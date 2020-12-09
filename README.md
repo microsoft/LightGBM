@@ -80,6 +80,8 @@ MMLSpark (LightGBM on Spark): https://github.com/Azure/mmlspark
 
 Kubeflow Fairing (LightGBM on Kubernetes): https://github.com/kubeflow/fairing
 
+Kubeflow Operator (LightGBM on Kubernetes): https://github.com/kubeflow/xgboost-operator
+
 ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
 LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net

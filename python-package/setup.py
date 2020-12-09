@@ -1,8 +1,5 @@
 # coding: utf-8
 """Setup lightgbm package."""
-from __future__ import absolute_import
-
-import io
 import logging
 import os
 import struct
@@ -68,6 +65,7 @@ def copy_files(integrated_opencl=False, use_gpu=False):
     if not os.path.isfile(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt')):
         copy_files_helper('include')
         copy_files_helper('src')
+        copy_files_helper('external_libs')
         if not os.path.exists(os.path.join(CURRENT_DIR, "compile", "windows")):
             os.makedirs(os.path.join(CURRENT_DIR, "compile", "windows"))
         copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.sln"),
@@ -328,8 +326,8 @@ if __name__ == "__main__":
         copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
                   os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'),
                   verbose=0)
-    version = io.open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'), encoding='utf-8').read().strip()
-    readme = io.open(os.path.join(CURRENT_DIR, 'README.rst'), encoding='utf-8').read()
+    version = open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'), encoding='utf-8').read().strip()
+    readme = open(os.path.join(CURRENT_DIR, 'README.rst'), encoding='utf-8').read()
 
     sys.path.insert(0, CURRENT_DIR)
 
@@ -367,8 +365,6 @@ if __name__ == "__main__":
                        'Operating System :: Microsoft :: Windows',
                        'Operating System :: POSIX',
                        'Operating System :: Unix',
-                       'Programming Language :: Python :: 2',
-                       'Programming Language :: Python :: 2.7',
                        'Programming Language :: Python :: 3',
                        'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',
