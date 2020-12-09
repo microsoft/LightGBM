@@ -4,8 +4,6 @@ import sys
 import pytest
 if not sys.platform.startswith("linux"):
     pytest.skip("lightgbm.dask is currently supported in Linux environments", allow_module_level=True)
-if sys.version_info < (3, 6):
-    pytest.skip("Only python>=3.6 is supported", allow_module_level=True)
 
 import dask.array as da
 import dask.dataframe as dd
