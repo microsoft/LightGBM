@@ -3,6 +3,7 @@ import copy
 import itertools
 import math
 import os
+import pickle
 import psutil
 import random
 import unittest
@@ -13,11 +14,6 @@ from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_csc
 from sklearn.datasets import load_svmlight_file, make_multilabel_classification
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score, average_precision_score
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 
 from .utils import load_boston, load_breast_cancer, load_digits, load_iris
 

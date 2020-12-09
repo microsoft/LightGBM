@@ -2,9 +2,12 @@
  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_UTILS_COMMON_FUN_H_
-#define LIGHTGBM_UTILS_COMMON_FUN_H_
+#ifndef LIGHTGBM_UTILS_COMMON_H_
+#define LIGHTGBM_UTILS_COMMON_H_
 
+#if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
+#include <LightGBM/utils/common_legacy_solaris.h>
+#endif
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
@@ -15,6 +18,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <functional>
 #include <iomanip>
 #include <iterator>
@@ -25,6 +29,12 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#if (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
+#define FMT_HEADER_ONLY
+#include "../../../external_libs/fmt/include/fmt/format.h"
+#endif
+#include "../../../external_libs/fast_double_parser/include/fast_double_parser.h"
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -50,6 +60,13 @@
 namespace LightGBM {
 
 namespace Common {
+
+/*!
+* Imbues the stream with the C locale.
+*/
+static void C_stringstream(std::stringstream &ss) {
+  ss.imbue(std::locale::classic());
+}
 
 inline static char tolower(char in) {
   if (in <= 'Z' && in >= 'A')
@@ -329,94 +346,6 @@ inline static bool AtofAndCheck(const char* p, double* out) {
   return true;
 }
 
-inline static unsigned CountDecimalDigit32(uint32_t n) {
-#if defined(_MSC_VER) || defined(__GNUC__)
-  static const uint32_t powers_of_10[] = {
-    0,
-    10,
-    100,
-    1000,
-    10000,
-    100000,
-    1000000,
-    10000000,
-    100000000,
-    1000000000
-  };
-#ifdef _MSC_VER
-  // NOLINTNEXTLINE
-  unsigned long i = 0;
-  _BitScanReverse(&i, n | 1);
-  uint32_t t = (i + 1) * 1233 >> 12;
-#elif __GNUC__
-  uint32_t t = (32 - __builtin_clz(n | 1)) * 1233 >> 12;
-#endif
-  return t - (n < powers_of_10[t]) + 1;
-#else
-  if (n < 10) return 1;
-  if (n < 100) return 2;
-  if (n < 1000) return 3;
-  if (n < 10000) return 4;
-  if (n < 100000) return 5;
-  if (n < 1000000) return 6;
-  if (n < 10000000) return 7;
-  if (n < 100000000) return 8;
-  if (n < 1000000000) return 9;
-  return 10;
-#endif
-}
-
-inline static void Uint32ToStr(uint32_t value, char* buffer) {
-  const char kDigitsLut[200] = {
-    '0', '0', '0', '1', '0', '2', '0', '3', '0', '4', '0', '5', '0', '6', '0', '7', '0', '8', '0', '9',
-    '1', '0', '1', '1', '1', '2', '1', '3', '1', '4', '1', '5', '1', '6', '1', '7', '1', '8', '1', '9',
-    '2', '0', '2', '1', '2', '2', '2', '3', '2', '4', '2', '5', '2', '6', '2', '7', '2', '8', '2', '9',
-    '3', '0', '3', '1', '3', '2', '3', '3', '3', '4', '3', '5', '3', '6', '3', '7', '3', '8', '3', '9',
-    '4', '0', '4', '1', '4', '2', '4', '3', '4', '4', '4', '5', '4', '6', '4', '7', '4', '8', '4', '9',
-    '5', '0', '5', '1', '5', '2', '5', '3', '5', '4', '5', '5', '5', '6', '5', '7', '5', '8', '5', '9',
-    '6', '0', '6', '1', '6', '2', '6', '3', '6', '4', '6', '5', '6', '6', '6', '7', '6', '8', '6', '9',
-    '7', '0', '7', '1', '7', '2', '7', '3', '7', '4', '7', '5', '7', '6', '7', '7', '7', '8', '7', '9',
-    '8', '0', '8', '1', '8', '2', '8', '3', '8', '4', '8', '5', '8', '6', '8', '7', '8', '8', '8', '9',
-    '9', '0', '9', '1', '9', '2', '9', '3', '9', '4', '9', '5', '9', '6', '9', '7', '9', '8', '9', '9'
-  };
-  unsigned digit = CountDecimalDigit32(value);
-  buffer += digit;
-  *buffer = '\0';
-
-  while (value >= 100) {
-    const unsigned i = (value % 100) << 1;
-    value /= 100;
-    *--buffer = kDigitsLut[i + 1];
-    *--buffer = kDigitsLut[i];
-  }
-
-  if (value < 10) {
-    *--buffer = static_cast<char>(value) + '0';
-  } else {
-    const unsigned i = value << 1;
-    *--buffer = kDigitsLut[i + 1];
-    *--buffer = kDigitsLut[i];
-  }
-}
-
-inline static void Int32ToStr(int32_t value, char* buffer) {
-  uint32_t u = static_cast<uint32_t>(value);
-  if (value < 0) {
-    *buffer++ = '-';
-    u = ~u + 1;
-  }
-  Uint32ToStr(u, buffer);
-}
-
-inline static void DoubleToStr(double value, char* buffer, size_t buffer_len) {
-  #ifdef _MSC_VER
-  int num_chars = sprintf_s(buffer, buffer_len, "%.17g", value);
-  #else
-  int num_chars = snprintf(buffer, buffer_len, "%.17g", value);
-  #endif
-  CHECK_GE(num_chars, 0);
-}
-
 inline static const char* SkipSpaceAndTab(const char* p) {
   while (*p == ' ' || *p == '\t') {
     ++p;
@@ -438,67 +367,6 @@ inline static std::vector<T2> ArrayCast(const std::vector<T>& arr) {
     ret[i] = static_cast<T2>(arr[i]);
   }
   return ret;
-}
-
-template<typename T, bool is_float, bool is_unsign>
-struct __TToStringHelperFast {
-  void operator()(T value, char* buffer, size_t) const {
-    Int32ToStr(value, buffer);
-  }
-};
-
-template<typename T>
-struct __TToStringHelperFast<T, true, false> {
-  void operator()(T value, char* buffer, size_t buf_len)
-  const {
-    #ifdef _MSC_VER
-    int num_chars = sprintf_s(buffer, buf_len, "%g", value);
-    #else
-    int num_chars = snprintf(buffer, buf_len, "%g", value);
-    #endif
-    CHECK_GE(num_chars, 0);
-  }
-};
-
-template<typename T>
-struct __TToStringHelperFast<T, false, true> {
-  void operator()(T value, char* buffer, size_t) const {
-    Uint32ToStr(value, buffer);
-  }
-};
-
-template<typename T>
-inline static std::string ArrayToStringFast(const std::vector<T>& arr, size_t n) {
-  if (arr.empty() || n == 0) {
-    return std::string("");
-  }
-  __TToStringHelperFast<T, std::is_floating_point<T>::value, std::is_unsigned<T>::value> helper;
-  const size_t buf_len = 16;
-  std::vector<char> buffer(buf_len);
-  std::stringstream str_buf;
-  helper(arr[0], buffer.data(), buf_len);
-  str_buf << buffer.data();
-  for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    helper(arr[i], buffer.data(), buf_len);
-    str_buf << ' ' << buffer.data();
-  }
-  return str_buf.str();
-}
-
-inline static std::string ArrayToString(const std::vector<double>& arr, size_t n) {
-  if (arr.empty() || n == 0) {
-    return std::string("");
-  }
-  const size_t buf_len = 32;
-  std::vector<char> buffer(buf_len);
-  std::stringstream str_buf;
-  DoubleToStr(arr[0], buffer.data(), buf_len);
-  str_buf << buffer.data();
-  for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    DoubleToStr(arr[i], buffer.data(), buf_len);
-    str_buf << ' ' << buffer.data();
-  }
-  return str_buf.str();
 }
 
 template<typename T, bool is_float>
@@ -588,11 +456,14 @@ inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
 }
 
 template<typename T>
-inline static std::string Join(const std::vector<T>& strs, const char* delimiter) {
+inline static std::string Join(const std::vector<T>& strs, const char* delimiter, const bool force_C_locale = false) {
   if (strs.empty()) {
     return std::string("");
   }
   std::stringstream str_buf;
+  if (force_C_locale) {
+    C_stringstream(str_buf);
+  }
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << strs[0];
   for (size_t i = 1; i < strs.size(); ++i) {
@@ -603,11 +474,14 @@ inline static std::string Join(const std::vector<T>& strs, const char* delimiter
 }
 
 template<>
-inline std::string Join<int8_t>(const std::vector<int8_t>& strs, const char* delimiter) {
+inline std::string Join<int8_t>(const std::vector<int8_t>& strs, const char* delimiter, const bool force_C_locale) {
   if (strs.empty()) {
     return std::string("");
   }
   std::stringstream str_buf;
+  if (force_C_locale) {
+    C_stringstream(str_buf);
+  }
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << static_cast<int16_t>(strs[0]);
   for (size_t i = 1; i < strs.size(); ++i) {
@@ -618,13 +492,16 @@ inline std::string Join<int8_t>(const std::vector<int8_t>& strs, const char* del
 }
 
 template<typename T>
-inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter) {
+inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter, const bool force_C_locale = false) {
   if (end - start <= 0) {
     return std::string("");
   }
   start = std::min(start, static_cast<size_t>(strs.size()) - 1);
   end = std::min(end, static_cast<size_t>(strs.size()));
   std::stringstream str_buf;
+  if (force_C_locale) {
+    C_stringstream(str_buf);
+  }
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << strs[start];
   for (size_t i = start + 1; i < end; ++i) {
@@ -1137,6 +1014,217 @@ class FunctionTimer {
 
 extern Common::Timer global_timer;
 
+
+/*!
+* Provides locale-independent alternatives to Common's methods.
+* Essential to make models robust to locale settings.
+*/
+namespace CommonC {
+
+template<typename T>
+inline static std::string Join(const std::vector<T>& strs, const char* delimiter) {
+  return LightGBM::Common::Join(strs, delimiter, true);
+}
+
+template<typename T>
+inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter) {
+  return LightGBM::Common::Join(strs, start, end, delimiter, true);
+}
+
+inline static const char* Atof(const char* p, double* out) {
+  return LightGBM::Common::Atof(p, out);
+}
+
+template<typename T, bool is_float>
+struct __StringToTHelperFast {
+  const char* operator()(const char*p, T* out) const {
+    return LightGBM::Common::Atoi(p, out);
+  }
+};
+
+/*!
+* \warning Beware that ``Common::Atof`` in ``__StringToTHelperFast``,
+*          has **less** floating point precision than ``__StringToTHelper``.
+*          Both versions are kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
+*          Check ``StringToArrayFast`` and ``StringToArray`` for more details on this.
+*/
+template<typename T>
+struct __StringToTHelperFast<T, true> {
+  const char* operator()(const char*p, T* out) const {
+    double tmp = 0.0f;
+    auto ret = Atof(p, &tmp);
+    *out = static_cast<T>(tmp);
+    return ret;
+  }
+};
+
+template<typename T, bool is_float>
+struct __StringToTHelper {
+  T operator()(const std::string& str) const {
+    T ret = 0;
+    LightGBM::Common::Atoi(str.c_str(), &ret);
+    return ret;
+  }
+};
+
+/*!
+* \warning Beware that ``Common::Atof`` in ``__StringToTHelperFast``,
+*          has **less** floating point precision than ``__StringToTHelper``.
+*          Both versions are kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
+*          Check ``StringToArrayFast`` and ``StringToArray`` for more details on this.
+* \note It is possible that ``fast_double_parser::parse_number`` is faster than ``Common::Atof``.
+*/
+template<typename T>
+struct __StringToTHelper<T, true> {
+  T operator()(const std::string& str) const {
+    double tmp;
+
+    // Fast (common) path: For numeric inputs in RFC 7159 format:
+    const bool fast_parse_succeeded = fast_double_parser::parse_number(str.c_str(), &tmp);
+
+    // Rare path: Not in RFC 7159 format. Possible "inf", "nan", etc. Fallback to standard library:
+    if (!fast_parse_succeeded) {
+      std::stringstream ss;
+      Common::C_stringstream(ss);
+      ss << str;
+      ss >> tmp;
+    }
+
+    return static_cast<T>(tmp);
+  }
+};
+
+
+/*!
+* \warning Beware that due to internal use of ``Common::Atof`` in ``__StringToTHelperFast``,
+*          this method has less precision for floating point numbers than ``StringToArray``,
+*          which calls ``__StringToTHelper``.
+*          As such, ``StringToArrayFast`` and ``StringToArray`` are not equivalent!
+*          Both versions were kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
+*/
+template<typename T>
+inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
+  if (n == 0) {
+    return std::vector<T>();
+  }
+  auto p_str = str.c_str();
+  __StringToTHelperFast<T, std::is_floating_point<T>::value> helper;
+  std::vector<T> ret(n);
+  for (int i = 0; i < n; ++i) {
+    p_str = helper(p_str, &ret[i]);
+  }
+  return ret;
+}
+
+/*!
+* \warning Do not replace calls to this method by ``StringToArrayFast``.
+*          This method is more precise for floating point numbers.
+*          Check ``StringToArrayFast`` for more details.
+*/
+template<typename T>
+inline static std::vector<T> StringToArray(const std::string& str, int n) {
+  if (n == 0) {
+    return std::vector<T>();
+  }
+  std::vector<std::string> strs = LightGBM::Common::Split(str.c_str(), ' ');
+  CHECK_EQ(strs.size(), static_cast<size_t>(n));
+  std::vector<T> ret;
+  ret.reserve(strs.size());
+  __StringToTHelper<T, std::is_floating_point<T>::value> helper;
+  for (const auto& s : strs) {
+    ret.push_back(helper(s));
+  }
+  return ret;
+}
+
+/*!
+* \warning Do not replace calls to this method by ``StringToArrayFast``.
+*          This method is more precise for floating point numbers.
+*          Check ``StringToArrayFast`` for more details.
+*/
+template<typename T>
+inline static std::vector<T> StringToArray(const std::string& str, char delimiter) {
+  std::vector<std::string> strs = LightGBM::Common::Split(str.c_str(), delimiter);
+  std::vector<T> ret;
+  ret.reserve(strs.size());
+  __StringToTHelper<T, std::is_floating_point<T>::value> helper;
+  for (const auto& s : strs) {
+    ret.push_back(helper(s));
+  }
+  return ret;
+}
+
+#if (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
+/*!
+* Safely formats a value onto a buffer according to a format string and null-terminates it.
+*
+* \note It checks that the full value was written or forcefully aborts.
+*       This safety check serves to prevent incorrect internal API usage.
+*       Correct usage will never incur in this problem:
+*         - The received buffer size shall be sufficient at all times for the input format string and value.
+*/
+template <typename T>
+inline static void format_to_buf(char* buffer, const size_t buf_len, const char* format, const T value) {
+    auto result = fmt::format_to_n(buffer, buf_len, format, value);
+    if (result.size >= buf_len) {
+      Log::Fatal("Numerical conversion failed. Buffer is too small.");
+    }
+    buffer[result.size] = '\0';
+}
+
+template<typename T, bool is_float, bool high_precision>
+struct __TToStringHelper {
+  void operator()(T value, char* buffer, size_t buf_len) const {
+    format_to_buf(buffer, buf_len, "{}", value);
+  }
+};
+
+template<typename T>
+struct __TToStringHelper<T, true, false> {
+  void operator()(T value, char* buffer, size_t buf_len) const {
+    format_to_buf(buffer, buf_len, "{:g}", value);
+  }
+};
+
+template<typename T>
+struct __TToStringHelper<T, true, true> {
+  void operator()(T value, char* buffer, size_t buf_len) const {
+    format_to_buf(buffer, buf_len, "{:.17g}", value);
+  }
+};
+
+/*!
+* Converts an array to a string with with values separated by the space character.
+* This method replaces Common's ``ArrayToString`` and ``ArrayToStringFast`` functionality
+* and is locale-independent.
+* 
+* \note If ``high_precision_output`` is set to true,
+*       floating point values are output with more digits of precision.
+*/
+template<bool high_precision_output = false, typename T>
+inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
+  if (arr.empty() || n == 0) {
+    return std::string("");
+  }
+  __TToStringHelper<T, std::is_floating_point<T>::value, high_precision_output> helper;
+  const size_t buf_len = high_precision_output ? 32 : 16;
+  std::vector<char> buffer(buf_len);
+  std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
+  helper(arr[0], buffer.data(), buf_len);
+  str_buf << buffer.data();
+  for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
+    helper(arr[i], buffer.data(), buf_len);
+    str_buf << ' ' << buffer.data();
+  }
+  return str_buf.str();
+}
+#endif  // (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
+
+
+}  // namespace CommonC
+
+
 }  // namespace LightGBM
 
-#endif   // LightGBM_UTILS_COMMON_FUN_H_
+#endif  // LIGHTGBM_UTILS_COMMON_H_
