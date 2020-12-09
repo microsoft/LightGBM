@@ -55,7 +55,7 @@ Grow Shallower Trees
 
 The total training time for LightGBM increases with the total number of tree nodes added. LightGBM comes with several parameters that can be used to control the number of nodes per tree.
 
-The suggestions below will speed up training, but might hurt statistical performance.
+The suggestions below will speed up training, but might hurt training accuracy.
 
 Decrease ``max_depth``
 **********************
@@ -95,16 +95,18 @@ Decrease ``num_iterations``
 
 The ``num_iterations`` parameter controls the number of boosting rounds that will be performed. Since LightGBM uses decision trees as the learners, this can also be thought of as "number of trees".
 
-Choosing the right value of ``num_iterations`` is highly dependent on the data and objective, so this parameter is often chosen from a set of possible values through hyperparameter tuning.
+If you try changing ``num_iterations``, change the ``learning_rate`` as well. ``learning_rate`` will not have any impact on training time, but it will impact the training accuracy. As a general rule, if you reduce ``num_iterations``, you should increase ``learning_rate``.
+
+Choosing the right value of ``num_iterations`` and ``learning_rate`` is highly dependent on the data and objective, so these parameters are often chosen from a set of possible values through hyperparameter tuning.
 
 Decrease ``num_iterations`` to reduce training time.
 
 Use Early Stopping
 ******************
 
-If early stopping is enabled, after each boosting round the model's performance is evaluated against a validation set that contains data not available to the training process. That performance is then compared to the performance as of the previous boosting round. If the model's performance fails to improve for some number of consecutive rounds, LightGBM stops the training process.
+If early stopping is enabled, after each boosting round the model's training accuracy is evaluated against a validation set that contains data not available to the training process. That accuracy is then compared to the accuracy as of the previous boosting round. If the model's accuracy fails to improve for some number of consecutive rounds, LightGBM stops the training process.
 
-That "number of consecutive rounds" is controlled by the parameter ``early_stopping_rounds``. For example, ``early_stopping_rounds=1`` says *the first time performance on the validation set does not improve, stop training*.
+That "number of consecutive rounds" is controlled by the parameter ``early_stopping_rounds``. For example, ``early_stopping_rounds=1`` says *the first time accuracy on the validation set does not improve, stop training*.
 
 Set ``early_stopping_rounds`` and provide a validation set to possibly reduce training time.
 
@@ -113,7 +115,7 @@ Consider Fewer Splits
 
 The parameters described in previous sections control how many trees are constructed and how many nodes are constructed per tree. Training time can be further reduced by reducing the amount of time needed to add a tree node to the model.
 
-The suggestions below will speed up training, but might hurt statistical performance.
+The suggestions below will speed up training, but might hurt training accuracy.
 
 Enable Feature Pre-Filtering When Creating Dataset
 **************************************************
