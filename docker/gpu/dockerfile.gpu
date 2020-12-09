@@ -75,8 +75,7 @@ RUN echo "export PATH=$CONDA_DIR/bin:"'$PATH' > /etc/profile.d/conda.sh && \
     rm ~/miniconda.sh
 
 RUN conda config --set always_yes yes --set changeps1 no && \
-    conda create -y -q -n py2 python=2.7 mkl numpy scipy scikit-learn jupyter notebook ipython pandas matplotlib && \
-    conda create -y -q -n py3 python=3.6 mkl numpy scipy scikit-learn jupyter notebook ipython pandas matplotlib
+    conda create -y -q -n py3 python=3.8 mkl numpy scipy scikit-learn jupyter notebook ipython pandas matplotlib
 
 #################################################################################################################
 #           LightGBM
@@ -90,7 +89,6 @@ RUN cd /usr/local/src && mkdir lightgbm && cd lightgbm && \
 
 ENV PATH /usr/local/src/lightgbm/LightGBM:${PATH}
 
-RUN /bin/bash -c "source activate py2 && cd /usr/local/src/lightgbm/LightGBM/python-package && python setup.py install --precompile && source deactivate"
 RUN /bin/bash -c "source activate py3 && cd /usr/local/src/lightgbm/LightGBM/python-package && python setup.py install --precompile && source deactivate"
 
 #################################################################################################################

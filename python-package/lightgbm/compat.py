@@ -1,62 +1,5 @@
 # coding: utf-8
 """Compatibility library."""
-from __future__ import absolute_import
-
-import inspect
-import sys
-
-import numpy as np
-
-is_py3 = (sys.version_info[0] == 3)
-
-"""Compatibility between Python2 and Python3"""
-if is_py3:
-    zip_ = zip
-    string_type = str
-    numeric_types = (int, float, bool)
-    integer_types = (int, )
-    range_ = range
-
-    def argc_(func):
-        """Count the number of arguments of a function."""
-        return len(inspect.signature(func).parameters)
-
-    def decode_string(bytestring):
-        """Decode C bytestring to ordinary string."""
-        return bytestring.decode('utf-8')
-else:
-    from itertools import izip as zip_
-    string_type = basestring
-    numeric_types = (int, long, float, bool)
-    integer_types = (int, long)
-    range_ = xrange
-
-    def argc_(func):
-        """Count the number of arguments of a function."""
-        return len(inspect.getargspec(func).args)
-
-    def decode_string(bytestring):
-        """Decode C bytestring to ordinary string."""
-        return bytestring
-
-"""json"""
-try:
-    import simplejson as json
-except (ImportError, SyntaxError):
-    # simplejson does not support Python 3.2, it throws a SyntaxError
-    # because of u'...' Unicode literals.
-    import json
-
-
-def json_default_with_numpy(obj):
-    """Convert numpy classes to JSON serializable objects."""
-    if isinstance(obj, (np.integer, np.floating, np.bool_)):
-        return obj.item()
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()
-    else:
-        return obj
-
 
 """pandas"""
 try:
@@ -66,12 +9,12 @@ try:
 except ImportError:
     PANDAS_INSTALLED = False
 
-    class Series(object):
+    class Series:
         """Dummy class for pandas.Series."""
 
         pass
 
-    class DataFrame(object):
+    class DataFrame:
         """Dummy class for pandas.DataFrame."""
 
         pass
@@ -103,7 +46,7 @@ try:
 except ImportError:
     DATATABLE_INSTALLED = False
 
-    class DataTable(object):
+    class DataTable:
         """Dummy class for DataTable."""
 
         pass
@@ -162,10 +105,3 @@ except ImportError:
     _LGBMAssertAllFinite = None
     _LGBMCheckClassificationTargets = None
     _LGBMComputeSampleWeight = None
-
-
-# DeprecationWarning is not shown by default, so let's create our own with higher level
-class LGBMDeprecationWarning(UserWarning):
-    """Custom deprecation warning."""
-
-    pass

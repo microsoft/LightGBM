@@ -1,8 +1,5 @@
 # coding: utf-8
 """Setup lightgbm package."""
-from __future__ import absolute_import
-
-import io
 import logging
 import os
 import struct
@@ -329,8 +326,8 @@ if __name__ == "__main__":
         copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
                   os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'),
                   verbose=0)
-    version = io.open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'), encoding='utf-8').read().strip()
-    readme = io.open(os.path.join(CURRENT_DIR, 'README.rst'), encoding='utf-8').read()
+    version = open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'), encoding='utf-8').read().strip()
+    readme = open(os.path.join(CURRENT_DIR, 'README.rst'), encoding='utf-8').read()
 
     sys.path.insert(0, CURRENT_DIR)
 
@@ -368,8 +365,6 @@ if __name__ == "__main__":
                        'Operating System :: Microsoft :: Windows',
                        'Operating System :: POSIX',
                        'Operating System :: Unix',
-                       'Programming Language :: Python :: 2',
-                       'Programming Language :: Python :: 2.7',
                        'Programming Language :: Python :: 3',
                        'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',

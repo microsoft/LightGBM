@@ -49,7 +49,7 @@ elseif ($env:TASK -eq "sdist") {
 }
 elseif ($env:TASK -eq "bdist") {
   cd $env:BUILD_SOURCESDIRECTORY/python-package
-  python setup.py bdist_wheel --plat-name=win-amd64 --universal ; Check-Output $?
+  python setup.py bdist_wheel --plat-name=win-amd64 --python-tag py3 ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.whl) ; Check-Output $?
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {

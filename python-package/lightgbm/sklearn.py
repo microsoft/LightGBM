@@ -1,9 +1,9 @@
 # coding: utf-8
 """Scikit-learn wrapper interface for LightGBM."""
-from __future__ import absolute_import
-
 import copy
 import warnings
+
+from inspect import signature
 
 import numpy as np
 
@@ -12,11 +12,11 @@ from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckSampleWeight,
                      _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     argc_, range_, zip_, string_type, DataFrame, DataTable)
+                     DataFrame, DataTable)
 from .engine import train
 
 
-class _ObjectiveFunctionWrapper(object):
+class _ObjectiveFunctionWrapper:
     """Proxy class for objective function."""
 
     def __init__(self, func):
@@ -69,7 +69,7 @@ class _ObjectiveFunctionWrapper(object):
             The value of the second order derivative (Hessian) for each sample point.
         """
         labels = dataset.get_label()
-        argc = argc_(self.func)
+        argc = len(signature(self.func).parameters)
         if argc == 2:
             grad, hess = self.func(labels, preds)
         elif argc == 3:
@@ -88,15 +88,15 @@ class _ObjectiveFunctionWrapper(object):
                 num_class = len(grad) // num_data
                 if num_class * num_data != len(grad):
                     raise ValueError("Length of grad and hess should equal to num_class * num_data")
-                for k in range_(num_class):
-                    for i in range_(num_data):
+                for k in range(num_class):
+                    for i in range(num_data):
                         idx = k * num_data + i
                         grad[idx] *= weight[i]
                         hess[idx] *= weight[i]
         return grad, hess
 
 
-class _EvalFunctionWrapper(object):
+class _EvalFunctionWrapper:
     """Proxy class for evaluation function."""
 
     def __init__(self, func):
@@ -158,7 +158,7 @@ class _EvalFunctionWrapper(object):
             Is eval result higher better, e.g. AUC is ``is_higher_better``.
         """
         labels = dataset.get_label()
-        argc = argc_(self.func)
+        argc = len(signature(self.func).parameters)
         if argc == 2:
             return self.func(labels, preds)
         elif argc == 3:
@@ -340,7 +340,7 @@ class LGBMModel(_LGBMModelBase):
         params : dict
             Parameter names mapped to their values.
         """
-        params = super(LGBMModel, self).get_params(deep=deep)
+        params = super().get_params(deep=deep)
         params.update(self._other_params)
         return params
 
@@ -518,10 +518,10 @@ class LGBMModel(_LGBMModelBase):
 
         # Separate built-in from callable evaluation metrics
         eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
-        eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, string_type)]
+        eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, str)]
 
         # register default metric for consistency with callable eval_metric case
-        original_metric = self._objective if isinstance(self._objective, string_type) else None
+        original_metric = self._objective if isinstance(self._objective, str) else None
         if original_metric is None:
             # try to deduce from class instance
             if isinstance(self, LGBMRegressor):
@@ -537,7 +537,7 @@ class LGBMModel(_LGBMModelBase):
                 original_metric = params.pop(metric_alias)
 
         # concatenate metric from params (or default if not provided in params) and eval_metric
-        original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
+        original_metric = [original_metric] if isinstance(original_metric, (str, type(None))) else original_metric
         params['metric'] = [e for e in eval_metrics_builtin if e not in original_metric] + original_metric
         params['metric'] = [metric for metric in params['metric'] if metric is not None]
 
@@ -767,16 +767,11 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
             verbose=True, feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
-        super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
-                                       init_score=init_score, eval_set=eval_set,
-                                       eval_names=eval_names,
-                                       eval_sample_weight=eval_sample_weight,
-                                       eval_init_score=eval_init_score,
-                                       eval_metric=eval_metric,
-                                       early_stopping_rounds=early_stopping_rounds,
-                                       verbose=verbose, feature_name=feature_name,
-                                       categorical_feature=categorical_feature,
-                                       callbacks=callbacks, init_model=init_model)
+        super().fit(X, y, sample_weight=sample_weight, init_score=init_score,
+                    eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
+                    eval_init_score=eval_init_score, eval_metric=eval_metric,
+                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
     _base_doc = LGBMModel.fit.__doc__
@@ -803,7 +798,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         _LGBMCheckClassificationTargets(y)
         self._le = _LGBMLabelEncoder().fit(y)
         _y = self._le.transform(y)
-        self._class_map = dict(zip_(self._le.classes_, self._le.transform(self._le.classes_)))
+        self._class_map = dict(zip(self._le.classes_, self._le.transform(self._le.classes_)))
         if isinstance(self.class_weight, dict):
             self._class_weight = {self._class_map[k]: v for k, v in self.class_weight.items()}
 
@@ -817,7 +812,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                 self._objective = "multiclass"
 
         if not callable(eval_metric):
-            if isinstance(eval_metric, (string_type, type(None))):
+            if isinstance(eval_metric, (str, type(None))):
                 eval_metric = [eval_metric]
             if self._n_classes > 2:
                 for index, metric in enumerate(eval_metric):
@@ -844,17 +839,12 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                 else:
                     valid_sets[i] = (valid_x, self._le.transform(valid_y))
 
-        super(LGBMClassifier, self).fit(X, _y, sample_weight=sample_weight,
-                                        init_score=init_score, eval_set=valid_sets,
-                                        eval_names=eval_names,
-                                        eval_sample_weight=eval_sample_weight,
-                                        eval_class_weight=eval_class_weight,
-                                        eval_init_score=eval_init_score,
-                                        eval_metric=eval_metric,
-                                        early_stopping_rounds=early_stopping_rounds,
-                                        verbose=verbose, feature_name=feature_name,
-                                        categorical_feature=categorical_feature,
-                                        callbacks=callbacks, init_model=init_model)
+        super().fit(X, _y, sample_weight=sample_weight, init_score=init_score, eval_set=valid_sets,
+                    eval_names=eval_names, eval_sample_weight=eval_sample_weight,
+                    eval_class_weight=eval_class_weight, eval_init_score=eval_init_score,
+                    eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds,
+                    verbose=verbose, feature_name=feature_name, categorical_feature=categorical_feature,
+                    callbacks=callbacks, init_model=init_model)
         return self
 
     _base_doc = LGBMModel.fit.__doc__
@@ -919,8 +909,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         X_SHAP_values : array-like of shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
             If ``pred_contrib=True``, the feature contributions for each sample.
         """
-        result = super(LGBMClassifier, self).predict(X, raw_score, start_iteration, num_iteration,
-                                                     pred_leaf, pred_contrib, **kwargs)
+        result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
             warnings.warn("Cannot compute class probabilities or labels "
                           "due to the usage of customized objective function.\n"
@@ -967,23 +956,18 @@ class LGBMRanker(LGBMModel):
             elif len(eval_group) != len(eval_set):
                 raise ValueError("Length of eval_group should be equal to eval_set")
             elif (isinstance(eval_group, dict)
-                  and any(i not in eval_group or eval_group[i] is None for i in range_(len(eval_group)))
+                  and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))
                   or isinstance(eval_group, list)
                   and any(group is None for group in eval_group)):
                 raise ValueError("Should set group for all eval datasets for ranking task; "
                                  "if you use dict, the index should start from 0")
 
         self._eval_at = eval_at
-        super(LGBMRanker, self).fit(X, y, sample_weight=sample_weight,
-                                    init_score=init_score, group=group,
-                                    eval_set=eval_set, eval_names=eval_names,
-                                    eval_sample_weight=eval_sample_weight,
-                                    eval_init_score=eval_init_score, eval_group=eval_group,
-                                    eval_metric=eval_metric,
-                                    early_stopping_rounds=early_stopping_rounds,
-                                    verbose=verbose, feature_name=feature_name,
-                                    categorical_feature=categorical_feature,
-                                    callbacks=callbacks, init_model=init_model)
+        super().fit(X, y, sample_weight=sample_weight, init_score=init_score, group=group,
+                    eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
+                    eval_init_score=eval_init_score, eval_group=eval_group, eval_metric=eval_metric,
+                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
     _base_doc = LGBMModel.fit.__doc__
