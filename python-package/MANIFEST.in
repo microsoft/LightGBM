@@ -8,7 +8,11 @@ recursive-include compile/compute *.txt
 recursive-include compile/compute/cmake *
 recursive-include compile/compute/include *
 recursive-include compile/compute/meta *
-recursive-include compile/external_libs *
+recursive-include compile/external_libs/fast_double_parser *.txt
+recursive-include compile/external_libs/fast_double_parser/include *
+recursive-include compile/external_libs/fmt *.txt
+recursive-include compile/external_libs/fmt/include *
+recursive-include compile/external_libs/fmt/src *
 recursive-include compile/include *
 recursive-include compile/src *
 recursive-include compile/windows LightGBM.sln LightGBM.vcxproj
