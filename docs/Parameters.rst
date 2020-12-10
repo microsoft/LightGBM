@@ -322,7 +322,7 @@ Learning Control Parameters
 
 -  ``feature_fraction`` :raw-html:`<a id="feature_fraction" title="Permalink to this parameter" href="#feature_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
 
-   -  LightGBM will randomly select a subset of of features on each iteration (tree) if ``feature_fraction`` is smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
+   -  LightGBM will randomly select a subset of features on each iteration (tree) if ``feature_fraction`` is smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
 
    -  can be used to speed up training
 
@@ -344,11 +344,11 @@ Learning Control Parameters
 
 -  ``extra_trees`` :raw-html:`<a id="extra_trees" title="Permalink to this parameter" href="#extra_trees">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
-   -  can be used to speed up training
-
    -  use extremely randomized trees
 
    -  if set to ``true``, when evaluating node splits LightGBM will check only one randomly-chosen threshold for each feature
+
+   -  can be used to speed up training
 
    -  can be used to deal with over-fitting
 
@@ -360,9 +360,9 @@ Learning Control Parameters
 
    -  will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
 
-   -  can be used to speed up training
+   -  ``<= 0`` means disable
 
-   -  ``<= 0`` means disable (the default)
+   -  can be used to speed up training
 
 -  ``first_metric_only`` :raw-html:`<a id="first_metric_only" title="Permalink to this parameter" href="#first_metric_only">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
@@ -386,9 +386,9 @@ Learning Control Parameters
 
 -  ``min_gain_to_split`` :raw-html:`<a id="min_gain_to_split" title="Permalink to this parameter" href="#min_gain_to_split">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``min_split_gain``, constraints: ``min_gain_to_split >= 0.0``
 
-   -  can be used to speed up training
-
    -  the minimal gain to perform split
+
+   -  can be used to speed up training
 
 -  ``drop_rate`` :raw-html:`<a id="drop_rate" title="Permalink to this parameter" href="#drop_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.1``, type = double, aliases: ``rate_drop``, constraints: ``0.0 <= drop_rate <= 1.0``
 
