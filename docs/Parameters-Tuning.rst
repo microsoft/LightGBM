@@ -39,7 +39,7 @@ For Faster Speed
 Add More Computational Resources
 ''''''''''''''''''''''''''''''''
 
-On systems where it is available, LightGBM uses OpenMP to parallelize many operations. The maximum number of threads used by LightGBM is controlled by the parameter ``num_threads``. By default, this will defer to the default behavior of OpenMP (one thread per real CPU core or the value in environment variable ``OMP_NUM_THREADS``, if it is set). For best performance, set this to the number of real CPU cores available.
+On systems where it is available, LightGBM uses OpenMP to parallelize many operations. The maximum number of threads used by LightGBM is controlled by the parameter ``num_threads``. By default, this will defer to the default behavior of OpenMP (one thread per real CPU core or the value in environment variable ``OMP_NUM_THREADS``, if it is set). For best performance, set this to the number of **real** CPU cores available.
 
 You might be able to achieve faster training by moving to a machine with more available CPU cores.
 
@@ -106,7 +106,7 @@ Use Early Stopping
 
 If early stopping is enabled, after each boosting round the model's training accuracy is evaluated against a validation set that contains data not available to the training process. That accuracy is then compared to the accuracy as of the previous boosting round. If the model's accuracy fails to improve for some number of consecutive rounds, LightGBM stops the training process.
 
-That "number of consecutive rounds" is controlled by the parameter ``early_stopping_rounds``. For example, ``early_stopping_rounds=1`` says *the first time accuracy on the validation set does not improve, stop training*.
+That "number of consecutive rounds" is controlled by the parameter ``early_stopping_rounds``. For example, ``early_stopping_rounds=1`` says "the first time accuracy on the validation set does not improve, stop training".
 
 Set ``early_stopping_rounds`` and provide a validation set to possibly reduce training time.
 
@@ -154,7 +154,7 @@ Decrease ``feature_fraction`` to reduce training time.
 Decrease ``max_cat_threshold``
 ******************************
 
-LightGBM uses a `custom approach for finding optimal splits for categorical features <./Advanced-Topics.html#categorical-feature-support>`_. In this process, LightGBM explores explores splits that break a categorical feature into two groups. These are sometimes called "k-vs.-rest" splits. Higher ``max_cat_threshold`` values correspond to more split points and larger possible group sizes to search.
+LightGBM uses a `custom approach for finding optimal splits for categorical features <./Advanced-Topics.html#categorical-feature-support>`_. In this process, LightGBM explores splits that break a categorical feature into two groups. These are sometimes called "k-vs.-rest" splits. Higher ``max_cat_threshold`` values correspond to more split points and larger possible group sizes to search.
 
 Decrease ``max_cat_threshold`` to reduce training time.
 
@@ -164,7 +164,7 @@ Use Less Data
 Use Bagging
 ***********
 
-By Default, LightGBM uses all observations in the training data for each iteration. It is possible to instead tell LightGBM to randomly sample the training data. This process of training over multiple random samples without replacement is called "bagging".
+By default, LightGBM uses all observations in the training data for each iteration. It is possible to instead tell LightGBM to randomly sample the training data. This process of training over multiple random samples without replacement is called "bagging".
 
 Set ``bagging_freq`` to an integer greater than 0 to control how often a new sample is drawn. Set ``bagging_fraction`` to a value ``> 0.0`` and ``< 1.0`` to control the size of the sample. For example, ``{"bagging_freq": 5, "bagging_fraction": 0.75}`` tells LightGBM "re-sample without replacement every 5 iterations, and draw samples of 75% of the training data".
 
