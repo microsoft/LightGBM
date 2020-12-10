@@ -17,7 +17,6 @@ recursive-include compile/external_libs/fast_double_parser/include *
 include compile/external_libs/fmt/CMakeLists.txt
 include compile/external_libs/fmt/LICENSE.rst
 recursive-include compile/external_libs/fmt/include *
-recursive-include compile/external_libs/fmt/src *
 recursive-include compile/include *
 recursive-include compile/src *
 recursive-include compile/windows LightGBM.sln LightGBM.vcxproj
