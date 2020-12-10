@@ -68,6 +68,8 @@ Treelite (model compiler for efficient deployment): https://github.com/dmlc/tree
 
 cuML Forest Inference Library (GPU-accelerated inference): https://github.com/rapidsai/cuml
 
+daal4py (Intel CPU-accelerated inference): https://github.com/IntelPython/daal4py
+
 m2cgen (model appliers for various languages): https://github.com/BayesWitnesses/m2cgen
 
 leaves (Go model applier): https://github.com/dmitryikh/leaves
