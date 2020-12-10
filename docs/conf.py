@@ -26,17 +26,13 @@ from distutils.dir_util import copy_tree
 from docutils.parsers.rst import Directive
 from sphinx.errors import VersionRequirementError
 from subprocess import PIPE, Popen
+from unittest.mock import Mock
 
 CURR_PATH = os.path.abspath(os.path.dirname(__file__))
 LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'python-package')
 sys.path.insert(0, LIB_PATH)
 
 # -- mock out modules
-try:
-    from unittest.mock import Mock  # Python 3.x
-except ImportError:
-    from mock import Mock  # Python 2.x
-
 MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
                 'sklearn', 'matplotlib', 'pandas', 'graphviz']
 for mod_name in MOCK_MODULES:
@@ -208,9 +204,7 @@ def generate_doxygen_xml(app):
         "WARN_AS_ERROR=YES",
     ]
     doxygen_input = '\n'.join(doxygen_args)
-    is_py3 = sys.version[0] == "3"
-    if is_py3:
-        doxygen_input = bytes(doxygen_input, "utf-8")
+    doxygen_input = bytes(doxygen_input, "utf-8")
     if not os.path.exists(os.path.join(CURR_PATH, 'doxyoutput')):
         os.makedirs(os.path.join(CURR_PATH, 'doxyoutput'))
     try:
@@ -221,8 +215,7 @@ def generate_doxygen_xml(app):
         process = Popen(["doxygen", "-"],
                         stdin=PIPE, stdout=PIPE, stderr=PIPE)
         stdout, stderr = process.communicate(doxygen_input)
-        output = '\n'.join([i.decode('utf-8') if is_py3 else i
-                            for i in (stdout, stderr) if i is not None])
+        output = '\n'.join([i.decode('utf-8') for i in (stdout, stderr) if i is not None])
         if process.returncode != 0:
             raise RuntimeError(output)
         else:

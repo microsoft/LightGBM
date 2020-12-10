@@ -22,7 +22,6 @@ PKG_LIBS = \
     -lIphlpapi
 
 OBJECTS = \
-    application/application.o \
     boosting/boosting.o \
     boosting/gbdt.o \
     boosting/gbdt_model_text.o \

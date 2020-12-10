@@ -17,15 +17,17 @@ env:
     - PYTHON_VERSION=3.8
   matrix:
     - TASK=regular PYTHON_VERSION=3.6
-    - TASK=sdist PYTHON_VERSION=2.7
+    - TASK=sdist
     - TASK=bdist
     - TASK=if-else
     - TASK=lint
     - TASK=check-docs
     - TASK=mpi METHOD=source
     - TASK=mpi METHOD=pip PYTHON_VERSION=3.7
+    - TASK=mpi METHOD=wheel PYTHON_VERSION=3.7
     - TASK=gpu METHOD=source
     - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
+    - TASK=gpu METHOD=wheel PYTHON_VERSION=3.7
 
 matrix:
   exclude:
@@ -33,6 +35,8 @@ matrix:
       env: TASK=gpu METHOD=source
     - os: osx
       env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
+    - os: osx
+      env: TASK=gpu METHOD=wheel PYTHON_VERSION=3.7
     - os: osx
       env: TASK=lint
     - os: osx
