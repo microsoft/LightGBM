@@ -587,7 +587,9 @@ class RegressionMAPELOSS : public RegressionL1loss {
     RegressionL2loss::Init(metadata, num_data);
     for (data_size_t i = 0; i < num_data_; ++i) {
       if (std::fabs(label_[i]) < 1) {
-        Log::Warning("Met 'abs(label) < 1', will convert them to '1' in MAPE objective and metric");
+        Log::Warning(
+          "Some label values are < 1 in absolute value. MAPE is unstable with such values, "
+          "so LightGBM rounds them to 1.0 when calculating MAPE.");
         break;
       }
     }
