@@ -7,10 +7,18 @@ if ($env:TASK -eq "bdist") {
   Get-WmiObject -Class Win32_Processor
   Get-WmiObject -Class Win32_BIOS
 
-  Write-Output "Downloading OpenCL runtime"
-  Invoke-WebRequest -OutFile AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe -Uri https://gamma-rho.com/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe
-  Write-Output "Installing OpenCL runtime"
-  Invoke-Command -ScriptBlock {Start-Process 'AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe' -ArgumentList '/S /V"/quiet /norestart /passive /log amd_opencl_sdk.log"' -Wait}
+  Write-Output "Downloading OpenCL platform installer"
+  $parts = @("1", "2", "3", "4", "EXE")
+  foreach ($p in $parts) {
+    Write-Output " - downloading part $($p)"
+    Invoke-WebRequest -OutFile "AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe.$($p)" -Uri "https://gamma-rho.com/split/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe.$($p)"
+  }
+  Write-Output " - combining parts"
+  Start-Process ".\AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe.EXE" -Wait
+  Start-Sleep -Seconds 10
+
+  Write-Output "Running OpenCL platform installer"
+  Invoke-Command -ScriptBlock {Start-Process '.\AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe' -ArgumentList '/S /V"/quiet /norestart /passive /log amd_opencl_sdk.log"' -Wait}
 
   $property = Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
   if ($property -eq $null) {
