@@ -5,6 +5,8 @@ Get-WmiObject -Class Win32_Processor
 Get-WmiObject -Class Win32_BIOS
 
 if ($env:TASK -eq "bdist") {
+  Write-Output "Installing OpenCL"
+
   Write-Output "Downloading OpenCL runtime"
   $installer = "AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe"
   curl -o .\$installer https://gamma-rho.com/$installer
@@ -14,5 +16,7 @@ if ($env:TASK -eq "bdist") {
 
   Write-Output "Current OpenCL drivers:"
   Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
+} else {
+  Write-Output "OpenCL installation not required"
 }
 
