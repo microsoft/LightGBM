@@ -11,6 +11,7 @@ if ($env:TASK -eq "bdist") {
   curl -o .\$installer https://gamma-rho.com/$installer
   Write-Output "Installing OpenCL runtime"
   Invoke-Command -ScriptBlock {Start-Process .\$installer -ArgumentList '/S /V"/quiet /norestart /passive /log amd_opencl_sdk.log"' -Wait}
+
   $property = Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
   if ($property -eq $null) {
     Write-Output "Unable to install OpenCL runtime"
