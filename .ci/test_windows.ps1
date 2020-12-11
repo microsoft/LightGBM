@@ -6,6 +6,39 @@ function Check-Output {
   }
 }
 
+function Get-EnvironmentVariable([string] $Name, [System.EnvironmentVariableTarget] $Scope) {
+    [Environment]::GetEnvironmentVariable($Name, $Scope)
+}
+
+function Get-EnvironmentVariableNames([System.EnvironmentVariableTarget] $Scope) {
+    switch ($Scope) {
+        'User' { Get-Item 'HKCU:\Environment' | Select-Object -ExpandProperty Property }
+        'Machine' { Get-Item 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' | Select-Object -ExpandProperty Property }
+        'Process' { Get-ChildItem Env:\ | Select-Object -ExpandProperty Key }
+        default { throw "Unsupported environment scope: $Scope" }
+    }
+}
+
+function Update-SessionEnvironment {
+  Write-Debug "Running 'Update-SessionEnvironment' - Updating the environment variables for the session."
+  #ordering is important here, $user comes after so we can override $machine
+  'Machine', 'User' |
+    % {
+      $scope = $_
+      Get-EnvironmentVariableNames -Scope $scope |
+        % {
+          Set-Item "Env:$($_)" -Value (Get-EnvironmentVariable -Scope $scope -Name $_)
+        }
+    }
+  #Path gets special treatment b/c it munges the two together
+  $paths = 'Machine', 'User' |
+    % {
+      (Get-EnvironmentVariable -Name 'PATH' -Scope $_) -split ';'
+    } |
+    Select -Unique
+  $Env:PATH = $paths -join ';'
+}
+
 # unify environment variables for Azure devops and AppVeyor
 if (Test-Path env:APPVEYOR) {
   $env:APPVEYOR = "true"
@@ -48,20 +81,7 @@ elseif ($env:TASK -eq "sdist") {
   cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar
 }
 elseif ($env:TASK -eq "bdist") {
-  # Install the Intel CPU runtime, so we can run tests against OpenCL
-  Write-Output "Downloading OpenCL runtime"
-  curl -o opencl_runtime_18.1_x64_setup.msi http://registrationcenter-download.intel.com/akdlm/irc_nas/vcp/13794/opencl_runtime_18.1_x64_setup.msi
-  $msiarglist = "/i opencl_runtime_18.1_x64_setup.msi /quiet /norestart /log msi.log"
-  Write-Output "Installing OpenCL runtime"
-  $return = Start-Process msiexec -ArgumentList $msiarglist -Wait -passthru
-  Get-Content msi.log
-  If (@(0,3010) -contains $return.exitcode) {
-    Write-Output "OpenCL install successful"
-  } else {
-    Write-Output "OpenCL install failed, aborting"
-    exit 1
-  }
-  RefreshEnv
+  Update-SessionEnvironment
   Write-Output "Current OpenCL drivers:"
   Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
 
@@ -104,3 +124,5 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
   conda install -q -y -n $env:CONDA_ENV ipywidgets notebook
   jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb ; Check-Output $?  # run all notebooks
 }
+
+conda deactivate
