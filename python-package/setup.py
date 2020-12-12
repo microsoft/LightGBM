@@ -366,7 +366,6 @@ if __name__ == "__main__":
           cmdclass={
               'install': CustomInstall,
               'install_lib': CustomInstallLib,
-              'bdist_wheel': CustomBdistWheel,
               'sdist': CustomSdist,
               'bdist_wheel': CustomBdistWheel,
           },
