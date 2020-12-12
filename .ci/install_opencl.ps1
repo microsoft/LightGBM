@@ -13,7 +13,7 @@ if ($env:TASK -eq "bdist") {
     Write-Output " - downloading part $($p)"
     Invoke-WebRequest -OutFile "AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe.$($p)" -Uri "https://gamma-rho.com/parts/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe.$($p)"
   }
-  Write-Output "Combining downloaded parts"
+  Write-Output "Combining OpenCL platform installer parts"
   Start-Process ".\AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe.EXE" -Wait
   Start-Sleep -Seconds 10
 

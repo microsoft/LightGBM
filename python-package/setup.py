@@ -314,26 +314,6 @@ class CustomSdist(sdist):
             os.remove(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt'))
 
 
-class CustomBdistWheel(bdist_wheel):
-    """Supports --integrated-opencl to allow building OpenCL wheels on Windows.
-
-    Other install options should be added over time when needed.
-    """
-
-    user_options = bdist_wheel.user_options + [
-        ('integrated-opencl', None, 'Compile integrated OpenCL version'),
-    ]
-
-    def initialize_options(self):
-        bdist_wheel.initialize_options(self)
-        self.integrated_opencl = False
-
-    def run(self):
-        install = self.distribution.get_command_obj('install')
-        install.integrated_opencl = self.integrated_opencl
-        bdist_wheel.run(self)
-
-
 if __name__ == "__main__":
     CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
     LOG_PATH = os.path.join(os.path.expanduser('~'), 'LightGBM_compilation.log')
@@ -366,8 +346,8 @@ if __name__ == "__main__":
           cmdclass={
               'install': CustomInstall,
               'install_lib': CustomInstallLib,
-              'sdist': CustomSdist,
               'bdist_wheel': CustomBdistWheel,
+              'sdist': CustomSdist,
           },
           packages=find_packages(),
           include_package_data=True,

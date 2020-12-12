@@ -80,9 +80,7 @@ if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq 
 } else {
   $tests = $env:BUILD_SOURCESDIRECTORY + "/tests"
 }
-Write-Output "Running tests"
 pytest $tests ; Check-Output $?
-Write-Output "Tests completed"
 
 if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
