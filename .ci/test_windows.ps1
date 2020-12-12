@@ -6,7 +6,8 @@ function Check-Output {
   }
 }
 
-. $env:BUILD_SOURCESDIRECTORY/.ci/update_environment.ps1
+$module = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+Import-Module "$module" ; Check-Output $?
 
 # unify environment variables for Azure devops and AppVeyor
 if (Test-Path env:APPVEYOR) {
@@ -51,7 +52,7 @@ elseif ($env:TASK -eq "sdist") {
   cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar
 }
 elseif ($env:TASK -eq "bdist") {
-  Update-SessionEnvironment
+  RefreshEnv
   Write-Output "Current OpenCL drivers:"
   Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
 
