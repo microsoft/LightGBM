@@ -8,12 +8,12 @@ if ($env:TASK -eq "bdist") {
   Get-WmiObject -Class Win32_BIOS
 
   Write-Output "Downloading OpenCL platform installer"
-  $parts = @("1", "2", "3", "4", "EXE")
+  $parts = @("1", "2", "3", "4", "5", "6", "7", "8", "9", "EXE")
   foreach ($p in $parts) {
     Write-Output " - downloading part $($p)"
-    Invoke-WebRequest -OutFile "AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe.$($p)" -Uri "https://gamma-rho.com/split/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe.$($p)"
+    Invoke-WebRequest -OutFile "AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe.$($p)" -Uri "https://gamma-rho.com/parts/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe.$($p)"
   }
-  Write-Output " - combining parts"
+  Write-Output "Combining downloaded parts"
   Start-Process ".\AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe.EXE" -Wait
   Start-Sleep -Seconds 10
 
