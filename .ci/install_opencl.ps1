@@ -1,4 +1,6 @@
 
+# Install OpenCL platform from installer executable expected in workspace cache
+
 Write-Output "Installing OpenCL CPU platform"
 
 Write-Output "Agent platform information:"

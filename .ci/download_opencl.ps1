@@ -1,4 +1,6 @@
 
+# Download OpenCL platform installer executable into workspace cache
+
 $cache = "$env:PIPELINE_WORKSPACE\opencl_windows-amd_cpu-v3_0_130_135"
 $installer = "AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe"
 
@@ -9,9 +11,11 @@ foreach ($p in $parts) {
   Invoke-WebRequest -OutFile "$installer.$p" -Uri "https://gamma-rho.com/parts/$installer.$p"
 }
 
-Write-Output "Combining OpenCL platform installer parts"
+Write-Output "Reassembling OpenCL platform installer"
 Start-Process "$installer.EXE" -Wait
 Start-Sleep -Seconds 10
+
+Write-Output "Caching OpenCL platform installer"
 New-Item $cache -ItemType Directory | Out-Null
 Move-Item -Path "$installer" -Destination "$cache\$installer" | Out-Null
 
