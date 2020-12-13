@@ -1,3 +1,4 @@
+# coding: utf-8
 import os
 import sys
 
@@ -70,16 +71,16 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
 def test_classifier(output, centers, client, listen_port):  # noqa
     X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
 
-    a = dlgbm.LGBMClassifier(time_out=5, local_listen_port=listen_port)
-    a = a.fit(dX, dy, sample_weight=dw, client=client)
-    p1 = a.predict(dX)
+    classifier_a = dlgbm.LGBMClassifier(time_out=5, local_listen_port=listen_port)
+    classifier_a = classifier_a.fit(dX, dy, sample_weight=dw, client=client)
+    p1 = classifier_a.predict(dX)
     s1 = accuracy_score(dy, p1)
     p1 = p1.compute()
 
-    b = lightgbm.LGBMClassifier()
-    b.fit(X, y, sample_weight=w)
-    p2 = b.predict(X)
-    s2 = b.score(X, y)
+    classifier_b = lightgbm.LGBMClassifier()
+    classifier_b.fit(X, y, sample_weight=w)
+    p2 = classifier_b.predict(X)
+    s2 = classifier_b.score(X, y)
 
     assert_eq(s1, s2)
 
@@ -162,11 +163,11 @@ def test_regressor_quantile(output, client, listen_port, alpha):  # noqa
     q2 = np.count_nonzero(y < p2) / y.shape[0]
 
     # Quantiles should be right
-    np.isclose(q1, alpha, atol=.1)
-    np.isclose(q2, alpha, atol=.1)
+    np.testing.assert_allclose(q1, alpha, atol=0.2)
+    np.testing.assert_allclose(q2, alpha, atol=0.2)
 
 
-def test_regressor_local_predict(client, listen_port):  # noqa
+def test_regressor_local_predict(client, listen_port):
     X, y, w, dX, dy, dw = _create_data('regression', output='array')
 
     a = dlgbm.LGBMRegressor(local_listen_port=listen_port, seed=42)
@@ -179,7 +180,7 @@ def test_regressor_local_predict(client, listen_port):  # noqa
 
     # Predictions and scores should be the same
     assert_eq(p1, p2)
-    np.isclose(s1, s2)
+    assert_eq(s1, s2)
 
 
 def test_build_network_params():

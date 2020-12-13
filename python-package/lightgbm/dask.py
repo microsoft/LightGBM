@@ -1,3 +1,4 @@
+# coding: utf-8
 """Distributed training with LightGBM and Dask.distributed.
 
 This module enables you to perform distributed training with LightGBM on Dask.Array and Dask.DataFrame collections.
@@ -13,15 +14,11 @@ from dask import array as da
 from dask import dataframe as dd
 from dask import delayed
 from dask.distributed import default_client, get_worker, wait
-from toolz import assoc, first
 
 from .basic import _LIB, _safe_call
 from .sklearn import LGBMClassifier as LocalLGBMClassifier, LGBMRegressor as LocalLGBMRegressor
 
-try:
-    import scipy.sparse as ss
-except ImportError:
-    ss = False
+import scipy.sparse as ss
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +29,7 @@ def _parse_host_port(address):
 
 
 def _build_network_params(worker_addresses, local_worker_ip, local_listen_port, time_out):
-    """Build network parameters suiltable for LightGBM C backend.
+    """Build network parameters suitable for LightGBM C backend.
 
     Parameters
     ----------
@@ -60,7 +57,7 @@ def _concat(seq):
         return np.concatenate(seq, axis=0)
     elif isinstance(seq[0], (pd.DataFrame, pd.Series)):
         return pd.concat(seq, axis=0)
-    elif ss and isinstance(seq[0], ss.spmatrix):
+    elif isinstance(seq[0], ss.spmatrix):
         return ss.vstack(seq, format='csr')
     else:
         raise TypeError('Data must be one of: numpy arrays, pandas dataframes, sparse matrices (from scipy). Got %s.' % str(type(seq[0])))
@@ -131,9 +128,9 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
     who_has = client.who_has(parts)
     worker_map = defaultdict(list)
     for key, workers in who_has.items():
-        worker_map[first(workers)].append(key_to_part_dict[key])
+        worker_map[next(iter(workers))].append(key_to_part_dict[key])
 
-    master_worker = first(worker_map)
+    master_worker = next(iter(worker_map))
     worker_ncores = client.ncores()
 
     if 'tree_learner' not in params or params['tree_learner'].lower() not in {'data', 'feature', 'voting'}:
@@ -144,7 +141,7 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
     # Tell each worker to train on the parts that it has locally
     futures_classifiers = [client.submit(_train_part,
                                          model_factory=model_factory,
-                                         params=assoc(params, 'num_threads', worker_ncores[worker]),
+                                         params={**params, 'num_threads': worker_ncores[worker]},
                                          list_of_parts=list_of_parts,
                                          worker_addresses=list(worker_map.keys()),
                                          local_listen_port=params.get('local_listen_port', 12400),
