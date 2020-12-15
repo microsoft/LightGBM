@@ -6,6 +6,8 @@ function Check-Output {
   }
 }
 
+# Import the Chocolatey profile module so that the RefreshEnv command
+# invoked below properly updates the current PowerShell session enviroment.
 $module = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
 Import-Module "$module" ; Check-Output $?
 
