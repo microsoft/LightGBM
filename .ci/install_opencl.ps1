@@ -1,6 +1,5 @@
 
 Write-Output "Installing OpenCL CPU platform"
-
 Write-Output "Agent platform information:"
 Get-WmiObject -Class Win32_ComputerSystem
 Get-WmiObject -Class Win32_Processor
