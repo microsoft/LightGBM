@@ -1168,7 +1168,6 @@ test_that("lgb.train() works with early stopping for regression with a metric th
 
 
 test_that("lgb.train() supports non-ASCII feature names", {
-  testthat::skip("UTF-8 feature names are not fully supported in the R package")
   dtrain <- lgb.Dataset(
     data = matrix(rnorm(400L), ncol =  4L)
     , label = rnorm(100L)
