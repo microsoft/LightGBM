@@ -9,15 +9,7 @@ if ($env:OPENCL_INSTALLER_FOUND -ne 'true') {
   # into workspace cache
 
   Write-Output "Downloading OpenCL platform installer"
-  $parts = @("1", "2", "3", "4", "5", "6", "7", "8", "9", "EXE")
-  foreach ($p in $parts) {
-    Write-Output " - downloading part $($p)"
-    Invoke-WebRequest -OutFile "$installer.$p" -Uri "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$installer.$p"
-  }
-
-  Write-Output "Reassembling OpenCL platform installer"
-  Start-Process "$installer.EXE" -Wait
-  Start-Sleep -Seconds 10
+  Invoke-WebRequest -OutFile "$installer" -Uri "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$installer"
 
   Write-Output "Caching OpenCL platform installer"
   New-Item $cache -ItemType Directory | Out-Null

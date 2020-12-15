@@ -126,7 +126,7 @@ jobs:
     displayName: 'Set Variables'
   - task: Cache@2
     inputs:
-      key: '"opencl.windows" | "amd.cpu" | "v3.0.130.135" | "2"'
+      key: '"opencl.windows" | "amd.cpu" | "v3.0.130.135" | "3"'
       path: $(Pipeline.Workspace)/opencl_windows-amd_cpu-v3_0_130_135
       cacheHitVar: OPENCL_INSTALLER_FOUND
     condition: eq(variables.TASK, 'bdist')
