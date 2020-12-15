@@ -124,6 +124,13 @@ jobs:
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
       Write-Host "##vso[task.setvariable variable=AZURE]true"
     displayName: 'Set Variables'
+  - task: Cache@2
+    inputs:
+      key: '"opencl.windows" | "amd.cpu" | "v3.0.130.135" | "2"'
+      path: $(Pipeline.Workspace)/opencl_windows-amd_cpu-v3_0_130_135
+      cacheHitVar: OPENCL_INSTALLER_FOUND
+    condition: eq(variables.TASK, 'bdist')
+    displayName: 'Cache OpenCL'
   - script: |
       cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/install_opencl.ps1"
     condition: eq(variables.TASK, 'bdist')
