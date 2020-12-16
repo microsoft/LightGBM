@@ -1,9 +1,6 @@
 
 Write-Output "Installing OpenCL CPU platform"
 
-# TODO(tpboudreau): consider removing the pipeline cache and downloading the
-# installer unconditionally on every run if download time improves sufficiently
-
 $cache = "$env:PIPELINE_WORKSPACE\opencl_windows-amd_cpu-v3_0_130_135"
 $installer = "AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe"
 
