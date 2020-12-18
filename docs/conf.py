@@ -248,8 +248,9 @@ def generate_r_docs(app):
     source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
     cd {0}
+    git submodule update --init --recursive
     export R_LIBS="$CONDA_PREFIX/lib/R/library"
-    Rscript build_r.R
+    Rscript build_r.R || exit 1
     cd {1}
     Rscript -e "roxygen2::roxygenize(load = 'installed')"
     Rscript -e "pkgdown::build_site( \
