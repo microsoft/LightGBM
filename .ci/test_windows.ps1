@@ -6,6 +6,11 @@ function Check-Output {
   }
 }
 
+# Import the Chocolatey profile module so that the RefreshEnv command
+# invoked below properly updates the current PowerShell session enviroment.
+$module = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+Import-Module "$module" ; Check-Output $?
+
 # unify environment variables for Azure devops and AppVeyor
 if (Test-Path env:APPVEYOR) {
   $env:APPVEYOR = "true"
@@ -23,9 +28,9 @@ conda activate
 conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda
 conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy ; Check-Output $?
-conda activate $env:CONDA_ENV
 
 if ($env:TASK -eq "regular") {
+  conda activate $env:CONDA_ENV
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
   cd $env:BUILD_SOURCESDIRECTORY/python-package
@@ -34,6 +39,7 @@ if ($env:TASK -eq "regular") {
   cp $env:BUILD_SOURCESDIRECTORY/Release/lightgbm.exe $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 }
 elseif ($env:TASK -eq "sdist") {
+  conda activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py sdist --formats gztar ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.gz) -v ; Check-Output $?
@@ -48,11 +54,17 @@ elseif ($env:TASK -eq "sdist") {
   cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar
 }
 elseif ($env:TASK -eq "bdist") {
+  RefreshEnv
+  Write-Output "Current OpenCL drivers:"
+  Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
+
+  conda activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY/python-package
-  python setup.py bdist_wheel --plat-name=win-amd64 --python-tag py3 ; Check-Output $?
-  cd dist; pip install @(Get-ChildItem *.whl) ; Check-Output $?
+  python setup.py bdist_wheel --integrated-opencl --plat-name=win-amd64 --python-tag py3 ; Check-Output $?
+  cd dist; pip install --user @(Get-ChildItem *.whl) ; Check-Output $?
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
+  conda activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY\python-package
   if ($env:COMPILER -eq "MINGW") {
     python setup.py install --mingw ; Check-Output $?
@@ -62,9 +74,13 @@ elseif ($env:TASK -eq "bdist") {
 }
 
 if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
-  $tests = $env:BUILD_SOURCESDIRECTORY + "/tests/python_package_test"
-} else {
   # cannot test C API with "sdist" task
+  $tests = $env:BUILD_SOURCESDIRECTORY + "/tests/python_package_test"
+} elseif ($env:TASK -eq "bdist") {
+  $tests = $env:BUILD_SOURCESDIRECTORY + "/tests"
+  # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
+  $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
+} else {
   $tests = $env:BUILD_SOURCESDIRECTORY + "/tests"
 }
 pytest $tests ; Check-Output $?
