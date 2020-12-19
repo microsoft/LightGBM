@@ -1,4 +1,3 @@
-
 Write-Output "Installing OpenCL CPU platform"
 
 $cache = "$env:PIPELINE_WORKSPACE\opencl_windows-amd_cpu-v3_0_130_135"
@@ -6,7 +5,6 @@ $installer = "AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe"
 
 if ($env:OPENCL_INSTALLER_FOUND -ne 'true') {
   # Pipeline cache miss; download OpenCL platform installer executable into workspace cache
-
   Write-Output "Downloading OpenCL platform installer"
   Invoke-WebRequest -OutFile "$installer" -Uri "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$installer"
 
@@ -25,7 +23,6 @@ if ($env:OPENCL_INSTALLER_FOUND -ne 'true') {
 }
 
 # Install OpenCL platform from installer executable expected in workspace cache
-
 Write-Output "Running OpenCL installer"
 Invoke-Command -ScriptBlock {Start-Process "$cache\$installer" -ArgumentList '/S /V"/quiet /norestart /passive /log opencl.log"' -Wait}
 
@@ -42,4 +39,3 @@ if ($property -eq $null) {
   Write-Output "Current OpenCL drivers:"
   Write-Output $property
 }
-
