@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - gpu_wheel_docs
+    - master
   tags:
     include:
     - v*
