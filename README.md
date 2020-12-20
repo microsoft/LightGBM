@@ -94,6 +94,10 @@ Ruby gem: https://github.com/ankane/lightgbm
 
 LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
 
+ML Flow (experiment tracking, model monitoring framework): https://github.com/mlflow/mlflow
+
+`{treesnip}` (R `{parsnip}`-compliant interface): https://github.com/curso-r/treesnip
+
 Support
 -------
 
