@@ -46,7 +46,6 @@ Booster <- R6::R6Class(
           train_set_handle <- train_set$.__enclos_env__$private$get_handle()
           params <- modifyList(params, train_set$get_params())
           params_str <- lgb.params2str(params = params)
-
           # Store booster handle
           handle <- lgb.call(
             fun_name = "LGBM_BoosterCreate_R"
