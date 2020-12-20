@@ -6,6 +6,7 @@ Booster <- R6::R6Class(
 
     best_iter = -1L,
     best_score = NA_real_,
+    params = list(),
     record_evals = list(),
 
     # Finalize will free up the handles
@@ -45,6 +46,7 @@ Booster <- R6::R6Class(
           train_set_handle <- train_set$.__enclos_env__$private$get_handle()
           params <- modifyList(params, train_set$get_params())
           params_str <- lgb.params2str(params = params)
+
           # Store booster handle
           handle <- lgb.call(
             fun_name = "LGBM_BoosterCreate_R"
@@ -134,6 +136,8 @@ Booster <- R6::R6Class(
 
       }
 
+      self$params <- params
+
     },
 
     # Set training data name
@@ -187,17 +191,20 @@ Booster <- R6::R6Class(
     # Reset parameters of booster
     reset_parameter = function(params, ...) {
 
-      # Append parameters
-      params <- append(params, list(...))
+      if (methods::is(self$params, "list")) {
+        params <- modifyList(self$params, params)
+      }
+
+      params <- modifyList(params, list(...))
       params_str <- lgb.params2str(params = params)
 
-      # Reset parameters
       lgb.call(
         fun_name = "LGBM_BoosterResetParameter_R"
         , ret = NULL
         , private$handle
         , params_str
       )
+      self$params <- params
 
       return(invisible(self))
 
