@@ -79,7 +79,7 @@ You need to know what you are going to use LightGBM!
 
 -  For running on Intel, get `Intel SDK for OpenCL`_ (**NOT RECOMMENDED**).
 
--  For running on AMD, get AMD APP SDK (downloads `for Linux`_ and `for Windows`_) (you may want to replace the ``OpenCL.dll`` from GPU driver package with the one from the SDK, if the one shipped with the driver lacks some functions).
+-  For running on AMD, get AMD APP SDK (downloads `for Linux`_ and `for Windows`_). You may want to replace the ``OpenCL.dll`` from the GPU driver package with the one from the SDK, if the one shipped with the driver lacks some functions.
 
 -  For running on NVIDIA, get `CUDA Toolkit`_.
 

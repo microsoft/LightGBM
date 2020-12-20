@@ -23,7 +23,7 @@ Install from `PyPI <https://pypi.org/project/lightgbm>`_ Using ``pip``
 
 You may need to install `wheel <https://pythonwheels.com>`_ via ``pip install wheel`` first.
 
-Compiled library that is included in the wheel file supports both **GPU** and **CPU** versions out of the box. This feature is experimental and available only for **Windows** currently. To use **GPU** version you only need to install OpenCL Runtime libraries. For NVIDIA and AMD GPU they are included in the ordinary drivers for your graphics card, so no action is required. For AMD or Intel CPU you can install `AMD APP SDK <https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe>`_.
+Compiled library that is included in the wheel file supports both **GPU** and **CPU** versions out of the box. This feature is experimental and available only for **Windows** currently. To use **GPU** version you only need to install OpenCL Runtime libraries. For NVIDIA and AMD GPU they are included in the ordinary drivers for your graphics card, so no action is required. If you would like your AMD or Intel CPU to act like a GPU (for testing and debugging) you can install `AMD APP SDK <https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe>`_.
 
 For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
 
