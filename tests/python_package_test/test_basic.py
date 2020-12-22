@@ -100,7 +100,8 @@ class TestBasic(unittest.TestCase):
         valid_data.construct()
 
     def test_chunked_dataset_linear(self):
-        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1,
+                                                            random_state=2)
         chunk_size = X_train.shape[0] // 10 + 1
         X_train = [X_train[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_train.shape[0] // chunk_size + 1)]
         X_test = [X_test[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_test.shape[0] // chunk_size + 1)]
@@ -111,7 +112,8 @@ class TestBasic(unittest.TestCase):
         valid_data.construct()
 
     def test_save_and_load_linear(self):
-        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1,
+                                                            random_state=2)
         X_train = np.concatenate([np.ones((X_train.shape[0], 1)), X_train], 1)
         X_train[:X_train.shape[0] // 2, 0] = 0
         y_train[:X_train.shape[0] // 2] = 1
