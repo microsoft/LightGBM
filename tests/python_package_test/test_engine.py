@@ -2490,7 +2490,7 @@ class TestEngine(unittest.TestCase):
         p3 = est2.predict(x)
         self.assertGreater(np.mean(np.abs(p2 - p1)), np.abs(np.max(p3 - p1)))
         # test when num_leaves - 1 < num_features and when num_leaves - 1 > num_features
-        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2)
         params = {'linear_tree': True,
                   'verbose': -1,
                   'metric': 'mse',
