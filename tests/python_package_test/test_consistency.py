@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.datasets import load_svmlight_file
 
 
-class FileLoader(object):
+class FileLoader:
 
     def __init__(self, directory, prefix, config_file='train.conf'):
         directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), directory)

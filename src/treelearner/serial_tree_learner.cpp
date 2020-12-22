@@ -49,8 +49,8 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
 
   // initialize splits for leaf
-  smaller_leaf_splits_.reset(new LeafSplits(train_data_->num_data()));
-  larger_leaf_splits_.reset(new LeafSplits(train_data_->num_data()));
+  smaller_leaf_splits_.reset(new LeafSplits(train_data_->num_data(), config_));
+  larger_leaf_splits_.reset(new LeafSplits(train_data_->num_data(), config_));
 
   // initialize data partition
   data_partition_.reset(new DataPartition(num_data_, config_->num_leaves));
@@ -60,7 +60,10 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   ordered_hessians_.resize(num_data_);
 
   GetShareStates(train_data_, is_constant_hessian, true);
-  histogram_pool_.DynamicChangeSize(train_data_, share_state_->is_colwise, config_, max_cache_size, config_->num_leaves);
+  histogram_pool_.DynamicChangeSize(train_data_,
+  share_state_->num_hist_total_bin(),
+  share_state_->feature_hist_offsets(),
+  config_, max_cache_size, config_->num_leaves);
   Log::Info("Number of data points in the train set: %d, number of used features: %d", num_data_, num_features_);
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
     cegb_.reset(new CostEfficientGradientBoosting(this));
@@ -81,8 +84,8 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
     // cannot change is_hist_col_wise during training
     share_state_.reset(dataset->GetShareStates(
         ordered_gradients_.data(), ordered_hessians_.data(), col_sampler_.is_feature_used_bytree(),
-        is_constant_hessian, share_state_->is_colwise,
-        !share_state_->is_colwise));
+        is_constant_hessian, share_state_->is_col_wise,
+        !share_state_->is_col_wise));
   }
   CHECK_NOTNULL(share_state_);
 }
@@ -130,7 +133,10 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
     // at least need 2 leaves
     max_cache_size = std::max(2, max_cache_size);
     max_cache_size = std::min(max_cache_size, config_->num_leaves);
-    histogram_pool_.DynamicChangeSize(train_data_, share_state_->is_colwise, config_, max_cache_size, config_->num_leaves);
+    histogram_pool_.DynamicChangeSize(train_data_,
+    share_state_->num_hist_total_bin(),
+    share_state_->feature_hist_offsets(),
+    config_, max_cache_size, config_->num_leaves);
 
     // push split information for all leaves
     best_split_per_leaf_.resize(config_->num_leaves);
@@ -353,7 +359,6 @@ void SerialTreeLearner::ConstructHistograms(
       smaller_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data(), share_state_.get(),
       ptr_smaller_leaf_hist_data);
-
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
     // construct larger leaf
     hist_t* ptr_larger_leaf_hist_data =
@@ -777,7 +782,7 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
   int num_data = split->left_count + split->right_count;
 
   std::vector<SplitInfo> bests(share_state_->num_threads);
-  LeafSplits leaf_splits(num_data);
+  LeafSplits leaf_splits(num_data, config_);
   leaf_splits.Init(leaf, sum_gradients, sum_hessians);
 
   // can't use GetParentOutput because leaf_splits doesn't have weight property set

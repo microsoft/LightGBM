@@ -8,6 +8,11 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CC=clang
 fi
 
+if [[ "${TASK:0:9}" == "r-package" ]]; then
+    bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
+    exit 0
+fi
+
 conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
 source activate $CONDA_ENV
 
@@ -47,8 +52,8 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
             "r-lintr>=2.0"
     pip install --user cpplint
     echo "Linting Python code"
-    pycodestyle --ignore=E501,W503 --exclude=./compute,./eigen,./.nuget . || exit -1
-    pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|^eigen|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
+    pycodestyle --ignore=E501,W503 --exclude=./compute,./eigen,./.nuget,./external_libs . || exit -1
+    pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|^eigen|external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
@@ -62,11 +67,6 @@ if [[ $TASK == "if-else" ]]; then
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
-    exit 0
-fi
-
-if [[ "${TASK:0:9}" == "r-package" ]]; then
-    bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
     exit 0
 fi
 
@@ -100,15 +100,15 @@ if [[ $TASK == "sdist" ]]; then
     exit 0
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --universal || exit -1
-        mv dist/lightgbm-$LGB_VER-py2.py3-none-macosx.whl dist/lightgbm-$LGB_VER-py2.py3-none-macosx_10_13_x86_64.macosx_10_14_x86_64.macosx_10_15_x86_64.whl
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --python-tag py3 || exit -1
+        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_13_x86_64.macosx_10_14_x86_64.macosx_10_15_x86_64.whl
         if [[ $AZURE == "true" ]]; then
-            cp dist/lightgbm-$LGB_VER-py2.py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
+            cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
     else
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --python-tag py3 || exit -1
         if [[ $AZURE == "true" ]]; then
-            cp dist/lightgbm-$LGB_VER-py2.py3-none-manylinux1_x86_64.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
+            cp dist/lightgbm-$LGB_VER-py3-none-manylinux1_x86_64.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
     fi
     pip install --user $BUILD_DIRECTORY/python-package/dist/*.whl || exit -1
@@ -126,8 +126,14 @@ if [[ $TASK == "gpu" ]]; then
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
+    elif [[ $METHOD == "wheel" ]]; then
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --gpu --opencl-include-dir="$AMDAPPSDK_PATH/include/" || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
+        pytest $BUILD_DIRECTORY/tests || exit -1
+        exit 0
+    elif [[ $METHOD == "source" ]]; then
+        cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
     fi
-    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
 elif [[ $TASK == "cuda" ]]; then
     sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
     grep -q 'std::string device_type = "cuda"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
@@ -136,16 +142,28 @@ elif [[ $TASK == "cuda" ]]; then
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
+    elif [[ $METHOD == "wheel" ]]; then
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
+        pytest $BUILD_DIRECTORY/tests || exit -1
+        exit 0
+    elif [[ $METHOD == "source" ]]; then
+        cmake -DUSE_CUDA=ON ..
     fi
-    cmake -DUSE_CUDA=ON ..
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
+    elif [[ $METHOD == "wheel" ]]; then
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --mpi || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
+        pytest $BUILD_DIRECTORY/tests || exit -1
+        exit 0
+    elif [[ $METHOD == "source" ]]; then
+        cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
     fi
-    cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
 else
     cmake ..
 fi

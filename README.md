@@ -11,6 +11,7 @@ Light Gradient Boosting Machine
 [![License](https://img.shields.io/github/license/microsoft/lightgbm.svg)](https://github.com/microsoft/LightGBM/blob/master/LICENSE)
 [![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg?logo=python&logoColor=white)](https://pypi.org/project/lightgbm)
 [![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg?logo=pypi&logoColor=white)](https://pypi.org/project/lightgbm)
+[![CRAN Version](https://www.r-pkg.org/badges/version/lightgbm)](https://cran.r-project.org/package=lightgbm)
 [![Join Gitter at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Slack](https://lightgbm-slack-autojoin.herokuapp.com/badge.svg)](https://lightgbm-slack-autojoin.herokuapp.com)
 
@@ -67,6 +68,8 @@ Treelite (model compiler for efficient deployment): https://github.com/dmlc/tree
 
 cuML Forest Inference Library (GPU-accelerated inference): https://github.com/rapidsai/cuml
 
+daal4py (Intel CPU-accelerated inference): https://github.com/IntelPython/daal4py
+
 m2cgen (model appliers for various languages): https://github.com/BayesWitnesses/m2cgen
 
 leaves (Go model applier): https://github.com/dmitryikh/leaves
@@ -79,6 +82,8 @@ MMLSpark (LightGBM on Spark): https://github.com/Azure/mmlspark
 
 Kubeflow Fairing (LightGBM on Kubernetes): https://github.com/kubeflow/fairing
 
+Kubeflow Operator (LightGBM on Kubernetes): https://github.com/kubeflow/xgboost-operator
+
 ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
 LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
@@ -86,6 +91,14 @@ LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 Dask-LightGBM (distributed and parallel Python-package): https://github.com/dask/dask-lightgbm
 
 Ruby gem: https://github.com/ankane/lightgbm
+
+LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
+
+ML Flow (experiment tracking, model monitoring framework): https://github.com/mlflow/mlflow
+
+`{treesnip}` (R `{parsnip}`-compliant interface): https://github.com/curso-r/treesnip
+
+`{mlr3learners.lightgbm}` (R `{mlr3}`-compliant interface): https://github.com/mlr3learners/mlr3learners.lightgbm
 
 Support
 -------

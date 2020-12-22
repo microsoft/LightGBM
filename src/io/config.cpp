@@ -317,7 +317,9 @@ void Config::CheckParamConflict() {
     double full_num_leaves = std::pow(2, max_depth);
     if (full_num_leaves > num_leaves
         && num_leaves == kDefaultNumLeaves) {
-      Log::Warning("Accuracy may be bad since you didn't set num_leaves and 2^max_depth > num_leaves");
+      Log::Warning("Accuracy may be bad since you didn't explicitly set num_leaves OR 2^max_depth > num_leaves."
+                   " (num_leaves=%d).",
+                   num_leaves);
     }
 
     if (full_num_leaves < num_leaves) {
@@ -329,6 +331,9 @@ void Config::CheckParamConflict() {
   if (device_type == std::string("gpu") || device_type == std::string("cuda")) {
     force_col_wise = true;
     force_row_wise = false;
+    if (deterministic) {
+      Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
+    }
   }
   // force gpu_use_dp for CUDA
   if (device_type == std::string("cuda") && !gpu_use_dp) {
@@ -373,6 +378,12 @@ void Config::CheckParamConflict() {
   }
   if (max_depth > 0 && monotone_penalty >= max_depth) {
     Log::Warning("Monotone penalty greater than tree depth. Monotone features won't be used.");
+  }
+  if (min_data_in_leaf <= 0 && min_sum_hessian_in_leaf <= kEpsilon) {
+    Log::Warning(
+        "Cannot set both min_data_in_leaf and min_sum_hessian_in_leaf to 0. "
+        "Will set min_data_in_leaf to 1.");
+    min_data_in_leaf = 1;
   }
 }
 

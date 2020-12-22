@@ -1,9 +1,8 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
-from __future__ import absolute_import, print_function
-
 import copy
 import ctypes
+import json
 import os
 import warnings
 from tempfile import NamedTemporaryFile
@@ -12,18 +11,13 @@ from collections import OrderedDict
 import numpy as np
 import scipy.sparse
 
-from .compat import (PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse,
-                     DataTable,
-                     decode_string, string_type,
-                     integer_types, numeric_types,
-                     json, json_default_with_numpy,
-                     range_, zip_)
+from .compat import PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse, DataTable
 from .libpath import find_lib_path
 
 
 def _log_callback(msg):
     """Redirect logs from native library into Python console."""
-    print("{0:s}".format(decode_string(msg)), end='')
+    print("{0:s}".format(msg.decode('utf-8')), end='')
 
 
 def _load_lib():
@@ -36,11 +30,14 @@ def _load_lib():
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
     lib.callback = callback(_log_callback)
     if lib.LGBM_RegisterLogCallback(lib.callback) != 0:
-        raise LightGBMError(decode_string(lib.LGBM_GetLastError()))
+        raise LightGBMError(lib.LGBM_GetLastError().decode('utf-8'))
     return lib
 
 
 _LIB = _load_lib()
+
+
+NUMERIC_TYPES = (int, float, bool)
 
 
 def _safe_call(ret):
@@ -52,7 +49,7 @@ def _safe_call(ret):
         The return value from C API calls.
     """
     if ret != 0:
-        raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
+        raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
 
 
 def is_numeric(obj):
@@ -136,6 +133,16 @@ def c_array(ctype, values):
     return (ctype * len(values))(*values)
 
 
+def json_default_with_numpy(obj):
+    """Convert numpy classes to JSON serializable objects."""
+    if isinstance(obj, (np.integer, np.floating, np.bool_)):
+        return obj.item()
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    else:
+        return obj
+
+
 def param_dict_to_str(data):
     """Convert Python dictionary to string, which is passed to C API."""
     if data is None or not data:
@@ -149,7 +156,7 @@ def param_dict_to_str(data):
                 else:
                     return str(x)
             pairs.append(str(key) + '=' + ','.join(map(to_string, val)))
-        elif isinstance(val, string_type) or isinstance(val, numeric_types) or is_numeric(val):
+        elif isinstance(val, (str, NUMERIC_TYPES)) or is_numeric(val):
             pairs.append(str(key) + '=' + str(val))
         elif val is not None:
             raise TypeError('Unknown type of parameter:%s, got:%s'
@@ -157,7 +164,7 @@ def param_dict_to_str(data):
     return ' '.join(pairs)
 
 
-class _TempFile(object):
+class _TempFile:
     def __enter__(self):
         with NamedTemporaryFile(prefix="lightgbm_tmp_", delete=True) as f:
             self.name = f.name
@@ -183,7 +190,14 @@ class LightGBMError(Exception):
     pass
 
 
-class _ConfigAliases(object):
+# DeprecationWarning is not shown by default, so let's create our own with higher level
+class LGBMDeprecationWarning(UserWarning):
+    """Custom deprecation warning."""
+
+    pass
+
+
+class _ConfigAliases:
     aliases = {"bin_construct_sample_cnt": {"bin_construct_sample_cnt",
                                             "subsample_for_bin"},
                "boosting": {"boosting",
@@ -375,7 +389,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         else:
             if len(cat_cols) != len(pandas_categorical):
                 raise ValueError('train and valid dataset categorical_feature do not match.')
-            for col, category in zip_(cat_cols, pandas_categorical):
+            for col, category in zip(cat_cols, pandas_categorical):
                 if list(data[col].cat.categories) != list(category):
                     data[col] = data[col].cat.set_categories(category)
         if len(cat_cols):  # cat_cols is list
@@ -440,9 +454,9 @@ def _load_pandas_categorical(file_name=None, model_str=None):
                 if len(lines) >= 2:
                     break
                 offset *= 2
-        last_line = decode_string(lines[-1]).strip()
+        last_line = lines[-1].decode('utf-8').strip()
         if not last_line.startswith(pandas_key):
-            last_line = decode_string(lines[-2]).strip()
+            last_line = lines[-2].decode('utf-8').strip()
     elif model_str is not None:
         idx = model_str.rfind('\n', 0, offset)
         last_line = model_str[idx:].strip()
@@ -452,7 +466,7 @@ def _load_pandas_categorical(file_name=None, model_str=None):
         return None
 
 
-class _InnerPredictor(object):
+class _InnerPredictor:
     """_InnerPredictor of LightGBM.
 
     Not exposed to user.
@@ -563,7 +577,7 @@ class _InnerPredictor(object):
             predict_type = C_API_PREDICT_CONTRIB
         int_data_has_header = 1 if data_has_header else 0
 
-        if isinstance(data, string_type):
+        if isinstance(data, str):
             with _TempFile() as f:
                 _safe_call(_LIB.LGBM_BoosterPredictForFile(
                     self.handle,
@@ -668,8 +682,8 @@ class _InnerPredictor(object):
             n_preds = [self.__get_num_preds(start_iteration, num_iteration, i, predict_type) for i in np.diff([0] + list(sections) + [nrow])]
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.zeros(sum(n_preds), dtype=np.float64)
-            for chunk, (start_idx_pred, end_idx_pred) in zip_(np.array_split(mat, sections),
-                                                              zip_(n_preds_sections, n_preds_sections[1:])):
+            for chunk, (start_idx_pred, end_idx_pred) in zip(np.array_split(mat, sections),
+                                                             zip(n_preds_sections, n_preds_sections[1:])):
                 # avoid memory consumption by arrays concatenation operations
                 inner_predict(chunk, start_iteration, num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
             return preds, nrow
@@ -807,8 +821,8 @@ class _InnerPredictor(object):
             n_preds = [self.__get_num_preds(start_iteration, num_iteration, i, predict_type) for i in np.diff(sections)]
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.zeros(sum(n_preds), dtype=np.float64)
-            for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip_(zip_(sections, sections[1:]),
-                                                                             zip_(n_preds_sections, n_preds_sections[1:])):
+            for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip(zip(sections, sections[1:]),
+                                                                            zip(n_preds_sections, n_preds_sections[1:])):
                 # avoid memory consumption by arrays concatenation operations
                 inner_predict(csr[start_idx:end_idx], start_iteration, num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
             return preds, nrow
@@ -906,7 +920,7 @@ class _InnerPredictor(object):
         return out_cur_iter.value
 
 
-class Dataset(object):
+class Dataset:
     """Dataset in LightGBM."""
 
     def __init__(self, data, label=None, reference=None,
@@ -1019,7 +1033,7 @@ class Dataset(object):
 
     def _set_init_score_by_predictor(self, predictor, data, used_indices=None):
         data_has_header = False
-        if isinstance(data, string_type):
+        if isinstance(data, str):
             # check data has header or not
             data_has_header = any(self.params.get(alias, False) for alias in _ConfigAliases.get("header"))
         num_data = self.num_data()
@@ -1030,18 +1044,18 @@ class Dataset(object):
                                            is_reshape=False)
             if used_indices is not None:
                 assert not self.need_slice
-                if isinstance(data, string_type):
+                if isinstance(data, str):
                     sub_init_score = np.zeros(num_data * predictor.num_class, dtype=np.float32)
                     assert num_data == len(used_indices)
-                    for i in range_(len(used_indices)):
-                        for j in range_(predictor.num_class):
+                    for i in range(len(used_indices)):
+                        for j in range(predictor.num_class):
                             sub_init_score[i * predictor.num_class + j] = init_score[used_indices[i] * predictor.num_class + j]
                     init_score = sub_init_score
             if predictor.num_class > 1:
                 # need to regroup init_score
                 new_init_score = np.zeros(init_score.size, dtype=np.float32)
-                for i in range_(num_data):
-                    for j in range_(predictor.num_class):
+                for i in range(num_data):
+                    for j in range(predictor.num_class):
                         new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
                 init_score = new_init_score
         elif self.init_score is not None:
@@ -1086,9 +1100,9 @@ class Dataset(object):
             if feature_name is not None:
                 feature_dict = {name: i for i, name in enumerate(feature_name)}
             for name in categorical_feature:
-                if isinstance(name, string_type) and name in feature_dict:
+                if isinstance(name, str) and name in feature_dict:
                     categorical_indices.add(feature_dict[name])
-                elif isinstance(name, integer_types):
+                elif isinstance(name, int):
                     categorical_indices.add(name)
                 else:
                     raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature"
@@ -1109,7 +1123,7 @@ class Dataset(object):
         elif reference is not None:
             raise TypeError('Reference dataset should be None or dataset instance')
         # start construct data
-        if isinstance(data, string_type):
+        if isinstance(data, str):
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_DatasetCreateFromFile(
                 c_str(data),
@@ -1298,7 +1312,7 @@ class Dataset(object):
                     assert used_indices.flags.c_contiguous
                     if self.reference.group is not None:
                         group_info = np.array(self.reference.group).astype(np.int32, copy=False)
-                        _, self.group = np.unique(np.repeat(range_(len(group_info)), repeats=group_info)[self.used_indices],
+                        _, self.group = np.unique(np.repeat(range(len(group_info)), repeats=group_info)[self.used_indices],
                                                   return_counts=True)
                     self.handle = ctypes.c_void_p()
                     params_str = param_dict_to_str(self.params)
@@ -1434,7 +1448,7 @@ class Dataset(object):
                     update()
                     self._free_handle()
                 else:
-                    raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
+                    raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
         return self
 
     def _reverse_update_params(self):
@@ -1728,7 +1742,7 @@ class Dataset(object):
         tmp_out_len = ctypes.c_int(0)
         reserved_string_buffer_size = 255
         required_string_buffer_size = ctypes.c_size_t(0)
-        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range_(num_feature)]
+        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range(num_feature)]
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
         _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
             self.handle,
@@ -1744,7 +1758,7 @@ class Dataset(object):
                 "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
                 .format(reserved_string_buffer_size, required_string_buffer_size.value)
             )
-        return [string_buffers[i].value.decode('utf-8') for i in range_(num_feature)]
+        return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
     def get_label(self):
         """Get the label of the Dataset.
@@ -1905,6 +1919,76 @@ class Dataset(object):
         if self.handle is None or other.handle is None:
             raise ValueError('Both source and target Datasets must be constructed before adding features')
         _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
+        was_none = self.data is None
+        old_self_data_type = type(self.data).__name__
+        if other.data is None:
+            self.data = None
+        elif self.data is not None:
+            if isinstance(self.data, np.ndarray):
+                if isinstance(other.data, np.ndarray):
+                    self.data = np.hstack((self.data, other.data))
+                elif scipy.sparse.issparse(other.data):
+                    self.data = np.hstack((self.data, other.data.toarray()))
+                elif isinstance(other.data, DataFrame):
+                    self.data = np.hstack((self.data, other.data.values))
+                elif isinstance(other.data, DataTable):
+                    self.data = np.hstack((self.data, other.data.to_numpy()))
+                else:
+                    self.data = None
+            elif scipy.sparse.issparse(self.data):
+                sparse_format = self.data.getformat()
+                if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(other.data):
+                    self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
+                elif isinstance(other.data, DataFrame):
+                    self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
+                elif isinstance(other.data, DataTable):
+                    self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
+                else:
+                    self.data = None
+            elif isinstance(self.data, DataFrame):
+                if not PANDAS_INSTALLED:
+                    raise LightGBMError("Cannot add features to DataFrame type of raw data "
+                                        "without pandas installed")
+                from pandas import concat
+                if isinstance(other.data, np.ndarray):
+                    self.data = concat((self.data, DataFrame(other.data)),
+                                       axis=1, ignore_index=True)
+                elif scipy.sparse.issparse(other.data):
+                    self.data = concat((self.data, DataFrame(other.data.toarray())),
+                                       axis=1, ignore_index=True)
+                elif isinstance(other.data, DataFrame):
+                    self.data = concat((self.data, other.data),
+                                       axis=1, ignore_index=True)
+                elif isinstance(other.data, DataTable):
+                    self.data = concat((self.data, DataFrame(other.data.to_numpy())),
+                                       axis=1, ignore_index=True)
+                else:
+                    self.data = None
+            elif isinstance(self.data, DataTable):
+                if isinstance(other.data, np.ndarray):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data)))
+                elif scipy.sparse.issparse(other.data):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
+                elif isinstance(other.data, DataFrame):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
+                elif isinstance(other.data, DataTable):
+                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
+                else:
+                    self.data = None
+            else:
+                self.data = None
+        if self.data is None:
+            err_msg = ("Cannot add features from {} type of raw data to "
+                       "{} type of raw data.\n").format(type(other.data).__name__,
+                                                        old_self_data_type)
+            err_msg += ("Set free_raw_data=False when construct Dataset to avoid this"
+                        if was_none else "Freeing raw data")
+            warnings.warn(err_msg)
+        self.feature_name = self.get_feature_name()
+        warnings.warn("Reseting categorical features.\n"
+                      "You can set new categorical features via ``set_categorical_feature`` method")
+        self.categorical_feature = "auto"
+        self.pandas_categorical = None
         return self
 
     def _dump_text(self, filename):
@@ -1928,7 +2012,7 @@ class Dataset(object):
         return self
 
 
-class Booster(object):
+class Booster:
     """Booster in LightGBM."""
 
     def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent=False):
@@ -1968,7 +2052,7 @@ class Booster(object):
             for alias in _ConfigAliases.get("machines"):
                 if alias in params:
                     machines = params[alias]
-                    if isinstance(machines, string_type):
+                    if isinstance(machines, str):
                         num_machines = len(machines.split(','))
                     elif isinstance(machines, (list, set)):
                         num_machines = len(machines)
@@ -2132,6 +2216,24 @@ class Booster(object):
 
     def trees_to_dataframe(self):
         """Parse the fitted model and return in an easy-to-read pandas DataFrame.
+
+        The returned DataFrame has the following columns.
+
+            - ``tree_index`` : int64, which tree a node belongs to. 0-based, so a value of ``6``, for example, means "this node is in the 7th tree".
+            - ``node_depth`` : int64, how far a node is from the root of the tree. The root node has a value of ``1``, its direct children are ``2``, etc.
+            - ``node_index`` : string, unique identifier for a node.
+            - ``left_child`` : string, ``node_index`` of the child node to the left of a split. ``None`` for leaf nodes.
+            - ``right_child`` : string, ``node_index`` of the child node to the right of a split. ``None`` for leaf nodes.
+            - ``parent_index`` : string, ``node_index`` of this node's parent. ``None`` for the root node.
+            - ``split_feature`` : string, name of the feature used for splitting. ``None`` for leaf nodes.
+            - ``split_gain`` : float64, gain from adding this split to the tree. ``NaN`` for leaf nodes.
+            - ``threshold`` : float64, value of the feature used to decide which side of the split a record will go down. ``NaN`` for leaf nodes.
+            - ``decision_type`` : string, logical operator describing how to compare a value to ``threshold``. For example, ``split_feature = "Column_10", threshold = 15, decision_type = "<="`` means that records where ``Column_10 <= 15`` follow the left side of the split, otherwise follows the right side of the split. ``None`` for leaf nodes.
+            - ``missing_direction`` : string, split direction that missing values should go to. ``None`` for leaf nodes.
+            - ``missing_type`` : string, describes what types of values are treated as missing.
+            - ``value`` : float64, predicted value for this leaf node, multiplied by the learning rate.
+            - ``weight`` : float64 or int64, sum of hessian (second-order derivative of objective), summed over observations that fall in this node.
+            - ``count`` : int64, number of records in the training data that fall into this node.
 
         Returns
         -------
@@ -2371,7 +2473,7 @@ class Booster(object):
             _safe_call(_LIB.LGBM_BoosterUpdateOneIter(
                 self.handle,
                 ctypes.byref(is_finished)))
-            self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
+            self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
             return is_finished.value == 1
         else:
             if not self.__set_objective_to_none:
@@ -2414,7 +2516,7 @@ class Booster(object):
             grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
             hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
             ctypes.byref(is_finished)))
-        self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
+        self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return is_finished.value == 1
 
     def rollback_one_iter(self):
@@ -2427,7 +2529,7 @@ class Booster(object):
         """
         _safe_call(_LIB.LGBM_BoosterRollbackOneIter(
             self.handle))
-        self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
+        self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return self
 
     def current_iteration(self):
@@ -2540,7 +2642,7 @@ class Booster(object):
         if data is self.train_set:
             data_idx = 0
         else:
-            for i in range_(len(self.valid_sets)):
+            for i in range(len(self.valid_sets)):
                 if data is self.valid_sets[i]:
                     data_idx = i + 1
                     break
@@ -2613,7 +2715,7 @@ class Booster(object):
         result : list
             List with evaluation results.
         """
-        return [item for i in range_(1, self.__num_dataset)
+        return [item for i in range(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
 
     def save_model(self, filename, num_iteration=None, start_iteration=0, importance_type='split'):
@@ -2978,7 +3080,7 @@ class Booster(object):
         tmp_out_len = ctypes.c_int(0)
         reserved_string_buffer_size = 255
         required_string_buffer_size = ctypes.c_size_t(0)
-        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range_(num_feature)]
+        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range(num_feature)]
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
         _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
             self.handle,
@@ -2994,7 +3096,7 @@ class Booster(object):
                 "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
                 .format(reserved_string_buffer_size, required_string_buffer_size.value)
             )
-        return [string_buffers[i].value.decode('utf-8') for i in range_(num_feature)]
+        return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
     def feature_importance(self, importance_type='split', iteration=None):
         """Get feature importances.
@@ -3065,12 +3167,12 @@ class Booster(object):
         def add(root):
             """Recursively add thresholds."""
             if 'split_index' in root:  # non-leaf
-                if feature_names is not None and isinstance(feature, string_type):
+                if feature_names is not None and isinstance(feature, str):
                     split_feature = feature_names[root['split_feature']]
                 else:
                     split_feature = root['split_feature']
                 if split_feature == feature:
-                    if isinstance(root['threshold'], string_type):
+                    if isinstance(root['threshold'], str):
                         raise LightGBMError('Cannot compute split value histogram for the categorical feature')
                     else:
                         values.append(root['threshold'])
@@ -3084,7 +3186,7 @@ class Booster(object):
         for tree_info in tree_infos:
             add(tree_info['tree_structure'])
 
-        if bins is None or isinstance(bins, integer_types) and xgboost_style:
+        if bins is None or isinstance(bins, int) and xgboost_style:
             n_unique = len(np.unique(values))
             bins = max(min(n_unique, bins) if bins is not None else n_unique, 1)
         hist, bin_edges = np.histogram(values, bins=bins)
@@ -3114,7 +3216,7 @@ class Booster(object):
                 result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
             if tmp_out_len.value != self.__num_inner_eval:
                 raise ValueError("Wrong length of eval results")
-            for i in range_(self.__num_inner_eval):
+            for i in range(self.__num_inner_eval):
                 ret.append((data_name, self.__name_inner_eval[i],
                             result[i], self.__higher_better_inner_eval[i]))
         if callable(feval):
@@ -3176,7 +3278,7 @@ class Booster(object):
                 reserved_string_buffer_size = 255
                 required_string_buffer_size = ctypes.c_size_t(0)
                 string_buffers = [
-                    ctypes.create_string_buffer(reserved_string_buffer_size) for i in range_(self.__num_inner_eval)
+                    ctypes.create_string_buffer(reserved_string_buffer_size) for i in range(self.__num_inner_eval)
                 ]
                 ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
                 _safe_call(_LIB.LGBM_BoosterGetEvalNames(
@@ -3194,9 +3296,9 @@ class Booster(object):
                         .format(reserved_string_buffer_size, required_string_buffer_size.value)
                     )
                 self.__name_inner_eval = \
-                    [string_buffers[i].value.decode('utf-8') for i in range_(self.__num_inner_eval)]
+                    [string_buffers[i].value.decode('utf-8') for i in range(self.__num_inner_eval)]
                 self.__higher_better_inner_eval = \
-                    [name.startswith(('auc', 'ndcg@', 'map@')) for name in self.__name_inner_eval]
+                    [name.startswith(('auc', 'ndcg@', 'map@', 'average_precision')) for name in self.__name_inner_eval]
 
     def attr(self, key):
         """Get attribute string from the Booster.
@@ -3230,7 +3332,7 @@ class Booster(object):
         """
         for key, value in kwargs.items():
             if value is not None:
-                if not isinstance(value, string_type):
+                if not isinstance(value, str):
                     raise ValueError("Only string values are accepted")
                 self.__attr[key] = value
             else:

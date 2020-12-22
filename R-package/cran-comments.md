@@ -1,5 +1,79 @@
 # CRAN Submission History
 
+## v3.1.1 - Submission 1 - (December 7, 2020)
+
+### CRAN response
+
+Accepted to CRAN, December 8.
+
+### Maintainer Notes
+
+Submitted a fix to 3.1.0 that skips some learning-to-rank tests on 32-bit Windows.
+
+## v3.1.0 - Submission 1 - (November 15, 2020)
+
+### CRAN response
+
+Accepted to CRAN, November 18.
+
+On November 21, found out that the CRAN's `r-oldrel-windows-ix86+x86_64` check was failing, with an issue similar to the one faced on Solaris and fixed in https://github.com/microsoft/LightGBM/pull/3534.
+
+CRAN did not ask for a re-submission, but this was fixed in 3.1.1.
+
+### Maintainer Notes
+
+This package was submitted with the following information in the "optional comments" box.
+
+```text
+Hello,
+
+I'm submitting {lightgbm} 3.1.0 on behalf of the maintainer, Guolin Ke. I am a co-author on the package, and he has asked me to handle this submission. We saw in https://cran.r-project.org/web/packages/policies.html#Submission that this is permitted.
+
+{lightgbm} was removed from CRAN in October for issues found by valgrind checks. We have invested significant effort in addressing those issues and creating an automatic test that tries to replicate CRAN's valgrind checks: https://github.com/microsoft/LightGBM/blob/742d72f8bb051105484fd5cca11620493ffb0b2b/.github/workflows/r_valgrind.yml.
+
+We see two warnings from valgrind that we believe are not problematic.
+
+==2063== Conditional jump or move depends on uninitialised value(s)
+==2063==    at 0x49CF138: gregexpr_Regexc (grep.c:2439)
+==2063==    by 0x49D1F13: do_regexpr (grep.c:3100)
+==2063==    by 0x49A0058: bcEval (eval.c:7121)
+==2063==    by 0x498B67F: Rf_eval (eval.c:727)
+==2063==    by 0x498E414: R_execClosure (eval.c:1895)
+==2063==    by 0x498E0C7: Rf_applyClosure (eval.c:1821)
+==2063==    by 0x499FC8C: bcEval (eval.c:7089)
+==2063==    by 0x498B67F: Rf_eval (eval.c:727)
+==2063==    by 0x498B1CB: forcePromise (eval.c:555)
+==2063==    by 0x49963AB: FORCE_PROMISE (eval.c:5142)
+==2063==    by 0x4996566: getvar (eval.c:5183)
+==2063==    by 0x499D1A5: bcEval (eval.c:6873)
+==2063==  Uninitialised value was created by a stack allocation
+==2063==    at 0x49CEC37: gregexpr_Regexc (grep.c:2369)
+
+This seems to be related to R itself and not any code in {lightgbm}.
+
+==2063== 336 bytes in 1 blocks are possibly lost in loss record 153 of 2,709
+==2063==    at 0x483DD99: calloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==2063==    by 0x40149CA: allocate_dtv (dl-tls.c:286)
+==2063==    by 0x40149CA: _dl_allocate_tls (dl-tls.c:532)
+==2063==    by 0x5702322: allocate_stack (allocatestack.c:622)
+==2063==    by 0x5702322: pthread_create@@GLIBC_2.2.5 (pthread_create.c:660)
+==2063==    by 0x56D0DDA: ??? (in /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0)
+==2063==    by 0x56C88E0: GOMP_parallel (in /usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0)
+==2063==    by 0x1544D29C: LGBM_DatasetCreateFromCSC (c_api.cpp:1286)
+==2063==    by 0x1546F980: LGBM_DatasetCreateFromCSC_R (lightgbm_R.cpp:91)
+==2063==    by 0x4941E2F: R_doDotCall (dotcode.c:634)
+==2063==    by 0x494CCC6: do_dotcall (dotcode.c:1281)
+==2063==    by 0x499FB01: bcEval (eval.c:7078)
+==2063==    by 0x498B67F: Rf_eval (eval.c:727)
+==2063==    by 0x498E414: R_execClosure (eval.c:1895)
+
+We believe this is a false positive, and related to a misunderstanding between valgrind and openmp (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=36298).
+
+We have also added automated tests with ASAN/UBSAN to our testing setup, and have checked the package on Solaris 10 and found no issues.
+
+Thanks for your time and consideration.
+```
+
 ## v3.0.0.2 - Submission 1 - (September 29, 2020)
 
 ### CRAN response

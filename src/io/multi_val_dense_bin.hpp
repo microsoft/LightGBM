@@ -18,8 +18,10 @@ namespace LightGBM {
 template <typename VAL_T>
 class MultiValDenseBin : public MultiValBin {
  public:
-  explicit MultiValDenseBin(data_size_t num_data, int num_bin, int num_feature)
-    : num_data_(num_data), num_bin_(num_bin), num_feature_(num_feature) {
+  explicit MultiValDenseBin(data_size_t num_data, int num_bin, int num_feature,
+    const std::vector<uint32_t>& offsets)
+    : num_data_(num_data), num_bin_(num_bin), num_feature_(num_feature),
+      offsets_(offsets) {
     data_.resize(static_cast<size_t>(num_data_) * num_feature_, static_cast<VAL_T>(0));
   }
 
@@ -36,6 +38,8 @@ class MultiValDenseBin : public MultiValBin {
 
   double num_element_per_row() const override { return num_feature_; }
 
+  const std::vector<uint32_t>& offsets() const override { return offsets_; }
+
   void PushOneRow(int , data_size_t idx, const std::vector<uint32_t>& values) override {
     auto start = RowPtr(idx);
     for (auto i = 0; i < num_feature_; ++i) {
@@ -50,13 +54,13 @@ class MultiValDenseBin : public MultiValBin {
     return false;
   }
 
-
   template<bool USE_INDICES, bool USE_PREFETCH, bool ORDERED>
   void ConstructHistogramInner(const data_size_t* data_indices, data_size_t start, data_size_t end,
     const score_t* gradients, const score_t* hessians, hist_t* out) const {
     data_size_t i = start;
     hist_t* grad = out;
     hist_t* hess = out + 1;
+
     if (USE_PREFETCH) {
       const data_size_t pf_offset = 32 / sizeof(VAL_T);
       const data_size_t pf_end = end - pf_offset;
@@ -70,30 +74,28 @@ class MultiValDenseBin : public MultiValBin {
         }
         PREFETCH_T0(data_.data() + RowPtr(pf_idx));
         const auto j_start = RowPtr(idx);
-        for (auto j = j_start; j < j_start + num_feature_; ++j) {
-          const auto ti = static_cast<uint32_t>(data_[j]) << 1;
-          if (ORDERED) {
-            grad[ti] += gradients[i];
-            hess[ti] += hessians[i];
-          } else {
-            grad[ti] += gradients[idx];
-            hess[ti] += hessians[idx];
-          }
+        const VAL_T* data_ptr = data_.data() + j_start;
+        const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
+        const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
+        for (int j = 0; j < num_feature_; ++j) {
+          const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
+          const auto ti = (bin + offsets_[j]) << 1;
+          grad[ti] += gradient;
+          hess[ti] += hessian;
         }
       }
     }
     for (; i < end; ++i) {
       const auto idx = USE_INDICES ? data_indices[i] : i;
       const auto j_start = RowPtr(idx);
-      for (auto j = j_start; j < j_start + num_feature_; ++j) {
-        const auto ti = static_cast<uint32_t>(data_[j]) << 1;
-        if (ORDERED) {
-          grad[ti] += gradients[i];
-          hess[ti] += hessians[i];
-        } else {
-          grad[ti] += gradients[idx];
-          hess[ti] += hessians[idx];
-        }
+      const VAL_T* data_ptr = data_.data() + j_start;
+      const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
+      const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
+      for (int j = 0; j < num_feature_; ++j) {
+        const uint32_t bin = static_cast<uint32_t>(data_ptr[j]);
+        const auto ti = (bin + offsets_[j]) << 1;
+        grad[ti] += gradient;
+        hess[ti] += hessian;
       }
     }
   }
@@ -121,15 +123,17 @@ class MultiValDenseBin : public MultiValBin {
                                               gradients, hessians, out);
   }
 
-  MultiValBin* CreateLike(data_size_t num_data, int num_bin, int num_feature, double) const override {
-    return new MultiValDenseBin<VAL_T>(num_data, num_bin, num_feature);
+  MultiValBin* CreateLike(data_size_t num_data, int num_bin, int num_feature, double,
+    const std::vector<uint32_t>& offsets) const override {
+    return new MultiValDenseBin<VAL_T>(num_data, num_bin, num_feature, offsets);
   }
 
   void ReSize(data_size_t num_data, int num_bin, int num_feature,
-              double) override {
+              double, const std::vector<uint32_t>& offsets) override {
     num_data_ = num_data;
     num_bin_ = num_bin;
     num_feature_ = num_feature;
+    offsets_ = offsets;
     size_t new_size = static_cast<size_t>(num_feature_) * num_data_;
     if (data_.size() < new_size) {
       data_.resize(new_size, 0);
@@ -139,8 +143,7 @@ class MultiValDenseBin : public MultiValBin {
   template <bool SUBROW, bool SUBCOL>
   void CopyInner(const MultiValBin* full_bin, const data_size_t* used_indices,
                  data_size_t num_used_indices,
-                 const std::vector<int>& used_feature_index,
-                 const std::vector<uint32_t>& delta) {
+                 const std::vector<int>& used_feature_index) {
     const auto other_bin =
         reinterpret_cast<const MultiValDenseBin<VAL_T>*>(full_bin);
     if (SUBROW) {
@@ -162,8 +165,7 @@ class MultiValDenseBin : public MultiValBin {
           if (SUBCOL) {
             if (other_bin->data_[other_j_start + used_feature_index[j]] > 0) {
               data_[j_start + j] = static_cast<VAL_T>(
-                  other_bin->data_[other_j_start + used_feature_index[j]] -
-                  delta[j]);
+                  other_bin->data_[other_j_start + used_feature_index[j]]);
             } else {
               data_[j_start + j] = 0;
             }
@@ -180,16 +182,15 @@ class MultiValDenseBin : public MultiValBin {
   void CopySubrow(const MultiValBin* full_bin, const data_size_t* used_indices,
                   data_size_t num_used_indices) override {
     CopyInner<true, false>(full_bin, used_indices, num_used_indices,
-                           std::vector<int>(), std::vector<uint32_t>());
+                           std::vector<int>());
   }
 
   void CopySubcol(const MultiValBin* full_bin,
                   const std::vector<int>& used_feature_index,
                   const std::vector<uint32_t>&,
                   const std::vector<uint32_t>&,
-                  const std::vector<uint32_t>& delta) override {
-    CopyInner<false, true>(full_bin, nullptr, num_data_, used_feature_index,
-                           delta);
+                  const std::vector<uint32_t>&) override {
+    CopyInner<false, true>(full_bin, nullptr, num_data_, used_feature_index);
   }
 
   void CopySubrowAndSubcol(const MultiValBin* full_bin,
@@ -198,9 +199,9 @@ class MultiValDenseBin : public MultiValBin {
                            const std::vector<int>& used_feature_index,
                            const std::vector<uint32_t>&,
                            const std::vector<uint32_t>&,
-                           const std::vector<uint32_t>& delta) override {
+                           const std::vector<uint32_t>&) override {
     CopyInner<true, true>(full_bin, used_indices, num_used_indices,
-                          used_feature_index, delta);
+                          used_feature_index);
   }
 
   inline size_t RowPtr(data_size_t idx) const {
@@ -213,10 +214,12 @@ class MultiValDenseBin : public MultiValBin {
   data_size_t num_data_;
   int num_bin_;
   int num_feature_;
+  std::vector<uint32_t> offsets_;
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, 32>> data_;
 
   MultiValDenseBin<VAL_T>(const MultiValDenseBin<VAL_T>& other)
-    : num_data_(other.num_data_), num_bin_(other.num_bin_), num_feature_(other.num_feature_), data_(other.data_) {
+    : num_data_(other.num_data_), num_bin_(other.num_bin_), num_feature_(other.num_feature_),
+      offsets_(other.offsets_), data_(other.data_) {
   }
 };
 

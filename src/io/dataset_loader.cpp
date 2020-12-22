@@ -168,6 +168,16 @@ void DatasetLoader::SetHeader(const char* filename) {
   }
 }
 
+void CheckSampleSize(size_t sample_cnt, size_t num_data) {
+  if (static_cast<double>(sample_cnt) / num_data < 0.2f &&
+      sample_cnt < 100000) {
+    Log::Warning(
+        "Using too small ``bin_construct_sample_cnt`` may encounter "
+        "unexpected "
+        "errors and poor accuracy.");
+  }
+}
+
 Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_machines) {
   // don't support query id in data file when training in parallel
   if (num_machines > 1 && !config_.pre_partition) {
@@ -183,6 +193,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
   auto bin_filename = CheckCanLoadFromBin(filename);
+  bool is_load_from_binary = false;
   if (bin_filename.size() == 0) {
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_));
     if (parser == nullptr) {
@@ -197,6 +208,8 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
       // sample data
       auto sample_data = SampleTextDataFromMemory(text_data);
+      CheckSampleSize(sample_data.size(),
+                      static_cast<size_t>(dataset->num_data_));
       // construct feature bin mappers
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
       if (dataset->has_raw()) {
@@ -215,6 +228,8 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       } else {
         dataset->num_data_ = num_global_data;
       }
+      CheckSampleSize(sample_data.size(),
+                      static_cast<size_t>(dataset->num_data_));
       // construct feature bin mappers
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
       if (dataset->has_raw()) {
@@ -228,12 +243,15 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     }
   } else {
     // load data from binary file
+    is_load_from_binary = true;
+    Log::Info("Load from binary file %s", bin_filename.c_str());
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), rank, num_machines, &num_global_data, &used_data_indices));
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
   // need to check training data
-  CheckDataset(dataset.get());
+  CheckDataset(dataset.get(), is_load_from_binary);
+
   return dataset.release();
 }
 
@@ -553,7 +571,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     dataset->feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
       new FeatureGroup(buffer.data(),
                        *num_global_data,
-                       *used_data_indices)));
+                       *used_data_indices, i)));
   }
   dataset->feature_groups_.shrink_to_fit();
 
@@ -601,6 +619,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
                                                 int** sample_indices, int num_col, const int* num_per_col,
                                                 size_t total_sample_size, data_size_t num_data) {
+  CheckSampleSize(total_sample_size, static_cast<size_t>(num_data));
   int num_total_features = num_col;
   if (Network::num_machines() > 1) {
     num_total_features = Network::GlobalSyncUpByMax(num_total_features);
@@ -756,7 +775,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
 
 // ---- private functions ----
 
-void DatasetLoader::CheckDataset(const Dataset* dataset) {
+void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binary) {
   if (dataset->num_data_ <= 0) {
     Log::Fatal("Data file %s is empty", dataset->data_filename_.c_str());
   }
@@ -784,6 +803,38 @@ void DatasetLoader::CheckDataset(const Dataset* dataset) {
   }
   if (!is_feature_order_by_group) {
     Log::Fatal("Features in dataset should be ordered by group");
+  }
+
+  if (is_load_from_binary) {
+    if (dataset->max_bin_ != config_.max_bin) {
+      Log::Fatal("Dataset max_bin %d != config %d", dataset->max_bin_, config_.max_bin);
+    }
+    if (dataset->min_data_in_bin_ != config_.min_data_in_bin) {
+      Log::Fatal("Dataset min_data_in_bin %d != config %d", dataset->min_data_in_bin_, config_.min_data_in_bin);
+    }
+    if (dataset->use_missing_ != config_.use_missing) {
+      Log::Fatal("Dataset use_missing %d != config %d", dataset->use_missing_, config_.use_missing);
+    }
+    if (dataset->zero_as_missing_ != config_.zero_as_missing) {
+      Log::Fatal("Dataset zero_as_missing %d != config %d", dataset->zero_as_missing_, config_.zero_as_missing);
+    }
+    if (dataset->bin_construct_sample_cnt_ != config_.bin_construct_sample_cnt) {
+      Log::Fatal("Dataset bin_construct_sample_cnt %d != config %d", dataset->bin_construct_sample_cnt_, config_.bin_construct_sample_cnt);
+    }
+    if ((dataset->max_bin_by_feature_.size() != config_.max_bin_by_feature.size()) ||
+        !std::equal(dataset->max_bin_by_feature_.begin(), dataset->max_bin_by_feature_.end(),
+            config_.max_bin_by_feature.begin())) {
+      Log::Fatal("Dataset max_bin_by_feature does not match with config");
+    }
+
+    int label_idx = -1;
+    if (Common::AtoiAndCheck(config_.label_column.c_str(), &label_idx)) {
+      if (dataset->label_idx_ != label_idx) {
+        Log::Fatal("Dataset label_idx %d != config %d", dataset->label_idx_, label_idx);
+      }
+    } else {
+      Log::Info("Recommend use integer for label index when loading data from binary for sanity check.");
+    }
   }
 }
 

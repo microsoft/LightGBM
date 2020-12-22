@@ -65,9 +65,15 @@ struct CHAllocator {
       if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaPointerAttributes attributes;
         cudaPointerGetAttributes(&attributes, p);
-        if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
-          cudaFreeHost(p);
-        }
+        #if CUDA_VERSION >= 10000
+          if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
+            cudaFreeHost(p);
+          }
+        #else
+          if ((attributes.memoryType == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
+            cudaFreeHost(p);
+          }
+        #endif
       } else {
         _mm_free(p);
       }
