@@ -376,17 +376,17 @@ std::string Tree::ToString() const {
 
   if (is_linear_) {
     str_buf << "leaf_const="
-      << Common::ArrayToStringFast(leaf_const_, num_leaves_) << '\n';
+      << ArrayToString(leaf_const_, num_leaves_) << '\n';
     std::vector<int> num_feat(num_leaves_);
     for (int i = 0; i < num_leaves_; ++i) {
       num_feat[i] = leaf_coeff_[i].size();
     }
     str_buf << "num_features="
-      << Common::ArrayToStringFast(num_feat, num_leaves_) << '\n';
+      << ArrayToString(num_feat, num_leaves_) << '\n';
     str_buf << "leaf_features=";
     for (int i = 0; i < num_leaves_; ++i) {
       if (num_feat[i] > 0) {
-        str_buf << Common::ArrayToStringFast(leaf_features_[i], leaf_features_[i].size()) << ' ';
+        str_buf << ArrayToString(leaf_features_[i], leaf_features_[i].size()) << ' ';
       }
       str_buf << ' ';
     }
@@ -394,7 +394,7 @@ std::string Tree::ToString() const {
     str_buf << "leaf_coeff=";
     for (int i = 0; i < num_leaves_; ++i) {
       if (num_feat[i] > 0) {
-        str_buf << Common::ArrayToStringFast(leaf_coeff_[i], leaf_coeff_[i].size()) << ' ';
+        str_buf << ArrayToString(leaf_coeff_[i], leaf_coeff_[i].size()) << ' ';
       }
       str_buf << ' ';
     }
