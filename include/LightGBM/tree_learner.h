@@ -37,7 +37,7 @@ class TreeLearner {
   virtual void Init(const Dataset* train_data, bool is_constant_hessian) = 0;
 
   /*! Initialise some temporary storage, only needed for the linear tree; needs to be a method of TreeLearner since we call it in GBDT::RefitTree */
-  virtual void InitLinear(const Dataset* train_data, const int max_leaves) {}
+  virtual void InitLinear(const Dataset* /*train_data*/, const int /*max_leaves*/) {}
 
   virtual void ResetIsConstantHessian(bool is_constant_hessian) = 0;
 

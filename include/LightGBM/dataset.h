@@ -664,7 +664,7 @@ class Dataset {
     if (static_cast<int>(raw_data_.size()) > num_numeric_features_) {
       raw_data_.resize(num_numeric_features_);
     }
-    for (size_t i = 0; i < static_cast<int>(raw_data_.size()); ++i) {
+    for (size_t i = 0; i < raw_data_.size(); ++i) {
       raw_data_[i].resize(num_rows);
     }
     int curr_size = static_cast<int>(raw_data_.size());

@@ -22,8 +22,8 @@ void LinearTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
 void LinearTreeLearner::InitLinear(const Dataset* train_data, const int max_leaves) {
   leaf_map_ = std::vector<int>(train_data->num_data(), -1);
   contains_nan_ = std::vector<int8_t>(train_data->num_features(), 0);
-  any_nan_ = false;
   // identify features containing nans
+#pragma omp parallel for schedule(static)
   for (int feat = 0; feat < train_data->num_features(); ++feat) {
     auto bin_mapper = train_data_->FeatureBinMapper(feat);
     if (bin_mapper->bin_type() == BinType::NumericalBin) {
@@ -31,10 +31,15 @@ void LinearTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
       for (int i = 0; i < train_data->num_data(); ++i) {
         if (std::isnan(feat_ptr[i])) {
           contains_nan_[feat] = 1;
-          any_nan_ = true;
           break;
         }
       }
+    }
+  }
+  for (int feat = 0; feat < train_data->num_features(); ++feat) {
+    if (contains_nan_[feat]) {
+      any_nan_ = true;
+      break;
     }
   }
   // preallocate the matrix used to calculate linear model coefficients
@@ -299,6 +304,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   auto total_nonzero = std::vector<int>(tree->num_leaves());
   // aggregate results from different threads
   for (int tid = 0; tid < num_threads; ++tid) {
+#pragma omp parallel for schedule(static)
     for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
       int num_feat = leaf_features[leaf_num].size();
       for (int j = 0; j < (num_feat + 1) * (num_feat + 2) / 2; ++j) {

@@ -155,7 +155,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
   constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
 }
 
-Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) {
+Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool /*is_first_tree*/) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::Train", global_timer);
   gradients_ = gradients;
   hessians_ = hessians;
