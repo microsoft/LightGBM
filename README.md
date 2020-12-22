@@ -98,6 +98,8 @@ ML Flow (experiment tracking, model monitoring framework): https://github.com/ml
 
 `{treesnip}` (R `{parsnip}`-compliant interface): https://github.com/curso-r/treesnip
 
+`{mlr3learners.lightgbm}` (R `{mlr3}`-compliant interface): https://github.com/mlr3learners/mlr3learners.lightgbm
+
 Support
 -------
 
