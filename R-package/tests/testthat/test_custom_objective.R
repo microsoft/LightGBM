@@ -39,6 +39,8 @@ param <- list(
 )
 num_round <- 10L
 
+# this is failing because of the checks in src/c_api.cpp#294,
+# which says "if you pass params into reset-params, throw an error"
 test_that("custom objective works", {
   bst <- lgb.train(param, dtrain, num_round, watchlist, eval = evalerror)
   expect_false(is.null(bst$record_evals))

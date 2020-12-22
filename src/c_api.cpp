@@ -294,13 +294,15 @@ class Booster {
   void ResetConfig(const char* parameters) {
     UNIQUE_LOCK(mutex_)
     auto param = Config::Str2Map(parameters);
-    if (param.count("num_class")) {
+    Config new_config;
+    new_config.Set(param);
+    if (param.count("num_class") && new_config.num_class != config_.num_class) {
       Log::Fatal("Cannot change num_class during training");
     }
-    if (param.count("boosting")) {
+    if (param.count("boosting") && new_config.boosting != config_.boosting) {
       Log::Fatal("Cannot change boosting during training");
     }
-    if (param.count("metric")) {
+    if (param.count("metric") && new_config.metric != config_.metric) {
       Log::Fatal("Cannot change metric during training");
     }
     CheckDatasetResetConfig(config_, param);

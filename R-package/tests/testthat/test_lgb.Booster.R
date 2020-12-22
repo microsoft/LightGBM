@@ -392,10 +392,16 @@ test_that("Booster should store parameters and Booster$reset_parameter() should 
         agaricus.train$data
         , label = agaricus.train$label
     )
+    # testing that this works for some cases that could break it:
+    #    - multiple metrics
+    #    - using "metric", "boosting", "num_class" in params
     params <- list(
-        objective = "binary"
+        objective = "multiclass"
         , max_depth = 4L
         , bagging_fraction = 0.8
+        , metric = c("multi_logloss", "multi_error")
+        , boosting = "gbdt"
+        , num_class = 5L
     )
     bst <- Booster$new(
         params = params
@@ -439,24 +445,14 @@ test_that("Booster$params should include dataset params, before and after Booste
 
     params[["bagging_fraction"]] <- 0.9
     ret_bst <- bst$reset_parameter(params = params)
-    expect_identical(
-        ret_bst$params
-        , list(
-            objective = "binary"
-            , max_depth = 4L
-            , bagging_fraction = 0.9
-            , max_bin = 17L
-        )
+    expected_params <- list(
+        objective = "binary"
+        , max_depth = 4L
+        , bagging_fraction = 0.9
+        , max_bin = 17L
     )
-    expect_identical(
-        bst$params
-        , list(
-            objective = "binary"
-            , max_depth = 4L
-            , bagging_fraction = 0.9
-            , max_bin = 17L
-        )
-    )
+    expect_identical(ret_bst$params, expected_params)
+    expect_identical(bst$params, expected_params)
 })
 
 context("save_model")
