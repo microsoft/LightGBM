@@ -1437,8 +1437,6 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
   PushClearIfEmpty(&max_bin_by_feature_, num_total_features_,
                    other->max_bin_by_feature_, other->num_total_features_, -1);
   num_total_features_ += other->num_total_features_;
-  num_groups_ += other->num_groups_;
-
   for (size_t i = 0; i < (other->numeric_feature_map_).size(); ++i) {
     int feat_ind = numeric_feature_map_[i];
     if (feat_ind > -1) {
