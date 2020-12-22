@@ -531,11 +531,11 @@ class CTRProvider {
     std::vector<bool> is_feature_processed(num_total_features_, false);
     double label;
     TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
-    num_data_ = 0;
+    num_data_ = text_reader.CountLine();
     std::mt19937 mt_generator(config_.seed);
     const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
     std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
-    training_data_fold_id_.clear();
+    training_data_fold_id_.resize(num_data_, 0);
     text_reader.ReadAllAndProcess([&parser, this, &oneline_features, &label, &is_feature_processed,
       &fold_distribution, &mt_generator]
       (data_size_t row_idx, const char* buffer, size_t size) {
@@ -545,7 +545,6 @@ class CTRProvider {
       const int fold_id = fold_distribution(mt_generator);
       training_data_fold_id_.push_back(fold_id);
       ProcessOneLine(oneline_features, label, row_idx, &is_feature_processed, fold_id);
-      ++num_data_;
     });
     FinishProcess(num_machines);
   }

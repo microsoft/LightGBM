@@ -539,18 +539,11 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
     }
   }
   sum_dense_ratio /= ncol;
-  const int offset = (1.0f - sum_dense_ratio) >=
-    MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
-  int num_total_bin = offset;
   for (int gid = 0; gid < num_groups_; ++gid) {
     if (feature_groups_[gid]->is_multi_val_) {
       for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
         const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
         most_freq_bins.push_back(bin_mapper->GetMostFreqBin());
-        num_total_bin += bin_mapper->num_bin();
-        if (most_freq_bins.back() == 0) {
-          num_total_bin -= offset;
-        }
 #pragma omp parallel for schedule(static, 1)
         for (int tid = 0; tid < num_threads; ++tid) {
           iters[tid].emplace_back(
@@ -559,7 +552,6 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
       }
     } else {
       most_freq_bins.push_back(0);
-      num_total_bin += feature_groups_[gid]->bin_offsets_.back() - offset;
       for (int tid = 0; tid < num_threads; ++tid) {
         iters[tid].emplace_back(feature_groups_[gid]->FeatureGroupIterator());
       }
@@ -569,7 +561,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
   Log::Debug("Dataset::GetMultiBinFromAllFeatures: sparse rate %f",
              1.0 - sum_dense_ratio);
   ret.reset(MultiValBin::CreateMultiValBin(
-      num_data_, num_total_bin, static_cast<int>(most_freq_bins.size()),
+      num_data_, offsets.back(), static_cast<int>(most_freq_bins.size()),
       1.0 - sum_dense_ratio, offsets));
   PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
   ret->FinishLoad();
