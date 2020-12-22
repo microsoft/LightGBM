@@ -1,13 +1,22 @@
 prune build
 include LICENSE
 include *.rst *.txt
-recursive-include lightgbm *.py *.txt *.so
-recursive-include compile *.txt *.so
+recursive-include lightgbm VERSION.txt *.py *.so
+include compile/CMakeLists.txt
+include compile/CMakeIntegratedOpenCL.cmake
+recursive-include compile *.so
 recursive-include compile/Release *.dll
-recursive-include compile/compute *.txt
+include compile/compute/CMakeLists.txt
 recursive-include compile/compute/cmake *
 recursive-include compile/compute/include *
 recursive-include compile/compute/meta *
+include compile/external_libs/fast_double_parser/CMakeLists.txt
+include compile/external_libs/fast_double_parser/LICENSE
+include compile/external_libs/fast_double_parser/LICENSE.BSL
+recursive-include compile/external_libs/fast_double_parser/include *
+include compile/external_libs/fmt/CMakeLists.txt
+include compile/external_libs/fmt/LICENSE.rst
+recursive-include compile/external_libs/fmt/include *
 recursive-include compile/include *
 recursive-include compile/src *
 recursive-include compile/windows LightGBM.sln LightGBM.vcxproj

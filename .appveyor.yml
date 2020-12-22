@@ -1,4 +1,4 @@
-version: 3.1.0.99.{build}
+version: 3.1.1.99.{build}
 
 image: Visual Studio 2015
 platform: x64
@@ -28,7 +28,6 @@ install:
   - set CONDA_ENV="test-env"
   - ps: >-
       switch ($env:PYTHON_VERSION) {
-          "2.7" {$env:MINICONDA = "C:\Miniconda-x64"}
           "3.6" {$env:MINICONDA = "C:\Miniconda36-x64"}
           "3.7" {$env:MINICONDA = "C:\Miniconda37-x64"}
           default {$env:MINICONDA = "C:\Miniconda37-x64"}
