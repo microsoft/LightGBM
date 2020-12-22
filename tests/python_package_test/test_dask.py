@@ -13,7 +13,7 @@ import pandas as pd
 import scipy.sparse
 from dask.array.utils import assert_eq
 from dask_ml.metrics import accuracy_score, r2_score
-from distributed.utils_test import client, cluster_fixture, gen_cluster, loop  # noqa
+from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
 from sklearn.datasets import make_blobs, make_regression
 
 import lightgbm
@@ -44,43 +44,43 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
     else:
         raise ValueError(objective)
     rnd = np.random.RandomState(42)
-    w = rnd.random(X.shape[0]) * 0.01
+    weights = rnd.random(X.shape[0]) * 0.01
 
     if output == 'array':
         dX = da.from_array(X, (chunk_size, X.shape[1]))
         dy = da.from_array(y, chunk_size)
-        dw = da.from_array(w, chunk_size)
+        dw = da.from_array(weights, chunk_size)
     elif output == 'dataframe':
         X_df = pd.DataFrame(X, columns=['feature_%d' % i for i in range(X.shape[1])])
         y_df = pd.Series(y, name='target')
         dX = dd.from_pandas(X_df, chunksize=chunk_size)
         dy = dd.from_pandas(y_df, chunksize=chunk_size)
-        dw = dd.from_array(w, chunksize=chunk_size)
+        dw = dd.from_array(weights, chunksize=chunk_size)
     elif output == 'scipy_csr_matrix':
         dX = da.from_array(X, chunks=(chunk_size, X.shape[1])).map_blocks(scipy.sparse.csr_matrix)
         dy = da.from_array(y, chunks=chunk_size)
-        dw = da.from_array(w, chunk_size)
+        dw = da.from_array(weights, chunk_size)
     else:
         raise ValueError("Unknown output type %s" % output)
 
-    return X, y, w, dX, dy, dw
+    return X, y, weights, dX, dy, dw
 
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('centers', data_centers)
-def test_classifier(output, centers, client, listen_port):  # noqa
+def test_classifier(output, centers, client, listen_port):
     X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
 
-    classifier_a = dlgbm.LGBMClassifier(time_out=5, local_listen_port=listen_port)
-    classifier_a = classifier_a.fit(dX, dy, sample_weight=dw, client=client)
-    p1 = classifier_a.predict(dX)
+    dask_classifier = dlgbm.DaskLGBMClassifier(time_out=5, local_listen_port=listen_port)
+    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
+    p1 = dask_classifier.predict(dX)
     s1 = accuracy_score(dy, p1)
     p1 = p1.compute()
 
-    classifier_b = lightgbm.LGBMClassifier()
-    classifier_b.fit(X, y, sample_weight=w)
-    p2 = classifier_b.predict(X)
-    s2 = classifier_b.score(X, y)
+    local_classifier = lightgbm.LGBMClassifier()
+    local_classifier.fit(X, y, sample_weight=w)
+    p2 = local_classifier.predict(X)
+    s2 = local_classifier.score(X, y)
 
     assert_eq(s1, s2)
 
@@ -91,31 +91,31 @@ def test_classifier(output, centers, client, listen_port):  # noqa
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('centers', data_centers)
-def test_classifier_proba(output, centers, client, listen_port):  # noqa
+def test_classifier_proba(output, centers, client, listen_port):
     X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
 
-    a = dlgbm.LGBMClassifier(time_out=5, local_listen_port=listen_port)
-    a = a.fit(dX, dy, sample_weight=dw, client=client)
-    p1 = a.predict_proba(dX)
+    dask_classifier = dlgbm.DaskLGBMClassifier(time_out=5, local_listen_port=listen_port)
+    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
+    p1 = dask_classifier.predict_proba(dX)
     p1 = p1.compute()
 
-    b = lightgbm.LGBMClassifier()
-    b.fit(X, y, sample_weight=w)
-    p2 = b.predict_proba(X)
+    local_classifier = lightgbm.LGBMClassifier()
+    local_classifier.fit(X, y, sample_weight=w)
+    p2 = local_classifier.predict_proba(X)
 
     assert_eq(p1, p2, atol=0.3)
 
 
-def test_classifier_local_predict(client, listen_port):  # noqa
+def test_classifier_local_predict(client, listen_port):
     X, y, w, dX, dy, dw = _create_data('classification', output='array')
 
-    a = dlgbm.LGBMClassifier(time_out=5, local_listen_port=listen_port)
-    a = a.fit(dX, dy, sample_weight=dw, client=client)
-    p1 = a.to_local().predict(dX)
+    dask_classifier = dlgbm.DaskLGBMClassifier(time_out=5, local_listen_port=listen_port)
+    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
+    p1 = dask_classifier.to_local().predict(dX)
 
-    b = lightgbm.LGBMClassifier()
-    b.fit(X, y, sample_weight=w)
-    p2 = b.predict(X)
+    local_classifier = lightgbm.LGBMClassifier()
+    local_classifier.fit(X, y, sample_weight=w)
+    p2 = local_classifier.predict(X)
 
     assert_eq(p1, p2)
     assert_eq(y, p1)
@@ -123,20 +123,20 @@ def test_classifier_local_predict(client, listen_port):  # noqa
 
 
 @pytest.mark.parametrize('output', data_output)
-def test_regressor(output, client, listen_port):  # noqa
+def test_regressor(output, client, listen_port):
     X, y, w, dX, dy, dw = _create_data('regression', output=output)
 
-    a = dlgbm.LGBMRegressor(time_out=5, local_listen_port=listen_port, seed=42)
-    a = a.fit(dX, dy, client=client, sample_weight=dw)
-    p1 = a.predict(dX)
+    dask_regressor = dlgbm.DaskLGBMRegressor(time_out=5, local_listen_port=listen_port, seed=42)
+    dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
+    p1 = dask_regressor.predict(dX)
     if output != 'dataframe':
         s1 = r2_score(dy, p1)
     p1 = p1.compute()
 
-    b = lightgbm.LGBMRegressor(seed=42)
-    b.fit(X, y, sample_weight=w)
-    s2 = b.score(X, y)
-    p2 = b.predict(X)
+    local_regressor = lightgbm.LGBMRegressor(seed=42)
+    local_regressor.fit(X, y, sample_weight=w)
+    s2 = local_regressor.score(X, y)
+    p2 = local_regressor.predict(X)
 
     # Scores should be the same
     if output != 'dataframe':
@@ -149,17 +149,17 @@ def test_regressor(output, client, listen_port):  # noqa
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('alpha', [.1, .5, .9])
-def test_regressor_quantile(output, client, listen_port, alpha):  # noqa
+def test_regressor_quantile(output, client, listen_port, alpha):
     X, y, w, dX, dy, dw = _create_data('regression', output=output)
 
-    a = dlgbm.LGBMRegressor(local_listen_port=listen_port, seed=42, objective='quantile', alpha=alpha)
-    a = a.fit(dX, dy, client=client, sample_weight=dw)
-    p1 = a.predict(dX).compute()
+    dask_regressor = dlgbm.DaskLGBMRegressor(local_listen_port=listen_port, seed=42, objective='quantile', alpha=alpha)
+    dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
+    p1 = dask_regressor.predict(dX).compute()
     q1 = np.count_nonzero(y < p1) / y.shape[0]
 
-    b = lightgbm.LGBMRegressor(seed=42, objective='quantile', alpha=alpha)
-    b.fit(X, y, sample_weight=w)
-    p2 = b.predict(X)
+    local_regressor = lightgbm.LGBMRegressor(seed=42, objective='quantile', alpha=alpha)
+    local_regressor.fit(X, y, sample_weight=w)
+    p2 = local_regressor.predict(X)
     q2 = np.count_nonzero(y < p2) / y.shape[0]
 
     # Quantiles should be right
@@ -170,13 +170,13 @@ def test_regressor_quantile(output, client, listen_port, alpha):  # noqa
 def test_regressor_local_predict(client, listen_port):
     X, y, w, dX, dy, dw = _create_data('regression', output='array')
 
-    a = dlgbm.LGBMRegressor(local_listen_port=listen_port, seed=42)
-    a = a.fit(dX, dy, sample_weight=dw, client=client)
-    p1 = a.predict(dX)
-    p2 = a.to_local().predict(X)
+    dask_regressor = dlgbm.DaskLGBMRegressor(local_listen_port=listen_port, seed=42)
+    dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
+    p1 = dask_regressor.predict(dX)
+    p2 = dask_regressor.to_local().predict(X)
     s1 = r2_score(dy, p1)
     p1 = p1.compute()
-    s2 = a.to_local().score(X, y)
+    s2 = dask_regressor.to_local().score(X, y)
 
     # Predictions and scores should be the same
     assert_eq(p1, p2)

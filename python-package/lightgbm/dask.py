@@ -16,7 +16,7 @@ from dask import delayed
 from dask.distributed import default_client, get_worker, wait
 
 from .basic import _LIB, _safe_call
-from .sklearn import LGBMClassifier as LocalLGBMClassifier, LGBMRegressor as LocalLGBMRegressor
+from .sklearn import LGBMClassifier, LGBMRegressor
 
 import scipy.sparse as ss
 
@@ -229,23 +229,23 @@ class _LGBMModel:
             setattr(dest, name, attributes[name])
 
 
-class LGBMClassifier(_LGBMModel, LocalLGBMClassifier):
+class DaskLGBMClassifier(_LGBMModel, LGBMClassifier):
     """Distributed version of lightgbm.LGBMClassifier."""
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
         """Docstring is inherited from the LGBMModel."""
-        return self._fit(LocalLGBMClassifier, X, y, sample_weight, client, **kwargs)
-    fit.__doc__ = LocalLGBMClassifier.fit.__doc__
+        return self._fit(LGBMClassifier, X, y, sample_weight, client, **kwargs)
+    fit.__doc__ = LGBMClassifier.fit.__doc__
 
     def predict(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
         return _predict(self.to_local(), X, dtype=self.classes_.dtype, **kwargs)
-    predict.__doc__ = LocalLGBMClassifier.predict.__doc__
+    predict.__doc__ = LGBMClassifier.predict.__doc__
 
     def predict_proba(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict_proba."""
         return _predict(self.to_local(), X, proba=True, **kwargs)
-    predict_proba.__doc__ = LocalLGBMClassifier.predict_proba.__doc__
+    predict_proba.__doc__ = LGBMClassifier.predict_proba.__doc__
 
     def to_local(self):
         """Create regular version of lightgbm.LGBMClassifier from the distributed version.
@@ -254,21 +254,21 @@ class LGBMClassifier(_LGBMModel, LocalLGBMClassifier):
         -------
         model : lightgbm.LGBMClassifier
         """
-        return self._to_local(LocalLGBMClassifier)
+        return self._to_local(LGBMClassifier)
 
 
-class LGBMRegressor(_LGBMModel, LocalLGBMRegressor):
+class DaskLGBMRegressor(_LGBMModel, LGBMRegressor):
     """Docstring is inherited from the lightgbm.LGBMRegressor."""
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        return self._fit(LocalLGBMRegressor, X, y, sample_weight, client, **kwargs)
-    fit.__doc__ = LocalLGBMRegressor.fit.__doc__
+        return self._fit(LGBMRegressor, X, y, sample_weight, client, **kwargs)
+    fit.__doc__ = LGBMRegressor.fit.__doc__
 
     def predict(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
         return _predict(self.to_local(), X, **kwargs)
-    predict.__doc__ = LocalLGBMRegressor.predict.__doc__
+    predict.__doc__ = LGBMRegressor.predict.__doc__
 
     def to_local(self):
         """Create regular version of lightgbm.LGBMRegressor from the distributed version.
@@ -277,4 +277,4 @@ class LGBMRegressor(_LGBMModel, LocalLGBMRegressor):
         -------
         model : lightgbm.LGBMRegressor
         """
-        return self._to_local(LocalLGBMRegressor)
+        return self._to_local(LGBMRegressor)
