@@ -11,7 +11,7 @@ Predictor <- R6::R6Class(
     finalize = function() {
 
       # Check the need for freeing handle
-      if (private$need_free_handle && !lgb.is.null.handle(private$handle)) {
+      if (private$need_free_handle && !lgb.is.null.handle(x = private$handle)) {
 
         # Freeing up handle
         lgb.call(
@@ -28,7 +28,7 @@ Predictor <- R6::R6Class(
     # Initialize will create a starter model
     initialize = function(modelfile, ...) {
       params <- list(...)
-      private$params <- lgb.params2str(params)
+      private$params <- lgb.params2str(params = params)
       # Create new lgb handle
       handle <- lgb.null.handle()
 
@@ -39,7 +39,7 @@ Predictor <- R6::R6Class(
         handle <- lgb.call(
           fun_name = "LGBM_BoosterCreateFromModelfile_R"
           , ret = handle
-          , lgb.c_str(modelfile)
+          , lgb.c_str(x = modelfile)
         )
         private$need_free_handle <- TRUE
 
@@ -114,7 +114,7 @@ Predictor <- R6::R6Class(
           , as.integer(start_iteration)
           , as.integer(num_iteration)
           , private$params
-          , lgb.c_str(tmp_filename)
+          , lgb.c_str(x = tmp_filename)
         )
 
         # Get predictions from file

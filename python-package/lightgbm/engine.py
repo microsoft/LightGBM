@@ -1,7 +1,5 @@
 # coding: utf-8
 """Library with training routines of LightGBM."""
-from __future__ import absolute_import
-
 import collections
 import copy
 import warnings
@@ -11,8 +9,7 @@ import numpy as np
 
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor
-from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
-                     string_type, integer_types, range_, zip_)
+from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 
 def train(params, train_set, num_boost_round=100,
@@ -169,7 +166,7 @@ def train(params, train_set, num_boost_round=100,
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
-    if isinstance(init_model, string_type):
+    if isinstance(init_model, str):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))
@@ -193,7 +190,7 @@ def train(params, train_set, num_boost_round=100,
     if valid_sets is not None:
         if isinstance(valid_sets, Dataset):
             valid_sets = [valid_sets]
-        if isinstance(valid_names, string_type):
+        if isinstance(valid_names, str):
             valid_names = [valid_names]
         for i, valid_data in enumerate(valid_sets):
             # reduce cost for prediction training data
@@ -220,7 +217,7 @@ def train(params, train_set, num_boost_round=100,
     # Most of legacy advanced options becomes callbacks
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation())
-    elif isinstance(verbose_eval, integer_types):
+    elif isinstance(verbose_eval, int):
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
@@ -242,7 +239,7 @@ def train(params, train_set, num_boost_round=100,
         booster = Booster(params=params, train_set=train_set)
         if is_valid_contain_train:
             booster.set_train_data_name(train_data_name)
-        for valid_set, name_valid_set in zip_(reduced_valid_sets, name_valid_sets):
+        for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
             booster.add_valid(valid_set, name_valid_set)
     finally:
         train_set._reverse_update_params()
@@ -251,7 +248,7 @@ def train(params, train_set, num_boost_round=100,
     booster.best_iteration = 0
 
     # start training
-    for i in range_(init_iteration, init_iteration + num_boost_round):
+    for i in range(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,
                                     params=params,
@@ -288,7 +285,7 @@ def train(params, train_set, num_boost_round=100,
     return booster
 
 
-class CVBooster(object):
+class CVBooster:
     """CVBooster in LightGBM.
 
     Auxiliary data structure to hold and redirect all boosters of ``cv`` function.
@@ -339,7 +336,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             group_info = full_data.get_group()
             if group_info is not None:
                 group_info = np.array(group_info, dtype=np.int32, copy=False)
-                flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
+                flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             else:
                 flatted_group = np.zeros(num_data, dtype=np.int32)
             folds = folds.split(X=np.zeros(num_data), y=full_data.get_label(), groups=flatted_group)
@@ -351,7 +348,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
                 raise LightGBMError('Scikit-learn is required for ranking cv.')
             # ranking task, split according to groups
             group_info = np.array(full_data.get_group(), dtype=np.int32, copy=False)
-            flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
+            flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             group_kfold = _LGBMGroupKFold(n_splits=nfold)
             folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
         elif stratified:
@@ -365,9 +362,9 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             else:
                 randidx = np.arange(num_data)
             kstep = int(num_data / nfold)
-            test_id = [randidx[i: i + kstep] for i in range_(0, num_data, kstep)]
-            train_id = [np.concatenate([test_id[i] for i in range_(nfold) if k != i]) for k in range_(nfold)]
-            folds = zip_(train_id, test_id)
+            test_id = [randidx[i: i + kstep] for i in range(0, num_data, kstep)]
+            train_id = [np.concatenate([test_id[i] for i in range(nfold) if k != i]) for k in range(nfold)]
+            folds = zip(train_id, test_id)
 
     ret = CVBooster()
     for train_idx, test_idx in folds:
@@ -559,7 +556,7 @@ def cv(params, train_set, num_boost_round=100,
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
-    if isinstance(init_model, string_type):
+    if isinstance(init_model, str):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))
@@ -594,7 +591,7 @@ def cv(params, train_set, num_boost_round=100,
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
-    elif isinstance(verbose_eval, integer_types):
+    elif isinstance(verbose_eval, int):
         callbacks.add(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
 
     callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
@@ -602,7 +599,7 @@ def cv(params, train_set, num_boost_round=100,
     callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
     callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
 
-    for i in range_(num_boost_round):
+    for i in range(num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=cvfolds,
                                     params=params,

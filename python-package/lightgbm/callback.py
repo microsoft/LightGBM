@@ -1,13 +1,10 @@
 # coding: utf-8
 """Callbacks library."""
-from __future__ import absolute_import
-
 import collections
 import warnings
 from operator import gt, lt
 
 from .basic import _ConfigAliases
-from .compat import range_
 
 
 class EarlyStopException(Exception):
@@ -23,7 +20,7 @@ class EarlyStopException(Exception):
         best_score : float
             The score of the best iteration.
         """
-        super(EarlyStopException, self).__init__()
+        super().__init__()
         self.best_iteration = best_iteration
         self.best_score = best_score
 
@@ -219,7 +216,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
             _init(env)
         if not enabled[0]:
             return
-        for i in range_(len(env.evaluation_result_list)):
+        for i in range(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2]
             if best_score_list[i] is None or cmp_op[i](score, best_score[i]):
                 best_score[i] = score
