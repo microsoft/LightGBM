@@ -156,6 +156,7 @@ struct Config {
   // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
   // descl2 = not yet supported in R-package
   // descl2 = ``regression_l1`` objective is not supported with linear tree boosting
+  // descl2 = setting ``linear_tree = True`` significantly increases the memory use of LightGBM
   bool linear_tree = false;
 
   // alias = train, train_data, train_data_file, data_filename
