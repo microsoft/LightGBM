@@ -21,9 +21,9 @@ jobs:
   variables:
     COMPILER: gcc
   pool: sh-ubuntu
-  container: ubuntu1404
+  #container: ubuntu1404
   strategy:
-    maxParallel: 6
+    maxParallel: 10
     matrix:
       regular:
         TASK: regular
