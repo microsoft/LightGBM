@@ -20,8 +20,7 @@ jobs:
 ###########################################
   variables:
     COMPILER: gcc
-  pool:
-    vmImage: 'ubuntu-latest'
+  pool: sh-ubuntu
   container: ubuntu1404
   strategy:
     maxParallel: 6
@@ -42,6 +41,10 @@ jobs:
         TASK: gpu
         METHOD: source
         PYTHON_VERSION: 3.6
+      check_docs:
+        TASK: check-docs
+      lint:
+        TASK: lint
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
