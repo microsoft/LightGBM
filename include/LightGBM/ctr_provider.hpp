@@ -543,7 +543,7 @@ class CTRProvider {
       oneline_features.clear();
       parser->ParseOneLine(line.c_str(), &oneline_features, &label);
       const int fold_id = fold_distribution(mt_generator);
-      training_data_fold_id_.push_back(fold_id);
+      training_data_fold_id_[row_idx] = fold_id;
       ProcessOneLine(oneline_features, label, row_idx, &is_feature_processed, fold_id);
     });
     FinishProcess(num_machines);
