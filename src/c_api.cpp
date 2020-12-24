@@ -289,6 +289,9 @@ class Booster {
           "You need to set `feature_pre_filter=false` to dynamically change "
           "the `min_data_in_leaf`.");
     }
+    if (new_param.count("linear_tree") && (new_config.linear_tree != old_config.linear_tree)) {
+      Log:: Fatal("Cannot change between gbdt_linear boosting and other boosting types after Dataset handle has been constructed.");
+    }
   }
 
   void ResetConfig(const char* parameters) {
@@ -960,6 +963,9 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
+  if (p_dataset->has_raw()) {
+    p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
+  }
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
@@ -990,14 +996,16 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
+  if (p_dataset->has_raw()) {
+    p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
+  }
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
-    p_dataset->PushOneRow(tid,
-                          static_cast<data_size_t>(start_row + i), one_row);
+    p_dataset->PushOneRow(tid, static_cast<data_size_t>(start_row + i), one_row);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
@@ -1090,6 +1098,9 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
+    if (ret->has_raw()) {
+      ret->ResizeRaw(total_nrow);
+    }
   }
   int32_t start_row = 0;
   for (int j = 0; j < nmat; ++j) {
@@ -1166,6 +1177,9 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
+    if (ret->has_raw()) {
+      ret->ResizeRaw(nrow);
+    }
   }
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
@@ -1234,6 +1248,9 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
+    if (ret->has_raw()) {
+      ret->ResizeRaw(nrow);
+    }
   }
 
   OMP_INIT_EX();
@@ -1326,12 +1343,12 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
         row_idx = pair.first;
         // no more data
         if (row_idx < 0) { break; }
-        ret->PushOneData(tid, row_idx, group, sub_feature, pair.second);
+        ret->PushOneData(tid, row_idx, group, feature_idx, sub_feature, pair.second);
       }
     } else {
       for (int row_idx = 0; row_idx < nrow; ++row_idx) {
         auto val = col_it.Get(row_idx);
-        ret->PushOneData(tid, row_idx, group, sub_feature, val);
+        ret->PushOneData(tid, row_idx, group, feature_idx, sub_feature, val);
       }
     }
     OMP_LOOP_EX_END();
@@ -1597,6 +1614,13 @@ int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetBoosting()->NumberOfClasses();
+  API_END();
+}
+
+int LGBM_BoosterGetLinear(BoosterHandle handle, bool* out) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out = ref_booster->GetBoosting()->IsLinear();
   API_END();
 }
 

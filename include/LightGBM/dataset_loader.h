@@ -82,6 +82,8 @@ class DatasetLoader {
   std::vector<std::string> feature_names_;
   /*! \brief Mapper from real feature index to used index*/
   std::unordered_set<int> categorical_features_;
+  /*! \brief Whether to store raw feature values */
+  bool store_raw_;
 };
 
 }  // namespace LightGBM

@@ -1011,6 +1011,7 @@ class Dataset:
                                                 "ignore_column",
                                                 "is_enable_sparse",
                                                 "label_column",
+                                                "linear_tree",
                                                 "max_bin",
                                                 "max_bin_by_feature",
                                                 "min_data_in_bin",
@@ -2999,8 +3000,13 @@ class Booster:
         predictor = self._to_predictor(copy.deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
-        train_set = Dataset(data, label, silent=True)
+        out_is_linear = ctypes.c_bool(False)
+        _safe_call(_LIB.LGBM_BoosterGetLinear(
+            self.handle,
+            ctypes.byref(out_is_linear)))
         new_params = copy.deepcopy(self.params)
+        new_params["linear_tree"] = out_is_linear.value
+        train_set = Dataset(data, label, silent=True, params=new_params)
         new_params['refit_decay_rate'] = decay_rate
         new_booster = Booster(new_params, train_set)
         # Copy models
