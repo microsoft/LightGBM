@@ -23,7 +23,6 @@ const char* Dataset::binary_file_token =
     "______LightGBM_Binary_File_Token______\n";
 
 Dataset::Dataset() {
-  data_filename_ = "noname";
   num_data_ = 0;
   is_finish_load_ = false;
   has_raw_ = false;
@@ -31,7 +30,6 @@ Dataset::Dataset() {
 
 Dataset::Dataset(data_size_t num_data) {
   CHECK_GT(num_data, 0);
-  data_filename_ = "noname";
   num_data_ = num_data;
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
   is_finish_load_ = false;
@@ -926,12 +924,12 @@ bool Dataset::GetIntField(const char* field_name, data_size_t* out_len,
 }
 
 void Dataset::SaveBinaryFile(const char* bin_filename) {
-  if (bin_filename != nullptr && std::string(bin_filename) == data_filename_) {
+  if (bin_filename != nullptr && std::string(bin_filename) == data_filename_[0]) {
     Log::Warning("Bianry file %s already exists", bin_filename);
     return;
   }
-  // if not pass a filename, just append ".bin" of original file
-  std::string bin_filename_str(data_filename_);
+  // if not pass a filename, just append ".bin" of first original file
+  std::string bin_filename_str(data_filename_[0]);
   if (bin_filename == nullptr || bin_filename[0] == '\0') {
     bin_filename_str.append(".bin");
     bin_filename = bin_filename_str.c_str();

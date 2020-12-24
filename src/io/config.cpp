@@ -226,8 +226,14 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   std::sort(eval_at.begin(), eval_at.end());
 
   std::vector<std::string> new_valid;
+
+  std::set<std::string> data_set;
+  for (size_t i = 0; i < data.size(); ++i) {
+    data_set.insert(data[i]);
+  }
+
   for (size_t i = 0; i < valid.size(); ++i) {
-    if (valid[i] != data) {
+    if (data_set.count(valid[i]) == 0) {
       // Only push the non-training data
       new_valid.push_back(valid[i]);
     } else {

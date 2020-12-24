@@ -161,9 +161,11 @@ struct Config {
   bool linear_tree = false;
 
   // alias = train, train_data, train_data_file, data_filename
-  // desc = path of training data, LightGBM will train from this data
+  // default = ""
+  // desc = path of training data, LightGBM will train from these data
+  // desc = support multiple train data, separated by ``,``
   // desc = **Note**: can be used only in CLI version
-  std::string data = "";
+  std::vector<std::string> data;
 
   // alias = test, valid_data, valid_data_file, test_data, test_data_file, valid_filenames
   // default = ""

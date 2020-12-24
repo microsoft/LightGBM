@@ -43,6 +43,7 @@ class PipelineReader {
     if (skip_bytes > 0) {
       // skip first k bytes
       read_cnt = reader->Read(buffer_process.data(), skip_bytes);
+      Log::Debug("Skipped header \"%s\" in file %s", std::string(buffer_process.data(), read_cnt).c_str(), filename);
     }
     // read first block
     read_cnt = reader->Read(buffer_process.data(), buffer_size);

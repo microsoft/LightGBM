@@ -17,16 +17,20 @@ namespace LightGBM {
 
 using json11::Json;
 
-DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename)
-  :config_(io_config), random_(config_.data_random_seed), predict_fun_(predict_fun), num_class_(num_class) {
+DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const std::vector<const char*>& filenames)
+    :config_(io_config), random_(config_.data_random_seed), predict_fun_(predict_fun), num_class_(num_class) {
   label_idx_ = 0;
   weight_idx_ = NO_SPECIFIC;
   group_idx_ = NO_SPECIFIC;
-  SetHeader(filename);
+  SetHeader(filenames[0]);
   store_raw_ = false;
   if (io_config.linear_tree) {
     store_raw_ = true;
   }
+}
+
+DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename)
+  : DatasetLoader(io_config, predict_fun, num_class, std::vector<const char*>{filename}) {
 }
 
 DatasetLoader::~DatasetLoader() {
@@ -179,7 +183,7 @@ void CheckSampleSize(size_t sample_cnt, size_t num_data) {
   }
 }
 
-Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_machines) {
+Dataset* DatasetLoader::LoadFromFile(const std::vector<const char*>& filenames, int rank, int num_machines) {
   // don't support query id in data file when training in parallel
   if (num_machines > 1 && !config_.pre_partition) {
     if (group_idx_ > 0) {
@@ -193,19 +197,21 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   }
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
-  auto bin_filename = CheckCanLoadFromBin(filename);
+  // When have multiple filenames, the saved binary uses first filename as its prefix.
+  auto bin_filename = CheckCanLoadFromBin(filenames[0]);
   bool is_load_from_binary = false;
   if (bin_filename.size() == 0) {
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_));
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filenames[0], config_.header, 0, label_idx_));
     if (parser == nullptr) {
-      Log::Fatal("Could not recognize data format of %s", filename);
+      Log::Fatal("Could not recognize data format of %s", filenames[0]);
     }
-    dataset->data_filename_ = filename;
+    dataset->data_filename_ = filenames;
     dataset->label_idx_ = label_idx_;
-    dataset->metadata_.Init(filename);
+    // TODO support loading metadata from multiple files.
+    dataset->metadata_.Init(filenames[0]);
     if (!config_.two_round) {
       // read data to memory
-      auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
+      auto text_data = LoadTextDataToMemory(filenames, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
       // sample data
       auto sample_data = SampleTextDataFromMemory(text_data);
@@ -223,7 +229,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       text_data.clear();
     } else {
       // sample data from file
-      auto sample_data = SampleTextDataFromFile(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
+      auto sample_data = SampleTextDataFromFile(filenames, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
       if (used_data_indices.size() > 0) {
         dataset->num_data_ = static_cast<data_size_t>(used_data_indices.size());
       } else {
@@ -240,13 +246,13 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       Log::Info("Making second pass...");
       // extract features
-      ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
+      ExtractFeaturesFromFile(filenames, parser.get(), used_data_indices, dataset.get());
     }
   } else {
     // load data from binary file
     is_load_from_binary = true;
     Log::Info("Load from binary file %s", bin_filename.c_str());
-    dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), rank, num_machines, &num_global_data, &used_data_indices));
+    dataset.reset(LoadFromBinFile(filenames, bin_filename.c_str(), rank, num_machines, &num_global_data, &used_data_indices));
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
@@ -271,7 +277,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
-    dataset->data_filename_ = filename;
+    dataset->data_filename_ = {filename};
     dataset->label_idx_ = label_idx_;
     dataset->metadata_.Init(filename);
     if (!config_.two_round) {
@@ -303,7 +309,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     }
   } else {
     // load data from binary file
-    dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), 0, 1, &num_global_data, &used_data_indices));
+    dataset.reset(LoadFromBinFile({filename}, bin_filename.c_str(), 0, 1, &num_global_data, &used_data_indices));
   }
   // not need to check validation data
   // check meta data
@@ -311,9 +317,10 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   return dataset.release();
 }
 
-Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* bin_filename,
+Dataset* DatasetLoader::LoadFromBinFile(const std::vector<const char*>& data_filename, const char* bin_filename,
                                         int rank, int num_machines, int* num_global_data,
                                         std::vector<data_size_t>* used_data_indices) {
+  // We save a single binary file even when given multiple data files.
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
   auto reader = VirtualFileReader::Make(bin_filename);
   dataset->data_filename_ = data_filename;
@@ -777,7 +784,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
 
 void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binary) {
   if (dataset->num_data_ <= 0) {
-    Log::Fatal("Data file %s is empty", dataset->data_filename_.c_str());
+    Log::Fatal("Data file %s is empty", dataset->data_filename_[0]);
   }
   if (dataset->feature_names_.size() != static_cast<size_t>(dataset->num_total_features_)) {
     Log::Fatal("Size of feature name error, should be %d, got %d", dataset->num_total_features_,
@@ -838,10 +845,10 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
   }
 }
 
-std::vector<std::string> DatasetLoader::LoadTextDataToMemory(const char* filename, const Metadata& metadata,
+std::vector<std::string> DatasetLoader::LoadTextDataToMemory(const std::vector<const char*>& filenames, const Metadata& metadata,
                                                              int rank, int num_machines, int* num_global_data,
                                                              std::vector<data_size_t>* used_data_indices) {
-  TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
+  TextReader<data_size_t> text_reader(filenames, config_.header, config_.file_load_progress_interval_bytes);
   used_data_indices->clear();
   if (num_machines == 1 || config_.pre_partition) {
     // read all lines
@@ -860,6 +867,7 @@ std::vector<std::string> DatasetLoader::LoadTextDataToMemory(const char* filenam
         }
       }, used_data_indices);
     } else {
+
       // if contain query data, minimal sample unit is one query
       data_size_t num_queries = metadata.num_queries();
       data_size_t qid = -1;
@@ -900,7 +908,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromMemory(const std::vect
   return out;
 }
 
-std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filename, const Metadata& metadata,
+std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const std::vector<const char*>& filename, const Metadata& metadata,
                                                                int rank, int num_machines, int* num_global_data,
                                                                std::vector<data_size_t>* used_data_indices) {
   const data_size_t sample_cnt = static_cast<data_size_t>(config_.bin_construct_sample_cnt);
@@ -1257,7 +1265,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
 }
 
 /*! \brief Extract local features from file */
-void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* parser,
+void DatasetLoader::ExtractFeaturesFromFile(const std::vector<const char*>& filename, const Parser* parser,
                                             const std::vector<data_size_t>& used_data_indices, Dataset* dataset) {
   std::vector<double> init_score;
   if (predict_fun_ != nullptr) {

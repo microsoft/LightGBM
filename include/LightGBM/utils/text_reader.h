@@ -30,41 +30,59 @@ class TextReader {
   * \param filename Filename of data
   * \param is_skip_first_line True if need to skip header
   */
-  TextReader(const char* filename, bool is_skip_first_line, size_t progress_interval_bytes = SIZE_MAX):
-    filename_(filename), is_skip_first_line_(is_skip_first_line), read_progress_interval_bytes_(progress_interval_bytes) {
-    if (is_skip_first_line_) {
-      auto reader = VirtualFileReader::Make(filename);
-      if (!reader->Init()) {
-        Log::Fatal("Could not open %s", filename);
-      }
-      std::stringstream str_buf;
-      char read_c;
-      size_t nread = reader->Read(&read_c, 1);
-      while (nread == 1) {
-        if (read_c == '\n' || read_c == '\r') {
-          break;
+  TextReader(const std::vector<const char*>& filenames, bool is_skip_first_line, size_t progress_interval_bytes = SIZE_MAX):
+    filename_(filenames), is_skip_first_line_(is_skip_first_line), read_progress_interval_bytes_(progress_interval_bytes) {
+    if (is_skip_first_line) {
+      first_line_ = CountFirstLineBytes(filename_[0], &skip_bytes_);
+      // Check if every file have same length of the first line.
+      for (size_t i = 1; i < filenames.size(); ++i) {
+        int n_bytes = 0;
+        CountFirstLineBytes(filename_[i], &n_bytes);
+        if (n_bytes != skip_bytes_) {
+          Log::Fatal("file %s first line has %d bytes, not equal to first file which have %d bytes",
+                     filename_[i], n_bytes, skip_bytes_);
         }
-        str_buf << read_c;
-        ++skip_bytes_;
-        nread = reader->Read(&read_c, 1);
       }
-      if (read_c == '\r') {
-        reader->Read(&read_c, 1);
-        ++skip_bytes_;
-      }
-      if (read_c == '\n') {
-        reader->Read(&read_c, 1);
-        ++skip_bytes_;
-      }
-      first_line_ = str_buf.str();
-      Log::Debug("Skipped header \"%s\" in file %s", first_line_.c_str(), filename_);
     }
+  }
+
+  TextReader(const char* filename, bool is_skip_first_line, size_t progress_interval_bytes = SIZE_MAX):
+      TextReader(std::vector<const char*>{filename}, is_skip_first_line, progress_interval_bytes) {
   }
   /*!
   * \brief Destructor
   */
   ~TextReader() {
     Clear();
+  }
+  /*!
+  * \brief Count number of bytes for the first line of a file.
+  */
+  std::string CountFirstLineBytes(const char* filename, int* n_bytes) {
+    auto reader = VirtualFileReader::Make(filename);
+    if (!reader->Init()) {
+      Log::Fatal("Could not open %s", filename);
+    }
+    std::stringstream str_buf;
+    char read_c;
+    size_t nread = reader->Read(&read_c, 1);
+    while (nread == 1) {
+      if (read_c == '\n' || read_c == '\r') {
+        break;
+      }
+      str_buf << read_c;
+      ++(*n_bytes);
+      nread = reader->Read(&read_c, 1);
+    }
+    if (read_c == '\r') {
+      reader->Read(&read_c, 1);
+      ++(*n_bytes);
+    }
+    if (read_c == '\n') {
+      reader->Read(&read_c, 1);
+      ++(*n_bytes);
+    }
+    return str_buf.str();
   }
   /*!
   * \brief Clear cached data
@@ -85,11 +103,12 @@ class TextReader {
   */
   inline std::vector<std::string>& Lines() { return lines_; }
 
-  INDEX_T ReadAllAndProcess(const std::function<void(INDEX_T, const char*, size_t)>& process_fun) {
+  INDEX_T ReadAllAndProcessFile(const char* filename, const std::function<void(INDEX_T, const char*, size_t)>& process_fun, INDEX_T& total_cnt) {
+    Log::Debug("ReadAllAndProcessFile %s", filename);
     last_line_ = "";
-    INDEX_T total_cnt = 0;
     size_t bytes_read = 0;
-    PipelineReader::Read(filename_, skip_bytes_,
+
+    PipelineReader::Read(filename, skip_bytes_,
         [&process_fun, &bytes_read, &total_cnt, this]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
@@ -138,6 +157,15 @@ class TextReader {
       ++total_cnt;
       last_line_ = "";
     }
+    Log::Debug("ReadAllAndProcessFile total_cnt %lu", total_cnt);
+    return total_cnt;
+  }
+
+  INDEX_T ReadAllAndProcess(const std::function<void(INDEX_T, const char*, size_t)>& process_fun) {
+    INDEX_T total_cnt = 0;
+    for (const auto& it : filename_) {
+      ReadAllAndProcessFile(it, process_fun, total_cnt);
+    }
     return total_cnt;
   }
 
@@ -152,21 +180,33 @@ class TextReader {
     });
   }
 
-  std::vector<char> ReadContent(size_t* out_len) {
-    std::vector<char> ret;
+  bool ReadContentFromFile(const char* filename, size_t* out_len, std::vector<char>* ret) {
     *out_len = 0;
-    auto reader = VirtualFileReader::Make(filename_);
+    auto reader = VirtualFileReader::Make(filename);
     if (!reader->Init()) {
-      return ret;
+      return false;
     }
     const size_t buffer_size = 16 * 1024 * 1024;
     auto buffer_read = std::vector<char>(buffer_size);
     size_t read_cnt = 0;
     do {
       read_cnt = reader->Read(buffer_read.data(), buffer_size);
-      ret.insert(ret.end(), buffer_read.begin(), buffer_read.begin() + read_cnt);
+      ret->insert(ret->end(), buffer_read.begin(), buffer_read.begin() + read_cnt);
       *out_len += read_cnt;
     } while (read_cnt > 0);
+    return true;
+  }
+
+  std::vector<char> ReadContent(size_t* out_len) {
+    std::vector<char> ret;
+    for (const auto& it : filename_) {
+      size_t read_cnt = 0;
+      Log::Debug("ReadContentFromFile %s", it);
+      if (!ReadContentFromFile(it, &read_cnt, &ret)) {
+        break;
+      }
+      *out_len += read_cnt;
+    }
     return ret;
   }
 
@@ -235,12 +275,13 @@ class TextReader {
     });
   }
 
-  INDEX_T ReadAllAndProcessParallelWithFilter(const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun, const std::function<bool(INDEX_T, INDEX_T)>& filter_fun) {
+  INDEX_T ReadAllAndProcessParallelWithFilterOne(const char* filename,
+                                                 const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun,
+                                                 const std::function<bool(INDEX_T, INDEX_T)>& filter_fun,
+                                                 INDEX_T& total_cnt, size_t& bytes_read, INDEX_T& used_cnt) {
+    Log::Debug("ReadAllAndProcessParallelWithFilterOne %s", filename);
     last_line_ = "";
-    INDEX_T total_cnt = 0;
-    size_t bytes_read = 0;
-    INDEX_T used_cnt = 0;
-    PipelineReader::Read(filename_, skip_bytes_,
+    PipelineReader::Read(filename, skip_bytes_,
         [&process_fun, &filter_fun, &total_cnt, &bytes_read, &used_cnt, this]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
@@ -306,6 +347,17 @@ class TextReader {
     return total_cnt;
   }
 
+  INDEX_T ReadAllAndProcessParallelWithFilter(const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun, const std::function<bool(INDEX_T, INDEX_T)>& filter_fun) {
+    INDEX_T total_cnt = 0;
+    size_t bytes_read = 0;
+    INDEX_T used_cnt = 0;
+    for (const auto& it : filename_) {
+      ReadAllAndProcessParallelWithFilterOne(it, process_fun, filter_fun, total_cnt, bytes_read, used_cnt);
+    }
+    Log::Debug("ReadAllAndProcessParallelWithFilter total_cnt %lu", total_cnt);
+    return total_cnt;
+  }
+
   INDEX_T ReadAllAndProcessParallel(const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun) {
     return ReadAllAndProcessParallelWithFilter(process_fun, [](INDEX_T, INDEX_T) { return true; });
   }
@@ -323,7 +375,7 @@ class TextReader {
 
  private:
   /*! \brief Filename of text data */
-  const char* filename_;
+  std::vector<const char*> filename_;
   /*! \brief Cache the read text data */
   std::vector<std::string> lines_;
   /*! \brief Buffer for last line */

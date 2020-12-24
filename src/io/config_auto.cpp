@@ -308,7 +308,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   std::string tmp_str = "";
   GetBool(params, "linear_tree", &linear_tree);
 
-  GetString(params, "data", &data);
+  if (GetString(params, "data", &tmp_str)) {
+    data = Common::Split(tmp_str.c_str(), ',');
+  }
 
   if (GetString(params, "valid", &tmp_str)) {
     valid = Common::Split(tmp_str.c_str(), ',');
@@ -630,7 +632,7 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 std::string Config::SaveMembersToString() const {
   std::stringstream str_buf;
   str_buf << "[linear_tree: " << linear_tree << "]\n";
-  str_buf << "[data: " << data << "]\n";
+  str_buf << "[data: " << Common::Join(data, ",") << "]\n";
   str_buf << "[valid: " << Common::Join(valid, ",") << "]\n";
   str_buf << "[num_iterations: " << num_iterations << "]\n";
   str_buf << "[learning_rate: " << learning_rate << "]\n";

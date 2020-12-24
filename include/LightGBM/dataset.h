@@ -679,7 +679,7 @@ class Dataset {
   }
 
  private:
-  std::string data_filename_;
+  std::vector<const char*> data_filename_;
   /*! \brief Store used features */
   std::vector<std::unique_ptr<FeatureGroup>> feature_groups_;
   /*! \brief Mapper from real feature index to used index*/

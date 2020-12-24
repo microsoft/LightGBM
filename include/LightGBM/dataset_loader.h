@@ -15,11 +15,17 @@ namespace LightGBM {
 
 class DatasetLoader {
  public:
+  LIGHTGBM_EXPORT DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const std::vector<const char*>& filenames);
+
   LIGHTGBM_EXPORT DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename);
 
   LIGHTGBM_EXPORT ~DatasetLoader();
 
-  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, int rank, int num_machines);
+  LIGHTGBM_EXPORT Dataset* LoadFromFile(const std::vector<const char*>& filenames, int rank, int num_machines);
+
+  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, int rank, int num_machines) {
+    return LoadFromFile(std::vector<const char*>{filename}, rank, num_machines);
+  }
 
   LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename) {
     return LoadFromFile(filename, 0, 1);
@@ -40,17 +46,25 @@ class DatasetLoader {
                                                         const std::unordered_set<int>& categorical_features);
 
  private:
-  Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+  Dataset* LoadFromBinFile(const std::vector<const char*>& data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
 
-  void SetHeader(const char* filename);
+  void SetHeader(const char* filenames);
 
   void CheckDataset(const Dataset* dataset, bool is_load_from_binary);
 
-  std::vector<std::string> LoadTextDataToMemory(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+  std::vector<std::string> LoadTextDataToMemory(const std::vector<const char*>& filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+
+  std::vector<std::string> LoadTextDataToMemory(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices) {
+    return LoadTextDataToMemory(std::vector<const char*>{filename}, metadata, rank, num_machines, num_global_data, used_data_indices);
+  }
 
   std::vector<std::string> SampleTextDataFromMemory(const std::vector<std::string>& data);
 
-  std::vector<std::string> SampleTextDataFromFile(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+  std::vector<std::string> SampleTextDataFromFile(const std::vector<const char*>& filenames, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+
+  std::vector<std::string> SampleTextDataFromFile(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices) {
+    return SampleTextDataFromFile(std::vector<const char*>{filename}, metadata, rank, num_machines, num_global_data, used_data_indices);
+  }
 
   void ConstructBinMappersFromTextData(int rank, int num_machines, const std::vector<std::string>& sample_data, const Parser* parser, Dataset* dataset);
 
@@ -58,7 +72,11 @@ class DatasetLoader {
   void ExtractFeaturesFromMemory(std::vector<std::string>* text_data, const Parser* parser, Dataset* dataset);
 
   /*! \brief Extract local features from file */
-  void ExtractFeaturesFromFile(const char* filename, const Parser* parser, const std::vector<data_size_t>& used_data_indices, Dataset* dataset);
+  void ExtractFeaturesFromFile(const std::vector<const char*>& filenames, const Parser* parser, const std::vector<data_size_t>& used_data_indices, Dataset* dataset);
+
+  void ExtractFeaturesFromFile(const char* filename, const Parser* parser, const std::vector<data_size_t>& used_data_indices, Dataset* dataset) {
+    ExtractFeaturesFromFile(std::vector<const char*>{filename}, parser, used_data_indices, dataset);
+  }
 
   /*! \brief Check can load from binary file */
   std::string CheckCanLoadFromBin(const char* filename);

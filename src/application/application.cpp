@@ -101,16 +101,23 @@ void Application::LoadData() {
   }
 
   Log::Debug("Loading train file...");
+  std::vector<const char*> train_data;
+  for (auto it = config_.data.begin(); it != config_.data.end(); ++it) {
+    train_data.push_back(it->c_str());
+  }
   DatasetLoader dataset_loader(config_, predict_fun,
-                               config_.num_class, config_.data.c_str());
+                               config_.num_class, train_data);
   // load Training data
   if (config_.is_data_based_parallel) {
     // load data for parallel training
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(),
+    if (!train_data.empty()) {
+      Log::Fatal("parallel training with multiple train data have not been tested!");
+    }
+    train_data_.reset(dataset_loader.LoadFromFile(train_data,
                                                   Network::rank(), Network::num_machines()));
   } else {
     // load data for single machine
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1));
+    train_data_.reset(dataset_loader.LoadFromFile(train_data, 0, 1));
   }
   // need save binary file
   if (config_.save_binary) {
@@ -160,8 +167,8 @@ void Application::LoadData() {
   }
   auto end_time = std::chrono::high_resolution_clock::now();
   // output used time on each iteration
-  Log::Info("Finished loading data in %f seconds",
-            std::chrono::duration<double, std::milli>(end_time - start_time) * 1e-3);
+  Log::Info("Finished loading data in %f seconds, number of train data %d",
+            std::chrono::duration<double, std::milli>(end_time - start_time) * 1e-3, train_data_->num_data());
 }
 
 void Application::InitTrain() {
@@ -218,10 +225,14 @@ void Application::Train() {
 }
 
 void Application::Predict() {
+  if (config_.data.size() > 1) {
+    Log::Fatal("Predict supports only a single data file.");
+  }
+  const char* data = config_.data[0].c_str();
   if (config_.task == TaskType::KRefitTree) {
     // create predictor
     Predictor predictor(boosting_.get(), 0, -1, false, true, false, false, 1, 1);
-    predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check);
+    predictor.Predict(data, config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check);
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
     std::vector<std::vector<int>> pred_leaf(result_reader.Lines().size());
@@ -232,8 +243,8 @@ void Application::Predict() {
       result_reader.Lines()[i].clear();
     }
     DatasetLoader dataset_loader(config_, nullptr,
-                                 config_.num_class, config_.data.c_str());
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1));
+                                 config_.num_class, data);
+    train_data_.reset(dataset_loader.LoadFromFile(data, 0, 1));
     train_metric_.clear();
     objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective,
                                                                     config_));
@@ -250,7 +261,7 @@ void Application::Predict() {
                         config_.predict_leaf_index, config_.predict_contrib,
                         config_.pred_early_stop, config_.pred_early_stop_freq,
                         config_.pred_early_stop_margin);
-    predictor.Predict(config_.data.c_str(),
+    predictor.Predict(data,
                       config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check);
     Log::Info("Finished prediction");
   }
