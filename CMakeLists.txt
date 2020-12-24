@@ -133,6 +133,10 @@ else()
       OR (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
     endif()
+    # Ignore unused private fields
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field")
+    endif()
 endif(USE_OPENMP)
 
 if(USE_GPU)
