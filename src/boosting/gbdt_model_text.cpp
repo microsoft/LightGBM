@@ -595,6 +595,11 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
         break;
       } else if (is_inparameter) {
         ss << cur_line << "\n";
+        if (Common::StartsWith(cur_line, "[linear_tree: ")) {
+          int is_linear = 0;
+          Common::Atoi(cur_line.substr(14, 1).c_str(), &is_linear);
+          linear_tree_ = static_cast<bool>(is_linear);
+        }
       }
     }
     p += line_len;

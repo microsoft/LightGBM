@@ -316,6 +316,8 @@ class LIGHTGBM_EXPORT Boosting {
   static Boosting* CreateBoosting(const std::string& type, const char* filename);
 
   virtual const CTRProvider* ctr_provider() const { return nullptr; }
+
+  virtual bool IsLinear() const { return false; }
 };
 
 class GBDTBase : public Boosting {

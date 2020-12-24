@@ -109,7 +109,7 @@ class RF : public GBDT {
     gradients = gradients_.data();
     hessians = hessians_.data();
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      std::unique_ptr<Tree> new_tree(new Tree(2, false));
+      std::unique_ptr<Tree> new_tree(new Tree(2, false, false));
       size_t offset = static_cast<size_t>(cur_tree_id)* num_data_;
       if (class_need_train_[cur_tree_id]) {
         auto grad = gradients + offset;
@@ -125,7 +125,7 @@ class RF : public GBDT {
           hess = tmp_hess_.data();
         }
 
-        new_tree.reset(tree_learner_->Train(grad, hess));
+        new_tree.reset(tree_learner_->Train(grad, hess, false));
       }
 
       if (new_tree->num_leaves() > 1) {
