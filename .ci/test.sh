@@ -165,7 +165,7 @@ elif [[ $TASK == "mpi" ]]; then
         cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
     fi
 else
-    cmake -DUSE_OPENMP=OFF ..
+    cmake ..
 fi
 
 make _lightgbm -j4 || exit -1
