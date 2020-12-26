@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2020 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include "linear_tree_learner.h"
@@ -211,7 +211,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     } else {
       raw_features = tree->branch_features(i);
     }
-    std::sort(raw_features.begin(), raw_features.end());
+    std::stable_sort(raw_features.begin(), raw_features.end());
     auto new_end = std::unique(raw_features.begin(), raw_features.end());
     raw_features.erase(new_end, raw_features.end());
     std::vector<int> numerical_features;
