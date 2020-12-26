@@ -5,6 +5,7 @@ function Download-File-With-Retries {
     [string]$url,
     [string]$destfile
   )
+  $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
   do {
     Write-Output "Downloading ${url}"
     sleep 5;
