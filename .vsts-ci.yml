@@ -16,7 +16,7 @@ resources:
     image: lightgbm/vsts-agent:ubuntu-14.04
 jobs:
 ###########################################
-- job: Linux (no container)
+- job: Linux_no_container
 ###########################################
   pool:
     vmImage: 'ubuntu-latest'
@@ -40,7 +40,7 @@ jobs:
   - bash: $(Build.SourcesDirectory)/.ci/test.sh
     displayName: Test
 ###########################################
-- job: Linux (old OS)
+- job: Linux_old_OS
 ###########################################
   variables:
     COMPILER: gcc
