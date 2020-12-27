@@ -44,6 +44,7 @@ class GBDT : public GBDTBase {
   */
   ~GBDT();
 
+
   /*!
   * \brief Initialization logic
   * \param gbdt_config Config for boosting
@@ -391,6 +392,8 @@ class GBDT : public GBDTBase {
   */
   const char* SubModelName() const override { return "tree"; }
 
+  bool IsLinear() const override { return linear_tree_; }
+
  protected:
   virtual bool GetIsConstHessian(const ObjectiveFunction* objective_function) {
     if (objective_function != nullptr) {
@@ -530,6 +533,7 @@ class GBDT : public GBDTBase {
   std::vector<Random> bagging_rands_;
   ParallelPartitionRunner<data_size_t, false> bagging_runner_;
   Json forced_splits_json_;
+  bool linear_tree_;
 };
 
 }  // namespace LightGBM
