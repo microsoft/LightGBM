@@ -77,9 +77,9 @@ OpenCL SDK Installation
 Installing the appropriate OpenCL SDK requires you to download the correct vendor source SDK.
 You need to know what you are going to use LightGBM!
 
--  For running on Intel, get `Intel SDK for OpenCL`_ (NOT RECOMMENDED).
+-  For running on Intel, get `Intel SDK for OpenCL`_ (**NOT RECOMMENDED**).
 
--  For running on AMD, get `AMD APP SDK`_ (you may want to replace the ``OpenCL.dll`` from GPU driver package with the one from the SDK, if the one shipped with the driver lacks some functions).
+-  For running on AMD, get AMD APP SDK (downloads `for Linux`_ and `for Windows`_). You may want to replace the ``OpenCL.dll`` from the GPU driver package with the one from the SDK, if the one shipped with the driver lacks some functions.
 
 -  For running on NVIDIA, get `CUDA Toolkit`_.
 
@@ -573,7 +573,9 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
-.. _AMD APP SDK: https://github.com/fireice-uk/xmr-stak/issues/1511
+.. _for Linux: https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+
+.. _for Windows: https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe
 
 .. _Khronos official OpenCL headers: https://github.com/KhronosGroup/OpenCL-Headers
 
