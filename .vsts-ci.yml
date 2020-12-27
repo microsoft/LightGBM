@@ -8,6 +8,7 @@ trigger:
 pr:
 - master
 variables:
+  AZURE: 'true'
   PYTHON_VERSION: 3.8
   CONDA_ENV: test-env
 resources:
@@ -20,6 +21,7 @@ jobs:
 ###########################################
   variables:
     COMPILER: gcc
+    SETUP_CONDA: 'false'
   pool:
     vmImage: 'ubuntu-latest'
   container: ubuntu1404
@@ -46,7 +48,6 @@ jobs:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=OS_NAME]linux"
-      echo "##vso[task.setvariable variable=AZURE]true"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
       echo "##vso[task.prependpath]$CONDA/bin"
       AMDAPPSDK_PATH=$BUILD_SOURCESDIRECTORY/AMDAPPSDK
@@ -86,7 +87,6 @@ jobs:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=OS_NAME]macos"
-      echo "##vso[task.setvariable variable=AZURE]true"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
       CONDA=$AGENT_HOMEDIRECTORY/miniconda
       echo "##vso[task.setvariable variable=CONDA]$CONDA"
@@ -122,7 +122,6 @@ jobs:
   steps:
   - powershell: |
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
-      Write-Host "##vso[task.setvariable variable=AZURE]true"
     displayName: 'Set Variables'
   - task: Cache@2
     inputs:
