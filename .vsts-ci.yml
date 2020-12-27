@@ -16,7 +16,31 @@ resources:
     image: lightgbm/vsts-agent:ubuntu-14.04
 jobs:
 ###########################################
-- job: Linux
+- job: Linux (no container)
+###########################################
+  pool:
+    vmImage: 'ubuntu-latest'
+  strategy:
+    maxParallel: 2
+    matrix:
+      check_docs:
+        TASK: check-docs
+      lint:
+        TASK: lint
+  steps:
+  - script: |
+      echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
+      echo "##vso[task.setvariable variable=OS_NAME]linux"
+      echo "##vso[task.setvariable variable=AZURE]true"
+      echo "##vso[task.prependpath]$CONDA/bin"
+      echo "##vso[task.setvariable variable=LD_LIBRARY_PATH]$LD_LIBRARY_PATH"
+    displayName: 'Set variables'
+  - bash: $(Build.SourcesDirectory)/.ci/setup.sh
+    displayName: Setup
+  - bash: $(Build.SourcesDirectory)/.ci/test.sh
+    displayName: Test
+###########################################
+- job: Linux (old OS)
 ###########################################
   variables:
     COMPILER: gcc
@@ -41,10 +65,6 @@ jobs:
         TASK: gpu
         METHOD: source
         PYTHON_VERSION: 3.6
-      check_docs:
-        TASK: check-docs
-      lint:
-        TASK: lint
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -71,20 +91,31 @@ jobs:
 ###########################################
 - job: MacOS
 ###########################################
-  variables:
-    COMPILER: clang
   pool:
     vmImage: 'macOS-10.14'
   strategy:
     maxParallel: 3
     matrix:
-      regular:
+      regular_clang:
         TASK: regular
         PYTHON_VERSION: 3.7
-      sdist:
+        COMPILER: clang
+      sdist_clang:
         TASK: sdist
-      bdist:
+        COMPILER: clang
+      bdist_clang:
         TASK: bdist
+        COMPILER: clang
+      regular_gcc:
+        TASK: regular
+        PYTHON_VERSION: 3.7
+        COMPILER: gcc
+      sdist_gcc:
+        TASK: sdist
+        COMPILER: gcc
+      bdist_gcc:
+        TASK: bdist
+        COMPILER: gcc
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -107,92 +138,92 @@ jobs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: PackageAssets
       artifactType: container
-###########################################
-- job: Windows
-###########################################
-  pool:
-    vmImage: 'vs2017-win2016'
-  strategy:
-    maxParallel: 3
-    matrix:
-      regular:
-        TASK: regular
-        PYTHON_VERSION: 3.6
-      sdist:
-        TASK: sdist
-      bdist:
-        TASK: bdist
-  steps:
-  - powershell: |
-      Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
-      Write-Host "##vso[task.setvariable variable=AZURE]true"
-    displayName: 'Set Variables'
-  - task: Cache@2
-    inputs:
-      key: '"opencl.windows" | "amd.cpu" | "v3.0.130.135" | "1"'
-      path: $(Pipeline.Workspace)/opencl_windows-amd_cpu-v3_0_130_135
-      cacheHitVar: OPENCL_INSTALLER_FOUND
-    condition: eq(variables['TASK'], 'bdist')
-    displayName: 'Cache OpenCL Installer'
-  - script: |
-      cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/install_opencl.ps1"
-    condition: eq(variables['TASK'], 'bdist')
-    displayName: 'Install OpenCL'
-  - script: |
-      cmd /c "conda init powershell"
-      cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
-    displayName: Test
-  - task: PublishBuildArtifacts@1
-    condition: and(succeeded(), in(variables['TASK'], 'regular', 'sdist', 'bdist'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
-    inputs:
-      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: PackageAssets
-      artifactType: container
+# ###########################################
+# - job: Windows
+# ###########################################
+#   pool:
+#     vmImage: 'vs2017-win2016'
+#   strategy:
+#     maxParallel: 3
+#     matrix:
+#       regular:
+#         TASK: regular
+#         PYTHON_VERSION: 3.6
+#       sdist:
+#         TASK: sdist
+#       bdist:
+#         TASK: bdist
+#   steps:
+#   - powershell: |
+#       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+#       Write-Host "##vso[task.setvariable variable=AZURE]true"
+#     displayName: 'Set Variables'
+#   - task: Cache@2
+#     inputs:
+#       key: '"opencl.windows" | "amd.cpu" | "v3.0.130.135" | "1"'
+#       path: $(Pipeline.Workspace)/opencl_windows-amd_cpu-v3_0_130_135
+#       cacheHitVar: OPENCL_INSTALLER_FOUND
+#     condition: eq(variables['TASK'], 'bdist')
+#     displayName: 'Cache OpenCL Installer'
+#   - script: |
+#       cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/install_opencl.ps1"
+#     condition: eq(variables['TASK'], 'bdist')
+#     displayName: 'Install OpenCL'
+#   - script: |
+#       cmd /c "conda init powershell"
+#       cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
+#     displayName: Test
+#   - task: PublishBuildArtifacts@1
+#     condition: and(succeeded(), in(variables['TASK'], 'regular', 'sdist', 'bdist'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
+#     inputs:
+#       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+#       artifactName: PackageAssets
+#       artifactType: container
 
-###########################################
-- job: Package
-###########################################
-  dependsOn:
-  - Linux
-  - MacOS
-  - Windows
-  condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
-  pool:
-    vmImage: 'vs2017-win2016'
-  steps:
-  # Download all agent packages from all previous phases
-  - task: DownloadBuildArtifacts@0
-    displayName: Download package assets
-    inputs:
-      artifactName: PackageAssets
-      downloadPath: $(Build.SourcesDirectory)/binaries
-  - script: |
-      python %BUILD_SOURCESDIRECTORY%/.nuget/create_nuget.py %BUILD_SOURCESDIRECTORY%/binaries/PackageAssets
-    displayName: 'Create NuGet configuration files'
-  - task: NuGetCommand@2
-    inputs:
-      command: pack
-      packagesToPack: '$(Build.SourcesDirectory)/.nuget/*.nuspec'
-      packDestination: '$(Build.ArtifactStagingDirectory)'
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: NuGet
-      artifactType: container
-  - task: GitHubRelease@0
-    displayName: 'Create GitHub Release'
-    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-    inputs:
-      gitHubConnection: guolinke
-      repositoryName: '$(Build.Repository.Name)'
-      action: 'create'
-      target: '$(Build.SourceVersion)'
-      tagSource: 'auto'
-      title: '$(Build.SourceBranchName)'
-      assets: |
-        $(Build.SourcesDirectory)/binaries/PackageAssets/*
-        $(Build.ArtifactStagingDirectory)/*.nupkg
-      assetUploadMode: 'delete'
-      isDraft: true
-      isPreRelease: false
-      addChangeLog: false
+# ###########################################
+# - job: Package
+# ###########################################
+#   dependsOn:
+#   - Linux
+#   - MacOS
+#   - Windows
+#   condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
+#   pool:
+#     vmImage: 'vs2017-win2016'
+#   steps:
+#   # Download all agent packages from all previous phases
+#   - task: DownloadBuildArtifacts@0
+#     displayName: Download package assets
+#     inputs:
+#       artifactName: PackageAssets
+#       downloadPath: $(Build.SourcesDirectory)/binaries
+#   - script: |
+#       python %BUILD_SOURCESDIRECTORY%/.nuget/create_nuget.py %BUILD_SOURCESDIRECTORY%/binaries/PackageAssets
+#     displayName: 'Create NuGet configuration files'
+#   - task: NuGetCommand@2
+#     inputs:
+#       command: pack
+#       packagesToPack: '$(Build.SourcesDirectory)/.nuget/*.nuspec'
+#       packDestination: '$(Build.ArtifactStagingDirectory)'
+#   - task: PublishBuildArtifacts@1
+#     inputs:
+#       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+#       artifactName: NuGet
+#       artifactType: container
+#   - task: GitHubRelease@0
+#     displayName: 'Create GitHub Release'
+#     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+#     inputs:
+#       gitHubConnection: guolinke
+#       repositoryName: '$(Build.Repository.Name)'
+#       action: 'create'
+#       target: '$(Build.SourceVersion)'
+#       tagSource: 'auto'
+#       title: '$(Build.SourceBranchName)'
+#       assets: |
+#         $(Build.SourcesDirectory)/binaries/PackageAssets/*
+#         $(Build.ArtifactStagingDirectory)/*.nupkg
+#       assetUploadMode: 'delete'
+#       isDraft: true
+#       isPreRelease: false
+#       addChangeLog: false
