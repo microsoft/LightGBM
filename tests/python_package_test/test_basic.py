@@ -99,6 +99,38 @@ class TestBasic(unittest.TestCase):
         train_data.construct()
         valid_data.construct()
 
+    def test_chunked_dataset_linear(self):
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1,
+                                                            random_state=2)
+        chunk_size = X_train.shape[0] // 10 + 1
+        X_train = [X_train[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_train.shape[0] // chunk_size + 1)]
+        X_test = [X_test[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_test.shape[0] // chunk_size + 1)]
+        params = {"bin_construct_sample_cnt": 100, 'linear_tree': True}
+        train_data = lgb.Dataset(X_train, label=y_train, params=params)
+        valid_data = train_data.create_valid(X_test, label=y_test, params=params)
+        train_data.construct()
+        valid_data.construct()
+
+    def test_save_and_load_linear(self):
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1,
+                                                            random_state=2)
+        X_train = np.concatenate([np.ones((X_train.shape[0], 1)), X_train], 1)
+        X_train[:X_train.shape[0] // 2, 0] = 0
+        y_train[:X_train.shape[0] // 2] = 1
+        params = {'linear_tree': True}
+        train_data = lgb.Dataset(X_train, label=y_train, params=params)
+        est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
+        pred1 = est.predict(X_train)
+        train_data.save_binary('temp_dataset.bin')
+        train_data_2 = lgb.Dataset('temp_dataset.bin')
+        est = lgb.train(params, train_data_2, num_boost_round=10)
+        pred2 = est.predict(X_train)
+        np.testing.assert_allclose(pred1, pred2)
+        est.save_model('temp_model.txt')
+        est2 = lgb.Booster(model_file='temp_model.txt')
+        pred3 = est2.predict(X_train)
+        np.testing.assert_allclose(pred2, pred3)
+
     def test_subset_group(self):
         X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                            '../../examples/lambdarank/rank.train'))

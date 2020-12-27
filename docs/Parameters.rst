@@ -117,6 +117,26 @@ Core Parameters
 
       -  **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
 
+-  ``linear_tree`` :raw-html:`<a id="linear_tree" title="Permalink to this parameter" href="#linear_tree">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  fit piecewise linear gradient boosting tree, only works with cpu and serial tree learner
+
+      -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
+
+      -  the linear model at each leaf includes all the numerical features in that leaf's branch
+
+      -  categorical features are used for splits as normal but are not used in the linear models
+
+      -  missing values must be encoded as ``np.nan`` (Python) or ``NA`` (cli), not ``0``
+
+      -  it is recommended to rescale data before training so that features have similar mean and standard deviation
+
+      -  not yet supported in R-package
+
+      -  ``regression_l1`` objective is not supported with linear tree boosting
+
+      -  setting ``linear_tree = True`` significantly increases the memory use of LightGBM
+
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
    -  path of training data, LightGBM will train from this data
@@ -383,6 +403,10 @@ Learning Control Parameters
 -  ``lambda_l2`` :raw-html:`<a id="lambda_l2" title="Permalink to this parameter" href="#lambda_l2">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``reg_lambda``, ``lambda``, constraints: ``lambda_l2 >= 0.0``
 
    -  L2 regularization
+
+-  ``linear_lambda`` :raw-html:`<a id="linear_lambda" title="Permalink to this parameter" href="#linear_lambda">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``linear_lambda >= 0.0``
+
+   -  Linear tree regularisation, the parameter `lambda` in Eq 3 of <https://arxiv.org/pdf/1802.05640.pdf>
 
 -  ``min_gain_to_split`` :raw-html:`<a id="min_gain_to_split" title="Permalink to this parameter" href="#min_gain_to_split">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``min_split_gain``, constraints: ``min_gain_to_split >= 0.0``
 
