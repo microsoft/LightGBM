@@ -21,7 +21,7 @@ cd $BUILD_DIRECTORY
 if [[ $TASK == "check-docs" ]]; then
     cd $BUILD_DIRECTORY/docs
     conda install -q -y -n $CONDA_ENV -c conda-forge doxygen
-    pip install --user -r requirements.txt rstcheck git+git://github.com/linkchecker/linkchecker.git@b9390c9ef63f7e1e210b48bc7fe97f76e8d39501
+    pip install -r requirements.txt rstcheck git+git://github.com/linkchecker/linkchecker.git@b9390c9ef63f7e1e210b48bc7fe97f76e8d39501
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
@@ -50,7 +50,7 @@ if [[ $TASK == "lint" ]]; then
         -c conda-forge \
             libxml2 \
             "r-lintr>=2.0"
-    pip install --user cpplint
+    pip install cpplint
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./eigen,./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|^eigen|external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
