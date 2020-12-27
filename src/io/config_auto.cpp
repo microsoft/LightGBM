@@ -174,6 +174,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "task",
   "objective",
   "boosting",
+  "linear_tree",
   "data",
   "valid",
   "num_iterations",
@@ -205,6 +206,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "max_delta_step",
   "lambda_l1",
   "lambda_l2",
+  "linear_lambda",
   "min_gain_to_split",
   "drop_rate",
   "max_drop",
@@ -304,6 +306,8 @@ const std::unordered_set<std::string>& Config::parameter_set() {
 
 void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {
   std::string tmp_str = "";
+  GetBool(params, "linear_tree", &linear_tree);
+
   GetString(params, "data", &data);
 
   if (GetString(params, "valid", &tmp_str)) {
@@ -379,6 +383,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetDouble(params, "lambda_l2", &lambda_l2);
   CHECK_GE(lambda_l2, 0.0);
+
+  GetDouble(params, "linear_lambda", &linear_lambda);
+  CHECK_GE(linear_lambda, 0.0);
 
   GetDouble(params, "min_gain_to_split", &min_gain_to_split);
   CHECK_GE(min_gain_to_split, 0.0);
@@ -622,6 +629,7 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
 std::string Config::SaveMembersToString() const {
   std::stringstream str_buf;
+  str_buf << "[linear_tree: " << linear_tree << "]\n";
   str_buf << "[data: " << data << "]\n";
   str_buf << "[valid: " << Common::Join(valid, ",") << "]\n";
   str_buf << "[num_iterations: " << num_iterations << "]\n";
@@ -650,6 +658,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[max_delta_step: " << max_delta_step << "]\n";
   str_buf << "[lambda_l1: " << lambda_l1 << "]\n";
   str_buf << "[lambda_l2: " << lambda_l2 << "]\n";
+  str_buf << "[linear_lambda: " << linear_lambda << "]\n";
   str_buf << "[min_gain_to_split: " << min_gain_to_split << "]\n";
   str_buf << "[drop_rate: " << drop_rate << "]\n";
   str_buf << "[max_drop: " << max_drop << "]\n";

@@ -2420,6 +2420,86 @@ class TestEngine(unittest.TestCase):
                                                               [1] + list(range(2, num_features))]),
                         train_data, num_boost_round=10)
 
+    def test_linear(self):
+        # check that setting boosting=gbdt_linear fits better than boosting=gbdt when data has linear relationship
+        np.random.seed(0)
+        x = np.arange(0, 100, 0.1)
+        y = 2 * x + np.random.normal(0, 0.1, len(x))
+        lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
+        params = {'verbose': -1,
+                  'metric': 'mse',
+                  'seed': 0,
+                  'num_leaves': 2}
+        est = lgb.train(params, lgb_train, num_boost_round=10)
+        pred1 = est.predict(x[:, np.newaxis])
+        lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
+        res = {}
+        est = lgb.train(dict(params, linear_tree=True), lgb_train, num_boost_round=10, evals_result=res,
+                        valid_sets=[lgb_train], valid_names=['train'])
+        pred2 = est.predict(x[:, np.newaxis])
+        np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=10**(-1))
+        self.assertLess(mean_squared_error(y, pred2), mean_squared_error(y, pred1))
+        # test again with nans in data
+        x[:10] = np.nan
+        lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
+        est = lgb.train(params, lgb_train, num_boost_round=10)
+        pred1 = est.predict(x[:, np.newaxis])
+        lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
+        res = {}
+        est = lgb.train(dict(params, linear_tree=True), lgb_train, num_boost_round=10, evals_result=res,
+                        valid_sets=[lgb_train], valid_names=['train'])
+        pred2 = est.predict(x[:, np.newaxis])
+        np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=10**(-1))
+        self.assertLess(mean_squared_error(y, pred2), mean_squared_error(y, pred1))
+        # test again with bagging
+        res = {}
+        est = lgb.train(dict(params, linear_tree=True, subsample=0.8, bagging_freq=1), lgb_train,
+                        num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
+        pred = est.predict(x[:, np.newaxis])
+        np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-1))
+        # test with a feature that has only one non-nan value
+        x = np.concatenate([np.ones([x.shape[0], 1]), x[:, np.newaxis]], 1)
+        x[500:, 1] = np.nan
+        y[500:] += 10
+        lgb_train = lgb.Dataset(x, label=y)
+        res = {}
+        est = lgb.train(dict(params, linear_tree=True, subsample=0.8, bagging_freq=1), lgb_train,
+                        num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
+        pred = est.predict(x)
+        np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-1))
+        # test with a categorical feature
+        x[:250, 0] = 0
+        y[:250] += 10
+        lgb_train = lgb.Dataset(x, label=y)
+        est = lgb.train(dict(params, linear_tree=True, subsample=0.8, bagging_freq=1), lgb_train,
+                        num_boost_round=10, categorical_feature=[0])
+        # test refit: same results on same data
+        est2 = est.refit(x, label=y)
+        p1 = est.predict(x)
+        p2 = est2.predict(x)
+        self.assertLess(np.mean(np.abs(p1 - p2)), 2)
+        # test refit with save and load
+        est.save_model('temp_model.txt')
+        est2 = lgb.Booster(model_file='temp_model.txt')
+        est2 = est2.refit(x, label=y)
+        p1 = est.predict(x)
+        p2 = est2.predict(x)
+        self.assertLess(np.mean(np.abs(p1 - p2)), 2)
+        # test refit: different results training on different data
+        est2 = est.refit(x[:100, :], label=y[:100])
+        p3 = est2.predict(x)
+        self.assertGreater(np.mean(np.abs(p2 - p1)), np.abs(np.max(p3 - p1)))
+        # test when num_leaves - 1 < num_features and when num_leaves - 1 > num_features
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2)
+        params = {'linear_tree': True,
+                  'verbose': -1,
+                  'metric': 'mse',
+                  'seed': 0}
+        train_data = lgb.Dataset(X_train, label=y_train, params=dict(params, num_leaves=2))
+        est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
+        train_data = lgb.Dataset(X_train, label=y_train, params=dict(params, num_leaves=60))
+        est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
+
     def test_predict_with_start_iteration(self):
         def inner_test(X, y, params, early_stopping_rounds):
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
