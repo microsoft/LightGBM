@@ -273,7 +273,7 @@ struct Config {
   // alias = min_data_per_leaf, min_data, min_child_samples
   // check = >=0
   // desc = minimal number of data in one leaf. Can be used to deal with over-fitting
-  // desc = **Note**: this is an approximation based on the hessian, so occasionally you may observe splits which produce leaf nodes that have less than this many observations
+  // desc = **Note**: this is an approximation based on the Hessian, so occasionally you may observe splits which produce leaf nodes that have less than this many observations
   int min_data_in_leaf = 20;
 
   // alias = min_sum_hessian_per_leaf, min_sum_hessian, min_hessian, min_child_weight
