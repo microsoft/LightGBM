@@ -282,6 +282,8 @@ Learning Control Parameters
 
    -  minimal number of data in one leaf. Can be used to deal with over-fitting
 
+   -  **Note**: this is an approximation based on the hessian, so occasionally you may observe splits which produce leaf nodes that have less than this many observations
+
 -  ``min_sum_hessian_in_leaf`` :raw-html:`<a id="min_sum_hessian_in_leaf" title="Permalink to this parameter" href="#min_sum_hessian_in_leaf">&#x1F517;&#xFE0E;</a>`, default = ``1e-3``, type = double, aliases: ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``, ``min_child_weight``, constraints: ``min_sum_hessian_in_leaf >= 0.0``
 
    -  minimal sum hessian in one leaf. Like ``min_data_in_leaf``, it can be used to deal with over-fitting
