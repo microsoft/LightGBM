@@ -148,15 +148,16 @@ struct Config {
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
-  // desc = fit piecewise linear gradient boosting tree, only works with cpu and serial tree learner
+  // desc = fit piecewise linear gradient boosting tree
   // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
   // descl2 = the linear model at each leaf includes all the numerical features in that leaf's branch
   // descl2 = categorical features are used for splits as normal but are not used in the linear models
-  // descl2 = missing values must be encoded as ``np.nan`` (Python) or ``NA`` (cli), not ``0``
+  // descl2 = missing values must be encoded as ``np.nan`` (Python) or ``NA`` (CLI), not ``0``
   // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
-  // descl2 = not yet supported in R-package
-  // descl2 = ``regression_l1`` objective is not supported with linear tree boosting
-  // descl2 = setting ``linear_tree = True`` significantly increases the memory use of LightGBM
+  // descl2 = **Note**: only works with CPU and ``serial`` tree learner
+  // descl2 = **Note**: not yet supported in R-package
+  // descl2 = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
+  // descl2 = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
   bool linear_tree = false;
 
   // alias = train, train_data, train_data_file, data_filename
@@ -378,7 +379,7 @@ struct Config {
   double lambda_l2 = 0.0;
 
   // check = >=0.0
-  // desc = Linear tree regularisation, the parameter `lambda` in Eq 3 of <https://arxiv.org/pdf/1802.05640.pdf>
+  // desc = linear tree regularization, corresponds to the parameter ``lambda`` in Eq. 3 of `Gradient Boosting with Piece-Wise Linear Regression Trees <https://arxiv.org/pdf/1802.05640.pdf>`__
   double linear_lambda = 0.0;
 
   // alias = min_split_gain
@@ -530,7 +531,7 @@ struct Config {
   // desc = helps prevent overfitting on leaves with few samples
   // desc = if set to zero, no smoothing is applied
   // desc = if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``
-  // desc = larger values give stronger regularisation
+  // desc = larger values give stronger regularization
   // descl2 = the weight of each node is ``(n / path_smooth) * w + w_p / (n / path_smooth + 1)``, where ``n`` is the number of samples in the node, ``w`` is the optimal node weight to minimise the loss (approximately ``-sum_gradients / sum_hessians``), and ``w_p`` is the weight of the parent node
   // descl2 = note that the parent output ``w_p`` itself has smoothing applied, unless it is the root node, so that the smoothing effect accumulates with the tree depth
   double path_smooth = 0;
