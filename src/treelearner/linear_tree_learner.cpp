@@ -211,7 +211,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     } else {
       raw_features = tree->branch_features(i);
     }
-    std::stable_sort(raw_features.begin(), raw_features.end());
+    std::sort(raw_features.begin(), raw_features.end());
     auto new_end = std::unique(raw_features.begin(), raw_features.end());
     raw_features.erase(new_end, raw_features.end());
     std::vector<int> numerical_features;
