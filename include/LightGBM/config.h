@@ -1013,7 +1013,7 @@ struct Config {
 
   #pragma endregion
 
-  size_t file_load_progress_interval_bytes = size_t(10) * 1024 * 1024 * 1024;
+  static constexpr size_t file_load_progress_interval_bytes = size_t(1) * 1024 * 1024 * 1024;
 
   bool is_parallel = false;
   bool is_data_based_parallel = false;

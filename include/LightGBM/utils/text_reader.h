@@ -9,6 +9,7 @@
 #include <LightGBM/utils/pipeline_reader.h>
 #include <LightGBM/utils/random.h>
 
+#include <chrono>
 #include <string>
 #include <cstdio>
 #include <functional>
@@ -103,13 +104,14 @@ class TextReader {
   */
   inline std::vector<std::string>& Lines() { return lines_; }
 
-  INDEX_T ReadAllAndProcessFile(const char* filename, const std::function<void(INDEX_T, const char*, size_t)>& process_fun, INDEX_T& total_cnt) {
-    Log::Debug("ReadAllAndProcessFile %s", filename);
+  INDEX_T ReadAllAndProcessFile(const char* filename, const std::function<void(INDEX_T, const char*, size_t)>& process_fun,
+                                INDEX_T& total_cnt, size_t& bytes_read,
+                                std::chrono::time_point<std::chrono::high_resolution_clock>& start_time,
+                                std::chrono::time_point<std::chrono::high_resolution_clock>& prev_time) {
     last_line_ = "";
-    size_t bytes_read = 0;
 
     PipelineReader::Read(filename, skip_bytes_,
-        [&process_fun, &bytes_read, &total_cnt, this]
+        [&process_fun, &bytes_read, &total_cnt, &filename, &start_time, &prev_time, this]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
       size_t i = 0;
@@ -145,7 +147,13 @@ class TextReader {
       size_t prev_bytes_read = bytes_read;
       bytes_read += read_cnt;
       if (prev_bytes_read / read_progress_interval_bytes_ < bytes_read / read_progress_interval_bytes_) {
-        Log::Debug("Read %.1f GBs from %s.", 1.0 * bytes_read / kGbs, filename_);
+        auto now = std::chrono::high_resolution_clock::now();
+        auto total_time = std::chrono::duration<double, std::milli>(now - start_time) * 1e-3;
+        auto interval_time = std::chrono::duration<double, std::milli>(now - prev_time) * 1e-3;
+        Log::Info("Read %.1f GBs in %.1f seconds (from %s), last interval speed %.1f MB/s",
+            1.0 * bytes_read / kGbs, total_time, filename,
+            1.0 * read_progress_interval_bytes_ / kGbs * 1024.0 / interval_time.count());
+        prev_time = now;
       }
 
       return cnt;
@@ -157,14 +165,17 @@ class TextReader {
       ++total_cnt;
       last_line_ = "";
     }
-    Log::Debug("ReadAllAndProcessFile total_cnt %lu", total_cnt);
+    Log::Info("ReadAllAndProcessFile %s total_cnt %lu, bytes_read %lu", filename, total_cnt, bytes_read);
     return total_cnt;
   }
 
   INDEX_T ReadAllAndProcess(const std::function<void(INDEX_T, const char*, size_t)>& process_fun) {
     INDEX_T total_cnt = 0;
+    size_t bytes_read = 0;
+    auto start_time = std::chrono::high_resolution_clock::now();
+    auto prev_time = start_time;
     for (const auto& it : filename_) {
-      ReadAllAndProcessFile(it, process_fun, total_cnt);
+      ReadAllAndProcessFile(it, process_fun, total_cnt, bytes_read, start_time, prev_time);
     }
     return total_cnt;
   }
@@ -278,11 +289,13 @@ class TextReader {
   INDEX_T ReadAllAndProcessParallelWithFilterOne(const char* filename,
                                                  const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun,
                                                  const std::function<bool(INDEX_T, INDEX_T)>& filter_fun,
-                                                 INDEX_T& total_cnt, size_t& bytes_read, INDEX_T& used_cnt) {
+                                                 INDEX_T& total_cnt, size_t& bytes_read, INDEX_T& used_cnt,
+                                                 std::chrono::time_point<std::chrono::high_resolution_clock>& start_time,
+                                                 std::chrono::time_point<std::chrono::high_resolution_clock>& prev_time) {
     Log::Debug("ReadAllAndProcessParallelWithFilterOne %s", filename);
     last_line_ = "";
     PipelineReader::Read(filename, skip_bytes_,
-        [&process_fun, &filter_fun, &total_cnt, &bytes_read, &used_cnt, this]
+        [&process_fun, &filter_fun, &total_cnt, &bytes_read, &used_cnt, &filename, &start_time, &prev_time, this]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
       size_t i = 0;
@@ -327,7 +340,13 @@ class TextReader {
       size_t prev_bytes_read = bytes_read;
       bytes_read += read_cnt;
       if (prev_bytes_read / read_progress_interval_bytes_ < bytes_read / read_progress_interval_bytes_) {
-        Log::Debug("Read %.1f GBs from %s.", 1.0 * bytes_read / kGbs, filename_);
+        auto now = std::chrono::high_resolution_clock::now();
+        auto total_time = std::chrono::duration<double, std::milli>(now - start_time) * 1e-3;
+        auto interval_time = std::chrono::duration<double, std::milli>(now - prev_time) * 1e-3;
+        Log::Info("Read %.1f GBs in %.1f seconds (from %s), last interval speed %.1f MB/s",
+            1.0 * bytes_read / kGbs, total_time,
+            1.0 * read_progress_interval_bytes_ / kGbs * 1024.0 / interval_time.count(), filename);
+        prev_time = now;
       }
 
       return cnt;
@@ -351,8 +370,10 @@ class TextReader {
     INDEX_T total_cnt = 0;
     size_t bytes_read = 0;
     INDEX_T used_cnt = 0;
+    auto start_time = std::chrono::high_resolution_clock::now();
+    auto prev_time = start_time;
     for (const auto& it : filename_) {
-      ReadAllAndProcessParallelWithFilterOne(it, process_fun, filter_fun, total_cnt, bytes_read, used_cnt);
+      ReadAllAndProcessParallelWithFilterOne(it, process_fun, filter_fun, total_cnt, bytes_read, used_cnt, start_time, prev_time);
     }
     Log::Debug("ReadAllAndProcessParallelWithFilter total_cnt %lu", total_cnt);
     return total_cnt;
