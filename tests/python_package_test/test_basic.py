@@ -118,18 +118,18 @@ class TestBasic(unittest.TestCase):
         X_train[:X_train.shape[0] // 2, 0] = 0
         y_train[:X_train.shape[0] // 2] = 1
         params = {'linear_tree': True}
-        train_data = lgb.Dataset(X_train, label=y_train, params=params)
-        est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
-        pred1 = est.predict(X_train)
-        train_data.save_binary('temp_dataset.bin')
+        train_data_1 = lgb.Dataset(X_train, label=y_train, params=params)
+        est_1 = lgb.train(params, train_data_1, num_boost_round=10, categorical_feature=[0])
+        pred_1 = est_1.predict(X_train)
+        train_data_1.save_binary('temp_dataset.bin')
         train_data_2 = lgb.Dataset('temp_dataset.bin')
-        est = lgb.train(params, train_data_2, num_boost_round=10)
-        pred2 = est.predict(X_train)
-        np.testing.assert_allclose(pred1, pred2)
-        est.save_model('temp_model.txt')
-        est2 = lgb.Booster(model_file='temp_model.txt')
-        pred3 = est2.predict(X_train)
-        np.testing.assert_allclose(pred2, pred3)
+        est_2 = lgb.train(params, train_data_2, num_boost_round=10)
+        pred_2 = est_2.predict(X_train)
+        np.testing.assert_allclose(pred_1, pred_2)
+        est_2.save_model('temp_model.txt')
+        est_3 = lgb.Booster(model_file='temp_model.txt')
+        pred_3 = est_3.predict(X_train)
+        np.testing.assert_allclose(pred_2, pred_3)
 
     def test_subset_group(self):
         X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
