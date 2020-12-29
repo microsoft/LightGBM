@@ -600,7 +600,6 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
       }
       mem_ptr = buffer.data();
       const float* tmp_ptr_raw_row = reinterpret_cast<const float*>(mem_ptr);
-      std::vector<float> curr_row(dataset->num_numeric_features_, 0);
       for (int j = 0; j < dataset->num_features(); ++j) {
         int feat_ind = dataset->numeric_feature_map_[j];
         if (feat_ind >= 0) {
