@@ -7,8 +7,6 @@
 #include <algorithm>
 
 #ifndef LGB_R_BUILD
-// preprocessor definition ensures we use only MPL2-licensed code
-#define EIGEN_MPL2_ONLY
 #include <Eigen/Dense>
 #endif  // !LGB_R_BUILD
 
