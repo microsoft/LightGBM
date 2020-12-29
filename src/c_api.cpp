@@ -290,7 +290,7 @@ class Booster {
           "the `min_data_in_leaf`.");
     }
     if (new_param.count("linear_tree") && (new_config.linear_tree != old_config.linear_tree)) {
-      Log:: Fatal("Cannot change between gbdt_linear boosting and other boosting types after Dataset handle has been constructed.");
+      Log::Fatal("Cannot change linear_tree after constructed Dataset handle.");
     }
   }
 
