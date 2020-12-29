@@ -697,7 +697,9 @@ Tree::Tree(const char* str, size_t* used_len) {
     is_linear_ = static_cast<bool>(is_linear_int);
   }
 
-  if ((num_leaves_ <= 1) && !is_linear_) { return; }
+  if ((num_leaves_ <= 1) && !is_linear_) {
+    return;
+  }
 
   if (key_vals.count("left_child")) {
     left_child_ = CommonC::StringToArrayFast<int>(key_vals["left_child"], num_leaves_ - 1);
@@ -780,7 +782,9 @@ Tree::Tree(const char* str, size_t* used_len) {
     leaf_features_inner_.resize(num_leaves_);
     if (num_feat.size() > 0) {
       int total_num_feat = 0;
-      for (size_t i = 0; i < num_feat.size(); ++i) { total_num_feat += num_feat[i]; }
+      for (size_t i = 0; i < num_feat.size(); ++i) {
+        total_num_feat += num_feat[i];
+      }
       std::vector<int> all_leaf_features;
       if (key_vals.count("leaf_features")) {
         all_leaf_features = Common::StringToArrayFast<int>(key_vals["leaf_features"], total_num_feat);
