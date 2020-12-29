@@ -22,7 +22,6 @@ jobs:
   pool:
     vmImage: 'ubuntu-latest'
   strategy:
-    maxParallel: 2
     matrix:
       check_docs:
         TASK: check-docs
@@ -49,7 +48,6 @@ jobs:
   pool: sh-ubuntu
   container: ubuntu1404
   strategy:
-    maxParallel: 10
     matrix:
       regular:
         TASK: regular
@@ -97,7 +95,6 @@ jobs:
   pool:
     vmImage: 'ubuntu-latest'
   strategy:
-    maxParallel: 8
     matrix:
       regular:
         TASK: regular
@@ -152,7 +149,6 @@ jobs:
   pool:
     vmImage: 'macOS-10.14'
   strategy:
-    maxParallel: 3
     matrix:
       regular:
         TASK: regular
@@ -190,7 +186,6 @@ jobs:
   pool:
     vmImage: 'macOS-latest'
   strategy:
-    maxParallel: 7
     matrix:
       regular:
         TASK: regular
@@ -239,7 +234,6 @@ jobs:
   pool:
     vmImage: 'vs2017-win2016'
   strategy:
-    maxParallel: 3
     matrix:
       regular:
         TASK: regular
@@ -271,8 +265,11 @@ jobs:
 - job: Package
 ###########################################
   dependsOn:
-  - Linux
-  - MacOS
+  - Linux_no_container
+  - Linux_old_OS
+  - Linux_latest
+  - MacOS_old_OS
+  - MacOS_latest
   - Windows
   condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
   pool:
