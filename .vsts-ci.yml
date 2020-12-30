@@ -9,7 +9,7 @@ pr:
 - master
 variables:
   AZURE: 'true'
-  PYTHON_VERSION: 3.8
+  PYTHON_VERSION: 3.9
   CONDA_ENV: test-env
 resources:
   containers:
@@ -32,14 +32,15 @@ jobs:
         TASK: regular
       sdist:
         TASK: sdist
+        PYTHON_VERSION: 3.7
       bdist:
         TASK: bdist
-        PYTHON_VERSION: 3.7
       inference:
         TASK: if-else
       mpi_source:
         TASK: mpi
         METHOD: source
+        PYTHON_VERSION: 3.8
       gpu_source:
         TASK: gpu
         METHOD: source
@@ -81,6 +82,7 @@ jobs:
         PYTHON_VERSION: 3.7
       sdist:
         TASK: sdist
+        PYTHON_VERSION: 3.8
       bdist:
         TASK: bdist
   steps:
@@ -117,6 +119,7 @@ jobs:
         PYTHON_VERSION: 3.6
       sdist:
         TASK: sdist
+        PYTHON_VERSION: 3.8
       bdist:
         TASK: bdist
   steps:
