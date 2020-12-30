@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - py39
+    - master
   tags:
     include:
     - v*
