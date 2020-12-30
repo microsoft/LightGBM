@@ -41,7 +41,7 @@ Next you may want to read:
 - [**Parameters**](https://github.com/microsoft/LightGBM/blob/master/docs/Parameters.rst) is an exhaustive list of customization you can make.
 - [**Parallel Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
 - [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
-- [**Optuna Hyperparameter Tuner**](https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258) provides automated tuning for LightGBM hyperparameters.
+- [**Optuna Hyperparameter Tuner**](https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258) provides automated tuning for LightGBM hyperparameters ([code examples](https://github.com/optuna/optuna/blob/master/examples/)).
 
 Documentation for contributors:
 
@@ -68,6 +68,8 @@ Treelite (model compiler for efficient deployment): https://github.com/dmlc/tree
 
 cuML Forest Inference Library (GPU-accelerated inference): https://github.com/rapidsai/cuml
 
+daal4py (Intel CPU-accelerated inference): https://github.com/IntelPython/daal4py
+
 m2cgen (model appliers for various languages): https://github.com/BayesWitnesses/m2cgen
 
 leaves (Go model applier): https://github.com/dmitryikh/leaves
@@ -91,6 +93,12 @@ Dask-LightGBM (distributed and parallel Python-package): https://github.com/dask
 Ruby gem: https://github.com/ankane/lightgbm
 
 LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
+
+MLflow (experiment tracking, model monitoring framework): https://github.com/mlflow/mlflow
+
+`{treesnip}` (R `{parsnip}`-compliant interface): https://github.com/curso-r/treesnip
+
+`{mlr3learners.lightgbm}` (R `{mlr3}`-compliant interface): https://github.com/mlr3learners/mlr3learners.lightgbm
 
 Support
 -------

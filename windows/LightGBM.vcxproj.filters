@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="src">
@@ -225,6 +225,9 @@
     <ClInclude Include="..\src\treelearner\monotone_constraints.hpp">
       <Filter>src\treelearner</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\treelearner\linear_tree_learner.h">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
@@ -319,6 +322,9 @@
     </ClCompile>
     <ClCompile Include="..\src\io\train_share_states.cpp">
       <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\treelearner\linear_tree_learner.cpp">
+      <Filter>src\treelearner</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

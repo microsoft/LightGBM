@@ -117,6 +117,28 @@ Core Parameters
 
       -  **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
 
+-  ``linear_tree`` :raw-html:`<a id="linear_tree" title="Permalink to this parameter" href="#linear_tree">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  fit piecewise linear gradient boosting tree
+
+      -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
+
+      -  the linear model at each leaf includes all the numerical features in that leaf's branch
+
+      -  categorical features are used for splits as normal but are not used in the linear models
+
+      -  missing values must be encoded as ``np.nan`` (Python) or ``NA`` (CLI), not ``0``
+
+      -  it is recommended to rescale data before training so that features have similar mean and standard deviation
+
+      -  **Note**: only works with CPU and ``serial`` tree learner
+
+      -  **Note**: not yet supported in R-package
+
+      -  **Note**: ``regression_l1`` objective is not supported with linear tree boosting
+
+      -  **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
+
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
    -  path of training data, LightGBM will train from this data
@@ -262,6 +284,8 @@ Learning Control Parameters
 
    -  minimal number of data in one leaf. Can be used to deal with over-fitting
 
+   -  **Note**: this is an approximation based on the Hessian, so occasionally you may observe splits which produce leaf nodes that have less than this many observations
+
 -  ``min_sum_hessian_in_leaf`` :raw-html:`<a id="min_sum_hessian_in_leaf" title="Permalink to this parameter" href="#min_sum_hessian_in_leaf">&#x1F517;&#xFE0E;</a>`, default = ``1e-3``, type = double, aliases: ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``, ``min_child_weight``, constraints: ``min_sum_hessian_in_leaf >= 0.0``
 
    -  minimal sum hessian in one leaf. Like ``min_data_in_leaf``, it can be used to deal with over-fitting
@@ -312,7 +336,7 @@ Learning Control Parameters
 
    -  frequency for bagging
 
-   -  ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration
+   -  ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration. Every ``k``-th iteration, LightGBM will randomly select ``bagging_fraction * 100 %`` of the data to use for the next ``k`` iterations
 
    -  **Note**: to enable bagging, ``bagging_fraction`` should be set to value smaller than ``1.0`` as well
 
@@ -322,7 +346,7 @@ Learning Control Parameters
 
 -  ``feature_fraction`` :raw-html:`<a id="feature_fraction" title="Permalink to this parameter" href="#feature_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
 
-   -  LightGBM will randomly select part of features on each iteration (tree) if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
+   -  LightGBM will randomly select a subset of features on each iteration (tree) if ``feature_fraction`` is smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
 
    -  can be used to speed up training
 
@@ -330,7 +354,7 @@ Learning Control Parameters
 
 -  ``feature_fraction_bynode`` :raw-html:`<a id="feature_fraction_bynode" title="Permalink to this parameter" href="#feature_fraction_bynode">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature_bynode``, ``colsample_bynode``, constraints: ``0.0 < feature_fraction_bynode <= 1.0``
 
-   -  LightGBM will randomly select part of features on each tree node if ``feature_fraction_bynode`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node
+   -  LightGBM will randomly select a subset of features on each tree node if ``feature_fraction_bynode`` is smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node
 
    -  can be used to deal with over-fitting
 
@@ -348,6 +372,8 @@ Learning Control Parameters
 
    -  if set to ``true``, when evaluating node splits LightGBM will check only one randomly-chosen threshold for each feature
 
+   -  can be used to speed up training
+
    -  can be used to deal with over-fitting
 
 -  ``extra_seed`` :raw-html:`<a id="extra_seed" title="Permalink to this parameter" href="#extra_seed">&#x1F517;&#xFE0E;</a>`, default = ``6``, type = int
@@ -360,9 +386,11 @@ Learning Control Parameters
 
    -  ``<= 0`` means disable
 
+   -  can be used to speed up training
+
 -  ``first_metric_only`` :raw-html:`<a id="first_metric_only" title="Permalink to this parameter" href="#first_metric_only">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
-   -  set this to ``true``, if you want to use only the first metric for early stopping
+   -  LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping
 
 -  ``max_delta_step`` :raw-html:`<a id="max_delta_step" title="Permalink to this parameter" href="#max_delta_step">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``max_tree_output``, ``max_leaf_output``
 
@@ -380,9 +408,15 @@ Learning Control Parameters
 
    -  L2 regularization
 
+-  ``linear_lambda`` :raw-html:`<a id="linear_lambda" title="Permalink to this parameter" href="#linear_lambda">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``linear_lambda >= 0.0``
+
+   -  linear tree regularization, corresponds to the parameter ``lambda`` in Eq. 3 of `Gradient Boosting with Piece-Wise Linear Regression Trees <https://arxiv.org/pdf/1802.05640.pdf>`__
+
 -  ``min_gain_to_split`` :raw-html:`<a id="min_gain_to_split" title="Permalink to this parameter" href="#min_gain_to_split">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``min_split_gain``, constraints: ``min_gain_to_split >= 0.0``
 
    -  the minimal gain to perform split
+
+   -  can be used to speed up training
 
 -  ``drop_rate`` :raw-html:`<a id="drop_rate" title="Permalink to this parameter" href="#drop_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.1``, type = double, aliases: ``rate_drop``, constraints: ``0.0 <= drop_rate <= 1.0``
 
@@ -442,7 +476,9 @@ Learning Control Parameters
 
    -  used for the categorical features
 
-   -  limit the max threshold points in categorical features
+   -  limit number of split points considered for categorical features. See `the documentation on how LightGBM finds optimal splits for categorical features <./Features.rst#optimal-split-for-categorical-features>`_ for more details
+
+   -  can be used to speed up training
 
 -  ``cat_l2`` :raw-html:`<a id="cat_l2" title="Permalink to this parameter" href="#cat_l2">&#x1F517;&#xFE0E;</a>`, default = ``10.0``, type = double, constraints: ``cat_l2 >= 0.0``
 
@@ -548,7 +584,7 @@ Learning Control Parameters
 
    -  if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``
 
-   -  larger values give stronger regularisation
+   -  larger values give stronger regularization
 
       -  the weight of each node is ``(n / path_smooth) * w + w_p / (n / path_smooth + 1)``, where ``n`` is the number of samples in the node, ``w`` is the optimal node weight to minimise the loss (approximately ``-sum_gradients / sum_hessians``), and ``w_p`` is the weight of the parent node
 
@@ -668,7 +704,7 @@ Dataset Parameters
 
 -  ``feature_pre_filter`` :raw-html:`<a id="feature_pre_filter" title="Permalink to this parameter" href="#feature_pre_filter">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
-   -  set this to ``true`` to pre-filter the unsplittable features by ``min_data_in_leaf``
+   -  set this to ``true`` (the default) to tell LightGBM to ignore the features that are unsplittable based on ``min_data_in_leaf``
 
    -  as dataset object is initialized only once and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_in_leaf``, otherwise features are filtered by ``min_data_in_leaf`` firstly if you don't reconstruct dataset object
 

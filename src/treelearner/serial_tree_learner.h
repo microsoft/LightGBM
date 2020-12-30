@@ -39,6 +39,7 @@ using json11::Json;
 
 /*! \brief forward declaration */
 class CostEfficientGradientBoosting;
+
 /*!
 * \brief Used for learning a tree by single machine
 */
@@ -74,12 +75,12 @@ class SerialTreeLearner: public TreeLearner {
     }
   }
 
-  Tree* Train(const score_t* gradients, const score_t *hessians) override;
+  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
-                          const score_t* gradients, const score_t* hessians) override;
+                          const score_t* gradients, const score_t* hessians) const override;
 
   void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
     if (subset == nullptr) {
@@ -96,10 +97,10 @@ class SerialTreeLearner: public TreeLearner {
 
   void AddPredictionToScore(const Tree* tree,
                             double* out_score) const override {
+    CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
     if (tree->num_leaves() <= 1) {
       return;
     }
-    CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
 #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       double output = static_cast<double>(tree->LeafOutput(i));
@@ -189,7 +190,6 @@ class SerialTreeLearner: public TreeLearner {
   FeatureHistogram* smaller_leaf_histogram_array_;
   /*! \brief pointer to histograms array of larger leaf */
   FeatureHistogram* larger_leaf_histogram_array_;
-
   /*! \brief store best split points for all leaves */
   std::vector<SplitInfo> best_split_per_leaf_;
   /*! \brief store best split per feature for all leaves */

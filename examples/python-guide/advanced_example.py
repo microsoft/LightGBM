@@ -1,14 +1,11 @@
 # coding: utf-8
 import json
+import pickle
 import lightgbm as lgb
 import pandas as pd
 import numpy as np
 from sklearn.metrics import mean_squared_error
 
-try:
-    import cPickle as pickle
-except BaseException:
-    import pickle
 
 print('Loading data...')
 # load or create your dataset

@@ -337,6 +337,12 @@ class Dataset {
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
+        if (has_raw_) {
+          int feat_ind = numeric_feature_map_[feature_idx];
+          if (feat_ind >= 0) {
+            raw_data_[feat_ind][row_idx] = feature_values[i];
+          }
+        }
       }
     }
   }
@@ -352,13 +358,25 @@ class Dataset {
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
+        if (has_raw_) {
+          int feat_ind = numeric_feature_map_[feature_idx];
+          if (feat_ind >= 0) {
+            raw_data_[feat_ind][row_idx] = inner_data.second;
+          }
+        }
       }
     }
     FinishOneRow(tid, row_idx, is_feature_added);
   }
 
-  inline void PushOneData(int tid, data_size_t row_idx, int group, int sub_feature, double value) {
+  inline void PushOneData(int tid, data_size_t row_idx, int group, int feature_idx, int sub_feature, double value) {
     feature_groups_[group]->PushData(tid, sub_feature, row_idx, value);
+    if (has_raw_) {
+      int feat_ind = numeric_feature_map_[feature_idx];
+      if (feat_ind >= 0) {
+        raw_data_[feat_ind][row_idx] = value;
+      }
+    }
   }
 
   inline int RealFeatureIndex(int fidx) const {
@@ -569,6 +587,9 @@ class Dataset {
   /*! \brief Get Number of used features */
   inline int num_features() const { return num_features_; }
 
+  /*! \brief Get number of numeric features */
+  inline int num_numeric_features() const { return num_numeric_features_; }
+
   /*! \brief Get Number of feature groups */
   inline int num_feature_groups() const { return num_groups_;}
 
@@ -632,6 +653,31 @@ class Dataset {
 
   void AddFeaturesFrom(Dataset* other);
 
+  /*! \brief Get has_raw_ */
+  inline bool has_raw() const { return has_raw_; }
+
+  /*! \brief Set has_raw_ */
+  inline void SetHasRaw(bool has_raw) { has_raw_ = has_raw; }
+
+  /*! \brief Resize raw_data_ */
+  inline void ResizeRaw(int num_rows) {
+    if (static_cast<int>(raw_data_.size()) > num_numeric_features_) {
+      raw_data_.resize(num_numeric_features_);
+    }
+    for (size_t i = 0; i < raw_data_.size(); ++i) {
+      raw_data_[i].resize(num_rows);
+    }
+    int curr_size = static_cast<int>(raw_data_.size());
+    for (int i = curr_size; i < num_numeric_features_; ++i) {
+      raw_data_.push_back(std::vector<float>(num_rows, 0));
+    }
+  }
+
+  /*! \brief Get pointer to raw_data_ feature */
+  inline const float* raw_index(int feat_ind) const {
+    return raw_data_[numeric_feature_map_[feat_ind]].data();
+  }
+
  private:
   std::string data_filename_;
   /*! \brief Store used features */
@@ -668,6 +714,11 @@ class Dataset {
   bool use_missing_;
   bool zero_as_missing_;
   std::vector<int> feature_need_push_zeros_;
+  std::vector<std::vector<float>> raw_data_;
+  bool has_raw_;
+  /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */
+  std::vector<int> numeric_feature_map_;
+  int num_numeric_features_;
 };
 
 }  // namespace LightGBM

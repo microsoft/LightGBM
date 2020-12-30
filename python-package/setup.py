@@ -1,8 +1,5 @@
 # coding: utf-8
 """Setup lightgbm package."""
-from __future__ import absolute_import
-
-import io
 import logging
 import os
 import struct
@@ -68,6 +65,7 @@ def copy_files(integrated_opencl=False, use_gpu=False):
     if not os.path.isfile(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt')):
         copy_files_helper('include')
         copy_files_helper('src')
+        copy_files_helper('eigen')
         copy_files_helper('external_libs')
         if not os.path.exists(os.path.join(CURRENT_DIR, "compile", "windows")):
             os.makedirs(os.path.join(CURRENT_DIR, "compile", "windows"))
@@ -104,14 +102,10 @@ def clear_path(path):
 
 def silent_call(cmd, raise_error=False, error_msg=''):
     try:
-        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         with open(LOG_PATH, "ab") as log:
-            log.write(output)
+            subprocess.check_call(cmd, stderr=log, stdout=log)
         return 0
     except Exception as err:
-        if isinstance(err, subprocess.CalledProcessError):
-            with open(LOG_PATH, "ab") as log:
-                log.write(err.output)
         if raise_error:
             raise Exception("\n".join((error_msg, LOG_NOTICE)))
         return 1
@@ -188,7 +182,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
                 arch = "Win32" if bit32 else "x64"
                 vs_versions = ("Visual Studio 16 2019", "Visual Studio 15 2017", "Visual Studio 14 2015")
                 for vs in vs_versions:
-                    logger.info("Starting to compile with %s." % vs)
+                    logger.info("Starting to compile with %s (%s).", vs, arch)
                     status = silent_call(cmake_cmd + ["-G", vs, "-A", arch])
                     if status == 0:
                         break
@@ -329,8 +323,8 @@ if __name__ == "__main__":
         copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
                   os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'),
                   verbose=0)
-    version = io.open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'), encoding='utf-8').read().strip()
-    readme = io.open(os.path.join(CURRENT_DIR, 'README.rst'), encoding='utf-8').read()
+    version = open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'), encoding='utf-8').read().strip()
+    readme = open(os.path.join(CURRENT_DIR, 'README.rst'), encoding='utf-8').read()
 
     sys.path.insert(0, CURRENT_DIR)
 
@@ -347,6 +341,14 @@ if __name__ == "__main__":
               'scipy',
               'scikit-learn!=0.22.0'
           ],
+          extras_require={
+              'dask': [
+                  'dask[array]>=2.0.0',
+                  'dask[dataframe]>=2.0.0'
+                  'dask[distributed]>=2.0.0',
+                  'pandas',
+              ],
+          },
           maintainer='Guolin Ke',
           maintainer_email='guolin.ke@microsoft.com',
           zip_safe=False,
@@ -368,8 +370,6 @@ if __name__ == "__main__":
                        'Operating System :: Microsoft :: Windows',
                        'Operating System :: POSIX',
                        'Operating System :: Unix',
-                       'Programming Language :: Python :: 2',
-                       'Programming Language :: Python :: 2.7',
                        'Programming Language :: Python :: 3',
                        'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',
