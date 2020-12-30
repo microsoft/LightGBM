@@ -10,7 +10,29 @@ include compile/compute/CMakeLists.txt
 recursive-include compile/compute/cmake *
 recursive-include compile/compute/include *
 recursive-include compile/compute/meta *
-recursive-include compile/eigen *
+include compile/eigen/CMakeLists.txt
+include compile/eigen/Eigen/CMakeLists.txt
+include compile/eigen/Eigen/Cholesky
+include compile/eigen/Eigen/Core
+include compile/eigen/Eigen/Dense
+include compile/eigen/Eigen/Eigenvalues
+include compile/eigen/Eigen/Geometry
+include compile/eigen/Eigen/Householder
+include compile/eigen/Eigen/Jacobi
+include compile/eigen/Eigen/LU
+include compile/eigen/Eigen/QR
+include compile/eigen/Eigen/SVD
+recursive-include compile/eigen/Eigen/src/Cholesky *
+recursive-include compile/eigen/Eigen/src/Core *
+recursive-include compile/eigen/Eigen/src/Eigenvalues *
+recursive-include compile/eigen/Eigen/src/Geometry *
+recursive-include compile/eigen/Eigen/src/Householder *
+recursive-include compile/eigen/Eigen/src/Jacobi *
+recursive-include compile/eigen/Eigen/src/LU *
+recursive-include compile/eigen/Eigen/src/misc *
+recursive-include compile/eigen/Eigen/src/plugins *
+recursive-include compile/eigen/Eigen/src/QR *
+recursive-include compile/eigen/Eigen/src/SVD *
 include compile/external_libs/fast_double_parser/CMakeLists.txt
 include compile/external_libs/fast_double_parser/LICENSE
 include compile/external_libs/fast_double_parser/LICENSE.BSL
