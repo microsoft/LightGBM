@@ -26,6 +26,12 @@ CXX=`"${R_HOME}/bin/R" CMD config CXX11`
 # LightGBM-specific flags
 LGB_CPPFLAGS=""
 
+#########
+# Eigen #
+#########
+
+LGB_CPPFLAGS="${LGB_CPPFLAGS} -DEIGEN_MPL2_ONLY"
+
 ###############
 # MM_PREFETCH #
 ###############

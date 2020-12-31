@@ -1619,6 +1619,246 @@ test_that("early stopping works with lgb.cv()", {
   )
 })
 
+context("linear learner")
+
+test_that("lgb.train() fit on linearly-relatead data improves when using linear learners", {
+  set.seed(708L)
+  .new_dataset <- function() {
+    X <- matrix(rnorm(100L), ncol = 1L)
+    return(lgb.Dataset(
+      data = X
+      , label = 2 * X + runif(nrow(X), 0, 0.1)
+    ))
+  }
+
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+  )
+
+  dtrain <- .new_dataset()
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = params
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst))
+
+  dtrain <- .new_dataset()
+  bst_linear <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = modifyList(params, list(linear_tree = TRUE))
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst_linear))
+
+  bst_last_mse <- bst$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  bst_lin_last_mse <- bst_linear$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  expect_true(bst_lin_last_mse <  bst_last_mse)
+})
+
+test_that("lgb.train() w/ linear learner fails already-constructed dataset with linear=false", {
+  set.seed(708L)
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+  )
+
+  dtrain <- lgb.Dataset(
+    data = matrix(rnorm(100L), ncol = 1L)
+    , label = rnorm(100L)
+  )
+  dtrain$construct()
+  expect_error({
+    bst_linear <- lgb.train(
+      data = dtrain
+      , nrounds = 10L
+      , params = modifyList(params, list(linear_tree = TRUE))
+      , valids = list("train" = dtrain)
+    )
+  }, regexp = "Cannot change linear_tree after constructed Dataset handle")
+})
+
+test_that("lgb.train() works with linear learners even if Dataset has missing values", {
+  set.seed(708L)
+  .new_dataset <- function() {
+    values <- rnorm(100)
+    values[sample(seq_len(length(values)), size = 10L)] <- NA_real_
+    X <- matrix(
+      data = sample(values, size = 100L)
+      , ncol = 1L
+    )
+    return(lgb.Dataset(
+      data = X
+      , label = 2 * X + runif(nrow(X), 0, 0.1)
+    ))
+  }
+
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+  )
+
+  dtrain <- .new_dataset()
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = params
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst))
+
+  dtrain <- .new_dataset()
+  bst_linear <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = modifyList(params, list(linear_tree = TRUE))
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst_linear))
+
+  bst_last_mse <- bst$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  bst_lin_last_mse <- bst_linear$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  expect_true(bst_lin_last_mse <  bst_last_mse)
+})
+
+test_that("lgb.train() works with linear learners, bagging, and a Dataset that has missing values", {
+  set.seed(708L)
+  .new_dataset <- function() {
+    values <- rnorm(100)
+    values[sample(seq_len(length(values)), size = 10L)] <- NA_real_
+    X <- matrix(
+      data = sample(values, size = 100L)
+      , ncol = 1L
+    )
+    return(lgb.Dataset(
+      data = X
+      , label = 2 * X + runif(nrow(X), 0, 0.1)
+    ))
+  }
+
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+    , bagging_freq = 1
+    , subsample = 0.8
+  )
+
+  dtrain <- .new_dataset()
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = params
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst))
+
+  dtrain <- .new_dataset()
+  bst_linear <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = modifyList(params, list(linear_tree = TRUE))
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst_linear))
+
+  bst_last_mse <- bst$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  bst_lin_last_mse <- bst_linear$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  expect_true(bst_lin_last_mse <  bst_last_mse)
+})
+
+test_that("lgb.train() works with linear learners and data where a feature has only 1 non-NA value", {
+  set.seed(708L)
+  .new_dataset <- function() {
+    values <- rep(NA_real_, 100L)
+    values[18L] <- rnorm(1L)
+    X <- matrix(
+      data = values
+      , ncol = 1L
+    )
+    return(lgb.Dataset(
+      data = X
+      , label = 2L * X + runif(nrow(X), 0L, 0.1)
+    ))
+  }
+
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+  )
+
+  dtrain <- .new_dataset()
+  bst_linear <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = modifyList(params, list(linear_tree = TRUE))
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst_linear))
+})
+
+test_that("lgb.train() works with linear learners when Dataset has categorical features", {
+  set.seed(708L)
+  .new_dataset <- function() {
+    X <- cbind(
+      matrix(rnorm(100L), ncol = 1L)
+      , matrix(sample(seq_len(4L), size = 100L, replace = TRUE), ncol = 1L)
+    )
+    return(lgb.Dataset(
+      data = X
+      , label = 2L * X[, 1L] + runif(nrow(X), 0L, 0.1)
+    ))
+  }
+
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+    , categorical_featurs = 1L
+  )
+
+  dtrain <- .new_dataset()
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = params
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst))
+
+  dtrain <- .new_dataset()
+  bst_linear <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = modifyList(params, list(linear_tree = TRUE))
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst_linear))
+
+  bst_last_mse <- bst$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  bst_lin_last_mse <- bst_linear$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  expect_true(bst_lin_last_mse <  bst_last_mse)
+})
+
 context("interaction constraints")
 
 test_that("lgb.train() throws an informative error if interaction_constraints is not a list", {

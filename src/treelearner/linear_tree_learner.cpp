@@ -6,9 +6,7 @@
 
 #include <algorithm>
 
-#ifndef LGB_R_BUILD
 #include <Eigen/Dense>
-#endif  // !LGB_R_BUILD
 
 namespace LightGBM {
 
@@ -169,12 +167,7 @@ void LinearTreeLearner::GetLeafMap(Tree* tree) const {
   }
 }
 
-#ifdef LGB_R_BUILD
-template<bool HAS_NAN>
-void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) const {
-  Log::Fatal("Linear tree learner does not work with R package.");
-}
-#else
+
 template<bool HAS_NAN>
 void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) const {
   tree->SetIsLinear(true);
@@ -384,5 +377,4 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     }
   }
 }
-#endif  // LGB_R_BUILD
 }  // namespace LightGBM

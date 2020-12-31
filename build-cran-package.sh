@@ -37,6 +37,51 @@ cp \
     external_libs/fmt/include/fmt/*.h \
     ${TEMP_R_DIR}/src/include/LightGBM/fmt/
 
+# including only specific files from Eigen, to keep the R package
+# small and avoid redistributing code with licenses incompatible with
+# LightGBM's license
+EIGEN_R_DIR=${TEMP_R_DIR}/src/include/Eigen
+mkdir -p ${EIGEN_R_DIR}
+
+modules="Cholesky Core Dense Eigenvalues Geometry Householder Jacobi LU QR SVD"
+for eigen_module in ${modules}; do
+    cp eigen/Eigen/${eigen_module} ${EIGEN_R_DIR}/${eigen_module}
+    if [[ ${eigen_module} != "Dense" ]]; then
+        mkdir -p ${EIGEN_R_DIR}/src/${eigen_module}/
+        cp -R eigen/Eigen/src/${eigen_module}/* ${EIGEN_R_DIR}/src/${eigen_module}/
+    fi
+done
+
+mkdir -p ${EIGEN_R_DIR}/src/misc
+cp -R eigen/Eigen/src/misc/* ${EIGEN_R_DIR}/src/misc/
+
+mkdir -p ${EIGEN_R_DIR}/src/plugins
+cp -R eigen/Eigen/src/plugins/* ${EIGEN_R_DIR}/src/plugins/
+
+# include compile/eigen/CMakeLists.txt
+# include compile/eigen/Eigen/CMakeLists.txt
+# include compile/eigen/Eigen/Cholesky
+# include compile/eigen/Eigen/Core
+# include compile/eigen/Eigen/Dense
+# include compile/eigen/Eigen/Eigenvalues
+# include compile/eigen/Eigen/Geometry
+# include compile/eigen/Eigen/Householder
+# include compile/eigen/Eigen/Jacobi
+# include compile/eigen/Eigen/LU
+# include compile/eigen/Eigen/QR
+# include compile/eigen/Eigen/SVD
+# recursive-include compile/eigen/Eigen/src/Cholesky *
+# recursive-include compile/eigen/Eigen/src/Core *
+# recursive-include compile/eigen/Eigen/src/Eigenvalues *
+# recursive-include compile/eigen/Eigen/src/Geometry *
+# recursive-include compile/eigen/Eigen/src/Householder *
+# recursive-include compile/eigen/Eigen/src/Jacobi *
+# recursive-include compile/eigen/Eigen/src/LU *
+# recursive-include compile/eigen/Eigen/src/misc *
+# recursive-include compile/eigen/Eigen/src/plugins *
+# recursive-include compile/eigen/Eigen/src/QR *
+# recursive-include compile/eigen/Eigen/src/SVD *
+
 cd ${TEMP_R_DIR}
 
     # Remove files not needed for CRAN

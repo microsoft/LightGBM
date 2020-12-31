@@ -155,7 +155,6 @@ struct Config {
   // descl2 = missing values must be encoded as ``np.nan`` (Python) or ``NA`` (CLI), not ``0``
   // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
   // descl2 = **Note**: only works with CPU and ``serial`` tree learner
-  // descl2 = **Note**: not yet supported in R-package
   // descl2 = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
   // descl2 = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
   bool linear_tree = false;

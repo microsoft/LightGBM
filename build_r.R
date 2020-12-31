@@ -156,6 +156,14 @@ if (USING_GPU) {
 }
 
 result <- file.copy(
+  from = "eigen/"
+  , to = file.path(sprintf("%s/", TEMP_SOURCE_DIR), "include")
+  , recursive = TRUE
+  , overwrite = TRUE
+)
+.handle_result(result)
+
+result <- file.copy(
   from = "CMakeLists.txt"
   , to = file.path(TEMP_R_DIR, "inst", "bin/")
   , overwrite = TRUE

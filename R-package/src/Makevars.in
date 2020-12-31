@@ -4,6 +4,7 @@ PKGROOT=.
 
 LGB_CPPFLAGS = \
     @LGB_CPPFLAGS@ \
+    -Wno-unknown-pragmas \
     -DUSE_SOCKET \
     -DLGB_R_BUILD
 
