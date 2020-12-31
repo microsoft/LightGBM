@@ -8,7 +8,6 @@ LGB_CPPFLAGS = \
     -DLGB_R_BUILD
 
 PKG_CPPFLAGS = \
-    -I$(PKGROOT) \
     -I$(PKGROOT)/include \
     $(LGB_CPPFLAGS)
 

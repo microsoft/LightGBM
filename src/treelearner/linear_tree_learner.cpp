@@ -4,9 +4,9 @@
  */
 #include "linear_tree_learner.h"
 
-#include <algorithm>
-
 #include <Eigen/Dense>
+
+#include <algorithm>
 
 namespace LightGBM {
 

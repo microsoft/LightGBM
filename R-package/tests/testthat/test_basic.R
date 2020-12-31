@@ -343,6 +343,45 @@ test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric
   expect_identical(cv_bst$best_score, auc_scores[which.max(auc_scores)])
 })
 
+test_that("lgb.cv() fit on linearly-relatead data improves when using linear learners", {
+  set.seed(708L)
+  .new_dataset <- function() {
+    X <- matrix(rnorm(1000L), ncol = 1L)
+    return(lgb.Dataset(
+      data = X
+      , label = 2L * X + runif(nrow(X), 0L, 0.1)
+    ))
+  }
+
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+  )
+
+  dtrain <- .new_dataset()
+  cv_bst <- lgb.cv(
+    data = dtrain
+    , nrounds = 10L
+    , params = params
+    , nfold = 5L
+  )
+  expect_is(cv_bst, "lgb.CVBooster")
+
+  dtrain <- .new_dataset()
+  cv_bst_linear <- lgb.cv(
+    data = dtrain
+    , nrounds = 10L
+    , params = modifyList(params, list(linear_tree = TRUE))
+    , nfold = 5L
+  )
+  expect_true(lgb.is.Booster(bst_linear))
+
+  expect_true(cv_bst_linear$best_score < cv_bst$best_score)
+})
+
 context("lgb.train()")
 
 test_that("lgb.train() works as expected with multiple eval metrics", {
@@ -1627,7 +1666,7 @@ test_that("lgb.train() fit on linearly-relatead data improves when using linear 
     X <- matrix(rnorm(100L), ncol = 1L)
     return(lgb.Dataset(
       data = X
-      , label = 2 * X + runif(nrow(X), 0, 0.1)
+      , label = 2L * X + runif(nrow(X), 0L, 0.1)
     ))
   }
 
@@ -1690,7 +1729,7 @@ test_that("lgb.train() w/ linear learner fails already-constructed dataset with 
 test_that("lgb.train() works with linear learners even if Dataset has missing values", {
   set.seed(708L)
   .new_dataset <- function() {
-    values <- rnorm(100)
+    values <- rnorm(100L)
     values[sample(seq_len(length(values)), size = 10L)] <- NA_real_
     X <- matrix(
       data = sample(values, size = 100L)
@@ -1698,7 +1737,7 @@ test_that("lgb.train() works with linear learners even if Dataset has missing va
     )
     return(lgb.Dataset(
       data = X
-      , label = 2 * X + runif(nrow(X), 0, 0.1)
+      , label = 2L * X + runif(nrow(X), 0L, 0.1)
     ))
   }
 
@@ -1736,7 +1775,7 @@ test_that("lgb.train() works with linear learners even if Dataset has missing va
 test_that("lgb.train() works with linear learners, bagging, and a Dataset that has missing values", {
   set.seed(708L)
   .new_dataset <- function() {
-    values <- rnorm(100)
+    values <- rnorm(100L)
     values[sample(seq_len(length(values)), size = 10L)] <- NA_real_
     X <- matrix(
       data = sample(values, size = 100L)
@@ -1744,7 +1783,7 @@ test_that("lgb.train() works with linear learners, bagging, and a Dataset that h
     )
     return(lgb.Dataset(
       data = X
-      , label = 2 * X + runif(nrow(X), 0, 0.1)
+      , label = 2L * X + runif(nrow(X), 0L, 0.1)
     ))
   }
 
@@ -1754,7 +1793,7 @@ test_that("lgb.train() works with linear learners, bagging, and a Dataset that h
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
-    , bagging_freq = 1
+    , bagging_freq = 1L
     , subsample = 0.8
   )
 
@@ -1817,10 +1856,9 @@ test_that("lgb.train() works with linear learners and data where a feature has o
 test_that("lgb.train() works with linear learners when Dataset has categorical features", {
   set.seed(708L)
   .new_dataset <- function() {
-    X <- cbind(
-      matrix(rnorm(100L), ncol = 1L)
-      , matrix(sample(seq_len(4L), size = 100L, replace = TRUE), ncol = 1L)
-    )
+    X <- matrix(numeric(200L), nrow = 100L, ncol = 2L)
+    X[, 1L] <- rnorm(100L)
+    X[, 2L] <- sample(seq_len(4L), size = 100L, replace = TRUE)
     return(lgb.Dataset(
       data = X
       , label = 2L * X[, 1L] + runif(nrow(X), 0L, 0.1)
