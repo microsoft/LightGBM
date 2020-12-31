@@ -377,7 +377,7 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
     , params = modifyList(params, list(linear_tree = TRUE))
     , nfold = 5L
   )
-  expect_true(lgb.is.Booster(bst_linear))
+  expect_is(cv_bst_linear, "lgb.CVBooster")
 
   expect_true(cv_bst_linear$best_score < cv_bst$best_score)
 })

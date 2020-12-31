@@ -157,7 +157,7 @@ if (USING_GPU) {
 
 result <- file.copy(
   from = "eigen/"
-  , to = file.path(sprintf("%s/", TEMP_SOURCE_DIR), "include")
+  , to = sprintf("%s/", TEMP_SOURCE_DIR)
   , recursive = TRUE
   , overwrite = TRUE
 )
