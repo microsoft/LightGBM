@@ -24,9 +24,9 @@ export _R_CHECK_PKG_SIZES_THRESHOLD_=60
 # for the non-CRAN build. This doesn't cause user-facing issues,
 # and ignoring it in CI is preferable to making build_r.R slower
 # by having it remove those pragmas with `sed`
-if [[ $R_BUILD_TYPE == "cmake" ]]; then
-    export _R_CHECK_PRAGMAS_=false
-fi
+#if [[ $R_BUILD_TYPE == "cmake" ]]; then
+    export _R_CHECK_PRAGMAS_=0
+#fi
 
 # Get details needed for installing R components
 R_MAJOR_VERSION=( ${R_VERSION//./ } )
