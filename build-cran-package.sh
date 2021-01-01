@@ -46,7 +46,7 @@ mkdir -p ${EIGEN_R_DIR}
 modules="Cholesky Core Dense Eigenvalues Geometry Householder Jacobi LU QR SVD"
 for eigen_module in ${modules}; do
     cp eigen/Eigen/${eigen_module} ${EIGEN_R_DIR}/${eigen_module}
-    if [[ ${eigen_module} != "Dense" ]]; then
+    if [ ${eigen_module} != "Dense" ]; then
         mkdir -p ${EIGEN_R_DIR}/src/${eigen_module}/
         cp -R eigen/Eigen/src/${eigen_module}/* ${EIGEN_R_DIR}/src/${eigen_module}/
     fi

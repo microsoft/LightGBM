@@ -155,13 +155,47 @@ if (USING_GPU) {
   .handle_result(result)
 }
 
-result <- file.copy(
-  from = "eigen/"
-  , to = sprintf("%s/", TEMP_SOURCE_DIR)
-  , recursive = TRUE
-  , overwrite = TRUE
+EIGEN_R_DIR <- file.path(TEMP_SOURCE_DIR, "include", "Eigen")
+dir.create(EIGEN_R_DIR)
+
+eigen_modules <- c(
+  "Cholesky"
+  , "Core"
+  , "Dense"
+  , "Eigenvalues"
+  , "Geometry"
+  , "Householder"
+  , "Jacobi"
+  , "LU"
+  , "QR"
+  , "SVD"
 )
-.handle_result(result)
+for (eigen_module in eigen_modules) {
+  result <- file.copy(
+    from = file.path("eigen", "Eigen", eigen_module)
+    , to = EIGEN_R_DIR
+    , recursive = FALSE
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+}
+
+dir.create(file.path(EIGEN_R_DIR, "src"))
+
+for (eigen_module in c(eigen_modules, "misc", "plugins")) {
+  if (eigen_module == "Dense") {
+    next
+  }
+  module_dir <- file.path(EIGEN_R_DIR, "src", eigen_module)
+  dir.create(module_dir, recursive = TRUE)
+  result <- file.copy(
+    from = sprintf("%s/", file.path("eigen", "Eigen", "src", eigen_module))
+    , to = sprintf("%s/", file.path(EIGEN_R_DIR, "src"))
+    , recursive = TRUE
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+}
 
 result <- file.copy(
   from = "CMakeLists.txt"
