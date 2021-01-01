@@ -22,6 +22,8 @@ Predictor <- R6::R6Class(
         private$handle <- NULL
 
       }
+      
+      return(invisible(NULL))
 
     },
 
@@ -58,6 +60,8 @@ Predictor <- R6::R6Class(
       # Override class and store it
       class(handle) <- "lgb.Booster.handle"
       private$handle <- handle
+      
+      return(invisible(NULL))
 
     },
 
@@ -65,11 +69,11 @@ Predictor <- R6::R6Class(
     current_iter = function() {
 
       cur_iter <- 0L
-      lgb.call(
+      return(lgb.call(
         fun_name = "LGBM_BoosterGetCurrentIteration_R"
         , ret = cur_iter
         , private$handle
-      )
+      ))
 
     },
 
