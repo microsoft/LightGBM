@@ -197,6 +197,30 @@ for (eigen_module in c(eigen_modules, "misc", "plugins")) {
   .handle_result(result)
 }
 
+.replace_pragmas <- function(filepath) {
+  pragma_patterns <- c(
+    "^.*#pragma clang diagnostic.*$"
+    , "^.*#pragma diag_suppress.*$"
+    , "^.*#pragma GCC diagnostic.*$"
+    , "^.*#pragma region.*$"
+    , "^.*#pragma endregion.*$"
+    , "^.*#pragma warning.*$"
+  )
+  content <- readLines(filepath)
+  for (pragma_pattern in pragma_patterns) {
+    content <- content[!grepl(pragma_pattern, content)]
+  }
+  writeLines(content, filepath)
+}
+
+# remove pragmas that suppress warnings, to appease R CMD check
+.replace_pragmas(
+  file.path(EIGEN_R_DIR, "src", "Core", "arch", "SSE", "Complex.h")
+)
+.replace_pragmas(
+  file.path(EIGEN_R_DIR, "src", "Core", "util", "DisableStupidWarnings.h")
+)
+
 result <- file.copy(
   from = "CMakeLists.txt"
   , to = file.path(TEMP_R_DIR, "inst", "bin/")
