@@ -17,6 +17,8 @@ Dataset <- R6::R6Class(
         private$handle <- NULL
 
       }
+      
+      return(invisible(NULL))
 
     },
 
@@ -84,6 +86,8 @@ Dataset <- R6::R6Class(
       private$used_indices <- sort(used_indices, decreasing = FALSE)
       private$info <- info
       private$version <- 0L
+      
+      return(invisible(NULL))
 
     },
 
@@ -325,7 +329,7 @@ Dataset <- R6::R6Class(
         num_col <- 0L
 
         # Get numeric data and numeric features
-        c(
+        return(c(
           lgb.call(
             fun_name = "LGBM_DatasetGetNumData_R"
             , ret = num_row
@@ -336,13 +340,13 @@ Dataset <- R6::R6Class(
             , ret = num_col
             , private$handle
           )
-        )
+        ))
 
       } else if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {
 
         # Check if dgCMatrix (sparse matrix column compressed)
         # NOTE: requires Matrix package
-        dim(private$raw_data)
+        return(dim(private$raw_data))
 
       } else {
 
@@ -368,12 +372,12 @@ Dataset <- R6::R6Class(
             , private$handle
         )
         private$colnames <- as.character(base::strsplit(cnames, "\t")[[1L]])
-        private$colnames
+        return(private$colnames)
 
       } else if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {
 
         # Check if dgCMatrix (sparse matrix column compressed)
-        colnames(private$raw_data)
+        return(colnames(private$raw_data))
 
       } else {
 
@@ -470,7 +474,7 @@ Dataset <- R6::R6Class(
         }
       }
 
-      private$info[[name]]
+      return(private$info[[name]])
 
     },
 
@@ -522,7 +526,7 @@ Dataset <- R6::R6Class(
     slice = function(idxset, ...) {
 
       # Perform slicing
-      Dataset$new(
+      return(Dataset$new(
         data = NULL
         , params = private$params
         , reference = self
@@ -533,7 +537,7 @@ Dataset <- R6::R6Class(
         , used_indices = sort(idxset, decreasing = FALSE)
         , info = NULL
         , ...
-      )
+      ))
 
     },
 
@@ -679,7 +683,7 @@ Dataset <- R6::R6Class(
       if (lgb.is.null.handle(x = private$handle)) {
         self$construct()
       }
-      private$handle
+      return(private$handle)
 
     },
 
@@ -753,7 +757,7 @@ lgb.Dataset <- function(data,
                         ...) {
 
   # Create new dataset
-  invisible(Dataset$new(
+  return(invisible(Dataset$new(
     data = data
     , params = params
     , reference = reference
@@ -764,7 +768,7 @@ lgb.Dataset <- function(data,
     , used_indices = NULL
     , info = info
     , ...
-  ))
+  )))
 
 }
 
@@ -796,7 +800,7 @@ lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
   }
 
   # Create validation dataset
-  invisible(dataset$create_valid(data = data, info = info, ...))
+  return(invisible(dataset$create_valid(data = data, info = info, ...)))
 
 }
 
@@ -822,7 +826,7 @@ lgb.Dataset.construct <- function(dataset) {
   }
 
   # Construct the dataset
-  invisible(dataset$construct())
+  return(invisible(dataset$construct()))
 
 }
 
@@ -856,7 +860,7 @@ dim.lgb.Dataset <- function(x, ...) {
     stop("dim.lgb.Dataset: input data should be an lgb.Dataset object")
   }
 
-  x$dim()
+  return(x$dim())
 
 }
 
@@ -893,7 +897,7 @@ dimnames.lgb.Dataset <- function(x) {
   }
 
   # Return dimension names
-  list(NULL, x$get_colnames())
+  return(list(NULL, x$get_colnames()))
 
 }
 
@@ -932,7 +936,7 @@ dimnames.lgb.Dataset <- function(x) {
 
   # Set column names properly, and return
   x$set_colnames(colnames = value[[2L]])
-  x
+  return(x)
 
 }
 
@@ -970,7 +974,7 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
   }
 
   # Return sliced set
-  invisible(dataset$slice(idxset = idxset, ...))
+  return(invisible(dataset$slice(idxset = idxset, ...)))
 
 }
 
@@ -1020,7 +1024,7 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
     stop("getinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  dataset$getinfo(name = name)
+  return(dataset$getinfo(name = name))
 
 }
 
@@ -1074,7 +1078,7 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
   }
 
   # Set information
-  invisible(dataset$setinfo(name = name, info = info))
+  return(invisible(dataset$setinfo(name = name, info = info)))
 }
 
 #' @name lgb.Dataset.set.categorical
@@ -1106,7 +1110,7 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
   }
 
   # Set categoricals
-  invisible(dataset$set_categorical_feature(categorical_feature = categorical_feature))
+  return(invisible(dataset$set_categorical_feature(categorical_feature = categorical_feature)))
 
 }
 
@@ -1138,7 +1142,7 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
   }
 
   # Set reference
-  invisible(dataset$set_reference(reference = reference))
+  return(invisible(dataset$set_reference(reference = reference)))
 }
 
 #' @name lgb.Dataset.save
@@ -1171,5 +1175,5 @@ lgb.Dataset.save <- function(dataset, fname) {
   }
 
   # Store binary
-  invisible(dataset$save_binary(fname = fname))
+  return(invisible(dataset$save_binary(fname = fname)))
 }
