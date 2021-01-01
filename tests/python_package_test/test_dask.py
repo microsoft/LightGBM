@@ -1,5 +1,6 @@
 # coding: utf-8
 import os
+import itertools
 import sys
 
 import pytest
@@ -10,11 +11,12 @@ import dask.array as da
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
+from scipy.stats import pearsonr, spearmanr
 import scipy.sparse
 from dask.array.utils import assert_eq
-from dask_ml.metrics import accuracy_score, r2_score
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
 from sklearn.datasets import make_blobs, make_regression
+from sklearn.utils import check_random_state
 
 import lightgbm
 import lightgbm.dask as dlgbm
@@ -34,6 +36,101 @@ def listen_port():
 
 
 listen_port.port = 13000
+
+
+def r2_score_from_arrays(dy_true, dy_pred):
+    numerator = ((dy_true - dy_pred) ** 2).sum(axis=0, dtype="f8")
+    denominator = ((dy_true - dy_pred.mean(axis=0)) ** 2).sum(axis=0, dtype="f8")
+    return (1 - numerator / denominator).compute()
+
+
+def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=4, avg_gs=10, random_state=0):
+    """Generate a learning-to-rank dataset - feature vectors grouped together with
+    integer-valued graded relevance scores. Replace this with a sklearn.datasets function
+    if ranking objective becomes supported."""
+    rnd_generator = check_random_state(random_state)
+
+    y_vec, group_vec = np.empty((0,), dtype=int), np.empty((0,), dtype=int)
+    gid = 0
+
+    # build target, group ID vectors.
+    relvalues = range(gmax + 1)
+    while len(y_vec) < n_samples:
+        gsize = rnd_generator.poisson(avg_gs)
+        if not gsize:
+            continue
+
+        rel = rnd_generator.choice(relvalues, size=gsize, replace=True)
+        y_vec = np.append(y_vec, rel)
+        group_vec = np.append(group_vec, [gid] * gsize)
+        gid += 1
+
+    y_vec, group_vec = y_vec[0:n_samples], group_vec[0:n_samples]
+
+    # build feature data, X. Transform first few into informative features.
+    n_informative = max(min(n_features, n_informative), 0)
+    x_grid = np.linspace(0, stop=1, num=gmax + 2)
+    X = np.random.uniform(size=(n_samples, n_features))
+
+    # make first n_informative features values bucketed according to relevance scores.
+    def bucket_fn(z):
+        return np.random.uniform(x_grid[z], high=x_grid[z + 1])
+
+    for j in range(n_informative):
+        bias, coef = rnd_generator.normal(size=2)
+        X[:, j] = bias + coef * np.apply_along_axis(bucket_fn, axis=0, arr=y_vec)
+
+    return X, y_vec, group_vec
+
+
+def _create_ranking_data(n_samples=100, output='array', chunk_size=10):
+    X, y, g = _make_ranking(n_samples=n_samples, random_state=42)
+    rnd = np.random.RandomState(42)
+    w = rnd.rand(X.shape[0]) * 0.01
+    g_rle = [sum([1 for _ in grp]) for _, grp in itertools.groupby(g)]
+
+    if output == 'dataframe':
+
+        # add target, weight, and group to DataFrame so that partitions abide by group boundaries.
+        X_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(X.shape[1])])
+        X_df = X_df.assign(y=y, g=g, w=w)
+
+        # set_index ensures partitions are based on group id. See https://bit.ly/3pAWyNw.
+        X_df.set_index('g', inplace=True)
+        dX = dd.from_pandas(X_df, chunksize=chunk_size)
+
+        # separate target, weight from features.
+        dy = dX['y']
+        dw = dX['w']
+        dX = dX.drop(columns=['y', 'w'])
+        dg = dX.index.to_series()
+
+        # encode group identifiers into run-length encoding, the format LightGBMRanker is expecting
+        # so that within each partition, sum(g) = n_samples.
+        dg = dg.map_partitions(lambda p: p.groupby('g', sort=False).apply(lambda z: z.shape[0]))
+
+    elif output == 'array':
+
+        # ranking arrays: one chunk per group. Each chunk must include all columns.
+        p = X.shape[1]
+        dX, dy, dw, dg = list(), list(), list(), list()
+        for g_idx, rhs in enumerate(np.cumsum(g_rle)):
+            lhs = rhs - g_rle[g_idx]
+            dX.append(da.from_array(X[lhs:rhs, :], chunks=(rhs-lhs, p)))
+            dy.append(da.from_array(y[lhs:rhs]))
+            dw.append(da.from_array(w[lhs:rhs]))
+            dg.append(da.from_array(g[lhs:rhs]))
+
+        dX = da.concatenate(dX, axis=0)
+        dy = da.concatenate(dy, axis=0)
+        dw = da.concatenate(dw, axis=0)
+        dg = da.concatenate(dg, axis=0)
+        assert np.array_equal(np.array(dX.chunks[0]), g_rle)
+
+    else:
+        raise ValueError('ranking data creation only supported for Dask arrays and dataframes')
+
+    return X, y, w, g_rle, dX, dy, dw, dg
 
 
 def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size=50):
@@ -74,7 +171,8 @@ def test_classifier(output, centers, client, listen_port):
     dask_classifier = dlgbm.DaskLGBMClassifier(time_out=5, local_listen_port=listen_port)
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_classifier.predict(dX)
-    s1 = accuracy_score(dy, p1)
+    # s1 = accuracy_score(dy, p1)
+    s1 = da.average(dy == p1).compute()
     p1 = p1.compute()
 
     local_classifier = lightgbm.LGBMClassifier()
@@ -130,7 +228,7 @@ def test_regressor(output, client, listen_port):
     dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
     p1 = dask_regressor.predict(dX)
     if output != 'dataframe':
-        s1 = r2_score(dy, p1)
+        s1 = r2_score_from_arrays(dy, p1)
     p1 = p1.compute()
 
     local_regressor = lightgbm.LGBMRegressor(seed=42)
@@ -174,13 +272,47 @@ def test_regressor_local_predict(client, listen_port):
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_regressor.predict(dX)
     p2 = dask_regressor.to_local().predict(X)
-    s1 = r2_score(dy, p1)
+    s1 = r2_score_from_arrays(dy, p1)
     p1 = p1.compute()
     s2 = dask_regressor.to_local().score(X, y)
 
     # Predictions and scores should be the same
     assert_eq(p1, p2)
     assert_eq(s1, s2)
+
+
+@pytest.mark.parametrize('output', ['array', 'dataframe'])
+def test_ranker(output, client, listen_port):
+    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output)
+
+    rnk_dask = dlgbm.LGBMRanker(time_out=5, local_listen_port=listen_port, seed=42)
+    rnk_dask = rnk_dask.fit(dX, dy, sample_weight=dw, group=dg, client=client)
+    rnkvec_dask = rnk_dask.predict(dX, client=client)
+    rnkvec_dask = rnkvec_dask.compute()
+
+    rnk_local = lightgbm.LGBMRanker(seed=42)
+    rnk_local.fit(X, y, sample_weight=w, group=g)
+    rnkvec_local = rnk_local.predict(X)
+
+    # distributed ranker should do a pretty good job of ranking
+    assert spearmanr(rnkvec_dask, y).correlation > 0.95
+
+    # distributed scores should give virtually same ranking as local model.
+    assert pearsonr(rnkvec_dask, rnkvec_local)[0] > 0.98
+
+
+@pytest.mark.parametrize('output', ['array', 'dataframe'])
+def test_ranker_local_predict(output, client, listen_port):
+    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output)
+
+    a = dlgbm.LGBMRanker(local_listen_port=listen_port, seed=42)
+    a = a.fit(dX, dy, group=dg, client=client)
+    rnk1 = a.predict(dX)
+    rnk1 = rnk1.compute()
+    rnk2 = a.to_local().predict(X)
+
+    # distributed and to-local scores should be the same.
+    assert_eq(rnk1, rnk2)
 
 
 def test_build_network_params():

@@ -16,7 +16,7 @@ from dask import delayed
 from dask.distributed import default_client, get_worker, wait
 
 from .basic import _LIB, _safe_call
-from .sklearn import LGBMClassifier, LGBMRegressor
+from .sklearn import LGBMClassifier, LGBMRegressor, LGBMRanker
 
 import scipy.sparse as ss
 
@@ -68,15 +68,22 @@ def _train_part(params, model_factory, list_of_parts, worker_addresses, return_m
     network_params = _build_network_params(worker_addresses, get_worker().address, local_listen_port, time_out)
     params.update(network_params)
 
+    is_ranker = model_factory.__qualname__ == 'LGBMRanker'
+
     # Concatenate many parts into one
-    parts = tuple(zip(*list_of_parts))
-    data = _concat(parts[0])
-    label = _concat(parts[1])
-    weight = _concat(parts[2]) if len(parts) == 3 else None
+    data = _concat([d['X'] for d in list_of_parts])
+    label = _concat([d['y'] for d in list_of_parts])
+    weight = _concat([d['weight'] for d in list_of_parts]) if 'weight' in list_of_parts[0] else None
 
     try:
         model = model_factory(**params)
-        model.fit(data, label, sample_weight=weight, **kwargs)
+
+        if is_ranker:
+            group = _concat([d['group'] for d in list_of_parts])
+            model.fit(data, y=label, sample_weight=weight, group=group, **kwargs)
+        else:
+            model.fit(data, label, sample_weight=weight, **kwargs)
+
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
 
@@ -91,7 +98,7 @@ def _split_to_parts(data, is_matrix):
     return parts
 
 
-def _train(client, data, label, params, model_factory, weight=None, **kwargs):
+def _train(client, data, label, params, model_factory, sample_weight=None, group=None, **kwargs):
     """Inner train routine.
 
     Parameters
@@ -102,20 +109,30 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
     y : dask array of shape = [n_samples]
         The target values (class labels in classification, real numbers in regression).
     params : dict
-    model_factory : lightgbm.LGBMClassifier or lightgbm.LGBMRegressor class
+    model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
     sample_weight : array-like of shape = [n_samples] or None, optional (default=None)
-            Weights of training data.
+        Weights of training data.
+    group : array-like
+        Group/query data, used for ranking task. sum(group) = n_samples.
     """
-    # Split arrays/dataframes into parts. Arrange parts into tuples to enforce co-locality
+    # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality
     data_parts = _split_to_parts(data, is_matrix=True)
     label_parts = _split_to_parts(label, is_matrix=False)
-    if weight is None:
-        parts = list(map(delayed, zip(data_parts, label_parts)))
-    else:
-        weight_parts = _split_to_parts(weight, is_matrix=False)
-        parts = list(map(delayed, zip(data_parts, label_parts, weight_parts)))
+    parts = [{'X': x, 'y': y} for (x, y) in zip(data_parts, label_parts)]
+
+    # append weight, group vectors to part dicts when needed.
+    if sample_weight is not None:
+        weight_parts = _split_to_parts(sample_weight, is_matrix=False)
+        for i, d in enumerate(parts):
+            d.update({'weight': weight_parts[i]})
+
+    if group is not None:
+        group_parts = _split_to_parts(group, is_matrix=False)
+        for i, d in enumerate(parts):
+            d.update({'group': group_parts[i]})
 
     # Start computation in the background
+    parts = list(map(delayed, parts))
     parts = client.compute(parts)
     wait(parts)
 
@@ -179,7 +196,7 @@ def _predict(model, data, proba=False, dtype=np.float32, **kwargs):
 
     Parameters
     ----------
-    model :
+    model : local lightgbm.LGBM[Classifier/Regressor/Ranker]
     data : dask array of shape = [n_samples, n_features]
         Input feature matrix.
     proba : bool
@@ -202,13 +219,13 @@ def _predict(model, data, proba=False, dtype=np.float32, **kwargs):
 
 class _LGBMModel:
 
-    def _fit(self, model_factory, X, y=None, sample_weight=None, client=None, **kwargs):
+    def _fit(self, model_factory, X, y=None, sample_weight=None, group=None, client=None, **kwargs):
         """Docstring is inherited from the LGBMModel."""
         if client is None:
             client = default_client()
 
         params = self.get_params(True)
-        model = _train(client, X, y, params, model_factory, sample_weight, **kwargs)
+        model = _train(client, X, y, params, model_factory, sample_weight, group, **kwargs)
 
         self.set_params(**model.get_params())
         self._copy_extra_params(model, self)
@@ -233,8 +250,8 @@ class DaskLGBMClassifier(_LGBMModel, LGBMClassifier):
     """Distributed version of lightgbm.LGBMClassifier."""
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
-        """Docstring is inherited from the LGBMModel."""
-        return self._fit(LGBMClassifier, X, y, sample_weight, client, **kwargs)
+        """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
+        return self._fit(LGBMClassifier, X=X, y=y, sample_weight=sample_weight, client=client, **kwargs)
     fit.__doc__ = LGBMClassifier.fit.__doc__
 
     def predict(self, X, **kwargs):
@@ -262,7 +279,7 @@ class DaskLGBMRegressor(_LGBMModel, LGBMRegressor):
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        return self._fit(LGBMRegressor, X, y, sample_weight, client, **kwargs)
+        return self._fit(LGBMRegressor, X=X, y=y, sample_weight=sample_weight, client=client, **kwargs)
     fit.__doc__ = LGBMRegressor.fit.__doc__
 
     def predict(self, X, **kwargs):
@@ -278,3 +295,26 @@ class DaskLGBMRegressor(_LGBMModel, LGBMRegressor):
         model : lightgbm.LGBMRegressor
         """
         return self._to_local(LGBMRegressor)
+
+
+class DaskLGBMRanker(_LGBMModel, LGBMRanker):
+    """Docstring is inherited from the lightgbm.LGBMRanker."""
+
+    def fit(self, X, y=None, sample_weight=None, group=None, client=None, **kwargs):
+        """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
+        return self._fit(LGBMRanker, X=X, y=y, sample_weight=sample_weight, group=group, client=client, **kwargs)
+    fit.__doc__ = LGBMRanker.fit.__doc__
+
+    def predict(self, X, **kwargs):
+        """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
+        return _predict(self.to_local(), X, **kwargs)
+    predict.__doc__ = LGBMRanker.predict.__doc__
+
+    def to_local(self):
+        """Create regular version of lightgbm.LGBMRanker from the distributed version.
+
+        Returns
+        -------
+        model : lightgbm.LGBMRanker
+        """
+        return self._to_local(LGBMRanker)
