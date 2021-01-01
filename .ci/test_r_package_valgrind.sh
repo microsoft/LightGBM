@@ -14,6 +14,7 @@ RDvalgrind \
 
 cat ${ALL_LOGS_FILE}
 
+echo "writing valgrind output to ${VALGRIND_LOGS_FILE}"
 cat ${ALL_LOGS_FILE} | grep -E "^\=" > ${VALGRIND_LOGS_FILE}
 
 bytes_definitely_lost=$(
@@ -22,8 +23,8 @@ bytes_definitely_lost=$(
       | sed 's/^.*definitely lost\: \(.*\) bytes.*$/\1/' \
       | tr -d ","
 )
+echo "valgrind found ${bytes_definitely_lost} bytes definitely lost"
 if [[ ${bytes_definitely_lost} -gt 0 ]]; then
-    echo "valgrind found ${bytes_definitely_lost} bytes definitely lost"
     exit -1
 fi
 
@@ -33,8 +34,8 @@ bytes_indirectly_lost=$(
     | sed 's/^.*indirectly lost\: \(.*\) bytes.*$/\1/' \
     | tr -d ","
 )
+echo "valgrind found ${bytes_indirectly_lost} bytes indirectly lost"
 if [[ ${bytes_indirectly_lost} -gt 0 ]]; then
-    echo "valgrind found ${bytes_indirectly_lost} bytes indirectly lost"
     exit -1
 fi
 
@@ -60,8 +61,8 @@ bytes_possibly_lost=$(
     | sed 's/^.*possibly lost\: \(.*\) bytes.*$/\1/' \
     | tr -d ","
 )
+echo "valgrind found ${bytes_possibly_lost} bytes possibly lost"
 if [[ ${bytes_possibly_lost} -gt 336 ]]; then
-    echo "valgrind found ${bytes_possibly_lost} bytes possibly lost"
     exit -1
 fi
 
