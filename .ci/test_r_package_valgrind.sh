@@ -10,7 +10,7 @@ RDvalgrind \
   --vanilla \
   -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes" \
   -f testthat.R \
-  2>&1 > ${ALL_LOGS_FILE} || exit -1
+  > ${ALL_LOGS_FILE} 2>&1 || exit -1
 
 cat ${ALL_LOGS_FILE}
 
