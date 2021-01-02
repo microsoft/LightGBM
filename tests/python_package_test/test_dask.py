@@ -1,4 +1,9 @@
 # coding: utf-8
+"""Tests for lightgbm.dask module
+
+An easy way to run these tests is from the (python) docker container.
+> python -m pytest /LightGBM/tests/python_package_test/test_dask.py
+"""
 import os
 import itertools
 import sys
@@ -38,9 +43,10 @@ def listen_port():
 listen_port.port = 13000
 
 
-def r2_score_from_arrays(dy_true, dy_pred):
-    numerator = ((dy_true - dy_pred) ** 2).sum(axis=0, dtype="f8")
-    denominator = ((dy_true - dy_pred.mean(axis=0)) ** 2).sum(axis=0, dtype="f8")
+def r2_score(dy_true, dy_pred):
+    """Helper function taken from dask_ml.metrics: computes coefficient of determination."""
+    numerator = ((dy_true - dy_pred) ** 2).sum(axis=0)
+    denominator = ((dy_true - dy_pred.mean(axis=0)) ** 2).sum(axis=0)
     return (1 - numerator / denominator).compute()
 
 
@@ -87,12 +93,13 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=10):
     X, y, g = _make_ranking(n_samples=n_samples, random_state=42)
     rnd = np.random.RandomState(42)
     w = rnd.rand(X.shape[0]) * 0.01
-    g_rle = [sum([1 for _ in grp]) for _, grp in itertools.groupby(g)]
+    g_rle = np.array([sum([1 for _ in grp]) for _, grp in itertools.groupby(g)])
 
     if output == 'dataframe':
 
         # add target, weight, and group to DataFrame so that partitions abide by group boundaries.
         X_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(X.shape[1])])
+        X = X_df.copy()
         X_df = X_df.assign(y=y, g=g, w=w)
 
         # set_index ensures partitions are based on group id. See https://bit.ly/3pAWyNw.
@@ -116,10 +123,10 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=10):
         dX, dy, dw, dg = list(), list(), list(), list()
         for g_idx, rhs in enumerate(np.cumsum(g_rle)):
             lhs = rhs - g_rle[g_idx]
-            dX.append(da.from_array(X[lhs:rhs, :], chunks=(rhs-lhs, p)))
+            dX.append(da.from_array(X[lhs:rhs, :], chunks=(rhs - lhs, p)))
             dy.append(da.from_array(y[lhs:rhs]))
             dw.append(da.from_array(w[lhs:rhs]))
-            dg.append(da.from_array(g[lhs:rhs]))
+            dg.append(da.from_array(np.array([g_rle[g_idx]])))
 
         dX = da.concatenate(dX, axis=0)
         dy = da.concatenate(dy, axis=0)
@@ -129,6 +136,9 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=10):
 
     else:
         raise ValueError('ranking data creation only supported for Dask arrays and dataframes')
+
+    # verify sum(g) == #data
+    assert dg.sum().compute() == np.sum(g_rle)
 
     return X, y, w, g_rle, dX, dy, dw, dg
 
@@ -171,7 +181,6 @@ def test_classifier(output, centers, client, listen_port):
     dask_classifier = dlgbm.DaskLGBMClassifier(time_out=5, local_listen_port=listen_port)
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_classifier.predict(dX)
-    # s1 = accuracy_score(dy, p1)
     s1 = da.average(dy == p1).compute()
     p1 = p1.compute()
 
@@ -179,8 +188,7 @@ def test_classifier(output, centers, client, listen_port):
     local_classifier.fit(X, y, sample_weight=w)
     p2 = local_classifier.predict(X)
     s2 = local_classifier.score(X, y)
-
-    assert_eq(s1, s2)
+    assert np.isclose(s1, s2)
 
     assert_eq(p1, p2)
     assert_eq(y, p1)
@@ -228,7 +236,7 @@ def test_regressor(output, client, listen_port):
     dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
     p1 = dask_regressor.predict(dX)
     if output != 'dataframe':
-        s1 = r2_score_from_arrays(dy, p1)
+        s1 = r2_score(dy, p1)
     p1 = p1.compute()
 
     local_regressor = lightgbm.LGBMRegressor(seed=42)
@@ -272,47 +280,48 @@ def test_regressor_local_predict(client, listen_port):
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_regressor.predict(dX)
     p2 = dask_regressor.to_local().predict(X)
-    s1 = r2_score_from_arrays(dy, p1)
+    s1 = r2_score(dy, p1)
     p1 = p1.compute()
     s2 = dask_regressor.to_local().score(X, y)
 
     # Predictions and scores should be the same
     assert_eq(p1, p2)
-    assert_eq(s1, s2)
+    assert np.isclose(s1, s2, rtol=1e-4)
 
 
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
 def test_ranker(output, client, listen_port):
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output)
 
-    rnk_dask = dlgbm.LGBMRanker(time_out=5, local_listen_port=listen_port, seed=42)
-    rnk_dask = rnk_dask.fit(dX, dy, sample_weight=dw, group=dg, client=client)
-    rnkvec_dask = rnk_dask.predict(dX, client=client)
+    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, seed=42, min_child_samples=1)
+    dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
+    rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
 
-    rnk_local = lightgbm.LGBMRanker(seed=42)
-    rnk_local.fit(X, y, sample_weight=w, group=g)
-    rnkvec_local = rnk_local.predict(X)
+    local_ranker = lightgbm.LGBMRanker(seed=42, min_child_samples=1)
+    local_ranker.fit(X, y, sample_weight=w, group=g)
+    rnkvec_local = local_ranker.predict(X)
 
     # distributed ranker should do a pretty good job of ranking
     assert spearmanr(rnkvec_dask, y).correlation > 0.95
 
     # distributed scores should give virtually same ranking as local model.
-    assert pearsonr(rnkvec_dask, rnkvec_local)[0] > 0.98
+    assert pearsonr(rnkvec_dask, rnkvec_local)[0] > 0.95
 
 
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
 def test_ranker_local_predict(output, client, listen_port):
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output)
 
-    a = dlgbm.LGBMRanker(local_listen_port=listen_port, seed=42)
-    a = a.fit(dX, dy, group=dg, client=client)
-    rnk1 = a.predict(dX)
-    rnk1 = rnk1.compute()
-    rnk2 = a.to_local().predict(X)
+    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, seed=42, min_child_samples=1)
+    dask_ranker = dask_ranker.fit(dX, dy, group=dg, client=client)
+    rnkvec_dask = dask_ranker.predict(dX)
+    rnkvec_dask = rnkvec_dask.compute()
+
+    rnkvec_local = dask_ranker.to_local().predict(X)
 
     # distributed and to-local scores should be the same.
-    assert_eq(rnk1, rnk2)
+    assert_eq(rnkvec_dask, rnkvec_local)
 
 
 def test_build_network_params():
