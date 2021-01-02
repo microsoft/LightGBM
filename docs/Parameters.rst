@@ -133,8 +133,6 @@ Core Parameters
 
       -  **Note**: only works with CPU and ``serial`` tree learner
 
-      -  **Note**: not yet supported in R-package
-
       -  **Note**: ``regression_l1`` objective is not supported with linear tree boosting
 
       -  **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
