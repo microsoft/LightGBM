@@ -269,7 +269,7 @@ jobs:
   - Linux_old_OS
   - Linux_latest
   - MacOS_old_OS
-  - MacOS_latest
+  # - MacOS_latest
   - Windows
   condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
   pool:
