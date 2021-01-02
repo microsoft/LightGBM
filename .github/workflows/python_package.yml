@@ -64,6 +64,7 @@ jobs:
           export TASK="${{ matrix.task }}"
           export METHOD="${{ matrix.method }}"
           export COMPILER="${{ matrix.compiler }}"
+          export PYTHON_VERSION="${{ matrix.python_version }}"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
