@@ -8,6 +8,10 @@ on:
     branches:
     - master
 
+env:
+  CONDA_ENV: test-env
+  GITHUB_ACTIONS: 'true'
+
 jobs:
   test:
     name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
@@ -60,7 +64,6 @@ jobs:
           export TASK="${{ matrix.task }}"
           export METHOD="${{ matrix.method }}"
           export COMPILER="${{ matrix.compiler }}"
-          export GITHUB_ACTIONS="true"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
