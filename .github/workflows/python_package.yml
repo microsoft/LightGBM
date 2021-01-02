@@ -1,0 +1,81 @@
+name: Python GitHub Actions
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+jobs:
+  test:
+    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macOS-latest
+            task: regular
+            python_version: 3.7
+            compiler: gcc
+          - os: macOS-latest
+            task: sdist
+            python_version: 3.8
+            compiler: gcc
+          - os: macOS-latest
+            task: bdist
+            python_version: 3.8
+            compiler: gcc
+          - os: macOS-latest
+            task: if-else
+            python_version: 3.8
+            compiler: gcc
+          - os: macOS-latest
+            task: mpi
+            method: source
+            python_version: 3.8
+            compiler: gcc
+          - os: macOS-latest
+            task: mpi
+            method: pip
+            python_version: 3.7
+            compiler: gcc
+          - os: macOS-latest
+            task: mpi
+            method: wheel
+            python_version: 3.7
+            compiler: gcc
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Setup and run tests
+        shell: bash
+        run: |
+          export TASK="${{ matrix.task }}"
+          export METHOD="${{ matrix.method }}"
+          export COMPILER="${{ matrix.compiler }}"
+          export GITHUB_ACTIONS="true"
+          if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
+              export OS_NAME="macos"
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              export OS_NAME="linux"
+          fi
+          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export LGB_VER=$(head -n 1 VERSION.txt)
+          export CONDA=${HOME}/miniconda
+          export PATH=${CONDA}/bin:$(brew --prefix swig@3)/bin:${PATH}
+          export JAVA_HOME=$JAVA_HOME_8_X64
+          $GITHUB_WORKSPACE/.ci/setup.sh
+          $GITHUB_WORKSPACE/.ci/test.sh
+  all-successful:
+    # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
+    runs-on: ubuntu-latest
+    needs: [test, test-r-sanitizers]
+    steps:
+    - name: Note that all tests succeeded
+      run: echo "🎉"
