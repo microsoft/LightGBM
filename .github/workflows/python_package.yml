@@ -52,6 +52,50 @@ jobs:
             method: wheel
             python_version: 3.7
             compiler: gcc
+          - os: ubuntu-latest
+            task: mpi
+            method: source
+            python_version: 3.8
+            compiler: clang
+          - os: ubuntu-latest
+            task: if-else
+            python_version: 3.8
+            compiler: clang
+          - os: ubuntu-latest
+            task: regular
+            python_version: 3.8
+            compiler: clang
+          - os: ubuntu-latest
+            task: sdist
+            python_version: 3.8
+            compiler: clang
+          - os: ubuntu-latest
+            task: bdist
+            python_version: 3.7
+            compiler: clang
+          - os: ubuntu-latest
+            task: gpu
+            method: source
+            python_version: 3.8
+            compiler: clang
+          - os: ubuntu-latest
+            task: gpu
+            method: pip
+            python_version: 3.6
+            compiler: clang
+          - os: ubuntu-latest
+            task: gpu
+            method: wheel
+            python_version: 3.7
+            compiler: clang
+          - os: ubuntu-latest
+            task: lint
+            python_version: 3.8
+            compiler: clang
+          - os: ubuntu-latest
+            task: check-docs
+            python_version: 3.8
+            compiler: clang
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2.3.4
@@ -73,7 +117,7 @@ jobs:
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export LGB_VER=$(head -n 1 VERSION.txt)
           export CONDA=${HOME}/miniconda
-          export PATH=${CONDA}/bin:${PATH}
+          export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
   all-successful:
