@@ -59,7 +59,6 @@ if [[ $OS_NAME == "linux" ]]; then
             qpdf \
             || exit -1
 
-    
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         sudo apt-get install \
             --no-install-recommends \
@@ -77,7 +76,7 @@ if [[ $OS_NAME == "macos" ]]; then
     brew install \
         checkbashisms \
         qpdf
-    brew cask install basictex
+    brew install --cask basictex
     export PATH="/Library/TeX/texbin:$PATH"
     sudo tlmgr --verify-repo=none update --self
     sudo tlmgr --verify-repo=none install inconsolata helvetic

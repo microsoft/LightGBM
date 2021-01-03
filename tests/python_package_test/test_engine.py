@@ -2232,6 +2232,7 @@ class TestEngine(unittest.TestCase):
                           "group_column": 0,
                           "ignore_column": 0,
                           "min_data_in_leaf": 10,
+                          "linear_tree": False,
                           "verbose": -1}
         unchangeable_params = {"max_bin": 150,
                                "max_bin_by_feature": [30, 5],
@@ -2252,7 +2253,8 @@ class TestEngine(unittest.TestCase):
                                "group_column": 1,
                                "ignore_column": 1,
                                "forcedbins_filename": "/some/path/forcedbins.json",
-                               "min_data_in_leaf": 2}
+                               "min_data_in_leaf": 2,
+                               "linear_tree": True}
         X = np.random.random((100, 2))
         y = np.random.random(100)
 
@@ -2420,45 +2422,46 @@ class TestEngine(unittest.TestCase):
                                                               [1] + list(range(2, num_features))]),
                         train_data, num_boost_round=10)
 
-    def test_linear(self):
-        # check that setting boosting=gbdt_linear fits better than boosting=gbdt when data has linear relationship
+    def test_linear_trees(self):
+        # check that setting linear_tree=True fits better than ordinary trees when data has linear relationship
         np.random.seed(0)
         x = np.arange(0, 100, 0.1)
         y = 2 * x + np.random.normal(0, 0.1, len(x))
-        lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
+        x = x[:, np.newaxis]
+        lgb_train = lgb.Dataset(x, label=y)
         params = {'verbose': -1,
                   'metric': 'mse',
                   'seed': 0,
                   'num_leaves': 2}
         est = lgb.train(params, lgb_train, num_boost_round=10)
-        pred1 = est.predict(x[:, np.newaxis])
-        lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
+        pred1 = est.predict(x)
+        lgb_train = lgb.Dataset(x, label=y)
         res = {}
         est = lgb.train(dict(params, linear_tree=True), lgb_train, num_boost_round=10, evals_result=res,
                         valid_sets=[lgb_train], valid_names=['train'])
-        pred2 = est.predict(x[:, np.newaxis])
+        pred2 = est.predict(x)
         np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=10**(-1))
         self.assertLess(mean_squared_error(y, pred2), mean_squared_error(y, pred1))
         # test again with nans in data
         x[:10] = np.nan
-        lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
+        lgb_train = lgb.Dataset(x, label=y)
         est = lgb.train(params, lgb_train, num_boost_round=10)
-        pred1 = est.predict(x[:, np.newaxis])
-        lgb_train = lgb.Dataset(x[:, np.newaxis], label=y)
+        pred1 = est.predict(x)
+        lgb_train = lgb.Dataset(x, label=y)
         res = {}
         est = lgb.train(dict(params, linear_tree=True), lgb_train, num_boost_round=10, evals_result=res,
                         valid_sets=[lgb_train], valid_names=['train'])
-        pred2 = est.predict(x[:, np.newaxis])
+        pred2 = est.predict(x)
         np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=10**(-1))
         self.assertLess(mean_squared_error(y, pred2), mean_squared_error(y, pred1))
         # test again with bagging
         res = {}
         est = lgb.train(dict(params, linear_tree=True, subsample=0.8, bagging_freq=1), lgb_train,
                         num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
-        pred = est.predict(x[:, np.newaxis])
+        pred = est.predict(x)
         np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-1))
         # test with a feature that has only one non-nan value
-        x = np.concatenate([np.ones([x.shape[0], 1]), x[:, np.newaxis]], 1)
+        x = np.concatenate([np.ones([x.shape[0], 1]), x], 1)
         x[500:, 1] = np.nan
         y[500:] += 10
         lgb_train = lgb.Dataset(x, label=y)
@@ -2486,11 +2489,11 @@ class TestEngine(unittest.TestCase):
         p2 = est2.predict(x)
         self.assertLess(np.mean(np.abs(p1 - p2)), 2)
         # test refit: different results training on different data
-        est2 = est.refit(x[:100, :], label=y[:100])
-        p3 = est2.predict(x)
+        est3 = est.refit(x[:100, :], label=y[:100])
+        p3 = est3.predict(x)
         self.assertGreater(np.mean(np.abs(p2 - p1)), np.abs(np.max(p3 - p1)))
         # test when num_leaves - 1 < num_features and when num_leaves - 1 > num_features
-        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2)
+        X_train, _, y_train, _ = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2)
         params = {'linear_tree': True,
                   'verbose': -1,
                   'metric': 'mse',
@@ -2606,3 +2609,37 @@ class TestEngine(unittest.TestCase):
         lgb_X = lgb.Dataset(X, label=y)
         lgb.train(params, lgb_X, num_boost_round=1, valid_sets=[lgb_X], evals_result=res)
         self.assertAlmostEqual(res['training']['average_precision'][-1], 1)
+
+    def test_reset_params_works_with_metric_num_class_and_boosting(self):
+        X, y = load_breast_cancer(return_X_y=True)
+        params = {
+            'objective': 'multiclass',
+            'max_depth': 4,
+            'bagging_fraction': 0.8,
+            'metric': ['multi_logloss', 'multi_error'],
+            'boosting': 'gbdt',
+            'num_class': 5
+        }
+        dtrain = lgb.Dataset(X, y, params={"max_bin": 150})
+
+        bst = lgb.Booster(
+            params=params,
+            train_set=dtrain
+        )
+        expected_params = {
+            'objective': 'multiclass',
+            'max_depth': 4,
+            'bagging_fraction': 0.8,
+            'metric': ['multi_logloss', 'multi_error'],
+            'boosting': 'gbdt',
+            'num_class': 5,
+            'max_bin': 150
+        }
+        assert bst.params == expected_params
+
+        params['bagging_fraction'] = 0.9
+        ret_bst = bst.reset_parameter(params)
+
+        expected_params['bagging_fraction'] = 0.9
+        assert bst.params == expected_params
+        assert ret_bst.params == expected_params
