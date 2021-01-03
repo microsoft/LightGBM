@@ -14,7 +14,7 @@
 
 namespace LightGBM {
 
-Tree::Tree(int max_leaves, bool track_branch_features)
+Tree::Tree(int max_leaves, bool track_branch_features, bool is_linear)
   :max_leaves_(max_leaves), track_branch_features_(track_branch_features) {
   left_child_.resize(max_leaves_ - 1);
   right_child_.resize(max_leaves_ - 1);
@@ -46,6 +46,13 @@ Tree::Tree(int max_leaves, bool track_branch_features)
   cat_boundaries_.push_back(0);
   cat_boundaries_inner_.push_back(0);
   max_depth_ = -1;
+  is_linear_ = is_linear;
+  if (is_linear_) {
+    leaf_coeff_.resize(max_leaves_);
+    leaf_const_ = std::vector<double>(max_leaves_, 0);
+    leaf_features_.resize(max_leaves_);
+    leaf_features_inner_.resize(max_leaves_);
+  }
 }
 
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
@@ -103,8 +110,42 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
     score[(data_idx)] += static_cast<double>(leaf_value_[~node]);             \
   }\
 
+
+#define PredictionFunLinear(niter, fidx_in_iter, start_pos, decision_fun,     \
+                            iter_idx, data_idx)                               \
+  std::vector<std::unique_ptr<BinIterator>> iter((niter));                    \
+  for (int i = 0; i < (niter); ++i) {                                         \
+    iter[i].reset(data->FeatureIterator((fidx_in_iter)));                     \
+    iter[i]->Reset((start_pos));                                              \
+  }                                                                           \
+  for (data_size_t i = start; i < end; ++i) {                                 \
+    int node = 0;                                                             \
+    while (node >= 0) {                                                       \
+      node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node,            \
+                          default_bins[node], max_bins[node]);                \
+    }                                                                         \
+    double add_score = leaf_const_[~node];                                    \
+    bool nan_found = false;                                                   \
+    const double* coeff_ptr = leaf_coeff_[~node].data();                      \
+    const float** data_ptr = feat_ptr[~node].data();                          \
+    for (size_t j = 0; j < leaf_features_inner_[~node].size(); ++j) {         \
+       float feat_val = data_ptr[j][(data_idx)];                              \
+       if (std::isnan(feat_val)) {                                            \
+          nan_found = true;                                                   \
+          break;                                                              \
+       }                                                                      \
+       add_score += coeff_ptr[j] * feat_val;                                  \
+    }                                                                         \
+    if (nan_found) {                                                          \
+       score[(data_idx)] += leaf_value_[~node];                               \
+    } else {                                                                  \
+      score[(data_idx)] += add_score;                                         \
+    }                                                                         \
+}\
+
+
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
-  if (num_leaves_ <= 1) {
+  if (!is_linear_ && num_leaves_ <= 1) {
     if (leaf_value_[0] != 0.0f) {
 #pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
       for (data_size_t i = 0; i < num_data; ++i) {
@@ -121,37 +162,71 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
     default_bins[i] = bin_mapper->GetDefaultBin();
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
-  if (num_cat_ > 0) {
-    if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
-      (int, data_size_t start, data_size_t end) {
-        PredictionFun(num_leaves_ - 1, split_feature_inner_[i], start, DecisionInner, node, i);
-      });
+  if (is_linear_) {
+    std::vector<std::vector<const float*>> feat_ptr(num_leaves_);
+    for (int leaf_num = 0; leaf_num < num_leaves_; ++leaf_num) {
+      for (int feat : leaf_features_inner_[leaf_num]) {
+        feat_ptr[leaf_num].push_back(data->raw_index(feat));
+      }
+    }
+    if (num_cat_ > 0) {
+      if (data->num_features() > num_leaves_ - 1) {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(num_leaves_ - 1, split_feature_inner_[i], start, DecisionInner, node, i);
+        });
+      } else {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(data->num_features(), i, start, DecisionInner, split_feature_inner_[node], i);
+        });
+      }
     } else {
-      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
-      (int, data_size_t start, data_size_t end) {
-        PredictionFun(data->num_features(), i, start, DecisionInner, split_feature_inner_[node], i);
-      });
+      if (data->num_features() > num_leaves_ - 1) {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(num_leaves_ - 1, split_feature_inner_[i], start, NumericalDecisionInner, node, i);
+        });
+      } else {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(data->num_features(), i, start, NumericalDecisionInner, split_feature_inner_[node], i);
+        });
+      }
     }
   } else {
-    if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
-      (int, data_size_t start, data_size_t end) {
-        PredictionFun(num_leaves_ - 1, split_feature_inner_[i], start, NumericalDecisionInner, node, i);
-      });
+    if (num_cat_ > 0) {
+      if (data->num_features() > num_leaves_ - 1) {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFun(num_leaves_ - 1, split_feature_inner_[i], start, DecisionInner, node, i);
+        });
+      } else {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFun(data->num_features(), i, start, DecisionInner, split_feature_inner_[node], i);
+        });
+      }
     } else {
-      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
-      (int, data_size_t start, data_size_t end) {
-        PredictionFun(data->num_features(), i, start, NumericalDecisionInner, split_feature_inner_[node], i);
-      });
+      if (data->num_features() > num_leaves_ - 1) {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFun(num_leaves_ - 1, split_feature_inner_[i], start, NumericalDecisionInner, node, i);
+        });
+      } else {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, &default_bins, &max_bins]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFun(data->num_features(), i, start, NumericalDecisionInner, split_feature_inner_[node], i);
+        });
+      }
     }
   }
 }
 
 void Tree::AddPredictionToScore(const Dataset* data,
-                                const data_size_t* used_data_indices,
-                                data_size_t num_data, double* score) const {
-  if (num_leaves_ <= 1) {
+  const data_size_t* used_data_indices,
+  data_size_t num_data, double* score) const {
+  if (!is_linear_ && num_leaves_ <= 1) {
     if (leaf_value_[0] != 0.0f) {
 #pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
       for (data_size_t i = 0; i < num_data; ++i) {
@@ -168,34 +243,72 @@ void Tree::AddPredictionToScore(const Dataset* data,
     default_bins[i] = bin_mapper->GetDefaultBin();
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
-  if (num_cat_ > 0) {
-    if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
-      (int, data_size_t start, data_size_t end) {
-        PredictionFun(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], DecisionInner, node, used_data_indices[i]);
-      });
+  if (is_linear_) {
+    std::vector<std::vector<const float*>> feat_ptr(num_leaves_);
+    for (int leaf_num = 0; leaf_num < num_leaves_; ++leaf_num) {
+      for (int feat : leaf_features_inner_[leaf_num]) {
+        feat_ptr[leaf_num].push_back(data->raw_index(feat));
+      }
+    }
+    if (num_cat_ > 0) {
+      if (data->num_features() > num_leaves_ - 1) {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], DecisionInner,
+                              node, used_data_indices[i]);
+        });
+      } else {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(data->num_features(), i, used_data_indices[start], DecisionInner, split_feature_inner_[node], used_data_indices[i]);
+        });
+      }
     } else {
-      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
-      (int, data_size_t start, data_size_t end) {
-        PredictionFun(data->num_features(), i, used_data_indices[start], DecisionInner, split_feature_inner_[node], used_data_indices[i]);
-      });
+      if (data->num_features() > num_leaves_ - 1) {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], NumericalDecisionInner,
+                              node, used_data_indices[i]);
+        });
+      } else {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins, &feat_ptr]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFunLinear(data->num_features(), i, used_data_indices[start], NumericalDecisionInner,
+                              split_feature_inner_[node], used_data_indices[i]);
+        });
+      }
     }
   } else {
-    if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
-      (int, data_size_t start, data_size_t end) {
-        PredictionFun(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], NumericalDecisionInner, node, used_data_indices[i]);
-      });
+    if (num_cat_ > 0) {
+      if (data->num_features() > num_leaves_ - 1) {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFun(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], DecisionInner, node, used_data_indices[i]);
+        });
+      } else {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFun(data->num_features(), i, used_data_indices[start], DecisionInner, split_feature_inner_[node], used_data_indices[i]);
+        });
+      }
     } else {
-      Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
-      (int, data_size_t start, data_size_t end) {
-        PredictionFun(data->num_features(), i, used_data_indices[start], NumericalDecisionInner, split_feature_inner_[node], used_data_indices[i]);
-      });
+      if (data->num_features() > num_leaves_ - 1) {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFun(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], NumericalDecisionInner, node, used_data_indices[i]);
+        });
+      } else {
+        Threading::For<data_size_t>(0, num_data, 512, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+        (int, data_size_t start, data_size_t end) {
+          PredictionFun(data->num_features(), i, used_data_indices[start], NumericalDecisionInner, split_feature_inner_[node], used_data_indices[i]);
+        });
+      }
     }
   }
 }
 
 #undef PredictionFun
+#undef PredictionFunLinear
 
 double Tree::GetUpperBoundValue() const {
   double upper_bound = leaf_value_[0];
@@ -219,45 +332,83 @@ double Tree::GetLowerBoundValue() const {
 
 std::string Tree::ToString() const {
   std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
+
+  #if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
+  using CommonLegacy::ArrayToString;  // Slower & unsafe regarding locale.
+  #else
+  using CommonC::ArrayToString;
+  #endif
+
   str_buf << "num_leaves=" << num_leaves_ << '\n';
   str_buf << "num_cat=" << num_cat_ << '\n';
   str_buf << "split_feature="
-    << Common::ArrayToStringFast(split_feature_, num_leaves_ - 1) << '\n';
+    << ArrayToString(split_feature_, num_leaves_ - 1) << '\n';
   str_buf << "split_gain="
-    << Common::ArrayToStringFast(split_gain_, num_leaves_ - 1) << '\n';
+    << ArrayToString(split_gain_, num_leaves_ - 1) << '\n';
   str_buf << "threshold="
-    << Common::ArrayToString(threshold_, num_leaves_ - 1) << '\n';
+    << ArrayToString<true>(threshold_, num_leaves_ - 1) << '\n';
   str_buf << "decision_type="
-    << Common::ArrayToStringFast(Common::ArrayCast<int8_t, int>(decision_type_), num_leaves_ - 1) << '\n';
+    << ArrayToString(Common::ArrayCast<int8_t, int>(decision_type_), num_leaves_ - 1) << '\n';
   str_buf << "left_child="
-    << Common::ArrayToStringFast(left_child_, num_leaves_ - 1) << '\n';
+    << ArrayToString(left_child_, num_leaves_ - 1) << '\n';
   str_buf << "right_child="
-    << Common::ArrayToStringFast(right_child_, num_leaves_ - 1) << '\n';
+    << ArrayToString(right_child_, num_leaves_ - 1) << '\n';
   str_buf << "leaf_value="
-    << Common::ArrayToString(leaf_value_, num_leaves_) << '\n';
+    << ArrayToString<true>(leaf_value_, num_leaves_) << '\n';
   str_buf << "leaf_weight="
-    << Common::ArrayToString(leaf_weight_, num_leaves_) << '\n';
+    << ArrayToString<true>(leaf_weight_, num_leaves_) << '\n';
   str_buf << "leaf_count="
-    << Common::ArrayToStringFast(leaf_count_, num_leaves_) << '\n';
+    << ArrayToString(leaf_count_, num_leaves_) << '\n';
   str_buf << "internal_value="
-    << Common::ArrayToStringFast(internal_value_, num_leaves_ - 1) << '\n';
+    << ArrayToString(internal_value_, num_leaves_ - 1) << '\n';
   str_buf << "internal_weight="
-    << Common::ArrayToStringFast(internal_weight_, num_leaves_ - 1) << '\n';
+    << ArrayToString(internal_weight_, num_leaves_ - 1) << '\n';
   str_buf << "internal_count="
-    << Common::ArrayToStringFast(internal_count_, num_leaves_ - 1) << '\n';
+    << ArrayToString(internal_count_, num_leaves_ - 1) << '\n';
   if (num_cat_ > 0) {
     str_buf << "cat_boundaries="
-      << Common::ArrayToStringFast(cat_boundaries_, num_cat_ + 1) << '\n';
+      << ArrayToString(cat_boundaries_, num_cat_ + 1) << '\n';
     str_buf << "cat_threshold="
-      << Common::ArrayToStringFast(cat_threshold_, cat_threshold_.size()) << '\n';
+      << ArrayToString(cat_threshold_, cat_threshold_.size()) << '\n';
+  }
+  str_buf << "is_linear=" << is_linear_ << '\n';
+
+  if (is_linear_) {
+    str_buf << "leaf_const="
+      << ArrayToString(leaf_const_, num_leaves_) << '\n';
+    std::vector<int> num_feat(num_leaves_);
+    for (int i = 0; i < num_leaves_; ++i) {
+      num_feat[i] = leaf_coeff_[i].size();
+    }
+    str_buf << "num_features="
+      << ArrayToString(num_feat, num_leaves_) << '\n';
+    str_buf << "leaf_features=";
+    for (int i = 0; i < num_leaves_; ++i) {
+      if (num_feat[i] > 0) {
+        str_buf << ArrayToString(leaf_features_[i], leaf_features_[i].size()) << ' ';
+      }
+      str_buf << ' ';
+    }
+    str_buf << '\n';
+    str_buf << "leaf_coeff=";
+    for (int i = 0; i < num_leaves_; ++i) {
+      if (num_feat[i] > 0) {
+        str_buf << ArrayToString(leaf_coeff_[i], leaf_coeff_[i].size()) << ' ';
+      }
+      str_buf << ' ';
+    }
+    str_buf << '\n';
   }
   str_buf << "shrinkage=" << shrinkage_ << '\n';
   str_buf << '\n';
+
   return str_buf.str();
 }
 
 std::string Tree::ToJSON() const {
   std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << "\"num_leaves\":" << num_leaves_ << "," << '\n';
   str_buf << "\"num_cat\":" << num_cat_ << "," << '\n';
@@ -273,6 +424,7 @@ std::string Tree::ToJSON() const {
 
 std::string Tree::NodeToJSON(int index) const {
   std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   if (index >= 0) {
     // non-leaf
@@ -292,7 +444,7 @@ std::string Tree::NodeToJSON(int index) const {
           }
         }
       }
-      str_buf << "\"threshold\":\"" << Common::Join(cats, "||") << "\"," << '\n';
+      str_buf << "\"threshold\":\"" << CommonC::Join(cats, "||") << "\"," << '\n';
       str_buf << "\"decision_type\":\"==\"," << '\n';
     } else {
       str_buf << "\"threshold\":" << Common::AvoidInf(threshold_[index]) << "," << '\n';
@@ -333,6 +485,7 @@ std::string Tree::NodeToJSON(int index) const {
 
 std::string Tree::NumericalDecisionIfElse(int node) const {
   std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
   uint8_t missing_type = GetMissingType(decision_type_[node]);
   bool default_left = GetDecisionType(decision_type_[node], kDefaultLeftMask);
   if (missing_type == MissingType::None
@@ -357,6 +510,7 @@ std::string Tree::NumericalDecisionIfElse(int node) const {
 std::string Tree::CategoricalDecisionIfElse(int node) const {
   uint8_t missing_type = GetMissingType(decision_type_[node]);
   std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
   if (missing_type == MissingType::NaN) {
     str_buf << "if (std::isnan(fval)) { int_fval = -1; } else { int_fval = static_cast<int>(fval); }";
   } else {
@@ -372,6 +526,7 @@ std::string Tree::CategoricalDecisionIfElse(int node) const {
 
 std::string Tree::ToIfElse(int index, bool predict_leaf_index) const {
   std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
   str_buf << "double PredictTree" << index;
   if (predict_leaf_index) {
     str_buf << "Leaf";
@@ -430,6 +585,7 @@ std::string Tree::ToIfElse(int index, bool predict_leaf_index) const {
 
 std::string Tree::NodeToIfElse(int index, bool predict_leaf_index) const {
   std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   if (index >= 0) {
     // non-leaf
@@ -461,6 +617,7 @@ std::string Tree::NodeToIfElse(int index, bool predict_leaf_index) const {
 
 std::string Tree::NodeToIfElseByMap(int index, bool predict_leaf_index) const {
   std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   if (index >= 0) {
     // non-leaf
@@ -493,7 +650,7 @@ std::string Tree::NodeToIfElseByMap(int index, bool predict_leaf_index) const {
 Tree::Tree(const char* str, size_t* used_len) {
   auto p = str;
   std::unordered_map<std::string, std::string> key_vals;
-  const int max_num_line = 17;
+  const int max_num_line = 22;
   int read_line = 0;
   while (read_line < max_num_line) {
     if (*p == '\r' || *p == '\n') break;
@@ -523,94 +680,143 @@ Tree::Tree(const char* str, size_t* used_len) {
   Common::Atoi(key_vals["num_cat"].c_str(), &num_cat_);
 
   if (key_vals.count("leaf_value")) {
-    leaf_value_ = Common::StringToArray<double>(key_vals["leaf_value"], num_leaves_);
+    leaf_value_ = CommonC::StringToArray<double>(key_vals["leaf_value"], num_leaves_);
   } else {
     Log::Fatal("Tree model string format error, should contain leaf_value field");
   }
 
   if (key_vals.count("shrinkage")) {
-    Common::Atof(key_vals["shrinkage"].c_str(), &shrinkage_);
+    CommonC::Atof(key_vals["shrinkage"].c_str(), &shrinkage_);
   } else {
     shrinkage_ = 1.0f;
   }
 
-  if (num_leaves_ <= 1) { return; }
+  if (key_vals.count("is_linear")) {
+    int is_linear_int;
+    Common::Atoi(key_vals["is_linear"].c_str(), &is_linear_int);
+    is_linear_ = static_cast<bool>(is_linear_int);
+  }
+
+  if ((num_leaves_ <= 1) && !is_linear_) {
+    return;
+  }
 
   if (key_vals.count("left_child")) {
-    left_child_ = Common::StringToArrayFast<int>(key_vals["left_child"], num_leaves_ - 1);
+    left_child_ = CommonC::StringToArrayFast<int>(key_vals["left_child"], num_leaves_ - 1);
   } else {
     Log::Fatal("Tree model string format error, should contain left_child field");
   }
 
   if (key_vals.count("right_child")) {
-    right_child_ = Common::StringToArrayFast<int>(key_vals["right_child"], num_leaves_ - 1);
+    right_child_ = CommonC::StringToArrayFast<int>(key_vals["right_child"], num_leaves_ - 1);
   } else {
     Log::Fatal("Tree model string format error, should contain right_child field");
   }
 
   if (key_vals.count("split_feature")) {
-    split_feature_ = Common::StringToArrayFast<int>(key_vals["split_feature"], num_leaves_ - 1);
+    split_feature_ = CommonC::StringToArrayFast<int>(key_vals["split_feature"], num_leaves_ - 1);
   } else {
     Log::Fatal("Tree model string format error, should contain split_feature field");
   }
 
   if (key_vals.count("threshold")) {
-    threshold_ = Common::StringToArray<double>(key_vals["threshold"], num_leaves_ - 1);
+    threshold_ = CommonC::StringToArray<double>(key_vals["threshold"], num_leaves_ - 1);
   } else {
     Log::Fatal("Tree model string format error, should contain threshold field");
   }
 
   if (key_vals.count("split_gain")) {
-    split_gain_ = Common::StringToArrayFast<float>(key_vals["split_gain"], num_leaves_ - 1);
+    split_gain_ = CommonC::StringToArrayFast<float>(key_vals["split_gain"], num_leaves_ - 1);
   } else {
     split_gain_.resize(num_leaves_ - 1);
   }
 
   if (key_vals.count("internal_count")) {
-    internal_count_ = Common::StringToArrayFast<int>(key_vals["internal_count"], num_leaves_ - 1);
+    internal_count_ = CommonC::StringToArrayFast<int>(key_vals["internal_count"], num_leaves_ - 1);
   } else {
     internal_count_.resize(num_leaves_ - 1);
   }
 
   if (key_vals.count("internal_value")) {
-    internal_value_ = Common::StringToArrayFast<double>(key_vals["internal_value"], num_leaves_ - 1);
+    internal_value_ = CommonC::StringToArrayFast<double>(key_vals["internal_value"], num_leaves_ - 1);
   } else {
     internal_value_.resize(num_leaves_ - 1);
   }
 
   if (key_vals.count("internal_weight")) {
-    internal_weight_ = Common::StringToArrayFast<double>(key_vals["internal_weight"], num_leaves_ - 1);
+    internal_weight_ = CommonC::StringToArrayFast<double>(key_vals["internal_weight"], num_leaves_ - 1);
   } else {
     internal_weight_.resize(num_leaves_ - 1);
   }
 
   if (key_vals.count("leaf_weight")) {
-    leaf_weight_ = Common::StringToArray<double>(key_vals["leaf_weight"], num_leaves_);
+    leaf_weight_ = CommonC::StringToArray<double>(key_vals["leaf_weight"], num_leaves_);
   } else {
     leaf_weight_.resize(num_leaves_);
   }
 
   if (key_vals.count("leaf_count")) {
-    leaf_count_ = Common::StringToArrayFast<int>(key_vals["leaf_count"], num_leaves_);
+    leaf_count_ = CommonC::StringToArrayFast<int>(key_vals["leaf_count"], num_leaves_);
   } else {
     leaf_count_.resize(num_leaves_);
   }
 
   if (key_vals.count("decision_type")) {
-    decision_type_ = Common::StringToArrayFast<int8_t>(key_vals["decision_type"], num_leaves_ - 1);
+    decision_type_ = CommonC::StringToArrayFast<int8_t>(key_vals["decision_type"], num_leaves_ - 1);
   } else {
     decision_type_ = std::vector<int8_t>(num_leaves_ - 1, 0);
   }
 
+  if (is_linear_) {
+    if (key_vals.count("leaf_const")) {
+      leaf_const_ = Common::StringToArrayFast<double>(key_vals["leaf_const"], num_leaves_);
+    } else {
+      leaf_const_.resize(num_leaves_);
+    }
+    std::vector<int> num_feat;
+    if (key_vals.count("num_features")) {
+      num_feat = Common::StringToArrayFast<int>(key_vals["num_features"], num_leaves_);
+    }
+    leaf_coeff_.resize(num_leaves_);
+    leaf_features_.resize(num_leaves_);
+    leaf_features_inner_.resize(num_leaves_);
+    if (num_feat.size() > 0) {
+      int total_num_feat = 0;
+      for (size_t i = 0; i < num_feat.size(); ++i) {
+        total_num_feat += num_feat[i];
+      }
+      std::vector<int> all_leaf_features;
+      if (key_vals.count("leaf_features")) {
+        all_leaf_features = Common::StringToArrayFast<int>(key_vals["leaf_features"], total_num_feat);
+      }
+      std::vector<double> all_leaf_coeff;
+      if (key_vals.count("leaf_coeff")) {
+        all_leaf_coeff = Common::StringToArrayFast<double>(key_vals["leaf_coeff"], total_num_feat);
+      }
+      int sum_num_feat = 0;
+      for (int i = 0; i < num_leaves_; ++i) {
+        if (num_feat[i] > 0) {
+          if (key_vals.count("leaf_features"))  {
+            leaf_features_[i].assign(all_leaf_features.begin() + sum_num_feat, all_leaf_features.begin() + sum_num_feat + num_feat[i]);
+          }
+          if (key_vals.count("leaf_coeff")) {
+            leaf_coeff_[i].assign(all_leaf_coeff.begin() + sum_num_feat, all_leaf_coeff.begin() + sum_num_feat + num_feat[i]);
+          }
+        }
+        sum_num_feat += num_feat[i];
+      }
+    }
+  }
+
   if (num_cat_ > 0) {
     if (key_vals.count("cat_boundaries")) {
-      cat_boundaries_ = Common::StringToArrayFast<int>(key_vals["cat_boundaries"], num_cat_ + 1);
+      cat_boundaries_ = CommonC::StringToArrayFast<int>(key_vals["cat_boundaries"], num_cat_ + 1);
     } else {
       Log::Fatal("Tree model should contain cat_boundaries field.");
     }
 
     if (key_vals.count("cat_threshold")) {
-      cat_threshold_ = Common::StringToArrayFast<uint32_t>(key_vals["cat_threshold"], cat_boundaries_.back());
+      cat_threshold_ = CommonC::StringToArrayFast<uint32_t>(key_vals["cat_threshold"], cat_boundaries_.back());
     } else {
       Log::Fatal("Tree model should contain cat_threshold field");
     }

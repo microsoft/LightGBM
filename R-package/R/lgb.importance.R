@@ -39,12 +39,12 @@
 lgb.importance <- function(model, percentage = TRUE) {
 
   # Check if model is a lightgbm model
-  if (!lgb.is.Booster(model)) {
+  if (!lgb.is.Booster(x = model)) {
     stop("'model' has to be an object of class lgb.Booster")
   }
 
   # Setup importance
-  tree_dt <- lgb.model.dt.tree(model)
+  tree_dt <- lgb.model.dt.tree(model = model)
 
   # Extract elements
   tree_imp_dt <- tree_dt[
@@ -54,7 +54,7 @@ lgb.importance <- function(model, percentage = TRUE) {
   ]
 
   data.table::setnames(
-    tree_imp_dt
+    x = tree_imp_dt
     , old = "split_feature"
     , new = "Feature"
   )

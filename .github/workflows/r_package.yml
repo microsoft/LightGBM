@@ -97,6 +97,12 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MINGW
+            toolchain: MINGW
+            r_version: 3.6
+            build_type: cran
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
             toolchain: MSYS
             r_version: 4.0
             build_type: cran
@@ -120,6 +126,8 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
+      - name: Install pandoc
+        uses: r-lib/actions/setup-pandoc@v1
       - name: Setup and run tests on Linux and macOS
         if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
         shell: bash
@@ -129,23 +137,14 @@ jobs:
           export GITHUB_ACTIONS="true"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
               export OS_NAME="macos"
-              export R_MAC_VERSION=3.6.3
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
-              export R_LINUX_VERSION=3.6.3-1bionic
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export CONDA="$HOME/miniconda"
-          export PATH="$CONDA/bin:${HOME}/.local/bin:$PATH"
           export R_VERSION="${{ matrix.r_version }}"
           export R_BUILD_TYPE="${{ matrix.build_type }}"
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
-      - name: Use conda on Windows
-        if: startsWith(matrix.os, 'windows')
-        uses: conda-incubator/setup-miniconda@v1.7.0
-        with:
-          auto-update-conda: false
       - name: Setup and run tests on Windows
         if: startsWith(matrix.os, 'windows')
         shell: pwsh -command ". {0}"
@@ -157,7 +156,6 @@ jobs:
           $env:COMPILER = "${{ matrix.compiler }}"
           $env:GITHUB_ACTIONS = "true"
           $env:TASK = "${{ matrix.task }}"
-          conda init powershell
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
   test-r-sanitizers:
     name: r-package (ubuntu-latest, R-devel, GCC ASAN/UBSAN)

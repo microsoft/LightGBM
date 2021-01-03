@@ -401,6 +401,14 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
 // --- start Booster interfaces
 
 /*!
+* \brief Get boolean representing whether booster is fitting linear trees.
+* \param handle Handle of booster
+* \param[out] out The address to hold linear trees indicator
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetLinear(BoosterHandle handle, bool* out);
+
+/*!
  * \brief Create a new boosting learner.
  * \param train_data Training dataset
  * \param parameters Parameters in format 'key1=value1 key2=value2'

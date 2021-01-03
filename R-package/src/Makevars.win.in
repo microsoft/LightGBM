@@ -22,7 +22,6 @@ PKG_LIBS = \
     -lIphlpapi
 
 OBJECTS = \
-    application/application.o \
     boosting/boosting.o \
     boosting/gbdt.o \
     boosting/gbdt_model_text.o \
@@ -50,6 +49,7 @@ OBJECTS = \
     treelearner/data_parallel_tree_learner.o \
     treelearner/feature_parallel_tree_learner.o \
     treelearner/gpu_tree_learner.o \
+    treelearner/linear_tree_learner.o \
     treelearner/serial_tree_learner.o \
     treelearner/tree_learner.o \
     treelearner/voting_parallel_tree_learner.o \

@@ -41,24 +41,6 @@ class Threading {
   }
 
   template <typename INDEX_T>
-  static inline void BlockInfo(int num_threads, INDEX_T cnt,
-                               INDEX_T min_cnt_per_block, INDEX_T max_cnt_per_block,
-                               int* out_nblock, INDEX_T* block_size) {
-    CHECK(max_cnt_per_block >= min_cnt_per_block);
-    *out_nblock = std::min<int>(
-        num_threads,
-        static_cast<int>((cnt + min_cnt_per_block - 1) / min_cnt_per_block));
-    *out_nblock = std::max<int>(
-      *out_nblock,
-      static_cast<int>((cnt + max_cnt_per_block - 1) / max_cnt_per_block));
-    if (*out_nblock > 1) {
-      *block_size = SIZE_ALIGNED((cnt + (*out_nblock) - 1) / (*out_nblock));
-    } else {
-      *block_size = cnt;
-    }
-  }
-
-  template <typename INDEX_T>
   static inline void BlockInfoForceSize(int num_threads, INDEX_T cnt,
                                         INDEX_T min_cnt_per_block,
                                         int* out_nblock, INDEX_T* block_size) {

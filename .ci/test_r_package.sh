@@ -11,6 +11,15 @@ export PATH="$R_LIB_PATH/R/bin:$PATH"
 # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
 export _R_CHECK_SYSTEM_CLOCK_=0
 
+# ignore R CMD CHECK NOTE checking how long it has
+# been since the last submission
+export _R_CHECK_CRAN_INCOMING_REMOTE_=0
+
+# CRAN ignores the "installed size is too large" NOTE,
+# so our CI can too. Setting to a large value here just
+# to catch extreme problems
+export _R_CHECK_PKG_SIZES_THRESHOLD_=60
+
 # Get details needed for installing R components
 R_MAJOR_VERSION=( ${R_VERSION//./ } )
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
@@ -50,7 +59,6 @@ if [[ $OS_NAME == "linux" ]]; then
             qpdf \
             || exit -1
 
-    
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         sudo apt-get install \
             --no-install-recommends \
@@ -68,7 +76,7 @@ if [[ $OS_NAME == "macos" ]]; then
     brew install \
         checkbashisms \
         qpdf
-    brew cask install basictex
+    brew install --cask basictex
     export PATH="/Library/TeX/texbin:$PATH"
     sudo tlmgr --verify-repo=none update --self
     sudo tlmgr --verify-repo=none install inconsolata helvetic
@@ -88,12 +96,6 @@ if [[ $OS_NAME == "macos" ]]; then
             /Library/Frameworks/R.framework/Versions/${R_MAJOR_MINOR}/Resources/lib/libomp.dylib
     fi
 fi
-
-conda install \
-    -y \
-    -q \
-    --no-deps \
-        pandoc
 
 # Manually install Depends and Imports libraries + 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
@@ -187,19 +189,8 @@ if [[ $check_succeeded == "no" ]]; then
     exit -1
 fi
 
-if grep -q -R "WARNING" "$LOG_FILE_NAME"; then
-    echo "WARNINGS have been found by R CMD check!"
-    exit -1
-fi
-
-ALLOWED_CHECK_NOTES=2
-NUM_CHECK_NOTES=$(
-    cat ${LOG_FILE_NAME} \
-        | grep -e '^Status: .* NOTE.*' \
-        | sed 's/[^0-9]*//g'
-)
-if [[ ${NUM_CHECK_NOTES} -gt ${ALLOWED_CHECK_NOTES} ]]; then
-    echo "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
+if grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME"; then
+    echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
     exit -1
 fi
 

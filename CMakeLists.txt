@@ -90,6 +90,12 @@ if(USE_SWIG)
   endif()
 endif(USE_SWIG)
 
+SET(EIGEN_DIR "${PROJECT_SOURCE_DIR}/eigen")
+include_directories(${EIGEN_DIR})
+
+# See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
+ADD_DEFINITIONS(-DEIGEN_MPL2_ONLY)
+
 if(__BUILD_FOR_R)
     list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
     find_package(LibR REQUIRED)
@@ -124,12 +130,6 @@ endif(USE_CUDA)
 if(USE_OPENMP)
     find_package(OpenMP REQUIRED)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-else()
-    # Ignore unknown #pragma warning
-    if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-      OR (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
-    endif()
 endif(USE_OPENMP)
 
 if(USE_GPU)
@@ -269,6 +269,9 @@ if(UNIX OR MINGW OR CYGWIN)
     if(USE_SWIG)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
     endif()
+    if(NOT USE_OPENMP)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-unused-private-field")
+    endif()
 endif()
 
 if(WIN32 AND MINGW)
@@ -318,7 +321,6 @@ if(USE_MPI)
 endif(USE_MPI)
 
 file(GLOB SOURCES
-    src/application/*.cpp
     src/boosting/*.cpp
     src/io/*.cpp
     src/metric/*.cpp
@@ -330,7 +332,7 @@ if(USE_CUDA)
 endif(USE_CUDA)
 )
 
-add_executable(lightgbm src/main.cpp ${SOURCES})
+add_executable(lightgbm src/main.cpp src/application/application.cpp ${SOURCES})
 list(APPEND SOURCES "src/c_api.cpp")
 
 # Only build the R part of the library if building for
