@@ -73,8 +73,7 @@ jobs:
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export LGB_VER=$(head -n 1 VERSION.txt)
           export CONDA=${HOME}/miniconda
-          export PATH=${CONDA}/bin:$(brew --prefix swig@3)/bin:${PATH}
-          export JAVA_HOME=$JAVA_HOME_8_X64
+          export PATH=${CONDA}/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
   all-successful:
