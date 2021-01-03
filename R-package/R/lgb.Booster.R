@@ -318,11 +318,13 @@ Booster <- R6::R6Class(
     current_iter = function() {
 
       cur_iter <- 0L
-      return(lgb.call(
-        fun_name = "LGBM_BoosterGetCurrentIteration_R"
-        , ret = cur_iter
-        , private$handle
-      ))
+      return(
+        lgb.call(
+          fun_name = "LGBM_BoosterGetCurrentIteration_R"
+          , ret = cur_iter
+          , private$handle
+        )
+      )
 
     },
 
@@ -330,11 +332,13 @@ Booster <- R6::R6Class(
     upper_bound = function() {
 
       upper_bound <- 0.0
-      return(lgb.call(
-        fun_name = "LGBM_BoosterGetUpperBoundValue_R"
-        , ret = upper_bound
-        , private$handle
-      ))
+      return(
+        lgb.call(
+          fun_name = "LGBM_BoosterGetUpperBoundValue_R"
+          , ret = upper_bound
+          , private$handle
+        )
+      )
 
     },
 
@@ -342,11 +346,13 @@ Booster <- R6::R6Class(
     lower_bound = function() {
 
       lower_bound <- 0.0
-      return(lgb.call(
-        fun_name = "LGBM_BoosterGetLowerBoundValue_R"
-        , ret = lower_bound
-        , private$handle
-      ))
+      return(
+        lgb.call(
+          fun_name = "LGBM_BoosterGetLowerBoundValue_R"
+          , ret = lower_bound
+          , private$handle
+        )
+      )
 
     },
 
@@ -395,11 +401,13 @@ Booster <- R6::R6Class(
       }
 
       # Evaluate data
-      return(private$inner_eval(
-        data_name = name
-        , data_idx = data_idx
-        , feval = feval
-      ))
+      return(
+        private$inner_eval(
+          data_name = name
+          , data_idx = data_idx
+          , feval = feval
+        )
+      )
 
     },
 
@@ -461,12 +469,14 @@ Booster <- R6::R6Class(
       }
 
       # Return model string
-      return(lgb.call.return.str(
-        fun_name = "LGBM_BoosterSaveModelToString_R"
-        , private$handle
-        , as.integer(num_iteration)
-        , as.integer(feature_importance_type)
-      ))
+      return(
+        lgb.call.return.str(
+          fun_name = "LGBM_BoosterSaveModelToString_R"
+          , private$handle
+          , as.integer(num_iteration)
+          , as.integer(feature_importance_type)
+        )
+      )
 
     },
 
@@ -478,12 +488,14 @@ Booster <- R6::R6Class(
         num_iteration <- self$best_iter
       }
 
-      return(lgb.call.return.str(
-        fun_name = "LGBM_BoosterDumpModel_R"
-        , private$handle
-        , as.integer(num_iteration)
-        , as.integer(feature_importance_type)
-      ))
+      return(
+        lgb.call.return.str(
+          fun_name = "LGBM_BoosterDumpModel_R"
+          , private$handle
+          , as.integer(num_iteration)
+          , as.integer(feature_importance_type)
+        )
+      )
 
     },
 
@@ -508,7 +520,8 @@ Booster <- R6::R6Class(
 
       # Predict on new data
       predictor <- Predictor$new(private$handle, ...)
-      return(predictor$predict(
+      return(
+        predictor$predict(
           data = data
           , start_iteration = start_iteration
           , num_iteration = num_iteration
@@ -517,7 +530,8 @@ Booster <- R6::R6Class(
           , predcontrib = predcontrib
           , header = header
           , reshape = reshape
-      ))
+        )
+      )
 
     },
 
@@ -780,8 +794,9 @@ predict.lgb.Booster <- function(object,
   }
 
   # Return booster predictions
-  return(object$predict(
-    data = data
+  return(
+    object$predict(
+      data = data
       , start_iteration = start_iteration
       , num_iteration = num_iteration
       , rawscore = rawscore
@@ -789,8 +804,9 @@ predict.lgb.Booster <- function(object,
       , predcontrib =  predcontrib
       , header = header
       , reshape = reshape
-    , ...
-  ))
+      , ...
+    )
+  )
 }
 
 #' @name lgb.load
@@ -896,10 +912,12 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
   }
 
   # Store booster
-  return(invisible(booster$save_model(
-    filename = filename
-    , num_iteration = num_iteration
-  )))
+  return(
+    invisible(booster$save_model(
+      filename = filename
+      , num_iteration = num_iteration
+    ))
+  )
 
 }
 

@@ -329,18 +329,20 @@ Dataset <- R6::R6Class(
         num_col <- 0L
 
         # Get numeric data and numeric features
-        return(c(
-          lgb.call(
-            fun_name = "LGBM_DatasetGetNumData_R"
-            , ret = num_row
-            , private$handle
-          ),
-          lgb.call(
-            fun_name = "LGBM_DatasetGetNumFeature_R"
-            , ret = num_col
-            , private$handle
+        return(
+          c(
+            lgb.call(
+              fun_name = "LGBM_DatasetGetNumData_R"
+              , ret = num_row
+              , private$handle
+            ),
+            lgb.call(
+              fun_name = "LGBM_DatasetGetNumFeature_R"
+              , ret = num_col
+              , private$handle
+            )
           )
-        ))
+        )
 
       } else if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {
 
@@ -526,18 +528,20 @@ Dataset <- R6::R6Class(
     slice = function(idxset, ...) {
 
       # Perform slicing
-      return(Dataset$new(
-        data = NULL
-        , params = private$params
-        , reference = self
-        , colnames = private$colnames
-        , categorical_feature = private$categorical_feature
-        , predictor = private$predictor
-        , free_raw_data = private$free_raw_data
-        , used_indices = sort(idxset, decreasing = FALSE)
-        , info = NULL
-        , ...
-      ))
+      return(
+        Dataset$new(
+          data = NULL
+          , params = private$params
+          , reference = self
+          , colnames = private$colnames
+          , categorical_feature = private$categorical_feature
+          , predictor = private$predictor
+          , free_raw_data = private$free_raw_data
+          , used_indices = sort(idxset, decreasing = FALSE)
+          , info = NULL
+          , ...
+        )
+      )
 
     },
 
@@ -757,18 +761,20 @@ lgb.Dataset <- function(data,
                         ...) {
 
   # Create new dataset
-  return(invisible(Dataset$new(
-    data = data
-    , params = params
-    , reference = reference
-    , colnames = colnames
-    , categorical_feature = categorical_feature
-    , predictor = NULL
-    , free_raw_data = free_raw_data
-    , used_indices = NULL
-    , info = info
-    , ...
-  )))
+  return(
+    invisible(Dataset$new(
+      data = data
+      , params = params
+      , reference = reference
+      , colnames = colnames
+      , categorical_feature = categorical_feature
+      , predictor = NULL
+      , free_raw_data = free_raw_data
+      , used_indices = NULL
+      , info = info
+      , ...
+    ))
+  )
 
 }
 

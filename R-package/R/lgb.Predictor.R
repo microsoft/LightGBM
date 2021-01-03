@@ -69,11 +69,13 @@ Predictor <- R6::R6Class(
     current_iter = function() {
 
       cur_iter <- 0L
-      return(lgb.call(
-        fun_name = "LGBM_BoosterGetCurrentIteration_R"
-        , ret = cur_iter
-        , private$handle
-      ))
+      return(
+        lgb.call(
+          fun_name = "LGBM_BoosterGetCurrentIteration_R"
+          , ret = cur_iter
+          , private$handle
+        )
+      )
 
     },
 

@@ -616,9 +616,11 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
   }
 
   # Return errors
-  return(list(
-    eval_list = ret_eval
-    , eval_err_list = ret_eval_err
-  ))
+  return(
+    list(
+      eval_list = ret_eval
+      , eval_err_list = ret_eval_err
+    )
+  )
 
 }

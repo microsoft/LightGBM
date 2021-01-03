@@ -446,15 +446,17 @@ add.cb <- function(cb_list, cb) {
 categorize.callbacks <- function(cb_list) {
 
   # Check for pre-iteration or post-iteration
-  return(list(
-    pre_iter = Filter(function(x) {
-      pre <- attr(x, "is_pre_iteration")
-      !is.null(pre) && pre
-    }, cb_list),
-    post_iter = Filter(function(x) {
-      pre <- attr(x, "is_pre_iteration")
-      is.null(pre) || !pre
-    }, cb_list)
-  ))
+  return(
+    list(
+      pre_iter = Filter(function(x) {
+        pre <- attr(x, "is_pre_iteration")
+        !is.null(pre) && pre
+      }, cb_list),
+      post_iter = Filter(function(x) {
+        pre <- attr(x, "is_pre_iteration")
+        is.null(pre) || !pre
+      }, cb_list)
+    )
+  )
 
 }
