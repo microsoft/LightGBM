@@ -34,6 +34,7 @@ void LinearTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
       }
     }
   }
+  any_nan_ = false;
   for (int feat = 0; feat < train_data->num_features(); ++feat) {
     if (contains_nan_[feat]) {
       any_nan_ = true;
