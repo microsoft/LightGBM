@@ -74,7 +74,7 @@ cb.reset.parameters <- function(new_params) {
 
     }
     
-    return(inivisble(NULL))
+    return(invisible(NULL))
 
   }
 
