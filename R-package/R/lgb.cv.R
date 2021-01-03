@@ -13,7 +13,7 @@ CVBooster <- R6::R6Class(
     },
     reset_parameter = function(new_params) {
       for (x in boosters) { x$reset_parameter(new_params) }
-      return(self)
+      return(invisible(self))
     }
   )
 )
