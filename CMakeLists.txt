@@ -93,6 +93,9 @@ endif(USE_SWIG)
 SET(EIGEN_DIR "${PROJECT_SOURCE_DIR}/eigen")
 include_directories(${EIGEN_DIR})
 
+# See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
+ADD_DEFINITIONS(-DEIGEN_MPL2_ONLY)
+
 if(__BUILD_FOR_R)
     list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
     find_package(LibR REQUIRED)
