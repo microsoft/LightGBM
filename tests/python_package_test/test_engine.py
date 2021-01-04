@@ -2609,3 +2609,37 @@ class TestEngine(unittest.TestCase):
         lgb_X = lgb.Dataset(X, label=y)
         lgb.train(params, lgb_X, num_boost_round=1, valid_sets=[lgb_X], evals_result=res)
         self.assertAlmostEqual(res['training']['average_precision'][-1], 1)
+
+    def test_reset_params_works_with_metric_num_class_and_boosting(self):
+        X, y = load_breast_cancer(return_X_y=True)
+        params = {
+            'objective': 'multiclass',
+            'max_depth': 4,
+            'bagging_fraction': 0.8,
+            'metric': ['multi_logloss', 'multi_error'],
+            'boosting': 'gbdt',
+            'num_class': 5
+        }
+        dtrain = lgb.Dataset(X, y, params={"max_bin": 150})
+
+        bst = lgb.Booster(
+            params=params,
+            train_set=dtrain
+        )
+        expected_params = {
+            'objective': 'multiclass',
+            'max_depth': 4,
+            'bagging_fraction': 0.8,
+            'metric': ['multi_logloss', 'multi_error'],
+            'boosting': 'gbdt',
+            'num_class': 5,
+            'max_bin': 150
+        }
+        assert bst.params == expected_params
+
+        params['bagging_fraction'] = 0.9
+        ret_bst = bst.reset_parameter(params)
+
+        expected_params['bagging_fraction'] = 0.9
+        assert bst.params == expected_params
+        assert ret_bst.params == expected_params

@@ -340,7 +340,7 @@ class Dataset {
         if (has_raw_) {
           int feat_ind = numeric_feature_map_[feature_idx];
           if (feat_ind >= 0) {
-            raw_data_[feat_ind][row_idx] = feature_values[i];
+            raw_data_[feat_ind][row_idx] = static_cast<float>(feature_values[i]);
           }
         }
       }

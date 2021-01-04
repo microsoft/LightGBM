@@ -42,7 +42,7 @@
 #' }
 #' @export
 saveRDS.lgb.Booster <- function(object,
-                                file = "",
+                                file,
                                 ascii = FALSE,
                                 version = NULL,
                                 compress = TRUE,
