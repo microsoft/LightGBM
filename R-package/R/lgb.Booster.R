@@ -137,10 +137,10 @@ Booster <- R6::R6Class(
 
       }
       
-      return(invisible(NULL))
-
       self$params <- params
-
+      
+      return(invisible(NULL))
+      
     },
 
     # Set training data name
