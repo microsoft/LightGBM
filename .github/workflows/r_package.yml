@@ -40,11 +40,6 @@ jobs:
             compiler: clang
             r_version: 4.0
             build_type: cmake
-          - os: ubuntu-latest
-            task: r-package-check-docs
-            compiler: gcc
-            r_version: 4.0
-            build_type: cmake
           - os: macOS-latest
             task: r-package
             compiler: gcc
