@@ -50,7 +50,7 @@ if [[ $TASK == "lint" ]]; then
         -c conda-forge \
             libxml2 \
             "r-lintr>=2.0"
-    pip install cpplint
+    pip install --user cpplint
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./compute,./eigen,./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|^eigen|external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1

@@ -88,14 +88,6 @@ jobs:
             method: wheel
             python_version: 3.7
             compiler: clang
-          - os: ubuntu-latest
-            task: lint
-            python_version: 3.8
-            compiler: clang
-          - os: ubuntu-latest
-            task: check-docs
-            python_version: 3.8
-            compiler: clang
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2.3.4
@@ -114,6 +106,10 @@ jobs:
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
           fi
+          export AMDAPPSDK_PATH=$HOME/AMDAPPSDK
+          export LD_LIBRARY_PATH="$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH"
+          export LD_LIBRARY_PATH="/usr/local/clang/lib:$LD_LIBRARY_PATH"  # fix error "libomp.so: cannot open shared object file: No such file or directory" on Linux with Clang
+          export OPENCL_VENDOR_PATH=$AMDAPPSDK_PATH/etc/OpenCL/vendors
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export LGB_VER=$(head -n 1 VERSION.txt)
           export CONDA=${HOME}/miniconda
