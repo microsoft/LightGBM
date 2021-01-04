@@ -29,10 +29,10 @@ if ($env:TASK -ne "bdist") {
 if ($env:TASK -eq "swig") {
   $env:JAVA_HOME = $env:JAVA_HOME_8_X64  # there is pre-installed Zulu OpenJDK-8 somewhere
   $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
-  Invoke-WebRequest -Uri "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/swigwin-3.0.12.zip" -OutFile $env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip -UserAgent "NativeHost"
+  Invoke-WebRequest -Uri "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/swigwin-4.0.2.zip" -OutFile $env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip -UserAgent "NativeHost"
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip", "$env:BUILD_SOURCESDIRECTORY/swig")
-  $env:PATH += ";$env:BUILD_SOURCESDIRECTORY/swig/swigwin-3.0.12"
+  $env:PATH += ";$env:BUILD_SOURCESDIRECTORY/swig/swigwin-4.0.2"
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 -DUSE_SWIG=ON .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
   if ($env:AZURE -eq "true") {
