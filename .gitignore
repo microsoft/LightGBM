@@ -423,7 +423,7 @@ lightgbm.Rcheck/
 miktex*.zip
 *.def
 
-# Files created by R examples and tests
+# Files created by R and Python examples and tests
 **/lgb-Dataset.data
 **/lgb.Dataset.data
 **/model.txt
