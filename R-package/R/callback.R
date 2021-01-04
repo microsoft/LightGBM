@@ -97,7 +97,7 @@ cb.reset.parameters <- function(new_params) {
     })
 
     if (!is.null(env$model)) {
-      env$model$reset_parameter(params = pars)
+      return(env$model$reset_parameter(params = pars))
     }
     
     return(invisible(NULL))
