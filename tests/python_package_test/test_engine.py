@@ -2612,7 +2612,8 @@ class TestEngine(unittest.TestCase):
 
     def test_reset_params_works_with_metric_num_class_and_boosting(self):
         X, y = load_breast_cancer(return_X_y=True)
-        params = {
+        dataset_params = {"max_bin": 150}
+        booster_params = {
             'objective': 'multiclass',
             'max_depth': 4,
             'bagging_fraction': 0.8,
@@ -2620,26 +2621,18 @@ class TestEngine(unittest.TestCase):
             'boosting': 'gbdt',
             'num_class': 5
         }
-        dtrain = lgb.Dataset(X, y, params={"max_bin": 150})
-
+        dtrain = lgb.Dataset(X, y, params=dataset_params)
         bst = lgb.Booster(
-            params=params,
+            params=booster_params,
             train_set=dtrain
         )
-        expected_params = {
-            'objective': 'multiclass',
-            'max_depth': 4,
-            'bagging_fraction': 0.8,
-            'metric': ['multi_logloss', 'multi_error'],
-            'boosting': 'gbdt',
-            'num_class': 5,
-            'max_bin': 150
-        }
-        assert bst.params == expected_params
 
-        params['bagging_fraction'] = 0.9
-        ret_bst = bst.reset_parameter(params)
+        expected_params = dict(dataset_params, **booster_params)
+        self.assertDictEqual(bst.params, expected_params)
 
-        expected_params['bagging_fraction'] = 0.9
-        assert bst.params == expected_params
-        assert ret_bst.params == expected_params
+        booster_params['bagging_fraction'] += 0.1
+        new_bst = bst.reset_parameter(booster_params)
+
+        expected_params = dict(dataset_params, **booster_params)
+        self.assertDictEqual(bst.params, expected_params)
+        self.assertDictEqual(new_bst.params, expected_params)
