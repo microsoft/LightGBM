@@ -17,7 +17,7 @@ Dataset <- R6::R6Class(
         private$handle <- NULL
 
       }
-      
+
       return(invisible(NULL))
 
     },
@@ -86,7 +86,7 @@ Dataset <- R6::R6Class(
       private$used_indices <- sort(used_indices, decreasing = FALSE)
       private$info <- info
       private$version <- 0L
-      
+
       return(invisible(NULL))
 
     },

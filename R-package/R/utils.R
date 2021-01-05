@@ -54,9 +54,9 @@ lgb.last_error <- function() {
   }
 
   stop("api error: ", lgb.encode.char(arr = err_msg, len = act_len))
-  
+
   return(invisible(NULL))
-  
+
 }
 
 lgb.call <- function(fun_name, ret, ...) {

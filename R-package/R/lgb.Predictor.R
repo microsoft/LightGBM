@@ -22,7 +22,7 @@ Predictor <- R6::R6Class(
         private$handle <- NULL
 
       }
-      
+
       return(invisible(NULL))
 
     },
@@ -60,7 +60,7 @@ Predictor <- R6::R6Class(
       # Override class and store it
       class(handle) <- "lgb.Booster.handle"
       private$handle <- handle
-      
+
       return(invisible(NULL))
 
     },

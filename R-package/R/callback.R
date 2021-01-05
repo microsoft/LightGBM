@@ -73,7 +73,7 @@ cb.reset.parameters <- function(new_params) {
       }
 
     }
-    
+
     return(invisible(NULL))
 
   }
@@ -99,7 +99,7 @@ cb.reset.parameters <- function(new_params) {
     if (!is.null(env$model)) {
       return(env$model$reset_parameter(params = pars))
     }
-    
+
     return(invisible(NULL))
 
   }
@@ -183,7 +183,7 @@ cb.print.evaluation <- function(period = 1L) {
       }
 
     }
-    
+
     return(invisible(NULL))
 
   }
@@ -258,7 +258,7 @@ cb.record.evaluation <- function() {
       )
 
     }
-    
+
     return(invisible(NULL))
 
   }
@@ -318,7 +318,7 @@ cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = 
       }
 
     }
-    
+
     return(invisible(NULL))
 
   }
@@ -402,9 +402,9 @@ cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = 
         env$met_early_stop <- TRUE
       }
     }
-    
+
     return(invisible(NULL))
-    
+
   }
 
   attr(callback, "call") <- match.call()

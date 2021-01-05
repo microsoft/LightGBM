@@ -20,7 +20,7 @@ Booster <- R6::R6Class(
         private$handle <- NULL
 
       }
-      
+
       return(invisible(NULL))
 
     },
@@ -136,11 +136,11 @@ Booster <- R6::R6Class(
         )
 
       }
-      
+
       self$params <- params
-      
+
       return(invisible(NULL))
-      
+
     },
 
     # Set training data name
@@ -554,7 +554,7 @@ Booster <- R6::R6Class(
 
       # Overwrite model in object
       self$raw <- self$save_model_to_string(NULL)
-      
+
       return(invisible(NULL))
 
     }
