@@ -61,7 +61,7 @@ jobs:
           sh build-cran-package.sh || exit -1
           R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit -1
       - name: Test documentation
-        shell: bash --noprofile --norc -e {0}
+        shell: bash --noprofile --norc {0}
         run: |
           Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit 100
           num_doc_files_changed=$(
