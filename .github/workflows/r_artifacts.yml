@@ -1,8 +1,8 @@
 name: R artifact builds
 
 on:
-  pull_request_review_comment:
-    types: [created]
+  repository_dispatch:
+    types: [gha_run_build_r_artifacts]
 
 jobs:
   cran-package:
@@ -11,6 +11,8 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     container: rocker/r-base
+    env:
+      SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
     steps:
       - name: Install Git before checkout
         shell: bash
@@ -22,6 +24,15 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
+          repository: microsoft/LightGBM
+          ref: "refs/pull/${{ github.event.client_payload.pr_number }}/merge"
+      - name: Send init status
+        if: ${{ always() }}
+        run: |
+          $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "pending" "${{ github.event.client_payload.pr_sha }}"
+          $GITHUB_WORKSPACE/.ci/append_comment.sh \
+            "${{ github.event.client_payload.comment_number }}" \
+            "Workflow **${{ github.workflow }}** has been triggered! 🚀\r\n${GITHUB_SERVER_URL}/microsoft/LightGBM/actions/runs/${GITHUB_RUN_ID}"
       - name: Build package
         shell: bash
         id: build_package
@@ -37,3 +48,18 @@ jobs:
         with:
           name: ${{ steps.build_package.outputs.artifact_name }}
           path: ${{ steps.build_package.outputs.artifact_path }}
+      - name: Send final status
+        if: ${{ always() }}
+        run: |
+          $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}" "${{ github.event.client_payload.pr_sha }}"
+          $GITHUB_WORKSPACE/.ci/append_comment.sh \
+            "${{ github.event.client_payload.comment_number }}" \
+            "Status: ${{ job.status }}."
+      - name: Rerun main workflow
+        if: ${{ success() }}
+        run: |
+          python $GITHUB_WORKSPACE/.ci/rerun_workflow.py \
+            "optional_checks.yml" \
+            "${{ github.event.client_payload.pr_number }}" \
+            "${{ github.event.client_payload.pr_branch }}" \
+            || true
