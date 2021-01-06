@@ -29,7 +29,6 @@ jobs:
       - name: Send init status
         if: ${{ always() }}
         run: |
-          $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "pending" "${{ github.event.client_payload.pr_sha }}"
           $GITHUB_WORKSPACE/.ci/append_comment.sh \
             "${{ github.event.client_payload.comment_number }}" \
             "Workflow **${{ github.workflow }}** has been triggered! 🚀\r\n${GITHUB_SERVER_URL}/microsoft/LightGBM/actions/runs/${GITHUB_RUN_ID}"
@@ -51,15 +50,6 @@ jobs:
       - name: Send final status
         if: ${{ always() }}
         run: |
-          $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}" "${{ github.event.client_payload.pr_sha }}"
           $GITHUB_WORKSPACE/.ci/append_comment.sh \
             "${{ github.event.client_payload.comment_number }}" \
             "Status: ${{ job.status }}."
-      - name: Rerun main workflow
-        if: ${{ success() }}
-        run: |
-          python $GITHUB_WORKSPACE/.ci/rerun_workflow.py \
-            "optional_checks.yml" \
-            "${{ github.event.client_payload.pr_number }}" \
-            "${{ github.event.client_payload.pr_branch }}" \
-            || true
