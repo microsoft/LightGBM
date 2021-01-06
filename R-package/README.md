@@ -247,7 +247,7 @@ This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the ver
 
 Alternatively, GitHub Actions can generate this file for you. On a pull request, create a comment with this phrase:
 
-> /gha run build-r-artifact
+> /gha run build-r-artifacts
 
 Go to https://github.com/microsoft/LightGBM/actions, and find the most recent run of the "R artifact builds" workflow. If it ran successfully, you'll find a download link for the package (in `.zip` format) in that run's "Artifacts" section.
 
