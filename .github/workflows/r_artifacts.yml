@@ -13,11 +13,11 @@ jobs:
     env:
       SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
     steps:
-      - name: Install Git before checkout
+      - name: Install curl, Git and jq before checkout
         shell: bash
         run: |
           apt-get update
-          apt-get install --no-install-recommends -y git
+          apt-get install --no-install-recommends -y curl git jq
       - name: Checkout repository
         uses: actions/checkout@v2.3.4
         with:
