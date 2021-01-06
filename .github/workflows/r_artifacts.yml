@@ -7,7 +7,6 @@ on:
 jobs:
   cran-package:
     name: cran-package
-    if: github.event.comment.body == '/gha build r-artifacts' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
     timeout-minutes: 60
     runs-on: ubuntu-latest
     container: rocker/r-base
