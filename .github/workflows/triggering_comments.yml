@@ -8,46 +8,22 @@ jobs:
   triggering-tests:
     if: github.event.issue.pull_request && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
     runs-on: ubuntu-latest
-
+    env:
+      SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
     steps:
+
     - name: Trigger R valgrind tests
       if: github.event.comment.body == '/gha run r-valgrind'
       run: |
-        pr=$(curl -sL \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ secrets.WORKFLOW }}" \
-          "${{ github.event.issue.pull_request.url }}")
-        data=$(jq -n \
-          --arg event_type "gha_run_r_valgrind" \
-          --arg pr_number "$(echo $pr | jq '.number')" \
-          --arg pr_sha "$(echo $pr | jq '.head.sha')" \
-          --arg pr_branch "$(echo $pr | jq '.head.ref')" \
-          --arg comment_number "${{ github.event.comment.id }}" \
-          '{"event_type":$event_type,"client_payload":{"pr_number":$pr_number,"pr_sha":$pr_sha,"pr_branch":$pr_branch,"comment_number":$comment_number}}')
-        curl -sL \
-        -X POST \
-        -H "Accept: application/vnd.github.v3+json" \
-        -H "Authorization: token ${{ secrets.WORKFLOW }}" \
-        -d "$data" \
-        "${GITHUB_API_URL}/repos/microsoft/LightGBM/dispatches"
+        $GITHUB_WORKSPACE/.ci/trigger_dispatch_run.sh \
+          "${{ github.event.issue.pull_request.url }}" \
+          "${{ github.event.comment.id }}" \
+          "gha_run_r_valgrind"
 
     - name: Trigger R artifact builds
       if: github.event.comment.body == '/gha run build-r-artifacts'
       run: |
-        pr=$(curl -sL \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ secrets.WORKFLOW }}" \
-          "${{ github.event.issue.pull_request.url }}")
-        data=$(jq -n \
-          --arg event_type "gha_run_build_r_artifacts" \
-          --arg pr_number "$(echo $pr | jq '.number')" \
-          --arg pr_sha "$(echo $pr | jq '.head.sha')" \
-          --arg pr_branch "$(echo $pr | jq '.head.ref')" \
-          --arg comment_number "${{ github.event.comment.id }}" \
-          '{"event_type":$event_type,"client_payload":{"pr_number":$pr_number,"pr_sha":$pr_sha,"pr_branch":$pr_branch,"comment_number":$comment_number}}')
-        curl -sL \
-        -X POST \
-        -H "Accept: application/vnd.github.v3+json" \
-        -H "Authorization: token ${{ secrets.WORKFLOW }}" \
-        -d "$data" \
-        "${GITHUB_API_URL}/repos/microsoft/LightGBM/dispatches"
+        $GITHUB_WORKSPACE/.ci/trigger_dispatch_run.sh \
+          "${{ github.event.issue.pull_request.url }}" \
+          "${{ github.event.comment.id }}" \
+          "gha_run_build_r_artifacts"
