@@ -11,6 +11,11 @@ jobs:
     env:
       SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2.3.4
+      with:
+        fetch-depth: 5
+        submodules: false
 
     - name: Trigger R valgrind tests
       if: github.event.comment.body == '/gha run r-valgrind'
