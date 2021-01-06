@@ -17,8 +17,7 @@ jobs:
           submodules: false
       - name: Check that all tests succeeded
         run: |
-            workflows=("R valgrind tests"
-                       "R artifact builds")
+            workflows=("R valgrind tests")
             for i in "${workflows[@]}"; do
                 python "$GITHUB_WORKSPACE/.ci/get_workflow_status.py" "$i" \
                 || { echo "The last reported status from workflow \"$i\" is failure. Commit fixes and rerun the workflow."; \
