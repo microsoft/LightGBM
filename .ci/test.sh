@@ -29,8 +29,6 @@ if [[ $TASK == "check-docs" ]]; then
     rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile `find . -type f -name "*.rst"` || exit -1
     # build docs and check them for broken links
     make html || exit -1
-    find ./_build/html/ -type f -name '*.html' -exec \
-    sed -i'.bak' -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
     linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     # check the consistency of parameters' descriptions and other stuff
     cp $BUILD_DIRECTORY/docs/Parameters.rst $BUILD_DIRECTORY/docs/Parameters-backup.rst
