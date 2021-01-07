@@ -37,7 +37,7 @@ jobs:
         run: |
           export TASK="${{ matrix.task }}"
           export OS_NAME="linux"
-          COMPILER="gcc"
+          export COMPILER="gcc"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniconda
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
