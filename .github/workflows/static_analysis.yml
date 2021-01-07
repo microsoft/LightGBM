@@ -37,15 +37,15 @@ jobs:
         run: |
           export TASK="${{ matrix.task }}"
           export OS_NAME="linux"
+          COMPILER="gcc"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export LGB_VER=$(head -n 1 VERSION.txt)
           export CONDA=${HOME}/miniconda
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
           $GITHUB_WORKSPACE/.ci/test.sh || exit -1
   r-check-docs:
     name: r-package-check-docs
-    timeout-minutes: 120
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     container: rocker/verse
     steps:
@@ -63,7 +63,7 @@ jobs:
       - name: Test documentation
         shell: bash --noprofile --norc {0}
         run: |
-          Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit 100
+          Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit -1
           num_doc_files_changed=$(
               git diff --name-only | grep --count -E "\.Rd|NAMESPACE"
           )
@@ -74,7 +74,7 @@ jobs:
               echo "    R CMD INSTALL --with-keep.source lightgbm_*.tar.gz"
               echo "    Rscript -e \"roxygen2::roxygenize('R-package/', load = 'installed')\""
               echo ""
-              exit 101
+              exit -1
           fi
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
