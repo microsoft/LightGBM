@@ -1,5 +1,5 @@
-# contains tests that can run without compiling LightGBM, like
-# linters and documentation checks.
+# contains non-functional tests, like checks on docs
+# and code style
 name: Static Analysis
 
 on:
@@ -45,7 +45,7 @@ jobs:
           $GITHUB_WORKSPACE/.ci/test.sh || exit -1
   r-check-docs:
     name: r-package-check-docs
-    timeout-minutes: 120
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     container: rocker/verse
     steps:

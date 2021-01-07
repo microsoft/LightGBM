@@ -1,4 +1,4 @@
-name: R GitHub Actions
+name: R-package
 
 on:
   push:
