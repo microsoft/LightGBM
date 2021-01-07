@@ -45,12 +45,13 @@ for mod_name in MOCK_MODULES:
 
 
 class InternalRefTransform(Transform):
-    """Replaces '.rst' with '.html' in all internal links
-    like './[Something].rst[#anchor]'."""
+    """Replaces '.rst' with '.html' in all internal links like './[Something].rst[#anchor]'."""
 
     default_priority = 210
+    """Numerical priority of this transform, 0 through 999."""
 
     def apply(self, **kwargs):
+    """Apply the transform to the document tree."""
         for section in self.document.traverse(reference):
             if section.get("refuri") is not None:
                 section["refuri"] = INTERNAL_REF_REGEX.sub(r"\g<url>.html\g<anchor>", section["refuri"])
