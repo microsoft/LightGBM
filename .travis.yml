@@ -1,4 +1,4 @@
-if: branch = master
+if: branch = sphinx
 
 language: cpp
 
