@@ -51,8 +51,8 @@ jobs:
           $GITHUB_WORKSPACE/.ci/append_comment.sh \
             "${{ github.event.client_payload.comment_number }}" \
             "Status: ${{ job.status }}."
-      - name: Rerun main workflow
-        if: ${{ success() }}
+      - name: Rerun workflow-indicator
+        if: ${{ always() }}
         run: |
           bash $GITHUB_WORKSPACE/.ci/rerun_workflow.sh \
             "optional_checks.yml" \
