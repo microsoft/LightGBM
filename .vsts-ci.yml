@@ -22,8 +22,7 @@ jobs:
   variables:
     COMPILER: gcc
     SETUP_CONDA: 'false'
-  pool:
-    vmImage: 'ubuntu-latest'
+  pool: sh-ubuntu
   container: ubuntu1404
   strategy:
     matrix:
