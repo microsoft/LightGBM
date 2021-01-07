@@ -8,7 +8,7 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CC=clang
 fi
 
-if [[ "${TASK:0:9}" == "r-package" ]]; then
+if [[ "${TASK}" == "r-package" ]]; then
     bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
     exit 0
 fi
