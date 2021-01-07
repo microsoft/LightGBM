@@ -53,7 +53,7 @@ class InternalRefTransform(Transform):
     def apply(self, **kwargs):
         for section in self.document.traverse(reference):
             if section.get("refuri") is not None:
-                section["refuri"] = INTERNAL_REF_REGEX.sub("\g<url>.html\g<anchor>", section["refuri"])
+                section["refuri"] = INTERNAL_REF_REGEX.sub(r"\g<url>.html\g<anchor>", section["refuri"])
 
 
 class IgnoredDirective(Directive):
