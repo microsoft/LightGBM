@@ -13,7 +13,7 @@ jobs:
     env:
       SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
     steps:
-      - name: Install curl, Git and jq before checkout
+      - name: Install essential software before checkout
         shell: bash
         run: |
           apt-get update
