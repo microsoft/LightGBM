@@ -23,7 +23,10 @@ import sys
 import sphinx
 
 from distutils.dir_util import copy_tree
+from docutils.nodes import reference
 from docutils.parsers.rst import Directive
+from docutils.transforms import Transform
+from re import compile
 from sphinx.errors import VersionRequirementError
 from subprocess import PIPE, Popen
 from unittest.mock import Mock
@@ -32,11 +35,25 @@ CURR_PATH = os.path.abspath(os.path.dirname(__file__))
 LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'python-package')
 sys.path.insert(0, LIB_PATH)
 
+INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#)")
+
 # -- mock out modules
 MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
                 'sklearn', 'matplotlib', 'pandas', 'graphviz']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
+
+
+class InternalRefTransform(Transform):
+    """Replaces '.rst' with '.html' in all internal links
+    like './[Something].rst[#anchor]'."""
+
+    default_priority = 210
+
+    def apply(self, **kwargs):
+        for section in self.document.traverse(reference):
+            if section.get("refuri") is not None:
+                section["refuri"] = INTERNAL_REF_REGEX.sub("\g<url>.html\g<anchor>", section["refuri"])
 
 
 class IgnoredDirective(Directive):
@@ -305,5 +322,6 @@ def setup(app):
         app.connect("build-finished",
                     lambda app, exception: copy_tree(os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r", "docs"),
                                                      os.path.join(app.outdir, "R"), verbose=0))
+    app.add_transform(InternalRefTransform)
     add_js_file = getattr(app, 'add_js_file', False) or app.add_javascript
     add_js_file("js/script.js")
