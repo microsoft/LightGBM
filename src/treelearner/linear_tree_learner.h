@@ -72,7 +72,7 @@ class LinearTreeLearner: public SerialTreeLearner {
       for (int feat : tree->LeafFeaturesInner(leaf_num)) {
         feat_ptr[leaf_num].push_back(train_data_->raw_index(feat));
       }
-      leaf_num_features[leaf_num] = feat_ptr[leaf_num].size();
+      leaf_num_features[leaf_num] = static_cast<int>(feat_ptr[leaf_num].size());
     }
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static) if (num_data_ > 1024)
