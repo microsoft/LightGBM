@@ -34,6 +34,7 @@ pytestmark = [
     pytest.mark.skipif(os.getenv("TASK", "") == "mpi", reason="Fails to run with MPI interface")
 ]
 
+
 @pytest.fixture()
 def listen_port():
     listen_port.port += 10
@@ -50,10 +51,10 @@ def r2_score(dy_true, dy_pred):
     return (1 - numerator / denominator).compute()
 
 
-def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=4, avg_gs=10, random_state=0):
+def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=1, random_gs=True, avg_gs=10, random_state=0):
     """Generate a learning-to-rank dataset - feature vectors grouped together with
     integer-valued graded relevance scores. Replace this with a sklearn.datasets function
-    if ranking objective becomes supported."""
+    if ranking objective becomes supported in sklearn.datasets module."""
     rnd_generator = check_random_state(random_state)
 
     y_vec, group_vec = np.empty((0,), dtype=int), np.empty((0,), dtype=int)
@@ -62,7 +63,7 @@ def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=4, avg_gs=
     # build target, group ID vectors.
     relvalues = range(gmax + 1)
     while len(y_vec) < n_samples:
-        gsize = rnd_generator.poisson(avg_gs)
+        gsize = avg_gs if not random_gs else rnd_generator.poisson(avg_gs)
         if not gsize:
             continue
 
@@ -132,13 +133,9 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=10):
         dy = da.concatenate(dy, axis=0)
         dw = da.concatenate(dw, axis=0)
         dg = da.concatenate(dg, axis=0)
-        assert np.array_equal(np.array(dX.chunks[0]), g_rle)
 
     else:
         raise ValueError('ranking data creation only supported for Dask arrays and dataframes')
-
-    # verify sum(g) == #data
-    assert dg.sum().compute() == np.sum(g_rle)
 
     return X, y, w, g_rle, dX, dy, dw, dg
 
@@ -293,8 +290,11 @@ def test_regressor_local_predict(client, listen_port):
 def test_ranker(output, client, listen_port):
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output)
 
+    # Avoid lightgbm.basic.LightGBMError: Binding port 13xxx failed exceptions.
+    client.wait_for_workers()
     time.sleep(10)
-    dask_ranker = dlgbm.DaskLGBMRanker(local_listen_port=listen_port, seed=42, min_child_samples=1)
+
+    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, seed=42, min_child_samples=1)
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
@@ -303,19 +303,23 @@ def test_ranker(output, client, listen_port):
     local_ranker.fit(X, y, sample_weight=w, group=g)
     rnkvec_local = local_ranker.predict(X)
 
-    # distributed ranker should do a pretty good job of ranking. Correlation affected by group size.
-    assert spearmanr(rnkvec_dask, y).correlation > 0.9
+    # distributed ranker should be able to rank decently well.
+    dcor = spearmanr(rnkvec_dask, y).correlation
+    assert dcor > 0.6
 
-    # distributed scores should give similar ranking to local model.
-    assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.9
+    # relative difference between distributed ranker and local ranker spearman corr should be small.
+    lcor = spearmanr(rnkvec_local, y).correlation
+    assert np.abs(dcor - lcor) / lcor < 0.01
 
 
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
 def test_ranker_local_predict(output, client, listen_port):
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output)
 
+    client.wait_for_workers()
     time.sleep(10)
-    dask_ranker = dlgbm.DaskLGBMRanker(local_listen_port=listen_port, seed=42, min_child_samples=1)
+
+    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, seed=42, min_child_samples=1)
     dask_ranker = dask_ranker.fit(dX, dy, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()

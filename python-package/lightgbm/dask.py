@@ -82,7 +82,7 @@ def _train_part(params, model_factory, list_of_parts, worker_addresses, return_m
             group = _concat([d['group'] for d in list_of_parts])
             model.fit(data, y=label, sample_weight=weight, group=group, **kwargs)
         else:
-            model.fit(data, label, sample_weight=weight, **kwargs)
+            model.fit(data, y=label, sample_weight=weight, **kwargs)
 
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
@@ -124,12 +124,12 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
     if sample_weight is not None:
         weight_parts = _split_to_parts(sample_weight, is_matrix=False)
         for i, d in enumerate(parts):
-            d.update({'weight': weight_parts[i]})
+            parts[i] = {**d, 'weight': weight_parts[i]}
 
     if group is not None:
         group_parts = _split_to_parts(group, is_matrix=False)
         for i, d in enumerate(parts):
-            d.update({'group': group_parts[i]})
+            parts[i] = {**d, 'group': group_parts[i]}
 
     # Start computation in the background
     parts = list(map(delayed, parts))
