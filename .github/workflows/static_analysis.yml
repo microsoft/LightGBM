@@ -11,8 +11,10 @@ on:
     - master
 
 env:
+  COMPILER: 'gcc'
   CONDA_ENV: test-env
   GITHUB_ACTIONS: 'true'
+  OS_NAME: 'linux'
   PYTHON_VERSION: 3.8
 
 jobs:
@@ -36,8 +38,6 @@ jobs:
         shell: bash
         run: |
           export TASK="${{ matrix.task }}"
-          export OS_NAME="linux"
-          export COMPILER="gcc"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniconda
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
