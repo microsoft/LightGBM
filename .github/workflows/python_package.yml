@@ -1,4 +1,4 @@
-name: Python GitHub Actions
+name: Python-package
 
 on:
   push:
@@ -113,9 +113,9 @@ jobs:
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export LGB_VER=$(head -n 1 VERSION.txt)
           export CONDA=${HOME}/miniconda
-          export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
-          $GITHUB_WORKSPACE/.ci/setup.sh
-          $GITHUB_WORKSPACE/.ci/test.sh
+          export PATH=${CONDA}/bin:${PATH}
+          $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
+          $GITHUB_WORKSPACE/.ci/test.sh || exit -1
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
     runs-on: ubuntu-latest

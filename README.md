@@ -3,6 +3,7 @@
 Light Gradient Boosting Machine
 ===============================
 
+[![Python-package GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/Python-package/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
 [![R-package GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/R-package/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
 [![Static Analysis GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/Static%20Analysis/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
 [![Azure Pipelines Build Status](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_apis/build/status/Microsoft.LightGBM?branchName=master)](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_build/latest?definitionId=1)
