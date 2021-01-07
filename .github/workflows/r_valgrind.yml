@@ -54,7 +54,7 @@ jobs:
       - name: Rerun main workflow
         if: ${{ success() }}
         run: |
-          python $GITHUB_WORKSPACE/.ci/rerun_workflow.py \
+          bash $GITHUB_WORKSPACE/.ci/rerun_workflow.sh \
             "optional_checks.yml" \
             "${{ github.event.client_payload.pr_number }}" \
             "${{ github.event.client_payload.pr_branch }}" \
