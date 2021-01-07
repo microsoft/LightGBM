@@ -51,7 +51,7 @@ class InternalRefTransform(Transform):
     """Numerical priority of this transform, 0 through 999."""
 
     def apply(self, **kwargs):
-    """Apply the transform to the document tree."""
+        """Apply the transform to the document tree."""
         for section in self.document.traverse(reference):
             if section.get("refuri") is not None:
                 section["refuri"] = INTERNAL_REF_REGEX.sub(r"\g<url>.html\g<anchor>", section["refuri"])
