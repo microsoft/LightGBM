@@ -137,9 +137,11 @@ single.tree.interprete <- function(tree_dt,
     , current_value = leaf_dt[["leaf_value"]]
   )
 
-  data.table::data.table(
-    Feature = feature_seq
-    , Contribution = diff.default(value_seq)
+  return(
+    data.table::data.table(
+      Feature = feature_seq
+      , Contribution = diff.default(value_seq)
+    )
   )
 
 }

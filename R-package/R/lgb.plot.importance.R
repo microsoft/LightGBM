@@ -91,6 +91,6 @@ lgb.plot.importance <- function(tree_imp,
                , las = 1L
            )]
 
-  invisible(tree_imp)
+  return(invisible(tree_imp))
 
 }

@@ -11,7 +11,6 @@ recursive-include compile/compute/cmake *
 recursive-include compile/compute/include *
 recursive-include compile/compute/meta *
 include compile/eigen/CMakeLists.txt
-include compile/eigen/Eigen/CMakeLists.txt
 include compile/eigen/Eigen/Cholesky
 include compile/eigen/Eigen/Core
 include compile/eigen/Eigen/Dense
