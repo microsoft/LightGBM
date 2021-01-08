@@ -1,4 +1,5 @@
 # coding: utf-8
+"""Get the most recent status of workflow for the current PR."""
 import json
 from os import environ
 from sys import argv, exit
@@ -10,6 +11,18 @@ except ImportError:
 
 
 def get_runs(workflow_name):
+    """Get all triggering workflow comments in the current PR.
+
+    Parameters
+    ----------
+    workflow_name : string
+        Name of the workflow.
+
+    Returns
+    -------
+    pr_runs : list
+        List of comment objects sorted by the time of creation in decreasing order.
+    """
     pr_runs = []
     if environ.get("GITHUB_EVENT_NAME", "") == "pull_request":
         pr_number = int(environ.get("GITHUB_REF").split('/')[-2])
@@ -27,6 +40,19 @@ def get_runs(workflow_name):
 
 
 def get_status(runs):
+    """Get the most recent status of workflow for the current PR.
+
+    Parameters
+    ----------
+    runs : list
+        List of comment objects sorted by the time of creation in decreasing order.
+
+    Returns
+    -------
+    status : string
+        The most recent status of workflow.
+        Can be 'success', 'failure' or 'in-progress'.
+    """
     status = 'success'
     for run in runs:
         body = run['body']
@@ -39,8 +65,8 @@ def get_status(runs):
             if "Status: success" in body:
                 status = 'success'
                 break
-        else:  # in progress
-            status = 'rerun'
+        else:
+            status = 'in-progress'
             break
     return status
 
@@ -49,7 +75,7 @@ if __name__ == "__main__":
     workflow_name = argv[1]
     while True:
         status = get_status(get_runs(workflow_name))
-        if status != 'rerun':
+        if status != 'in-progress':
             break
         sleep(60)
     if status == 'failure':
