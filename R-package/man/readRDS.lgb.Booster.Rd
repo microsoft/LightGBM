@@ -4,7 +4,7 @@
 \alias{readRDS.lgb.Booster}
 \title{readRDS for \code{lgb.Booster} models}
 \usage{
-readRDS.lgb.Booster(file = "", refhook = NULL)
+readRDS.lgb.Booster(file, refhook = NULL)
 }
 \arguments{
 \item{file}{a connection or the name of the file where the R object is saved to or read from.}

@@ -361,7 +361,7 @@ class Dataset {
         if (has_raw_) {
           int feat_ind = numeric_feature_map_[feature_idx];
           if (feat_ind >= 0) {
-            raw_data_[feat_ind][row_idx] = inner_data.second;
+            raw_data_[feat_ind][row_idx] = static_cast<float>(inner_data.second);
           }
         }
       }
@@ -374,7 +374,7 @@ class Dataset {
     if (has_raw_) {
       int feat_ind = numeric_feature_map_[feature_idx];
       if (feat_ind >= 0) {
-        raw_data_[feat_ind][row_idx] = value;
+        raw_data_[feat_ind][row_idx] = static_cast<float>(value);
       }
     }
   }

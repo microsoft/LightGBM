@@ -126,8 +126,8 @@ class TestBasic(unittest.TestCase):
         est_2 = lgb.train(params, train_data_2, num_boost_round=10)
         pred_2 = est_2.predict(X_train)
         np.testing.assert_allclose(pred_1, pred_2)
-        est_2.save_model('temp_model.txt')
-        est_3 = lgb.Booster(model_file='temp_model.txt')
+        est_2.save_model('model.txt')
+        est_3 = lgb.Booster(model_file='model.txt')
         pred_3 = est_3.predict(X_train)
         np.testing.assert_allclose(pred_2, pred_3)
 

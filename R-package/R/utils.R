@@ -1,9 +1,9 @@
 lgb.is.Booster <- function(x) {
-  lgb.check.r6.class(object = x, name = "lgb.Booster")
+  return(lgb.check.r6.class(object = x, name = "lgb.Booster"))
 }
 
 lgb.is.Dataset <- function(x) {
-  lgb.check.r6.class(object = x, name = "lgb.Dataset")
+  return(lgb.check.r6.class(object = x, name = "lgb.Dataset"))
 }
 
 lgb.null.handle <- function() {
@@ -15,7 +15,7 @@ lgb.null.handle <- function() {
 }
 
 lgb.is.null.handle <- function(x) {
-  is.null(x) || is.na(x)
+  return(is.null(x) || is.na(x))
 }
 
 lgb.encode.char <- function(arr, len) {
@@ -54,6 +54,9 @@ lgb.last_error <- function() {
   }
 
   stop("api error: ", lgb.encode.char(arr = err_msg, len = act_len))
+
+  return(invisible(NULL))
+
 }
 
 lgb.call <- function(fun_name, ret, ...) {
@@ -232,14 +235,14 @@ lgb.c_str <- function(x) {
 
   ret <- charToRaw(as.character(x))
   ret <- c(ret, as.raw(0L))
-  ret
+  return(ret)
 
 }
 
 lgb.check.r6.class <- function(object, name) {
 
   # Check for non-existence of R6 class or named class
-  all(c("R6", name) %in% class(object))
+  return(all(c("R6", name) %in% class(object)))
 
 }
 

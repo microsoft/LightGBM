@@ -48,7 +48,7 @@ else  # Linux
     fi
 fi
 
-if [[ "${TASK:0:9}" != "r-package" ]]; then
+if [[ "${TASK}" != "r-package" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
         sh conda.sh -b -p $CONDA
     fi

@@ -9,10 +9,11 @@ CVBooster <- R6::R6Class(
     boosters = list(),
     initialize = function(x) {
       self$boosters <- x
+      return(invisible(NULL))
     },
     reset_parameter = function(new_params) {
       for (x in boosters) { x$reset_parameter(new_params) }
-      self
+      return(invisible(self))
     }
   )
 )
@@ -563,7 +564,7 @@ lgb.stratified.folds <- function(y, k = 10L) {
 
   out <- split(seq(along = y), foldVector)
   names(out) <- NULL
-  out
+  return(out)
 }
 
 lgb.merge.cv.result <- function(msg, showsd = TRUE) {
@@ -615,9 +616,11 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
   }
 
   # Return errors
-  list(
-    eval_list = ret_eval
-    , eval_err_list = ret_eval_err
+  return(
+    list(
+      eval_list = ret_eval
+      , eval_err_list = ret_eval_err
+    )
   )
 
 }
