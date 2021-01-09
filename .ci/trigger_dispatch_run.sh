@@ -28,17 +28,21 @@ pr_url=$1
 comment_id=$2
 dispatch_name=$3
 
-pr=$(curl -sL \
-  -H "Accept: application/vnd.github.v3+json" \
-  -H "Authorization: token $SECRETS_WORKFLOW" \
-  "$pr_url")
-data=$(jq -n \
-  --arg event_type "$dispatch_name" \
-  --arg pr_number "$(echo $pr | jq '.number')" \
-  --arg pr_sha "$(echo $pr | jq '.head.sha')" \
-  --arg pr_branch "$(echo $pr | jq '.head.ref')" \
-  --arg comment_number "$comment_id" \
-  '{"event_type":$event_type,"client_payload":{"pr_number":$pr_number,"pr_sha":$pr_sha,"pr_branch":$pr_branch,"comment_number":$comment_number}}')
+pr=$(
+  curl -sL \
+    -H "Accept: application/vnd.github.v3+json" \
+    -H "Authorization: token $SECRETS_WORKFLOW" \
+    "$pr_url"
+)
+data=$(
+  jq -n \
+    --arg event_type "$dispatch_name" \
+    --arg pr_number "$(echo $pr | jq '.number')" \
+    --arg pr_sha "$(echo $pr | jq '.head.sha')" \
+    --arg pr_branch "$(echo $pr | jq '.head.ref')" \
+    --arg comment_number "$comment_id" \
+    '{"event_type":$event_type,"client_payload":{"pr_number":$pr_number,"pr_sha":$pr_sha,"pr_branch":$pr_branch,"comment_number":$comment_number}}'
+)
 curl -sL \
   -X POST \
   -H "Accept: application/vnd.github.v3+json" \
