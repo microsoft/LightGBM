@@ -14,7 +14,7 @@ This document gives a basic walkthrough of LightGBM Python-package.
 Install
 -------
 
-Refer to `Python-package`_ folder for the installation guide.
+Refer to `Python-package`_ folder for the detailed installation guide.
 
 To verify your installation, try to ``import lightgbm`` in Python:
 
