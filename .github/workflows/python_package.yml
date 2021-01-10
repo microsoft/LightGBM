@@ -16,7 +16,7 @@ env:
 
 jobs:
   test:
-    name: ${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }}
+    name: macOS-latest, gcc, Python ${{ matrix.python_version }}
     runs-on: macOS-latest
     timeout-minutes: 60
     strategy:
