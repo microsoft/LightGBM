@@ -234,9 +234,6 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   }
   valid = new_valid;
 
-  // check for conflicts
-  CheckParamConflict();
-
   if (verbosity == 1) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
   } else if (verbosity == 0) {
@@ -246,6 +243,9 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   } else {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
   }
+
+  // check for conflicts
+  CheckParamConflict();
 }
 
 bool CheckMultiClassObjective(const std::string& objective) {
@@ -340,9 +340,9 @@ void Config::CheckParamConflict() {
     Log::Warning("CUDA currently requires double precision calculations.");
     gpu_use_dp = true;
   }
-  // linear tree learner must be serial type and cpu device
+  // linear tree learner must be serial type and run on cpu device
   if (linear_tree) {
-    if (device_type == std::string("gpu")) {
+    if (device_type != std::string("cpu")) {
       device_type = "cpu";
       Log::Warning("Linear tree learner only works with CPU.");
     }

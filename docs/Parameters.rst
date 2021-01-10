@@ -119,7 +119,7 @@ Core Parameters
 
 -  ``linear_tree`` :raw-html:`<a id="linear_tree" title="Permalink to this parameter" href="#linear_tree">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
-   -  fit piecewise linear gradient boosting tree, only works with cpu and serial tree learner
+   -  fit piecewise linear gradient boosting tree
 
       -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
 
@@ -127,15 +127,17 @@ Core Parameters
 
       -  categorical features are used for splits as normal but are not used in the linear models
 
-      -  missing values must be encoded as ``np.nan`` (Python) or ``NA`` (cli), not ``0``
+      -  missing values must be encoded as ``np.nan`` (Python) or ``NA`` (CLI), not ``0``
 
       -  it is recommended to rescale data before training so that features have similar mean and standard deviation
 
-      -  not yet supported in R-package
+      -  **Note**: only works with CPU and ``serial`` tree learner
 
-      -  ``regression_l1`` objective is not supported with linear tree boosting
+      -  **Note**: not yet supported in R-package
 
-      -  setting ``linear_tree = True`` significantly increases the memory use of LightGBM
+      -  **Note**: ``regression_l1`` objective is not supported with linear tree boosting
+
+      -  **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
 
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
@@ -282,6 +284,8 @@ Learning Control Parameters
 
    -  minimal number of data in one leaf. Can be used to deal with over-fitting
 
+   -  **Note**: this is an approximation based on the Hessian, so occasionally you may observe splits which produce leaf nodes that have less than this many observations
+
 -  ``min_sum_hessian_in_leaf`` :raw-html:`<a id="min_sum_hessian_in_leaf" title="Permalink to this parameter" href="#min_sum_hessian_in_leaf">&#x1F517;&#xFE0E;</a>`, default = ``1e-3``, type = double, aliases: ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``, ``min_child_weight``, constraints: ``min_sum_hessian_in_leaf >= 0.0``
 
    -  minimal sum hessian in one leaf. Like ``min_data_in_leaf``, it can be used to deal with over-fitting
@@ -406,7 +410,7 @@ Learning Control Parameters
 
 -  ``linear_lambda`` :raw-html:`<a id="linear_lambda" title="Permalink to this parameter" href="#linear_lambda">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``linear_lambda >= 0.0``
 
-   -  Linear tree regularisation, the parameter `lambda` in Eq 3 of <https://arxiv.org/pdf/1802.05640.pdf>
+   -  linear tree regularization, corresponds to the parameter ``lambda`` in Eq. 3 of `Gradient Boosting with Piece-Wise Linear Regression Trees <https://arxiv.org/pdf/1802.05640.pdf>`__
 
 -  ``min_gain_to_split`` :raw-html:`<a id="min_gain_to_split" title="Permalink to this parameter" href="#min_gain_to_split">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``min_split_gain``, constraints: ``min_gain_to_split >= 0.0``
 
@@ -580,7 +584,7 @@ Learning Control Parameters
 
    -  if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``
 
-   -  larger values give stronger regularisation
+   -  larger values give stronger regularization
 
       -  the weight of each node is ``(n / path_smooth) * w + w_p / (n / path_smooth + 1)``, where ``n`` is the number of samples in the node, ``w`` is the optimal node weight to minimise the loss (approximately ``-sum_gradients / sum_hessians``), and ``w_p`` is the weight of the parent node
 

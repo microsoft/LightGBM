@@ -8,7 +8,7 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CC=clang
 fi
 
-if [[ "${TASK:0:9}" == "r-package" ]]; then
+if [[ "${TASK}" == "r-package" ]]; then
     bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
     exit 0
 fi
@@ -18,7 +18,7 @@ source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
 
-if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
+if [[ $TASK == "check-docs" ]]; then
     cd $BUILD_DIRECTORY/docs
     conda install -q -y -n $CONDA_ENV -c conda-forge doxygen
     pip install --user -r requirements.txt rstcheck git+git://github.com/linkchecker/linkchecker.git@b9390c9ef63f7e1e210b48bc7fe97f76e8d39501
@@ -29,8 +29,6 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile `find . -type f -name "*.rst"` || exit -1
     # build docs and check them for broken links
     make html || exit -1
-    find ./_build/html/ -type f -name '*.html' -exec \
-    sed -i'.bak' -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
     linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     # check the consistency of parameters' descriptions and other stuff
     cp $BUILD_DIRECTORY/docs/Parameters.rst $BUILD_DIRECTORY/docs/Parameters-backup.rst
@@ -41,7 +39,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     exit 0
 fi
 
-if [[ $TRAVIS == "true" ]] && [[ $TASK == "lint" ]]; then
+if [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
         pycodestyle \
         pydocstyle \

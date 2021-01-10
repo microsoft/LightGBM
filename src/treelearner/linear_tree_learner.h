@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2020 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_
@@ -72,7 +72,7 @@ class LinearTreeLearner: public SerialTreeLearner {
       for (int feat : tree->LeafFeaturesInner(leaf_num)) {
         feat_ptr[leaf_num].push_back(train_data_->raw_index(feat));
       }
-      leaf_num_features[leaf_num] = feat_ptr[leaf_num].size();
+      leaf_num_features[leaf_num] = static_cast<int>(feat_ptr[leaf_num].size());
     }
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static) if (num_data_ > 1024)

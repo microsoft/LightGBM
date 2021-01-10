@@ -43,13 +43,13 @@ else  # Linux
         chmod +x cmake.sh
         ./cmake.sh --prefix=/usr/local --exclude-subdir
     fi
-    if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]]; then
+    if [[ $SETUP_CONDA != "false" ]]; then
         wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     fi
 fi
 
-if [[ "${TASK:0:9}" != "r-package" ]]; then
-    if [[ $TRAVIS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
+if [[ "${TASK}" != "r-package" ]]; then
+    if [[ $SETUP_CONDA != "false" ]]; then
         sh conda.sh -b -p $CONDA
     fi
     conda config --set always_yes yes --set changeps1 no

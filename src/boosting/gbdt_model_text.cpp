@@ -410,13 +410,13 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
 
 bool GBDT::SaveModelToFile(int start_iteration, int num_iteration, int feature_importance_type, const char* filename) const {
   /*! \brief File to write models */
-  std::ofstream output_file;
-  output_file.open(filename, std::ios::out | std::ios::binary);
+  auto writer = VirtualFileWriter::Make(filename);
+  if (!writer->Init()) {
+    Log::Fatal("Model file %s is not available for writes", filename);
+  }
   std::string str_to_write = SaveModelToString(start_iteration, num_iteration, feature_importance_type);
-  output_file.write(str_to_write.c_str(), str_to_write.size());
-  output_file.close();
-
-  return static_cast<bool>(output_file);
+  auto size = writer->Write(str_to_write.c_str(), str_to_write.size());
+  return size > 0;
 }
 
 bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
