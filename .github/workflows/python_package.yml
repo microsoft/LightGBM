@@ -16,11 +16,10 @@ env:
 
 jobs:
   test:
-    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
-    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }}
+    runs-on: macOS-latest
     timeout-minutes: 60
     strategy:
-      os: macOS-latest
       fail-fast: false
       matrix:
         include:
