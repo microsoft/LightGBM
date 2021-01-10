@@ -14,6 +14,12 @@ This document gives a basic walkthrough of LightGBM Python-package.
 Install
 -------
 
+The preferred way to install LightGBM is via pip
+
+::
+
+    pip install lightgbm
+
 Refer to `Python-package`_ folder for the detailed installation guide.
 
 To verify your installation, try to ``import lightgbm`` in Python:
