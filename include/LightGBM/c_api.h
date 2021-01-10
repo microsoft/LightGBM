@@ -420,14 +420,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumOriginalFeature(DatasetHandle handle,
                                                 int* out);
 
 /*!
- * \brief Get boolean representing whether booster is fitting linear trees.
- * \param handle Handle of dataset
- * \param[out] out The address to hold linear indicator
- * \return 0 when succeed, -1 when failure happens
- */
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetLinear(BoosterHandle handle, bool* out);
-
-/*!
  * \brief Add features from ``source`` to ``target``.
  * \param target The handle of the dataset to add features to
  * \param source The handle of the dataset to take features from
