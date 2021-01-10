@@ -12,11 +12,11 @@ env:
   COMPILER: gcc
   CONDA_ENV: test-env
   GITHUB_ACTIONS: 'true'
-  OS_NAME: 'macOS-latest'
+  OS_NAME: 'macos'
 
 jobs:
   test:
-    name: macOS-latest, gcc, Python ${{ matrix.python_version }}
+    name: ${{ matrix.task }} (macOS-latest, gcc, Python ${{ matrix.python_version }})
     runs-on: macOS-latest
     timeout-minutes: 60
     strategy:
