@@ -142,7 +142,7 @@ By default, installation in environment with 32-bit Python is prohibited. Howeve
 It is **strongly not recommended** to use this version of LightGBM!
 
 Install from `conda-forge <https://anaconda.org/conda-forge/lightgbm>`_
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 If you use ``conda`` to manage Python dependencies, you can install ``lightgbm`` using ``conda install``.
 
