@@ -14,7 +14,7 @@ env:
 
 jobs:
   test:
-    name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
+    name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, Python ${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
