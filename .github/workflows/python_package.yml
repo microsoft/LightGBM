@@ -9,8 +9,8 @@ on:
     - master
 
 env:
-  CONDA_ENV: test-env
   COMPILER: gcc
+  CONDA_ENV: test-env
   GITHUB_ACTIONS: 'true'
   OS_NAME: 'macOS-latest'
 
