@@ -24,34 +24,27 @@ jobs:
           - os: macOS-latest
             task: regular
             python_version: 3.6
-            compiler: gcc
           - os: macOS-latest
             task: sdist
             python_version: 3.8
-            compiler: gcc
           - os: macOS-latest
             task: bdist
             python_version: 3.8
-            compiler: gcc
           - os: macOS-latest
             task: if-else
             python_version: 3.8
-            compiler: gcc
           - os: macOS-latest
             task: mpi
             method: source
             python_version: 3.8
-            compiler: gcc
           - os: macOS-latest
             task: mpi
             method: pip
             python_version: 3.6
-            compiler: gcc
           - os: macOS-latest
             task: mpi
             method: wheel
             python_version: 3.7
-            compiler: gcc
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2.3.4
@@ -66,8 +59,10 @@ jobs:
           export COMPILER="${{ matrix.compiler }}"
           export PYTHON_VERSION="${{ matrix.python_version }}"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
+              export COMPILER="gcc"
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              export COMPILER="clang"
               export OS_NAME="linux"
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
