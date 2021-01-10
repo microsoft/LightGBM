@@ -19,6 +19,43 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
     wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
+    if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+        export DEBIAN_FRONTEND="noninteractive"
+        apt-get update
+        apt-get install -y --no-install-recommends \
+            software-properties-common \
+            sudo
+
+        add-apt-repository -y ppa:git-core/ppa
+        apt-get update
+
+        apt-get install -y --no-install-recommends \
+            apt-utils \
+            build-essential \
+            ca-certificates \
+            curl \
+            git \
+            iputils-ping \
+            jq \
+            libcurl4 \
+            libicu66 \
+            libssl1.1 \
+            libunwind8 \
+            locales \
+            netcat \
+            sudo \
+            unzip \
+            wget \
+            zip
+
+        export LANG="en_US.UTF-8"
+        sudo locale-gen ${LANG}
+        update-locale
+
+        apt-get install -y --no-install-recommends \
+            cmake \
+            clang-11
+    fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
