@@ -17,6 +17,7 @@ resources:
     image: lightgbm/vsts-agent:ubuntu-14.04
   - container: ubuntu-latest
     image: 'ubuntu:latest'
+    options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
 jobs:
 # ###########################################
 # - job: Linux
@@ -78,9 +79,7 @@ jobs:
     OS_NAME: 'linux'
     PYTHON_VERSION: 3.8
   pool: sh-ubuntu
-  container:
-    image: ubuntu-latest
-    options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
+  container: ubuntu-latest
   strategy:
     matrix:
       # regular:
