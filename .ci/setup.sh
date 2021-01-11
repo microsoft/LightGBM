@@ -20,10 +20,10 @@ if [[ $OS_NAME == "macos" ]]; then
     wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
-        apt-get update
+        apt-get update || exit -1
         apt-get install -y --no-install-recommends \
             software-properties-common \
-            sudo
+            sudo || exit  -1
 
         add-apt-repository -y ppa:git-core/ppa
         apt-get update
