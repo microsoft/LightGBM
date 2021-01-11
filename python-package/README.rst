@@ -146,7 +146,7 @@ Install from `conda-forge <https://anaconda.org/conda-forge/lightgbm>`_
 
 If you use ``conda`` to manage Python dependencies, you can install ``lightgbm`` using ``conda install``.
 
-**Note**: The `lightgbm conda-forge package <https://github.com/conda-forge/lightgbm-feedstock>`_.  is not maintained by LightGBM maintainers.
+**Note**: The `lightgbm conda-forge feedstock <https://github.com/conda-forge/lightgbm-feedstock>`_ is not maintained by LightGBM maintainers.
 
 .. code:: sh
 
