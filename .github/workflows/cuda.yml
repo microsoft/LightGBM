@@ -47,6 +47,7 @@ jobs:
             export ROOT_DOCKER_FOLDER=/LightGBM
             cat > docker.env <<EOF
             TASK=cuda
+            METHOD=source
             COMPILER=gcc
             GITHUB_ACTIONS=true
             OS_NAME=linux
