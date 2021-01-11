@@ -30,22 +30,22 @@ jobs:
   container: ubuntu1404
   strategy:
     matrix:
-      # regular:
-      #   TASK: regular
-      # sdist:
-      #   TASK: sdist
-      # bdist:
-      #   TASK: bdist
-      #   PYTHON_VERSION: 3.7
+      regular:
+        TASK: regular
+      sdist:
+        TASK: sdist
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: 3.7
       inference:
         TASK: if-else
-      # mpi_source:
-      #   TASK: mpi
-      #   METHOD: source
-      # gpu_source:
-      #   TASK: gpu
-      #   METHOD: source
-      #   PYTHON_VERSION: 3.6
+      mpi_source:
+        TASK: mpi
+        METHOD: source
+      gpu_source:
+        TASK: gpu
+        METHOD: source
+        PYTHON_VERSION: 3.6
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -73,6 +73,7 @@ jobs:
 ###########################################
   variables:
     COMPILER: gcc
+    DEBIAN_FRONTEND: 'noninteractive'
     IN_UBUNTU_LATEST_CONTAINER: 'true'
     OS_NAME: 'linux'
     PYTHON_VERSION: 3.8
@@ -104,14 +105,14 @@ jobs:
       gpu_source:
         TASK: gpu
         METHOD: source
-      # gpu_pip:
-      #   TASK: gpu
-      #   METHOD: pip
-      #   PYTHON_VERSION: 3.6
-      # gpu_wheel:
-      #   TASK: gpu
-      #   METHOD: wheel
-      #   PYTHON_VERSION: 3.7
+      gpu_pip:
+        TASK: gpu
+        METHOD: pip
+        PYTHON_VERSION: 3.6
+      gpu_wheel:
+        TASK: gpu
+        METHOD: wheel
+        PYTHON_VERSION: 3.7
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -127,7 +128,7 @@ jobs:
   # https://github.com/microsoft/azure-pipelines-agent/issues/2043#issuecomment-687983301
   - script: |
       /tmp/docker exec -t -u 0 ci-container \
-      sh -c "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confold" -y install sudo"
+      sh -c "apt-get update && apt-get -o Dpkg::Options::="--force-confold" -y install sudo"
     displayName: 'Install sudo'
   - bash: $(Build.SourcesDirectory)/.ci/setup.sh
     displayName: Setup
@@ -214,7 +215,7 @@ jobs:
 - job: Package
 ###########################################
   dependsOn:
-  #- Linux
+  - Linux
   - Linux_latest
   #- MacOS
   #- Windows

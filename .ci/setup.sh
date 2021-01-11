@@ -21,13 +21,8 @@ if [[ $OS_NAME == "macos" ]]; then
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
 
-        # https://github.com/moby/moby/issues/27988
-        # https://github.com/dotnet/dotnet-docker/issues/788
-        # https://github.com/microsoft/azure-pipelines-agent/issues/2043
-
-        export DEBIAN_FRONTEND=noninteractive
-
-        #  https://github.com/moby/moby/issues/27988#issuecomment-462809153
+        # fixes error "unable to initialize frontend: Dialog"
+        # https://github.com/moby/moby/issues/27988#issuecomment-462809153
         echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
 
         sudo apt-get update || exit -1
