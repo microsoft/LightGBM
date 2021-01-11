@@ -78,7 +78,9 @@ jobs:
     OS_NAME: 'linux'
     PYTHON_VERSION: 3.8
   pool: sh-ubuntu
-  container: ubuntu-latest
+  container:
+    image: ubuntu-latest
+    options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
   strategy:
     matrix:
       # regular:
@@ -123,6 +125,11 @@ jobs:
       echo "##vso[task.setvariable variable=LD_LIBRARY_PATH]$LD_LIBRARY_PATH"
       echo "##vso[task.setvariable variable=OPENCL_VENDOR_PATH]$AMDAPPSDK_PATH/etc/OpenCL/vendors"
     displayName: 'Set variables'
+  # https://github.com/microsoft/azure-pipelines-agent/issues/2043#issuecomment-687983301
+  - displayName: Install sudo
+    bash: |
+      /tmp/docker exec -t -u 0 ci-container \
+      sh -c "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confold" -y install sudo"
   - bash: $(Build.SourcesDirectory)/.ci/setup.sh
     displayName: Setup
   - bash: $(Build.SourcesDirectory)/.ci/test.sh
