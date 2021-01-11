@@ -81,13 +81,13 @@ jobs:
   container: ubuntu-latest
   strategy:
     matrix:
-      # regular:
-      #   TASK: regular
-      #   PYTHON_VERSION: 3.6
-      # sdist:
-      #   TASK: sdist
-      # bdist:
-      #   TASK: bdist
+      regular:
+        TASK: regular
+        PYTHON_VERSION: 3.6
+      sdist:
+        TASK: sdist
+      bdist:
+        TASK: bdist
       inference:
         TASK: if-else
       # mpi_source:
