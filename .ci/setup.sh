@@ -20,6 +20,7 @@ if [[ $OS_NAME == "macos" ]]; then
     wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+        export DEBIAN_FRONTEND=noninteractive
         sudo apt-get update || exit -1
         sudo apt-get install -y --no-install-recommends \
             software-properties-common || exit  -1
@@ -41,7 +42,6 @@ else  # Linux
             libunwind8 \
             locales \
             netcat \
-            sudo \
             unzip \
             wget \
             zip
