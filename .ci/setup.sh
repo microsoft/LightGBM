@@ -55,9 +55,6 @@ else  # Linux
             wget \
             zip
 
-        # graphviz stuff
-        #sudo apt-get install -y --no-install-recommends libxau-dev
-
         export LANG="en_US.UTF-8"
         export LC_ALL="${LANG}"
         sudo locale-gen ${LANG}

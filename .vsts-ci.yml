@@ -84,26 +84,26 @@ jobs:
       regular:
         TASK: regular
         PYTHON_VERSION: 3.6
-      # sdist:
-      #   TASK: sdist
-      # bdist:
-      #   TASK: bdist
-      # inference:
-      #   TASK: if-else
+      sdist:
+        TASK: sdist
+      bdist:
+        TASK: bdist
+      inference:
+        TASK: if-else
       mpi_source:
         TASK: mpi
         METHOD: source
-      # mpi_pip:
-      #   TASK: mpi
-      #   METHOD: pip
-      #   PYTHON_VERSION: 3.7
-      # mpi_wheel:
-      #   TASK: mpi
-      #   METHOD: wheel
-      #   PYTHON_VERSION: 3.7
-      # gpu_source:
-      #   TASK: gpu
-      #   METHOD: source
+      mpi_pip:
+        TASK: mpi
+        METHOD: pip
+        PYTHON_VERSION: 3.7
+      mpi_wheel:
+        TASK: mpi
+        METHOD: wheel
+        PYTHON_VERSION: 3.7
+      gpu_source:
+        TASK: gpu
+        METHOD: source
       # gpu_pip:
       #   TASK: gpu
       #   METHOD: pip
