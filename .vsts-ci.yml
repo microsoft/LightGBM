@@ -76,6 +76,7 @@ jobs:
     IN_UBUNTU_LATEST_CONTAINER: 'true'
     OS_NAME: 'linux'
     PYTHON_VERSION: 3.8
+    SETUP_CONDA: 'true'
   pool: sh-ubuntu
   container: ubuntu-latest
   strategy:
