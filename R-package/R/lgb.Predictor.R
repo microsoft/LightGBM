@@ -23,6 +23,8 @@ Predictor <- R6::R6Class(
 
       }
 
+      return(invisible(NULL))
+
     },
 
     # Initialize will create a starter model
@@ -59,16 +61,20 @@ Predictor <- R6::R6Class(
       class(handle) <- "lgb.Booster.handle"
       private$handle <- handle
 
+      return(invisible(NULL))
+
     },
 
     # Get current iteration
     current_iter = function() {
 
       cur_iter <- 0L
-      lgb.call(
-        fun_name = "LGBM_BoosterGetCurrentIteration_R"
-        , ret = cur_iter
-        , private$handle
+      return(
+        lgb.call(
+          fun_name = "LGBM_BoosterGetCurrentIteration_R"
+          , ret = cur_iter
+          , private$handle
+        )
       )
 
     },

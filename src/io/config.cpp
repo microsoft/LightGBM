@@ -234,9 +234,6 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   }
   valid = new_valid;
 
-  // check for conflicts
-  CheckParamConflict();
-
   if (verbosity == 1) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
   } else if (verbosity == 0) {
@@ -246,6 +243,9 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   } else {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
   }
+
+  // check for conflicts
+  CheckParamConflict();
 }
 
 bool CheckMultiClassObjective(const std::string& objective) {

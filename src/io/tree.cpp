@@ -379,7 +379,7 @@ std::string Tree::ToString() const {
       << ArrayToString(leaf_const_, num_leaves_) << '\n';
     std::vector<int> num_feat(num_leaves_);
     for (int i = 0; i < num_leaves_; ++i) {
-      num_feat[i] = leaf_coeff_[i].size();
+      num_feat[i] = static_cast<int>(leaf_coeff_[i].size());
     }
     str_buf << "num_features="
       << ArrayToString(num_feat, num_leaves_) << '\n';

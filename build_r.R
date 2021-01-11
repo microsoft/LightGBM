@@ -53,6 +53,7 @@ install_libs_content <- .replace_flag("use_msys2", USING_MSYS2, install_libs_con
   if (!all(res)) {
     stop("Copying files failed!")
   }
+  return(invisible(NULL))
 }
 
 # system() will not raise an R exception if the process called

@@ -1,5 +1,7 @@
 context("lightgbm()")
 
+ON_WINDOWS <- .Platform$OS.type == "windows"
+
 data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")
 train <- agaricus.train
@@ -1207,7 +1209,6 @@ test_that("lgb.train() works with early stopping for regression with a metric th
 
 
 test_that("lgb.train() supports non-ASCII feature names", {
-  testthat::skip("UTF-8 feature names are not fully supported in the R package")
   dtrain <- lgb.Dataset(
     data = matrix(rnorm(400L), ncol =  4L)
     , label = rnorm(100L)
@@ -1224,10 +1225,21 @@ test_that("lgb.train() supports non-ASCII feature names", {
   )
   expect_true(lgb.is.Booster(bst))
   dumped_model <- jsonlite::fromJSON(bst$dump_model())
-  expect_identical(
-    dumped_model[["feature_names"]]
-    , feature_names
-  )
+
+  # UTF-8 strings are not well-supported on Windows
+  # * https://developer.r-project.org/Blog/public/2020/05/02/utf-8-support-on-windows/
+  # * https://developer.r-project.org/Blog/public/2020/07/30/windows/utf-8-build-of-r-and-cran-packages/index.html
+  if (!ON_WINDOWS) {
+    expect_identical(
+      dumped_model[["feature_names"]]
+      , feature_names
+    )
+  } else {
+    expect_identical(
+      dumped_model[["feature_names"]]
+      , iconv(feature_names, to = "UTF-8")
+    )
+  }
 })
 
 test_that("when early stopping is not activated, best_iter and best_score come from valids and not training data", {
