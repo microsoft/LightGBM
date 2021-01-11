@@ -49,7 +49,7 @@ else  # Linux
         export LANG="en_US.UTF-8"
         export LC_ALL="${LANG}"
         sudo locale-gen ${LANG}
-        update-locale
+        sudo update-locale
 
         sudo apt-get install -y --no-install-recommends \
             cmake \
