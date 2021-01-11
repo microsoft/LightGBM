@@ -95,8 +95,9 @@ fi
 
 if [[ "${TASK}" != "r-package" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
-        sh conda.sh -b -p $CONDA || exit -1
+        sh conda.sh -b -p $CONDA
     fi
+    echo $PATH
     conda config --set always_yes yes --set changeps1 no
     conda update -q -y conda
 fi
