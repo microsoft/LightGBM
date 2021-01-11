@@ -90,9 +90,9 @@ jobs:
       #   TASK: bdist
       # inference:
       #   TASK: if-else
-      # mpi_source:
-      #   TASK: mpi
-      #   METHOD: source
+      mpi_source:
+        TASK: mpi
+        METHOD: source
       # mpi_pip:
       #   TASK: mpi
       #   METHOD: pip
