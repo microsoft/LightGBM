@@ -21,6 +21,10 @@ if [[ $OS_NAME == "macos" ]]; then
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
         export DEBIAN_FRONTEND=noninteractive
+
+        #  https://github.com/moby/moby/issues/27988#issuecomment-462809153
+        echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
+
         sudo apt-get update || exit -1
         sudo apt-get install -y --no-install-recommends \
             software-properties-common || exit  -1
