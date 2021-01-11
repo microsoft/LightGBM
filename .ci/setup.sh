@@ -47,6 +47,7 @@ else  # Linux
             zip
 
         export LANG="en_US.UTF-8"
+        export LC_ALL="${LANG}"
         sudo locale-gen ${LANG}
         update-locale
 
