@@ -144,7 +144,7 @@ It is **strongly not recommended** to use this version of LightGBM!
 Install from `conda-forge <https://anaconda.org/conda-forge/lightgbm>`_
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-If you use ``conda`` to manage Python dependencies, you can install ``lightgbm`` using ``conda install``.
+If you use ``conda`` to manage Python dependencies, you can install LightGBM using ``conda install``.
 
 **Note**: The `lightgbm conda-forge feedstock <https://github.com/conda-forge/lightgbm-feedstock>`_ is not maintained by LightGBM maintainers.
 
