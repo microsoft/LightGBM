@@ -13,13 +13,12 @@ Preparation
 
 `setuptools <https://pypi.org/project/setuptools>`_ is needed.
 
-Install from `PyPI <https://pypi.org/project/lightgbm>`_ Using ``pip``
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Install from `PyPI <https://pypi.org/project/lightgbm>`_
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 .. code:: sh
 
     pip install lightgbm
- 
 
 You may need to install `wheel <https://pythonwheels.com>`_ via ``pip install wheel`` first.
 
