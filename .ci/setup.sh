@@ -20,15 +20,14 @@ if [[ $OS_NAME == "macos" ]]; then
     wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
-        apt-get update || exit -1
-        apt-get install -y --no-install-recommends \
-            software-properties-common \
-            sudo || exit  -1
+        sudo apt-get update || exit -1
+        sudo apt-get install -y --no-install-recommends \
+            software-properties-common || exit  -1
 
-        add-apt-repository -y ppa:git-core/ppa
-        apt-get update
+        sudo add-apt-repository -y ppa:git-core/ppa
+        sudo apt-get update
 
-        apt-get install -y --no-install-recommends \
+        sudo apt-get install -y --no-install-recommends \
             apt-utils \
             build-essential \
             ca-certificates \
@@ -51,7 +50,7 @@ else  # Linux
         sudo locale-gen ${LANG}
         update-locale
 
-        apt-get install -y --no-install-recommends \
+        sudo apt-get install -y --no-install-recommends \
             cmake \
             clang-11
     fi
