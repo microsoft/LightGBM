@@ -117,7 +117,7 @@ jobs:
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
       echo "##vso[task.setvariable variable=CONDA]$HOME/miniconda"
-      echo "##vso[task.prependpath]$CONDA/bin"
+      echo "##vso[task.prependpath]$HOME/miniconda/bin"
       AMDAPPSDK_PATH=$BUILD_SOURCESDIRECTORY/AMDAPPSDK
       echo "##vso[task.setvariable variable=AMDAPPSDK_PATH]$AMDAPPSDK_PATH"
       LD_LIBRARY_PATH=$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH
