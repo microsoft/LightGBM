@@ -20,6 +20,11 @@ if [[ $OS_NAME == "macos" ]]; then
     wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+
+        # https://github.com/moby/moby/issues/27988
+        # https://github.com/dotnet/dotnet-docker/issues/788
+        # https://github.com/microsoft/azure-pipelines-agent/issues/2043
+
         export DEBIAN_FRONTEND=noninteractive
 
         #  https://github.com/moby/moby/issues/27988#issuecomment-462809153
