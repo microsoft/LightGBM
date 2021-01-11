@@ -6,7 +6,7 @@
 \usage{
 saveRDS.lgb.Booster(
   object,
-  file = "",
+  file,
   ascii = FALSE,
   version = NULL,
   compress = TRUE,

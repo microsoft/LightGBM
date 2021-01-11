@@ -176,6 +176,9 @@ void MultiValBinWrapper::CopyMultiValBinSubset(
       if (feature_groups[i]->is_multi_val_) {
         for (int j = 0; j < feature_groups[i]->num_feature_; ++j) {
           const auto& bin_mapper = feature_groups[i]->bin_mappers_[j];
+          if (i == 0 && j == 0 && bin_mapper->GetMostFreqBin() > 0) {
+            num_total_bin = 1;
+          }
           int cur_num_bin = bin_mapper->num_bin();
           if (bin_mapper->GetMostFreqBin() == 0) {
             cur_num_bin -= offset;
