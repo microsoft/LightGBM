@@ -6,12 +6,12 @@ An easy way to run these tests is from the (python) docker container.
 """
 import os
 import itertools
-import time
 import sys
+import time
 
 import pytest
-if not sys.platform.startswith("linux"):
-    pytest.skip("lightgbm.dask is currently supported in Linux environments", allow_module_level=True)
+if not sys.platform.startswith('linux'):
+    pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 
 import dask.array as da
 import dask.dataframe as dd
@@ -31,7 +31,7 @@ data_output = ['array', 'scipy_csr_matrix', 'dataframe']
 data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
 
 pytestmark = [
-    pytest.mark.skipif(os.getenv("TASK", "") == "mpi", reason="Fails to run with MPI interface")
+    pytest.mark.skipif(os.getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface')
 ]
 
 
@@ -51,7 +51,7 @@ def r2_score(dy_true, dy_pred):
     return (1 - numerator / denominator).compute()
 
 
-def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=1, random_gs=True, avg_gs=10, random_state=0):
+def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=1, random_gs=False, avg_gs=10, random_state=0):
     """Generate a learning-to-rank dataset - feature vectors grouped together with
     integer-valued graded relevance scores. Replace this with a sklearn.datasets function
     if ranking objective becomes supported in sklearn.datasets module."""
@@ -90,7 +90,7 @@ def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=1, random_
     return X, y_vec, group_vec
 
 
-def _create_ranking_data(n_samples=100, output='array', chunk_size=10):
+def _create_ranking_data(n_samples=100, output='array', chunk_size=50):
     X, y, g = _make_ranking(n_samples=n_samples, random_state=42)
     rnd = np.random.RandomState(42)
     w = rnd.rand(X.shape[0]) * 0.01
@@ -291,7 +291,6 @@ def test_ranker(output, client, listen_port):
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output)
 
     # Avoid lightgbm.basic.LightGBMError: Binding port 13xxx failed exceptions.
-    client.wait_for_workers()
     time.sleep(10)
 
     dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, seed=42, min_child_samples=1)
@@ -309,14 +308,13 @@ def test_ranker(output, client, listen_port):
 
     # relative difference between distributed ranker and local ranker spearman corr should be small.
     lcor = spearmanr(rnkvec_local, y).correlation
-    assert np.abs(dcor - lcor) / lcor < 0.01
+    assert np.abs(dcor - lcor) / lcor < 0.03
 
 
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
 def test_ranker_local_predict(output, client, listen_port):
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output)
 
-    client.wait_for_workers()
     time.sleep(10)
 
     dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, seed=42, min_child_samples=1)
