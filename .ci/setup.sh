@@ -42,6 +42,7 @@ else  # Linux
             jq \
             libcurl4 \
             libicu66 \
+            libomp-dev \
             libssl1.1 \
             libunwind8 \
             locales \
