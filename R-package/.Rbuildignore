@@ -46,4 +46,3 @@ src/external_libs/fmt/support/Vagrantfile
 src/external_libs/fmt/support/.*\.xml
 src/external_libs/fmt/support/.*\.yml
 src/external_libs/fmt/test
-\.travis\.yml
