@@ -72,11 +72,10 @@ jobs:
 - job: Linux_latest
 ###########################################
   variables:
-    COMPILER: gcc
+    COMPILER: clang
     DEBIAN_FRONTEND: 'noninteractive'
     IN_UBUNTU_LATEST_CONTAINER: 'true'
     OS_NAME: 'linux'
-    PYTHON_VERSION: 3.8
     SETUP_CONDA: 'true'
   pool: sh-ubuntu
   container: ubuntu-latest
@@ -117,8 +116,9 @@ jobs:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
-      echo "##vso[task.setvariable variable=CONDA]$HOME/miniconda"
-      echo "##vso[task.prependpath]$HOME/miniconda/bin"
+      CONDA=$HOME/miniconda
+      echo "##vso[task.setvariable variable=CONDA]$CONDA"
+      echo "##vso[task.prependpath]$CONDA/bin"
       AMDAPPSDK_PATH=$BUILD_SOURCESDIRECTORY/AMDAPPSDK
       echo "##vso[task.setvariable variable=AMDAPPSDK_PATH]$AMDAPPSDK_PATH"
       LD_LIBRARY_PATH=$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH
@@ -134,12 +134,6 @@ jobs:
     displayName: Setup
   - bash: $(Build.SourcesDirectory)/.ci/test.sh
     displayName: Test
-  - task: PublishBuildArtifacts@1
-    condition: and(succeeded(), in(variables['TASK'], 'regular', 'sdist', 'bdist'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
-    inputs:
-      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: PackageAssets
-      artifactType: container
 ###########################################
 - job: MacOS
 ###########################################

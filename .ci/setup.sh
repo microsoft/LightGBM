@@ -25,9 +25,9 @@ else  # Linux
         # https://github.com/moby/moby/issues/27988#issuecomment-462809153
         echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
 
-        sudo apt-get update || exit -1
+        sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
-            software-properties-common || exit  -1
+            software-properties-common
 
         sudo add-apt-repository -y ppa:git-core/ppa
         sudo apt-get update
@@ -57,7 +57,7 @@ else  # Linux
 
         sudo apt-get install -y --no-install-recommends \
             cmake \
-            clang-11
+            clang
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
