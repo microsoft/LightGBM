@@ -55,7 +55,7 @@ def _build_network_params(worker_addresses, local_worker_ip, local_listen_port, 
         in addr_port_map.items()
     ]
     params = {
-        'machines': ','.join(machine_list)
+        'machines': ','.join(machine_list),
         'local_listen_port': addr_port_map[local_worker_ip],
         'time_out': time_out,
         'num_machines': len(addr_port_map)
