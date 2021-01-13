@@ -1,8 +1,10 @@
 # coding: utf-8
 """Distributed training with LightGBM and Dask.distributed.
 
-This module enables you to perform distributed training with LightGBM on Dask.Array and Dask.DataFrame collections.
-It is based on dask-xgboost package.
+This module enables you to perform distributed training with LightGBM on
+Dask.Array and Dask.DataFrame collections.
+
+It is based on dask-lightgbm, which was based on dask-xgboost.
 """
 import logging
 from collections import defaultdict
@@ -42,9 +44,18 @@ def _build_network_params(worker_addresses, local_worker_ip, local_listen_port, 
     -------
     params: dict
     """
-    addr_port_map = {addr: (local_listen_port + i) for i, addr in enumerate(worker_addresses)}
+    addr_port_map = {
+        addr: (local_listen_port + i)
+        for i, addr
+        in enumerate(worker_addresses)
+    }
+    machine_list = [
+        '%s:%d' % (_parse_host_port(addr)[0], port)
+        for addr, port
+        in addr_port_map.items()
+    ]
     params = {
-        'machines': ','.join('%s:%d' % (_parse_host_port(addr)[0], port) for addr, port in addr_port_map.items()),
+        'machines': ','.join(machine_list)
         'local_listen_port': addr_port_map[local_worker_ip],
         'time_out': time_out,
         'num_machines': len(addr_port_map)
@@ -65,7 +76,12 @@ def _concat(seq):
 
 def _train_part(params, model_factory, list_of_parts, worker_addresses, return_model, local_listen_port=12400,
                 time_out=120, **kwargs):
-    network_params = _build_network_params(worker_addresses, get_worker().address, local_listen_port, time_out)
+    network_params = _build_network_params(
+        worker_addresses=worker_addresses,
+        local_worker_ip=get_worker().address,
+        local_listen_port=local_listen_port,
+        time_out=time_out
+    )
     params.update(network_params)
 
     # Concatenate many parts into one
@@ -76,7 +92,12 @@ def _train_part(params, model_factory, list_of_parts, worker_addresses, return_m
 
     try:
         model = model_factory(**params)
-        model.fit(data, label, sample_weight=weight, **kwargs)
+        model.fit(
+            X=data,
+            y=label,
+            sample_weight=weight,
+            **kwargs
+        )
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
 
@@ -86,7 +107,10 @@ def _train_part(params, model_factory, list_of_parts, worker_addresses, return_m
 def _split_to_parts(data, is_matrix):
     parts = data.to_delayed()
     if isinstance(parts, np.ndarray):
-        assert (parts.shape[1] == 1) if is_matrix else (parts.ndim == 1 or parts.shape[1] == 1)
+        if is_matrix:
+            assert parts.shape[1] == 1
+        else:
+            assert parts.ndim == 1 or parts.shape[1] == 1
         parts = parts.flatten().tolist()
     return parts
 
@@ -107,12 +131,12 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
             Weights of training data.
     """
     # Split arrays/dataframes into parts. Arrange parts into tuples to enforce co-locality
-    data_parts = _split_to_parts(data, is_matrix=True)
-    label_parts = _split_to_parts(label, is_matrix=False)
+    data_parts = _split_to_parts(data=data, is_matrix=True)
+    label_parts = _split_to_parts(data=label, is_matrix=False)
     if weight is None:
         parts = list(map(delayed, zip(data_parts, label_parts)))
     else:
-        weight_parts = _split_to_parts(weight, is_matrix=False)
+        weight_parts = _split_to_parts(data=weight, is_matrix=False)
         parts = list(map(delayed, zip(data_parts, label_parts, weight_parts)))
 
     # Start computation in the background
@@ -134,21 +158,28 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
     worker_ncores = client.ncores()
 
     if 'tree_learner' not in params or params['tree_learner'].lower() not in {'data', 'feature', 'voting'}:
-        logger.warning('Parameter tree_learner not set or set to incorrect value '
-                       '(%s), using "data" as default', params.get("tree_learner", None))
+        logger.warning(
+            'Parameter tree_learner not set or set to incorrect value '
+            '(%s), using "data" as default',
+            params.get("tree_learner", None)
+        )
         params['tree_learner'] = 'data'
 
     # Tell each worker to train on the parts that it has locally
-    futures_classifiers = [client.submit(_train_part,
-                                         model_factory=model_factory,
-                                         params={**params, 'num_threads': worker_ncores[worker]},
-                                         list_of_parts=list_of_parts,
-                                         worker_addresses=list(worker_map.keys()),
-                                         local_listen_port=params.get('local_listen_port', 12400),
-                                         time_out=params.get('time_out', 120),
-                                         return_model=(worker == master_worker),
-                                         **kwargs)
-                           for worker, list_of_parts in worker_map.items()]
+    futures_classifiers = [
+        client.submit(
+            _train_part,
+            model_factory=model_factory,
+            params={**params, 'num_threads': worker_ncores[worker]},
+            list_of_parts=list_of_parts,
+            worker_addresses=list(worker_map.keys()),
+            local_listen_port=params.get('local_listen_port', 12400),
+            time_out=params.get('time_out', 120),
+            return_model=(worker == master_worker),
+            **kwargs
+        )
+        for worker, list_of_parts in worker_map.items()
+    ]
 
     results = client.gather(futures_classifiers)
     results = [v for v in results if v]
@@ -208,7 +239,16 @@ class _LGBMModel:
             client = default_client()
 
         params = self.get_params(True)
-        model = _train(client, X, y, params, model_factory, sample_weight, **kwargs)
+
+        model = _train(
+            client=client,
+            data=X,
+            label=y,
+            params=params,
+            model_factory=model_factory,
+            weight=sample_weight,
+            **kwargs
+        )
 
         self.set_params(**model.get_params())
         self._copy_extra_params(model, self)
@@ -234,17 +274,37 @@ class DaskLGBMClassifier(_LGBMModel, LGBMClassifier):
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
         """Docstring is inherited from the LGBMModel."""
-        return self._fit(LGBMClassifier, X, y, sample_weight, client, **kwargs)
+        return self._fit(
+            model_factory=LGBMClassifier,
+            X=X,
+            y=y,
+            sample_weight=sample_weight,
+            client=client,
+            **kwargs
+        )
+
     fit.__doc__ = LGBMClassifier.fit.__doc__
 
     def predict(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
-        return _predict(self.to_local(), X, dtype=self.classes_.dtype, **kwargs)
+        return _predict(
+            model=self.to_local(),
+            data=X,
+            dtype=self.classes_.dtype,
+            **kwargs
+        )
+
     predict.__doc__ = LGBMClassifier.predict.__doc__
 
     def predict_proba(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict_proba."""
-        return _predict(self.to_local(), X, proba=True, **kwargs)
+        return _predict(
+            model=self.to_local(),
+            data=X,
+            proba=True,
+            **kwargs
+        )
+
     predict_proba.__doc__ = LGBMClassifier.predict_proba.__doc__
 
     def to_local(self):
@@ -262,12 +322,25 @@ class DaskLGBMRegressor(_LGBMModel, LGBMRegressor):
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        return self._fit(LGBMRegressor, X, y, sample_weight, client, **kwargs)
+        return self._fit(
+            model_factoory=LGBMRegressor,
+            X=X,
+            y=y,
+            sample_weight=sample_weight,
+            client=client,
+            **kwargs
+        )
+
     fit.__doc__ = LGBMRegressor.fit.__doc__
 
     def predict(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
-        return _predict(self.to_local(), X, **kwargs)
+        return _predict(
+            model=self.to_local(),
+            data=X,
+            **kwargs
+        )
+
     predict.__doc__ = LGBMRegressor.predict.__doc__
 
     def to_local(self):
