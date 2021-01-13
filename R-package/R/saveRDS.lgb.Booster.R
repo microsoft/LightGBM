@@ -42,7 +42,7 @@
 #' }
 #' @export
 saveRDS.lgb.Booster <- function(object,
-                                file = "",
+                                file,
                                 ascii = FALSE,
                                 version = NULL,
                                 compress = TRUE,
@@ -66,6 +66,8 @@ saveRDS.lgb.Booster <- function(object,
     # Free model from memory
     object$raw <- NA
 
+    return(invisible(NULL))
+
   } else {
 
     saveRDS(
@@ -76,6 +78,8 @@ saveRDS.lgb.Booster <- function(object,
       , compress = compress
       , refhook = refhook
     )
+
+    return(invisible(NULL))
 
   }
 

@@ -944,16 +944,20 @@ class FeatureHistogram {
         is_splittable_ = true;
         // better split point
         if (current_gain > best_gain) {
+          if (USE_MC) {
+            best_right_constraints = constraints->RightToBasicConstraint();
+            best_left_constraints = constraints->LeftToBasicConstraint();
+            if (best_right_constraints.min > best_right_constraints.max ||
+                best_left_constraints.min > best_left_constraints.max) {
+              continue;
+            }
+          }
           best_left_count = left_count;
           best_sum_left_gradient = sum_left_gradient;
           best_sum_left_hessian = sum_left_hessian;
           // left is <= threshold, right is > threshold.  so this is t-1
           best_threshold = static_cast<uint32_t>(t - 1 + offset);
           best_gain = current_gain;
-          if (USE_MC) {
-            best_right_constraints = constraints->RightToBasicConstraint();
-            best_left_constraints = constraints->LeftToBasicConstraint();
-          }
         }
       }
     } else {
@@ -1033,15 +1037,19 @@ class FeatureHistogram {
         is_splittable_ = true;
         // better split point
         if (current_gain > best_gain) {
+          if (USE_MC) {
+            best_right_constraints = constraints->RightToBasicConstraint();
+            best_left_constraints = constraints->LeftToBasicConstraint();
+            if (best_right_constraints.min > best_right_constraints.max ||
+                best_left_constraints.min > best_left_constraints.max) {
+              continue;
+            }
+          }
           best_left_count = left_count;
           best_sum_left_gradient = sum_left_gradient;
           best_sum_left_hessian = sum_left_hessian;
           best_threshold = static_cast<uint32_t>(t + offset);
           best_gain = current_gain;
-          if (USE_MC) {
-            best_right_constraints = constraints->RightToBasicConstraint();
-            best_left_constraints = constraints->LeftToBasicConstraint();
-          }
         }
       }
     }

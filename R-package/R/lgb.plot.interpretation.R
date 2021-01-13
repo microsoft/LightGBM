@@ -124,6 +124,7 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
 
     }
   }
+  return(invisible(NULL))
 }
 
 #' @importFrom graphics barplot

@@ -1,4 +1,4 @@
-name: R GitHub Actions
+name: R-package
 
 on:
   push:
@@ -40,11 +40,6 @@ jobs:
             compiler: clang
             r_version: 4.0
             build_type: cmake
-          - os: ubuntu-latest
-            task: r-package-check-docs
-            compiler: gcc
-            r_version: 4.0
-            build_type: cmake
           - os: macOS-latest
             task: r-package
             compiler: gcc
@@ -64,12 +59,6 @@ jobs:
             task: r-package
             compiler: clang
             r_version: 4.0
-            build_type: cmake
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
             build_type: cmake
           - os: windows-latest
             task: r-package

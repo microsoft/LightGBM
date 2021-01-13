@@ -34,6 +34,7 @@ void LinearTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
       }
     }
   }
+  any_nan_ = false;
   for (int feat = 0; feat < train_data->num_features(); ++feat) {
     if (contains_nan_[feat]) {
       any_nan_ = true;
@@ -201,7 +202,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   std::vector<std::vector<int>> leaf_features;
   std::vector<int> leaf_num_features;
   std::vector<std::vector<const float*>> raw_data_ptr;
-  int max_num_features = 0;
+  size_t max_num_features = 0;
   for (int i = 0; i < num_leaves; ++i) {
     std::vector<int> raw_features;
     if (is_refit) {
@@ -224,8 +225,8 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     }
     leaf_features.push_back(numerical_features);
     raw_data_ptr.push_back(data_ptr);
-    leaf_num_features.push_back(numerical_features.size());
-    if (static_cast<int>(numerical_features.size()) > max_num_features) {
+    leaf_num_features.push_back(static_cast<int>(numerical_features.size()));
+    if (numerical_features.size() > max_num_features) {
       max_num_features = numerical_features.size();
     }
   }
@@ -233,16 +234,16 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < num_threads; ++i) {
     for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
-      int num_feat = leaf_features[leaf_num].size();
-      std::fill(XTHX_by_thread_[i][leaf_num].begin(), XTHX_by_thread_[i][leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0);
-      std::fill(XTg_by_thread_[i][leaf_num].begin(), XTg_by_thread_[i][leaf_num].begin() + num_feat + 1, 0);
+      size_t num_feat = leaf_features[leaf_num].size();
+      std::fill(XTHX_by_thread_[i][leaf_num].begin(), XTHX_by_thread_[i][leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0.0f);
+      std::fill(XTg_by_thread_[i][leaf_num].begin(), XTg_by_thread_[i][leaf_num].begin() + num_feat + 1, 0.0f);
     }
   }
 #pragma omp parallel for schedule(static)
   for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
-    int num_feat = leaf_features[leaf_num].size();
-    std::fill(XTHX_[leaf_num].begin(), XTHX_[leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0);
-    std::fill(XTg_[leaf_num].begin(), XTg_[leaf_num].begin() + num_feat + 1, 0);
+    size_t num_feat = leaf_features[leaf_num].size();
+    std::fill(XTHX_[leaf_num].begin(), XTHX_[leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0.0f);
+    std::fill(XTg_[leaf_num].begin(), XTg_[leaf_num].begin() + num_feat + 1, 0.0f);
   }
   std::vector<std::vector<int>> num_nonzero;
   for (int i = 0; i < num_threads; ++i) {
@@ -283,11 +284,11 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
         }
       }
       curr_row[num_feat] = 1.0;
-      double h = hessians[i];
-      double g = gradients[i];
+      float h = static_cast<float>(hessians[i]);
+      float g = static_cast<float>(gradients[i]);
       int j = 0;
       for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
-        double f1_val = curr_row[feat1];
+        float f1_val = curr_row[feat1];
         XTg_by_thread_[tid][leaf_num][feat1] += f1_val * g;
         f1_val *= h;
         for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
@@ -304,11 +305,11 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   for (int tid = 0; tid < num_threads; ++tid) {
 #pragma omp parallel for schedule(static)
     for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
-      int num_feat = leaf_features[leaf_num].size();
-      for (int j = 0; j < (num_feat + 1) * (num_feat + 2) / 2; ++j) {
+      size_t num_feat = leaf_features[leaf_num].size();
+      for (size_t j = 0; j < (num_feat + 1) * (num_feat + 2) / 2; ++j) {
         XTHX_[leaf_num][j] += XTHX_by_thread_[tid][leaf_num][j];
       }
-      for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
+      for (size_t feat1 = 0; feat1 < num_feat + 1; ++feat1) {
         XTg_[leaf_num][feat1] += XTg_by_thread_[tid][leaf_num][feat1];
       }
       if (HAS_NAN) {
@@ -337,12 +338,12 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
       }
       continue;
     }
-    int num_feat = leaf_features[leaf_num].size();
+    size_t num_feat = leaf_features[leaf_num].size();
     Eigen::MatrixXd XTHX_mat(num_feat + 1, num_feat + 1);
     Eigen::MatrixXd XTg_mat(num_feat + 1, 1);
-    int j = 0;
-    for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
-      for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
+    size_t j = 0;
+    for (size_t feat1 = 0; feat1 < num_feat + 1; ++feat1) {
+      for (size_t feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
         XTHX_mat(feat1, feat2) = XTHX_[leaf_num][j];
         XTHX_mat(feat2, feat1) = XTHX_mat(feat1, feat2);
         if ((feat1 == feat2) && (feat1 < num_feat)) {
