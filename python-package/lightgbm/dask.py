@@ -5,7 +5,9 @@ This module enables you to perform distributed training with LightGBM on Dask.Ar
 It is based on dask-xgboost package.
 """
 import logging
+import socket
 from collections import defaultdict
+from typing import Iterable
 from urllib.parse import urlparse
 
 import numpy as np
@@ -18,14 +20,47 @@ from dask.distributed import default_client, get_worker, wait
 from .basic import _LIB, _safe_call
 from .sklearn import LGBMClassifier, LGBMRegressor
 
+
 import scipy.sparse as ss
 
 logger = logging.getLogger(__name__)
 
 
-def _parse_host_port(address):
+def _parse_host_port(address: str):
+    """
+    Dask worker addresses are of the form ``tcp://127.0.0.1:46361``.
+
+    This method takes such an address and parses out the host
+    and port.
+    """
     parsed = urlparse(address)
     return parsed.hostname, parsed.port
+
+
+def _find_open_port(ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
+    """Find an open port to accept connections on"""
+    max_tries = 1000
+    out_port = None
+    found_port = False
+    for i in range(max_tries):
+        out_port = local_listen_port + i
+        if out_port in ports_to_skip:
+            continue
+        try:
+            out_port = local_listen_port + i
+            print(f"trying {out_port}")
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind((ip, out_port))
+                s.listen()
+            found_port = True
+            break
+        # if unavailable, you'll get OSError: Address already in use
+        except OSError:
+            continue
+    if not found_port:
+        msg = f"LightGBM tried {ip}:{local_listen_port}-{out_port} and could not create a connection. Try setting local_listen_port to a different value."
+        raise RuntimeError(msg)
+    return out_port
 
 
 def _build_network_params(worker_addresses, local_worker_ip, local_listen_port, time_out):
@@ -42,12 +77,31 @@ def _build_network_params(worker_addresses, local_worker_ip, local_listen_port, 
     -------
     params: dict
     """
-    addr_port_map = {addr: (local_listen_port + i) for i, addr in enumerate(worker_addresses)}
+    # find an open port on each worker. It's possible for multiple workers to be on the same machine,
+    # so keep track of which ports are going to be taken by LightGBM
+    lightgbm_ports = set()
+    address_port_map = {}
+    for address in worker_addresses:
+        worker_ip, _ = _parse_host_port(address)
+        port = _find_open_port(
+            ip=worker_ip,
+            local_listen_port=local_listen_port,
+            ports_to_skip=lightgbm_ports
+        )
+        address_port_map[worker_ip] = port
+        lightgbm_ports.add(port)
+
+    machine_list = [
+        '%s:%d' % (worker_ip, port)
+        for worker_ip, port
+        in address_port_map.items()
+    ]
+
     params = {
-        'machines': ','.join('%s:%d' % (_parse_host_port(addr)[0], port) for addr, port in addr_port_map.items()),
-        'local_listen_port': addr_port_map[local_worker_ip],
+        'machines': ','.join(machine_list),
+        'local_listen_port': address_port_map[local_worker_ip],
         'time_out': time_out,
-        'num_machines': len(addr_port_map)
+        'num_machines': len(address_port_map)
     }
     return params
 
@@ -65,7 +119,13 @@ def _concat(seq):
 
 def _train_part(params, model_factory, list_of_parts, worker_addresses, return_model, local_listen_port=12400,
                 time_out=120, **kwargs):
-    network_params = _build_network_params(worker_addresses, get_worker().address, local_listen_port, time_out)
+    local_worker_ip, _ = _parse_host_port(get_worker().address)
+    network_params = _build_network_params(
+        worker_addresses=worker_addresses,
+        local_worker_ip=local_worker_ip,
+        local_listen_port=local_listen_port,
+        time_out=time_out
+    )
     params.update(network_params)
 
     # Concatenate many parts into one
