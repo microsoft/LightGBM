@@ -42,7 +42,6 @@ else  # Linux
             jq \
             libcurl4 \
             libicu66 \
-            libomp-dev \
             libssl1.1 \
             libunwind8 \
             locales \
@@ -58,7 +57,8 @@ else  # Linux
 
         sudo apt-get install -y --no-install-recommends \
             cmake \
-            clang
+            clang \
+            libomp-dev
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update

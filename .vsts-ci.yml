@@ -46,7 +46,6 @@ jobs:
       gpu_source:
         TASK: gpu
         METHOD: source
-        PYTHON_VERSION: 3.6
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
