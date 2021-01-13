@@ -404,18 +404,29 @@ class CTRProvider {
         feature_names.push_back(str_buf.str());
       }
     }
-    CHECK(static_cast<int>(feature_names.size()) == num_original_features_);
+    int feature_names_size = static_cast<int>(feature_names.size());
     const std::vector<std::string> old_feature_names = feature_names;
-    feature_names.resize(num_total_features_);
+    std::vector<std::string> new_feature_names(num_total_features_);
     for (int fid = 0; fid < num_original_features_; ++fid) {
+      new_feature_names[fid] = old_feature_names[fid];
       if (is_categorical_feature_[fid]) {
         for (const auto& cat_converter : cat_converters_) {
           const int convert_fid = cat_converter->GetConvertFid(fid);
           std::string cat_converter_name = cat_converter->Name();
           std::replace(cat_converter_name.begin(), cat_converter_name.end(), ':', '_');
-          feature_names[convert_fid] = old_feature_names[fid] + std::string("_") + cat_converter_name;
+          new_feature_names[convert_fid] = old_feature_names[fid] + std::string("_") + cat_converter_name;
         }
       }
+    }
+    if (feature_names_size == num_original_features_) {
+      feature_names = new_feature_names;
+    } else if (feature_names_size == num_original_features_ +
+      static_cast<int>(cat_converters_.size()) * static_cast<int>(categorical_features_.size())) {
+      for (size_t i = 0; i < new_feature_names.size(); ++i) {
+        CHECK_EQ(new_feature_names[i], feature_names[i]);
+      }
+    } else {
+      Log::Fatal("wrong length of feature_names");
     }
   }
 
@@ -507,6 +518,7 @@ class CTRProvider {
     SetConfig(config);
     const auto bin_filename = Parser::CheckCanLoadFromBin(filename);
     if (bin_filename.size() > 0) {
+      cat_converters_.clear();
       return;
     }
     const int label_idx = ParseMetaInfo(filename, config);

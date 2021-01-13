@@ -206,12 +206,17 @@ Dataset <- R6::R6Class(
           )
 
         } else if (is.matrix(private$raw_data)) {
-
+          if (is.null(private$info[["label"]])) {
+            label <- NULL
+          } else {
+            label <- self$getinfo(name = "label")
+          }
           # Are we using a matrix?
           handle <- lgb.call(
             fun_name = "LGBM_DatasetCreateFromMat_R"
             , ret = handle
             , private$raw_data
+            , label
             , nrow(private$raw_data)
             , ncol(private$raw_data)
             , params_str
@@ -219,6 +224,11 @@ Dataset <- R6::R6Class(
           )
 
         } else if (methods::is(private$raw_data, "dgCMatrix")) {
+          if (is.null(private$info[["label"]])) {
+            label <- NULL
+          } else {
+            label <- self$getinfo(name = "label")
+          }
           if (length(private$raw_data@p) > 2147483647L) {
             stop("Cannot support large CSC matrix")
           }
@@ -229,6 +239,7 @@ Dataset <- R6::R6Class(
             , private$raw_data@p
             , private$raw_data@i
             , private$raw_data@x
+            , label
             , length(private$raw_data@p)
             , length(private$raw_data@x)
             , nrow(private$raw_data)
@@ -549,6 +560,15 @@ Dataset <- R6::R6Class(
     update_params = function(params) {
       if (length(params) == 0L) {
         return(invisible(self))
+      }
+      if (!is.null(params$categorical_feature)) {
+        # when categorical feature is passed in the constructor of lgb.Dataset
+        # all indices are subtracted by 1 in set_categorical_feature.
+        # however, when it is passed directly to the C API, it used the original indices.
+        # this causes unexpected inconsistent results, so we remove
+        # categorical features from the parameters and directly set it in R.
+        self$set_categorical_feature(params$categorical_feature)
+        params$categorical_feature <- private$params$categorical_feature
       }
       if (lgb.is.null.handle(x = private$handle)) {
         private$params <- modifyList(private$params, params)
