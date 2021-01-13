@@ -245,9 +245,9 @@ sh build-cran-package.sh
 
 This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
 
-Alternatively, GitHub Actions can generate this file for you. On a pull request, go to the "Files changed" tab and create a comment with this phrase:
+Alternatively, GitHub Actions can generate this file for you. On a pull request, create a comment with this phrase:
 
-> /gha build r-artifacts
+> /gha run build-r-artifacts
 
 Go to https://github.com/microsoft/LightGBM/actions, and find the most recent run of the "R artifact builds" workflow. If it ran successfully, you'll find a download link for the package (in `.zip` format) in that run's "Artifacts" section.
 
@@ -389,7 +389,7 @@ RDvalgrind \
 | cat
 ```
 
-These tests can also be triggered on any pull request by leaving a review on the "Files changed" tab in a pull request:
+These tests can also be triggered on any pull request by leaving a comment in a pull request:
 
 > /gha run r-valgrind
 
