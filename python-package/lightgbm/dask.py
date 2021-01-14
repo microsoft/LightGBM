@@ -26,20 +26,21 @@ import scipy.sparse as ss
 logger = logging.getLogger(__name__)
 
 
-def _find_open_port(ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
+def _find_open_port(local_listen_port: int, lightgbm_ports: Iterable[int]) -> int:
     """Find an open port to accept connections on"""
+    local_ip = '127.0.0.1'
     max_tries = 1000
     out_port = None
     found_port = False
     for i in range(max_tries):
         out_port = local_listen_port + i
-        if out_port in ports_to_skip:
-            continue
         try:
             out_port = local_listen_port + i
+            if out_port in lightgbm_ports:
+                continue
             print(f"trying {out_port}")
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind((ip, out_port))
+                s.bind((local_ip, out_port))
                 s.listen()
             found_port = True
             break
@@ -52,47 +53,25 @@ def _find_open_port(ip: str, local_listen_port: int, ports_to_skip: Iterable[int
     return out_port
 
 
-def _build_network_params(worker_addresses, local_worker_ip, local_listen_port, time_out):
-    """Build network parameters suitable for LightGBM C backend.
+def _find_open_ports(client, worker_addresses, local_listen_port) -> int:
+    """Find an open port on each worker
 
-    Parameters
-    ----------
-    worker_addresses : iterable of str - collection of worker addresses in `<protocol>://<host>:port` format
-    local_worker_ip : str
-    local_listen_port : int
-    time_out : int
-
-    Returns
-    -------
-    params: dict
+    Tries to find an open port on each worker. Returns a dictionary where keys are
+    worker addresses and values are an open port for LightGBM to use.
     """
-    # find an open port on each worker. It's possible for multiple workers to be on the same machine,
-    # so keep track of which ports are going to be taken by LightGBM
     lightgbm_ports = set()
-    address_port_map = {}
-    for address in worker_addresses:
-        worker_ip = urlparse(address).hostname
-        port = _find_open_port(
-            ip=worker_ip,
+    worker_ip_to_port = {}
+    for worker_address in worker_addresses:
+        port = client.submit(
+            func=_find_open_port,
+            workers=[worker_address],
             local_listen_port=local_listen_port,
-            ports_to_skip=lightgbm_ports
-        )
-        address_port_map[worker_ip] = port
+            lightgbm_ports=lightgbm_ports
+        ).result()
         lightgbm_ports.add(port)
+        worker_ip_to_port[worker_address] = port
 
-    machine_list = [
-        '%s:%d' % (worker_ip, port)
-        for worker_ip, port
-        in address_port_map.items()
-    ]
-
-    params = {
-        'machines': ','.join(machine_list),
-        'local_listen_port': address_port_map[local_worker_ip],
-        'time_out': time_out,
-        'num_machines': len(address_port_map)
-    }
-    return params
+    return worker_ip_to_port
 
 
 def _concat(seq):
@@ -106,15 +85,21 @@ def _concat(seq):
         raise TypeError('Data must be one of: numpy arrays, pandas dataframes, sparse matrices (from scipy). Got %s.' % str(type(seq[0])))
 
 
-def _train_part(params, model_factory, list_of_parts, worker_addresses, return_model, local_listen_port=12400,
+def _train_part(params, model_factory, list_of_parts, worker_address_to_port, return_model,
                 time_out=120, **kwargs):
-    local_worker_ip = urlparse(get_worker().address).hostname
-    network_params = _build_network_params(
-        worker_addresses=worker_addresses,
-        local_worker_ip=local_worker_ip,
-        local_listen_port=local_listen_port,
-        time_out=time_out
-    )
+    local_worker_address = get_worker().address
+    print(f"local_worker_address {local_worker_address}")
+    machine_list = ','.join([
+        '%s:%d' % (urlparse(worker_address).hostname, port)
+        for worker_address, port
+        in worker_address_to_port.items()
+    ])
+    network_params = {
+        'machines': machine_list,
+        'local_listen_port': worker_address_to_port[local_worker_address],
+        'time_out': time_out,
+        'num_machines': len(worker_address_to_port)
+    }
     params.update(network_params)
 
     # Concatenate many parts into one
@@ -187,13 +172,25 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
                        '(%s), using "data" as default', params.get("tree_learner", None))
         params['tree_learner'] = 'data'
 
+    # find an open port on each worker. note that multiple workers can run
+    # on the same machine, so this needs to ensure that each one gets its
+    # own port
+    local_listen_port = params.get('local_listen_port', 12400)
+    worker_address_to_port = _find_open_ports(
+        client=client,
+        worker_addresses=list(worker_map.keys()),
+        local_listen_port=local_listen_port
+    )
+
+    print("worker_address_to_port")
+    print(worker_address_to_port)
+
     # Tell each worker to train on the parts that it has locally
     futures_classifiers = [client.submit(_train_part,
                                          model_factory=model_factory,
                                          params={**params, 'num_threads': worker_ncores[worker]},
                                          list_of_parts=list_of_parts,
-                                         worker_addresses=list(worker_map.keys()),
-                                         local_listen_port=params.get('local_listen_port', 12400),
+                                         worker_address_to_port=worker_address_to_port,
                                          time_out=params.get('time_out', 120),
                                          return_model=(worker == master_worker),
                                          **kwargs)

@@ -10,16 +10,20 @@ cluster-image:
 	docker build --no-cache -t ${CLUSTER_IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile-cluster .
 
 delete-repo:
-	aws ecr-public batch-delete-image \
-		--repository-name ${CLUSTER_IMAGE_NAME} \
-		--image-ids imageTag=${IMAGE_TAG}
-	aws ecr-public delete-repository \
-		--repository-name ${CLUSTER_IMAGE_NAME}
+	aws --region us-east-1 \
+		ecr-public batch-delete-image \
+			--repository-name ${CLUSTER_IMAGE_NAME} \
+			--image-ids imageTag=${IMAGE_TAG}
+	aws --region us-east-1 \
+		ecr-public delete-repository \
+			--repository-name ${CLUSTER_IMAGE_NAME}
+	rm ecr-details.json
 
 ecr-details.json:
-	aws ecr-public create-repository \
-		--repository-name ${CLUSTER_IMAGE_NAME} \
-		> ecr-details.json
+	aws --region us-east-1 \
+		ecr-public create-repository \
+			--repository-name ${CLUSTER_IMAGE_NAME} \
+	> ecr-details.json
 
 create-repo: ecr-details.json
 
