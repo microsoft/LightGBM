@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
-    """Find an open port
+    """Find an open port.
 
     This function tries to find a free port on the machine it's run on. It is intended to
     be run once on each Dask worker, sequentially.
@@ -72,7 +72,7 @@ def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Itera
 
 
 def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], local_listen_port: int) -> Dict[str, int]:
-    """Find an open port on each worker
+    """Find an open port on each worker.
 
     LightGBM distributed training uses TCP sockets by default, and this method is used to
     identify open ports on each worker so LightGBM can reliable create those sockets.
