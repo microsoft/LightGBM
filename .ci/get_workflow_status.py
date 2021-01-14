@@ -1,5 +1,11 @@
 # coding: utf-8
-"""Get the most recent status of workflow for the current PR."""
+"""Get the most recent status of workflow for the current PR.
+
+[usage]
+    python get_workflow_status.py TRIGGER_PHRASE
+
+TRIGGER_PHRASE: Code phrase that triggers workflow.
+"""
 import json
 from os import environ
 from sys import argv, exit
@@ -10,13 +16,13 @@ except ImportError:
     import urllib2 as request
 
 
-def get_runs(workflow_name):
+def get_runs(trigger_phrase):
     """Get all triggering workflow comments in the current PR.
 
     Parameters
     ----------
-    workflow_name : string
-        Name of the workflow.
+    trigger_phrase : string
+        Code phrase that triggers workflow.
 
     Returns
     -------
@@ -34,8 +40,7 @@ def get_runs(workflow_name):
         url.close()
         pr_runs = [i for i in data
                    if i['author_association'].lower() in {'owner', 'member', 'collaborator'}
-                   and i['body'].startswith('/gha run')
-                   and 'Workflow **{}** has been triggered!'.format(workflow_name) in i['body']]
+                   and i['body'].startswith('/gha run {}'.format(trigger_phrase))]
     return pr_runs[::-1]
 
 
@@ -72,9 +77,9 @@ def get_status(runs):
 
 
 if __name__ == "__main__":
-    workflow_name = argv[1]
+    trigger_phrase = argv[1]
     while True:
-        status = get_status(get_runs(workflow_name))
+        status = get_status(get_runs(trigger_phrase))
         if status != 'in-progress':
             break
         sleep(60)
