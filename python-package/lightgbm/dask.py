@@ -7,7 +7,7 @@ It is based on dask-xgboost package.
 import logging
 import socket
 from collections import defaultdict
-from typing import Iterable
+from typing import Dict, Iterable
 from urllib.parse import urlparse
 
 import numpy as np
@@ -15,20 +15,39 @@ import pandas as pd
 from dask import array as da
 from dask import dataframe as dd
 from dask import delayed
-from dask.distributed import default_client, get_worker, wait
+from dask.distributed import Client, default_client, get_worker, wait
 
 from .basic import _LIB, _safe_call
 from .sklearn import LGBMClassifier, LGBMRegressor
-
 
 import scipy.sparse as ss
 
 logger = logging.getLogger(__name__)
 
 
-def _find_open_port(worker_ip: str, local_listen_port: int, lightgbm_ports: Iterable[int]) -> int:
-    """Find an open port to accept connections on"""
-    #worker_ip = '127.0.0.1'
+def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
+    """Find an open port
+
+    This function tries to find a free port on the machine it's run on. It is intended to
+    be run once on each Dask worker, sequentially.
+
+    Parameters
+    ----------
+    worker_ip : str
+        IP address for the Dask worker.
+    local_listen_port : int
+        First port to try when searching for open ports.
+    ports_to_skip: Iterable[int]
+        An iterable of integers referring to ports that should be skipped. Since multiple Dask
+        workers can run on the same physical machine, this method may be called multiple times
+        on the same machine. ``ports_to_skip`` is used to ensure that LightGBM doesn't try to use
+        the same port for two worker processes running on the same machine.
+
+    Returns
+    -------
+    result : int
+        A free port on the machine referenced by ``worker_ip``.
+    """
     max_tries = 1000
     out_port = None
     found_port = False
@@ -36,9 +55,8 @@ def _find_open_port(worker_ip: str, local_listen_port: int, lightgbm_ports: Iter
         out_port = local_listen_port + i
         try:
             out_port = local_listen_port + i
-            if out_port in lightgbm_ports:
+            if out_port in ports_to_skip:
                 continue
-            print(f"trying {out_port}")
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.bind((worker_ip, out_port))
                 s.listen()
@@ -48,16 +66,33 @@ def _find_open_port(worker_ip: str, local_listen_port: int, lightgbm_ports: Iter
         except OSError:
             continue
     if not found_port:
-        msg = f"LightGBM tried {ip}:{local_listen_port}-{out_port} and could not create a connection. Try setting local_listen_port to a different value."
-        raise RuntimeError(msg)
+        msg = "LightGBM tried %s:%d-%d and could not create a connection. Try setting local_listen_port to a different value."
+        raise RuntimeError(msg % (worker_ip, local_listen_port, out_port))
     return out_port
 
 
-def _find_open_ports(client, worker_addresses, local_listen_port) -> int:
+def _find_open_ports(client: Client, worker_addresses: List[str], local_listen_port: int) -> Dict[str, int]:
     """Find an open port on each worker
 
-    Tries to find an open port on each worker. Returns a dictionary where keys are
+    LightGBM distributed training uses TCP sockets by default, and this method is used to
+    identify open ports on each worker so LightGBM can reliable create those sockets.
+
+    Returns a dictionary where keys are
     worker addresses and values are an open port for LightGBM to use.
+
+    Parameters
+    ----------
+    client : dask.distributed.Client
+        Dask client.
+    worker_addresses : List[str]
+        A list of addresses for workers in the cluster. These are strings of the form ```<protocol>://<host>:port```
+    local_listen_port : int
+        First port to try when searching for open ports.
+
+    Returns
+    -------
+    result : Dict[str, int]
+        Dictionary where keys are worker addresses and values are an open port for LightGBM to use.
     """
     lightgbm_ports = set()
     worker_ip_to_port = {}
@@ -67,7 +102,7 @@ def _find_open_ports(client, worker_addresses, local_listen_port) -> int:
             workers=[worker_address],
             worker_ip=urlparse(worker_address).hostname,
             local_listen_port=local_listen_port,
-            lightgbm_ports=lightgbm_ports
+            ports_to_skip=lightgbm_ports
         ).result()
         lightgbm_ports.add(port)
         worker_ip_to_port[worker_address] = port
@@ -89,7 +124,6 @@ def _concat(seq):
 def _train_part(params, model_factory, list_of_parts, worker_address_to_port, return_model,
                 time_out=120, **kwargs):
     local_worker_address = get_worker().address
-    print(f"local_worker_address {local_worker_address}")
     machine_list = ','.join([
         '%s:%d' % (urlparse(worker_address).hostname, port)
         for worker_address, port
@@ -182,9 +216,6 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
         worker_addresses=list(worker_map.keys()),
         local_listen_port=local_listen_port
     )
-
-    print("worker_address_to_port")
-    print(worker_address_to_port)
 
     # Tell each worker to train on the parts that it has locally
     futures_classifiers = [client.submit(_train_part,
