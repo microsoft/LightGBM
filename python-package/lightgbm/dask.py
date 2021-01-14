@@ -26,17 +26,6 @@ import scipy.sparse as ss
 logger = logging.getLogger(__name__)
 
 
-def _parse_host_port(address: str):
-    """
-    Dask worker addresses are of the form ``tcp://127.0.0.1:46361``.
-
-    This method takes such an address and parses out the host
-    and port.
-    """
-    parsed = urlparse(address)
-    return parsed.hostname, parsed.port
-
-
 def _find_open_port(ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
     """Find an open port to accept connections on"""
     max_tries = 1000
@@ -82,7 +71,7 @@ def _build_network_params(worker_addresses, local_worker_ip, local_listen_port, 
     lightgbm_ports = set()
     address_port_map = {}
     for address in worker_addresses:
-        worker_ip, _ = _parse_host_port(address)
+        worker_ip, _ = urlparse(address).hostname
         port = _find_open_port(
             ip=worker_ip,
             local_listen_port=local_listen_port,
@@ -119,7 +108,7 @@ def _concat(seq):
 
 def _train_part(params, model_factory, list_of_parts, worker_addresses, return_model, local_listen_port=12400,
                 time_out=120, **kwargs):
-    local_worker_ip, _ = _parse_host_port(get_worker().address)
+    local_worker_ip, _ = _urlparse(get_worker().address).hostname
     network_params = _build_network_params(
         worker_addresses=worker_addresses,
         local_worker_ip=local_worker_ip,
