@@ -71,7 +71,7 @@ def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Itera
     return out_port
 
 
-def _find_open_ports(client: Client, worker_addresses: List[str], local_listen_port: int) -> Dict[str, int]:
+def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], local_listen_port: int) -> Dict[str, int]:
     """Find an open port on each worker
 
     LightGBM distributed training uses TCP sockets by default, and this method is used to
@@ -84,8 +84,8 @@ def _find_open_ports(client: Client, worker_addresses: List[str], local_listen_p
     ----------
     client : dask.distributed.Client
         Dask client.
-    worker_addresses : List[str]
-        A list of addresses for workers in the cluster. These are strings of the form ```<protocol>://<host>:port```
+    worker_addresses : Iterable[str]
+        An iterable of addresses for workers in the cluster. These are strings of the form ```<protocol>://<host>:port```
     local_listen_port : int
         First port to try when searching for open ports.
 
@@ -211,7 +211,7 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
     # on the same machine, so this needs to ensure that each one gets its
     # own port
     local_listen_port = params.get('local_listen_port', 12400)
-    worker_address_to_port = _find_open_ports(
+    worker_address_to_port = _find_ports_for_workers(
         client=client,
         worker_addresses=list(worker_map.keys()),
         local_listen_port=local_listen_port
