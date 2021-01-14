@@ -71,7 +71,7 @@ def _build_network_params(worker_addresses, local_worker_ip, local_listen_port, 
     lightgbm_ports = set()
     address_port_map = {}
     for address in worker_addresses:
-        worker_ip, _ = urlparse(address).hostname
+        worker_ip = urlparse(address).hostname
         port = _find_open_port(
             ip=worker_ip,
             local_listen_port=local_listen_port,
@@ -108,7 +108,7 @@ def _concat(seq):
 
 def _train_part(params, model_factory, list_of_parts, worker_addresses, return_model, local_listen_port=12400,
                 time_out=120, **kwargs):
-    local_worker_ip, _ = _urlparse(get_worker().address).hostname
+    local_worker_ip = urlparse(get_worker().address).hostname
     network_params = _build_network_params(
         worker_addresses=worker_addresses,
         local_worker_ip=local_worker_ip,
