@@ -323,7 +323,7 @@ class DaskLGBMRegressor(_LGBMModel, LGBMRegressor):
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
         return self._fit(
-            model_factoory=LGBMRegressor,
+            model_factory=LGBMRegressor,
             X=X,
             y=y,
             sample_weight=sample_weight,
