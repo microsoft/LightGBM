@@ -26,9 +26,9 @@ import scipy.sparse as ss
 logger = logging.getLogger(__name__)
 
 
-def _find_open_port(local_listen_port: int, lightgbm_ports: Iterable[int]) -> int:
+def _find_open_port(worker_ip: str, local_listen_port: int, lightgbm_ports: Iterable[int]) -> int:
     """Find an open port to accept connections on"""
-    local_ip = '127.0.0.1'
+    #worker_ip = '127.0.0.1'
     max_tries = 1000
     out_port = None
     found_port = False
@@ -40,7 +40,7 @@ def _find_open_port(local_listen_port: int, lightgbm_ports: Iterable[int]) -> in
                 continue
             print(f"trying {out_port}")
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind((local_ip, out_port))
+                s.bind((worker_ip, out_port))
                 s.listen()
             found_port = True
             break
@@ -65,6 +65,7 @@ def _find_open_ports(client, worker_addresses, local_listen_port) -> int:
         port = client.submit(
             func=_find_open_port,
             workers=[worker_address],
+            worker_ip=urlparse(worker_address).hostname,
             local_listen_port=local_listen_port,
             lightgbm_ports=lightgbm_ports
         ).result()
