@@ -9,4 +9,6 @@ RUN conda install -y -c conda-forge \
     dask-cloudprovider \
     scikit-learn \
     numpy \
-    pandas
+    pandas && \
+    pip install \
+        awscli
