@@ -85,7 +85,8 @@ def test_basic(tmp_path):
 
 
 def test_chunked_dataset():
-    X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2)
+    X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1,
+                                                        random_state=2)
 
     chunk_size = X_train.shape[0] // 10 + 1
     X_train = [X_train[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_train.shape[0] // chunk_size + 1)]
@@ -240,7 +241,7 @@ def test_add_features_from_different_sources():
         # test that method works but sets raw data to None in case of immergeable data types
         d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=False).construct()
         d2 = lgb.Dataset([X[:n_row // 2, :], X[n_row // 2:, :]],
-                            feature_name=names, free_raw_data=False).construct()
+                         feature_name=names, free_raw_data=False).construct()
         d1.add_features_from(d2)
         assert d1.data is None
 
