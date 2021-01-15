@@ -1,6 +1,5 @@
 # coding: utf-8
 import os
-import tempfile
 
 import lightgbm as lgb
 import numpy as np
@@ -268,8 +267,7 @@ def test_cegb_affects_behavior(tmp_path):
     base = lgb.Booster(train_set=ds)
     for k in range(10):
         base.update()
-    with tempfile.NamedTemporaryFile() as f:
-        basename = f.name
+    basename = str(tmp_path / "basename.txt")
     base.save_model(basename)
     with open(basename, 'rt') as f:
         basetxt = f.read()
