@@ -11,13 +11,13 @@ from typing import Dict, Iterable
 from urllib.parse import urlparse
 
 import numpy as np
-import pandas as pd
 from dask import array as da
 from dask import dataframe as dd
 from dask import delayed
 from dask.distributed import Client, default_client, get_worker, wait
 
 from .basic import _LIB, _safe_call
+from .compat import DataFrame, Series
 from .sklearn import LGBMClassifier, LGBMRegressor
 
 import scipy.sparse as ss
@@ -108,8 +108,12 @@ def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], loc
 def _concat(seq):
     if isinstance(seq[0], np.ndarray):
         return np.concatenate(seq, axis=0)
-    elif isinstance(seq[0], (pd.DataFrame, pd.Series)):
-        return pd.concat(seq, axis=0)
+    elif isinstance(seq[0], (DataFrame, Series)):
+        if PANDAS_INSTALLED:
+            from pandas import concat
+            return concat(seq, axis=0)
+        else:
+            raise ImportError('You must install pandas to work with DataFrame and Series datatypes.')
     elif isinstance(seq[0], ss.spmatrix):
         return ss.vstack(seq, format='csr')
     else:
@@ -229,7 +233,7 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
 
 
 def _predict_part(part, model, proba, **kwargs):
-    data = part.values if isinstance(part, pd.DataFrame) else part
+    data = part.values if isinstance(part, DataFrame) else part
 
     if data.shape[0] == 0:
         result = np.array([])
@@ -238,7 +242,11 @@ def _predict_part(part, model, proba, **kwargs):
     else:
         result = model.predict(data, **kwargs)
 
-    if isinstance(part, pd.DataFrame):
+    if isinstance(part, DataFrame):
+        if PANDAS_INSTALLED:
+            import pandas as pd
+        else:
+            raise ImportError('You must install pandas to work with DataFrame and Series datatypes.')
         if proba:
             result = pd.DataFrame(result, index=part.index)
         else:
