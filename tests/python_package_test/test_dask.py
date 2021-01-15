@@ -1,5 +1,6 @@
 # coding: utf-8
 import os
+import socket
 import sys
 
 import pytest
@@ -87,6 +88,26 @@ def test_classifier(output, centers, client, listen_port):
     assert_eq(p1, p2)
     assert_eq(y, p1)
     assert_eq(y, p2)
+
+
+def test_training_does_not_fail_on_port_conflicts(client):
+    _, _, _, dX, dy, dw = _create_data('classification', output='array')
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('127.0.0.1', 12400))
+
+        dask_classifier = dlgbm.DaskLGBMClassifier(
+            time_out=5,
+            local_listen_port=12400
+        )
+        for i in range(5):
+            dask_classifier.fit(
+                X=dX,
+                y=dy,
+                sample_weight=dw,
+                client=client
+            )
+            assert dask_classifier.booster_
 
 
 @pytest.mark.parametrize('output', data_output)
@@ -183,21 +204,27 @@ def test_regressor_local_predict(client, listen_port):
     assert_eq(s1, s2)
 
 
-def test_build_network_params():
-    workers_ips = [
-        'tcp://192.168.0.1:34545',
-        'tcp://192.168.0.2:34346',
-        'tcp://192.168.0.3:34347'
-    ]
+def test_find_open_port_works():
+    worker_ip = '127.0.0.1'
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((worker_ip, 12400))
+        new_port = dlgbm._find_open_port(
+            worker_ip=worker_ip,
+            local_listen_port=12400,
+            ports_to_skip=set()
+        )
+        assert new_port == 12401
 
-    params = dlgbm._build_network_params(workers_ips, 'tcp://192.168.0.2:34346', 12400, 120)
-    exp_params = {
-        'machines': '192.168.0.1:12400,192.168.0.2:12401,192.168.0.3:12402',
-        'local_listen_port': 12401,
-        'num_machines': len(workers_ips),
-        'time_out': 120
-    }
-    assert exp_params == params
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
+        s_1.bind((worker_ip, 12400))
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_2:
+            s_2.bind((worker_ip, 12401))
+            new_port = dlgbm._find_open_port(
+                worker_ip=worker_ip,
+                local_listen_port=12400,
+                ports_to_skip=set()
+            )
+            assert new_port == 12402
 
 
 @gen_cluster(client=True, timeout=None)
