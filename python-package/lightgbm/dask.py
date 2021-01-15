@@ -53,10 +53,9 @@ def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Itera
     found_port = False
     for i in range(max_tries):
         out_port = local_listen_port + i
+        if out_port in ports_to_skip:
+            continue
         try:
-            out_port = local_listen_port + i
-            if out_port in ports_to_skip:
-                continue
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.bind((worker_ip, out_port))
                 s.listen()
