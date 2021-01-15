@@ -17,7 +17,7 @@ from dask import delayed
 from dask.distributed import Client, default_client, get_worker, wait
 
 from .basic import _LIB, _safe_call
-from .compat import DataFrame, Series
+from .compat import PANDAS_INSTALLED, DataFrame, Series
 from .sklearn import LGBMClassifier, LGBMRegressor
 
 import scipy.sparse as ss
