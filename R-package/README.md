@@ -207,21 +207,19 @@ Please visit [demo](https://github.com/microsoft/LightGBM/tree/master/R-package/
 Testing
 -------
 
-The R package's unit tests are run automatically on every commit, via integrations like [Travis CI](https://travis-ci.org/microsoft/LightGBM/) and [Azure DevOps](https://dev.azure.com/lightgbm-ci/lightgbm-ci/_build). Adding new tests in `R-package/tests/testthat` is a valuable way to improve the reliability of the R package.
+The R package's unit tests are run automatically on every commit, via integrations like [GitHub Actions](https://github.com/microsoft/LightGBM/actions). Adding new tests in `R-package/tests/testthat` is a valuable way to improve the reliability of the R package.
 
 When adding tests, you may want to use test coverage to identify untested areas and to check if the tests you've added are covering all branches of the intended code.
 
-The example below shows how to generate code coverage for the R package on a macOS or Linux setup, using `gcc-8` to compile `LightGBM`. To adjust for your environment, swap out the 'Install' step with [the relevant code from the instructions above](#install).
+The example below shows how to generate code coverage for the R package on a macOS or Linux setup. To adjust for your environment, refer to [the customization step described above](#custom-installation-linux-mac).
 
 ```shell
 # Install
-export CXX=/usr/local/bin/g++-8
-export CC=/usr/local/bin/gcc-8
-Rscript build_r.R --skip-install
+sh build-cran-package.sh
 
 # Get coverage
 Rscript -e " \
-    coverage  <- covr::package_coverage('./lightgbm_r', quiet=FALSE);
+    coverage  <- covr::package_coverage('./lightgbm_r', type = 'tests', quiet = FALSE);
     print(coverage);
     covr::report(coverage, file = file.path(getwd(), 'coverage.html'), browse = TRUE);
     "
@@ -247,9 +245,9 @@ sh build-cran-package.sh
 
 This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
 
-Alternatively, GitHub Actions can generate this file for you. On a pull request, go to the "Files changed" tab and create a comment with this phrase:
+Alternatively, GitHub Actions can generate this file for you. On a pull request, create a comment with this phrase:
 
-> /gha build r-artifacts
+> /gha run build-r-artifacts
 
 Go to https://github.com/microsoft/LightGBM/actions, and find the most recent run of the "R artifact builds" workflow. If it ran successfully, you'll find a download link for the package (in `.zip` format) in that run's "Artifacts" section.
 
@@ -391,7 +389,7 @@ RDvalgrind \
 | cat
 ```
 
-These tests can also be triggered on any pull request by leaving a review on the "Files changed" tab in a pull request:
+These tests can also be triggered on any pull request by leaving a comment in a pull request:
 
 > /gha run r-valgrind
 

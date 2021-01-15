@@ -1125,7 +1125,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
                      Common::Vector2Ptr<double>(&sample_values).data(),
                      Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()), sample_data.size(), config_);
   if (dataset->has_raw()) {
-    dataset->ResizeRaw(sample_data.size());
+    dataset->ResizeRaw(static_cast<int>(sample_data.size()));
   }
 }
 
@@ -1163,7 +1163,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
           int sub_feature = dataset->feature2subfeature_[feature_idx];
           dataset->feature_groups_[group]->PushData(tid, sub_feature, i, inner_data.second);
           if (dataset->has_raw()) {
-            feature_row[feature_idx] = inner_data.second;
+            feature_row[feature_idx] = static_cast<float>(inner_data.second);
           }
         } else {
           if (inner_data.first == weight_idx_) {
@@ -1205,7 +1205,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       // set label
       dataset->metadata_.SetLabelAt(i, static_cast<label_t>(tmp_label));
       // free processed line:
-      text_data[i].clear();
+      ref_text_data[i].clear();
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
       // push data
@@ -1220,7 +1220,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
           int sub_feature = dataset->feature2subfeature_[feature_idx];
           dataset->feature_groups_[group]->PushData(tid, sub_feature, i, inner_data.second);
           if (dataset->has_raw()) {
-            feature_row[feature_idx] = inner_data.second;
+            feature_row[feature_idx] = static_cast<float>(inner_data.second);
           }
         } else {
           if (inner_data.first == weight_idx_) {
@@ -1293,7 +1293,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
           int sub_feature = dataset->feature2subfeature_[feature_idx];
           dataset->feature_groups_[group]->PushData(tid, sub_feature, start_idx + i, inner_data.second);
           if (dataset->has_raw()) {
-            feature_row[feature_idx] = inner_data.second;
+            feature_row[feature_idx] = static_cast<float>(inner_data.second);
           }
         } else {
           if (inner_data.first == weight_idx_) {

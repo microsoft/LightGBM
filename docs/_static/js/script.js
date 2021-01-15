@@ -1,7 +1,4 @@
 $(function() {
-    /* Replace '.rst' with '.html' in all internal links like './[Something].rst[#anchor]' */
-    $('a[href^="./"][href*=".rst"]').attr('href', (i, val) => { return val.replace('.rst', '.html'); });
-
     /* Use wider container for the page content */
     $('.wy-nav-content').each(function() { this.style.setProperty('max-width', 'none', 'important'); });
 

@@ -8,7 +8,7 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CC=clang
 fi
 
-if [[ "${TASK:0:9}" == "r-package" ]]; then
+if [[ "${TASK}" == "r-package" ]]; then
     bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
     exit 0
 fi
@@ -29,8 +29,6 @@ if [[ $TASK == "check-docs" ]]; then
     rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile `find . -type f -name "*.rst"` || exit -1
     # build docs and check them for broken links
     make html || exit -1
-    find ./_build/html/ -type f -name '*.html' -exec \
-    sed -i'.bak' -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
     linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     # check the consistency of parameters' descriptions and other stuff
     cp $BUILD_DIRECTORY/docs/Parameters.rst $BUILD_DIRECTORY/docs/Parameters-backup.rst
@@ -83,13 +81,21 @@ if [[ $TASK == "swig" ]]; then
         objdump -T $BUILD_DIRECTORY/lib_lightgbm_swig.so >> $BUILD_DIRECTORY/objdump.log || exit -1
         python $BUILD_DIRECTORY/helpers/check_dynamic_dependencies.py $BUILD_DIRECTORY/objdump.log || exit -1
     fi
-    if [[ $AZURE == "true" ]]; then
+    if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp $BUILD_DIRECTORY/build/lightgbmlib.jar $BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_$OS_NAME.jar
     fi
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV dask dask-ml distributed joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy
+conda install -q -y -n $CONDA_ENV dask dask-ml distributed joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
+
+# graphviz must come from conda-forge to avoid this on some linux distros:
+# https://github.com/conda-forge/graphviz-feedstock/issues/18
+conda install -q -y \
+    -n $CONDA_ENV \
+    -c conda-forge \
+        python-graphviz \
+        xorg-libxau
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
@@ -99,7 +105,7 @@ fi
 if [[ $TASK == "sdist" ]]; then
     cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
     pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
-    if [[ $AZURE == "true" ]]; then
+    if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
     fi
     pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
@@ -107,13 +113,13 @@ if [[ $TASK == "sdist" ]]; then
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --python-tag py3 || exit -1
-        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_13_x86_64.macosx_10_14_x86_64.macosx_10_15_x86_64.whl
-        if [[ $AZURE == "true" ]]; then
+        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_14_x86_64.macosx_10_15_x86_64.macosx_11_0_x86_64.whl
+        if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
     else
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --python-tag py3 || exit -1
-        if [[ $AZURE == "true" ]]; then
+        if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-manylinux1_x86_64.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
     fi
@@ -180,7 +186,7 @@ cd $BUILD_DIRECTORY/python-package && python setup.py install --precompile --use
 pytest $BUILD_DIRECTORY/tests || exit -1
 
 if [[ $TASK == "regular" ]]; then
-    if [[ $AZURE == "true" ]]; then
+    if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         if [[ $OS_NAME == "macos" ]]; then
             cp $BUILD_DIRECTORY/lib_lightgbm.so $BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.dylib
         else
