@@ -95,7 +95,6 @@ def test_training_does_not_fail_on_port_conflicts(client):
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(('127.0.0.1', 12400))
-        s.listen()
 
         dask_classifier = dlgbm.DaskLGBMClassifier(
             time_out=5,
@@ -209,7 +208,6 @@ def test_find_open_port_works():
     worker_ip = '127.0.0.1'
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((worker_ip, 12400))
-        s.listen()
         new_port = dlgbm._find_open_port(
             worker_ip=worker_ip,
             local_listen_port=12400,
@@ -219,10 +217,8 @@ def test_find_open_port_works():
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
         s_1.bind((worker_ip, 12400))
-        s_1.listen()
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_2:
             s_2.bind((worker_ip, 12401))
-            s_2.listen()
             new_port = dlgbm._find_open_port(
                 worker_ip=worker_ip,
                 local_listen_port=12400,
