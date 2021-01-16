@@ -6,10 +6,10 @@ include compile/CMakeLists.txt
 include compile/CMakeIntegratedOpenCL.cmake
 recursive-include compile *.so
 recursive-include compile/Release *.dll
-include compile/compute/CMakeLists.txt
-recursive-include compile/compute/cmake *
-recursive-include compile/compute/include *
-recursive-include compile/compute/meta *
+include compile/external_libs/compute/CMakeLists.txt
+recursive-include compile/external_libs/compute/cmake *
+recursive-include compile/external_libs/compute/include *
+recursive-include compile/external_libs/compute/meta *
 include compile/eigen/CMakeLists.txt
 include compile/eigen/Eigen/Cholesky
 include compile/eigen/Eigen/Core
@@ -44,4 +44,4 @@ recursive-include compile/src *
 recursive-include compile/windows LightGBM.sln LightGBM.vcxproj
 recursive-include compile/windows/x64/DLL *.dll
 global-exclude *.py[co]
-exclude compile/compute/.git
+exclude compile/external_libs/compute/.git
