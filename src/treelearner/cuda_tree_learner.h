@@ -45,7 +45,7 @@ class CUDATreeLearner: public SerialTreeLearner {
     ~CUDATreeLearner();
     void Init(const Dataset* train_data, bool is_constant_hessian) override;
     void ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) override;
-    Tree* Train(const score_t* gradients, const score_t *hessians);
+    Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree);
     void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
       SerialTreeLearner::SetBaggingData(subset, used_indices, num_data);
       if (subset == nullptr && used_indices != nullptr) {
