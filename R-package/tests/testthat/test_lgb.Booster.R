@@ -386,6 +386,75 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
     }, regexp = "lgb.Booster.update: Only can use lgb.Dataset", fixed = TRUE)
 })
 
+test_that("Booster should store parameters and Booster$reset_parameter() should update them", {
+    data(agaricus.train, package = "lightgbm")
+    dtrain <- lgb.Dataset(
+        agaricus.train$data
+        , label = agaricus.train$label
+    )
+    # testing that this works for some cases that could break it:
+    #    - multiple metrics
+    #    - using "metric", "boosting", "num_class" in params
+    params <- list(
+        objective = "multiclass"
+        , max_depth = 4L
+        , bagging_fraction = 0.8
+        , metric = c("multi_logloss", "multi_error")
+        , boosting = "gbdt"
+        , num_class = 5L
+    )
+    bst <- Booster$new(
+        params = params
+        , train_set = dtrain
+    )
+    expect_identical(bst$params, params)
+
+    params[["bagging_fraction"]] <- 0.9
+    ret_bst <- bst$reset_parameter(params = params)
+    expect_identical(ret_bst$params, params)
+    expect_identical(bst$params, params)
+})
+
+test_that("Booster$params should include dataset params, before and after Booster$reset_parameter()", {
+    data(agaricus.train, package = "lightgbm")
+    dtrain <- lgb.Dataset(
+        agaricus.train$data
+        , label = agaricus.train$label
+        , params = list(
+            max_bin = 17L
+        )
+    )
+    params <- list(
+        objective = "binary"
+        , max_depth = 4L
+        , bagging_fraction = 0.8
+    )
+    bst <- Booster$new(
+        params = params
+        , train_set = dtrain
+    )
+    expect_identical(
+        bst$params
+        , list(
+            objective = "binary"
+            , max_depth = 4L
+            , bagging_fraction = 0.8
+            , max_bin = 17L
+        )
+    )
+
+    params[["bagging_fraction"]] <- 0.9
+    ret_bst <- bst$reset_parameter(params = params)
+    expected_params <- list(
+        objective = "binary"
+        , max_depth = 4L
+        , bagging_fraction = 0.9
+        , max_bin = 17L
+    )
+    expect_identical(ret_bst$params, expected_params)
+    expect_identical(bst$params, expected_params)
+})
+
 context("save_model")
 
 test_that("Saving a model with different feature importance types works", {
@@ -625,4 +694,39 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
         expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L)
     }
 
+})
+
+context("saveRDS.lgb.Booster() and readRDS.lgb.Booster()")
+
+test_that("params (including dataset params) should be stored in .rds file for Booster", {
+    data(agaricus.train, package = "lightgbm")
+    dtrain <- lgb.Dataset(
+        agaricus.train$data
+        , label = agaricus.train$label
+        , params = list(
+            max_bin = 17L
+        )
+    )
+    params <- list(
+        objective = "binary"
+        , max_depth = 4L
+        , bagging_fraction = 0.8
+    )
+    bst <- Booster$new(
+        params = params
+        , train_set = dtrain
+    )
+    bst_file <- tempfile(fileext = ".rds")
+    saveRDS.lgb.Booster(bst, file = bst_file)
+
+    bst_from_file <- readRDS.lgb.Booster(file = bst_file)
+    expect_identical(
+        bst_from_file$params
+        , list(
+            objective = "binary"
+            , max_depth = 4L
+            , bagging_fraction = 0.8
+            , max_bin = 17L
+        )
+    )
 })

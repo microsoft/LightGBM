@@ -534,8 +534,8 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
   copyDenseFeature();
 }
 
-Tree* CUDATreeLearner::Train(const score_t* gradients, const score_t *hessians) {
-  Tree *ret = SerialTreeLearner::Train(gradients, hessians);
+Tree* CUDATreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) {
+  Tree *ret = SerialTreeLearner::Train(gradients, hessians, is_first_tree);
   return ret;
 }
 

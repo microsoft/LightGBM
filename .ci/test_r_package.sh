@@ -59,7 +59,6 @@ if [[ $OS_NAME == "linux" ]]; then
             qpdf \
             || exit -1
 
-    
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         sudo apt-get install \
             --no-install-recommends \
@@ -77,7 +76,7 @@ if [[ $OS_NAME == "macos" ]]; then
     brew install \
         checkbashisms \
         qpdf
-    brew cask install basictex
+    brew install --cask basictex
     export PATH="/Library/TeX/texbin:$PATH"
     sudo tlmgr --verify-repo=none update --self
     sudo tlmgr --verify-repo=none install inconsolata helvetic
@@ -105,24 +104,6 @@ if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
 fi
 Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
-
-if [[ $TASK == "r-package-check-docs" ]]; then
-    Rscript build_r.R || exit -1
-    Rscript --vanilla -e "install.packages('roxygen2', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
-    Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit -1
-    num_doc_files_changed=$(
-        git diff --name-only | grep --count -E "\.Rd|NAMESPACE"
-    )
-    if [[ ${num_doc_files_changed} -gt 0 ]]; then
-        echo "Some R documentation files have changed. Please re-generate them and commit those changes."
-        echo ""
-        echo "    Rscript build_r.R"
-        echo "    Rscript -e \"roxygen2::roxygenize('R-package/', load = 'installed')\""
-        echo ""
-        exit -1
-    fi
-    exit 0
-fi
 
 cd ${BUILD_DIRECTORY}
 

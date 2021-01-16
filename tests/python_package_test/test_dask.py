@@ -2,12 +2,12 @@
 """Tests for lightgbm.dask module
 
 An easy way to run these tests is from the (python) docker container.
-> python -m pytest /LightGBM/tests/python_package_test/test_dask.py
+Also see lightgbm-dask-testing repo: https://github.com/jameslamb/lightgbm-dask-testing
 """
 import os
 import itertools
+import socket
 import sys
-import time
 
 import pytest
 if not sys.platform.startswith('linux'):
@@ -20,6 +20,7 @@ import pandas as pd
 from scipy.stats import spearmanr
 import scipy.sparse
 from dask.array.utils import assert_eq
+from dask_ml.metrics import accuracy_score, r2_score
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
 from sklearn.datasets import make_blobs, make_regression
 from sklearn.utils import check_random_state
@@ -29,6 +30,7 @@ import lightgbm.dask as dlgbm
 
 data_output = ['array', 'scipy_csr_matrix', 'dataframe']
 data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
+group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 
 pytestmark = [
     pytest.mark.skipif(os.getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface')
@@ -44,35 +46,72 @@ def listen_port():
 listen_port.port = 13000
 
 
-def r2_score(dy_true, dy_pred):
-    """Helper function taken from dask_ml.metrics: computes coefficient of determination."""
-    numerator = ((dy_true - dy_pred) ** 2).sum(axis=0)
-    denominator = ((dy_true - dy_pred.mean(axis=0)) ** 2).sum(axis=0)
-    return (1 - numerator / denominator).compute()
-
-
-def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=1, random_gs=False, avg_gs=10, random_state=0):
+def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2
+                  , group=None, random_gs=False, avg_gs=10, random_state=0):
     """Generate a learning-to-rank dataset - feature vectors grouped together with
     integer-valued graded relevance scores. Replace this with a sklearn.datasets function
-    if ranking objective becomes supported in sklearn.datasets module."""
+    if ranking objective becomes supported in sklearn.datasets module.
+
+    Parameters
+    ----------
+    n_samples: int (default=100)
+        Total number of documents (records) in the dataset
+    n_features : int (default=20)
+        Total number of features in the dataset
+    n_informative : int (default=5)
+        Number of features that are "informative" for ranking, as they are bias + beta * unif(min=y, max=y+1),
+        where bias and beta are standard normal variates. If this is greater than n_features, the dataset will have
+        n_features features, all will be informative.
+    group : array-like, optional (default=None)
+        1-d array or list of group sizes. When `group` is specified, this overrides n_samples, random_gs, and
+        avg_gs by simply creating groups with sizes group[0], ..., group[-1].
+    gmax : int (default=2)
+        Maximum graded relevance value for creating relevance/target vector. If you set this to 2, for example, all
+        documents in a group will have relevance scores of either 0, 1, or 2.
+    random_gs : bool (default=False)
+        True will make group sizes ~ Poisson(avg_gs), False will make group sizes == avg_gs.
+    avg_gs : int (default=10)
+        Average number of documents (records) in each group
+
+    Returns
+    ----------
+    X : 2-d np.ndarray of shape = [n_samples (or np.sum(group), n_features]
+        Input feature matrix for ranking objective
+    y : 1-d np.array of shape = [n_samples (or np.sum(group))]
+        integer-graded relevance scores
+    group_ids: 1-d np.array of shape = [n_samples (or np.sum(group))]
+        vector of group ids, each value indicates to which group each record belongs
+    """
     rnd_generator = check_random_state(random_state)
 
-    y_vec, group_vec = np.empty((0,), dtype=int), np.empty((0,), dtype=int)
+    y_vec, group_id_vec = np.empty((0,), dtype=int), np.empty((0,), dtype=int)
     gid = 0
 
     # build target, group ID vectors.
     relvalues = range(gmax + 1)
-    while len(y_vec) < n_samples:
-        gsize = avg_gs if not random_gs else rnd_generator.poisson(avg_gs)
-        if not gsize:
-            continue
 
-        rel = rnd_generator.choice(relvalues, size=gsize, replace=True)
-        y_vec = np.append(y_vec, rel)
-        group_vec = np.append(group_vec, [gid] * gsize)
-        gid += 1
+    # build y/target and group-id vectors with user-specified group sizes.
+    if group is not None and hasattr(group, '__len__'):
+        n_samples = np.sum(group)
 
-    y_vec, group_vec = y_vec[0:n_samples], group_vec[0:n_samples]
+        for i, gsize in enumerate(group):
+            y_vec = np.concatenate((y_vec, rnd_generator.choice(relvalues, size=gsize, replace=True)))
+            group_id_vec = np.concatenate((group_id_vec, [i] * gsize))
+
+    # build y/target and group-id vectors according to n_samples, avg_gs, and random_gs.
+    else:
+        while len(y_vec) < n_samples:
+            gsize = avg_gs if not random_gs else rnd_generator.poisson(avg_gs)
+
+            # groups should contain > 1 element for pairwise learning objective.
+            if gsize < 1:
+                continue
+
+            y_vec = np.append(y_vec, rnd_generator.choice(relvalues, size=gsize, replace=True))
+            group_id_vec = np.append(group_id_vec, [gid] * gsize)
+            gid += 1
+
+        y_vec, group_id_vec = y_vec[0:n_samples], group_id_vec[0:n_samples]
 
     # build feature data, X. Transform first few into informative features.
     n_informative = max(min(n_features, n_informative), 0)
@@ -87,11 +126,11 @@ def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=1, random_
         bias, coef = rnd_generator.normal(size=2)
         X[:, j] = bias + coef * np.apply_along_axis(bucket_fn, axis=0, arr=y_vec)
 
-    return X, y_vec, group_vec
+    return X, y_vec, group_id_vec
 
 
-def _create_ranking_data(n_samples=100, output='array', chunk_size=50):
-    X, y, g = _make_ranking(n_samples=n_samples, random_state=42)
+def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs):
+    X, y, g = _make_ranking(n_samples=n_samples, random_state=42, **kwargs)
     rnd = np.random.RandomState(42)
     w = rnd.rand(X.shape[0]) * 0.01
     g_rle = np.array([sum([1 for _ in grp]) for _, grp in itertools.groupby(g)])
@@ -178,18 +217,38 @@ def test_classifier(output, centers, client, listen_port):
     dask_classifier = dlgbm.DaskLGBMClassifier(time_out=5, local_listen_port=listen_port)
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_classifier.predict(dX)
-    s1 = da.average(dy == p1).compute()
+    s1 = accuracy_score(dy, p1)
     p1 = p1.compute()
 
     local_classifier = lightgbm.LGBMClassifier()
     local_classifier.fit(X, y, sample_weight=w)
     p2 = local_classifier.predict(X)
     s2 = local_classifier.score(X, y)
-    assert np.isclose(s1, s2)
 
+    assert_eq(s1, s2)
     assert_eq(p1, p2)
     assert_eq(y, p1)
     assert_eq(y, p2)
+
+
+def test_training_does_not_fail_on_port_conflicts(client):
+    _, _, _, dX, dy, dw = _create_data('classification', output='array')
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('127.0.0.1', 12400))
+
+        dask_classifier = dlgbm.DaskLGBMClassifier(
+            time_out=5,
+            local_listen_port=12400
+        )
+        for i in range(5):
+            dask_classifier.fit(
+                X=dX,
+                y=dy,
+                sample_weight=dw,
+                client=client
+            )
+            assert dask_classifier.booster_
 
 
 @pytest.mark.parametrize('output', data_output)
@@ -287,11 +346,9 @@ def test_regressor_local_predict(client, listen_port):
 
 
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
-def test_ranker(output, client, listen_port):
-    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output)
-
-    # Avoid lightgbm.basic.LightGBMError: Binding port 13xxx failed exceptions.
-    time.sleep(10)
+@pytest.mark.parametrize('group', [None, group_sizes])
+def test_ranker(output, client, listen_port, group):
+    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
 
     dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, seed=42, min_child_samples=1)
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
@@ -306,43 +363,47 @@ def test_ranker(output, client, listen_port):
     dcor = spearmanr(rnkvec_dask, y).correlation
     assert dcor > 0.6
 
-    # relative difference between distributed ranker and local ranker spearman corr should be small.
+    # difference between distributed ranker and local ranker spearman corr should be small.
     lcor = spearmanr(rnkvec_local, y).correlation
-    assert np.abs(dcor - lcor) / lcor < 0.03
+    assert np.abs(dcor - lcor) < 0.003
 
 
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
-def test_ranker_local_predict(output, client, listen_port):
+@pytest.mark.parametrize('group', [None, group_sizes])
+def test_ranker_local_predict(output, client, listen_port, group):
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output)
-
-    time.sleep(10)
 
     dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, seed=42, min_child_samples=1)
     dask_ranker = dask_ranker.fit(dX, dy, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
-
     rnkvec_local = dask_ranker.to_local().predict(X)
 
     # distributed and to-local scores should be the same.
     assert_eq(rnkvec_dask, rnkvec_local)
 
 
-def test_build_network_params():
-    workers_ips = [
-        'tcp://192.168.0.1:34545',
-        'tcp://192.168.0.2:34346',
-        'tcp://192.168.0.3:34347'
-    ]
+def test_find_open_port_works():
+    worker_ip = '127.0.0.1'
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((worker_ip, 12400))
+        new_port = dlgbm._find_open_port(
+            worker_ip=worker_ip,
+            local_listen_port=12400,
+            ports_to_skip=set()
+        )
+        assert new_port == 12401
 
-    params = dlgbm._build_network_params(workers_ips, 'tcp://192.168.0.2:34346', 12400, 120)
-    exp_params = {
-        'machines': '192.168.0.1:12400,192.168.0.2:12401,192.168.0.3:12402',
-        'local_listen_port': 12401,
-        'num_machines': len(workers_ips),
-        'time_out': 120
-    }
-    assert exp_params == params
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
+        s_1.bind((worker_ip, 12400))
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_2:
+            s_2.bind((worker_ip, 12401))
+            new_port = dlgbm._find_open_port(
+                worker_ip=worker_ip,
+                local_listen_port=12400,
+                ports_to_skip=set()
+            )
+            assert new_port == 12402
 
 
 @gen_cluster(client=True, timeout=None)
