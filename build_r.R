@@ -144,18 +144,6 @@ result <- file.copy(
 )
 .handle_result(result)
 
-# compute/ is a submodule with boost, only needed if
-# building the R package with GPU support
-if (USING_GPU) {
-  result <- file.copy(
-    from = "compute/"
-    , to = sprintf("%s/", TEMP_SOURCE_DIR)
-    , recursive = TRUE
-    , overwrite = TRUE
-  )
-  .handle_result(result)
-}
-
 result <- file.copy(
   from = "CMakeLists.txt"
   , to = file.path(TEMP_R_DIR, "inst", "bin/")
@@ -177,13 +165,23 @@ result <- file.remove(
 #------------#
 # submodules #
 #------------#
-result <- file.copy(
-  from = "external_libs/"
-  , to = sprintf("%s/", TEMP_SOURCE_DIR)
-  , recursive = TRUE
-  , overwrite = TRUE
-)
-.handle_result(result)
+for (submodule in list.dirs(
+  path = "external_libs"
+  , full.names = FALSE
+  , recursive = FALSE
+)) {
+  # compute/ is a submodule with boost, only needed if
+  # building the R package with GPU support
+  if (submodule == "compute" && !USING_GPU) {
+    next
+  }
+  result <- file.copy(
+    from = file.path("external_libs", sprintf("%s/", submodule))
+    , to = file.path(sprintf("%s/", TEMP_SOURCE_DIR))
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+}
 
 # copy files into the place CMake expects
 for (src_file in c("lightgbm_R.cpp", "lightgbm_R.h", "R_object_helper.h")) {
