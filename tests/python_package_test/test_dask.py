@@ -46,8 +46,8 @@ def listen_port():
 listen_port.port = 13000
 
 
-def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2
-                  , group=None, random_gs=False, avg_gs=10, random_state=0):
+def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
+                  group=None, random_gs=False, avg_gs=10, random_state=0):
     """Generate a learning-to-rank dataset - feature vectors grouped together with
     integer-valued graded relevance scores. Replace this with a sklearn.datasets function
     if ranking objective becomes supported in sklearn.datasets module.
@@ -341,8 +341,8 @@ def test_regressor_local_predict(client, listen_port):
     s2 = dask_regressor.to_local().score(X, y)
 
     # Predictions and scores should be the same
+    assert_eq(s1, s2)
     assert_eq(p1, p2)
-    assert np.isclose(s1, s2, rtol=1e-4)
 
 
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
@@ -371,7 +371,7 @@ def test_ranker(output, client, listen_port, group):
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
 @pytest.mark.parametrize('group', [None, group_sizes])
 def test_ranker_local_predict(output, client, listen_port, group):
-    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output)
+    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
 
     dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, seed=42, min_child_samples=1)
     dask_ranker = dask_ranker.fit(dX, dy, group=dg, client=client)
