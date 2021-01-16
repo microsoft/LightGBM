@@ -39,7 +39,7 @@ class _ObjectiveFunctionWrapper:
                     Group/query data, only used for ranking task.
                     Only used in the learning-to-rank task.
                     sum(group) = n_samples.
-                    For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
+                    For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are in the second group, etc.
                 grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The value of the first order derivative (gradient) for each sample point.
                 hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
@@ -128,7 +128,7 @@ class _EvalFunctionWrapper:
                     Group/query data, only used for ranking task.
                     Only used in the learning-to-rank task.
                     sum(group) = n_samples.
-                    For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
+                    For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are in the second group, etc.
                 eval_name : string
                     The name of evaluation function (without whitespaces).
                 eval_result : float
@@ -275,7 +275,7 @@ class LGBMModel(_LGBMModelBase):
                 Group/query data, only used for ranking task.
                 Only used in the learning-to-rank task.
                 sum(group) = n_samples.
-                For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
+                For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are in the second group, etc.
             grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The value of the first order derivative (gradient) for each sample point.
             hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
@@ -396,7 +396,7 @@ class LGBMModel(_LGBMModelBase):
             Group/query data, only used for ranking task.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
-            For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
+            For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are in the second group, etc.
         eval_set : list or None, optional (default=None)
             A list of (X, y) tuple pairs to use as validation sets.
         eval_names : list of strings or None, optional (default=None)
@@ -475,7 +475,7 @@ class LGBMModel(_LGBMModelBase):
                 Group/query data, only used for ranking task.
                 Only used in the learning-to-rank task.
                 sum(group) = n_samples.
-                For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
+                For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are in the second group, etc.
             eval_name : string
                 The name of evaluation function (without whitespaces).
             eval_result : float

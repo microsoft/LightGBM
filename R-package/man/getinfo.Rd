@@ -34,7 +34,7 @@ The \code{name} field can be one of the following:
         group rows together as ordered results from the same set of candidate results to be ranked.
         For example, if you have a 100-document dataset with \code{group = c(10, 20, 40, 10, 10)},
         that means that you have 5 groups, where the first 10 records are in the first group,
-        records 11-30 are the second group, etc.}
+        records 11-30 are in the second group, etc.}
     \item \code{init_score}: initial score is the base prediction lightgbm will boost from.
 }
 }

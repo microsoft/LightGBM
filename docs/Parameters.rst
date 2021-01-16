@@ -766,6 +766,8 @@ Dataset Parameters
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0 and query\_id is column\_1, the correct parameter is ``query=0``
 
+   -  for more information, see `Query Data <#query-data>`__
+
 -  ``ignore_column`` :raw-html:`<a id="ignore_column" title="Permalink to this parameter" href="#ignore_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-int or string, aliases: ``ignore_feature``, ``blacklist``
 
    -  used to specify some ignoring columns in training
@@ -1231,7 +1233,8 @@ Query Data
 ~~~~~~~~~~
 
 For learning to rank, it needs query information for training data.
-LightGBM uses an additional file to store query data, like the following:
+
+LightGBM's CLI uses an additional file to store query data, like the following:
 
 ::
 
@@ -1240,7 +1243,13 @@ LightGBM uses an additional file to store query data, like the following:
     67
     ...
 
-It means first ``27`` lines samples belong to one query and next ``18`` lines belong to another, and so on.
+For wrapper libraries like in Python and R, this information is provided as an array-like via the Dataset parameter ``group``.
+
+::
+
+   [27, 18, 67, ...]
+
+For example, if you have a 112-document dataset with ``group = [27, 18, 67]``, that means that you have 3 groups, where the first 27 records are in the first group, records 28-45 are in the second group, and records 46-112 are in the third group.
 
 **Note**: data should be ordered by the query.
 
