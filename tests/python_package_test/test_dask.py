@@ -365,7 +365,7 @@ def test_ranker(output, client, listen_port, group):
 
     # difference between distributed ranker and local ranker spearman corr should be small.
     lcor = spearmanr(rnkvec_local, y).correlation
-    assert np.abs(dcor - lcor) < 0.003
+    assert np.abs(dcor - lcor) < 0.03
 
 
 @pytest.mark.parametrize('output', ['array', 'dataframe'])

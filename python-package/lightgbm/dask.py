@@ -135,17 +135,19 @@ def _train_part(params, model_factory, list_of_parts, worker_address_to_port, re
     is_ranker = model_factory.__qualname__ == 'LGBMRanker'
 
     # Concatenate many parts into one
-    data = _concat([d['X'] for d in list_of_parts])
-    label = _concat([d['y'] for d in list_of_parts])
-    weight = _concat([d['weight'] for d in list_of_parts]) if 'weight' in list_of_parts[0] else None
+    parts = tuple(zip(*list_of_parts))
+    data = _concat(parts[0])
+    label = _concat(parts[1])
 
     try:
         model = model_factory(**params)
 
         if is_ranker:
-            group = _concat([d['group'] for d in list_of_parts])
+            group = _concat(parts[-1])
+            weight = _concat(parts[2]) if len(parts) == 4 else None
             model.fit(data, y=label, sample_weight=weight, group=group, **kwargs)
         else:
+            weight = _concat(parts[2]) if len(parts) == 3 else None
             model.fit(data, y=label, sample_weight=weight, **kwargs)
 
     finally:
@@ -176,24 +178,26 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
     sample_weight : array-like of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
-    group : array-like
-        Group/query data, used for ranking task. sum(group) = n_samples.
+    group : array-like where sum(group) = [n_samples] or None for non-ranking objectives (default=None)
+        Group/query data, only used for ranking task. sum(group) = n_samples. For example,
+        if you have a 100-record dataset with `group = [10, 20, 40, 10, 10]`, that means that you have
+        5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
     """
     # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality
     data_parts = _split_to_parts(data, is_matrix=True)
     label_parts = _split_to_parts(label, is_matrix=False)
-    parts = [{'X': x, 'y': y} for (x, y) in zip(data_parts, label_parts)]
+    weight_parts = _split_to_parts(sample_weight, is_matrix=False) if sample_weight is not None else None
+    group_parts = _split_to_parts(group, is_matrix=False) if group is not None else None
 
-    # append weight, group vectors to part dicts when needed.
-    if sample_weight is not None:
-        weight_parts = _split_to_parts(sample_weight, is_matrix=False)
-        for i, d in enumerate(parts):
-            parts[i] = {**d, 'weight': weight_parts[i]}
-
-    if group is not None:
-        group_parts = _split_to_parts(group, is_matrix=False)
-        for i, d in enumerate(parts):
-            parts[i] = {**d, 'group': group_parts[i]}
+    # choose between four options of (sample_weight, group) being (un)specified
+    if weight_parts is None and group_parts is None:
+        parts = zip(data_parts, label_parts)
+    elif weight_parts is not None and group_parts is None:
+        parts = zip(data_parts, label_parts, weight_parts)
+    elif weight_parts is None and group_parts is not None:
+        parts = zip(data_parts, label_parts, group_parts)
+    else:
+        parts = zip(data_parts, label_parts, weight_parts, group_parts)
 
     # Start computation in the background
     parts = list(map(delayed, parts))
