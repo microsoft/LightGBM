@@ -941,7 +941,10 @@ class Dataset:
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Weight for each instance.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Group/query size for Dataset.
+            Group/query data, only used for ranking task.
+            Only used in the learning-to-rank task.
+            sum(group) = n_samples.
+            For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
         init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
@@ -1357,6 +1360,10 @@ class Dataset:
             Weight for each instance.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query size for Dataset.
+            Only used in the learning-to-rank task.
+            Group/query data, only used for ranking task.
+            sum(group) = n_samples.
+            For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
         init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
@@ -1715,7 +1722,10 @@ class Dataset:
         Parameters
         ----------
         group : list, numpy 1-D array, pandas Series or None
-            Group size of each group.
+            Group/query data, only used for ranking task.
+            Only used in the learning-to-rank task.
+            sum(group) = n_samples.
+            For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
 
         Returns
         -------
@@ -1830,7 +1840,10 @@ class Dataset:
         Returns
         -------
         group : numpy array or None
-            Group size of each group.
+            Group/query data, only used for ranking task.
+            Only used in the learning-to-rank task.
+            sum(group) = n_samples.
+            For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
         """
         if self.group is None:
             self.group = self.get_field('group')
