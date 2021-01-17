@@ -7,6 +7,7 @@ import pytest
 if not sys.platform.startswith("linux"):
     pytest.skip("lightgbm.dask is currently supported in Linux environments", allow_module_level=True)
 
+import dask
 import dask.array as da
 import dask.dataframe as dd
 import numpy as np
@@ -90,6 +91,57 @@ def test_classifier(output, centers, client, listen_port):
     assert_eq(y, p2)
 
 
+@pytest.mark.parametrize('output', data_output)
+@pytest.mark.parametrize('centers', data_centers)
+def test_classifier_pred_contrib(output, centers, client, listen_port):
+    X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
+
+    dask_classifier = dlgbm.DaskLGBMClassifier(
+        time_out=5,
+        local_listen_port=listen_port,
+        tree_learner='data'
+    )
+    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
+    preds_with_contrib = dask_classifier.predict(dX, raw_score=True, pred_contrib=True).compute()
+
+    local_classifier = lightgbm.LGBMClassifier()
+    local_classifier.fit(X, y, sample_weight=w)
+    local_preds_with_contrib = local_classifier.predict(X, raw_score=True, pred_contrib=True)
+
+    if output == 'scipy_csr_matrix':
+        preds_with_contrib = np.array(preds_with_contrib.todense())
+
+    # shape depends on whether it is binary or multiclass classification
+    num_classes = len(centers)
+    if num_classes == 2:
+        expected_num_cols = dX.shape[1] + 1
+    else:
+        expected_num_cols = (dX.shape[1] + 1) * num_classes
+
+    if isinstance(dX, dask.dataframe.core.DataFrame):
+        assert preds_with_contrib.shape == (dX.shape[0].compute(), expected_num_cols)
+    else:
+        assert preds_with_contrib.shape == (dX.shape[0], expected_num_cols)
+
+    assert preds_with_contrib.shape == local_preds_with_contrib.shape        
+
+    # * shape depends on whether it is binary or multiclass classification
+    # * matrix for binary classification is of the form [feature_contrib, base_value],
+    #   for multi-class it's [feat_contrib_class1, base_value_class1, feat_contrib_class2, base_value_class2, etc.]
+    # * contrib outputs for distributed training are different than from local training, so we can just test
+    #   that the output has the right shape and base values are in the right position
+    num_features = dX.shape[1]
+    num_classes = len(centers)
+    if num_classes == 2:
+        assert preds_with_contrib.shape[1] == num_features + 1
+        assert len(np.unique(preds_with_contrib[:, num_features]) == 1)
+    else:
+        assert preds_with_contrib.shape[1] == (num_features + 1) * num_classes
+        for i in range(num_classes):
+            base_value_col = num_features * (i + 1) + i
+            assert len(np.unique(preds_with_contrib[:, base_value_col]) == 1)
+
+
 def test_training_does_not_fail_on_port_conflicts(client):
     _, _, _, dX, dy, dw = _create_data('classification', output='array')
 
@@ -166,6 +218,32 @@ def test_regressor(output, client, listen_port):
     # Predictions should be roughly the same
     assert_eq(y, p1, rtol=1., atol=100.)
     assert_eq(y, p2, rtol=1., atol=50.)
+
+    
+@pytest.mark.parametrize('output', data_output)
+def test_regressor_pred_contrib(output, client, listen_port):
+    X, y, w, dX, dy, dw = _create_data('regression', output=output)
+
+    dask_regressor = dlgbm.DaskLGBMRegressor(
+        time_out=5,
+        local_listen_port=listen_port,
+        tree_learner='data'
+    )
+    dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
+    preds_with_contrib = dask_regressor.predict(dX, raw_score=True, pred_contrib=True).compute()
+
+    local_regressor = lightgbm.LGBMRegressor()
+    local_regressor.fit(X, y, sample_weight=w)
+    local_preds_with_contrib = local_regressor.predict(X, raw_score=True, pred_contrib=True)
+
+    if output == "scipy_csr_matrix":
+        preds_with_contrib = np.array(preds_with_contrib.todense())
+    
+    # contrib outputs for distributed training are different than from local training, so we can just test
+    # that the output has the right shape and base values are in the right position
+    num_features = dX.shape[1]
+    assert preds_with_contrib.shape[1] == num_features + 1
+    assert preds_with_contrib.shape == local_preds_with_contrib.shape
 
 
 @pytest.mark.parametrize('output', data_output)
