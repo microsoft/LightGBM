@@ -123,7 +123,7 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
     else:
         assert preds_with_contrib.shape == (dX.shape[0], expected_num_cols)
 
-    assert preds_with_contrib.shape == local_preds_with_contrib.shape        
+    assert preds_with_contrib.shape == local_preds_with_contrib.shape
 
     # * shape depends on whether it is binary or multiclass classification
     # * matrix for binary classification is of the form [feature_contrib, base_value],
@@ -219,7 +219,7 @@ def test_regressor(output, client, listen_port):
     assert_eq(y, p1, rtol=1., atol=100.)
     assert_eq(y, p2, rtol=1., atol=50.)
 
-    
+
 @pytest.mark.parametrize('output', data_output)
 def test_regressor_pred_contrib(output, client, listen_port):
     X, y, w, dX, dy, dw = _create_data('regression', output=output)
@@ -238,7 +238,7 @@ def test_regressor_pred_contrib(output, client, listen_port):
 
     if output == "scipy_csr_matrix":
         preds_with_contrib = np.array(preds_with_contrib.todense())
-    
+
     # contrib outputs for distributed training are different than from local training, so we can just test
     # that the output has the right shape and base values are in the right position
     num_features = dX.shape[1]
