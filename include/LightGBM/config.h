@@ -671,9 +671,8 @@ struct Config {
   // desc = use number for index, e.g. ``query=0`` means column\_0 is the query id
   // desc = add a prefix ``name:`` for column name, e.g. ``query=name:query_id``
   // desc = **Note**: works only in case of loading data directly from file
-  // desc = **Note**: data should be grouped by query\_id
+  // desc = **Note**: data should be grouped by query\_id, for more information, see `Query Data <#query-data>`__
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0 and query\_id is column\_1, the correct parameter is ``query=0``
-  // desc = for more information, see `Query Data <#query-data>`__
   std::string group_column = "";
 
   // type = multi-int or string

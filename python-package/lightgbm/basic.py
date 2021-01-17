@@ -941,7 +941,7 @@ class Dataset:
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Weight for each instance.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Group/query data, only used for ranking task.
+            Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are in the second group, etc.
@@ -1359,9 +1359,8 @@ class Dataset:
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Weight for each instance.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Group/query size for Dataset.
+            Group/query data.
             Only used in the learning-to-rank task.
-            Group/query data, only used for ranking task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are in the second group, etc.
         init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
@@ -1722,7 +1721,7 @@ class Dataset:
         Parameters
         ----------
         group : list, numpy 1-D array, pandas Series or None
-            Group/query data, only used for ranking task.
+            Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are in the second group, etc.
@@ -1840,7 +1839,7 @@ class Dataset:
         Returns
         -------
         group : numpy array or None
-            Group/query data, only used for ranking task.
+            Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10]``, that means that you have 5 groups, where the first 10 records are in the first group, records 11-30 are in the second group, etc.

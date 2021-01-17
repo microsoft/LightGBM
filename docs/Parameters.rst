@@ -1234,7 +1234,7 @@ Query Data
 
 For learning to rank, it needs query information for training data.
 
-LightGBM's CLI uses an additional file to store query data, like the following:
+LightGBM uses an additional file to store query data, like the following:
 
 ::
 
@@ -1243,7 +1243,7 @@ LightGBM's CLI uses an additional file to store query data, like the following:
     67
     ...
 
-For wrapper libraries like in Python and R, this information is provided as an array-like via the Dataset parameter ``group``.
+For wrapper libraries like in Python and R, this information can also be provided as an array-like via the Dataset parameter ``group``.
 
 ::
 
