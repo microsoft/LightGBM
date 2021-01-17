@@ -762,11 +762,9 @@ Dataset Parameters
 
    -  **Note**: works only in case of loading data directly from file
 
-   -  **Note**: data should be grouped by query\_id
+   -  **Note**: data should be grouped by query\_id, for more information, see `Query Data <#query-data>`__
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0 and query\_id is column\_1, the correct parameter is ``query=0``
-
-   -  for more information, see `Query Data <#query-data>`__
 
 -  ``ignore_column`` :raw-html:`<a id="ignore_column" title="Permalink to this parameter" href="#ignore_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-int or string, aliases: ``ignore_feature``, ``blacklist``
 
