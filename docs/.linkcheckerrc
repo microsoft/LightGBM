@@ -1,5 +1,5 @@
 [checking]
-maxrequestspersecond=3
+maxrequestspersecond=1
 recursionlevel=1
 anchors=1
 sslverify=0
