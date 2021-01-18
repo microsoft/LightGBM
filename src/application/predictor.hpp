@@ -272,7 +272,7 @@ class Predictor {
 
   std::unordered_map<int, double> CopyToPredictMap(const std::vector<std::pair<int, double>>& features) {
     std::unordered_map<int, double> buf;
-    for (const auto &feature: features) {
+    for (const auto &feature : features) {
       if (feature.first < num_feature_) {
         buf[feature.first] = feature.second;
       }
