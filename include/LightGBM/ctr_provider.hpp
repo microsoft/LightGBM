@@ -377,13 +377,72 @@ class CTRProvider {
     return static_cast<int>(cat_converters_.size());
   }
 
+  void IterateOverCatConverters(int fid, double fval, int line_idx,
+    const std::function<void(int convert_fid, int fid, double convert_value)>& write_func,
+    const std::function<void(int fid)>& post_process_func) const;
+
+  void IterateOverCatConverters(int fid, double fval,
+    const std::function<void(int convert_fid, int fid, double convert_value)>& write_func,
+    const std::function<void(int fid)>& post_process_func) const;
+
+  template <bool IS_TRAIN>
+  void IterateOverCatConvertersInner(int fid, double fval, int fold_id,
+    const std::function<void(int convert_fid, int fid, double convert_value)>& write_func,
+    const std::function<void(int fid)>& post_process_func) const {
+    const int int_fval = static_cast<int>(fval);
+    double label_sum = 0.0f, total_count = 0.0f, all_fold_total_count = 0.0f;
+    const auto& fold_label_info = IS_TRAIN ?
+      label_info_.at(fid).at(fold_id) : label_info_.at(fid).back();
+    const auto& fold_count_info = IS_TRAIN ?
+      count_info_.at(fid).at(fold_id) : count_info_.at(fid).back();
+    if (IS_TRAIN) {
+      const auto& all_fold_count_info = count_info_.at(fid).back();
+      if (all_fold_count_info.count(int_fval) > 0) {
+        all_fold_total_count = all_fold_count_info.at(int_fval);
+      }
+    } else {
+      all_fold_total_count = total_count;
+    }
+    if (fold_count_info.count(int_fval) > 0) {
+      label_sum = fold_label_info.at(int_fval);
+      total_count = fold_count_info.at(int_fval);
+    }
+    for (const auto& cat_converter : cat_converters_) {
+      const double convert_value =
+        cat_converter->CalcValue(label_sum, total_count, all_fold_total_count);
+      const int convert_fid = cat_converter->GetConvertFid(fid);
+      write_func(convert_fid, fid, convert_value);
+    }
+    post_process_func(fid);
+  }
+
+  template <bool IS_TRAIN>
+  double HandleOneCatConverter(int fid, double fval, int fold_id,
+    const CTRProvider::CatConverter* cat_converter) const {
+    const int int_fval = static_cast<int>(fval);
+    double label_sum = 0.0f, total_count = 0.0f, all_fold_total_count = 0.0f;
+    const auto& fold_label_info = IS_TRAIN ?
+      label_info_.at(fid).at(fold_id) : label_info_.at(fid).back();
+    const auto& fold_count_info = IS_TRAIN ?
+      count_info_.at(fid).at(fold_id) : count_info_.at(fid).back();
+    if (fold_count_info.count(int_fval) > 0) {
+      label_sum = fold_label_info.at(int_fval);
+      total_count = fold_count_info.at(int_fval);
+    }
+    if (IS_TRAIN) {
+      const auto& all_fold_count_info = count_info_.at(fid).back();
+      if (all_fold_count_info.count(int_fval) > 0) {
+        all_fold_total_count = all_fold_count_info.at(int_fval);
+      }
+    } else {
+      all_fold_total_count = total_count;
+    }
+    return cat_converter->CalcValue(label_sum, total_count, all_fold_total_count);
+  }
+
   void ConvertCatToCTR(std::vector<double>* features, int line_idx) const;
 
   void ConvertCatToCTR(std::vector<double>* features) const;
-
-  void ConvertCatToCTR(double* features) const;
-
-  void ConvertCatToCTR(std::unordered_map<int, double>* features_ptr) const;
 
   void ConvertCatToCTR(std::vector<std::pair<int, double>>* features_ptr, const int fold_id) const;
 
@@ -437,6 +496,25 @@ class CTRProvider {
   void WrapRowFunction(
     std::function<std::vector<std::pair<int, double>>(int row_idx)>* get_row_fun,
     int64_t* ncol, bool is_valid) const;
+
+  template <typename T>
+  std::function<std::vector<T>(int row_idx)> WrapRowFunctionInner(
+    const std::function<std::vector<T>(int row_idx)>* get_row_fun, bool is_valid) const {
+  std::function<std::vector<T>(int row_idx)> old_get_row_fun = *get_row_fun;
+    if (is_valid) {
+      return [old_get_row_fun, this] (int row_idx) {
+        std::vector<T> row = old_get_row_fun(row_idx);
+        ConvertCatToCTR(&row);
+        return row;
+      };
+    } else {
+      return [old_get_row_fun, this] (int row_idx) {
+        std::vector<T> row = old_get_row_fun(row_idx);
+        ConvertCatToCTR(&row, row_idx);
+        return row;
+      };
+    }
+  }
 
   void WrapColIters(
     std::vector<std::unique_ptr<CSC_RowIterator>>* col_iters,

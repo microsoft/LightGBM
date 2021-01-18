@@ -1011,7 +1011,8 @@ struct Config {
 
   // desc = ways to convert categorical features, currently supports:
   // desc = ctr[:prior], where prior is a real number used to smooth the calculation of CTR values
-  // desc = if the prior value is missing, use the label mean of training data
+  // desc = ctr is calculated as: (sum_label + prior * prior_weight) / (count + prior_weight)
+  // desc = if the prior value is missing, use the label mean of training data as default prior
   // desc = count, the count of the categorical feature value in the dataset
   // desc = raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians per leaf per iteration
   // desc = for example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features, with the 3 different ways separated by ','.
@@ -1021,6 +1022,8 @@ struct Config {
   int num_ctr_folds = 4;
 
   // desc = weight of prior in CTR calculation
+  // desc = if ctr is used, prior_weight is used to calculate ctr values by
+  // desc = (sum_label + prior * prior_weight) / (count + prior_weight)
   double prior_weight = 1.0f;
 
   #pragma endregion

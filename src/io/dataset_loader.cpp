@@ -219,9 +219,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       std::vector<std::string> sample_data;
       std::vector<data_size_t> sampled_indices;
       if (ctr_provider == nullptr) {
-        sample_data = SampleTextDataFromMemory(text_data);
+        sample_data = SampleTextDataFromMemory<false>(text_data, &sampled_indices);
       } else {
-        sample_data = SampleTextDataFromMemoryWithIndices(text_data, &sampled_indices);
+        sample_data = SampleTextDataFromMemory<true>(text_data, &sampled_indices);
         if (ctr_provider != nullptr) {
           ctr_provider->ExtendFeatureNames(&feature_names_);
         }
@@ -243,10 +243,11 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       std::vector<std::string> sample_data;
       std::vector<data_size_t> sampled_indices;
       if (ctr_provider == nullptr) {
-        sample_data = SampleTextDataFromFile(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
+        sample_data = SampleTextDataFromFile<false>(filename, dataset->metadata_, rank, num_machines,
+          &num_global_data, &used_data_indices, &sampled_indices);
       } else {
-        sample_data = SampleTextDataFromFileWithIndices(filename, dataset->metadata_, rank,
-          num_machines, &num_global_data, &used_data_indices, &sampled_indices);
+        sample_data = SampleTextDataFromFile<true>(filename, dataset->metadata_, rank, num_machines,
+          &num_global_data, &used_data_indices, &sampled_indices);
       }
       if (used_data_indices.size() > 0) {
         dataset->num_data_ = static_cast<data_size_t>(used_data_indices.size());
@@ -950,85 +951,32 @@ std::vector<std::string> DatasetLoader::LoadTextDataToMemory(const char* filenam
   return std::move(text_reader.Lines());
 }
 
-std::vector<std::string> DatasetLoader::SampleTextDataFromMemory(const std::vector<std::string>& data) {
-  int sample_cnt = config_.bin_construct_sample_cnt;
-  if (static_cast<size_t>(sample_cnt) > data.size()) {
-    sample_cnt = static_cast<int>(data.size());
-  }
-  auto sampled_indices = random_.Sample(static_cast<int>(data.size()), sample_cnt);
-  std::vector<std::string> out(sampled_indices.size());
-  for (size_t i = 0; i < sampled_indices.size(); ++i) {
-    const size_t idx = sampled_indices[i];
-    out[i] = data[idx];
-  }
-  return out;
-}
-
-std::vector<std::string> DatasetLoader::SampleTextDataFromMemoryWithIndices(
-    const std::vector<std::string>& data,
+template <bool GET_SAMPLED_INDICES>
+std::vector<std::string> DatasetLoader::SampleTextDataFromMemory(const std::vector<std::string>& data,
     std::vector<data_size_t>* sampled_indices) {
   int sample_cnt = config_.bin_construct_sample_cnt;
   if (static_cast<size_t>(sample_cnt) > data.size()) {
     sample_cnt = static_cast<int>(data.size());
   }
-  *sampled_indices = random_.Sample(static_cast<int>(data.size()), sample_cnt);
-  std::vector<std::string> out(sampled_indices->size());
-  for (size_t i = 0; i < sampled_indices->size(); ++i) {
-    const size_t idx = sampled_indices->operator[](i);
+  std::vector<data_size_t>* sampled_indices_ptr;
+  std::vector<data_size_t> local_sampled_indices;
+  if (GET_SAMPLED_INDICES) {
+    sampled_indices_ptr = sampled_indices;
+  } else {
+    sampled_indices_ptr = &local_sampled_indices;
+  }
+  *sampled_indices_ptr = random_.Sample(static_cast<int>(data.size()), sample_cnt);
+  const std::vector<data_size_t>& sampled_indices_ref = *sampled_indices_ptr;
+  std::vector<std::string> out(sampled_indices_ref.size());
+  for (size_t i = 0; i < sampled_indices_ref.size(); ++i) {
+    const size_t idx = sampled_indices_ref[i];
     out[i] = data[idx];
   }
   return out;
 }
 
+template <bool GET_SAMPLED_INDICES>
 std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filename, const Metadata& metadata,
-                                                               int rank, int num_machines, int* num_global_data,
-                                                               std::vector<data_size_t>* used_data_indices) {
-  const data_size_t sample_cnt = static_cast<data_size_t>(config_.bin_construct_sample_cnt);
-  TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
-  std::vector<std::string> out_data;
-  if (num_machines == 1 || config_.pre_partition) {
-    *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile(&random_, sample_cnt, &out_data));
-  } else {  // need partition data
-            // get query data
-    const data_size_t* query_boundaries = metadata.query_boundaries();
-    if (query_boundaries == nullptr) {
-      // if not contain query file, minimal sample unit is one record
-      *num_global_data = text_reader.SampleAndFilterFromFile([this, rank, num_machines]
-      (data_size_t) {
-        if (random_.NextShort(0, num_machines) == rank) {
-          return true;
-        } else {
-          return false;
-        }
-      }, used_data_indices, &random_, sample_cnt, &out_data);
-    } else {
-      // if contain query file, minimal sample unit is one query
-      data_size_t num_queries = metadata.num_queries();
-      data_size_t qid = -1;
-      bool is_query_used = false;
-      *num_global_data = text_reader.SampleAndFilterFromFile(
-        [this, rank, num_machines, &qid, &query_boundaries, &is_query_used, num_queries]
-      (data_size_t line_idx) {
-        if (qid >= num_queries) {
-          Log::Fatal("Query id exceeds the range of the query file, "
-                     "please ensure the query file is correct");
-        }
-        if (line_idx >= query_boundaries[qid + 1]) {
-          // if is new query
-          is_query_used = false;
-          if (random_.NextShort(0, num_machines) == rank) {
-            is_query_used = true;
-          }
-          ++qid;
-        }
-        return is_query_used;
-      }, used_data_indices, &random_, sample_cnt, &out_data);
-    }
-  }
-  return out_data;
-}
-
-std::vector<std::string> DatasetLoader::SampleTextDataFromFileWithIndices(const char* filename, const Metadata& metadata,
                                                                int rank, int num_machines, int* num_global_data,
                                                                std::vector<data_size_t>* used_data_indices,
                                                                std::vector<data_size_t>* sampled_indices) {
@@ -1036,27 +984,28 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFileWithIndices(const 
   TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
   std::vector<std::string> out_data;
   if (num_machines == 1 || config_.pre_partition) {
-    *num_global_data = static_cast<data_size_t>(
-        text_reader.SampleFromFileWithIndices(&random_, sample_cnt, &out_data, sampled_indices));
+    *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile<GET_SAMPLED_INDICES>
+      (&random_, sample_cnt, &out_data, sampled_indices));
   } else {  // need partition data
             // get query data
     const data_size_t* query_boundaries = metadata.query_boundaries();
     if (query_boundaries == nullptr) {
       // if not contain query file, minimal sample unit is one record
-      *num_global_data = text_reader.SampleAndFilterFromFile([this, rank, num_machines]
+      *num_global_data = text_reader.SampleAndFilterFromFile<GET_SAMPLED_INDICES>(
+      [this, rank, num_machines]
       (data_size_t) {
         if (random_.NextShort(0, num_machines) == rank) {
           return true;
         } else {
           return false;
         }
-      }, used_data_indices, &random_, sample_cnt, &out_data);
+      }, used_data_indices, &random_, sample_cnt, &out_data, sampled_indices);
     } else {
       // if contain query file, minimal sample unit is one query
       data_size_t num_queries = metadata.num_queries();
       data_size_t qid = -1;
       bool is_query_used = false;
-      *num_global_data = text_reader.SampleAndFilterFromFile(
+      *num_global_data = text_reader.SampleAndFilterFromFile<GET_SAMPLED_INDICES>(
         [this, rank, num_machines, &qid, &query_boundaries, &is_query_used, num_queries]
       (data_size_t line_idx) {
         if (qid >= num_queries) {
@@ -1072,7 +1021,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFileWithIndices(const 
           ++qid;
         }
         return is_query_used;
-      }, used_data_indices, &random_, sample_cnt, &out_data);
+      }, used_data_indices, &random_, sample_cnt, &out_data, sampled_indices);
     }
   }
   return out_data;
@@ -1444,17 +1393,15 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
           }
         }
       }
-      // TODO(shiyu1994): should be start_idx + i ?
       if (dataset->has_raw()) {
         for (size_t j = 0; j < feature_row.size(); ++j) {
           int feat_ind = dataset->numeric_feature_map_[j];
           if (feat_ind >= 0) {
-            dataset->raw_data_[feat_ind][i] = feature_row[j];
+            dataset->raw_data_[feat_ind][start_idx + i] = feature_row[j];
           }
         }
       }
-      // TODO(shiyu1994): should be start_idx + i ?
-      dataset->FinishOneRow(tid, i, is_feature_added);
+      dataset->FinishOneRow(tid, start_idx + i, is_feature_added);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();

@@ -331,221 +331,144 @@ void CTRProvider::FinishProcess(const int num_machines) {
   }
 }
 
-void CTRProvider::ConvertCatToCTR(double* features) const {
-  if (cat_converters_.size() == 0) { return; }
-  for (const auto& pair : label_info_) {
-    const int cat_value = static_cast<int>(features[pair.first]);
-    double label_sum = 0.0f, total_count = 0.0f;
-    if (pair.second.back().count(cat_value) > 0) {
-      label_sum = pair.second.back().at(cat_value);
-      total_count = count_info_.at(pair.first).back().at(cat_value);
-    }
-    for (const auto& cat_converter : cat_converters_) {
-      const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
-      const int convert_fid = cat_converter->GetConvertFid(pair.first);
-      features[convert_fid] = convert_value;
-    }
-  }
+void CTRProvider::IterateOverCatConverters(int fid, double fval, int line_idx,
+    const std::function<void(int convert_fid, int fid, double convert_value)>& write_func,
+    const std::function<void(int fid)>& post_process) const {
+  const int fold_id = training_data_fold_id_[line_idx];
+  IterateOverCatConvertersInner<true>(fid, fval, fold_id, write_func, post_process);
+}
+
+void CTRProvider::IterateOverCatConverters(int fid, double fval,
+    const std::function<void(int convert_fid, int fid, double convert_value)>& write_func,
+    const std::function<void(int fid)>& post_process) const {
+  IterateOverCatConvertersInner<false>(fid, fval, -1, write_func, post_process);
 }
 
 void CTRProvider::ConvertCatToCTR(std::vector<double>* features, int line_idx) const {
   if (cat_converters_.size() == 0) { return; }
-  features->resize(num_total_features_);
-  const int fold_id = training_data_fold_id_[line_idx];
+  auto& features_ref = *features;
+  features_ref.resize(num_total_features_);
   for (const auto& pair : label_info_) {
-    const int cat_value = static_cast<int>(features->operator[](pair.first));
-    double label_sum = 0.0f, total_count = 0.0f;
-    if (pair.second[fold_id].count(cat_value) > 0) {
-      label_sum = pair.second[fold_id].at(cat_value);
-      total_count = count_info_.at(pair.first)[fold_id].at(cat_value);
-    }
-    double all_fold_total_count = 0.0f;
-    if (pair.second.back().count(cat_value) > 0) {
-      all_fold_total_count = count_info_.at(pair.first).back().at(cat_value);
-    }
-    for (const auto& cat_converter : cat_converters_) {
-      const double convert_value = cat_converter->CalcValue(label_sum, total_count, all_fold_total_count);
-      const int convert_fid = cat_converter->GetConvertFid(pair.first);
-      features->operator[](convert_fid) = convert_value;
-    }
+    IterateOverCatConverters(pair.first, features_ref[pair.first], line_idx,
+
+      [&features_ref] (int convert_fid, int, double convert_value) {
+        features_ref[convert_fid] = convert_value;
+      },
+
+      [] (int) {}
+    );
   }
 }
 
 void CTRProvider::ConvertCatToCTR(std::vector<double>* features) const {
   if (cat_converters_.size() == 0) { return; }
+  auto& features_ref = *features;
+  features_ref.resize(num_total_features_);
   features->resize(num_total_features_);
   for (const auto& pair : label_info_) {
-    const int cat_value = static_cast<int>(features->operator[](pair.first));
-    double label_sum = 0.0f, total_count = 0.0f;
-    if (pair.second.back().count(cat_value) > 0) {
-      label_sum = pair.second.back().at(cat_value);
-      total_count = count_info_.at(pair.first).back().at(cat_value);
-    }
-    for (const auto& cat_converter : cat_converters_) {
-      const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
-      const int convert_fid = cat_converter->GetConvertFid(pair.first);
-      features->operator[](convert_fid) = convert_value;
-    }
-  }
-}
+    IterateOverCatConverters(pair.first, features_ref[pair.first],
 
-void CTRProvider::ConvertCatToCTR(std::unordered_map<int, double>* features_ptr) const {
-  auto& features = *features_ptr;
-  if (cat_converters_.size() == 0) { return; }
-  for (const auto& pair : label_info_) {
-    if (features.count(pair.first) > 0) {
-      const int cat_value = static_cast<int>(features[pair.first]);
-      double label_sum = 0.0f, total_count = 0.0f;
-      if (pair.second.back().count(cat_value) > 0) {
-        label_sum = pair.second.back().at(cat_value);
-        total_count = count_info_.at(pair.first).back().at(cat_value);
-      }
-      for (const auto& cat_converter : cat_converters_) {
-        const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
-        const int convert_fid = cat_converter->GetConvertFid(pair.first);
-        features[convert_fid] = convert_value;
-      }
-    }
+      [&features_ref] (int convert_fid, int, double convert_value) {
+        features_ref[convert_fid] = convert_value;
+      },
+
+      [] (int) {}
+    );
   }
 }
 
 void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_ptr,
   const int line_idx) const {
-  auto& features = *features_ptr;
+  auto& features_ref = *features_ptr;
   std::vector<bool> feature_processed(num_original_features_, false);
   for (const int fid : categorical_features_) {
     feature_processed[fid] = false;
   }
-  const size_t n_pairs = features.size();
-  const int fold_id = training_data_fold_id_[line_idx];
+  const size_t n_pairs = features_ref.size();
   for (size_t i = 0; i < n_pairs; ++i) {
-    auto& pair = features[i];
+    auto& pair = features_ref[i];
     const int fid = pair.first;
     if (is_categorical_feature_[fid]) {
-      const int cat_value = static_cast<int>(pair.second);
-      const auto& label_info = label_info_.at(fid).at(fold_id);
-      const auto& count_info = count_info_.at(fid).at(fold_id);
-      double label_sum = 0.0f, total_count = 0.0f;
-      if (label_info.count(cat_value)) {
-        label_sum = label_info.at(cat_value);
-        total_count = count_info.at(cat_value);
-      }
-      double all_fold_total_count = 0.0f;
-      if (count_info_.at(fid).back().count(cat_value) > 0) {
-        all_fold_total_count = count_info_.at(fid).back().at(cat_value);
-      }
-      for (const auto& cat_converter : cat_converters_) {
-        const double convert_value = cat_converter->CalcValue(label_sum, total_count, all_fold_total_count);
-        const int convert_fid = cat_converter->GetConvertFid(fid);
-        if (convert_fid == fid) {
-          pair.second = convert_value;
-        } else {
-          // assert that convert_fid in this case is larger than all the original feature indices
-          features.emplace_back(convert_fid, convert_value);
-        }
-      }
-      feature_processed[fid] = true;
+      IterateOverCatConverters(fid, pair.second, line_idx,
+
+        [&features_ref] (int convert_fid, int fid, double convert_value) {
+          if (convert_fid == fid) {
+            features_ref[fid].second = convert_value;
+          } else {
+            // assert that convert_fid in this case is larger than all the original feature indices
+            features_ref.emplace_back(convert_fid, convert_value);
+          }
+        },
+
+        [&feature_processed] (int fid) { feature_processed[fid] =  true; }
+      );
     }
   }
   for (const int fid : categorical_features_) {
     if (!feature_processed[fid]) {
-      const auto& label_info = label_info_.at(fid).at(fold_id);
-      const auto& count_info = count_info_.at(fid).at(fold_id);
-      double label_sum = 0.0f, total_count = 0.0f;
-      if (label_info.count(0) > 0) {
-        label_sum = label_info.at(0);
-        total_count = count_info.at(0);
-      }
-      double all_fold_total_count = 0.0f;
-      if (count_info_.at(fid).back().count(0) > 0) {
-        all_fold_total_count = count_info_.at(fid).back().at(0);
-      }
-      for (const auto& cat_converter : cat_converters_) {
-        const double convert_value = cat_converter->CalcValue(label_sum, total_count, all_fold_total_count);
-        const int convert_fid = cat_converter->GetConvertFid(fid);
-        features.emplace_back(convert_fid, convert_value);
-      }
+      IterateOverCatConverters(fid, 0.0f, line_idx,
+
+        [&features_ref] (int convert_fid, int, double convert_value) {
+          // assert that convert_fid in this case is larger than all the original feature indices
+          features_ref.emplace_back(convert_fid, convert_value);
+        },
+
+        [] (int) {}
+      );
     }
   }
 }
 
 void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_ptr) const {
-  auto& features = *features_ptr;
+  auto& features_ref = *features_ptr;
   std::vector<bool> feature_processed(num_original_features_, false);
   for (const int fid : categorical_features_) {
     feature_processed[fid] = false;
   }
-  const size_t n_pairs = features.size();
+  const size_t n_pairs = features_ref.size();
   for (size_t i = 0; i < n_pairs; ++i) {
-    auto& pair = features[i];
+    auto& pair = features_ref[i];
     const int fid = pair.first;
     if (is_categorical_feature_[fid]) {
-      const int cat_value = static_cast<int>(pair.second);
-      const auto& label_info = label_info_.at(fid).back();
-      const auto& count_info = count_info_.at(fid).back();
-      double label_sum = 0.0f, total_count = 0.0f;
-      if (label_info.count(cat_value)) {
-        label_sum = label_info.at(cat_value);
-        total_count = count_info.at(cat_value);
-      }
-      for (const auto& cat_converter : cat_converters_) {
-        const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
-        const int convert_fid = cat_converter->GetConvertFid(fid);
-        if (convert_fid == fid) {
-          pair.second = convert_value;
-        } else {
-          // assert that convert_fid in this case is larger than all the original feature indices
-          features.emplace_back(convert_fid, convert_value);
-        }
-      }
-      feature_processed[fid] = true;
+      IterateOverCatConverters(fid, pair.second,
+
+        [&features_ref] (int convert_fid, int fid, double convert_value) {
+          if (convert_fid == fid) {
+            features_ref[fid].second = convert_value;
+          } else {
+            // assert that convert_fid in this case is larger than all the original feature indices
+            features_ref.emplace_back(convert_fid, convert_value);
+          }
+        },
+
+        [&feature_processed] (int fid) { feature_processed[fid] = true; }
+      );
     }
   }
   for (const int fid : categorical_features_) {
     if (!feature_processed[fid]) {
-      const auto& label_info = label_info_.at(fid).back();
-      const auto& count_info = count_info_.at(fid).back();
-      double label_sum = 0.0f, total_count = 0.0f;
-      if (label_info.count(0)) {
-        label_sum = label_info.at(0);
-        total_count = count_info.at(0);
-      }
-      for (const auto& cat_converter : cat_converters_) {
-        const double convert_value = cat_converter->CalcValue(label_sum, total_count, total_count);
-        const int convert_fid = cat_converter->GetConvertFid(fid);
-        features.emplace_back(convert_fid, convert_value);
-      }
+      IterateOverCatConverters(fid, 0.0f,
+
+        [&features_ref] (int convert_fid, int, double convert_value) {
+          // assert that convert_fid in this case is larger than all the original feature indices
+          features_ref.emplace_back(convert_fid, convert_value);
+        },
+
+        [] (int) {}
+      );
     }
   }
 }
 
 double CTRProvider::ConvertCatToCTR(double fval, const CTRProvider::CatConverter* cat_converter,
   int col_idx, int line_idx) const {
-  const int int_cat_val = static_cast<int>(fval);
   const int fold_id = training_data_fold_id_[line_idx];
-  const auto& f_label_info = label_info_.at(col_idx).at(fold_id);
-  double label_sum = 0.0f, total_count = 0.0f;
-  if (f_label_info.count(int_cat_val) > 0) {
-    label_sum = f_label_info.at(int_cat_val);
-    total_count = count_info_.at(col_idx).at(fold_id).at(int_cat_val);
-  }
-  double all_fold_total_count = 0.0f;
-  if (count_info_.at(col_idx).back().count(int_cat_val) > 0) {
-    all_fold_total_count = count_info_.at(col_idx).back().at(int_cat_val);
-  }
-  return cat_converter->CalcValue(label_sum, total_count, all_fold_total_count);
+  return HandleOneCatConverter<true>(col_idx, fval, fold_id, cat_converter);
 }
 
 double CTRProvider::ConvertCatToCTR(double fval, const CTRProvider::CatConverter* cat_converter,
   int col_idx) const {
-  const int int_cat_val = static_cast<int>(fval);
-  const auto& f_label_info = label_info_.at(col_idx).back();
-  double label_sum = 0.0f, total_count = 0.0f;
-  if (f_label_info.count(int_cat_val) > 0) {
-    label_sum = f_label_info.at(int_cat_val);
-    total_count = count_info_.at(col_idx).back().at(int_cat_val);
-  }
-  return cat_converter->CalcValue(label_sum, total_count, total_count);
+  return HandleOneCatConverter<false>(col_idx, fval, -1, cat_converter);
 }
 
 void CTRProvider::WrapRowFunctions(
@@ -554,20 +477,7 @@ void CTRProvider::WrapRowFunctions(
   const std::vector<std::function<std::vector<double>(int row_idx)>> old_get_row_fun = *get_row_fun;
   get_row_fun->clear();
   for (size_t i = 0; i < old_get_row_fun.size(); ++i) {
-    std::function<std::vector<double>(int row_idx)> old_fun = old_get_row_fun[i];
-    if (is_valid) {
-      get_row_fun->push_back([old_fun, this] (int row_idx) {
-        std::vector<double> row = old_fun(row_idx);
-        ConvertCatToCTR(&row);
-        return row;
-      });
-    } else {
-      get_row_fun->push_back([old_fun, this] (int row_idx) {
-        std::vector<double> row = old_fun(row_idx);
-        ConvertCatToCTR(&row, row_idx);
-        return row;
-      });
-    }
+    get_row_fun->push_back(WrapRowFunctionInner<double>(&old_get_row_fun[i], is_valid));
   }
   *ncol = static_cast<int32_t>(num_total_features_);
 }
@@ -575,20 +485,7 @@ void CTRProvider::WrapRowFunctions(
 void CTRProvider::WrapRowFunction(
   std::function<std::vector<std::pair<int, double>>(int row_idx)>* get_row_fun,
   int64_t* ncol, bool is_valid) const {
-  std::function<std::vector<std::pair<int, double>>(int row_idx)> old_get_row_fun = *get_row_fun;
-  if (is_valid) {
-    *get_row_fun = [old_get_row_fun, this] (int row_idx) {
-      std::vector<std::pair<int, double>> row = old_get_row_fun(row_idx);
-      ConvertCatToCTR(&row);
-      return row;
-    };
-  } else {
-    *get_row_fun = [old_get_row_fun, this] (int row_idx) {
-      std::vector<std::pair<int, double>> row = old_get_row_fun(row_idx);
-      ConvertCatToCTR(&row, row_idx);
-      return row;
-    };
-  }
+  *get_row_fun = WrapRowFunctionInner<std::pair<int, double>>(get_row_fun, is_valid);
   *ncol = static_cast<int64_t>(num_total_features_);
 }
 

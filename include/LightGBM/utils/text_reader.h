@@ -170,41 +170,33 @@ class TextReader {
     return ret;
   }
 
-  INDEX_T SampleFromFile(Random* random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data) {
+  template <bool GET_SAMPLED_INDICES>
+  INDEX_T SampleFromFile(Random* random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data,
+    std::vector<INDEX_T>* sampled_indices) {
     INDEX_T cur_sample_cnt = 0;
+    if (GET_SAMPLED_INDICES) {
+      sampled_indices->clear();
+    }
     return ReadAllAndProcess([=, &random, &cur_sample_cnt, &out_sampled_data]
     (INDEX_T line_idx, const char* buffer, size_t size) {
       if (cur_sample_cnt < sample_cnt) {
         out_sampled_data->emplace_back(buffer, size);
+        if (GET_SAMPLED_INDICES) {
+          sampled_indices->push_back(line_idx);
+        }
         ++cur_sample_cnt;
       } else {
         const size_t idx = static_cast<size_t>(random->NextInt(0, static_cast<int>(line_idx + 1)));
         if (idx < static_cast<size_t>(sample_cnt)) {
           out_sampled_data->operator[](idx) = std::string(buffer, size);
+          if (GET_SAMPLED_INDICES) {
+            sampled_indices->operator[](idx) = line_idx;
+          }
         }
       }
     });
   }
 
-  INDEX_T SampleFromFileWithIndices(Random* random, INDEX_T sample_cnt,
-    std::vector<std::string>* out_sampled_data, std::vector<INDEX_T>* sampled_indices) {
-    INDEX_T cur_sample_cnt = 0;
-    sampled_indices->clear();
-    return ReadAllAndProcess([=, &random, &cur_sample_cnt, &out_sampled_data]
-    (INDEX_T line_idx, const char* buffer, size_t size) {
-      if (cur_sample_cnt < sample_cnt) {
-        out_sampled_data->emplace_back(buffer, size);
-        sampled_indices->push_back(line_idx);
-        ++cur_sample_cnt;
-      } else {
-        const size_t idx = static_cast<size_t>(random->NextInt(0, static_cast<int>(line_idx + 1)));
-        if (idx < static_cast<size_t>(sample_cnt)) {
-          out_sampled_data->operator[](idx) = std::string(buffer, size);
-          sampled_indices->operator[](idx) = line_idx;
-        }
-      }
-    });
-  }
   /*!
   * \brief Read part of text data from file in memory, use filter_fun to filter data
   * \param filter_fun Function that perform data filter
@@ -223,8 +215,9 @@ class TextReader {
     return total_cnt;
   }
 
+  template <bool GET_SAMPLED_INDICES>
   INDEX_T SampleAndFilterFromFile(const std::function<bool(INDEX_T)>& filter_fun, std::vector<INDEX_T>* out_used_data_indices,
-    Random* random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data) {
+    Random* random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data, std::vector<INDEX_T>* sampled_indices) {
     INDEX_T cur_sample_cnt = 0;
     out_used_data_indices->clear();
     INDEX_T total_cnt = ReadAllAndProcess(
@@ -232,15 +225,24 @@ class TextReader {
          &out_sampled_data]
     (INDEX_T line_idx, const char* buffer, size_t size) {
       bool is_used = filter_fun(line_idx);
+      if (GET_SAMPLED_INDICES) {
+        sampled_indices->clear();
+      }
       if (is_used) { out_used_data_indices->push_back(line_idx); }
       if (is_used) {
         if (cur_sample_cnt < sample_cnt) {
           out_sampled_data->emplace_back(buffer, size);
+          if (GET_SAMPLED_INDICES) {
+            sampled_indices->emplace_back(line_idx);
+          }
           ++cur_sample_cnt;
         } else {
           const size_t idx = static_cast<size_t>(random->NextInt(0, static_cast<int>(out_used_data_indices->size())));
           if (idx < static_cast<size_t>(sample_cnt)) {
             out_sampled_data->operator[](idx) = std::string(buffer, size);
+            if (GET_SAMPLED_INDICES) {
+              sampled_indices->operator[](idx) = line_idx;
+            }
           }
         }
       }
