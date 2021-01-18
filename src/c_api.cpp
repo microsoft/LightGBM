@@ -72,8 +72,6 @@ class SingleRowPredictor {
       is_raw_score = true;
     } else if (predict_type == C_API_PREDICT_CONTRIB) {
       predict_contrib = true;
-    } else {
-      is_raw_score = false;
     }
     early_stop_ = config.pred_early_stop;
     early_stop_freq_ = config.pred_early_stop_freq;
