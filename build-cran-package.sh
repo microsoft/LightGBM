@@ -45,18 +45,18 @@ mkdir -p ${EIGEN_R_DIR}
 
 modules="Cholesky Core Dense Eigenvalues Geometry Householder Jacobi LU QR SVD"
 for eigen_module in ${modules}; do
-    cp eigen/Eigen/${eigen_module} ${EIGEN_R_DIR}/${eigen_module}
+    cp external_libs/eigen/Eigen/${eigen_module} ${EIGEN_R_DIR}/${eigen_module}
     if [ ${eigen_module} != "Dense" ]; then
         mkdir -p ${EIGEN_R_DIR}/src/${eigen_module}/
-        cp -R eigen/Eigen/src/${eigen_module}/* ${EIGEN_R_DIR}/src/${eigen_module}/
+        cp -R external_libs/eigen/Eigen/src/${eigen_module}/* ${EIGEN_R_DIR}/src/${eigen_module}/
     fi
 done
 
 mkdir -p ${EIGEN_R_DIR}/src/misc
-cp -R eigen/Eigen/src/misc/* ${EIGEN_R_DIR}/src/misc/
+cp -R external_libs/eigen/Eigen/src/misc/* ${EIGEN_R_DIR}/src/misc/
 
 mkdir -p ${EIGEN_R_DIR}/src/plugins
-cp -R eigen/Eigen/src/plugins/* ${EIGEN_R_DIR}/src/plugins/
+cp -R external_libs/eigen/Eigen/src/plugins/* ${EIGEN_R_DIR}/src/plugins/
 
 cd ${TEMP_R_DIR}
 

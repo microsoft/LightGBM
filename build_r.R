@@ -161,7 +161,7 @@ eigen_modules <- c(
 )
 for (eigen_module in eigen_modules) {
   result <- file.copy(
-    from = file.path("eigen", "Eigen", eigen_module)
+    from = file.path("external_libs", "eigen", "Eigen", eigen_module)
     , to = EIGEN_R_DIR
     , recursive = FALSE
     , overwrite = TRUE
@@ -178,7 +178,7 @@ for (eigen_module in c(eigen_modules, "misc", "plugins")) {
   module_dir <- file.path(EIGEN_R_DIR, "src", eigen_module)
   dir.create(module_dir, recursive = TRUE)
   result <- file.copy(
-    from = sprintf("%s/", file.path("eigen", "Eigen", "src", eigen_module))
+    from = sprintf("%s/", file.path("external_libs", "eigen", "Eigen", "src", eigen_module))
     , to = sprintf("%s/", file.path(EIGEN_R_DIR, "src"))
     , recursive = TRUE
     , overwrite = TRUE
@@ -238,7 +238,8 @@ for (submodule in list.dirs(
 )) {
   # compute/ is a submodule with boost, only needed if
   # building the R package with GPU support
-  if (submodule == "compute" && !USING_GPU) {
+  # eigen/ has a special treatment due to licensing aspects
+  if ((submodule == "compute" && !USING_GPU) || submodule == "eigen") {
     next
   }
   result <- file.copy(
