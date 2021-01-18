@@ -102,11 +102,11 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
         tree_learner='data'
     )
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
-    preds_with_contrib = dask_classifier.predict(dX, raw_score=True, pred_contrib=True).compute()
+    preds_with_contrib = dask_classifier.predict(dX, pred_contrib=True).compute()
 
     local_classifier = lightgbm.LGBMClassifier()
     local_classifier.fit(X, y, sample_weight=w)
-    local_preds_with_contrib = local_classifier.predict(X, raw_score=True, pred_contrib=True)
+    local_preds_with_contrib = local_classifier.predict(X, pred_contrib=True)
 
     if output == 'scipy_csr_matrix':
         preds_with_contrib = np.array(preds_with_contrib.todense())
@@ -230,11 +230,11 @@ def test_regressor_pred_contrib(output, client, listen_port):
         tree_learner='data'
     )
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
-    preds_with_contrib = dask_regressor.predict(dX, raw_score=True, pred_contrib=True).compute()
+    preds_with_contrib = dask_regressor.predict(dX, pred_contrib=True).compute()
 
     local_regressor = lightgbm.LGBMRegressor()
     local_regressor.fit(X, y, sample_weight=w)
-    local_preds_with_contrib = local_regressor.predict(X, raw_score=True, pred_contrib=True)
+    local_preds_with_contrib = local_regressor.predict(X, pred_contrib=True)
 
     if output == "scipy_csr_matrix":
         preds_with_contrib = np.array(preds_with_contrib.todense())
