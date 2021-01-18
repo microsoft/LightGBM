@@ -19,11 +19,11 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 #           example, c("--boost-librarydir" = "/usr/lib/x86_64-linux-gnu")
 .parse_args <- function(args) {
   out_list <- list(
-    "flags" = character(0)
-    , "keyword_args" = character(0)
+    "flags" = character(0L)
+    , "keyword_args" = character(0L)
   )
   for (arg in args) {
-    if (any(grepl("=", arg))){
+    if (any(grepl("=", arg))) {
       split_arg <- strsplit(arg, "=")[[1L]]
       arg_name <- split_arg[[1L]]
       arg_value <- split_arg[[2L]]
@@ -90,9 +90,9 @@ install_libs_content <- .replace_flag("use_msys2", USING_MSYS2, install_libs_con
 
 # set up extra flags based on keyword arguments
 keyword_args <- parsed_args[["keyword_args"]]
-if (length(keyword_args) > 0L){
+if (length(keyword_args) > 0L) {
   cmake_args_to_add <- NULL
-  for (i in seq_len(length(keyword_args))){
+  for (i in seq_len(length(keyword_args))) {
     arg_name <- names(keyword_args)[[i]]
     define_name <- ARGS_TO_DEFINES[[arg_name]]
     arg_value <- shQuote(keyword_args[[arg_name]])
