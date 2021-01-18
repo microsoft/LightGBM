@@ -57,8 +57,8 @@ def copy_files(integrated_opencl=False, use_gpu=False):
                     remove_tree(dst)
                 else:
                     os.remove(dst)
-            create_tree(src, dst, verbose=0)
-            copy_tree(src, dst, verbose=0)
+            create_tree(src, dst, verbose=1)
+            copy_tree(src, dst, verbose=1)
         else:
             raise Exception('Cannot copy {0} folder'.format(src))
 
