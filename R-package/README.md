@@ -169,6 +169,28 @@ After installing these other libraries, follow the steps in ["Installing from So
 Rscript build_r.R --use-gpu
 ```
 
+You may also need or want to provide additional configuration, depending on your setup. For example, you may need to provide locations for Boost and OpenCL.
+
+```shell
+Rscript build_r.R \
+    --use-gpu \
+    --opencl-library=/usr/lib/x86_64-linux-gnu/libOpenCL.so \
+    --boost-librarydir=/usr/lib/x86_64-linux-gnu
+```
+
+The following options correspond to the [CMake FindBoost options](https://cmake.org/cmake/help/latest/module/FindBoost.html) by the same names.
+
+* `--boost-root`
+* `--boost-dir`
+* `--boost-include-dir`
+* `--boost-librarydir`
+
+The following options correspond to the [CMake FindOpenCL options](https://cmake.org/cmake/help/latest/module/FindOpenCL.html) by the same names.
+
+* `--opencl-include-dir`
+* `--opencl-library`
+
+
 ### Installing Precompiled Binaries
 
 Precompiled binaries for Mac and Windows are prepared by CRAN a few days after each release to CRAN. They can be installed with the following R code.
