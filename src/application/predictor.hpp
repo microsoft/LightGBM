@@ -262,7 +262,7 @@ class Predictor {
     if (features.size() > static_cast<size_t>(buf_size / 2)) {
       std::memset(pred_buf, 0, sizeof(double)*(buf_size));
     } else {
-      for (const auto &feature: features) {
+      for (const auto &feature : features) {
         if (feature.first < num_feature_) {
           pred_buf[feature.first] = 0.0f;
         }
