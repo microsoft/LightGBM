@@ -90,7 +90,7 @@ if(USE_SWIG)
   endif()
 endif(USE_SWIG)
 
-SET(EIGEN_DIR "${PROJECT_SOURCE_DIR}/eigen")
+SET(EIGEN_DIR "${PROJECT_SOURCE_DIR}/external_libs/eigen")
 include_directories(${EIGEN_DIR})
 
 # See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
