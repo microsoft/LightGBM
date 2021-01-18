@@ -190,7 +190,6 @@ The following options correspond to the [CMake FindOpenCL options](https://cmake
 * `--opencl-include-dir`
 * `--opencl-library`
 
-
 ### Installing Precompiled Binaries
 
 Precompiled binaries for Mac and Windows are prepared by CRAN a few days after each release to CRAN. They can be installed with the following R code.

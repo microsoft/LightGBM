@@ -135,8 +135,8 @@ build_cmd <- "make"
 build_args <- "_lightgbm"
 lib_folder <- file.path(source_dir, fsep = "/")
 
-# add in arguments passed in by command-line arguments
-# build_r.R replaces the line below
+# add in command-line arguments
+# NOTE: build_r.R replaces the line below
 command_line_args <- NULL
 cmake_args <- c(cmake_args, command_line_args)
 
