@@ -37,6 +37,27 @@ cp \
     external_libs/fmt/include/fmt/*.h \
     ${TEMP_R_DIR}/src/include/LightGBM/fmt/
 
+# including only specific files from Eigen, to keep the R package
+# small and avoid redistributing code with licenses incompatible with
+# LightGBM's license
+EIGEN_R_DIR=${TEMP_R_DIR}/src/include/Eigen
+mkdir -p ${EIGEN_R_DIR}
+
+modules="Cholesky Core Dense Eigenvalues Geometry Householder Jacobi LU QR SVD"
+for eigen_module in ${modules}; do
+    cp eigen/Eigen/${eigen_module} ${EIGEN_R_DIR}/${eigen_module}
+    if [ ${eigen_module} != "Dense" ]; then
+        mkdir -p ${EIGEN_R_DIR}/src/${eigen_module}/
+        cp -R eigen/Eigen/src/${eigen_module}/* ${EIGEN_R_DIR}/src/${eigen_module}/
+    fi
+done
+
+mkdir -p ${EIGEN_R_DIR}/src/misc
+cp -R eigen/Eigen/src/misc/* ${EIGEN_R_DIR}/src/misc/
+
+mkdir -p ${EIGEN_R_DIR}/src/plugins
+cp -R eigen/Eigen/src/plugins/* ${EIGEN_R_DIR}/src/plugins/
+
 cd ${TEMP_R_DIR}
 
     # Remove files not needed for CRAN
@@ -69,6 +90,9 @@ cd ${TEMP_R_DIR}
     for file in $(find . -name '*.h' -o -name '*.hpp' -o -name '*.cpp'); do
       sed \
         -i.bak \
+        -e 's/^.*#pragma clang diagnostic.*$//' \
+        -e 's/^.*#pragma diag_suppress.*$//' \
+        -e 's/^.*#pragma GCC diagnostic.*$//' \
         -e 's/^.*#pragma region.*$//' \
         -e 's/^.*#pragma endregion.*$//' \
         -e 's/^.*#pragma warning.*$//' \

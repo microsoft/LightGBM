@@ -127,13 +127,11 @@ Core Parameters
 
       -  categorical features are used for splits as normal but are not used in the linear models
 
-      -  missing values must be encoded as ``np.nan`` (Python) or ``NA`` (CLI), not ``0``
+      -  missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
 
       -  it is recommended to rescale data before training so that features have similar mean and standard deviation
 
       -  **Note**: only works with CPU and ``serial`` tree learner
-
-      -  **Note**: not yet supported in R-package
 
       -  **Note**: ``regression_l1`` objective is not supported with linear tree boosting
 
