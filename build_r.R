@@ -4,6 +4,7 @@
 #export CXX=/usr/local/bin/g++-8 CC=/usr/local/bin/gcc-8
 # Sys.setenv("CXX" = "/usr/local/bin/g++-8")
 # Sys.setenv("CC" = "/usr/local/bin/gcc-8")
+
 args <- commandArgs(trailingOnly = TRUE)
 INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 TEMP_R_DIR <- file.path(getwd(), "lightgbm_r")
