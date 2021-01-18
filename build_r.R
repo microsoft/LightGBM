@@ -218,6 +218,72 @@ if (USING_GPU) {
   .handle_result(result)
 }
 
+EIGEN_R_DIR <- file.path(TEMP_SOURCE_DIR, "include", "Eigen")
+dir.create(EIGEN_R_DIR)
+
+eigen_modules <- c(
+  "Cholesky"
+  , "Core"
+  , "Dense"
+  , "Eigenvalues"
+  , "Geometry"
+  , "Householder"
+  , "Jacobi"
+  , "LU"
+  , "QR"
+  , "SVD"
+)
+for (eigen_module in eigen_modules) {
+  result <- file.copy(
+    from = file.path("eigen", "Eigen", eigen_module)
+    , to = EIGEN_R_DIR
+    , recursive = FALSE
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+}
+
+dir.create(file.path(EIGEN_R_DIR, "src"))
+
+for (eigen_module in c(eigen_modules, "misc", "plugins")) {
+  if (eigen_module == "Dense") {
+    next
+  }
+  module_dir <- file.path(EIGEN_R_DIR, "src", eigen_module)
+  dir.create(module_dir, recursive = TRUE)
+  result <- file.copy(
+    from = sprintf("%s/", file.path("eigen", "Eigen", "src", eigen_module))
+    , to = sprintf("%s/", file.path(EIGEN_R_DIR, "src"))
+    , recursive = TRUE
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+}
+
+.replace_pragmas <- function(filepath) {
+  pragma_patterns <- c(
+    "^.*#pragma clang diagnostic.*$"
+    , "^.*#pragma diag_suppress.*$"
+    , "^.*#pragma GCC diagnostic.*$"
+    , "^.*#pragma region.*$"
+    , "^.*#pragma endregion.*$"
+    , "^.*#pragma warning.*$"
+  )
+  content <- readLines(filepath)
+  for (pragma_pattern in pragma_patterns) {
+    content <- content[!grepl(pragma_pattern, content)]
+  }
+  writeLines(content, filepath)
+}
+
+# remove pragmas that suppress warnings, to appease R CMD check
+.replace_pragmas(
+  file.path(EIGEN_R_DIR, "src", "Core", "arch", "SSE", "Complex.h")
+)
+.replace_pragmas(
+  file.path(EIGEN_R_DIR, "src", "Core", "util", "DisableStupidWarnings.h")
+)
+
 result <- file.copy(
   from = "CMakeLists.txt"
   , to = file.path(TEMP_R_DIR, "inst", "bin/")
