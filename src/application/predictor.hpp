@@ -251,7 +251,7 @@ class Predictor {
 
  private:
   void CopyToPredictBuffer(double* pred_buf, const std::vector<std::pair<int, double>>& features) {
-    for (const auto &feature: features) {
+    for (const auto &feature : features) {
       if (feature.first < num_feature_) {
         pred_buf[feature.first] = feature.second;
       }
