@@ -1735,7 +1735,6 @@ test_that("lgb.train() w/ linear learner fails already-constructed dataset with 
       data = dtrain
       , nrounds = 10L
       , params = modifyList(params, list(linear_tree = TRUE))
-      , valids = list("train" = dtrain)
     )
   }, regexp = "Cannot change linear_tree after constructed Dataset handle")
 })
@@ -1862,7 +1861,6 @@ test_that("lgb.train() works with linear learners and data where a feature has o
     data = dtrain
     , nrounds = 10L
     , params = modifyList(params, list(linear_tree = TRUE))
-    , valids = list("train" = dtrain)
   )
   expect_true(lgb.is.Booster(bst_linear))
 })
