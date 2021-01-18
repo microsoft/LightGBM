@@ -9,7 +9,7 @@ configuration:  # a trick to construct a build matrix with multiple Python versi
 # commits to 'master'
 branches:
   only:
-    - master
+    - ext_libs
 
 environment:
   matrix:

@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - master
+    - ext_libs
   tags:
     include:
     - v*

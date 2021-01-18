@@ -3,7 +3,7 @@ name: R-package
 on:
   push:
     branches:
-    - master
+    - ext_libs
   pull_request:
     branches:
     - master
