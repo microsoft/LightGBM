@@ -188,7 +188,6 @@ test_that("boosters with linear models at leaves can be written to text file and
         data = dtrain
         , nrounds = 10L
         , params = params
-        , valids = list("train" = dtrain)
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -204,8 +203,8 @@ test_that("boosters with linear models at leaves can be written to text file and
     bst2 <- lgb.load(
         filename = model_file
     )
-    pred2 <- predict(bst2, X)
-    expect_identical(preds, pred2)
+    preds2 <- predict(bst2, X)
+    expect_identical(preds, preds2)
 })
 
 
@@ -792,7 +791,6 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
         data = dtrain
         , nrounds = 10L
         , params = params
-        , valids = list("train" = dtrain)
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -806,6 +804,6 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
 
     # load the booster and make predictions...should be the same
     bst2 <- readRDS.lgb.Booster(file = model_file)
-    pred2 <- predict(bst2, X)
-    expect_identical(preds, pred2)
+    preds2 <- predict(bst2, X)
+    expect_identical(preds, preds2)
 })
