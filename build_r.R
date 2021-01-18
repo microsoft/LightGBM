@@ -237,14 +237,15 @@ for (submodule in list.dirs(
   , recursive = FALSE
 )) {
   # compute/ is a submodule with boost, only needed if
-  # building the R package with GPU support
+  # building the R package with GPU support;
   # eigen/ has a special treatment due to licensing aspects
   if ((submodule == "compute" && !USING_GPU) || submodule == "eigen") {
     next
   }
   result <- file.copy(
     from = file.path("external_libs", sprintf("%s/", submodule))
-    , to = file.path(sprintf("%s/", TEMP_SOURCE_DIR))
+    , to = sprintf("%s/", TEMP_SOURCE_DIR)
+    , recursive = TRUE
     , overwrite = TRUE
   )
   .handle_result(result)
