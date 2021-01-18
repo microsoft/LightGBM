@@ -98,7 +98,8 @@ def test_training_does_not_fail_on_port_conflicts(client):
 
         dask_classifier = dlgbm.DaskLGBMClassifier(
             time_out=5,
-            local_listen_port=12400
+            local_listen_port=12400,
+            n_estimators=5
         )
         for i in range(5):
             dask_classifier.fit(
@@ -115,12 +116,16 @@ def test_training_does_not_fail_on_port_conflicts(client):
 def test_classifier_proba(output, centers, client, listen_port):
     X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
 
-    dask_classifier = dlgbm.DaskLGBMClassifier(time_out=5, local_listen_port=listen_port)
+    dask_classifier = dlgbm.DaskLGBMClassifier(
+        time_out=5,
+        local_listen_port=listen_port,
+        n_estimators=10
+    )
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_classifier.predict_proba(dX)
     p1 = p1.compute()
 
-    local_classifier = lightgbm.LGBMClassifier()
+    local_classifier = lightgbm.LGBMClassifier(n_estimators=10)
     local_classifier.fit(X, y, sample_weight=w)
     p2 = local_classifier.predict_proba(X)
 
@@ -130,11 +135,15 @@ def test_classifier_proba(output, centers, client, listen_port):
 def test_classifier_local_predict(client, listen_port):
     X, y, w, dX, dy, dw = _create_data('classification', output='array')
 
-    dask_classifier = dlgbm.DaskLGBMClassifier(time_out=5, local_listen_port=listen_port)
+    dask_classifier = dlgbm.DaskLGBMClassifier(
+        time_out=5,
+        local_listen_port=listen_port,
+        n_estimators=10
+    )
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_classifier.to_local().predict(dX)
 
-    local_classifier = lightgbm.LGBMClassifier()
+    local_classifier = lightgbm.LGBMClassifier(n_estimators=10)
     local_classifier.fit(X, y, sample_weight=w)
     p2 = local_classifier.predict(X)
 
@@ -173,12 +182,23 @@ def test_regressor(output, client, listen_port):
 def test_regressor_quantile(output, client, listen_port, alpha):
     X, y, w, dX, dy, dw = _create_data('regression', output=output)
 
-    dask_regressor = dlgbm.DaskLGBMRegressor(local_listen_port=listen_port, seed=42, objective='quantile', alpha=alpha)
+    dask_regressor = dlgbm.DaskLGBMRegressor(
+        local_listen_port=listen_port,
+        seed=42,
+        objective='quantile',
+        alpha=alpha,
+        n_estimators=10
+    )
     dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
     p1 = dask_regressor.predict(dX).compute()
     q1 = np.count_nonzero(y < p1) / y.shape[0]
 
-    local_regressor = lightgbm.LGBMRegressor(seed=42, objective='quantile', alpha=alpha)
+    local_regressor = lightgbm.LGBMRegressor(
+        seed=42,
+        objective='quantile',
+        alpha=alpha,
+        n_estimatores=10
+    )
     local_regressor.fit(X, y, sample_weight=w)
     p2 = local_regressor.predict(X)
     q2 = np.count_nonzero(y < p2) / y.shape[0]
@@ -191,7 +211,11 @@ def test_regressor_quantile(output, client, listen_port, alpha):
 def test_regressor_local_predict(client, listen_port):
     X, y, w, dX, dy, dw = _create_data('regression', output='array')
 
-    dask_regressor = dlgbm.DaskLGBMRegressor(local_listen_port=listen_port, seed=42)
+    dask_regressor = dlgbm.DaskLGBMRegressor(
+        local_listen_port=listen_port,
+        seed=42,
+        n_estimators=10
+    )
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_regressor.predict(dX)
     p2 = dask_regressor.to_local().predict(X)
