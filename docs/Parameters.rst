@@ -1243,7 +1243,7 @@ For wrapper libraries like in Python and R, this information can also be provide
 
 ::
 
-   [27, 18, 67, ...]
+    [27, 18, 67, ...]
 
 For example, if you have a 112-document dataset with ``group = [27, 18, 67]``, that means that you have 3 groups, where the first 27 records are in the first group, records 28-45 are in the second group, and records 46-112 are in the third group.
 
