@@ -228,15 +228,27 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
     return results[0]
 
 
-def _predict_part(part, model, pred_proba, pred_leaf, pred_contrib, **kwargs):
+def _predict_part(part, model, raw_score, pred_proba, pred_leaf, pred_contrib, **kwargs):
     data = part.values if isinstance(part, pd.DataFrame) else part
 
     if data.shape[0] == 0:
         result = np.array([])
     elif pred_proba:
-        result = model.predict_proba(data, pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
+        result = model.predict_proba(
+            data,
+            raw_score=raw_score,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            **kwargs
+        )
     else:
-        result = model.predict(data, pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
+        result = model.predict(
+            data,
+            raw_score=raw_score,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            **kwargs
+        )
 
     if isinstance(part, pd.DataFrame):
         if pred_proba or pred_contrib:
@@ -247,7 +259,7 @@ def _predict_part(part, model, pred_proba, pred_leaf, pred_contrib, **kwargs):
     return result
 
 
-def _predict(model, data, pred_proba=False, pred_leaf=False, pred_contrib=False,
+def _predict(model, data, raw_score=False, pred_proba=False, pred_leaf=False, pred_contrib=False,
              dtype=np.float32, **kwargs):
     """Inner predict routine.
 
@@ -270,6 +282,7 @@ def _predict(model, data, pred_proba=False, pred_leaf=False, pred_contrib=False,
         return data.map_partitions(
             _predict_part,
             model=model,
+            raw_score=raw_score,
             pred_proba=pred_proba,
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,
@@ -283,6 +296,7 @@ def _predict(model, data, pred_proba=False, pred_leaf=False, pred_contrib=False,
         return data.map_blocks(
             _predict_part,
             model=model,
+            raw_score=raw_score,
             pred_proba=pred_proba,
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,

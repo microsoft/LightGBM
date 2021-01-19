@@ -125,7 +125,7 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
     else:
         expected_num_cols = (dX.shape[1] + 1) * num_classes
 
-    if isinstance(dX, dask.dataframe.core.DataFrame):
+    if isinstance(dX, dask.dataframe.DataFrame):
         assert preds_with_contrib.shape == (dX.shape[0].compute(), expected_num_cols)
     else:
         assert preds_with_contrib.shape == (dX.shape[0], expected_num_cols)
