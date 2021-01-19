@@ -293,6 +293,8 @@ result <- file.remove(
 #------------#
 # submodules #
 #------------#
+EXTERNAL_LIBS_R_DIR <- file.path(TEMP_SOURCE_DIR, "external_libs")
+dir.create(EXTERNAL_LIBS_R_DIR)
 for (submodule in list.dirs(
   path = "external_libs"
   , full.names = FALSE
@@ -305,8 +307,8 @@ for (submodule in list.dirs(
     next
   }
   result <- file.copy(
-    from = file.path("external_libs", sprintf("%s/", submodule))
-    , to = sprintf("%s/", TEMP_SOURCE_DIR)
+    from = sprintf("%s/", file.path("external_libs", submodule))
+    , to = sprintf("%s/", EXTERNAL_LIBS_R_DIR)
     , recursive = TRUE
     , overwrite = TRUE
   )

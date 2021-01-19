@@ -57,15 +57,15 @@ def copy_files(integrated_opencl=False, use_gpu=False):
                     remove_tree(dst)
                 else:
                     os.remove(dst)
-            create_tree(src, dst, verbose=1)
-            copy_tree(src, dst, verbose=1)
+            create_tree(src, dst, verbose=0)
+            copy_tree(src, dst, verbose=0)
         else:
             raise Exception('Cannot copy {0} folder'.format(src))
 
     if not os.path.isfile(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt')):
         copy_files_helper('include')
         copy_files_helper('src')
-        for submodule in os.listdir('external_libs'):
+        for submodule in os.listdir(os.path.join(CURRENT_DIR, os.path.pardir, 'external_libs')):
             if submodule == 'compute' and not use_gpu:
                 continue
             copy_files_helper(os.path.join('external_libs', submodule))
