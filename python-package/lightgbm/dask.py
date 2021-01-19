@@ -215,7 +215,7 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
         'voting_parallel'
     }
     if tree_learner is None:
-        logger.warning('Parameter tree_learner not set. Using "data" as default"')
+        logger.warning('Parameter tree_learner not set. Using "data" as default')
         params['tree_learner'] = 'data'
     elif tree_learner.lower() not in allowed_tree_learners:
         logger.warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
@@ -239,7 +239,7 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
 
     # num_threads is set below, so remove it and all aliases of it from params
     for num_thread_alias in _ConfigAliases.get('num_threads'):
-        _ = params.pop(num_thread_alias, None)
+        params.pop(num_thread_alias, None)
 
     # Tell each worker to train on the parts that it has locally
     futures_classifiers = [client.submit(_train_part,
