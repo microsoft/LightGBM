@@ -4,8 +4,9 @@
 An easy way to run these tests is from the (python) docker container.
 Also see lightgbm-dask-testing repo: https://github.com/jameslamb/lightgbm-dask-testing
 """
-import os
+import functools
 import itertools
+import os
 import socket
 import sys
 
@@ -13,6 +14,7 @@ import pytest
 if not sys.platform.startswith('linux'):
     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 
+from asyncio import TimeoutError
 import dask.array as da
 import dask.dataframe as dd
 import numpy as np
@@ -35,6 +37,26 @@ group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 pytestmark = [
     pytest.mark.skipif(os.getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface')
 ]
+
+
+def handle_fixture_timeout_errors(f):
+    """
+    Decorator to avoid asyncio.exceptions.TimeoutErrors triggered on teardown of dask.utils_test
+    client fixture (do_disconnect). See GitHub issue: https://github.com/dask/dask-ml/issues/611
+    Inform pytest to skip the tests instead.
+    """
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except TimeoutError as e:
+            if 'Task cancelled' in str(e):
+                msg = 'Ignoring do_disconnect error in fixture teardown' + str(e)
+                pytest.skip(msg)
+            else:
+                raise(e)
+
+    return wrapper
 
 
 @pytest.fixture()
@@ -211,6 +233,7 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('centers', data_centers)
+@handle_fixture_timeout_errors
 def test_classifier(output, centers, client, listen_port):
     X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
 
@@ -231,6 +254,7 @@ def test_classifier(output, centers, client, listen_port):
     assert_eq(y, p2)
 
 
+@handle_fixture_timeout_errors
 def test_training_does_not_fail_on_port_conflicts(client):
     _, _, _, dX, dy, dw = _create_data('classification', output='array')
 
@@ -253,6 +277,7 @@ def test_training_does_not_fail_on_port_conflicts(client):
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('centers', data_centers)
+@handle_fixture_timeout_errors
 def test_classifier_proba(output, centers, client, listen_port):
     X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
 
@@ -268,6 +293,7 @@ def test_classifier_proba(output, centers, client, listen_port):
     assert_eq(p1, p2, atol=0.3)
 
 
+@handle_fixture_timeout_errors
 def test_classifier_local_predict(client, listen_port):
     X, y, w, dX, dy, dw = _create_data('classification', output='array')
 
@@ -285,6 +311,7 @@ def test_classifier_local_predict(client, listen_port):
 
 
 @pytest.mark.parametrize('output', data_output)
+@handle_fixture_timeout_errors
 def test_regressor(output, client, listen_port):
     X, y, w, dX, dy, dw = _create_data('regression', output=output)
 
@@ -311,6 +338,7 @@ def test_regressor(output, client, listen_port):
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('alpha', [.1, .5, .9])
+@handle_fixture_timeout_errors
 def test_regressor_quantile(output, client, listen_port, alpha):
     X, y, w, dX, dy, dw = _create_data('regression', output=output)
 
@@ -329,6 +357,7 @@ def test_regressor_quantile(output, client, listen_port, alpha):
     np.testing.assert_allclose(q2, alpha, atol=0.2)
 
 
+@handle_fixture_timeout_errors
 def test_regressor_local_predict(client, listen_port):
     X, y, w, dX, dy, dw = _create_data('regression', output='array')
 
@@ -347,15 +376,17 @@ def test_regressor_local_predict(client, listen_port):
 
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
 @pytest.mark.parametrize('group', [None, group_sizes])
+@handle_fixture_timeout_errors
 def test_ranker(output, client, listen_port, group):
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
 
-    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, seed=42, min_child_samples=1)
+    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port,
+                                       n_estimators=10, num_leaves=10, seed=42, min_child_samples=1)
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
 
-    local_ranker = lightgbm.LGBMRanker(seed=42, min_child_samples=1)
+    local_ranker = lightgbm.LGBMRanker(n_estimators=10, num_leaves=10, seed=42, min_child_samples=1)
     local_ranker.fit(X, y, sample_weight=w, group=g)
     rnkvec_local = local_ranker.predict(X)
 
@@ -370,10 +401,12 @@ def test_ranker(output, client, listen_port, group):
 
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
 @pytest.mark.parametrize('group', [None, group_sizes])
+@handle_fixture_timeout_errors
 def test_ranker_local_predict(output, client, listen_port, group):
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
 
-    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, seed=42, min_child_samples=1)
+    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port,
+                                       n_estimators=10, num_leaves=10, seed=42, min_child_samples=1)
     dask_ranker = dask_ranker.fit(dX, dy, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
