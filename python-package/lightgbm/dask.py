@@ -7,6 +7,7 @@ It is based on dask-xgboost package.
 import logging
 import socket
 from collections import defaultdict
+from copy import deepcopy
 from typing import Dict, Iterable
 from urllib.parse import urlparse
 
@@ -170,6 +171,8 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
     sample_weight : array-like of shape = [n_samples] or None, optional (default=None)
             Weights of training data.
     """
+    params = deepcopy(params)
+
     # Split arrays/dataframes into parts. Arrange parts into tuples to enforce co-locality
     data_parts = _split_to_parts(data, is_matrix=True)
     label_parts = _split_to_parts(label, is_matrix=False)
@@ -233,6 +236,10 @@ def _train(client, data, label, params, model_factory, weight=None, **kwargs):
         worker_addresses=worker_map.keys(),
         local_listen_port=local_listen_port
     )
+
+    # num_threads is set below, so remove it and all aliases of it from params
+    for num_thread_alias in _ConfigAliases.get('num_threads'):
+        _ = params.pop(num_thread_alias, None)
 
     # Tell each worker to train on the parts that it has locally
     futures_classifiers = [client.submit(_train_part,
