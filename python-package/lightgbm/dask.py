@@ -13,6 +13,8 @@ from urllib.parse import urlparse
 
 import numpy as np
 import pandas as pd
+import scipy.sparse as ss
+
 from dask import array as da
 from dask import dataframe as dd
 from dask import delayed
@@ -20,8 +22,6 @@ from dask.distributed import Client, default_client, get_worker, wait
 
 from .basic import _ConfigAliases, _LIB, _safe_call
 from .sklearn import LGBMClassifier, LGBMRegressor
-
-import scipy.sparse as ss
 
 logger = logging.getLogger(__name__)
 

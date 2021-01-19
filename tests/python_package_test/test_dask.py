@@ -109,7 +109,7 @@ def test_training_does_not_fail_on_port_conflicts(client):
             n_estimators=5,
             num_leaves=5
         )
-        for i in range(5):
+        for _ in range(5):
             dask_classifier.fit(
                 X=dX,
                 y=dy,
@@ -206,7 +206,7 @@ def test_regressor_quantile(output, client, listen_port, alpha):
 
 
 def test_regressor_local_predict(client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('regression', output='array')
+    X, y, _, dX, dy, dw = _create_data('regression', output='array')
 
     dask_regressor = dlgbm.DaskLGBMRegressor(
         local_listen_port=listen_port,
