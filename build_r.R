@@ -43,7 +43,7 @@ USING_MSYS2 <- "--use-msys2" %in% parsed_args[["flags"]]
 # this maps command-line arguments to defines passed into CMake,
 ARGS_TO_DEFINES <- c(
   "--boost-root" = "-DBOOST_ROOT"
-  , "--boost-dir" = "-Dboost_DIR"
+  , "--boost-dir" = "-DBoost_DIR"
   , "--boost-include-dir" = "-DBoost_INCLUDE_DIR"
   , "--boost-librarydir" = "-DBOOST_LIBRARYDIR"
   , "--opencl-include-dir" = "-DOpenCL_INCLUDE_DIR"
