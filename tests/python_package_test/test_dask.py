@@ -33,7 +33,8 @@ data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 
 pytestmark = [
-    pytest.mark.skipif(os.getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface')
+    pytest.mark.skipif(os.getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
+    pytest.mark.skipif(os.getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface')
 ]
 
 
@@ -380,9 +381,6 @@ def test_regressor_local_predict(client, listen_port):
 @pytest.mark.parametrize('group', [None, group_sizes])
 def test_ranker(output, client, listen_port, group):
 
-    if os.getenv('TASK', '') == 'gpu':
-        pytest.skip('Ranker fails to run with GPU interface')
-
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
 
     # -- use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
@@ -409,9 +407,6 @@ def test_ranker(output, client, listen_port, group):
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
 @pytest.mark.parametrize('group', [None, group_sizes])
 def test_ranker_local_predict(output, client, listen_port, group):
-
-    if os.getenv('TASK', '') == 'gpu':
-        pytest.skip('Ranker fails to run with GPU interface')
 
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
 
