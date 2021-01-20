@@ -161,7 +161,7 @@ def test_training_does_not_fail_on_port_conflicts(client):
             n_estimators=5,
             num_leaves=5
         )
-        for i in range(5):
+        for _ in range(5):
             dask_classifier.fit(
                 X=dX,
                 y=dy,
@@ -176,7 +176,7 @@ def test_classifier_local_predict(client, listen_port):
 
     dask_classifier = dlgbm.DaskLGBMClassifier(
         time_out=5,
-        local_listen_port=listen_port,
+        local_port=listen_port,
         n_estimators=10,
         num_leaves=10
     )
@@ -200,7 +200,8 @@ def test_regressor(output, client, listen_port):
         time_out=5,
         local_listen_port=listen_port,
         seed=42,
-        num_leaves=10
+        num_leaves=10,
+        tree='data'
     )
     dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
     p1 = dask_regressor.predict(dX)
@@ -259,7 +260,8 @@ def test_regressor_quantile(output, client, listen_port, alpha):
         objective='quantile',
         alpha=alpha,
         n_estimators=10,
-        num_leaves=10
+        num_leaves=10,
+        tree_learner_type='data_parallel'
     )
     dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
     p1 = dask_regressor.predict(dX).compute()
@@ -282,13 +284,14 @@ def test_regressor_quantile(output, client, listen_port, alpha):
 
 
 def test_regressor_local_predict(client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('regression', output='array')
+    X, y, _, dX, dy, dw = _create_data('regression', output='array')
 
     dask_regressor = dlgbm.DaskLGBMRegressor(
         local_listen_port=listen_port,
         seed=42,
         n_estimators=10,
-        num_leaves=10
+        num_leaves=10,
+        tree_type='data'
     )
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_regressor.predict(dX)
