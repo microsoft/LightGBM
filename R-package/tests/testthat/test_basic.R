@@ -2017,7 +2017,7 @@ test_that(paste0("CTR for R package works"), {
   dtrain <- lgb.Dataset(train$data, label=train$label)
   dtest <- lgb.Dataset(test$data, label = test$label, reference = dtrain)
   # ``` cat_converters = "" ```   is equal to   ``` cat_converters = "raw" ```
-  params <- list(objective = "binary", categorical_feature = c(1L, 2L, 3L), cat_converters = "")
+  params <- list(objective = "binary", categorical_feature = c(1L, 2L, 3L, 4L), cat_converters = "")
   bst <- lightgbm(
     data = dtrain
     , params = params
@@ -2027,8 +2027,8 @@ test_that(paste0("CTR for R package works"), {
   )
   pred1 <- bst$predict(test$data)
 
-  dtrain <- lgb.Dataset(train$data, label = train$label, categorical_feature = c(1L, 2L, 3L), cat_converters = "raw")
-  dtest <- lgb.Dataset(test$data, label = test$label, categorical_feature = c(1L, 2L, 3L), reference = dtrain)
+  dtrain <- lgb.Dataset(train$data, label = train$label, categorical_feature = c(1L, 2L, 3L, 4L), cat_converters = "raw")
+  dtest <- lgb.Dataset(test$data, label = test$label, categorical_feature = c(1L, 2L, 3L, 4L), reference = dtrain)
   params <- list(objective = "binary")
   bst <- lightgbm(
     data = dtrain
@@ -2040,8 +2040,8 @@ test_that(paste0("CTR for R package works"), {
   pred2 <- bst$predict(test$data)
   expect_equal(pred1, pred2)
 
-  dtrain <- lgb.Dataset(train$data, label=train$label, categorical_feature = c(1L, 2L, 3L))
-  dtest <- lgb.Dataset(test$data, label = test$label, categorical_feature = c(1L, 2L, 3L), reference = dtrain)
+  dtrain <- lgb.Dataset(train$data, label=train$label, categorical_feature = c(1L, 2L, 3L, 4L))
+  dtest <- lgb.Dataset(test$data, label = test$label, categorical_feature = c(1L, 2L, 3L, 4L), reference = dtrain)
   params <- list(objective = "binary", cat_converters = "ctr,count,raw")
   bst <- lightgbm(
     data = dtrain

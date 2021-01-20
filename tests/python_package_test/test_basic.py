@@ -386,7 +386,7 @@ def test_ctr(tmp_path):
     booster = lgb.train(params, train_data, valid_sets=[valid_data], valid_names=["valid_data"])
     pred_1 = booster.predict(X_test)
 
-    tmp_dataset = str(tmp_path / 'temp_dataset.bin')
+    tmp_dataset = str(tmp_path / 'ctr_temp_dataset.bin')
     train_data.save_binary(tmp_dataset)
 
     train_data_2 = lgb.Dataset(tmp_dataset)
@@ -395,7 +395,7 @@ def test_ctr(tmp_path):
     pred_2 = booster.predict(X_test)
     np.testing.assert_allclose(pred_1, pred_2)
 
-    model_file = str(tmp_path / "model.txt")
+    model_file = str(tmp_path / "ctr_model.txt")
     booster.save_model(model_file)
     new_booster = lgb.Booster(params=params, model_file=model_file)
     pred_3 = new_booster.predict(X_test)
