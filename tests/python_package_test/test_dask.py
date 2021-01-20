@@ -14,7 +14,7 @@ import pytest
 if not sys.platform.startswith('linux'):
     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 
-from asyncio import TimeoutError
+from asyncio import TimeoutError, CancelledError
 import dask.array as da
 import dask.dataframe as dd
 import numpy as np
@@ -49,8 +49,8 @@ def handle_fixture_timeout_errors(f):
     def wrapper(*args, **kwargs):
         try:
             return f(*args, **kwargs)
-        except TimeoutError as e:
-            msg = 'Ignoring Timeout Error in fixture teardown: ' + str(e)
+        except (TimeoutError, CancelledError) as e:
+            msg = 'Ignoring error in fixture teardown: ' + str(e)
             pytest.skip(msg)
 
     return wrapper
@@ -134,16 +134,11 @@ def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
 
     # build feature data, X. Transform first few into informative features.
     n_informative = max(min(n_features, n_informative), 0)
-    x_grid = np.linspace(0, stop=1, num=gmax + 2)
     X = rnd_generator.uniform(size=(n_samples, n_features))
-
-    # make first n_informative features values bucketed according to relevance scores.
-    def bucket_fn(z):
-        return rnd_generator.uniform(x_grid[z], high=x_grid[z + 1])
 
     for j in range(n_informative):
         bias, coef = rnd_generator.normal(size=2)
-        X[:, j] = bias + coef * np.apply_along_axis(bucket_fn, axis=0, arr=y_vec)
+        X[:, j] = bias + coef * y_vec
 
     return X, y_vec, group_id_vec
 
@@ -413,25 +408,29 @@ def test_regressor_local_predict(client, listen_port):
 @pytest.mark.parametrize('group', [None, group_sizes])
 @handle_fixture_timeout_errors
 def test_ranker(output, client, listen_port, group):
+
+    if os.getenv('TASK', '') == 'gpu':
+        pytest.skip('Ranker fails to run with GPU interface')
+
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
 
+    # -- use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
+    # -- serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
     dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port,
-                                       n_estimators=10, num_leaves=10, seed=42, min_child_samples=1)
+                                       n_estimators=50, num_leaves=20, seed=42, min_child_samples=1)
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
 
-    local_ranker = lightgbm.LGBMRanker(n_estimators=10, num_leaves=10, seed=42, min_child_samples=1)
+    local_ranker = lightgbm.LGBMRanker(n_estimators=50, num_leaves=20, seed=42, min_child_samples=1)
     local_ranker.fit(X, y, sample_weight=w, group=g)
     rnkvec_local = local_ranker.predict(X)
 
-    # distributed ranker should be able to rank decently well.
+    # distributed ranker should be able to rank decently well and should
+    # have high rank correlation with scores from serial ranker.
     dcor = spearmanr(rnkvec_dask, y).correlation
     assert dcor > 0.6
-
-    # difference between distributed ranker and local ranker spearman corr should be small.
-    lcor = spearmanr(rnkvec_local, y).correlation
-    assert np.abs(dcor - lcor) < 0.03
+    assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.9
 
 
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
