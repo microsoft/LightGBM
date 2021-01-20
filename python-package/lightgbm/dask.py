@@ -7,6 +7,7 @@ It is based on dask-xgboost package.
 import logging
 import socket
 from collections import defaultdict
+from copy import deepcopy
 from typing import Dict, Iterable
 from urllib.parse import urlparse
 
@@ -19,7 +20,7 @@ from dask import dataframe as dd
 from dask import delayed
 from dask.distributed import Client, default_client, get_worker, wait
 
-from .basic import _LIB, _safe_call
+from .basic import _ConfigAliases, _LIB, _safe_call
 from .sklearn import LGBMClassifier, LGBMRegressor, LGBMRanker
 
 logger = logging.getLogger(__name__)
@@ -183,6 +184,8 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
         if you have a 100-record dataset with `group = [10, 20, 40, 10, 10]`, that means that you have
         5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
     """
+    params = deepcopy(params)
+
     # Split arrays/dataframes into parts. Arrange parts into tuples to enforce co-locality
     data_parts = _split_to_parts(data, is_matrix=True)
     label_parts = _split_to_parts(label, is_matrix=False)
@@ -218,20 +221,46 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
     master_worker = next(iter(worker_map))
     worker_ncores = client.ncores()
 
-    if 'tree_learner' not in params or params['tree_learner'].lower() not in {'data', 'feature', 'voting'}:
-        logger.warning('Parameter tree_learner not set or set to incorrect value '
-                       '(%s), using "data" as default', params.get("tree_learner", None))
+    tree_learner = None
+    for tree_learner_param in _ConfigAliases.get('tree_learner'):
+        tree_learner = params.get(tree_learner_param)
+        if tree_learner is not None:
+            break
+
+    allowed_tree_learners = {
+        'data',
+        'data_parallel',
+        'feature',
+        'feature_parallel',
+        'voting',
+        'voting_parallel'
+    }
+    if tree_learner is None:
+        logger.warning('Parameter tree_learner not set. Using "data" as default')
         params['tree_learner'] = 'data'
+    elif tree_learner.lower() not in allowed_tree_learners:
+        logger.warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
+        params['tree_learner'] = 'data'
+
+    local_listen_port = 12400
+    for port_param in _ConfigAliases.get('local_listen_port'):
+        val = params.get(port_param)
+        if val is not None:
+            local_listen_port = val
+            break
 
     # find an open port on each worker. note that multiple workers can run
     # on the same machine, so this needs to ensure that each one gets its
     # own port
-    local_listen_port = params.get('local_listen_port', 12400)
     worker_address_to_port = _find_ports_for_workers(
         client=client,
         worker_addresses=worker_map.keys(),
         local_listen_port=local_listen_port
     )
+
+    # num_threads is set below, so remove it and all aliases of it from params
+    for num_thread_alias in _ConfigAliases.get('num_threads'):
+        params.pop(num_thread_alias, None)
 
     # Tell each worker to train on the parts that it has locally
     futures_classifiers = [client.submit(_train_part,

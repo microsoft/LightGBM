@@ -265,7 +265,7 @@ def test_classifier_local_predict(client, listen_port):
 
     dask_classifier = dlgbm.DaskLGBMClassifier(
         time_out=5,
-        local_listen_port=listen_port,
+        local_port=listen_port,
         n_estimators=10,
         num_leaves=10
     )
@@ -291,7 +291,8 @@ def test_regressor(output, client, listen_port):
         time_out=5,
         local_listen_port=listen_port,
         seed=42,
-        num_leaves=10
+        num_leaves=10,
+        tree='data'
     )
     dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
     p1 = dask_regressor.predict(dX)
@@ -326,7 +327,8 @@ def test_regressor_quantile(output, client, listen_port, alpha):
         objective='quantile',
         alpha=alpha,
         n_estimators=10,
-        num_leaves=10
+        num_leaves=10,
+        tree_learner_type='data_parallel'
     )
     dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
     p1 = dask_regressor.predict(dX).compute()
@@ -357,7 +359,8 @@ def test_regressor_local_predict(client, listen_port):
         local_listen_port=listen_port,
         seed=42,
         n_estimators=10,
-        num_leaves=10
+        num_leaves=10,
+        tree_type='data'
     )
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_regressor.predict(dX)
@@ -384,7 +387,7 @@ def test_ranker(output, client, listen_port, group):
 
     # -- use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
     # -- serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
-    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port,
+    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, tree_learner_type='data_parallel',
                                        n_estimators=50, num_leaves=20, seed=42, min_child_samples=1)
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
@@ -412,7 +415,7 @@ def test_ranker_local_predict(output, client, listen_port, group):
 
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
 
-    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port,
+    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, tree_learner='data',
                                        n_estimators=10, num_leaves=10, seed=42, min_child_samples=1)
     dask_ranker = dask_ranker.fit(dX, dy, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
