@@ -13,13 +13,12 @@ Preparation
 
 `setuptools <https://pypi.org/project/setuptools>`_ is needed.
 
-Install from `PyPI <https://pypi.org/project/lightgbm>`_ Using ``pip``
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Install from `PyPI <https://pypi.org/project/lightgbm>`_
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 .. code:: sh
 
     pip install lightgbm
- 
 
 You may need to install `wheel <https://pythonwheels.com>`_ via ``pip install wheel`` first.
 
@@ -36,7 +35,6 @@ For **macOS** (we provide wheels for 3 newest macOS versions) users:
 - For version smaller than 2.2.1 and not smaller than 2.1.2, **gcc-8** with **OpenMP** support must be installed first. Refer to `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__ for installation of **gcc-8** with **OpenMP** support.
 
 - For version smaller than 2.1.2, **gcc-7** with **OpenMP** is required.
-
 
 Build from Sources
 ******************
@@ -143,6 +141,17 @@ Build 32-bit Version with 32-bit Python
 By default, installation in environment with 32-bit Python is prohibited. However, you can remove this prohibition on your own risk by passing ``bit32`` option.
 
 It is **strongly not recommended** to use this version of LightGBM!
+
+Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+If you use ``conda`` to manage Python dependencies, you can install LightGBM using ``conda install``.
+
+**Note**: The `lightgbm conda-forge feedstock <https://github.com/conda-forge/lightgbm-feedstock>`_ is not maintained by LightGBM maintainers.
+
+.. code:: sh
+
+    conda install -c conda-forge lightgbm
 
 Install from GitHub
 '''''''''''''''''''

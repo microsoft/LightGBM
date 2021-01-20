@@ -4,11 +4,9 @@
  */
 #include "linear_tree_learner.h"
 
-#include <algorithm>
-
-#ifndef LGB_R_BUILD
 #include <Eigen/Dense>
-#endif  // !LGB_R_BUILD
+
+#include <algorithm>
 
 namespace LightGBM {
 
@@ -34,6 +32,7 @@ void LinearTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
       }
     }
   }
+  any_nan_ = false;
   for (int feat = 0; feat < train_data->num_features(); ++feat) {
     if (contains_nan_[feat]) {
       any_nan_ = true;
@@ -169,12 +168,7 @@ void LinearTreeLearner::GetLeafMap(Tree* tree) const {
   }
 }
 
-#ifdef LGB_R_BUILD
-template<bool HAS_NAN>
-void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) const {
-  Log::Fatal("Linear tree learner does not work with R package.");
-}
-#else
+
 template<bool HAS_NAN>
 void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) const {
   tree->SetIsLinear(true);
@@ -384,5 +378,4 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     }
   }
 }
-#endif  // LGB_R_BUILD
 }  // namespace LightGBM

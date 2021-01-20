@@ -1,5 +1,6 @@
 # coding: utf-8
 import os
+import socket
 import sys
 
 import pytest
@@ -71,49 +72,66 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
 def test_classifier(output, centers, client, listen_port):
     X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
 
-    dask_classifier = dlgbm.DaskLGBMClassifier(time_out=5, local_listen_port=listen_port)
+    dask_classifier = dlgbm.DaskLGBMClassifier(
+        time_out=5,
+        local_listen_port=listen_port,
+        n_estimators=10,
+        num_leaves=10
+    )
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_classifier.predict(dX)
+    p1_proba = dask_classifier.predict_proba(dX).compute()
     s1 = accuracy_score(dy, p1)
     p1 = p1.compute()
 
-    local_classifier = lightgbm.LGBMClassifier()
+    local_classifier = lightgbm.LGBMClassifier(n_estimators=10, num_leaves=10)
     local_classifier.fit(X, y, sample_weight=w)
     p2 = local_classifier.predict(X)
+    p2_proba = local_classifier.predict_proba(X)
     s2 = local_classifier.score(X, y)
 
     assert_eq(s1, s2)
-
     assert_eq(p1, p2)
     assert_eq(y, p1)
     assert_eq(y, p2)
+    assert_eq(p1_proba, p2_proba, atol=0.3)
 
 
-@pytest.mark.parametrize('output', data_output)
-@pytest.mark.parametrize('centers', data_centers)
-def test_classifier_proba(output, centers, client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
+def test_training_does_not_fail_on_port_conflicts(client):
+    _, _, _, dX, dy, dw = _create_data('classification', output='array')
 
-    dask_classifier = dlgbm.DaskLGBMClassifier(time_out=5, local_listen_port=listen_port)
-    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
-    p1 = dask_classifier.predict_proba(dX)
-    p1 = p1.compute()
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('127.0.0.1', 12400))
 
-    local_classifier = lightgbm.LGBMClassifier()
-    local_classifier.fit(X, y, sample_weight=w)
-    p2 = local_classifier.predict_proba(X)
-
-    assert_eq(p1, p2, atol=0.3)
+        dask_classifier = dlgbm.DaskLGBMClassifier(
+            time_out=5,
+            local_listen_port=12400,
+            n_estimators=5,
+            num_leaves=5
+        )
+        for _ in range(5):
+            dask_classifier.fit(
+                X=dX,
+                y=dy,
+                sample_weight=dw,
+                client=client
+            )
+            assert dask_classifier.booster_
 
 
 def test_classifier_local_predict(client, listen_port):
     X, y, w, dX, dy, dw = _create_data('classification', output='array')
 
-    dask_classifier = dlgbm.DaskLGBMClassifier(time_out=5, local_listen_port=listen_port)
+    dask_classifier = dlgbm.DaskLGBMClassifier(
+        time_out=5,
+        local_listen_port=listen_port,
+        n_estimators=10,
+        num_leaves=10
+    )
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_classifier.to_local().predict(dX)
 
-    local_classifier = lightgbm.LGBMClassifier()
+    local_classifier = lightgbm.LGBMClassifier(n_estimators=10, num_leaves=10)
     local_classifier.fit(X, y, sample_weight=w)
     p2 = local_classifier.predict(X)
 
@@ -126,14 +144,19 @@ def test_classifier_local_predict(client, listen_port):
 def test_regressor(output, client, listen_port):
     X, y, w, dX, dy, dw = _create_data('regression', output=output)
 
-    dask_regressor = dlgbm.DaskLGBMRegressor(time_out=5, local_listen_port=listen_port, seed=42)
+    dask_regressor = dlgbm.DaskLGBMRegressor(
+        time_out=5,
+        local_listen_port=listen_port,
+        seed=42,
+        num_leaves=10
+    )
     dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
     p1 = dask_regressor.predict(dX)
     if output != 'dataframe':
         s1 = r2_score(dy, p1)
     p1 = p1.compute()
 
-    local_regressor = lightgbm.LGBMRegressor(seed=42)
+    local_regressor = lightgbm.LGBMRegressor(seed=42, num_leaves=10)
     local_regressor.fit(X, y, sample_weight=w)
     s2 = local_regressor.score(X, y)
     p2 = local_regressor.predict(X)
@@ -152,12 +175,25 @@ def test_regressor(output, client, listen_port):
 def test_regressor_quantile(output, client, listen_port, alpha):
     X, y, w, dX, dy, dw = _create_data('regression', output=output)
 
-    dask_regressor = dlgbm.DaskLGBMRegressor(local_listen_port=listen_port, seed=42, objective='quantile', alpha=alpha)
+    dask_regressor = dlgbm.DaskLGBMRegressor(
+        local_listen_port=listen_port,
+        seed=42,
+        objective='quantile',
+        alpha=alpha,
+        n_estimators=10,
+        num_leaves=10
+    )
     dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
     p1 = dask_regressor.predict(dX).compute()
     q1 = np.count_nonzero(y < p1) / y.shape[0]
 
-    local_regressor = lightgbm.LGBMRegressor(seed=42, objective='quantile', alpha=alpha)
+    local_regressor = lightgbm.LGBMRegressor(
+        seed=42,
+        objective='quantile',
+        alpha=alpha,
+        n_estimatores=10,
+        num_leaves=10
+    )
     local_regressor.fit(X, y, sample_weight=w)
     p2 = local_regressor.predict(X)
     q2 = np.count_nonzero(y < p2) / y.shape[0]
@@ -168,9 +204,14 @@ def test_regressor_quantile(output, client, listen_port, alpha):
 
 
 def test_regressor_local_predict(client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('regression', output='array')
+    X, y, _, dX, dy, dw = _create_data('regression', output='array')
 
-    dask_regressor = dlgbm.DaskLGBMRegressor(local_listen_port=listen_port, seed=42)
+    dask_regressor = dlgbm.DaskLGBMRegressor(
+        local_listen_port=listen_port,
+        seed=42,
+        n_estimators=10,
+        num_leaves=10
+    )
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_regressor.predict(dX)
     p2 = dask_regressor.to_local().predict(X)
@@ -183,21 +224,27 @@ def test_regressor_local_predict(client, listen_port):
     assert_eq(s1, s2)
 
 
-def test_build_network_params():
-    workers_ips = [
-        'tcp://192.168.0.1:34545',
-        'tcp://192.168.0.2:34346',
-        'tcp://192.168.0.3:34347'
-    ]
+def test_find_open_port_works():
+    worker_ip = '127.0.0.1'
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((worker_ip, 12400))
+        new_port = dlgbm._find_open_port(
+            worker_ip=worker_ip,
+            local_listen_port=12400,
+            ports_to_skip=set()
+        )
+        assert new_port == 12401
 
-    params = dlgbm._build_network_params(workers_ips, 'tcp://192.168.0.2:34346', 12400, 120)
-    exp_params = {
-        'machines': '192.168.0.1:12400,192.168.0.2:12401,192.168.0.3:12402',
-        'local_listen_port': 12401,
-        'num_machines': len(workers_ips),
-        'time_out': 120
-    }
-    assert exp_params == params
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
+        s_1.bind((worker_ip, 12400))
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_2:
+            s_2.bind((worker_ip, 12401))
+            new_port = dlgbm._find_open_port(
+                worker_ip=worker_ip,
+                local_listen_port=12400,
+                ports_to_skip=set()
+            )
+            assert new_port == 12402
 
 
 @gen_cluster(client=True, timeout=None)
