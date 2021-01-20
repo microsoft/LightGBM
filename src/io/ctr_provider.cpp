@@ -391,9 +391,9 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_
     if (is_categorical_feature_[fid]) {
       IterateOverCatConverters(fid, pair.second, line_idx,
 
-        [&features_ref] (int convert_fid, int fid, double convert_value) {
+        [&features_ref, &pair] (int convert_fid, int fid, double convert_value) {
           if (convert_fid == fid) {
-            features_ref[fid].second = convert_value;
+            pair.second = convert_value;
           } else {
             // assert that convert_fid in this case is larger than all the original feature indices
             features_ref.emplace_back(convert_fid, convert_value);
@@ -432,9 +432,9 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_
     if (is_categorical_feature_[fid]) {
       IterateOverCatConverters(fid, pair.second,
 
-        [&features_ref] (int convert_fid, int fid, double convert_value) {
+        [&features_ref, &pair] (int convert_fid, int fid, double convert_value) {
           if (convert_fid == fid) {
-            features_ref[fid].second = convert_value;
+            pair.second = convert_value;
           } else {
             // assert that convert_fid in this case is larger than all the original feature indices
             features_ref.emplace_back(convert_fid, convert_value);

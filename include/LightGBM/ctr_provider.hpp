@@ -395,6 +395,10 @@ class CTRProvider {
       label_info_.at(fid).at(fold_id) : label_info_.at(fid).back();
     const auto& fold_count_info = IS_TRAIN ?
       count_info_.at(fid).at(fold_id) : count_info_.at(fid).back();
+    if (fold_count_info.count(int_fval) > 0) {
+      label_sum = fold_label_info.at(int_fval);
+      total_count = fold_count_info.at(int_fval);
+    }
     if (IS_TRAIN) {
       const auto& all_fold_count_info = count_info_.at(fid).back();
       if (all_fold_count_info.count(int_fval) > 0) {
@@ -402,10 +406,6 @@ class CTRProvider {
       }
     } else {
       all_fold_total_count = total_count;
-    }
-    if (fold_count_info.count(int_fval) > 0) {
-      label_sum = fold_label_info.at(int_fval);
-      total_count = fold_count_info.at(int_fval);
     }
     for (const auto& cat_converter : cat_converters_) {
       const double convert_value =

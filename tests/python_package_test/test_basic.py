@@ -136,14 +136,20 @@ def test_save_and_load_linear(tmp_path):
 
 
 def test_subset_group():
+    print("step 0")
     X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                        '../../examples/lambdarank/rank.train'))
+    print("step 1")
     q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                       '../../examples/lambdarank/rank.train.query'))
+    print("step 2")
     lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
+    print("step 3")
     assert len(lgb_train.get_group()) == 201
     subset = lgb_train.subset(list(range(10))).construct()
+    print("step 4")
     subset_group = subset.get_group()
+    print("step 5")
     assert len(subset_group) == 2
     assert subset_group[0] == 1
     assert subset_group[1] == 9
@@ -152,8 +158,11 @@ def test_subset_group():
 def test_add_features_throws_if_num_data_unequal():
     X1 = np.random.random((100, 1))
     X2 = np.random.random((10, 1))
+    print("before construct 0")
     d1 = lgb.Dataset(X1).construct()
+    print("before construct 1")
     d2 = lgb.Dataset(X2).construct()
+    print("before construct 2")
     with pytest.raises(lgb.basic.LightGBMError):
         d1.add_features_from(d2)
 
@@ -355,23 +364,39 @@ def test_consistent_state_for_dataset_fields():
     lgb_data.set_feature_name(feature_names)
     check_asserts(lgb_data)
 
-def test_ctr(self):
-        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
-                                                            test_size=0.1, random_state=2)
-        train_data = lgb.Dataset(X_train, label=y_train, cat_converters="ctr,count,ctr:0.5,raw")
-        valid_data = train_data.create_valid(X_test, label=y_test)
+def test_ctr(tmp_path):
+    X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
+                                                        test_size=0.1, random_state=2)
+    train_data = lgb.Dataset(X_train, label=y_train, cat_converters="ctr,count,ctr:0.5,raw")
+    valid_data = train_data.create_valid(X_test, label=y_test)
 
-        params = {
-            "objective": "binary",
-            "metric": "auc",
-            "min_data": 10,
-            "num_leaves": 15,
-            "verbose": 1,
-            "num_threads": 1,
-            "max_bin": 255,
-            "max_cat_to_onehot": 1,
-            "cat_converters": "ctr,count,ctr:0.5,raw"
-        }
-        categorical_feature = ",".join([str(fidx) for fidx in range(X_train.shape[1] // 2)])
-        params.update({"categorical_feature": categorical_feature})
-        lgb.train(params, train_data, valid_sets=[valid_data], valid_names=["valid_data"])
+    params = {
+        "objective": "binary",
+        "metric": "auc",
+        "min_data": 10,
+        "num_leaves": 15,
+        "verbose": 1,
+        "num_threads": 1,
+        "max_bin": 255,
+        "max_cat_to_onehot": 1,
+        "cat_converters": "ctr,count,ctr:0.5,raw"
+    }
+    categorical_feature = [fidx for fidx in range(X_train.shape[1] // 2)]
+    params.update({"categorical_feature": categorical_feature})
+    booster = lgb.train(params, train_data, valid_sets=[valid_data], valid_names=["valid_data"])
+    pred_1 = booster.predict(X_test)
+
+    tmp_dataset = str(tmp_path / 'temp_dataset.bin')
+    train_data.save_binary(tmp_dataset)
+
+    train_data_2 = lgb.Dataset(tmp_dataset)
+    valid_data = train_data.create_valid(X_test, label=y_test)
+    booster = lgb.train(params, train_data_2, valid_sets=[valid_data], valid_names=["valid_data"])
+    pred_2 = booster.predict(X_test)
+    np.testing.assert_allclose(pred_1, pred_2)
+
+    model_file = str(tmp_path / "model.txt")
+    booster.save_model(model_file)
+    new_booster = lgb.Booster(params=params, model_file=model_file)
+    pred_3 = new_booster.predict(X_test)
+    np.testing.assert_allclose(pred_1, pred_3)

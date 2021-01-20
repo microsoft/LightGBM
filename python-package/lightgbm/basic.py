@@ -326,7 +326,7 @@ def convert_from_sliced_object(data):
 def c_float_label(label):
     """Get pointer of float numpy array / list for label."""
     if label is None:
-        ptr_label = ctypes.c_float(None)
+        ptr_label = None
         type_label = C_API_DTYPE_FLOAT32
     else:
         label = list_to_1d_numpy(_label_from_pandas(label), name="label")
@@ -1005,7 +1005,7 @@ class Dataset:
         self.cat_converters = cat_converters
         self._extract_categorical_info_from_params(params)
 
-        self.params = copy.deepcopy(params)
+        self.params = {} if params is None else copy.deepcopy(params)
         self.free_raw_data = free_raw_data
         self.used_indices = None
         self.need_slice = True
@@ -1023,19 +1023,20 @@ class Dataset:
             pass
 
     def _extract_categorical_info_from_params(self, params):
-        categorical_feature_from_params = None
-        cat_converters_from_params = None
-        if isinstance(params, dict):
-            for cat_alias in _ConfigAliases.get("categorical_feature"):
-                if cat_alias in params:
-                    categorical_feature_from_params = params.pop(cat_alias)
-            if "cat_converters" in params:
-                cat_converters_from_params = params.pop("cat_converters")
-        if self.categorical_feature == 'auto' or self.categorical_feature is None\
-            and categorical_feature_from_params is not None:
-            self.categorical_feature = categorical_feature_from_params
-        if self.cat_converters == None and self.cat_converters_from_params is not None:
-            self.cat_converters = cat_converters_from_params
+        if params is not None:
+            categorical_feature_from_params = None
+            cat_converters_from_params = None
+            if isinstance(params, dict):
+                for cat_alias in _ConfigAliases.get("categorical_feature"):
+                    if cat_alias in params:
+                        categorical_feature_from_params = params.pop(cat_alias)
+                if "cat_converters" in params:
+                    cat_converters_from_params = params.pop("cat_converters")
+            if self.categorical_feature == 'auto' or self.categorical_feature is None\
+                and categorical_feature_from_params is not None:
+                self.categorical_feature = categorical_feature_from_params
+            if self.cat_converters == None and cat_converters_from_params is not None:
+                self.cat_converters = cat_converters_from_params
 
     def get_params(self):
         """Get the used parameters in the Dataset.
@@ -1366,6 +1367,8 @@ class Dataset:
         if self.handle is None:
             if self.reference is not None:
                 reference_params = self.reference.get_params()
+                if reference_params is None:
+                    print("error !!!!!!!!!!!!!! reference_params is None")
                 reference_params.pop("cat_converters", None)
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     reference_params.pop(cat_alias, None)
