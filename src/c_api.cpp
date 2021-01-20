@@ -873,8 +873,8 @@ std::function<std::vector<std::pair<int, double>>(T idx)>
 RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices,
                    const void* data, int data_type, int64_t nindptr, int64_t nelem);
 
-std::function<double(int row_idx)>
-LabelFunctionFromArray(const void* label, int label_type);
+std::function<float(int row_idx)>
+LabelFunctionFromArray(const void* label);
 
 // start of c_api functions
 
@@ -1020,7 +1020,6 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
 int LGBM_DatasetCreateFromMat(const void* data,
                               const void* label,
                               int data_type,
-                              int label_type,
                               int32_t nrow,
                               int32_t ncol,
                               int is_row_major,
@@ -1031,7 +1030,6 @@ int LGBM_DatasetCreateFromMat(const void* data,
                                     &data,
                                     label,
                                     data_type,
-                                    label_type,
                                     &nrow,
                                     ncol,
                                     is_row_major,
@@ -1045,7 +1043,6 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                const void** data,
                                const void* label,
                                int data_type,
-                               int label_type,
                                int32_t* nrow,
                                int32_t ncol,
                                int is_row_major,
@@ -1078,7 +1075,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
       ctr_provider.reset(CTRProvider::RecoverFromModelString((ctr_provider_ptr->DumpModelInfo())));
     }
   } else {
-    std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
+    std::function<float(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
     ctr_provider.reset(CTRProvider::CreateCTRProvider(
       &config, get_row_fun, get_label_fun, nmat, nrow, ncol));
   }
@@ -1152,7 +1149,6 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                               const void* data,
                               const void* label,
                               int data_type,
-                              int label_type,
                               int64_t nindptr,
                               int64_t nelem,
                               int64_t num_col,
@@ -1181,7 +1177,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
       ctr_provider.reset(CTRProvider::RecoverFromModelString((ctr_provider_ptr->DumpModelInfo())));
     }
   } else {
-    std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
+    std::function<float(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
     ctr_provider.reset(CTRProvider::CreateCTRProvider(
       &config, get_row_fun, get_label_fun, nindptr - 1, num_col));
   }
@@ -1325,7 +1321,6 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                               const void* data,
                               const void* label,
                               int data_type,
-                              int label_type,
                               int64_t ncol_ptr,
                               int64_t nelem,
                               int64_t num_row,
@@ -1356,7 +1351,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       ctr_provider.reset(CTRProvider::RecoverFromModelString((ctr_provider_ptr->DumpModelInfo())));
     }
   } else {
-    std::function<double(int row_idx)> get_label_fun = LabelFunctionFromArray(label, label_type);
+    std::function<float(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
     ctr_provider.reset(CTRProvider::CreateCTRProvider(
       &config, csc_iterators, get_label_fun, num_row, ncol_ptr - 1));
   }
@@ -2517,34 +2512,16 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
 }
 
 // label is array of pointer to individual labels
-std::function<double(int row_idx)>
-LabelFunctionFromArray(const void* label, int label_type) {
-  if (label_type == C_API_DTYPE_FLOAT32) {
+std::function<float(int row_idx)>
+LabelFunctionFromArray(const void* label) {
+  if (label != nullptr) {
     const float* label_ptr = reinterpret_cast<const float*>(label);
-    return [=](int row_idx) {
-      return  static_cast<double>(label_ptr[row_idx]);
-    };
-  } else if (label_type == C_API_DTYPE_FLOAT64) {
-    const double* label_ptr = reinterpret_cast<const double*>(label);
     return [=](int row_idx) {
       return label_ptr[row_idx];
     };
-  } else if (label_type == C_API_DTYPE_INT32) {
-    const int32_t* label_ptr = reinterpret_cast<const int32_t*>(label);
-    return [=](int row_idx) {
-      return static_cast<double>(label_ptr[row_idx]);
-    };
-  } else if (label_type == C_API_DTYPE_INT64) {
-    const int64_t* label_ptr = reinterpret_cast<const int64_t*>(label);
-    return [=](int row_idx) {
-      return static_cast<double>(label_ptr[row_idx]);
-    };
-  } else if (label_type == C_API_DTYPE_NONE) {
-    return nullptr;
   } else {
-    Log::Fatal("Unknown data type in LabelFunctionFromArray");
+    return nullptr;
   }
-  return nullptr;
 }
 
 // data is array of pointers to individual rows

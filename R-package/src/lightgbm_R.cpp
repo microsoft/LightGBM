@@ -69,6 +69,18 @@ LGBM_SE LGBM_DatasetCreateFromFile_R(LGBM_SE filename,
   R_API_END();
 }
 
+float* GetFloatLabelPTR(double* double_label_ptr, int nrow) {
+  std::unique_ptr<float> label_ptr(nullptr);
+  if (double_label_ptr != nullptr) {
+    label_ptr.reset(new float[nrow]);
+    #pragma omp parallel for schedule(static) if (nrow >= 1024)
+    for (int i = 0; i < nrow; ++i) {
+      label_ptr[i] = static_cast<float>(double_label_ptr[i]);
+    }
+  }
+  return label_ptr.release();
+}
+
 LGBM_SE LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
   LGBM_SE indices,
   LGBM_SE data,
@@ -85,14 +97,14 @@ LGBM_SE LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
   const int* p_indices = R_INT_PTR(indices);
   const double* p_data = R_REAL_PTR(data);
   const double* p_label = R_REAL_PTR(label);
-
+  std::unique_ptr<const float[]> p_float_label(GetFloatLabelPTR(p_label, nrow));
   int64_t nindptr = static_cast<int64_t>(R_AS_INT(num_indptr));
   int64_t ndata = static_cast<int64_t>(R_AS_INT(nelem));
   int64_t nrow = static_cast<int64_t>(R_AS_INT(num_row));
   DatasetHandle handle = nullptr;
   int label_type = p_label == nullptr ? C_API_DTYPE_NONE : C_API_DTYPE_FLOAT64;
   CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
-    p_data, p_label, C_API_DTYPE_FLOAT64, label_type, nindptr, ndata,
+    p_data, p_float_label.get(), C_API_DTYPE_FLOAT64, nindptr, ndata,
     nrow, R_CHAR_PTR(parameters), R_GET_PTR(reference), &handle));
   R_SET_PTR(out, handle);
   R_API_END();
@@ -111,9 +123,9 @@ LGBM_SE LGBM_DatasetCreateFromMat_R(LGBM_SE data,
   int32_t ncol = static_cast<int32_t>(R_AS_INT(num_col));
   double* p_mat = R_REAL_PTR(data);
   double* p_label = R_REAL_PTR(label);
+  std::unique_ptr<const float[]> p_float_label(GetFloatLabelPTR(p_label, nrow));
   DatasetHandle handle = nullptr;
-  int label_type = p_label == nullptr ? C_API_DTYPE_NONE : C_API_DTYPE_FLOAT64;
-  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, p_label, C_API_DTYPE_FLOAT64, label_type, nrow, ncol, COL_MAJOR,
+  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, p_float_label.get(), C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
     R_CHAR_PTR(parameters), R_GET_PTR(reference), &handle));
   R_SET_PTR(out, handle);
   R_API_END();

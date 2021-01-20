@@ -28,7 +28,6 @@ typedef void* FastConfigHandle; /*!< \brief Handle of FastConfig. */
 #define C_API_DTYPE_FLOAT64 (1)  /*!< \brief float64 (double precision float). */
 #define C_API_DTYPE_INT32   (2)  /*!< \brief int32. */
 #define C_API_DTYPE_INT64   (3)  /*!< \brief int64. */
-#define C_API_DTYPE_NONE   (4)  /*!< \brief None. */
 
 #define C_API_PREDICT_NORMAL     (0)  /*!< \brief Normal prediction, with transform (if needed). */
 #define C_API_PREDICT_RAW_SCORE  (1)  /*!< \brief Predict raw score. */
@@ -151,8 +150,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
  * \param data Pointer to the data space
  * \param label Pointer to the label space
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- * \param label_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- *                   or ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64`` or ``C_API_DTYPE_NONE``
  * \param nindptr Number of rows in the matrix + 1
  * \param nelem Number of nonzero elements in the matrix
  * \param num_col Number of columns
@@ -167,7 +164,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
                                                 const void* data,
                                                 const void* label,
                                                 int data_type,
-                                                int label_type,
                                                 int64_t nindptr,
                                                 int64_t nelem,
                                                 int64_t num_col,
@@ -201,8 +197,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
  * \param data Pointer to the data space
  * \param label Pointer to the label space
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- * \param label_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- *                   or ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64`` or ``C_API_DTYPE_NONE``
  * \param ncol_ptr Number of columns in the matrix + 1
  * \param nelem Number of nonzero elements in the matrix
  * \param num_row Number of rows
@@ -217,7 +211,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                                 const void* data,
                                                 const void* label,
                                                 int data_type,
-                                                int label_type,
                                                 int64_t ncol_ptr,
                                                 int64_t nelem,
                                                 int64_t num_row,
@@ -230,8 +223,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
  * \param data Pointer to the data space
  * \param label Pointer to the label space
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- * \param label_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- *                   or ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64`` or ``C_API_DTYPE_NONE``
  * \param nrow Number of rows
  * \param ncol Number of columns
  * \param is_row_major 1 for row-major, 0 for column-major
@@ -243,7 +234,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
                                                 const void* label,
                                                 int data_type,
-                                                int label_type,
                                                 int32_t nrow,
                                                 int32_t ncol,
                                                 int is_row_major,
@@ -257,8 +247,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
  * \param data Pointer to the data space
  * \param label Pointer to the label space
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- * \param label_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- *                   or ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64`` or ``C_API_DTYPE_NONE``
  * \param nrow Number of rows
  * \param ncol Number of columns
  * \param is_row_major 1 for row-major, 0 for column-major
@@ -271,7 +259,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
                                                  const void** data,
                                                  const void* label,
                                                  int data_type,
-                                                 int label_type,
                                                  int32_t* nrow,
                                                  int32_t ncol,
                                                  int is_row_major,

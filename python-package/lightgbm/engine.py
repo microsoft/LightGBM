@@ -19,7 +19,7 @@ def train(params, train_set, num_boost_round=100,
           early_stopping_rounds=None, evals_result=None,
           verbose_eval=True, learning_rates=None,
           keep_training_booster=False, callbacks=None,
-          cat_converters='raw'):
+          cat_converters=None):
     """Perform the training with given parameters.
 
     Parameters
@@ -131,7 +131,7 @@ def train(params, train_set, num_boost_round=100,
     callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
-    cat_converters : string, optional (default='raw')
+    cat_converters : string, optional (default=None)
         Ways to convert categorical features, currently supports:
         1. ctr[:prior], where prior is a real number used to smooth the calculation of CTR values.
         If the prior value is omitted, then the label mean will be used as prior.
@@ -140,6 +140,7 @@ def train(params, train_set, num_boost_round=100,
         per leaf per iteration.
         For example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features,
         with the 3 different ways separated by ','.
+        When cat_converters==None, it is treated as 'raw'.
 
     Returns
     -------
@@ -406,7 +407,7 @@ def cv(params, train_set, num_boost_round=100,
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None, eval_train_metric=False,
-       return_cvbooster=False, cat_converters='raw'):
+       return_cvbooster=False, cat_converters=None):
     """Perform the cross-validation with given paramaters.
 
     Parameters
@@ -514,7 +515,7 @@ def cv(params, train_set, num_boost_round=100,
         The score of the metric is calculated again after each training step, so there is some impact on performance.
     return_cvbooster : bool, optional (default=False)
         Whether to return Booster models trained on each fold through ``CVBooster``.
-    cat_converters : string, optional (default='raw')
+    cat_converters : string, optional (default=None)
         Ways to convert categorical features, currently supports:
         1. ctr[:prior], where prior is a real number used to smooth the calculation of CTR values.
         If the prior value is omitted, then the label mean will be used as prior.
@@ -523,6 +524,7 @@ def cv(params, train_set, num_boost_round=100,
         per leaf per iteration.
         For example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features,
         with the 3 different ways separated by ','.
+        When cat_converters==None, it is treated as 'raw'.
 
     Returns
     -------

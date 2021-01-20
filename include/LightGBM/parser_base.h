@@ -87,10 +87,6 @@ class CSC_RowIterator {
 #define C_API_DTYPE_INT64   (3)  /*!< \brief int64. */
 #endif
 
-#ifndef C_API_DTYPE_NONE
-#define C_API_DTYPE_NONE   (4)  /*!< \brief None. */
-#endif
-
 std::function<std::pair<int, double>(int idx)>
 IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices,
   const void* data, int data_type, int64_t ncol_ptr, int64_t , int col_idx);

@@ -284,7 +284,6 @@ C_API_DTYPE_FLOAT32 = 0
 C_API_DTYPE_FLOAT64 = 1
 C_API_DTYPE_INT32 = 2
 C_API_DTYPE_INT64 = 3
-C_API_DTYPE_NONE = 4
 
 """Matrix is row major in Python"""
 C_API_IS_ROW_MAJOR = 1
@@ -327,39 +326,14 @@ def convert_from_sliced_object(data):
 def c_float_label(label):
     """Get pointer of float numpy array / list for label."""
     if label is None:
-        ptr_label = np.zeros(1, dtype=np.float32).ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-        type_label = C_API_DTYPE_NONE
+        ptr_label = ctypes.c_float(None)
+        type_label = C_API_DTYPE_FLOAT32
     else:
-        if is_1d_list(label):
-            label = np.array(label, copy=False)
-        elif isinstance(label, Series):
-            label = label.to_numpy()
-        if is_numpy_1d_array(label):
-            label = convert_from_sliced_object(label)
-            assert label.flags.c_contiguous
-            if label.dtype == np.float32:
-                ptr_label = label.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-                type_label = C_API_DTYPE_FLOAT32
-            elif label.dtype == np.float64:
-                ptr_label = label.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-                type_label = C_API_DTYPE_FLOAT64
-            elif label.dtype == np.int32:
-                ptr_label = label.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
-                type_label = C_API_DTYPE_INT32
-            elif label.dtype == np.int64:
-                ptr_label = label.ctypes.data_as(ctypes.POINTER(ctypes.c_int64))
-                type_label = C_API_DTYPE_INT64
-            else:
-                try:
-                    label = np.array([float(elem) for elem in label], dtype=np.float32)
-                    ptr_label = label.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-                    type_label = C_API_DTYPE_FLOAT32
-                except Exception:
-                    raise TypeError("Expected np.float32, np.float64, np.int32 or np.int64"
-                                    "or a type convertable to np.float32 in label array, met type({})"
-                                    .format(label.dtype))
-        else:
-            raise TypeError("Unknown type({})".format(type(label).__name__))
+        label = list_to_1d_numpy(_label_from_pandas(label), name="label")
+        label = convert_from_sliced_object(label)
+        assert label.flags.c_contiguous
+        ptr_label = label.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+        type_label = C_API_DTYPE_FLOAT32
     return ptr_label, type_label
 
 
@@ -966,7 +940,7 @@ class Dataset:
     def __init__(self, data, label=None, reference=None,
                  weight=None, group=None, init_score=None, silent=False,
                  feature_name='auto', categorical_feature='auto', params=None,
-                 free_raw_data=True, cat_converters='raw'):
+                 free_raw_data=True, cat_converters=None):
         """Initialize Dataset.
 
         Parameters
@@ -1011,6 +985,7 @@ class Dataset:
             per leaf per iteration.
             For example "ctr:0.5,ctr:0.0,count will convert each categorical feature into 3 numerical features,
             with the 3 different ways separated by ','.
+            When cat_converters==None, it is equivalent to 'raw'.
         """
         self.handle = None
         self.data = data
@@ -1021,7 +996,11 @@ class Dataset:
         self.init_score = init_score
         self.silent = silent
         self.feature_name = feature_name
+
         self.categorical_feature = categorical_feature
+        self.cat_converters = cat_converters
+        self._extract_categorical_info_from_params(params)
+
         self.params = copy.deepcopy(params)
         self.free_raw_data = free_raw_data
         self.used_indices = None
@@ -1032,13 +1011,27 @@ class Dataset:
         self.feature_penalty = None
         self.monotone_constraints = None
         self.version = 0
-        self.cat_converters = cat_converters
 
     def __del__(self):
         try:
             self._free_handle()
         except AttributeError:
             pass
+
+    def _extract_categorical_info_from_params(self, params):
+        categorical_feature_from_params = None
+        cat_converters_from_params = None
+        if isinstance(params, dict):
+            for cat_alias in _ConfigAliases.get("categorical_feature"):
+                if cat_alias in params:
+                    categorical_feature_from_params = params.pop(cat_alias)
+            if "cat_converters" in params:
+                cat_converters_from_params = params.pop("cat_converters")
+        if self.categorical_feature == 'auto' or self.categorical_feature is None\
+            and categorical_feature_from_params is not None:
+            self.categorical_feature = categorical_feature_from_params
+        if self.cat_converters == None and self.cat_converters_from_params is not None:
+            self.cat_converters = cat_converters_from_params
 
     def get_params(self):
         """Get the used parameters in the Dataset.
@@ -1052,6 +1045,7 @@ class Dataset:
             # no min_data, nthreads and verbose in this function
             dataset_params = _ConfigAliases.get("bin_construct_sample_cnt",
                                                 "categorical_feature",
+                                                "cat_converters",
                                                 "data_random_seed",
                                                 "enable_bundle",
                                                 "feature_pre_filter",
@@ -1117,14 +1111,19 @@ class Dataset:
     def _lazy_init(self, data, label=None, reference=None,
                    weight=None, group=None, init_score=None, predictor=None,
                    silent=False, feature_name='auto',
-                   categorical_feature='auto', params=None,
-                   cat_converters='raw'):
+                   categorical_feature='auto', params=None):
         if data is None:
             self.handle = None
             return self
         if reference is not None:
             self.pandas_categorical = reference.pandas_categorical
+            if self.cat_converters is not None and self.cat_converters != reference.cat_converters:
+                warnings.warn("'cat_converters' set in validation data is overridden by that of training data.")
             self.cat_converters = reference.cat_converters
+            if self.categorical_feature != 'auto' and self.categorical_feature is not None and\
+                self.categorical_feature != reference.categorical_feature:
+                warnings.warn("'categorical_feature' set in validation data is overridden by that of training data.")
+            self.categorical_feature = reference.categorical_feature
             categorical_feature = reference.categorical_feature
         data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data,
                                                                                              feature_name,
@@ -1165,10 +1164,11 @@ class Dataset:
                         warnings.warn('{} in param dict is overridden.'.format(cat_alias))
                         params.pop(cat_alias, None)
                 params['categorical_column'] = sorted(categorical_indices)
-        if self.cat_converters != '':
-            params['cat_converters'] = self.cat_converters
-        elif 'cat_converters' in params and params['cat_converters'] != '':
-            self.cat_converters = params['cat_converters']
+        if self.cat_converters is not None:
+            if "cat_converters" in params:
+                warnings.warn("cat_converters in param dict is overridden.")
+                params.pop("cat_converters", None)
+            params["cat_converters"] = self.cat_converters
         params_str = param_dict_to_str(params)
         self.params = params
         # process for reference dataset
@@ -1232,12 +1232,11 @@ class Dataset:
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
 
         ptr_data, type_ptr_data, _ = c_float_array(data)
-        ptr_label, type_ptr_label = c_float_label(label)
+        ptr_label, _ = c_float_label(label)
         _safe_call(_LIB.LGBM_DatasetCreateFromMat(
             ptr_data,
             ptr_label,
             ctypes.c_int(type_ptr_data),
-            ctypes.c_int(type_ptr_label),
             ctypes.c_int(mat.shape[0]),
             ctypes.c_int(mat.shape[1]),
             ctypes.c_int(C_API_IS_ROW_MAJOR),
@@ -1279,7 +1278,7 @@ class Dataset:
             type_ptr_data = chunk_type_ptr_data
             holders.append(holder)
 
-        ptr_label, type_ptr_label = c_float_label(label)
+        ptr_label, _ = c_float_label(label)
 
         self.handle = ctypes.c_void_p()
         _safe_call(_LIB.LGBM_DatasetCreateFromMats(
@@ -1287,7 +1286,6 @@ class Dataset:
             ctypes.cast(ptr_data, ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
             ptr_label,
             ctypes.c_int(type_ptr_data),
-            ctypes.c_int(type_ptr_label),
             nrow.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
             ctypes.c_int(ncol),
             ctypes.c_int(C_API_IS_ROW_MAJOR),
@@ -1304,7 +1302,7 @@ class Dataset:
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csr.data)
-        ptr_label, type_ptr_label = c_float_label(label)
+        ptr_label, _ = c_float_label(label)
 
         assert csr.shape[1] <= MAX_INT32
         csr_indices = csr.indices.astype(np.int32, copy=False)
@@ -1316,7 +1314,6 @@ class Dataset:
             ptr_data,
             ptr_label,
             ctypes.c_int(type_ptr_data),
-            ctypes.c_int(type_ptr_label),
             ctypes.c_int64(len(csr.indptr)),
             ctypes.c_int64(len(csr.data)),
             ctypes.c_int64(csr.shape[1]),
@@ -1334,7 +1331,7 @@ class Dataset:
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csc.data)
 
-        ptr_label, type_ptr_label = c_float_label(label)
+        ptr_label, _ = c_float_label(label)
 
         assert csc.shape[0] <= MAX_INT32
         csc_indices = csc.indices.astype(np.int32, copy=False)
@@ -1346,7 +1343,6 @@ class Dataset:
             ptr_data,
             ptr_label,
             ctypes.c_int(type_ptr_data),
-            ctypes.c_int(type_ptr_label),
             ctypes.c_int64(len(csc.indptr)),
             ctypes.c_int64(len(csc.data)),
             ctypes.c_int64(csc.shape[0]),
@@ -1366,6 +1362,10 @@ class Dataset:
         if self.handle is None:
             if self.reference is not None:
                 reference_params = self.reference.get_params()
+                reference_params.pop("cat_converters", None)
+                for cat_alias in _ConfigAliases.get("categorical_feature"):
+                    reference_params.pop(cat_alias, None)
+                self._extract_categorical_info_from_params(self.params)
                 if self.get_params() != reference_params:
                     warnings.warn('Overriding the parameters from Reference Dataset.')
                     self._update_params(reference_params)
@@ -1402,11 +1402,12 @@ class Dataset:
                         self._set_init_score_by_predictor(self._predictor, self.data, used_indices)
             else:
                 # create train
+                self._extract_categorical_info_from_params(self.params)
                 self._lazy_init(self.data, label=self.label,
                                 weight=self.weight, group=self.group,
                                 init_score=self.init_score, predictor=self._predictor,
                                 silent=self.silent, feature_name=self.feature_name,
-                                categorical_feature=self.categorical_feature, cat_converters=self.cat_converters,
+                                categorical_feature=self.categorical_feature,
                                 params=self.params)
             if self.free_raw_data:
                 self.data = None
@@ -1633,10 +1634,10 @@ class Dataset:
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
             elif categorical_feature == 'auto':
-                warnings.warn('Using categorical_feature in Dataset.')
+                warnings.warn('Using categorical_feature in Dataset constructor.')
                 return self
             else:
-                warnings.warn('categorical_feature in Dataset is overridden.\n'
+                warnings.warn('categorical_feature in Dataset constructor is overridden.\n'
                               'New categorical_feature is {}'.format(sorted(list(categorical_feature))))
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
@@ -1658,6 +1659,7 @@ class Dataset:
             per leaf per iteration.
             For example "ctr:0.5,ctr:0.0,count will convert each categorical feature into 3 numerical features,
             with the 3 different ways separated by ','.
+            When cat_converters==None, it is equivalent to 'raw'.
 
         Returns
         -------
@@ -1665,18 +1667,15 @@ class Dataset:
             Dataset with set categorical converters
         """
         if cat_converters is None:
-            cat_converters = "raw"
+            return self
         if self.cat_converters == cat_converters:
             return self
         if self.data is not None:
             if self.cat_converters is None:
                 self.cat_converters = cat_converters
                 return self._free_handle()
-            elif cat_converters == 'raw' or cat_converters == '':
-                warnings.warn('Using cat_converters in Dataset.')
-                return self
             else:
-                warnings.warn('cat_converters in Dataset is overridden.\n'
+                warnings.warn('cat_converters in Dataset constructor is overridden.\n'
                               'New cat_converters is {}'.format(cat_converters))
                 self.cat_converters = cat_converters
                 return self._free_handle()
@@ -1718,9 +1717,13 @@ class Dataset:
         self : Dataset
             Dataset with set reference.
         """
-        self.set_categorical_feature(reference.categorical_feature) \
-            .set_cat_converters(reference.cat_converters) \
-            .set_feature_name(reference.feature_name) \
+        if self.categorical_feature is not None and self.categorical_feature != 'auto' and \
+            self.categorical_feature != reference.categorical_feature:
+            warnings.warn("'categorical_feature' set in validation data is overridden by that of training data.")
+        self.categorical_feature = reference.categorical_feature
+        if self.cat_converters is not None and self.cat_converters != reference.cat_converters:
+            warnings.warn("'cat_converters' set in validation data is overridden by that of training data.")
+        self.set_feature_name(reference.feature_name) \
             ._set_predictor(reference._predictor)
         # we're done if self and reference share a common upstrem reference
         if self.get_ref_chain().intersection(reference.get_ref_chain()):
