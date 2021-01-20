@@ -260,25 +260,6 @@ def test_training_does_not_fail_on_port_conflicts(client):
     client.close()
 
 
-@pytest.mark.parametrize('output', data_output)
-@pytest.mark.parametrize('centers', data_centers)
-def test_classifier_proba(output, centers, client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
-
-    dask_classifier = dlgbm.DaskLGBMClassifier(time_out=5, local_listen_port=listen_port)
-    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
-    p1 = dask_classifier.predict_proba(dX)
-    p1 = p1.compute()
-
-    local_classifier = lightgbm.LGBMClassifier()
-    local_classifier.fit(X, y, sample_weight=w)
-    p2 = local_classifier.predict_proba(X)
-
-    assert_eq(p1, p2, atol=0.3)
-
-    client.close()
-
-
 def test_classifier_local_predict(client, listen_port):
     X, y, w, dX, dy, dw = _create_data('classification', output='array')
 
@@ -386,8 +367,8 @@ def test_regressor_local_predict(client, listen_port):
     s2 = dask_regressor.to_local().score(X, y)
 
     # Predictions and scores should be the same
-    assert_eq(s1, s2)
     assert_eq(p1, p2)
+    assert_eq(s1, s2)
 
     client.close()
 

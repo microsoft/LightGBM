@@ -183,7 +183,7 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
         if you have a 100-record dataset with `group = [10, 20, 40, 10, 10]`, that means that you have
         5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
     """
-    # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality
+    # Split arrays/dataframes into parts. Arrange parts into tuples to enforce co-locality
     data_parts = _split_to_parts(data, is_matrix=True)
     label_parts = _split_to_parts(label, is_matrix=False)
     weight_parts = _split_to_parts(sample_weight, is_matrix=False) if sample_weight is not None else None
