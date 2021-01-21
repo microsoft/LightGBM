@@ -32,4 +32,4 @@ def test_cpu_and_gpu_work():
     gpu_score = log_loss(y, gpu_bst.predict(X))
 
     np.testing.assert_allclose(cpu_score, gpu_score)
-    assert gpu_score < 0.25
+    assert gpu_score < 0.242
