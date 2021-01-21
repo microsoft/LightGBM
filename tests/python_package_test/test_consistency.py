@@ -1,6 +1,5 @@
 # coding: utf-8
 import os
-import unittest
 
 import lightgbm as lgb
 import numpy as np
