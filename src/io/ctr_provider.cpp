@@ -91,7 +91,6 @@ void CTRProvider::SyncCTRStat(std::vector<std::unordered_map<int, label_t>>* fol
     int check_num_machines = 0;
     while (cur_str_pos < output_buffer.size()) {
       std::string all_ctr_stat_string(output_buffer.data() + cur_str_pos);
-      Log::Warning(all_ctr_stat_string.c_str());
       cur_str_pos += max_ctr_values_string_size;
       ++check_num_machines;
       std::stringstream sin(all_ctr_stat_string);

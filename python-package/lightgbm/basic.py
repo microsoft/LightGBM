@@ -1032,10 +1032,12 @@ class Dataset:
                         categorical_feature_from_params = params.pop(cat_alias)
                 if "cat_converters" in params:
                     cat_converters_from_params = params.pop("cat_converters")
-            if self.categorical_feature == 'auto' or self.categorical_feature is None\
-                and categorical_feature_from_params is not None:
+            if (self.categorical_feature == 'auto' or self.categorical_feature is None)\
+                    and categorical_feature_from_params is not None:
+                if isinstance(categorical_feature_from_params, int):
+                    categorical_feature_from_params = [categorical_feature_from_params]
                 self.categorical_feature = categorical_feature_from_params
-            if self.cat_converters == None and cat_converters_from_params is not None:
+            if self.cat_converters is None and cat_converters_from_params is not None:
                 self.cat_converters = cat_converters_from_params
 
     def get_params(self):
@@ -1126,7 +1128,7 @@ class Dataset:
                 warnings.warn("'cat_converters' set in validation data is overridden by that of training data.")
             self.cat_converters = reference.cat_converters
             if self.categorical_feature != 'auto' and self.categorical_feature is not None and\
-                self.categorical_feature != reference.categorical_feature:
+                    self.categorical_feature != reference.categorical_feature:
                 warnings.warn("'categorical_feature' set in validation data is overridden by that of training data.")
             self.categorical_feature = reference.categorical_feature
             categorical_feature = reference.categorical_feature
@@ -1367,8 +1369,6 @@ class Dataset:
         if self.handle is None:
             if self.reference is not None:
                 reference_params = self.reference.get_params()
-                if reference_params is None:
-                    print("error !!!!!!!!!!!!!! reference_params is None")
                 reference_params.pop("cat_converters", None)
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     reference_params.pop(cat_alias, None)
@@ -1729,11 +1729,12 @@ class Dataset:
             Dataset with set reference.
         """
         if self.categorical_feature is not None and self.categorical_feature != 'auto' and \
-            self.categorical_feature != reference.categorical_feature:
+                self.categorical_feature != reference.categorical_feature:
             warnings.warn("'categorical_feature' set in validation data is overridden by that of training data.")
         self.categorical_feature = reference.categorical_feature
         if self.cat_converters is not None and self.cat_converters != reference.cat_converters:
             warnings.warn("'cat_converters' set in validation data is overridden by that of training data.")
+        self.cat_converters = reference.cat_converters
         self.set_feature_name(reference.feature_name) \
             ._set_predictor(reference._predictor)
         # we're done if self and reference share a common upstrem reference

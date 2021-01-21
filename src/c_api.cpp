@@ -1506,6 +1506,7 @@ int LGBM_DatasetFree(DatasetHandle handle) {
 int LGBM_DatasetSaveBinary(DatasetHandle handle,
                            const char* filename) {
   API_BEGIN();
+  Log::Warning("LGBM_DatasetSaveBinary is called");
   auto dataset = reinterpret_cast<Dataset*>(handle);
   dataset->SaveBinaryFile(filename);
   API_END();

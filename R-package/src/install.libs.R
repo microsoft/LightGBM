@@ -131,7 +131,7 @@ if (WINDOWS && use_visual_studio) {
 
 # Prepare installation steps
 cmake_args <- NULL
-build_cmd <- "make -j"
+build_cmd <- "make"
 build_args <- "_lightgbm"
 lib_folder <- file.path(source_dir, fsep = "/")
 

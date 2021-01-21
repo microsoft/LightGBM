@@ -364,6 +364,7 @@ def test_consistent_state_for_dataset_fields():
     lgb_data.set_feature_name(feature_names)
     check_asserts(lgb_data)
 
+
 def test_ctr(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
                                                         test_size=0.1, random_state=2)

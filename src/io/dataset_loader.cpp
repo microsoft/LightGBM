@@ -616,6 +616,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   read_cnt = reader->Read(buffer.data(), sizeof(size_t));
 
   if (read_cnt != sizeof(size_t)) {
+    Log::Warning("read_cnt = %d", read_cnt);
     Log::Fatal("Binary file error: ctr provider data has the wrong size");
   }
 
@@ -1038,7 +1039,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
 
   std::function<void(int)> parse_func = nullptr;
   if (sampled_indices.empty()) {
-    parse_func = [&sample_data, &oneline_features, &label, &sampled_indices, parser] (int line_idx) {
+    parse_func = [&sample_data, &oneline_features, &label, parser] (int line_idx) {
       parser->ParseOneLine(sample_data[line_idx].c_str(), &oneline_features, &label);
     };
   } else {
