@@ -139,7 +139,7 @@ def test_missing_value_handle():
                     verbose_eval=False,
                     evals_result=evals_result)
     ret = mean_squared_error(y_train, gbm.predict(X_train))
-    assert ret < 5
+    assert ret < 0.005
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
 
@@ -165,7 +165,7 @@ def test_missing_value_handle_more_na():
                     verbose_eval=False,
                     evals_result=evals_result)
     ret = mean_squared_error(y_train, gbm.predict(X_train))
-    assert ret < 5
+    assert ret < 0.005
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
 
@@ -2192,7 +2192,7 @@ def test_node_level_subcol():
                     verbose_eval=False,
                     evals_result=evals_result)
     ret = log_loss(y_test, gbm.predict(X_test))
-    assert ret < 4
+    assert ret < 0.14
     assert evals_result['valid_0']['binary_logloss'][-1] == pytest.approx(ret)
     params['feature_fraction'] = 0.5
     gbm2 = lgb.train(params, lgb_train, num_boost_round=25)
