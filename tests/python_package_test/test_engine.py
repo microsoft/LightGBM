@@ -6,7 +6,6 @@ import os
 import pickle
 import psutil
 import random
-import unittest
 
 import lightgbm as lgb
 import numpy as np
@@ -402,7 +401,7 @@ def test_multiclass():
                     verbose_eval=False,
                     evals_result=evals_result)
     ret = multi_logloss(y_test, gbm.predict(X_test))
-    assert ret < 6
+    assert ret < 0.16
     assert evals_result['valid_0']['multi_logloss'][-1] == pytest.approx(ret)
 
 
@@ -431,7 +430,7 @@ def test_multiclass_rf():
                     verbose_eval=False,
                     evals_result=evals_result)
     ret = multi_logloss(y_test, gbm.predict(X_test))
-    assert ret < 3
+    assert ret < 0.23
     assert evals_result['valid_0']['multi_logloss'][-1] == pytest.approx(ret)
 
 
@@ -452,14 +451,14 @@ def test_multiclass_prediction_early_stopping():
                       "pred_early_stop_freq": 5,
                       "pred_early_stop_margin": 1.5}
     ret = multi_logloss(y_test, gbm.predict(X_test, **pred_parameter))
-    assert ret < 8
+    assert ret < 0.8
     assert ret > 0.6  # loss will be higher than when evaluating the full model
 
     pred_parameter = {"pred_early_stop": True,
                       "pred_early_stop_freq": 5,
                       "pred_early_stop_margin": 5.5}
     ret = multi_logloss(y_test, gbm.predict(X_test, **pred_parameter))
-    assert ret < 2
+    assert ret < 0.2
 
 
 def test_multi_class_error():
@@ -707,7 +706,7 @@ def test_continue_train_multiclass():
                     evals_result=evals_result,
                     init_model=init_gbm)
     ret = multi_logloss(y_test, gbm.predict(X_test))
-    assert ret < 1
+    assert ret < 0.1
     assert evals_result['valid_0']['multi_logloss'][-1] == pytest.approx(ret)
 
 
@@ -801,7 +800,7 @@ def test_cvbooster():
     # fold averaging
     avg_pred = np.mean(preds, axis=0)
     ret = log_loss(y_test, avg_pred)
-    assert ret < 3
+    assert ret < 0.13
     # without early stopping
     cv_res = lgb.cv(params, lgb_train,
                     num_boost_round=20,
@@ -813,7 +812,7 @@ def test_cvbooster():
     preds = cvb.predict(X_test)
     avg_pred = np.mean(preds, axis=0)
     ret = log_loss(y_test, avg_pred)
-    assert ret < 5
+    assert ret < 0.15
 
 
 def test_feature_name():
@@ -880,9 +879,8 @@ def test_save_load_copy_pickle():
         assert ret_origin == pytest.approx(ret)
 
 
-@unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
 def test_pandas_categorical():
-    import pandas as pd
+    pd = pytest.importorskip("pandas")
     np.random.seed(42)  # sometimes there is no difference how cols are treated (cat or not cat)
     X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
                       "B": np.random.permutation([1, 2, 3] * 100),  # int
@@ -963,9 +961,8 @@ def test_pandas_categorical():
     assert gbm7.pandas_categorical == cat_values
 
 
-@unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
 def test_pandas_sparse():
-    import pandas as pd
+    pd = pytest.importorskip("pandas")
     try:
         from pandas.arrays import SparseArray
     except ImportError:  # support old versions
@@ -1103,7 +1100,7 @@ def test_contribs_sparse_multiclass():
     np.testing.assert_allclose(contribs_csc_array, contribs_dense)
 
 
-@unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
+@pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason='not enough RAM')
 def test_int32_max_sparse_contribs():
     params = {
         'objective': 'binary'
@@ -1955,7 +1952,7 @@ def test_multiple_feval_cv():
     assert 'decreasing_metric-stdv' in cv_results
 
 
-@unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
+@pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason='not enough RAM')
 def test_model_size():
     X, y = load_boston(return_X_y=True)
     data = lgb.Dataset(X, y)
@@ -2400,8 +2397,8 @@ def test_path_smoothing():
     assert err < err_new
 
 
-@unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
 def test_trees_to_dataframe():
+    pytest.importorskip("pandas")
 
     def _imptcs_to_numpy(X, impcts_dict):
         cols = ['Column_' + str(i) for i in range(X.shape[1])]
