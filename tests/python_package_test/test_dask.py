@@ -123,7 +123,7 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
         preds_with_contrib = np.array(preds_with_contrib.todense())
 
     # shape depends on whether it is binary or multiclass classification
-    num_features = dX.shape[1]
+    num_features = dask_classifier.n_features_
     num_classes = dask_classifier.n_classes_
     if num_classes == 2:
         expected_num_cols = num_features + 1
@@ -135,8 +135,6 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
     #   for multi-class it's [feat_contrib_class1, base_value_class1, feat_contrib_class2, base_value_class2, etc.]
     # * contrib outputs for distributed training are different than from local training, so we can just test
     #   that the output has the right shape and base values are in the right position
-    num_features = dX.shape[1]
-    num_classes = len(centers)
     assert preds_with_contrib.shape[1] == expected_num_cols
     assert preds_with_contrib.shape == local_preds_with_contrib.shape
 
