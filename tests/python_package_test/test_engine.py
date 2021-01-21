@@ -2482,7 +2482,7 @@ def test_interaction_constraints():
                     train_data, num_boost_round=10)
 
 
-def test_linear_trees():
+def test_linear_trees(tmp_path):
     # check that setting linear_tree=True fits better than ordinary trees when data has linear relationship
     np.random.seed(0)
     x = np.arange(0, 100, 0.1)
@@ -2541,9 +2541,11 @@ def test_linear_trees():
     p1 = est.predict(x)
     p2 = est2.predict(x)
     assert np.mean(np.abs(p1 - p2)) < 2
+
     # test refit with save and load
-    est.save_model('temp_model.txt')
-    est2 = lgb.Booster(model_file='temp_model.txt')
+    temp_model = str(tmp_path / "temp_model.txt")
+    est.save_model(temp_model)
+    est2 = lgb.Booster(model_file=temp_model)
     est2 = est2.refit(x, label=y)
     p1 = est.predict(x)
     p2 = est2.predict(x)
