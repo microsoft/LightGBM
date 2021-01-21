@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - dual_test_fix
+    - dual_test_fi
   tags:
     include:
     - v*
