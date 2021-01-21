@@ -69,18 +69,6 @@ LGBM_SE LGBM_DatasetCreateFromFile_R(LGBM_SE filename,
   R_API_END();
 }
 
-float* GetFloatLabelPTR(const double* double_label_ptr, int nrow) {
-  std::unique_ptr<float[]> label_ptr(nullptr);
-  if (double_label_ptr != nullptr) {
-    label_ptr.reset(new float[nrow]);
-    #pragma omp parallel for schedule(static) if (nrow >= 1024)
-    for (int i = 0; i < nrow; ++i) {
-      label_ptr[i] = static_cast<float>(double_label_ptr[i]);
-    }
-  }
-  return label_ptr.release();
-}
-
 LGBM_SE LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
   LGBM_SE indices,
   LGBM_SE data,
@@ -96,7 +84,7 @@ LGBM_SE LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
   const int* p_indptr = R_INT_PTR(indptr);
   const int* p_indices = R_INT_PTR(indices);
   const double* p_data = R_REAL_PTR(data);
-  const double* p_label = R_REAL_PTR(label);
+  const double* p_label = R_IS_NULL(label) ? nullptr : R_REAL_PTR(label);
   int64_t nindptr = static_cast<int64_t>(R_AS_INT(num_indptr));
   int64_t ndata = static_cast<int64_t>(R_AS_INT(nelem));
   int64_t nrow = static_cast<int64_t>(R_AS_INT(num_row));
@@ -130,7 +118,7 @@ LGBM_SE LGBM_DatasetCreateFromMat_R(LGBM_SE data,
   int32_t nrow = static_cast<int32_t>(R_AS_INT(num_row));
   int32_t ncol = static_cast<int32_t>(R_AS_INT(num_col));
   double* p_mat = R_REAL_PTR(data);
-  double* p_label = R_REAL_PTR(label);
+  double* p_label = R_IS_NULL(label) ? nullptr : R_REAL_PTR(label);
   const float* float_p_label = nullptr;
   std::vector<float> float_label_vec;
   if (p_label != nullptr) {
