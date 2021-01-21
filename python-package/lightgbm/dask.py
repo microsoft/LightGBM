@@ -297,15 +297,16 @@ def _predict(model, data, raw_score=False, pred_proba=False, pred_leaf=False, pr
     model :
     data : dask array of shape = [n_samples, n_features]
         Input feature matrix.
-    pred_proba : bool
-        Should method return results of predict_proba (proba == True) or predict (proba == False)
+    pred_proba : bool, optional (default=False)
+        Should method return results of ``predict_proba`` (``pred_proba=True``) or ``predict`` (``pred_proba=False``).
     pred_leaf : bool, optional (default=False)
         Whether to predict leaf index.
     pred_contrib : bool, optional (default=False)
         Whether to predict feature contributions.
     dtype : np.dtype
-        Dtype of the output
-    kwargs : other parameters passed to predict or predict_proba method
+        Dtype of the output.
+    kwargs : dict
+        Other parameters passed to ``predict`` or ``predict_proba`` method.
     """
     if isinstance(data, dd._Frame):
         return data.map_partitions(
