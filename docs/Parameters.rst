@@ -1191,7 +1191,9 @@ CTR Parameters
 
    -  ctr[:prior], where prior is a real number used to smooth the calculation of CTR values
 
-   -  if the prior value is missing, use the label mean of training data
+   -  ctr is calculated as: (sum_label + prior * prior_weight) / (count + prior_weight)
+
+   -  if the prior value is missing, use the label mean of training data as default prior
 
    -  count, the count of the categorical feature value in the dataset
 
@@ -1206,6 +1208,10 @@ CTR Parameters
 -  ``prior_weight`` :raw-html:`<a id="prior_weight" title="Permalink to this parameter" href="#prior_weight">&#x1F517;&#xFE0E;</a>`, default = ``1.0f``, type = double
 
    -  weight of prior in CTR calculation
+
+   -  if ctr is used, prior_weight is used to calculate ctr values by
+
+   -  (sum_label + prior * prior_weight) / (count + prior_weight)
 
 .. end params list
 
