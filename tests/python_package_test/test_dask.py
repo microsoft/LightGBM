@@ -7,7 +7,6 @@ import pytest
 if not sys.platform.startswith("linux"):
     pytest.skip("lightgbm.dask is currently supported in Linux environments", allow_module_level=True)
 
-import dask
 import dask.array as da
 import dask.dataframe as dd
 import numpy as np
@@ -106,12 +105,17 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
     dask_classifier = dlgbm.DaskLGBMClassifier(
         time_out=5,
         local_listen_port=listen_port,
-        tree_learner='data'
+        tree_learner='data',
+        n_estimators=10,
+        num_leaves=10
     )
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     preds_with_contrib = dask_classifier.predict(dX, pred_contrib=True).compute()
 
-    local_classifier = lightgbm.LGBMClassifier()
+    local_classifier = lightgbm.LGBMClassifier(
+        n_estimators=10,
+        num_leaves=10
+    )
     local_classifier.fit(X, y, sample_weight=w)
     local_preds_with_contrib = local_classifier.predict(X, pred_contrib=True)
 
@@ -119,18 +123,12 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
         preds_with_contrib = np.array(preds_with_contrib.todense())
 
     # shape depends on whether it is binary or multiclass classification
-    num_classes = len(centers)
+    num_features = dX.shape[1]
+    num_classes = dask_classifier.n_classes_
     if num_classes == 2:
-        expected_num_cols = dX.shape[1] + 1
+        expected_num_cols = num_features + 1
     else:
-        expected_num_cols = (dX.shape[1] + 1) * num_classes
-
-    if isinstance(dX, dask.dataframe.DataFrame):
-        assert preds_with_contrib.shape == (dX.shape[0].compute(), expected_num_cols)
-    else:
-        assert preds_with_contrib.shape == (dX.shape[0], expected_num_cols)
-
-    assert preds_with_contrib.shape == local_preds_with_contrib.shape
+        expected_num_cols = (num_features + 1) * num_classes
 
     # * shape depends on whether it is binary or multiclass classification
     # * matrix for binary classification is of the form [feature_contrib, base_value],
@@ -139,11 +137,12 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
     #   that the output has the right shape and base values are in the right position
     num_features = dX.shape[1]
     num_classes = len(centers)
+    assert preds_with_contrib.shape[1] == expected_num_cols
+    assert preds_with_contrib.shape == local_preds_with_contrib.shape
+
     if num_classes == 2:
-        assert preds_with_contrib.shape[1] == num_features + 1
         assert len(np.unique(preds_with_contrib[:, num_features]) == 1)
     else:
-        assert preds_with_contrib.shape[1] == (num_features + 1) * num_classes
         for i in range(num_classes):
             base_value_col = num_features * (i + 1) + i
             assert len(np.unique(preds_with_contrib[:, base_value_col]) == 1)
@@ -230,12 +229,17 @@ def test_regressor_pred_contrib(output, client, listen_port):
     dask_regressor = dlgbm.DaskLGBMRegressor(
         time_out=5,
         local_listen_port=listen_port,
-        tree_learner='data'
+        tree_learner='data',
+        n_estimators=10,
+        num_leaves=10
     )
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
     preds_with_contrib = dask_regressor.predict(dX, pred_contrib=True).compute()
 
-    local_regressor = lightgbm.LGBMRegressor()
+    local_regressor = lightgbm.LGBMRegressor(
+        n_estimators=10,
+        num_leaves=10
+    )
     local_regressor.fit(X, y, sample_weight=w)
     local_preds_with_contrib = local_regressor.predict(X, pred_contrib=True)
 
