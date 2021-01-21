@@ -100,10 +100,19 @@ LGBM_SE LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
   int64_t nindptr = static_cast<int64_t>(R_AS_INT(num_indptr));
   int64_t ndata = static_cast<int64_t>(R_AS_INT(nelem));
   int64_t nrow = static_cast<int64_t>(R_AS_INT(num_row));
-  std::unique_ptr<const float[]> p_float_label(GetFloatLabelPTR(p_label, nrow));
+  const float* float_p_label = nullptr;
+  std::vector<float> float_label_vec;
+  if (p_label != nullptr) {
+    float_label_vec.resize(nrow);
+    #pragma omp parallel for schedule(static) if (nrow >= 1024)
+    for (int i = 0; i < nrow; ++i) {
+      float_label_vec[i] = static_cast<float>(p_label[i]);
+    }
+    float_p_label = float_label_vec.data();
+  }
   DatasetHandle handle = nullptr;
   CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
-    p_data, p_float_label.get(), C_API_DTYPE_FLOAT64, nindptr, ndata,
+    p_data, float_p_label, C_API_DTYPE_FLOAT64, nindptr, ndata,
     nrow, R_CHAR_PTR(parameters), R_GET_PTR(reference), &handle));
   R_SET_PTR(out, handle);
   R_API_END();
@@ -122,9 +131,18 @@ LGBM_SE LGBM_DatasetCreateFromMat_R(LGBM_SE data,
   int32_t ncol = static_cast<int32_t>(R_AS_INT(num_col));
   double* p_mat = R_REAL_PTR(data);
   double* p_label = R_REAL_PTR(label);
-  std::unique_ptr<const float[]> p_float_label(GetFloatLabelPTR(p_label, nrow));
+  const float* float_p_label = nullptr;
+  std::vector<float> float_label_vec;
+  if (p_label != nullptr) {
+    float_label_vec.resize(nrow);
+    #pragma omp parallel for schedule(static) if (nrow >= 1024)
+    for (int i = 0; i < nrow; ++i) {
+      float_label_vec[i] = static_cast<float>(p_label[i]);
+    }
+    float_p_label = float_label_vec.data();
+  }
   DatasetHandle handle = nullptr;
-  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, p_float_label.get(), C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
+  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, float_p_label, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
     R_CHAR_PTR(parameters), R_GET_PTR(reference), &handle));
   R_SET_PTR(out, handle);
   R_API_END();

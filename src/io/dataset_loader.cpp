@@ -616,7 +616,6 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   read_cnt = reader->Read(buffer.data(), sizeof(size_t));
 
   if (read_cnt != sizeof(size_t)) {
-    Log::Warning("read_cnt = %d", read_cnt);
     Log::Fatal("Binary file error: ctr provider data has the wrong size");
   }
 

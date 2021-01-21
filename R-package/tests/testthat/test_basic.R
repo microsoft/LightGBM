@@ -2062,42 +2062,42 @@ test_that(paste0("CTR for R package works"), {
 
 
   # test gbdt model with cat_converters
-  #model_file <- tempfile(fileext = ".model")
-  #lgb.save(bst, model_file)
+  model_file <- tempfile(fileext = ".model")
+  lgb.save(bst, model_file)
   # finalize the booster and destroy it so you know we aren't cheating
-  #bst$finalize()
-  #expect_null(bst$.__enclos_env__$private$handle)
-  #rm(bst)
+  bst$finalize()
+  expect_null(bst$.__enclos_env__$private$handle)
+  rm(bst)
 
-  #bst2 <- lgb.load(
-  #    filename = model_file
-  #)
-  #pred4 <- predict(bst2, test$data)
-  #expect_equal(pred3, pred4)
+  bst2 <- lgb.load(
+      filename = model_file
+  )
+  pred4 <- predict(bst2, test$data)
+  expect_equal(pred3, pred4)
 
 
   # test Dataset binary store with cat_converters
-  #tmp_file <- tempfile(pattern = "lgb.Dataset_CTR_")
-  #lgb.Dataset.save(
-  #  dataset = dtrain
-  #  , fname = tmp_file
-  #)
-  #dtrain_read_in <- lgb.Dataset(data = tmp_file)
+  tmp_file <- tempfile(pattern = "lgb.Dataset_CTR_")
+  lgb.Dataset.save(
+    dataset = dtrain
+    , fname = tmp_file
+  )
+  dtrain_read_in <- lgb.Dataset(data = tmp_file)
 
-  #tmp_file <- tempfile(pattern = "lgb.Dataset_CTR_")
-  #lgb.Dataset.save(
-  #  dataset = dtest
-  #  , fname = tmp_file
-  #)
-  #dtest_read_in <- lgb.Dataset(data = tmp_file)
+  tmp_file <- tempfile(pattern = "lgb.Dataset_CTR_")
+  lgb.Dataset.save(
+    dataset = dtest
+    , fname = tmp_file
+  )
+  dtest_read_in <- lgb.Dataset(data = tmp_file)
 
-  #bst <- lightgbm(
-  #  data = dtrain_read_in
-  #  , params = params
-  #  , nrounds = 10L
-  #  , verbose = 2L
-  #  , valids = list("valid1" = dtest_read_in)
-  #)
-  #pred5 <- bst$predict(test$data)
-  #expect_equal(pred3, pred5)
+  bst <- lightgbm(
+    data = dtrain_read_in
+    , params = params
+    , nrounds = 10L
+    , verbose = 2L
+    , valids = list("valid1" = dtest_read_in)
+  )
+  pred5 <- bst$predict(test$data)
+  expect_equal(pred3, pred5)
 })

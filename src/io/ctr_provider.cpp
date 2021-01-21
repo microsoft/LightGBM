@@ -354,8 +354,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<double>* features, int line_idx) c
         features_ref[convert_fid] = convert_value;
       },
 
-      [] (int) {}
-    );
+      [] (int) {});
   }
 }
 
@@ -371,8 +370,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<double>* features) const {
         features_ref[convert_fid] = convert_value;
       },
 
-      [] (int) {}
-    );
+      [] (int) {});
   }
 }
 
@@ -399,8 +397,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_
           }
         },
 
-        [&feature_processed] (int fid) { feature_processed[fid] =  true; }
-      );
+        [&feature_processed] (int fid) { feature_processed[fid] =  true; });
     }
   }
   for (const int fid : categorical_features_) {
@@ -412,8 +409,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_
           features_ref.emplace_back(convert_fid, convert_value);
         },
 
-        [] (int) {}
-      );
+        [] (int) {});
     }
   }
 }
@@ -440,8 +436,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_
           }
         },
 
-        [&feature_processed] (int fid) { feature_processed[fid] = true; }
-      );
+        [&feature_processed] (int fid) { feature_processed[fid] = true; });
     }
   }
   for (const int fid : categorical_features_) {
@@ -453,8 +448,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_
           features_ref.emplace_back(convert_fid, convert_value);
         },
 
-        [] (int) {}
-      );
+        [] (int) {});
     }
   }
 }
