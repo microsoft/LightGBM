@@ -15,6 +15,7 @@ std::string CTRProvider::DumpModelInfo() const {
     str_buf << static_cast<int>(keep_raw_cat_method_) << " ";
     str_buf << num_original_features_ << " ";
     str_buf << num_total_features_ << " ";
+    str_buf << prior_weight_ << " ";
     for (const int cat_fid : categorical_features_) {
       str_buf << cat_fid;
       // only the information of the full training dataset is kept

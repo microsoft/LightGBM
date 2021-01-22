@@ -149,13 +149,8 @@ Dataset <- R6::R6Class(
             }
 
           } else {
-
-            # Check if more categorical features were output over the feature space
-            if (is.null(private$colnames)) {
-              stop("lgb.self.get.handle: please specify colnames before to use categorical_feature")
-            }
-
-            if (max(private$categorical_feature) > length(private$colnames)) {
+            # by pass this test when colnames is not set
+            if (!is.null(private$colnames) && max(private$categorical_feature) > length(private$colnames)) {
               stop(
                 "lgb.self.get.handle: supplied a too large value in categorical_feature: "
                 , max(private$categorical_feature)

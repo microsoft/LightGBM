@@ -60,7 +60,7 @@ class CTRProvider {
 
       static CatConverter* CreateFromString(const std::string& model_string, const double prior_weight) {
         std::vector<std::string> split_model_string = Common::Split(model_string.c_str(), ",");
-        if (split_model_string.size() > 2 || split_model_string.size() == 0) {
+        if (split_model_string.size() != 2) {
           Log::Fatal("Invalid CatConverter model string %s", model_string.c_str());
         }
         const std::string& cat_converter_name = split_model_string[0];
@@ -74,23 +74,24 @@ class CTRProvider {
           double prior = 0.0f;
           Common::Atof(Common::Split(cat_converter_name.c_str(), ':')[1].c_str(), &prior);
           cat_converter = new CTRConverter(prior);
+          cat_converter->SetPrior(prior, prior_weight);
         } else if (cat_converter_name == std::string("count")) {
           cat_converter = new CountConverter();
         } else {
           Log::Fatal("Invalid CatConverter model string %s", model_string.c_str());
         }
         cat_converter->cat_fid_to_convert_fid_.clear();
-        if (split_model_string.size() == 2) {
-          const std::string& feature_map = split_model_string[1];
-          std::stringstream feature_map_stream(feature_map);
-          int key = 0, val = 0;
-          while (feature_map_stream >> key) {
-            CHECK_EQ(feature_map_stream.get(), ':');
-            feature_map_stream >> val;
-            cat_converter->cat_fid_to_convert_fid_[key] = val;
-            feature_map_stream.get();
-          }
+
+        const std::string& feature_map = split_model_string[1];
+        std::stringstream feature_map_stream(feature_map);
+        int key = 0, val = 0;
+        while (feature_map_stream >> key) {
+          CHECK_EQ(feature_map_stream.get(), ':');
+          feature_map_stream >> val;
+          cat_converter->cat_fid_to_convert_fid_[key] = val;
+          feature_map_stream.get();
         }
+
         return cat_converter;
       }
   };
@@ -126,6 +127,7 @@ class CTRProvider {
 
       CatConverter* Copy() const override {
         CatConverter* ret = new CTRConverter(prior_);
+        ret->SetPrior(prior_, prior_weight_);
         ret->SetCatFidToConvertFid(cat_fid_to_convert_fid_);
         return ret;
       }
@@ -550,6 +552,7 @@ class CTRProvider {
 
     max_bin_by_feature_ = config_.max_bin_by_feature;
     prior_ = 0.0f;
+    prior_weight_ = config_.prior_weight;
   }
 
   explicit CTRProvider(const std::string model_string) {
@@ -561,6 +564,7 @@ class CTRProvider {
     keep_raw_cat_method_ = static_cast<bool>(keep_raw_cat_method);
     str_stream >> num_original_features_;
     str_stream >> num_total_features_;
+    str_stream >> prior_weight_;
     is_categorical_feature_.clear();
     is_categorical_feature_.resize(num_original_features_, false);
     categorical_features_.clear();
@@ -937,6 +941,8 @@ class CTRProvider {
   std::vector<double> fold_prior_;
   // mean of labels of sampled data
   double prior_;
+  // weight of the prior in ctr calculation
+  double prior_weight_;
   // record whether a feature is categorical in the original data
   std::vector<bool> is_categorical_feature_;
 

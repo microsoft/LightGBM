@@ -1874,8 +1874,6 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
     return(lgb.Dataset(
       data = X
       , label = 2L * X[, 1L] + runif(nrow(X), 0L, 0.1)
-      # currently, we need specify colnames to use categorical features.
-      , colnames = c("f0", "f1")
     ))
   }
 
@@ -1885,7 +1883,8 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
-    , categorical_featurs = 1L
+    # indices in categorical feature starts from 1L, so here should be 2L
+    , categorical_feature = 2L
   )
 
   dtrain <- .new_dataset()
@@ -2018,8 +2017,6 @@ test_that(paste0("CTR for R package works"), {
   set.seed(1L)
   dtrain <- lgb.Dataset(train$data, label = train$label)
   dtest <- lgb.Dataset(test$data, label = test$label, reference = dtrain)
-  print(dtrain$dim())
-  print(dtest$dim())
   # ``` cat_converters = "" ```   is equal to   ``` cat_converters = "raw" ```
   params <- list(objective = "binary", categorical_feature = c(1L, 2L, 3L, 4L), cat_converters = "")
   bst <- lightgbm(
