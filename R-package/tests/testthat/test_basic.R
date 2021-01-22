@@ -1883,7 +1883,7 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
-    # indices in categorical feature starts from 1L, so here should be 2L
+    # indices in categorical feature start from 1L, so here should be 2L
     , categorical_feature = 2L
   )
 
@@ -2060,6 +2060,9 @@ test_that(paste0("CTR for R package works"), {
 
   err_pred1 <- sum((pred1 > 0.5) != test$label) / length(test$label)
   err_pred3 <- sum((pred3 > 0.5) != test$label) / length(test$label)
+  print("here print err_pred1 and err_pred3 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+  print(err_pred1)
+  print(err_pred3)
   expect_lt(err_pred3, err_pred1)
 
 
