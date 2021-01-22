@@ -512,7 +512,7 @@ def test_ranker(output, client, listen_port, group):
     # have high rank correlation with scores from serial ranker.
     dcor = spearmanr(rnkvec_dask, y).correlation
     assert dcor > 0.6
-    assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.9
+    assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.75
 
     client.close()
 
