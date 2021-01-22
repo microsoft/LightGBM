@@ -2048,7 +2048,7 @@ test_that(paste0("CTR for R package works"), {
     categorical_feature = c(1L, 2L, 3L, 4L))
   dtest <- lgb.Dataset(test$data, label = test$label,
     categorical_feature = c(1L, 2L, 3L, 4L), reference = dtrain)
-  params <- list(objective = "binary", cat_converters = "ctr0,count,raw")
+  params <- list(objective = "binary", cat_converters = "aaa,count,raw")
   bst <- lightgbm(
     data = dtrain
     , params = params
