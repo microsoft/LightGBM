@@ -179,10 +179,11 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
     sample_weight : array-like of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
-    group : array-like where sum(group) = [n_samples] or None for non-ranking objectives (default=None)
-        Group/query data, only used for ranking task. sum(group) = n_samples. For example,
-        if you have a 100-record dataset with `group = [10, 20, 40, 10, 10]`, that means that you have
-        5 groups, where the first 10 records are in the first group, records 11-30 are the second group, etc.
+    group : array-like or None, optional (default=None)
+        Group/query data.
+        Only used in the learning-to-rank task.
+        sum(group) = n_samples.
+        For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups, where the first 10 records are in the first group, records 11-30 are in the second group, etc.
     """
     params = deepcopy(params)
 
@@ -302,13 +303,13 @@ def _predict(model, data, proba=False, dtype=np.float32, **kwargs):
 
     Parameters
     ----------
-    model : local lightgbm.LGBM[Classifier/Regressor/Ranker]
+    model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
     data : dask array of shape = [n_samples, n_features]
         Input feature matrix.
     proba : bool
-        Should method return results of predict_proba (proba == True) or predict (proba == False)
+        Should method return results of predict_proba (proba == True) or predict (proba == False).
     dtype : np.dtype
-        Dtype of the output
+        Dtype of the output.
     kwargs : other parameters passed to predict or predict_proba method
     """
     if isinstance(data, dd._Frame):
@@ -331,7 +332,8 @@ class _LGBMModel:
             client = default_client()
 
         params = self.get_params(True)
-        model = _train(client, X, y, params, model_factory, sample_weight, group, **kwargs)
+        model = _train(client, data=X, label=y, params=params, model_factory=model_factory,
+                       sample_weight=sample_weight, group=group, **kwargs)
 
         self.set_params(**model.get_params())
         self._copy_extra_params(model, self)
@@ -406,8 +408,11 @@ class DaskLGBMRegressor(_LGBMModel, LGBMRegressor):
 class DaskLGBMRanker(_LGBMModel, LGBMRanker):
     """Docstring is inherited from the lightgbm.LGBMRanker."""
 
-    def fit(self, X, y=None, sample_weight=None, group=None, client=None, **kwargs):
+    def fit(self, X, y=None, sample_weight=None, init_score=None, group=None, client=None, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
+        if init_score is not None:
+            raise RuntimeError('init_score is not currently supported in lightgbm.dask')
+
         return self._fit(LGBMRanker, X=X, y=y, sample_weight=sample_weight, group=group, client=client, **kwargs)
     fit.__doc__ = LGBMRanker.fit.__doc__
 

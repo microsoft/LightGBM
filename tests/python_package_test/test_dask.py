@@ -1,9 +1,6 @@
 # coding: utf-8
-"""Tests for lightgbm.dask module
+"""Tests for lightgbm.dask module"""
 
-An easy way to run these tests is from the (python) docker container.
-Also see lightgbm-dask-testing repo: https://github.com/jameslamb/lightgbm-dask-testing
-"""
 import itertools
 import os
 import socket
@@ -55,33 +52,33 @@ def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
 
     Parameters
     ----------
-    n_samples: int (default=100)
-        Total number of documents (records) in the dataset
-    n_features : int (default=20)
-        Total number of features in the dataset
-    n_informative : int (default=5)
-        Number of features that are "informative" for ranking, as they are bias + beta * unif(min=y, max=y+1),
+    n_samples : int, optional (default=100)
+        Total number of documents (records) in the dataset.
+    n_features : int, optional (default=20)
+        Total number of features in the dataset.
+    n_informative : int, optional (default=5)
+        Number of features that are "informative" for ranking, as they are bias + beta * y
         where bias and beta are standard normal variates. If this is greater than n_features, the dataset will have
         n_features features, all will be informative.
     group : array-like, optional (default=None)
         1-d array or list of group sizes. When `group` is specified, this overrides n_samples, random_gs, and
         avg_gs by simply creating groups with sizes group[0], ..., group[-1].
-    gmax : int (default=2)
+    gmax : int, optional (default=2)
         Maximum graded relevance value for creating relevance/target vector. If you set this to 2, for example, all
         documents in a group will have relevance scores of either 0, 1, or 2.
-    random_gs : bool (default=False)
+    random_gs : bool, optional (default=False)
         True will make group sizes ~ Poisson(avg_gs), False will make group sizes == avg_gs.
-    avg_gs : int (default=10)
-        Average number of documents (records) in each group
+    avg_gs : int, optional (default=10)
+        Average number of documents (records) in each group.
 
     Returns
     ----------
-    X : 2-d np.ndarray of shape = [n_samples (or np.sum(group), n_features]
-        Input feature matrix for ranking objective
+    X : 2-d np.ndarray of shape = [n_samples (or np.sum(group)), n_features]
+        Input feature matrix for ranking objective.
     y : 1-d np.array of shape = [n_samples (or np.sum(group))]
-        integer-graded relevance scores
+        Integer-graded relevance scores.
     group_ids: 1-d np.array of shape = [n_samples (or np.sum(group))]
-        vector of group ids, each value indicates to which group each record belongs
+        Array of group ids, each value indicates to which group each record belongs.
     """
     rnd_generator = check_random_state(random_state)
 
@@ -112,7 +109,7 @@ def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
             group_id_vec = np.append(group_id_vec, [gid] * gsize)
             gid += 1
 
-        y_vec, group_id_vec = y_vec[0:n_samples], group_id_vec[0:n_samples]
+        y_vec, group_id_vec = y_vec[:n_samples], group_id_vec[:n_samples]
 
     # build feature data, X. Transform first few into informative features.
     n_informative = max(min(n_features, n_informative), 0)
@@ -129,7 +126,7 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
     X, y, g = _make_ranking(n_samples=n_samples, random_state=42, **kwargs)
     rnd = np.random.RandomState(42)
     w = rnd.rand(X.shape[0]) * 0.01
-    g_rle = np.array([sum([1 for _ in grp]) for _, grp in itertools.groupby(g)])
+    g_rle = np.array([len(list(grp)) for _, grp in itertools.groupby(g)])
 
     if output == 'dataframe':
 
@@ -138,7 +135,8 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
         X = X_df.copy()
         X_df = X_df.assign(y=y, g=g, w=w)
 
-        # set_index ensures partitions are based on group id. See https://bit.ly/3pAWyNw.
+        # set_index ensures partitions are based on group id.
+        # See https://stackoverflow.com/questions/49532824/dask-dataframe-split-partitions-based-on-a-column-or-function.
         X_df.set_index('g', inplace=True)
         dX = dd.from_pandas(X_df, chunksize=chunk_size)
 
@@ -156,7 +154,7 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
 
         # ranking arrays: one chunk per group. Each chunk must include all columns.
         p = X.shape[1]
-        dX, dy, dw, dg = list(), list(), list(), list()
+        dX, dy, dw, dg = [], [], [], []
         for g_idx, rhs in enumerate(np.cumsum(g_rle)):
             lhs = rhs - g_rle[g_idx]
             dX.append(da.from_array(X[lhs:rhs, :], chunks=(rhs - lhs, p)))
@@ -170,7 +168,7 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
         dg = da.concatenate(dg, axis=0)
 
     else:
-        raise ValueError('ranking data creation only supported for Dask arrays and dataframes')
+        raise ValueError('Ranking data creation only supported for Dask arrays and dataframes')
 
     return X, y, w, g_rle, dX, dy, dw, dg
 
@@ -383,8 +381,8 @@ def test_ranker(output, client, listen_port, group):
 
     X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
 
-    # -- use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
-    # -- serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
+    # use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
+    # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
     dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, tree_learner_type='data_parallel',
                                        n_estimators=50, num_leaves=20, seed=42, min_child_samples=1)
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
