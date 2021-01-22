@@ -5,8 +5,10 @@ import ctypes
 import json
 import os
 import warnings
-from tempfile import NamedTemporaryFile
 from collections import OrderedDict
+from functools import wraps
+from logging import Logger
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 import scipy.sparse
@@ -15,9 +17,60 @@ from .compat import PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse, DataTa
 from .libpath import find_lib_path
 
 
+_LOGGER = None
+
+
+def register_logger(logger):
+    """Register custom logger.
+
+    Parameters
+    ----------
+    logger : logging.Logger
+        Custom logger.
+    """
+    if not isinstance(logger, Logger):
+        raise TypeError("Logger should inherit logging.Logger class")
+    global _LOGGER
+    _LOGGER = logger
+
+
+def _normalize_native_string(func):
+    msg_normalized = []
+
+    @wraps(func)
+    def wrapper(msg):
+        nonlocal msg_normalized
+        if msg.strip() == '':
+            msg = ''.join(msg_normalized)
+            msg_normalized = []
+            return func(msg)
+        else:
+            msg_normalized.append(msg)
+
+    return wrapper
+
+
+def _log(msg, is_warning=False):
+    """Output LightGBM's logs."""
+    if _LOGGER is None:
+        if is_warning:
+            warnings.warn(msg, stacklevel=2)
+        else:
+            print(msg)
+    else:  # custom logger
+        if is_warning:
+            _LOGGER.warning(msg)
+        else:
+            _LOGGER.info(msg)
+
+@_normalize_native_string
+def _log_native(msg):
+    _log(msg)
+
+
 def _log_callback(msg):
-    """Redirect logs from native library into Python console."""
-    print("{0:s}".format(msg.decode('utf-8')), end='')
+    """Redirect logs from native library into Python."""
+    _log_native("{0:s}".format(msg.decode('utf-8')))
 
 
 def _load_lib():
@@ -329,8 +382,9 @@ def convert_from_sliced_object(data):
     """Fix the memory of multi-dimensional sliced object."""
     if isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         if not data.flags.c_contiguous:
-            warnings.warn("Usage of np.ndarray subset (sliced data) is not recommended "
-                          "due to it will double the peak memory cost in LightGBM.")
+            _log("Usage of np.ndarray subset (sliced data) is not recommended "
+                 "due to it will double the peak memory cost in LightGBM.",
+                 is_warning=True)
             return np.copy(data)
     return data
 
@@ -620,7 +674,7 @@ class _InnerPredictor:
             preds, nrow = self.__pred_for_np2d(data.to_numpy(), start_iteration, num_iteration, predict_type)
         else:
             try:
-                warnings.warn('Converting data to scipy sparse matrix.')
+                _log('Converting data to scipy sparse matrix.', is_warning=True)
                 csr = scipy.sparse.csr_matrix(data)
             except BaseException:
                 raise TypeError('Cannot predict data for type {}'.format(type(data).__name__))
@@ -1103,9 +1157,9 @@ class Dataset:
                       .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount])
         for key, _ in params.items():
             if key in args_names:
-                warnings.warn('{0} keyword has been found in `params` and will be ignored.\n'
-                              'Please use {0} argument of the Dataset constructor to pass this parameter.'
-                              .format(key))
+                _log('{0} keyword has been found in `params` and will be ignored.\n'
+                     'Please use {0} argument of the Dataset constructor to pass this parameter.'
+                     .format(key), is_warning=True)
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
@@ -1126,7 +1180,8 @@ class Dataset:
             if categorical_indices:
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     if cat_alias in params:
-                        warnings.warn('{} in param dict is overridden.'.format(cat_alias))
+                        _log('{} in param dict is overridden.'.format(cat_alias),
+                             is_warning=True)
                         params.pop(cat_alias, None)
                 params['categorical_column'] = sorted(categorical_indices)
 
@@ -1172,7 +1227,8 @@ class Dataset:
             self.set_group(group)
         if isinstance(predictor, _InnerPredictor):
             if self._predictor is None and init_score is not None:
-                warnings.warn("The init_score will be overridden by the prediction of init_model.")
+                _log("The init_score will be overridden by the prediction of init_model.",
+                     is_warning=True)
             self._set_init_score_by_predictor(predictor, data)
         elif init_score is not None:
             self.set_init_score(init_score)
@@ -1314,7 +1370,8 @@ class Dataset:
             if self.reference is not None:
                 reference_params = self.reference.get_params()
                 if self.get_params() != reference_params:
-                    warnings.warn('Overriding the parameters from Reference Dataset.')
+                    _log('Overriding the parameters from Reference Dataset.',
+                         is_warning=True)
                     self._update_params(reference_params)
                 if self.used_indices is None:
                     # create valid
@@ -1583,11 +1640,12 @@ class Dataset:
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
             elif categorical_feature == 'auto':
-                warnings.warn('Using categorical_feature in Dataset.')
+                _log('Using categorical_feature in Dataset.', is_warning=True)
                 return self
             else:
-                warnings.warn('categorical_feature in Dataset is overridden.\n'
-                              'New categorical_feature is {}'.format(sorted(list(categorical_feature))))
+                _log('categorical_feature in Dataset is overridden.\n'
+                     'New categorical_feature is {}'.format(sorted(list(categorical_feature))),
+                     is_warning=True)
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
         else:
@@ -1840,8 +1898,9 @@ class Dataset:
                 elif isinstance(self.data, DataTable):
                     self.data = self.data[self.used_indices, :]
                 else:
-                    warnings.warn("Cannot subset {} type of raw data.\n"
-                                  "Returning original raw data".format(type(self.data).__name__))
+                    _log("Cannot subset {} type of raw data.\n"
+                         "Returning original raw data".format(type(self.data).__name__),
+                         is_warning=True)
             self.need_slice = False
         if self.data is None:
             raise LightGBMError("Cannot call `get_data` after freed raw data, "
@@ -2011,10 +2070,11 @@ class Dataset:
                                                         old_self_data_type)
             err_msg += ("Set free_raw_data=False when construct Dataset to avoid this"
                         if was_none else "Freeing raw data")
-            warnings.warn(err_msg)
+            _log(err_msg, is_warning=True)
         self.feature_name = self.get_feature_name()
-        warnings.warn("Reseting categorical features.\n"
-                      "You can set new categorical features via ``set_categorical_feature`` method")
+        _log("Reseting categorical features.\n"
+             "You can set new categorical features via ``set_categorical_feature`` method",
+             is_warning=True)
         self.categorical_feature = "auto"
         self.pandas_categorical = None
         return self
@@ -2834,7 +2894,7 @@ class Booster:
             self.handle,
             ctypes.byref(out_num_class)))
         if verbose:
-            print('Finished loading model, total used %d iterations' % int(out_num_iterations.value))
+            _log('Finished loading model, total used %d iterations' % int(out_num_iterations.value))
         self.__num_class = out_num_class.value
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self

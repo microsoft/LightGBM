@@ -2,13 +2,12 @@
 """Library with training routines of LightGBM."""
 import collections
 import copy
-import warnings
 from operator import attrgetter
 
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor
+from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor, _log
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 
@@ -146,12 +145,14 @@ def train(params, train_set, num_boost_round=100,
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             num_boost_round = params.pop(alias)
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log("Found `{}` in params. Will use it instead of argument".format(alias),
+                 is_warning=True)
     params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             early_stopping_rounds = params.pop(alias)
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log("Found `{}` in params. Will use it instead of argument".format(alias),
+                 is_warning=True)
     params["early_stopping_round"] = early_stopping_rounds
     first_metric_only = params.get('first_metric_only', False)
 
@@ -525,12 +526,14 @@ def cv(params, train_set, num_boost_round=100,
         params['objective'] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log("Found `{}` in params. Will use it instead of argument".format(alias),
+                 is_warning=True)
             num_boost_round = params.pop(alias)
     params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log("Found `{}` in params. Will use it instead of argument".format(alias),
+                 is_warning=True)
             early_stopping_rounds = params.pop(alias)
     params["early_stopping_round"] = early_stopping_rounds
     first_metric_only = params.get('first_metric_only', False)
