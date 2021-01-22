@@ -72,12 +72,12 @@ def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
         Average number of documents (records) in each group.
 
     Returns
-    ----------
+    -------
     X : 2-d np.ndarray of shape = [n_samples (or np.sum(group)), n_features]
         Input feature matrix for ranking objective.
     y : 1-d np.array of shape = [n_samples (or np.sum(group))]
         Integer-graded relevance scores.
-    group_ids: 1-d np.array of shape = [n_samples (or np.sum(group))]
+    group_ids : 1-d np.array of shape = [n_samples (or np.sum(group))]
         Array of group ids, each value indicates to which group each record belongs.
     """
     rnd_generator = check_random_state(random_state)
