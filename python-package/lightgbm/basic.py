@@ -17,7 +17,15 @@ from .compat import PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse, DataTa
 from .libpath import find_lib_path
 
 
-_LOGGER = None
+class _DummyLogger:
+    def info(self, msg):
+        print(msg)
+
+    def warning(self, msg):
+        warnings.warn(msg, stacklevel=3)
+
+
+_LOGGER = _DummyLogger()
 
 
 def register_logger(logger):
@@ -35,6 +43,7 @@ def register_logger(logger):
 
 
 def _normalize_native_string(func):
+    """Join log messages from native library which come by chunks."""
     msg_normalized = []
 
     @wraps(func)
@@ -52,16 +61,11 @@ def _normalize_native_string(func):
 
 def _log(msg, is_warning=False):
     """Output LightGBM's logs."""
-    if _LOGGER is None:
-        if is_warning:
-            warnings.warn(msg, stacklevel=2)
-        else:
-            print(msg)
-    else:  # custom logger
-        if is_warning:
-            _LOGGER.warning(msg)
-        else:
-            _LOGGER.info(msg)
+    if is_warning:
+        _LOGGER.warning(msg)
+    else:
+        _LOGGER.info(msg)
+
 
 @_normalize_native_string
 def _log_native(msg):

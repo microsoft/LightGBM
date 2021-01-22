@@ -3,7 +3,7 @@
 
 Contributors: https://github.com/microsoft/LightGBM/graphs/contributors.
 """
-from .basic import Booster, Dataset
+from .basic import Booster, Dataset, register_logger
 from .callback import (early_stopping, print_evaluation, record_evaluation,
                        reset_parameter)
 from .engine import cv, train, CVBooster
@@ -28,6 +28,7 @@ if os.path.isfile(os.path.join(dir_path, 'VERSION.txt')):
         __version__ = version_file.read().strip()
 
 __all__ = ['Dataset', 'Booster', 'CVBooster',
+           'register_logger',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
            'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
