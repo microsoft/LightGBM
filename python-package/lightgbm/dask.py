@@ -144,6 +144,7 @@ def _train_part(params, model_factory, list_of_parts, worker_address_to_port, re
 
     try:
         model = model_factory(**params)
+
         if is_ranker:
             group = _concat(parts[-1])
             if len(parts) == 4:
@@ -157,6 +158,7 @@ def _train_part(params, model_factory, list_of_parts, worker_address_to_port, re
             else:
                 weight = None
             model.fit(data, y=label, sample_weight=weight, **kwargs)
+
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
 
