@@ -242,7 +242,11 @@ def test_classifier(output, centers, client, listen_port):
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('centers', data_centers)
 def test_classifier_pred_contrib(output, centers, client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
+    X, y, w, dX, dy, dw = _create_data(
+        objective='classification',
+        output=output,
+        centers=centers
+    )
 
     dask_classifier = dlgbm.DaskLGBMClassifier(
         time_out=5,
@@ -376,7 +380,10 @@ def test_regressor(output, client, listen_port):
 
 @pytest.mark.parametrize('output', data_output)
 def test_regressor_pred_contrib(output, client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('regression', output=output)
+    X, y, w, dX, dy, dw = _create_data(
+        objective='regression',
+        output=output
+    )
 
     dask_regressor = dlgbm.DaskLGBMRegressor(
         time_out=5,
