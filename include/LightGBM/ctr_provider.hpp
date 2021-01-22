@@ -592,7 +592,7 @@ class CTRProvider {
     cat_converters_.clear();
     std::string cat_converter_string;
     while (str_stream >> cat_converter_string) {
-      cat_converters_.emplace_back(CatConverter::CreateFromString(cat_converter_string, config_.prior_weight));
+      cat_converters_.emplace_back(CatConverter::CreateFromString(cat_converter_string, prior_weight_));
     }
   }
 
