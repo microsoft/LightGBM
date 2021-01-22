@@ -133,7 +133,7 @@ def _train_part(params, model_factory, list_of_parts, worker_address_to_port, re
     }
     params.update(network_params)
 
-    is_ranker = model_factory.__qualname__ == 'LGBMRanker'
+    is_ranker = issubclass(model_factory, LGBMRanker)
 
     # Concatenate many parts into one
     parts = tuple(zip(*list_of_parts))
