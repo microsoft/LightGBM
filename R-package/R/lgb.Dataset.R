@@ -151,6 +151,10 @@ Dataset <- R6::R6Class(
           } else {
 
             # Check if more categorical features were output over the feature space
+            if (is.null(private$colnames)) {
+              stop("lgb.self.get.handle: please specify colnames before to use categorical_feature")
+            }
+
             if (max(private$categorical_feature) > length(private$colnames)) {
               stop(
                 "lgb.self.get.handle: supplied a too large value in categorical_feature: "
@@ -563,12 +567,12 @@ Dataset <- R6::R6Class(
       }
       if (!is.null(params$categorical_feature)) {
         # when categorical feature is passed in the constructor of lgb.Dataset
-        # all indices are subtracted by 1 in set_categorical_feature.
+        # all indices are subtracted by 1 in construct().
         # however, when it is passed directly to the C API, it used the original indices.
         # this causes unexpected inconsistent results, so we remove
         # categorical features from the parameters and directly set it in R.
         self$set_categorical_feature(params$categorical_feature)
-        params$categorical_feature <- private$params$categorical_feature
+        params$categorical_feature <- NULL
       }
       if (lgb.is.null.handle(x = private$handle)) {
         private$params <- modifyList(private$params, params)
