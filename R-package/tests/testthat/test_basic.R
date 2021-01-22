@@ -2063,7 +2063,9 @@ test_that(paste0("CTR for R package works"), {
   print("here print err_pred1 and err_pred3 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
   print(err_pred1)
   print(err_pred3)
-  expect_lt(err_pred3, err_pred1)
+  expect_lt(abs(err_pred1 - 0.00248293), TOLERANCE)
+  expect_lt(abs(err_pred3 - 0.001862197), TOLERANCE)
+  #expect_lt(err_pred3, err_pred1)
 
 
   # test gbdt model with cat_converters
