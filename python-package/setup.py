@@ -65,8 +65,10 @@ def copy_files(integrated_opencl=False, use_gpu=False):
     if not os.path.isfile(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt')):
         copy_files_helper('include')
         copy_files_helper('src')
-        copy_files_helper('eigen')
-        copy_files_helper('external_libs')
+        for submodule in os.listdir(os.path.join(CURRENT_DIR, os.path.pardir, 'external_libs')):
+            if submodule == 'compute' and not use_gpu:
+                continue
+            copy_files_helper(os.path.join('external_libs', submodule))
         if not os.path.exists(os.path.join(CURRENT_DIR, "compile", "windows")):
             os.makedirs(os.path.join(CURRENT_DIR, "compile", "windows"))
         copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.sln"),
@@ -85,8 +87,6 @@ def copy_files(integrated_opencl=False, use_gpu=False):
             copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeIntegratedOpenCL.cmake"),
                       os.path.join(CURRENT_DIR, "compile", "CMakeIntegratedOpenCL.cmake"),
                       verbose=0)
-        if use_gpu:
-            copy_files_helper('compute')
 
 
 def clear_path(path):
