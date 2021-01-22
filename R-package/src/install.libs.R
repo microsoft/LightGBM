@@ -82,7 +82,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
       , "-A"
       , "x64"
     )
-    exit_code <- .run_shell_command("cmake", c(vs_cmake_args, ".."), strict = FALSE)
+    exit_code <- .run_shell_command("cmake -DCMAKE_CXX_COMPILER=clang++-7 -DCMAKE_C_COMPILER=clang-7", c(vs_cmake_args, ".."), strict = FALSE)
     if (exit_code == 0L) {
       message(sprintf("Successfully created build files for '%s'", vs_version))
       return(invisible(TRUE))
@@ -131,7 +131,7 @@ if (WINDOWS && use_visual_studio) {
 
 # Prepare installation steps
 cmake_args <- NULL
-build_cmd <- "make"
+build_cmd <- "make -j"
 build_args <- "_lightgbm"
 lib_folder <- file.path(source_dir, fsep = "/")
 
@@ -192,7 +192,7 @@ if (WINDOWS) {
     message(sprintf("Trying to build with %s", windows_toolchain))
     # Must build twice for Windows due sh.exe in Rtools
     cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
-    .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
+    .run_shell_command("cmake -DCMAKE_CXX_COMPILER=clang++-7 -DCMAKE_C_COMPILER=clang-7", c(cmake_args, ".."), strict = FALSE)
     build_cmd <- windows_build_tool
     build_args <- "_lightgbm"
   } else {
@@ -201,24 +201,24 @@ if (WINDOWS) {
       warning(sprintf("Building with Visual Studio failed. Attempting with %s", windows_toolchain))
       # Must build twice for Windows due sh.exe in Rtools
       cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
-      .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
+      .run_shell_command("cmake -DCMAKE_CXX_COMPILER=clang++-7 -DCMAKE_C_COMPILER=clang-7", c(cmake_args, ".."), strict = FALSE)
       build_cmd <- windows_build_tool
       build_args <- "_lightgbm"
     } else {
-      build_cmd <- "cmake"
+      build_cmd <- "cmake -DCMAKE_CXX_COMPILER=clang++-7 -DCMAKE_C_COMPILER=clang-7"
       build_args <- c("--build", ".", "--target", "_lightgbm", "--config", "Release")
       lib_folder <- file.path(source_dir, "Release", fsep = "/")
       makefiles_already_generated <- TRUE
     }
   }
 } else {
-    .run_shell_command("cmake", c(cmake_args, ".."))
+    .run_shell_command("cmake -DCMAKE_CXX_COMPILER=clang++-7 -DCMAKE_C_COMPILER=clang-7", c(cmake_args, ".."))
     makefiles_already_generated <- TRUE
 }
 
 # generate build files
 if (!makefiles_already_generated) {
-  .run_shell_command("cmake", c(cmake_args, ".."))
+  .run_shell_command("cmake -DCMAKE_CXX_COMPILER=clang++-7 -DCMAKE_C_COMPILER=clang-7", c(cmake_args, ".."))
 }
 
 # build the library
