@@ -183,7 +183,8 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
         Group/query data.
         Only used in the learning-to-rank task.
         sum(group) = n_samples.
-        For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups, where the first 10 records are in the first group, records 11-30 are in the second group, etc.
+        For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+        where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
     """
     params = deepcopy(params)
 
