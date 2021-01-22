@@ -127,13 +127,11 @@ Core Parameters
 
       -  categorical features are used for splits as normal but are not used in the linear models
 
-      -  missing values must be encoded as ``np.nan`` (Python) or ``NA`` (CLI), not ``0``
+      -  missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
 
       -  it is recommended to rescale data before training so that features have similar mean and standard deviation
 
       -  **Note**: only works with CPU and ``serial`` tree learner
-
-      -  **Note**: not yet supported in R-package
 
       -  **Note**: ``regression_l1`` objective is not supported with linear tree boosting
 
@@ -762,7 +760,7 @@ Dataset Parameters
 
    -  **Note**: works only in case of loading data directly from file
 
-   -  **Note**: data should be grouped by query\_id
+   -  **Note**: data should be grouped by query\_id, for more information, see `Query Data <#query-data>`__
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0 and query\_id is column\_1, the correct parameter is ``query=0``
 
@@ -1231,6 +1229,7 @@ Query Data
 ~~~~~~~~~~
 
 For learning to rank, it needs query information for training data.
+
 LightGBM uses an additional file to store query data, like the following:
 
 ::
@@ -1240,7 +1239,13 @@ LightGBM uses an additional file to store query data, like the following:
     67
     ...
 
-It means first ``27`` lines samples belong to one query and next ``18`` lines belong to another, and so on.
+For wrapper libraries like in Python and R, this information can also be provided as an array-like via the Dataset parameter ``group``.
+
+::
+
+    [27, 18, 67, ...]
+
+For example, if you have a 112-document dataset with ``group = [27, 18, 67]``, that means that you have 3 groups, where the first 27 records are in the first group, records 28-45 are in the second group, and records 46-112 are in the third group.
 
 **Note**: data should be ordered by the query.
 

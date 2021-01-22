@@ -238,6 +238,9 @@ class _ConfigAliases:
                                     "sparse"},
                "label_column": {"label_column",
                                 "label"},
+               "local_listen_port": {"local_listen_port",
+                                     "local_port",
+                                     "port"},
                "machines": {"machines",
                             "workers",
                             "nodes"},
@@ -255,12 +258,21 @@ class _ConfigAliases:
                                   "num_rounds",
                                   "num_boost_round",
                                   "n_estimators"},
+               "num_threads": {"num_threads",
+                               "num_thread",
+                               "nthread",
+                               "nthreads",
+                               "n_jobs"},
                "objective": {"objective",
                              "objective_type",
                              "app",
                              "application"},
                "pre_partition": {"pre_partition",
                                  "is_pre_partition"},
+               "tree_learner": {"tree_learner",
+                                "tree",
+                                "tree_type",
+                                "tree_learner_type"},
                "two_round": {"two_round",
                              "two_round_loading",
                              "use_two_round_loading"},
@@ -941,7 +953,11 @@ class Dataset:
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Weight for each instance.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Group/query size for Dataset.
+            Group/query data.
+            Only used in the learning-to-rank task.
+            sum(group) = n_samples.
+            For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+            where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
@@ -1356,7 +1372,11 @@ class Dataset:
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Weight for each instance.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Group/query size for Dataset.
+            Group/query data.
+            Only used in the learning-to-rank task.
+            sum(group) = n_samples.
+            For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+            where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
@@ -1715,7 +1735,11 @@ class Dataset:
         Parameters
         ----------
         group : list, numpy 1-D array, pandas Series or None
-            Group size of each group.
+            Group/query data.
+            Only used in the learning-to-rank task.
+            sum(group) = n_samples.
+            For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+            where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
 
         Returns
         -------
@@ -1830,7 +1854,11 @@ class Dataset:
         Returns
         -------
         group : numpy array or None
-            Group size of each group.
+            Group/query data.
+            Only used in the learning-to-rank task.
+            sum(group) = n_samples.
+            For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+            where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         """
         if self.group is None:
             self.group = self.get_field('group')
@@ -2228,7 +2256,9 @@ class Booster:
             - ``split_feature`` : string, name of the feature used for splitting. ``None`` for leaf nodes.
             - ``split_gain`` : float64, gain from adding this split to the tree. ``NaN`` for leaf nodes.
             - ``threshold`` : float64, value of the feature used to decide which side of the split a record will go down. ``NaN`` for leaf nodes.
-            - ``decision_type`` : string, logical operator describing how to compare a value to ``threshold``. For example, ``split_feature = "Column_10", threshold = 15, decision_type = "<="`` means that records where ``Column_10 <= 15`` follow the left side of the split, otherwise follows the right side of the split. ``None`` for leaf nodes.
+            - ``decision_type`` : string, logical operator describing how to compare a value to ``threshold``.
+              For example, ``split_feature = "Column_10", threshold = 15, decision_type = "<="`` means that
+              records where ``Column_10 <= 15`` follow the left side of the split, otherwise follows the right side of the split. ``None`` for leaf nodes.
             - ``missing_direction`` : string, split direction that missing values should go to. ``None`` for leaf nodes.
             - ``missing_type`` : string, describes what types of values are treated as missing.
             - ``value`` : float64, predicted value for this leaf node, multiplied by the learning rate.

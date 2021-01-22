@@ -20,16 +20,9 @@ elseif(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
 elseif(USE_CUDA)
   cmake_minimum_required(VERSION 3.16)
-elseif(__BUILD_FOR_R)
-  cmake_minimum_required(VERSION 3.6)
 else()
   cmake_minimum_required(VERSION 3.0)
 endif()
-
-if(__BUILD_FOR_R)
-  # Should be always before PROJECT command
-  set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
-endif(__BUILD_FOR_R)
 
 if(USE_CUDA)
   PROJECT(lightgbm LANGUAGES C CXX CUDA)

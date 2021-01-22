@@ -10,17 +10,58 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 TEMP_R_DIR <- file.path(getwd(), "lightgbm_r")
 TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 
-USING_GPU <- "--use-gpu" %in% args
-USING_MINGW <- "--use-mingw" %in% args
-USING_MSYS2 <- "--use-msys2" %in% args
+# [description]
+#     Parse the content of commandArgs() into a structured
+#     list. This returns a list with two sections.
+#       * "flags" = a character of vector of flags like "--use-gpu"
+#       * "keyword_args" = a named character vector, where names
+#           refer to options and values are the option values. For
+#           example, c("--boost-librarydir" = "/usr/lib/x86_64-linux-gnu")
+.parse_args <- function(args) {
+  out_list <- list(
+    "flags" = character(0L)
+    , "keyword_args" = character(0L)
+  )
+  for (arg in args) {
+    if (any(grepl("=", arg))) {
+      split_arg <- strsplit(arg, "=")[[1L]]
+      arg_name <- split_arg[[1L]]
+      arg_value <- split_arg[[2L]]
+      out_list[["keyword_args"]][[arg_name]] <- arg_value
+    } else {
+      out_list[["flags"]] <- c(out_list[["flags"]], arg)
+    }
+  }
+  return(out_list)
+}
+parsed_args <- .parse_args(args)
+
+USING_GPU <- "--use-gpu" %in% parsed_args[["flags"]]
+USING_MINGW <- "--use-mingw" %in% parsed_args[["flags"]]
+USING_MSYS2 <- "--use-msys2" %in% parsed_args[["flags"]]
+
+# this maps command-line arguments to defines passed into CMake,
+ARGS_TO_DEFINES <- c(
+  "--boost-root" = "-DBOOST_ROOT"
+  , "--boost-dir" = "-DBoost_DIR"
+  , "--boost-include-dir" = "-DBoost_INCLUDE_DIR"
+  , "--boost-librarydir" = "-DBOOST_LIBRARYDIR"
+  , "--opencl-include-dir" = "-DOpenCL_INCLUDE_DIR"
+  , "--opencl-library" = "-DOpenCL_LIBRARY"
+)
 
 recognized_args <- c(
   "--skip-install"
   , "--use-gpu"
   , "--use-mingw"
   , "--use-msys2"
+  , names(ARGS_TO_DEFINES)
 )
-unrecognized_args <- setdiff(args, recognized_args)
+given_args <- c(
+  parsed_args[["flags"]]
+  , names(parsed_args[["keyword_args"]])
+)
+unrecognized_args <- setdiff(given_args, recognized_args)
 if (length(unrecognized_args) > 0L) {
   msg <- paste0(
     "Unrecognized arguments: "
@@ -46,6 +87,27 @@ install_libs_content <- readLines(
 install_libs_content <- .replace_flag("use_gpu", USING_GPU, install_libs_content)
 install_libs_content <- .replace_flag("use_mingw", USING_MINGW, install_libs_content)
 install_libs_content <- .replace_flag("use_msys2", USING_MSYS2, install_libs_content)
+
+# set up extra flags based on keyword arguments
+keyword_args <- parsed_args[["keyword_args"]]
+if (length(keyword_args) > 0L) {
+  cmake_args_to_add <- NULL
+  for (i in seq_len(length(keyword_args))) {
+    arg_name <- names(keyword_args)[[i]]
+    define_name <- ARGS_TO_DEFINES[[arg_name]]
+    arg_value <- shQuote(keyword_args[[arg_name]])
+    cmake_args_to_add <- c(cmake_args_to_add, paste0(define_name, "=", arg_value))
+  }
+  install_libs_content <- gsub(
+    pattern = paste0("command_line_args <- NULL")
+    , replacement = paste0(
+      "command_line_args <- c(\""
+      , paste(cmake_args_to_add, collapse = "\", \"")
+      , "\")"
+    )
+    , x = install_libs_content
+  )
+}
 
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
@@ -155,6 +217,72 @@ if (USING_GPU) {
   )
   .handle_result(result)
 }
+
+EIGEN_R_DIR <- file.path(TEMP_SOURCE_DIR, "include", "Eigen")
+dir.create(EIGEN_R_DIR)
+
+eigen_modules <- c(
+  "Cholesky"
+  , "Core"
+  , "Dense"
+  , "Eigenvalues"
+  , "Geometry"
+  , "Householder"
+  , "Jacobi"
+  , "LU"
+  , "QR"
+  , "SVD"
+)
+for (eigen_module in eigen_modules) {
+  result <- file.copy(
+    from = file.path("eigen", "Eigen", eigen_module)
+    , to = EIGEN_R_DIR
+    , recursive = FALSE
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+}
+
+dir.create(file.path(EIGEN_R_DIR, "src"))
+
+for (eigen_module in c(eigen_modules, "misc", "plugins")) {
+  if (eigen_module == "Dense") {
+    next
+  }
+  module_dir <- file.path(EIGEN_R_DIR, "src", eigen_module)
+  dir.create(module_dir, recursive = TRUE)
+  result <- file.copy(
+    from = sprintf("%s/", file.path("eigen", "Eigen", "src", eigen_module))
+    , to = sprintf("%s/", file.path(EIGEN_R_DIR, "src"))
+    , recursive = TRUE
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+}
+
+.replace_pragmas <- function(filepath) {
+  pragma_patterns <- c(
+    "^.*#pragma clang diagnostic.*$"
+    , "^.*#pragma diag_suppress.*$"
+    , "^.*#pragma GCC diagnostic.*$"
+    , "^.*#pragma region.*$"
+    , "^.*#pragma endregion.*$"
+    , "^.*#pragma warning.*$"
+  )
+  content <- readLines(filepath)
+  for (pragma_pattern in pragma_patterns) {
+    content <- content[!grepl(pragma_pattern, content)]
+  }
+  writeLines(content, filepath)
+}
+
+# remove pragmas that suppress warnings, to appease R CMD check
+.replace_pragmas(
+  file.path(EIGEN_R_DIR, "src", "Core", "arch", "SSE", "Complex.h")
+)
+.replace_pragmas(
+  file.path(EIGEN_R_DIR, "src", "Core", "util", "DisableStupidWarnings.h")
+)
 
 result <- file.copy(
   from = "CMakeLists.txt"

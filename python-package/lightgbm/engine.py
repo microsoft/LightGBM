@@ -126,7 +126,8 @@ def train(params, train_set, num_boost_round=100,
     keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
         If False, the returned value will be converted into _InnerPredictor before returning.
-        When your model is very large and cause the memory error, you can try to set this param to ``True`` to avoid the model conversion performed during the internal call of ``model_to_string``.
+        When your model is very large and cause the memory error,
+        you can try to set this param to ``True`` to avoid the model conversion performed during the internal call of ``model_to_string``.
         You can still use _InnerPredictor as ``init_model`` for future continue training.
     callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
