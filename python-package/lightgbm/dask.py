@@ -1,8 +1,10 @@
 # coding: utf-8
 """Distributed training with LightGBM and Dask.distributed.
 
-This module enables you to perform distributed training with LightGBM on Dask.Array and Dask.DataFrame collections.
-It is based on dask-xgboost package.
+This module enables you to perform distributed training with LightGBM on
+Dask.Array and Dask.DataFrame collections.
+
+It is based on dask-lightgbm, which was based on dask-xgboost.
 """
 import logging
 import socket
@@ -145,10 +147,16 @@ def _train_part(params, model_factory, list_of_parts, worker_address_to_port, re
 
         if is_ranker:
             group = _concat(parts[-1])
-            weight = _concat(parts[2]) if len(parts) == 4 else None
+            if len(parts) == 4:
+                weight = _concat(parts[2])
+            else:
+                weight = None
             model.fit(data, y=label, sample_weight=weight, group=group, **kwargs)
         else:
-            weight = _concat(parts[2]) if len(parts) == 3 else None
+            if len(parts) == 3:
+                weight = _concat(parts[2])
+            else:
+                weight = None
             model.fit(data, y=label, sample_weight=weight, **kwargs)
 
     finally:
@@ -160,7 +168,10 @@ def _train_part(params, model_factory, list_of_parts, worker_address_to_port, re
 def _split_to_parts(data, is_matrix):
     parts = data.to_delayed()
     if isinstance(parts, np.ndarray):
-        assert (parts.shape[1] == 1) if is_matrix else (parts.ndim == 1 or parts.shape[1] == 1)
+        if is_matrix:
+            assert parts.shape[1] == 1
+        else:
+            assert parts.ndim == 1 or parts.shape[1] == 1
         parts = parts.flatten().tolist()
     return parts
 
@@ -189,10 +200,18 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
     params = deepcopy(params)
 
     # Split arrays/dataframes into parts. Arrange parts into tuples to enforce co-locality
-    data_parts = _split_to_parts(data, is_matrix=True)
-    label_parts = _split_to_parts(label, is_matrix=False)
-    weight_parts = _split_to_parts(sample_weight, is_matrix=False) if sample_weight is not None else None
-    group_parts = _split_to_parts(group, is_matrix=False) if group is not None else None
+    data_parts = _split_to_parts(data=data, is_matrix=True)
+    label_parts = _split_to_parts(data=label, is_matrix=False)
+
+    if sample_weight is not None:
+        weight_parts = _split_to_parts(data=sample_weight, is_matrix=False)
+    else:
+        weight_parts = None
+
+    if group is not None:
+        group_parts = _split_to_parts(data=group, is_matrix=False)
+    else:
+        group_parts = None
 
     # choose between four options of (sample_weight, group) being (un)specified
     if weight_parts is None and group_parts is None:
@@ -265,15 +284,19 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
         params.pop(num_thread_alias, None)
 
     # Tell each worker to train on the parts that it has locally
-    futures_classifiers = [client.submit(_train_part,
-                                         model_factory=model_factory,
-                                         params={**params, 'num_threads': worker_ncores[worker]},
-                                         list_of_parts=list_of_parts,
-                                         worker_address_to_port=worker_address_to_port,
-                                         time_out=params.get('time_out', 120),
-                                         return_model=(worker == master_worker),
-                                         **kwargs)
-                           for worker, list_of_parts in worker_map.items()]
+    futures_classifiers = [
+        client.submit(
+            _train_part,
+            model_factory=model_factory,
+            params={**params, 'num_threads': worker_ncores[worker]},
+            list_of_parts=list_of_parts,
+            worker_address_to_port=worker_address_to_port,
+            time_out=params.get('time_out', 120),
+            return_model=(worker == master_worker),
+            **kwargs
+        )
+        for worker, list_of_parts in worker_map.items()
+    ]
 
     results = client.gather(futures_classifiers)
     results = [v for v in results if v]
@@ -368,8 +391,17 @@ class _LGBMModel:
             client = default_client()
 
         params = self.get_params(True)
-        model = _train(client, data=X, label=y, params=params, model_factory=model_factory,
-                       sample_weight=sample_weight, group=group, **kwargs)
+
+        model = _train(
+            client=client,
+            data=X,
+            label=y,
+            params=params,
+            model_factory=model_factory,
+            sample_weight=sample_weight,
+            group=group,
+            **kwargs
+        )
 
         self.set_params(**model.get_params())
         self._copy_extra_params(model, self)
@@ -395,17 +427,37 @@ class DaskLGBMClassifier(_LGBMModel, LGBMClassifier):
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
-        return self._fit(LGBMClassifier, X=X, y=y, sample_weight=sample_weight, client=client, **kwargs)
+        return self._fit(
+            model_factory=LGBMClassifier,
+            X=X,
+            y=y,
+            sample_weight=sample_weight,
+            client=client,
+            **kwargs
+        )
+
     fit.__doc__ = LGBMClassifier.fit.__doc__
 
     def predict(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
-        return _predict(self.to_local(), X, dtype=self.classes_.dtype, **kwargs)
+        return _predict(
+            model=self.to_local(),
+            data=X,
+            dtype=self.classes_.dtype,
+            **kwargs
+        )
+
     predict.__doc__ = LGBMClassifier.predict.__doc__
 
     def predict_proba(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict_proba."""
-        return _predict(self.to_local(), X, pred_proba=True, **kwargs)
+        return _predict(
+            model=self.to_local(),
+            data=X,
+            pred_proba=True,
+            **kwargs
+        )
+
     predict_proba.__doc__ = LGBMClassifier.predict_proba.__doc__
 
     def to_local(self):
@@ -423,12 +475,25 @@ class DaskLGBMRegressor(_LGBMModel, LGBMRegressor):
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        return self._fit(LGBMRegressor, X=X, y=y, sample_weight=sample_weight, client=client, **kwargs)
+        return self._fit(
+            model_factory=LGBMRegressor,
+            X=X,
+            y=y,
+            sample_weight=sample_weight,
+            client=client,
+            **kwargs
+        )
+
     fit.__doc__ = LGBMRegressor.fit.__doc__
 
     def predict(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
-        return _predict(self.to_local(), X, **kwargs)
+        return _predict(
+            model=self.to_local(),
+            data=X,
+            **kwargs
+        )
+
     predict.__doc__ = LGBMRegressor.predict.__doc__
 
     def to_local(self):
@@ -449,12 +514,22 @@ class DaskLGBMRanker(_LGBMModel, LGBMRanker):
         if init_score is not None:
             raise RuntimeError('init_score is not currently supported in lightgbm.dask')
 
-        return self._fit(LGBMRanker, X=X, y=y, sample_weight=sample_weight, group=group, client=client, **kwargs)
+        return self._fit(
+            model_factory=LGBMRanker,
+            X=X,
+            y=y,
+            sample_weight=sample_weight,
+            group=group,
+            client=client,
+            **kwargs
+        )
+
     fit.__doc__ = LGBMRanker.fit.__doc__
 
     def predict(self, X, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
         return _predict(self.to_local(), X, **kwargs)
+
     predict.__doc__ = LGBMRanker.predict.__doc__
 
     def to_local(self):

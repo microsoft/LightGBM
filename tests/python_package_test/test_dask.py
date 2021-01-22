@@ -206,7 +206,11 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('centers', data_centers)
 def test_classifier(output, centers, client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
+    X, y, w, dX, dy, dw = _create_data(
+        objective='classification',
+        output=output,
+        centers=centers
+    )
 
     dask_classifier = dlgbm.DaskLGBMClassifier(
         time_out=5,
@@ -238,7 +242,11 @@ def test_classifier(output, centers, client, listen_port):
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('centers', data_centers)
 def test_classifier_pred_contrib(output, centers, client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
+    X, y, w, dX, dy, dw = _create_data(
+        objective='classification',
+        output=output,
+        centers=centers
+    )
 
     dask_classifier = dlgbm.DaskLGBMClassifier(
         time_out=5,
@@ -309,7 +317,10 @@ def test_training_does_not_fail_on_port_conflicts(client):
 
 
 def test_classifier_local_predict(client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('classification', output='array')
+    X, y, w, dX, dy, dw = _create_data(
+        objective='classification',
+        output='array'
+    )
 
     dask_classifier = dlgbm.DaskLGBMClassifier(
         time_out=5,
@@ -333,7 +344,10 @@ def test_classifier_local_predict(client, listen_port):
 
 @pytest.mark.parametrize('output', data_output)
 def test_regressor(output, client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('regression', output=output)
+    X, y, w, dX, dy, dw = _create_data(
+        objective='regression',
+        output=output
+    )
 
     dask_regressor = dlgbm.DaskLGBMRegressor(
         time_out=5,
@@ -366,7 +380,10 @@ def test_regressor(output, client, listen_port):
 
 @pytest.mark.parametrize('output', data_output)
 def test_regressor_pred_contrib(output, client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('regression', output=output)
+    X, y, w, dX, dy, dw = _create_data(
+        objective='regression',
+        output=output
+    )
 
     dask_regressor = dlgbm.DaskLGBMRegressor(
         time_out=5,
@@ -398,7 +415,10 @@ def test_regressor_pred_contrib(output, client, listen_port):
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('alpha', [.1, .5, .9])
 def test_regressor_quantile(output, client, listen_port, alpha):
-    X, y, w, dX, dy, dw = _create_data('regression', output=output)
+    X, y, w, dX, dy, dw = _create_data(
+        objective='regression',
+        output=output
+    )
 
     dask_regressor = dlgbm.DaskLGBMRegressor(
         local_listen_port=listen_port,
@@ -459,17 +479,32 @@ def test_regressor_local_predict(client, listen_port):
 @pytest.mark.parametrize('group', [None, group_sizes])
 def test_ranker(output, client, listen_port, group):
 
-    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
+    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
+        output=output,
+        group=group
+    )
 
     # use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
     # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
-    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, tree_learner_type='data_parallel',
-                                       n_estimators=50, num_leaves=20, seed=42, min_child_samples=1)
+    dask_ranker = dlgbm.DaskLGBMRanker(
+        time_out=5,
+        local_listen_port=listen_port,
+        tree_learner_type='data_parallel',
+        n_estimators=50,
+        num_leaves=20,
+        seed=42,
+        min_child_samples=1
+    )
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
 
-    local_ranker = lightgbm.LGBMRanker(n_estimators=50, num_leaves=20, seed=42, min_child_samples=1)
+    local_ranker = lightgbm.LGBMRanker(
+        n_estimators=50,
+        num_leaves=20,
+        seed=42,
+        min_child_samples=1
+    )
     local_ranker.fit(X, y, sample_weight=w, group=g)
     rnkvec_local = local_ranker.predict(X)
 
@@ -486,10 +521,20 @@ def test_ranker(output, client, listen_port, group):
 @pytest.mark.parametrize('group', [None, group_sizes])
 def test_ranker_local_predict(output, client, listen_port, group):
 
-    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
+    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
+        output=output,
+        group=group
+    )
 
-    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, tree_learner='data',
-                                       n_estimators=10, num_leaves=10, seed=42, min_child_samples=1)
+    dask_ranker = dlgbm.DaskLGBMRanker(
+        time_out=5,
+        local_listen_port=listen_port,
+        tree_learner='data',
+        n_estimators=10,
+        num_leaves=10,
+        seed=42,
+        min_child_samples=1
+    )
     dask_ranker = dask_ranker.fit(dX, dy, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
@@ -532,5 +577,11 @@ def test_errors(c, s, a, b):
     df = dd.demo.make_timeseries()
     df = df.map_partitions(f, meta=df._meta)
     with pytest.raises(Exception) as info:
-        yield dlgbm._train(c, df, df.x, params={}, model_factory=lightgbm.LGBMClassifier)
+        yield dlgbm._train(
+            client=c,
+            data=df,
+            label=df.x,
+            params={},
+            model_factory=lightgbm.LGBMClassifier
+        )
         assert 'foo' in str(info.value)
