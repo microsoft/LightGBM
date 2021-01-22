@@ -303,18 +303,30 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
     return results[0]
 
 
-def _predict_part(part, model, proba, **kwargs):
+def _predict_part(part, model, raw_score, pred_proba, pred_leaf, pred_contrib, **kwargs):
     data = part.values if isinstance(part, pd.DataFrame) else part
 
     if data.shape[0] == 0:
         result = np.array([])
-    elif proba:
-        result = model.predict_proba(data, **kwargs)
+    elif pred_proba:
+        result = model.predict_proba(
+            data,
+            raw_score=raw_score,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            **kwargs
+        )
     else:
-        result = model.predict(data, **kwargs)
+        result = model.predict(
+            data,
+            raw_score=raw_score,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            **kwargs
+        )
 
     if isinstance(part, pd.DataFrame):
-        if proba:
+        if pred_proba or pred_contrib:
             result = pd.DataFrame(result, index=part.index)
         else:
             result = pd.Series(result, index=part.index, name='predictions')
@@ -322,7 +334,8 @@ def _predict_part(part, model, proba, **kwargs):
     return result
 
 
-def _predict(model, data, proba=False, dtype=np.float32, **kwargs):
+def _predict(model, data, raw_score=False, pred_proba=False, pred_leaf=False, pred_contrib=False,
+             dtype=np.float32, **kwargs):
     """Inner predict routine.
 
     Parameters
@@ -330,20 +343,42 @@ def _predict(model, data, proba=False, dtype=np.float32, **kwargs):
     model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
     data : dask array of shape = [n_samples, n_features]
         Input feature matrix.
-    proba : bool
-        Should method return results of predict_proba (proba == True) or predict (proba == False).
+    pred_proba : bool, optional (default=False)
+        Should method return results of ``predict_proba`` (``pred_proba=True``) or ``predict`` (``pred_proba=False``).
+    pred_leaf : bool, optional (default=False)
+        Whether to predict leaf index.
+    pred_contrib : bool, optional (default=False)
+        Whether to predict feature contributions.
     dtype : np.dtype
         Dtype of the output.
-    kwargs : other parameters passed to predict or predict_proba method
+    kwargs : dict
+        Other parameters passed to ``predict`` or ``predict_proba`` method.
     """
     if isinstance(data, dd._Frame):
-        return data.map_partitions(_predict_part, model=model, proba=proba, **kwargs).values
+        return data.map_partitions(
+            _predict_part,
+            model=model,
+            raw_score=raw_score,
+            pred_proba=pred_proba,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            **kwargs
+        ).values
     elif isinstance(data, da.Array):
-        if proba:
+        if pred_proba:
             kwargs['chunks'] = (data.chunks[0], (model.n_classes_,))
         else:
             kwargs['drop_axis'] = 1
-        return data.map_blocks(_predict_part, model=model, proba=proba, dtype=dtype, **kwargs)
+        return data.map_blocks(
+            _predict_part,
+            model=model,
+            raw_score=raw_score,
+            pred_proba=pred_proba,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            dtype=dtype,
+            **kwargs
+        )
     else:
         raise TypeError('Data must be either Dask array or dataframe. Got %s.' % str(type(data)))
 
@@ -419,7 +454,7 @@ class DaskLGBMClassifier(_LGBMModel, LGBMClassifier):
         return _predict(
             model=self.to_local(),
             data=X,
-            proba=True,
+            pred_proba=True,
             **kwargs
         )
 
