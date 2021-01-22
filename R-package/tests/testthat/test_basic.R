@@ -2048,7 +2048,7 @@ test_that(paste0("CTR for R package works"), {
     categorical_feature = c(1L, 2L, 3L, 4L))
   dtest <- lgb.Dataset(test$data, label = test$label,
     categorical_feature = c(1L, 2L, 3L, 4L), reference = dtrain)
-  params <- list(objective = "binary", cat_converters = "ctr,count,raw")
+  params <- list(objective = "binary", cat_converters = "ctr0,count,raw")
   bst <- lightgbm(
     data = dtrain
     , params = params
@@ -2060,9 +2060,6 @@ test_that(paste0("CTR for R package works"), {
 
   err_pred1 <- sum((pred1 > 0.5) != test$label) / length(test$label)
   err_pred3 <- sum((pred3 > 0.5) != test$label) / length(test$label)
-  print("here print err_pred1 and err_pred3 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-  print(err_pred1)
-  print(err_pred3)
   expect_lt(abs(err_pred1 - 0.00248293), TOLERANCE)
   expect_lt(abs(err_pred3 - 0.001862197), TOLERANCE)
   #expect_lt(err_pred3, err_pred1)
