@@ -88,8 +88,8 @@ def test_plot_split_value_histogram(params, breast_cancer_split, train_data):
                                          title='Histogram for feature @index/name@ @feature@',
                                          xlabel='x', ylabel='y', color='r')
     assert isinstance(ax1, matplotlib.axes.Axes)
-    assert (ax1.get_title() ==
-            'Histogram for feature name {}'.format(gbm1.booster_.feature_name()[27]))
+    title = 'Histogram for feature name {}'.format(gbm1.booster_.feature_name()[27])
+    assert ax1.get_title() == title
     assert ax1.get_xlabel() == 'x'
     assert ax1.get_ylabel() == 'y'
     assert len(ax1.patches) <= 2
