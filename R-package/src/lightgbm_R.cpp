@@ -69,12 +69,10 @@ LGBM_SE LGBM_DatasetCreateFromFile_R(LGBM_SE filename,
   R_API_END();
 }
 
-#include <iostream>
-
 LGBM_SE LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
   LGBM_SE indices,
   LGBM_SE data,
-  //LGBM_SE label,
+  LGBM_SE label,
   LGBM_SE num_indptr,
   LGBM_SE nelem,
   LGBM_SE num_row,
@@ -86,31 +84,30 @@ LGBM_SE LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
   const int* p_indptr = R_INT_PTR(indptr);
   const int* p_indices = R_INT_PTR(indices);
   const double* p_data = R_REAL_PTR(data);
-  //const double* p_label = R_IS_NULL(label) ? nullptr : R_REAL_PTR(label);
+  const double* p_label = R_IS_NULL(label) ? nullptr : R_REAL_PTR(label);
   int64_t nindptr = static_cast<int64_t>(R_AS_INT(num_indptr));
   int64_t ndata = static_cast<int64_t>(R_AS_INT(nelem));
   int64_t nrow = static_cast<int64_t>(R_AS_INT(num_row));
-  //const float* float_p_label = nullptr;
-  //std::vector<float> float_label_vec;
-  /*if (p_label != nullptr) {
+  const float* float_p_label = nullptr;
+  std::vector<float> float_label_vec;
+  if (p_label != nullptr) {
     float_label_vec.resize(nrow);
-    //#pragma omp parallel for schedule(static) if (nrow >= 1024)
+    #pragma omp parallel for schedule(static) if (nrow >= 1024)
     for (int i = 0; i < nrow; ++i) {
       float_label_vec[i] = static_cast<float>(p_label[i]);
-      std::cout << "float_label_vec[" << i << "]" << float_label_vec[i] << std::endl; 
     }
     float_p_label = float_label_vec.data();
-  }*/
+  }
   DatasetHandle handle = nullptr;
   CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
-    p_data, nullptr,/* float_p_label,*/ C_API_DTYPE_FLOAT64, nindptr, ndata,
+    p_data, float_p_label, C_API_DTYPE_FLOAT64, nindptr, ndata,
     nrow, R_CHAR_PTR(parameters), R_GET_PTR(reference), &handle));
   R_SET_PTR(out, handle);
   R_API_END();
 }
 
 LGBM_SE LGBM_DatasetCreateFromMat_R(LGBM_SE data,
-  //LGBM_SE label,
+  LGBM_SE label,
   LGBM_SE num_row,
   LGBM_SE num_col,
   LGBM_SE parameters,
@@ -121,20 +118,19 @@ LGBM_SE LGBM_DatasetCreateFromMat_R(LGBM_SE data,
   int32_t nrow = static_cast<int32_t>(R_AS_INT(num_row));
   int32_t ncol = static_cast<int32_t>(R_AS_INT(num_col));
   double* p_mat = R_REAL_PTR(data);
-  //double* p_label = R_IS_NULL(label) ? nullptr : R_REAL_PTR(label);
-  /*const float* float_p_label = nullptr;
+  double* p_label = R_IS_NULL(label) ? nullptr : R_REAL_PTR(label);
+  const float* float_p_label = nullptr;
   std::vector<float> float_label_vec;
   if (p_label != nullptr) {
     float_label_vec.resize(nrow);
-    //#pragma omp parallel for schedule(static) if (nrow >= 1024)
+    #pragma omp parallel for schedule(static) if (nrow >= 1024)
     for (int i = 0; i < nrow; ++i) {
       float_label_vec[i] = static_cast<float>(p_label[i]);
-      std::cout << "float_label_vec[" << i << "]" << float_label_vec[i] << std::endl; 
     }
     float_p_label = float_label_vec.data();
-  }*/
+  }
   DatasetHandle handle = nullptr;
-  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, nullptr,/* float_p_label,*/ C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
+  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat,  float_p_label, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
     R_CHAR_PTR(parameters), R_GET_PTR(reference), &handle));
   R_SET_PTR(out, handle);
   R_API_END();
@@ -705,8 +701,8 @@ LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
 static const R_CallMethodDef CallEntries[] = {
   {"LGBM_GetLastError_R"              , (DL_FUNC) &LGBM_GetLastError_R              , 3},
   {"LGBM_DatasetCreateFromFile_R"     , (DL_FUNC) &LGBM_DatasetCreateFromFile_R     , 5},
-  {"LGBM_DatasetCreateFromCSC_R"      , (DL_FUNC) &LGBM_DatasetCreateFromCSC_R      , 10},
-  {"LGBM_DatasetCreateFromMat_R"      , (DL_FUNC) &LGBM_DatasetCreateFromMat_R      , 7},
+  {"LGBM_DatasetCreateFromCSC_R"      , (DL_FUNC) &LGBM_DatasetCreateFromCSC_R      , 11},
+  {"LGBM_DatasetCreateFromMat_R"      , (DL_FUNC) &LGBM_DatasetCreateFromMat_R      , 8},
   {"LGBM_DatasetGetSubset_R"          , (DL_FUNC) &LGBM_DatasetGetSubset_R          , 6},
   {"LGBM_DatasetSetFeatureNames_R"    , (DL_FUNC) &LGBM_DatasetSetFeatureNames_R    , 3},
   {"LGBM_DatasetGetFeatureNames_R"    , (DL_FUNC) &LGBM_DatasetGetFeatureNames_R    , 5},

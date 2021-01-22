@@ -209,14 +209,14 @@ Dataset <- R6::R6Class(
           if (is.null(private$info[["label"]])) {
             label <- NULL
           } else {
-            label <- self$getinfo(name = "label")
+            label <- as.numeric(private$info[["label"]])
           }
           # Are we using a matrix?
           handle <- lgb.call(
             fun_name = "LGBM_DatasetCreateFromMat_R"
             , ret = handle
             , private$raw_data
-            #, label
+            , label
             , nrow(private$raw_data)
             , ncol(private$raw_data)
             , params_str
@@ -227,7 +227,7 @@ Dataset <- R6::R6Class(
           if (is.null(private$info[["label"]])) {
             label <- NULL
           } else {
-            label <- self$getinfo(name = "label")
+            label <- as.numeric(private$info[["label"]])
           }
           if (length(private$raw_data@p) > 2147483647L) {
             stop("Cannot support large CSC matrix")
@@ -239,7 +239,7 @@ Dataset <- R6::R6Class(
             , private$raw_data@p
             , private$raw_data@i
             , private$raw_data@x
-            #, label
+            , label
             , length(private$raw_data@p)
             , length(private$raw_data@x)
             , nrow(private$raw_data)

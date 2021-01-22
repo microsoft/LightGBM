@@ -44,6 +44,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetCreateFromFile_R(
 * \param indptr pointer to row headers
 * \param indices findex
 * \param data fvalue
+* \param label label
 * \param nindptr number of cols in the matrix + 1
 * \param nelem number of nonzero elements in the matrix
 * \param num_row number of rows
@@ -56,7 +57,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetCreateFromCSC_R(
   LGBM_SE indptr,
   LGBM_SE indices,
   LGBM_SE data,
-  //LGBM_SE label,
+  LGBM_SE label,
   LGBM_SE nindptr,
   LGBM_SE nelem,
   LGBM_SE num_row,
@@ -69,6 +70,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetCreateFromCSC_R(
 /*!
 * \brief create dataset from dense matrix
 * \param data matric data
+* \param label label
 * \param nrow number of rows
 * \param ncol number columns
 * \param parameters additional parameters
@@ -78,7 +80,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetCreateFromCSC_R(
 */
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetCreateFromMat_R(
   LGBM_SE data,
-  //LGBM_SE label,
+  LGBM_SE label,
   LGBM_SE nrow,
   LGBM_SE ncol,
   LGBM_SE parameters,
