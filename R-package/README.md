@@ -169,6 +169,27 @@ After installing these other libraries, follow the steps in ["Installing from So
 Rscript build_r.R --use-gpu
 ```
 
+You may also need or want to provide additional configuration, depending on your setup. For example, you may need to provide locations for Boost and OpenCL.
+
+```shell
+Rscript build_r.R \
+    --use-gpu \
+    --opencl-library=/usr/lib/x86_64-linux-gnu/libOpenCL.so \
+    --boost-librarydir=/usr/lib/x86_64-linux-gnu
+```
+
+The following options correspond to the [CMake FindBoost options](https://cmake.org/cmake/help/latest/module/FindBoost.html) by the same names.
+
+* `--boost-root`
+* `--boost-dir`
+* `--boost-include-dir`
+* `--boost-librarydir`
+
+The following options correspond to the [CMake FindOpenCL options](https://cmake.org/cmake/help/latest/module/FindOpenCL.html) by the same names.
+
+* `--opencl-include-dir`
+* `--opencl-library`
+
 ### Installing Precompiled Binaries
 
 Precompiled binaries for Mac and Windows are prepared by CRAN a few days after each release to CRAN. They can be installed with the following R code.
@@ -245,9 +266,9 @@ sh build-cran-package.sh
 
 This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
 
-Alternatively, GitHub Actions can generate this file for you. On a pull request, go to the "Files changed" tab and create a comment with this phrase:
+Alternatively, GitHub Actions can generate this file for you. On a pull request, create a comment with this phrase:
 
-> /gha build r-artifacts
+> /gha run build-r-artifacts
 
 Go to https://github.com/microsoft/LightGBM/actions, and find the most recent run of the "R artifact builds" workflow. If it ran successfully, you'll find a download link for the package (in `.zip` format) in that run's "Artifacts" section.
 
@@ -389,7 +410,7 @@ RDvalgrind \
 | cat
 ```
 
-These tests can also be triggered on any pull request by leaving a review on the "Files changed" tab in a pull request:
+These tests can also be triggered on any pull request by leaving a comment in a pull request:
 
 > /gha run r-valgrind
 

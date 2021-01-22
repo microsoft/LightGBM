@@ -14,11 +14,51 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
     fi
-    if [[ $AZURE == "true" ]] && [[ $TASK == "sdist" ]]; then
-        brew install swig@3
+    if [[ $TASK == "swig" ]]; then
+        brew install swig
     fi
     wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
+    if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+        # fixes error "unable to initialize frontend: Dialog"
+        # https://github.com/moby/moby/issues/27988#issuecomment-462809153
+        echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
+
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+            software-properties-common
+
+        sudo add-apt-repository -y ppa:git-core/ppa
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends \
+            apt-utils \
+            build-essential \
+            ca-certificates \
+            curl \
+            git \
+            iputils-ping \
+            jq \
+            libcurl4 \
+            libicu66 \
+            libssl1.1 \
+            libunwind8 \
+            locales \
+            netcat \
+            unzip \
+            wget \
+            zip
+
+        export LANG="en_US.UTF-8"
+        export LC_ALL="${LANG}"
+        sudo locale-gen ${LANG}
+        sudo update-locale
+
+        sudo apt-get install -y --no-install-recommends \
+            cmake \
+            clang \
+            libomp-dev
+    fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
