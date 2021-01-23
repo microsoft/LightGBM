@@ -1,8 +1,12 @@
-name: CUDA GitHub Actions
+name: CUDA Version
 
 on:
-  pull_request_review_comment:
-    types: [created]
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
 
 jobs:
   test:
