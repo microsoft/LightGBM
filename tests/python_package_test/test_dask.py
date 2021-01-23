@@ -292,6 +292,12 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
             assert len(np.unique(preds_with_contrib[:, base_value_col]) == 1)
 
 
+def test_different_ports_on_local_cluster(client):
+    worker_address_to_port = client.run(dlgbm._get_random_port)
+    found_ports = worker_address_to_port.values()
+    assert len(set(found_ports)) == len(found_ports)
+
+
 def test_training_does_not_fail_on_port_conflicts(client):
     _, _, _, dX, dy, dw = _create_data('classification', output='array')
 
