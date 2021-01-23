@@ -7,7 +7,6 @@ Dask.Array and Dask.DataFrame collections.
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
 import logging
-import socket
 from collections import defaultdict
 from copy import deepcopy
 from typing import Dict, Iterable
@@ -28,84 +27,20 @@ from .sklearn import LGBMClassifier, LGBMRegressor, LGBMRanker
 logger = logging.getLogger(__name__)
 
 
-def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
-    """Find an open port.
-
-    This function tries to find a free port on the machine it's run on. It is intended to
-    be run once on each Dask worker, sequentially.
-
-    Parameters
-    ----------
-    worker_ip : str
-        IP address for the Dask worker.
-    local_listen_port : int
-        First port to try when searching for open ports.
-    ports_to_skip: Iterable[int]
-        An iterable of integers referring to ports that should be skipped. Since multiple Dask
-        workers can run on the same physical machine, this method may be called multiple times
-        on the same machine. ``ports_to_skip`` is used to ensure that LightGBM doesn't try to use
-        the same port for two worker processes running on the same machine.
+def _get_random_port():
+    """Finds a random open port on the machine it's run on.
 
     Returns
     -------
-    result : int
-        A free port on the machine referenced by ``worker_ip``.
+    port : int
+        A free port on the machine.
     """
-    max_tries = 1000
-    out_port = None
-    found_port = False
-    for i in range(max_tries):
-        out_port = local_listen_port + i
-        if out_port in ports_to_skip:
-            continue
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind((worker_ip, out_port))
-            found_port = True
-            break
-        # if unavailable, you'll get OSError: Address already in use
-        except OSError:
-            continue
-    if not found_port:
-        msg = "LightGBM tried %s:%d-%d and could not create a connection. Try setting local_listen_port to a different value."
-        raise RuntimeError(msg % (worker_ip, local_listen_port, out_port))
-    return out_port
+    import socket
 
-
-def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], local_listen_port: int) -> Dict[str, int]:
-    """Find an open port on each worker.
-
-    LightGBM distributed training uses TCP sockets by default, and this method is used to
-    identify open ports on each worker so LightGBM can reliable create those sockets.
-
-    Parameters
-    ----------
-    client : dask.distributed.Client
-        Dask client.
-    worker_addresses : Iterable[str]
-        An iterable of addresses for workers in the cluster. These are strings of the form ``<protocol>://<host>:port``
-    local_listen_port : int
-        First port to try when searching for open ports.
-
-    Returns
-    -------
-    result : Dict[str, int]
-        Dictionary where keys are worker addresses and values are an open port for LightGBM to use.
-    """
-    lightgbm_ports = set()
-    worker_ip_to_port = {}
-    for worker_address in worker_addresses:
-        port = client.submit(
-            func=_find_open_port,
-            workers=[worker_address],
-            worker_ip=urlparse(worker_address).hostname,
-            local_listen_port=local_listen_port,
-            ports_to_skip=lightgbm_ports
-        ).result()
-        lightgbm_ports.add(port)
-        worker_ip_to_port[worker_address] = port
-
-    return worker_ip_to_port
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        port = s.getsockname()[1]
+    return port
 
 
 def _concat(seq):
@@ -273,11 +208,7 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
     # find an open port on each worker. note that multiple workers can run
     # on the same machine, so this needs to ensure that each one gets its
     # own port
-    worker_address_to_port = _find_ports_for_workers(
-        client=client,
-        worker_addresses=worker_map.keys(),
-        local_listen_port=local_listen_port
-    )
+    worker_address_to_port = client.run(_get_random_port)
 
     # num_threads is set below, so remove it and all aliases of it from params
     for num_thread_alias in _ConfigAliases.get('num_threads'):

@@ -546,29 +546,6 @@ def test_ranker_local_predict(output, client, listen_port, group):
     client.close()
 
 
-def test_find_open_port_works():
-    worker_ip = '127.0.0.1'
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((worker_ip, 12400))
-        new_port = dlgbm._find_open_port(
-            worker_ip=worker_ip,
-            local_listen_port=12400,
-            ports_to_skip=set()
-        )
-        assert new_port == 12401
-
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
-        s_1.bind((worker_ip, 12400))
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_2:
-            s_2.bind((worker_ip, 12401))
-            new_port = dlgbm._find_open_port(
-                worker_ip=worker_ip,
-                local_listen_port=12400,
-                ports_to_skip=set()
-            )
-            assert new_port == 12402
-
-
 @gen_cluster(client=True, timeout=None)
 def test_errors(c, s, a, b):
     def f(part):
