@@ -77,6 +77,7 @@ else  # Linux
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
     if [[ $TASK == "cuda" ]]; then
+        echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
         apt-get update
         apt-get install --no-install-recommends -y \
             cmake \
