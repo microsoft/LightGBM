@@ -212,11 +212,14 @@ def test_classifier(output, centers, client, listen_port):
         centers=centers
     )
 
+    params = {
+        "n_estimators": 10,
+        "num_leaves": 10
+    }
     dask_classifier = dlgbm.DaskLGBMClassifier(
         time_out=5,
         local_listen_port=listen_port,
-        n_estimators=10,
-        num_leaves=10
+        **params
     )
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_classifier.predict(dX)
@@ -224,7 +227,7 @@ def test_classifier(output, centers, client, listen_port):
     s1 = accuracy_score(dy, p1)
     p1 = p1.compute()
 
-    local_classifier = lightgbm.LGBMClassifier(n_estimators=10, num_leaves=10)
+    local_classifier = lightgbm.LGBMClassifier(**params)
     local_classifier.fit(X, y, sample_weight=w)
     p2 = local_classifier.predict(X)
     p2_proba = local_classifier.predict_proba(X)
@@ -248,20 +251,20 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
         centers=centers
     )
 
+    params = {
+        "n_estimators": 10,
+        "num_leaves": 10
+    }
     dask_classifier = dlgbm.DaskLGBMClassifier(
         time_out=5,
         local_listen_port=listen_port,
         tree_learner='data',
-        n_estimators=10,
-        num_leaves=10
+        **params
     )
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     preds_with_contrib = dask_classifier.predict(dX, pred_contrib=True).compute()
 
-    local_classifier = lightgbm.LGBMClassifier(
-        n_estimators=10,
-        num_leaves=10
-    )
+    local_classifier = lightgbm.LGBMClassifier(**params)
     local_classifier.fit(X, y, sample_weight=w)
     local_preds_with_contrib = local_classifier.predict(X, pred_contrib=True)
 
@@ -322,16 +325,19 @@ def test_classifier_local_predict(client, listen_port):
         output='array'
     )
 
+    params = {
+        "n_estimators": 10,
+        "num_leaves": 10
+    }
     dask_classifier = dlgbm.DaskLGBMClassifier(
         time_out=5,
         local_port=listen_port,
-        n_estimators=10,
-        num_leaves=10
+        **params
     )
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_classifier.to_local().predict(dX)
 
-    local_classifier = lightgbm.LGBMClassifier(n_estimators=10, num_leaves=10)
+    local_classifier = lightgbm.LGBMClassifier(**params)
     local_classifier.fit(X, y, sample_weight=w)
     p2 = local_classifier.predict(X)
 
@@ -349,12 +355,15 @@ def test_regressor(output, client, listen_port):
         output=output
     )
 
+    params = {
+        "random_state": 42,
+        "num_leaves": 10
+    }
     dask_regressor = dlgbm.DaskLGBMRegressor(
         time_out=5,
         local_listen_port=listen_port,
-        seed=42,
-        num_leaves=10,
-        tree='data'
+        tree='data',
+        **params
     )
     dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
     p1 = dask_regressor.predict(dX)
@@ -362,7 +371,7 @@ def test_regressor(output, client, listen_port):
         s1 = r2_score(dy, p1)
     p1 = p1.compute()
 
-    local_regressor = lightgbm.LGBMRegressor(seed=42, num_leaves=10)
+    local_regressor = lightgbm.LGBMRegressor(**params)
     local_regressor.fit(X, y, sample_weight=w)
     s2 = local_regressor.score(X, y)
     p2 = local_regressor.predict(X)
@@ -385,20 +394,20 @@ def test_regressor_pred_contrib(output, client, listen_port):
         output=output
     )
 
+    params = {
+        "n_estimators": 10,
+        "num_leaves": 10
+    }
     dask_regressor = dlgbm.DaskLGBMRegressor(
         time_out=5,
         local_listen_port=listen_port,
         tree_learner='data',
-        n_estimators=10,
-        num_leaves=10
+        **params
     )
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
     preds_with_contrib = dask_regressor.predict(dX, pred_contrib=True).compute()
 
-    local_regressor = lightgbm.LGBMRegressor(
-        n_estimators=10,
-        num_leaves=10
-    )
+    local_regressor = lightgbm.LGBMRegressor(**params)
     local_regressor.fit(X, y, sample_weight=w)
     local_preds_with_contrib = local_regressor.predict(X, pred_contrib=True)
 
@@ -420,26 +429,23 @@ def test_regressor_quantile(output, client, listen_port, alpha):
         output=output
     )
 
+    params = {
+        "objective": "quantile",
+        "alpha": alpha,
+        "random_state": 42,
+        "n_estimators": 10,
+        "num_leaves": 10
+    }
     dask_regressor = dlgbm.DaskLGBMRegressor(
         local_listen_port=listen_port,
-        seed=42,
-        objective='quantile',
-        alpha=alpha,
-        n_estimators=10,
-        num_leaves=10,
-        tree_learner_type='data_parallel'
+        tree_learner_type='data_parallel',
+        **params
     )
     dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
     p1 = dask_regressor.predict(dX).compute()
     q1 = np.count_nonzero(y < p1) / y.shape[0]
 
-    local_regressor = lightgbm.LGBMRegressor(
-        seed=42,
-        objective='quantile',
-        alpha=alpha,
-        n_estimatores=10,
-        num_leaves=10
-    )
+    local_regressor = lightgbm.LGBMRegressor(**params)
     local_regressor.fit(X, y, sample_weight=w)
     p2 = local_regressor.predict(X)
     q2 = np.count_nonzero(y < p2) / y.shape[0]
@@ -456,7 +462,7 @@ def test_regressor_local_predict(client, listen_port):
 
     dask_regressor = dlgbm.DaskLGBMRegressor(
         local_listen_port=listen_port,
-        seed=42,
+        random_state=42,
         n_estimators=10,
         num_leaves=10,
         tree_type='data'
@@ -486,25 +492,23 @@ def test_ranker(output, client, listen_port, group):
 
     # use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
     # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
+    params = {
+        "random_state": 42,
+        "n_estimators": 50,
+        "num_leaves": 20,
+        "min_child_samples": 1
+    }
     dask_ranker = dlgbm.DaskLGBMRanker(
         time_out=5,
         local_listen_port=listen_port,
         tree_learner_type='data_parallel',
-        n_estimators=50,
-        num_leaves=20,
-        seed=42,
-        min_child_samples=1
+        **params
     )
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
 
-    local_ranker = lightgbm.LGBMRanker(
-        n_estimators=50,
-        num_leaves=20,
-        seed=42,
-        min_child_samples=1
-    )
+    local_ranker = lightgbm.LGBMRanker(**params)
     local_ranker.fit(X, y, sample_weight=w, group=g)
     rnkvec_local = local_ranker.predict(X)
 
@@ -532,7 +536,7 @@ def test_ranker_local_predict(output, client, listen_port, group):
         tree_learner='data',
         n_estimators=10,
         num_leaves=10,
-        seed=42,
+        random_state=42,
         min_child_samples=1
     )
     dask_ranker = dask_ranker.fit(dX, dy, group=dg, client=client)
