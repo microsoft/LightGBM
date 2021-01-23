@@ -3,7 +3,7 @@ name: CUDA Version
 on:
   push:
     branches:
-    - cuda_ci
+    - master
   pull_request:
     branches:
     - master
@@ -54,6 +54,8 @@ jobs:
                 nvidia-docker2
             sudo chmod a+rw /var/run/docker.sock
             sudo systemctl restart docker
+      - name: Remove old folder with repository	
+        run: sudo rm -rf $GITHUB_WORKSPACE
       - name: Checkout repository
         uses: actions/checkout@v1
         with:
