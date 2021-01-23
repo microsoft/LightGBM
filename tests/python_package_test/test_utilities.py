@@ -74,9 +74,9 @@ INFO | [10]	training's auc: 0.5	training's binary_error: 0.5	training's dummy_me
 INFO | Did not meet early stopping. Best iteration is:
 [1]	training's auc: 0.5	training's binary_error: 0.5	training's dummy_metric: 1
 WARNING | More than one metric available, picking one to plot.
-""".split()
+""".strip()
 
     with open(log_filename, "rt", encoding="utf-8") as f:
-        actual_log = f.read().split()
+        actual_log = f.read().strip()
 
     assert actual_log == expected_log
