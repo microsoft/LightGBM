@@ -22,7 +22,8 @@ from dask import dataframe as dd
 from dask import delayed
 from dask.distributed import Client, default_client, get_worker, wait
 
-from .basic import _ConfigAliases, _LIB, _safe_call
+from .basic import _ConfigAliases, _LIB, _safe_call, LightGBMError
+from .compat import DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED
 from .sklearn import LGBMClassifier, LGBMRegressor, LGBMRanker
 
 logger = logging.getLogger(__name__)
@@ -384,6 +385,9 @@ def _predict(model, data, raw_score=False, pred_proba=False, pred_leaf=False, pr
 
 
 class _LGBMModel:
+    def __init__(self):
+        if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
+            raise LightGBMError('Dask, Pandas and Scikit-learn are required for this module')
 
     def _fit(self, model_factory, X, y=None, sample_weight=None, group=None, client=None, **kwargs):
         """Docstring is inherited from the LGBMModel."""

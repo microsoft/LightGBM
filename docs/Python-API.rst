@@ -33,6 +33,16 @@ Scikit-learn API
     LGBMRegressor
     LGBMRanker
 
+Dask API
+--------
+
+.. autosummary::
+    :toctree: pythonapi/
+
+    DaskLGBMClassifier
+    DaskLGBMRegressor
+    DaskLGBMRanker
+
 Callbacks
 ---------
 
