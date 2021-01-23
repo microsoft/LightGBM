@@ -22,7 +22,7 @@ else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
         # https://github.com/moby/moby/issues/27988#issuecomment-462809153
-        echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
+        echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
