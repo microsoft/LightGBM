@@ -31,7 +31,6 @@ def load_linnerud(**kwargs):
     return sklearn.datasets.load_linnerud(**kwargs)
 
 
-@lru_cache(maxsize=None)
 def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
                  group=None, random_gs=False, avg_gs=10, random_state=0):
     """Generate a learning-to-rank dataset - feature vectors grouped together with
