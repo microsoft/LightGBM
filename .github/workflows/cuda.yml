@@ -52,10 +52,8 @@ jobs:
                 docker-ce \
                 docker-ce-cli \
                 nvidia-docker2
-            sudo chmod 666 /var/run/docker.sock
+            sudo chmod a+rw /var/run/docker.sock
             sudo systemctl restart docker
-      - name: Remove old folder with repository
-        run: sudo rm -rf $GITHUB_WORKSPACE
       - name: Checkout repository
         uses: actions/checkout@v1
         with:
