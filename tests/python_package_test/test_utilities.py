@@ -15,11 +15,9 @@ def test_register_logger(tmp_path):
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-
     def dummy_metric(_, __):
         logger.debug('In dummy_metric')
         return 'dummy_metric', 1, True
-
 
     lgb.register_logger(logger)
 
