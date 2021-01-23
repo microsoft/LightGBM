@@ -3,7 +3,6 @@ import logging
 
 import numpy as np
 import lightgbm as lgb
-import pytest
 
 
 def test_register_logger(tmp_path):
