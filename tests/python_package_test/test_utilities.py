@@ -76,7 +76,18 @@ INFO | Did not meet early stopping. Best iteration is:
 WARNING | More than one metric available, picking one to plot.
 """.strip()
 
+    gpu_lines = [
+        "INFO | [LightGBM] [Info] This is the GPU trainer",
+        "INFO | [LightGBM] [Info] Using GPU Device:",
+        "INFO | [LightGBM] [Info] Compiling OpenCL Kernel with 16 bins...",
+        "INFO | [LightGBM] [Info] GPU programs have been built",
+        "INFO | [LightGBM] [Warning] GPU acceleration is disabled because no non-trivial dense features can be found"
+    ]
     with open(log_filename, "rt", encoding="utf-8") as f:
         actual_log = f.read().strip()
+        actual_log_wo_gpu_stuff = []
+        for line in actual_log.split("\n"):
+            if not any(line.startswith(gpu_line) for gpu_line in gpu_lines):
+                actual_log_wo_gpu_stuff.append(line)
 
-    assert actual_log == expected_log
+    assert "\n".join(actual_log_wo_gpu_stuff) == expected_log
