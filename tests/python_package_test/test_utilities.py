@@ -6,7 +6,7 @@ import lightgbm as lgb
 import pytest
 
 
-def test_plot_tree(tmp_path):
+def test_register_logger(tmp_path):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter('%(levelname)s | %(message)s')
