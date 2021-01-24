@@ -65,3 +65,11 @@ Plotting
     plot_metric
     plot_tree
     create_tree_digraph
+
+Utilities
+---------
+
+.. autosummary::
+    :toctree: pythonapi/
+
+    register_logger

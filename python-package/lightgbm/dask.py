@@ -6,7 +6,6 @@ Dask.Array and Dask.DataFrame collections.
 
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
-import logging
 import socket
 from collections import defaultdict
 from copy import deepcopy
@@ -22,11 +21,9 @@ from dask import dataframe as dd
 from dask import delayed
 from dask.distributed import Client, default_client, get_worker, wait
 
-from .basic import _ConfigAliases, _LIB, _safe_call, LightGBMError
+from .basic import _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
 from .compat import DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED
 from .sklearn import LGBMClassifier, LGBMRegressor, LGBMRanker
-
-logger = logging.getLogger(__name__)
 
 
 def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
@@ -234,7 +231,7 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
             return part  # trigger error locally
 
     # Find locations of all parts and map them to particular Dask workers
-    key_to_part_dict = dict([(part.key, part) for part in parts])
+    key_to_part_dict = {part.key: part for part in parts}
     who_has = client.who_has(parts)
     worker_map = defaultdict(list)
     for key, workers in who_has.items():
@@ -258,10 +255,10 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
         'voting_parallel'
     }
     if tree_learner is None:
-        logger.warning('Parameter tree_learner not set. Using "data" as default')
+        _log_warning('Parameter tree_learner not set. Using "data" as default')
         params['tree_learner'] = 'data'
     elif tree_learner.lower() not in allowed_tree_learners:
-        logger.warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
+        _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
         params['tree_learner'] = 'data'
 
     local_listen_port = 12400
@@ -283,6 +280,18 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
     # num_threads is set below, so remove it and all aliases of it from params
     for num_thread_alias in _ConfigAliases.get('num_threads'):
         params.pop(num_thread_alias, None)
+
+    # machines is constructed manually, so remove it and all aliases of it from params
+    for machine_alias in _ConfigAliases.get('machines'):
+        params.pop(machine_alias, None)
+
+    # machines is constructed manually, so remove machine_list_filename and all aliases of it from params
+    for machine_list_filename_alias in _ConfigAliases.get('machine_list_filename'):
+        params.pop(machine_list_filename_alias, None)
+
+    # machines is constructed manually, so remove num_machines and all aliases of it from params
+    for num_machine_alias in _ConfigAliases.get('num_machines'):
+        params.pop(num_machine_alias, None)
 
     # Tell each worker to train on the parts that it has locally
     futures_classifiers = [
