@@ -197,8 +197,7 @@ def test_stacking_classifier():
     assert score <= 1.
     assert clf.n_features_in_ == 4  # number of input features
     assert len(clf.named_estimators_['gbm1'].feature_importances_) == 4
-    assert (clf.named_estimators_['gbm1'].n_features_in_ ==
-            clf.named_estimators_['gbm2'].n_features_in_)
+    assert clf.named_estimators_['gbm1'].n_features_in_ == clf.named_estimators_['gbm2'].n_features_in_
     assert clf.final_estimator_.n_features_in_ == 10  # number of concatenated features
     assert len(clf.final_estimator_.feature_importances_) == 10
     classes = clf.named_estimators_['gbm1'].classes_ == clf.named_estimators_['gbm2'].classes_
@@ -225,8 +224,7 @@ def test_stacking_regressor():
     assert score <= 1.
     assert reg.n_features_in_ == 13  # number of input features
     assert len(reg.named_estimators_['gbm1'].feature_importances_) == 13
-    assert (reg.named_estimators_['gbm1'].n_features_in_ ==
-            reg.named_estimators_['gbm2'].n_features_in_)
+    assert reg.named_estimators_['gbm1'].n_features_in_ == reg.named_estimators_['gbm2'].n_features_in_
     assert reg.final_estimator_.n_features_in_ == 15  # number of concatenated features
     assert len(reg.final_estimator_.feature_importances_) == 15
 
@@ -1125,15 +1123,13 @@ def test_continue_training_with_model():
                                                       verbose=False)
     gbm = lgb.LGBMClassifier(n_estimators=5).fit(X_train, y_train, eval_set=(X_test, y_test),
                                                  verbose=False, init_model=init_gbm)
-    assert (len(init_gbm.evals_result_['valid_0']['multi_logloss']) ==
-            len(gbm.evals_result_['valid_0']['multi_logloss']))
+    assert len(init_gbm.evals_result_['valid_0']['multi_logloss']) == len(gbm.evals_result_['valid_0']['multi_logloss'])
     assert len(init_gbm.evals_result_['valid_0']['multi_logloss']) == 5
-    assert (gbm.evals_result_['valid_0']['multi_logloss'][-1] <
-            init_gbm.evals_result_['valid_0']['multi_logloss'][-1])
+    assert gbm.evals_result_['valid_0']['multi_logloss'][-1] < init_gbm.evals_result_['valid_0']['multi_logloss'][-1]
 
 
 # sklearn < 0.22 requires passing "attributes" argument
-@pytest.mark.skipif(sk_version < parse_version('0.22'), reason='scikit-learn version is less than 0.22')
+@pytest.mark.skipif(sk_version < parse_version('0.22'), 'scikit-learn version is less than 0.22')
 def test_check_is_fitted():
     X, y = load_digits(n_class=2, return_X_y=True)
     est = lgb.LGBMModel(n_estimators=5, objective="binary")
