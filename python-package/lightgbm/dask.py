@@ -233,7 +233,7 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
             return part  # trigger error locally
 
     # Find locations of all parts and map them to particular Dask workers
-    key_to_part_dict = dict([(part.key, part) for part in parts])
+    key_to_part_dict = {part.key: part for part in parts}
     who_has = client.who_has(parts)
     worker_map = defaultdict(list)
     for key, workers in who_has.items():
@@ -281,7 +281,19 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
 
     # num_threads is set below, so remove it and all aliases of it from params
     for num_thread_alias in _ConfigAliases.get('num_threads'):
-        params.pop(num_thread_alias, None)
+        params.pop(num_thread_alias)
+
+    # machines is constructed manually, so remove it and all aliases of it from params
+    for machine_alias in _ConfigAliases.get('machines'):
+        params.pop(machine_alias)
+
+    # machines is constructed manually, so remove machine_list_filename and all aliases of it from params
+    for machine_list_filename_alias in _ConfigAliases.get('machine_list_filename'):
+        params.pop(machine_list_filename_alias)
+
+    # machines is constructed manually, so remove num_machines and all aliases of it from params
+    for num_machine_alias in _ConfigAliases.get('num_machines'):
+        params.pop(num_machine_alias)
 
     # Tell each worker to train on the parts that it has locally
     futures_classifiers = [
