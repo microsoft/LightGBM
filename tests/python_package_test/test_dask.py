@@ -289,12 +289,12 @@ def test_regressor(output, client, listen_port):
     # Scores should be the same
     if output != 'dataframe':
         assert_eq(s1, s2, atol=.01)
+        assert_eq(s1, s2_local_predict)
 
     # Predictions should be roughly the same
     assert_eq(y, p1, rtol=1., atol=100.)
     assert_eq(y, p2, rtol=1., atol=50.)
     assert_eq(p1, p2_local_predict)
-    assert_eq(s1, s2_local_predict)
 
     client.close()
 
