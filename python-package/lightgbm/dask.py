@@ -281,19 +281,19 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
 
     # num_threads is set below, so remove it and all aliases of it from params
     for num_thread_alias in _ConfigAliases.get('num_threads'):
-        params.pop(num_thread_alias)
+        params.pop(num_thread_alias, None)
 
     # machines is constructed manually, so remove it and all aliases of it from params
     for machine_alias in _ConfigAliases.get('machines'):
-        params.pop(machine_alias)
+        params.pop(machine_alias, None)
 
     # machines is constructed manually, so remove machine_list_filename and all aliases of it from params
     for machine_list_filename_alias in _ConfigAliases.get('machine_list_filename'):
-        params.pop(machine_list_filename_alias)
+        params.pop(machine_list_filename_alias, None)
 
     # machines is constructed manually, so remove num_machines and all aliases of it from params
     for num_machine_alias in _ConfigAliases.get('num_machines'):
-        params.pop(num_machine_alias)
+        params.pop(num_machine_alias, None)
 
     # Tell each worker to train on the parts that it has locally
     futures_classifiers = [
