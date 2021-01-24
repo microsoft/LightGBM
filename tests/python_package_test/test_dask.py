@@ -133,6 +133,11 @@ def test_classifier(output, centers, client, listen_port):
         centers=centers
     )
 
+    X_1, y_1, w_1, dX_1, dy_1, dw_1 = _create_data(
+        objective='classification',
+        output='array'
+    )
+
     params = {
         "n_estimators": 10,
         "num_leaves": 10
@@ -142,6 +147,10 @@ def test_classifier(output, centers, client, listen_port):
         local_listen_port=listen_port,
         **params
     )
+
+    dask_classifier_local = dask_classifier.fit(dX_1, dy_1, sample_weight=dw_1, client=client)
+    p1_local_predict = dask_classifier_local.to_local().predict(dX_1)
+
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_classifier.predict(dX)
     p1_proba = dask_classifier.predict_proba(dX).compute()
@@ -154,11 +163,18 @@ def test_classifier(output, centers, client, listen_port):
     p2_proba = local_classifier.predict_proba(X)
     s2 = local_classifier.score(X, y)
 
+    local_classifier_predict = lightgbm.LGBMClassifier(**params)
+    local_classifier_predict.fit(X_1, y_1, sample_weight=w_1)
+    p2_local_predict = local_classifier_predict.predict(X_1)
+
     assert_eq(s1, s2)
     assert_eq(p1, p2)
     assert_eq(y, p1)
     assert_eq(y, p2)
     assert_eq(p1_proba, p2_proba, atol=0.3)
+    assert_eq(p1_local_predict, p2_local_predict)
+    assert_eq(y_1, p1_local_predict)
+    assert_eq(y_1, p2_local_predict)
 
     client.close()
 
@@ -240,35 +256,6 @@ def test_training_does_not_fail_on_port_conflicts(client):
     client.close()
 
 
-def test_classifier_local_predict(client, listen_port):
-    X, y, w, dX, dy, dw = _create_data(
-        objective='classification',
-        output='array'
-    )
-
-    params = {
-        "n_estimators": 10,
-        "num_leaves": 10
-    }
-    dask_classifier = dlgbm.DaskLGBMClassifier(
-        time_out=5,
-        local_port=listen_port,
-        **params
-    )
-    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
-    p1 = dask_classifier.to_local().predict(dX)
-
-    local_classifier = lightgbm.LGBMClassifier(**params)
-    local_classifier.fit(X, y, sample_weight=w)
-    p2 = local_classifier.predict(X)
-
-    assert_eq(p1, p2)
-    assert_eq(y, p1)
-    assert_eq(y, p2)
-
-    client.close()
-
-
 @pytest.mark.parametrize('output', data_output)
 def test_regressor(output, client, listen_port):
     X, y, w, dX, dy, dw = _create_data(
@@ -291,6 +278,8 @@ def test_regressor(output, client, listen_port):
     if output != 'dataframe':
         s1 = r2_score(dy, p1)
     p1 = p1.compute()
+    p2_local_predict = dask_regressor.to_local().predict(X)
+    s2_local_predict = dask_regressor.to_local().score(X, y)
 
     local_regressor = lightgbm.LGBMRegressor(**params)
     local_regressor.fit(X, y, sample_weight=w)
@@ -304,6 +293,8 @@ def test_regressor(output, client, listen_port):
     # Predictions should be roughly the same
     assert_eq(y, p1, rtol=1., atol=100.)
     assert_eq(y, p2, rtol=1., atol=50.)
+    assert_eq(p1, p2_local_predict)
+    assert_eq(s1, s2_local_predict)
 
     client.close()
 
@@ -378,30 +369,6 @@ def test_regressor_quantile(output, client, listen_port, alpha):
     client.close()
 
 
-def test_regressor_local_predict(client, listen_port):
-    X, y, _, dX, dy, dw = _create_data('regression', output='array')
-
-    dask_regressor = dlgbm.DaskLGBMRegressor(
-        local_listen_port=listen_port,
-        random_state=42,
-        n_estimators=10,
-        num_leaves=10,
-        tree_type='data'
-    )
-    dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
-    p1 = dask_regressor.predict(dX)
-    p2 = dask_regressor.to_local().predict(X)
-    s1 = r2_score(dy, p1)
-    p1 = p1.compute()
-    s2 = dask_regressor.to_local().score(X, y)
-
-    # Predictions and scores should be the same
-    assert_eq(p1, p2)
-    assert_eq(s1, s2)
-
-    client.close()
-
-
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
 @pytest.mark.parametrize('group', [None, group_sizes])
 def test_ranker(output, client, listen_port, group):
@@ -428,6 +395,7 @@ def test_ranker(output, client, listen_port, group):
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
+    rnkvec_local_predict = dask_ranker.to_local().predict(X)
 
     local_ranker = lightgbm.LGBMRanker(**params)
     local_ranker.fit(X, y, sample_weight=w, group=g)
@@ -438,35 +406,7 @@ def test_ranker(output, client, listen_port, group):
     dcor = spearmanr(rnkvec_dask, y).correlation
     assert dcor > 0.6
     assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.75
-
-    client.close()
-
-
-@pytest.mark.parametrize('output', ['array', 'dataframe'])
-@pytest.mark.parametrize('group', [None, group_sizes])
-def test_ranker_local_predict(output, client, listen_port, group):
-
-    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
-        output=output,
-        group=group
-    )
-
-    dask_ranker = dlgbm.DaskLGBMRanker(
-        time_out=5,
-        local_listen_port=listen_port,
-        tree_learner='data',
-        n_estimators=10,
-        num_leaves=10,
-        random_state=42,
-        min_child_samples=1
-    )
-    dask_ranker = dask_ranker.fit(dX, dy, group=dg, client=client)
-    rnkvec_dask = dask_ranker.predict(dX)
-    rnkvec_dask = rnkvec_dask.compute()
-    rnkvec_local = dask_ranker.to_local().predict(X)
-
-    # distributed and to-local scores should be the same.
-    assert_eq(rnkvec_dask, rnkvec_local)
+    assert_eq(rnkvec_dask, rnkvec_local_predict)
 
     client.close()
 
