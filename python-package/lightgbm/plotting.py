@@ -5,7 +5,7 @@ from io import BytesIO
 
 import numpy as np
 
-from .basic import Booster, _log
+from .basic import Booster, _log_warning
 from .compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED
 from .sklearn import LGBMModel
 
@@ -325,8 +325,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     num_metric = len(metrics_for_one)
     if metric is None:
         if num_metric > 1:
-            _log("More than one metric available, picking one to plot.",
-                 is_warning=True)
+            _log_warning("More than one metric available, picking one to plot.")
         metric, results = metrics_for_one.popitem()
     else:
         if metric not in metrics_for_one:

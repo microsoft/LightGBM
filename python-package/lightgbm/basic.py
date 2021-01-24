@@ -59,17 +59,17 @@ def _normalize_native_string(func):
     return wrapper
 
 
-def _log(msg, is_warning=False):
-    """Output LightGBM's logs."""
-    if is_warning:
-        _LOGGER.warning(msg)
-    else:
-        _LOGGER.info(msg)
+def _log_info(msg):
+    _LOGGER.info(msg)
+
+
+def _log_warning(msg):
+    _LOGGER.warning(msg)
 
 
 @_normalize_native_string
 def _log_native(msg):
-    _log(msg)
+    _LOGGER.info(msg)
 
 
 def _log_callback(msg):
@@ -386,9 +386,8 @@ def convert_from_sliced_object(data):
     """Fix the memory of multi-dimensional sliced object."""
     if isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         if not data.flags.c_contiguous:
-            _log("Usage of np.ndarray subset (sliced data) is not recommended "
-                 "due to it will double the peak memory cost in LightGBM.",
-                 is_warning=True)
+            _log_warning("Usage of np.ndarray subset (sliced data) is not recommended "
+                         "due to it will double the peak memory cost in LightGBM.")
             return np.copy(data)
     return data
 
@@ -678,7 +677,7 @@ class _InnerPredictor:
             preds, nrow = self.__pred_for_np2d(data.to_numpy(), start_iteration, num_iteration, predict_type)
         else:
             try:
-                _log('Converting data to scipy sparse matrix.', is_warning=True)
+                _log_warning('Converting data to scipy sparse matrix.')
                 csr = scipy.sparse.csr_matrix(data)
             except BaseException:
                 raise TypeError('Cannot predict data for type {}'.format(type(data).__name__))
@@ -1161,9 +1160,9 @@ class Dataset:
                       .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount])
         for key, _ in params.items():
             if key in args_names:
-                _log('{0} keyword has been found in `params` and will be ignored.\n'
-                     'Please use {0} argument of the Dataset constructor to pass this parameter.'
-                     .format(key), is_warning=True)
+                _log_warning('{0} keyword has been found in `params` and will be ignored.\n'
+                             'Please use {0} argument of the Dataset constructor to pass this parameter.'
+                             .format(key))
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
@@ -1184,8 +1183,7 @@ class Dataset:
             if categorical_indices:
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     if cat_alias in params:
-                        _log('{} in param dict is overridden.'.format(cat_alias),
-                             is_warning=True)
+                        _log_warning('{} in param dict is overridden.'.format(cat_alias))
                         params.pop(cat_alias, None)
                 params['categorical_column'] = sorted(categorical_indices)
 
@@ -1231,8 +1229,7 @@ class Dataset:
             self.set_group(group)
         if isinstance(predictor, _InnerPredictor):
             if self._predictor is None and init_score is not None:
-                _log("The init_score will be overridden by the prediction of init_model.",
-                     is_warning=True)
+                _log_warning("The init_score will be overridden by the prediction of init_model.")
             self._set_init_score_by_predictor(predictor, data)
         elif init_score is not None:
             self.set_init_score(init_score)
@@ -1374,8 +1371,7 @@ class Dataset:
             if self.reference is not None:
                 reference_params = self.reference.get_params()
                 if self.get_params() != reference_params:
-                    _log('Overriding the parameters from Reference Dataset.',
-                         is_warning=True)
+                    _log_warning('Overriding the parameters from Reference Dataset.')
                     self._update_params(reference_params)
                 if self.used_indices is None:
                     # create valid
@@ -1644,12 +1640,11 @@ class Dataset:
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
             elif categorical_feature == 'auto':
-                _log('Using categorical_feature in Dataset.', is_warning=True)
+                _log_warning('Using categorical_feature in Dataset.')
                 return self
             else:
-                _log('categorical_feature in Dataset is overridden.\n'
-                     'New categorical_feature is {}'.format(sorted(list(categorical_feature))),
-                     is_warning=True)
+                _log_warning('categorical_feature in Dataset is overridden.\n'
+                             'New categorical_feature is {}'.format(sorted(list(categorical_feature))))
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
         else:
@@ -1902,9 +1897,8 @@ class Dataset:
                 elif isinstance(self.data, DataTable):
                     self.data = self.data[self.used_indices, :]
                 else:
-                    _log("Cannot subset {} type of raw data.\n"
-                         "Returning original raw data".format(type(self.data).__name__),
-                         is_warning=True)
+                    _log_warning("Cannot subset {} type of raw data.\n"
+                                 "Returning original raw data".format(type(self.data).__name__))
             self.need_slice = False
         if self.data is None:
             raise LightGBMError("Cannot call `get_data` after freed raw data, "
@@ -2074,11 +2068,10 @@ class Dataset:
                                                         old_self_data_type)
             err_msg += ("Set free_raw_data=False when construct Dataset to avoid this"
                         if was_none else "Freeing raw data")
-            _log(err_msg, is_warning=True)
+            _log_warning(err_msg)
         self.feature_name = self.get_feature_name()
-        _log("Reseting categorical features.\n"
-             "You can set new categorical features via ``set_categorical_feature`` method",
-             is_warning=True)
+        _log_warning("Reseting categorical features.\n"
+                     "You can set new categorical features via ``set_categorical_feature`` method")
         self.categorical_feature = "auto"
         self.pandas_categorical = None
         return self
@@ -2898,7 +2891,7 @@ class Booster:
             self.handle,
             ctypes.byref(out_num_class)))
         if verbose:
-            _log('Finished loading model, total used %d iterations' % int(out_num_iterations.value))
+            _log_info('Finished loading model, total used %d iterations' % int(out_num_iterations.value))
         self.__num_class = out_num_class.value
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self

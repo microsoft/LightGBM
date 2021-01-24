@@ -21,7 +21,7 @@ from dask import dataframe as dd
 from dask import delayed
 from dask.distributed import Client, default_client, get_worker, wait
 
-from .basic import _ConfigAliases, _LIB, _safe_call
+from .basic import _ConfigAliases, _LIB, _log_warning, _safe_call
 from .sklearn import LGBMClassifier, LGBMRegressor, LGBMRanker
 
 
@@ -254,11 +254,10 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
         'voting_parallel'
     }
     if tree_learner is None:
-        _log('Parameter tree_learner not set. Using "data" as default', is_warning=True)
+        _log_warning('Parameter tree_learner not set. Using "data" as default')
         params['tree_learner'] = 'data'
     elif tree_learner.lower() not in allowed_tree_learners:
-        _log('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner,
-             is_warning=True)
+        _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
         params['tree_learner'] = 'data'
 
     local_listen_port = 12400
