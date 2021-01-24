@@ -2566,6 +2566,31 @@ def test_linear_trees(tmp_path):
     est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
 
 
+def test_save_and_load_linear(tmp_path):
+    X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1,
+                                                        random_state=2)
+    X_train = np.concatenate([np.ones((X_train.shape[0], 1)), X_train], 1)
+    X_train[:X_train.shape[0] // 2, 0] = 0
+    y_train[:X_train.shape[0] // 2] = 1
+    params = {'linear_tree': True}
+    train_data_1 = lgb.Dataset(X_train, label=y_train, params=params)
+    est_1 = lgb.train(params, train_data_1, num_boost_round=10, categorical_feature=[0])
+    pred_1 = est_1.predict(X_train)
+
+    tmp_dataset = str(tmp_path / 'temp_dataset.bin')
+    train_data_1.save_binary(tmp_dataset)
+    train_data_2 = lgb.Dataset(tmp_dataset)
+    est_2 = lgb.train(params, train_data_2, num_boost_round=10)
+    pred_2 = est_2.predict(X_train)
+    np.testing.assert_allclose(pred_1, pred_2)
+
+    model_file = str(tmp_path / 'model.txt')
+    est_2.save_model(model_file)
+    est_3 = lgb.Booster(model_file=model_file)
+    pred_3 = est_3.predict(X_train)
+    np.testing.assert_allclose(pred_2, pred_3)
+
+
 def test_predict_with_start_iteration():
     def inner_test(X, y, params, early_stopping_rounds):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
