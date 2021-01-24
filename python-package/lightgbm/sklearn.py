@@ -290,7 +290,7 @@ class LGBMModel(_LGBMModelBase):
         and you should group grad and hess in this way as well.
         """
         if not SKLEARN_INSTALLED:
-            raise LightGBMError('Scikit-learn is required for this module')
+            raise LightGBMError('scikit-learn is required for lightgbm.sklearn')
 
         self.boosting_type = boosting_type
         self.objective = objective

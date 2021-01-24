@@ -387,7 +387,7 @@ def _predict(model, data, raw_score=False, pred_proba=False, pred_leaf=False, pr
 class _LGBMModel:
     def __init__(self):
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
-            raise LightGBMError('Dask, Pandas and Scikit-learn are required for this module')
+            raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
 
     def _fit(self, model_factory, X, y=None, sample_weight=None, group=None, client=None, **kwargs):
         """Docstring is inherited from the LGBMModel."""
