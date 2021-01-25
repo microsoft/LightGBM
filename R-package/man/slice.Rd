@@ -18,8 +18,6 @@ slice(dataset, ...)
 }
 \value{
 constructed sub dataset
-
-constructed sub dataset
 }
 \description{
 Get a new \code{lgb.Dataset} containing the specified rows of
