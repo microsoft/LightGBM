@@ -300,13 +300,13 @@ class _ConfigAliases:
                "local_listen_port": {"local_listen_port",
                                      "local_port",
                                      "port"},
-               "machines": {"machines",
-                            "workers",
-                            "nodes"},
                "machine_list_filename": {"machine_list_filename",
                                          "machine_list_file",
                                          "machine_list",
                                          "mlist"},
+               "machines": {"machines",
+                            "workers",
+                            "nodes"},
                "metric": {"metric",
                           "metrics",
                           "metric_types"},
@@ -354,7 +354,7 @@ class _ConfigAliases:
         return ret
 
 
-def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_value: Any):
+def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_value: Any) -> Dict[str, Any]:
     """Get a single parameter value, accounting for aliases.
 
     Parameters
