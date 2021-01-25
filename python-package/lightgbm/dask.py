@@ -225,7 +225,7 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
             'Support for tree_learner %s in lightgbm.dask is experimental and may break in a future release. Use "data" for a stable, well-tested interface.' % params['tree_learner']
         )
 
-    # Some passed-inparameters can be removed:
+    # Some passed-in parameters can be removed:
     #   * 'machines': constructed automatically from Dask worker list
     #   * 'machine_list_filename': not relevant for the Dask interface
     #   * 'num_machines': set automatically from Dask worker list
