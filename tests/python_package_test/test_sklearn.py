@@ -1129,7 +1129,7 @@ def test_continue_training_with_model():
 
 
 # sklearn < 0.22 requires passing "attributes" argument
-@pytest.mark.skipif(sk_version < parse_version('0.22'), 'scikit-learn version is less than 0.22')
+@pytest.mark.skipif(sk_version < parse_version('0.22'), reason='scikit-learn version is less than 0.22')
 def test_check_is_fitted():
     X, y = load_digits(n_class=2, return_X_y=True)
     est = lgb.LGBMModel(n_estimators=5, objective="binary")
