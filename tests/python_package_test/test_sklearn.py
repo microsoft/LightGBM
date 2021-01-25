@@ -3,7 +3,6 @@ import itertools
 import joblib
 import math
 import os
-import unittest
 
 import lightgbm as lgb
 import numpy as np
@@ -996,9 +995,10 @@ def test_first_metric_only():
                 expected = assumed_iteration + (params_fit['early_stopping_rounds']
                                                 if eval_set_name != 'training'
                                                 and assumed_iteration != gbm.n_estimators else 0)
-                assert expected == actual
-                assert (assumed_iteration
-                        if eval_set_name != 'training' else gbm.n_estimators == gbm.best_iteration_)
+                if eval_set_name != 'training':
+                    assert assumed_iteration == gbm.best_iteration_
+                else:
+                    assert gbm.n_estimators == gbm.best_iteration_
 
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
