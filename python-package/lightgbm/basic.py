@@ -364,7 +364,7 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     params : dict
         Dictionary of LightGBM parameters.
     default_value : Any
-        Default value to use for the parameter, if none is found in ``params``
+        Default value to use for the parameter, if none is found in ``params``.
 
     Returns
     -------
