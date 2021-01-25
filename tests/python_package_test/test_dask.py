@@ -285,7 +285,7 @@ def test_regressor(output, client, listen_port):
     # Scores should be the same
     if output != 'dataframe':
         assert_eq(s1, s2, atol=.01)
-        assert_eq(s1, s1_local)
+        assert_eq(s1, s1_local, atol=.003)
 
     # Predictions should be roughly the same
     assert_eq(y, p1, rtol=1., atol=100.)
