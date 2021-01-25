@@ -6,9 +6,11 @@ import json
 import os
 import warnings
 from collections import OrderedDict
+from copy import deepcopy
 from functools import wraps
 from logging import Logger
 from tempfile import NamedTemporaryFile
+from typing import Any, Dict
 
 import numpy as np
 import scipy.sparse
@@ -350,6 +352,46 @@ class _ConfigAliases:
         for i in args:
             ret |= cls.aliases.get(i, {i})
         return ret
+
+
+def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_value: Any):
+    """Get a single parameter value, accounting for aliases.
+
+    Parameters
+    ----------
+    main_param_name : str
+        Name of the main parameter to get a value for. One of the keys of ``_ConfigAliases``.
+    params : dict
+        Dictionary of LightGBM parameters.
+    default_value : Any
+        Default value to use for the parameter, if none is found in ``params``
+
+    Returns
+    -------
+    params : dict
+        A ``params`` dict with exactly one value for ``main_param_name``, and all aliases ``main_param_name`` removed.
+        If both ``main_param_name`` and one or more aliases for it are found, the value of ``main_param_name`` will be preferred.
+    """
+    # avoid side effects on passed-in parameters
+    params = deepcopy(params)
+
+    # find a value, and remove other aliases with .pop()
+    # prefer the value of 'main_param_name' if it exists, otherwise search the aliases
+    found_value = None
+    if main_param_name in params.keys():
+        found_value = params[main_param_name]
+
+    for param in _ConfigAliases.get(main_param_name):
+        val = params.pop(param, None)
+        if found_value is None and val is not None:
+            found_value = val
+
+    if found_value is not None:
+        params[main_param_name] = found_value
+    else:
+        params[main_param_name] = default_value
+
+    return params
 
 
 MAX_INT32 = (1 << 31) - 1
@@ -2144,16 +2186,29 @@ class Booster:
                 if alias in params:
                     machines = params[alias]
                     if isinstance(machines, str):
-                        num_machines = len(machines.split(','))
+                        num_machines_from_machine_list = len(machines.split(','))
                     elif isinstance(machines, (list, set)):
-                        num_machines = len(machines)
+                        num_machines_from_machine_list = len(machines)
                         machines = ','.join(machines)
                     else:
                         raise ValueError("Invalid machines in params.")
-                    self.set_network(machines,
-                                     local_listen_port=params.get("local_listen_port", 12400),
-                                     listen_time_out=params.get("listen_time_out", 120),
-                                     num_machines=params.setdefault("num_machines", num_machines))
+
+                    params = _choose_param_value(
+                        main_param_name="num_machines",
+                        params=params,
+                        default_value=num_machines_from_machine_list
+                    )
+                    params = _choose_param_value(
+                        main_param_name="local_listen_port",
+                        params=params,
+                        default_value=12400
+                    )
+                    self.set_network(
+                        machines=machines,
+                        local_listen_port=params["local_listen_port"],
+                        listen_time_out=params.get("listen_time_out", 120),
+                        num_machines=params["num_machines"]
+                    )
                     break
             # construct booster object
             train_set.construct()
