@@ -20,7 +20,7 @@ import pandas as pd
 from scipy.stats import spearmanr
 from dask.array.utils import assert_eq
 from dask_ml.metrics import accuracy_score, r2_score
-from distributed.utils_test import client, gen_cluster
+from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
 from scipy.sparse import csr_matrix
 from sklearn.datasets import make_blobs, make_regression
 from sklearn.utils import check_random_state
