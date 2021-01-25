@@ -142,7 +142,6 @@ def test_classifier(output, centers, client, listen_port):
         local_listen_port=listen_port,
         **params
     )
-
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_classifier.predict(dX)
     p1_proba = dask_classifier.predict_proba(dX).compute()
@@ -155,6 +154,7 @@ def test_classifier(output, centers, client, listen_port):
     p2 = local_classifier.predict(X)
     p2_proba = local_classifier.predict_proba(X)
     s2 = local_classifier.score(X, y)
+
     assert_eq(s1, s2)
     assert_eq(p1, p2)
     assert_eq(y, p1)
@@ -265,8 +265,8 @@ def test_regressor(output, client, listen_port):
     if output != 'dataframe':
         s1 = r2_score(dy, p1)
     p1 = p1.compute()
-    p2_local = dask_regressor.to_local().predict(X)
-    s2_local = dask_regressor.to_local().score(X, y)
+    p1_local = dask_regressor.to_local().predict(X)
+    s1_local = dask_regressor.to_local().score(X, y)
 
     local_regressor = lightgbm.LGBMRegressor(**params)
     local_regressor.fit(X, y, sample_weight=w)
@@ -276,12 +276,12 @@ def test_regressor(output, client, listen_port):
     # Scores should be the same
     if output != 'dataframe':
         assert_eq(s1, s2, atol=.01)
-        assert_eq(s1, s2_local)
+        assert_eq(s1, s1_local)
 
     # Predictions should be roughly the same
     assert_eq(y, p1, rtol=1., atol=100.)
     assert_eq(y, p2, rtol=1., atol=50.)
-    assert_eq(p1, p2_local)
+    assert_eq(p1, p1_local)
 
     client.close()
 
@@ -382,7 +382,7 @@ def test_ranker(output, client, listen_port, group):
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
-    rnkvec_local_1 = dask_ranker.to_local().predict(X)
+    rnkvec_dask_local = dask_ranker.to_local().predict(X)
 
     local_ranker = lightgbm.LGBMRanker(**params)
     local_ranker.fit(X, y, sample_weight=w, group=g)
@@ -393,7 +393,7 @@ def test_ranker(output, client, listen_port, group):
     dcor = spearmanr(rnkvec_dask, y).correlation
     assert dcor > 0.6
     assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.75
-    assert_eq(rnkvec_dask, rnkvec_local_1)
+    assert_eq(rnkvec_dask, rnkvec_dask_local)
 
     client.close()
 
