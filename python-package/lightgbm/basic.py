@@ -2180,35 +2180,40 @@ class Booster:
             if not isinstance(train_set, Dataset):
                 raise TypeError('Training data should be Dataset instance, met {}'
                                 .format(type(train_set).__name__))
-            # set network if necessary
-            for alias in _ConfigAliases.get("machines"):
-                if alias in params:
-                    machines = params[alias]
-                    if isinstance(machines, str):
-                        num_machines_from_machine_list = len(machines.split(','))
-                    elif isinstance(machines, (list, set)):
-                        num_machines_from_machine_list = len(machines)
-                        machines = ','.join(machines)
-                    else:
-                        raise ValueError("Invalid machines in params.")
+            params = _choose_param_value(
+                main_param_name="machines",
+                params=params,
+                default_value=None
+            )
+            # if "machines" is given, assume user wants to do distributed learning, and set up network
+            if params["machines"] is None:
+                params.pop("machines", None)
+            else:
+                machines = params["machines"]
+                if isinstance(machines, str):
+                    num_machines_from_machine_list = len(machines.split(','))
+                elif isinstance(machines, (list, set)):
+                    num_machines_from_machine_list = len(machines)
+                    machines = ','.join(machines)
+                else:
+                    raise ValueError("Invalid machines in params.")
 
-                    params = _choose_param_value(
-                        main_param_name="num_machines",
-                        params=params,
-                        default_value=num_machines_from_machine_list
-                    )
-                    params = _choose_param_value(
-                        main_param_name="local_listen_port",
-                        params=params,
-                        default_value=12400
-                    )
-                    self.set_network(
-                        machines=machines,
-                        local_listen_port=params["local_listen_port"],
-                        listen_time_out=params.get("listen_time_out", 120),
-                        num_machines=params["num_machines"]
-                    )
-                    break
+                params = _choose_param_value(
+                    main_param_name="num_machines",
+                    params=params,
+                    default_value=num_machines_from_machine_list
+                )
+                params = _choose_param_value(
+                    main_param_name="local_listen_port",
+                    params=params,
+                    default_value=12400
+                )
+                self.set_network(
+                    machines=machines,
+                    local_listen_port=params["local_listen_port"],
+                    listen_time_out=params.get("listen_time_out", 120),
+                    num_machines=params["num_machines"]
+                )
             # construct booster object
             train_set.construct()
             # copy the parameters from train_set
