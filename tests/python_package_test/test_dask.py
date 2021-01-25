@@ -124,8 +124,8 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
 
 
 def _r2_score(dy_true, dy_pred):
-    numerator = ((dy_true - dy_pred) ** 2).sum(axis=0, dtype="f8")
-    denominator = ((dy_true - dy_pred.mean(axis=0)) ** 2).sum(axis=0, dtype="f8")
+    numerator = ((dy_true - dy_pred) ** 2).sum(axis=0, dtype=np.float64)
+    denominator = ((dy_true - dy_pred.mean(axis=0)) ** 2).sum(axis=0, dtype=np.float64)
     return (1 - numerator / denominator).compute()
 
 
