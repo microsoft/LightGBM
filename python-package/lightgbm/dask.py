@@ -203,13 +203,13 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
 
     if sample_weight is not None:
         weight_parts = _split_to_parts(data=sample_weight, is_matrix=False)
-        for i, d in enumerate(parts):
-            parts[i] = {**d, 'weight': weight_parts[i]}
+        for i in range(len(parts)):
+            parts[i]['weight'] = weight_parts[i]
 
     if group is not None:
         group_parts = _split_to_parts(data=group, is_matrix=False)
-        for i, d in enumerate(parts):
-            parts[i] = {**d, 'group': group_parts[i]}
+        for i in range(len(parts)):
+            parts[i]['group'] = group_parts[i]
 
     # Start computation in the background
     parts = list(map(delayed, parts))
