@@ -1,13 +1,12 @@
 # coding: utf-8
 """Scikit-learn wrapper interface for LightGBM."""
 import copy
-import warnings
 
 from inspect import signature
 
 import numpy as np
 
-from .basic import Dataset, LightGBMError, _ConfigAliases
+from .basic import Dataset, LightGBMError, _ConfigAliases, _log_warning
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckSampleWeight,
@@ -290,7 +289,7 @@ class LGBMModel(_LGBMModelBase):
         and you should group grad and hess in this way as well.
         """
         if not SKLEARN_INSTALLED:
-            raise LightGBMError('Scikit-learn is required for this module')
+            raise LightGBMError('scikit-learn is required for lightgbm.sklearn')
 
         self.boosting_type = boosting_type
         self.objective = objective
@@ -931,9 +930,9 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         """
         result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
-            warnings.warn("Cannot compute class probabilities or labels "
-                          "due to the usage of customized objective function.\n"
-                          "Returning raw scores instead.")
+            _log_warning("Cannot compute class probabilities or labels "
+                         "due to the usage of customized objective function.\n"
+                         "Returning raw scores instead.")
             return result
         elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
             return result

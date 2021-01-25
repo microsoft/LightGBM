@@ -39,7 +39,7 @@ INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#
 
 # -- mock out modules
 MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
-                'sklearn', 'matplotlib', 'pandas', 'graphviz']
+                'sklearn', 'matplotlib', 'pandas', 'graphviz', 'dask', 'dask.distributed']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
@@ -220,7 +220,6 @@ def generate_doxygen_xml(app):
         "SKIP_FUNCTION_MACROS=NO",
         "SORT_BRIEF_DOCS=YES",
         "WARN_AS_ERROR=YES",
-        "EXCLUDE_PATTERNS=*/eigen/*"
     ]
     doxygen_input = '\n'.join(doxygen_args)
     doxygen_input = bytes(doxygen_input, "utf-8")
@@ -321,8 +320,8 @@ def setup(app):
         if first_run:
             app.connect("builder-inited", generate_r_docs)
         app.connect("build-finished",
-                    lambda app, exception: copy_tree(os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r", "docs"),
-                                                     os.path.join(app.outdir, "R"), verbose=0))
+                    lambda app, _: copy_tree(os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r", "docs"),
+                                             os.path.join(app.outdir, "R"), verbose=0))
     app.add_transform(InternalRefTransform)
     add_js_file = getattr(app, 'add_js_file', False) or app.add_javascript
     add_js_file("js/script.js")

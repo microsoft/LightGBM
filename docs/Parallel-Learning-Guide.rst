@@ -7,7 +7,7 @@ Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first
 
 **List of external libraries in which LightGBM can be used in a distributed fashion**
 
--  `Dask-LightGBM`_ allows to create ML workflow on Dask distributed data structures.
+-  `Dask API of LightGBM <./Python-API.rst#dask-api>`__ (formerly it was a separate package) allows to create ML workflow on Dask distributed data structures.
 
 -  `MMLSpark`_ integrates LightGBM into Apache Spark ecosystem.
    `The following example`_ demonstrates how easy it's possible to utilize the great power of Spark.
@@ -133,8 +133,6 @@ Example
 ^^^^^^^
 
 -  `A simple parallel example`_
-
-.. _Dask-LightGBM: https://github.com/dask/dask-lightgbm
 
 .. _MMLSpark: https://aka.ms/spark
 
