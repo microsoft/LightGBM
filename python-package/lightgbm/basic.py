@@ -1,6 +1,5 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
-import copy
 import ctypes
 import json
 import os
@@ -1094,7 +1093,7 @@ class Dataset:
         self.silent = silent
         self.feature_name = feature_name
         self.categorical_feature = categorical_feature
-        self.params = copy.deepcopy(params)
+        self.params = deepcopy(params)
         self.free_raw_data = free_raw_data
         self.used_indices = None
         self.need_slice = True
@@ -1552,13 +1551,13 @@ class Dataset:
     def _update_params(self, params):
         if not params:
             return self
-        params = copy.deepcopy(params)
+        params = deepcopy(params)
 
         def update():
             if not self.params:
                 self.params = params
             else:
-                self.params_back_up = copy.deepcopy(self.params)
+                self.params_back_up = deepcopy(self.params)
                 self.params.update(params)
 
         if self.handle is None:
@@ -1578,7 +1577,7 @@ class Dataset:
 
     def _reverse_update_params(self):
         if self.handle is None:
-            self.params = copy.deepcopy(self.params_back_up)
+            self.params = deepcopy(self.params_back_up)
             self.params_back_up = None
         return self
 
@@ -2172,7 +2171,7 @@ class Booster:
         self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
-        params = {} if params is None else copy.deepcopy(params)
+        params = {} if params is None else deepcopy(params)
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
@@ -3111,7 +3110,7 @@ class Booster:
             Prediction result.
             Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
         """
-        predictor = self._to_predictor(copy.deepcopy(kwargs))
+        predictor = self._to_predictor(deepcopy(kwargs))
         if num_iteration is None:
             if start_iteration <= 0:
                 num_iteration = self.best_iteration
@@ -3145,14 +3144,14 @@ class Booster:
         """
         if self.__set_objective_to_none:
             raise LightGBMError('Cannot refit due to null objective function.')
-        predictor = self._to_predictor(copy.deepcopy(kwargs))
+        predictor = self._to_predictor(deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_bool(False)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
             self.handle,
             ctypes.byref(out_is_linear)))
-        new_params = copy.deepcopy(self.params)
+        new_params = deepcopy(self.params)
         new_params["linear_tree"] = out_is_linear.value
         train_set = Dataset(data, label, silent=True, params=new_params)
         new_params['refit_decay_rate'] = decay_rate
