@@ -17,7 +17,6 @@ import pandas as pd
 from scipy.stats import spearmanr
 import scipy.sparse
 from dask.array.utils import assert_eq
-from dask_ml.metrics import accuracy_score, r2_score
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
 from sklearn.datasets import make_blobs, make_regression
 from sklearn.utils import check_random_state
@@ -124,6 +123,16 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
     return X, y, weights, dX, dy, dw
 
 
+def _r2_score(dy_true, dy_pred):
+    numerator = ((dy_true - dy_pred) ** 2).sum(axis=0, dtype="f8")
+    denominator = ((dy_true - dy_pred.mean(axis=0)) ** 2).sum(axis=0, dtype="f8")
+    return (1 - numerator / denominator).compute()
+
+
+def _accuracy_score(dy_true, dy_pred):
+    return da.average(dy_true == dy_pred).compute()
+
+
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('centers', data_centers)
 def test_classifier(output, centers, client, listen_port):
@@ -145,7 +154,7 @@ def test_classifier(output, centers, client, listen_port):
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_classifier.predict(dX)
     p1_proba = dask_classifier.predict_proba(dX).compute()
-    s1 = accuracy_score(dy, p1)
+    s1 = _accuracy_score(dy, p1)
     p1 = p1.compute()
 
     local_classifier = lightgbm.LGBMClassifier(**params)
@@ -289,7 +298,7 @@ def test_regressor(output, client, listen_port):
     dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
     p1 = dask_regressor.predict(dX)
     if output != 'dataframe':
-        s1 = r2_score(dy, p1)
+        s1 = _r2_score(dy, p1)
     p1 = p1.compute()
 
     local_regressor = lightgbm.LGBMRegressor(**params)
@@ -391,7 +400,7 @@ def test_regressor_local_predict(client, listen_port):
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
     p1 = dask_regressor.predict(dX)
     p2 = dask_regressor.to_local().predict(X)
-    s1 = r2_score(dy, p1)
+    s1 = _r2_score(dy, p1)
     p1 = p1.compute()
     s2 = dask_regressor.to_local().score(X, y)
 
