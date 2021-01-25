@@ -334,7 +334,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
                                              "xe_ndcg", "xe_ndcg_mart", "xendcg_mart"}
                for obj_alias in _ConfigAliases.get("objective")):
             if not SKLEARN_INSTALLED:
-                raise LightGBMError('Scikit-learn is required for ranking cv.')
+                raise LightGBMError('scikit-learn is required for ranking cv')
             # ranking task, split according to groups
             group_info = np.array(full_data.get_group(), dtype=np.int32, copy=False)
             flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
@@ -342,7 +342,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
         elif stratified:
             if not SKLEARN_INSTALLED:
-                raise LightGBMError('Scikit-learn is required for stratified cv.')
+                raise LightGBMError('scikit-learn is required for stratified cv')
             skf = _LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
             folds = skf.split(X=np.zeros(num_data), y=full_data.get_label())
         else:

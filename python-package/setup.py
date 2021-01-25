@@ -344,7 +344,7 @@ if __name__ == "__main__":
           extras_require={
               'dask': [
                   'dask[array]>=2.0.0',
-                  'dask[dataframe]>=2.0.0'
+                  'dask[dataframe]>=2.0.0',
                   'dask[distributed]>=2.0.0',
                   'pandas',
               ],

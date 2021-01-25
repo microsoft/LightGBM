@@ -21,7 +21,8 @@ from dask import dataframe as dd
 from dask import delayed
 from dask.distributed import Client, default_client, get_worker, wait
 
-from .basic import _ConfigAliases, _LIB, _log_warning, _safe_call
+from .basic import _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
+from .compat import DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED
 from .sklearn import LGBMClassifier, LGBMRegressor, LGBMRanker
 
 
@@ -393,6 +394,9 @@ def _predict(model, data, raw_score=False, pred_proba=False, pred_leaf=False, pr
 
 
 class _LGBMModel:
+    def __init__(self):
+        if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
+            raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
 
     def _fit(self, model_factory, X, y=None, sample_weight=None, group=None, client=None, **kwargs):
         """Docstring is inherited from the LGBMModel."""
@@ -431,7 +435,7 @@ class _LGBMModel:
             setattr(dest, name, attributes[name])
 
 
-class DaskLGBMClassifier(_LGBMModel, LGBMClassifier):
+class DaskLGBMClassifier(LGBMClassifier, _LGBMModel):
     """Distributed version of lightgbm.LGBMClassifier."""
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
@@ -479,7 +483,7 @@ class DaskLGBMClassifier(_LGBMModel, LGBMClassifier):
         return self._to_local(LGBMClassifier)
 
 
-class DaskLGBMRegressor(_LGBMModel, LGBMRegressor):
+class DaskLGBMRegressor(LGBMRegressor, _LGBMModel):
     """Docstring is inherited from the lightgbm.LGBMRegressor."""
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
@@ -515,7 +519,7 @@ class DaskLGBMRegressor(_LGBMModel, LGBMRegressor):
         return self._to_local(LGBMRegressor)
 
 
-class DaskLGBMRanker(_LGBMModel, LGBMRanker):
+class DaskLGBMRanker(LGBMRanker, _LGBMModel):
     """Docstring is inherited from the lightgbm.LGBMRanker."""
 
     def fit(self, X, y=None, sample_weight=None, init_score=None, group=None, client=None, **kwargs):

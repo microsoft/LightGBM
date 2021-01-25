@@ -105,3 +105,12 @@ except ImportError:
     _LGBMAssertAllFinite = None
     _LGBMCheckClassificationTargets = None
     _LGBMComputeSampleWeight = None
+
+"""dask"""
+try:
+    from dask import array
+    from dask import dataframe
+    from dask.distributed import Client
+    DASK_INSTALLED = True
+except ImportError:
+    DASK_INSTALLED = False
