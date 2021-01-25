@@ -244,6 +244,7 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
     for tree_learner_param in _ConfigAliases.get('tree_learner'):
         tree_learner = params.get(tree_learner_param)
         if tree_learner is not None:
+            params['tree_learner'] = tree_learner
             break
 
     allowed_tree_learners = {
@@ -263,7 +264,7 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
 
     if params['tree_learner'] not in {'data', 'data_parallel'}:
         _log_warning(
-            'Support for tree_learner %s in lightgbm.dask is currently untested, and should be considered experimental' % params['tree_learner']
+            'Support for tree_learner %s in lightgbm.dask is experimental and may break in a future release. Use "data" for a stable, well-tested interface.' % params['tree_learner']
         )
 
     local_listen_port = 12400
