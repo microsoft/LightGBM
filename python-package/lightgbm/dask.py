@@ -220,6 +220,11 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
         _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
         params['tree_learner'] = 'data'
 
+    if params['tree_learner'] not in {'data', 'data_parallel'}:
+        _log_warning(
+            'Support for tree_learner %s in lightgbm.dask is experimental and may break in a future release. Use "data" for a stable, well-tested interface.' % params['tree_learner']
+        )
+
     # Some passed-inparameters can be removed:
     #   * 'machines': constructed automatically from Dask worker list
     #   * 'machine_list_filename': not relevant for the Dask interface
