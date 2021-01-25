@@ -261,6 +261,11 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
         _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
         params['tree_learner'] = 'data'
 
+    if params['tree_learner'] not in {'data', 'data_parallel'}:
+        _log_warning(
+            'Support for tree_learner %s in lightgbm.dask is currently untested, and should be considered experimental' % params['tree_learner']
+        )
+
     local_listen_port = 12400
     for port_param in _ConfigAliases.get('local_listen_port'):
         val = params.get(port_param)
