@@ -25,11 +25,15 @@ from .basic import _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
 from .compat import DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED
 from .sklearn import LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
 
-_DaskCollectionTypes = (da.Array, dd.DataFrame, dd.Series)
-_DaskCollection = Union[_DaskCollectionTypes]
-_DaskPart = Union["np.ndarray", "pd.DataFrame", "pd.Series", "ss.spmatrix"]
 _1DArrayLike = Union[List, "np.ndarray"]
+_DaskCollection = Union[da.Array, dd.DataFrame, dd.Series]
+_DaskPart = Union["np.ndarray", "pd.DataFrame", "pd.Series", "ss.spmatrix"]
 
+
+def _expect_type(obj: Any, obj_name: str, types: List[Type]) -> None:
+    if not isinstance(obj, types):
+        type_str = ""
+        msg = "'%s' must be one of ()"
 
 def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
     """Find an open port.
@@ -129,7 +133,7 @@ def _train_part(
     worker_address_to_port: Dict[str, int],
     return_model: bool,
     time_out: int = 120,
-    **kwargs
+    **kwargs: Any
 ) -> Optional[LGBMModel]:
     local_worker_address = get_worker().address
     machine_list = ','.join([
@@ -194,7 +198,7 @@ def _train(
     model_factory: Type[LGBMModel],
     sample_weight: Optional[_DaskCollection] = None,
     group: Optional[_1DArrayLike] = None,
-    **kwargs
+    **kwargs: Any
 ) -> LGBMModel:
     """Inner train routine.
 
@@ -347,7 +351,7 @@ def _predict_part(
     pred_proba: bool,
     pred_leaf: bool,
     pred_contrib: bool,
-    **kwargs
+    **kwargs: Any
 ) -> _DaskPart:
     data = part.values if isinstance(part, pd.DataFrame) else part
 
@@ -385,9 +389,9 @@ def _predict(
     raw_score: bool = False,
     pred_proba: bool = False,
     pred_leaf: bool = False,
-    pred_contrib=False,
-    dtype=np.float32,
-    **kwargs
+    pred_contrib: bool = False,
+    dtype: Union[Type[np.float32], Type[np.float64]] = np.float32,
+    **kwargs: Any
 ) -> _DaskCollection:
     """Inner predict routine.
 
@@ -445,11 +449,11 @@ class _DaskLGBMModel:
         self,
         model_factory: Type[LGBMModel],
         X: _DaskCollection,
-        y: Optional[_DaskCollection] = None,
+        y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
         client: Optional[Client] = None,
-        **kwargs
+        **kwargs: Any
     ) -> "_DaskLGBMModel":
         """Docstring is inherited from the LGBMModel."""
         if client is None:
@@ -493,10 +497,10 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     def fit(
         self,
         X: _DaskCollection,
-        y: Optional[_DaskCollection] = None,
+        y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
         client: Optional[Client] = None,
-        **kwargs
+        **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
         return self._fit(
@@ -510,7 +514,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     fit.__doc__ = LGBMClassifier.fit.__doc__
 
-    def predict(self, X: _DaskCollection, **kwargs) -> _DaskCollection:
+    def predict(self, X: _DaskCollection, **kwargs: Any) -> _DaskCollection:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
         return _predict(
             model=self.to_local(),
@@ -521,7 +525,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     predict.__doc__ = LGBMClassifier.predict.__doc__
 
-    def predict_proba(self, X: _DaskCollection, **kwargs) -> _DaskCollection:
+    def predict_proba(self, X: _DaskCollection, **kwargs: Any) -> _DaskCollection:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict_proba."""
         return _predict(
             model=self.to_local(),
@@ -548,10 +552,10 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     def fit(
         self,
         X: _DaskCollection,
-        y: Optional[_DaskCollection] = None,
+        y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
         client: Optional[Client] = None,
-        **kwargs
+        **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
         return self._fit(
@@ -591,12 +595,12 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     def fit(
         self,
         X: _DaskCollection,
-        y: Optional[_DaskCollection] = None,
+        y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
         init_score: Optional[_DaskCollection] = None,
         group: Optional[_1DArrayLike] = None,
         client: Optional[Client] = None,
-        **kwargs
+        **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
         if init_score is not None:
@@ -614,7 +618,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
     fit.__doc__ = LGBMRanker.fit.__doc__
 
-    def predict(self, X: _DaskCollection, **kwargs) -> _DaskCollection:
+    def predict(self, X: _DaskCollection, **kwargs: Any) -> _DaskCollection:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
         return _predict(self.to_local(), X, **kwargs)
 
