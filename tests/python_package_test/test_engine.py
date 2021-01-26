@@ -553,7 +553,7 @@ def test_auc_mu():
     lgb.train(params, lgb_X_weighted, num_boost_round=10, valid_sets=[lgb_X_weighted],
               evals_result=results_weighted)
     assert results_unweighted['training']['auc_mu'][-1] == pytest.approx(
-        results_weighted['training']['auc_mu'][-1])
+        results_weighted['training']['auc_mu'][-1], abs=1e-5)
     # should give 1 when accuracy = 1
     X = X[:10, :]
     y = y[:10]
