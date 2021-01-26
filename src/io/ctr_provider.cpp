@@ -220,7 +220,7 @@ void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>&
   label_sum[fold_id] += label;
 }
 
-void CTRProvider::FinishProcess(const int num_machines) {
+Parser* CTRProvider::FinishProcess(const int num_machines) {
   // gather from threads
   #pragma omp parallel for schedule(static) num_threads(num_threads_)
   for (int i = 0; i < static_cast<int>(categorical_features_.size()); ++i) {
@@ -329,6 +329,7 @@ void CTRProvider::FinishProcess(const int num_machines) {
       }
     }
   }
+  return tmp_parser_.release();
 }
 
 void CTRProvider::IterateOverCatConverters(int fid, double fval, int line_idx,
@@ -465,24 +466,6 @@ double CTRProvider::ConvertCatToCTR(double fval, const CTRProvider::CatConverter
   return HandleOneCatConverter<false>(col_idx, fval, -1, cat_converter);
 }
 
-void CTRProvider::WrapRowFunctions(
-  std::vector<std::function<std::vector<double>(int row_idx)>>* get_row_fun,
-  int32_t* ncol, bool is_valid) const {
-  const std::vector<std::function<std::vector<double>(int row_idx)>> old_get_row_fun = *get_row_fun;
-  get_row_fun->clear();
-  for (size_t i = 0; i < old_get_row_fun.size(); ++i) {
-    get_row_fun->push_back(WrapRowFunctionInner<double>(&old_get_row_fun[i], is_valid));
-  }
-  *ncol = static_cast<int32_t>(num_total_features_);
-}
-
-void CTRProvider::WrapRowFunction(
-  std::function<std::vector<std::pair<int, double>>(int row_idx)>* get_row_fun,
-  int64_t* ncol, bool is_valid) const {
-  *get_row_fun = WrapRowFunctionInner<std::pair<int, double>>(get_row_fun, is_valid);
-  *ncol = static_cast<int64_t>(num_total_features_);
-}
-
 void CTRProvider::WrapColIters(
   std::vector<std::unique_ptr<CSC_RowIterator>>* col_iters,
   int64_t* ncol_ptr, bool is_valid, int64_t num_row) const {
@@ -508,6 +491,49 @@ void CTRProvider::WrapColIters(
     }
   }
   *ncol_ptr = static_cast<int64_t>(col_iters->size()) + 1;
+}
+
+void CTRProvider::InitFromParser(Config* config_from_loader, Parser* parser, const int num_machines,
+  std::unordered_set<int>& categorical_features_from_loader) {
+  if (cat_converters_.size() == 0) { return; }
+  num_original_features_ = parser->NumFeatures();
+  if (num_machines > 1) {
+    num_original_features_ = Network::GlobalSyncUpByMax(num_original_features_);
+  }
+  for (const int fid : categorical_features_from_loader) {
+    if (fid < num_original_features_) {
+      categorical_features_.push_back(fid);
+    }
+  }
+  std::sort(categorical_features_.begin(), categorical_features_.end());
+  Init(config_from_loader);
+  tmp_parser_.reset(parser);
+  training_data_fold_id_.clear();
+  tmp_oneline_features_.clear();
+  tmp_mt_generator_ = std::mt19937(config_.seed);
+  tmp_fold_probs_.resize(config_.num_ctr_folds, 1.0f / config_.num_ctr_folds);
+  tmp_fold_distribution_ = std::discrete_distribution<int>(tmp_fold_probs_.begin(), tmp_fold_probs_.end());
+  num_data_ = 0;
+  tmp_is_feature_processed_.clear();
+  tmp_is_feature_processed_.resize(num_total_features_, false);
+  if (config_from_loader->categorical_feature.size() > 0) {
+    if (!keep_raw_cat_method_) {
+      config_from_loader->categorical_feature.clear();
+      config_from_loader->categorical_feature.shrink_to_fit();
+      categorical_features_from_loader.clear();
+    }
+  }
+}
+
+void CTRProvider::AccumulateOneLineStat(const char* buffer, const size_t size, const data_size_t row_idx) {
+  tmp_oneline_features_.clear();
+  std::string oneline_feature_str(buffer, size);
+  double label = 0.0f;
+  tmp_parser_->ParseOneLine(oneline_feature_str.data(), &tmp_oneline_features_, &label);
+  const int fold_id = tmp_fold_distribution_(tmp_mt_generator_);
+  training_data_fold_id_.emplace_back(fold_id);
+  ++num_data_;
+  ProcessOneLine(tmp_oneline_features_, label, row_idx, &tmp_is_feature_processed_, fold_id);
 }
 
 }  // namespace LightGBM

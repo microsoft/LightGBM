@@ -17,7 +17,7 @@ namespace LightGBM {
 
 using json11::Json;
 
-DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename)
+DatasetLoader::DatasetLoader(Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename)
   :config_(io_config), random_(config_.data_random_seed), predict_fun_(predict_fun), num_class_(num_class) {
   label_idx_ = 0;
   weight_idx_ = NO_SPECIFIC;
@@ -180,7 +180,7 @@ void CheckSampleSize(size_t sample_cnt, size_t num_data) {
 }
 
 Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_machines,
-  const CTRProvider* ctr_provider) {
+  CTRProvider* ctr_provider) {
   // don't support query id in data file when training in parallel
   if (num_machines > 1 && !config_.pre_partition) {
     if (group_idx_ > 0) {
@@ -203,17 +203,22 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
-    if (ctr_provider != nullptr) {
-      std::unique_ptr<Parser> inner_parser(nullptr);
-      inner_parser.reset(parser.release());
-      parser.reset(new CTRParser(inner_parser.release(), ctr_provider, false));
-    }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
     dataset->metadata_.Init(filename);
     if (!config_.two_round) {
       // read data to memory
-      auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
+      if (ctr_provider != nullptr) {
+        ctr_provider->InitFromParser(&config_, parser.release(), num_machines, categorical_features_);
+      }
+      auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines,
+        &num_global_data, &used_data_indices, ctr_provider);
+      if (ctr_provider != nullptr) {
+        parser.reset(ctr_provider->FinishProcess(num_machines));
+        std::unique_ptr<Parser> inner_parser(nullptr);
+        inner_parser.reset(parser.release());
+        parser.reset(new CTRParser(inner_parser.release(), ctr_provider, false));
+      }
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
       // sample data
       std::vector<std::string> sample_data;
@@ -242,12 +247,16 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       // sample data from file
       std::vector<std::string> sample_data;
       std::vector<data_size_t> sampled_indices;
-      if (ctr_provider == nullptr) {
-        sample_data = SampleTextDataFromFile<false>(filename, dataset->metadata_, rank, num_machines,
-          &num_global_data, &used_data_indices, &sampled_indices);
-      } else {
-        sample_data = SampleTextDataFromFile<true>(filename, dataset->metadata_, rank, num_machines,
-          &num_global_data, &used_data_indices, &sampled_indices);
+      if (ctr_provider != nullptr) {
+        ctr_provider->InitFromParser(&config_, parser.release(), num_machines, categorical_features_);
+      }
+      sample_data = SampleTextDataFromFile(filename, dataset->metadata_, rank, num_machines,
+        &num_global_data, &used_data_indices, &sampled_indices, ctr_provider);
+      if (ctr_provider != nullptr) {
+        parser.reset(ctr_provider->FinishProcess(num_machines));
+        std::unique_ptr<Parser> inner_parser(nullptr);
+        inner_parser.reset(parser.release());
+        parser.reset(new CTRParser(inner_parser.release(), ctr_provider, false));
       }
       if (used_data_indices.size() > 0) {
         dataset->num_data_ = static_cast<data_size_t>(used_data_indices.size());
@@ -267,6 +276,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       // extract features
       ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
     }
+    if (ctr_provider != nullptr) {
+      dataset->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
+    }
   } else {
     // load data from binary file
     is_load_from_binary = true;
@@ -278,9 +290,6 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   // need to check training data
 
   CheckDataset(dataset.get(), is_load_from_binary);
-  if (ctr_provider != nullptr) {
-    dataset->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
-  }
 
 
   return dataset.release();
@@ -312,7 +321,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     dataset->metadata_.Init(filename);
     if (!config_.two_round) {
       // read data in memory
-      auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &num_global_data, &used_data_indices);
+      auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &num_global_data, &used_data_indices, nullptr);
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
@@ -905,47 +914,90 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
 
 std::vector<std::string> DatasetLoader::LoadTextDataToMemory(const char* filename, const Metadata& metadata,
                                                              int rank, int num_machines, int* num_global_data,
-                                                             std::vector<data_size_t>* used_data_indices) {
+                                                             std::vector<data_size_t>* used_data_indices,
+                                                             CTRProvider* ctr_provider) {
   TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
   used_data_indices->clear();
   if (num_machines == 1 || config_.pre_partition) {
     // read all lines
-    *num_global_data = text_reader.ReadAllLines();
+    if (ctr_provider == nullptr) {
+      *num_global_data = text_reader.ReadAllLines();
+    } else {
+      *num_global_data = text_reader.ReadAllLines(
+        [ctr_provider] (const char* buffer, size_t size, data_size_t row_idx) {
+          ctr_provider->AccumulateOneLineStat(buffer, size, row_idx);
+        });
+    }
   } else {  // need partition data
             // get query data
     const data_size_t* query_boundaries = metadata.query_boundaries();
 
     if (query_boundaries == nullptr) {
       // if not contain query data, minimal sample unit is one record
-      *num_global_data = text_reader.ReadAndFilterLines([this, rank, num_machines](data_size_t) {
-        if (random_.NextShort(0, num_machines) == rank) {
-          return true;
-        } else {
-          return false;
-        }
-      }, used_data_indices);
+      std::function<bool(data_size_t, const char*, size_t)> filter_func = nullptr;
+      if (ctr_provider == nullptr) {
+        filter_func = [this, rank, num_machines](data_size_t, const char*, size_t) {
+          if (random_.NextShort(0, num_machines) == rank) {
+            return true;
+          } else {
+            return false;
+          }
+        };
+      } else {
+        filter_func = [this, rank, num_machines, ctr_provider](data_size_t row_idx, const char* buffer, size_t size) {
+          ctr_provider->AccumulateOneLineStat(buffer, size, row_idx);
+          if (random_.NextShort(0, num_machines) == rank) {
+            return true;
+          } else {
+            return false;
+          }
+        };
+      }
+      *num_global_data = text_reader.ReadAndFilterLines(filter_func, used_data_indices);
     } else {
       // if contain query data, minimal sample unit is one query
       data_size_t num_queries = metadata.num_queries();
       data_size_t qid = -1;
       bool is_query_used = false;
-      *num_global_data = text_reader.ReadAndFilterLines(
-        [this, rank, num_machines, &qid, &query_boundaries, &is_query_used, num_queries]
-      (data_size_t line_idx) {
-        if (qid >= num_queries) {
-          Log::Fatal("Current query exceeds the range of the query file,\n"
-                     "please ensure the query file is correct");
-        }
-        if (line_idx >= query_boundaries[qid + 1]) {
-          // if is new query
-          is_query_used = false;
-          if (random_.NextShort(0, num_machines) == rank) {
-            is_query_used = true;
+      std::function<bool(data_size_t, const char*, size_t)> filter_func = nullptr;
+      if (ctr_provider == nullptr) {
+        filter_func = [this, rank, num_machines, &qid, &query_boundaries, &is_query_used, num_queries]
+        (data_size_t line_idx, const char*, size_t) {
+          if (qid >= num_queries) {
+            Log::Fatal("Current query exceeds the range of the query file,\n"
+                      "please ensure the query file is correct");
           }
-          ++qid;
-        }
-        return is_query_used;
-      }, used_data_indices);
+          if (line_idx >= query_boundaries[qid + 1]) {
+            // if is new query
+            is_query_used = false;
+            if (random_.NextShort(0, num_machines) == rank) {
+              is_query_used = true;
+            }
+            ++qid;
+          }
+          return is_query_used;
+        };
+      } else {
+        filter_func = [this, rank, num_machines, &qid, &query_boundaries,
+          &is_query_used, num_queries, ctr_provider]
+        (data_size_t line_idx, const char* buffer, size_t size) {
+          if (qid >= num_queries) {
+            Log::Fatal("Current query exceeds the range of the query file,\n"
+                      "please ensure the query file is correct");
+          }
+          ctr_provider->AccumulateOneLineStat(buffer, size, line_idx);
+          if (line_idx >= query_boundaries[qid + 1]) {
+            // if is new query
+            is_query_used = false;
+            if (random_.NextShort(0, num_machines) == rank) {
+              is_query_used = true;
+            }
+            ++qid;
+          }
+          return is_query_used;
+        };
+      }
+      *num_global_data = text_reader.ReadAndFilterLines(filter_func, used_data_indices);
     }
   }
   return std::move(text_reader.Lines());
@@ -975,53 +1027,97 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromMemory(const std::vect
   return out;
 }
 
-template <bool GET_SAMPLED_INDICES>
 std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filename, const Metadata& metadata,
                                                                int rank, int num_machines, int* num_global_data,
                                                                std::vector<data_size_t>* used_data_indices,
-                                                               std::vector<data_size_t>* sampled_indices) {
+                                                               std::vector<data_size_t>* sampled_indices,
+                                                               CTRProvider* ctr_provider) {
   const data_size_t sample_cnt = static_cast<data_size_t>(config_.bin_construct_sample_cnt);
   TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
   std::vector<std::string> out_data;
   if (num_machines == 1 || config_.pre_partition) {
-    *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile<GET_SAMPLED_INDICES>
-      (&random_, sample_cnt, &out_data, sampled_indices));
+    if (ctr_provider == nullptr) {
+      *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile<false>
+        (&random_, sample_cnt, &out_data, sampled_indices,
+        [ctr_provider] (const char* buffer, size_t size, data_size_t row_idx) {
+          ctr_provider->AccumulateOneLineStat(buffer, size, row_idx);
+        }));
+    } else {
+      *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile<true>
+        (&random_, sample_cnt, &out_data, sampled_indices, nullptr));
+    }
   } else {  // need partition data
             // get query data
     const data_size_t* query_boundaries = metadata.query_boundaries();
     if (query_boundaries == nullptr) {
       // if not contain query file, minimal sample unit is one record
-      *num_global_data = text_reader.SampleAndFilterFromFile<GET_SAMPLED_INDICES>(
-      [this, rank, num_machines]
-      (data_size_t) {
+      auto filter_return_func = [this, rank, num_machines] (data_size_t) {
         if (random_.NextShort(0, num_machines) == rank) {
           return true;
         } else {
           return false;
         }
-      }, used_data_indices, &random_, sample_cnt, &out_data, sampled_indices);
+      };
+      std::function<bool(data_size_t, const char*, size_t)> filter_func = nullptr;
+      if (ctr_provider == nullptr) {
+
+        filter_func = [filter_return_func] (data_size_t row_idx, const char*, size_t) {
+          return filter_return_func(row_idx);
+        };
+
+        *num_global_data = text_reader.SampleAndFilterFromFile<false>(
+          filter_func, used_data_indices, &random_, sample_cnt, &out_data, sampled_indices);
+
+      } else {
+
+        filter_func = [filter_return_func, ctr_provider]
+        (data_size_t row_idx, const char* buffer, size_t size) {
+          ctr_provider->AccumulateOneLineStat(buffer, size, row_idx);
+          return filter_return_func(row_idx);
+        };
+
+        *num_global_data = text_reader.SampleAndFilterFromFile<true>(
+          filter_func, used_data_indices, &random_, sample_cnt, &out_data, sampled_indices);
+      }
     } else {
       // if contain query file, minimal sample unit is one query
       data_size_t num_queries = metadata.num_queries();
       data_size_t qid = -1;
       bool is_query_used = false;
-      *num_global_data = text_reader.SampleAndFilterFromFile<GET_SAMPLED_INDICES>(
+
+      auto filter_return_func =
         [this, rank, num_machines, &qid, &query_boundaries, &is_query_used, num_queries]
-      (data_size_t line_idx) {
-        if (qid >= num_queries) {
-          Log::Fatal("Query id exceeds the range of the query file, "
-                     "please ensure the query file is correct");
-        }
-        if (line_idx >= query_boundaries[qid + 1]) {
-          // if is new query
-          is_query_used = false;
-          if (random_.NextShort(0, num_machines) == rank) {
-            is_query_used = true;
+        (data_size_t line_idx) {
+          if (qid >= num_queries) {
+            Log::Fatal("Query id exceeds the range of the query file, "
+                      "please ensure the query file is correct");
           }
-          ++qid;
-        }
-        return is_query_used;
-      }, used_data_indices, &random_, sample_cnt, &out_data, sampled_indices);
+          if (line_idx >= query_boundaries[qid + 1]) {
+            // if is new query
+            is_query_used = false;
+            if (random_.NextShort(0, num_machines) == rank) {
+              is_query_used = true;
+            }
+            ++qid;
+          }
+          return is_query_used;
+        };
+
+      std::function<bool(data_size_t, const char*, size_t)> filter_func = nullptr;
+      if (ctr_provider == nullptr) {
+        filter_func = [filter_return_func] (data_size_t row_idx, const char*, size_t) {
+          return filter_return_func(row_idx);
+        };
+        *num_global_data = text_reader.SampleAndFilterFromFile<false>
+          (filter_func, used_data_indices, &random_, sample_cnt, &out_data, sampled_indices);
+      } else {
+        filter_func = [filter_return_func, ctr_provider] (data_size_t row_idx, const char* buffer, size_t size) {
+          ctr_provider->AccumulateOneLineStat(buffer, size, row_idx);
+          return filter_return_func(row_idx);
+        };
+        *num_global_data = text_reader.SampleAndFilterFromFile<true>
+          (filter_func, used_data_indices, &random_, sample_cnt, &out_data, sampled_indices);
+      }
     }
   }
   return out_data;

@@ -19,6 +19,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <unordered_set>
 
 namespace LightGBM {
 
@@ -234,6 +235,16 @@ class CTRProvider {
     max_bin_by_feature_.shrink_to_fit();
     cat_converters_.clear();
     cat_converters_.shrink_to_fit();
+  }
+
+  // for file data input and accumulating statistics when sampling from file
+  static CTRProvider* CreateCTRProvider(Config* config) {
+    std::unique_ptr<CTRProvider> ctr_provider(new CTRProvider(config));
+    if (ctr_provider->GetNumCatConverters() == 0) {
+      return nullptr;
+    } else {
+      return ctr_provider.release();
+    }
   }
 
   // for file data input
@@ -491,26 +502,38 @@ class CTRProvider {
     }
   }
 
+  template <typename INDEX_T>
   void WrapRowFunctions(
-    std::vector<std::function<std::vector<double>(int row_idx)>>* get_row_fun,
-    int32_t* ncol, bool is_valid) const;
+    std::vector<std::function<std::vector<double>(INDEX_T row_idx)>>* get_row_fun,
+    int32_t* ncol, bool is_valid) const {
+    const std::vector<std::function<std::vector<double>(INDEX_T row_idx)>> old_get_row_fun = *get_row_fun;
+    get_row_fun->clear();
+    for (size_t i = 0; i < old_get_row_fun.size(); ++i) {
+      get_row_fun->push_back(WrapRowFunctionInner<double, INDEX_T>(&old_get_row_fun[i], is_valid));
+    }
+    *ncol = static_cast<int32_t>(num_total_features_);
+  }
 
+  template <typename INDEX_T>
   void WrapRowFunction(
-    std::function<std::vector<std::pair<int, double>>(int row_idx)>* get_row_fun,
-    int64_t* ncol, bool is_valid) const;
+    std::function<std::vector<std::pair<int, double>>(INDEX_T row_idx)>* get_row_fun,
+    int64_t* ncol, bool is_valid) const {
+    *get_row_fun = WrapRowFunctionInner<std::pair<int, double>, INDEX_T>(get_row_fun, is_valid);
+    *ncol = static_cast<int64_t>(num_total_features_);
+  }
 
-  template <typename T>
-  std::function<std::vector<T>(int row_idx)> WrapRowFunctionInner(
-    const std::function<std::vector<T>(int row_idx)>* get_row_fun, bool is_valid) const {
-  std::function<std::vector<T>(int row_idx)> old_get_row_fun = *get_row_fun;
+  template <typename T, typename INDEX_T>
+  std::function<std::vector<T>(INDEX_T row_idx)> WrapRowFunctionInner(
+    const std::function<std::vector<T>(INDEX_T row_idx)>* get_row_fun, bool is_valid) const {
+  std::function<std::vector<T>(INDEX_T row_idx)> old_get_row_fun = *get_row_fun;
     if (is_valid) {
-      return [old_get_row_fun, this] (int row_idx) {
+      return [old_get_row_fun, this] (INDEX_T row_idx) {
         std::vector<T> row = old_get_row_fun(row_idx);
         ConvertCatToCTR(&row);
         return row;
       };
     } else {
-      return [old_get_row_fun, this] (int row_idx) {
+      return [old_get_row_fun, this] (INDEX_T row_idx) {
         std::vector<T> row = old_get_row_fun(row_idx);
         ConvertCatToCTR(&row, row_idx);
         return row;
@@ -522,12 +545,20 @@ class CTRProvider {
     std::vector<std::unique_ptr<CSC_RowIterator>>* col_iters,
     int64_t* ncol_ptr, bool is_valid, int64_t num_row) const;
 
+  Parser* FinishProcess(const int num_machines);
+
+  void InitFromParser(Config* config_from_loader, Parser* parser, const int num_machines,
+    std::unordered_set<int>& categorical_features_from_loader);
+
+  void AccumulateOneLineStat(const char* buffer, const size_t size, const data_size_t row_idx);
+
  private:
   void SetConfig(const Config* config) {
     config_ = *config;
     num_threads_ = config_.num_threads > 0 ? config_.num_threads : OMP_NUM_THREADS();
     keep_raw_cat_method_ = false;
     const std::string ctr_string = std::string("ctr");
+    cat_converters_.clear();
     if (config_.cat_converters.size() > 0) {
       for (auto token : Common::Split(config_.cat_converters.c_str(), ',')) {
         if (Common::StartsWith(token, "ctr")) {
@@ -553,6 +584,7 @@ class CTRProvider {
     max_bin_by_feature_ = config_.max_bin_by_feature;
     prior_ = 0.0f;
     prior_weight_ = config_.prior_weight;
+    tmp_parser_ = nullptr;
   }
 
   explicit CTRProvider(const std::string model_string) {
@@ -594,6 +626,10 @@ class CTRProvider {
     while (str_stream >> cat_converter_string) {
       cat_converters_.emplace_back(CatConverter::CreateFromString(cat_converter_string, prior_weight_));
     }
+  }
+
+  CTRProvider(Config* config) {
+    SetConfig(config);
   }
 
   CTRProvider(Config* config, const int num_machines, const char* filename) {
@@ -801,8 +837,6 @@ class CTRProvider {
     return str_buf.str();
   }
 
-  void FinishProcess(const int num_machines);
-
   int ParseMetaInfo(const char* filename, Config* config) {
     std::unordered_set<int> ignore_features;
     std::unordered_map<std::string, int> name2idx;
@@ -976,6 +1010,19 @@ class CTRProvider {
   std::vector<int> max_bin_by_feature_;
   // whether the old categorical handling method is used
   bool keep_raw_cat_method_;
+  // temporary parser used when accumulating statistics from file
+  std::unique_ptr<Parser> tmp_parser_;
+  // temporary oneline_features used when accumulating statistics from file
+  std::vector<std::pair<int, double>> tmp_oneline_features_;
+  // temporary random generator used when accumulating statistics from file,
+  // used to generate training data folds for CTR calculations
+  std::mt19937 tmp_mt_generator_;
+  // temporary fold distribution probability when accumulating statistics from file
+  std::vector<double> tmp_fold_probs_;
+  // temporary fold distribution when accumulating statistics from file
+  std::discrete_distribution<int> tmp_fold_distribution_;
+  // temporary feature read mask when accumulating statistics from files
+  std::vector<bool> tmp_is_feature_processed_;
 };
 
 class CTRParser : public Parser {

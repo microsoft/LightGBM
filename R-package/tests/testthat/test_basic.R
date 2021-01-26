@@ -2059,13 +2059,6 @@ test_that(paste0("CTR for R package works"), {
   )
   pred3 <- bst$predict(test$data)
   expect_equal(dim(dtrain), c(6513L, 134L))
-  err_pred1 <- sum((pred1 > 0.5) != test$label) / length(test$label)
-  err_pred3 <- sum((pred3 > 0.5) != test$label) / length(test$label)
-  # diable these tests due to randomness in CTR calculation
-  #expect_lt(abs(err_pred1 - 0.00248293), TOLERANCE)
-  #expect_lt(abs(err_pred3 - 0.001862197), TOLERANCE)
-  #expect_lt(err_pred3, err_pred1)
-
 
   # test gbdt model with cat_converters
   model_file <- tempfile(fileext = ".model")

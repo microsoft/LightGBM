@@ -136,20 +136,14 @@ def test_save_and_load_linear(tmp_path):
 
 
 def test_subset_group():
-    print("step 0")
     X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                        '../../examples/lambdarank/rank.train'))
-    print("step 1")
     q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                       '../../examples/lambdarank/rank.train.query'))
-    print("step 2")
     lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
-    print("step 3")
     assert len(lgb_train.get_group()) == 201
     subset = lgb_train.subset(list(range(10))).construct()
-    print("step 4")
     subset_group = subset.get_group()
-    print("step 5")
     assert len(subset_group) == 2
     assert subset_group[0] == 1
     assert subset_group[1] == 9
@@ -158,11 +152,8 @@ def test_subset_group():
 def test_add_features_throws_if_num_data_unequal():
     X1 = np.random.random((100, 1))
     X2 = np.random.random((10, 1))
-    print("before construct 0")
     d1 = lgb.Dataset(X1).construct()
-    print("before construct 1")
     d2 = lgb.Dataset(X2).construct()
-    print("before construct 2")
     with pytest.raises(lgb.basic.LightGBMError):
         d1.add_features_from(d2)
 
@@ -368,7 +359,10 @@ def test_consistent_state_for_dataset_fields():
 def test_ctr(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
                                                         test_size=0.1, random_state=2)
-    train_data = lgb.Dataset(X_train, label=y_train, cat_converters="ctr,count,ctr:0.5,raw")
+
+    # checks that cat_converters works for Dataset constructor
+    cat_converters_str = "ctr,count,ctr:0.5,raw"
+    train_data = lgb.Dataset(X_train, label=y_train, cat_converters=cat_converters_str)
     valid_data = train_data.create_valid(X_test, label=y_test)
 
     params = {
@@ -379,14 +373,13 @@ def test_ctr(tmp_path):
         "verbose": 1,
         "num_threads": 1,
         "max_bin": 255,
-        "max_cat_to_onehot": 1,
-        "cat_converters": "ctr,count,ctr:0.5,raw"
+        "max_cat_to_onehot": 1
     }
     categorical_feature = [fidx for fidx in range(X_train.shape[1] // 2)]
     params.update({"categorical_feature": categorical_feature})
     booster = lgb.train(params, train_data, valid_sets=[valid_data], valid_names=["valid_data"])
     pred_1 = booster.predict(X_test)
-
+    pred_contrib_1 = booster.predict(X_test, pred_contrib=True)
     tmp_dataset = str(tmp_path / 'ctr_temp_dataset.bin')
     train_data.save_binary(tmp_dataset)
 
@@ -394,10 +387,46 @@ def test_ctr(tmp_path):
     valid_data = train_data.create_valid(X_test, label=y_test)
     booster = lgb.train(params, train_data_2, valid_sets=[valid_data], valid_names=["valid_data"])
     pred_2 = booster.predict(X_test)
+    pred_contrib_2 = booster.predict(X_test, pred_contrib=True)
     np.testing.assert_allclose(pred_1, pred_2)
+    np.testing.assert_allclose(pred_contrib_1, pred_contrib_2)
 
     model_file = str(tmp_path / "ctr_model.txt")
     booster.save_model(model_file)
     new_booster = lgb.Booster(params=params, model_file=model_file)
     pred_3 = new_booster.predict(X_test)
+    pred_contrib_3 = new_booster.predict(X_test, pred_contrib=True)
     np.testing.assert_allclose(pred_1, pred_3)
+    np.testing.assert_allclose(pred_contrib_1, pred_contrib_3)
+
+    # checks that cat_converters works in params
+    train_data_4 = lgb.Dataset(X_train, label=y_train)
+    valid_data = train_data_4.create_valid(X_test, label=y_test)
+    params.update({"cat_converters": cat_converters_str})
+    booster = lgb.train(params, train_data_4, valid_sets=[valid_data], valid_names=["valid_data"])
+    pred_4 = booster.predict(X_test)
+    pred_contrib_4 = booster.predict(X_test, pred_contrib=True)
+    np.testing.assert_allclose(pred_1, pred_4)
+    np.testing.assert_allclose(pred_contrib_1, pred_contrib_4)
+
+    # test that CTR with csr format works
+    train_data_csr = lgb.Dataset(sparse.csr_matrix(X_train), label=y_train,\
+        cat_converters=cat_converters_str)
+    valid_data_csr = lgb.Dataset(sparse.csr_matrix(X_test), label=y_test,\
+        cat_converters=cat_converters_str, reference=train_data_csr)
+    booster = lgb.train(params, train_data_csr, valid_sets=[valid_data_csr], valid_names=["valid_data"])
+    pred_csr = booster.predict(sparse.csr_matrix(X_test))
+    pred_contrib_csr = booster.predict(sparse.csr_matrix(X_test), pred_contrib=True)
+    np.testing.assert_allclose(pred_csr, pred_1)
+    np.testing.assert_allclose(pred_contrib_1, pred_contrib_csr.toarray())
+
+    # test that CTR with csc format works
+    train_data_csc = lgb.Dataset(sparse.csc_matrix(X_train), label=y_train,\
+        cat_converters=cat_converters_str)
+    valid_data_csc = lgb.Dataset(sparse.csc_matrix(X_test), label=y_test,\
+        cat_converters=cat_converters_str, reference=train_data_csc)
+    booster = lgb.train(params, train_data_csc, valid_sets=[valid_data_csc], valid_names=["valid_data"])
+    pred_csc = booster.predict(sparse.csc_matrix(X_test))
+    pred_contrib_csc = booster.predict(sparse.csc_matrix(X_test), pred_contrib=True)
+    np.testing.assert_allclose(pred_csc, pred_1)
+    np.testing.assert_allclose(pred_contrib_1, pred_contrib_csc.toarray())

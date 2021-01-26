@@ -103,7 +103,7 @@ void Application::LoadData() {
   Log::Debug("Loading train file...");
   std::unique_ptr<CTRProvider> ctr_provider(nullptr);
   if (!config_.cat_converters.empty()) {
-    ctr_provider.reset(CTRProvider::CreateCTRProvider(&config_, Network::num_machines(), config_.data.c_str()));
+    ctr_provider.reset(CTRProvider::CreateCTRProvider(&config_));
   }
   DatasetLoader dataset_loader(config_, predict_fun,
                                config_.num_class, config_.data.c_str());
@@ -235,7 +235,7 @@ void Application::Predict() {
                                  config_.num_class, config_.data.c_str());
     std::unique_ptr<CTRProvider> ctr_provider(nullptr);
     if (!config_.cat_converters.empty()) {
-      ctr_provider.reset(CTRProvider::CreateCTRProvider(&config_, Network::num_machines(), config_.data.c_str()));
+      ctr_provider.reset(CTRProvider::CreateCTRProvider(&config_));
     }
     train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1, ctr_provider.get()));
     train_metric_.clear();

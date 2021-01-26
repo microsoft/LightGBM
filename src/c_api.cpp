@@ -587,6 +587,8 @@ class Booster {
     }
     out_len[0] = elements_size;
     out_len[1] = indptr_size;
+    out_len[2] = nrow;
+    out_len[3] = ncol;
   }
 
   void PredictSparseCSC(int start_iteration, int num_iteration, int predict_type, int64_t nrow, int ncol,
@@ -696,6 +698,8 @@ class Booster {
     OMP_THROW_EX();
     out_len[0] = elements_size;
     out_len[1] = col_ptr_size;
+    out_len[2] = nrow;
+    out_len[3] = ncol;
   }
 
   void Predict(int start_iteration, int num_iteration, int predict_type, const char* data_filename,
@@ -900,7 +904,7 @@ int LGBM_DatasetCreateFromFile(const char* filename,
 
   std::unique_ptr<CTRProvider> ctr_provider(nullptr);
   if (!config.cat_converters.empty()) {
-    ctr_provider.reset(CTRProvider::CreateCTRProvider(&config, Network::num_machines(), filename));
+    ctr_provider.reset(CTRProvider::CreateCTRProvider(&config));
   }
 
   DatasetLoader loader(config, nullptr, 1, filename);
@@ -1984,6 +1988,9 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
       Log::Fatal("The number of columns should be smaller than INT32_MAX.");
     }
     auto get_row_fun = RowFunctionFromCSR<int64_t>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
+    if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+      ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col_or_row, true);
+    }
     int64_t nrow = nindptr - 1;
     ref_booster->PredictSparseCSR(start_iteration, num_iteration, predict_type, nrow, static_cast<int>(num_col_or_row), get_row_fun,
                                   config, out_len, out_indptr, indptr_type, out_indices, out_data, data_type);
@@ -2009,6 +2016,11 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
       }
       return one_row;
     };
+    if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+      int64_t num_col = static_cast<int64_t>(ncol);
+      ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+      ncol = static_cast<int>(num_col);
+    }
     ref_booster->PredictSparseCSC(start_iteration, num_iteration, predict_type, num_col_or_row, ncol, get_row_fun, config,
                                   out_len, out_indptr, indptr_type, out_indices, out_data, data_type);
   } else {
