@@ -110,8 +110,8 @@ except ImportError:
 """dask"""
 try:
     from dask import delayed
-    from dask.array import Array
-    from dask.dataframe import _Frame
+    from dask.array import Array as dask_Array
+    from dask.dataframe import _Frame as dask_Frame
     from dask.distributed import Client, default_client, get_worker, wait
     DASK_INSTALLED = True
 except ImportError:
@@ -122,12 +122,12 @@ except ImportError:
     get_worker = None
     wait = None
 
-    class Array:
-        """Dummy class for Array."""
+    class dask_Array:
+        """Dummy class for dask.array.Array."""
 
         pass
 
-    class _Frame:
-        """Dummy class for _Frame."""
+    class dask_Frame:
+        """Dummy class for ddask.dataframe._Frame."""
 
         pass

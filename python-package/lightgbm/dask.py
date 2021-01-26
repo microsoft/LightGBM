@@ -18,7 +18,7 @@ import scipy.sparse as ss
 from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
 from .compat import (PANDAS_INSTALLED, DataFrame, Series, concat,
                      SKLEARN_INSTALLED,
-                     DASK_INSTALLED, _Frame, Array, delayed, Client, default_client, get_worker, wait)
+                     DASK_INSTALLED, dask_Frame, dask_Array, delayed, Client, default_client, get_worker, wait)
 from .sklearn import LGBMClassifier, LGBMRegressor, LGBMRanker
 
 
