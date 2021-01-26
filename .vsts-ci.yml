@@ -50,6 +50,8 @@ jobs:
       swig:
         TASK: swig
   steps:
+  - checkout: self 
+    submodules: true
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
@@ -116,6 +118,8 @@ jobs:
         METHOD: wheel
         PYTHON_VERSION: 3.7
   steps:
+  - checkout: self 
+    submodules: true
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
