@@ -377,7 +377,7 @@ def _predict(model, data, raw_score=False, pred_proba=False, pred_leaf=False, pr
         raise TypeError('Data must be either Dask array or dataframe. Got %s.' % str(type(data)))
 
 
-class _LGBMModel:
+class _DaskLGBMModel:
     def __init__(self):
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
             raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
@@ -419,7 +419,7 @@ class _LGBMModel:
             setattr(dest, name, attributes[name])
 
 
-class DaskLGBMClassifier(LGBMClassifier, _LGBMModel):
+class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     """Distributed version of lightgbm.LGBMClassifier."""
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
@@ -467,7 +467,7 @@ class DaskLGBMClassifier(LGBMClassifier, _LGBMModel):
         return self._to_local(LGBMClassifier)
 
 
-class DaskLGBMRegressor(LGBMRegressor, _LGBMModel):
+class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     """Docstring is inherited from the lightgbm.LGBMRegressor."""
 
     def fit(self, X, y=None, sample_weight=None, client=None, **kwargs):
@@ -503,7 +503,7 @@ class DaskLGBMRegressor(LGBMRegressor, _LGBMModel):
         return self._to_local(LGBMRegressor)
 
 
-class DaskLGBMRanker(LGBMRanker, _LGBMModel):
+class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     """Docstring is inherited from the lightgbm.LGBMRanker."""
 
     def fit(self, X, y=None, sample_weight=None, init_score=None, group=None, client=None, **kwargs):
