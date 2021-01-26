@@ -21,7 +21,7 @@ from dask import dataframe as dd
 from dask import delayed
 from dask.distributed import Client, default_client, get_worker, wait
 
-from .basic import _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
+from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
 from .compat import DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED
 from .sklearn import LGBMClassifier, LGBMRegressor, LGBMRanker
 
@@ -196,6 +196,44 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
     """
     params = deepcopy(params)
 
+    params = _choose_param_value(
+        main_param_name="local_listen_port",
+        params=params,
+        default_value=12400
+    )
+
+    params = _choose_param_value(
+        main_param_name="tree_learner",
+        params=params,
+        default_value="data"
+    )
+    allowed_tree_learners = {
+        'data',
+        'data_parallel',
+        'feature',
+        'feature_parallel',
+        'voting',
+        'voting_parallel'
+    }
+    if params["tree_learner"] not in allowed_tree_learners:
+        _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
+        params['tree_learner'] = 'data'
+
+    if params['tree_learner'] not in {'data', 'data_parallel'}:
+        _log_warning(
+            'Support for tree_learner %s in lightgbm.dask is experimental and may break in a future release. \n'
+            'Use "data" for a stable, well-tested interface.' % params['tree_learner']
+        )
+
+    # Some passed-in parameters can be removed:
+    #   * 'machines': constructed automatically from Dask worker list
+    #   * 'machine_list_filename': not relevant for the Dask interface
+    #   * 'num_machines': set automatically from Dask worker list
+    #   * 'num_threads': overridden to match nthreads on each Dask process
+    for param_name in ['machines', 'machine_list_filename', 'num_machines', 'num_threads']:
+        for param_alias in _ConfigAliases.get(param_name):
+            params.pop(param_alias, None)
+
     # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality
     data_parts = _split_to_parts(data=data, is_matrix=True)
     label_parts = _split_to_parts(data=label, is_matrix=False)
@@ -230,64 +268,14 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
     master_worker = next(iter(worker_map))
     worker_ncores = client.ncores()
 
-    tree_learner = None
-    for tree_learner_param in _ConfigAliases.get('tree_learner'):
-        tree_learner = params.get(tree_learner_param)
-        if tree_learner is not None:
-            params['tree_learner'] = tree_learner
-            break
-
-    allowed_tree_learners = {
-        'data',
-        'data_parallel',
-        'feature',
-        'feature_parallel',
-        'voting',
-        'voting_parallel'
-    }
-    if tree_learner is None:
-        _log_warning('Parameter tree_learner not set. Using "data" as default')
-        params['tree_learner'] = 'data'
-    elif tree_learner.lower() not in allowed_tree_learners:
-        _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
-        params['tree_learner'] = 'data'
-
-    if params['tree_learner'] not in {'data', 'data_parallel'}:
-        _log_warning(
-            'Support for tree_learner %s in lightgbm.dask is experimental and may break in a future release. Use "data" for a stable, well-tested interface.' % params['tree_learner']
-        )
-
-    local_listen_port = 12400
-    for port_param in _ConfigAliases.get('local_listen_port'):
-        val = params.get(port_param)
-        if val is not None:
-            local_listen_port = val
-            break
-
     # find an open port on each worker. note that multiple workers can run
     # on the same machine, so this needs to ensure that each one gets its
     # own port
     worker_address_to_port = _find_ports_for_workers(
         client=client,
         worker_addresses=worker_map.keys(),
-        local_listen_port=local_listen_port
+        local_listen_port=params["local_listen_port"]
     )
-
-    # num_threads is set below, so remove it and all aliases of it from params
-    for num_thread_alias in _ConfigAliases.get('num_threads'):
-        params.pop(num_thread_alias, None)
-
-    # machines is constructed manually, so remove it and all aliases of it from params
-    for machine_alias in _ConfigAliases.get('machines'):
-        params.pop(machine_alias, None)
-
-    # machines is constructed manually, so remove machine_list_filename and all aliases of it from params
-    for machine_list_filename_alias in _ConfigAliases.get('machine_list_filename'):
-        params.pop(machine_list_filename_alias, None)
-
-    # machines is constructed manually, so remove num_machines and all aliases of it from params
-    for num_machine_alias in _ConfigAliases.get('num_machines'):
-        params.pop(num_machine_alias, None)
 
     # Tell each worker to train on the parts that it has locally
     futures_classifiers = [

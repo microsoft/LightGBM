@@ -329,3 +329,49 @@ def test_consistent_state_for_dataset_fields():
     lgb_data.set_init_score(sequence)
     lgb_data.set_feature_name(feature_names)
     check_asserts(lgb_data)
+
+
+def test_choose_param_value():
+
+    original_params = {
+        "local_listen_port": 1234,
+        "port": 2222,
+        "metric": "auc",
+        "num_trees": 81
+    }
+
+    # should resolve duplicate aliases, and prefer the main parameter
+    params = lgb.basic._choose_param_value(
+        main_param_name="local_listen_port",
+        params=original_params,
+        default_value=5555
+    )
+    assert params["local_listen_port"] == 1234
+    assert "port" not in params
+
+    # should choose a value from an alias and set that value on main param
+    # if only an alias is used
+    params = lgb.basic._choose_param_value(
+        main_param_name="num_iterations",
+        params=params,
+        default_value=17
+    )
+    assert params["num_iterations"] == 81
+    assert "num_trees" not in params
+
+    # should use the default if main param and aliases are missing
+    params = lgb.basic._choose_param_value(
+        main_param_name="learning_rate",
+        params=params,
+        default_value=0.789
+    )
+    assert params["learning_rate"] == 0.789
+
+    # all changes should be made on copies and not modify the original
+    expected_params = {
+        "local_listen_port": 1234,
+        "port": 2222,
+        "metric": "auc",
+        "num_trees": 81
+    }
+    assert original_params == expected_params
