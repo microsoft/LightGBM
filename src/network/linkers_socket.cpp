@@ -197,20 +197,21 @@ void Linkers::Construct() {
     int out_rank = it->first;
     // let smaller rank connect to larger rank
     if (out_rank > rank_) {
-      TcpSocket cur_socket;
       int connect_fail_delay_time = connect_fail_retry_first_delay_interval;
       for (int i = 0; i < connect_fail_retry_cnt; ++i) {
+        TcpSocket cur_socket;
         if (cur_socket.Connect(client_ips_[out_rank].c_str(), client_ports_[out_rank])) {
+          // send local rank
+          cur_socket.Send(reinterpret_cast<const char*>(&rank_), sizeof(rank_));
+          SetLinker(out_rank, cur_socket);
           break;
         } else {
           Log::Warning("Connecting to rank %d failed, waiting for %d milliseconds", out_rank, connect_fail_delay_time);
+          cur_socket.Close();
           std::this_thread::sleep_for(std::chrono::milliseconds(connect_fail_delay_time));
           connect_fail_delay_time = static_cast<int>(connect_fail_delay_time * connect_fail_retry_delay_factor);
         }
       }
-      // send local rank
-      cur_socket.Send(reinterpret_cast<const char*>(&rank_), sizeof(rank_));
-      SetLinker(out_rank, cur_socket);
     }
   }
   // wait for listener
