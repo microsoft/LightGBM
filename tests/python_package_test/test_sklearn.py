@@ -199,10 +199,8 @@ def test_stacking_classifier():
     assert clf.named_estimators_['gbm1'].n_features_in_ == clf.named_estimators_['gbm2'].n_features_in_
     assert clf.final_estimator_.n_features_in_ == 10  # number of concatenated features
     assert len(clf.final_estimator_.feature_importances_) == 10
-    classes = clf.named_estimators_['gbm1'].classes_ == clf.named_estimators_['gbm2'].classes_
-    assert all(classes)
-    classes = clf.classes_ == clf.named_estimators_['gbm1'].classes_
-    assert all(classes)
+    assert all(clf.named_estimators_['gbm1'].classes_ == clf.named_estimators_['gbm2'].classes_)
+    assert all(clf.classes_ == clf.named_estimators_['gbm1'].classes_)
 
 
 # sklearn <0.23 does not have a stacking regressor and n_features_in_ property
