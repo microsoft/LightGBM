@@ -430,6 +430,40 @@ def test_find_open_port_works():
             assert new_port == 12402
 
 
+def test_warns_and_continues_on_unrecognized_tree_learner(client):
+    X = da.random.random((1e3, 10))
+    y = da.random.random((1e3, 1))
+    dask_regressor = lgb.DaskLGBMRegressor(
+        time_out=5,
+        local_listen_port=1234,
+        tree_learner='some-nonsense-value',
+        n_estimators=1,
+        num_leaves=2
+    )
+    with pytest.warns(UserWarning, match='Parameter tree_learner set to some-nonsense-value'):
+        dask_regressor = dask_regressor.fit(X, y, client=client)
+
+    assert dask_regressor.fitted_
+
+
+def test_warns_but_makes_no_changes_for_feature_or_voting_parallel(client):
+    X = da.random.random((1e3, 10))
+    y = da.random.random((1e3, 1))
+    for tree_learner in ['feature_parallel', 'voting']:
+        dask_regressor = lgb.DaskLGBMRegressor(
+            time_out=5,
+            local_listen_port=1234,
+            tree_learner=tree_learner,
+            n_estimators=1,
+            num_leaves=2
+        )
+        with pytest.warns(UserWarning, match='Support for tree_learner %s in lightgbm' % tree_learner):
+            dask_regressor = dask_regressor.fit(X, y, client=client)
+
+        assert dask_regressor.fitted_
+        assert dask_regressor.get_params()['tree_learner'] == tree_learner
+
+
 @gen_cluster(client=True, timeout=None)
 def test_errors(c, s, a, b):
     def f(part):

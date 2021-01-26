@@ -222,7 +222,7 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
         'voting_parallel'
     }
     if params["tree_learner"] not in allowed_tree_learners:
-        _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
+        _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % params['tree_learner'])
         params['tree_learner'] = 'data'
 
     if params['tree_learner'] not in {'data', 'data_parallel'}:
