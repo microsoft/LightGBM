@@ -492,6 +492,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
 class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     """Distributed version of lightgbm.LGBMRegressor."""
+
     def fit(self, X, y, sample_weight=None, client=None, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
         return self._fit(
@@ -533,6 +534,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
 class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     """Distributed version of lightgbm.LGBMRanker."""
+
     def fit(self, X, y, sample_weight=None, init_score=None, group=None, client=None, **kwargs):
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
         if init_score is not None:
