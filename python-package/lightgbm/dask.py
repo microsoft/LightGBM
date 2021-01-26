@@ -366,6 +366,8 @@ def _predict(model, data, raw_score=False, pred_proba=False, pred_leaf=False, pr
     X_SHAP_values : dask array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
         If ``pred_contrib=True``, the feature contributions for each sample.
     """
+    if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
+        raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
     if isinstance(data, _Frame):
         return data.map_partitions(
             _predict_part,
