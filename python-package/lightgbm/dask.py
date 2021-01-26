@@ -221,7 +221,8 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
 
     if params['tree_learner'] not in {'data', 'data_parallel'}:
         _log_warning(
-            'Support for tree_learner %s in lightgbm.dask is experimental and may break in a future release. Use "data" for a stable, well-tested interface.' % params['tree_learner']
+            'Support for tree_learner %s in lightgbm.dask is experimental and may break in a future release. \n'
+            'Use "data" for a stable, well-tested interface.' % params['tree_learner']
         )
 
     # Some passed-in parameters can be removed:

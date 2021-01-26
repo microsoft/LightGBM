@@ -357,7 +357,7 @@ def test_choose_param_value():
         default_value=17
     )
     assert params["num_iterations"] == 81
-    assert "random_state" not in params
+    assert "num_trees" not in params
 
     # should use the default if main param and aliases are missing
     params = lgb.basic._choose_param_value(

@@ -2211,7 +2211,7 @@ class Booster:
                 self.set_network(
                     machines=machines,
                     local_listen_port=params["local_listen_port"],
-                    listen_time_out=params.get("listen_time_out", 120),
+                    listen_time_out=params.get("time_out", 120),
                     num_machines=params["num_machines"]
                 )
             # construct booster object
