@@ -236,9 +236,8 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
     #   * 'machine_list_filename': not relevant for the Dask interface
     #   * 'num_machines': set automatically from Dask worker list
     #   * 'num_threads': overridden to match nthreads on each Dask process
-    for param_name in ['machines', 'machine_list_filename', 'num_machines', 'num_threads']:
-        for param_alias in _ConfigAliases.get(param_name):
-            params.pop(param_alias, None)
+    for param_alias in _ConfigAliases.get('machines', 'machine_list_filename', 'num_machines', 'num_threads'):
+        params.pop(param_alias, None)
 
     # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality
     data_parts = _split_to_parts(data=data, is_matrix=True)

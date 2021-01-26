@@ -6,7 +6,7 @@ from inspect import signature
 
 import numpy as np
 
-from .basic import Dataset, LightGBMError, _ConfigAliases, _log_warning
+from .basic import Dataset, LightGBMError, _ConfigAliases, _choose_param_value, _log_warning
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckSampleWeight,
@@ -551,13 +551,11 @@ class LGBMModel(_LGBMModelBase):
                 original_metric = "ndcg"
 
         # overwrite default metric by explicitly set metric
-        for metric_alias in _ConfigAliases.get("metric"):
-            if metric_alias in params:
-                original_metric = params.pop(metric_alias)
+        params = _choose_param_value("metric", params, original_metric)
 
         # concatenate metric from params (or default if not provided in params) and eval_metric
-        original_metric = [original_metric] if isinstance(original_metric, (str, type(None))) else original_metric
-        params['metric'] = [e for e in eval_metrics_builtin if e not in original_metric] + original_metric
+        params['metric'] = [params['metric']] if isinstance(params['metric'], (str, type(None))) else params['metric']
+        params['metric'] = [e for e in eval_metrics_builtin if e not in params['metric']] + params['metric']
         params['metric'] = [metric for metric in params['metric'] if metric is not None]
 
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
