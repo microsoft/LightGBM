@@ -21,15 +21,9 @@ from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
                      DASK_INSTALLED, dask_Frame, dask_Array, delayed, Client, default_client, get_worker, wait)
 from .sklearn import LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
 
-_1DArrayLike = Union[List, "np.ndarray"]
+_1DArrayLike = Union[List, np.ndarray]
 _DaskCollection = Union[dask_Array, dask_Frame]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
-
-
-def _expect_type(obj: Any, obj_name: str, types: List[Type]) -> None:
-    if not isinstance(obj, types):
-        type_str = ""
-        msg = "'%s' must be one of ()"
 
 
 def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
