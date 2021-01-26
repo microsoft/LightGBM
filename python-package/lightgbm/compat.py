@@ -3,7 +3,7 @@
 
 """pandas"""
 try:
-    from pandas import Series, DataFrame
+    from pandas import Series, DataFrame, concat
     from pandas.api.types import is_sparse as is_dtype_sparse
     PANDAS_INSTALLED = True
 except ImportError:
@@ -19,6 +19,7 @@ except ImportError:
 
         pass
 
+    concat = None
     is_dtype_sparse = None
 
 """matplotlib"""
@@ -108,9 +109,25 @@ except ImportError:
 
 """dask"""
 try:
-    from dask import array
-    from dask import dataframe
-    from dask.distributed import Client
+    from dask import delayed
+    from dask.array import Array as dask_Array
+    from dask.dataframe import _Frame as dask_Frame
+    from dask.distributed import Client, default_client, get_worker, wait
     DASK_INSTALLED = True
 except ImportError:
     DASK_INSTALLED = False
+    delayed = None
+    Client = object
+    default_client = None
+    get_worker = None
+    wait = None
+
+    class dask_Array:
+        """Dummy class for dask.array.Array."""
+
+        pass
+
+    class dask_Frame:
+        """Dummy class for ddask.dataframe._Frame."""
+
+        pass

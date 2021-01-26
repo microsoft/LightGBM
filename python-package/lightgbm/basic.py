@@ -14,7 +14,7 @@ from typing import Any, Dict
 import numpy as np
 import scipy.sparse
 
-from .compat import PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse, DataTable
+from .compat import PANDAS_INSTALLED, DataFrame, Series, concat, is_dtype_sparse, DataTable
 from .libpath import find_lib_path
 
 
@@ -2081,7 +2081,6 @@ class Dataset:
                 if not PANDAS_INSTALLED:
                     raise LightGBMError("Cannot add features to DataFrame type of raw data "
                                         "without pandas installed")
-                from pandas import concat
                 if isinstance(other.data, np.ndarray):
                     self.data = concat((self.data, DataFrame(other.data)),
                                        axis=1, ignore_index=True)
