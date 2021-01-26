@@ -152,7 +152,7 @@ def test_regression_with_custom_objective():
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     assert ret < 7.0
-    assert ret == pytest.approx(gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1])
+    assert gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
 def test_binary_classification_with_custom_objective():
