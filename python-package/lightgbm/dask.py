@@ -24,6 +24,7 @@ from .sklearn import LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
 _1DArrayLike = Union[List, np.ndarray]
 _DaskCollection = Union[dask_Array, dask_Frame]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
+_PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
 
 def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
@@ -369,7 +370,7 @@ def _predict(
     pred_proba: bool = False,
     pred_leaf: bool = False,
     pred_contrib: bool = False,
-    dtype: Union[Type[np.float32], Type[np.float64]] = np.float32,
+    dtype: _PredictionDtype = np.float32,
     **kwargs: Any
 ) -> _DaskCollection:
     """Inner predict routine.
