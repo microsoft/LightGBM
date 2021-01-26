@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - py_tests
+    - master
   tags:
     include:
     - v*
