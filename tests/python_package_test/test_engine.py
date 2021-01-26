@@ -950,7 +950,7 @@ def test_pandas_categorical():
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(pred0, pred7)  # ordered cat features aren't treated as cat features by default
     with pytest.raises(AssertionError):
-        np.testing.assert_allclose(pred0, pred8)  # ordered cat features aren't treated as cat features by default
+        np.testing.assert_allclose(pred0, pred8)
     assert gbm0.pandas_categorical == cat_values
     assert gbm1.pandas_categorical == cat_values
     assert gbm2.pandas_categorical == cat_values
