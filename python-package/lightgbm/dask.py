@@ -13,27 +13,24 @@ from typing import Any, Dict, Iterable, List, Optional, Type, Union
 from urllib.parse import urlparse
 
 import numpy as np
-import pandas as pd
 import scipy.sparse as ss
 
-from dask import array as da
-from dask import dataframe as dd
-from dask import delayed
-from dask.distributed import Client, default_client, get_worker, wait
-
-from .basic import _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
-from .compat import DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED
+from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
+from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
+                     SKLEARN_INSTALLED,
+                     DASK_INSTALLED, dask_Frame, dask_Array, delayed, Client, default_client, get_worker, wait)
 from .sklearn import LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
 
 _1DArrayLike = Union[List, "np.ndarray"]
-_DaskCollection = Union[da.Array, dd.DataFrame, dd.Series]
-_DaskPart = Union["np.ndarray", "pd.DataFrame", "pd.Series", "ss.spmatrix"]
+_DaskCollection = Union[dask_Array, dask_Frame]
+_DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 
 
 def _expect_type(obj: Any, obj_name: str, types: List[Type]) -> None:
     if not isinstance(obj, types):
         type_str = ""
         msg = "'%s' must be one of ()"
+
 
 def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
     """Find an open port.
@@ -55,7 +52,7 @@ def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Itera
 
     Returns
     -------
-    result : int
+    port : int
         A free port on the machine referenced by ``worker_ip``.
     """
     max_tries = 1000
@@ -90,7 +87,7 @@ def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], loc
     client : dask.distributed.Client
         Dask client.
     worker_addresses : Iterable[str]
-        An iterable of addresses for workers in the cluster. These are strings of the form ``<protocol>://<host>:port``
+        An iterable of addresses for workers in the cluster. These are strings of the form ``<protocol>://<host>:port``.
     local_listen_port : int
         First port to try when searching for open ports.
 
@@ -118,8 +115,8 @@ def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], loc
 def _concat(seq: Iterable[_DaskPart]) -> _DaskPart:
     if isinstance(seq[0], np.ndarray):
         return np.concatenate(seq, axis=0)
-    elif isinstance(seq[0], (pd.DataFrame, pd.Series)):
-        return pd.concat(seq, axis=0)
+    elif isinstance(seq[0], (pd_DataFrame, pd_Series)):
+        return concat(seq, axis=0)
     elif isinstance(seq[0], ss.spmatrix):
         return ss.vstack(seq, format='csr')
     else:
@@ -152,26 +149,25 @@ def _train_part(
     is_ranker = issubclass(model_factory, LGBMRanker)
 
     # Concatenate many parts into one
-    parts = tuple(zip(*list_of_parts))
-    data = _concat(parts[0])
-    label = _concat(parts[1])
+    data = _concat([x['data'] for x in list_of_parts])
+    label = _concat([x['label'] for x in list_of_parts])
+
+    if 'weight' in list_of_parts[0]:
+        weight = _concat([x['weight'] for x in list_of_parts])
+    else:
+        weight = None
+
+    if 'group' in list_of_parts[0]:
+        group = _concat([x['group'] for x in list_of_parts])
+    else:
+        group = None
 
     try:
         model = model_factory(**params)
-
         if is_ranker:
-            group = _concat(parts[-1])
-            if len(parts) == 4:
-                weight = _concat(parts[2])
-            else:
-                weight = None
-            model.fit(data, y=label, sample_weight=weight, group=group, **kwargs)
+            model.fit(data, label, sample_weight=weight, group=group, **kwargs)
         else:
-            if len(parts) == 3:
-                weight = _concat(parts[2])
-            else:
-                weight = None
-            model.fit(data, y=label, sample_weight=weight, **kwargs)
+            model.fit(data, label, sample_weight=weight, **kwargs)
 
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
@@ -204,13 +200,16 @@ def _train(
 
     Parameters
     ----------
-    client: dask.Client - client
-    X : dask array of shape = [n_samples, n_features]
+    client : dask.distributed.Client
+        Dask client.
+    data : dask array of shape = [n_samples, n_features]
         Input feature matrix.
-    y : dask array of shape = [n_samples]
+    label : dask array of shape = [n_samples]
         The target values (class labels in classification, real numbers in regression).
     params : dict
+        Parameters passed to constructor of the local underlying model.
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
+        Class of the local underlying model.
     sample_weight : array-like of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
     group : array-like or None, optional (default=None)
@@ -219,32 +218,68 @@ def _train(
         sum(group) = n_samples.
         For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+    **kwargs
+        Other parameters passed to ``fit`` method of the local underlying model.
+
+    Returns
+    -------
+    model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
+        Returns fitted underlying model.
     """
     params = deepcopy(params)
 
-    # Split arrays/dataframes into parts. Arrange parts into tuples to enforce co-locality
+    params = _choose_param_value(
+        main_param_name="local_listen_port",
+        params=params,
+        default_value=12400
+    )
+
+    params = _choose_param_value(
+        main_param_name="tree_learner",
+        params=params,
+        default_value="data"
+    )
+    allowed_tree_learners = {
+        'data',
+        'data_parallel',
+        'feature',
+        'feature_parallel',
+        'voting',
+        'voting_parallel'
+    }
+    if params["tree_learner"] not in allowed_tree_learners:
+        _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
+        params['tree_learner'] = 'data'
+
+    if params['tree_learner'] not in {'data', 'data_parallel'}:
+        _log_warning(
+            'Support for tree_learner %s in lightgbm.dask is experimental and may break in a future release. \n'
+            'Use "data" for a stable, well-tested interface.' % params['tree_learner']
+        )
+
+    # Some passed-in parameters can be removed:
+    #   * 'machines': constructed automatically from Dask worker list
+    #   * 'machine_list_filename': not relevant for the Dask interface
+    #   * 'num_machines': set automatically from Dask worker list
+    #   * 'num_threads': overridden to match nthreads on each Dask process
+    for param_name in ['machines', 'machine_list_filename', 'num_machines', 'num_threads']:
+        for param_alias in _ConfigAliases.get(param_name):
+            params.pop(param_alias, None)
+
+    # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality
     data_parts = _split_to_parts(data=data, is_matrix=True)
     label_parts = _split_to_parts(data=label, is_matrix=False)
+    parts = [{'data': x, 'label': y} for (x, y) in zip(data_parts, label_parts)]
 
     if sample_weight is not None:
         weight_parts = _split_to_parts(data=sample_weight, is_matrix=False)
-    else:
-        weight_parts = None
+        for i in range(len(parts)):
+            parts[i]['weight'] = weight_parts[i]
 
     if group is not None:
         group_parts = _split_to_parts(data=group, is_matrix=False)
-    else:
-        group_parts = None
-
-    # choose between four options of (sample_weight, group) being (un)specified
-    if weight_parts is None and group_parts is None:
-        parts = zip(data_parts, label_parts)
-    elif weight_parts is not None and group_parts is None:
-        parts = zip(data_parts, label_parts, weight_parts)
-    elif weight_parts is None and group_parts is not None:
-        parts = zip(data_parts, label_parts, group_parts)
-    else:
-        parts = zip(data_parts, label_parts, weight_parts, group_parts)
+        for i in range(len(parts)):
+            parts[i]['group'] = group_parts[i]
 
     # Start computation in the background
     parts = list(map(delayed, parts))
@@ -265,64 +300,14 @@ def _train(
     master_worker = next(iter(worker_map))
     worker_ncores = client.ncores()
 
-    tree_learner = None
-    for tree_learner_param in _ConfigAliases.get('tree_learner'):
-        tree_learner = params.get(tree_learner_param)
-        if tree_learner is not None:
-            params['tree_learner'] = tree_learner
-            break
-
-    allowed_tree_learners = {
-        'data',
-        'data_parallel',
-        'feature',
-        'feature_parallel',
-        'voting',
-        'voting_parallel'
-    }
-    if tree_learner is None:
-        _log_warning('Parameter tree_learner not set. Using "data" as default')
-        params['tree_learner'] = 'data'
-    elif tree_learner.lower() not in allowed_tree_learners:
-        _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
-        params['tree_learner'] = 'data'
-
-    if params['tree_learner'] not in {'data', 'data_parallel'}:
-        _log_warning(
-            'Support for tree_learner %s in lightgbm.dask is experimental and may break in a future release. Use "data" for a stable, well-tested interface.' % params['tree_learner']
-        )
-
-    local_listen_port = 12400
-    for port_param in _ConfigAliases.get('local_listen_port'):
-        val = params.get(port_param)
-        if val is not None:
-            local_listen_port = val
-            break
-
     # find an open port on each worker. note that multiple workers can run
     # on the same machine, so this needs to ensure that each one gets its
     # own port
     worker_address_to_port = _find_ports_for_workers(
         client=client,
         worker_addresses=worker_map.keys(),
-        local_listen_port=local_listen_port
+        local_listen_port=params["local_listen_port"]
     )
-
-    # num_threads is set below, so remove it and all aliases of it from params
-    for num_thread_alias in _ConfigAliases.get('num_threads'):
-        params.pop(num_thread_alias, None)
-
-    # machines is constructed manually, so remove it and all aliases of it from params
-    for machine_alias in _ConfigAliases.get('machines'):
-        params.pop(machine_alias, None)
-
-    # machines is constructed manually, so remove machine_list_filename and all aliases of it from params
-    for machine_list_filename_alias in _ConfigAliases.get('machine_list_filename'):
-        params.pop(machine_list_filename_alias, None)
-
-    # machines is constructed manually, so remove num_machines and all aliases of it from params
-    for num_machine_alias in _ConfigAliases.get('num_machines'):
-        params.pop(num_machine_alias, None)
 
     # Tell each worker to train on the parts that it has locally
     futures_classifiers = [
@@ -353,7 +338,7 @@ def _predict_part(
     pred_contrib: bool,
     **kwargs: Any
 ) -> _DaskPart:
-    data = part.values if isinstance(part, pd.DataFrame) else part
+    data = part.values if isinstance(part, pd_DataFrame) else part
 
     if data.shape[0] == 0:
         result = np.array([])
@@ -374,11 +359,11 @@ def _predict_part(
             **kwargs
         )
 
-    if isinstance(part, pd.DataFrame):
+    if isinstance(part, pd_DataFrame):
         if pred_proba or pred_contrib:
-            result = pd.DataFrame(result, index=part.index)
+            result = pd_DataFrame(result, index=part.index)
         else:
-            result = pd.Series(result, index=part.index, name='predictions')
+            result = pd_Series(result, index=part.index, name='predictions')
 
     return result
 
@@ -398,20 +383,34 @@ def _predict(
     Parameters
     ----------
     model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
+        Fitted underlying model.
     data : dask array of shape = [n_samples, n_features]
         Input feature matrix.
+    raw_score : bool, optional (default=False)
+        Whether to predict raw scores.
     pred_proba : bool, optional (default=False)
         Should method return results of ``predict_proba`` (``pred_proba=True``) or ``predict`` (``pred_proba=False``).
     pred_leaf : bool, optional (default=False)
         Whether to predict leaf index.
     pred_contrib : bool, optional (default=False)
         Whether to predict feature contributions.
-    dtype : np.dtype
+    dtype : np.dtype, optional (default=np.float32)
         Dtype of the output.
-    kwargs : dict
+    **kwargs
         Other parameters passed to ``predict`` or ``predict_proba`` method.
+
+    Returns
+    -------
+    predicted_result : dask array of shape = [n_samples] or shape = [n_samples, n_classes]
+        The predicted values.
+    X_leaves : dask array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
+        If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
+    X_SHAP_values : dask array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
+        If ``pred_contrib=True``, the feature contributions for each sample.
     """
-    if isinstance(data, dd._Frame):
+    if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
+        raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
+    if isinstance(data, dask_Frame):
         return data.map_partitions(
             _predict_part,
             model=model,
@@ -421,7 +420,7 @@ def _predict(
             pred_contrib=pred_contrib,
             **kwargs
         ).values
-    elif isinstance(data, da.Array):
+    elif isinstance(data, dask_Array):
         if pred_proba:
             kwargs['chunks'] = (data.chunks[0], (model.n_classes_,))
         else:
@@ -441,9 +440,6 @@ def _predict(
 
 
 class _DaskLGBMModel:
-    def __init__(self):
-        if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
-            raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
 
     def _fit(
         self,
@@ -455,7 +451,9 @@ class _DaskLGBMModel:
         client: Optional[Client] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
-        """Docstring is inherited from the LGBMModel."""
+        if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
+            raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
+
         if client is None:
             client = default_client()
 
@@ -512,7 +510,12 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             **kwargs
         )
 
-    fit.__doc__ = LGBMClassifier.fit.__doc__
+    _base_doc = LGBMClassifier.fit.__doc__
+    _before_init_score, _init_score, _after_init_score = _base_doc.partition('init_score :')
+    fit.__doc__ = (_before_init_score
+                   + 'client : dask.distributed.Client or None, optional (default=None)\n'
+                   + ' ' * 12 + 'Dask client.\n'
+                   + ' ' * 8 + _init_score + _after_init_score)
 
     def predict(self, X: _DaskCollection, **kwargs: Any) -> _DaskCollection:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
@@ -542,12 +545,12 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         Returns
         -------
         model : lightgbm.LGBMClassifier
+            Local underlying model.
         """
         return self._to_local(LGBMClassifier)
 
 
 class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
-    """Docstring is inherited from the lightgbm.LGBMRegressor."""
 
     def fit(
         self,
@@ -567,7 +570,12 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             **kwargs
         )
 
-    fit.__doc__ = LGBMRegressor.fit.__doc__
+    _base_doc = LGBMRegressor.fit.__doc__
+    _before_init_score, _init_score, _after_init_score = _base_doc.partition('init_score :')
+    fit.__doc__ = (_before_init_score
+                   + 'client : dask.distributed.Client or None, optional (default=None)\n'
+                   + ' ' * 12 + 'Dask client.\n'
+                   + ' ' * 8 + _init_score + _after_init_score)
 
     def predict(self, X: _DaskCollection, **kwargs) -> _DaskCollection:
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
@@ -585,12 +593,12 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         Returns
         -------
         model : lightgbm.LGBMRegressor
+            Local underlying model.
         """
         return self._to_local(LGBMRegressor)
 
 
 class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
-    """Docstring is inherited from the lightgbm.LGBMRanker."""
 
     def fit(
         self,
@@ -616,7 +624,12 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             **kwargs
         )
 
-    fit.__doc__ = LGBMRanker.fit.__doc__
+    _base_doc = LGBMRanker.fit.__doc__
+    _before_eval_set, _eval_set, _after_eval_set = _base_doc.partition('eval_set :')
+    fit.__doc__ = (_before_eval_set
+                   + 'client : dask.distributed.Client or None, optional (default=None)\n'
+                   + ' ' * 12 + 'Dask client.\n'
+                   + ' ' * 8 + _eval_set + _after_eval_set)
 
     def predict(self, X: _DaskCollection, **kwargs: Any) -> _DaskCollection:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
@@ -630,5 +643,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         Returns
         -------
         model : lightgbm.LGBMRanker
+            Local underlying model.
         """
         return self._to_local(LGBMRanker)

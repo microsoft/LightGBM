@@ -1,19 +1,20 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
-import copy
 import ctypes
 import json
 import os
 import warnings
 from collections import OrderedDict
+from copy import deepcopy
 from functools import wraps
 from logging import Logger
 from tempfile import NamedTemporaryFile
+from typing import Any, Dict
 
 import numpy as np
 import scipy.sparse
 
-from .compat import PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse, DataTable
+from .compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat, is_dtype_sparse, dt_DataTable
 from .libpath import find_lib_path
 
 
@@ -139,7 +140,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
             return data.astype(dtype=dtype, copy=False)
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
-    elif isinstance(data, Series):
+    elif isinstance(data, pd_Series):
         if _get_bad_pandas_dtypes([data.dtypes]):
             raise ValueError('Series.dtypes must be int, float or bool')
         return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
@@ -352,6 +353,46 @@ class _ConfigAliases:
         return ret
 
 
+def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_value: Any) -> Dict[str, Any]:
+    """Get a single parameter value, accounting for aliases.
+
+    Parameters
+    ----------
+    main_param_name : str
+        Name of the main parameter to get a value for. One of the keys of ``_ConfigAliases``.
+    params : dict
+        Dictionary of LightGBM parameters.
+    default_value : Any
+        Default value to use for the parameter, if none is found in ``params``.
+
+    Returns
+    -------
+    params : dict
+        A ``params`` dict with exactly one value for ``main_param_name``, and all aliases ``main_param_name`` removed.
+        If both ``main_param_name`` and one or more aliases for it are found, the value of ``main_param_name`` will be preferred.
+    """
+    # avoid side effects on passed-in parameters
+    params = deepcopy(params)
+
+    # find a value, and remove other aliases with .pop()
+    # prefer the value of 'main_param_name' if it exists, otherwise search the aliases
+    found_value = None
+    if main_param_name in params.keys():
+        found_value = params[main_param_name]
+
+    for param in _ConfigAliases.get(main_param_name):
+        val = params.pop(param, None)
+        if found_value is None and val is not None:
+            found_value = val
+
+    if found_value is not None:
+        params[main_param_name] = found_value
+    else:
+        params[main_param_name] = default_value
+
+    return params
+
+
 MAX_INT32 = (1 << 31) - 1
 
 """Macro definition of data type in C API of LightGBM"""
@@ -452,7 +493,7 @@ def _get_bad_pandas_dtypes(dtypes):
 
 
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
-    if isinstance(data, DataFrame):
+    if isinstance(data, pd_DataFrame):
         if len(data.shape) != 2 or data.shape[0] < 1:
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
@@ -496,7 +537,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
 
 
 def _label_from_pandas(label):
-    if isinstance(label, DataFrame):
+    if isinstance(label, pd_DataFrame):
         if len(label.columns) > 1:
             raise ValueError('DataFrame for label cannot have multiple columns')
         if _get_bad_pandas_dtypes(label.dtypes):
@@ -679,7 +720,7 @@ class _InnerPredictor:
             except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
             preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type)
-        elif isinstance(data, DataTable):
+        elif isinstance(data, dt_DataTable):
             preds, nrow = self.__pred_for_np2d(data.to_numpy(), start_iteration, num_iteration, predict_type)
         else:
             try:
@@ -1052,7 +1093,7 @@ class Dataset:
         self.silent = silent
         self.feature_name = feature_name
         self.categorical_feature = categorical_feature
-        self.params = copy.deepcopy(params)
+        self.params = deepcopy(params)
         self.free_raw_data = free_raw_data
         self.used_indices = None
         self.need_slice = True
@@ -1217,7 +1258,7 @@ class Dataset:
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif isinstance(data, list) and len(data) > 0 and all(isinstance(x, np.ndarray) for x in data):
             self.__init_from_list_np2d(data, params_str, ref_dataset)
-        elif isinstance(data, DataTable):
+        elif isinstance(data, dt_DataTable):
             self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
             try:
@@ -1510,13 +1551,13 @@ class Dataset:
     def _update_params(self, params):
         if not params:
             return self
-        params = copy.deepcopy(params)
+        params = deepcopy(params)
 
         def update():
             if not self.params:
                 self.params = params
             else:
-                self.params_back_up = copy.deepcopy(self.params)
+                self.params_back_up = deepcopy(self.params)
                 self.params.update(params)
 
         if self.handle is None:
@@ -1536,7 +1577,7 @@ class Dataset:
 
     def _reverse_update_params(self):
         if self.handle is None:
-            self.params = copy.deepcopy(self.params_back_up)
+            self.params = deepcopy(self.params_back_up)
             self.params_back_up = None
         return self
 
@@ -1898,9 +1939,9 @@ class Dataset:
             if self.data is not None:
                 if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
                     self.data = self.data[self.used_indices, :]
-                elif isinstance(self.data, DataFrame):
+                elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
-                elif isinstance(self.data, DataTable):
+                elif isinstance(self.data, dt_DataTable):
                     self.data = self.data[self.used_indices, :]
                 else:
                     _log_warning("Cannot subset {} type of raw data.\n"
@@ -2020,9 +2061,9 @@ class Dataset:
                     self.data = np.hstack((self.data, other.data))
                 elif scipy.sparse.issparse(other.data):
                     self.data = np.hstack((self.data, other.data.toarray()))
-                elif isinstance(other.data, DataFrame):
+                elif isinstance(other.data, pd_DataFrame):
                     self.data = np.hstack((self.data, other.data.values))
-                elif isinstance(other.data, DataTable):
+                elif isinstance(other.data, dt_DataTable):
                     self.data = np.hstack((self.data, other.data.to_numpy()))
                 else:
                     self.data = None
@@ -2030,40 +2071,39 @@ class Dataset:
                 sparse_format = self.data.getformat()
                 if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(other.data):
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
-                elif isinstance(other.data, DataFrame):
+                elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
-                elif isinstance(other.data, DataTable):
+                elif isinstance(other.data, dt_DataTable):
                     self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
                 else:
                     self.data = None
-            elif isinstance(self.data, DataFrame):
+            elif isinstance(self.data, pd_DataFrame):
                 if not PANDAS_INSTALLED:
                     raise LightGBMError("Cannot add features to DataFrame type of raw data "
                                         "without pandas installed")
-                from pandas import concat
                 if isinstance(other.data, np.ndarray):
-                    self.data = concat((self.data, DataFrame(other.data)),
+                    self.data = concat((self.data, pd_DataFrame(other.data)),
                                        axis=1, ignore_index=True)
                 elif scipy.sparse.issparse(other.data):
-                    self.data = concat((self.data, DataFrame(other.data.toarray())),
+                    self.data = concat((self.data, pd_DataFrame(other.data.toarray())),
                                        axis=1, ignore_index=True)
-                elif isinstance(other.data, DataFrame):
+                elif isinstance(other.data, pd_DataFrame):
                     self.data = concat((self.data, other.data),
                                        axis=1, ignore_index=True)
-                elif isinstance(other.data, DataTable):
-                    self.data = concat((self.data, DataFrame(other.data.to_numpy())),
+                elif isinstance(other.data, dt_DataTable):
+                    self.data = concat((self.data, pd_DataFrame(other.data.to_numpy())),
                                        axis=1, ignore_index=True)
                 else:
                     self.data = None
-            elif isinstance(self.data, DataTable):
+            elif isinstance(self.data, dt_DataTable):
                 if isinstance(other.data, np.ndarray):
-                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data)))
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data)))
                 elif scipy.sparse.issparse(other.data):
-                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
-                elif isinstance(other.data, DataFrame):
-                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
-                elif isinstance(other.data, DataTable):
-                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
+                elif isinstance(other.data, pd_DataFrame):
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
+                elif isinstance(other.data, dt_DataTable):
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
                 else:
                     self.data = None
             else:
@@ -2130,7 +2170,7 @@ class Booster:
         self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
-        params = {} if params is None else copy.deepcopy(params)
+        params = {} if params is None else deepcopy(params)
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
@@ -2139,22 +2179,40 @@ class Booster:
             if not isinstance(train_set, Dataset):
                 raise TypeError('Training data should be Dataset instance, met {}'
                                 .format(type(train_set).__name__))
-            # set network if necessary
-            for alias in _ConfigAliases.get("machines"):
-                if alias in params:
-                    machines = params[alias]
-                    if isinstance(machines, str):
-                        num_machines = len(machines.split(','))
-                    elif isinstance(machines, (list, set)):
-                        num_machines = len(machines)
-                        machines = ','.join(machines)
-                    else:
-                        raise ValueError("Invalid machines in params.")
-                    self.set_network(machines,
-                                     local_listen_port=params.get("local_listen_port", 12400),
-                                     listen_time_out=params.get("listen_time_out", 120),
-                                     num_machines=params.setdefault("num_machines", num_machines))
-                    break
+            params = _choose_param_value(
+                main_param_name="machines",
+                params=params,
+                default_value=None
+            )
+            # if "machines" is given, assume user wants to do distributed learning, and set up network
+            if params["machines"] is None:
+                params.pop("machines", None)
+            else:
+                machines = params["machines"]
+                if isinstance(machines, str):
+                    num_machines_from_machine_list = len(machines.split(','))
+                elif isinstance(machines, (list, set)):
+                    num_machines_from_machine_list = len(machines)
+                    machines = ','.join(machines)
+                else:
+                    raise ValueError("Invalid machines in params.")
+
+                params = _choose_param_value(
+                    main_param_name="num_machines",
+                    params=params,
+                    default_value=num_machines_from_machine_list
+                )
+                params = _choose_param_value(
+                    main_param_name="local_listen_port",
+                    params=params,
+                    default_value=12400
+                )
+                self.set_network(
+                    machines=machines,
+                    local_listen_port=params["local_listen_port"],
+                    listen_time_out=params.get("time_out", 120),
+                    num_machines=params["num_machines"]
+                )
             # construct booster object
             train_set.construct()
             # copy the parameters from train_set
@@ -2438,7 +2496,7 @@ class Booster:
                                                      tree_index=tree['tree_index'],
                                                      feature_names=feature_names))
 
-        return DataFrame(model_list, columns=model_list[0].keys())
+        return pd_DataFrame(model_list, columns=model_list[0].keys())
 
     def set_train_data_name(self, name):
         """Set the name to the training Dataset.
@@ -3056,7 +3114,7 @@ class Booster:
             Prediction result.
             Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
         """
-        predictor = self._to_predictor(copy.deepcopy(kwargs))
+        predictor = self._to_predictor(deepcopy(kwargs))
         if num_iteration is None:
             if start_iteration <= 0:
                 num_iteration = self.best_iteration
@@ -3090,14 +3148,14 @@ class Booster:
         """
         if self.__set_objective_to_none:
             raise LightGBMError('Cannot refit due to null objective function.')
-        predictor = self._to_predictor(copy.deepcopy(kwargs))
+        predictor = self._to_predictor(deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_bool(False)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
             self.handle,
             ctypes.byref(out_is_linear)))
-        new_params = copy.deepcopy(self.params)
+        new_params = deepcopy(self.params)
         new_params["linear_tree"] = out_is_linear.value
         train_set = Dataset(data, label, silent=True, params=new_params)
         new_params['refit_decay_rate'] = decay_rate
@@ -3287,7 +3345,7 @@ class Booster:
             ret = np.column_stack((bin_edges[1:], hist))
             ret = ret[ret[:, 1] > 0]
             if PANDAS_INSTALLED:
-                return DataFrame(ret, columns=['SplitValue', 'Count'])
+                return pd_DataFrame(ret, columns=['SplitValue', 'Count'])
             else:
                 return ret
         else:
