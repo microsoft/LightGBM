@@ -993,6 +993,7 @@ def test_first_metric_only():
                 expected = assumed_iteration + (params_fit['early_stopping_rounds']
                                                 if eval_set_name != 'training'
                                                 and assumed_iteration != gbm.n_estimators else 0)
+                assert expected == actual
                 if eval_set_name != 'training':
                     assert assumed_iteration == gbm.best_iteration_
                 else:
