@@ -86,7 +86,7 @@ def test_binary():
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
     ret = log_loss(y_test, gbm.predict_proba(X_test))
     assert ret < 0.12
-    assert ret == pytest.approx(gbm.evals_result_['valid_0']['binary_logloss'][gbm.best_iteration_ - 1], abs=1e-5)
+    assert ret == pytest.approx(gbm.evals_result_['valid_0']['binary_logloss'][gbm.best_iteration_ - 1])
 
 
 def test_regression():
@@ -96,7 +96,7 @@ def test_regression():
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     assert ret < 7
-    assert ret == pytest.approx(gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], abs=1e-5)
+    assert ret == pytest.approx(gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1])
 
 
 def test_multiclass():
@@ -108,7 +108,7 @@ def test_multiclass():
     assert ret < 0.05
     ret = multi_logloss(y_test, gbm.predict_proba(X_test))
     assert ret < 0.16
-    assert ret == pytest.approx(gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1], abs=1e-5)
+    assert ret == pytest.approx(gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1])
 
 
 def test_lambdarank():
@@ -152,7 +152,7 @@ def test_regression_with_custom_objective():
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     assert ret < 7.0
-    assert ret == pytest.approx(gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], abs=1e-5)
+    assert ret == pytest.approx(gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1])
 
 
 def test_binary_classification_with_custom_objective():
