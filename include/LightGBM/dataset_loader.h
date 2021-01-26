@@ -15,7 +15,7 @@ namespace LightGBM {
 
 class DatasetLoader {
  public:
-  LIGHTGBM_EXPORT DatasetLoader(Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename);
+  LIGHTGBM_EXPORT DatasetLoader(Config* io_config, const PredictFunction& predict_fun, int num_class, const char* filename);
 
   LIGHTGBM_EXPORT ~DatasetLoader();
 

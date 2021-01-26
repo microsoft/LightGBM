@@ -907,7 +907,7 @@ int LGBM_DatasetCreateFromFile(const char* filename,
     ctr_provider.reset(CTRProvider::CreateCTRProvider(&config));
   }
 
-  DatasetLoader loader(config, nullptr, 1, filename);
+  DatasetLoader loader(&config, nullptr, 1, filename);
 
   if (reference == nullptr) {
     if (Network::num_machines() == 1) {
@@ -938,7 +938,7 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
-  DatasetLoader loader(config, nullptr, 1, nullptr);
+  DatasetLoader loader(&config, nullptr, 1, nullptr);
   // TODO(shiyu1994): in this case do we need ctr provider ? it seems that therea are no labels available.
   *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
                                         num_sample_row,
@@ -1092,7 +1092,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol);
     std::vector<std::vector<int>> sample_idx(ncol);
-    DatasetLoader loader(config, nullptr, 1, nullptr);
+    DatasetLoader loader(&config, nullptr, 1, nullptr);
     int offset = 0;
     int j = 0;
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -1207,7 +1207,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
         }
       }
     }
-    DatasetLoader loader(config, nullptr, 1, nullptr);
+    DatasetLoader loader(&config, nullptr, 1, nullptr);
     ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
@@ -1282,7 +1282,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
         }
       }
     }
-    DatasetLoader loader(config, nullptr, 1, nullptr);
+    DatasetLoader loader(&config, nullptr, 1, nullptr);
     ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
@@ -1386,7 +1386,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-    DatasetLoader loader(config, nullptr, 1, nullptr);
+    DatasetLoader loader(&config, nullptr, 1, nullptr);
     ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(sample_values.size()),

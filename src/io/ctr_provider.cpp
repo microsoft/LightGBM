@@ -183,7 +183,6 @@ void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>&
   std::vector<label_t>* label_sum_ptr,
   std::vector<int>* num_data_ptr,
   const int fold_id) {
-
   auto& is_feature_processed = *is_feature_processed_ptr;
   auto& count_info = *count_info_ptr;
   auto& label_info = *label_info_ptr;
@@ -556,14 +555,15 @@ void CTRProvider::WrapColIters(
 }
 
 void CTRProvider::InitFromParser(Config* config_from_loader, Parser* parser, const int num_machines,
-  std::unordered_set<int>& categorical_features_from_loader) {
+  std::unordered_set<int>* categorical_features_from_loader) {
   if (cat_converters_.size() == 0) { return; }
   num_original_features_ = parser->NumFeatures();
   if (num_machines > 1) {
     num_original_features_ = Network::GlobalSyncUpByMax(num_original_features_);
   }
   categorical_features_.clear();
-  for (const int fid : categorical_features_from_loader) {
+  auto categorical_features_from_loader_ref = *categorical_features_from_loader;
+  for (const int fid : categorical_features_from_loader_ref) {
     categorical_features_.push_back(fid);
   }
   std::sort(categorical_features_.begin(), categorical_features_.end());
@@ -581,7 +581,7 @@ void CTRProvider::InitFromParser(Config* config_from_loader, Parser* parser, con
     if (!keep_raw_cat_method_) {
       config_from_loader->categorical_feature.clear();
       config_from_loader->categorical_feature.shrink_to_fit();
-      categorical_features_from_loader.clear();
+      categorical_features_from_loader_ref.clear();
     }
   }
 }

@@ -19,7 +19,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <unordered_set>
 
 namespace LightGBM {
 
@@ -518,7 +517,7 @@ class CTRProvider {
   Parser* FinishProcess(const int num_machines, Config* config);
 
   void InitFromParser(Config* config_from_loader, Parser* parser, const int num_machines,
-    std::unordered_set<int>& categorical_features_from_loader);
+    std::unordered_set<int>* categorical_features_from_loader);
 
   void AccumulateOneLineStat(const char* buffer, const size_t size, const data_size_t row_idx);
 
@@ -599,7 +598,7 @@ class CTRProvider {
     }
   }
 
-  CTRProvider(Config* config) {
+  explicit CTRProvider(Config* config) {
     accumulated_from_file_ = true;
     SetConfig(config);
   }
@@ -659,26 +658,21 @@ class CTRProvider {
     num_original_features_ = ncol;
     num_data_ = nrow;
     training_data_fold_id_.resize(num_data_);
-    Log::Warning("step 0 in ctr provider");
     Init();
-    Log::Warning("step 1 in ctr provider");
     if (cat_converters_.size() == 0) { return; }
     if (get_label_fun == nullptr) {
       Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
     }
-    Log::Warning("step 2 in ctr provider");
     std::vector<std::mt19937> mt_generators;
     for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
       mt_generators.emplace_back(config_.seed + thread_id);
     }
-    Log::Warning("step 3 in ctr provider");
     const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
     std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
     std::vector<std::vector<bool>> is_feature_processed(num_threads_);
     for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
       is_feature_processed[thread_id].resize(num_original_features_, false);
     }
-    Log::Warning("step 4 in ctr provider");
     Threading::For<int64_t>(0, nrow, 1024,
     [this, &get_row_fun, &get_label_fun, &fold_distribution, &mt_generators, &is_feature_processed]
     (int thread_id, int64_t start, int64_t end) {
@@ -691,9 +685,7 @@ class CTRProvider {
         ProcessOneLine(oneline_features, label, row_idx, &is_feature_processed[thread_id], thread_id, fold_id);
       }
     });
-    Log::Warning("step 5 in ctr provider");
     FinishProcess(1, config);
-    Log::Warning("step 6 in ctr provider");
   }
 
   CTRProvider(Config* config,

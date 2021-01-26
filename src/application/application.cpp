@@ -105,7 +105,7 @@ void Application::LoadData() {
   if (!config_.cat_converters.empty()) {
     ctr_provider.reset(CTRProvider::CreateCTRProvider(&config_));
   }
-  DatasetLoader dataset_loader(config_, predict_fun,
+  DatasetLoader dataset_loader(&config_, predict_fun,
                                config_.num_class, config_.data.c_str());
   // load Training data
   if (config_.is_data_based_parallel) {
@@ -231,7 +231,7 @@ void Application::Predict() {
       // Free memory
       result_reader.Lines()[i].clear();
     }
-    DatasetLoader dataset_loader(config_, nullptr,
+    DatasetLoader dataset_loader(&config_, nullptr,
                                  config_.num_class, config_.data.c_str());
     std::unique_ptr<CTRProvider> ctr_provider(nullptr);
     if (!config_.cat_converters.empty()) {

@@ -17,14 +17,14 @@ namespace LightGBM {
 
 using json11::Json;
 
-DatasetLoader::DatasetLoader(Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename)
-  :config_(io_config), random_(config_.data_random_seed), predict_fun_(predict_fun), num_class_(num_class) {
+DatasetLoader::DatasetLoader(Config* io_config, const PredictFunction& predict_fun, int num_class, const char* filename)
+  :config_(*io_config), random_(config_.data_random_seed), predict_fun_(predict_fun), num_class_(num_class) {
   label_idx_ = 0;
   weight_idx_ = NO_SPECIFIC;
   group_idx_ = NO_SPECIFIC;
   SetHeader(filename);
   store_raw_ = false;
-  if (io_config.linear_tree) {
+  if (io_config->linear_tree) {
     store_raw_ = true;
   }
 }
@@ -209,18 +209,18 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     if (!config_.two_round) {
       // read data to memory
       if (ctr_provider != nullptr) {
-        ctr_provider->InitFromParser(&config_, parser.release(), num_machines, categorical_features_);
+        ctr_provider->InitFromParser(&config_, parser.release(), num_machines, &categorical_features_);
       }
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines,
         &num_global_data, &used_data_indices, ctr_provider);
-      Parser* parser_ptr = ctr_provider->FinishProcess(num_machines, &config_);
-      if (ctr_provider->GetNumCatConverters() == 0) {
-        ctr_provider = nullptr;
-      }
       if (ctr_provider != nullptr) {
-        parser.reset(new CTRParser(parser_ptr, ctr_provider, false));
-      } else {
-        parser.reset(parser_ptr);
+        Parser* parser_ptr = ctr_provider->FinishProcess(num_machines, &config_);
+        if (ctr_provider->GetNumCatConverters() == 0) {
+          ctr_provider = nullptr;
+          parser.reset(parser_ptr);
+        } else {
+          parser.reset(new CTRParser(parser_ptr, ctr_provider, false));
+        }
       }
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
       // sample data
@@ -251,7 +251,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       std::vector<std::string> sample_data;
       std::vector<data_size_t> sampled_indices;
       if (ctr_provider != nullptr) {
-        ctr_provider->InitFromParser(&config_, parser.release(), num_machines, categorical_features_);
+        ctr_provider->InitFromParser(&config_, parser.release(), num_machines, &categorical_features_);
       }
       sample_data = SampleTextDataFromFile(filename, dataset->metadata_, rank, num_machines,
         &num_global_data, &used_data_indices, &sampled_indices, ctr_provider);
@@ -1060,16 +1060,13 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
       };
       std::function<bool(data_size_t, const char*, size_t)> filter_func = nullptr;
       if (ctr_provider == nullptr) {
-
         filter_func = [filter_return_func] (data_size_t row_idx, const char*, size_t) {
           return filter_return_func(row_idx);
         };
 
         *num_global_data = text_reader.SampleAndFilterFromFile<false>(
           filter_func, used_data_indices, &random_, sample_cnt, &out_data, sampled_indices);
-
       } else {
-
         filter_func = [filter_return_func, ctr_provider]
         (data_size_t row_idx, const char* buffer, size_t size) {
           ctr_provider->AccumulateOneLineStat(buffer, size, row_idx);
