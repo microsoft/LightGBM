@@ -9,7 +9,7 @@ from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
 
-from utils import load_breast_cancer, load_iris
+from .utils import load_breast_cancer, load_iris
 
 
 def test_basic(tmp_path):
@@ -332,13 +332,79 @@ def test_consistent_state_for_dataset_fields():
 
 
 def test_ctr(tmp_path):
+
+    def test_ctr_inner(tmp_path, X_train, X_test, y_train, y_test, params, model_prefix):
+        # checks that cat_converters works for Dataset constructor
+        cat_converters_str = "ctr,count,ctr:0.5,raw"
+        train_data = lgb.Dataset(X_train, label=y_train, cat_converters=cat_converters_str)
+        valid_data = train_data.create_valid(X_test, label=y_test)
+
+        categorical_feature = [fidx for fidx in range(X_train.shape[1] // 2)]
+        params.update({"categorical_feature": categorical_feature})
+        booster = lgb.train(params, train_data, valid_sets=[valid_data], valid_names=["valid_data"])
+        pred_1 = booster.predict(X_test)
+        pred_contrib_1 = booster.predict(X_test, pred_contrib=True)
+        tmp_dataset = str(tmp_path / 'ctr_{}_temp_dataset.bin'.format(model_prefix))
+        train_data.save_binary(tmp_dataset)
+
+        train_data_2 = lgb.Dataset(tmp_dataset)
+        valid_data = train_data.create_valid(X_test, label=y_test)
+        booster = lgb.train(params, train_data_2, valid_sets=[valid_data], valid_names=["valid_data"])
+        pred_2 = booster.predict(X_test)
+        pred_contrib_2 = booster.predict(X_test, pred_contrib=True)
+        np.testing.assert_allclose(pred_1, pred_2)
+        np.testing.assert_allclose(pred_contrib_1, pred_contrib_2)
+
+        model_file = str(tmp_path / "ctr_{}_model.txt".format(model_prefix))
+        booster.save_model(model_file)
+        new_booster = lgb.Booster(params=params, model_file=model_file)
+        pred_3 = new_booster.predict(X_test)
+        pred_contrib_3 = new_booster.predict(X_test, pred_contrib=True)
+        np.testing.assert_allclose(pred_1, pred_3)
+        np.testing.assert_allclose(pred_contrib_1, pred_contrib_3)
+
+        # checks that cat_converters works in params
+        train_data_4 = lgb.Dataset(X_train, label=y_train)
+        valid_data = train_data_4.create_valid(X_test, label=y_test)
+        params.update({"cat_converters": cat_converters_str})
+        booster = lgb.train(params, train_data_4, valid_sets=[valid_data], valid_names=["valid_data"])
+        pred_4 = booster.predict(X_test)
+        pred_contrib_4 = booster.predict(X_test, pred_contrib=True)
+        np.testing.assert_allclose(pred_1, pred_4)
+        np.testing.assert_allclose(pred_contrib_1, pred_contrib_4)
+
+        # test that CTR with csr format works
+        train_data_csr = lgb.Dataset(sparse.csr_matrix(X_train), label=y_train,
+                                    cat_converters=cat_converters_str)
+        valid_data_csr = lgb.Dataset(sparse.csr_matrix(X_test), label=y_test,
+                                    cat_converters=cat_converters_str, reference=train_data_csr)
+        booster = lgb.train(params, train_data_csr, valid_sets=[valid_data_csr], valid_names=["valid_data"])
+        pred_csr = booster.predict(sparse.csr_matrix(X_test))
+        pred_contrib_csr = booster.predict(sparse.csr_matrix(X_test), pred_contrib=True)
+        if model_prefix == "multiclass":
+            pred_contrib_csr = np.hstack([csr.toarray() for csr in pred_contrib_csr])
+        else:
+            pred_contrib_csr = pred_contrib_csr.toarray()
+        np.testing.assert_allclose(pred_csr, pred_1)
+        np.testing.assert_allclose(pred_contrib_1, pred_contrib_csr)
+
+        # test that CTR with csc format works
+        train_data_csc = lgb.Dataset(sparse.csc_matrix(X_train), label=y_train,
+                                    cat_converters=cat_converters_str)
+        valid_data_csc = lgb.Dataset(sparse.csc_matrix(X_test), label=y_test,
+                                    cat_converters=cat_converters_str, reference=train_data_csc)
+        booster = lgb.train(params, train_data_csc, valid_sets=[valid_data_csc], valid_names=["valid_data"])
+        pred_csc = booster.predict(sparse.csc_matrix(X_test))
+        pred_contrib_csc = booster.predict(sparse.csc_matrix(X_test), pred_contrib=True)
+        if model_prefix == "multiclass":
+            pred_contrib_csc = np.hstack([csc.toarray() for csc in pred_contrib_csc])
+        else:
+            pred_contrib_csc = pred_contrib_csc.toarray()
+        np.testing.assert_allclose(pred_csc, pred_1)
+        np.testing.assert_allclose(pred_contrib_1, pred_contrib_csc)
+    
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
                                                         test_size=0.1, random_state=2)
-
-    # checks that cat_converters works for Dataset constructor
-    cat_converters_str = "ctr,count,ctr:0.5,raw"
-    train_data = lgb.Dataset(X_train, label=y_train, cat_converters=cat_converters_str)
-    valid_data = train_data.create_valid(X_test, label=y_test)
 
     params = {
         "objective": "binary",
@@ -350,141 +416,18 @@ def test_ctr(tmp_path):
         "max_bin": 255,
         "max_cat_to_onehot": 1
     }
-    categorical_feature = [fidx for fidx in range(X_train.shape[1] // 2)]
-    params.update({"categorical_feature": categorical_feature})
-    booster = lgb.train(params, train_data, valid_sets=[valid_data], valid_names=["valid_data"])
-    pred_1 = booster.predict(X_test)
-    pred_contrib_1 = booster.predict(X_test, pred_contrib=True)
-    tmp_dataset = str(tmp_path / 'ctr_temp_dataset.bin')
-    train_data.save_binary(tmp_dataset)
 
-    train_data_2 = lgb.Dataset(tmp_dataset)
-    valid_data = train_data.create_valid(X_test, label=y_test)
-    booster = lgb.train(params, train_data_2, valid_sets=[valid_data], valid_names=["valid_data"])
-    pred_2 = booster.predict(X_test)
-    pred_contrib_2 = booster.predict(X_test, pred_contrib=True)
-    np.testing.assert_allclose(pred_1, pred_2)
-    np.testing.assert_allclose(pred_contrib_1, pred_contrib_2)
+    test_ctr_inner(tmp_path, X_train, X_test, y_train, y_test, params, "binary")
 
-    model_file = str(tmp_path / "ctr_model.txt")
-    booster.save_model(model_file)
-    new_booster = lgb.Booster(params=params, model_file=model_file)
-    pred_3 = new_booster.predict(X_test)
-    pred_contrib_3 = new_booster.predict(X_test, pred_contrib=True)
-    np.testing.assert_allclose(pred_1, pred_3)
-    np.testing.assert_allclose(pred_contrib_1, pred_contrib_3)
+    X, y = load_iris(return_X_y=True)
+    # convert float to int, so that we can treat them as categorical features
+    X = np.array(np.array(X, dtype=np.int), dtype=np.float)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    params = {
+        'objective': 'multiclass',
+        'metric': 'multi_logloss',
+        'num_class': 3,
+        'verbose': 1
+    }
 
-    # checks that cat_converters works in params
-    train_data_4 = lgb.Dataset(X_train, label=y_train)
-    valid_data = train_data_4.create_valid(X_test, label=y_test)
-    params.update({"cat_converters": cat_converters_str})
-    booster = lgb.train(params, train_data_4, valid_sets=[valid_data], valid_names=["valid_data"])
-    pred_4 = booster.predict(X_test)
-    pred_contrib_4 = booster.predict(X_test, pred_contrib=True)
-    np.testing.assert_allclose(pred_1, pred_4)
-    np.testing.assert_allclose(pred_contrib_1, pred_contrib_4)
-
-    # test that CTR with csr format works
-    train_data_csr = lgb.Dataset(sparse.csr_matrix(X_train), label=y_train,
-                                 cat_converters=cat_converters_str)
-    valid_data_csr = lgb.Dataset(sparse.csr_matrix(X_test), label=y_test,
-                                 cat_converters=cat_converters_str, reference=train_data_csr)
-    booster = lgb.train(params, train_data_csr, valid_sets=[valid_data_csr], valid_names=["valid_data"])
-    pred_csr = booster.predict(sparse.csr_matrix(X_test))
-    pred_contrib_csr = booster.predict(sparse.csr_matrix(X_test), pred_contrib=True)
-    np.testing.assert_allclose(pred_csr, pred_1)
-    np.testing.assert_allclose(pred_contrib_1, pred_contrib_csr.toarray())
-
-    # test that CTR with csc format works
-    train_data_csc = lgb.Dataset(sparse.csc_matrix(X_train), label=y_train,
-                                 cat_converters=cat_converters_str)
-    valid_data_csc = lgb.Dataset(sparse.csc_matrix(X_test), label=y_test,
-                                 cat_converters=cat_converters_str, reference=train_data_csc)
-    booster = lgb.train(params, train_data_csc, valid_sets=[valid_data_csc], valid_names=["valid_data"])
-    pred_csc = booster.predict(sparse.csc_matrix(X_test))
-    pred_contrib_csc = booster.predict(sparse.csc_matrix(X_test), pred_contrib=True)
-    np.testing.assert_allclose(pred_csc, pred_1)
-    np.testing.assert_allclose(pred_contrib_1, pred_contrib_csc.toarray())
-
-#def test_ctr_with_multiclass(tmp_path):
-X, y = load_iris(return_X_y=True)
-# convert float to int, so that we can treat them as categorical features
-X = np.array(np.array(X, dtype=np.int), dtype=np.float)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-print(X_train, X_test)
-cat_converters_str = "ctr,count,ctr:0.5,raw"
-train_data = lgb.Dataset(X_train, label=y_train, cat_converters=cat_converters_str)
-valid_data = train_data.create_valid(X_test, label=y_test)
-params = {
-    'objective': 'multiclass',
-    'metric': 'multi_logloss',
-    'num_class': 3,
-    'verbose': 1,
-    'cat_converters': 'ctr,count,raw,ctr:0.5'
-}
-categorical_feature = [fidx for fidx in range(X_train.shape[1] // 2)]
-params.update({"categorical_feature": categorical_feature})
-booster = lgb.train(params, train_data, valid_sets=[valid_data], valid_names=["valid_data"])
-pred_1 = booster.predict(X_test)
-pred_contrib_1 = booster.predict(X_test, pred_contrib=True)
-tmp_dataset = str('ctr_temp_dataset_multiclass.bin')
-train_data.save_binary(tmp_dataset)
-print("step 0")
-train_data_2 = lgb.Dataset(tmp_dataset)
-valid_data = train_data.create_valid(X_test, label=y_test)
-booster = lgb.train(params, train_data_2, valid_sets=[valid_data], valid_names=["valid_data"])
-pred_2 = booster.predict(X_test)
-pred_contrib_2 = booster.predict(X_test, pred_contrib=True)
-np.testing.assert_allclose(pred_1, pred_2)
-np.testing.assert_allclose(pred_contrib_1, pred_contrib_2)
-print("step 1")
-
-model_file = str("ctr_model_multiclass.txt")
-booster.save_model(model_file)
-new_booster = lgb.Booster(params=params, model_file=model_file)
-pred_3 = new_booster.predict(X_test)
-pred_contrib_3 = new_booster.predict(X_test, pred_contrib=True)
-np.testing.assert_allclose(pred_1, pred_3)
-np.testing.assert_allclose(pred_contrib_1, pred_contrib_3)
-print("step 2")
-
-# checks that cat_converters works in params
-train_data_4 = lgb.Dataset(X_train, label=y_train)
-valid_data = train_data_4.create_valid(X_test, label=y_test)
-params.update({"cat_converters": cat_converters_str})
-booster = lgb.train(params, train_data_4, valid_sets=[valid_data], valid_names=["valid_data"])
-pred_4 = booster.predict(X_test)
-pred_contrib_4 = booster.predict(X_test, pred_contrib=True)
-np.testing.assert_allclose(pred_1, pred_4)
-np.testing.assert_allclose(pred_contrib_1, pred_contrib_4)
-print("step 3")
-#cat_converters_str="raw"
-#params.update({"cat_converters": cat_converters_str})
-# test that CTR with csr format works
-train_data_csr = lgb.Dataset(sparse.csr_matrix(X_train), label=y_train,
-                                cat_converters=cat_converters_str, categorical_feature=categorical_feature).construct()
-print("step 3.1")
-valid_data_csr = lgb.Dataset(sparse.csr_matrix(X_test), label=y_test,
-                                cat_converters=cat_converters_str, reference=train_data_csr)
-print("step 3.2")
-booster = lgb.train(params, train_data_csr, valid_sets=[valid_data_csr], valid_names=["valid_data"])
-print("step 3.8")
-pred_csr = booster.predict(sparse.csr_matrix(X_test))
-print("step 3.9")
-pred_contrib_csr = booster.predict(sparse.csr_matrix(X_test), pred_contrib=True)
-np.testing.assert_allclose(pred_csr, pred_1)
-print(type(pred_contrib_1))
-np.testing.assert_allclose(pred_contrib_1, np.hstack([csr.toarray() for csr in pred_contrib_csr]))
-print("step 4")
-
-# test that CTR with csc format works
-train_data_csc = lgb.Dataset(sparse.csc_matrix(X_train), label=y_train,
-                                cat_converters=cat_converters_str)
-valid_data_csc = lgb.Dataset(sparse.csc_matrix(X_test), label=y_test,
-                                cat_converters=cat_converters_str, reference=train_data_csc)
-booster = lgb.train(params, train_data_csc, valid_sets=[valid_data_csc], valid_names=["valid_data"])
-pred_csc = booster.predict(sparse.csc_matrix(X_test))
-pred_contrib_csc = booster.predict(sparse.csc_matrix(X_test), pred_contrib=True)
-np.testing.assert_allclose(pred_csc, pred_1)
-np.testing.assert_allclose(pred_contrib_1, np.hstack([csc.toarray() for csc in pred_contrib_csc]))
-print("step 5")
+    test_ctr_inner(tmp_path, X_train, X_test, y_train, y_test, params, "multiclass")
