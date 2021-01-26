@@ -448,7 +448,6 @@ class _DaskLGBMModel:
     ) -> "_DaskLGBMModel":
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
             raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
-
         if client is None:
             client = default_client()
 
