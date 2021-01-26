@@ -1,14 +1,15 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
-import copy
 import ctypes
 import json
 import os
 import warnings
 from collections import OrderedDict
+from copy import deepcopy
 from functools import wraps
 from logging import Logger
 from tempfile import NamedTemporaryFile
+from typing import Any, Dict
 
 import numpy as np
 import scipy.sparse
@@ -350,6 +351,46 @@ class _ConfigAliases:
         for i in args:
             ret |= cls.aliases.get(i, {i})
         return ret
+
+
+def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_value: Any) -> Dict[str, Any]:
+    """Get a single parameter value, accounting for aliases.
+
+    Parameters
+    ----------
+    main_param_name : str
+        Name of the main parameter to get a value for. One of the keys of ``_ConfigAliases``.
+    params : dict
+        Dictionary of LightGBM parameters.
+    default_value : Any
+        Default value to use for the parameter, if none is found in ``params``.
+
+    Returns
+    -------
+    params : dict
+        A ``params`` dict with exactly one value for ``main_param_name``, and all aliases ``main_param_name`` removed.
+        If both ``main_param_name`` and one or more aliases for it are found, the value of ``main_param_name`` will be preferred.
+    """
+    # avoid side effects on passed-in parameters
+    params = deepcopy(params)
+
+    # find a value, and remove other aliases with .pop()
+    # prefer the value of 'main_param_name' if it exists, otherwise search the aliases
+    found_value = None
+    if main_param_name in params.keys():
+        found_value = params[main_param_name]
+
+    for param in _ConfigAliases.get(main_param_name):
+        val = params.pop(param, None)
+        if found_value is None and val is not None:
+            found_value = val
+
+    if found_value is not None:
+        params[main_param_name] = found_value
+    else:
+        params[main_param_name] = default_value
+
+    return params
 
 
 MAX_INT32 = (1 << 31) - 1
@@ -1085,7 +1126,8 @@ class Dataset:
         self.cat_converters = cat_converters
         self._extract_categorical_info_from_params(params)
 
-        self.params = {} if params is None else copy.deepcopy(params)
+        self.params = {} if params is None else .deepcopy(params)
+
         self.free_raw_data = free_raw_data
         self.used_indices = None
         self.need_slice = True
@@ -1589,13 +1631,13 @@ class Dataset:
     def _update_params(self, params):
         if not params:
             return self
-        params = copy.deepcopy(params)
+        params = deepcopy(params)
 
         def update():
             if not self.params:
                 self.params = params
             else:
-                self.params_back_up = copy.deepcopy(self.params)
+                self.params_back_up = deepcopy(self.params)
                 self.params.update(params)
 
         if self.handle is None:
@@ -1615,7 +1657,7 @@ class Dataset:
 
     def _reverse_update_params(self):
         if self.handle is None:
-            self.params = copy.deepcopy(self.params_back_up)
+            self.params = deepcopy(self.params_back_up)
             self.params_back_up = None
         return self
 
@@ -2269,7 +2311,7 @@ class Booster:
         self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
-        params = {} if params is None else copy.deepcopy(params)
+        params = {} if params is None else deepcopy(params)
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
@@ -2278,22 +2320,40 @@ class Booster:
             if not isinstance(train_set, Dataset):
                 raise TypeError('Training data should be Dataset instance, met {}'
                                 .format(type(train_set).__name__))
-            # set network if necessary
-            for alias in _ConfigAliases.get("machines"):
-                if alias in params:
-                    machines = params[alias]
-                    if isinstance(machines, str):
-                        num_machines = len(machines.split(','))
-                    elif isinstance(machines, (list, set)):
-                        num_machines = len(machines)
-                        machines = ','.join(machines)
-                    else:
-                        raise ValueError("Invalid machines in params.")
-                    self.set_network(machines,
-                                     local_listen_port=params.get("local_listen_port", 12400),
-                                     listen_time_out=params.get("listen_time_out", 120),
-                                     num_machines=params.setdefault("num_machines", num_machines))
-                    break
+            params = _choose_param_value(
+                main_param_name="machines",
+                params=params,
+                default_value=None
+            )
+            # if "machines" is given, assume user wants to do distributed learning, and set up network
+            if params["machines"] is None:
+                params.pop("machines", None)
+            else:
+                machines = params["machines"]
+                if isinstance(machines, str):
+                    num_machines_from_machine_list = len(machines.split(','))
+                elif isinstance(machines, (list, set)):
+                    num_machines_from_machine_list = len(machines)
+                    machines = ','.join(machines)
+                else:
+                    raise ValueError("Invalid machines in params.")
+
+                params = _choose_param_value(
+                    main_param_name="num_machines",
+                    params=params,
+                    default_value=num_machines_from_machine_list
+                )
+                params = _choose_param_value(
+                    main_param_name="local_listen_port",
+                    params=params,
+                    default_value=12400
+                )
+                self.set_network(
+                    machines=machines,
+                    local_listen_port=params["local_listen_port"],
+                    listen_time_out=params.get("time_out", 120),
+                    num_machines=params["num_machines"]
+                )
             # construct booster object
             train_set.construct()
             # copy the parameters from train_set
@@ -3195,7 +3255,7 @@ class Booster:
             Prediction result.
             Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
         """
-        predictor = self._to_predictor(copy.deepcopy(kwargs))
+        predictor = self._to_predictor(deepcopy(kwargs))
         if num_iteration is None:
             if start_iteration <= 0:
                 num_iteration = self.best_iteration
@@ -3229,14 +3289,14 @@ class Booster:
         """
         if self.__set_objective_to_none:
             raise LightGBMError('Cannot refit due to null objective function.')
-        predictor = self._to_predictor(copy.deepcopy(kwargs))
+        predictor = self._to_predictor(deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_bool(False)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
             self.handle,
             ctypes.byref(out_is_linear)))
-        new_params = copy.deepcopy(self.params)
+        new_params = deepcopy(self.params)
         new_params["linear_tree"] = out_is_linear.value
         train_set = Dataset(data, label, silent=True, params=new_params)
         new_params['refit_decay_rate'] = decay_rate
