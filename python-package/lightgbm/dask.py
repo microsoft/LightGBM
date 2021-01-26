@@ -16,7 +16,7 @@ import numpy as np
 import scipy.sparse as ss
 
 from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
-from .compat import (PANDAS_INSTALLED, DataFrame, Series, concat,
+from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
                      SKLEARN_INSTALLED,
                      DASK_INSTALLED, dask_Frame, dask_Array, delayed, Client, default_client, get_worker, wait)
 from .sklearn import LGBMClassifier, LGBMRegressor, LGBMRanker
@@ -105,7 +105,7 @@ def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], loc
 def _concat(seq):
     if isinstance(seq[0], np.ndarray):
         return np.concatenate(seq, axis=0)
-    elif isinstance(seq[0], (DataFrame, Series)):
+    elif isinstance(seq[0], (pd_DataFrame, pd_Series)):
         return concat(seq, axis=0)
     elif isinstance(seq[0], ss.spmatrix):
         return ss.vstack(seq, format='csr')
@@ -304,7 +304,7 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
 
 
 def _predict_part(part, model, raw_score, pred_proba, pred_leaf, pred_contrib, **kwargs):
-    data = part.values if isinstance(part, DataFrame) else part
+    data = part.values if isinstance(part, pd_DataFrame) else part
 
     if data.shape[0] == 0:
         result = np.array([])
@@ -325,11 +325,11 @@ def _predict_part(part, model, raw_score, pred_proba, pred_leaf, pred_contrib, *
             **kwargs
         )
 
-    if isinstance(part, DataFrame):
+    if isinstance(part, pd_DataFrame):
         if pred_proba or pred_contrib:
-            result = DataFrame(result, index=part.index)
+            result = pd_DataFrame(result, index=part.index)
         else:
-            result = Series(result, index=part.index, name='predictions')
+            result = pd_Series(result, index=part.index, name='predictions')
 
     return result
 
@@ -361,7 +361,7 @@ def _predict(model, data, raw_score=False, pred_proba=False, pred_leaf=False, pr
     -------
     predicted_result : dask array of shape = [n_samples] or shape = [n_samples, n_classes]
         The predicted values.
-    X_leaves : dask arrayof shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
+    X_leaves : dask array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
         If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
     X_SHAP_values : dask array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
         If ``pred_contrib=True``, the feature contributions for each sample.
