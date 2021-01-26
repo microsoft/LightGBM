@@ -108,8 +108,8 @@ if [[ $TASK == "sdist" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
     fi
-    pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
-    exit 0
+    pytest $BUILD_DIRECTORY/tests/python_package_test || cat /home/vsts_azpcontainer/LightGBM_compilation.log
+    exit -1
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --python-tag py3 || exit -1

@@ -28,7 +28,7 @@ jobs:
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
   pool:
-    vmImage: ubuntu-latest
+    vmImage: 'ubuntu-latest'
   container: ubuntu1404
   strategy:
     matrix:
