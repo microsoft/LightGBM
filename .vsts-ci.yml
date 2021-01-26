@@ -27,7 +27,8 @@ jobs:
     SETUP_CONDA: 'false'
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
-  pool: sh-ubuntu
+  pool:
+    vmImage: 'ubuntu-latest'
   container: ubuntu1404
   strategy:
     matrix:
@@ -78,7 +79,8 @@ jobs:
     IN_UBUNTU_LATEST_CONTAINER: 'true'
     OS_NAME: 'linux'
     SETUP_CONDA: 'true'
-  pool: sh-ubuntu
+  pool:
+    vmImage: 'ubuntu-latest'
   container: ubuntu-latest
   strategy:
     matrix:
