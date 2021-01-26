@@ -9,6 +9,7 @@
 #include <LightGBM/dataset.h>
 #include <LightGBM/dataset_loader.h>
 #include <LightGBM/metric.h>
+#include <LightGBM/meta.h>
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/parser_base.h>
@@ -18,7 +19,6 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
-#include <LightGBM/meta.h>
 
 #include <string>
 #include <cstdio>

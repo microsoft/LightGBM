@@ -6,10 +6,10 @@
 
 #include <LightGBM/network.h>
 #include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/common.h>
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/utils/common.h>
 
 #include <fstream>
 
