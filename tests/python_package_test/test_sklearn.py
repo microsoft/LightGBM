@@ -86,7 +86,7 @@ def test_binary():
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
     ret = log_loss(y_test, gbm.predict_proba(X_test))
     assert ret < 0.12
-    assert ret == pytest.approx(gbm.evals_result_['valid_0']['binary_logloss'][gbm.best_iteration_ - 1], abs=1e-5)
+    assert gbm.evals_result_['valid_0']['binary_logloss'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
 def test_regression():
@@ -96,7 +96,7 @@ def test_regression():
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     assert ret < 7
-    assert ret == pytest.approx(gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], abs=1e-5)
+    assert gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
 def test_multiclass():
@@ -108,7 +108,7 @@ def test_multiclass():
     assert ret < 0.05
     ret = multi_logloss(y_test, gbm.predict_proba(X_test))
     assert ret < 0.16
-    assert ret == pytest.approx(gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1], abs=1e-5)
+    assert gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
 def test_lambdarank():
@@ -152,7 +152,7 @@ def test_regression_with_custom_objective():
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     assert ret < 7.0
-    assert ret == pytest.approx(gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], abs=1e-5)
+    assert gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
 def test_binary_classification_with_custom_objective():
@@ -199,10 +199,8 @@ def test_stacking_classifier():
     assert clf.named_estimators_['gbm1'].n_features_in_ == clf.named_estimators_['gbm2'].n_features_in_
     assert clf.final_estimator_.n_features_in_ == 10  # number of concatenated features
     assert len(clf.final_estimator_.feature_importances_) == 10
-    classes = clf.named_estimators_['gbm1'].classes_ == clf.named_estimators_['gbm2'].classes_
-    assert all(classes)
-    classes = clf.classes_ == clf.named_estimators_['gbm1'].classes_
-    assert all(classes)
+    assert all(clf.named_estimators_['gbm1'].classes_ == clf.named_estimators_['gbm2'].classes_)
+    assert all(clf.classes_ == clf.named_estimators_['gbm1'].classes_)
 
 
 # sklearn <0.23 does not have a stacking regressor and n_features_in_ property
@@ -995,6 +993,7 @@ def test_first_metric_only():
                 expected = assumed_iteration + (params_fit['early_stopping_rounds']
                                                 if eval_set_name != 'training'
                                                 and assumed_iteration != gbm.n_estimators else 0)
+                assert expected == actual
                 if eval_set_name != 'training':
                     assert assumed_iteration == gbm.best_iteration_
                 else:

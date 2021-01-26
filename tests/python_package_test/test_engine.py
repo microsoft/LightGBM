@@ -950,7 +950,7 @@ def test_pandas_categorical():
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(pred0, pred7)  # ordered cat features aren't treated as cat features by default
     with pytest.raises(AssertionError):
-        np.testing.assert_allclose(pred0, pred8)  # ordered cat features aren't treated as cat features by default
+        np.testing.assert_allclose(pred0, pred8)
     assert gbm0.pandas_categorical == cat_values
     assert gbm1.pandas_categorical == cat_values
     assert gbm2.pandas_categorical == cat_values
@@ -2500,7 +2500,7 @@ def test_linear_trees(tmp_path):
     est = lgb.train(dict(params, linear_tree=True), lgb_train, num_boost_round=10, evals_result=res,
                     valid_sets=[lgb_train], valid_names=['train'])
     pred2 = est.predict(x)
-    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=10**(-1))
+    assert res['train']['l2'][-1] == pytest.approx(mean_squared_error(y, pred2), abs=1e-1)
     assert mean_squared_error(y, pred2) < mean_squared_error(y, pred1)
     # test again with nans in data
     x[:10] = np.nan
@@ -2512,14 +2512,14 @@ def test_linear_trees(tmp_path):
     est = lgb.train(dict(params, linear_tree=True), lgb_train, num_boost_round=10, evals_result=res,
                     valid_sets=[lgb_train], valid_names=['train'])
     pred2 = est.predict(x)
-    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=10**(-1))
+    assert res['train']['l2'][-1] == pytest.approx(mean_squared_error(y, pred2), abs=1e-1)
     assert mean_squared_error(y, pred2) < mean_squared_error(y, pred1)
     # test again with bagging
     res = {}
     est = lgb.train(dict(params, linear_tree=True, subsample=0.8, bagging_freq=1), lgb_train,
                     num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
     pred = est.predict(x)
-    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-1))
+    assert res['train']['l2'][-1] == pytest.approx(mean_squared_error(y, pred), abs=1e-1)
     # test with a feature that has only one non-nan value
     x = np.concatenate([np.ones([x.shape[0], 1]), x], 1)
     x[500:, 1] = np.nan
@@ -2529,7 +2529,7 @@ def test_linear_trees(tmp_path):
     est = lgb.train(dict(params, linear_tree=True, subsample=0.8, bagging_freq=1), lgb_train,
                     num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
     pred = est.predict(x)
-    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-1))
+    assert res['train']['l2'][-1] == pytest.approx(mean_squared_error(y, pred), abs=1e-1)
     # test with a categorical feature
     x[:250, 0] = 0
     y[:250] += 10
