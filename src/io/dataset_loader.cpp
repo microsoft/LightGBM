@@ -1044,13 +1044,13 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
   if (num_machines == 1 || config_.pre_partition) {
     if (ctr_provider == nullptr) {
       *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile<false>
+        (&random_, sample_cnt, &out_data, sampled_indices, nullptr));
+    } else {
+      *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile<true>
         (&random_, sample_cnt, &out_data, sampled_indices,
         [ctr_provider] (const char* buffer, size_t size, data_size_t row_idx) {
           ctr_provider->AccumulateOneLineStat(buffer, size, row_idx);
         }));
-    } else {
-      *num_global_data = static_cast<data_size_t>(text_reader.SampleFromFile<true>
-        (&random_, sample_cnt, &out_data, sampled_indices, nullptr));
     }
   } else {  // need partition data
             // get query data
