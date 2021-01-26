@@ -27,8 +27,9 @@ def test_cpu_and_gpu_work():
 
     params_gpu = params_cpu.copy()
     params_gpu["device"] = "gpu"
+    params_gpu["gpu_use_dp"] = True
     gpu_bst = lgb.train(params_gpu, data, num_boost_round=10)
     gpu_score = log_loss(y, gpu_bst.predict(X))
 
-    np.testing.assert_allclose(cpu_score, gpu_score, rtol=1e-4)
-    assert gpu_score < 0.25
+    np.testing.assert_allclose(cpu_score, gpu_score)
+    assert gpu_score < 0.242

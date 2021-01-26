@@ -1194,8 +1194,6 @@ inline std::string ParseMetricAlias(const std::string& type) {
     return "kullback_leibler";
   } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
     return "mape";
-  } else if (type == std::string("auc_mu")) {
-    return "auc_mu";
   } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
     return "custom";
   }
