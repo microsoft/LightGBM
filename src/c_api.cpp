@@ -1170,9 +1170,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
     omp_set_num_threads(config.num_threads);
   }
   std::unique_ptr<Dataset> ret;
-  Log::Warning("step 0 in LGBM_DatasetCreateFromCSR");
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  Log::Warning("step 1 in LGBM_DatasetCreateFromCSR");
   std::unique_ptr<const CTRProvider> ctr_provider;
   const bool is_valid = (reference != nullptr);
   if (is_valid) {
@@ -1185,11 +1183,9 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
     ctr_provider.reset(CTRProvider::CreateCTRProvider(
       &config, get_row_fun, get_label_fun, nindptr - 1, num_col));
   }
-  Log::Warning("step 2 in LGBM_DatasetCreateFromCSR");
   if (ctr_provider != nullptr) {
     ctr_provider->WrapRowFunction(&get_row_fun, &num_col, is_valid);
   }
-  Log::Warning("step 3 in LGBM_DatasetCreateFromCSR");
 
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
   if (!is_valid) {
@@ -1211,14 +1207,12 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
         }
       }
     }
-    Log::Warning("step 4 in LGBM_DatasetCreateFromCSR");
     DatasetLoader loader(config, nullptr, 1, nullptr);
     ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
                                              VectorSize<double>(sample_values).data(),
                                              sample_cnt, nrow, ctr_provider.get()));
-    Log::Warning("step 5 in LGBM_DatasetCreateFromCSR");
     if (ctr_provider != nullptr) {
       ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
     }

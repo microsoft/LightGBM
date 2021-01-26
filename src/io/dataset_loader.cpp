@@ -213,8 +213,14 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       }
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines,
         &num_global_data, &used_data_indices, ctr_provider);
+      Parser* parser_ptr = ctr_provider->FinishProcess(num_machines, &config_);
+      if (ctr_provider->GetNumCatConverters() == 0) {
+        ctr_provider = nullptr;
+      }
       if (ctr_provider != nullptr) {
-        parser.reset(new CTRParser(ctr_provider->FinishProcess(num_machines, &config_), ctr_provider, false));
+        parser.reset(new CTRParser(parser_ptr, ctr_provider, false));
+      } else {
+        parser.reset(parser_ptr);
       }
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
       // sample data
@@ -1153,8 +1159,6 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   }
   dataset->feature_groups_.clear();
   dataset->num_total_features_ = std::max(static_cast<int>(sample_values.size()), parser->NumFeatures());
-  Log::Warning("static_cast<int>(sample_values.size()) = %d", static_cast<int>(sample_values.size()));
-  Log::Warning("parser->NumFeatures() = %d", parser->NumFeatures());
   if (num_machines > 1) {
     dataset->num_total_features_ = Network::GlobalSyncUpByMax(dataset->num_total_features_);
   }

@@ -375,9 +375,9 @@ def test_ctr(tmp_path):
 
         # test that CTR with csr format works
         train_data_csr = lgb.Dataset(sparse.csr_matrix(X_train), label=y_train,
-                                    cat_converters=cat_converters_str)
+                                     cat_converters=cat_converters_str)
         valid_data_csr = lgb.Dataset(sparse.csr_matrix(X_test), label=y_test,
-                                    cat_converters=cat_converters_str, reference=train_data_csr)
+                                     cat_converters=cat_converters_str, reference=train_data_csr)
         booster = lgb.train(params, train_data_csr, valid_sets=[valid_data_csr], valid_names=["valid_data"])
         pred_csr = booster.predict(sparse.csr_matrix(X_test))
         pred_contrib_csr = booster.predict(sparse.csr_matrix(X_test), pred_contrib=True)
@@ -390,9 +390,9 @@ def test_ctr(tmp_path):
 
         # test that CTR with csc format works
         train_data_csc = lgb.Dataset(sparse.csc_matrix(X_train), label=y_train,
-                                    cat_converters=cat_converters_str)
+                                     cat_converters=cat_converters_str)
         valid_data_csc = lgb.Dataset(sparse.csc_matrix(X_test), label=y_test,
-                                    cat_converters=cat_converters_str, reference=train_data_csc)
+                                     cat_converters=cat_converters_str, reference=train_data_csc)
         booster = lgb.train(params, train_data_csc, valid_sets=[valid_data_csc], valid_names=["valid_data"])
         pred_csc = booster.predict(sparse.csc_matrix(X_test))
         pred_contrib_csc = booster.predict(sparse.csc_matrix(X_test), pred_contrib=True)
@@ -402,7 +402,7 @@ def test_ctr(tmp_path):
             pred_contrib_csc = pred_contrib_csc.toarray()
         np.testing.assert_allclose(pred_csc, pred_1)
         np.testing.assert_allclose(pred_contrib_1, pred_contrib_csc)
-    
+
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
                                                         test_size=0.1, random_state=2)
 
@@ -412,13 +412,13 @@ def test_ctr(tmp_path):
         "min_data": 10,
         "num_leaves": 15,
         "verbose": 1,
-        "num_threads": 1,
         "max_bin": 255,
         "max_cat_to_onehot": 1
     }
 
     test_ctr_inner(tmp_path, X_train, X_test, y_train, y_test, params, "binary")
 
+    # test CTR under multi-class case
     X, y = load_iris(return_X_y=True)
     # convert float to int, so that we can treat them as categorical features
     X = np.array(np.array(X, dtype=np.int), dtype=np.float)

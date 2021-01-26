@@ -238,6 +238,15 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
     }
   }
 
+  if (categorical_features_.size() == 0) {
+    cat_converters_.clear();
+    if (tmp_parser_ != nullptr) {
+      return tmp_parser_.release();
+    } else {
+      return nullptr;
+    }
+  }
+
   size_t append_from = 0;
   if (!keep_raw_cat_method_) {
     auto& cat_converter = cat_converters_[0];
@@ -378,7 +387,11 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
       }
     }
   }
-  return tmp_parser_.release();
+  if (tmp_parser_ != nullptr) {
+    return tmp_parser_.release();
+  } else {
+    return nullptr;
+  }
 }
 
 void CTRProvider::IterateOverCatConverters(int fid, double fval, int line_idx,

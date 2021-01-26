@@ -901,7 +901,6 @@ class _InnerPredictor:
                 ctypes.byref(out_ptr_indptr),
                 ctypes.byref(out_ptr_indices),
                 ctypes.byref(out_ptr_data)))
-            print("out_shape ##################################", out_shape)
             matrices = self.__create_sparse_native(csr, out_shape, out_ptr_indptr, out_ptr_indices, out_ptr_data,
                                                    type_ptr_indptr, type_ptr_data, is_csr=True)
             nrow = len(csr.indptr) - 1
@@ -962,7 +961,6 @@ class _InnerPredictor:
                 ctypes.byref(out_ptr_data)))
             matrices = self.__create_sparse_native(csc, out_shape, out_ptr_indptr, out_ptr_indices, out_ptr_data,
                                                    type_ptr_indptr, type_ptr_data, is_csr=False)
-            print("matrices[0].shape", matrices[0].shape)
             nrow = csc.shape[0]
             return matrices, nrow
 
