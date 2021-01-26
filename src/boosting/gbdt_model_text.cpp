@@ -41,6 +41,13 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_
   str_buf << "\"monotone_constraints\":["
           << CommonC::Join(monotone_constraints_, ",") << "]," << '\n';
 
+  if (ctr_provider_ != nullptr) {
+    str_buf << "\"ctr_provider\":"
+            << "\"" << ctr_provider_->DumpModelInfo() << "\"," << '\n';
+  } else {
+    str_buf << "\"ctr_provider\":\"\",\n";
+  }
+
   str_buf << "\"feature_infos\":" << "{";
   bool first_obj = true;
   for (size_t i = 0; i < feature_infos_.size(); ++i) {

@@ -214,10 +214,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines,
         &num_global_data, &used_data_indices, ctr_provider);
       if (ctr_provider != nullptr) {
-        parser.reset(ctr_provider->FinishProcess(num_machines));
-        std::unique_ptr<Parser> inner_parser(nullptr);
-        inner_parser.reset(parser.release());
-        parser.reset(new CTRParser(inner_parser.release(), ctr_provider, false));
+        parser.reset(new CTRParser(ctr_provider->FinishProcess(num_machines, &config_), ctr_provider, false));
       }
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
       // sample data
@@ -253,10 +250,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       sample_data = SampleTextDataFromFile(filename, dataset->metadata_, rank, num_machines,
         &num_global_data, &used_data_indices, &sampled_indices, ctr_provider);
       if (ctr_provider != nullptr) {
-        parser.reset(ctr_provider->FinishProcess(num_machines));
-        std::unique_ptr<Parser> inner_parser(nullptr);
-        inner_parser.reset(parser.release());
-        parser.reset(new CTRParser(inner_parser.release(), ctr_provider, false));
+        parser.reset(new CTRParser(ctr_provider->FinishProcess(num_machines, &config_), ctr_provider, false));
       }
       if (used_data_indices.size() > 0) {
         dataset->num_data_ = static_cast<data_size_t>(used_data_indices.size());
@@ -1159,6 +1153,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   }
   dataset->feature_groups_.clear();
   dataset->num_total_features_ = std::max(static_cast<int>(sample_values.size()), parser->NumFeatures());
+  Log::Warning("static_cast<int>(sample_values.size()) = %d", static_cast<int>(sample_values.size()));
+  Log::Warning("parser->NumFeatures() = %d", parser->NumFeatures());
   if (num_machines > 1) {
     dataset->num_total_features_ = Network::GlobalSyncUpByMax(dataset->num_total_features_);
   }

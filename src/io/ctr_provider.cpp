@@ -164,16 +164,17 @@ void CTRProvider::ProcessOneLine(const std::vector<double>& one_line, double lab
 
 void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx,
   std::vector<bool>* is_feature_processed_ptr, const int thread_id, const int fold_id) {
-  ProcessOneLineInner(one_line, label, line_idx, is_feature_processed_ptr, &thread_count_info_[thread_id],
+  ProcessOneLineInner<false>(one_line, label, line_idx, is_feature_processed_ptr, &thread_count_info_[thread_id],
     &thread_label_info_[thread_id], &thread_fold_label_sum_[thread_id], &thread_fold_num_data_[thread_id], fold_id);
 }
 
 void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label,
   int line_idx, std::vector<bool>* is_feature_processed_ptr, const int fold_id) {
-  ProcessOneLineInner(one_line, label, line_idx, is_feature_processed_ptr,
+  ProcessOneLineInner<true>(one_line, label, line_idx, is_feature_processed_ptr,
     &count_info_, &label_info_, &fold_label_sum_, &fold_num_data_, fold_id);
 }
 
+template <bool ACCUMULATE_FROM_FILE>
 void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line,
   double label, int /*line_idx*/,
   std::vector<bool>* is_feature_processed_ptr,
@@ -182,6 +183,7 @@ void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>&
   std::vector<label_t>* label_sum_ptr,
   std::vector<int>* num_data_ptr,
   const int fold_id) {
+
   auto& is_feature_processed = *is_feature_processed_ptr;
   auto& count_info = *count_info_ptr;
   auto& label_info = *label_info_ptr;
@@ -193,6 +195,11 @@ void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>&
   ++num_data[fold_id];
   for (const auto& pair : one_line) {
     const int fid = pair.first;
+    if (ACCUMULATE_FROM_FILE) {
+      if (fid >= num_original_features_) {
+        ExpandNumFeatureWhileAccumulate(fid);
+      }
+    }
     if (is_categorical_feature_[fid]) {
       is_feature_processed[fid] = true;
       const int value = static_cast<int>(pair.second);
@@ -220,43 +227,85 @@ void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>&
   label_sum[fold_id] += label;
 }
 
-Parser* CTRProvider::FinishProcess(const int num_machines) {
-  // gather from threads
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
-  for (int i = 0; i < static_cast<int>(categorical_features_.size()); ++i) {
-    const int fid = categorical_features_[i];
-    for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
-      auto& feature_fold_count_info = count_info_.at(fid)[fold_id];
-      auto& feature_fold_label_info = label_info_.at(fid)[fold_id];
-      for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-        const auto& thread_feature_fold_count_info = thread_count_info_[thread_id].at(fid)[fold_id];
-        const auto& thread_feature_fold_label_info = thread_label_info_[thread_id].at(fid)[fold_id];
-        for (const auto& pair : thread_feature_fold_count_info) {
-          if (feature_fold_count_info.count(pair.first) == 0) {
-            feature_fold_count_info[pair.first] = pair.second;
-          } else {
-            feature_fold_count_info[pair.first] += pair.second;
+Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_loader) {
+  num_total_features_ = num_original_features_;
+
+  auto categorical_features = categorical_features_;
+  categorical_features_.clear();
+  for (const int fid : categorical_features) {
+    if (fid < num_original_features_) {
+      categorical_features_.emplace_back(fid);
+    }
+  }
+
+  size_t append_from = 0;
+  if (!keep_raw_cat_method_) {
+    auto& cat_converter = cat_converters_[0];
+    for (int fid : categorical_features_) {
+      cat_converter->RegisterConvertFid(fid, fid);
+      convert_fid_to_cat_fid_[fid] = fid;
+    }
+    append_from = 1;
+  }
+  CHECK(max_bin_by_feature_.empty() || static_cast<int>(max_bin_by_feature_.size()) == num_original_features_);
+  CHECK(config_from_loader->max_bin_by_feature.empty() ||
+    static_cast<int>(config_from_loader->max_bin_by_feature.size()) == num_original_features_);
+  for (size_t i = append_from; i < cat_converters_.size(); ++i) {
+    auto& cat_converter = cat_converters_[i];
+    for (const int& fid : categorical_features_) {
+      cat_converter->RegisterConvertFid(fid, num_total_features_);
+      convert_fid_to_cat_fid_[num_total_features_] = fid;
+      if (!max_bin_by_feature_.empty()) {
+        max_bin_by_feature_.push_back(max_bin_by_feature_[fid]);
+        config_from_loader->max_bin_by_feature.push_back(max_bin_by_feature_[fid]);
+      }
+      ++num_total_features_;
+    }
+  }
+
+  if (!accumulated_from_file_) {
+    // gather from threads
+    #pragma omp parallel for schedule(static) num_threads(num_threads_)
+    for (int i = 0; i < static_cast<int>(categorical_features_.size()); ++i) {
+      const int fid = categorical_features_[i];
+      for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+        auto& feature_fold_count_info = count_info_.at(fid)[fold_id];
+        auto& feature_fold_label_info = label_info_.at(fid)[fold_id];
+        for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+          const auto& thread_feature_fold_count_info = thread_count_info_[thread_id].at(fid)[fold_id];
+          const auto& thread_feature_fold_label_info = thread_label_info_[thread_id].at(fid)[fold_id];
+          for (const auto& pair : thread_feature_fold_count_info) {
+            if (feature_fold_count_info.count(pair.first) == 0) {
+              feature_fold_count_info[pair.first] = pair.second;
+            } else {
+              feature_fold_count_info[pair.first] += pair.second;
+            }
           }
-        }
-        for (const auto& pair : thread_feature_fold_label_info) {
-          if (feature_fold_label_info.count(pair.first) == 0) {
-            feature_fold_label_info[pair.first] = pair.second;
-          } else {
-            feature_fold_label_info[pair.first] += pair.second;
+          for (const auto& pair : thread_feature_fold_label_info) {
+            if (feature_fold_label_info.count(pair.first) == 0) {
+              feature_fold_label_info[pair.first] = pair.second;
+            } else {
+              feature_fold_label_info[pair.first] += pair.second;
+            }
           }
         }
       }
     }
   }
+
   for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
-    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-      fold_num_data_[fold_id] += thread_fold_num_data_[thread_id][fold_id];
+    if (!accumulated_from_file_) {
+      for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+        fold_num_data_[fold_id] += thread_fold_num_data_[thread_id][fold_id];
+      }
     }
     fold_num_data_.back() += fold_num_data_[fold_id];
   }
   for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
-    for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-      fold_label_sum_[fold_id] += thread_fold_label_sum_[thread_id][fold_id];
+    if (!accumulated_from_file_) {
+      for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+        fold_label_sum_[fold_id] += thread_fold_label_sum_[thread_id][fold_id];
+      }
     }
     fold_label_sum_.back() += fold_label_sum_[fold_id];
   }
@@ -500,13 +549,12 @@ void CTRProvider::InitFromParser(Config* config_from_loader, Parser* parser, con
   if (num_machines > 1) {
     num_original_features_ = Network::GlobalSyncUpByMax(num_original_features_);
   }
+  categorical_features_.clear();
   for (const int fid : categorical_features_from_loader) {
-    if (fid < num_original_features_) {
-      categorical_features_.push_back(fid);
-    }
+    categorical_features_.push_back(fid);
   }
   std::sort(categorical_features_.begin(), categorical_features_.end());
-  Init(config_from_loader);
+  Init();
   tmp_parser_.reset(parser);
   training_data_fold_id_.clear();
   tmp_oneline_features_.clear();
@@ -515,7 +563,7 @@ void CTRProvider::InitFromParser(Config* config_from_loader, Parser* parser, con
   tmp_fold_distribution_ = std::discrete_distribution<int>(tmp_fold_probs_.begin(), tmp_fold_probs_.end());
   num_data_ = 0;
   tmp_is_feature_processed_.clear();
-  tmp_is_feature_processed_.resize(num_total_features_, false);
+  tmp_is_feature_processed_.resize(num_original_features_, false);
   if (config_from_loader->categorical_feature.size() > 0) {
     if (!keep_raw_cat_method_) {
       config_from_loader->categorical_feature.clear();
@@ -534,6 +582,14 @@ void CTRProvider::AccumulateOneLineStat(const char* buffer, const size_t size, c
   training_data_fold_id_.emplace_back(fold_id);
   ++num_data_;
   ProcessOneLine(tmp_oneline_features_, label, row_idx, &tmp_is_feature_processed_, fold_id);
+}
+
+void CTRProvider::ExpandNumFeatureWhileAccumulate(const int new_largest_fid) {
+  num_original_features_ = new_largest_fid + 1;
+  is_categorical_feature_.resize(num_original_features_, false);
+  for (const int fid : categorical_features_) {
+    is_categorical_feature_[fid] = true;
+  }
 }
 
 }  // namespace LightGBM

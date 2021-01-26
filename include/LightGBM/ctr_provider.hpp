@@ -247,17 +247,6 @@ class CTRProvider {
     }
   }
 
-  // for file data input
-  static CTRProvider* CreateCTRProvider(Config* config,
-    const int num_machines, const char* filename) {
-    std::unique_ptr<CTRProvider> ctr_provider(new CTRProvider(config, num_machines, filename));
-    if (ctr_provider->GetNumCatConverters() == 0) {
-      return nullptr;
-    } else {
-      return ctr_provider.release();
-    }
-  }
-
   // for pandas/numpy array data input
   static CTRProvider* CreateCTRProvider(Config* config,
     const std::vector<std::function<std::vector<double>(int row_idx)>>& get_row_fun,
@@ -297,56 +286,37 @@ class CTRProvider {
     }
   }
 
-  void Init(Config* config) {
-    num_total_features_ = num_original_features_;
-    CHECK(max_bin_by_feature_.empty() || static_cast<int>(max_bin_by_feature_.size()) == num_original_features_);
-    CHECK(config->max_bin_by_feature.empty() || static_cast<int>(config->max_bin_by_feature.size()) == num_original_features_);
+  void Init() {
     is_categorical_feature_.clear();
     is_categorical_feature_.resize(num_original_features_, false);
     for (const int fid : categorical_features_) {
-      is_categorical_feature_[fid] = true;
+      if (fid < num_original_features_) {
+        is_categorical_feature_[fid] = true;
+      }
     }
     fold_prior_.resize(config_.num_ctr_folds + 1, 0.0f);
     if (cat_converters_.size() > 0) {
       // prepare to accumulate ctr statistics
       fold_label_sum_.resize(config_.num_ctr_folds + 1, 0.0f);
       fold_num_data_.resize(config_.num_ctr_folds + 1, 0);
-      thread_fold_label_sum_.resize(num_threads_);
-      thread_fold_num_data_.resize(num_threads_);
-      thread_count_info_.resize(num_threads_);
-      thread_label_info_.resize(num_threads_);
-      for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-        thread_fold_label_sum_[thread_id].resize(config_.num_ctr_folds + 1, 0.0f);
-        thread_fold_num_data_[thread_id].resize(config_.num_ctr_folds + 1, 0.0f);
+      if (!accumulated_from_file_) {
+        thread_fold_label_sum_.resize(num_threads_);
+        thread_fold_num_data_.resize(num_threads_);
+        thread_count_info_.resize(num_threads_);
+        thread_label_info_.resize(num_threads_);
+        for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+          thread_fold_label_sum_[thread_id].resize(config_.num_ctr_folds + 1, 0.0f);
+          thread_fold_num_data_[thread_id].resize(config_.num_ctr_folds + 1, 0.0f);
+        }
       }
       for (const int fid : categorical_features_) {
         count_info_[fid].resize(config_.num_ctr_folds + 1);
         label_info_[fid].resize(config_.num_ctr_folds + 1);
-        for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-          thread_count_info_[thread_id][fid].resize(config_.num_ctr_folds + 1);
-          thread_label_info_[thread_id][fid].resize(config_.num_ctr_folds + 1);
-        }
-      }
-
-      size_t append_from = 0;
-      if (!keep_raw_cat_method_) {
-        auto& cat_converter = cat_converters_[0];
-        for (int fid : categorical_features_) {
-          cat_converter->RegisterConvertFid(fid, fid);
-          convert_fid_to_cat_fid_[fid] = fid;
-        }
-        append_from = 1;
-      }
-      for (size_t i = append_from; i < cat_converters_.size(); ++i) {
-        auto& cat_converter = cat_converters_[i];
-        for (const int& fid : categorical_features_) {
-          cat_converter->RegisterConvertFid(fid, num_total_features_);
-          convert_fid_to_cat_fid_[num_total_features_] = fid;
-          if (!max_bin_by_feature_.empty()) {
-            max_bin_by_feature_.push_back(max_bin_by_feature_[fid]);
-            config->max_bin_by_feature.push_back(max_bin_by_feature_[fid]);
+        if (!accumulated_from_file_) {
+          for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+            thread_count_info_[thread_id][fid].resize(config_.num_ctr_folds + 1);
+            thread_label_info_[thread_id][fid].resize(config_.num_ctr_folds + 1);
           }
-          ++num_total_features_;
         }
       }
     }
@@ -545,7 +515,7 @@ class CTRProvider {
     std::vector<std::unique_ptr<CSC_RowIterator>>* col_iters,
     int64_t* ncol_ptr, bool is_valid, int64_t num_row) const;
 
-  Parser* FinishProcess(const int num_machines);
+  Parser* FinishProcess(const int num_machines, Config* config);
 
   void InitFromParser(Config* config_from_loader, Parser* parser, const int num_machines,
     std::unordered_set<int>& categorical_features_from_loader);
@@ -588,6 +558,7 @@ class CTRProvider {
   }
 
   explicit CTRProvider(const std::string model_string) {
+    accumulated_from_file_ = false;
     std::stringstream str_stream(model_string);
     int cat_fid = 0, cat_value = 0;
     double label_sum = 0.0f, total_count = 0.0f;
@@ -629,64 +600,19 @@ class CTRProvider {
   }
 
   CTRProvider(Config* config) {
+    accumulated_from_file_ = true;
     SetConfig(config);
-  }
-
-  CTRProvider(Config* config, const int num_machines, const char* filename) {
-    SetConfig(config);
-    const auto bin_filename = Parser::CheckCanLoadFromBin(filename);
-    if (bin_filename.size() > 0) {
-      cat_converters_.clear();
-      return;
-    }
-    const int label_idx = ParseMetaInfo(filename, config);
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx));
-    auto categorical_features = categorical_features_;
-    categorical_features_.clear();
-    categorical_features_.shrink_to_fit();
-    num_original_features_ = parser->NumFeatures();
-    if (num_machines > 1) {
-      num_original_features_ = Network::GlobalSyncUpByMax(num_original_features_);
-    }
-    for (const int fid : categorical_features) {
-      if (fid < num_original_features_) {
-        categorical_features_.push_back(fid);
-      }
-    }
-    categorical_features.clear();
-    categorical_features.shrink_to_fit();
-    Init(config);
-    if (cat_converters_.size() == 0) { return; }
-    std::vector<std::pair<int, double>> oneline_features;
-    std::vector<bool> is_feature_processed(num_total_features_, false);
-    double label;
-    TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
-    num_data_ = text_reader.CountLine();
-    std::mt19937 mt_generator(config_.seed);
-    const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
-    std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
-    training_data_fold_id_.resize(num_data_, 0);
-    text_reader.ReadAllAndProcess([&parser, this, &oneline_features, &label, &is_feature_processed,
-      &fold_distribution, &mt_generator]
-      (data_size_t row_idx, const char* buffer, size_t size) {
-      std::string line(buffer, size);
-      oneline_features.clear();
-      parser->ParseOneLine(line.c_str(), &oneline_features, &label);
-      const int fold_id = fold_distribution(mt_generator);
-      training_data_fold_id_[row_idx] = fold_id;
-      ProcessOneLine(oneline_features, label, row_idx, &is_feature_processed, fold_id);
-    });
-    FinishProcess(num_machines);
   }
 
   CTRProvider(Config* config,
     const std::vector<std::function<std::vector<double>(int row_idx)>>& get_row_fun,
     const std::function<double(int row_idx)>& get_label_fun, const int32_t nmat,
     const int32_t* nrow, const int32_t ncol) {
+    accumulated_from_file_ = false;
     SetConfig(config);
     ParseMetaInfo(nullptr, config);
     num_original_features_ = ncol;
-    Init(config);
+    Init();
     if (cat_converters_.size() == 0) { return; }
     if (get_label_fun == nullptr) {
       Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
@@ -720,33 +646,39 @@ class CTRProvider {
       });
       mat_offset += mat_nrow;
     }
-    FinishProcess(1);
+    FinishProcess(1, config);
   }
 
   CTRProvider(Config* config,
     const std::function<std::vector<std::pair<int, double>>(int row_idx)>& get_row_fun,
     const std::function<double(int row_idx)>& get_label_fun,
     const int64_t nrow, const int64_t ncol) {
+    accumulated_from_file_ = false;
     SetConfig(config);
     ParseMetaInfo(nullptr, config);
     num_original_features_ = ncol;
     num_data_ = nrow;
     training_data_fold_id_.resize(num_data_);
-    Init(config);
+    Log::Warning("step 0 in ctr provider");
+    Init();
+    Log::Warning("step 1 in ctr provider");
     if (cat_converters_.size() == 0) { return; }
     if (get_label_fun == nullptr) {
       Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
     }
+    Log::Warning("step 2 in ctr provider");
     std::vector<std::mt19937> mt_generators;
     for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
       mt_generators.emplace_back(config_.seed + thread_id);
     }
+    Log::Warning("step 3 in ctr provider");
     const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
     std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
     std::vector<std::vector<bool>> is_feature_processed(num_threads_);
     for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-      is_feature_processed[thread_id].resize(num_total_features_, false);
+      is_feature_processed[thread_id].resize(num_original_features_, false);
     }
+    Log::Warning("step 4 in ctr provider");
     Threading::For<int64_t>(0, nrow, 1024,
     [this, &get_row_fun, &get_label_fun, &fold_distribution, &mt_generators, &is_feature_processed]
     (int thread_id, int64_t start, int64_t end) {
@@ -759,19 +691,22 @@ class CTRProvider {
         ProcessOneLine(oneline_features, label, row_idx, &is_feature_processed[thread_id], thread_id, fold_id);
       }
     });
-    FinishProcess(1);
+    Log::Warning("step 5 in ctr provider");
+    FinishProcess(1, config);
+    Log::Warning("step 6 in ctr provider");
   }
 
   CTRProvider(Config* config,
     const std::vector<std::unique_ptr<CSC_RowIterator>>& csc_iters,
     const std::function<double(int row_idx)>& get_label_fun,
     const int64_t nrow, const int64_t ncol) {
+    accumulated_from_file_ = false;
     SetConfig(config);
     ParseMetaInfo(nullptr, config);
     num_original_features_ = ncol;
     num_data_ = nrow;
     training_data_fold_id_.resize(num_data_);
-    Init(config);
+    Init();
     if (cat_converters_.size() == 0) { return; }
     if (get_label_fun == nullptr) {
       Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
@@ -804,9 +739,10 @@ class CTRProvider {
         ProcessOneLine(oneline_features, label, row_idx, thread_id, fold_id);
       }
     });
-    FinishProcess(1);
+    FinishProcess(1, config);
   }
 
+  template <bool ACCUMULATE_FROM_FILE>
   void ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line,
     double label, int line_idx, std::vector<bool>* is_feature_processed_ptr,
     std::unordered_map<int, std::vector<std::unordered_map<int, int>>>* count_info_ptr,
@@ -959,6 +895,8 @@ class CTRProvider {
     return label_idx;
   }
 
+  void ExpandNumFeatureWhileAccumulate(const int new_largest_fid);
+
   // parameter configuration
   Config config_;
 
@@ -1023,6 +961,8 @@ class CTRProvider {
   std::discrete_distribution<int> tmp_fold_distribution_;
   // temporary feature read mask when accumulating statistics from files
   std::vector<bool> tmp_is_feature_processed_;
+  // mark whether the ctr statistics is accumulated from file
+  bool accumulated_from_file_;
 };
 
 class CTRParser : public Parser {
