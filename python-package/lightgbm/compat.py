@@ -3,18 +3,20 @@
 
 """pandas"""
 try:
-    from pandas import Series, DataFrame, concat
+    from pandas import concat
+    from pandas import Series as pd_Series
+    from pandas import DataFrame as pd_DataFrame
     from pandas.api.types import is_sparse as is_dtype_sparse
     PANDAS_INSTALLED = True
 except ImportError:
     PANDAS_INSTALLED = False
 
-    class Series:
+    class pd_Series:
         """Dummy class for pandas.Series."""
 
         pass
 
-    class DataFrame:
+    class pd_DataFrame:
         """Dummy class for pandas.DataFrame."""
 
         pass
@@ -40,15 +42,15 @@ except ImportError:
 try:
     import datatable
     if hasattr(datatable, "Frame"):
-        DataTable = datatable.Frame
+        dt_DataTable = datatable.Frame
     else:
-        DataTable = datatable.DataTable
+        dt_DataTable = datatable.DataTable
     DATATABLE_INSTALLED = True
 except ImportError:
     DATATABLE_INSTALLED = False
 
-    class DataTable:
-        """Dummy class for DataTable."""
+    class dt_DataTable:
+        """Dummy class for datatable.DataTable."""
 
         pass
 
@@ -128,6 +130,6 @@ except ImportError:
         pass
 
     class dask_Frame:
-        """Dummy class for ddask.dataframe._Frame."""
+        """Dummy class for dask.dataframe._Frame."""
 
         pass
