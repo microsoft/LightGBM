@@ -2500,7 +2500,7 @@ def test_linear_trees(tmp_path):
     est = lgb.train(dict(params, linear_tree=True), lgb_train, num_boost_round=10, evals_result=res,
                     valid_sets=[lgb_train], valid_names=['train'])
     pred2 = est.predict(x)
-    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=10**(-1))
+    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=1e-1)
     assert mean_squared_error(y, pred2) < mean_squared_error(y, pred1)
     # test again with nans in data
     x[:10] = np.nan
@@ -2512,14 +2512,14 @@ def test_linear_trees(tmp_path):
     est = lgb.train(dict(params, linear_tree=True), lgb_train, num_boost_round=10, evals_result=res,
                     valid_sets=[lgb_train], valid_names=['train'])
     pred2 = est.predict(x)
-    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=10**(-1))
+    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=1e-1)
     assert mean_squared_error(y, pred2) < mean_squared_error(y, pred1)
     # test again with bagging
     res = {}
     est = lgb.train(dict(params, linear_tree=True, subsample=0.8, bagging_freq=1), lgb_train,
                     num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
     pred = est.predict(x)
-    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-1))
+    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=1e-1)
     # test with a feature that has only one non-nan value
     x = np.concatenate([np.ones([x.shape[0], 1]), x], 1)
     x[500:, 1] = np.nan
@@ -2529,7 +2529,7 @@ def test_linear_trees(tmp_path):
     est = lgb.train(dict(params, linear_tree=True, subsample=0.8, bagging_freq=1), lgb_train,
                     num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
     pred = est.predict(x)
-    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-1))
+    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=1e-1)
     # test with a categorical feature
     x[:250, 0] = 0
     y[:250] += 10
