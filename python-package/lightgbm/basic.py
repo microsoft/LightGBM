@@ -1126,7 +1126,7 @@ class Dataset:
         self.cat_converters = cat_converters
         self._extract_categorical_info_from_params(params)
 
-        self.params = {} if params is None else .deepcopy(params)
+        self.params = {} if params is None else deepcopy(params)
 
         self.free_raw_data = free_raw_data
         self.used_indices = None

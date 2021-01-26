@@ -256,7 +256,13 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       sample_data = SampleTextDataFromFile(filename, dataset->metadata_, rank, num_machines,
         &num_global_data, &used_data_indices, &sampled_indices, ctr_provider);
       if (ctr_provider != nullptr) {
-        parser.reset(new CTRParser(ctr_provider->FinishProcess(num_machines, &config_), ctr_provider, false));
+        Parser* parser_ptr = ctr_provider->FinishProcess(num_machines, &config_);
+        if (ctr_provider->GetNumCatConverters() == 0) {
+          ctr_provider = nullptr;
+          parser.reset(parser_ptr);
+        } else {
+          parser.reset(new CTRParser(parser_ptr, ctr_provider, false));
+        }
       }
       if (used_data_indices.size() > 0) {
         dataset->num_data_ = static_cast<data_size_t>(used_data_indices.size());
