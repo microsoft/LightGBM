@@ -546,6 +546,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
 
 class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
+    """Distributed version of lightgbm.LGBMRegressor."""
 
     def fit(
         self,
@@ -594,6 +595,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
 
 class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
+    """Distributed version of lightgbm.LGBMRanker."""
 
     def fit(
         self,
