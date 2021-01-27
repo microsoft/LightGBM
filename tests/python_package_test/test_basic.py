@@ -336,40 +336,57 @@ def test_ctr(tmp_path):
     def test_ctr_inner(tmp_path, X_train, X_test, y_train, y_test, params, model_prefix):
         # checks that cat_converters works for Dataset constructor
         cat_converters_str = "ctr,count,ctr:0.5,raw"
-        train_data = lgb.Dataset(X_train, label=y_train, cat_converters=cat_converters_str)
-        valid_data = train_data.create_valid(X_test, label=y_test)
+        train_data_1 = lgb.Dataset(X_train, label=y_train, cat_converters=cat_converters_str)
+        valid_data_1 = train_data_1.create_valid(X_test, label=y_test)
 
         categorical_feature = [fidx for fidx in range(X_train.shape[1] // 2)]
-        params.update({"categorical_feature": categorical_feature})
-        booster = lgb.train(params, train_data, valid_sets=[valid_data], valid_names=["valid_data"])
-        pred_1 = booster.predict(X_test)
-        pred_contrib_1 = booster.predict(X_test, pred_contrib=True)
-        tmp_dataset = str(tmp_path / 'ctr_{}_temp_dataset.bin'.format(model_prefix))
-        train_data.save_binary(tmp_dataset)
+        expected_num_features = X_train.shape[1] + 3 * len(categorical_feature)
 
+        params.update({"categorical_feature": categorical_feature})
+        booster_1 = lgb.train(params, train_data_1, valid_sets=[valid_data_1], valid_names=["valid_data"])
+        np.testing.assert_equal(train_data_1.num_feature(), expected_num_features)
+        np.testing.assert_equal(valid_data_1.num_feature(), expected_num_features)
+        np.testing.assert_equal(len(train_data_1.get_feature_name()), expected_num_features)
+        np.testing.assert_equal(booster_1.num_feature(), expected_num_features)
+        pred_1 = booster_1.predict(X_test)
+        pred_contrib_1 = booster_1.predict(X_test, pred_contrib=True)
+        tmp_dataset = str(tmp_path / 'ctr_{}_temp_dataset.bin'.format(model_prefix))
+        train_data_1.save_binary(tmp_dataset)
+
+        # checks that Dataset with cat_converters can be saved to and load from file
         train_data_2 = lgb.Dataset(tmp_dataset)
-        valid_data = train_data.create_valid(X_test, label=y_test)
-        booster = lgb.train(params, train_data_2, valid_sets=[valid_data], valid_names=["valid_data"])
-        pred_2 = booster.predict(X_test)
-        pred_contrib_2 = booster.predict(X_test, pred_contrib=True)
+        valid_data_2 = train_data_2.create_valid(X_test, label=y_test)
+        booster_2 = lgb.train(params, train_data_2, valid_sets=[valid_data_2], valid_names=["valid_data"])
+        np.testing.assert_equal(train_data_2.num_feature(), expected_num_features)
+        np.testing.assert_equal(valid_data_2.num_feature(), expected_num_features)
+        np.testing.assert_equal(len(train_data_2.get_feature_name()), expected_num_features)
+        np.testing.assert_equal(booster_2.num_feature(), expected_num_features)
+        pred_2 = booster_2.predict(X_test)
+        pred_contrib_2 = booster_2.predict(X_test, pred_contrib=True)
         np.testing.assert_allclose(pred_1, pred_2)
         np.testing.assert_allclose(pred_contrib_1, pred_contrib_2)
 
+        # checks that Booster with cat_converters can be saved to and load from file
         model_file = str(tmp_path / "ctr_{}_model.txt".format(model_prefix))
-        booster.save_model(model_file)
-        new_booster = lgb.Booster(params=params, model_file=model_file)
-        pred_3 = new_booster.predict(X_test)
-        pred_contrib_3 = new_booster.predict(X_test, pred_contrib=True)
+        booster_2.save_model(model_file)
+        booster_3 = lgb.Booster(params=params, model_file=model_file)
+        np.testing.assert_equal(booster_3.num_feature(), expected_num_features)
+        pred_3 = booster_3.predict(X_test)
+        pred_contrib_3 = booster_3.predict(X_test, pred_contrib=True)
         np.testing.assert_allclose(pred_1, pred_3)
         np.testing.assert_allclose(pred_contrib_1, pred_contrib_3)
 
         # checks that cat_converters works in params
         train_data_4 = lgb.Dataset(X_train, label=y_train)
-        valid_data = train_data_4.create_valid(X_test, label=y_test)
+        valid_data_4 = train_data_4.create_valid(X_test, label=y_test)
         params.update({"cat_converters": cat_converters_str})
-        booster = lgb.train(params, train_data_4, valid_sets=[valid_data], valid_names=["valid_data"])
-        pred_4 = booster.predict(X_test)
-        pred_contrib_4 = booster.predict(X_test, pred_contrib=True)
+        booster_4 = lgb.train(params, train_data_4, valid_sets=[valid_data_4], valid_names=["valid_data"])
+        np.testing.assert_equal(train_data_4.num_feature(), expected_num_features)
+        np.testing.assert_equal(valid_data_4.num_feature(), expected_num_features)
+        np.testing.assert_equal(len(train_data_4.get_feature_name()), expected_num_features)
+        np.testing.assert_equal(booster_4.num_feature(), expected_num_features)
+        pred_4 = booster_4.predict(X_test)
+        pred_contrib_4 = booster_4.predict(X_test, pred_contrib=True)
         np.testing.assert_allclose(pred_1, pred_4)
         np.testing.assert_allclose(pred_contrib_1, pred_contrib_4)
 
@@ -378,9 +395,13 @@ def test_ctr(tmp_path):
                                      cat_converters=cat_converters_str)
         valid_data_csr = lgb.Dataset(sparse.csr_matrix(X_test), label=y_test,
                                      cat_converters=cat_converters_str, reference=train_data_csr)
-        booster = lgb.train(params, train_data_csr, valid_sets=[valid_data_csr], valid_names=["valid_data"])
-        pred_csr = booster.predict(sparse.csr_matrix(X_test))
-        pred_contrib_csr = booster.predict(sparse.csr_matrix(X_test), pred_contrib=True)
+        booster_csr = lgb.train(params, train_data_csr, valid_sets=[valid_data_csr], valid_names=["valid_data"])
+        np.testing.assert_equal(train_data_csr.num_feature(), expected_num_features)
+        np.testing.assert_equal(valid_data_csr.num_feature(), expected_num_features)
+        np.testing.assert_equal(len(train_data_csr.get_feature_name()), expected_num_features)
+        np.testing.assert_equal(booster_csr.num_feature(), expected_num_features)
+        pred_csr = booster_csr.predict(sparse.csr_matrix(X_test))
+        pred_contrib_csr = booster_csr.predict(sparse.csr_matrix(X_test), pred_contrib=True)
         if model_prefix == "multiclass":
             pred_contrib_csr = np.hstack([csr.toarray() for csr in pred_contrib_csr])
         else:
@@ -393,9 +414,13 @@ def test_ctr(tmp_path):
                                      cat_converters=cat_converters_str)
         valid_data_csc = lgb.Dataset(sparse.csc_matrix(X_test), label=y_test,
                                      cat_converters=cat_converters_str, reference=train_data_csc)
-        booster = lgb.train(params, train_data_csc, valid_sets=[valid_data_csc], valid_names=["valid_data"])
-        pred_csc = booster.predict(sparse.csc_matrix(X_test))
-        pred_contrib_csc = booster.predict(sparse.csc_matrix(X_test), pred_contrib=True)
+        booster_csc = lgb.train(params, train_data_csc, valid_sets=[valid_data_csc], valid_names=["valid_data"])
+        np.testing.assert_equal(train_data_csc.num_feature(), expected_num_features)
+        np.testing.assert_equal(valid_data_csc.num_feature(), expected_num_features)
+        np.testing.assert_equal(len(train_data_csc.get_feature_name()), expected_num_features)
+        np.testing.assert_equal(booster_csc.num_feature(), expected_num_features)
+        pred_csc = booster_csc.predict(sparse.csc_matrix(X_test))
+        pred_contrib_csc = booster_csc.predict(sparse.csc_matrix(X_test), pred_contrib=True)
         if model_prefix == "multiclass":
             pred_contrib_csc = np.hstack([csc.toarray() for csc in pred_contrib_csc])
         else:

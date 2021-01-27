@@ -1201,6 +1201,18 @@ CTR Parameters
 
    -  for example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features, with the 3 different ways separated by ','.
 
+   -  the numbers and names of features will be changed when cat_converters is not `raw`
+
+   -  suppose the original name of a feature is `NAME`, the naming rules of its ctr and count features are:
+
+   -  1. for the ctr (without user specified prior), it will be named as `NAME_label_mean_prior_ctr_<label_mean>`
+
+   -  2. for the ctr:<prior> (with user specified prior), it will be named as `NAME_ctr_<prior>`
+
+   -  3. for the count, it will be named as `NAME_count`
+
+   -  Use get_feature_name() of python Booster of feature_name() of python Dataset after training to get the actual feature names used when cat_converters is set.
+
 -  ``num_ctr_folds`` :raw-html:`<a id="num_ctr_folds" title="Permalink to this parameter" href="#num_ctr_folds">&#x1F517;&#xFE0E;</a>`, default = ``4``, type = int
 
    -  number of folds that training data is divided into, to calculate ctr values

@@ -1154,13 +1154,20 @@ class Dataset:
                         categorical_feature_from_params = params.pop(cat_alias)
                 if "cat_converters" in params:
                     cat_converters_from_params = params.pop("cat_converters")
-            if (self.categorical_feature == 'auto' or self.categorical_feature is None)\
-                    and categorical_feature_from_params is not None:
-                if isinstance(categorical_feature_from_params, int):
-                    categorical_feature_from_params = [categorical_feature_from_params]
-                self.categorical_feature = categorical_feature_from_params
-            if self.cat_converters is None and cat_converters_from_params is not None:
-                self.cat_converters = cat_converters_from_params
+            if categorical_feature_from_params is not None:
+                if self.categorical_feature == 'auto' or self.categorical_feature is None:
+                    if isinstance(categorical_feature_from_params, int):
+                        categorical_feature_from_params = [categorical_feature_from_params]
+                    self.categorical_feature = categorical_feature_from_params
+                elif self.categorical_feature != categorical_feature_from_params:
+                    warnings.warn("categorical_feature {0} in params will be ignored, using {1}".format(
+                    categorical_feature_from_params, self.categorical_feature))
+            if cat_converters_from_params is not None:
+                if self.cat_converters is None:
+                    self.cat_converters = cat_converters_from_params
+                elif self.cat_converters != cat_converters_from_params:
+                    warnings.warn("cat_converters {0} in params will be ignored, using {1}".format(
+                    cat_converters_from_params, self.cat_converters))
 
     def get_params(self):
         """Get the used parameters in the Dataset.
@@ -1761,6 +1768,10 @@ class Dataset:
             Dataset with set categorical features.
         """
         if self.categorical_feature == categorical_feature:
+            return self
+        if categorical_feature is None:
+            return self
+        if categorical_feature == 'auto' and self.categorical_feature is not None:
             return self
         if self.data is not None:
             if self.categorical_feature is None:

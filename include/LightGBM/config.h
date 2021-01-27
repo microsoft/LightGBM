@@ -1015,6 +1015,12 @@ struct Config {
   // desc = count, the count of the categorical feature value in the dataset
   // desc = raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians per leaf per iteration
   // desc = for example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features, with the 3 different ways separated by ','.
+  // desc = the numbers and names of features will be changed when cat_converters is not `raw`
+  // desc = suppose the original name of a feature is `NAME`, the naming rules of its ctr and count features are:
+  // desc = 1. for the ctr (without user specified prior), it will be named as `NAME_label_mean_prior_ctr_<label_mean>`
+  // desc = 2. for the ctr:<prior> (with user specified prior), it will be named as `NAME_ctr_<prior>`
+  // desc = 3. for the count, it will be named as `NAME_count`
+  // desc = Use get_feature_name() of python Booster of feature_name() of python Dataset after training to get the actual feature names used when cat_converters is set.
   std::string cat_converters = std::string("raw");
 
   // desc = number of folds that training data is divided into, to calculate ctr values

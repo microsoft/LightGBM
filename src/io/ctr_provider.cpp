@@ -9,6 +9,218 @@
 
 namespace LightGBM {
 
+CTRProvider::CTRProvider(Config* config) {
+  accumulated_from_file_ = true;
+  SetConfig(config);
+}
+
+CTRProvider::CTRProvider(const std::string model_string) {
+  accumulated_from_file_ = false;
+  std::stringstream str_stream(model_string);
+  int cat_fid = 0, cat_value = 0;
+  double label_sum = 0.0f, total_count = 0.0f;
+  int keep_raw_cat_method;
+  str_stream >> keep_raw_cat_method;
+  keep_raw_cat_method_ = static_cast<bool>(keep_raw_cat_method);
+  str_stream >> num_original_features_;
+  str_stream >> num_total_features_;
+  str_stream >> prior_weight_;
+  is_categorical_feature_.clear();
+  is_categorical_feature_.resize(num_original_features_, false);
+  categorical_features_.clear();
+  while (str_stream >> cat_fid) {
+    CHECK_EQ(str_stream.get(), ' ');
+    is_categorical_feature_[cat_fid] = true;
+    categorical_features_.push_back(cat_fid);
+    label_info_[cat_fid].clear();
+    count_info_[cat_fid].clear();
+    label_info_[cat_fid].resize(1);
+    count_info_[cat_fid].resize(1);
+    while (str_stream >> cat_value) {
+      CHECK_EQ(str_stream.get(), ':');
+      str_stream >> label_sum;
+      CHECK_EQ(str_stream.get(), ':');
+      str_stream >> total_count;
+      label_info_[cat_fid][0][cat_value] = label_sum;
+      count_info_[cat_fid][0][cat_value] = total_count;
+    }
+    str_stream.clear();
+    CHECK_EQ(str_stream.get(), '@');
+  }
+  std::sort(categorical_features_.begin(), categorical_features_.end());
+  str_stream.clear();
+  cat_converters_.clear();
+  std::string cat_converter_string;
+  while (str_stream >> cat_converter_string) {
+    cat_converters_.emplace_back(CatConverter::CreateFromString(cat_converter_string, prior_weight_));
+  }
+}
+
+CTRProvider::CTRProvider(Config* config,
+  const std::vector<std::function<std::vector<double>(int row_idx)>>& get_row_fun,
+  const std::function<double(int row_idx)>& get_label_fun, const int32_t nmat,
+  const int32_t* nrow, const int32_t ncol) {
+  accumulated_from_file_ = false;
+  SetConfig(config);
+  num_original_features_ = ncol;
+  ParseMetaInfo(nullptr, config);
+  PrepareCTRStatVectors();
+  if (cat_converters_.size() == 0) { return; }
+  if (get_label_fun == nullptr) {
+    Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
+  }
+  int32_t mat_offset = 0;
+  num_data_ = 0;
+  for (int32_t i = 0; i < nmat; ++i) {
+    num_data_ += nrow[i];
+  }
+  std::vector<std::mt19937> mt_generators;
+  for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+    mt_generators.emplace_back(config_.seed + thread_id);
+  }
+  const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
+  std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
+  training_data_fold_id_.resize(num_data_, 0);
+  for (int32_t i_mat = 0; i_mat < nmat; ++i_mat) {
+    const int32_t mat_nrow = nrow[i_mat];
+    const auto& mat_get_row_fun = get_row_fun[i_mat];
+    Threading::For<int32_t>(0, mat_nrow, 1024,
+      [this, &mat_get_row_fun, &get_label_fun, &mat_offset, &fold_distribution, &mt_generators]
+      (int thread_id, int32_t start, int32_t end) {
+      for (int32_t j = start; j < end; ++j) {
+        const std::vector<double>& oneline_features = mat_get_row_fun(j);
+        const int32_t row_idx = j + mat_offset;
+        const double label = get_label_fun(row_idx);
+        const int fold_id = fold_distribution(mt_generators[thread_id]);
+        training_data_fold_id_[row_idx] = fold_id;
+        ProcessOneLine(oneline_features, label, row_idx, thread_id, fold_id);
+      }
+    });
+    mat_offset += mat_nrow;
+  }
+  FinishProcess(1, config);
+}
+
+
+CTRProvider::CTRProvider(Config* config,
+  const std::function<std::vector<std::pair<int, double>>(int row_idx)>& get_row_fun,
+  const std::function<double(int row_idx)>& get_label_fun,
+  const int64_t nrow, const int64_t ncol) {
+  accumulated_from_file_ = false;
+  SetConfig(config);
+  num_original_features_ = ncol;
+  ParseMetaInfo(nullptr, config);
+  num_data_ = nrow;
+  training_data_fold_id_.resize(num_data_);
+  PrepareCTRStatVectors();
+  if (cat_converters_.size() == 0) { return; }
+  if (get_label_fun == nullptr) {
+    Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
+  }
+  std::vector<std::mt19937> mt_generators;
+  for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+    mt_generators.emplace_back(config_.seed + thread_id);
+  }
+  const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
+  std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
+  std::vector<std::vector<bool>> is_feature_processed(num_threads_);
+  for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+    is_feature_processed[thread_id].resize(num_original_features_, false);
+  }
+  Threading::For<int64_t>(0, nrow, 1024,
+  [this, &get_row_fun, &get_label_fun, &fold_distribution, &mt_generators, &is_feature_processed]
+  (int thread_id, int64_t start, int64_t end) {
+    for (int64_t j = start; j < end; ++j) {
+      const std::vector<std::pair<int, double>>& oneline_features = get_row_fun(j);
+      const int32_t row_idx = j;
+      const double label = get_label_fun(row_idx);
+      const int fold_id = fold_distribution(mt_generators[thread_id]);
+      training_data_fold_id_[row_idx] = fold_id;
+      ProcessOneLine(oneline_features, label, row_idx, &is_feature_processed[thread_id], thread_id, fold_id);
+    }
+  });
+  FinishProcess(1, config);
+}
+
+CTRProvider::CTRProvider(Config* config,
+  const std::vector<std::unique_ptr<CSC_RowIterator>>& csc_iters,
+  const std::function<double(int row_idx)>& get_label_fun,
+  const int64_t nrow, const int64_t ncol) {
+  accumulated_from_file_ = false;
+  SetConfig(config);
+  num_original_features_ = ncol;
+  ParseMetaInfo(nullptr, config);
+  num_data_ = nrow;
+  training_data_fold_id_.resize(num_data_);
+  PrepareCTRStatVectors();
+  if (cat_converters_.size() == 0) { return; }
+  if (get_label_fun == nullptr) {
+    Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
+  }
+  std::vector<std::mt19937> mt_generators;
+  for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+    mt_generators.emplace_back(config_.seed + thread_id);
+  }
+  const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
+  std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
+  std::vector<std::vector<std::unique_ptr<CSC_RowIterator>>> thread_csc_iters(num_threads_);
+  // copy csc row iterators for each thread
+  #pragma omp parallel for schedule(static) num_threads(num_threads_)
+  for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+    for (size_t i = 0; i < csc_iters.size(); ++i) {
+      thread_csc_iters[thread_id].emplace_back(new CSC_RowIterator(*csc_iters[i].get()));
+    }
+  }
+  Threading::For<int32_t>(0, nrow, 1024,
+    [this, &thread_csc_iters, &get_label_fun, ncol, &fold_distribution, &mt_generators]
+    (int thread_id, int32_t start, int32_t end) {
+    std::vector<double> oneline_features(ncol, 0.0f);
+    for (int32_t row_idx = start; row_idx < end; ++row_idx) {
+      for (int32_t col_idx = 0; col_idx < ncol; ++col_idx) {
+        oneline_features[col_idx] = thread_csc_iters[thread_id][col_idx]->Get(row_idx);
+      }
+      const int fold_id = fold_distribution(mt_generators[thread_id]);
+      training_data_fold_id_[row_idx] = fold_id;
+      const double label = get_label_fun(row_idx);
+      ProcessOneLine(oneline_features, label, row_idx, thread_id, fold_id);
+    }
+  });
+  FinishProcess(1, config);
+}
+
+void CTRProvider::SetConfig(const Config* config) {
+  config_ = *config;
+  num_threads_ = config_.num_threads > 0 ? config_.num_threads : OMP_NUM_THREADS();
+  keep_raw_cat_method_ = false;
+  const std::string ctr_string = std::string("ctr");
+  cat_converters_.clear();
+  if (config_.cat_converters.size() > 0) {
+    for (auto token : Common::Split(config_.cat_converters.c_str(), ',')) {
+      if (Common::StartsWith(token, "ctr")) {
+        if (token.size() == ctr_string.size()) {
+          cat_converters_.emplace_back(new CTRProvider::CTRConverterLabelMean());
+        } else {
+          double prior = 0.0f;
+          if (token[ctr_string.size()] != ':' ||
+              !Common::AtofAndCheck(token.c_str() + ctr_string.size() + 1, &prior)) {
+            Log::Fatal("CTR prior of cat_converter specification %s is not a valid float value.", token.c_str());
+          }
+          cat_converters_.emplace_back(new CTRProvider::CTRConverter(prior));
+        }
+      } else if (token == std::string("count")) {
+        cat_converters_.emplace_back(new CTRProvider::CountConverter());
+      } else if (token == std::string("raw")) {
+        keep_raw_cat_method_ = true;
+      } else {
+        Log::Fatal("Unknown cat_converters specification %s.", token.c_str());
+      }
+    }
+  }
+
+  prior_weight_ = config_.prior_weight;
+  tmp_parser_ = nullptr;
+}
+
 std::string CTRProvider::DumpModelInfo() const {
   std::stringstream str_buf;
   if (cat_converters_.size() > 0) {
@@ -45,21 +257,204 @@ CTRProvider* CTRProvider::RecoverFromModelString(const std::string model_string)
   }
 }
 
-std::unordered_map<int, std::unordered_map<int, double>> CTRProvider::RecoverCTRValues(const std::string str) {
-  std::stringstream sin(str);
-  std::unordered_map<int, std::unordered_map<int, double>> ctr_values;
-  int fid = 0;
-  int cat_feature_value = 0;
-  double ctr_value = 0.0;
-  while (sin >> fid) {
-    while (sin.get() != ' ') {
-      sin >> cat_feature_value;
-      CHECK_EQ(sin.get(), ':');
-      sin >> ctr_value;
-      ctr_values[fid][cat_feature_value] = ctr_value;
+void CTRProvider::ExtendFeatureNames(std::vector<std::string>* feature_names_ptr) const {
+  auto& feature_names = *feature_names_ptr;
+  if (feature_names.empty()) {
+    for (int i = 0; i < num_original_features_; ++i) {
+      std::stringstream str_buf;
+      str_buf << "Column_" << i;
+      feature_names.push_back(str_buf.str());
     }
   }
-  return ctr_values;
+  int feature_names_size = static_cast<int>(feature_names.size());
+  const std::vector<std::string> old_feature_names = feature_names;
+  std::vector<std::string> new_feature_names(num_total_features_);
+  for (int fid = 0; fid < num_original_features_; ++fid) {
+    new_feature_names[fid] = old_feature_names[fid];
+    if (is_categorical_feature_[fid]) {
+      for (const auto& cat_converter : cat_converters_) {
+        const int convert_fid = cat_converter->GetConvertFid(fid);
+        std::string cat_converter_name = cat_converter->Name();
+        std::replace(cat_converter_name.begin(), cat_converter_name.end(), ':', '_');
+        new_feature_names[convert_fid] = old_feature_names[fid] + std::string("_") + cat_converter_name;
+      }
+    }
+  }
+  if (feature_names_size == num_original_features_) {
+    feature_names = new_feature_names;
+  } else if (feature_names_size == num_original_features_ +
+    static_cast<int>(cat_converters_.size()) * static_cast<int>(categorical_features_.size())) {
+    for (size_t i = 0; i < new_feature_names.size(); ++i) {
+      CHECK_EQ(new_feature_names[i], feature_names[i]);
+    }
+  } else {
+    Log::Fatal("wrong length of feature_names");
+  }
+}
+
+int CTRProvider::ParseMetaInfo(const char* filename, Config* config) {
+  std::unordered_set<int> ignore_features;
+  std::unordered_map<std::string, int> name2idx;
+  std::string name_prefix("name:");
+  int label_idx = 0;
+  if (filename != nullptr) {
+    TextReader<data_size_t> text_reader(filename, config->header);
+    // get column names
+    std::vector<std::string> feature_names;
+    if (config->header) {
+      std::string first_line = text_reader.first_line();
+      feature_names = Common::Split(first_line.c_str(), "\t,");
+    }
+    // load label idx first
+    if (config->label_column.size() > 0) {
+      if (Common::StartsWith(config->label_column, name_prefix)) {
+        std::string name = config->label_column.substr(name_prefix.size());
+        label_idx = -1;
+        for (int i = 0; i < static_cast<int>(feature_names.size()); ++i) {
+          if (name == feature_names[i]) {
+            label_idx = i;
+            break;
+          }
+        }
+        if (label_idx >= 0) {
+          Log::Info("Using column %s as label", name.c_str());
+        } else {
+          Log::Fatal("Could not find label column %s in data file \n"
+                    "or data file doesn't contain header", name.c_str());
+        }
+      } else {
+        if (!Common::AtoiAndCheck(config->label_column.c_str(), &label_idx)) {
+          Log::Fatal("label_column is not a number,\n"
+                    "if you want to use a column name,\n"
+                    "please add the prefix \"name:\" to the column name");
+        }
+        Log::Info("Using column number %d as label", label_idx);
+      }
+    }
+
+    if (!feature_names.empty()) {
+      // erase label column name
+      feature_names.erase(feature_names.begin() + label_idx);
+      for (size_t i = 0; i < feature_names.size(); ++i) {
+        name2idx[feature_names[i]] = static_cast<int>(i);
+      }
+    }
+
+    // load ignore columns
+    if (config->ignore_column.size() > 0) {
+      if (Common::StartsWith(config->ignore_column, name_prefix)) {
+        std::string names = config->ignore_column.substr(name_prefix.size());
+        for (auto name : Common::Split(names.c_str(), ',')) {
+          if (name2idx.count(name) > 0) {
+            int tmp = name2idx[name];
+            ignore_features.emplace(tmp);
+          } else {
+            Log::Fatal("Could not find ignore column %s in data file", name.c_str());
+          }
+        }
+      } else {
+        for (auto token : Common::Split(config->ignore_column.c_str(), ',')) {
+          int tmp = 0;
+          if (!Common::AtoiAndCheck(token.c_str(), &tmp)) {
+            Log::Fatal("ignore_column is not a number,\n"
+                      "if you want to use a column name,\n"
+                      "please add the prefix \"name:\" to the column name");
+          }
+          ignore_features.emplace(tmp);
+        }
+      }
+    }
+  }
+  std::unordered_set<int> categorical_features;
+  if (config->categorical_feature.size() > 0) {
+    if (Common::StartsWith(config->categorical_feature, name_prefix)) {
+      std::string names = config->categorical_feature.substr(name_prefix.size());
+      for (auto name : Common::Split(names.c_str(), ',')) {
+        if (name2idx.count(name) > 0) {
+          int tmp = name2idx[name];
+          categorical_features.emplace(tmp);
+        } else {
+          Log::Fatal("Could not find categorical_feature %s in data file", name.c_str());
+        }
+      }
+    } else {
+      for (auto token : Common::Split(config->categorical_feature.c_str(), ',')) {
+        int tmp = 0;
+        if (!Common::AtoiAndCheck(token.c_str(), &tmp)) {
+          Log::Fatal("categorical_feature is not a number,\n"
+                    "if you want to use a column name,\n"
+                    "please add the prefix \"name:\" to the column name");
+        }
+        categorical_features.emplace(tmp);
+      }
+    }
+  }
+
+  for (const int fid : ignore_features) {
+    if (categorical_features.count(fid)) {
+      categorical_features.erase(fid);
+    }
+  }
+
+  // reset categorical features for Config
+  if (config->categorical_feature.size() > 0) {
+    if (!keep_raw_cat_method_) {
+      config->categorical_feature.clear();
+      config->categorical_feature.shrink_to_fit();
+    }
+  }
+
+  categorical_features_.clear();
+  for (const int fid : categorical_features) {
+    if (fid < num_original_features_) {
+      categorical_features_.push_back(fid);
+    } else {
+      Log::Warning("Categorical feature index %d is no less than the actual feature number %d, and will be ignored.",
+        fid, num_original_features_);
+    }
+  }
+  std::sort(categorical_features_.begin(), categorical_features_.end());
+  is_categorical_feature_.clear();
+
+  return label_idx;
+}
+
+void CTRProvider::PrepareCTRStatVectors() {
+  is_categorical_feature_.clear();
+  is_categorical_feature_.resize(num_original_features_, false);
+  for (const int fid : categorical_features_) {
+    if (fid < num_original_features_) {
+      is_categorical_feature_[fid] = true;
+    }
+  }
+  fold_prior_.resize(config_.num_ctr_folds + 1, 0.0f);
+  if (cat_converters_.size() > 0) {
+    // prepare to accumulate ctr statistics
+    fold_label_sum_.resize(config_.num_ctr_folds + 1, 0.0f);
+    fold_num_data_.resize(config_.num_ctr_folds + 1, 0);
+    if (!accumulated_from_file_) {
+      thread_fold_label_sum_.resize(num_threads_);
+      thread_fold_num_data_.resize(num_threads_);
+      thread_count_info_.resize(num_threads_);
+      thread_label_info_.resize(num_threads_);
+      for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+        thread_fold_label_sum_[thread_id].resize(config_.num_ctr_folds + 1, 0.0f);
+        thread_fold_num_data_[thread_id].resize(config_.num_ctr_folds + 1, 0.0f);
+      }
+    }
+    for (const int fid : categorical_features_) {
+      if (fid < num_original_features_) {
+        count_info_[fid].resize(config_.num_ctr_folds + 1);
+        label_info_[fid].resize(config_.num_ctr_folds + 1);
+        if (!accumulated_from_file_) {
+          for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
+            thread_count_info_[thread_id][fid].resize(config_.num_ctr_folds + 1);
+            thread_label_info_[thread_id][fid].resize(config_.num_ctr_folds + 1);
+          }
+        }
+      }
+    }
+  }
 }
 
 void CTRProvider::SyncCTRStat(std::vector<std::unordered_map<int, label_t>>* fold_label_sum_ptr,
@@ -149,13 +544,8 @@ void CTRProvider::ProcessOneLine(const std::vector<double>& one_line, double lab
   for (int fid = 0; fid < num_original_features_; ++fid) {
     if (is_categorical_feature_[fid]) {
       const int value = static_cast<int>(one_line[fid]);
-      if (count_info[fid][fold_id].count(value) == 0) {
-        count_info[fid][fold_id][value] = 1;
-        label_info[fid][fold_id][value] = static_cast<label_t>(label);
-      } else {
-        ++count_info[fid][fold_id][value];
-        label_info[fid][fold_id][value] += label;
-      }
+      AddCountAndLabel(&count_info[fid][fold_id], &label_info[fid][fold_id],
+        value, 1, static_cast<label_t>(label));
     }
   }
   thread_fold_label_sum_[thread_id][fold_id] += label;
@@ -202,25 +592,13 @@ void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>&
     if (is_categorical_feature_[fid]) {
       is_feature_processed[fid] = true;
       const int value = static_cast<int>(pair.second);
-      if (count_info[fid][fold_id].count(value) == 0) {
-        count_info[fid][fold_id][value] = 1;
-        label_info[fid][fold_id][value] = static_cast<label_t>(label);
-      } else {
-        ++count_info[fid][fold_id][value];
-        label_info[fid][fold_id][value] += static_cast<label_t>(label);
-      }
+      AddCountAndLabel(&count_info[fid][fold_id], &label_info[fid][fold_id], value, 1, static_cast<label_t>(label));
     }
   }
   // pad the missing values with zeros
   for (const int fid : categorical_features_) {
     if (!is_feature_processed[fid]) {
-      if (count_info[fid][fold_id].count(0) == 0) {
-        count_info[fid][fold_id][0] = 1;
-        label_info[fid][fold_id][0] = static_cast<label_t>(label);
-      } else {
-        ++count_info[fid][fold_id][0];
-        label_info[fid][fold_id][0] += static_cast<label_t>(label);
-      }
+      AddCountAndLabel(&count_info[fid][fold_id], &label_info[fid][fold_id], 0, 1, static_cast<label_t>(label));
     }
   }
   label_sum[fold_id] += label;
@@ -234,15 +612,37 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
   for (const int fid : categorical_features) {
     if (fid < num_original_features_) {
       categorical_features_.emplace_back(fid);
+    } else {
+      Log::Warning("Categorical feature index %d is no less than the actual feature number %d, and will be ignored.",
+        fid, num_original_features_);
     }
   }
 
   if (categorical_features_.size() == 0) {
     cat_converters_.clear();
+    Log::Warning("cat_converters is specified but no categorical feature is specified. Ignoring cat_converters.");
     if (tmp_parser_ != nullptr) {
       return tmp_parser_.release();
     } else {
       return nullptr;
+    }
+  }
+
+  const bool is_max_bin_by_feature_set = !config_from_loader->max_bin_by_feature.empty();
+  auto& max_bin_by_feature = config_from_loader->max_bin_by_feature;
+  if (is_max_bin_by_feature_set) {
+    const int max_bin_by_feature_size = static_cast<int>(max_bin_by_feature.size());
+    if (max_bin_by_feature_size < num_original_features_) {
+      Log::Warning("Size of max_bin_by_feature is smaller than the number of features.");
+      Log::Warning("Padding the unspecified max_bin_by_feature by max_bin=%d.", config_.max_bin);
+      for (int fid = max_bin_by_feature_size; fid < num_original_features_; ++fid) {
+        max_bin_by_feature.emplace_back(config_.max_bin);
+      }
+    } else {
+      Log::Warning("Size of max_bin_by_feature is larger than the number of features.");
+      Log::Warning("Ignoring the extra max_bin_by_feature values.");
+      max_bin_by_feature.resize(num_original_features_);
+      max_bin_by_feature.shrink_to_fit();
     }
   }
 
@@ -251,21 +651,15 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
     auto& cat_converter = cat_converters_[0];
     for (int fid : categorical_features_) {
       cat_converter->RegisterConvertFid(fid, fid);
-      convert_fid_to_cat_fid_[fid] = fid;
     }
     append_from = 1;
   }
-  CHECK(max_bin_by_feature_.empty() || static_cast<int>(max_bin_by_feature_.size()) == num_original_features_);
-  CHECK(config_from_loader->max_bin_by_feature.empty() ||
-    static_cast<int>(config_from_loader->max_bin_by_feature.size()) == num_original_features_);
   for (size_t i = append_from; i < cat_converters_.size(); ++i) {
     auto& cat_converter = cat_converters_[i];
     for (const int& fid : categorical_features_) {
       cat_converter->RegisterConvertFid(fid, num_total_features_);
-      convert_fid_to_cat_fid_[num_total_features_] = fid;
-      if (!max_bin_by_feature_.empty()) {
-        max_bin_by_feature_.push_back(max_bin_by_feature_[fid]);
-        config_from_loader->max_bin_by_feature.push_back(max_bin_by_feature_[fid]);
+      if (is_max_bin_by_feature_set) {
+        max_bin_by_feature.push_back(max_bin_by_feature[fid]);
       }
       ++num_total_features_;
     }
@@ -283,18 +677,8 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
           const auto& thread_feature_fold_count_info = thread_count_info_[thread_id].at(fid)[fold_id];
           const auto& thread_feature_fold_label_info = thread_label_info_[thread_id].at(fid)[fold_id];
           for (const auto& pair : thread_feature_fold_count_info) {
-            if (feature_fold_count_info.count(pair.first) == 0) {
-              feature_fold_count_info[pair.first] = pair.second;
-            } else {
-              feature_fold_count_info[pair.first] += pair.second;
-            }
-          }
-          for (const auto& pair : thread_feature_fold_label_info) {
-            if (feature_fold_label_info.count(pair.first) == 0) {
-              feature_fold_label_info[pair.first] = pair.second;
-            } else {
-              feature_fold_label_info[pair.first] += pair.second;
-            }
+            AddCountAndLabel(&feature_fold_count_info, &feature_fold_label_info,
+              pair.first, pair.second, thread_feature_fold_label_info.at(pair.first));
           }
         }
       }
@@ -346,10 +730,9 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
   for (int fold_id = 0; fold_id < config_.num_ctr_folds + 1; ++fold_id) {
     fold_prior_[fold_id] = fold_label_sum_[fold_id] * 1.0f / fold_num_data_[fold_id];
   }
-  prior_ = fold_prior_.back();
   // set prior for label mean ctr converter
   for (size_t i = 0; i < cat_converters_.size(); ++i) {
-    cat_converters_[i]->SetPrior(prior_, config_.prior_weight);
+    cat_converters_[i]->SetPrior(fold_prior_.back(), config_.prior_weight);
   }
 
   #pragma omp parallel for schedule(static) num_threads(num_threads_)
@@ -362,13 +745,8 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
       const auto& fold_count_info = count_info_.at(fid).at(fold_id);
       const auto& fold_label_info = label_info_.at(fid).at(fold_id);
       for (const auto& pair : fold_count_info) {
-        if (total_count_info.count(pair.first) == 0) {
-          total_count_info[pair.first] = pair.second;
-          label_count_info[pair.first] = fold_label_info.at(pair.first);
-        } else {
-          total_count_info[pair.first] += pair.second;
-          label_count_info[pair.first] += fold_label_info.at(pair.first);
-        }
+        AddCountAndLabel(&total_count_info, &label_count_info,
+          pair.first, pair.second, fold_label_info.at(pair.first));
       }
     }
     // replace "fold sum" with "total sum - fold sum", for the convenience of value calculation
@@ -562,12 +940,12 @@ void CTRProvider::InitFromParser(Config* config_from_loader, Parser* parser, con
     num_original_features_ = Network::GlobalSyncUpByMax(num_original_features_);
   }
   categorical_features_.clear();
-  auto categorical_features_from_loader_ref = *categorical_features_from_loader;
+  auto& categorical_features_from_loader_ref = *categorical_features_from_loader;
   for (const int fid : categorical_features_from_loader_ref) {
     categorical_features_.push_back(fid);
   }
   std::sort(categorical_features_.begin(), categorical_features_.end());
-  Init();
+  PrepareCTRStatVectors();
   tmp_parser_.reset(parser);
   training_data_fold_id_.clear();
   tmp_oneline_features_.clear();
@@ -601,7 +979,11 @@ void CTRProvider::ExpandNumFeatureWhileAccumulate(const int new_largest_fid) {
   num_original_features_ = new_largest_fid + 1;
   is_categorical_feature_.resize(num_original_features_, false);
   for (const int fid : categorical_features_) {
-    is_categorical_feature_[fid] = true;
+    if (fid < num_original_features_) {
+      is_categorical_feature_[fid] = true;
+      count_info_[fid].resize(config_.num_ctr_folds + 1);
+      label_info_[fid].resize(config_.num_ctr_folds + 1);
+    }
   }
 }
 
