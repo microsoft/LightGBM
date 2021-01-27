@@ -14,7 +14,7 @@ from typing import Any, Dict
 import numpy as np
 import scipy.sparse
 
-from .compat import PANDAS_INSTALLED, DataFrame, Series, concat, is_dtype_sparse, DataTable
+from .compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat, is_dtype_sparse, dt_DataTable
 from .libpath import find_lib_path
 
 
@@ -140,7 +140,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
             return data.astype(dtype=dtype, copy=False)
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
-    elif isinstance(data, Series):
+    elif isinstance(data, pd_Series):
         if _get_bad_pandas_dtypes([data.dtypes]):
             raise ValueError('Series.dtypes must be int, float or bool')
         return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
@@ -489,7 +489,7 @@ def _get_bad_pandas_dtypes(dtypes):
 
 
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
-    if isinstance(data, DataFrame):
+    if isinstance(data, pd_DataFrame):
         if len(data.shape) != 2 or data.shape[0] < 1:
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
@@ -533,7 +533,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
 
 
 def _label_from_pandas(label):
-    if isinstance(label, DataFrame):
+    if isinstance(label, pd_DataFrame):
         if len(label.columns) > 1:
             raise ValueError('DataFrame for label cannot have multiple columns')
         if _get_bad_pandas_dtypes(label.dtypes):
@@ -716,7 +716,7 @@ class _InnerPredictor:
             except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
             preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type)
-        elif isinstance(data, DataTable):
+        elif isinstance(data, dt_DataTable):
             preds, nrow = self.__pred_for_np2d(data.to_numpy(), start_iteration, num_iteration, predict_type)
         else:
             try:
@@ -1254,7 +1254,7 @@ class Dataset:
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif isinstance(data, list) and len(data) > 0 and all(isinstance(x, np.ndarray) for x in data):
             self.__init_from_list_np2d(data, params_str, ref_dataset)
-        elif isinstance(data, DataTable):
+        elif isinstance(data, dt_DataTable):
             self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
             try:
@@ -1935,9 +1935,9 @@ class Dataset:
             if self.data is not None:
                 if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
                     self.data = self.data[self.used_indices, :]
-                elif isinstance(self.data, DataFrame):
+                elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
-                elif isinstance(self.data, DataTable):
+                elif isinstance(self.data, dt_DataTable):
                     self.data = self.data[self.used_indices, :]
                 else:
                     _log_warning("Cannot subset {} type of raw data.\n"
@@ -2057,9 +2057,9 @@ class Dataset:
                     self.data = np.hstack((self.data, other.data))
                 elif scipy.sparse.issparse(other.data):
                     self.data = np.hstack((self.data, other.data.toarray()))
-                elif isinstance(other.data, DataFrame):
+                elif isinstance(other.data, pd_DataFrame):
                     self.data = np.hstack((self.data, other.data.values))
-                elif isinstance(other.data, DataTable):
+                elif isinstance(other.data, dt_DataTable):
                     self.data = np.hstack((self.data, other.data.to_numpy()))
                 else:
                     self.data = None
@@ -2067,39 +2067,39 @@ class Dataset:
                 sparse_format = self.data.getformat()
                 if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(other.data):
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
-                elif isinstance(other.data, DataFrame):
+                elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
-                elif isinstance(other.data, DataTable):
+                elif isinstance(other.data, dt_DataTable):
                     self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
                 else:
                     self.data = None
-            elif isinstance(self.data, DataFrame):
+            elif isinstance(self.data, pd_DataFrame):
                 if not PANDAS_INSTALLED:
                     raise LightGBMError("Cannot add features to DataFrame type of raw data "
                                         "without pandas installed")
                 if isinstance(other.data, np.ndarray):
-                    self.data = concat((self.data, DataFrame(other.data)),
+                    self.data = concat((self.data, pd_DataFrame(other.data)),
                                        axis=1, ignore_index=True)
                 elif scipy.sparse.issparse(other.data):
-                    self.data = concat((self.data, DataFrame(other.data.toarray())),
+                    self.data = concat((self.data, pd_DataFrame(other.data.toarray())),
                                        axis=1, ignore_index=True)
-                elif isinstance(other.data, DataFrame):
+                elif isinstance(other.data, pd_DataFrame):
                     self.data = concat((self.data, other.data),
                                        axis=1, ignore_index=True)
-                elif isinstance(other.data, DataTable):
-                    self.data = concat((self.data, DataFrame(other.data.to_numpy())),
+                elif isinstance(other.data, dt_DataTable):
+                    self.data = concat((self.data, pd_DataFrame(other.data.to_numpy())),
                                        axis=1, ignore_index=True)
                 else:
                     self.data = None
-            elif isinstance(self.data, DataTable):
+            elif isinstance(self.data, dt_DataTable):
                 if isinstance(other.data, np.ndarray):
-                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data)))
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data)))
                 elif scipy.sparse.issparse(other.data):
-                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
-                elif isinstance(other.data, DataFrame):
-                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
-                elif isinstance(other.data, DataTable):
-                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
+                elif isinstance(other.data, pd_DataFrame):
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
+                elif isinstance(other.data, dt_DataTable):
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
                 else:
                     self.data = None
             else:
@@ -2492,7 +2492,7 @@ class Booster:
                                                      tree_index=tree['tree_index'],
                                                      feature_names=feature_names))
 
-        return DataFrame(model_list, columns=model_list[0].keys())
+        return pd_DataFrame(model_list, columns=model_list[0].keys())
 
     def set_train_data_name(self, name):
         """Set the name to the training Dataset.
@@ -3341,7 +3341,7 @@ class Booster:
             ret = np.column_stack((bin_edges[1:], hist))
             ret = ret[ret[:, 1] > 0]
             if PANDAS_INSTALLED:
-                return DataFrame(ret, columns=['SplitValue', 'Count'])
+                return pd_DataFrame(ret, columns=['SplitValue', 'Count'])
             else:
                 return ret
         else:
