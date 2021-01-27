@@ -184,7 +184,7 @@ def _split_to_parts(data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
 def _train(
     client: Client,
     data: _DaskCollection,
-    label:_DaskCollection,
+    label: _DaskCollection,
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
     sample_weight: Optional[_DaskCollection] = None,
