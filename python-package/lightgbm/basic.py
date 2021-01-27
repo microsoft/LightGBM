@@ -1161,13 +1161,13 @@ class Dataset:
                     self.categorical_feature = categorical_feature_from_params
                 elif self.categorical_feature != categorical_feature_from_params:
                     warnings.warn("categorical_feature {0} in params will be ignored, using {1}".format(
-                    categorical_feature_from_params, self.categorical_feature))
+                        categorical_feature_from_params, self.categorical_feature))
             if cat_converters_from_params is not None:
                 if self.cat_converters is None:
                     self.cat_converters = cat_converters_from_params
                 elif self.cat_converters != cat_converters_from_params:
                     warnings.warn("cat_converters {0} in params will be ignored, using {1}".format(
-                    cat_converters_from_params, self.cat_converters))
+                        cat_converters_from_params, self.cat_converters))
 
     def get_params(self):
         """Get the used parameters in the Dataset.
