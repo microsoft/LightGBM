@@ -196,17 +196,17 @@ def _train(
     ----------
     client : dask.distributed.Client
         Dask client.
-    data : dask array or dask DataFrame of shape = [n_samples, n_features]
+    data : dask Array or dask DataFrame of shape = [n_samples, n_features]
         Input feature matrix.
-    label : dask array, dask DataFrame, or dask Series of shape = [n_samples]
+    label : dask Array, dask DataFrame, or dask Series of shape = [n_samples]
         The target values (class labels in classification, real numbers in regression).
     params : dict
         Parameters passed to constructor of the local underlying model.
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Class of the local underlying model.
-    sample_weight : dask array or dask DataFrame or Dask Series or None of shape = [n_samples] or None, optional (default=None)
+    sample_weight : dask Array or dask DataFrame or Dask Series or None of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
-    group : dask array or dask DataFrame or Dask Series of shape = [n_samples] or None, optional (default=None)
+    group : dask Array or dask DataFrame or Dask Series of shape = [n_samples] or None, optional (default=None)
         Group/query data.
         Only used in the learning-to-rank task.
         sum(group) = n_samples.
@@ -377,7 +377,7 @@ def _predict(
     ----------
     model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Fitted underlying model.
-    data : dask array or dask DataFrame of shape = [n_samples, n_features]
+    data : dask Array or dask DataFrame of shape = [n_samples, n_features]
         Input feature matrix.
     raw_score : bool, optional (default=False)
         Whether to predict raw scores.
@@ -394,11 +394,11 @@ def _predict(
 
     Returns
     -------
-    predicted_result : dask array of shape = [n_samples] or shape = [n_samples, n_classes]
+    predicted_result : dask Array of shape = [n_samples] or shape = [n_samples, n_classes]
         The predicted values.
-    X_leaves : dask array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
+    X_leaves : dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
         If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-    X_SHAP_values : dask array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
+    X_SHAP_values : dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
         If ``pred_contrib=True``, the feature contributions for each sample.
     """
     if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
@@ -429,7 +429,7 @@ def _predict(
             **kwargs
         )
     else:
-        raise TypeError('Data must be either Dask array or dataframe. Got %s.' % str(type(data)))
+        raise TypeError('Data must be either dask Array or dataframe. Got %s.' % str(type(data)))
 
 
 class _DaskLGBMModel:
