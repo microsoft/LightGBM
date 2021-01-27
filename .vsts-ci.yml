@@ -9,7 +9,7 @@ pr:
 - master
 variables:
   AZURE: 'true'
-  PYTHON_VERSION: 3.8
+  PYTHON_VERSION: 3.7
   CONDA_ENV: test-env
 resources:
   containers:
