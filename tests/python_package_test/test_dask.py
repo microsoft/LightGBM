@@ -446,7 +446,7 @@ def test_warns_and_continues_on_unrecognized_tree_learner(client):
     assert dask_regressor.fitted_
 
 
-def test_warns_but_makes_no_changes_for_feature_or_voting_parallel(client):
+def test_warns_but_makes_no_changes_for_feature_or_voting_tree_learner(client):
     X = da.random.random((1e3, 10))
     y = da.random.random((1e3, 1))
     for tree_learner in ['feature_parallel', 'voting']:
