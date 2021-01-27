@@ -21,7 +21,6 @@ from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
                      DASK_INSTALLED, dask_Frame, dask_Array, delayed, Client, default_client, get_worker, wait)
 from .sklearn import LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
 
-_1DArrayLike = Union[List, np.ndarray]
 _DaskCollection = Union[dask_Array, dask_Frame]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
@@ -107,7 +106,7 @@ def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], loc
     return worker_ip_to_port
 
 
-def _concat(seq: Iterable[_DaskPart]) -> _DaskPart:
+def _concat(seq: List[_DaskPart]) -> _DaskPart:
     if isinstance(seq[0], np.ndarray):
         return np.concatenate(seq, axis=0)
     elif isinstance(seq[0], (pd_DataFrame, pd_Series)):
@@ -188,7 +187,7 @@ def _train(
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
     sample_weight: Optional[_DaskCollection] = None,
-    group: Optional[_1DArrayLike] = None,
+    group: Optional[_DaskCollection] = None,
     **kwargs: Any
 ) -> LGBMModel:
     """Inner train routine.
@@ -197,17 +196,17 @@ def _train(
     ----------
     client : dask.distributed.Client
         Dask client.
-    data : dask array of shape = [n_samples, n_features]
+    data : dask array or dask DataFrame of shape = [n_samples, n_features]
         Input feature matrix.
-    label : dask array of shape = [n_samples]
+    label : dask array, dask DataFrame, or dask Series of shape = [n_samples]
         The target values (class labels in classification, real numbers in regression).
     params : dict
         Parameters passed to constructor of the local underlying model.
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Class of the local underlying model.
-    sample_weight : array-like of shape = [n_samples] or None, optional (default=None)
+    sample_weight : dask array or dask DataFrame or Dask Series or None of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
-    group : array-like or None, optional (default=None)
+    group : dask array or dask DataFrame or Dask Series of shape = [n_samples] or None, optional (default=None)
         Group/query data.
         Only used in the learning-to-rank task.
         sum(group) = n_samples.
@@ -379,7 +378,7 @@ def _predict(
     ----------
     model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Fitted underlying model.
-    data : dask array of shape = [n_samples, n_features]
+    data : dask array or dask DataFrame of shape = [n_samples, n_features]
         Input feature matrix.
     raw_score : bool, optional (default=False)
         Whether to predict raw scores.
@@ -475,7 +474,7 @@ class _DaskLGBMModel:
         return model
 
     @staticmethod
-    def _copy_extra_params(source: "_DaskLGBMModel", dest: "_DaskLGBMModel") -> None:
+    def _copy_extra_params(source: Union["_DaskLGBMModel", LGBMModel], dest: Union["_DaskLGBMModel", LGBMModel]) -> None:
         params = source.get_params()
         attributes = source.__dict__
         extra_param_names = set(attributes.keys()).difference(params.keys())
@@ -602,7 +601,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
         init_score: Optional[_DaskCollection] = None,
-        group: Optional[_1DArrayLike] = None,
+        group: Optional[_DaskCollection] = None,
         client: Optional[Client] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
