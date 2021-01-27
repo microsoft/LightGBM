@@ -97,6 +97,9 @@ autodoc_default_options = {
     "show-inheritance": True,
 }
 
+# hide type hints in API docs
+autodoc_typehints = "none"
+
 # Generate autosummary pages. Output should be set with: `:toctree: pythonapi/`
 autosummary_generate = ['Python-API.rst']
 
