@@ -18,10 +18,11 @@ import scipy.sparse as ss
 from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
 from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
                      SKLEARN_INSTALLED,
-                     DASK_INSTALLED, dask_Frame, dask_Array, delayed, Client, default_client, get_worker, wait)
+                     DASK_INSTALLED, dask_DataFrame, dask_Array, dask_Series, delayed, Client, default_client, get_worker, wait)
 from .sklearn import LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
 
-_DaskCollection = Union[dask_Array, dask_Frame]
+_DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
+_DaskMatrixLike = Union[dask_Array, dask_DataFrame]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
@@ -182,7 +183,7 @@ def _split_to_parts(data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
 
 def _train(
     client: Client,
-    data: _DaskCollection,
+    data: _DaskMatrixLike,
     label: _DaskCollection,
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
@@ -362,7 +363,7 @@ def _predict_part(
 
 def _predict(
     model: LGBMModel,
-    data: _DaskCollection,
+    data: _DaskMatrixLike,
     raw_score: bool = False,
     pred_proba: bool = False,
     pred_leaf: bool = False,
@@ -402,7 +403,7 @@ def _predict(
     """
     if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
         raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
-    if isinstance(data, dask_Frame):
+    if isinstance(data, dask_DataFrame):
         return data.map_partitions(
             _predict_part,
             model=model,
@@ -436,7 +437,7 @@ class _DaskLGBMModel:
     def _fit(
         self,
         model_factory: Type[LGBMModel],
-        X: _DaskCollection,
+        X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
@@ -485,7 +486,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     def fit(
         self,
-        X: _DaskCollection,
+        X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
         client: Optional[Client] = None,
@@ -508,7 +509,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
                    + ' ' * 12 + 'Dask client.\n'
                    + ' ' * 8 + _init_score + _after_init_score)
 
-    def predict(self, X: _DaskCollection, **kwargs: Any) -> _DaskCollection:
+    def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> _DaskCollection:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
         return _predict(
             model=self.to_local(),
@@ -546,7 +547,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
     def fit(
         self,
-        X: _DaskCollection,
+        X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
         client: Optional[Client] = None,
@@ -569,7 +570,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
                    + ' ' * 12 + 'Dask client.\n'
                    + ' ' * 8 + _init_score + _after_init_score)
 
-    def predict(self, X: _DaskCollection, **kwargs) -> _DaskCollection:
+    def predict(self, X: _DaskMatrixLike, **kwargs) -> _DaskCollection:
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
         return _predict(
             model=self.to_local(),
@@ -595,7 +596,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
     def fit(
         self,
-        X: _DaskCollection,
+        X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
         init_score: Optional[_DaskCollection] = None,
@@ -624,7 +625,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
                    + ' ' * 12 + 'Dask client.\n'
                    + ' ' * 8 + _eval_set + _after_eval_set)
 
-    def predict(self, X: _DaskCollection, **kwargs: Any) -> _DaskCollection:
+    def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> _DaskCollection:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
         return _predict(self.to_local(), X, **kwargs)
 
