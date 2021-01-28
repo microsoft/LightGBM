@@ -103,7 +103,7 @@ packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'both'"
 fi
-Rscript --vanilla -e "options(install.packages.compile.from.source = 'both'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
+Rscript --vanilla -e "options(install.packages.compile.from.source = 'always'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
 cd ${BUILD_DIRECTORY}
 
