@@ -80,9 +80,13 @@ else  # Linux
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
         apt-get install --no-install-recommends -y \
-            cmake \
             curl \
             wget
+        curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
+        apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -rs) main" -y
+        apt-get update
+        apt-get install --no-install-recommends -y \
+            cmake
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
         wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
