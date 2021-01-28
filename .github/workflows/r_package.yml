@@ -20,26 +20,26 @@ jobs:
           ################
           # CMake builds #
           ################
-          # - os: ubuntu-latest
-          #   task: r-package
-          #   compiler: gcc
-          #   r_version: 3.6
-          #   build_type: cmake
-          # - os: ubuntu-latest
-          #   task: r-package
-          #   compiler: gcc
-          #   r_version: 4.0
-          #   build_type: cmake
-          # - os: ubuntu-latest
-          #   task: r-package
-          #   compiler: clang
-          #   r_version: 3.6
-          #   build_type: cmake
-          # - os: ubuntu-latest
-          #   task: r-package
-          #   compiler: clang
-          #   r_version: 4.0
-          #   build_type: cmake
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 3.6
+            build_type: cmake
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
+            build_type: cmake
+          - os: ubuntu-latest
+            task: r-package
+            compiler: clang
+            r_version: 3.6
+            build_type: cmake
+          - os: ubuntu-latest
+            task: r-package
+            compiler: clang
+            r_version: 4.0
+            build_type: cmake
           - os: macOS-latest
             task: r-package
             compiler: gcc
@@ -66,40 +66,40 @@ jobs:
             toolchain: MSYS
             r_version: 4.0
             build_type: cmake
-          # # Visual Studio 2017
-          # - os: windows-2016
-          #   task: r-package
-          #   compiler: MSVC
-          #   toolchain: MSVC
-          #   r_version: 3.6
-          #   build_type: cmake
-          # # Visual Studio 2019
-          # - os: windows-2019
-          #   task: r-package
-          #   compiler: MSVC
-          #   toolchain: MSVC
-          #   r_version: 4.0
-          #   build_type: cmake
+          # Visual Studio 2017
+          - os: windows-2016
+            task: r-package
+            compiler: MSVC
+            toolchain: MSVC
+            r_version: 3.6
+            build_type: cmake
+          # Visual Studio 2019
+          - os: windows-2019
+            task: r-package
+            compiler: MSVC
+            toolchain: MSVC
+            r_version: 4.0
+            build_type: cmake
           ###############
           # CRAN builds #
           ###############
-          # - os: windows-latest
-          #   task: r-package
-          #   compiler: MINGW
-          #   toolchain: MINGW
-          #   r_version: 3.6
-          #   build_type: cran
-          # - os: windows-latest
-          #   task: r-package
-          #   compiler: MINGW
-          #   toolchain: MSYS
-          #   r_version: 4.0
-          #   build_type: cran
-          # - os: ubuntu-latest
-          #   task: r-package
-          #   compiler: gcc
-          #   r_version: 4.0
-          #   build_type: cran
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
+            toolchain: MINGW
+            r_version: 3.6
+            build_type: cran
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
+            toolchain: MSYS
+            r_version: 4.0
+            build_type: cran
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
+            build_type: cran
           - os: macOS-latest
             task: r-package
             compiler: clang
