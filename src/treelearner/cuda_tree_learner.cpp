@@ -265,7 +265,7 @@ void CUDATreeLearner::CountDenseFeatureGroups() {
     }
   }
   if (!num_dense_feature_groups_) {
-    Log::Warning("GPU acceleration is disabled because no non-trival dense features can be found");
+    Log::Warning("GPU acceleration is disabled because no non-trivial dense features can be found");
   }
 }
 
