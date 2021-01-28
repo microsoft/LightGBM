@@ -204,9 +204,9 @@ def _train(
         Parameters passed to constructor of the local underlying model.
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Class of the local underlying model.
-    sample_weight : dask Array or dask DataFrame or Dask Series or None of shape = [n_samples] or None, optional (default=None)
+    sample_weight : dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
-    group : dask Array or dask DataFrame or Dask Series of shape = [n_samples] or None, optional (default=None)
+    group : dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Group/query data.
         Only used in the learning-to-rank task.
         sum(group) = n_samples.
@@ -429,7 +429,7 @@ def _predict(
             **kwargs
         )
     else:
-        raise TypeError('Data must be either dask Array or dataframe. Got %s.' % str(type(data)))
+        raise TypeError('Data must be either dask Array or dask DataFrame. Got %s.' % str(type(data)))
 
 
 class _DaskLGBMModel:
@@ -509,7 +509,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
                    + ' ' * 12 + 'Dask client.\n'
                    + ' ' * 8 + _init_score + _after_init_score)
 
-    def predict(self, X: _DaskCollection, **kwargs: Any) -> _DaskCollection:
+    def predict(self, X: _DaskCollection, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
         return _predict(
             model=self.to_local(),
@@ -520,7 +520,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     predict.__doc__ = LGBMClassifier.predict.__doc__
 
-    def predict_proba(self, X: _DaskCollection, **kwargs: Any) -> _DaskCollection:
+    def predict_proba(self, X: _DaskCollection, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict_proba."""
         return _predict(
             model=self.to_local(),
@@ -570,7 +570,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
                    + ' ' * 12 + 'Dask client.\n'
                    + ' ' * 8 + _init_score + _after_init_score)
 
-    def predict(self, X: _DaskCollection, **kwargs) -> _DaskCollection:
+    def predict(self, X: _DaskCollection, **kwargs) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
         return _predict(
             model=self.to_local(),
@@ -625,7 +625,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
                    + ' ' * 12 + 'Dask client.\n'
                    + ' ' * 8 + _eval_set + _after_eval_set)
 
-    def predict(self, X: _DaskCollection, **kwargs: Any) -> _DaskCollection:
+    def predict(self, X: _DaskCollection, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
         return _predict(self.to_local(), X, **kwargs)
 
