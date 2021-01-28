@@ -253,10 +253,9 @@ def _train(
 
     # Some passed-in parameters can be removed:
     #   * 'machines': constructed automatically from Dask worker list
-    #   * 'machine_list_filename': not relevant for the Dask interface
     #   * 'num_machines': set automatically from Dask worker list
     #   * 'num_threads': overridden to match nthreads on each Dask process
-    for param_alias in _ConfigAliases.get('machines', 'machine_list_filename', 'num_machines', 'num_threads'):
+    for param_alias in _ConfigAliases.get('machines', 'num_machines', 'num_threads'):
         params.pop(param_alias, None)
 
     # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality

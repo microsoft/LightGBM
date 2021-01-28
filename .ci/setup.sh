@@ -77,11 +77,12 @@ else  # Linux
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
     if [[ $TASK == "cuda" ]]; then
+        echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
-        apt-get install --no-install-recommends -y curl wget
-        curl -sL https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh -o cmake.sh
-        chmod +x cmake.sh
-        ./cmake.sh --prefix=/usr/local --exclude-subdir
+        apt-get install --no-install-recommends -y \
+            cmake \
+            curl \
+            wget
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
         wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh

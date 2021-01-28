@@ -1,17 +1,35 @@
-name: CUDA GitHub Actions
+name: CUDA Version
 
 on:
-  pull_request_review_comment:
-    types: [created]
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+env:
+  github_actions: 'true'
+  os_name: linux
+  compiler: gcc
+  task: cuda
+  conda_env: test-env
 
 jobs:
   test:
-    name: CUDA
+    name: cuda ${{ matrix.method }} (linux, Python ${{ matrix.python_version }})
     runs-on: [self-hosted, linux]
-    if: github.event.comment.body == '/gha run cuda-builds' && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association)
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      matrix:
+        include:
+          - method: source
+            python_version: 3.6
+          - method: pip
+            python_version: 3.7
+          - method: wheel
+            python_version: 3.8
     steps:
       - name: Setup or update software on host machine
         run: |
@@ -34,6 +52,7 @@ jobs:
                 docker-ce \
                 docker-ce-cli \
                 nvidia-docker2
+            sudo chmod a+rw /var/run/docker.sock
             sudo systemctl restart docker
       - name: Remove old folder with repository
         run: sudo rm -rf $GITHUB_WORKSPACE
@@ -42,18 +61,19 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
-      - name: Test CUDA
+      - name: Setup and run tests
         run: |
             export ROOT_DOCKER_FOLDER=/LightGBM
             cat > docker.env <<EOF
-            TASK=cuda
-            METHOD=source
-            COMPILER=gcc
-            GITHUB_ACTIONS=true
-            OS_NAME=linux
+            GITHUB_ACTIONS=${{ env.github_actions }}
+            OS_NAME=${{ env.os_name }}
+            COMPILER=${{ env.compiler }}
+            TASK=${{ env.task }}
+            METHOD=${{ matrix.method }}
+            CONDA_ENV=${{ env.conda_env }}
+            PYTHON_VERSION=${{ matrix.python_version }}
             BUILD_DIRECTORY=$ROOT_DOCKER_FOLDER
-            CONDA_ENV=test-env
-            PYTHON_VERSION=3.8
+            LGB_VER=$(head -n 1 VERSION.txt)
             EOF
             cat > docker-script.sh <<EOF
             export CONDA=\$HOME/miniconda
@@ -62,4 +82,11 @@ jobs:
             $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
             $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
             EOF
-            sudo docker run --env-file docker.env -v "$GITHUB_WORKSPACE":"$ROOT_DOCKER_FOLDER" --rm --gpus all nvidia/cuda:11.0-devel-ubuntu20.04 /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
+            docker run --env-file docker.env -v "$GITHUB_WORKSPACE":"$ROOT_DOCKER_FOLDER" --rm --gpus all nvidia/cuda:11.2.0-devel /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
+  all-successful:
+    # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+    - name: Note that all tests succeeded
+      run: echo "🎉"
