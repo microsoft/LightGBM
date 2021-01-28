@@ -570,7 +570,7 @@ The CUDA-based build is a separate implementation and requires an NVIDIA graphic
 Linux
 ^^^^^
 
-On Linux a CUDA version of LightGBM can be built using **CUDA**, **CMake** and **gcc** or **Clang**.
+On Linux a CUDA version of LightGBM can be built using **CUDA**, **CMake** and **gcc**.
 
 The following dependencies should be installed before compilation:
 
