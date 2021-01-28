@@ -222,7 +222,7 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
         'voting_parallel'
     }
     if params["tree_learner"] not in allowed_tree_learners:
-        _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % tree_learner)
+        _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % params['tree_learner'])
         params['tree_learner'] = 'data'
 
     if params['tree_learner'] not in {'data', 'data_parallel'}:
@@ -233,10 +233,9 @@ def _train(client, data, label, params, model_factory, sample_weight=None, group
 
     # Some passed-in parameters can be removed:
     #   * 'machines': constructed automatically from Dask worker list
-    #   * 'machine_list_filename': not relevant for the Dask interface
     #   * 'num_machines': set automatically from Dask worker list
     #   * 'num_threads': overridden to match nthreads on each Dask process
-    for param_alias in _ConfigAliases.get('machines', 'machine_list_filename', 'num_machines', 'num_threads'):
+    for param_alias in _ConfigAliases.get('machines', 'num_machines', 'num_threads'):
         params.pop(param_alias, None)
 
     # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality
