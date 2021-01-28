@@ -199,7 +199,7 @@ def _train(
         Dask client.
     data : dask Array or dask DataFrame of shape = [n_samples, n_features]
         Input feature matrix.
-    label : dask Array, dask DataFrame, or dask Series of shape = [n_samples]
+    label : dask Array, dask DataFrame or dask Series of shape = [n_samples]
         The target values (class labels in classification, real numbers in regression).
     params : dict
         Parameters passed to constructor of the local underlying model.
