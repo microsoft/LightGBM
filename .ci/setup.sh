@@ -81,6 +81,8 @@ else  # Linux
         apt-get update
         apt-get install --no-install-recommends -y \
             curl \
+            lsb-release \
+            software-properties-common \
             wget
         curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
         apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -rs) main" -y
