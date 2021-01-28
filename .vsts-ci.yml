@@ -31,16 +31,16 @@ jobs:
   container: ubuntu1404
   strategy:
     matrix:
-      bdist:
-        TASK: bdist
-      bdist2:
-        TASK: bdist
-      bdist3:
-        TASK: bdist
-      bdist4:
-        TASK: bdist
-      bdist5:
-        TASK: bdist
+      regular:
+        TASK: regular
+      regular2:
+        TASK: regular
+      regular3:
+        TASK: regular
+      regular4:
+        TASK: regular
+      regular5:
+        TASK: regular
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -69,16 +69,16 @@ jobs:
   container: ubuntu-latest
   strategy:
     matrix:
-      bdist:
-        TASK: bdist
-      bdist2:
-        TASK: bdist
-      bdist3:
-        TASK: bdist
-      bdist4:
-        TASK: bdist
-      bdist5:
-        TASK: bdist
+      regular:
+        TASK: regular
+      regular2:
+        TASK: regular
+      regular3:
+        TASK: regular
+      regular4:
+        TASK: regular
+      regular5:
+        TASK: regular
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
