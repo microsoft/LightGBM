@@ -3,7 +3,7 @@ name: R-package
 on:
   push:
     branches:
-    - r_ci
+    - master
   pull_request:
     branches:
     - master
