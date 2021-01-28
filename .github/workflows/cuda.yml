@@ -3,7 +3,7 @@ name: CUDA Version
 on:
   push:
     branches:
-    - master
+    - fix_cuda_tests
   pull_request:
     branches:
     - master
