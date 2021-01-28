@@ -97,11 +97,6 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
 fi
 
-# hack to fix https://github.com/microsoft/LightGBM/pull/3876#issuecomment-769187766
-if [[ $OS_NAME == "macos" ]]; then
-    Rscript --vanilla -e "install.packages('withr', repos = '${CRAN_MIRROR}', type = 'source', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))"
-fi
-
 # Manually install Depends and Imports libraries + 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
