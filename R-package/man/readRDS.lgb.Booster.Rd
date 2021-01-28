@@ -4,7 +4,7 @@
 \alias{readRDS.lgb.Booster}
 \title{readRDS for \code{lgb.Booster} models}
 \usage{
-readRDS.lgb.Booster(file = "", refhook = NULL)
+readRDS.lgb.Booster(file, refhook = NULL)
 }
 \arguments{
 \item{file}{a connection or the name of the file where the R object is saved to or read from.}
@@ -12,13 +12,13 @@ readRDS.lgb.Booster(file = "", refhook = NULL)
 \item{refhook}{a hook function for handling reference objects.}
 }
 \value{
-\code{lgb.Booster}.
+\code{lgb.Booster}
 }
 \description{
 Attempts to load a model stored in a \code{.rds} file, using \code{\link[base]{readRDS}}
 }
 \examples{
-\dontrun{
+\donttest{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train

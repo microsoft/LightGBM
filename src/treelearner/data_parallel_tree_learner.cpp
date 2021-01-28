@@ -30,7 +30,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, boo
   auto max_cat_threshold = this->config_->max_cat_threshold;
   // need to be able to hold smaller and larger best splits in SyncUpGlobalBestSplit
   size_t split_info_size = static_cast<size_t>(SplitInfo::Size(max_cat_threshold) * 2);
-  size_t histogram_size = static_cast<size_t>(this->train_data_->NumTotalBin() * kHistEntrySize);
+  size_t histogram_size = static_cast<size_t>(this->share_state_->num_hist_total_bin() * kHistEntrySize);
 
   // allocate buffer for communication
   size_t buffer_size = std::max(histogram_size, split_info_size);

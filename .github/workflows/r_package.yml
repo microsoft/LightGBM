@@ -1,4 +1,4 @@
-name: GitHub Actions
+name: R-package
 
 on:
   push:
@@ -40,11 +40,6 @@ jobs:
             compiler: clang
             r_version: 4.0
             build_type: cmake
-          - os: ubuntu-latest
-            task: r-package-check-docs
-            compiler: gcc
-            r_version: 4.0
-            build_type: cmake
           - os: macOS-latest
             task: r-package
             compiler: gcc
@@ -64,12 +59,6 @@ jobs:
             task: r-package
             compiler: clang
             r_version: 4.0
-            build_type: cmake
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
             build_type: cmake
           - os: windows-latest
             task: r-package
@@ -97,6 +86,12 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MINGW
+            toolchain: MINGW
+            r_version: 3.6
+            build_type: cran
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
             toolchain: MSYS
             r_version: 4.0
             build_type: cran
@@ -116,10 +111,12 @@ jobs:
         shell: pwsh
         run: git config --global core.autocrlf false
       - name: Checkout repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2.3.4
         with:
           fetch-depth: 5
           submodules: true
+      - name: Install pandoc
+        uses: r-lib/actions/setup-pandoc@v1
       - name: Setup and run tests on Linux and macOS
         if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
         shell: bash
@@ -129,23 +126,14 @@ jobs:
           export GITHUB_ACTIONS="true"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
               export OS_NAME="macos"
-              export R_MAC_VERSION=3.6.3
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
-              export R_LINUX_VERSION=3.6.3-1bionic
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export CONDA="$HOME/miniconda"
-          export PATH="$CONDA/bin:${HOME}/.local/bin:$PATH"
           export R_VERSION="${{ matrix.r_version }}"
           export R_BUILD_TYPE="${{ matrix.build_type }}"
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
-      - name: Use conda on Windows
-        if: startsWith(matrix.os, 'windows')
-        uses: goanpeca/setup-miniconda@v1
-        with:
-          auto-update-conda: false
       - name: Setup and run tests on Windows
         if: startsWith(matrix.os, 'windows')
         shell: pwsh -command ". {0}"
@@ -157,12 +145,40 @@ jobs:
           $env:COMPILER = "${{ matrix.compiler }}"
           $env:GITHUB_ACTIONS = "true"
           $env:TASK = "${{ matrix.task }}"
-          conda init powershell
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
+  test-r-sanitizers:
+    name: r-package (ubuntu-latest, R-devel, GCC ASAN/UBSAN)
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    container: rhub/rocker-gcc-san
+    steps:
+      - name: Install Git before checkout
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y git
+      - name: Checkout repository
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Install packages
+        shell: bash
+        run: |
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.r-project.org')"
+          sh build-cran-package.sh
+          Rdevel CMD INSTALL lightgbm_*.tar.gz || exit -1
+      - name: Run tests with sanitizers
+        shell: bash
+        run: |
+          cd R-package/tests
+          Rscriptdevel testthat.R 2>&1 > ubsan-tests.log
+          cat ubsan-tests.log
+          exit $(cat ubsan-tests.log | grep --count "runtime error")
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [test, test-r-sanitizers]
     steps:
     - name: Note that all tests succeeded
       run: echo "🎉"

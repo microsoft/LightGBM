@@ -148,6 +148,17 @@ struct Config {
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
+  // desc = fit piecewise linear gradient boosting tree
+  // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
+  // descl2 = the linear model at each leaf includes all the numerical features in that leaf's branch
+  // descl2 = categorical features are used for splits as normal but are not used in the linear models
+  // descl2 = missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
+  // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
+  // descl2 = **Note**: only works with CPU and ``serial`` tree learner
+  // descl2 = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
+  // descl2 = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
+  bool linear_tree = false;
+
   // alias = train, train_data, train_data_file, data_filename
   // desc = path of training data, LightGBM will train from this data
   // desc = **Note**: can be used only in CLI version
@@ -218,6 +229,13 @@ struct Config {
   // desc = this seed has lower priority in comparison with other seeds, which means that it will be overridden, if you set other seeds explicitly
   int seed = 0;
 
+  // desc = used only with ``cpu`` device type
+  // desc = setting this to ``true`` should ensure the stable results when using the same data and the same parameters (and different ``num_threads``)
+  // desc = when you use the different seeds, different LightGBM versions, the binaries compiled by different compilers, or in different systems, the results are expected to be different
+  // desc = you can `raise issues <https://github.com/microsoft/LightGBM/issues>`__ in LightGBM GitHub repo when you meet the unstable results
+  // desc = **Note**: setting this to ``true`` may slow down the training
+  bool deterministic = false;
+
   #pragma endregion
 
   #pragma region Learning Control Parameters
@@ -255,6 +273,7 @@ struct Config {
   // alias = min_data_per_leaf, min_data, min_child_samples
   // check = >=0
   // desc = minimal number of data in one leaf. Can be used to deal with over-fitting
+  // desc = **Note**: this is an approximation based on the Hessian, so occasionally you may observe splits which produce leaf nodes that have less than this many observations
   int min_data_in_leaf = 20;
 
   // alias = min_sum_hessian_per_leaf, min_sum_hessian, min_hessian, min_child_weight
@@ -297,7 +316,7 @@ struct Config {
 
   // alias = subsample_freq
   // desc = frequency for bagging
-  // desc = ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration
+  // desc = ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration. Every ``k``-th iteration, LightGBM will randomly select ``bagging_fraction * 100 %`` of the data to use for the next ``k`` iterations
   // desc = **Note**: to enable bagging, ``bagging_fraction`` should be set to value smaller than ``1.0`` as well
   int bagging_freq = 0;
 
@@ -308,7 +327,7 @@ struct Config {
   // alias = sub_feature, colsample_bytree
   // check = >0.0
   // check = <=1.0
-  // desc = LightGBM will randomly select part of features on each iteration (tree) if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
+  // desc = LightGBM will randomly select a subset of features on each iteration (tree) if ``feature_fraction`` is smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
   // desc = can be used to speed up training
   // desc = can be used to deal with over-fitting
   double feature_fraction = 1.0;
@@ -316,7 +335,7 @@ struct Config {
   // alias = sub_feature_bynode, colsample_bynode
   // check = >0.0
   // check = <=1.0
-  // desc = LightGBM will randomly select part of features on each tree node if ``feature_fraction_bynode`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node
+  // desc = LightGBM will randomly select a subset of features on each tree node if ``feature_fraction_bynode`` is smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node
   // desc = can be used to deal with over-fitting
   // desc = **Note**: unlike ``feature_fraction``, this cannot speed up training
   // desc = **Note**: if both ``feature_fraction`` and ``feature_fraction_bynode`` are smaller than ``1.0``, the final fraction of each node is ``feature_fraction * feature_fraction_bynode``
@@ -327,6 +346,7 @@ struct Config {
 
   // desc = use extremely randomized trees
   // desc = if set to ``true``, when evaluating node splits LightGBM will check only one randomly-chosen threshold for each feature
+  // desc = can be used to speed up training
   // desc = can be used to deal with over-fitting
   bool extra_trees = false;
 
@@ -336,9 +356,10 @@ struct Config {
   // alias = early_stopping_rounds, early_stopping, n_iter_no_change
   // desc = will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
   // desc = ``<= 0`` means disable
+  // desc = can be used to speed up training
   int early_stopping_round = 0;
 
-  // desc = set this to ``true``, if you want to use only the first metric for early stopping
+  // desc = LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping
   bool first_metric_only = false;
 
   // alias = max_tree_output, max_leaf_output
@@ -357,9 +378,14 @@ struct Config {
   // desc = L2 regularization
   double lambda_l2 = 0.0;
 
+  // check = >=0.0
+  // desc = linear tree regularization, corresponds to the parameter ``lambda`` in Eq. 3 of `Gradient Boosting with Piece-Wise Linear Regression Trees <https://arxiv.org/pdf/1802.05640.pdf>`__
+  double linear_lambda = 0.0;
+
   // alias = min_split_gain
   // check = >=0.0
   // desc = the minimal gain to perform split
+  // desc = can be used to speed up training
   double min_gain_to_split = 0.0;
 
   // alias = rate_drop
@@ -410,7 +436,8 @@ struct Config {
 
   // check = >0
   // desc = used for the categorical features
-  // desc = limit the max threshold points in categorical features
+  // desc = limit number of split points considered for categorical features. See `the documentation on how LightGBM finds optimal splits for categorical features <./Features.rst#optimal-split-for-categorical-features>`_ for more details
+  // desc = can be used to speed up training
   int max_cat_threshold = 32;
 
   // check = >=0.0
@@ -504,7 +531,7 @@ struct Config {
   // desc = helps prevent overfitting on leaves with few samples
   // desc = if set to zero, no smoothing is applied
   // desc = if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``
-  // desc = larger values give stronger regularisation
+  // desc = larger values give stronger regularization
   // descl2 = the weight of each node is ``(n / path_smooth) * w + w_p / (n / path_smooth + 1)``, where ``n`` is the number of samples in the node, ``w`` is the optimal node weight to minimise the loss (approximately ``-sum_gradients / sum_hessians``), and ``w_p`` is the weight of the parent node
   // descl2 = note that the parent output ``w_p`` itself has smoothing applied, unless it is the root node, so that the smoothing effect accumulates with the tree depth
   double path_smooth = 0;
@@ -573,9 +600,10 @@ struct Config {
 
   // alias = subsample_for_bin
   // check = >0
-  // desc = number of data that sampled to construct histogram bins
-  // desc = setting this to larger value will give better training result, but will increase data loading time
+  // desc = number of data that sampled to construct feature discrete bins
+  // desc = setting this to larger value will give better training result, but may increase data loading time
   // desc = set this to larger value if data is very sparse
+  // desc = **Note**: don't set this to small values, otherwise, you may encounter unexpected errors and poor accuracy
   int bin_construct_sample_cnt = 200000;
 
   // alias = data_seed
@@ -598,7 +626,7 @@ struct Config {
   // desc = set this to ``false`` to use ``na`` for representing missing values
   bool zero_as_missing = false;
 
-  // desc = set this to ``true`` to pre-filter the unsplittable features by ``min_data_in_leaf``
+  // desc = set this to ``true`` (the default) to tell LightGBM to ignore the features that are unsplittable based on ``min_data_in_leaf``
   // desc = as dataset object is initialized only once and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_in_leaf``, otherwise features are filtered by ``min_data_in_leaf`` firstly if you don't reconstruct dataset object
   // desc = **Note**: setting this to ``false`` may slow down the training
   bool feature_pre_filter = true;
@@ -642,7 +670,7 @@ struct Config {
   // desc = use number for index, e.g. ``query=0`` means column\_0 is the query id
   // desc = add a prefix ``name:`` for column name, e.g. ``query=name:query_id``
   // desc = **Note**: works only in case of loading data directly from file
-  // desc = **Note**: data should be grouped by query\_id
+  // desc = **Note**: data should be grouped by query\_id, for more information, see `Query Data <#query-data>`__
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0 and query\_id is column\_1, the correct parameter is ``query=0``
   std::string group_column = "";
 
@@ -835,8 +863,9 @@ struct Config {
 
   // check = >0
   // desc = used only in ``lambdarank`` application
-  // desc = used for truncating the max DCG, refer to "truncation level" in the Sec. 3 of `LambdaMART paper <https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/MSR-TR-2010-82.pdf>`__
-  int lambdarank_truncation_level = 20;
+  // desc = controls the number of top-results to focus on during training, refer to "truncation level" in the Sec. 3 of `LambdaMART paper <https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/MSR-TR-2010-82.pdf>`__
+  // desc = this parameter is closely related to the desirable cutoff ``k`` in the metric **NDCG@k** that we aim at optimizing the ranker for. The optimal setting for this parameter is likely to be slightly higher than ``k`` (e.g., ``k + 3``) to include more pairs of documents to train on, but perhaps not too high to avoid deviating too much from the desired target metric **NDCG@k**
+  int lambdarank_truncation_level = 30;
 
   // desc = used only in ``lambdarank`` application
   // desc = set this to ``true`` to normalize the lambdas for different queries, and improve the performance for unbalanced data
@@ -947,6 +976,7 @@ struct Config {
   // alias = machine_list_file, machine_list, mlist
   // desc = path of file that lists machines for this parallel learning application
   // desc = each line contains one IP and one port for one machine. The format is ``ip port`` (space as a separator)
+  // desc = **Note**: can be used only in CLI version
   std::string machine_list_filename = "";
 
   // alias = workers, nodes
@@ -1145,8 +1175,6 @@ inline std::string ParseMetricAlias(const std::string& type) {
     return "kullback_leibler";
   } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
     return "mape";
-  } else if (type == std::string("auc_mu")) {
-    return "auc_mu";
   } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
     return "custom";
   }

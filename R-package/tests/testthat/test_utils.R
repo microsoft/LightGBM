@@ -67,6 +67,10 @@ test_that("lgb.last_error() throws an error if there are no errors", {
 })
 
 test_that("lgb.last_error() correctly returns errors from the C++ side", {
+    testthat::skip(paste0(
+        "Skipping this test because it causes valgrind to think "
+        , "there is a memory leak, and needs to be rethought"
+    ))
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dvalid1 <- lgb.Dataset(

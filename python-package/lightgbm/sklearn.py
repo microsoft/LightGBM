@@ -1,22 +1,21 @@
 # coding: utf-8
 """Scikit-learn wrapper interface for LightGBM."""
-from __future__ import absolute_import
-
 import copy
-import warnings
+
+from inspect import signature
 
 import numpy as np
 
-from .basic import Dataset, LightGBMError, _ConfigAliases
+from .basic import Dataset, LightGBMError, _ConfigAliases, _choose_param_value, _log_warning
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckSampleWeight,
                      _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     argc_, range_, zip_, string_type, DataFrame, DataTable)
+                     pd_DataFrame, dt_DataTable)
 from .engine import train
 
 
-class _ObjectiveFunctionWrapper(object):
+class _ObjectiveFunctionWrapper:
     """Proxy class for objective function."""
 
     def __init__(self, func):
@@ -36,7 +35,11 @@ class _ObjectiveFunctionWrapper(object):
                 y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The predicted values.
                 group : array-like
-                    Group/query data, used for ranking task.
+                    Group/query data.
+                    Only used in the learning-to-rank task.
+                    sum(group) = n_samples.
+                    For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+                    where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
                 grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The value of the first order derivative (gradient) for each sample point.
                 hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
@@ -69,7 +72,7 @@ class _ObjectiveFunctionWrapper(object):
             The value of the second order derivative (Hessian) for each sample point.
         """
         labels = dataset.get_label()
-        argc = argc_(self.func)
+        argc = len(signature(self.func).parameters)
         if argc == 2:
             grad, hess = self.func(labels, preds)
         elif argc == 3:
@@ -88,15 +91,15 @@ class _ObjectiveFunctionWrapper(object):
                 num_class = len(grad) // num_data
                 if num_class * num_data != len(grad):
                     raise ValueError("Length of grad and hess should equal to num_class * num_data")
-                for k in range_(num_class):
-                    for i in range_(num_data):
+                for k in range(num_class):
+                    for i in range(num_data):
                         idx = k * num_data + i
                         grad[idx] *= weight[i]
                         hess[idx] *= weight[i]
         return grad, hess
 
 
-class _EvalFunctionWrapper(object):
+class _EvalFunctionWrapper:
     """Proxy class for evaluation function."""
 
     def __init__(self, func):
@@ -122,7 +125,11 @@ class _EvalFunctionWrapper(object):
                 weight : array-like of shape = [n_samples]
                     The weight of samples.
                 group : array-like
-                    Group/query data, used for ranking task.
+                    Group/query data.
+                    Only used in the learning-to-rank task.
+                    sum(group) = n_samples.
+                    For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+                    where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
                 eval_name : string
                     The name of evaluation function (without whitespaces).
                 eval_result : float
@@ -158,7 +165,7 @@ class _EvalFunctionWrapper(object):
             Is eval result higher better, e.g. AUC is ``is_higher_better``.
         """
         labels = dataset.get_label()
-        argc = argc_(self.func)
+        argc = len(signature(self.func).parameters)
         if argc == 2:
             return self.func(labels, preds)
         elif argc == 3:
@@ -266,7 +273,11 @@ class LGBMModel(_LGBMModelBase):
             y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The predicted values.
             group : array-like
-                Group/query data, used for ranking task.
+                Group/query data.
+                Only used in the learning-to-rank task.
+                sum(group) = n_samples.
+                For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+                where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
             grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The value of the first order derivative (gradient) for each sample point.
             hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
@@ -278,7 +289,7 @@ class LGBMModel(_LGBMModelBase):
         and you should group grad and hess in this way as well.
         """
         if not SKLEARN_INSTALLED:
-            raise LightGBMError('Scikit-learn is required for this module')
+            raise LightGBMError('scikit-learn is required for lightgbm.sklearn')
 
         self.boosting_type = boosting_type
         self.objective = objective
@@ -315,8 +326,16 @@ class LGBMModel(_LGBMModelBase):
         self.set_params(**kwargs)
 
     def _more_tags(self):
-        return {'allow_nan': True,
-                'X_types': ['2darray', 'sparse', '1dlabels']}
+        return {
+            'allow_nan': True,
+            'X_types': ['2darray', 'sparse', '1dlabels'],
+            '_xfail_checks': {
+                'check_no_attributes_set_in_init':
+                'scikit-learn incorrectly asserts that private attributes '
+                'cannot be set in __init__: '
+                '(see https://github.com/microsoft/LightGBM/issues/2628)'
+            }
+        }
 
     def get_params(self, deep=True):
         """Get parameters for this estimator.
@@ -332,7 +351,7 @@ class LGBMModel(_LGBMModelBase):
         params : dict
             Parameter names mapped to their values.
         """
-        params = super(LGBMModel, self).get_params(deep=deep)
+        params = super().get_params(deep=deep)
         params.update(self._other_params)
         return params
 
@@ -376,7 +395,11 @@ class LGBMModel(_LGBMModelBase):
         init_score : array-like of shape = [n_samples] or None, optional (default=None)
             Init score of training data.
         group : array-like or None, optional (default=None)
-            Group data of training data.
+            Group/query data.
+            Only used in the learning-to-rank task.
+            sum(group) = n_samples.
+            For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+            where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         eval_set : list or None, optional (default=None)
             A list of (X, y) tuple pairs to use as validation sets.
         eval_names : list of strings or None, optional (default=None)
@@ -452,7 +475,11 @@ class LGBMModel(_LGBMModelBase):
             weight : array-like of shape = [n_samples]
                 The weight of samples.
             group : array-like
-                Group/query data, used for ranking task.
+                Group/query data.
+                Only used in the learning-to-rank task.
+                sum(group) = n_samples.
+                For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+                where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
             eval_name : string
                 The name of evaluation function (without whitespaces).
             eval_result : float
@@ -510,10 +537,10 @@ class LGBMModel(_LGBMModelBase):
 
         # Separate built-in from callable evaluation metrics
         eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
-        eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, string_type)]
+        eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, str)]
 
         # register default metric for consistency with callable eval_metric case
-        original_metric = self._objective if isinstance(self._objective, string_type) else None
+        original_metric = self._objective if isinstance(self._objective, str) else None
         if original_metric is None:
             # try to deduce from class instance
             if isinstance(self, LGBMRegressor):
@@ -524,16 +551,14 @@ class LGBMModel(_LGBMModelBase):
                 original_metric = "ndcg"
 
         # overwrite default metric by explicitly set metric
-        for metric_alias in _ConfigAliases.get("metric"):
-            if metric_alias in params:
-                original_metric = params.pop(metric_alias)
+        params = _choose_param_value("metric", params, original_metric)
 
         # concatenate metric from params (or default if not provided in params) and eval_metric
-        original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
-        params['metric'] = [e for e in eval_metrics_builtin if e not in original_metric] + original_metric
+        params['metric'] = [params['metric']] if isinstance(params['metric'], (str, type(None))) else params['metric']
+        params['metric'] = [e for e in eval_metrics_builtin if e not in params['metric']] + params['metric']
         params['metric'] = [metric for metric in params['metric'] if metric is not None]
 
-        if not isinstance(X, (DataFrame, DataTable)):
+        if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
             if sample_weight is not None:
                 sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
@@ -668,7 +693,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        if not isinstance(X, (DataFrame, DataTable)):
+        if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
@@ -759,16 +784,11 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
             verbose=True, feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
-        super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
-                                       init_score=init_score, eval_set=eval_set,
-                                       eval_names=eval_names,
-                                       eval_sample_weight=eval_sample_weight,
-                                       eval_init_score=eval_init_score,
-                                       eval_metric=eval_metric,
-                                       early_stopping_rounds=early_stopping_rounds,
-                                       verbose=verbose, feature_name=feature_name,
-                                       categorical_feature=categorical_feature,
-                                       callbacks=callbacks, init_model=init_model)
+        super().fit(X, y, sample_weight=sample_weight, init_score=init_score,
+                    eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
+                    eval_init_score=eval_init_score, eval_metric=eval_metric,
+                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
     _base_doc = LGBMModel.fit.__doc__
@@ -795,7 +815,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         _LGBMCheckClassificationTargets(y)
         self._le = _LGBMLabelEncoder().fit(y)
         _y = self._le.transform(y)
-        self._class_map = dict(zip_(self._le.classes_, self._le.transform(self._le.classes_)))
+        self._class_map = dict(zip(self._le.classes_, self._le.transform(self._le.classes_)))
         if isinstance(self.class_weight, dict):
             self._class_weight = {self._class_map[k]: v for k, v in self.class_weight.items()}
 
@@ -809,7 +829,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                 self._objective = "multiclass"
 
         if not callable(eval_metric):
-            if isinstance(eval_metric, (string_type, type(None))):
+            if isinstance(eval_metric, (str, type(None))):
                 eval_metric = [eval_metric]
             if self._n_classes > 2:
                 for index, metric in enumerate(eval_metric):
@@ -836,17 +856,12 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                 else:
                     valid_sets[i] = (valid_x, self._le.transform(valid_y))
 
-        super(LGBMClassifier, self).fit(X, _y, sample_weight=sample_weight,
-                                        init_score=init_score, eval_set=valid_sets,
-                                        eval_names=eval_names,
-                                        eval_sample_weight=eval_sample_weight,
-                                        eval_class_weight=eval_class_weight,
-                                        eval_init_score=eval_init_score,
-                                        eval_metric=eval_metric,
-                                        early_stopping_rounds=early_stopping_rounds,
-                                        verbose=verbose, feature_name=feature_name,
-                                        categorical_feature=categorical_feature,
-                                        callbacks=callbacks, init_model=init_model)
+        super().fit(X, _y, sample_weight=sample_weight, init_score=init_score, eval_set=valid_sets,
+                    eval_names=eval_names, eval_sample_weight=eval_sample_weight,
+                    eval_class_weight=eval_class_weight, eval_init_score=eval_init_score,
+                    eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds,
+                    verbose=verbose, feature_name=feature_name, categorical_feature=categorical_feature,
+                    callbacks=callbacks, init_model=init_model)
         return self
 
     _base_doc = LGBMModel.fit.__doc__
@@ -911,12 +926,11 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         X_SHAP_values : array-like of shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
             If ``pred_contrib=True``, the feature contributions for each sample.
         """
-        result = super(LGBMClassifier, self).predict(X, raw_score, start_iteration, num_iteration,
-                                                     pred_leaf, pred_contrib, **kwargs)
+        result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
-            warnings.warn("Cannot compute class probabilities or labels "
-                          "due to the usage of customized objective function.\n"
-                          "Returning raw scores instead.")
+            _log_warning("Cannot compute class probabilities or labels "
+                         "due to the usage of customized objective function.\n"
+                         "Returning raw scores instead.")
             return result
         elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
             return result
@@ -959,23 +973,18 @@ class LGBMRanker(LGBMModel):
             elif len(eval_group) != len(eval_set):
                 raise ValueError("Length of eval_group should be equal to eval_set")
             elif (isinstance(eval_group, dict)
-                  and any(i not in eval_group or eval_group[i] is None for i in range_(len(eval_group)))
+                  and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))
                   or isinstance(eval_group, list)
                   and any(group is None for group in eval_group)):
                 raise ValueError("Should set group for all eval datasets for ranking task; "
                                  "if you use dict, the index should start from 0")
 
         self._eval_at = eval_at
-        super(LGBMRanker, self).fit(X, y, sample_weight=sample_weight,
-                                    init_score=init_score, group=group,
-                                    eval_set=eval_set, eval_names=eval_names,
-                                    eval_sample_weight=eval_sample_weight,
-                                    eval_init_score=eval_init_score, eval_group=eval_group,
-                                    eval_metric=eval_metric,
-                                    early_stopping_rounds=early_stopping_rounds,
-                                    verbose=verbose, feature_name=feature_name,
-                                    categorical_feature=categorical_feature,
-                                    callbacks=callbacks, init_model=init_model)
+        super().fit(X, y, sample_weight=sample_weight, init_score=init_score, group=group,
+                    eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
+                    eval_init_score=eval_init_score, eval_group=eval_group, eval_metric=eval_metric,
+                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
     _base_doc = LGBMModel.fit.__doc__

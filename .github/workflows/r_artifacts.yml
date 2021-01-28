@@ -1,0 +1,57 @@
+name: R artifact builds
+
+on:
+  repository_dispatch:
+    types: [gha_run_build_r_artifacts]
+
+jobs:
+  cran-package:
+    name: cran-package
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    container: rocker/r-base
+    env:
+      SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
+    steps:
+      - name: Install essential software before checkout
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y \
+            curl \
+            git \
+            jq
+      - name: Checkout repository
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 5
+          submodules: true
+          repository: microsoft/LightGBM
+          ref: "refs/pull/${{ github.event.client_payload.pr_number }}/merge"
+      - name: Send init status
+        if: ${{ always() }}
+        run: |
+          $GITHUB_WORKSPACE/.ci/append_comment.sh \
+            "${{ github.event.client_payload.comment_number }}" \
+            "Workflow **${{ github.workflow }}** has been triggered! 🚀\r\n${GITHUB_SERVER_URL}/microsoft/LightGBM/actions/runs/${GITHUB_RUN_ID}"
+      - name: Build package
+        shell: bash
+        id: build_package
+        run: |
+          sh build-cran-package.sh || exit -1
+          LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
+          ARTIFACT_NAME=lightgbm-${LGB_VERSION}-r-cran.tar.gz
+          mv lightgbm_${LGB_VERSION}.tar.gz ${ARTIFACT_NAME}
+          echo "::set-output name=artifact_name::${ARTIFACT_NAME}"
+          echo "::set-output name=artifact_path::$(pwd)/${ARTIFACT_NAME}"
+      - name: Upload package
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.build_package.outputs.artifact_name }}
+          path: ${{ steps.build_package.outputs.artifact_path }}
+      - name: Send final status
+        if: ${{ always() }}
+        run: |
+          $GITHUB_WORKSPACE/.ci/append_comment.sh \
+            "${{ github.event.client_payload.comment_number }}" \
+            "Status: ${{ job.status }}."

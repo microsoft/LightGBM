@@ -23,24 +23,38 @@ import sys
 import sphinx
 
 from distutils.dir_util import copy_tree
+from docutils.nodes import reference
 from docutils.parsers.rst import Directive
+from docutils.transforms import Transform
+from re import compile
 from sphinx.errors import VersionRequirementError
 from subprocess import PIPE, Popen
+from unittest.mock import Mock
 
 CURR_PATH = os.path.abspath(os.path.dirname(__file__))
 LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'python-package')
 sys.path.insert(0, LIB_PATH)
 
-# -- mock out modules
-try:
-    from unittest.mock import Mock  # Python 3.x
-except ImportError:
-    from mock import Mock  # Python 2.x
+INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#)")
 
+# -- mock out modules
 MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
-                'sklearn', 'matplotlib', 'pandas', 'graphviz']
+                'sklearn', 'matplotlib', 'pandas', 'graphviz', 'dask', 'dask.distributed']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
+
+
+class InternalRefTransform(Transform):
+    """Replaces '.rst' with '.html' in all internal links like './[Something].rst[#anchor]'."""
+
+    default_priority = 210
+    """Numerical priority of this transform, 0 through 999."""
+
+    def apply(self, **kwargs):
+        """Apply the transform to the document tree."""
+        for section in self.document.traverse(reference):
+            if section.get("refuri") is not None:
+                section["refuri"] = INTERNAL_REF_REGEX.sub(r"\g<url>.html\g<anchor>", section["refuri"])
 
 
 class IgnoredDirective(Directive):
@@ -208,9 +222,7 @@ def generate_doxygen_xml(app):
         "WARN_AS_ERROR=YES",
     ]
     doxygen_input = '\n'.join(doxygen_args)
-    is_py3 = sys.version[0] == "3"
-    if is_py3:
-        doxygen_input = bytes(doxygen_input, "utf-8")
+    doxygen_input = bytes(doxygen_input, "utf-8")
     if not os.path.exists(os.path.join(CURR_PATH, 'doxyoutput')):
         os.makedirs(os.path.join(CURR_PATH, 'doxyoutput'))
     try:
@@ -221,8 +233,7 @@ def generate_doxygen_xml(app):
         process = Popen(["doxygen", "-"],
                         stdin=PIPE, stdout=PIPE, stderr=PIPE)
         stdout, stderr = process.communicate(doxygen_input)
-        output = '\n'.join([i.decode('utf-8') if is_py3 else i
-                            for i in (stdout, stderr) if i is not None])
+        output = '\n'.join([i.decode('utf-8') for i in (stdout, stderr) if i is not None])
         if process.returncode != 0:
             raise RuntimeError(output)
         else:
@@ -240,24 +251,25 @@ def generate_r_docs(app):
         The application object representing the Sphinx process.
     """
     commands = """
-    echo 'options(repos = "https://cran.rstudio.com")' > $HOME/.Rprofile
-    /home/docs/.conda/bin/conda create -q -y -n r_env \
-        r-base=3.5.1=h1e0a451_2 \
-        r-jsonlite=1.5=r351h96ca727_0 \
-        r-matrix=1.2_14=r351h96ca727_0 \
-        r-testthat=2.0.0=r351h29659fb_0 \
-        cmake=3.14.0=h52cb24c_0
-    /home/docs/.conda/bin/conda install -q -y -n r_env -c conda-forge \
-        r-data.table=1.12.8=r35hcdcec82_0 \
-        r-pkgdown=1.5.1=r35h6115d3f_0 \
-        r-roxygen2=7.1.0=r35h0357c0b_0
+    /home/docs/.conda/bin/conda create \
+        -q \
+        -y \
+        -c conda-forge \
+        -n r_env \
+            cmake=3.18.2=ha30ef3c_0 \
+            r-base=4.0.3=ha43b4e8_3 \
+            r-data.table=1.13.2=r40h0eb13af_0 \
+            r-jsonlite=1.7.1=r40hcdcec82_0 \
+            r-matrix=1.2_18=r40h7fa42b6_3 \
+            r-pkgdown=1.6.1=r40h6115d3f_0 \
+            r-roxygen2=7.1.1=r40h0357c0b_0
     source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
     cd {0}
     export R_LIBS="$CONDA_PREFIX/lib/R/library"
-    Rscript build_r.R
+    Rscript build_r.R || exit -1
     cd {1}
-    Rscript -e "roxygen2::roxygenize(load = 'installed')"
+    Rscript -e "roxygen2::roxygenize(load = 'installed')" || exit -1
     Rscript -e "pkgdown::build_site( \
             lazy = FALSE \
             , install = FALSE \
@@ -267,8 +279,8 @@ def generate_r_docs(app):
             , seed = 42L \
             , preview = FALSE \
             , new_process = TRUE \
-        ) \
-        "
+        )
+        " || exit -1
     cd {0}
     """.format(os.path.join(CURR_PATH, os.path.pardir), os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r"))
     try:
@@ -308,7 +320,8 @@ def setup(app):
         if first_run:
             app.connect("builder-inited", generate_r_docs)
         app.connect("build-finished",
-                    lambda app, exception: copy_tree(os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r", "docs"),
-                                                     os.path.join(app.outdir, "R"), verbose=0))
+                    lambda app, _: copy_tree(os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r", "docs"),
+                                             os.path.join(app.outdir, "R"), verbose=0))
+    app.add_transform(InternalRefTransform)
     add_js_file = getattr(app, 'add_js_file', False) or app.add_javascript
     add_js_file("js/script.js")

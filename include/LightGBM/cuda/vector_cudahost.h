@@ -42,6 +42,7 @@ struct CHAllocator {
   T* allocate(std::size_t n) {
     T* ptr;
     if (n == 0) return NULL;
+    n = (n + kAlignedSize - 1) & -kAlignedSize;
     #ifdef USE_CUDA
       if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaError_t ret = cudaHostAlloc(&ptr, n*sizeof(T), cudaHostAllocPortable);
@@ -65,9 +66,15 @@ struct CHAllocator {
       if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaPointerAttributes attributes;
         cudaPointerGetAttributes(&attributes, p);
-        if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
-          cudaFreeHost(p);
-        }
+        #if CUDA_VERSION >= 10000
+          if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
+            cudaFreeHost(p);
+          }
+        #else
+          if ((attributes.memoryType == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
+            cudaFreeHost(p);
+          }
+        #endif
       } else {
         _mm_free(p);
       }

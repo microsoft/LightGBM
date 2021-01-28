@@ -3,9 +3,7 @@
 
 Contributors: https://github.com/microsoft/LightGBM/graphs/contributors.
 """
-from __future__ import absolute_import
-
-from .basic import Booster, Dataset
+from .basic import Booster, Dataset, register_logger
 from .callback import (early_stopping, print_evaluation, record_evaluation,
                        reset_parameter)
 from .engine import cv, train, CVBooster
@@ -21,6 +19,10 @@ try:
                            plot_tree, create_tree_digraph)
 except ImportError:
     pass
+try:
+    from .dask import DaskLGBMRegressor, DaskLGBMClassifier, DaskLGBMRanker
+except ImportError:
+    pass
 
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -30,7 +32,9 @@ if os.path.isfile(os.path.join(dir_path, 'VERSION.txt')):
         __version__ = version_file.read().strip()
 
 __all__ = ['Dataset', 'Booster', 'CVBooster',
+           'register_logger',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
+           'DaskLGBMRegressor', 'DaskLGBMClassifier', 'DaskLGBMRanker',
            'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
            'plot_importance', 'plot_split_value_histogram', 'plot_metric', 'plot_tree', 'create_tree_digraph']

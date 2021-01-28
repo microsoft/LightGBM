@@ -290,7 +290,7 @@ Apple Clang
 
 Only **Apple Clang** version 8.1 or higher is supported.
 
-1. Install `CMake`_ (3.12 or higher):
+1. Install `CMake`_ (3.16 or higher):
 
    .. code::
 

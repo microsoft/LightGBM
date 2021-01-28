@@ -4,7 +4,7 @@ if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
         if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_9.4.1.app/Contents/Developer
+            sudo xcode-select -s /Applications/Xcode_9.4.1.app/Contents/Developer || exit -1
         fi
     else  # gcc
         if [[ $TASK != "mpi" ]]; then
@@ -14,11 +14,51 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
     fi
-    if [[ $AZURE == "true" ]] && [[ $TASK == "sdist" ]]; then
-        brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/f3544543a3115023fc7ca962c21d14b443f419d0/Formula/swig.rb  # swig 3.0.12
+    if [[ $TASK == "swig" ]]; then
+        brew install swig
     fi
     wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
+    if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+        # fixes error "unable to initialize frontend: Dialog"
+        # https://github.com/moby/moby/issues/27988#issuecomment-462809153
+        echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
+
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+            software-properties-common
+
+        sudo add-apt-repository -y ppa:git-core/ppa
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends \
+            apt-utils \
+            build-essential \
+            ca-certificates \
+            curl \
+            git \
+            iputils-ping \
+            jq \
+            libcurl4 \
+            libicu66 \
+            libssl1.1 \
+            libunwind8 \
+            locales \
+            netcat \
+            unzip \
+            wget \
+            zip
+
+        export LANG="en_US.UTF-8"
+        export LC_ALL="${LANG}"
+        sudo locale-gen ${LANG}
+        sudo update-locale
+
+        sudo apt-get install -y --no-install-recommends \
+            cmake \
+            clang \
+            libomp-dev
+    fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
@@ -36,13 +76,23 @@ else  # Linux
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
-    if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]]; then
+    if [[ $TASK == "cuda" ]]; then
+        echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+        apt-get update
+        apt-get install --no-install-recommends -y \
+            cmake \
+            curl \
+            wget
+    fi
+    if [[ $SETUP_CONDA != "false" ]]; then
         wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     fi
 fi
 
-if [[ $TRAVIS == "true" ]] || [[ $GITHUB_ACTIONS == "true" ]] || [[ $OS_NAME == "macos" ]]; then
-    sh conda.sh -b -p $CONDA
+if [[ "${TASK}" != "r-package" ]]; then
+    if [[ $SETUP_CONDA != "false" ]]; then
+        sh conda.sh -b -p $CONDA
+    fi
+    conda config --set always_yes yes --set changeps1 no
+    conda update -q -y conda
 fi
-conda config --set always_yes yes --set changeps1 no
-conda update -q -y conda

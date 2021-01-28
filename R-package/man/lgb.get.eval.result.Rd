@@ -25,14 +25,14 @@ lgb.get.eval.result(
 \item{is_err}{TRUE will return evaluation error instead}
 }
 \value{
-vector of evaluation result
+numeric vector of evaluation result
 }
 \description{
 Given a \code{lgb.Booster}, return evaluation results for a
              particular metric on a particular dataset.
 }
 \examples{
-\dontrun{
+\donttest{
 # train a regression model
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train

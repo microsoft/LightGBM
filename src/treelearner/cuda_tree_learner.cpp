@@ -408,7 +408,7 @@ void CUDATreeLearner::copyDenseFeature() {
     // looking for dword_features_ non-sparse feature-groups
     if (!train_data_->IsMultiGroup(i)) {
       dense_feature_group_map_.push_back(i);
-      auto sizes_in_byte = train_data_->FeatureGroupSizesInByte(i);
+      auto sizes_in_byte = std::min(train_data_->FeatureGroupSizesInByte(i), static_cast<size_t>(num_data_));
       void* tmp_data = train_data_->FeatureGroupData(i);
       Log::Debug("Started copying dense features from CPU to GPU - 2");
       CUDASUCCESS_OR_FATAL(cudaMemcpyAsync(&device_features[copied_feature * num_data_], tmp_data, sizes_in_byte, cudaMemcpyHostToDevice, stream_[device_id]));
@@ -534,8 +534,8 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
   copyDenseFeature();
 }
 
-Tree* CUDATreeLearner::Train(const score_t* gradients, const score_t *hessians) {
-  Tree *ret = SerialTreeLearner::Train(gradients, hessians);
+Tree* CUDATreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) {
+  Tree *ret = SerialTreeLearner::Train(gradients, hessians, is_first_tree);
   return ret;
 }
 

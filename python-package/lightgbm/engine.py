@@ -1,18 +1,14 @@
 # coding: utf-8
 """Library with training routines of LightGBM."""
-from __future__ import absolute_import
-
 import collections
 import copy
-import warnings
 from operator import attrgetter
 
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor
-from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
-                     string_type, integer_types, range_, zip_)
+from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor, _log_warning
+from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 
 def train(params, train_set, num_boost_round=100,
@@ -128,7 +124,8 @@ def train(params, train_set, num_boost_round=100,
     keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
         If False, the returned value will be converted into _InnerPredictor before returning.
-        When your model is very large and cause the memory error, you can try to set this param to ``True`` to avoid the model conversion performed during the internal call of ``model_to_string``.
+        When your model is very large and cause the memory error,
+        you can try to set this param to ``True`` to avoid the model conversion performed during the internal call of ``model_to_string``.
         You can still use _InnerPredictor as ``init_model`` for future continue training.
     callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
@@ -148,18 +145,18 @@ def train(params, train_set, num_boost_round=100,
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             num_boost_round = params.pop(alias)
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
     params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             early_stopping_rounds = params.pop(alias)
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
     params["early_stopping_round"] = early_stopping_rounds
     first_metric_only = params.get('first_metric_only', False)
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
-    if isinstance(init_model, string_type):
+    if isinstance(init_model, str):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))
@@ -182,7 +179,7 @@ def train(params, train_set, num_boost_round=100,
     if valid_sets is not None:
         if isinstance(valid_sets, Dataset):
             valid_sets = [valid_sets]
-        if isinstance(valid_names, string_type):
+        if isinstance(valid_names, str):
             valid_names = [valid_names]
         for i, valid_data in enumerate(valid_sets):
             # reduce cost for prediction training data
@@ -209,7 +206,7 @@ def train(params, train_set, num_boost_round=100,
     # Most of legacy advanced options becomes callbacks
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation())
-    elif isinstance(verbose_eval, integer_types):
+    elif isinstance(verbose_eval, int):
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
@@ -231,7 +228,7 @@ def train(params, train_set, num_boost_round=100,
         booster = Booster(params=params, train_set=train_set)
         if is_valid_contain_train:
             booster.set_train_data_name(train_data_name)
-        for valid_set, name_valid_set in zip_(reduced_valid_sets, name_valid_sets):
+        for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
             booster.add_valid(valid_set, name_valid_set)
     finally:
         train_set._reverse_update_params()
@@ -240,7 +237,7 @@ def train(params, train_set, num_boost_round=100,
     booster.best_iteration = 0
 
     # start training
-    for i in range_(init_iteration, init_iteration + num_boost_round):
+    for i in range(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,
                                     params=params,
@@ -277,7 +274,7 @@ def train(params, train_set, num_boost_round=100,
     return booster
 
 
-class CVBooster(object):
+class CVBooster:
     """CVBooster in LightGBM.
 
     Auxiliary data structure to hold and redirect all boosters of ``cv`` function.
@@ -328,7 +325,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             group_info = full_data.get_group()
             if group_info is not None:
                 group_info = np.array(group_info, dtype=np.int32, copy=False)
-                flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
+                flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             else:
                 flatted_group = np.zeros(num_data, dtype=np.int32)
             folds = folds.split(X=np.zeros(num_data), y=full_data.get_label(), groups=flatted_group)
@@ -337,15 +334,15 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
                                              "xe_ndcg", "xe_ndcg_mart", "xendcg_mart"}
                for obj_alias in _ConfigAliases.get("objective")):
             if not SKLEARN_INSTALLED:
-                raise LightGBMError('Scikit-learn is required for ranking cv.')
+                raise LightGBMError('scikit-learn is required for ranking cv')
             # ranking task, split according to groups
             group_info = np.array(full_data.get_group(), dtype=np.int32, copy=False)
-            flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
+            flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             group_kfold = _LGBMGroupKFold(n_splits=nfold)
             folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
         elif stratified:
             if not SKLEARN_INSTALLED:
-                raise LightGBMError('Scikit-learn is required for stratified cv.')
+                raise LightGBMError('scikit-learn is required for stratified cv')
             skf = _LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
             folds = skf.split(X=np.zeros(num_data), y=full_data.get_label())
         else:
@@ -354,9 +351,9 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             else:
                 randidx = np.arange(num_data)
             kstep = int(num_data / nfold)
-            test_id = [randidx[i: i + kstep] for i in range_(0, num_data, kstep)]
-            train_id = [np.concatenate([test_id[i] for i in range_(nfold) if k != i]) for k in range_(nfold)]
-            folds = zip_(train_id, test_id)
+            test_id = [randidx[i: i + kstep] for i in range(0, num_data, kstep)]
+            train_id = [np.concatenate([test_id[i] for i in range(nfold) if k != i]) for k in range(nfold)]
+            folds = zip(train_id, test_id)
 
     ret = CVBooster()
     for train_idx, test_idx in folds:
@@ -527,19 +524,19 @@ def cv(params, train_set, num_boost_round=100,
         params['objective'] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
             num_boost_round = params.pop(alias)
     params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
             early_stopping_rounds = params.pop(alias)
     params["early_stopping_round"] = early_stopping_rounds
     first_metric_only = params.get('first_metric_only', False)
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
-    if isinstance(init_model, string_type):
+    if isinstance(init_model, str):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))
@@ -573,7 +570,7 @@ def cv(params, train_set, num_boost_round=100,
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
-    elif isinstance(verbose_eval, integer_types):
+    elif isinstance(verbose_eval, int):
         callbacks.add(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
 
     callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
@@ -581,7 +578,7 @@ def cv(params, train_set, num_boost_round=100,
     callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
     callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
 
-    for i in range_(num_boost_round):
+    for i in range(num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=cvfolds,
                                     params=params,

@@ -8,6 +8,7 @@
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/train_share_states.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
@@ -275,57 +276,6 @@ class Parser {
   static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx);
 };
 
-struct TrainingShareStates {
-  int num_threads = 0;
-  bool is_colwise = true;
-  bool is_use_subcol = false;
-  bool is_use_subrow = false;
-  bool is_subrow_copied = false;
-  bool is_constant_hessian = true;
-  const data_size_t* bagging_use_indices;
-  data_size_t bagging_indices_cnt;
-  int num_bin_aligned;
-  std::unique_ptr<MultiValBin> multi_val_bin;
-  std::unique_ptr<MultiValBin> multi_val_bin_subset;
-  std::vector<uint32_t> hist_move_src;
-  std::vector<uint32_t> hist_move_dest;
-  std::vector<uint32_t> hist_move_size;
-  std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
-      hist_buf;
-
-  void SetMultiValBin(MultiValBin* bin) {
-    num_threads = OMP_NUM_THREADS();
-    if (bin == nullptr) {
-      return;
-    }
-    multi_val_bin.reset(bin);
-    num_bin_aligned =
-        (bin->num_bin() + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-    size_t new_size = static_cast<size_t>(num_bin_aligned) * 2 * num_threads;
-    if (new_size > hist_buf.size()) {
-      hist_buf.resize(static_cast<size_t>(num_bin_aligned) * 2 * num_threads);
-    }
-  }
-
-  hist_t* TempBuf() {
-    if (!is_use_subcol) {
-      return nullptr;
-    }
-    return hist_buf.data() + hist_buf.size() - num_bin_aligned * 2;
-  }
-
-  void HistMove(const hist_t* src, hist_t* dest) {
-    if (!is_use_subcol) {
-      return;
-    }
-#pragma omp parallel for schedule(static)
-    for (int i = 0; i < static_cast<int>(hist_move_src.size()); ++i) {
-      std::copy_n(src + hist_move_src[i], hist_move_size[i],
-                  dest + hist_move_dest[i]);
-    }
-  }
-};
-
 /*! \brief The main class of data set,
 *          which are used to training or validation
 */
@@ -387,6 +337,12 @@ class Dataset {
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
+        if (has_raw_) {
+          int feat_ind = numeric_feature_map_[feature_idx];
+          if (feat_ind >= 0) {
+            raw_data_[feat_ind][row_idx] = static_cast<float>(feature_values[i]);
+          }
+        }
       }
     }
   }
@@ -402,13 +358,25 @@ class Dataset {
         const int group = feature2group_[feature_idx];
         const int sub_feature = feature2subfeature_[feature_idx];
         feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
+        if (has_raw_) {
+          int feat_ind = numeric_feature_map_[feature_idx];
+          if (feat_ind >= 0) {
+            raw_data_[feat_ind][row_idx] = static_cast<float>(inner_data.second);
+          }
+        }
       }
     }
     FinishOneRow(tid, row_idx, is_feature_added);
   }
 
-  inline void PushOneData(int tid, data_size_t row_idx, int group, int sub_feature, double value) {
+  inline void PushOneData(int tid, data_size_t row_idx, int group, int feature_idx, int sub_feature, double value) {
     feature_groups_[group]->PushData(tid, sub_feature, row_idx, value);
+    if (has_raw_) {
+      int feat_ind = numeric_feature_map_[feature_idx];
+      if (feat_ind >= 0) {
+        raw_data_[feat_ind][row_idx] = static_cast<float>(value);
+      }
+    }
   }
 
   inline int RealFeatureIndex(int fidx) const {
@@ -444,14 +412,14 @@ class Dataset {
 
   void CopySubrow(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
 
-  MultiValBin* GetMultiBinFromSparseFeatures() const;
+  MultiValBin* GetMultiBinFromSparseFeatures(const std::vector<uint32_t>& offsets) const;
 
-  MultiValBin* GetMultiBinFromAllFeatures() const;
+  MultiValBin* GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets) const;
 
   TrainingShareStates* GetShareStates(
       score_t* gradients, score_t* hessians,
       const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-      bool force_colwise, bool force_rowwise) const;
+      bool force_col_wise, bool force_row_wise) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
 
@@ -619,6 +587,9 @@ class Dataset {
   /*! \brief Get Number of used features */
   inline int num_features() const { return num_features_; }
 
+  /*! \brief Get number of numeric features */
+  inline int num_numeric_features() const { return num_numeric_features_; }
+
   /*! \brief Get Number of feature groups */
   inline int num_feature_groups() const { return num_groups_;}
 
@@ -682,6 +653,31 @@ class Dataset {
 
   void AddFeaturesFrom(Dataset* other);
 
+  /*! \brief Get has_raw_ */
+  inline bool has_raw() const { return has_raw_; }
+
+  /*! \brief Set has_raw_ */
+  inline void SetHasRaw(bool has_raw) { has_raw_ = has_raw; }
+
+  /*! \brief Resize raw_data_ */
+  inline void ResizeRaw(int num_rows) {
+    if (static_cast<int>(raw_data_.size()) > num_numeric_features_) {
+      raw_data_.resize(num_numeric_features_);
+    }
+    for (size_t i = 0; i < raw_data_.size(); ++i) {
+      raw_data_[i].resize(num_rows);
+    }
+    int curr_size = static_cast<int>(raw_data_.size());
+    for (int i = curr_size; i < num_numeric_features_; ++i) {
+      raw_data_.push_back(std::vector<float>(num_rows, 0));
+    }
+  }
+
+  /*! \brief Get pointer to raw_data_ feature */
+  inline const float* raw_index(int feat_ind) const {
+    return raw_data_[numeric_feature_map_[feat_ind]].data();
+  }
+
  private:
   std::string data_filename_;
   /*! \brief Store used features */
@@ -718,6 +714,11 @@ class Dataset {
   bool use_missing_;
   bool zero_as_missing_;
   std::vector<int> feature_need_push_zeros_;
+  std::vector<std::vector<float>> raw_data_;
+  bool has_raw_;
+  /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */
+  std::vector<int> numeric_feature_map_;
+  int num_numeric_features_;
 };
 
 }  // namespace LightGBM

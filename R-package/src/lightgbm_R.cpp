@@ -506,7 +506,7 @@ LGBM_SE LGBM_BoosterGetNumPredict_R(LGBM_SE handle,
   R_API_BEGIN();
   int64_t len;
   CHECK_CALL(LGBM_BoosterGetNumPredict(R_GET_PTR(handle), R_AS_INT(data_idx), &len));
-  R_INT64_PTR(out)[0] = len;
+  R_INT_PTR(out)[0] = static_cast<int>(len);
   R_API_END();
 }
 
@@ -624,7 +624,7 @@ LGBM_SE LGBM_BoosterPredictForMat_R(LGBM_SE handle,
   int32_t nrow = R_AS_INT(num_row);
   int32_t ncol = R_AS_INT(num_col);
 
-  double* p_mat = R_REAL_PTR(data);
+  const double* p_mat = R_REAL_PTR(data);
   double* ptr_ret = R_REAL_PTR(out_result);
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForMat(R_GET_PTR(handle),

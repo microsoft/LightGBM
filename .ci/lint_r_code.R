@@ -53,7 +53,8 @@ LINTERS_TO_USE <- list(
     , "true_false"           = lintr::T_and_F_symbol_linter
     , "undesirable_function" = lintr::undesirable_function_linter(
         fun = c(
-            "cbind" = paste0(
+            "cat" = "CRAN forbids the use of cat() in packages except in special cases. Use message() or warning()."
+            , "cbind" = paste0(
                 "cbind is an unsafe way to build up a data frame. merge() or direct "
                 , "column assignment is preferred."
             )
@@ -85,7 +86,7 @@ LINTERS_TO_USE <- list(
     , "unneeded_concatenation" = lintr::unneeded_concatenation_linter
 )
 
-cat(sprintf("Found %i R files to lint\n", length(FILES_TO_LINT)))
+noquote(paste0(length(FILES_TO_LINT), " R files need linting"))
 
 results <- NULL
 
@@ -111,6 +112,8 @@ for (r_file in FILES_TO_LINT) {
 }
 
 issues_found <- length(results)
+
+noquote(paste0("Total linting issues found: ", issues_found))
 
 if (issues_found > 0L) {
     print(results)

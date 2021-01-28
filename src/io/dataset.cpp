@@ -26,6 +26,7 @@ Dataset::Dataset() {
   data_filename_ = "noname";
   num_data_ = 0;
   is_finish_load_ = false;
+  has_raw_ = false;
 }
 
 Dataset::Dataset(data_size_t num_data) {
@@ -35,6 +36,7 @@ Dataset::Dataset(data_size_t num_data) {
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
   is_finish_load_ = false;
   group_bin_boundaries_.push_back(0);
+  has_raw_ = false;
 }
 
 Dataset::~Dataset() {}
@@ -365,14 +367,17 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   real_feature_idx_.resize(num_features_);
   feature2group_.resize(num_features_);
   feature2subfeature_.resize(num_features_);
-  int num_multi_val_group = 0;
   feature_need_push_zeros_.clear();
+  group_bin_boundaries_.clear();
+  uint64_t num_total_bin = 0;
+  group_bin_boundaries_.push_back(num_total_bin);
+  group_feature_start_.resize(num_groups_);
+  group_feature_cnt_.resize(num_groups_);
   for (int i = 0; i < num_groups_; ++i) {
     auto cur_features = features_in_group[i];
     int cur_cnt_features = static_cast<int>(cur_features.size());
-    if (group_is_multi_val[i]) {
-      ++num_multi_val_group;
-    }
+    group_feature_start_[i] = cur_fidx;
+    group_feature_cnt_[i] = cur_cnt_features;
     // get bin_mappers
     std::vector<std::unique_ptr<BinMapper>> cur_bin_mappers;
     for (int j = 0; j < cur_cnt_features; ++j) {
@@ -388,31 +393,10 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
       }
       ++cur_fidx;
     }
-    feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(new FeatureGroup(
-        cur_cnt_features, group_is_multi_val[i], &cur_bin_mappers, num_data_)));
-  }
-  feature_groups_.shrink_to_fit();
-  group_bin_boundaries_.clear();
-  uint64_t num_total_bin = 0;
-  group_bin_boundaries_.push_back(num_total_bin);
-  for (int i = 0; i < num_groups_; ++i) {
+    feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
+      new FeatureGroup(cur_cnt_features, group_is_multi_val[i], &cur_bin_mappers, num_data_, i)));
     num_total_bin += feature_groups_[i]->num_total_bin_;
     group_bin_boundaries_.push_back(num_total_bin);
-  }
-  int last_group = 0;
-  group_feature_start_.reserve(num_groups_);
-  group_feature_cnt_.reserve(num_groups_);
-  group_feature_start_.push_back(0);
-  group_feature_cnt_.push_back(1);
-  for (int i = 1; i < num_features_; ++i) {
-    const int group = feature2group_[i];
-    if (group == last_group) {
-      group_feature_cnt_.back() = group_feature_cnt_.back() + 1;
-    } else {
-      group_feature_start_.push_back(i);
-      group_feature_cnt_.push_back(1);
-      last_group = group;
-    }
   }
   if (!io_config.max_bin_by_feature.empty()) {
     CHECK_EQ(static_cast<size_t>(num_total_features_),
@@ -429,6 +413,18 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   bin_construct_sample_cnt_ = io_config.bin_construct_sample_cnt;
   use_missing_ = io_config.use_missing;
   zero_as_missing_ = io_config.zero_as_missing;
+  has_raw_ = false;
+  if (io_config.linear_tree) {
+    has_raw_ = true;
+  }
+  numeric_feature_map_ = std::vector<int>(num_features_, -1);
+  num_numeric_features_ = 0;
+  for (int i = 0; i < num_features_; ++i) {
+    if (FeatureBinMapper(i)->bin_type() == BinType::NumericalBin) {
+      numeric_feature_map_[i] = num_numeric_features_;
+      ++num_numeric_features_;
+    }
+  }
 }
 
 void Dataset::FinishLoad() {
@@ -461,6 +457,7 @@ void PushDataToMultiValBin(
           for (data_size_t i = start; i < end; ++i) {
             cur_data.clear();
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+              // for sparse multi value bin, we store the feature bin values with offset added
               auto cur_bin = (*iters)[tid][j]->Get(i);
               if (cur_bin == most_freq_bins[j]) {
                 continue;
@@ -483,15 +480,8 @@ void PushDataToMultiValBin(
           }
           for (data_size_t i = start; i < end; ++i) {
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+              // for dense multi value bin, the feature bin values without offsets are used
               auto cur_bin = (*iters)[tid][j]->Get(i);
-              if (cur_bin == most_freq_bins[j]) {
-                cur_bin = 0;
-              } else {
-                cur_bin += offsets[j];
-                if (most_freq_bins[j] == 0) {
-                  cur_bin -= 1;
-                }
-              }
               cur_data[j] = cur_bin;
             }
             ret->PushOneRow(tid, i, cur_data);
@@ -500,7 +490,7 @@ void PushDataToMultiValBin(
   }
 }
 
-MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
+MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>& offsets) const {
   Common::FunctionTimer fun_time("Dataset::GetMultiBinFromSparseFeatures",
                                  global_timer);
   int multi_group_id = -1;
@@ -516,7 +506,6 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
   if (multi_group_id < 0) {
     return nullptr;
   }
-  const auto& offsets = feature_groups_[multi_group_id]->bin_offsets_;
   const int num_feature = feature_groups_[multi_group_id]->num_feature_;
   int num_threads = OMP_NUM_THREADS();
 
@@ -539,13 +528,13 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures() const {
              sum_sparse_rate);
   std::unique_ptr<MultiValBin> ret;
   ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back(),
-                                           num_feature, sum_sparse_rate));
+                                           num_feature, sum_sparse_rate, offsets));
   PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
   ret->FinishLoad();
   return ret.release();
 }
 
-MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
+MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets) const {
   Common::FunctionTimer fun_time("Dataset::GetMultiBinFromAllFeatures",
                                  global_timer);
   int num_threads = OMP_NUM_THREADS();
@@ -554,20 +543,24 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
   std::unique_ptr<MultiValBin> ret;
   std::vector<std::vector<std::unique_ptr<BinIterator>>> iters(num_threads);
   std::vector<uint32_t> most_freq_bins;
-  std::vector<uint32_t> offsets;
-  int num_total_bin = 1;
-  offsets.push_back(num_total_bin);
+  int ncol = 0;
+  for (int gid = 0; gid < num_groups_; ++gid) {
+    if (feature_groups_[gid]->is_multi_val_) {
+      ncol += feature_groups_[gid]->num_feature_;
+    } else {
+      ++ncol;
+    }
+    for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
+      const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
+      sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
+    }
+  }
+  sum_dense_ratio /= ncol;
   for (int gid = 0; gid < num_groups_; ++gid) {
     if (feature_groups_[gid]->is_multi_val_) {
       for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
         const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
-        sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
         most_freq_bins.push_back(bin_mapper->GetMostFreqBin());
-        num_total_bin += bin_mapper->num_bin();
-        if (most_freq_bins.back() == 0) {
-          num_total_bin -= 1;
-        }
-        offsets.push_back(num_total_bin);
 #pragma omp parallel for schedule(static, 1)
         for (int tid = 0; tid < num_threads; ++tid) {
           iters[tid].emplace_back(
@@ -576,23 +569,17 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
       }
     } else {
       most_freq_bins.push_back(0);
-      num_total_bin += feature_groups_[gid]->bin_offsets_.back() - 1;
       for (int tid = 0; tid < num_threads; ++tid) {
         iters[tid].emplace_back(feature_groups_[gid]->FeatureGroupIterator());
       }
-      offsets.push_back(num_total_bin);
-      for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
-        const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
-        sum_dense_ratio += 1.0f - bin_mapper->sparse_rate();
-      }
     }
   }
-  sum_dense_ratio /= static_cast<double>(most_freq_bins.size());
+  CHECK(static_cast<int>(most_freq_bins.size()) == ncol);
   Log::Debug("Dataset::GetMultiBinFromAllFeatures: sparse rate %f",
              1.0 - sum_dense_ratio);
   ret.reset(MultiValBin::CreateMultiValBin(
-      num_data_, num_total_bin, static_cast<int>(most_freq_bins.size()),
-      1.0 - sum_dense_ratio));
+      num_data_, offsets.back(), static_cast<int>(most_freq_bins.size()),
+      1.0 - sum_dense_ratio, offsets));
   PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
   ret->FinishLoad();
   return ret.release();
@@ -601,74 +588,90 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures() const {
 TrainingShareStates* Dataset::GetShareStates(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-    bool force_colwise, bool force_rowwise) const {
+    bool force_col_wise, bool force_row_wise) const {
   Common::FunctionTimer fun_timer("Dataset::TestMultiThreadingMethod",
                                   global_timer);
-  if (force_colwise && force_rowwise) {
+  if (force_col_wise && force_row_wise) {
     Log::Fatal(
-        "Cannot set both `force_col_wise` and `force_row_wise` to `true` at "
+        "Cannot set both of `force_col_wise` and `force_row_wise` to `true` at "
         "the same time");
   }
   if (num_groups_ <= 0) {
     TrainingShareStates* share_state = new TrainingShareStates();
-    share_state->is_colwise = true;
+    share_state->is_col_wise = true;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   }
-  if (force_colwise) {
+  if (force_col_wise) {
     TrainingShareStates* share_state = new TrainingShareStates();
-    share_state->SetMultiValBin(GetMultiBinFromSparseFeatures());
-    share_state->is_colwise = true;
+    std::vector<uint32_t> offsets;
+    share_state->CalcBinOffsets(
+      feature_groups_, &offsets, true);
+    share_state->SetMultiValBin(GetMultiBinFromSparseFeatures(offsets),
+      num_data_, feature_groups_, false, true);
+    share_state->is_col_wise = true;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
-  } else if (force_rowwise) {
+  } else if (force_row_wise) {
     TrainingShareStates* share_state = new TrainingShareStates();
-    share_state->SetMultiValBin(GetMultiBinFromAllFeatures());
-    share_state->is_colwise = false;
+    std::vector<uint32_t> offsets;
+    share_state->CalcBinOffsets(
+      feature_groups_, &offsets, false);
+    share_state->SetMultiValBin(GetMultiBinFromAllFeatures(offsets), num_data_,
+      feature_groups_, false, false);
+    share_state->is_col_wise = false;
     share_state->is_constant_hessian = is_constant_hessian;
     return share_state;
   } else {
     std::unique_ptr<MultiValBin> sparse_bin;
     std::unique_ptr<MultiValBin> all_bin;
-    std::unique_ptr<TrainingShareStates> colwise_state;
-    std::unique_ptr<TrainingShareStates> rowwise_state;
-    colwise_state.reset(new TrainingShareStates());
-    rowwise_state.reset(new TrainingShareStates());
+    std::unique_ptr<TrainingShareStates> col_wise_state;
+    std::unique_ptr<TrainingShareStates> row_wise_state;
+    col_wise_state.reset(new TrainingShareStates());
+    row_wise_state.reset(new TrainingShareStates());
 
-    std::chrono::duration<double, std::milli> col_wise_init_time,
-        row_wise_init_time;
+    std::chrono::duration<double, std::milli> col_wise_init_time, row_wise_init_time;
     auto start_time = std::chrono::steady_clock::now();
-    colwise_state->SetMultiValBin(GetMultiBinFromSparseFeatures());
+    std::vector<uint32_t> col_wise_offsets;
+    col_wise_state->CalcBinOffsets(feature_groups_, &col_wise_offsets, true);
+    col_wise_state->SetMultiValBin(GetMultiBinFromSparseFeatures(col_wise_offsets), num_data_,
+      feature_groups_, false, true);
     col_wise_init_time = std::chrono::steady_clock::now() - start_time;
 
     start_time = std::chrono::steady_clock::now();
-    rowwise_state->SetMultiValBin(GetMultiBinFromAllFeatures());
-    std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
-        hist_data(NumTotalBin() * 2);
-
+    std::vector<uint32_t> row_wise_offsets;
+    row_wise_state->CalcBinOffsets(feature_groups_, &row_wise_offsets, false);
+    row_wise_state->SetMultiValBin(GetMultiBinFromAllFeatures(row_wise_offsets), num_data_,
+      feature_groups_, false, false);
     row_wise_init_time = std::chrono::steady_clock::now() - start_time;
+
+    uint64_t max_total_bin = std::max<uint64_t>(row_wise_state->num_hist_total_bin(),
+      col_wise_state->num_hist_total_bin());
+    std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
+        hist_data(max_total_bin * 2);
+
     Log::Debug(
-        "init for col-wise cost %f seconds, init for row-wise cost %f seconds",
-        col_wise_init_time * 1e-3, row_wise_init_time * 1e-3);
-    colwise_state->is_colwise = true;
-    colwise_state->is_constant_hessian = is_constant_hessian;
-    InitTrain(is_feature_used, colwise_state.get());
-    rowwise_state->is_colwise = false;
-    rowwise_state->is_constant_hessian = is_constant_hessian;
-    InitTrain(is_feature_used, rowwise_state.get());
+      "init for col-wise cost %f seconds, init for row-wise cost %f seconds",
+      col_wise_init_time * 1e-3, row_wise_init_time * 1e-3);
+
+    col_wise_state->is_col_wise = true;
+    col_wise_state->is_constant_hessian = is_constant_hessian;
+    InitTrain(is_feature_used, col_wise_state.get());
+    row_wise_state->is_col_wise = false;
+    row_wise_state->is_constant_hessian = is_constant_hessian;
+    InitTrain(is_feature_used, row_wise_state.get());
     std::chrono::duration<double, std::milli> col_wise_time, row_wise_time;
     start_time = std::chrono::steady_clock::now();
     ConstructHistograms(is_feature_used, nullptr, num_data_, gradients,
-                        hessians, gradients, hessians, colwise_state.get(),
+                        hessians, gradients, hessians, col_wise_state.get(),
                         hist_data.data());
     col_wise_time = std::chrono::steady_clock::now() - start_time;
     start_time = std::chrono::steady_clock::now();
     ConstructHistograms(is_feature_used, nullptr, num_data_, gradients,
-                        hessians, gradients, hessians, rowwise_state.get(),
+                        hessians, gradients, hessians, row_wise_state.get(),
                         hist_data.data());
     row_wise_time = std::chrono::steady_clock::now() - start_time;
-    Log::Debug("col-wise cost %f seconds, row-wise cost %f seconds",
-               col_wise_time * 1e-3, row_wise_time * 1e-3);
+
     if (col_wise_time < row_wise_time) {
       auto overhead_cost = row_wise_init_time + row_wise_time + col_wise_time;
       Log::Warning(
@@ -676,7 +679,7 @@ TrainingShareStates* Dataset::GetShareStates(
           "%f seconds.\n"
           "You can set `force_col_wise=true` to remove the overhead.",
           overhead_cost * 1e-3);
-      return colwise_state.release();
+      return col_wise_state.release();
     } else {
       auto overhead_cost = col_wise_init_time + row_wise_time + col_wise_time;
       Log::Warning(
@@ -685,12 +688,12 @@ TrainingShareStates* Dataset::GetShareStates(
           "You can set `force_row_wise=true` to remove the overhead.\n"
           "And if memory is not enough, you can set `force_col_wise=true`.",
           overhead_cost * 1e-3);
-      if (rowwise_state->multi_val_bin->IsSparse()) {
+      if (row_wise_state->IsSparseRowwise()) {
         Log::Debug("Using Sparse Multi-Val Bin");
       } else {
         Log::Debug("Using Dense Multi-Val Bin");
       }
-      return rowwise_state.release();
+      return row_wise_state.release();
     }
   }
 }
@@ -699,6 +702,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   feature_groups_.clear();
   num_features_ = dataset->num_features_;
   num_groups_ = dataset->num_groups_;
+  has_raw_ = dataset->has_raw();
   // copy feature bin mapper data
   for (int i = 0; i < num_groups_; ++i) {
     feature_groups_.emplace_back(
@@ -725,8 +729,16 @@ void Dataset::CreateValid(const Dataset* dataset) {
   num_groups_ = num_features_;
   feature2group_.clear();
   feature2subfeature_.clear();
+  has_raw_ = dataset->has_raw();
+  numeric_feature_map_ = dataset->numeric_feature_map_;
+  num_numeric_features_ = dataset->num_numeric_features_;
   // copy feature bin mapper data
   feature_need_push_zeros_.clear();
+  group_bin_boundaries_.clear();
+  uint64_t num_total_bin = 0;
+  group_bin_boundaries_.push_back(num_total_bin);
+  group_feature_start_.resize(num_groups_);
+  group_feature_cnt_.resize(num_groups_);
   for (int i = 0; i < num_features_; ++i) {
     std::vector<std::unique_ptr<BinMapper>> bin_mappers;
     bin_mappers.emplace_back(new BinMapper(*(dataset->FeatureBinMapper(i))));
@@ -737,6 +749,10 @@ void Dataset::CreateValid(const Dataset* dataset) {
     feature_groups_.emplace_back(new FeatureGroup(&bin_mappers, num_data_));
     feature2group_.push_back(i);
     feature2subfeature_.push_back(0);
+    num_total_bin += feature_groups_[i]->num_total_bin_;
+    group_bin_boundaries_.push_back(num_total_bin);
+    group_feature_start_[i] = i;
+    group_feature_cnt_[i] = 1;
   }
 
   feature_groups_.shrink_to_fit();
@@ -745,28 +761,6 @@ void Dataset::CreateValid(const Dataset* dataset) {
   feature_names_ = dataset->feature_names_;
   label_idx_ = dataset->label_idx_;
   real_feature_idx_ = dataset->real_feature_idx_;
-  group_bin_boundaries_.clear();
-  uint64_t num_total_bin = 0;
-  group_bin_boundaries_.push_back(num_total_bin);
-  for (int i = 0; i < num_groups_; ++i) {
-    num_total_bin += feature_groups_[i]->num_total_bin_;
-    group_bin_boundaries_.push_back(num_total_bin);
-  }
-  int last_group = 0;
-  group_feature_start_.reserve(num_groups_);
-  group_feature_cnt_.reserve(num_groups_);
-  group_feature_start_.push_back(0);
-  group_feature_cnt_.push_back(1);
-  for (int i = 1; i < num_features_; ++i) {
-    const int group = feature2group_[i];
-    if (group == last_group) {
-      group_feature_cnt_.back() = group_feature_cnt_.back() + 1;
-    } else {
-      group_feature_start_.push_back(i);
-      group_feature_cnt_.push_back(1);
-      last_group = group;
-    }
-  }
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
 }
 
@@ -788,19 +782,51 @@ void Dataset::CopySubrow(const Dataset* fullset,
                          const data_size_t* used_indices,
                          data_size_t num_used_indices, bool need_meta_data) {
   CHECK_EQ(num_used_indices, num_data_);
-  OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+
+  std::vector<int> group_ids, subfeature_ids;
+  group_ids.reserve(num_features_);
+  subfeature_ids.reserve(num_features_);
   for (int group = 0; group < num_groups_; ++group) {
+    if (fullset->IsMultiGroup(group)) {
+      for (int sub_feature = 0; sub_feature <
+          fullset->feature_groups_[group]->num_feature_; ++sub_feature) {
+        group_ids.emplace_back(group);
+        subfeature_ids.emplace_back(sub_feature);
+      }
+    } else {
+      group_ids.emplace_back(group);
+      subfeature_ids.emplace_back(-1);
+    }
+  }
+  int num_copy_tasks = static_cast<int>(group_ids.size());
+
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(dynamic)
+  for (int task_id = 0; task_id < num_copy_tasks; ++task_id) {
     OMP_LOOP_EX_BEGIN();
-    feature_groups_[group]->CopySubrow(fullset->feature_groups_[group].get(),
-                                       used_indices, num_used_indices);
+    int group = group_ids[task_id];
+    int subfeature = subfeature_ids[task_id];
+    feature_groups_[group]->CopySubrowByCol(fullset->feature_groups_[group].get(),
+                                            used_indices, num_used_indices, subfeature);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
+
   if (need_meta_data) {
     metadata_.Init(fullset->metadata_, used_indices, num_used_indices);
   }
   is_finish_load_ = true;
+  numeric_feature_map_ = fullset->numeric_feature_map_;
+  num_numeric_features_ = fullset->num_numeric_features_;
+  if (has_raw_) {
+    ResizeRaw(num_used_indices);
+#pragma omp parallel for schedule(static)
+    for (int i = 0; i < num_used_indices; ++i) {
+      for (int j = 0; j < num_numeric_features_; ++j) {
+        raw_data_[j][i] = fullset->raw_data_[j][used_indices[i]];
+      }
+    }
+  }
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data,
@@ -938,8 +964,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
         2 * VirtualFileWriter::AlignedSize(sizeof(int) * num_groups_) +
         VirtualFileWriter::AlignedSize(sizeof(int32_t) * num_total_features_) +
         VirtualFileWriter::AlignedSize(sizeof(int)) * 3 +
-        VirtualFileWriter::AlignedSize(sizeof(bool)) * 2;
-
+        VirtualFileWriter::AlignedSize(sizeof(bool)) * 3;
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
       size_of_header +=
@@ -963,6 +988,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     writer->AlignedWrite(&min_data_in_bin_, sizeof(min_data_in_bin_));
     writer->AlignedWrite(&use_missing_, sizeof(use_missing_));
     writer->AlignedWrite(&zero_as_missing_, sizeof(zero_as_missing_));
+    writer->AlignedWrite(&has_raw_, sizeof(has_raw_));
     writer->AlignedWrite(used_feature_map_.data(),
                          sizeof(int) * num_total_features_);
     writer->AlignedWrite(&num_groups_, sizeof(num_groups_));
@@ -1013,6 +1039,18 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       writer->Write(&size_of_feature, sizeof(size_of_feature));
       // write feature
       feature_groups_[i]->SaveBinaryToFile(writer.get());
+    }
+
+    // write raw data; use row-major order so we can read row-by-row
+    if (has_raw_) {
+      for (int i = 0; i < num_data_; ++i) {
+        for (int j = 0; j < num_features_; ++j) {
+          int feat_ind = numeric_feature_map_[j];
+          if (feat_ind > -1) {
+            writer->Write(&raw_data_[feat_ind][i], sizeof(float));
+          }
+        }
+      }
     }
   }
 }
@@ -1072,152 +1110,9 @@ void Dataset::DumpTextFile(const char* text_filename) {
 void Dataset::InitTrain(const std::vector<int8_t>& is_feature_used,
                         TrainingShareStates* share_state) const {
   Common::FunctionTimer fun_time("Dataset::InitTrain", global_timer);
-  share_state->is_use_subcol = false;
-  if (share_state->multi_val_bin == nullptr) {
-    return;
-  }
-  const auto multi_val_bin = share_state->multi_val_bin.get();
-  double sum_used_dense_ratio = 0.0;
-  double sum_dense_ratio = 0.0;
-  int num_used = 0;
-  int total = 0;
-  std::vector<int> used_feature_index;
-  for (int i = 0; i < num_groups_; ++i) {
-    int f_start = group_feature_start_[i];
-    if (feature_groups_[i]->is_multi_val_) {
-      for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
-        const auto dense_rate =
-            1.0 - feature_groups_[i]->bin_mappers_[j]->sparse_rate();
-        if (is_feature_used[f_start + j]) {
-          ++num_used;
-          used_feature_index.push_back(total);
-          sum_used_dense_ratio += dense_rate;
-        }
-        sum_dense_ratio += dense_rate;
-        ++total;
-      }
-    } else if (!share_state->is_colwise) {
-      bool is_group_used = false;
-      double dense_rate = 0;
-      for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
-        if (is_feature_used[f_start + j]) {
-          is_group_used = true;
-        }
-        dense_rate += 1.0 - feature_groups_[i]->bin_mappers_[j]->sparse_rate();
-      }
-      if (is_group_used) {
-        ++num_used;
-        used_feature_index.push_back(total);
-        sum_used_dense_ratio += dense_rate;
-      }
-      sum_dense_ratio += dense_rate;
-      ++total;
-    }
-  }
-  const double k_subfeature_threshold = 0.6;
-  if (sum_used_dense_ratio >= sum_dense_ratio * k_subfeature_threshold) {
-    // only need to copy subset
-    if (share_state->is_use_subrow && !share_state->is_subrow_copied) {
-      if (share_state->multi_val_bin_subset == nullptr) {
-        share_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
-            share_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
-            multi_val_bin->num_element_per_row()));
-      } else {
-        share_state->multi_val_bin_subset->ReSize(
-            share_state->bagging_indices_cnt, multi_val_bin->num_bin(), total,
-            multi_val_bin->num_element_per_row());
-      }
-      share_state->multi_val_bin_subset->CopySubrow(
-          multi_val_bin, share_state->bagging_use_indices,
-          share_state->bagging_indices_cnt);
-      // avoid to copy subset many times
-      share_state->is_subrow_copied = true;
-    }
-  } else {
-    share_state->is_use_subcol = true;
-    std::vector<uint32_t> upper_bound;
-    std::vector<uint32_t> lower_bound;
-    std::vector<uint32_t> delta;
-    share_state->hist_move_src.clear();
-    share_state->hist_move_dest.clear();
-    share_state->hist_move_size.clear();
-
-    int num_total_bin = 1;
-    int new_num_total_bin = 1;
-
-    for (int i = 0; i < num_groups_; ++i) {
-      int f_start = group_feature_start_[i];
-      if (feature_groups_[i]->is_multi_val_) {
-        for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
-          const auto& bin_mapper = feature_groups_[i]->bin_mappers_[j];
-          int cur_num_bin = bin_mapper->num_bin();
-          if (bin_mapper->GetMostFreqBin() == 0) {
-            cur_num_bin -= 1;
-          }
-          num_total_bin += cur_num_bin;
-          if (is_feature_used[f_start + j]) {
-            new_num_total_bin += cur_num_bin;
-
-            lower_bound.push_back(num_total_bin - cur_num_bin);
-            upper_bound.push_back(num_total_bin);
-
-            share_state->hist_move_src.push_back(
-                (new_num_total_bin - cur_num_bin) * 2);
-            share_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) *
-                                                 2);
-            share_state->hist_move_size.push_back(cur_num_bin * 2);
-            delta.push_back(num_total_bin - new_num_total_bin);
-          }
-        }
-      } else if (!share_state->is_colwise) {
-        bool is_group_used = false;
-        for (int j = 0; j < feature_groups_[i]->num_feature_; ++j) {
-          if (is_feature_used[f_start + j]) {
-            is_group_used = true;
-            break;
-          }
-        }
-        int cur_num_bin = feature_groups_[i]->bin_offsets_.back() - 1;
-        num_total_bin += cur_num_bin;
-        if (is_group_used) {
-          new_num_total_bin += cur_num_bin;
-
-          lower_bound.push_back(num_total_bin - cur_num_bin);
-          upper_bound.push_back(num_total_bin);
-
-          share_state->hist_move_src.push_back(
-              (new_num_total_bin - cur_num_bin) * 2);
-          share_state->hist_move_dest.push_back((num_total_bin - cur_num_bin) *
-                                               2);
-          share_state->hist_move_size.push_back(cur_num_bin * 2);
-          delta.push_back(num_total_bin - new_num_total_bin);
-        }
-      }
-    }
-    // avoid out of range
-    lower_bound.push_back(num_total_bin);
-    upper_bound.push_back(num_total_bin);
-    data_size_t num_data =
-        share_state->is_use_subrow ? share_state->bagging_indices_cnt : num_data_;
-    if (share_state->multi_val_bin_subset == nullptr) {
-      share_state->multi_val_bin_subset.reset(multi_val_bin->CreateLike(
-          num_data, new_num_total_bin, num_used, sum_used_dense_ratio));
-    } else {
-      share_state->multi_val_bin_subset->ReSize(num_data, new_num_total_bin,
-                                               num_used, sum_used_dense_ratio);
-    }
-    if (share_state->is_use_subrow) {
-      share_state->multi_val_bin_subset->CopySubrowAndSubcol(
-          multi_val_bin, share_state->bagging_use_indices,
-          share_state->bagging_indices_cnt, used_feature_index, lower_bound,
-          upper_bound, delta);
-      // may need to recopy subset
-      share_state->is_subrow_copied = false;
-    } else {
-      share_state->multi_val_bin_subset->CopySubcol(
-          multi_val_bin, used_feature_index, lower_bound, upper_bound, delta);
-    }
-  }
+  share_state->InitTrain(group_feature_start_,
+        feature_groups_,
+        is_feature_used);
 }
 
 template <bool USE_INDICES, bool ORDERED>
@@ -1229,80 +1124,8 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
                                           hist_t* hist_data) const {
   Common::FunctionTimer fun_time("Dataset::ConstructHistogramsMultiVal",
                                  global_timer);
-  const auto multi_val_bin =
-      (share_state->is_use_subcol || share_state->is_use_subrow)
-          ? share_state->multi_val_bin_subset.get()
-          : share_state->multi_val_bin.get();
-  if (multi_val_bin == nullptr) {
-    return;
-  }
-  global_timer.Start("Dataset::sparse_bin_histogram");
-  const int num_bin = multi_val_bin->num_bin();
-  const int num_bin_aligned =
-      (num_bin + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
-  int n_data_block = 1;
-  int data_block_size = num_data;
-  Threading::BlockInfo<data_size_t>(share_state->num_threads, num_data, 1024,
-                                    &n_data_block, &data_block_size);
-  const size_t buf_size =
-      static_cast<size_t>(n_data_block - 1) * num_bin_aligned * 2;
-  if (share_state->hist_buf.size() < buf_size) {
-    share_state->hist_buf.resize(buf_size);
-  }
-  auto origin_hist_data = hist_data;
-  if (share_state->is_use_subcol) {
-    hist_data = share_state->TempBuf();
-  }
-  OMP_INIT_EX();
-#pragma omp parallel for schedule(static, 1) num_threads(share_state->num_threads)
-  for (int tid = 0; tid < n_data_block; ++tid) {
-    OMP_LOOP_EX_BEGIN();
-    data_size_t start = tid * data_block_size;
-    data_size_t end = std::min(start + data_block_size, num_data);
-    auto data_ptr = hist_data;
-    if (tid > 0) {
-      data_ptr = share_state->hist_buf.data() +
-                 static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
-    }
-    std::memset(reinterpret_cast<void*>(data_ptr), 0, num_bin * kHistEntrySize);
-    if (USE_INDICES) {
-      if (ORDERED) {
-        multi_val_bin->ConstructHistogramOrdered(data_indices, start, end,
-                                                 gradients, hessians, data_ptr);
-      } else {
-        multi_val_bin->ConstructHistogram(data_indices, start, end, gradients,
-                                          hessians, data_ptr);
-      }
-    } else {
-      multi_val_bin->ConstructHistogram(start, end, gradients, hessians,
-                                        data_ptr);
-    }
-    OMP_LOOP_EX_END();
-  }
-  OMP_THROW_EX();
-  global_timer.Stop("Dataset::sparse_bin_histogram");
-
-  global_timer.Start("Dataset::sparse_bin_histogram_merge");
-  int n_bin_block = 1;
-  int bin_block_size = num_bin;
-  Threading::BlockInfo<data_size_t>(share_state->num_threads, num_bin, 512, &n_bin_block,
-                                    &bin_block_size);
-#pragma omp parallel for schedule(static, 1) num_threads(share_state->num_threads)
-  for (int t = 0; t < n_bin_block; ++t) {
-    const int start = t * bin_block_size;
-    const int end = std::min(start + bin_block_size, num_bin);
-    for (int tid = 1; tid < n_data_block; ++tid) {
-      auto src_ptr = share_state->hist_buf.data() +
-                     static_cast<size_t>(num_bin_aligned) * 2 * (tid - 1);
-      for (int i = start * 2; i < end * 2; ++i) {
-        hist_data[i] += src_ptr[i];
-      }
-    }
-  }
-  global_timer.Stop("Dataset::sparse_bin_histogram_merge");
-  global_timer.Start("Dataset::sparse_bin_histogram_move");
-  share_state->HistMove(hist_data, origin_hist_data);
-  global_timer.Stop("Dataset::sparse_bin_histogram_move");
+  share_state->ConstructHistograms<USE_INDICES, ORDERED>(
+      data_indices, num_data, gradients, hessians, hist_data);
 }
 
 template <bool USE_INDICES, bool USE_HESSIAN>
@@ -1311,7 +1134,7 @@ void Dataset::ConstructHistogramsInner(
     data_size_t num_data, const score_t* gradients, const score_t* hessians,
     score_t* ordered_gradients, score_t* ordered_hessians,
     TrainingShareStates* share_state, hist_t* hist_data) const {
-  if (!share_state->is_colwise) {
+  if (!share_state->is_col_wise) {
     return ConstructHistogramsMultiVal<USE_INDICES, false>(
         data_indices, num_data, gradients, hessians, share_state, hist_data);
   }
@@ -1319,10 +1142,11 @@ void Dataset::ConstructHistogramsInner(
   int multi_val_groud_id = -1;
   used_dense_group.reserve(num_groups_);
   for (int group = 0; group < num_groups_; ++group) {
+    const int f_start = group_feature_start_[group];
     const int f_cnt = group_feature_cnt_[group];
     bool is_group_used = false;
     for (int j = 0; j < f_cnt; ++j) {
-      const int fidx = group_feature_start_[group] + j;
+      const int fidx = f_start + j;
       if (is_feature_used[fidx]) {
         is_group_used = true;
         break;
@@ -1494,37 +1318,152 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
         "Cannot add features from other Dataset with a different number of "
         "rows");
   }
-  PushVector(&feature_names_, other->feature_names_);
-  PushVector(&feature2subfeature_, other->feature2subfeature_);
-  PushVector(&group_feature_cnt_, other->group_feature_cnt_);
-  PushVector(&forced_bin_bounds_, other->forced_bin_bounds_);
-  feature_groups_.reserve(other->feature_groups_.size());
-  // FIXME: fix the multiple multi-val feature groups, they need to be merged
-  // into one multi-val group
-  for (auto& fg : other->feature_groups_) {
-    feature_groups_.emplace_back(new FeatureGroup(*fg));
+  if (other->has_raw_ != has_raw_) {
+    Log::Fatal("Can only add features from other Dataset if both or neither have raw data.");
   }
-  for (auto feature_idx : other->used_feature_map_) {
-    if (feature_idx >= 0) {
-      used_feature_map_.push_back(feature_idx + num_features_);
-    } else {
-      used_feature_map_.push_back(-1);  // Unused feature.
+  int mv_gid = -1;
+  int other_mv_gid = -1;
+  for (int i = 0; i < num_groups_; ++i) {
+    if (IsMultiGroup(i)) {
+      mv_gid = i;
     }
   }
-  PushOffset(&real_feature_idx_, other->real_feature_idx_, num_total_features_);
-  PushOffset(&feature2group_, other->feature2group_, num_groups_);
-  auto bin_offset = group_bin_boundaries_.back();
-  // Skip the leading 0 when copying group_bin_boundaries.
-  for (auto i = other->group_bin_boundaries_.begin() + 1;
-       i < other->group_bin_boundaries_.end(); ++i) {
-    group_bin_boundaries_.push_back(*i + bin_offset);
+  for (int i = 0; i < other->num_groups_; ++i) {
+    if (other->IsMultiGroup(i)) {
+      other_mv_gid = i;
+    }
   }
-  PushOffset(&group_feature_start_, other->group_feature_start_, num_features_);
-  PushClearIfEmpty(&max_bin_by_feature_, num_total_features_, other->max_bin_by_feature_, other->num_total_features_, -1);
+  // Only one multi-val group, just simply merge
+  if (mv_gid < 0 || other_mv_gid < 0) {
+    PushVector(&feature2subfeature_, other->feature2subfeature_);
+    PushVector(&group_feature_cnt_, other->group_feature_cnt_);
+    feature_groups_.reserve(other->feature_groups_.size());
+    for (auto& fg : other->feature_groups_) {
+      const int cur_group_id = static_cast<int>(feature_groups_.size());
+      feature_groups_.emplace_back(new FeatureGroup(*fg, true, cur_group_id));
+    }
+    for (auto feature_idx : other->used_feature_map_) {
+      if (feature_idx >= 0) {
+        used_feature_map_.push_back(feature_idx + num_features_);
+      } else {
+        used_feature_map_.push_back(-1);  // Unused feature.
+      }
+    }
+    PushOffset(&real_feature_idx_, other->real_feature_idx_,
+               num_total_features_);
+    PushOffset(&feature2group_, other->feature2group_, num_groups_);
+    auto bin_offset = group_bin_boundaries_.back();
+    // Skip the leading 0 when copying group_bin_boundaries.
+    for (auto i = other->group_bin_boundaries_.begin() + 1;
+         i < other->group_bin_boundaries_.end(); ++i) {
+      group_bin_boundaries_.push_back(*i + bin_offset);
+    }
+    PushOffset(&group_feature_start_, other->group_feature_start_,
+               num_features_);
+    num_groups_ += other->num_groups_;
+    num_features_ += other->num_features_;
+  } else {
+    std::vector<std::vector<int>> features_in_group;
+    for (int i = 0; i < num_groups_; ++i) {
+      int f_start = group_feature_start_[i];
+      int f_cnt = group_feature_cnt_[i];
+      features_in_group.emplace_back();
+      for (int j = 0; j < f_cnt; ++j) {
+        const int real_fidx = real_feature_idx_[f_start + j];
+        features_in_group.back().push_back(real_fidx);
+      }
+    }
+    feature_groups_[mv_gid]->AddFeaturesFrom(
+        other->feature_groups_[other_mv_gid].get(), mv_gid);
+    for (int i = 0; i < other->num_groups_; ++i) {
+      int f_start = other->group_feature_start_[i];
+      int f_cnt = other->group_feature_cnt_[i];
+      if (i == other_mv_gid) {
+        for (int j = 0; j < f_cnt; ++j) {
+          const int real_fidx = other->real_feature_idx_[f_start + j] + num_total_features_;
+          features_in_group[mv_gid].push_back(real_fidx);
+        }
+      } else {
+        features_in_group.emplace_back();
+        for (int j = 0; j < f_cnt; ++j) {
+          const int real_fidx = other->real_feature_idx_[f_start + j] + num_total_features_;
+          features_in_group.back().push_back(real_fidx);
+        }
+        feature_groups_.emplace_back(
+            new FeatureGroup(*other->feature_groups_[i], false, -1));
+      }
+    }
+    // regenerate other fields
+    num_groups_ += other->num_groups_ - 1;
+    CHECK(num_groups_ == static_cast<int>(features_in_group.size()));
+    num_features_ += other->num_features_;
+    int cur_fidx = 0;
+    used_feature_map_ =
+      std::vector<int>(num_total_features_ + other->num_total_features_, -1);
+    real_feature_idx_.resize(num_features_);
+    feature2group_.resize(num_features_);
+    feature2subfeature_.resize(num_features_);
+    group_feature_start_.resize(num_groups_);
+    group_feature_cnt_.resize(num_groups_);
 
-  num_features_ += other->num_features_;
+    group_bin_boundaries_.clear();
+    uint64_t num_total_bin = 0;
+    group_bin_boundaries_.push_back(num_total_bin);
+    for (int i = 0; i < num_groups_; ++i) {
+      auto cur_features = features_in_group[i];
+      int cur_cnt_features = static_cast<int>(cur_features.size());
+      group_feature_start_[i] = cur_fidx;
+      group_feature_cnt_[i] = cur_cnt_features;
+      for (int j = 0; j < cur_cnt_features; ++j) {
+        int real_fidx = cur_features[j];
+        used_feature_map_[real_fidx] = cur_fidx;
+        real_feature_idx_[cur_fidx] = real_fidx;
+        feature2group_[cur_fidx] = i;
+        feature2subfeature_[cur_fidx] = j;
+        ++cur_fidx;
+      }
+      num_total_bin += feature_groups_[i]->num_total_bin_;
+      group_bin_boundaries_.push_back(num_total_bin);
+    }
+  }
+  std::unordered_set<std::string> feature_names_set;
+  for (const auto& val : feature_names_) {
+    feature_names_set.emplace(val);
+  }
+  for (const auto& val : other->feature_names_) {
+    std::string new_name = val;
+    int cnt = 2;
+    while (feature_names_set.count(new_name)) {
+      new_name = "D" + std::to_string(cnt) + "_" + val;
+      ++cnt;
+    }
+    if (new_name != val) {
+      Log::Warning(
+        "Find the same feature name (%s) in Dataset::AddFeaturesFrom, change "
+        "its name to (%s)",
+        val.c_str(), new_name.c_str());
+    }
+    feature_names_set.emplace(new_name);
+    feature_names_.push_back(new_name);
+  }
+  PushVector(&forced_bin_bounds_, other->forced_bin_bounds_);
+  PushClearIfEmpty(&max_bin_by_feature_, num_total_features_,
+                   other->max_bin_by_feature_, other->num_total_features_, -1);
   num_total_features_ += other->num_total_features_;
-  num_groups_ += other->num_groups_;
+  for (size_t i = 0; i < (other->numeric_feature_map_).size(); ++i) {
+    int feat_ind = numeric_feature_map_[i];
+    if (feat_ind > -1) {
+      numeric_feature_map_.push_back(feat_ind + num_numeric_features_);
+    } else {
+      numeric_feature_map_.push_back(-1);
+    }
+  }
+  num_numeric_features_ += other->num_numeric_features_;
+  if (has_raw_) {
+    for (int i = 0; i < other->num_numeric_features_; ++i) {
+      raw_data_.push_back(other->raw_data_[i]);
+    }
+  }
 }
 
 }  // namespace LightGBM

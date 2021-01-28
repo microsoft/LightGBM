@@ -1,5 +1,4 @@
 # User options
-use_precompile <- FALSE
 use_gpu <- FALSE
 
 # For Windows, the package will be built with Visual Studio
@@ -107,175 +106,125 @@ if (!write_succeeded) {
 source_dir <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
 build_dir <- file.path(source_dir, "build", fsep = "/")
 
-# Check for precompilation
-if (!use_precompile) {
+# Prepare building package
+dir.create(
+  build_dir
+  , recursive = TRUE
+  , showWarnings = FALSE
+)
+setwd(build_dir)
 
-  # Prepare building package
-  dir.create(
-    build_dir
-    , recursive = TRUE
-    , showWarnings = FALSE
+use_visual_studio <- !(use_mingw || use_msys2)
+
+# If using MSVC to build, pull in the script used
+# to create R.def from R.dll
+if (WINDOWS && use_visual_studio) {
+  write_succeeded <- file.copy(
+    "../../inst/make-r-def.R"
+    , file.path(build_dir, "make-r-def.R")
+    , overwrite = TRUE
   )
-  setwd(build_dir)
-
-  use_visual_studio <- !(use_mingw || use_msys2)
-
-  # If using MSVC to build, pull in the script used
-  # to create R.def from R.dll
-  if (WINDOWS && use_visual_studio) {
-    write_succeeded <- file.copy(
-      "../../inst/make-r-def.R"
-      , file.path(build_dir, "make-r-def.R")
-      , overwrite = TRUE
-    )
-    if (!write_succeeded) {
-      stop("Copying make-r-def.R failed")
-    }
+  if (!write_succeeded) {
+    stop("Copying make-r-def.R failed")
   }
+}
 
-  # Prepare installation steps
-  cmake_args <- NULL
-  build_cmd <- "make"
-  build_args <- "_lightgbm"
-  lib_folder <- file.path(source_dir, fsep = "/")
+# Prepare installation steps
+cmake_args <- NULL
+build_cmd <- "make"
+build_args <- "_lightgbm"
+lib_folder <- file.path(source_dir, fsep = "/")
 
-  WINDOWS_BUILD_TOOLS <- list(
-    "MinGW" = c(
-      build_tool = "mingw32-make.exe"
-      , makefile_generator = "MinGW Makefiles"
-    )
-    , "MSYS2" = c(
-      build_tool = "make.exe"
-      , makefile_generator = "MSYS Makefiles"
-    )
+# add in command-line arguments
+# NOTE: build_r.R replaces the line below
+command_line_args <- NULL
+cmake_args <- c(cmake_args, command_line_args)
+
+WINDOWS_BUILD_TOOLS <- list(
+  "MinGW" = c(
+    build_tool = "mingw32-make.exe"
+    , makefile_generator = "MinGW Makefiles"
   )
+  , "MSYS2" = c(
+    build_tool = "make.exe"
+    , makefile_generator = "MSYS Makefiles"
+  )
+)
 
-  if (use_mingw) {
-    windows_toolchain <- "MinGW"
-  } else if (use_msys2) {
+if (use_mingw) {
+  windows_toolchain <- "MinGW"
+} else if (use_msys2) {
+  windows_toolchain <- "MSYS2"
+} else {
+  # Rtools 4.0 moved from MinGW to MSYS toolchain. If user tries
+  # Visual Studio install but that fails, fall back to the toolchain
+  # supported in Rtools
+  if (R_ver >= 4.0) {
     windows_toolchain <- "MSYS2"
   } else {
-    # Rtools 4.0 moved from MinGW to MSYS toolchain. If user tries
-    # Visual Studio install but that fails, fall back to the toolchain
-    # supported in Rtools
-    if (R_ver >= 4.0) {
-      windows_toolchain <- "MSYS2"
-    } else {
-      windows_toolchain <- "MinGW"
-    }
+    windows_toolchain <- "MinGW"
   }
-  windows_build_tool <- WINDOWS_BUILD_TOOLS[[windows_toolchain]][["build_tool"]]
-  windows_makefile_generator <- WINDOWS_BUILD_TOOLS[[windows_toolchain]][["makefile_generator"]]
+}
+windows_build_tool <- WINDOWS_BUILD_TOOLS[[windows_toolchain]][["build_tool"]]
+windows_makefile_generator <- WINDOWS_BUILD_TOOLS[[windows_toolchain]][["makefile_generator"]]
 
-  if (use_gpu) {
-    cmake_args <- c(cmake_args, "-DUSE_GPU=ON")
-  }
-  cmake_args <- c(cmake_args, "-D__BUILD_FOR_R=ON")
+if (use_gpu) {
+  cmake_args <- c(cmake_args, "-DUSE_GPU=ON")
+}
+cmake_args <- c(cmake_args, "-D__BUILD_FOR_R=ON")
 
-  # Pass in R version, used to help find R executable for linking
-  R_version_string <- paste(
-    R.Version()[["major"]]
-    , R.Version()[["minor"]]
-    , sep = "."
-  )
-  r_version_arg <- sprintf("-DCMAKE_R_VERSION='%s'", R_version_string)
-  cmake_args <- c(cmake_args, r_version_arg)
+# Pass in R version, used to help find R executable for linking
+R_version_string <- paste(
+  R.Version()[["major"]]
+  , R.Version()[["minor"]]
+  , sep = "."
+)
+r_version_arg <- sprintf("-DCMAKE_R_VERSION='%s'", R_version_string)
+cmake_args <- c(cmake_args, r_version_arg)
 
-  # the checks below might already run `cmake -G`. If they do, set this flag
-  # to TRUE to avoid re-running it later
-  makefiles_already_generated <- FALSE
+# the checks below might already run `cmake -G`. If they do, set this flag
+# to TRUE to avoid re-running it later
+makefiles_already_generated <- FALSE
 
-  # Check if Windows installation (for gcc vs Visual Studio)
-  if (WINDOWS) {
-    if (!use_visual_studio) {
-      message(sprintf("Trying to build with %s", windows_toolchain))
+# Check if Windows installation (for gcc vs Visual Studio)
+if (WINDOWS) {
+  if (!use_visual_studio) {
+    message(sprintf("Trying to build with %s", windows_toolchain))
+    # Must build twice for Windows due sh.exe in Rtools
+    cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
+    .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
+    build_cmd <- windows_build_tool
+    build_args <- "_lightgbm"
+  } else {
+    visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
+    if (!isTRUE(visual_studio_succeeded)) {
+      warning(sprintf("Building with Visual Studio failed. Attempting with %s", windows_toolchain))
       # Must build twice for Windows due sh.exe in Rtools
       cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
       .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
       build_cmd <- windows_build_tool
       build_args <- "_lightgbm"
     } else {
-      visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
-      if (!isTRUE(visual_studio_succeeded)) {
-        warning(sprintf("Building with Visual Studio failed. Attempting with %s", windows_toolchain))
-        # Must build twice for Windows due sh.exe in Rtools
-        cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
-        .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
-        build_cmd <- windows_build_tool
-        build_args <- "_lightgbm"
-      } else {
-        build_cmd <- "cmake"
-        build_args <- c("--build", ".", "--target", "_lightgbm", "--config", "Release")
-        lib_folder <- file.path(source_dir, "Release", fsep = "/")
-        makefiles_already_generated <- TRUE
-      }
-    }
-  } else {
-      .run_shell_command("cmake", c(cmake_args, ".."))
+      build_cmd <- "cmake"
+      build_args <- c("--build", ".", "--target", "_lightgbm", "--config", "Release")
+      lib_folder <- file.path(source_dir, "Release", fsep = "/")
       makefiles_already_generated <- TRUE
+    }
   }
-
-  # generate build files
-  if (!makefiles_already_generated) {
-    .run_shell_command("cmake", c(cmake_args, ".."))
-  }
-
-  # R CMD check complains about the .NOTPARALLEL directive created in the cmake
-  # Makefile. We don't need it here anyway since targets are built serially, so trying
-  # to remove it with this hack
-  generated_makefile <- file.path(
-    build_dir
-    , "Makefile"
-  )
-  if (file.exists(generated_makefile)) {
-    makefile_txt <- readLines(
-      con = generated_makefile
-    )
-    makefile_txt <- gsub(
-      pattern = ".*NOTPARALLEL.*"
-      , replacement = ""
-      , x = makefile_txt
-    )
-    writeLines(
-      text = makefile_txt
-      , con = generated_makefile
-      , sep = "\n"
-    )
-  }
-
-  # build the library
-  message("Building lib_lightgbm")
-  .run_shell_command(build_cmd, build_args)
-  src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
-
 } else {
-
-  # Has precompiled package
-  lib_folder <- file.path(R_PACKAGE_SOURCE, "../", fsep = "/")
-  shared_object_file <- file.path(
-    lib_folder
-    , paste0("lib_lightgbm", SHLIB_EXT)
-    , fsep = "/"
-  )
-  release_file <- file.path(
-    lib_folder
-    , paste0("Release/lib_lightgbm", SHLIB_EXT)
-    , fsep = "/"
-  )
-  windows_shared_object_file <- file.path(
-    lib_folder
-    , paste0("/windows/x64/DLL/lib_lightgbm", SHLIB_EXT)
-    , fsep = "/"
-  )
-  if (file.exists(shared_object_file)) {
-    src <- shared_object_file
-  } else if (file.exists(release_file)) {
-    src <- release_file
-  } else {
-    # Expected result: installation will fail if it is not here or any other
-    src <- windows_shared_object_file
-  }
+    .run_shell_command("cmake", c(cmake_args, ".."))
+    makefiles_already_generated <- TRUE
 }
+
+# generate build files
+if (!makefiles_already_generated) {
+  .run_shell_command("cmake", c(cmake_args, ".."))
+}
+
+# build the library
+message("Building lib_lightgbm")
+.run_shell_command(build_cmd, build_args)
+src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
 
 # Packages with install.libs.R need to copy some artifacts into the
 # expected places in the package structure.

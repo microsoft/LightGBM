@@ -37,7 +37,7 @@ The graph represents each feature as a horizontal bar of length proportional to 
 Features are shown ranked in a decreasing importance order.
 }
 \examples{
-\dontrun{
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)

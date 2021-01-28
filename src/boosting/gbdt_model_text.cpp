@@ -20,6 +20,7 @@ const char* kModelVersion = "v3";
 
 std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_importance_type) const {
   std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
 
   str_buf << "{";
   str_buf << "\"name\":\"" << SubModelName() << "\"," << '\n';
@@ -34,16 +35,17 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_
 
   str_buf << "\"average_output\":" << (average_output_ ? "true" : "false") << ",\n";
 
-  str_buf << "\"feature_names\":[\"" << Common::Join(feature_names_, "\",\"")
+  str_buf << "\"feature_names\":[\"" << CommonC::Join(feature_names_, "\",\"")
           << "\"]," << '\n';
 
   str_buf << "\"monotone_constraints\":["
-          << Common::Join(monotone_constraints_, ",") << "]," << '\n';
+          << CommonC::Join(monotone_constraints_, ",") << "]," << '\n';
 
   str_buf << "\"feature_infos\":" << "{";
   bool first_obj = true;
   for (size_t i = 0; i < feature_infos_.size(); ++i) {
     std::stringstream json_str_buf;
+    Common::C_stringstream(json_str_buf);
     auto strs = Common::Split(feature_infos_[i].c_str(), ":");
     if (strs[0][0] == '[') {
       strs[0].erase(0, 1);  // remove '['
@@ -56,12 +58,12 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_
       json_str_buf << "\"max_value\":" << Common::AvoidInf(max_) << ",";
       json_str_buf << "\"values\":[]}";
     } else if (strs[0] != "none") {  // categorical feature
-      auto vals = Common::StringToArray<int>(feature_infos_[i], ':');
+      auto vals = CommonC::StringToArray<int>(feature_infos_[i], ':');
       auto max_idx = ArrayArgs<int>::ArgMax(vals);
       auto min_idx = ArrayArgs<int>::ArgMin(vals);
       json_str_buf << "{\"min_value\":" << vals[min_idx] << ",";
       json_str_buf << "\"max_value\":" << vals[max_idx] << ",";
-      json_str_buf << "\"values\":[" << Common::Join(vals, ",") << "]}";
+      json_str_buf << "\"values\":[" << CommonC::Join(vals, ",") << "]}";
     } else {  // unused feature
       continue;
     }
@@ -121,6 +123,7 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_
 
 std::string GBDT::ModelToIfElse(int num_iteration) const {
   std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
 
   str_buf << "#include \"gbdt.h\"" << '\n';
   str_buf << "#include <LightGBM/utils/common.h>" << '\n';
@@ -155,6 +158,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << " };" << '\n' << '\n';
 
   std::stringstream pred_str_buf;
+  Common::C_stringstream(pred_str_buf);
 
   pred_str_buf << "\t" << "int early_stop_round_counter = 0;" << '\n';
   pred_str_buf << "\t" << "std::memset(output, 0, sizeof(double) * num_tree_per_iteration_);" << '\n';
@@ -186,6 +190,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << " };" << '\n' << '\n';
 
   std::stringstream pred_str_buf_map;
+  Common::C_stringstream(pred_str_buf_map);
 
   pred_str_buf_map << "\t" << "int early_stop_round_counter = 0;" << '\n';
   pred_str_buf_map << "\t" << "std::memset(output, 0, sizeof(double) * num_tree_per_iteration_);" << '\n';
@@ -305,6 +310,7 @@ bool GBDT::SaveModelToIfElse(int num_iteration, const char* filename) const {
 
 std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int feature_importance_type) const {
   std::stringstream ss;
+  Common::C_stringstream(ss);
 
   // output model type
   ss << SubModelName() << '\n';
@@ -325,14 +331,14 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
     ss << "average_output" << '\n';
   }
 
-  ss << "feature_names=" << Common::Join(feature_names_, " ") << '\n';
+  ss << "feature_names=" << CommonC::Join(feature_names_, " ") << '\n';
 
   if (monotone_constraints_.size() != 0) {
-    ss << "monotone_constraints=" << Common::Join(monotone_constraints_, " ")
+    ss << "monotone_constraints=" << CommonC::Join(monotone_constraints_, " ")
        << '\n';
   }
 
-  ss << "feature_infos=" << Common::Join(feature_infos_, " ") << '\n';
+  ss << "feature_infos=" << CommonC::Join(feature_infos_, " ") << '\n';
 
   int num_used_model = static_cast<int>(models_.size());
   int total_iteration = num_used_model / num_tree_per_iteration_;
@@ -356,7 +362,7 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
     tree_sizes[idx] = tree_strs[idx].size();
   }
 
-  ss << "tree_sizes=" << Common::Join(tree_sizes, " ") << '\n';
+  ss << "tree_sizes=" << CommonC::Join(tree_sizes, " ") << '\n';
   ss << '\n';
 
   for (int i = 0; i < num_used_model - start_model; ++i) {
@@ -398,13 +404,13 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
 
 bool GBDT::SaveModelToFile(int start_iteration, int num_iteration, int feature_importance_type, const char* filename) const {
   /*! \brief File to write models */
-  std::ofstream output_file;
-  output_file.open(filename, std::ios::out | std::ios::binary);
+  auto writer = VirtualFileWriter::Make(filename);
+  if (!writer->Init()) {
+    Log::Fatal("Model file %s is not available for writes", filename);
+  }
   std::string str_to_write = SaveModelToString(start_iteration, num_iteration, feature_importance_type);
-  output_file.write(str_to_write.c_str(), str_to_write.size());
-  output_file.close();
-
-  return static_cast<bool>(output_file);
+  auto size = writer->Write(str_to_write.c_str(), str_to_write.size());
+  return size > 0;
 }
 
 bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
@@ -491,7 +497,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
 
   // get monotone_constraints
   if (key_vals.count("monotone_constraints")) {
-    monotone_constraints_ = Common::StringToArray<int8_t>(key_vals["monotone_constraints"].c_str(), ' ');
+    monotone_constraints_ = CommonC::StringToArray<int8_t>(key_vals["monotone_constraints"].c_str(), ' ');
     if (monotone_constraints_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
       Log::Fatal("Wrong size of monotone_constraints");
       return false;
@@ -533,7 +539,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
       p = Common::SkipNewLine(p);
     }
   } else {
-    std::vector<size_t> tree_sizes = Common::StringToArray<size_t>(key_vals["tree_sizes"].c_str(), ' ');
+    std::vector<size_t> tree_sizes = CommonC::StringToArray<size_t>(key_vals["tree_sizes"].c_str(), ' ');
     std::vector<size_t> tree_boundries(tree_sizes.size() + 1, 0);
     int num_trees = static_cast<int>(tree_sizes.size());
     for (int i = 0; i < num_trees; ++i) {
@@ -564,6 +570,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   iter_ = 0;
   bool is_inparameter = false;
   std::stringstream ss;
+  Common::C_stringstream(ss);
   while (p < end) {
     auto line_len = Common::GetLine(p);
     if (line_len > 0) {
@@ -574,6 +581,11 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
         break;
       } else if (is_inparameter) {
         ss << cur_line << "\n";
+        if (Common::StartsWith(cur_line, "[linear_tree: ")) {
+          int is_linear = 0;
+          Common::Atoi(cur_line.substr(14, 1).c_str(), &is_linear);
+          linear_tree_ = static_cast<bool>(is_linear);
+        }
       }
     }
     p += line_len;
