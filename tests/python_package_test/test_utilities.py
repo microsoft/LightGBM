@@ -81,7 +81,9 @@ WARNING | More than one metric available, picking one to plot.
         "INFO | [LightGBM] [Info] Using GPU Device:",
         "INFO | [LightGBM] [Info] Compiling OpenCL Kernel with 16 bins...",
         "INFO | [LightGBM] [Info] GPU programs have been built",
-        "INFO | [LightGBM] [Warning] GPU acceleration is disabled because no non-trivial dense features can be found"
+        "INFO | [LightGBM] [Warning] GPU acceleration is disabled because no non-trivial dense features can be found",
+        "INFO | [LightGBM] [Warning] Using sparse features with CUDA is currently not supported.",
+        "INFO | [LightGBM] [Warning] CUDA currently requires double precision calculations."
     ]
     with open(log_filename, "rt", encoding="utf-8") as f:
         actual_log = f.read().strip()
