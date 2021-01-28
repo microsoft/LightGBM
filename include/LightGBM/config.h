@@ -976,6 +976,7 @@ struct Config {
   // alias = machine_list_file, machine_list, mlist
   // desc = path of file that lists machines for this parallel learning application
   // desc = each line contains one IP and one port for one machine. The format is ``ip port`` (space as a separator)
+  // desc = **Note**: can be used only in CLI version
   std::string machine_list_filename = "";
 
   // alias = workers, nodes

@@ -1149,6 +1149,8 @@ Network Parameters
 
    -  each line contains one IP and one port for one machine. The format is ``ip port`` (space as a separator)
 
+   -  **Note**: can be used only in CLI version
+
 -  ``machines`` :raw-html:`<a id="machines" title="Permalink to this parameter" href="#machines">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``workers``, ``nodes``
 
    -  list of machines in the following format: ``ip1:port1,ip2:port2``
