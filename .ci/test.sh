@@ -48,7 +48,7 @@ if [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
         -c conda-forge \
             libxml2 \
-            "r-xfun>=0.20" \
+            "r-xfun>=0.19" \
             "r-lintr>=2.0"
     pip install --user cpplint mypy
     echo "Linting Python code"
