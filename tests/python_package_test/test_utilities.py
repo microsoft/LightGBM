@@ -83,7 +83,8 @@ WARNING | More than one metric available, picking one to plot.
         "INFO | [LightGBM] [Info] GPU programs have been built",
         "INFO | [LightGBM] [Warning] GPU acceleration is disabled because no non-trivial dense features can be found",
         "INFO | [LightGBM] [Warning] Using sparse features with CUDA is currently not supported.",
-        "INFO | [LightGBM] [Warning] CUDA currently requires double precision calculations."
+        "INFO | [LightGBM] [Warning] CUDA currently requires double precision calculations.",
+        "INFO | [LightGBM] [Info] LightGBM using CUDA trainer with DP float!!"
     ]
     with open(log_filename, "rt", encoding="utf-8") as f:
         actual_log = f.read().strip()
