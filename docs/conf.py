@@ -74,7 +74,7 @@ C_API = os.environ.get('C_API', '').lower().strip() != 'no'
 RTD = bool(os.environ.get('READTHEDOCS', ''))
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
+needs_sphinx = '2.1.0'  # Due to sphinx.ext.napoleon, autodoc_typehints
 if needs_sphinx > sphinx.__version__:
     message = 'This project needs at least Sphinx v%s' % needs_sphinx
     raise VersionRequirementError(message)
