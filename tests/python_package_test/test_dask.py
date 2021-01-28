@@ -473,7 +473,7 @@ def test_warns_but_makes_no_changes_for_feature_or_voting_tree_learner(client):
         assert dask_regressor.fitted_
         assert dask_regressor.get_params()['tree_learner'] == tree_learner
 
-        client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
 @gen_cluster(client=True, timeout=None)
