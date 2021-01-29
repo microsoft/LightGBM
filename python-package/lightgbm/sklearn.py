@@ -291,6 +291,9 @@ class LGBMModel(_LGBMModelBase):
         if not SKLEARN_INSTALLED:
             raise LightGBMError('scikit-learn is required for lightgbm.sklearn')
 
+        # Dask estimators inherit from this and may pass an argument "client"
+        self.__client = kwargs.pop("client", None)
+
         self.boosting_type = boosting_type
         self.objective = objective
         self.num_leaves = num_leaves
