@@ -434,6 +434,18 @@ def _predict(
 
 class _DaskLGBMModel:
 
+    @property
+    def client(self) -> Client:
+        """Dask client
+
+        This property can be passed in the constructor or directly assigned
+        like ``model.client = client``.
+        """
+        if self.__client is None:
+            return default_client()
+        else:
+            return self.__client
+
     def _fit(
         self,
         model_factory: Type[LGBMModel],
@@ -446,13 +458,11 @@ class _DaskLGBMModel:
     ) -> "_DaskLGBMModel":
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
             raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
-        if client is None:
-            client = default_client()
 
         params = self.get_params(True)
 
         model = _train(
-            client=client,
+            client=self.client,
             data=X,
             label=y,
             params=params,
@@ -489,7 +499,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
-        client: Optional[Client] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
@@ -498,16 +507,9 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
-            client=client,
+            client=self.client,
             **kwargs
         )
-
-    _base_doc = LGBMClassifier.fit.__doc__
-    _before_init_score, _init_score, _after_init_score = _base_doc.partition('init_score :')
-    fit.__doc__ = (_before_init_score
-                   + 'client : dask.distributed.Client or None, optional (default=None)\n'
-                   + ' ' * 12 + 'Dask client.\n'
-                   + ' ' * 8 + _init_score + _after_init_score)
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
@@ -540,6 +542,16 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             Local underlying model.
         """
         return self._to_local(LGBMClassifier)
+
+
+_base_doc = LGBMClassifier.__init__.__doc__
+_before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+DaskLGBMClassifier.__init__.__doc__ = (
+    _before_kwargs
+    + 'client : dask.distributed.Client or None, optional (default=None)\n'
+    + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. This client will not be saved if the model object is pickled.\n'
+    + ' ' * 8 + _kwargs + _after_kwargs
+)
 
 
 class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
@@ -591,6 +603,16 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         return self._to_local(LGBMRegressor)
 
 
+_base_doc = LGBMRegressor.__init__.__doc__
+_before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+DaskLGBMRegressor.__init__.__doc__ = (
+    _before_kwargs
+    + 'client : dask.distributed.Client or None, optional (default=None)\n'
+    + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. This client will not be saved if the model object is pickled.\n'
+    + ' ' * 8 + _kwargs + _after_kwargs
+)
+
+
 class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     """Distributed version of lightgbm.LGBMRanker."""
 
@@ -601,7 +623,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         sample_weight: Optional[_DaskCollection] = None,
         init_score: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
-        client: Optional[Client] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
@@ -614,7 +635,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             y=y,
             sample_weight=sample_weight,
             group=group,
-            client=client,
+            client=self.client,
             **kwargs
         )
 
@@ -640,3 +661,13 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             Local underlying model.
         """
         return self._to_local(LGBMRanker)
+
+
+_base_doc = LGBMRanker.__init__.__doc__
+_before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+DaskLGBMRanker.__init__.__doc__ = (
+    _before_kwargs
+    + 'client : dask.distributed.Client or None, optional (default=None)\n'
+    + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. This client will not be saved if the model object is pickled.\n'
+    + ' ' * 8 + _kwargs + _after_kwargs
+)
