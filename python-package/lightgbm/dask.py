@@ -370,7 +370,7 @@ def _predict(
     pred_contrib: bool = False,
     dtype: _PredictionDtype = np.float32,
     **kwargs: Any
-) -> _DaskCollection:
+) -> dask_Array:
     """Inner predict routine.
 
     Parameters
@@ -520,7 +520,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     predict.__doc__ = LGBMClassifier.predict.__doc__
 
-    def predict_proba(self, X: _DaskCollection, **kwargs: Any) -> dask_Array:
+    def predict_proba(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict_proba."""
         return _predict(
             model=self.to_local(),
