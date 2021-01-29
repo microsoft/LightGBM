@@ -398,7 +398,7 @@ def _predict(
         The predicted values.
     X_leaves : dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
         If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-    X_SHAP_values : dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
+    X_SHAP_values : dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
         If ``pred_contrib=True``, the feature contributions for each sample.
     """
     if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
@@ -570,7 +570,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
                    + ' ' * 12 + 'Dask client.\n'
                    + ' ' * 8 + _init_score + _after_init_score)
 
-    def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array
+    def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
         return _predict(
             model=self.to_local(),
