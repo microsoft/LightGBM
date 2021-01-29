@@ -27,12 +27,6 @@ jobs:
           - method: source
             python_version: 3.6
             cuda_version: "9.0"
-          - method: pip
-            python_version: 3.7
-            cuda_version: "10.0"
-          - method: wheel
-            python_version: 3.8
-            cuda_version: "9.0"
     steps:
       - name: Setup or update software on host machine
         run: |
