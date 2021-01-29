@@ -90,6 +90,7 @@ jobs:
         TASK: sdist
       bdist:
         TASK: bdist
+        PYTHON_VERSION: 3.8
       inference:
         TASK: if-else
       mpi_source:
@@ -98,7 +99,7 @@ jobs:
       mpi_pip:
         TASK: mpi
         METHOD: pip
-        PYTHON_VERSION: 3.7
+        PYTHON_VERSION: 3.8
       mpi_wheel:
         TASK: mpi
         METHOD: wheel

@@ -25,11 +25,11 @@ jobs:
       matrix:
         include:
           - method: source
-            python_version: 3.6
-          - method: pip
             python_version: 3.7
-          - method: wheel
+          - method: pip
             python_version: 3.8
+          - method: wheel
+            python_version: 3.9
     steps:
       - name: Setup or update software on host machine
         run: |
