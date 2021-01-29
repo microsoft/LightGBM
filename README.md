@@ -5,10 +5,10 @@ Light Gradient Boosting Machine
 
 [![Python-package GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/Python-package/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
 [![R-package GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/R-package/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
+[![CUDA Version GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/CUDA%20Version/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
 [![Static Analysis GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/Static%20Analysis/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
 [![Azure Pipelines Build Status](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_apis/build/status/Microsoft.LightGBM?branchName=master)](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_build/latest?definitionId=1)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
-[![Travis Build Status](https://travis-ci.org/microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/microsoft/LightGBM)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
 [![License](https://img.shields.io/github/license/microsoft/lightgbm.svg)](https://github.com/microsoft/LightGBM/blob/master/LICENSE)
 [![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg?logo=python&logoColor=white)](https://pypi.org/project/lightgbm)
@@ -87,8 +87,6 @@ Kubeflow Operator (LightGBM on Kubernetes): https://github.com/kubeflow/xgboost-
 ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
 LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
-
-Dask-LightGBM (distributed and parallel Python-package): https://github.com/dask/dask-lightgbm
 
 Ruby gem: https://github.com/ankane/lightgbm
 

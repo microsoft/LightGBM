@@ -152,10 +152,9 @@ struct Config {
   // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
   // descl2 = the linear model at each leaf includes all the numerical features in that leaf's branch
   // descl2 = categorical features are used for splits as normal but are not used in the linear models
-  // descl2 = missing values must be encoded as ``np.nan`` (Python) or ``NA`` (CLI), not ``0``
+  // descl2 = missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
   // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
   // descl2 = **Note**: only works with CPU and ``serial`` tree learner
-  // descl2 = **Note**: not yet supported in R-package
   // descl2 = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
   // descl2 = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
   bool linear_tree = false;
@@ -671,7 +670,7 @@ struct Config {
   // desc = use number for index, e.g. ``query=0`` means column\_0 is the query id
   // desc = add a prefix ``name:`` for column name, e.g. ``query=name:query_id``
   // desc = **Note**: works only in case of loading data directly from file
-  // desc = **Note**: data should be grouped by query\_id
+  // desc = **Note**: data should be grouped by query\_id, for more information, see `Query Data <#query-data>`__
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0 and query\_id is column\_1, the correct parameter is ``query=0``
   std::string group_column = "";
 
@@ -977,6 +976,7 @@ struct Config {
   // alias = machine_list_file, machine_list, mlist
   // desc = path of file that lists machines for this parallel learning application
   // desc = each line contains one IP and one port for one machine. The format is ``ip port`` (space as a separator)
+  // desc = **Note**: can be used only in CLI version
   std::string machine_list_filename = "";
 
   // alias = workers, nodes
@@ -1174,8 +1174,6 @@ inline std::string ParseMetricAlias(const std::string& type) {
     return "kullback_leibler";
   } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
     return "mape";
-  } else if (type == std::string("auc_mu")) {
-    return "auc_mu";
   } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
     return "custom";
   }

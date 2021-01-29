@@ -20,16 +20,9 @@ elseif(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
 elseif(USE_CUDA)
   cmake_minimum_required(VERSION 3.16)
-elseif(__BUILD_FOR_R)
-  cmake_minimum_required(VERSION 3.6)
 else()
   cmake_minimum_required(VERSION 3.0)
 endif()
-
-if(__BUILD_FOR_R)
-  # Should be always before PROJECT command
-  set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
-endif(__BUILD_FOR_R)
 
 if(USE_CUDA)
   PROJECT(lightgbm LANGUAGES C CXX CUDA)
@@ -90,7 +83,7 @@ if(USE_SWIG)
   endif()
 endif(USE_SWIG)
 
-SET(EIGEN_DIR "${PROJECT_SOURCE_DIR}/eigen")
+SET(EIGEN_DIR "${PROJECT_SOURCE_DIR}/external_libs/eigen")
 include_directories(${EIGEN_DIR})
 
 # See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
@@ -133,7 +126,7 @@ if(USE_OPENMP)
 endif(USE_OPENMP)
 
 if(USE_GPU)
-    SET(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/compute/include)
+    SET(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/external_libs/compute/include)
     include_directories(${BOOST_COMPUTE_HEADER_DIR})
     find_package(OpenCL REQUIRED)
     include_directories(${OpenCL_INCLUDE_DIRS})

@@ -13,13 +13,12 @@ Preparation
 
 `setuptools <https://pypi.org/project/setuptools>`_ is needed.
 
-Install from `PyPI <https://pypi.org/project/lightgbm>`_ Using ``pip``
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Install from `PyPI <https://pypi.org/project/lightgbm>`_
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 .. code:: sh
 
     pip install lightgbm
- 
 
 You may need to install `wheel <https://pythonwheels.com>`_ via ``pip install wheel`` first.
 
@@ -36,7 +35,6 @@ For **macOS** (we provide wheels for 3 newest macOS versions) users:
 - For version smaller than 2.2.1 and not smaller than 2.1.2, **gcc-8** with **OpenMP** support must be installed first. Refer to `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__ for installation of **gcc-8** with **OpenMP** support.
 
 - For version smaller than 2.1.2, **gcc-7** with **OpenMP** is required.
-
 
 Build from Sources
 ******************
@@ -144,6 +142,17 @@ By default, installation in environment with 32-bit Python is prohibited. Howeve
 
 It is **strongly not recommended** to use this version of LightGBM!
 
+Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+If you use ``conda`` to manage Python dependencies, you can install LightGBM using ``conda install``.
+
+**Note**: The `lightgbm conda-forge feedstock <https://github.com/conda-forge/lightgbm-feedstock>`_ is not maintained by LightGBM maintainers.
+
+.. code:: sh
+
+    conda install -c conda-forge lightgbm
+
 Install from GitHub
 '''''''''''''''''''
 
@@ -174,11 +183,21 @@ Run ``python setup.py install --bit32``, if you want to use 32-bit version. All 
 
 If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``python setup.py install --precompile``.
 
-
 Build Wheel File
 ****************
 
 You can use ``python setup.py bdist_wheel`` instead of ``python setup.py install`` to build wheel file and use it for installation later. This might be useful for systems with restricted or completely without network access.
+
+Install Dask-package
+''''''''''''''''''''
+
+To install all additional dependencies required for Dask-package, you can append ``[dask]`` to LightGBM package name:
+
+.. code:: sh
+
+    pip install lightgbm[dask]
+
+Or replace ``python setup.py install`` with ``pip install -e .[dask]`` if you are installing the package from source files.
 
 Troubleshooting
 ---------------
