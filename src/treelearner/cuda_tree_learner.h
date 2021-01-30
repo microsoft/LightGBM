@@ -202,8 +202,6 @@ class CUDATreeLearner: public SerialTreeLearner {
     void * ptr_pinned_gradients_ = nullptr;
     /*! \brief GPU memory object holding the ordered hessian */
     std::vector<score_t*> device_hessians_;
-    /*! \brief Pointer to pinned memory of ordered hessian */
-    void * ptr_pinned_hessians_ = nullptr;
     /*! \brief A vector of feature mask. 1 = feature used, 0 = feature not used */
     std::vector<char> feature_masks_;
     /*! \brief GPU memory object holding the feature masks */
