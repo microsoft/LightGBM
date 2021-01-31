@@ -110,6 +110,17 @@ All available options:
 
 For more details see `FindBoost <https://cmake.org/cmake/help/latest/module/FindBoost.html>`__ and `FindOpenCL <https://cmake.org/cmake/help/latest/module/FindOpenCL.html>`__.
 
+Build CUDA Version
+~~~~~~~~~~~~~~~~~~
+
+.. code:: sh
+
+    pip install lightgbm --install-option=--cuda
+
+All remarks from `Build from Sources section <#build-from-sources>`__ are actual in this case and `CMake`_ (version 3.16 or higher) is strongly required.
+
+**CUDA** library is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version-experimental>`__.
+
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
 
@@ -176,6 +187,8 @@ Run ``python setup.py install --mpi`` to enable **MPI** support. All remarks fro
 Run ``python setup.py install --mingw``, if you want to use **MinGW-w64** on **Windows** instead of **Visual Studio**. All remarks from `Build with MinGW-w64 on Windows section <#build-with-mingw-w64-on-windows>`__ are actual in this case.
 
 Run ``python setup.py install --gpu`` to enable GPU support. All remarks from `Build GPU Version section <#build-gpu-version>`__ are actual in this case. To pass additional options to **CMake** use the following syntax: ``python setup.py install --gpu --opencl-include-dir=/usr/local/cuda/include/``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
+
+Run ``python setup.py install --cuda`` to enable CUDA support. All remarks from `Build CUDA Version section <#build-cuda-version>`__ are actual in this case.
 
 Run ``python setup.py install --hdfs`` to enable HDFS support. All remarks from `Build HDFS Version section <#build-hdfs-version>`__ are actual in this case.
 
