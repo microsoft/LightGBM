@@ -1,6 +1,7 @@
 # coding: utf-8
 """Tests for lightgbm.dask module"""
 
+import inspect
 import joblib
 import pickle
 import socket
@@ -688,3 +689,9 @@ def test_errors(c, s, a, b):
             model_factory=lgb.LGBMClassifier
         )
         assert 'foo' in str(info.value)
+
+
+def test_dask_classes_and_sklearn_equivalents_have_identical_constructors():
+    assert inspect.getfullargspec(lgb.LGBMClassifier.__init__) == inspect.getfullargspec(lgb.DaskLGBMClassifier.__init__)
+    assert inspect.getfullargspec(lgb.LGBMRegressor.__init__) == inspect.getfullargspec(lgb.DaskLGBMRegressor.__init__)
+    assert inspect.getfullargspec(lgb.LGBMRanker.__init__) == inspect.getfullargspec(lgb.DaskLGBMRanker.__init__)
