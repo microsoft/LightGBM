@@ -574,7 +574,7 @@ On Linux a CUDA version of LightGBM can be built using **CUDA**, **CMake** and *
 
 The following dependencies should be installed before compilation:
 
--  **CUDA** libraries. Please refer to `this detailed guide`_.
+-  **CUDA** 9.0 or later libraries. Please refer to `this detailed guide`_.
 
 -  **CMake** 3.16 or later.
 
