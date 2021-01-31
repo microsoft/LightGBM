@@ -24,11 +24,7 @@ else()
   cmake_minimum_required(VERSION 3.0)
 endif()
 
-if(USE_CUDA)
-  PROJECT(lightgbm LANGUAGES C CXX CUDA)
-else()
-  PROJECT(lightgbm LANGUAGES C CXX)
-endif()
+PROJECT(lightgbm LANGUAGES C CXX)
 
 if(__INTEGRATE_OPENCL)
   set(__INTEGRATE_OPENCL ON CACHE BOOL "" FORCE)
@@ -117,6 +113,8 @@ else()
 endif(USE_MPI)
 
 if(USE_CUDA)
+    SET(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
+    enable_language(CUDA)
     SET(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
 endif(USE_CUDA)
 
