@@ -90,7 +90,7 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV dask distributed joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
+conda install -q -y -n $CONDA_ENV cloudpickle dask distributed joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
 
 # graphviz must come from conda-forge to avoid this on some linux distros:
 # https://github.com/conda-forge/graphviz-feedstock/issues/18

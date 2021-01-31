@@ -442,7 +442,7 @@ class _DaskLGBMModel:
         """Dask client.
 
         This property can be passed in the constructor or directly assigned
-        like ``model.client = client``.
+        like ``model.set_params(client=client)``.
         """
         if self._client is None:
             return default_client()
@@ -452,6 +452,13 @@ class _DaskLGBMModel:
     @client.setter
     def client(self, client: Client) -> None:
         self._client = client
+
+    def _lgb_getstate(self) -> Dict[Any, Any]:
+        """Remove un-picklable attributes before serialization."""
+        client = self.__dict__.pop("_client", None)
+        out = copy.deepcopy(self.__dict__)
+        self.set_params(client=client)
+        return out
 
     def _fit(
         self,
@@ -508,7 +515,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
                  min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
                  subsample=1., subsample_freq=0, colsample_bytree=1.,
                  reg_alpha=0., reg_lambda=0., random_state=None,
-                 n_jobs=-1, silent=True, importance_type='split', **kwargs):
+                 n_jobs=-1, silent=True, importance_type='split', client=None, **kwargs):
         super().__init__(
             boosting_type=boosting_type,
             num_leaves=num_leaves,
@@ -532,6 +539,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             importance_type=importance_type,
             **kwargs
         )
+        self.set_params(client=client)
 
     _base_doc = LGBMClassifier.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
@@ -541,6 +549,9 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. This client will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
+
+    def __getstate__(self) -> Dict[Any, Any]:
+        return self._lgb_getstate()
 
     def fit(
         self,
@@ -603,7 +614,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
                  min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
                  subsample=1., subsample_freq=0, colsample_bytree=1.,
                  reg_alpha=0., reg_lambda=0., random_state=None,
-                 n_jobs=-1, silent=True, importance_type='split', **kwargs):
+                 n_jobs=-1, silent=True, importance_type='split', client=None, **kwargs):
         super().__init__(
             boosting_type=boosting_type,
             num_leaves=num_leaves,
@@ -627,6 +638,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             importance_type=importance_type,
             **kwargs
         )
+        self.set_params(client=client)
 
     _base_doc = LGBMRegressor.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
@@ -636,6 +648,9 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. This client will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
+
+    def __getstate__(self) -> Dict[Any, Any]:
+        return self._lgb_getstate()
 
     def fit(
         self,
@@ -687,7 +702,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
                  min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
                  subsample=1., subsample_freq=0, colsample_bytree=1.,
                  reg_alpha=0., reg_lambda=0., random_state=None,
-                 n_jobs=-1, silent=True, importance_type='split', **kwargs):
+                 n_jobs=-1, silent=True, importance_type='split', client=None, **kwargs):
         super().__init__(
             boosting_type=boosting_type,
             num_leaves=num_leaves,
@@ -711,6 +726,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             importance_type=importance_type,
             **kwargs
         )
+        self.set_params(client=client)
 
     _base_doc = LGBMRanker.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
@@ -720,6 +736,9 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. This client will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
+
+    def __getstate__(self) -> Dict[Any, Any]:
+        return self._lgb_getstate()
 
     def fit(
         self,
