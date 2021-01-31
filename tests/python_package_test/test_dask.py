@@ -692,6 +692,6 @@ def test_errors(c, s, a, b):
 
 
 def test_dask_classes_and_sklearn_equivalents_have_identical_constructors():
-    assert inspect.getfullargspec(lgb.LGBMClassifier.__init__) == inspect.getfullargspec(lgb.DaskLGBMClassifier.__init__)
-    assert inspect.getfullargspec(lgb.LGBMRegressor.__init__) == inspect.getfullargspec(lgb.DaskLGBMRegressor.__init__)
-    assert inspect.getfullargspec(lgb.LGBMRanker.__init__) == inspect.getfullargspec(lgb.DaskLGBMRanker.__init__)
+    assert inspect.getfullargspec(lgb.DaskLGBMClassifier.__init__) == inspect.getfullargspec(lgb.LGBMClassifier.__init__)
+    assert inspect.getfullargspec(lgb.DaskLGBMRegressor.__init__) == inspect.getfullargspec(lgb.LGBMRegressor.__init__)
+    assert inspect.getfullargspec(lgb.DaskLGBMRanker.__init__) == inspect.getfullargspec(lgb.LGBMRanker.__init__)
