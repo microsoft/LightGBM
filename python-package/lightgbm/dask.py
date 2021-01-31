@@ -559,6 +559,8 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             **kwargs
         )
 
+    fit.__doc__ = LGBMClassifier.fit.__doc__
+
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
         return _predict(
@@ -653,6 +655,8 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             **kwargs
         )
 
+    fit.__doc__ = LGBMRegressor.fit.__doc__
+
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
         return _predict(
@@ -739,6 +743,8 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             client=self.client,
             **kwargs
         )
+
+    fit.__doc__ = LGBMRanker.fit.__doc__
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
