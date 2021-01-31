@@ -434,6 +434,9 @@ def _predict(
 
 class _DaskLGBMModel:
 
+    # self._client is set in the constructor of lightgbm.sklearn.LGBMModel
+    _client = None
+
     @property
     def client(self) -> Client:
         """Dask client
@@ -441,10 +444,14 @@ class _DaskLGBMModel:
         This property can be passed in the constructor or directly assigned
         like ``model.client = client``.
         """
-        if self.__client is None:
+        if self._client is None:
             return default_client()
         else:
-            return self.__client
+            return self._client
+
+    @client.setter
+    def client(self, client: Client) -> None:
+        self._client = client
 
     def _fit(
         self,
@@ -472,9 +479,9 @@ class _DaskLGBMModel:
             **kwargs
         )
 
+        # at this point, self._client is still set
         self.set_params(**model.get_params())
         self._copy_extra_params(model, self)
-
         return self
 
     def _to_local(self, model_factory: Type[LGBMModel]) -> LGBMModel:
@@ -488,7 +495,8 @@ class _DaskLGBMModel:
         attributes = source.__dict__
         extra_param_names = set(attributes.keys()).difference(params.keys())
         for name in extra_param_names:
-            setattr(dest, name, attributes[name])
+            if name != "_client":
+                setattr(dest, name, attributes[name])
 
 
 class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):

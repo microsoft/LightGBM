@@ -292,7 +292,7 @@ class LGBMModel(_LGBMModelBase):
             raise LightGBMError('scikit-learn is required for lightgbm.sklearn')
 
         # Dask estimators inherit from this and may pass an argument "client"
-        self.__client = kwargs.pop("client", None)
+        self._client = kwargs.pop("client", None)
 
         self.boosting_type = boosting_type
         self.objective = objective
@@ -327,6 +327,13 @@ class LGBMModel(_LGBMModelBase):
         self._classes = None
         self._n_classes = None
         self.set_params(**kwargs)
+
+    def __getstate__(self):
+        """Remove un-picklable attributes before serialization"""
+        client = self.__dict__.pop("_client", None)
+        out = copy.deepcopy(self.__dict__)
+        self._client = client
+        return out
 
     def _more_tags(self):
         return {

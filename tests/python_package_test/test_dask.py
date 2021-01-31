@@ -1,6 +1,8 @@
 # coding: utf-8
 """Tests for lightgbm.dask module"""
 
+import joblib
+import pickle
 import socket
 from itertools import groupby
 from os import getenv
@@ -13,6 +15,7 @@ if not platform.startswith('linux'):
 if not lgb.compat.DASK_INSTALLED:
     pytest.skip('Dask is not installed', allow_module_level=True)
 
+import cloudpickle
 import dask.array as da
 import dask.dataframe as dd
 import numpy as np
@@ -137,6 +140,32 @@ def _accuracy_score(dy_true, dy_pred):
     return da.average(dy_true == dy_pred).compute()
 
 
+def _pickle(obj, filepath, serializer):
+    if serializer == 'pickle':
+        with open(filepath, 'wb') as f:
+            pickle.dump(obj, f)
+    elif serializer == 'joblib':
+        joblib.dump(obj, filepath)
+    elif serializer == 'cloudpickle':
+        with open(filepath, 'wb') as f:
+            cloudpickle.dump(obj, f)
+    else:
+        raise ValueError(f'unrecognized serializer type: {serializer}')
+
+
+def _unpickle(filepath, serializer):
+    if serializer == 'pickle':
+        with open(filepath, 'rb') as f:
+            return pickle.load(f)
+    elif serializer == 'joblib':
+        return joblib.load(filepath)
+    elif serializer == 'cloudpickle':
+        with open(filepath, 'rb') as f:
+            return cloudpickle.load(f)
+    else:
+        raise ValueError(f'unrecognized serializer type: {serializer}')
+
+
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('centers', data_centers)
 def test_classifier(output, centers, client, listen_port):
@@ -151,11 +180,12 @@ def test_classifier(output, centers, client, listen_port):
         "num_leaves": 10
     }
     dask_classifier = lgb.DaskLGBMClassifier(
+        client=client,
         time_out=5,
         local_listen_port=listen_port,
         **params
     )
-    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
+    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
     p1 = dask_classifier.predict(dX)
     p1_proba = dask_classifier.predict_proba(dX).compute()
     p1_local = dask_classifier.to_local().predict(X)
@@ -193,12 +223,13 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
         "num_leaves": 10
     }
     dask_classifier = lgb.DaskLGBMClassifier(
+        client=client,
         time_out=5,
         local_listen_port=listen_port,
         tree_learner='data',
         **params
     )
-    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
+    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
     preds_with_contrib = dask_classifier.predict(dX, pred_contrib=True).compute()
 
     local_classifier = lgb.LGBMClassifier(**params)
@@ -241,6 +272,7 @@ def test_training_does_not_fail_on_port_conflicts(client):
         s.bind(('127.0.0.1', 12400))
 
         dask_classifier = lgb.DaskLGBMClassifier(
+            client=client,
             time_out=5,
             local_listen_port=12400,
             n_estimators=5,
@@ -251,7 +283,6 @@ def test_training_does_not_fail_on_port_conflicts(client):
                 X=dX,
                 y=dy,
                 sample_weight=dw,
-                client=client
             )
             assert dask_classifier.booster_
 
@@ -270,12 +301,13 @@ def test_regressor(output, client, listen_port):
         "num_leaves": 10
     }
     dask_regressor = lgb.DaskLGBMRegressor(
+        client=client,
         time_out=5,
         local_listen_port=listen_port,
         tree='data',
         **params
     )
-    dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
+    dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw)
     p1 = dask_regressor.predict(dX)
     if output != 'dataframe':
         s1 = _r2_score(dy, p1)
@@ -313,12 +345,13 @@ def test_regressor_pred_contrib(output, client, listen_port):
         "num_leaves": 10
     }
     dask_regressor = lgb.DaskLGBMRegressor(
+        client=client,
         time_out=5,
         local_listen_port=listen_port,
         tree_learner='data',
         **params
     )
-    dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
+    dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw)
     preds_with_contrib = dask_regressor.predict(dX, pred_contrib=True).compute()
 
     local_regressor = lgb.LGBMRegressor(**params)
@@ -353,11 +386,12 @@ def test_regressor_quantile(output, client, listen_port, alpha):
         "num_leaves": 10
     }
     dask_regressor = lgb.DaskLGBMRegressor(
+        client=client,
         local_listen_port=listen_port,
         tree_learner_type='data_parallel',
         **params
     )
-    dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
+    dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw)
     p1 = dask_regressor.predict(dX).compute()
     q1 = np.count_nonzero(y < p1) / y.shape[0]
 
@@ -391,12 +425,13 @@ def test_ranker(output, client, listen_port, group):
         "min_child_samples": 1
     }
     dask_ranker = lgb.DaskLGBMRanker(
+        client=client,
         time_out=5,
         local_listen_port=listen_port,
         tree_learner_type='data_parallel',
         **params
     )
-    dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
+    dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
     rnkvec_dask_local = dask_ranker.to_local().predict(X)
@@ -413,6 +448,165 @@ def test_ranker(output, client, listen_port, group):
     assert_eq(rnkvec_dask, rnkvec_dask_local)
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
+@pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
+def test_training_works_if_client_not_provided_or_set_after_construction(task, listen_port, client):
+    if task == 'ranking':
+        _, _, _, _, dX, dy, _, dg = _create_ranking_data(
+            output='array',
+            group=None
+        )
+        model_factory = lgb.DaskLGBMRanker
+    else:
+        _, _, _, dX, dy, _ = _create_data(
+            objective=task,
+            output='array',
+        )
+        dg = None
+        if task == 'classification':
+            model_factory = lgb.DaskLGBMClassifier
+        elif task == 'regression':
+            model_factory = lgb.DaskLGBMRegressor
+
+    params = {
+        "time_out": 5,
+        "local_listen_port": listen_port,
+        "n_estimators": 1,
+        "num_leaves": 2
+    }
+
+    # fit should work if client isn't provided
+    dask_model = model_factory(**params)
+    assert dask_model._client is None
+    assert dask_model.client == client
+
+    dask_model.fit(dX, dy, group=dg)
+    assert dask_model.fitted_
+    assert dask_model._client is None
+    assert dask_model.client == client
+
+    preds = dask_model.predict(dX)
+    assert isinstance(preds, da.Array)
+    assert dask_model.fitted_
+    assert dask_model._client is None
+    assert dask_model.client == client
+
+    local_model = dask_model.to_local()
+    assert local_model._client is None
+    with pytest.raises(AttributeError):
+        local_model.client
+
+    # should be able to set client after construction
+    dask_model = model_factory(**params)
+    dask_model.client = client
+    assert dask_model._client == client
+    assert dask_model.client == client
+
+    dask_model.fit(dX, dy, group=dg)
+    assert dask_model.fitted_
+    assert dask_model._client == client
+    assert dask_model.client == client
+
+    preds = dask_model.predict(dX)
+    assert isinstance(preds, da.Array)
+    assert dask_model.fitted_
+    assert dask_model._client == client
+    assert dask_model.client == client
+
+    local_model = dask_model.to_local()
+    assert local_model._client is None
+    with pytest.raises(AttributeError):
+        local_model.client
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
+@pytest.mark.parametrize('serializer', ['pickle', 'joblib', 'cloudpickle'])
+@pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
+@pytest.mark.parametrize('set_client', [True, False])
+def test_model_is_picklable_whether_or_not_client_set_explicitly(serializer, task, set_client, listen_port, client, tmp_path):
+    if task == 'ranking':
+        _, _, _, _, dX, dy, _, dg = _create_ranking_data(
+            output='array',
+            group=None
+        )
+        model_factory = lgb.DaskLGBMRanker
+    else:
+        _, _, _, dX, dy, _ = _create_data(
+            objective=task,
+            output='array',
+        )
+        dg = None
+        if task == 'classification':
+            model_factory = lgb.DaskLGBMClassifier
+        elif task == 'regression':
+            model_factory = lgb.DaskLGBMRegressor
+
+    params = {
+        "time_out": 5,
+        "local_listen_port": listen_port,
+        "n_estimators": 1,
+        "num_leaves": 2
+    }
+
+    if set_client:
+        params.update({"client": client})
+
+    # unfitted model should survive pickling round trip, and pickling
+    # shouldn't have side effects on the model object
+    tmp_file = str(tmp_path / "model-1.pkl")
+    dask_model = model_factory(**params)
+    if set_client:
+        assert dask_model._client == client
+    else:
+        assert dask_model._client is None
+
+    assert dask_model.client == client
+
+    _pickle(
+        obj=dask_model,
+        filepath=tmp_file,
+        serializer=serializer
+    )
+    model_from_disk = _unpickle(
+        filepath=tmp_file,
+        serializer=serializer
+    )
+
+    if set_client:
+        assert dask_model._client == client
+    else:
+        assert dask_model._client is None
+    assert model_from_disk._client is None
+    assert model_from_disk.client == client
+    assert model_from_disk.get_params() == dask_model.get_params()
+
+    # fitted model should survive pickling round trip, and pickling
+    # shouldn't have side effects on the model object
+    tmp_file2 = str(tmp_path / "model-2.pkl")
+    dask_model.fit(dX, dy, group=dg)
+    _pickle(
+        obj=dask_model,
+        filepath=tmp_file2,
+        serializer=serializer
+    )
+    fitted_model_from_disk = _unpickle(
+        filepath=tmp_file2,
+        serializer=serializer
+    )
+
+    if set_client:
+        assert dask_model._client == client
+    else:
+        assert dask_model._client is None
+    assert isinstance(fitted_model_from_disk, model_factory)
+    assert fitted_model_from_disk._client is None
+    assert fitted_model_from_disk.client == client
+    assert fitted_model_from_disk.get_params() == dask_model.get_params()
+    preds_orig = dask_model.predict(dX).compute()
+    preds_loaded_model = fitted_model_from_disk.predict(dX).compute()
+    assert_eq(preds_orig, preds_loaded_model)
 
 
 def test_find_open_port_works():
@@ -442,6 +636,7 @@ def test_warns_and_continues_on_unrecognized_tree_learner(client):
     X = da.random.random((1e3, 10))
     y = da.random.random((1e3, 1))
     dask_regressor = lgb.DaskLGBMRegressor(
+        client=client,
         time_out=5,
         local_listen_port=1234,
         tree_learner='some-nonsense-value',
@@ -449,7 +644,7 @@ def test_warns_and_continues_on_unrecognized_tree_learner(client):
         num_leaves=2
     )
     with pytest.warns(UserWarning, match='Parameter tree_learner set to some-nonsense-value'):
-        dask_regressor = dask_regressor.fit(X, y, client=client)
+        dask_regressor = dask_regressor.fit(X, y)
 
     assert dask_regressor.fitted_
 
@@ -461,6 +656,7 @@ def test_warns_but_makes_no_changes_for_feature_or_voting_tree_learner(client):
     y = da.random.random((1e3, 1))
     for tree_learner in ['feature_parallel', 'voting']:
         dask_regressor = lgb.DaskLGBMRegressor(
+            client=client,
             time_out=5,
             local_listen_port=1234,
             tree_learner=tree_learner,
@@ -468,7 +664,7 @@ def test_warns_but_makes_no_changes_for_feature_or_voting_tree_learner(client):
             num_leaves=2
         )
         with pytest.warns(UserWarning, match='Support for tree_learner %s in lightgbm' % tree_learner):
-            dask_regressor = dask_regressor.fit(X, y, client=client)
+            dask_regressor = dask_regressor.fit(X, y)
 
         assert dask_regressor.fitted_
         assert dask_regressor.get_params()['tree_learner'] == tree_learner
