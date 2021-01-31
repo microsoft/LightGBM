@@ -329,7 +329,7 @@ class LGBMModel(_LGBMModelBase):
         self.set_params(**kwargs)
 
     def __getstate__(self):
-        """Remove un-picklable attributes before serialization"""
+        """Remove un-picklable attributes before serialization."""
         client = self.__dict__.pop("_client", None)
         out = copy.deepcopy(self.__dict__)
         self._client = client

@@ -439,7 +439,7 @@ class _DaskLGBMModel:
 
     @property
     def client(self) -> Client:
-        """Dask client
+        """Dask client.
 
         This property can be passed in the constructor or directly assigned
         like ``model.client = client``.
@@ -479,9 +479,9 @@ class _DaskLGBMModel:
             **kwargs
         )
 
-        # at this point, self._client is still set
         self.set_params(**model.get_params())
         self._copy_extra_params(model, self)
+
         return self
 
     def _to_local(self, model_factory: Type[LGBMModel]) -> LGBMModel:
