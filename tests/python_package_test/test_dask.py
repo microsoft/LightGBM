@@ -480,45 +480,54 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, l
     # fit should work if client isn't provided
     dask_model = model_factory(**params)
     assert dask_model._client is None
-    assert dask_model.client == client
+    assert dask_model.client is None
+    assert dask_model.client_ == client
 
     dask_model.fit(dX, dy, group=dg)
     assert dask_model.fitted_
     assert dask_model._client is None
-    assert dask_model.client == client
+    assert dask_model.client is None
+    assert dask_model.client_ == client
 
     preds = dask_model.predict(dX)
     assert isinstance(preds, da.Array)
     assert dask_model.fitted_
     assert dask_model._client is None
-    assert dask_model.client == client
+    assert dask_model.client is None
+    assert dask_model.client_ == client
 
     local_model = dask_model.to_local()
-    assert getattr(local_model, "_client", None) is None
     with pytest.raises(AttributeError):
+        local_model._client
         local_model.client
+        local_model.client_
 
     # should be able to set client after construction
     dask_model = model_factory(**params)
     dask_model.set_params(client=client)
     assert dask_model._client == client
     assert dask_model.client == client
+    assert dask_model.client_ == client
 
     dask_model.fit(dX, dy, group=dg)
     assert dask_model.fitted_
     assert dask_model._client == client
     assert dask_model.client == client
+    assert dask_model.client_ == client
 
     preds = dask_model.predict(dX)
     assert isinstance(preds, da.Array)
     assert dask_model.fitted_
     assert dask_model._client == client
     assert dask_model.client == client
+    assert dask_model.client_ == client
 
     local_model = dask_model.to_local()
     assert getattr(local_model, "_client", None) is None
     with pytest.raises(AttributeError):
+        local_model._client
         local_model.client
+        local_model.client_
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -526,9 +535,6 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, l
 @pytest.mark.parametrize('serializer', ['pickle', 'joblib', 'cloudpickle'])
 @pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
 @pytest.mark.parametrize('set_client', [True, False])
-# @pytest.mark.parametrize('serializer', ['pickle'])
-# @pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
-# @pytest.mark.parametrize('set_client', [True])
 def test_model_and_local_version_are_picklable_whether_or_not_client_set_explicitly(serializer, task, set_client, listen_port, client, tmp_path):
     if task == 'ranking':
         X, _, _, _, dX, dy, _, dg = _create_ranking_data(
@@ -563,10 +569,12 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
     local_model = dask_model.to_local()
     if set_client:
         assert dask_model._client == client
+        assert dask_model.client == client
     else:
         assert dask_model._client is None
+        assert dask_model.client is None
 
-    assert dask_model.client == client
+    assert dask_model.client_ == client
     assert "client" not in local_model.get_params()
     assert getattr(local_model, "client", None) is None
 
@@ -594,11 +602,22 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
 
     if set_client:
         assert dask_model._client == client
+        assert dask_model.client == client
     else:
         assert dask_model._client is None
+        assert dask_model.client is None
     assert model_from_disk._client is None
-    assert model_from_disk.client == client
-    assert model_from_disk.get_params() == dask_model.get_params()
+    assert model_from_disk.client is None
+    assert model_from_disk.client_ == client
+    # client will always be None after unpickling
+    if set_client:
+        from_disk_params = model_from_disk.get_params()
+        from_disk_params.pop("client", None)
+        dask_params = dask_model.get_params()
+        dask_params.pop("client", None)
+        assert from_disk_params == dask_params
+    else:
+        assert model_from_disk.get_params() == dask_model.get_params()
     assert local_model_from_disk.get_params() == local_model.get_params()
 
     # fitted model should survive pickling round trip, and pickling
@@ -607,7 +626,10 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
     local_model = dask_model.to_local()
 
     assert "client" not in local_model.get_params()
-    assert getattr(local_model, "client", None) is None
+    with pytest.raises(AttributeError):
+        local_model._client
+        local_model.client
+        local_model.client_
 
     tmp_file2 = str(tmp_path / "model-2.pkl")
     _pickle(
@@ -633,12 +655,25 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
 
     if set_client:
         assert dask_model._client == client
+        assert dask_model.client == client
     else:
         assert dask_model._client is None
+        assert dask_model.client is None
     assert isinstance(fitted_model_from_disk, model_factory)
     assert fitted_model_from_disk._client is None
-    assert fitted_model_from_disk.client == client
-    assert fitted_model_from_disk.get_params() == dask_model.get_params()
+    assert fitted_model_from_disk.client is None
+    assert fitted_model_from_disk.client_ == client
+
+    # client will always be None after unpickling
+    if set_client:
+        from_disk_params = fitted_model_from_disk.get_params()
+        from_disk_params.pop("client", None)
+        dask_params = dask_model.get_params()
+        dask_params.pop("client", None)
+        assert from_disk_params == dask_params
+    else:
+        assert fitted_model_from_disk.get_params() == dask_model.get_params()
+    assert local_fitted_model_from_disk.get_params() == local_model.get_params()
 
     preds_orig = dask_model.predict(dX).compute()
     preds_loaded_model = fitted_model_from_disk.predict(dX).compute()
