@@ -455,9 +455,9 @@ class _DaskLGBMModel:
 
     def _lgb_getstate(self) -> Dict[Any, Any]:
         """Remove un-picklable attributes before serialization."""
-        self._other_params.pop("client", None)
-        client = self.__dict__.pop("_client", None)
         out = deepcopy(self.__dict__)
+        client = out.pop("_client", None)
+        self._other_params.pop("client", None)
         self.client = client
         return out
 
