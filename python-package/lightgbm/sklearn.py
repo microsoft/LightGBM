@@ -372,8 +372,7 @@ class LGBMModel(_LGBMModelBase):
             setattr(self, key, value)
             if hasattr(self, '_' + key):
                 setattr(self, '_' + key, value)
-            if key != "client":
-                self._other_params[key] = value
+            self._other_params[key] = value
         return self
 
     def fit(self, X, y,

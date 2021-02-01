@@ -434,7 +434,7 @@ def _predict(
 
 class _DaskLGBMModel:
 
-    # self._client is set in the constructor of lightgbm.sklearn.LGBMModel
+    # self._client is set in the constructor of classes that use this mixin
     _client: Optional[Client] = None
 
     @property
@@ -455,9 +455,10 @@ class _DaskLGBMModel:
 
     def _lgb_getstate(self) -> Dict[Any, Any]:
         """Remove un-picklable attributes before serialization."""
+        self._other_params.pop("client", None)
         client = self.__dict__.pop("_client", None)
-        out = copy.deepcopy(self.__dict__)
-        self.set_params(client=client)
+        out = deepcopy(self.__dict__)
+        self.client = client
         return out
 
     def _fit(
@@ -467,13 +468,13 @@ class _DaskLGBMModel:
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
-        client: Optional[Client] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
             raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
 
         params = self.get_params(True)
+        params.pop("client", None)
 
         model = _train(
             client=self.client,
@@ -492,8 +493,11 @@ class _DaskLGBMModel:
         return self
 
     def _to_local(self, model_factory: Type[LGBMModel]) -> LGBMModel:
-        model = model_factory(**self.get_params())
+        params = self.get_params()
+        params.pop("client", None)
+        model = model_factory(**params)
         self._copy_extra_params(self, model)
+        model._other_params.pop("client", None)
         return model
 
     @staticmethod
@@ -516,6 +520,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
                  subsample=1., subsample_freq=0, colsample_bytree=1.,
                  reg_alpha=0., reg_lambda=0., random_state=None,
                  n_jobs=-1, silent=True, importance_type='split', client=None, **kwargs):
+        self.client = client
         super().__init__(
             boosting_type=boosting_type,
             num_leaves=num_leaves,
@@ -539,7 +544,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             importance_type=importance_type,
             **kwargs
         )
-        self.set_params(client=client)
 
     _base_doc = LGBMClassifier.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
@@ -566,7 +570,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
-            client=self.client,
             **kwargs
         )
 
@@ -615,6 +618,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
                  subsample=1., subsample_freq=0, colsample_bytree=1.,
                  reg_alpha=0., reg_lambda=0., random_state=None,
                  n_jobs=-1, silent=True, importance_type='split', client=None, **kwargs):
+        self.client = client
         super().__init__(
             boosting_type=boosting_type,
             num_leaves=num_leaves,
@@ -638,7 +642,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             importance_type=importance_type,
             **kwargs
         )
-        self.set_params(client=client)
 
     _base_doc = LGBMRegressor.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
@@ -666,7 +669,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
-            client=client,
             **kwargs
         )
 
@@ -703,6 +705,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
                  subsample=1., subsample_freq=0, colsample_bytree=1.,
                  reg_alpha=0., reg_lambda=0., random_state=None,
                  n_jobs=-1, silent=True, importance_type='split', client=None, **kwargs):
+        self.client = client
         super().__init__(
             boosting_type=boosting_type,
             num_leaves=num_leaves,
@@ -726,7 +729,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             importance_type=importance_type,
             **kwargs
         )
-        self.set_params(client=client)
 
     _base_doc = LGBMRanker.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
@@ -759,7 +761,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             y=y,
             sample_weight=sample_weight,
             group=group,
-            client=self.client,
             **kwargs
         )
 

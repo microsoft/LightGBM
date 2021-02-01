@@ -494,13 +494,13 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, l
     assert dask_model.client == client
 
     local_model = dask_model.to_local()
-    assert local_model._client is None
+    assert getattr(local_model, "_client", None) is None
     with pytest.raises(AttributeError):
         local_model.client
 
     # should be able to set client after construction
     dask_model = model_factory(**params)
-    dask_model.client = client
+    dask_model.set_params(client=client)
     assert dask_model._client == client
     assert dask_model.client == client
 
@@ -516,7 +516,7 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, l
     assert dask_model.client == client
 
     local_model = dask_model.to_local()
-    assert local_model._client is None
+    assert getattr(local_model, "_client", None) is None
     with pytest.raises(AttributeError):
         local_model.client
 
@@ -526,15 +526,18 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, l
 @pytest.mark.parametrize('serializer', ['pickle', 'joblib', 'cloudpickle'])
 @pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
 @pytest.mark.parametrize('set_client', [True, False])
-def test_model_is_picklable_whether_or_not_client_set_explicitly(serializer, task, set_client, listen_port, client, tmp_path):
+# @pytest.mark.parametrize('serializer', ['pickle'])
+# @pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
+# @pytest.mark.parametrize('set_client', [True])
+def test_model_and_local_version_are_picklable_whether_or_not_client_set_explicitly(serializer, task, set_client, listen_port, client, tmp_path):
     if task == 'ranking':
-        _, _, _, _, dX, dy, _, dg = _create_ranking_data(
+        X, _, _, _, dX, dy, _, dg = _create_ranking_data(
             output='array',
             group=None
         )
         model_factory = lgb.DaskLGBMRanker
     else:
-        _, _, _, dX, dy, _ = _create_data(
+        X, _, _, dX, dy, _ = _create_data(
             objective=task,
             output='array',
         )
@@ -556,15 +559,18 @@ def test_model_is_picklable_whether_or_not_client_set_explicitly(serializer, tas
 
     # unfitted model should survive pickling round trip, and pickling
     # shouldn't have side effects on the model object
-    tmp_file = str(tmp_path / "model-1.pkl")
     dask_model = model_factory(**params)
+    local_model = dask_model.to_local()
     if set_client:
         assert dask_model._client == client
     else:
         assert dask_model._client is None
 
     assert dask_model.client == client
+    assert "client" not in local_model.get_params()
+    assert getattr(local_model, "client", None) is None
 
+    tmp_file = str(tmp_path / "model-1.pkl")
     _pickle(
         obj=dask_model,
         filepath=tmp_file,
@@ -575,6 +581,17 @@ def test_model_is_picklable_whether_or_not_client_set_explicitly(serializer, tas
         serializer=serializer
     )
 
+    local_tmp_file = str(tmp_path / "local-model-1.pkl")
+    _pickle(
+        obj=local_model,
+        filepath=local_tmp_file,
+        serializer=serializer
+    )
+    local_model_from_disk = _unpickle(
+        filepath=local_tmp_file,
+        serializer=serializer
+    )
+
     if set_client:
         assert dask_model._client == client
     else:
@@ -582,11 +599,17 @@ def test_model_is_picklable_whether_or_not_client_set_explicitly(serializer, tas
     assert model_from_disk._client is None
     assert model_from_disk.client == client
     assert model_from_disk.get_params() == dask_model.get_params()
+    assert local_model_from_disk.get_params() == local_model.get_params()
 
     # fitted model should survive pickling round trip, and pickling
     # shouldn't have side effects on the model object
-    tmp_file2 = str(tmp_path / "model-2.pkl")
     dask_model.fit(dX, dy, group=dg)
+    local_model = dask_model.to_local()
+
+    assert "client" not in local_model.get_params()
+    assert getattr(local_model, "client", None) is None
+
+    tmp_file2 = str(tmp_path / "model-2.pkl")
     _pickle(
         obj=dask_model,
         filepath=tmp_file2,
@@ -594,6 +617,17 @@ def test_model_is_picklable_whether_or_not_client_set_explicitly(serializer, tas
     )
     fitted_model_from_disk = _unpickle(
         filepath=tmp_file2,
+        serializer=serializer
+    )
+
+    local_tmp_file2 = str(tmp_path / "local-model-2.pkl")
+    _pickle(
+        obj=local_model,
+        filepath=local_tmp_file2,
+        serializer=serializer
+    )
+    local_fitted_model_from_disk = _unpickle(
+        filepath=local_tmp_file2,
         serializer=serializer
     )
 
@@ -605,9 +639,14 @@ def test_model_is_picklable_whether_or_not_client_set_explicitly(serializer, tas
     assert fitted_model_from_disk._client is None
     assert fitted_model_from_disk.client == client
     assert fitted_model_from_disk.get_params() == dask_model.get_params()
+
     preds_orig = dask_model.predict(dX).compute()
     preds_loaded_model = fitted_model_from_disk.predict(dX).compute()
     assert_eq(preds_orig, preds_loaded_model)
+
+    preds_orig_local = local_model.predict(X)
+    preds_loaded_model_local = local_fitted_model_from_disk.predict(X)
+    assert_eq(preds_orig_local, preds_loaded_model_local)
 
 
 def test_find_open_port_works():
@@ -691,7 +730,22 @@ def test_errors(c, s, a, b):
         assert 'foo' in str(info.value)
 
 
-def test_dask_classes_and_sklearn_equivalents_have_identical_constructors():
-    assert inspect.getfullargspec(lgb.DaskLGBMClassifier.__init__) == inspect.getfullargspec(lgb.LGBMClassifier.__init__)
-    assert inspect.getfullargspec(lgb.DaskLGBMRegressor.__init__) == inspect.getfullargspec(lgb.LGBMRegressor.__init__)
-    assert inspect.getfullargspec(lgb.DaskLGBMRanker.__init__) == inspect.getfullargspec(lgb.LGBMRanker.__init__)
+def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except_client_arg():
+    def _compare_spec(dask_cls, sklearn_cls):
+        dask_spec = inspect.getfullargspec(dask_cls)
+        sklearn_spec = inspect.getfullargspec(sklearn_cls)
+        assert dask_spec.varargs == sklearn_spec.varargs
+        assert dask_spec.varkw == sklearn_spec.varkw
+        assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs
+        assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults
+        assert dask_spec.annotations == sklearn_spec.annotations
+
+        # "client" should be the only different, and the final argument
+        assert dask_spec.args[:-1] == sklearn_spec.args
+        assert dask_spec.defaults[:-1] == sklearn_spec.defaults
+        assert dask_spec.args[-1] == 'client'
+        assert dask_spec.defaults[-1] is None
+
+    _compare_spec(lgb.DaskLGBMClassifier, lgb.LGBMClassifier)
+    _compare_spec(lgb.DaskLGBMRegressor, lgb.LGBMRegressor)
+    _compare_spec(lgb.DaskLGBMRanker, lgb.LGBMRanker)
