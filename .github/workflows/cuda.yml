@@ -16,7 +16,7 @@ env:
 
 jobs:
   test:
-    name: cuda ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, Python ${{ matrix.python_version }})
+    name: cuda ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: [self-hosted, linux]
     timeout-minutes: 60
     strategy:
