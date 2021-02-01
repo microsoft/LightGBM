@@ -35,6 +35,7 @@ else  # Linux
             apt-utils \
             build-essential \
             ca-certificates \
+            cmake \
             curl \
             git \
             iputils-ping \
@@ -48,16 +49,16 @@ else  # Linux
             unzip \
             wget \
             zip
+        if [[ $COMPILER == "clang" ]]; then
+            sudo apt-get install --no-install-recommends -y \
+                clang \
+                libomp-dev
+        fi
 
         export LANG="en_US.UTF-8"
         export LC_ALL="${LANG}"
         sudo locale-gen ${LANG}
         sudo update-locale
-
-        sudo apt-get install -y --no-install-recommends \
-            cmake \
-            clang \
-            libomp-dev
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
@@ -80,9 +81,20 @@ else  # Linux
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
         apt-get install --no-install-recommends -y \
-            cmake \
             curl \
+            lsb-release \
+            software-properties-common \
             wget
+        if [[ $COMPILER == "clang" ]]; then
+            apt-get install --no-install-recommends -y \
+                clang \
+                libomp-dev
+        fi
+        curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
+        apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
+        apt-get update
+        apt-get install --no-install-recommends -y \
+            cmake
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
         wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
