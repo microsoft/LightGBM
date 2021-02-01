@@ -3,17 +3,17 @@
 Light Gradient Boosting Machine
 ===============================
 
-[![GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/R%20GitHub%20Actions/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
+[![Python-package GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/Python-package/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
+[![R-package GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/R-package/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
+[![CUDA Version GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/CUDA%20Version/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
+[![Static Analysis GitHub Actions Build Status](https://github.com/microsoft/LightGBM/workflows/Static%20Analysis/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions)
 [![Azure Pipelines Build Status](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_apis/build/status/Microsoft.LightGBM?branchName=master)](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_build/latest?definitionId=1)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
-[![Travis Build Status](https://travis-ci.org/microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/microsoft/LightGBM)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
 [![License](https://img.shields.io/github/license/microsoft/lightgbm.svg)](https://github.com/microsoft/LightGBM/blob/master/LICENSE)
 [![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg?logo=python&logoColor=white)](https://pypi.org/project/lightgbm)
 [![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg?logo=pypi&logoColor=white)](https://pypi.org/project/lightgbm)
 [![CRAN Version](https://www.r-pkg.org/badges/version/lightgbm)](https://cran.r-project.org/package=lightgbm)
-[![Join Gitter at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Slack](https://lightgbm-slack-autojoin.herokuapp.com/badge.svg)](https://lightgbm-slack-autojoin.herokuapp.com)
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
@@ -88,8 +88,6 @@ ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
 LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 
-Dask-LightGBM (distributed and parallel Python-package): https://github.com/dask/dask-lightgbm
-
 Ruby gem: https://github.com/ankane/lightgbm
 
 LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
@@ -104,9 +102,6 @@ Support
 -------
 
 - Ask a question [on Stack Overflow with the `lightgbm` tag](https://stackoverflow.com/questions/ask?tags=lightgbm), we monitor this for new questions.
-- Discuss on the [LightGBM Gitter](https://gitter.im/Microsoft/LightGBM).
-- Discuss on the [LightGBM Slack team](https://lightgbm.slack.com).
-  - Use [this invite link](https://lightgbm-slack-autojoin.herokuapp.com/) to join the team.
 - Open **bug reports** and **feature requests** (not questions) on [GitHub issues](https://github.com/microsoft/LightGBM/issues).
 
 How to Contribute

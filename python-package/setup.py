@@ -65,8 +65,10 @@ def copy_files(integrated_opencl=False, use_gpu=False):
     if not os.path.isfile(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt')):
         copy_files_helper('include')
         copy_files_helper('src')
-        copy_files_helper('eigen')
-        copy_files_helper('external_libs')
+        for submodule in os.listdir(os.path.join(CURRENT_DIR, os.path.pardir, 'external_libs')):
+            if submodule == 'compute' and not use_gpu:
+                continue
+            copy_files_helper(os.path.join('external_libs', submodule))
         if not os.path.exists(os.path.join(CURRENT_DIR, "compile", "windows")):
             os.makedirs(os.path.join(CURRENT_DIR, "compile", "windows"))
         copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.sln"),
@@ -85,8 +87,6 @@ def copy_files(integrated_opencl=False, use_gpu=False):
             copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeIntegratedOpenCL.cmake"),
                       os.path.join(CURRENT_DIR, "compile", "CMakeIntegratedOpenCL.cmake"),
                       verbose=0)
-        if use_gpu:
-            copy_files_helper('compute')
 
 
 def clear_path(path):
@@ -163,7 +163,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
         else:
             status = 1
             lib_path = os.path.join(CURRENT_DIR, "compile", "windows", "x64", "DLL", "lib_lightgbm.dll")
-            if not any((use_gpu, use_mpi, use_hdfs, nomp, bit32, integrated_opencl)):
+            if not any((use_gpu, use_cuda, use_mpi, use_hdfs, nomp, bit32, integrated_opencl)):
                 logger.info("Starting to compile with MSBuild from existing solution file.")
                 platform_toolsets = ("v142", "v141", "v140")
                 for pt in platform_toolsets:
@@ -344,7 +344,7 @@ if __name__ == "__main__":
           extras_require={
               'dask': [
                   'dask[array]>=2.0.0',
-                  'dask[dataframe]>=2.0.0'
+                  'dask[dataframe]>=2.0.0',
                   'dask[distributed]>=2.0.0',
                   'pandas',
               ],
@@ -374,4 +374,5 @@ if __name__ == "__main__":
                        'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',
                        'Programming Language :: Python :: 3.8',
+                       'Programming Language :: Python :: 3.9',
                        'Topic :: Scientific/Engineering :: Artificial Intelligence'])

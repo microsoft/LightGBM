@@ -6,6 +6,7 @@ Booster <- R6::R6Class(
 
     best_iter = -1L,
     best_score = NA_real_,
+    params = list(),
     record_evals = list(),
 
     # Finalize will free up the handles
@@ -19,6 +20,8 @@ Booster <- R6::R6Class(
         private$handle <- NULL
 
       }
+
+      return(invisible(NULL))
 
     },
 
@@ -134,6 +137,10 @@ Booster <- R6::R6Class(
 
       }
 
+      self$params <- params
+
+      return(invisible(NULL))
+
     },
 
     # Set training data name
@@ -187,17 +194,20 @@ Booster <- R6::R6Class(
     # Reset parameters of booster
     reset_parameter = function(params, ...) {
 
-      # Append parameters
-      params <- append(params, list(...))
+      if (methods::is(self$params, "list")) {
+        params <- modifyList(self$params, params)
+      }
+
+      params <- modifyList(params, list(...))
       params_str <- lgb.params2str(params = params)
 
-      # Reset parameters
       lgb.call(
         fun_name = "LGBM_BoosterResetParameter_R"
         , ret = NULL
         , private$handle
         , params_str
       )
+      self$params <- params
 
       return(invisible(self))
 
@@ -314,10 +324,12 @@ Booster <- R6::R6Class(
     current_iter = function() {
 
       cur_iter <- 0L
-      lgb.call(
-        fun_name = "LGBM_BoosterGetCurrentIteration_R"
-        , ret = cur_iter
-        , private$handle
+      return(
+        lgb.call(
+          fun_name = "LGBM_BoosterGetCurrentIteration_R"
+          , ret = cur_iter
+          , private$handle
+        )
       )
 
     },
@@ -326,10 +338,12 @@ Booster <- R6::R6Class(
     upper_bound = function() {
 
       upper_bound <- 0.0
-      lgb.call(
-        fun_name = "LGBM_BoosterGetUpperBoundValue_R"
-        , ret = upper_bound
-        , private$handle
+      return(
+        lgb.call(
+          fun_name = "LGBM_BoosterGetUpperBoundValue_R"
+          , ret = upper_bound
+          , private$handle
+        )
       )
 
     },
@@ -338,10 +352,12 @@ Booster <- R6::R6Class(
     lower_bound = function() {
 
       lower_bound <- 0.0
-      lgb.call(
-        fun_name = "LGBM_BoosterGetLowerBoundValue_R"
-        , ret = lower_bound
-        , private$handle
+      return(
+        lgb.call(
+          fun_name = "LGBM_BoosterGetLowerBoundValue_R"
+          , ret = lower_bound
+          , private$handle
+        )
       )
 
     },
@@ -391,17 +407,19 @@ Booster <- R6::R6Class(
       }
 
       # Evaluate data
-      private$inner_eval(
-        data_name = name
-        , data_idx = data_idx
-        , feval = feval
+      return(
+        private$inner_eval(
+          data_name = name
+          , data_idx = data_idx
+          , feval = feval
+        )
       )
 
     },
 
     # Evaluation training data
     eval_train = function(feval = NULL) {
-      private$inner_eval(private$name_train_set, 1L, feval)
+      return(private$inner_eval(private$name_train_set, 1L, feval))
     },
 
     # Evaluation validation data
@@ -457,12 +475,14 @@ Booster <- R6::R6Class(
       }
 
       # Return model string
-      return(lgb.call.return.str(
-        fun_name = "LGBM_BoosterSaveModelToString_R"
-        , private$handle
-        , as.integer(num_iteration)
-        , as.integer(feature_importance_type)
-      ))
+      return(
+        lgb.call.return.str(
+          fun_name = "LGBM_BoosterSaveModelToString_R"
+          , private$handle
+          , as.integer(num_iteration)
+          , as.integer(feature_importance_type)
+        )
+      )
 
     },
 
@@ -474,11 +494,13 @@ Booster <- R6::R6Class(
         num_iteration <- self$best_iter
       }
 
-      lgb.call.return.str(
-        fun_name = "LGBM_BoosterDumpModel_R"
-        , private$handle
-        , as.integer(num_iteration)
-        , as.integer(feature_importance_type)
+      return(
+        lgb.call.return.str(
+          fun_name = "LGBM_BoosterDumpModel_R"
+          , private$handle
+          , as.integer(num_iteration)
+          , as.integer(feature_importance_type)
+        )
       )
 
     },
@@ -504,7 +526,8 @@ Booster <- R6::R6Class(
 
       # Predict on new data
       predictor <- Predictor$new(private$handle, ...)
-      predictor$predict(
+      return(
+        predictor$predict(
           data = data
           , start_iteration = start_iteration
           , num_iteration = num_iteration
@@ -513,13 +536,14 @@ Booster <- R6::R6Class(
           , predcontrib = predcontrib
           , header = header
           , reshape = reshape
+        )
       )
 
     },
 
     # Transform into predictor
     to_predictor = function() {
-      Predictor$new(private$handle)
+      return(Predictor$new(private$handle))
     },
 
     # Used for save
@@ -530,6 +554,8 @@ Booster <- R6::R6Class(
 
       # Overwrite model in object
       self$raw <- self$save_model_to_string(NULL)
+
+      return(invisible(NULL))
 
     }
 
@@ -774,8 +800,9 @@ predict.lgb.Booster <- function(object,
   }
 
   # Return booster predictions
-  object$predict(
-    data = data
+  return(
+    object$predict(
+      data = data
       , start_iteration = start_iteration
       , num_iteration = num_iteration
       , rawscore = rawscore
@@ -783,7 +810,8 @@ predict.lgb.Booster <- function(object,
       , predcontrib =  predcontrib
       , header = header
       , reshape = reshape
-    , ...
+      , ...
+    )
   )
 }
 
@@ -890,10 +918,12 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
   }
 
   # Store booster
-  invisible(booster$save_model(
-    filename = filename
-    , num_iteration = num_iteration
-  ))
+  return(
+    invisible(booster$save_model(
+      filename = filename
+      , num_iteration = num_iteration
+    ))
+  )
 
 }
 
@@ -935,7 +965,7 @@ lgb.dump <- function(booster, num_iteration = NULL) {
   }
 
   # Return booster at requested iteration
-  booster$dump_model(num_iteration =  num_iteration)
+  return(booster$dump_model(num_iteration =  num_iteration))
 
 }
 
@@ -1039,5 +1069,5 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
   iters <- iters - delta
 
   # Return requested result
-  as.numeric(result[iters])
+  return(as.numeric(result[iters]))
 }

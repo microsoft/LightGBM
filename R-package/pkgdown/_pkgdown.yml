@@ -46,7 +46,7 @@ navbar:
 
 reference:
   - title: Datasets
-    desc: Datasets included with the R package
+    desc: Datasets included with the R-package
     contents:
     - '`agaricus.train`'
     - '`agaricus.test`'
@@ -67,10 +67,11 @@ reference:
     - '`lgb.Dataset.set.reference`'
     - '`lgb.convert_with_rules`'
   - title: Machine Learning
-    desc: Train models with LightGBM
+    desc: Train models with LightGBM and then use them to make predictions on new data
     contents:
     - '`lightgbm`'
     - '`lgb.train`'
+    - '`predict.lgb.Booster`'
     - '`lgb.cv`'
   - title: Saving / Loading Models
     desc: Save and load LightGBM models
@@ -79,11 +80,10 @@ reference:
     - '`lgb.save`'
     - '`lgb.load`'
     - '`lgb.model.dt.tree`'
-    - '`predict.lgb.Booster`'
     - '`saveRDS.lgb.Booster`'
     - '`readRDS.lgb.Booster`'
-  - title: Predictive Analysis
-    desc: Analyze your predictions
+  - title: Model Interpretation
+    desc: Analyze your models
     contents:
     - '`lgb.get.eval.result`'
     - '`lgb.importance`'

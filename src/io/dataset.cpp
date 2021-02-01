@@ -556,18 +556,11 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
     }
   }
   sum_dense_ratio /= ncol;
-  const int offset = (1.0f - sum_dense_ratio) >=
-    MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
-  int num_total_bin = offset;
   for (int gid = 0; gid < num_groups_; ++gid) {
     if (feature_groups_[gid]->is_multi_val_) {
       for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
         const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
         most_freq_bins.push_back(bin_mapper->GetMostFreqBin());
-        num_total_bin += bin_mapper->num_bin();
-        if (most_freq_bins.back() == 0) {
-          num_total_bin -= offset;
-        }
 #pragma omp parallel for schedule(static, 1)
         for (int tid = 0; tid < num_threads; ++tid) {
           iters[tid].emplace_back(
@@ -576,7 +569,6 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
       }
     } else {
       most_freq_bins.push_back(0);
-      num_total_bin += feature_groups_[gid]->bin_offsets_.back() - offset;
       for (int tid = 0; tid < num_threads; ++tid) {
         iters[tid].emplace_back(feature_groups_[gid]->FeatureGroupIterator());
       }
@@ -586,7 +578,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
   Log::Debug("Dataset::GetMultiBinFromAllFeatures: sparse rate %f",
              1.0 - sum_dense_ratio);
   ret.reset(MultiValBin::CreateMultiValBin(
-      num_data_, num_total_bin, static_cast<int>(most_freq_bins.size()),
+      num_data_, offsets.back(), static_cast<int>(most_freq_bins.size()),
       1.0 - sum_dense_ratio, offsets));
   PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
   ret->FinishLoad();
@@ -790,15 +782,36 @@ void Dataset::CopySubrow(const Dataset* fullset,
                          const data_size_t* used_indices,
                          data_size_t num_used_indices, bool need_meta_data) {
   CHECK_EQ(num_used_indices, num_data_);
-  OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+
+  std::vector<int> group_ids, subfeature_ids;
+  group_ids.reserve(num_features_);
+  subfeature_ids.reserve(num_features_);
   for (int group = 0; group < num_groups_; ++group) {
+    if (fullset->IsMultiGroup(group)) {
+      for (int sub_feature = 0; sub_feature <
+          fullset->feature_groups_[group]->num_feature_; ++sub_feature) {
+        group_ids.emplace_back(group);
+        subfeature_ids.emplace_back(sub_feature);
+      }
+    } else {
+      group_ids.emplace_back(group);
+      subfeature_ids.emplace_back(-1);
+    }
+  }
+  int num_copy_tasks = static_cast<int>(group_ids.size());
+
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(dynamic)
+  for (int task_id = 0; task_id < num_copy_tasks; ++task_id) {
     OMP_LOOP_EX_BEGIN();
-    feature_groups_[group]->CopySubrow(fullset->feature_groups_[group].get(),
-                                       used_indices, num_used_indices);
+    int group = group_ids[task_id];
+    int subfeature = subfeature_ids[task_id];
+    feature_groups_[group]->CopySubrowByCol(fullset->feature_groups_[group].get(),
+                                            used_indices, num_used_indices, subfeature);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
+
   if (need_meta_data) {
     metadata_.Init(fullset->metadata_, used_indices, num_used_indices);
   }

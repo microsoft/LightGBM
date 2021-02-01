@@ -1,0 +1,85 @@
+# contains non-functional tests, like checks on docs
+# and code style
+name: Static Analysis
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+env:
+  COMPILER: 'gcc'
+  CONDA_ENV: test-env
+  GITHUB_ACTIONS: 'true'
+  OS_NAME: 'linux'
+  PYTHON_VERSION: 3.9
+
+jobs:
+  test:
+    name: ${{ matrix.task }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - task: lint
+          - task: check-docs
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 5
+          submodules: false
+      - name: Setup and run tests
+        shell: bash
+        run: |
+          export TASK="${{ matrix.task }}"
+          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export CONDA=${HOME}/miniconda
+          export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
+          $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
+          $GITHUB_WORKSPACE/.ci/test.sh || exit -1
+  r-check-docs:
+    name: r-package-check-docs
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    container: rocker/verse
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Install packages
+        shell: bash
+        run: |
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'roxygen2', 'testthat'), repos = 'https://cran.r-project.org')"
+          sh build-cran-package.sh || exit -1
+          R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit -1
+      - name: Test documentation
+        shell: bash --noprofile --norc {0}
+        run: |
+          Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit -1
+          num_doc_files_changed=$(
+              git diff --name-only | grep --count -E "\.Rd|NAMESPACE"
+          )
+          if [[ ${num_doc_files_changed} -gt 0 ]]; then
+              echo "Some R documentation files have changed. Please re-generate them and commit those changes."
+              echo ""
+              echo "    sh build-cran-package.sh"
+              echo "    R CMD INSTALL --with-keep.source lightgbm_*.tar.gz"
+              echo "    Rscript -e \"roxygen2::roxygenize('R-package/', load = 'installed')\""
+              echo ""
+              exit -1
+          fi
+  all-successful:
+    # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
+    runs-on: ubuntu-latest
+    needs: [test, r-check-docs]
+    steps:
+    - name: Note that all tests succeeded
+      run: echo "🎉"

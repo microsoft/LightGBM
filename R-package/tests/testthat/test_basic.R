@@ -1,5 +1,7 @@
 context("lightgbm()")
 
+ON_WINDOWS <- .Platform$OS.type == "windows"
+
 data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")
 train <- agaricus.train
@@ -341,6 +343,45 @@ test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric
   expect_length(auc_scores, nrounds)
   expect_identical(cv_bst$best_iter, which.max(auc_scores))
   expect_identical(cv_bst$best_score, auc_scores[which.max(auc_scores)])
+})
+
+test_that("lgb.cv() fit on linearly-relatead data improves when using linear learners", {
+  set.seed(708L)
+  .new_dataset <- function() {
+    X <- matrix(rnorm(1000L), ncol = 1L)
+    return(lgb.Dataset(
+      data = X
+      , label = 2L * X + runif(nrow(X), 0L, 0.1)
+    ))
+  }
+
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+  )
+
+  dtrain <- .new_dataset()
+  cv_bst <- lgb.cv(
+    data = dtrain
+    , nrounds = 10L
+    , params = params
+    , nfold = 5L
+  )
+  expect_is(cv_bst, "lgb.CVBooster")
+
+  dtrain <- .new_dataset()
+  cv_bst_linear <- lgb.cv(
+    data = dtrain
+    , nrounds = 10L
+    , params = modifyList(params, list(linear_tree = TRUE))
+    , nfold = 5L
+  )
+  expect_is(cv_bst_linear, "lgb.CVBooster")
+
+  expect_true(cv_bst_linear$best_score < cv_bst$best_score)
 })
 
 context("lgb.train()")
@@ -1168,7 +1209,6 @@ test_that("lgb.train() works with early stopping for regression with a metric th
 
 
 test_that("lgb.train() supports non-ASCII feature names", {
-  testthat::skip("UTF-8 feature names are not fully supported in the R package")
   dtrain <- lgb.Dataset(
     data = matrix(rnorm(400L), ncol =  4L)
     , label = rnorm(100L)
@@ -1185,10 +1225,21 @@ test_that("lgb.train() supports non-ASCII feature names", {
   )
   expect_true(lgb.is.Booster(bst))
   dumped_model <- jsonlite::fromJSON(bst$dump_model())
-  expect_identical(
-    dumped_model[["feature_names"]]
-    , feature_names
-  )
+
+  # UTF-8 strings are not well-supported on Windows
+  # * https://developer.r-project.org/Blog/public/2020/05/02/utf-8-support-on-windows/
+  # * https://developer.r-project.org/Blog/public/2020/07/30/windows/utf-8-build-of-r-and-cran-packages/index.html
+  if (!ON_WINDOWS) {
+    expect_identical(
+      dumped_model[["feature_names"]]
+      , feature_names
+    )
+  } else {
+    expect_identical(
+      dumped_model[["feature_names"]]
+      , iconv(feature_names, to = "UTF-8")
+    )
+  }
 })
 
 test_that("when early stopping is not activated, best_iter and best_score come from valids and not training data", {
@@ -1617,6 +1668,245 @@ test_that("early stopping works with lgb.cv()", {
     length(bst$record_evals[["valid"]][["increasing_metric"]][["eval"]])
     , early_stopping_rounds + 1L
   )
+})
+
+context("linear learner")
+
+test_that("lgb.train() fit on linearly-relatead data improves when using linear learners", {
+  set.seed(708L)
+  .new_dataset <- function() {
+    X <- matrix(rnorm(100L), ncol = 1L)
+    return(lgb.Dataset(
+      data = X
+      , label = 2L * X + runif(nrow(X), 0L, 0.1)
+    ))
+  }
+
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+  )
+
+  dtrain <- .new_dataset()
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = params
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst))
+
+  dtrain <- .new_dataset()
+  bst_linear <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = modifyList(params, list(linear_tree = TRUE))
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst_linear))
+
+  bst_last_mse <- bst$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  bst_lin_last_mse <- bst_linear$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  expect_true(bst_lin_last_mse <  bst_last_mse)
+})
+
+
+test_that("lgb.train() w/ linear learner fails already-constructed dataset with linear=false", {
+  testthat::skip("Skipping this test because it causes issues for valgrind")
+  set.seed(708L)
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+  )
+
+  dtrain <- lgb.Dataset(
+    data = matrix(rnorm(100L), ncol = 1L)
+    , label = rnorm(100L)
+  )
+  dtrain$construct()
+  expect_error({
+    bst_linear <- lgb.train(
+      data = dtrain
+      , nrounds = 10L
+      , params = modifyList(params, list(linear_tree = TRUE))
+    )
+  }, regexp = "Cannot change linear_tree after constructed Dataset handle")
+})
+
+test_that("lgb.train() works with linear learners even if Dataset has missing values", {
+  set.seed(708L)
+  .new_dataset <- function() {
+    values <- rnorm(100L)
+    values[sample(seq_len(length(values)), size = 10L)] <- NA_real_
+    X <- matrix(
+      data = sample(values, size = 100L)
+      , ncol = 1L
+    )
+    return(lgb.Dataset(
+      data = X
+      , label = 2L * X + runif(nrow(X), 0L, 0.1)
+    ))
+  }
+
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+  )
+
+  dtrain <- .new_dataset()
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = params
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst))
+
+  dtrain <- .new_dataset()
+  bst_linear <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = modifyList(params, list(linear_tree = TRUE))
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst_linear))
+
+  bst_last_mse <- bst$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  bst_lin_last_mse <- bst_linear$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  expect_true(bst_lin_last_mse <  bst_last_mse)
+})
+
+test_that("lgb.train() works with linear learners, bagging, and a Dataset that has missing values", {
+  set.seed(708L)
+  .new_dataset <- function() {
+    values <- rnorm(100L)
+    values[sample(seq_len(length(values)), size = 10L)] <- NA_real_
+    X <- matrix(
+      data = sample(values, size = 100L)
+      , ncol = 1L
+    )
+    return(lgb.Dataset(
+      data = X
+      , label = 2L * X + runif(nrow(X), 0L, 0.1)
+    ))
+  }
+
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+    , bagging_freq = 1L
+    , subsample = 0.8
+  )
+
+  dtrain <- .new_dataset()
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = params
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst))
+
+  dtrain <- .new_dataset()
+  bst_linear <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = modifyList(params, list(linear_tree = TRUE))
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst_linear))
+
+  bst_last_mse <- bst$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  bst_lin_last_mse <- bst_linear$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  expect_true(bst_lin_last_mse <  bst_last_mse)
+})
+
+test_that("lgb.train() works with linear learners and data where a feature has only 1 non-NA value", {
+  set.seed(708L)
+  .new_dataset <- function() {
+    values <- rep(NA_real_, 100L)
+    values[18L] <- rnorm(1L)
+    X <- matrix(
+      data = values
+      , ncol = 1L
+    )
+    return(lgb.Dataset(
+      data = X
+      , label = 2L * X + runif(nrow(X), 0L, 0.1)
+    ))
+  }
+
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+  )
+
+  dtrain <- .new_dataset()
+  bst_linear <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = modifyList(params, list(linear_tree = TRUE))
+  )
+  expect_true(lgb.is.Booster(bst_linear))
+})
+
+test_that("lgb.train() works with linear learners when Dataset has categorical features", {
+  set.seed(708L)
+  .new_dataset <- function() {
+    X <- matrix(numeric(200L), nrow = 100L, ncol = 2L)
+    X[, 1L] <- rnorm(100L)
+    X[, 2L] <- sample(seq_len(4L), size = 100L, replace = TRUE)
+    return(lgb.Dataset(
+      data = X
+      , label = 2L * X[, 1L] + runif(nrow(X), 0L, 0.1)
+    ))
+  }
+
+  params <- list(
+    objective = "regression"
+    , verbose = -1L
+    , metric = "mse"
+    , seed = 0L
+    , num_leaves = 2L
+    , categorical_featurs = 1L
+  )
+
+  dtrain <- .new_dataset()
+  bst <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = params
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst))
+
+  dtrain <- .new_dataset()
+  bst_linear <- lgb.train(
+    data = dtrain
+    , nrounds = 10L
+    , params = modifyList(params, list(linear_tree = TRUE))
+    , valids = list("train" = dtrain)
+  )
+  expect_true(lgb.is.Booster(bst_linear))
+
+  bst_last_mse <- bst$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  bst_lin_last_mse <- bst_linear$record_evals[["train"]][["l2"]][["eval"]][[10L]]
+  expect_true(bst_lin_last_mse <  bst_last_mse)
 })
 
 context("interaction constraints")

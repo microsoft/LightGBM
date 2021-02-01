@@ -72,8 +72,6 @@ class SingleRowPredictor {
       is_raw_score = true;
     } else if (predict_type == C_API_PREDICT_CONTRIB) {
       predict_contrib = true;
-    } else {
-      is_raw_score = false;
     }
     early_stop_ = config.pred_early_stop;
     early_stop_freq_ = config.pred_early_stop_freq;
@@ -297,13 +295,15 @@ class Booster {
   void ResetConfig(const char* parameters) {
     UNIQUE_LOCK(mutex_)
     auto param = Config::Str2Map(parameters);
-    if (param.count("num_class")) {
+    Config new_config;
+    new_config.Set(param);
+    if (param.count("num_class") && new_config.num_class != config_.num_class) {
       Log::Fatal("Cannot change num_class during training");
     }
-    if (param.count("boosting")) {
+    if (param.count("boosting") && new_config.boosting != config_.boosting) {
       Log::Fatal("Cannot change boosting during training");
     }
-    if (param.count("metric")) {
+    if (param.count("metric") && new_config.metric != config_.metric) {
       Log::Fatal("Cannot change metric during training");
     }
     CheckDatasetResetConfig(config_, param);
@@ -389,7 +389,7 @@ class Booster {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n"\
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
-    SHARED_LOCK(mutex_)
+    UNIQUE_LOCK(mutex_)
     const auto& single_row_predictor = single_row_predictor_[predict_type];
     auto one_row = get_row_fun(0);
     auto pred_wrt_ptr = out_result;
