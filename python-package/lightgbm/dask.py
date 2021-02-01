@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 
 import numpy as np
 import scipy.sparse as ss
-from numpy.random import RandomState
+#from np.random import RandomState
 
 from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
 from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
@@ -532,13 +532,14 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         colsample_bytree: float = 1.,
         reg_alpha: float = 0.,
         reg_lambda: float = 0.,
-        random_state: Optional[Union[int, RandomState]] = None,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
         silent: bool = True,
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
     ):
+        """Docstring is inherited from the lightgbm.LGBMClassifier.__init__."""
         self.client = client
         super().__init__(
             boosting_type=boosting_type,
@@ -648,13 +649,14 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         colsample_bytree: float = 1.,
         reg_alpha: float = 0.,
         reg_lambda: float = 0.,
-        random_state: Optional[Union[int, RandomState]] = None,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
         silent: bool = True,
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
     ):
+        """Docstring is inherited from the lightgbm.LGBMRegressor.__init__."""
         self.client = client
         super().__init__(
             boosting_type=boosting_type,
@@ -753,13 +755,14 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         colsample_bytree: float = 1.,
         reg_alpha: float = 0.,
         reg_lambda: float = 0.,
-        random_state: Optional[Union[int, RandomState]] = None,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
         silent: bool = True,
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
     ):
+        """Docstring is inherited from the lightgbm.LGBMRanker.__init__."""
         self.client = client
         super().__init__(
             boosting_type=boosting_type,

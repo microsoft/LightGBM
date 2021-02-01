@@ -738,7 +738,6 @@ def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except
         assert dask_spec.varkw == sklearn_spec.varkw
         assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs
         assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults
-        assert dask_spec.annotations == sklearn_spec.annotations
 
         # "client" should be the only different, and the final argument
         assert dask_spec.args[:-1] == sklearn_spec.args
