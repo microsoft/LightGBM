@@ -119,7 +119,7 @@ Build CUDA Version
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well, and `CMake`_ (version 3.16 or higher) is strongly required.
 
-**CUDA** library is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version-experimental>`__.
+**CUDA** library (version 9.0 or higher) is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version-experimental>`__.
 
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
