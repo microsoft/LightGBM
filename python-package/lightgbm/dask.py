@@ -14,7 +14,6 @@ from urllib.parse import urlparse
 
 import numpy as np
 import scipy.sparse as ss
-#from np.random import RandomState
 
 from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
 from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
