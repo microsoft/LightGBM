@@ -17,7 +17,7 @@ import scipy.sparse as ss
 
 from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
 from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
-                     SKLEARN_INSTALLED,
+                     SKLEARN_INSTALLED, LGBMNotFittedError,
                      DASK_INSTALLED, dask_DataFrame, dask_Array, dask_Series, delayed, Client, default_client, get_worker, wait)
 from .sklearn import LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
 
@@ -25,6 +25,25 @@ _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
+
+
+def _get_dask_client(client: Optional[Client]) -> Client:
+    """Choose a Dask client to use
+
+    Parameters
+    ----------
+    client : dask.distributed.Client or None
+        Dask client.
+
+    Returns
+    -------
+    client : dask.distributed.Client
+        A Dask client.
+    """
+    if client is None:
+        return default_client()
+    else:
+        return client
 
 
 def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
@@ -444,10 +463,10 @@ class _DaskLGBMModel:
         This property can be passed in the constructor or updated
         with ``model.set_params(client=client)``.
         """
-        if self._client is None:
-            return default_client()
-        else:
-            return self._client
+        if not getattr(self, "fitted_", False):
+            raise LGBMNotFittedError('Cannot access property client_ before calling fit().')
+
+        return _get_dask_client(client=self.client)
 
     def _lgb_getstate(self) -> Dict[Any, Any]:
         """Remove un-picklable attributes before serialization."""
@@ -476,7 +495,7 @@ class _DaskLGBMModel:
         params.pop("client", None)
 
         model = _train(
-            client=self.client_,
+            client=_get_dask_client(self.client),
             data=X,
             label=y,
             params=params,
@@ -569,7 +588,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     __init__.__doc__ = (
         _before_kwargs
         + 'client : dask.distributed.Client or None, optional (default=None)\n'
-        + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. This client will not be saved if the model object is pickled.\n'
+        + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
 
@@ -687,7 +706,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     __init__.__doc__ = (
         _before_kwargs
         + 'client : dask.distributed.Client or None, optional (default=None)\n'
-        + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. This client will not be saved if the model object is pickled.\n'
+        + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
 
@@ -794,7 +813,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     __init__.__doc__ = (
         _before_kwargs
         + 'client : dask.distributed.Client or None, optional (default=None)\n'
-        + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. This client will not be saved if the model object is pickled.\n'
+        + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
 
