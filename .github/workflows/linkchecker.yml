@@ -12,6 +12,7 @@ env:
   GITHUB_ACTIONS: 'true'
   OS_NAME: 'linux'
   PYTHON_VERSION: 3.9
+  TASK: 'check-links'
 
 jobs:
   check-links:
@@ -26,7 +27,6 @@ jobs:
       - name: Check that all tests succeeded
         run: |
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export TASK="check-links"
           export CONDA=${HOME}/miniconda
           export PATH=${CONDA}/bin:${HOME}/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
