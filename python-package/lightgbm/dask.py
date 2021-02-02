@@ -9,7 +9,7 @@ It is based on dask-lightgbm, which was based on dask-xgboost.
 import socket
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Dict, Iterable, List, Optional, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Type, Union, Set
 from urllib.parse import urlparse
 
 import numpy as np
@@ -27,7 +27,7 @@ _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
 
-def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
+def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> Optional[int]:
     """Find an open port.
 
     This function tries to find a free port on the machine it's run on. It is intended to
@@ -91,7 +91,7 @@ def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], loc
     result : Dict[str, int]
         Dictionary where keys are worker addresses and values are an open port for LightGBM to use.
     """
-    lightgbm_ports = set()
+    lightgbm_ports : Set[Client] = set()
     worker_ip_to_port = {}
     for worker_address in worker_addresses:
         port = client.submit(
@@ -284,7 +284,7 @@ def _train(
             return part  # trigger error locally
 
     # Find locations of all parts and map them to particular Dask workers
-    key_to_part_dict = {part.key: part for part in parts}
+    key_to_part_dict = {part.keys: part for part in parts}
     who_has = client.who_has(parts)
     worker_map = defaultdict(list)
     for key, workers in who_has.items():
@@ -503,6 +503,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         )
 
     _base_doc = LGBMClassifier.fit.__doc__
+    assert isinstance(_base_doc, str)
     _before_init_score, _init_score, _after_init_score = _base_doc.partition('init_score :')
     fit.__doc__ = (_before_init_score
                    + 'client : dask.distributed.Client or None, optional (default=None)\n'
