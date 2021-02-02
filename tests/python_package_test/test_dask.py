@@ -19,10 +19,10 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 from dask.array.utils import assert_eq
+from dask.distributed import wait
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
 from scipy.sparse import csr_matrix
 from sklearn.datasets import make_blobs, make_regression
-from sklearn.utils import check_random_state
 
 from .utils import make_ranking
 
@@ -382,6 +382,15 @@ def test_ranker(output, client, listen_port, group):
         group=group
     )
 
+    # rebalance small dask.array dataset for better performance.
+    if output == 'array':
+        dX = dX.persist()
+        dy = dy.persist()
+        dw = dw.persist()
+        dg = dg.persist()
+        _ = wait([dX, dy, dw, dg])
+        client.rebalance()
+
     # use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
     # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
     params = {
@@ -409,7 +418,7 @@ def test_ranker(output, client, listen_port, group):
     # have high rank correlation with scores from serial ranker.
     dcor = spearmanr(rnkvec_dask, y).correlation
     assert dcor > 0.6
-    assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.75
+    assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.8
     assert_eq(rnkvec_dask, rnkvec_dask_local)
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
