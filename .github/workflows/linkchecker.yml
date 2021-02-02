@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   # Run every 8 hours
   schedule:
-    - cron: '0 */8 * * *'
+    - cron: '0 8 * * *'
 
 env:
   CONDA_ENV: test-env
