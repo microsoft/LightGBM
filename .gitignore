@@ -453,3 +453,6 @@ dask-worker-space/
 *.pub
 *.rdp
 *_rsa
+
+# swig jni
+*_swig.jnilib
