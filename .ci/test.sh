@@ -19,23 +19,28 @@ source activate $CONDA_ENV
 cd $BUILD_DIRECTORY
 
 if [[ $TASK == "check-docs" ]]; then
-    cd $BUILD_DIRECTORY/docs
-    conda install -q -y -n $CONDA_ENV -c conda-forge doxygen
-    pip install --user -r requirements.txt linkchecker rstcheck
+    pip install --user -r $BUILD_DIRECTORY/docs/requirements.txt rstcheck
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
     cd $BUILD_DIRECTORY/docs
     rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile `find . -type f -name "*.rst"` || exit -1
-    # build docs and check them for broken links
-    make html || exit -1
-    linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     # check the consistency of parameters' descriptions and other stuff
     cp $BUILD_DIRECTORY/docs/Parameters.rst $BUILD_DIRECTORY/docs/Parameters-backup.rst
     cp $BUILD_DIRECTORY/src/io/config_auto.cpp $BUILD_DIRECTORY/src/io/config_auto-backup.cpp
     python $BUILD_DIRECTORY/helpers/parameter_generator.py || exit -1
     diff $BUILD_DIRECTORY/docs/Parameters-backup.rst $BUILD_DIRECTORY/docs/Parameters.rst || exit -1
     diff $BUILD_DIRECTORY/src/io/config_auto-backup.cpp $BUILD_DIRECTORY/src/io/config_auto.cpp || exit -1
+    exit 0
+fi
+
+if [[ $TASK == "check-links" ]]; then
+    conda install -q -y -n $CONDA_ENV -c conda-forge doxygen
+    pip install --user -r $BUILD_DIRECTORY/docs/requirements.txt linkchecker
+    cd $BUILD_DIRECTORY/docs
+    # build docs and check them for broken links
+    make html || exit -1
+    linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     exit 0
 fi
 

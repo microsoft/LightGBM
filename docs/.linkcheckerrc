@@ -3,12 +3,13 @@ maxrequestspersecond=1
 recursionlevel=1
 anchors=1
 sslverify=0
+threads=1
 
 [filtering]
 ignore=
   pythonapi/lightgbm\..*\.html.*
   http.*amd.com/.*
-ignorewarnings=http-robots-denied,https-certificate-error
+ignorewarnings=http-robots-denied,https-certificate-error,url-rate-limited
 checkextern=1
 
 [output]

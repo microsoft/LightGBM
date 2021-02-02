@@ -1,0 +1,27 @@
+name: Link checks
+
+on:
+  # Run manually by clicking a button in the UI
+  workflow_dispatch:
+  # Run every 8 hours
+  schedule:
+    - cron: '0 */8 * * *'
+
+jobs:
+  check-links:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 5
+          submodules: false
+      - name: Check that all tests succeeded
+        run: |
+          export TASK="check-links"
+          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export CONDA=${HOME}/miniconda
+          export PATH=${CONDA}/bin:${PATH}
+          $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
+          $GITHUB_WORKSPACE/.ci/test.sh || exit -1
