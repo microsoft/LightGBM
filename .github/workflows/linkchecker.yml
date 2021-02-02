@@ -1,12 +1,6 @@
 name: Link checks
 
 on:
-  push:
-    branches:
-    - master
-  pull_request:
-    branches:
-    - master
   # Run manually by clicking a button in the UI
   workflow_dispatch:
   # Run every 8 hours
