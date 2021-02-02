@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
     - master
+    - position_debias
 
 env:
   github_actions: 'true'
