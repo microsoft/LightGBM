@@ -25,8 +25,10 @@ jobs:
           submodules: false
       - name: Check that all tests succeeded
         run: |
-          export TASK="check-links"
+          export CONDA_ENV="test-env"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export PYTHON_VERSION="3.8"
+          export TASK="check-links"
           export CONDA=${HOME}/miniconda
           export PATH=${CONDA}/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
