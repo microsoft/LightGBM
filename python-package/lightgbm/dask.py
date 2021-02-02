@@ -9,11 +9,7 @@ It is based on dask-lightgbm, which was based on dask-xgboost.
 import socket
 from collections import defaultdict
 from copy import deepcopy
-<<<<<<< HEAD
 from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union
-=======
-from typing import Any, Dict, Iterable, List, Optional, Type, Union, Set
->>>>>>> minor mypy type errors fixed
 from urllib.parse import urlparse
 
 import numpy as np
@@ -769,7 +765,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             **kwargs
         )
 
-<<<<<<< HEAD
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
@@ -787,14 +782,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         + '**kwargs\n'
         + ' ' * 12 + 'Other parameters passed through to ``LGBMRegressor.fit()``.\n'
     )
-=======
-    _base_doc = LGBMRegressor.fit.__doc__
-    _before_init_score, _init_score, _after_init_score = _base_doc.partition('init_score :') # type: ignore
-    fit.__doc__ = (_before_init_score
-                   + 'client : dask.distributed.Client or None, optional (default=None)\n'
-                   + ' ' * 12 + 'Dask client.\n'
-                   + ' ' * 8 + _init_score + _after_init_score)
->>>>>>> minor mypy type errors fixed
 
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
@@ -916,7 +903,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             **kwargs
         )
 
-<<<<<<< HEAD
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
@@ -937,14 +923,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         + '**kwargs\n'
         + ' ' * 12 + 'Other parameters passed through to ``LGBMRanker.fit()``.\n'
     )
-=======
-    _base_doc = LGBMRanker.fit.__doc__
-    _before_eval_set, _eval_set, _after_eval_set = _base_doc.partition('eval_set :') # type: ignore
-    fit.__doc__ = (_before_eval_set
-                   + 'client : dask.distributed.Client or None, optional (default=None)\n'
-                   + ' ' * 12 + 'Dask client.\n'
-                   + ' ' * 8 + _eval_set + _after_eval_set)
->>>>>>> minor mypy type errors fixed
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
