@@ -21,6 +21,7 @@
 %pointer_functions(float, floatp)
 %pointer_functions(int64_t, int64_tp)
 %pointer_functions(int32_t, int32_tp)
+%pointer_functions(size_t, size_tp)
 
 %pointer_cast(int64_t *, long *, int64_t_to_long_ptr)
 %pointer_cast(int64_t *, double *, int64_t_to_double_ptr)
