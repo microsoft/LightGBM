@@ -19,13 +19,17 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 from dask.array.utils import assert_eq
+from dask.distributed import wait
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
 from scipy.sparse import csr_matrix
 from sklearn.datasets import make_blobs, make_regression
-from sklearn.utils import check_random_state
 
 from .utils import make_ranking
 
+
+# time, in seconds, to wait for the Dask client to close. Used to avoid teardown errors
+# see https://distributed.dask.org/en/latest/api.html#distributed.Client.close
+CLIENT_CLOSE_TIMEOUT = 120
 
 data_output = ['array', 'scipy_csr_matrix', 'dataframe']
 data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
@@ -172,7 +176,7 @@ def test_classifier(output, centers, client, listen_port):
     assert_eq(p1_local, p2)
     assert_eq(y, p1_local)
 
-    client.close()
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
 @pytest.mark.parametrize('output', data_output)
@@ -227,6 +231,8 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
             base_value_col = num_features * (i + 1) + i
             assert len(np.unique(preds_with_contrib[:, base_value_col]) == 1)
 
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
 
 def test_training_does_not_fail_on_port_conflicts(client):
     _, _, _, dX, dy, dw = _create_data('classification', output='array')
@@ -249,7 +255,7 @@ def test_training_does_not_fail_on_port_conflicts(client):
             )
             assert dask_classifier.booster_
 
-    client.close()
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
 @pytest.mark.parametrize('output', data_output)
@@ -292,7 +298,7 @@ def test_regressor(output, client, listen_port):
     assert_eq(y, p2, rtol=1., atol=50.)
     assert_eq(p1, p1_local)
 
-    client.close()
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
 @pytest.mark.parametrize('output', data_output)
@@ -328,6 +334,8 @@ def test_regressor_pred_contrib(output, client, listen_port):
     assert preds_with_contrib.shape[1] == num_features + 1
     assert preds_with_contrib.shape == local_preds_with_contrib.shape
 
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('alpha', [.1, .5, .9])
@@ -362,7 +370,7 @@ def test_regressor_quantile(output, client, listen_port, alpha):
     np.testing.assert_allclose(q1, alpha, atol=0.2)
     np.testing.assert_allclose(q2, alpha, atol=0.2)
 
-    client.close()
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
@@ -373,6 +381,15 @@ def test_ranker(output, client, listen_port, group):
         output=output,
         group=group
     )
+
+    # rebalance small dask.array dataset for better performance.
+    if output == 'array':
+        dX = dX.persist()
+        dy = dy.persist()
+        dw = dw.persist()
+        dg = dg.persist()
+        _ = wait([dX, dy, dw, dg])
+        client.rebalance()
 
     # use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
     # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
@@ -401,10 +418,10 @@ def test_ranker(output, client, listen_port, group):
     # have high rank correlation with scores from serial ranker.
     dcor = spearmanr(rnkvec_dask, y).correlation
     assert dcor > 0.6
-    assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.75
+    assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.8
     assert_eq(rnkvec_dask, rnkvec_dask_local)
 
-    client.close()
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
 def test_find_open_port_works():
@@ -445,6 +462,8 @@ def test_warns_and_continues_on_unrecognized_tree_learner(client):
 
     assert dask_regressor.fitted_
 
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
 
 def test_warns_but_makes_no_changes_for_feature_or_voting_tree_learner(client):
     X = da.random.random((1e3, 10))
@@ -462,6 +481,8 @@ def test_warns_but_makes_no_changes_for_feature_or_voting_tree_learner(client):
 
         assert dask_regressor.fitted_
         assert dask_regressor.get_params()['tree_learner'] == tree_learner
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
 @gen_cluster(client=True, timeout=None)

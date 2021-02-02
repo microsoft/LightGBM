@@ -44,14 +44,17 @@ if [[ $TASK == "lint" ]]; then
         pycodestyle \
         pydocstyle \
         r-stringi  # stringi needs to be installed separate from r-lintr to avoid issues like 'unable to load shared object stringi.so'
+    # r-xfun below has to be upgraded because lintr requires > 0.19 for that package
     conda install -q -y -n $CONDA_ENV \
         -c conda-forge \
             libxml2 \
+            "r-xfun>=0.19" \
             "r-lintr>=2.0"
-    pip install --user cpplint
+    pip install --user cpplint mypy
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
+    mypy --ignore-missing-imports python-package/ || true
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
