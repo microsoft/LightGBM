@@ -3,7 +3,7 @@ name: Link checks
 on:
   # Run manually by clicking a button in the UI
   workflow_dispatch:
-  # Run every 8 hours
+  # Run once a day at 8:00am UTC
   schedule:
     - cron: '0 8 * * *'
 
