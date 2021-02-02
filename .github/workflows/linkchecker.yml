@@ -13,6 +13,12 @@ on:
   schedule:
     - cron: '0 */8 * * *'
 
+env:
+  CONDA_ENV: test-env
+  GITHUB_ACTIONS: 'true'
+  OS_NAME: 'linux'
+  PYTHON_VERSION: 3.9
+
 jobs:
   check-links:
     timeout-minutes: 60
@@ -25,11 +31,9 @@ jobs:
           submodules: false
       - name: Check that all tests succeeded
         run: |
-          export CONDA_ENV="test-env"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export PYTHON_VERSION="3.8"
           export TASK="check-links"
           export CONDA=${HOME}/miniconda
-          export PATH=${CONDA}/bin:${PATH}
+          export PATH=${CONDA}/bin:${HOME}/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
           $GITHUB_WORKSPACE/.ci/test.sh || exit -1
