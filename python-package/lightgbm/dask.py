@@ -28,7 +28,7 @@ _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Typ
 
 
 def _get_dask_client(client: Optional[Client]) -> Client:
-    """Choose a Dask client to use
+    """Choose a Dask client to use.
 
     Parameters
     ----------
