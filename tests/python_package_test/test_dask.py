@@ -151,7 +151,7 @@ def _pickle(obj, filepath, serializer):
         with open(filepath, 'wb') as f:
             cloudpickle.dump(obj, f)
     else:
-        raise ValueError(f'unrecognized serializer type: {serializer}')
+        raise ValueError(f'Unrecognized serializer type: {serializer}')
 
 
 def _unpickle(filepath, serializer):
@@ -164,7 +164,7 @@ def _unpickle(filepath, serializer):
         with open(filepath, 'rb') as f:
             return cloudpickle.load(f)
     else:
-        raise ValueError(f'unrecognized serializer type: {serializer}')
+        raise ValueError(f'Unrecognized serializer type: {serializer}')
 
 
 @pytest.mark.parametrize('output', data_output)
