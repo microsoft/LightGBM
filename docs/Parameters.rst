@@ -1023,6 +1023,22 @@ Objective Parameters
 
    -  separate by ``,``
 
+-  ``lambdarank_unbiased`` :raw-html:`<a id="lambdarank_unbiased" title="Permalink to this parameter" href="#lambdarank_unbiased">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  used only in ``lambdarank`` application
+
+   -  set this to ``true`` to use the position bias correction of `Unbiased LambdaMART <https://arxiv.org/pdf/1809.05818.pdf>`__
+
+-  ``lambdarank_position_bins`` :raw-html:`<a id="lambdarank_position_bins" title="Permalink to this parameter" href="#lambdarank_position_bins">&#x1F517;&#xFE0E;</a>`, default = ``12``, type = int, constraints: ``lambdarank_position_bins > 0``
+
+   -  used only in ``lambdarank`` application where ``lambdarank_unbiased = true``
+
+-  ``lambdarank_eta`` :raw-html:`<a id="lambdarank_eta" title="Permalink to this parameter" href="#lambdarank_eta">&#x1F517;&#xFE0E;</a>`, default = ``0.5``, type = double, constraints: ``lambdarank_eta >= 0.0``
+
+   -  used only in ``lambdarank`` application where ``lambdarank_unbiased = true``
+
+   -  position bias ratio regularizer exponent will be set to ``1 / (1 + eta)``
+
 Metric Parameters
 -----------------
 

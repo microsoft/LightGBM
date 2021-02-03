@@ -879,6 +879,19 @@ struct Config {
   // desc = separate by ``,``
   std::vector<double> label_gain;
 
+  // desc = used only in ``lambdarank`` application
+  // desc = set this to ``true`` to use the position bias correction of `Unbiased LambdaMART <https://arxiv.org/pdf/1809.05818.pdf>`__
+  bool lambdarank_unbiased = false;
+
+  // check = >0
+  // desc = used only in ``lambdarank`` application where ``lambdarank_unbiased = true``
+  int lambdarank_position_bins = 12;
+
+  // check = >=0.0
+  // desc = used only in ``lambdarank`` application where ``lambdarank_unbiased = true``
+  // desc = position bias ratio regularizer exponent will be set to ``1 / (1 + eta)``
+  double lambdarank_eta = 0.5;
+
   #pragma endregion
 
   #pragma region Metric Parameters
