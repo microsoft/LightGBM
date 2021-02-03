@@ -187,6 +187,10 @@ void Application::InitTrain() {
                                                config_));
   // load training data
   LoadData();
+  if (config_.task == TaskType::kSaveBinary) {
+    Log::Info("Save data as binary finished, exit");
+    exit(0);
+  }
   // initialize the objective function
   objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
   // initialize the boosting
