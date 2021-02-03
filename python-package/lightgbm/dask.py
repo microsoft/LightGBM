@@ -315,8 +315,10 @@ def _train(
     if params["local_listen_port"] == 12400:
         # If local_listen_port is set to LightGBM's default value
         # then we find a random open port for each worker
-        worker_address_to_port = client.run(_find_random_open_port,
-                                            workers=worker_map.keys())
+        worker_address_to_port = client.run(
+            _find_random_open_port,
+            workers=list(worker_map.keys())
+        )
     else:
         # If another port was specified then we search for an open port
         # in [local_listen_port, local_listen_port+999] for each worker
