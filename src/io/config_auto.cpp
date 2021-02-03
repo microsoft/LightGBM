@@ -285,6 +285,9 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "lambdarank_truncation_level",
   "lambdarank_norm",
   "label_gain",
+  "lambdarank_unbiased",
+  "lambdarank_position_bins",
+  "lambdarank_eta",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -588,6 +591,14 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     label_gain = Common::StringToArray<double>(tmp_str, ',');
   }
 
+  GetBool(params, "lambdarank_unbiased", &lambdarank_unbiased);
+
+  GetInt(params, "lambdarank_position_bins", &lambdarank_position_bins);
+  CHECK_GT(lambdarank_position_bins, 0);
+
+  GetDouble(params, "lambdarank_eta", &lambdarank_eta);
+  CHECK_GE(lambdarank_eta, 0.0);
+
   GetInt(params, "metric_freq", &metric_freq);
   CHECK_GT(metric_freq, 0);
 
@@ -721,6 +732,9 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[lambdarank_truncation_level: " << lambdarank_truncation_level << "]\n";
   str_buf << "[lambdarank_norm: " << lambdarank_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
+  str_buf << "[lambdarank_unbiased: " << lambdarank_unbiased << "]\n";
+  str_buf << "[lambdarank_position_bins: " << lambdarank_position_bins << "]\n";
+  str_buf << "[lambdarank_eta: " << lambdarank_eta << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[auc_mu_weights: " << Common::Join(auc_mu_weights, ",") << "]\n";
