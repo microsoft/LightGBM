@@ -9,7 +9,7 @@ It is based on dask-lightgbm, which was based on dask-xgboost.
 import socket
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Dict, Iterable, List, Optional, Type, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union
 from urllib.parse import urlparse
 
 import numpy as np
@@ -17,7 +17,7 @@ import scipy.sparse as ss
 
 from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
 from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
-                     SKLEARN_INSTALLED,
+                     SKLEARN_INSTALLED, LGBMNotFittedError,
                      DASK_INSTALLED, dask_DataFrame, dask_Array, dask_Series, delayed, Client, default_client, get_worker, wait)
 from .sklearn import LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
 
@@ -25,6 +25,25 @@ _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
+
+
+def _get_dask_client(client: Optional[Client]) -> Client:
+    """Choose a Dask client to use.
+
+    Parameters
+    ----------
+    client : dask.distributed.Client or None
+        Dask client.
+
+    Returns
+    -------
+    client : dask.distributed.Client
+        A Dask client.
+    """
+    if client is None:
+        return default_client()
+    else:
+        return client
 
 
 def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
@@ -460,6 +479,29 @@ def _predict(
 
 class _DaskLGBMModel:
 
+    @property
+    def client_(self) -> Client:
+        """Dask client.
+
+        This property can be passed in the constructor or updated
+        with ``model.set_params(client=client)``.
+        """
+        if not getattr(self, "fitted_", False):
+            raise LGBMNotFittedError('Cannot access property client_ before calling fit().')
+
+        return _get_dask_client(client=self.client)
+
+    def _lgb_getstate(self) -> Dict[Any, Any]:
+        """Remove un-picklable attributes before serialization."""
+        client = self.__dict__.pop("client", None)
+        self.__dict__.pop("_client", None)
+        self._other_params.pop("client", None)
+        out = deepcopy(self.__dict__)
+        out.update({"_client": None, "client": None})
+        self._client = client
+        self.client = client
+        return out
+
     def _fit(
         self,
         model_factory: Type[LGBMModel],
@@ -467,18 +509,16 @@ class _DaskLGBMModel:
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
-        client: Optional[Client] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
             raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
-        if client is None:
-            client = default_client()
 
         params = self.get_params(True)
+        params.pop("client", None)
 
         model = _train(
-            client=client,
+            client=_get_dask_client(self.client),
             data=X,
             label=y,
             params=params,
@@ -494,8 +534,11 @@ class _DaskLGBMModel:
         return self
 
     def _to_local(self, model_factory: Type[LGBMModel]) -> LGBMModel:
-        model = model_factory(**self.get_params())
+        params = self.get_params()
+        params.pop("client", None)
+        model = model_factory(**params)
         self._copy_extra_params(self, model)
+        model._other_params.pop("client", None)
         return model
 
     @staticmethod
@@ -504,18 +547,82 @@ class _DaskLGBMModel:
         attributes = source.__dict__
         extra_param_names = set(attributes.keys()).difference(params.keys())
         for name in extra_param_names:
-            setattr(dest, name, attributes[name])
+            if name != "_client":
+                setattr(dest, name, attributes[name])
 
 
 class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     """Distributed version of lightgbm.LGBMClassifier."""
+
+    def __init__(
+        self,
+        boosting_type: str = 'gbdt',
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[Callable, str]] = None,
+        class_weight: Optional[Union[dict, str]] = None,
+        min_split_gain: float = 0.,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.,
+        reg_alpha: float = 0.,
+        reg_lambda: float = 0.,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
+        n_jobs: int = -1,
+        silent: bool = True,
+        importance_type: str = 'split',
+        client: Optional[Client] = None,
+        **kwargs: Any
+    ):
+        """Docstring is inherited from the lightgbm.LGBMClassifier.__init__."""
+        self._client = client
+        self.client = client
+        super().__init__(
+            boosting_type=boosting_type,
+            num_leaves=num_leaves,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            subsample_for_bin=subsample_for_bin,
+            objective=objective,
+            class_weight=class_weight,
+            min_split_gain=min_split_gain,
+            min_child_weight=min_child_weight,
+            min_child_samples=min_child_samples,
+            subsample=subsample,
+            subsample_freq=subsample_freq,
+            colsample_bytree=colsample_bytree,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            silent=silent,
+            importance_type=importance_type,
+            **kwargs
+        )
+
+    _base_doc = LGBMClassifier.__init__.__doc__
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+    __init__.__doc__ = (
+        _before_kwargs
+        + 'client : dask.distributed.Client or None, optional (default=None)\n'
+        + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
+        + ' ' * 8 + _kwargs + _after_kwargs
+    )
+
+    def __getstate__(self) -> Dict[Any, Any]:
+        return self._lgb_getstate()
 
     def fit(
         self,
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
-        client: Optional[Client] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
@@ -524,16 +631,10 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
-            client=client,
             **kwargs
         )
 
-    _base_doc = LGBMClassifier.fit.__doc__
-    _before_init_score, _init_score, _after_init_score = _base_doc.partition('init_score :')
-    fit.__doc__ = (_before_init_score
-                   + 'client : dask.distributed.Client or None, optional (default=None)\n'
-                   + ' ' * 12 + 'Dask client.\n'
-                   + ' ' * 8 + _init_score + _after_init_score)
+    fit.__doc__ = LGBMClassifier.fit.__doc__
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
@@ -571,6 +672,70 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     """Distributed version of lightgbm.LGBMRegressor."""
 
+    def __init__(
+        self,
+        boosting_type: str = 'gbdt',
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[Callable, str]] = None,
+        class_weight: Optional[Union[dict, str]] = None,
+        min_split_gain: float = 0.,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.,
+        reg_alpha: float = 0.,
+        reg_lambda: float = 0.,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
+        n_jobs: int = -1,
+        silent: bool = True,
+        importance_type: str = 'split',
+        client: Optional[Client] = None,
+        **kwargs: Any
+    ):
+        """Docstring is inherited from the lightgbm.LGBMRegressor.__init__."""
+        self._client = client
+        self.client = client
+        super().__init__(
+            boosting_type=boosting_type,
+            num_leaves=num_leaves,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            subsample_for_bin=subsample_for_bin,
+            objective=objective,
+            class_weight=class_weight,
+            min_split_gain=min_split_gain,
+            min_child_weight=min_child_weight,
+            min_child_samples=min_child_samples,
+            subsample=subsample,
+            subsample_freq=subsample_freq,
+            colsample_bytree=colsample_bytree,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            silent=silent,
+            importance_type=importance_type,
+            **kwargs
+        )
+
+    _base_doc = LGBMRegressor.__init__.__doc__
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+    __init__.__doc__ = (
+        _before_kwargs
+        + 'client : dask.distributed.Client or None, optional (default=None)\n'
+        + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
+        + ' ' * 8 + _kwargs + _after_kwargs
+    )
+
+    def __getstate__(self) -> Dict[Any, Any]:
+        return self._lgb_getstate()
+
     def fit(
         self,
         X: _DaskMatrixLike,
@@ -585,16 +750,10 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
-            client=client,
             **kwargs
         )
 
-    _base_doc = LGBMRegressor.fit.__doc__
-    _before_init_score, _init_score, _after_init_score = _base_doc.partition('init_score :')
-    fit.__doc__ = (_before_init_score
-                   + 'client : dask.distributed.Client or None, optional (default=None)\n'
-                   + ' ' * 12 + 'Dask client.\n'
-                   + ' ' * 8 + _init_score + _after_init_score)
+    fit.__doc__ = LGBMRegressor.fit.__doc__
 
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
@@ -620,6 +779,70 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     """Distributed version of lightgbm.LGBMRanker."""
 
+    def __init__(
+        self,
+        boosting_type: str = 'gbdt',
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[Callable, str]] = None,
+        class_weight: Optional[Union[dict, str]] = None,
+        min_split_gain: float = 0.,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.,
+        reg_alpha: float = 0.,
+        reg_lambda: float = 0.,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
+        n_jobs: int = -1,
+        silent: bool = True,
+        importance_type: str = 'split',
+        client: Optional[Client] = None,
+        **kwargs: Any
+    ):
+        """Docstring is inherited from the lightgbm.LGBMRanker.__init__."""
+        self._client = client
+        self.client = client
+        super().__init__(
+            boosting_type=boosting_type,
+            num_leaves=num_leaves,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            subsample_for_bin=subsample_for_bin,
+            objective=objective,
+            class_weight=class_weight,
+            min_split_gain=min_split_gain,
+            min_child_weight=min_child_weight,
+            min_child_samples=min_child_samples,
+            subsample=subsample,
+            subsample_freq=subsample_freq,
+            colsample_bytree=colsample_bytree,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            silent=silent,
+            importance_type=importance_type,
+            **kwargs
+        )
+
+    _base_doc = LGBMRanker.__init__.__doc__
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+    __init__.__doc__ = (
+        _before_kwargs
+        + 'client : dask.distributed.Client or None, optional (default=None)\n'
+        + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
+        + ' ' * 8 + _kwargs + _after_kwargs
+    )
+
+    def __getstate__(self) -> Dict[Any, Any]:
+        return self._lgb_getstate()
+
     def fit(
         self,
         X: _DaskMatrixLike,
@@ -627,7 +850,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         sample_weight: Optional[_DaskCollection] = None,
         init_score: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
-        client: Optional[Client] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
@@ -640,16 +862,10 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             y=y,
             sample_weight=sample_weight,
             group=group,
-            client=client,
             **kwargs
         )
 
-    _base_doc = LGBMRanker.fit.__doc__
-    _before_eval_set, _eval_set, _after_eval_set = _base_doc.partition('eval_set :')
-    fit.__doc__ = (_before_eval_set
-                   + 'client : dask.distributed.Client or None, optional (default=None)\n'
-                   + ' ' * 12 + 'Dask client.\n'
-                   + ' ' * 8 + _eval_set + _after_eval_set)
+    fit.__doc__ = LGBMRanker.fit.__doc__
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
