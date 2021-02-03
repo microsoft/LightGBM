@@ -280,7 +280,7 @@ def _train(
     wait(parts)
 
     for part in parts:
-        if part.status == 'error':
+        if part.status == 'error': # type: ignore
             return part  # trigger error locally
 
     # Find locations of all parts and map them to particular Dask workers
@@ -503,7 +503,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         )
 
     _base_doc = LGBMClassifier.fit.__doc__
-    _before_init_score, _init_score, _after_init_score = _base_doc.partition('init_score :')
+    _before_init_score, _init_score, _after_init_score = _base_doc.partition('init_score :') # type: ignore
     fit.__doc__ = (_before_init_score
                    + 'client : dask.distributed.Client or None, optional (default=None)\n'
                    + ' ' * 12 + 'Dask client.\n'
@@ -564,7 +564,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         )
 
     _base_doc = LGBMRegressor.fit.__doc__
-    _before_init_score, _init_score, _after_init_score = _base_doc.partition('init_score :')
+    _before_init_score, _init_score, _after_init_score = _base_doc.partition('init_score :') # type: ignore
     fit.__doc__ = (_before_init_score
                    + 'client : dask.distributed.Client or None, optional (default=None)\n'
                    + ' ' * 12 + 'Dask client.\n'
