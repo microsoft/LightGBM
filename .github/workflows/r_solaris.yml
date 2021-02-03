@@ -2,7 +2,7 @@ name: Solaris CRAN check
 
 on:
   repository_dispatch:
-    types: [gha_run_r_solais]
+    types: [gha_run_r_solaris]
 
 jobs:
   test:
