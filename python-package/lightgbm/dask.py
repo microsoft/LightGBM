@@ -453,9 +453,6 @@ def _predict(
 
 class _DaskLGBMModel:
 
-    # self._client is set in the constructor of classes that use this mixin
-    _client: Optional[Client] = None
-
     @property
     def client_(self) -> Client:
         """Dask client.

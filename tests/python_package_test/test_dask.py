@@ -832,18 +832,15 @@ def test_errors(c, s, a, b):
     ]
 )
 def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except_client_arg(classes):
-    def _compare_spec(dask_cls, sklearn_cls):
-        dask_spec = inspect.getfullargspec(dask_cls)
-        sklearn_spec = inspect.getfullargspec(sklearn_cls)
-        assert dask_spec.varargs == sklearn_spec.varargs
-        assert dask_spec.varkw == sklearn_spec.varkw
-        assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs
-        assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults
+    dask_spec = inspect.getfullargspec(classes[0])
+    sklearn_spec = inspect.getfullargspec(classes[1])
+    assert dask_spec.varargs == sklearn_spec.varargs
+    assert dask_spec.varkw == sklearn_spec.varkw
+    assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs
+    assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults
 
-        # "client" should be the only different, and the final argument
-        assert dask_spec.args[:-1] == sklearn_spec.args
-        assert dask_spec.defaults[:-1] == sklearn_spec.defaults
-        assert dask_spec.args[-1] == 'client'
-        assert dask_spec.defaults[-1] is None
-
-    _compare_spec(classes[0], classes[1])
+    # "client" should be the only different, and the final argument
+    assert dask_spec.args[:-1] == sklearn_spec.args
+    assert dask_spec.defaults[:-1] == sklearn_spec.defaults
+    assert dask_spec.args[-1] == 'client'
+    assert dask_spec.defaults[-1] is None
