@@ -241,27 +241,27 @@ def test_different_ports_on_local_cluster(client):
         assert len(set(found_ports)) == len(found_ports)
 
 
-def test_training_does_not_fail_on_port_conflicts(client):
+@pytest.mark.parametrize('local_listen_port', [None, 12400, 13000])
+def test_training_does_not_fail_on_port_conflicts(client, local_listen_port):
     _, _, _, dX, dy, dw = _create_data('classification', output='array')
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(('127.0.0.1', 12400))
 
-        for local_listen_port in (None, 12400, 13000):
-            dask_classifier = lgb.DaskLGBMClassifier(
-                time_out=5,
-                local_listen_port=local_listen_port,
-                n_estimators=5,
-                num_leaves=5
+        dask_classifier = lgb.DaskLGBMClassifier(
+            time_out=5,
+            local_listen_port=local_listen_port,
+            n_estimators=5,
+            num_leaves=5
+        )
+        for _ in range(5):
+            dask_classifier.fit(
+                X=dX,
+                y=dy,
+                sample_weight=dw,
+                client=client
             )
-            for _ in range(5):
-                dask_classifier.fit(
-                    X=dX,
-                    y=dy,
-                    sample_weight=dw,
-                    client=client
-                )
-                assert dask_classifier.booster_
+            assert dask_classifier.booster_
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 

@@ -107,7 +107,7 @@ def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], loc
     return worker_ip_to_port
 
 
-def _find_random_open_port():
+def _find_random_open_port() -> int:
     """Find a random open port on the machine.
 
     Returns
@@ -315,7 +315,8 @@ def _train(
     if params["local_listen_port"] == 12400:
         # If local_listen_port is set to LightGBM's default value
         # then we find a random open port for each worker
-        worker_address_to_port = client.run(_find_random_open_port)
+        worker_address_to_port = client.run(_find_random_open_port,
+                                            workers=worker_map.keys())
     else:
         # If another port was specified then we search for an open port
         # in [local_listen_port, local_listen_port+999] for each worker
