@@ -39,4 +39,4 @@ jobs:
         $GITHUB_WORKSPACE/.ci/trigger_dispatch_run.sh \
           "${{ github.event.issue.pull_request.url }}" \
           "${{ github.event.comment.id }}" \
-          "gha_run_r_solais"
+          "gha_run_r_solaris"
