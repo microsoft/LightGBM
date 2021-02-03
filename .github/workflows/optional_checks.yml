@@ -19,7 +19,7 @@ jobs:
         run: |
             workflows=(
                 "R valgrind tests;r-valgrind"
-                "Solaris CRAN check;r-solais"
+                "Solaris CRAN check;r-solaris"
             )
             for i in "${workflows[@]}"; do
                 workflow_name=${i%;*}
