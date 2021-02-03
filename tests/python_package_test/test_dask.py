@@ -235,9 +235,10 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
 
 
 def test_different_ports_on_local_cluster(client):
-    worker_address_to_port = client.run(dlgbm._get_random_port)
-    found_ports = worker_address_to_port.values()
-    assert len(set(found_ports)) == len(found_ports)
+    for _ in range(5):
+        worker_address_to_port = client.run(lgb.dask._find_random_open_port)
+        found_ports = worker_address_to_port.values()
+        assert len(set(found_ports)) == len(found_ports)
 
 
 def test_training_does_not_fail_on_port_conflicts(client):
@@ -246,20 +247,21 @@ def test_training_does_not_fail_on_port_conflicts(client):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(('127.0.0.1', 12400))
 
-        dask_classifier = lgb.DaskLGBMClassifier(
-            time_out=5,
-            local_listen_port=12400,
-            n_estimators=5,
-            num_leaves=5
-        )
-        for _ in range(5):
-            dask_classifier.fit(
-                X=dX,
-                y=dy,
-                sample_weight=dw,
-                client=client
+        for local_listen_port in (None, 12400, 13000):
+            dask_classifier = lgb.DaskLGBMClassifier(
+                time_out=5,
+                local_listen_port=local_listen_port,
+                n_estimators=5,
+                num_leaves=5
             )
-            assert dask_classifier.booster_
+            for _ in range(5):
+                dask_classifier.fit(
+                    X=dX,
+                    y=dy,
+                    sample_weight=dw,
+                    client=client
+                )
+                assert dask_classifier.booster_
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 

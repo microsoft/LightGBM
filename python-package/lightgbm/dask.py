@@ -29,8 +29,10 @@ _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Typ
 
 def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
     """Find an open port.
+
     This function tries to find a free port on the machine it's run on. It is intended to
     be run once on each Dask worker, sequentially.
+
     Parameters
     ----------
     worker_ip : str
@@ -42,6 +44,7 @@ def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Itera
         workers can run on the same physical machine, this method may be called multiple times
         on the same machine. ``ports_to_skip`` is used to ensure that LightGBM doesn't try to use
         the same port for two worker processes running on the same machine.
+
     Returns
     -------
     port : int
@@ -70,8 +73,10 @@ def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Itera
 
 def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], local_listen_port: int) -> Dict[str, int]:
     """Find an open port on each worker.
+
     LightGBM distributed training uses TCP sockets by default, and this method is used to
     identify open ports on each worker so LightGBM can reliable create those sockets.
+
     Parameters
     ----------
     client : dask.distributed.Client
@@ -80,6 +85,7 @@ def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], loc
         An iterable of addresses for workers in the cluster. These are strings of the form ``<protocol>://<host>:port``.
     local_listen_port : int
         First port to try when searching for open ports.
+
     Returns
     -------
     result : Dict[str, int]
@@ -310,7 +316,7 @@ def _train(
         # If local_listen_port is set to LightGBM's default value
         # then we find a random open port for each worker
         worker_address_to_port = client.run(_find_random_open_port)
-    else:        
+    else:
         # If another port was specified then we search for an open port
         # in [local_listen_port, local_listen_port+999] for each worker
         worker_address_to_port = _find_ports_for_workers(
