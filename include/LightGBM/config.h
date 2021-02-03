@@ -976,6 +976,7 @@ struct Config {
   // alias = machine_list_file, machine_list, mlist
   // desc = path of file that lists machines for this parallel learning application
   // desc = each line contains one IP and one port for one machine. The format is ``ip port`` (space as a separator)
+  // desc = **Note**: can be used only in CLI version
   std::string machine_list_filename = "";
 
   // alias = workers, nodes
@@ -996,7 +997,8 @@ struct Config {
   // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_device_id = -1;
 
-  // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used in OpenCL implementation and double precision is used in CUDA implementation)
+  // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
+  // desc = **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is currently supported
   bool gpu_use_dp = false;
 
   // check = >0

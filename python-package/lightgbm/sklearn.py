@@ -1,18 +1,17 @@
 # coding: utf-8
 """Scikit-learn wrapper interface for LightGBM."""
 import copy
-import warnings
 
 from inspect import signature
 
 import numpy as np
 
-from .basic import Dataset, LightGBMError, _ConfigAliases
+from .basic import Dataset, LightGBMError, _ConfigAliases, _choose_param_value, _log_warning
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckSampleWeight,
                      _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     DataFrame, DataTable)
+                     pd_DataFrame, dt_DataTable)
 from .engine import train
 
 
@@ -290,7 +289,7 @@ class LGBMModel(_LGBMModelBase):
         and you should group grad and hess in this way as well.
         """
         if not SKLEARN_INSTALLED:
-            raise LightGBMError('Scikit-learn is required for this module')
+            raise LightGBMError('scikit-learn is required for lightgbm.sklearn')
 
         self.boosting_type = boosting_type
         self.objective = objective
@@ -552,16 +551,14 @@ class LGBMModel(_LGBMModelBase):
                 original_metric = "ndcg"
 
         # overwrite default metric by explicitly set metric
-        for metric_alias in _ConfigAliases.get("metric"):
-            if metric_alias in params:
-                original_metric = params.pop(metric_alias)
+        params = _choose_param_value("metric", params, original_metric)
 
         # concatenate metric from params (or default if not provided in params) and eval_metric
-        original_metric = [original_metric] if isinstance(original_metric, (str, type(None))) else original_metric
-        params['metric'] = [e for e in eval_metrics_builtin if e not in original_metric] + original_metric
+        params['metric'] = [params['metric']] if isinstance(params['metric'], (str, type(None))) else params['metric']
+        params['metric'] = [e for e in eval_metrics_builtin if e not in params['metric']] + params['metric']
         params['metric'] = [metric for metric in params['metric'] if metric is not None]
 
-        if not isinstance(X, (DataFrame, DataTable)):
+        if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
             if sample_weight is not None:
                 sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
@@ -696,7 +693,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        if not isinstance(X, (DataFrame, DataTable)):
+        if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
@@ -931,9 +928,9 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         """
         result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
-            warnings.warn("Cannot compute class probabilities or labels "
-                          "due to the usage of customized objective function.\n"
-                          "Returning raw scores instead.")
+            _log_warning("Cannot compute class probabilities or labels "
+                         "due to the usage of customized objective function.\n"
+                         "Returning raw scores instead.")
             return result
         elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
             return result

@@ -782,15 +782,36 @@ void Dataset::CopySubrow(const Dataset* fullset,
                          const data_size_t* used_indices,
                          data_size_t num_used_indices, bool need_meta_data) {
   CHECK_EQ(num_used_indices, num_data_);
-  OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+
+  std::vector<int> group_ids, subfeature_ids;
+  group_ids.reserve(num_features_);
+  subfeature_ids.reserve(num_features_);
   for (int group = 0; group < num_groups_; ++group) {
+    if (fullset->IsMultiGroup(group)) {
+      for (int sub_feature = 0; sub_feature <
+          fullset->feature_groups_[group]->num_feature_; ++sub_feature) {
+        group_ids.emplace_back(group);
+        subfeature_ids.emplace_back(sub_feature);
+      }
+    } else {
+      group_ids.emplace_back(group);
+      subfeature_ids.emplace_back(-1);
+    }
+  }
+  int num_copy_tasks = static_cast<int>(group_ids.size());
+
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(dynamic)
+  for (int task_id = 0; task_id < num_copy_tasks; ++task_id) {
     OMP_LOOP_EX_BEGIN();
-    feature_groups_[group]->CopySubrow(fullset->feature_groups_[group].get(),
-                                       used_indices, num_used_indices);
+    int group = group_ids[task_id];
+    int subfeature = subfeature_ids[task_id];
+    feature_groups_[group]->CopySubrowByCol(fullset->feature_groups_[group].get(),
+                                            used_indices, num_used_indices, subfeature);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
+
   if (need_meta_data) {
     metadata_.Init(fullset->metadata_, used_indices, num_used_indices);
   }

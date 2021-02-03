@@ -950,7 +950,7 @@ def test_pandas_categorical():
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(pred0, pred7)  # ordered cat features aren't treated as cat features by default
     with pytest.raises(AssertionError):
-        np.testing.assert_allclose(pred0, pred8)  # ordered cat features aren't treated as cat features by default
+        np.testing.assert_allclose(pred0, pred8)
     assert gbm0.pandas_categorical == cat_values
     assert gbm1.pandas_categorical == cat_values
     assert gbm2.pandas_categorical == cat_values
@@ -2500,7 +2500,7 @@ def test_linear_trees(tmp_path):
     est = lgb.train(dict(params, linear_tree=True), lgb_train, num_boost_round=10, evals_result=res,
                     valid_sets=[lgb_train], valid_names=['train'])
     pred2 = est.predict(x)
-    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=10**(-1))
+    assert res['train']['l2'][-1] == pytest.approx(mean_squared_error(y, pred2), abs=1e-1)
     assert mean_squared_error(y, pred2) < mean_squared_error(y, pred1)
     # test again with nans in data
     x[:10] = np.nan
@@ -2512,14 +2512,14 @@ def test_linear_trees(tmp_path):
     est = lgb.train(dict(params, linear_tree=True), lgb_train, num_boost_round=10, evals_result=res,
                     valid_sets=[lgb_train], valid_names=['train'])
     pred2 = est.predict(x)
-    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred2), atol=10**(-1))
+    assert res['train']['l2'][-1] == pytest.approx(mean_squared_error(y, pred2), abs=1e-1)
     assert mean_squared_error(y, pred2) < mean_squared_error(y, pred1)
     # test again with bagging
     res = {}
     est = lgb.train(dict(params, linear_tree=True, subsample=0.8, bagging_freq=1), lgb_train,
                     num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
     pred = est.predict(x)
-    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-1))
+    assert res['train']['l2'][-1] == pytest.approx(mean_squared_error(y, pred), abs=1e-1)
     # test with a feature that has only one non-nan value
     x = np.concatenate([np.ones([x.shape[0], 1]), x], 1)
     x[500:, 1] = np.nan
@@ -2529,7 +2529,7 @@ def test_linear_trees(tmp_path):
     est = lgb.train(dict(params, linear_tree=True, subsample=0.8, bagging_freq=1), lgb_train,
                     num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
     pred = est.predict(x)
-    np.testing.assert_allclose(res['train']['l2'][-1], mean_squared_error(y, pred), atol=10**(-1))
+    assert res['train']['l2'][-1] == pytest.approx(mean_squared_error(y, pred), abs=1e-1)
     # test with a categorical feature
     x[:250, 0] = 0
     y[:250] += 10
@@ -2564,6 +2564,31 @@ def test_linear_trees(tmp_path):
     est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
     train_data = lgb.Dataset(X_train, label=y_train, params=dict(params, num_leaves=60))
     est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
+
+
+def test_save_and_load_linear(tmp_path):
+    X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1,
+                                                        random_state=2)
+    X_train = np.concatenate([np.ones((X_train.shape[0], 1)), X_train], 1)
+    X_train[:X_train.shape[0] // 2, 0] = 0
+    y_train[:X_train.shape[0] // 2] = 1
+    params = {'linear_tree': True}
+    train_data_1 = lgb.Dataset(X_train, label=y_train, params=params)
+    est_1 = lgb.train(params, train_data_1, num_boost_round=10, categorical_feature=[0])
+    pred_1 = est_1.predict(X_train)
+
+    tmp_dataset = str(tmp_path / 'temp_dataset.bin')
+    train_data_1.save_binary(tmp_dataset)
+    train_data_2 = lgb.Dataset(tmp_dataset)
+    est_2 = lgb.train(params, train_data_2, num_boost_round=10)
+    pred_2 = est_2.predict(X_train)
+    np.testing.assert_allclose(pred_1, pred_2)
+
+    model_file = str(tmp_path / 'model.txt')
+    est_2.save_model(model_file)
+    est_3 = lgb.Booster(model_file=model_file)
+    pred_3 = est_3.predict(X_train)
+    np.testing.assert_allclose(pred_2, pred_3)
 
 
 def test_predict_with_start_iteration():

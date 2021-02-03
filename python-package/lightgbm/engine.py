@@ -2,13 +2,12 @@
 """Library with training routines of LightGBM."""
 import collections
 import copy
-import warnings
 from operator import attrgetter
 
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor
+from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor, _log_warning
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 
@@ -146,12 +145,12 @@ def train(params, train_set, num_boost_round=100,
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             num_boost_round = params.pop(alias)
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
     params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             early_stopping_rounds = params.pop(alias)
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
     params["early_stopping_round"] = early_stopping_rounds
     first_metric_only = params.get('first_metric_only', False)
 
@@ -335,7 +334,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
                                              "xe_ndcg", "xe_ndcg_mart", "xendcg_mart"}
                for obj_alias in _ConfigAliases.get("objective")):
             if not SKLEARN_INSTALLED:
-                raise LightGBMError('Scikit-learn is required for ranking cv.')
+                raise LightGBMError('scikit-learn is required for ranking cv')
             # ranking task, split according to groups
             group_info = np.array(full_data.get_group(), dtype=np.int32, copy=False)
             flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
@@ -343,7 +342,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
         elif stratified:
             if not SKLEARN_INSTALLED:
-                raise LightGBMError('Scikit-learn is required for stratified cv.')
+                raise LightGBMError('scikit-learn is required for stratified cv')
             skf = _LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
             folds = skf.split(X=np.zeros(num_data), y=full_data.get_label())
         else:
@@ -525,12 +524,12 @@ def cv(params, train_set, num_boost_round=100,
         params['objective'] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
             num_boost_round = params.pop(alias)
     params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
             early_stopping_rounds = params.pop(alias)
     params["early_stopping_round"] = early_stopping_rounds
     first_metric_only = params.get('first_metric_only', False)

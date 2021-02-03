@@ -39,7 +39,7 @@ INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#
 
 # -- mock out modules
 MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
-                'sklearn', 'matplotlib', 'pandas', 'graphviz']
+                'sklearn', 'matplotlib', 'pandas', 'graphviz', 'dask', 'dask.distributed']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
@@ -74,7 +74,7 @@ C_API = os.environ.get('C_API', '').lower().strip() != 'no'
 RTD = bool(os.environ.get('READTHEDOCS', ''))
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
+needs_sphinx = '2.1.0'  # Due to sphinx.ext.napoleon, autodoc_typehints
 if needs_sphinx > sphinx.__version__:
     message = 'This project needs at least Sphinx v%s' % needs_sphinx
     raise VersionRequirementError(message)
@@ -96,6 +96,9 @@ autodoc_default_options = {
     "inherited-members": True,
     "show-inheritance": True,
 }
+
+# hide type hints in API docs
+autodoc_typehints = "none"
 
 # Generate autosummary pages. Output should be set with: `:toctree: pythonapi/`
 autosummary_generate = ['Python-API.rst']

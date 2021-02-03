@@ -970,7 +970,6 @@ slice <- function(dataset, ...) {
 }
 
 #' @rdname slice
-#' @return constructed sub dataset
 #' @export
 slice.lgb.Dataset <- function(dataset, idxset, ...) {
 

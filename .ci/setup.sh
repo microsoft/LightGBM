@@ -4,7 +4,7 @@ if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
         if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_9.4.1.app/Contents/Developer
+            sudo xcode-select -s /Applications/Xcode_9.4.1.app/Contents/Developer || exit -1
         fi
     else  # gcc
         if [[ $TASK != "mpi" ]]; then
@@ -35,6 +35,7 @@ else  # Linux
             apt-utils \
             build-essential \
             ca-certificates \
+            cmake \
             curl \
             git \
             iputils-ping \
@@ -48,16 +49,16 @@ else  # Linux
             unzip \
             wget \
             zip
+        if [[ $COMPILER == "clang" ]]; then
+            sudo apt-get install --no-install-recommends -y \
+                clang \
+                libomp-dev
+        fi
 
         export LANG="en_US.UTF-8"
         export LC_ALL="${LANG}"
         sudo locale-gen ${LANG}
         sudo update-locale
-
-        sudo apt-get install -y --no-install-recommends \
-            cmake \
-            clang \
-            libomp-dev
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
@@ -77,11 +78,23 @@ else  # Linux
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
     if [[ $TASK == "cuda" ]]; then
+        echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
-        apt-get install --no-install-recommends -y curl wget
-        curl -sL https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh -o cmake.sh
-        chmod +x cmake.sh
-        ./cmake.sh --prefix=/usr/local --exclude-subdir
+        apt-get install --no-install-recommends -y \
+            curl \
+            lsb-release \
+            software-properties-common \
+            wget
+        if [[ $COMPILER == "clang" ]]; then
+            apt-get install --no-install-recommends -y \
+                clang \
+                libomp-dev
+        fi
+        curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
+        apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
+        apt-get update
+        apt-get install --no-install-recommends -y \
+            cmake
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
         wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
