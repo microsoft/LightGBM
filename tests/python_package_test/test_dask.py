@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 from dask.array.utils import assert_eq
-from dask.distributed import wait
+from dask.distributed import futures_of, wait
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
 from scipy.sparse import csr_matrix
 from sklearn.datasets import make_blobs, make_regression
@@ -501,3 +501,46 @@ def test_errors(c, s, a, b):
             model_factory=lgb.LGBMClassifier
         )
         assert 'foo' in str(info.value)
+
+
+@pytest.mark.parametrize('output', data_output)
+def test_training_having_workers_without_data(client, output):
+
+    def assert_collection_is_only_in_one_worker(client,
+                                                collection,
+                                                worker=None):
+        futures = futures_of(collection)
+        [workers] = client.who_has(futures).values()
+        assert len(workers) == 1
+        if worker is not None:
+            assert worker == workers[0]
+        return worker
+
+    workers = list(client.run(lambda: 1).keys())
+    assert len(workers) > 1
+
+    _, _, _, dX, dy, dw = _create_data(
+        objective='regression',
+        output=output,
+        n_samples=100,
+        chunk_size=100
+    )
+    dX, dy, dw = client.persist([dX, dy, dw])
+    _ = wait([dX, dy, dw])
+
+    worker = None
+    for collection in (dX, dy, dw):
+        worker = assert_collection_is_only_in_one_worker(client,
+                                                         collection,
+                                                         worker)
+
+    dask_regressor = lgb.DaskLGBMRegressor(
+        time_out=5,
+        tree='data',
+        random_state=42,
+        num_leaves=10
+    )
+    dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
+    assert dask_regressor.booster_
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
