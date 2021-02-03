@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - master
+      - position_debias
 
 jobs:
   all-successful:
