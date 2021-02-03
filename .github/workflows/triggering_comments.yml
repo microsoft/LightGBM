@@ -34,7 +34,7 @@ jobs:
           "gha_run_build_r_artifacts"
 
     - name: Trigger R Solaris CRAN checks
-      if: github.event.comment.body == '/gha run build-r-solaris'
+      if: github.event.comment.body == '/gha run r-solaris'
       run: |
         $GITHUB_WORKSPACE/.ci/trigger_dispatch_run.sh \
           "${{ github.event.issue.pull_request.url }}" \
