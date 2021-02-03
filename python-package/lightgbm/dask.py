@@ -455,7 +455,7 @@ class _DaskLGBMModel:
 
     @property
     def client_(self) -> Client:
-        """Dask client.
+        """dask.distributed.Client: Dask client.
 
         This property can be passed in the constructor or updated
         with ``model.set_params(client=client)``.
