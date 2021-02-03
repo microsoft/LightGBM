@@ -101,7 +101,9 @@ class LambdarankNDCG : public RankingObjective {
       : RankingObjective(config),
         sigmoid_(config.sigmoid),
         norm_(config.lambdarank_norm),
-        truncation_level_(config.lambdarank_truncation_level) {
+        truncation_level_(config.lambdarank_truncation_level),
+        _position_bins(config.position_bins),
+        _eta(config.eta) {
     label_gain_ = config.label_gain;
     // initialize DCG calculator
     DCGCalculator::DefaultLabelGain(&label_gain_);
@@ -252,6 +254,110 @@ class LambdarankNDCG : public RankingObjective {
     }
   }
 
+    void InitPositionBiases() { ///
+    i_biases_.resize(_position_bins);
+    i_biases_pow_.resize(_position_bins);
+    j_biases_.resize(_position_bins);
+    j_biases_pow_.resize(_position_bins);
+    for (size_t i = 0; i < _position_bins; ++i) {
+      i_biases_[i] = 1.0f;
+      i_biases_pow_[i] = 1.0f;
+      j_biases_[i] = 1.0f;
+      j_biases_pow_[i] = 1.0f;
+    }
+  }
+
+  void InitPositionGradients() { ///
+    position_cnts_.resize(_position_bins);
+    position_scores_.resize(_position_bins);
+    position_lambdas_.resize(_position_bins);
+    i_costs_.resize(_position_bins);
+    j_costs_.resize(_position_bins);
+    for (size_t i = 0; i < _position_bins; ++i) {
+      position_cnts_[i] = 0LL;
+      position_scores_[i] = 0.0f;
+      position_lambdas_[i] = 0.0f;
+      i_costs_[i] = 0.0f;
+      j_costs_[i] = 0.0f;
+    }
+
+    for (int i = 0; i < num_threads_; i++) {
+      position_cnts_buffer_.emplace_back(_position_bins, 0LL);
+      position_scores_buffer_.emplace_back(_position_bins, 0.0f);
+      position_lambdas_buffer_.emplace_back(_position_bins, 0.0f);
+      i_costs_buffer_.emplace_back(_position_bins, 0.0f);
+      j_costs_buffer_.emplace_back(_position_bins, 0.0f);
+    }
+  }
+
+  void UpdatePositionBiases() const {
+    // accumulate the parallel results
+    for (int i = 0; i < num_threads_; i++) {
+      for (size_t j = 0; j < _position_bins; ++j) {
+        position_cnts_[j] += position_cnts_buffer_[i][j];
+        position_scores_[j] += position_scores_buffer_[i][j];
+        position_lambdas_[j] += position_lambdas_buffer_[i][j];
+        i_costs_[j] += i_costs_buffer_[i][j];
+        j_costs_[j] += j_costs_buffer_[i][j];
+      }
+    }
+
+    long long position_cnts_sum = 0LL;
+    for (size_t i = 0; i < _position_bins; ++i) {
+      position_cnts_sum += position_cnts_[i];
+    }
+    std::cout << "" << std::endl;
+    std::cout << "eta: " << _eta << ", pair_cnt_sum: " << position_cnts_sum << std::endl;
+    std::cout << std::setw(10) << "position" 
+              << std::setw(15) << "bias_i"
+              << std::setw(15) << "bias_j"
+              << std::setw(15) << "score" 
+              << std::setw(15) << "lambda" 
+              << std::setw(15) << "high_pair_cnt"
+              << std::setw(15) << "i_cost"
+              << std::setw(15) << "j_cost"
+              << std::endl;
+    for (size_t i = 0; i < _position_bins; ++i) { ///
+      std::cout << std::setw(10) << i
+                << std::setw(15) << i_biases_pow_[i]
+                << std::setw(15) << j_biases_pow_[i]
+                << std::setw(15) << position_scores_[i] / num_queries_
+                << std::setw(15) << - position_lambdas_[i] / num_queries_
+                << std::setw(15) << 1.0f * position_cnts_[i] / position_cnts_sum
+                << std::setw(15) << i_costs_[i] / position_cnts_sum
+                << std::setw(15) << j_costs_[i] / position_cnts_sum
+                << std::endl;
+    }
+
+    // Update bias
+    for (size_t i = 0; i < _position_bins; ++i) { /// 
+      i_biases_[i] = i_costs_[i] / i_costs_[0];
+      i_biases_pow_[i] = pow(i_biases_[i], _eta);
+    }
+    for (size_t i = 0; i < _position_bins; ++i) { /// 
+      j_biases_[i] = j_costs_[i] / j_costs_[0];
+      j_biases_pow_[i] = pow(j_biases_[i], _eta);
+    }
+    // Clear Buffer
+    for (size_t i = 0; i < _position_bins; ++i) { ///
+      position_cnts_[i] = 0LL;
+      position_scores_[i] = 0.0f;
+      position_lambdas_[i] = 0.0f;
+      i_costs_[i] = 0.0f;
+      j_costs_[i] = 0.0f;
+    }
+
+    for (int i = 0; i < num_threads_; i++) {
+      for (size_t j = 0; j < _position_bins; ++j) {
+        position_cnts_buffer_[i][j] = 0LL;
+        position_scores_buffer_[i][j] = 0.0f;
+        position_lambdas_buffer_[i][j] = 0.0f;
+        i_costs_buffer_[i][j] = 0.0f;
+        j_costs_buffer_[i][j] = 0.0f;
+      }
+    }  
+  }
+
   const char* GetName() const override { return "lambdarank"; }
 
  private:
@@ -275,6 +381,36 @@ class LambdarankNDCG : public RankingObjective {
   double max_sigmoid_input_ = 50;
   /*! \brief Factor that covert score to bin in sigmoid table */
   double sigmoid_table_idx_factor_;
+
+  // bias correction variables
+  mutable std::vector<label_t> i_biases_; 
+  /*! \brief pow position biases */
+  mutable std::vector<label_t> i_biases_pow_; 
+
+  mutable std::vector<label_t> j_biases_; 
+  /*! \brief pow position biases */
+  mutable std::vector<label_t> j_biases_pow_; 
+
+  /*! \brief position cnts */
+  mutable std::vector<long long> position_cnts_; 
+  mutable std::vector<std::vector<long long>> position_cnts_buffer_;
+  /*! \brief position scores */
+  mutable std::vector<label_t> position_scores_;
+  mutable std::vector<std::vector<label_t>> position_scores_buffer_;
+  /*! \brief position lambdas */
+  mutable std::vector<label_t> position_lambdas_;
+  mutable std::vector<std::vector<label_t>> position_lambdas_buffer_;
+  // mutable double position cost; 
+  mutable std::vector<label_t> i_costs_; 
+  mutable std::vector<std::vector<label_t>> i_costs_buffer_; 
+
+  mutable std::vector<label_t> j_costs_; 
+  mutable std::vector<std::vector<label_t>> j_costs_buffer_; 
+
+  /*! \brief Number of exponent */
+  double _eta;
+  /*! \brief Number of positions */
+  size_t _position_bins;
 };
 
 /*!
