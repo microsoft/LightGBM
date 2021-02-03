@@ -322,7 +322,7 @@ if __name__ == "__main__":
     if os.path.isfile(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt')):
         copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
                   os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'),
-                  verbose=False)
+                  verbose=0)  # type:ignore
     version = open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'), encoding='utf-8').read().strip()
     readme = open(os.path.join(CURRENT_DIR, 'README.rst'), encoding='utf-8').read()
 
