@@ -64,8 +64,11 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
         # add target, weight, and group to DataFrame so that partitions abide by group boundaries.
         X_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(X.shape[1])])
         if output == 'dataframe-with-categorical':
-            cat_series = pd.Series(np.random.choice(["a", "b", "y", "z"], n_samples), dtype="category")
-            X_df["cat_col"] = cat_series
+            cat_series = pd.Series(
+                np.random.choice(['a', 'b', 'y', 'z'], n_samples),
+                dtype='category'
+            )
+            X_df['cat_col'] = cat_series
             X = np.hstack((X, cat_series.cat.codes.values.reshape(-1, 1)))
         X = X_df.copy()
         X_df = X_df.assign(y=y, g=g, w=w)
@@ -122,8 +125,11 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
     elif output.startswith('dataframe'):
         X_df = pd.DataFrame(X, columns=['feature_%d' % i for i in range(X.shape[1])])
         if output == 'dataframe-with-categorical':
-            cat_series = pd.Series(np.random.choice(["a", "b", "y", "z"], n_samples), dtype="category")
-            X_df["cat_col"] = cat_series
+            cat_series = pd.Series(
+                np.random.choice(['a', 'b', 'y', 'z'], n_samples),
+                dtype='category'
+            )
+            X_df['cat_col'] = cat_series
             X = np.hstack((X, cat_series.cat.codes.values.reshape(-1, 1)))
         y_df = pd.Series(y, name='target')
         dX = dd.from_pandas(X_df, chunksize=chunk_size)
