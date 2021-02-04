@@ -65,7 +65,7 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
         X_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(X.shape[1])])
         if output == 'dataframe-with-categorical':
             cat_series = pd.Series(
-                np.random.choice(['a', 'b', 'y', 'z'], n_samples),
+                np.random.choice(['a', 'b', 'y', 'z'], X.shape[0]),
                 dtype='category'
             )
             X_df['cat_col'] = cat_series
@@ -126,7 +126,7 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
         X_df = pd.DataFrame(X, columns=['feature_%d' % i for i in range(X.shape[1])])
         if output == 'dataframe-with-categorical':
             cat_series = pd.Series(
-                np.random.choice(['a', 'b', 'y', 'z'], n_samples),
+                np.random.choice(['a', 'b', 'y', 'z'], X.shape[0]),
                 dtype='category'
             )
             X_df['cat_col'] = cat_series
