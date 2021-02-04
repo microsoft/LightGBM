@@ -35,7 +35,7 @@ from .utils import make_ranking
 # see https://distributed.dask.org/en/latest/api.html#distributed.Client.close
 CLIENT_CLOSE_TIMEOUT = 120
 
-data_output = ['array', 'scipy_csr_matrix', 'dataframe']
+data_output = ['array', 'scipy_csr_matrix', 'dataframe', 'dataframe-with-categorical']
 data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 
@@ -60,9 +60,11 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
     w = rnd.rand(X.shape[0]) * 0.01
     g_rle = np.array([len(list(grp)) for _, grp in groupby(g)])
 
-    if output == 'dataframe':
+    if output.startswith('dataframe'):
         # add target, weight, and group to DataFrame so that partitions abide by group boundaries.
         X_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(X.shape[1])])
+        if output == 'dataframe-with-categorical':
+            X_df["cat_col"] = pd.Series(np.random.choice(["a", "b", "y", "z"], n_samples), dtype="category")
         X = X_df.copy()
         X_df = X_df.assign(y=y, g=g, w=w)
 
@@ -115,8 +117,12 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
         dX = da.from_array(X, (chunk_size, X.shape[1]))
         dy = da.from_array(y, chunk_size)
         dw = da.from_array(weights, chunk_size)
-    elif output == 'dataframe':
+    elif output.startswith('dataframe'):
         X_df = pd.DataFrame(X, columns=['feature_%d' % i for i in range(X.shape[1])])
+        if output == 'dataframe-with-categorical':
+            cat_series = pd.Series(np.random.choice(["a", "b", "y", "z"], n_samples), dtype="category")
+            X_df["cat_col"] = cat_series
+            X = np.hstack((X, cat_series.cat.codes.values.reshape(-1, 1)))
         y_df = pd.Series(y, name='target')
         dX = dd.from_pandas(X_df, chunksize=chunk_size)
         dy = dd.from_pandas(y_df, chunksize=chunk_size)
@@ -175,6 +181,10 @@ def test_classifier(output, centers, client, listen_port):
         output=output,
         centers=centers
     )
+
+    # be sure a categorical columne was added
+    if output == 'dataframe-with-categorical':
+        assert dX.dtypes['cat_col'].name == 'category'
 
     params = {
         "n_estimators": 10,
@@ -297,6 +307,10 @@ def test_regressor(output, client, listen_port):
         output=output
     )
 
+    # be sure a categorical columne was added
+    if output == 'dataframe-with-categorical':
+        assert dX.dtypes['cat_col'].name == 'category'
+
     params = {
         "random_state": 42,
         "num_leaves": 10
@@ -408,7 +422,7 @@ def test_regressor_quantile(output, client, listen_port, alpha):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-@pytest.mark.parametrize('output', ['array', 'dataframe'])
+@pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])
 @pytest.mark.parametrize('group', [None, group_sizes])
 def test_ranker(output, client, listen_port, group):
 
@@ -416,6 +430,10 @@ def test_ranker(output, client, listen_port, group):
         output=output,
         group=group
     )
+
+    # be sure a categorical columne was added
+    if output == 'dataframe-with-categorical':
+        assert dX.dtypes['cat_col'].name == 'category'
 
     # rebalance small dask.array dataset for better performance.
     if output == 'array':
@@ -785,6 +803,69 @@ def test_warns_but_makes_no_changes_for_feature_or_voting_tree_learner(client):
         assert dask_regressor.get_params()['tree_learner'] == tree_learner
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
+# @pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
+# def test_should_work_for_dataframe_input_with_pandas_categorical_type(client):
+#     if task == 'ranking':
+#         _, _, _, _, dX, dy, _, dg = _create_ranking_data(
+#             output='dataframe',
+#             group=None
+#         )
+#         model_factory = lgb.DaskLGBMRanker
+#         local_model_factory = lgb.LGBMRanker
+#     else:
+#         _, _, _, dX, dy, _ = _create_data(
+#             objective=task,
+#             output='dataframe',
+#         )
+#         dg = None
+#         if task == 'classification':
+#             model_factory = lgb.DaskLGBMClassifier
+#             local_model_factory = lgb.LGBMClassifier
+#         elif task == 'regression':
+#             model_factory = lgb.DaskLGBMRegressor
+#             local_model_factor = lgb.LGBMRegressor
+
+#     params = {
+#         "time_out": 5,
+#         "local_listen_port": listen_port,
+#         "n_estimators": 1,
+#         "num_leaves": 2
+#     }
+
+#     # add a categorical column
+#     rows_per_chunk = int(dX.shape[0].compute() / dX.npartitions)
+#     cat_series = pd.Series(np.random.choice(["a", "b", "y", "z"], num_rows), dtype="category")
+#     dX["cat_col"] = dd.from_pandas(cat_series, chunksize=rows_per_chunk)
+
+#     # check that it's really a categorical column
+#     assert dX.dtypes["cat_col"].name == 'category'
+
+#     dask_model = model_factor(**params)
+#     dask_model.fit(X=dX, y=dy, group=dg)
+#     assert dask_model.fitted_
+
+#     p1 = dask_model.predict(dX)
+#     p1_local = dask_model.to_local().predict(X)
+
+#     local_model = lgb.local_model_factory(**params)
+#     local_model.fit(X, y, sample_weight=w)
+#     p2 = local_model.predict(X)
+
+#     if task == 'classification'
+#         p1_proba = dask_model.predict_proba(dX).compute()
+#         p2_proba = local_model.predict_proba(X)
+#         s1 = _accuracy_score(dy, p1)
+#         s2 = local_modelr.score(X, y)
+#         assert_eq(p1_proba, p2_proba, atol=0.3)
+#         assert_eq(s1, s2)
+
+#     assert_eq(p1, p2)
+#     assert_eq(y, p1)
+#     assert_eq(y, p2)
+#     assert_eq(p1_local, p2)
+#     assert_eq(y, p1_local)
 
 
 @gen_cluster(client=True, timeout=None)
