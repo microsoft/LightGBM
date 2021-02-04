@@ -371,7 +371,7 @@ def _predict_part(
         )
 
     # dask.DataFrame.map_partitions() expects each call to return a pandas DataFrame or Series
-    if isinstance(part, pd_DataFrame)
+    if isinstance(part, pd_DataFrame):
         if pred_proba or pred_contrib:
             result = pd_DataFrame(result, index=part.index)
         else:
