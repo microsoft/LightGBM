@@ -207,7 +207,7 @@ Dataset* DatasetLoader::LoadFromFile(const std::vector<const char*>& filenames, 
     }
     dataset->data_filename_ = filenames;
     dataset->label_idx_ = label_idx_;
-    // TODO support loading metadata from multiple files.
+    // XXX load metadata only from the first input.
     dataset->metadata_.Init(filenames[0]);
     if (!config_.two_round) {
       // read data to memory
@@ -867,7 +867,6 @@ std::vector<std::string> DatasetLoader::LoadTextDataToMemory(const std::vector<c
         }
       }, used_data_indices);
     } else {
-
       // if contain query data, minimal sample unit is one query
       data_size_t num_queries = metadata.num_queries();
       data_size_t qid = -1;

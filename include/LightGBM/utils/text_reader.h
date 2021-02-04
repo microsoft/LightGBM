@@ -105,13 +105,13 @@ class TextReader {
   inline std::vector<std::string>& Lines() { return lines_; }
 
   INDEX_T ReadAllAndProcessFile(const char* filename, const std::function<void(INDEX_T, const char*, size_t)>& process_fun,
-                                INDEX_T& total_cnt, size_t& bytes_read,
+                                INDEX_T* total_cnt, size_t& bytes_read,
                                 std::chrono::time_point<std::chrono::high_resolution_clock>& start_time,
                                 std::chrono::time_point<std::chrono::high_resolution_clock>& prev_time) {
     last_line_ = "";
 
     PipelineReader::Read(filename, skip_bytes_,
-        [&process_fun, &bytes_read, &total_cnt, &filename, &start_time, &prev_time, this]
+        [&process_fun, &bytes_read, total_cnt, &filename, &start_time, &prev_time, this]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
       size_t i = 0;
@@ -125,14 +125,14 @@ class TextReader {
         if (buffer_process[i] == '\n' || buffer_process[i] == '\r') {
           if (last_line_.size() > 0) {
             last_line_.append(buffer_process + last_i, i - last_i);
-            process_fun(total_cnt, last_line_.c_str(), last_line_.size());
+            process_fun(*total_cnt, last_line_.c_str(), last_line_.size());
             last_line_ = "";
           } else {
-            process_fun(total_cnt, buffer_process + last_i, i - last_i);
+            process_fun(*total_cnt, buffer_process + last_i, i - last_i);
           }
           ++cnt;
           ++i;
-          ++total_cnt;
+          ++(*total_cnt);
           // skip end of line
           while ((buffer_process[i] == '\n' || buffer_process[i] == '\r') && i < read_cnt) { ++i; }
           last_i = i;
@@ -161,12 +161,12 @@ class TextReader {
     // if last line of file doesn't contain end of line
     if (last_line_.size() > 0) {
       Log::Info("Warning: last line of %s has no end of line, still using this line", filename_);
-      process_fun(total_cnt, last_line_.c_str(), last_line_.size());
-      ++total_cnt;
+      process_fun(*total_cnt, last_line_.c_str(), last_line_.size());
+      ++(*total_cnt);
       last_line_ = "";
     }
-    Log::Info("ReadAllAndProcessFile %s total_cnt %lu, bytes_read %lu", filename, total_cnt, bytes_read);
-    return total_cnt;
+    Log::Info("ReadAllAndProcessFile %s total_cnt %lu, bytes_read %lu", filename, *total_cnt, bytes_read);
+    return *total_cnt;
   }
 
   INDEX_T ReadAllAndProcess(const std::function<void(INDEX_T, const char*, size_t)>& process_fun) {
@@ -175,7 +175,7 @@ class TextReader {
     auto start_time = std::chrono::high_resolution_clock::now();
     auto prev_time = start_time;
     for (const auto& it : filename_) {
-      ReadAllAndProcessFile(it, process_fun, total_cnt, bytes_read, start_time, prev_time);
+      ReadAllAndProcessFile(it, process_fun, &total_cnt, bytes_read, start_time, prev_time);
     }
     return total_cnt;
   }
@@ -289,13 +289,13 @@ class TextReader {
   INDEX_T ReadAllAndProcessParallelWithFilterOne(const char* filename,
                                                  const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun,
                                                  const std::function<bool(INDEX_T, INDEX_T)>& filter_fun,
-                                                 INDEX_T& total_cnt, size_t& bytes_read, INDEX_T& used_cnt,
+                                                 INDEX_T* total_cnt, size_t* bytes_read, INDEX_T& used_cnt,
                                                  std::chrono::time_point<std::chrono::high_resolution_clock>& start_time,
                                                  std::chrono::time_point<std::chrono::high_resolution_clock>& prev_time) {
     Log::Debug("ReadAllAndProcessParallelWithFilterOne %s", filename);
     last_line_ = "";
     PipelineReader::Read(filename, skip_bytes_,
-        [&process_fun, &filter_fun, &total_cnt, &bytes_read, &used_cnt, &filename, &start_time, &prev_time, this]
+        [&process_fun, &filter_fun, total_cnt, bytes_read, &used_cnt, &filename, &start_time, &prev_time, this]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
       size_t i = 0;
@@ -310,20 +310,20 @@ class TextReader {
         if (buffer_process[i] == '\n' || buffer_process[i] == '\r') {
           if (last_line_.size() > 0) {
             last_line_.append(buffer_process + last_i, i - last_i);
-            if (filter_fun(used_cnt, total_cnt)) {
+            if (filter_fun(used_cnt, *total_cnt)) {
               lines_.push_back(last_line_);
               ++used_cnt;
             }
             last_line_ = "";
           } else {
-            if (filter_fun(used_cnt, total_cnt)) {
+            if (filter_fun(used_cnt, *total_cnt)) {
               lines_.emplace_back(buffer_process + last_i, i - last_i);
               ++used_cnt;
             }
           }
           ++cnt;
           ++i;
-          ++total_cnt;
+          ++(*total_cnt);
           // skip end of line
           while ((buffer_process[i] == '\n' || buffer_process[i] == '\r') && i < read_cnt) { ++i; }
           last_i = i;
@@ -337,14 +337,14 @@ class TextReader {
         last_line_.append(buffer_process + last_i, read_cnt - last_i);
       }
 
-      size_t prev_bytes_read = bytes_read;
-      bytes_read += read_cnt;
-      if (prev_bytes_read / read_progress_interval_bytes_ < bytes_read / read_progress_interval_bytes_) {
+      size_t prev_bytes_read = *bytes_read;
+      *bytes_read += read_cnt;
+      if (prev_bytes_read / read_progress_interval_bytes_ < *bytes_read / read_progress_interval_bytes_) {
         auto now = std::chrono::high_resolution_clock::now();
         auto total_time = std::chrono::duration<double, std::milli>(now - start_time) * 1e-3;
         auto interval_time = std::chrono::duration<double, std::milli>(now - prev_time) * 1e-3;
         Log::Info("Read %.1f GBs in %.1f seconds (from %s), last interval speed %.1f MB/s",
-            1.0 * bytes_read / kGbs, total_time,
+            1.0 * (*bytes_read) / kGbs, total_time,
             1.0 * read_progress_interval_bytes_ / kGbs * 1024.0 / interval_time.count(), filename);
         prev_time = now;
       }
@@ -354,16 +354,16 @@ class TextReader {
     // if last line of file doesn't contain end of line
     if (last_line_.size() > 0) {
       Log::Info("Warning: last line of %s has no end of line, still using this line", filename_);
-      if (filter_fun(used_cnt, total_cnt)) {
+      if (filter_fun(used_cnt, *total_cnt)) {
         lines_.push_back(last_line_);
         process_fun(used_cnt, lines_);
       }
       lines_.clear();
-      ++total_cnt;
+      ++(*total_cnt);
       ++used_cnt;
       last_line_ = "";
     }
-    return total_cnt;
+    return *total_cnt;
   }
 
   INDEX_T ReadAllAndProcessParallelWithFilter(const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun, const std::function<bool(INDEX_T, INDEX_T)>& filter_fun) {
@@ -373,7 +373,7 @@ class TextReader {
     auto start_time = std::chrono::high_resolution_clock::now();
     auto prev_time = start_time;
     for (const auto& it : filename_) {
-      ReadAllAndProcessParallelWithFilterOne(it, process_fun, filter_fun, total_cnt, bytes_read, used_cnt, start_time, prev_time);
+      ReadAllAndProcessParallelWithFilterOne(it, process_fun, filter_fun, &total_cnt, &bytes_read, used_cnt, start_time, prev_time);
     }
     Log::Debug("ReadAllAndProcessParallelWithFilter total_cnt %lu", total_cnt);
     return total_cnt;
