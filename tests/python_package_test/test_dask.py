@@ -69,7 +69,6 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
                 dtype='category'
             )
             X_df['cat_col'] = cat_series
-            X = np.hstack((X, cat_series.cat.codes.values.reshape(-1, 1)))
         X = X_df.copy()
         X_df = X_df.assign(y=y, g=g, w=w)
 
