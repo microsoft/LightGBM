@@ -5,7 +5,7 @@ import inspect
 import joblib
 import pickle
 import socket
-from itertools import groupby
+from itertools import groupby, product
 from os import getenv
 from sys import platform
 
@@ -35,9 +35,12 @@ from .utils import make_ranking
 # see https://distributed.dask.org/en/latest/api.html#distributed.Client.close
 CLIENT_CLOSE_TIMEOUT = 120
 
+tasks = ['classification', 'regression', 'ranking']
 data_output = ['array', 'scipy_csr_matrix', 'dataframe']
 data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
+tasks_outputs = [(task, output) for task, output in product(tasks, data_output)
+                 if (task, output) != ('ranking', 'scipy_csr_matrix')]
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
@@ -460,7 +463,7 @@ def test_ranker(output, client, listen_port, group):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-@pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
+@pytest.mark.parametrize('task', tasks)
 def test_training_works_if_client_not_provided_or_set_after_construction(task, listen_port, client):
     if task == 'ranking':
         _, _, _, _, dX, dy, _, dg = _create_ranking_data(
@@ -545,7 +548,7 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, l
 
 
 @pytest.mark.parametrize('serializer', ['pickle', 'joblib', 'cloudpickle'])
-@pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
+@pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('set_client', [True, False])
 def test_model_and_local_version_are_picklable_whether_or_not_client_set_explicitly(serializer, task, set_client, listen_port, tmp_path):
 
@@ -823,45 +826,64 @@ def test_errors(c, s, a, b):
         assert 'foo' in str(info.value)
 
 
-@pytest.mark.parametrize('output', data_output)
-def test_training_having_workers_without_data(client, output):
+@pytest.mark.parametrize('task,output', tasks_outputs)
+def test_training_having_workers_without_data(client, task, output):
 
-    def assert_collection_is_only_in_one_worker(client,
-                                                collection,
-                                                worker=None):
-        futures = futures_of(collection)
-        [workers] = client.who_has(futures).values()
-        assert len(workers) == 1
-        if worker is not None:
-            assert worker == workers[0]
-        return worker
+    def repartition(collection):
+        if collection is None:
+            return
+        if isinstance(collection, da.Array):
+            return collection.rechunk(*collection.shape)
+        return collection.repartition(npartitions=1)
 
-    workers = list(client.run(lambda: 1).keys())
-    assert len(workers) > 1
+    if task == 'ranking':
+        X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
+            output=output,
+            group=None
+        )
+        dask_model_factory = lgb.DaskLGBMRanker
+        local_model_factory = lgb.LGBMRanker
+    else:
+        X, y, w, dX, dy, dw = _create_data(
+            objective=task,
+            output=output
+        )
+        g = dg = None
+        if task == 'classification':
+            dask_model_factory = lgb.DaskLGBMClassifier
+            local_model_factory = lgb.LGBMClassifier
+        elif task == 'regression':
+            dask_model_factory = lgb.DaskLGBMRegressor
+            local_model_factory = lgb.LGBMRegressor
 
-    _, _, _, dX, dy, dw = _create_data(
-        objective='regression',
-        output=output,
-        n_samples=100,
-        chunk_size=100
-    )
-    dX, dy, dw = client.persist([dX, dy, dw])
-    _ = wait([dX, dy, dw])
+    dX = repartition(dX)
+    dy = repartition(dy)
+    dw = repartition(dw)
+    dg = repartition(dg)
 
-    worker = None
-    for collection in (dX, dy, dw):
-        worker = assert_collection_is_only_in_one_worker(client,
-                                                         collection,
-                                                         worker)
+    n_workers = len(client.scheduler_info()['workers'])
+    assert n_workers > 1
+    assert dX.npartitions == 1
 
-    dask_regressor = lgb.DaskLGBMRegressor(
-        time_out=5,
-        tree='data',
-        random_state=42,
-        num_leaves=10
-    )
-    dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
-    assert dask_regressor.booster_
+    params = {
+        'time_out': 5,
+        'random_state': 42,
+        'num_leaves': 10
+    }
+
+    dask_model = dask_model_factory(tree='data', client=client, **params)
+    dask_model.fit(dX, dy, group=dg, sample_weight=dw)
+    dask_preds = dask_model.predict(dX).compute()
+
+    local_model = local_model_factory(**params)
+    if task == 'ranking':
+        local_model.fit(X, y, group=g, sample_weight=w)
+    else:
+        local_model.fit(X, y, sample_weight=w)
+    local_preds = local_model.predict(X)
+
+    assert np.allclose(dask_preds, local_preds)
+
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
