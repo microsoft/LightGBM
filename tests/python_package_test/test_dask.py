@@ -190,7 +190,7 @@ def test_classifier(output, centers, client, listen_port):
         centers=centers
     )
 
-    # be sure a categorical columne was added
+    # be sure a categorical column was added
     if output == 'dataframe-with-categorical':
         assert dX.dtypes['cat_col'].name == 'category'
 
@@ -315,7 +315,7 @@ def test_regressor(output, client, listen_port):
         output=output
     )
 
-    # be sure a categorical columne was added
+    # be sure a categorical column was added
     if output == 'dataframe-with-categorical':
         assert dX.dtypes['cat_col'].name == 'category'
 
@@ -439,7 +439,7 @@ def test_ranker(output, client, listen_port, group):
         group=group
     )
 
-    # be sure a categorical columne was added
+    # be sure a categorical column was added
     if output == 'dataframe-with-categorical':
         assert dX.dtypes['cat_col'].name == 'category'
 
