@@ -27,7 +27,7 @@ namespace LightGBM {
 
 /*! \brief Types of tasks */
 enum TaskType {
-  kTrain, kPredict, kConvertModel, KRefitTree
+  kTrain, kPredict, kConvertModel, KRefitTree, kSaveBinary
 };
 const int kDefaultNumLeaves = 31;
 
@@ -102,6 +102,7 @@ struct Config {
   // desc = ``predict``, for prediction, aliases: ``prediction``, ``test``
   // desc = ``convert_model``, for converting model file into if-else format, see more information in `Convert Parameters <#convert-parameters>`__
   // desc = ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
+  // desc = ``save_binary``, load train (and validation) data then save dataset to binary file. Typical usage: ``save_binary`` first, then run multiple ``train`` tasks in parallel using the saved binary file
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
   TaskType task = TaskType::kTrain;
 

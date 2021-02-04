@@ -113,6 +113,8 @@ void GetTaskType(const std::unordered_map<std::string, std::string>& params, Tas
       *task = TaskType::kConvertModel;
     } else if (value == std::string("refit") || value == std::string("refit_tree")) {
       *task = TaskType::KRefitTree;
+    } else if (value == std::string("save_binary")) {
+      *task = TaskType::kSaveBinary;
     } else {
       Log::Fatal("Unknown task type %s", value.c_str());
     }
@@ -233,6 +235,11 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
     }
   }
   valid = new_valid;
+
+  if ((task == TaskType::kSaveBinary) && !save_binary) {
+    Log::Info("save_binary parameter set to true because task is save_binary");
+    save_binary = true;
+  }
 
   if (verbosity == 1) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);

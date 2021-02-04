@@ -455,7 +455,7 @@ class _DaskLGBMModel:
 
     @property
     def client_(self) -> Client:
-        """Dask client.
+        """:obj:`dask.distributed.Client`: Dask client.
 
         This property can be passed in the constructor or updated
         with ``model.set_params(client=client)``.
@@ -468,11 +468,9 @@ class _DaskLGBMModel:
     def _lgb_getstate(self) -> Dict[Any, Any]:
         """Remove un-picklable attributes before serialization."""
         client = self.__dict__.pop("client", None)
-        self.__dict__.pop("_client", None)
         self._other_params.pop("client", None)
         out = deepcopy(self.__dict__)
-        out.update({"_client": None, "client": None})
-        self._client = client
+        out.update({"client": None})
         self.client = client
         return out
 
@@ -521,8 +519,7 @@ class _DaskLGBMModel:
         attributes = source.__dict__
         extra_param_names = set(attributes.keys()).difference(params.keys())
         for name in extra_param_names:
-            if name != "_client":
-                setattr(dest, name, attributes[name])
+            setattr(dest, name, attributes[name])
 
 
 class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
@@ -554,7 +551,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         **kwargs: Any
     ):
         """Docstring is inherited from the lightgbm.LGBMClassifier.__init__."""
-        self._client = client
         self.client = client
         super().__init__(
             boosting_type=boosting_type,
@@ -672,7 +668,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         **kwargs: Any
     ):
         """Docstring is inherited from the lightgbm.LGBMRegressor.__init__."""
-        self._client = client
         self.client = client
         super().__init__(
             boosting_type=boosting_type,
@@ -715,7 +710,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
-        client: Optional[Client] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
@@ -779,7 +773,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         **kwargs: Any
     ):
         """Docstring is inherited from the lightgbm.LGBMRanker.__init__."""
-        self._client = client
         self.client = client
         super().__init__(
             boosting_type=boosting_type,
