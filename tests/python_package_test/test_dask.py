@@ -114,7 +114,7 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
     if objective == 'classification':
         X, y = make_blobs(n_samples=n_samples, centers=centers, random_state=42)
     elif objective == 'regression':
-        X, y = make_regression(n_samples=n_samples, random_state=42, n_informative=2)
+        X, y = make_regression(n_samples=n_samples, random_state=42)
     else:
         raise ValueError("Unknown objective '%s'" % objective)
     rnd = np.random.RandomState(42)
@@ -206,7 +206,7 @@ def test_classifier(output, centers, client, listen_port):
 
     params = {
         "n_estimators": 10,
-        "num_leaves": 10,
+        "num_leaves": 10
     }
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
@@ -258,8 +258,7 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
 
     params = {
         "n_estimators": 10,
-        "num_leaves": 10,
-        "min_data_in_leaf": 1
+        "num_leaves": 10
     }
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
@@ -341,12 +340,12 @@ def test_training_does_not_fail_on_port_conflicts(client):
 def test_regressor(output, client, listen_port):
     X, y, w, dX, dy, dw = _create_data(
         objective='regression',
-        output=output,
+        output=output
     )
 
     params = {
         "random_state": 42,
-        "num_leaves": 10,
+        "num_leaves": 10
     }
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
@@ -375,7 +374,7 @@ def test_regressor(output, client, listen_port):
 
     # Predictions should be roughly the same
     assert_eq(y, p1, rtol=1., atol=100.)
-    assert_eq(y, p2, rtol=1., atol=100.)
+    assert_eq(y, p2, rtol=1., atol=50.)
     assert_eq(p1, p1_local)
 
     # be sure LightGBM actually used at least one categorical column
@@ -394,12 +393,12 @@ def test_regressor(output, client, listen_port):
 def test_regressor_pred_contrib(output, client, listen_port):
     X, y, w, dX, dy, dw = _create_data(
         objective='regression',
-        output=output,
+        output=output
     )
 
     params = {
-        "random_state": 42,
-        "num_leaves": 10,
+        "n_estimators": 10,
+        "num_leaves": 10
     }
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
@@ -449,8 +448,7 @@ def test_regressor_quantile(output, client, listen_port, alpha):
         "alpha": alpha,
         "random_state": 42,
         "n_estimators": 10,
-        "num_leaves": 10,
-        "min_data_in_leaf": 1
+        "num_leaves": 10
     }
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
@@ -483,8 +481,7 @@ def test_regressor_quantile(output, client, listen_port, alpha):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-# @pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])
-@pytest.mark.parametrize('output', ['dataframe-with-categorical'])
+@pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])
 @pytest.mark.parametrize('group', [None, group_sizes])
 def test_ranker(output, client, listen_port, group):
 
@@ -516,8 +513,7 @@ def test_ranker(output, client, listen_port, group):
         "random_state": 42,
         "n_estimators": 50,
         "num_leaves": 20,
-        "min_child_samples": 1,
-        "min_data_in_leaf": 1
+        "min_child_samples": 1
     }
     dask_ranker = lgb.DaskLGBMRanker(
         client=client,
@@ -577,8 +573,7 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, l
         "time_out": 5,
         "local_listen_port": listen_port,
         "n_estimators": 1,
-        "num_leaves": 2,
-        "min_data_in_leaf": 1
+        "num_leaves": 2
     }
 
     # should be able to use the class without specifying a client
