@@ -3,6 +3,7 @@ args <- commandArgs(
 )
 package_tarball <- args[[1L]]
 log_file <- args[[2L]]
+dir.create(dirname(log_file), recursive = TRUE, showWarnings = FALSE)
 
 install.packages('rhub', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org')
 
@@ -21,44 +22,66 @@ if (Sys.info()['sysname'] == "Windows") {
     null_file <- "/dev/null"
 }
 sink(file=null_file)
-res_object <- rhub::check(
-    path = package_tarball
-    , email = intToUtf8(email - 42L)
-    , check_args = c(
-        "--as-cran"
-    )
-    , platform = c(
-        "solaris-x86-patched"
-        , "solaris-x86-patched-ods"
-    )
-    , env_vars = c(
-        "R_COMPILE_AND_INSTALL_PACKAGES" = "always"
-        , "_R_CHECK_SYSTEM_CLOCK_" = 0L
-        , "_R_CHECK_CRAN_INCOMING_REMOTE_" = 0L
-        , "_R_CHECK_PKG_SIZES_THRESHOLD_" = 60L
-    )
-    , show_status = TRUE
+checks_succeeded = TRUE
+platforms = c(
+    "solaris-x86-patched"
+    , "solaris-x86-patched-ods"
 )
-statuses <- res_object[[".__enclos_env__"]][["private"]][["status_"]]
-result <- do.call(rbind, lapply(statuses, function(thisStatus) {
-    data.frame(
-        plaform = thisStatus[["platform"]][["name"]]
-        , url = sprintf("https://builder.r-hub.io/status/%s", thisStatus[["id"]])
-        , errors = length(thisStatus[["result"]][["errors"]])
-        , warnings = length(thisStatus[["result"]][["warnings"]])
-        , notes = length(thisStatus[["result"]][["notes"]])
-        , stringsAsFactors = FALSE
+for (platform in platforms) {
+    res_object <- rhub::check(
+        path = package_tarball
+        , email = intToUtf8(email - 42L)
+        , check_args = c(
+            "--as-cran"
+        )
+        , platform = platform
+        , env_vars = c(
+            "R_COMPILE_AND_INSTALL_PACKAGES" = "always"
+            , "_R_CHECK_SYSTEM_CLOCK_" = 0L
+            , "_R_CHECK_CRAN_INCOMING_REMOTE_" = 0L
+            , "_R_CHECK_PKG_SIZES_THRESHOLD_" = 60L
+            , "_R_CHECK_TOPLEVEL_FILES_" = 0L
+        )
+        , show_status = TRUE
     )
-}))
-sink()
-
-dir.create(dirname(log_file), recursive = TRUE, showWarnings = FALSE)
-for(i in 1L:nrow(result)) {
+    statuses <- res_object[[".__enclos_env__"]][["private"]][["status_"]]
+    plaform_name = names(statuses)[1]
+    url = sprintf(
+        "https://builder.r-hub.io/status/%s"
+        , statuses[[plaform_name]][["id"]]
+    )
+    errors = statuses[[plaform_name]][["result"]][["errors"]]
+    warnings = statuses[[plaform_name]][["result"]][["warnings"]]
+    notes = statuses[[plaform_name]][["result"]][["notes"]]
     write(
-        sprintf("%s@%s", result[i, 1L], result[i, 2L])
+        sprintf("%s@%s", plaform_name, url)
         , file = log_file
         , append = TRUE
     )
+    if (length(errors) > 0L) {
+        checks_succeeded = FALSE
+    }
+    for (warning in warnings) {
+        warning = iconv(warning, "UTF-8", "ASCII", sub="")
+        # https://github.com/r-hub/rhub/issues/113
+        if (!startsWith(warning, "checking top-level files")) {
+            checks_succeeded = FALSE
+            break
+        }
+    }
+    for (note in notes) {
+        note = iconv(note, "UTF-8", "ASCII", sub="")
+        # https://github.com/r-hub/rhub/issues/415
+        if (!(startsWith(note, "checking CRAN incoming feasibility")
+            || note == "checking compilation flags used ... NOTE\nCompilation used the following non-portable flag(s):\n  -march=pentiumpro")) {
+            checks_succeeded = FALSE
+            break
+        }
+    }
+    if (!checks_succeeded) {
+        break
+    }
 }
+sink()
 
-quit(save = "no", status = sum(rowSums(result[, c(3L:5L)])))
+quit(save = "no", status = as.integer(!checks_succeeded))
