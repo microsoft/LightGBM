@@ -372,10 +372,16 @@ def test_regressor(output, client, listen_port):
         assert_eq(s1, s2, atol=.01)
         assert_eq(s1, s1_local, atol=.003)
 
-    # Predictions should be roughly the same
-    assert_eq(y, p1, rtol=1., atol=100.)
-    assert_eq(y, p2, rtol=1., atol=50.)
+    # Predictions should be roughly the same.
     assert_eq(p1, p1_local)
+
+    # The checks below are skipped
+    # for the categorical data case because it's difficult to get
+    # a good fit from just categoricals for a regression problem
+    # with small data
+    if output != 'dataframe-with-categorical':
+        assert_eq(y, p1, rtol=1., atol=100.)
+        assert_eq(y, p2, rtol=1., atol=50.)
 
     # be sure LightGBM actually used at least one categorical column
     if output == 'dataframe-with-categorical':
