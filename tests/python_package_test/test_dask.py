@@ -36,7 +36,6 @@ from .utils import make_ranking
 CLIENT_CLOSE_TIMEOUT = 120
 
 data_output = ['array', 'scipy_csr_matrix', 'dataframe', 'dataframe-with-categorical']
-data_output = ['dataframe-with-categorical']
 data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 
@@ -65,11 +64,14 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
         # add target, weight, and group to DataFrame so that partitions abide by group boundaries.
         X_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(X.shape[1])])
         if output == 'dataframe-with-categorical':
-            cat_series = pd.Series(
-                rnd.choice(['a', 'b'], X.shape[0]),
-                dtype='category'
-            )
-            X_df['cat_col'] = cat_series
+            for i in range(5):
+                col_name = "cat_col" + str(i)
+                cat_values = rnd.choice(['a', 'b'], X.shape[0])
+                cat_series = pd.Series(
+                    cat_values,
+                    dtype='category'
+                )
+                X_df[col_name] = cat_series
         X = X_df.copy()
         X_df = X_df.assign(y=y, g=g, w=w)
 
@@ -112,13 +114,7 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
     if objective == 'classification':
         X, y = make_blobs(n_samples=n_samples, centers=centers, random_state=42)
     elif objective == 'regression':
-        # it's difficult to make LightGBM choose a categorical column for splits in a regression
-        # problem on very small data. The code below only generates a single continuous feature,
-        # so that splits from the categorical feature will be chosen
-        if output == 'dataframe-with-categorical':
-            X, y = make_regression(n_samples=n_samples, random_state=42, n_features=1, n_informative=1)
-        else:
-            X, y = make_regression(n_samples=n_samples, random_state=42)
+        X, y = make_regression(n_samples=n_samples, random_state=42, n_informative=2)
     else:
         raise ValueError("Unknown objective '%s'" % objective)
     rnd = np.random.RandomState(42)
@@ -131,17 +127,24 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
     elif output.startswith('dataframe'):
         X_df = pd.DataFrame(X, columns=['feature_%d' % i for i in range(X.shape[1])])
         if output == 'dataframe-with-categorical':
-            if objective == 'regression':
-                cat_values = (y / (y.max() - y.min())) / 0.05
-                cat_values = cat_values.astype('int16').astype('str')
-            else:
+            num_cat_cols = 5
+            for i in range(num_cat_cols):
+                col_name = "cat_col" + str(i)
                 cat_values = rnd.choice(['a', 'b'], X.shape[0])
-            cat_series = pd.Series(
-                cat_values,
-                dtype='category'
-            )
-            X_df['cat_col'] = cat_series
-            X = np.hstack((X, cat_series.cat.codes.values.reshape(-1, 1)))
+                cat_series = pd.Series(
+                    cat_values,
+                    dtype='category'
+                )
+                X_df[col_name] = cat_series
+                X = np.hstack((X, cat_series.cat.codes.values.reshape(-1, 1)))
+
+            # for the small data sizes used in tests, it's hard to get LGBMRegressor to choose
+            # categorical features for splits. So for regression tests with categorical features,
+            # _create_data() returns a DataFrame with ONLY categorical features
+            if objective == 'regression':
+                cat_cols = [col for col in X_df.columns if col.startswith('cat_col')]
+                X_df = X_df[cat_cols]
+                X = X[:, -num_cat_cols:]
         y_df = pd.Series(y, name='target')
         dX = dd.from_pandas(X_df, chunksize=chunk_size)
         dy = dd.from_pandas(y_df, chunksize=chunk_size)
@@ -201,14 +204,9 @@ def test_classifier(output, centers, client, listen_port):
         centers=centers
     )
 
-    # be sure a categorical column was added
-    if output == 'dataframe-with-categorical':
-        assert dX.dtypes['cat_col'].name == 'category'
-
     params = {
         "n_estimators": 10,
         "num_leaves": 10,
-        "min_data_in_leaf": 1
     }
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
@@ -237,10 +235,14 @@ def test_classifier(output, centers, client, listen_port):
     assert_eq(p1_local, p2)
     assert_eq(y, p1_local)
 
-    # be sure LightGBM actually used the categorical column
+    # be sure LightGBM actually used at least one categorical column
     if output == 'dataframe-with-categorical':
+        cat_cols = [
+            col for col in dX.columns
+            if dX.dtypes[col].name == 'category'
+        ]
         tree_df = dask_classifier.booster_.trees_to_dataframe()
-        assert 'cat_col' in tree_df['split_feature'].values
+        assert tree_df['split_feature'].isin(cat_cols).sum() > 0
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -276,10 +278,14 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
     if output == 'scipy_csr_matrix':
         preds_with_contrib = np.array(preds_with_contrib.todense())
 
-    # be sure LightGBM actually used the categorical column
+    # be sure LightGBM actually used at least one categorical column
     if output == 'dataframe-with-categorical':
+        cat_cols = [
+            col for col in dX.columns
+            if dX.dtypes[col].name == 'category'
+        ]
         tree_df = dask_classifier.booster_.trees_to_dataframe()
-        assert 'cat_col' in tree_df['split_feature'].values
+        assert tree_df['split_feature'].isin(cat_cols).sum() > 0
 
     # shape depends on whether it is binary or multiclass classification
     num_features = dask_classifier.n_features_
@@ -336,12 +342,7 @@ def test_regressor(output, client, listen_port):
     X, y, w, dX, dy, dw = _create_data(
         objective='regression',
         output=output,
-        n_samples=1000
     )
-
-    # be sure a categorical column was added
-    if output == 'dataframe-with-categorical':
-        assert dX.dtypes['cat_col'].name == 'category'
 
     params = {
         "random_state": 42,
@@ -377,10 +378,14 @@ def test_regressor(output, client, listen_port):
     assert_eq(y, p2, rtol=1., atol=100.)
     assert_eq(p1, p1_local)
 
-    # be sure LightGBM actually used the categorical column
+    # be sure LightGBM actually used at least one categorical column
     if output == 'dataframe-with-categorical':
+        cat_cols = [
+            col for col in dX.columns
+            if dX.dtypes[col].name == 'category'
+        ]
         tree_df = dask_regressor.booster_.trees_to_dataframe()
-        assert 'cat_col' in tree_df['split_feature'].values
+        assert tree_df['split_feature'].isin(cat_cols).sum() > 0
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -389,13 +394,12 @@ def test_regressor(output, client, listen_port):
 def test_regressor_pred_contrib(output, client, listen_port):
     X, y, w, dX, dy, dw = _create_data(
         objective='regression',
-        output=output
+        output=output,
     )
 
     params = {
-        "n_estimators": 10,
+        "random_state": 42,
         "num_leaves": 10,
-        "min_data_in_leaf": 1
     }
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
@@ -420,10 +424,14 @@ def test_regressor_pred_contrib(output, client, listen_port):
     assert preds_with_contrib.shape[1] == num_features + 1
     assert preds_with_contrib.shape == local_preds_with_contrib.shape
 
-    # be sure LightGBM actually used the categorical column
+    # be sure LightGBM actually used at least one categorical column
     if output == 'dataframe-with-categorical':
+        cat_cols = [
+            col for col in dX.columns
+            if dX.dtypes[col].name == 'category'
+        ]
         tree_df = dask_regressor.booster_.trees_to_dataframe()
-        assert 'cat_col' in tree_df['split_feature'].values
+        assert tree_df['split_feature'].isin(cat_cols).sum() > 0
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -463,10 +471,14 @@ def test_regressor_quantile(output, client, listen_port, alpha):
     np.testing.assert_allclose(q1, alpha, atol=0.2)
     np.testing.assert_allclose(q2, alpha, atol=0.2)
 
-    # be sure LightGBM actually used the categorical column
+    # be sure LightGBM actually used at least one categorical column
     if output == 'dataframe-with-categorical':
+        cat_cols = [
+            col for col in dX.columns
+            if dX.dtypes[col].name == 'category'
+        ]
         tree_df = dask_regressor.booster_.trees_to_dataframe()
-        assert 'cat_col' in tree_df['split_feature'].values
+        assert tree_df['split_feature'].isin(cat_cols).sum() > 0
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -488,10 +500,6 @@ def test_ranker(output, client, listen_port, group):
             output=output,
             group=group,
         )
-
-    # be sure a categorical column was added
-    if output == 'dataframe-with-categorical':
-        assert dX.dtypes['cat_col'].name == 'category'
 
     # rebalance small dask.array dataset for better performance.
     if output == 'array':
@@ -534,10 +542,14 @@ def test_ranker(output, client, listen_port, group):
     assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.8
     assert_eq(rnkvec_dask, rnkvec_dask_local)
 
-    # be sure LightGBM actually used the categorical column
+    # be sure LightGBM actually used at least one categorical column
     if output == 'dataframe-with-categorical':
+        cat_cols = [
+            col for col in dX.columns
+            if dX.dtypes[col].name == 'category'
+        ]
         tree_df = dask_ranker.booster_.trees_to_dataframe()
-        assert 'cat_col' in tree_df['split_feature'].values
+        assert tree_df['split_feature'].isin(cat_cols).sum() > 0
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
