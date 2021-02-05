@@ -830,7 +830,7 @@ def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except
 
 @pytest.mark.parametrize(
     "methods",
-    [   
+    [
         (lgb.DaskLGBMClassifier.fit, lgb.LGBMClassifier.fit),
         (lgb.DaskLGBMClassifier.predict, lgb.LGBMClassifier.predict),
 
@@ -847,5 +847,6 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
     sklearn_spec = inspect.getfullargspec(methods[1])
 
     # checks for a sublist in sklearn's kwargs which matches dask's
-    assert any(sklearn_spec.args[i : i + len(dask_spec.args)] == dask_spec.args for i in range(len(sklearn_spec.args) - len(dask_spec.args) + 1)) is True
-    assert any(sklearn_spec.defaults[i : i + len(dask_spec.defaults)] == dask_spec.defaults for i in range(len(sklearn_spec.defaults) - len(dask_spec.defaults) + 1)) is True
+    assert dark_spec.args is not None and sklearn_spec.args is not None
+    assert any(sklearn_spec.args[i: i + len(dask_spec.args)] == dask_spec.args for i in range(len(sklearn_spec.args) - len(dask_spec.args) + 1)) is True
+    assert any(sklearn_spec.defaults[i: i + len(dask_spec.defaults)] == dask_spec.defaults for i in range(len(sklearn_spec.defaults) - len(dask_spec.defaults) + 1)) is True
