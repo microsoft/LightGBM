@@ -372,7 +372,7 @@ def _predict_part(
         )
 
     if isinstance(part, pd_DataFrame):
-        if pred_proba or pred_contrib:
+        if pred_proba or pred_contrib or pred_leaf:
             result = pd_DataFrame(result, index=part.index)
         else:
             result = pd_Series(result, index=part.index, name='predictions')

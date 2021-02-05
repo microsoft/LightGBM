@@ -189,6 +189,7 @@ def test_classifier(output, centers, client, listen_port):
     dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
     p1 = dask_classifier.predict(dX)
     p1_proba = dask_classifier.predict_proba(dX).compute()
+    p1_pred_leaf = dask_classifier.predict(dX, pred_leaf=True)
     p1_local = dask_classifier.to_local().predict(X)
     s1 = _accuracy_score(dy, p1)
     p1 = p1.compute()
@@ -197,6 +198,7 @@ def test_classifier(output, centers, client, listen_port):
     local_classifier.fit(X, y, sample_weight=w)
     p2 = local_classifier.predict(X)
     p2_proba = local_classifier.predict_proba(X)
+    p2_pred_leaf = local_classifier.predict(X, pred_leaf=True)
     s2 = local_classifier.score(X, y)
 
     assert_eq(s1, s2)
@@ -206,6 +208,16 @@ def test_classifier(output, centers, client, listen_port):
     assert_eq(p1_proba, p2_proba, atol=0.3)
     assert_eq(p1_local, p2)
     assert_eq(y, p1_local)
+
+    num_trees = dask_classifier.booster_.num_trees()
+    pred_leaf_shape = (X.shape[0], num_trees)
+    assert p1_pred_leaf.compute().shape == pred_leaf_shape
+    assert p2_pred_leaf.shape == pred_leaf_shape
+
+    # pref_leaf outputs should look like valid tree indices
+    assert np.max(p1_pred_leaf.compute()) <= num_trees
+    assert np.min(p1_pred_leaf.compute()) >= 0
+    assert p1_pred_leaf.compute().dtype in [np.int32, np.int64]
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -310,6 +322,7 @@ def test_regressor(output, client, listen_port):
     )
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw)
     p1 = dask_regressor.predict(dX)
+    p1_pred_leaf = dask_regressor.predict(dX, pred_leaf=True)
     if output != 'dataframe':
         s1 = _r2_score(dy, p1)
     p1 = p1.compute()
@@ -320,6 +333,7 @@ def test_regressor(output, client, listen_port):
     local_regressor.fit(X, y, sample_weight=w)
     s2 = local_regressor.score(X, y)
     p2 = local_regressor.predict(X)
+    p2_pred_leaf = local_regressor.predict(X, pred_leaf=True)
 
     # Scores should be the same
     if output != 'dataframe':
@@ -330,6 +344,17 @@ def test_regressor(output, client, listen_port):
     assert_eq(y, p1, rtol=1., atol=100.)
     assert_eq(y, p2, rtol=1., atol=50.)
     assert_eq(p1, p1_local)
+
+    num_trees = dask_regressor.booster_.num_trees()
+    pred_leaf_shape = (X.shape[0], num_trees)
+    assert p1_pred_leaf.compute().shape == pred_leaf_shape
+    assert p2_pred_leaf.shape == pred_leaf_shape
+
+    # pref_leaf outputs should look like valid tree indices
+    pred_leaf_vals = p1_pred_leaf.compute()
+    assert np.max(pred_leaf_vals) <= params['num_leaves']
+    assert np.min(pred_leaf_vals) >= 0
+    assert len(np.unique(pred_leaf_vals)) <= num_trees * params['num_leaves']
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
