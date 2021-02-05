@@ -833,10 +833,8 @@ def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except
     [
         (lgb.DaskLGBMClassifier.fit, lgb.LGBMClassifier.fit),
         (lgb.DaskLGBMClassifier.predict, lgb.LGBMClassifier.predict),
-
         (lgb.DaskLGBMRegressor.fit, lgb.LGBMRegressor.fit),
         (lgb.DaskLGBMRegressor.predict, lgb.LGBMRegressor.predict),
-
         (lgb.DaskLGBMRanker.fit, lgb.LGBMRanker.fit),
         (lgb.DaskLGBMRanker.predict, lgb.LGBMRanker.predict)
 
@@ -845,10 +843,13 @@ def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except
 def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
     dask_spec = inspect.getfullargspec(methods[0])
     sklearn_spec = inspect.getfullargspec(methods[1])
-
-    # checks for a sublist in sklearn's kwargs which matches dask's
-    if dask_spec.args is not None and sklearn_spec.args is not None:
-        assert any(sklearn_spec.args[i: i + len(dask_spec.args)] == dask_spec.args for i in range(len(sklearn_spec.args) - len(dask_spec.args) + 1)) is True
-
-    if dask_spec.defaults is not None and sklearn_spec.defaults is not None:
-        assert any(sklearn_spec.defaults[i: i + len(dask_spec.defaults)] == dask_spec.defaults for i in range(len(sklearn_spec.defaults) - len(dask_spec.defaults) + 1)) is True
+    num_dask_args = len(dask_spec.args)
+    dask_params = inspect.signature(methods[0]).parameters
+    sklearn_params = inspect.signature(methods[1]).parameters
+    assert dask_spec.args == sklearn_spec.args[:num_dask_args]
+    assert dask_spec.defaults == sklearn_spec.defaults[:num_dask_args]
+    assert dask_spec.varargs == sklearn_spec.varargs[:num_dask_args]
+    assert dask_spec.varkw == sklearn_spec.varkw[:num_dask_args]
+    assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs[:num_dask_args]
+    assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults[:num_dask_args]
+    assert all([dask_params[key].default == sklearn_params[key].default for key in dask_params]) is True
