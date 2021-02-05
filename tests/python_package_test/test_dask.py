@@ -831,13 +831,13 @@ def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except
 @pytest.mark.parametrize(
     "methods",
     [   
-        (lgb.DaskLGBMClassifier.fit, lgb.LGBMClassifier.fit)
-        (lgb.DaskLGBMClassifier.predict, lgb.LGBMClassifier.predict)
+        (lgb.DaskLGBMClassifier.fit, lgb.LGBMClassifier.fit),
+        (lgb.DaskLGBMClassifier.predict, lgb.LGBMClassifier.predict),
 
-        (lgb.DaskLGBMRegressor.fit, lgb.LGBMRegressor.fit)
-        (lgb.DaskLGBMRegressor.predict, lgb.LGBMRegressor.predict)
+        (lgb.DaskLGBMRegressor.fit, lgb.LGBMRegressor.fit),
+        (lgb.DaskLGBMRegressor.predict, lgb.LGBMRegressor.predict),
 
-        (lgb.DaskLGBMRanker.fit, lgb.LGBMRanker.fit)
+        (lgb.DaskLGBMRanker.fit, lgb.LGBMRanker.fit),
         (lgb.DaskLGBMRanker.predict, lgb.LGBMRanker.predict)
 
     ]
