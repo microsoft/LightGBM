@@ -37,20 +37,18 @@ jobs:
       - name: Run tests on Solaris
         shell: bash
         run: |
-          #sh build-cran-package.sh || exit -1
-          #LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
-          #apt-get install --no-install-recommends -y \
-          #    libcurl4-openssl-dev \
-          #    libxml2-dev \
-          #    libssl-dev
-          #check_succeeded="yes"
-          #log_file="$GITHUB_WORKSPACE/rhub_logs.txt"
-          #Rscript $GITHUB_WORKSPACE/.ci/run_rhub_solaris_checks.R "$(pwd)/lightgbm_${LGB_VERSION}.tar.gz" $log_file || check_succeeded="no"
-          #cat $log_file || true
-          #if [[ $check_succeeded == "no" ]]; then
-          #    exit -1
-          #fi
-          exit -1
+          sh build-cran-package.sh || exit -1
+          LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
+          apt-get install --no-install-recommends -y \
+              libcurl4-openssl-dev \
+              libxml2-dev \
+              libssl-dev
+          check_succeeded="yes"
+          log_file="$GITHUB_WORKSPACE/rhub_logs.txt"
+          Rscript $GITHUB_WORKSPACE/.ci/run_rhub_solaris_checks.R "$(pwd)/lightgbm_${LGB_VERSION}.tar.gz" $log_file || check_succeeded="no"
+          if [[ $check_succeeded == "no" ]]; then
+              exit -1
+          fi
       - name: Send final status
         if: ${{ always() }}
         run: |
