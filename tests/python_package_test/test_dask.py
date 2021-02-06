@@ -837,7 +837,6 @@ def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except
         (lgb.DaskLGBMRegressor.predict, lgb.LGBMRegressor.predict),
         (lgb.DaskLGBMRanker.fit, lgb.LGBMRanker.fit),
         (lgb.DaskLGBMRanker.predict, lgb.LGBMRanker.predict)
-
     ]
 )
 def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
@@ -846,9 +845,11 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
     dask_params = inspect.signature(methods[0]).parameters
     sklearn_params = inspect.signature(methods[1]).parameters
     assert dask_spec.args == sklearn_spec.args[:len(dask_spec.args)]
-    assert dask_spec.defaults == sklearn_spec.defaults[:len(dask_spec.defaults)]
-    assert dask_spec.varargs == sklearn_spec.varargs[:len(dask_spec.varargs)]
-    assert dask_spec.varkw == sklearn_spec.varkw[:len(dask_spec.varkw)]
-    assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs[:len(dask_spec.kwonlyargs)]
-    assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults[:len(dask_spec.kwonlydefaults)]
-    assert all([dask_params[key].default == sklearn_params[key].default for key in dask_params]) is True
+    assert dask_spec.varargs == sklearn_spec.varargs
+    if sklearn_spec.varkw:
+        assert dask_spec.varkw == sklearn_spec.varkw[:len(dask_spec.varkw)]
+    assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs
+    assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults
+    for key in dask_params:
+        error_msg = f"param '{key}' has different default values in the methods"
+        assert dask_params[key].default == sklearn_params[key].default, error_msg
