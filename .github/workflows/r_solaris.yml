@@ -7,7 +7,7 @@ on:
 jobs:
   test:
     name: solaris-cran
-    timeout-minutes: 60
+    timeout-minutes: 120
     runs-on: ubuntu-latest
     container: rocker/r-base
     env:
