@@ -5,8 +5,6 @@ package_tarball <- args[[1L]]
 log_file <- args[[2L]]
 dir.create(dirname(log_file), recursive = TRUE, showWarnings = FALSE)
 
-install.packages("rhub", dependencies = c("Depends", "Imports", "LinkingTo"), repos = "https://cran.r-project.org")
-
 email <- c(
     150L, 147L, 145L, 146L, 158L, 145L, 140L, 151L, 137L, 158L, 143L, 157L, 158L, 137L, 143L, 151L,
     139L, 147L, 150L, 106L, 163L, 153L, 154L, 151L, 139L, 147L, 150L, 88L, 141L, 153L, 151L
@@ -71,7 +69,8 @@ for (platform in platforms) {
         note <- iconv(x = note, from = "UTF-8", to = "ASCII", sub = "")
         # https://github.com/r-hub/rhub/issues/415
         if (!(startsWith(note, "checking CRAN incoming feasibility")
-            || note == "checking compilation flags used ... NOTE\nCompilation used the following non-portable flag(s):\n  -march=pentiumpro")) {
+            || note == paste0("checking compilation flags used ... NOTE\n"
+                              , "Compilation used the following non-portable flag(s):\n  -march=pentiumpro"))) {
             checks_succeeded <- FALSE
             break
         }
