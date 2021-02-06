@@ -43,12 +43,8 @@ jobs:
               libcurl4-openssl-dev \
               libxml2-dev \
               libssl-dev
-          check_succeeded="yes"
           log_file="$GITHUB_WORKSPACE/rhub_logs.txt"
-          Rscript $GITHUB_WORKSPACE/.ci/run_rhub_solaris_checks.R "$(pwd)/lightgbm_${LGB_VERSION}.tar.gz" $log_file || check_succeeded="no"
-          if [[ $check_succeeded == "no" ]]; then
-              exit -1
-          fi
+          Rscript $GITHUB_WORKSPACE/.ci/run_rhub_solaris_checks.R "$(pwd)/lightgbm_${LGB_VERSION}.tar.gz" $log_file || exit -1
       - name: Send final status
         if: ${{ always() }}
         run: |
