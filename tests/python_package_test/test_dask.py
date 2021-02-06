@@ -208,6 +208,12 @@ def test_classifier(output, centers, client, listen_port):
         "n_estimators": 10,
         "num_leaves": 10
     }
+
+    if output == 'dataframe-with-categorical':
+        params["categorical_feature"] = [
+            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
+        ]
+
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
         time_out=5,
@@ -235,14 +241,17 @@ def test_classifier(output, centers, client, listen_port):
     assert_eq(p1_local, p2)
     assert_eq(y, p1_local)
 
-    # be sure LightGBM actually used at least one categorical column
+    # be sure LightGBM actually used at least one categorical column,
+    # and that it was correctly treated as a categorical feature
     if output == 'dataframe-with-categorical':
         cat_cols = [
             col for col in dX.columns
             if dX.dtypes[col].name == 'category'
         ]
         tree_df = dask_classifier.booster_.trees_to_dataframe()
-        assert tree_df['split_feature'].isin(cat_cols).sum() > 0
+        node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
+        assert node_uses_cat_col.sum() > 0
+        assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -260,6 +269,12 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
         "n_estimators": 10,
         "num_leaves": 10
     }
+
+    if output == 'dataframe-with-categorical':
+        params["categorical_feature"] = [
+            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
+        ]
+
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
         time_out=5,
@@ -277,14 +292,17 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
     if output == 'scipy_csr_matrix':
         preds_with_contrib = np.array(preds_with_contrib.todense())
 
-    # be sure LightGBM actually used at least one categorical column
+    # be sure LightGBM actually used at least one categorical column,
+    # and that it was correctly treated as a categorical feature
     if output == 'dataframe-with-categorical':
         cat_cols = [
             col for col in dX.columns
             if dX.dtypes[col].name == 'category'
         ]
         tree_df = dask_classifier.booster_.trees_to_dataframe()
-        assert tree_df['split_feature'].isin(cat_cols).sum() > 0
+        node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
+        assert node_uses_cat_col.sum() > 0
+        assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
     # shape depends on whether it is binary or multiclass classification
     num_features = dask_classifier.n_features_
@@ -347,6 +365,12 @@ def test_regressor(output, client, listen_port):
         "random_state": 42,
         "num_leaves": 10
     }
+
+    if output == 'dataframe-with-categorical':
+        params["categorical_feature"] = [
+            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
+        ]
+
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         time_out=5,
@@ -383,14 +407,17 @@ def test_regressor(output, client, listen_port):
         assert_eq(y, p1, rtol=1., atol=100.)
         assert_eq(y, p2, rtol=1., atol=50.)
 
-    # be sure LightGBM actually used at least one categorical column
+    # be sure LightGBM actually used at least one categorical column,
+    # and that it was correctly treated as a categorical feature
     if output == 'dataframe-with-categorical':
         cat_cols = [
             col for col in dX.columns
             if dX.dtypes[col].name == 'category'
         ]
         tree_df = dask_regressor.booster_.trees_to_dataframe()
-        assert tree_df['split_feature'].isin(cat_cols).sum() > 0
+        node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
+        assert node_uses_cat_col.sum() > 0
+        assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -406,6 +433,12 @@ def test_regressor_pred_contrib(output, client, listen_port):
         "n_estimators": 10,
         "num_leaves": 10
     }
+
+    if output == 'dataframe-with-categorical':
+        params["categorical_feature"] = [
+            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
+        ]
+
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         time_out=5,
@@ -429,14 +462,17 @@ def test_regressor_pred_contrib(output, client, listen_port):
     assert preds_with_contrib.shape[1] == num_features + 1
     assert preds_with_contrib.shape == local_preds_with_contrib.shape
 
-    # be sure LightGBM actually used at least one categorical column
+    # be sure LightGBM actually used at least one categorical column,
+    # and that it was correctly treated as a categorical feature
     if output == 'dataframe-with-categorical':
         cat_cols = [
             col for col in dX.columns
             if dX.dtypes[col].name == 'category'
         ]
         tree_df = dask_regressor.booster_.trees_to_dataframe()
-        assert tree_df['split_feature'].isin(cat_cols).sum() > 0
+        node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
+        assert node_uses_cat_col.sum() > 0
+        assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -456,6 +492,12 @@ def test_regressor_quantile(output, client, listen_port, alpha):
         "n_estimators": 10,
         "num_leaves": 10
     }
+
+    if output == 'dataframe-with-categorical':
+        params["categorical_feature"] = [
+            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
+        ]
+
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         local_listen_port=listen_port,
@@ -475,14 +517,17 @@ def test_regressor_quantile(output, client, listen_port, alpha):
     np.testing.assert_allclose(q1, alpha, atol=0.2)
     np.testing.assert_allclose(q2, alpha, atol=0.2)
 
-    # be sure LightGBM actually used at least one categorical column
+    # be sure LightGBM actually used at least one categorical column,
+    # and that it was correctly treated as a categorical feature
     if output == 'dataframe-with-categorical':
         cat_cols = [
             col for col in dX.columns
             if dX.dtypes[col].name == 'category'
         ]
         tree_df = dask_regressor.booster_.trees_to_dataframe()
-        assert tree_df['split_feature'].isin(cat_cols).sum() > 0
+        node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
+        assert node_uses_cat_col.sum() > 0
+        assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -521,6 +566,12 @@ def test_ranker(output, client, listen_port, group):
         "num_leaves": 20,
         "min_child_samples": 1
     }
+
+    if output == 'dataframe-with-categorical':
+        params["categorical_feature"] = [
+            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
+        ]
+
     dask_ranker = lgb.DaskLGBMRanker(
         client=client,
         time_out=5,
@@ -544,14 +595,17 @@ def test_ranker(output, client, listen_port, group):
     assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.8
     assert_eq(rnkvec_dask, rnkvec_dask_local)
 
-    # be sure LightGBM actually used at least one categorical column
+    # be sure LightGBM actually used at least one categorical column,
+    # and that it was correctly treated as a categorical feature
     if output == 'dataframe-with-categorical':
         cat_cols = [
             col for col in dX.columns
             if dX.dtypes[col].name == 'category'
         ]
         tree_df = dask_ranker.booster_.trees_to_dataframe()
-        assert tree_df['split_feature'].isin(cat_cols).sum() > 0
+        node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
+        assert node_uses_cat_col.sum() > 0
+        assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
