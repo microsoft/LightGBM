@@ -350,13 +350,12 @@ def _predict_part(
     pred_contrib: bool,
     **kwargs: Any
 ) -> _DaskPart:
-    data = part.values if isinstance(part, pd_DataFrame) else part
 
-    if data.shape[0] == 0:
+    if part.shape[0] == 0:
         result = np.array([])
     elif pred_proba:
         result = model.predict_proba(
-            data,
+            part,
             raw_score=raw_score,
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,
@@ -364,13 +363,14 @@ def _predict_part(
         )
     else:
         result = model.predict(
-            data,
+            part,
             raw_score=raw_score,
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,
             **kwargs
         )
 
+    # dask.DataFrame.map_partitions() expects each call to return a pandas DataFrame or Series
     if isinstance(part, pd_DataFrame):
         if pred_proba or pred_contrib:
             result = pd_DataFrame(result, index=part.index)
@@ -710,7 +710,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
-        client: Optional[Client] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
