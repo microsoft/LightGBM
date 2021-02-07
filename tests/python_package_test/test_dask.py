@@ -852,5 +852,5 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
     assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs
     assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults
     for param in dask_spec.args:
-        error_msg = f"param '{key}' has different default values in the methods"
+        error_msg = f"param '{param}' has different default values in the methods"
         assert dask_params[param].default == sklearn_params[param].default, error_msg
