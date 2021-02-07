@@ -244,11 +244,11 @@ def test_classifier(output, centers, client, listen_port):
 
     # pref_leaf values should have the right shape
     # and values that look like valid tree nodes
-    assert p1_pred_leaf.compute().shape == (
+    pred_leaf_vals = p1_pred_leaf.compute()
+    assert pred_leaf_vals.shape == (
         X.shape[0],
         dask_classifier.booster_.num_trees()
     )
-    pred_leaf_vals = p1_pred_leaf.compute()
     assert np.max(pred_leaf_vals) <= params['num_leaves']
     assert np.min(pred_leaf_vals) >= 0
     assert len(np.unique(pred_leaf_vals)) <= params['num_leaves']
@@ -415,11 +415,11 @@ def test_regressor(output, client, listen_port):
 
     # pref_leaf values should have the right shape
     # and values that look like valid tree nodes
-    assert p1_pred_leaf.compute().shape == (
+    pred_leaf_vals = p1_pred_leaf.compute()
+    assert pred_leaf_vals.shape == (
         X.shape[0],
         dask_regressor.booster_.num_trees()
     )
-    pred_leaf_vals = p1_pred_leaf.compute()
     assert np.max(pred_leaf_vals) <= params['num_leaves']
     assert np.min(pred_leaf_vals) >= 0
     assert len(np.unique(pred_leaf_vals)) <= params['num_leaves']
@@ -623,11 +623,11 @@ def test_ranker(output, client, listen_port, group):
 
     # pref_leaf values should have the right shape
     # and values that look like valid tree nodes
-    assert p1_pred_leaf.compute().shape == (
+    pred_leaf_vals = p1_pred_leaf.compute()
+    assert pred_leaf_vals.shape == (
         X.shape[0],
         dask_ranker.booster_.num_trees()
     )
-    pred_leaf_vals = p1_pred_leaf.compute()
     assert np.max(pred_leaf_vals) <= params['num_leaves']
     assert np.min(pred_leaf_vals) >= 0
     assert len(np.unique(pred_leaf_vals)) <= params['num_leaves']
