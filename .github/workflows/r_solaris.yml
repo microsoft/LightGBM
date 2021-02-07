@@ -55,7 +55,7 @@ jobs:
               url=${line#*@}
               body="${body}${platform}: ${url}\r\n"
           done < "$GITHUB_WORKSPACE/rhub_logs.txt" || true
-          body="${body}Reports also have been sent to LightGBM public e-mail: http://www.yopmail.com/lightgbm_test_email\r\n"
+          body="${body}Reports also have been sent to LightGBM public e-mail: http://www.yopmail.com/lightgbm_rhub_checks\r\n"
           body="${body}Status: ${{ job.status }}."
           $GITHUB_WORKSPACE/.ci/append_comment.sh \
             "${{ github.event.client_payload.comment_number }}" \
