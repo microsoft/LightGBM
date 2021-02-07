@@ -11,7 +11,7 @@ email <- c(
 )
 rhub::validate_email(
     email = intToUtf8(email - 42L)
-    , token = "6bc89147c8fc4824bce09f8454e4ab8e"
+    , token = "181dd96184924f0aaea19d73f9ae7974"
 )
 
 if (Sys.info()["sysname"] == "Windows") {
