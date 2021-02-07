@@ -7,7 +7,7 @@ about: Something isn't working as expected? Here is the right place to report.
 <!-- A clear description of the bug -->
 
 ## Reproducible example
-<!-- Minimal code that exhibits this behavior.-->
+<!-- Minimal code that exhibits this behavior -->
 
 ## Environment info
 
