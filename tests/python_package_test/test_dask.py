@@ -243,15 +243,20 @@ def test_classifier(output, centers, client, listen_port):
     assert_eq(p1_local, p2)
     assert_eq(y, p1_local)
 
+    # pred leaf outputs should have the right shape
     num_trees = dask_classifier.booster_.num_trees()
-    pred_leaf_shape = (X.shape[0], num_trees)
-    assert p1_pred_leaf.compute().shape == pred_leaf_shape
-    assert p2_pred_leaf.shape == pred_leaf_shape
+    assert p1_pred_leaf.compute().shape == (
+        num_rows,
+        dask_classifier.booster_.num_trees()
+    )
+    assert p2_pred_leaf.compute().shape == (
+        num_rows,
+        local_classifier.booster_.num_trees()
+    )
 
     # pref_leaf outputs should look like valid tree indices
-    assert np.max(p1_pred_leaf.compute()) <= num_trees
+    assert np.max(p1_pred_leaf.compute()) <= params['num_leaves']
     assert np.min(p1_pred_leaf.compute()) >= 0
-    assert p1_pred_leaf.compute().dtype in [np.int32, np.int64]
 
     # be sure LightGBM actually used at least one categorical column,
     # and that it was correctly treated as a categorical feature
@@ -414,16 +419,20 @@ def test_regressor(output, client, listen_port):
     # Predictions should be roughly the same.
     assert_eq(p1, p1_local)
 
+    # pred leaf outputs should have the right shape
     num_trees = dask_regressor.booster_.num_trees()
-    pred_leaf_shape = (X.shape[0], num_trees)
-    assert p1_pred_leaf.compute().shape == pred_leaf_shape
-    assert p2_pred_leaf.shape == pred_leaf_shape
+    assert p1_pred_leaf.compute().shape == (
+        num_rows,
+        dask_regressor.booster_.num_trees()
+    )
+    assert p2_pred_leaf.compute().shape == (
+        num_rows,
+        local_regressor.booster_.num_trees()
+    )
 
     # pref_leaf outputs should look like valid tree indices
-    pred_leaf_vals = p1_pred_leaf.compute()
-    assert np.max(pred_leaf_vals) <= params['num_leaves']
-    assert np.min(pred_leaf_vals) >= 0
-    assert len(np.unique(pred_leaf_vals)) <= num_trees * params['num_leaves']
+    assert np.max(p1_pred_leaf.compute()) <= params['num_leaves']
+    assert np.min(p1_pred_leaf.compute()) >= 0
 
     # The checks below are skipped
     # for the categorical data case because it's difficult to get
