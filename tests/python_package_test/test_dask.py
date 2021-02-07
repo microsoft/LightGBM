@@ -244,19 +244,21 @@ def test_classifier(output, centers, client, listen_port):
     assert_eq(y, p1_local)
 
     # pred leaf outputs should have the right shape
-    num_trees = dask_classifier.booster_.num_trees()
+    num_rows = X.shape[0]
     assert p1_pred_leaf.compute().shape == (
         num_rows,
         dask_classifier.booster_.num_trees()
     )
-    assert p2_pred_leaf.compute().shape == (
+    assert p2_pred_leaf.shape == (
         num_rows,
         local_classifier.booster_.num_trees()
     )
 
-    # pref_leaf outputs should look like valid tree indices
-    assert np.max(p1_pred_leaf.compute()) <= params['num_leaves']
-    assert np.min(p1_pred_leaf.compute()) >= 0
+    # pref_leaf values should look like valid tree nodes
+    pred_leaf_vals = p1_pred_leaf.compute()
+    assert np.max(pred_leaf_vals) <= params['num_leaves']
+    assert np.min(pred_leaf_vals) >= 0
+    assert len(np.unique(pred_leaf_vals)) <= params['num_leaves']
 
     # be sure LightGBM actually used at least one categorical column,
     # and that it was correctly treated as a categorical feature
@@ -268,7 +270,7 @@ def test_classifier(output, centers, client, listen_port):
         tree_df = dask_classifier.booster_.trees_to_dataframe()
         node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
         assert node_uses_cat_col.sum() > 0
-        assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='r
+        assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -420,19 +422,21 @@ def test_regressor(output, client, listen_port):
     assert_eq(p1, p1_local)
 
     # pred leaf outputs should have the right shape
-    num_trees = dask_regressor.booster_.num_trees()
+    num_rows = X.shape[0]
     assert p1_pred_leaf.compute().shape == (
         num_rows,
         dask_regressor.booster_.num_trees()
     )
-    assert p2_pred_leaf.compute().shape == (
+    assert p2_pred_leaf.shape == (
         num_rows,
         local_regressor.booster_.num_trees()
     )
 
-    # pref_leaf outputs should look like valid tree indices
-    assert np.max(p1_pred_leaf.compute()) <= params['num_leaves']
-    assert np.min(p1_pred_leaf.compute()) >= 0
+    # pref_leaf values should look like valid tree nodes
+    pred_leaf_vals = p1_pred_leaf.compute()
+    assert np.max(pred_leaf_vals) <= params['num_leaves']
+    assert np.min(pred_leaf_vals) >= 0
+    assert len(np.unique(pred_leaf_vals)) <= params['num_leaves']
 
     # The checks below are skipped
     # for the categorical data case because it's difficult to get
@@ -617,11 +621,13 @@ def test_ranker(output, client, listen_port, group):
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg)
     rnkvec_dask = dask_ranker.predict(dX)
     rnkvec_dask = rnkvec_dask.compute()
+    p1_pred_leaf = dask_ranker.predict(dX, pred_leaf=True)
     rnkvec_dask_local = dask_ranker.to_local().predict(X)
 
     local_ranker = lgb.LGBMRanker(**params)
     local_ranker.fit(X, y, sample_weight=w, group=g)
     rnkvec_local = local_ranker.predict(X)
+    p2_pred_leaf = local_ranker.predict(X, pred_leaf=True)
 
     # distributed ranker should be able to rank decently well and should
     # have high rank correlation with scores from serial ranker.
@@ -629,6 +635,23 @@ def test_ranker(output, client, listen_port, group):
     assert dcor > 0.6
     assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.8
     assert_eq(rnkvec_dask, rnkvec_dask_local)
+
+    # pred leaf outputs should have the right shape
+    num_rows = X.shape[0]
+    assert p1_pred_leaf.compute().shape == (
+        num_rows,
+        dask_ranker.booster_.num_trees()
+    )
+    assert p2_pred_leaf.shape == (
+        num_rows,
+        local_ranker.booster_.num_trees()
+    )
+
+    # pref_leaf values should look like valid tree nodes
+    pred_leaf_vals = p1_pred_leaf.compute()
+    assert np.max(pred_leaf_vals) <= params['num_leaves']
+    assert np.min(pred_leaf_vals) >= 0
+    assert len(np.unique(pred_leaf_vals)) <= params['num_leaves']
 
     # be sure LightGBM actually used at least one categorical column,
     # and that it was correctly treated as a categorical feature
