@@ -6,8 +6,8 @@ log_file <- args[[2L]]
 dir.create(dirname(log_file), recursive = TRUE, showWarnings = FALSE)
 
 email <- c(
-    150L, 147L, 145L, 146L, 158L, 145L, 140L, 151L, 137L, 158L, 143L, 157L, 158L, 137L, 143L, 151L,
-    139L, 147L, 150L, 106L, 163L, 153L, 154L, 151L, 139L, 147L, 150L, 88L, 141L, 153L, 151L
+    150L, 147L, 145L, 146L, 158L, 145L, 140L, 151L, 137L, 156L, 146L, 159L, 140L, 137L, 141L, 146L,
+    143L, 141L, 149L, 157L, 106L, 163L, 153L, 154L, 151L, 139L, 147L, 150L, 88L, 141L, 153L, 151L
 )
 rhub::validate_email(
     email = intToUtf8(email - 42L)
