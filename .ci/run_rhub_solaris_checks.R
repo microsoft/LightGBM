@@ -13,22 +13,26 @@ token = c(
     91L, 98L, 91L, 142L, 142L, 99L, 96L, 91L, 98L, 94L, 99L, 92L, 94L, 144L, 90L, 139L,
     139L, 143L, 139L, 91L, 99L, 142L, 97L, 93L, 144L, 99L, 139L, 143L, 97L, 99L, 97L, 94L
 )
-rhub::validate_email(
-    email = intToUtf8(email - 42L)
-    , token = intToUtf8(token - 42L)
-)
 
 if (Sys.info()["sysname"] == "Windows") {
     null_file <- "NUL"
 } else {
     null_file <- "/dev/null"
 }
+
 sink(file = null_file)
+rhub::validate_email(
+    email = intToUtf8(email - 42L)
+    , token = intToUtf8(token - 42L)
+)
+sink()
+
 checks_succeeded <- TRUE
 platforms <- c(
     "solaris-x86-patched"
     , "solaris-x86-patched-ods"
 )
+sink(file = null_file)
 for (platform in platforms) {
     res_object <- rhub::check(
         path = package_tarball
