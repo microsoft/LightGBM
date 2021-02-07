@@ -69,8 +69,8 @@ for (platform in platforms) {
         note <- iconv(x = note, from = "UTF-8", to = "ASCII", sub = "")
         # https://github.com/r-hub/rhub/issues/415
         if (!(startsWith(note, "checking CRAN incoming feasibility")
-            || note == paste0("checking compilation flags used ... NOTE\n"
-                              , "Compilation used the following non-portable flag(s):\n  -march=pentiumpro"))) {
+              || note == paste0("checking compilation flags used ... NOTE\n"
+                                , "Compilation used the following non-portable flag(s):\n  -march=pentiumpro"))) {
             checks_succeeded <- FALSE
             break
         }
