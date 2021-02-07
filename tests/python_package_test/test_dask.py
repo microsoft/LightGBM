@@ -232,7 +232,6 @@ def test_classifier(output, centers, client, listen_port):
     local_classifier.fit(X, y, sample_weight=w)
     p2 = local_classifier.predict(X)
     p2_proba = local_classifier.predict_proba(X)
-    p2_pred_leaf = local_classifier.predict(X, pred_leaf=True)
     s2 = local_classifier.score(X, y)
 
     assert_eq(s1, s2)
@@ -243,18 +242,12 @@ def test_classifier(output, centers, client, listen_port):
     assert_eq(p1_local, p2)
     assert_eq(y, p1_local)
 
-    # pred leaf outputs should have the right shape
-    num_rows = X.shape[0]
+    # pref_leaf values should have the right shape
+    # and values that look like valid tree nodes
     assert p1_pred_leaf.compute().shape == (
-        num_rows,
+        X.shape[0],
         dask_classifier.booster_.num_trees()
     )
-    assert p2_pred_leaf.shape == (
-        num_rows,
-        local_classifier.booster_.num_trees()
-    )
-
-    # pref_leaf values should look like valid tree nodes
     pred_leaf_vals = p1_pred_leaf.compute()
     assert np.max(pred_leaf_vals) <= params['num_leaves']
     assert np.min(pred_leaf_vals) >= 0
@@ -411,7 +404,6 @@ def test_regressor(output, client, listen_port):
     local_regressor.fit(X, y, sample_weight=w)
     s2 = local_regressor.score(X, y)
     p2 = local_regressor.predict(X)
-    p2_pred_leaf = local_regressor.predict(X, pred_leaf=True)
 
     # Scores should be the same
     if not output.startswith('dataframe'):
@@ -421,18 +413,12 @@ def test_regressor(output, client, listen_port):
     # Predictions should be roughly the same.
     assert_eq(p1, p1_local)
 
-    # pred leaf outputs should have the right shape
-    num_rows = X.shape[0]
+    # pref_leaf values should have the right shape
+    # and values that look like valid tree nodes
     assert p1_pred_leaf.compute().shape == (
-        num_rows,
+        X.shape[0],
         dask_regressor.booster_.num_trees()
     )
-    assert p2_pred_leaf.shape == (
-        num_rows,
-        local_regressor.booster_.num_trees()
-    )
-
-    # pref_leaf values should look like valid tree nodes
     pred_leaf_vals = p1_pred_leaf.compute()
     assert np.max(pred_leaf_vals) <= params['num_leaves']
     assert np.min(pred_leaf_vals) >= 0
@@ -627,7 +613,6 @@ def test_ranker(output, client, listen_port, group):
     local_ranker = lgb.LGBMRanker(**params)
     local_ranker.fit(X, y, sample_weight=w, group=g)
     rnkvec_local = local_ranker.predict(X)
-    p2_pred_leaf = local_ranker.predict(X, pred_leaf=True)
 
     # distributed ranker should be able to rank decently well and should
     # have high rank correlation with scores from serial ranker.
@@ -636,18 +621,12 @@ def test_ranker(output, client, listen_port, group):
     assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.8
     assert_eq(rnkvec_dask, rnkvec_dask_local)
 
-    # pred leaf outputs should have the right shape
-    num_rows = X.shape[0]
+    # pref_leaf values should have the right shape
+    # and values that look like valid tree nodes
     assert p1_pred_leaf.compute().shape == (
-        num_rows,
+        X.shape[0],
         dask_ranker.booster_.num_trees()
     )
-    assert p2_pred_leaf.shape == (
-        num_rows,
-        local_ranker.booster_.num_trees()
-    )
-
-    # pref_leaf values should look like valid tree nodes
     pred_leaf_vals = p1_pred_leaf.compute()
     assert np.max(pred_leaf_vals) <= params['num_leaves']
     assert np.min(pred_leaf_vals) >= 0
