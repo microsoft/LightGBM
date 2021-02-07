@@ -354,6 +354,12 @@ rhub::check(
 )
 ```
 
+Alternatively, GitHub Actions can run code above for you. On a pull request, create a comment with this phrase:
+
+> /gha run r-solais
+
+**NOTE:** Please do this only once you see that other R tests on a pull request are passing. R Hub is a free resource with limited capacity, and we want to be respectful community members.
+
 #### UBSAN
 
 All packages uploaded to CRAN must pass a build using `gcc` instrumented with two sanitizers: the Address Sanitizer (ASAN) and the Undefined Behavior Sanitizer (UBSAN). For more background, see [this blog post](http://dirk.eddelbuettel.com/code/sanitizers.html).
