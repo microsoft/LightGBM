@@ -833,7 +833,7 @@ def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except
     [
         (lgb.DaskLGBMClassifier.fit, lgb.LGBMClassifier.fit),
         (lgb.DaskLGBMClassifier.predict, lgb.LGBMClassifier.predict),
-        (lgb.DaskLGBMClassifier.predict_proba, lgb.LGBMClassifier.predict_proba),        
+        (lgb.DaskLGBMClassifier.predict_proba, lgb.LGBMClassifier.predict_proba),    
         (lgb.DaskLGBMRegressor.fit, lgb.LGBMRegressor.fit),
         (lgb.DaskLGBMRegressor.predict, lgb.LGBMRegressor.predict),
         (lgb.DaskLGBMRanker.fit, lgb.LGBMRanker.fit),
@@ -851,6 +851,6 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
         assert dask_spec.varkw == sklearn_spec.varkw[:len(dask_spec.varkw)]
     assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs
     assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults
-    for key in dask_params:
-        error_msg = f"param '{key}' has different default values in the methods"
-        assert dask_params[key].default == sklearn_params[key].default, error_msg
+    for param_key in dask_params:
+        error_msg = f"param '{param_key}' has different default values in the methods"
+        assert dask_params[param_key].default == sklearn_params[param_key].default, error_msg
