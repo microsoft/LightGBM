@@ -5,20 +5,6 @@
 #ifndef LIGHTGBM_OPENMP_WRAPPER_H_
 #define LIGHTGBM_OPENMP_WRAPPER_H_
 
-/*
- * See https://github.com/dmlc/dmlc-core/blob/main/include/dmlc/omp.h#L14
- */
-#if defined(__clang__)
-#undef __GOMP_NOTHROW
-#define __GOMP_NOTHROW
-#elif defined(__cplusplus)
-#undef __GOMP_NOTHROW
-#define __GOMP_NOTHROW throw()
-#else
-#undef __GOMP_NOTHROW
-#define __GOMP_NOTHROW __attribute__((__nothrow__))
-#endif
-
 #ifdef _OPENMP
 
 #include <LightGBM/utils/log.h>
@@ -80,6 +66,22 @@ class ThreadExceptionHelper {
 #define OMP_THROW_EX() omp_except_helper.ReThrow()
 
 #else
+
+/*
+ * To be compatible with openmp, define a nothrow macro which is used by gcc
+ * openmp, but not by clang.
+ * See also https://github.com/dmlc/dmlc-core/blob/main/include/dmlc/omp.h#L14
+ */
+#if defined(__clang__)
+#undef __GOMP_NOTHROW
+#define __GOMP_NOTHROW
+#elif defined(__cplusplus)
+#undef __GOMP_NOTHROW
+#define __GOMP_NOTHROW throw()
+#else
+#undef __GOMP_NOTHROW
+#define __GOMP_NOTHROW __attribute__((__nothrow__))
+#endif
 
 #ifdef _MSC_VER
   #pragma warning(disable : 4068)  // disable unknown pragma warning
