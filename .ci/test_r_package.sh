@@ -81,7 +81,7 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo tlmgr --verify-repo=none update --self
     sudo tlmgr --verify-repo=none install inconsolata helvetic
 
-    wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
+    curl -sL https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -o R.pkg
     sudo installer \
         -pkg $(pwd)/R.pkg \
         -target /
