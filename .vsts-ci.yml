@@ -165,7 +165,6 @@ jobs:
       CONDA=$AGENT_HOMEDIRECTORY/miniconda
       echo "##vso[task.setvariable variable=CONDA]$CONDA"
       echo "##vso[task.prependpath]$CONDA/bin"
-      echo "##vso[task.prependpath]$(brew --prefix swig@3)/bin"
       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_8_X64"
     displayName: 'Set variables'
   - bash: $(Build.SourcesDirectory)/.ci/setup.sh
