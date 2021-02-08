@@ -17,7 +17,7 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "swig" ]]; then
         brew install swig
     fi
-    wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+    curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
@@ -47,7 +47,6 @@ else  # Linux
             locales \
             netcat \
             unzip \
-            wget \
             zip
         if [[ $COMPILER == "clang" ]]; then
             sudo apt-get install --no-install-recommends -y \
@@ -69,7 +68,7 @@ else  # Linux
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libboost1.74-dev ocl-icd-opencl-dev
         cd $BUILD_DIRECTORY  # to avoid permission errors
-        wget -q https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+        curl -sL https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
         tar -xjf AMD-APP-SDK*.tar.bz2
         mkdir -p $OPENCL_VENDOR_PATH
         mkdir -p $AMDAPPSDK_PATH
@@ -83,8 +82,7 @@ else  # Linux
         apt-get install --no-install-recommends -y \
             curl \
             lsb-release \
-            software-properties-common \
-            wget
+            software-properties-common
         if [[ $COMPILER == "clang" ]]; then
             apt-get install --no-install-recommends -y \
                 clang \
@@ -97,7 +95,7 @@ else  # Linux
             cmake
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
-        wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     fi
 fi
 
