@@ -575,7 +575,7 @@ def test_ranker(output, client, listen_port, group):
             group=group,
         )
 
-    # rebalance small dask.array dataset for better performance.
+    # rebalance small dask.Array dataset for better performance.
     if output == 'array':
         dX = dX.persist()
         dy = dy.persist()
@@ -584,7 +584,7 @@ def test_ranker(output, client, listen_port, group):
         _ = wait([dX, dy, dw, dg])
         client.rebalance()
 
-    # use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
+    # use many trees + leaves to overfit, help ensure that Dask data-parallel strategy matches that of
     # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
     params = {
         "random_state": 42,
