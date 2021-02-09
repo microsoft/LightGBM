@@ -575,7 +575,7 @@ def test_ranker(output, client, listen_port, group):
             group=group,
         )
 
-    # rebalance small Dask.array dataset for better performance.
+    # rebalance small dask.Array dataset for better performance.
     if output == 'array':
         dX = dX.persist()
         dy = dy.persist()
