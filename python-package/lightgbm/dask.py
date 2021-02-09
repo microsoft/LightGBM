@@ -9,7 +9,7 @@ It is based on dask-lightgbm, which was based on dask-xgboost.
 import socket
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Tuple, Union
 from urllib.parse import urlparse
 
 import numpy as np
@@ -176,12 +176,23 @@ def _train_part(
     else:
         group = None
 
+    if 'eval_set' in list_of_parts[0]:
+        eval_set = list()
+        eval_sets = [x['eval_set'] for x in list_of_parts]
+        for i, e_set in enumerate(eval_sets):
+            if e_set == '__train__':
+                eval_set.append((data, label))
+            else:
+                eval_set.append((_concat(e_set[0]), _concat(e_set[1])))
+    else:
+        eval_set=None
+
     try:
         model = model_factory(**params)
         if is_ranker:
-            model.fit(data, label, sample_weight=weight, group=group, **kwargs)
+            model.fit(data, label, sample_weight=weight, group=group, eval_set=eval_set, **kwargs)
         else:
-            model.fit(data, label, sample_weight=weight, **kwargs)
+            model.fit(data, label, sample_weight=weight, eval_set=eval_set, **kwargs)
 
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
@@ -208,6 +219,7 @@ def _train(
     model_factory: Type[LGBMModel],
     sample_weight: Optional[_DaskCollection] = None,
     group: Optional[_DaskCollection] = None,
+    eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
     **kwargs: Any
 ) -> LGBMModel:
     """Inner train routine.
@@ -232,6 +244,8 @@ def _train(
         sum(group) = n_samples.
         For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+    eval_set : List or None, optional (default=None)
+        List of (X, y) tuple pairs to use as validation sets, were X and y are dask data collections.
     **kwargs
         Other parameters passed to ``fit`` method of the local underlying model.
 
@@ -282,16 +296,50 @@ def _train(
     data_parts = _split_to_parts(data=data, is_matrix=True)
     label_parts = _split_to_parts(data=label, is_matrix=False)
     parts = [{'data': x, 'label': y} for (x, y) in zip(data_parts, label_parts)]
+    n_parts = len(parts)
 
     if sample_weight is not None:
         weight_parts = _split_to_parts(data=sample_weight, is_matrix=False)
-        for i in range(len(parts)):
+        for i in range(n_parts):
             parts[i]['weight'] = weight_parts[i]
 
     if group is not None:
         group_parts = _split_to_parts(data=group, is_matrix=False)
-        for i in range(len(parts)):
+        for i in range(n_parts):
             parts[i]['group'] = group_parts[i]
+
+    # evals_set will to be re-constructed into smaller lists of (X, y) tuples, where
+    # X and y are each delayed sub-lists of original eval dask Collections.
+    if eval_set:
+        eval_sets = defaultdict(list)
+        for i, (X, y) in enumerate(eval_set):
+
+            if id(X) == id(data):
+                for j in range(n_parts):
+                    eval_sets[j].append('__train__')
+                continue
+
+            eval_x_parts = _split_to_parts(data=X, is_matrix=True)
+            eval_y_parts = _split_to_parts(data=y, is_matrix=False)
+
+            # ensure that all evaluation parts map uniquely to one part.
+            for j in range(len(eval_x_parts)):
+                parts_idx = j % n_parts
+                init_eval_set = j < n_parts
+
+                x_e, y_e = eval_x_parts[j], eval_y_parts[j]
+
+                if init_eval_set:
+                    eval_sets[parts_idx].append(([x_e], [y_e]))
+
+                else:
+                    n_evals = len(eval_sets[parts_idx]) - 1
+                    eval_sets[parts_idx][n_evals][0].append(x_e)
+                    eval_sets[parts_idx][n_evals][1].append(y_e)
+
+        # assign sub-eval_set to worker parts.
+        for i, e_set in eval_sets.items():
+            parts[i]['eval_set'] = e_set
 
     # Start computation in the background
     parts = list(map(delayed, parts))
@@ -481,6 +529,7 @@ class _DaskLGBMModel:
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
+        eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
@@ -496,6 +545,7 @@ class _DaskLGBMModel:
             params=params,
             model_factory=model_factory,
             sample_weight=sample_weight,
+            eval_set=eval_set,
             group=group,
             **kwargs
         )
@@ -593,14 +643,20 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
+        init_score: Optional[_DaskCollection] = None,
+        eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
+        if init_score is not None:
+            raise RuntimeError('init_score is not currently supported in lightgbm.dask')
+
         return self._fit(
             model_factory=LGBMClassifier,
             X=X,
             y=y,
             sample_weight=sample_weight,
+            eval_set=eval_set
             **kwargs
         )
 
@@ -710,14 +766,20 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
+        init_score: Optional[_DaskCollection] = None,
+        eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
+        if init_score is not None:
+            raise RuntimeError('init_score is not currently supported in lightgbm.dask')
+
         return self._fit(
             model_factory=LGBMRegressor,
             X=X,
             y=y,
             sample_weight=sample_weight,
+            eval_set=eval_set,
             **kwargs
         )
 
@@ -817,6 +879,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         sample_weight: Optional[_DaskCollection] = None,
         init_score: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
+        eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
@@ -829,6 +892,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             y=y,
             sample_weight=sample_weight,
             group=group,
+            eval_set=eval_set,
             **kwargs
         )
 
