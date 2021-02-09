@@ -296,7 +296,7 @@ _lgbmmodel_doc_custom_eval_note = """
 
 _lgbmmodel_doc_predict = (
     """
-    Return the predicted value for each sample.
+    {description}
 
     Parameters
     ----------
@@ -330,7 +330,7 @@ _lgbmmodel_doc_predict = (
 
     Returns
     -------
-    predicted_result : {predicted_result_shape}
+    {output_name} : {predicted_result_shape}
         The predicted values.
     X_leaves : {X_leaves_shape}
         If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
@@ -728,7 +728,9 @@ class LGBMModel(_LGBMModelBase):
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted value for each sample.",
         X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
+        output_name="predicted_result",
         predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
         X_SHAP_values_shape="array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects"
@@ -915,47 +917,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
 
     def predict_proba(self, X, raw_score=False, start_iteration=0, num_iteration=None,
                       pred_leaf=False, pred_contrib=False, **kwargs):
-        """Return the predicted probability for each class for each sample.
 
-        Parameters
-        ----------
-        X : array-like or sparse matrix of shape = [n_samples, n_features]
-            Input features matrix.
-        raw_score : bool, optional (default=False)
-            Whether to predict raw scores.
-        start_iteration : int, optional (default=0)
-            Start index of the iteration to predict.
-            If <= 0, starts from the first iteration.
-        num_iteration : int or None, optional (default=None)
-            Total number of iterations used in the prediction.
-            If None, if the best iteration exists and start_iteration <= 0, the best iteration is used;
-            otherwise, all iterations from ``start_iteration`` are used (no limits).
-            If <= 0, all iterations from ``start_iteration`` are used (no limits).
-        pred_leaf : bool, optional (default=False)
-            Whether to predict leaf index.
-        pred_contrib : bool, optional (default=False)
-            Whether to predict feature contributions.
-
-            .. note::
-
-                If you want to get more explanations for your model's predictions using SHAP values,
-                like SHAP interaction values,
-                you can install the shap package (https://github.com/slundberg/shap).
-                Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
-                column, where the last column is the expected value.
-
-        **kwargs
-            Other parameters for the prediction.
-
-        Returns
-        -------
-        predicted_probability : array-like of shape = [n_samples, n_classes]
-            The predicted probability for each class for each sample.
-        X_leaves : array-like of shape = [n_samples, n_trees * n_classes]
-            If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-        X_SHAP_values : array-like of shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
-            If ``pred_contrib=True``, the feature contributions for each sample.
-        """
         result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
             _log_warning("Cannot compute class probabilities or labels "
@@ -966,6 +928,15 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             return result
         else:
             return np.vstack((1. - result, result)).transpose()
+
+    predict_proba.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted probability for each class for each sample.",
+        X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
+        output_name="predicted_probability",
+        predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
+        X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
+        X_SHAP_values_shape="array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects"
+    )
 
     @property
     def classes_(self):

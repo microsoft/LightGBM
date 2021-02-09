@@ -618,8 +618,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         group_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
-    # DaskLGBMClassifier does not support init_score, evaluation data,
-    # or early stopping
+    # DaskLGBMClassifier does not support init_score, evaluation data, or early stopping
     _base_doc = (_base_doc[:_base_doc.find('init_score :')]
                  + _base_doc[_base_doc.find('verbose :'):])
 
@@ -640,7 +639,9 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         )
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted value for each sample.",
         X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        output_name="predicted_result",
         predicted_result_shape="dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
         X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
@@ -655,7 +656,14 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             **kwargs
         )
 
-    predict_proba.__doc__ = LGBMClassifier.predict_proba.__doc__
+    predict_proba.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted probability for each class for each sample.",
+        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        output_name="predicted_probability",
+        predicted_result_shape="dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
+        X_leaves_shape="dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
+        X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+    )
 
     def to_local(self) -> LGBMClassifier:
         """Create regular version of lightgbm.LGBMClassifier from the distributed version.
@@ -757,8 +765,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         group_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
-    # DaskLGBMRegressor does not support init_score, evaluation data,
-    # or early stopping
+    # DaskLGBMRegressor does not support init_score, evaluation data, or early stopping
     _base_doc = (_base_doc[:_base_doc.find('init_score :')]
                  + _base_doc[_base_doc.find('verbose :'):])
 
@@ -778,7 +785,9 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         )
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted value for each sample.",
         X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        output_name="predicted_result",
         predicted_result_shape="dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
         X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
@@ -890,8 +899,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         group_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
-    # DaskLGBMRanker does not support init_score, evaluation data,
-    # or early stopping
+    # DaskLGBMRanker does not support init_score, evaluation data, or early stopping
     _base_doc = (_base_doc[:_base_doc.find('init_score :')]
                  + _base_doc[_base_doc.find('init_score :'):])
 
@@ -910,7 +918,9 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         return _predict(self.to_local(), X, **kwargs)
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted value for each sample.",
         X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        output_name="predicted_result",
         predicted_result_shape="dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
         X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
