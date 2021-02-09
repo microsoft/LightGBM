@@ -4,7 +4,7 @@
 import inspect
 import pickle
 import socket
-from itertools import groupby, product
+from itertools import groupby
 from os import getenv
 from sys import platform
 
