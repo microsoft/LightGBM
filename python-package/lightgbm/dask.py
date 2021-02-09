@@ -27,7 +27,7 @@ _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
 
-def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> Optional[int]:
+def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
     """Find an open port.
 
     This function tries to find a free port on the machine it's run on. It is intended to
@@ -51,7 +51,6 @@ def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Itera
         A free port on the machine referenced by ``worker_ip``.
     """
     max_tries = 1000
-    out_port = None
     found_port = False
     for i in range(max_tries):
         out_port = local_listen_port + i
@@ -619,7 +618,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         )
 
     _base_doc = LGBMRanker.fit.__doc__
-    _before_eval_set, _eval_set, _after_eval_set = _base_doc.partition('eval_set :')
+    _before_eval_set, _eval_set, _after_eval_set = _base_doc.partition('eval_set :') # type: ignore
     fit.__doc__ = (_before_eval_set
                    + 'client : dask.distributed.Client or None, optional (default=None)\n'
                    + ' ' * 12 + 'Dask client.\n'
