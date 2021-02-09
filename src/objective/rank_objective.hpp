@@ -104,8 +104,7 @@ class LambdarankNDCG : public RankingObjective {
         norm_(config.lambdarank_norm),
         truncation_level_(config.lambdarank_truncation_level),
         unbiased_(config.lambdarank_unbiased),
-        eta_(config.lambdarank_eta),
-        position_bins_(config.lambdarank_position_bins) {
+        eta_(config.lambdarank_eta) {
     label_gain_ = config.label_gain;
     // initialize DCG calculator
     DCGCalculator::DefaultLabelGain(&label_gain_);
@@ -155,6 +154,8 @@ class LambdarankNDCG : public RankingObjective {
                                       const label_t* label, const double* score,
                                       score_t* lambdas,
                                       score_t* hessians) const override {
+    const int tid = omp_get_thread_num(); // get thread ID
+
     // get max DCG on current query
     const double inverse_max_dcg = inverse_max_dcgs_[query_id];
     // initialize with zero
@@ -215,28 +216,56 @@ class LambdarankNDCG : public RankingObjective {
         // get delta NDCG
         double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
         // regular the delta_pair_NDCG by score distance
-        if (norm_ && best_score != worst_score) {
+        if ((norm_ || unbiased_) && best_score != worst_score) {
           delta_pair_NDCG /= (0.01f + fabs(delta_score));
         }
         // calculate lambda for this pair
         double p_lambda = GetSigmoid(delta_score);
-        double p_hessian = p_lambda * (1.0f - p_lambda);
+        double p_hessian = p_lambda * (1.0f - p_lambda);  // check that 1.0 instead of 2.0 is ok
+
+        if (unbiased_) {
+          // check that 1.0 instead of 2.0 is ok
+          // might need a sigmoid_ thrown in somewhere
+          double p_cost = log(1.0f / (1.0f - p_lambda)) * delta_pair_NDCG; /// log(1+e^(-sigma*(si-sj)))
+
+          // orig has += high_sum_cost_i
+          // but that is just an in loop accumulator to avoid element look up 
+          // that var that can be removed, lookup is fine
+          i_costs_buffer_[tid][high_rank] += p_cost / j_biases_pow_[low_rank];
+          j_costs_buffer_[tid][low_rank] += p_cost / i_biases_pow_[high_rank];
+        }
+
         // update
-        p_lambda *= -sigmoid_ * delta_pair_NDCG;
-        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG;
+        // orig doesn't have sigmoid_
+        p_lambda *= -sigmoid_ * delta_pair_NDCG / i_biases_pow_[high_rank] / j_biases_pow_[low_rank];
+
+        // orig has 2.0 * delta / bias related to always defaulting sigmoid to 2
+        // this has a sigmoid_^2, check impact
+        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG / i_biases_pow_[high_rank] / j_biases_pow_[low_rank]; ;
+
         lambdas[low] -= static_cast<score_t>(p_lambda);
         hessians[low] += static_cast<score_t>(p_hessian);
         lambdas[high] += static_cast<score_t>(p_lambda);
         hessians[high] += static_cast<score_t>(p_hessian);
+
         // lambda is negative, so use minus to accumulate
         sum_lambdas -= 2 * p_lambda;
       }
     }
+
     if (norm_ && sum_lambdas > 0) {
       double norm_factor = std::log2(1 + sum_lambdas) / sum_lambdas;
       for (data_size_t i = 0; i < cnt; ++i) {
         lambdas[i] = static_cast<score_t>(lambdas[i] * norm_factor);
         hessians[i] = static_cast<score_t>(hessians[i] * norm_factor);
+      }
+    }
+
+    if (unbiased_) {
+      // calculate position score, and position lambda
+      for (data_size_t i = 0; i < cnt && i < truncation_level_; ++i) { ///
+        position_scores_buffer_[tid][i] += score[i];
+        position_lambdas_buffer_[tid][i] += lambdas[i];
       }
     }
   }
@@ -269,12 +298,12 @@ class LambdarankNDCG : public RankingObjective {
     }
   }
 
-    void InitPositionBiases() { ///
-    i_biases_.resize(position_bins_);
-    i_biases_pow_.resize(position_bins_);
-    j_biases_.resize(position_bins_);
-    j_biases_pow_.resize(position_bins_);
-    for (size_t i = 0; i < position_bins_; ++i) {
+    void InitPositionBiases() { 
+    i_biases_.resize(truncation_level_);
+    i_biases_pow_.resize(truncation_level_);
+    j_biases_.resize(truncation_level_);
+    j_biases_pow_.resize(truncation_level_);
+    for (int i = 0; i < truncation_level_; ++i) {
       i_biases_[i] = 1.0f;
       i_biases_pow_[i] = 1.0f;
       j_biases_[i] = 1.0f;
@@ -282,13 +311,13 @@ class LambdarankNDCG : public RankingObjective {
     }
   }
 
-  void InitPositionGradients() { ///
-    position_cnts_.resize(position_bins_);
-    position_scores_.resize(position_bins_);
-    position_lambdas_.resize(position_bins_);
-    i_costs_.resize(position_bins_);
-    j_costs_.resize(position_bins_);
-    for (size_t i = 0; i < position_bins_; ++i) {
+  void InitPositionGradients() { 
+    position_cnts_.resize(truncation_level_);
+    position_scores_.resize(truncation_level_);
+    position_lambdas_.resize(truncation_level_);
+    i_costs_.resize(truncation_level_);
+    j_costs_.resize(truncation_level_);
+    for (int i = 0; i < truncation_level_; ++i) {
       position_cnts_[i] = 0LL;
       position_scores_[i] = 0.0f;
       position_lambdas_[i] = 0.0f;
@@ -297,18 +326,18 @@ class LambdarankNDCG : public RankingObjective {
     }
 
     for (int i = 0; i < num_threads_; i++) {
-      position_cnts_buffer_.emplace_back(position_bins_, 0LL);
-      position_scores_buffer_.emplace_back(position_bins_, 0.0f);
-      position_lambdas_buffer_.emplace_back(position_bins_, 0.0f);
-      i_costs_buffer_.emplace_back(position_bins_, 0.0f);
-      j_costs_buffer_.emplace_back(position_bins_, 0.0f);
+      position_cnts_buffer_.emplace_back(truncation_level_, 0LL);
+      position_scores_buffer_.emplace_back(truncation_level_, 0.0f);
+      position_lambdas_buffer_.emplace_back(truncation_level_, 0.0f);
+      i_costs_buffer_.emplace_back(truncation_level_, 0.0f);
+      j_costs_buffer_.emplace_back(truncation_level_, 0.0f);
     }
   }
 
   void UpdatePositionBiases() const {
     // accumulate the parallel results
     for (int i = 0; i < num_threads_; i++) {
-      for (size_t j = 0; j < position_bins_; ++j) {
+      for (int j = 0; j < truncation_level_; ++j) {
         position_cnts_[j] += position_cnts_buffer_[i][j];
         position_scores_[j] += position_scores_buffer_[i][j];
         position_lambdas_[j] += position_lambdas_buffer_[i][j];
@@ -319,13 +348,17 @@ class LambdarankNDCG : public RankingObjective {
 
     LogDebugPositionBiases();
 
-    for (size_t i = 0; i < position_bins_; ++i) {
+    for (int i = 0; i < truncation_level_; ++i) {
       // Update bias
-      i_biases_[i] = i_costs_[i] / i_costs_[0];
-      i_biases_pow_[i] = pow(i_biases_[i], eta_);
+      if (i_costs_[0] > kMinScore) {
+        i_biases_[i] = i_costs_[i] / i_costs_[0];
+        i_biases_pow_[i] = pow(i_biases_[i], eta_);
+      }
 
-      j_biases_[i] = j_costs_[i] / j_costs_[0];
-      j_biases_pow_[i] = pow(j_biases_[i], eta_);
+      if (j_costs_[0] > kMinScore) {
+        j_biases_[i] = j_costs_[i] / j_costs_[0];
+        j_biases_pow_[i] = pow(j_biases_[i], eta_);
+      }
 
       // Clear position info
       position_cnts_[i] = 0LL;
@@ -337,14 +370,14 @@ class LambdarankNDCG : public RankingObjective {
 
     // Clear Buffer
     for (int i = 0; i < num_threads_; i++) {
-      for (size_t j = 0; j < position_bins_; ++j) {
+      for (int j = 0; j < truncation_level_; ++j) {
         position_cnts_buffer_[i][j] = 0LL;
         position_scores_buffer_[i][j] = 0.0f;
         position_lambdas_buffer_[i][j] = 0.0f;
         i_costs_buffer_[i][j] = 0.0f;
         j_costs_buffer_[i][j] = 0.0f;
       }
-    }  
+    }
   }
 
   const char* GetName() const override { return "lambdarank"; }
@@ -352,7 +385,7 @@ class LambdarankNDCG : public RankingObjective {
  private:
   void LogDebugPositionBiases() const {
     long long position_cnts_sum = 0LL;
-    for (size_t i = 0; i < position_bins_; ++i) {
+    for (int i = 0; i < truncation_level_; ++i) {
       position_cnts_sum += position_cnts_[i];
     }
 
@@ -370,7 +403,7 @@ class LambdarankNDCG : public RankingObjective {
                     << std::setw(15) << "j_cost";
     Log::Debug(message_stream.str().c_str());
 
-    for (size_t i = 0; i < position_bins_; ++i) { ///
+    for (int i = 0; i < truncation_level_; ++i) { ///
       message_stream  << std::setw(10) << i
                       << std::setw(15) << i_biases_pow_[i]
                       << std::setw(15) << j_biases_pow_[i]
@@ -434,8 +467,6 @@ class LambdarankNDCG : public RankingObjective {
   bool unbiased_;
   /*! \brief Number of exponent */
   double eta_;
-  /*! \brief Number of positions */
-  size_t position_bins_;
 
   /*! \brief Number of threads */
   int num_threads_;
