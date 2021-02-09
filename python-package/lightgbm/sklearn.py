@@ -546,7 +546,7 @@ class LGBMModel(_LGBMModelBase):
             eval_metric=None, early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
-
+        """Docstring is set after definition, using a template."""
         if self._objective is None:
             if isinstance(self, LGBMRegressor):
                 self._objective = "regression"
@@ -713,7 +713,7 @@ class LGBMModel(_LGBMModelBase):
 
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
                 pred_leaf=False, pred_contrib=False, **kwargs):
-
+        """Docstring is set after definition, using a template."""
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
@@ -917,7 +917,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
 
     def predict_proba(self, X, raw_score=False, start_iteration=0, num_iteration=None,
                       pred_leaf=False, pred_contrib=False, **kwargs):
-
+        """Docstring is set after definition, using a template."""
         result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
             _log_warning("Cannot compute class probabilities or labels "

@@ -585,12 +585,16 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     _base_doc = LGBMClassifier.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    __init__.__doc__ = (
+    _base_doc = (
         _before_kwargs
         + 'client : dask.distributed.Client or None, optional (default=None)\n'
         + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
+
+    # the note on custom objective functions in LGBMModel.__init__ is not
+    # currently relevant for the Dask estimators
+    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_getstate()
@@ -732,12 +736,16 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
     _base_doc = LGBMRegressor.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    __init__.__doc__ = (
+    _base_doc = (
         _before_kwargs
         + 'client : dask.distributed.Client or None, optional (default=None)\n'
         + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
+
+    # the note on custom objective functions in LGBMModel.__init__ is not
+    # currently relevant for the Dask estimators
+    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_getstate()
@@ -860,12 +868,16 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
     _base_doc = LGBMRanker.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    __init__.__doc__ = (
+    _base_doc = (
         _before_kwargs
         + 'client : dask.distributed.Client or None, optional (default=None)\n'
         + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
+
+    # the note on custom objective functions in LGBMModel.__init__ is not
+    # currently relevant for the Dask estimators
+    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_getstate()
