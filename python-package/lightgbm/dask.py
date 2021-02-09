@@ -664,7 +664,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         description="Return the predicted probability for each class for each sample.",
         X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
         output_name="predicted_probability",
-        predicted_result_shape="dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
+        predicted_result_shape="dask Array of shape = [n_samples, n_classes]",
         X_leaves_shape="dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
         X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
     )
@@ -796,9 +796,9 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         description="Return the predicted value for each sample.",
         X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
         output_name="predicted_result",
-        predicted_result_shape="dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
-        X_leaves_shape="dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
-        X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+        predicted_result_shape="dask Array of shape = [n_samples]",
+        X_leaves_shape="dask Array of shape = [n_samples, n_trees]",
+        X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1]"
     )
 
     def to_local(self) -> LGBMRegressor:
@@ -933,9 +933,9 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         description="Return the predicted value for each sample.",
         X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
         output_name="predicted_result",
-        predicted_result_shape="dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
-        X_leaves_shape="dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
-        X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+        predicted_result_shape="dask Array of shape = [n_samples]",
+        X_leaves_shape="dask Array of shape = [n_samples, n_trees]",
+        X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1]"
     )
 
     def to_local(self) -> LGBMRanker:
