@@ -1,8 +1,8 @@
 # coding: utf-8
-"""Distributed training with LightGBM and Dask.distributed.
+"""Distributed training with LightGBM and dask.distributed.
 
 This module enables you to perform distributed training with LightGBM on
-Dask.Array and Dask.DataFrame collections.
+dask.Array and dask.DataFrame collections.
 
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
@@ -223,17 +223,17 @@ def _train(
     ----------
     client : dask.distributed.Client
         Dask client.
-    data : dask Array or dask DataFrame of shape = [n_samples, n_features]
+    data : Dask Array or Dask DataFrame of shape = [n_samples, n_features]
         Input feature matrix.
-    label : dask Array, dask DataFrame or dask Series of shape = [n_samples]
+    label : Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]
         The target values (class labels in classification, real numbers in regression).
     params : dict
         Parameters passed to constructor of the local underlying model.
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Class of the local underlying model.
-    sample_weight : dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+    sample_weight : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
-    group : dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+    group : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Group/query data.
         Only used in the learning-to-rank task.
         sum(group) = n_samples.
@@ -403,7 +403,7 @@ def _predict(
     ----------
     model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Fitted underlying model.
-    data : dask Array or dask DataFrame of shape = [n_samples, n_features]
+    data : Dask Array or Dask DataFrame of shape = [n_samples, n_features]
         Input feature matrix.
     raw_score : bool, optional (default=False)
         Whether to predict raw scores.
@@ -420,11 +420,11 @@ def _predict(
 
     Returns
     -------
-    predicted_result : dask Array of shape = [n_samples] or shape = [n_samples, n_classes]
+    predicted_result : Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]
         The predicted values.
-    X_leaves : dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
+    X_leaves : Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
         If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-    X_SHAP_values : dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
+    X_SHAP_values : Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
         If ``pred_contrib=True``, the feature contributions for each sample.
     """
     if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
@@ -455,7 +455,7 @@ def _predict(
             **kwargs
         )
     else:
-        raise TypeError('Data must be either dask Array or dask DataFrame. Got %s.' % str(type(data)))
+        raise TypeError('Data must be either Dask Array or Dask DataFrame. Got %s.' % str(type(data)))
 
 
 class _DaskLGBMModel:
@@ -616,10 +616,10 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         )
 
     _base_doc = _lgbmmodel_doc_fit.format(
-        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
-        y_shape="dask Array, dask DataFrame or dask Series of shape = [n_samples]",
-        sample_weight_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        group_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
+        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
     # DaskLGBMClassifier does not support init_score, evaluation data, or early stopping
@@ -644,11 +644,11 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
-        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         output_name="predicted_result",
-        predicted_result_shape="dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
-        X_leaves_shape="dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
-        X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+        predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
+        X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
     )
 
     def predict_proba(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
@@ -662,11 +662,11 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     predict_proba.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted probability for each class for each sample.",
-        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         output_name="predicted_probability",
-        predicted_result_shape="dask Array of shape = [n_samples, n_classes]",
-        X_leaves_shape="dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
-        X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+        predicted_result_shape="Dask Array of shape = [n_samples, n_classes]",
+        X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
     )
 
     def to_local(self) -> LGBMClassifier:
@@ -767,10 +767,10 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         )
 
     _base_doc = _lgbmmodel_doc_fit.format(
-        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
-        y_shape="dask Array, dask DataFrame or dask Series of shape = [n_samples]",
-        sample_weight_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        group_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
+        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
     # DaskLGBMRegressor does not support init_score, evaluation data, or early stopping
@@ -794,11 +794,11 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
-        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         output_name="predicted_result",
-        predicted_result_shape="dask Array of shape = [n_samples]",
-        X_leaves_shape="dask Array of shape = [n_samples, n_trees]",
-        X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1]"
+        predicted_result_shape="Dask Array of shape = [n_samples]",
+        X_leaves_shape="Dask Array of shape = [n_samples, n_trees]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1]"
     )
 
     def to_local(self) -> LGBMRegressor:
@@ -905,10 +905,10 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         )
 
     _base_doc = _lgbmmodel_doc_fit.format(
-        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
-        y_shape="dask Array, dask DataFrame or dask Series of shape = [n_samples]",
-        sample_weight_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        group_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
+        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
     # DaskLGBMRanker does not support init_score, evaluation data, or early stopping
@@ -931,11 +931,11 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
-        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         output_name="predicted_result",
-        predicted_result_shape="dask Array of shape = [n_samples]",
-        X_leaves_shape="dask Array of shape = [n_samples, n_trees]",
-        X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1]"
+        predicted_result_shape="Dask Array of shape = [n_samples]",
+        X_leaves_shape="Dask Array of shape = [n_samples, n_trees]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1]"
     )
 
     def to_local(self) -> LGBMRanker:
