@@ -630,7 +630,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     fit.__doc__ = (
         _base_doc[:_base_doc.find('callbacks :')]
         + '**kwargs\n'
-        + ' ' * 12 + 'Other parameters passed through to ``LGBMClassifier.fit()``\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMClassifier.fit()``.\n'
     )
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
@@ -664,7 +664,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         description="Return the predicted probability for each class for each sample.",
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         output_name="predicted_probability",
-        predicted_result_shape="Dask Array of shape = [n_samples, n_classes]",
+        predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
         X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
     )
@@ -781,7 +781,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     fit.__doc__ = (
         _base_doc[:_base_doc.find('callbacks :')]
         + '**kwargs\n'
-        + ' ' * 12 + 'Other parameters passed through to ``LGBMRegressor.fit()``\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMRegressor.fit()``.\n'
     )
 
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
@@ -922,7 +922,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     fit.__doc__ = (
         _base_doc[:_base_doc.find('callbacks :')]
         + '**kwargs\n'
-        + ' ' * 12 + 'Other parameters passed through to ``LGBMRanker.fit()``\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMRanker.fit()``.\n'
     )
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
