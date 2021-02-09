@@ -19,7 +19,7 @@ from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _saf
 from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
                      SKLEARN_INSTALLED, LGBMNotFittedError,
                      DASK_INSTALLED, dask_DataFrame, dask_Array, dask_Series, delayed, Client, default_client, get_worker, wait)
-from .sklearn import LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
+from .sklearn import _lgbmmodel_doc_fit, LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
@@ -604,7 +604,24 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             **kwargs
         )
 
-    fit.__doc__ = LGBMClassifier.fit.__doc__
+    _base_doc = _lgbmmodel_doc_fit.format(
+        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        y_shape="dask Array, dask DataFrame or dask Series of shape = [n_samples]",
+        sample_weight_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+    )
+
+    # DaskLGBMClassifier does not support init_score, evaluation data,
+    # or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
+                 + _base_doc[_base_doc.find('verbose :'):])
+
+    # DaskLGBMClassifier support for callbacks and init_model is not tested
+    fit.__doc__ = (
+        _base_doc[:_base_doc.find('callbacks :')]
+        + '**kwargs\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMClassifier.fit()``\n'
+    )
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
@@ -721,7 +738,24 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             **kwargs
         )
 
-    fit.__doc__ = LGBMRegressor.fit.__doc__
+    _base_doc = _lgbmmodel_doc_fit.format(
+        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        y_shape="dask Array, dask DataFrame or dask Series of shape = [n_samples]",
+        sample_weight_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+    )
+
+    # DaskLGBMRegressor does not support init_score, evaluation data,
+    # or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
+                 + _base_doc[_base_doc.find('verbose :'):])
+
+    # DaskLGBMRegressor support for callbacks and init_model is not tested
+    fit.__doc__ = (
+        _base_doc[:_base_doc.find('callbacks :')]
+        + '**kwargs\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMRegressor.fit()``\n'
+    )
 
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
@@ -832,7 +866,27 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             **kwargs
         )
 
-    fit.__doc__ = LGBMRanker.fit.__doc__
+    _base_doc = _lgbmmodel_doc_fit.format(
+        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        y_shape="dask Array, dask DataFrame or dask Series of shape = [n_samples]",
+        sample_weight_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+    )
+
+    # DaskLGBMRanker does not support init_score, evaluation data,
+    # or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
+                 + _base_doc[_base_doc.find('init_score :'):])
+
+    _base_doc = (_base_doc[:_base_doc.find('eval_set :')]
+                 + _base_doc[_base_doc.find('verbose :'):])
+
+    # DaskLGBMRanker support for callbacks and init_model is not tested
+    fit.__doc__ = (
+        _base_doc[:_base_doc.find('callbacks :')]
+        + '**kwargs\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMRanker.fit()``\n'
+    )
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
