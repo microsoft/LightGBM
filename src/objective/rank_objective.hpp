@@ -187,7 +187,6 @@ class LambdarankNDCG : public RankingObjective {
         // skip pairs with the same labels
         if (label[sorted_idx[i]] == label[sorted_idx[j]]) { continue; }
 
-        // diff
         data_size_t high_rank, low_rank;
         if (label[sorted_idx[i]] > label[sorted_idx[j]]) {
           high_rank = i;
@@ -233,6 +232,8 @@ class LambdarankNDCG : public RankingObjective {
           // that var that can be removed, lookup is fine
           i_costs_buffer_[tid][high_rank] += p_cost / j_biases_pow_[low_rank];
           j_costs_buffer_[tid][low_rank] += p_cost / i_biases_pow_[high_rank];
+
+          position_cnts_buffer_[tid][high_rank] += 1LL;
         }
 
         // update
@@ -299,14 +300,10 @@ class LambdarankNDCG : public RankingObjective {
   }
 
     void InitPositionBiases() { 
-    i_biases_.resize(truncation_level_);
     i_biases_pow_.resize(truncation_level_);
-    j_biases_.resize(truncation_level_);
     j_biases_pow_.resize(truncation_level_);
     for (int i = 0; i < truncation_level_; ++i) {
-      i_biases_[i] = 1.0f;
       i_biases_pow_[i] = 1.0f;
-      j_biases_[i] = 1.0f;
       j_biases_pow_[i] = 1.0f;
     }
   }
@@ -350,16 +347,11 @@ class LambdarankNDCG : public RankingObjective {
 
     for (int i = 0; i < truncation_level_; ++i) {
       // Update bias
-      if (i_costs_[0] > kMinScore) {
-        i_biases_[i] = i_costs_[i] / i_costs_[0];
-        i_biases_pow_[i] = pow(i_biases_[i], eta_);
-      }
+      i_biases_pow_[i] = pow(i_costs_[i] / i_costs_[0], eta_);
+      j_biases_pow_[i] = pow(j_costs_[i] / j_costs_[0], eta_);
+    }
 
-      if (j_costs_[0] > kMinScore) {
-        j_biases_[i] = j_costs_[i] / j_costs_[0];
-        j_biases_pow_[i] = pow(j_biases_[i], eta_);
-      }
-
+    for (int i = 0; i < truncation_level_; ++i) {
       // Clear position info
       position_cnts_[i] = 0LL;
       position_scores_[i] = 0.0f;
@@ -439,12 +431,10 @@ class LambdarankNDCG : public RankingObjective {
   double sigmoid_table_idx_factor_;
 
   // bias correction variables
-  mutable std::vector<label_t> i_biases_; 
-  /*! \brief pow position biases */
+  /*! \brief power of position biases */
   mutable std::vector<label_t> i_biases_pow_; 
 
-  mutable std::vector<label_t> j_biases_; 
-  /*! \brief pow position biases */
+  /*! \brief power of position biases */
   mutable std::vector<label_t> j_biases_pow_; 
 
   /*! \brief position cnts */
