@@ -236,8 +236,6 @@ class LambdarankNDCG : public RankingObjective {
           // that var that can be removed, lookup is fine
           i_costs_buffer_[tid][high_rank] += p_cost / j_biases_pow_[low_rank];
           j_costs_buffer_[tid][low_rank] += p_cost / i_biases_pow_[high_rank];
-
-          position_cnts_buffer_[tid][high_rank] += 1LL;
         }
 
         // update
@@ -305,17 +303,14 @@ class LambdarankNDCG : public RankingObjective {
   }
 
   void InitPositionGradients() {
-    position_cnts_.resize(truncation_level_);
     i_costs_.resize(truncation_level_);
     j_costs_.resize(truncation_level_);
     for (int i = 0; i < truncation_level_; ++i) {
-      position_cnts_[i] = 0LL;
       i_costs_[i] = 0.0f;
       j_costs_[i] = 0.0f;
     }
 
     for (int i = 0; i < num_threads_; i++) {
-      position_cnts_buffer_.emplace_back(truncation_level_, 0LL);
       i_costs_buffer_.emplace_back(truncation_level_, 0.0f);
       j_costs_buffer_.emplace_back(truncation_level_, 0.0f);
     }
@@ -325,7 +320,6 @@ class LambdarankNDCG : public RankingObjective {
     // accumulate the parallel results
     for (int i = 0; i < num_threads_; i++) {
       for (int j = 0; j < truncation_level_; ++j) {
-        position_cnts_[j] += position_cnts_buffer_[i][j];
         i_costs_[j] += i_costs_buffer_[i][j];
         j_costs_[j] += j_costs_buffer_[i][j];
       }
@@ -341,7 +335,6 @@ class LambdarankNDCG : public RankingObjective {
 
     for (int i = 0; i < truncation_level_; ++i) {
       // Clear position info
-      position_cnts_[i] = 0LL;
       i_costs_[i] = 0.0f;
       j_costs_[i] = 0.0f;
     }
@@ -349,7 +342,6 @@ class LambdarankNDCG : public RankingObjective {
     // Clear Buffer
     for (int i = 0; i < num_threads_; i++) {
       for (int j = 0; j < truncation_level_; ++j) {
-        position_cnts_buffer_[i][j] = 0LL;
         i_costs_buffer_[i][j] = 0.0f;
         j_costs_buffer_[i][j] = 0.0f;
       }
@@ -360,21 +352,10 @@ class LambdarankNDCG : public RankingObjective {
 
  private:
   void LogDebugPositionBiases() const {
-    int64_t position_cnts_sum = 0LL;
-    for (int i = 0; i < truncation_level_; ++i) {
-      position_cnts_sum += position_cnts_[i];
-    }
-
-    Log::Debug("");
-    Log::Debug("eta: %.1f, position_cnts_sum: %i", eta_, position_cnts_sum);
-
     std::stringstream message_stream;
     message_stream  << std::setw(10) << "position"
                     << std::setw(15) << "bias_i"
                     << std::setw(15) << "bias_j"
-                    << std::setw(15) << "score"
-                    << std::setw(15) << "lambda"
-                    << std::setw(15) << "high_pair_cnt"
                     << std::setw(15) << "i_cost"
                     << std::setw(15) << "j_cost";
     Log::Debug(message_stream.str().c_str());
@@ -383,9 +364,8 @@ class LambdarankNDCG : public RankingObjective {
       message_stream  << std::setw(10) << i
                       << std::setw(15) << i_biases_pow_[i]
                       << std::setw(15) << j_biases_pow_[i]
-                      << std::setw(15) << 1.0f * position_cnts_[i] / position_cnts_sum
-                      << std::setw(15) << i_costs_[i] / position_cnts_sum
-                      << std::setw(15) << j_costs_[i] / position_cnts_sum
+                      << std::setw(15) << i_costs_[i]
+                      << std::setw(15) << j_costs_[i]
                       << std::endl;
       Log::Debug(message_stream.str().c_str());
     }
@@ -418,10 +398,6 @@ class LambdarankNDCG : public RankingObjective {
 
   /*! \brief power of position biases */
   mutable std::vector<label_t> j_biases_pow_;
-
-  /*! \brief position cnts */
-  mutable std::vector<int64_t> position_cnts_;
-  mutable std::vector<std::vector<int64_t>> position_cnts_buffer_;
 
   // mutable double position cost;
   mutable std::vector<label_t> i_costs_;
