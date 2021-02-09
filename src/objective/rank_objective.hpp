@@ -154,7 +154,7 @@ class LambdarankNDCG : public RankingObjective {
                                       const label_t* label, const double* score,
                                       score_t* lambdas,
                                       score_t* hessians) const override {
-    const int tid = omp_get_thread_num(); // get thread ID
+    const int tid = omp_get_thread_num();  // get thread id
 
     // get max DCG on current query
     const double inverse_max_dcg = inverse_max_dcgs_[query_id];
@@ -225,10 +225,10 @@ class LambdarankNDCG : public RankingObjective {
         if (unbiased_) {
           // check that 1.0 instead of 2.0 is ok
           // might need a sigmoid_ thrown in somewhere
-          double p_cost = log(1.0f / (1.0f - p_lambda)) * delta_pair_NDCG; /// log(1+e^(-sigma*(si-sj)))
+          double p_cost = log(1.0f / (1.0f - p_lambda)) * delta_pair_NDCG;  // log(1+e^(-sigma*(si-sj)))
 
           // orig has += high_sum_cost_i
-          // but that is just an in loop accumulator to avoid element look up 
+          // but that is just an in loop accumulator to avoid element look up
           // that var that can be removed, lookup is fine
           i_costs_buffer_[tid][high_rank] += p_cost / j_biases_pow_[low_rank];
           j_costs_buffer_[tid][low_rank] += p_cost / i_biases_pow_[high_rank];
@@ -242,7 +242,7 @@ class LambdarankNDCG : public RankingObjective {
 
         // orig has 2.0 * delta / bias related to always defaulting sigmoid to 2
         // this has a sigmoid_^2, check impact
-        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG / i_biases_pow_[high_rank] / j_biases_pow_[low_rank]; ;
+        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG / i_biases_pow_[high_rank] / j_biases_pow_[low_rank];
 
         lambdas[low] -= static_cast<score_t>(p_lambda);
         hessians[low] += static_cast<score_t>(p_hessian);
@@ -264,7 +264,7 @@ class LambdarankNDCG : public RankingObjective {
 
     if (unbiased_) {
       // calculate position score, and position lambda
-      for (data_size_t i = 0; i < cnt && i < truncation_level_; ++i) { ///
+      for (data_size_t i = 0; i < cnt && i < truncation_level_; ++i) {
         position_scores_buffer_[tid][i] += score[i];
         position_lambdas_buffer_[tid][i] += lambdas[i];
       }
@@ -299,7 +299,7 @@ class LambdarankNDCG : public RankingObjective {
     }
   }
 
-    void InitPositionBiases() { 
+  void InitPositionBiases() {
     i_biases_pow_.resize(truncation_level_);
     j_biases_pow_.resize(truncation_level_);
     for (int i = 0; i < truncation_level_; ++i) {
@@ -308,7 +308,7 @@ class LambdarankNDCG : public RankingObjective {
     }
   }
 
-  void InitPositionGradients() { 
+  void InitPositionGradients() {
     position_cnts_.resize(truncation_level_);
     position_scores_.resize(truncation_level_);
     position_lambdas_.resize(truncation_level_);
@@ -376,7 +376,7 @@ class LambdarankNDCG : public RankingObjective {
 
  private:
   void LogDebugPositionBiases() const {
-    long long position_cnts_sum = 0LL;
+    int64_t position_cnts_sum = 0LL;
     for (int i = 0; i < truncation_level_; ++i) {
       position_cnts_sum += position_cnts_[i];
     }
@@ -384,18 +384,18 @@ class LambdarankNDCG : public RankingObjective {
     Log::Debug("");
     Log::Debug("eta: %.1f, position_cnts_sum: %i", eta_, position_cnts_sum);
 
-    std::stringstream message_stream; 
-    message_stream  << std::setw(10) << "position" 
+    std::stringstream message_stream;
+    message_stream  << std::setw(10) << "position"
                     << std::setw(15) << "bias_i"
                     << std::setw(15) << "bias_j"
-                    << std::setw(15) << "score" 
-                    << std::setw(15) << "lambda" 
+                    << std::setw(15) << "score"
+                    << std::setw(15) << "lambda"
                     << std::setw(15) << "high_pair_cnt"
                     << std::setw(15) << "i_cost"
                     << std::setw(15) << "j_cost";
     Log::Debug(message_stream.str().c_str());
 
-    for (int i = 0; i < truncation_level_; ++i) { ///
+    for (int i = 0; i < truncation_level_; ++i) {
       message_stream  << std::setw(10) << i
                       << std::setw(15) << i_biases_pow_[i]
                       << std::setw(15) << j_biases_pow_[i]
@@ -432,26 +432,26 @@ class LambdarankNDCG : public RankingObjective {
 
   // bias correction variables
   /*! \brief power of position biases */
-  mutable std::vector<label_t> i_biases_pow_; 
+  mutable std::vector<label_t> i_biases_pow_;
 
   /*! \brief power of position biases */
-  mutable std::vector<label_t> j_biases_pow_; 
+  mutable std::vector<label_t> j_biases_pow_;
 
   /*! \brief position cnts */
-  mutable std::vector<long long> position_cnts_; 
-  mutable std::vector<std::vector<long long>> position_cnts_buffer_;
+  mutable std::vector<int64_t> position_cnts_;
+  mutable std::vector<std::vector<int64_t>> position_cnts_buffer_;
   /*! \brief position scores */
   mutable std::vector<label_t> position_scores_;
   mutable std::vector<std::vector<label_t>> position_scores_buffer_;
   /*! \brief position lambdas */
   mutable std::vector<label_t> position_lambdas_;
   mutable std::vector<std::vector<label_t>> position_lambdas_buffer_;
-  // mutable double position cost; 
-  mutable std::vector<label_t> i_costs_; 
-  mutable std::vector<std::vector<label_t>> i_costs_buffer_; 
+  // mutable double position cost;
+  mutable std::vector<label_t> i_costs_;
+  mutable std::vector<std::vector<label_t>> i_costs_buffer_;
 
-  mutable std::vector<label_t> j_costs_; 
-  mutable std::vector<std::vector<label_t>> j_costs_buffer_; 
+  mutable std::vector<label_t> j_costs_;
+  mutable std::vector<std::vector<label_t>> j_costs_buffer_;
 
   /*! \brief Should use unbiased lambdarank */
   bool unbiased_;
