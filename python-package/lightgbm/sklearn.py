@@ -176,8 +176,8 @@ class _EvalFunctionWrapper:
             raise TypeError("Self-defined eval function should have 2, 3 or 4 arguments, got %d" % argc)
 
 
-# documentation for LGBMModel methods is shared between the classes here
-# and those in the ``dask`` module
+# documentation templates for LGBMModel methods are shared between the classes in
+# this module and those in the ``dask`` module
 
 _lgbmmodel_doc_fit = (
     """
@@ -293,6 +293,51 @@ _lgbmmodel_doc_custom_eval_note = """
     For multi-class task, the y_pred is group by class_id first, then group by row_id.
     If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
 """
+
+_lgbmmodel_doc_predict = (
+    """
+    Return the predicted value for each sample.
+
+    Parameters
+    ----------
+    X : {X_shape}
+        Input features matrix.
+    raw_score : bool, optional (default=False)
+        Whether to predict raw scores.
+    start_iteration : int, optional (default=0)
+        Start index of the iteration to predict.
+        If <= 0, starts from the first iteration.
+    num_iteration : int or None, optional (default=None)
+        Total number of iterations used in the prediction.
+        If None, if the best iteration exists and start_iteration <= 0, the best iteration is used;
+        otherwise, all iterations from ``start_iteration`` are used (no limits).
+        If <= 0, all iterations from ``start_iteration`` are used (no limits).
+    pred_leaf : bool, optional (default=False)
+        Whether to predict leaf index.
+    pred_contrib : bool, optional (default=False)
+        Whether to predict feature contributions.
+
+        .. note::
+
+            If you want to get more explanations for your model's predictions using SHAP values,
+            like SHAP interaction values,
+            you can install the shap package (https://github.com/slundberg/shap).
+            Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
+            column, where the last column is the expected value.
+
+    **kwargs
+        Other parameters for the prediction.
+
+    Returns
+    -------
+    predicted_result : {predicted_result_shape}
+        The predicted values.
+    X_leaves : {X_leaves_shape}
+        If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
+    X_SHAP_values : {X_SHAP_values_shape}
+        If ``pred_contrib=True``, the feature contributions for each sample.
+    """
+)
 
 
 class LGBMModel(_LGBMModelBase):
@@ -668,47 +713,7 @@ class LGBMModel(_LGBMModelBase):
 
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
                 pred_leaf=False, pred_contrib=False, **kwargs):
-        """Return the predicted value for each sample.
 
-        Parameters
-        ----------
-        X : array-like or sparse matrix of shape = [n_samples, n_features]
-            Input features matrix.
-        raw_score : bool, optional (default=False)
-            Whether to predict raw scores.
-        start_iteration : int, optional (default=0)
-            Start index of the iteration to predict.
-            If <= 0, starts from the first iteration.
-        num_iteration : int or None, optional (default=None)
-            Total number of iterations used in the prediction.
-            If None, if the best iteration exists and start_iteration <= 0, the best iteration is used;
-            otherwise, all iterations from ``start_iteration`` are used (no limits).
-            If <= 0, all iterations from ``start_iteration`` are used (no limits).
-        pred_leaf : bool, optional (default=False)
-            Whether to predict leaf index.
-        pred_contrib : bool, optional (default=False)
-            Whether to predict feature contributions.
-
-            .. note::
-
-                If you want to get more explanations for your model's predictions using SHAP values,
-                like SHAP interaction values,
-                you can install the shap package (https://github.com/slundberg/shap).
-                Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
-                column, where the last column is the expected value.
-
-        **kwargs
-            Other parameters for the prediction.
-
-        Returns
-        -------
-        predicted_result : array-like of shape = [n_samples] or shape = [n_samples, n_classes]
-            The predicted values.
-        X_leaves : array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
-            If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-        X_SHAP_values : array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects
-            If ``pred_contrib=True``, the feature contributions for each sample.
-        """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
@@ -721,6 +726,13 @@ class LGBMModel(_LGBMModelBase):
                              % (self._n_features, n_features))
         return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
+
+    predict.__doc__ = _lgbmmodel_doc_predict.format(
+        X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
+        predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
+        X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
+        X_SHAP_values_shape="array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects"
+    )
 
     @property
     def n_features_(self):

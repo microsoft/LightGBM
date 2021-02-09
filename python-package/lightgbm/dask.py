@@ -19,7 +19,14 @@ from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _saf
 from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
                      SKLEARN_INSTALLED, LGBMNotFittedError,
                      DASK_INSTALLED, dask_DataFrame, dask_Array, dask_Series, delayed, Client, default_client, get_worker, wait)
-from .sklearn import _lgbmmodel_doc_fit, LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
+from .sklearn import (
+    _lgbmmodel_doc_fit,
+    _lgbmmodel_doc_predict,
+    LGBMClassifier,
+    LGBMModel,
+    LGBMRegressor,
+    LGBMRanker
+)
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
@@ -632,7 +639,12 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             **kwargs
         )
 
-    predict.__doc__ = LGBMClassifier.predict.__doc__
+    predict.__doc__ = _lgbmmodel_doc_predict.format(
+        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        predicted_result_shape="dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
+        X_leaves_shape="dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
+        X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+    )
 
     def predict_proba(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict_proba."""
@@ -765,7 +777,12 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             **kwargs
         )
 
-    predict.__doc__ = LGBMRegressor.predict.__doc__
+    predict.__doc__ = _lgbmmodel_doc_predict.format(
+        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        predicted_result_shape="dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
+        X_leaves_shape="dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
+        X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+    )
 
     def to_local(self) -> LGBMRegressor:
         """Create regular version of lightgbm.LGBMRegressor from the distributed version.
@@ -892,7 +909,12 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
         return _predict(self.to_local(), X, **kwargs)
 
-    predict.__doc__ = LGBMRanker.predict.__doc__
+    predict.__doc__ = _lgbmmodel_doc_predict.format(
+        X_shape="dask Array or dask DataFrame of shape = [n_samples, n_features]",
+        predicted_result_shape="dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
+        X_leaves_shape="dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
+        X_SHAP_values_shape="dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+    )
 
     def to_local(self) -> LGBMRanker:
         """Create regular version of lightgbm.LGBMRanker from the distributed version.
