@@ -210,11 +210,6 @@ def test_classifier(output, centers, client, listen_port):
         "num_leaves": 10
     }
 
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
-
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
         time_out=5,
@@ -282,11 +277,6 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
         "n_estimators": 10,
         "num_leaves": 10
     }
-
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
 
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
@@ -379,11 +369,6 @@ def test_regressor(output, client, listen_port):
         "num_leaves": 10
     }
 
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
-
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         time_out=5,
@@ -460,11 +445,6 @@ def test_regressor_pred_contrib(output, client, listen_port):
         "num_leaves": 10
     }
 
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
-
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         time_out=5,
@@ -518,11 +498,6 @@ def test_regressor_quantile(output, client, listen_port, alpha):
         "n_estimators": 10,
         "num_leaves": 10
     }
-
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
 
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
@@ -592,11 +567,6 @@ def test_ranker(output, client, listen_port, group):
         "num_leaves": 20,
         "min_child_samples": 1
     }
-
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
 
     dask_ranker = lgb.DaskLGBMRanker(
         client=client,
