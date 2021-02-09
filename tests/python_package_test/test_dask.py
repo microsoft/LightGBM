@@ -39,8 +39,6 @@ tasks = ['classification', 'regression', 'ranking']
 data_output = ['array', 'scipy_csr_matrix', 'dataframe']
 data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
-tasks_outputs = [(task, output) for task, output in product(tasks, data_output)
-                 if (task, output) != ('ranking', 'scipy_csr_matrix')]
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
@@ -808,10 +806,14 @@ def test_errors(c, s, a, b):
         assert 'foo' in str(info.value)
 
 
-@pytest.mark.parametrize('task,output', tasks_outputs)
-def test_training_having_workers_without_data(client, task, output):
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
+def test_training_succeeds_even_if_some_workers_do_not_have_any_data(client, task, output):
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
-    def repartition(collection):
+    def collection_to_single_partition(collection):
+        """Merge the parts of a Dask collection into a single partition."""
         if collection is None:
             return
         if isinstance(collection, da.Array):
@@ -830,7 +832,8 @@ def test_training_having_workers_without_data(client, task, output):
             objective=task,
             output=output
         )
-        g = dg = None
+        g = None
+        dg = None
         if task == 'classification':
             dask_model_factory = lgb.DaskLGBMClassifier
             local_model_factory = lgb.LGBMClassifier
@@ -838,10 +841,10 @@ def test_training_having_workers_without_data(client, task, output):
             dask_model_factory = lgb.DaskLGBMRegressor
             local_model_factory = lgb.LGBMRegressor
 
-    dX = repartition(dX)
-    dy = repartition(dy)
-    dw = repartition(dw)
-    dg = repartition(dg)
+    dX = collection_to_single_partition(dX)
+    dy = collection_to_single_partition(dy)
+    dw = collection_to_single_partition(dw)
+    dg = collection_to_single_partition(dg)
 
     n_workers = len(client.scheduler_info()['workers'])
     assert n_workers > 1
@@ -864,7 +867,7 @@ def test_training_having_workers_without_data(client, task, output):
         local_model.fit(X, y, sample_weight=w)
     local_preds = local_model.predict(X)
 
-    assert np.allclose(dask_preds, local_preds)
+    assert assert_eq(dask_preds, local_preds)
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
