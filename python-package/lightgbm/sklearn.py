@@ -933,7 +933,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         description="Return the predicted probability for each class for each sample.",
         X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
         output_name="predicted_probability",
-        predicted_result_shape="array-like of shape = [n_samples, n_classes]",
+        predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
         X_SHAP_values_shape="array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects"
     )
