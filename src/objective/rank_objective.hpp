@@ -319,7 +319,6 @@ class LambdarankNDCG : public RankingObjective {
     // accumulate the parallel results
     for (int i = 0; i < num_threads_; i++) {
       for (int j = 0; j < truncation_level_; ++j) {
-        
         i_costs_[j] += i_costs_buffer_[i][j];
         j_costs_[j] += j_costs_buffer_[i][j];
 
