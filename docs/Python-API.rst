@@ -1,69 +1,75 @@
 Python API
 ==========
 
+.. currentmodule:: lightgbm
+
 Data Structure API
 ------------------
 
-.. autoclass:: lightgbm.Dataset
-    :members:
-    :show-inheritance:
+.. autosummary::
+    :toctree: pythonapi/
 
-.. autoclass:: lightgbm.Booster
-    :members:
-    :show-inheritance:
-
+    Dataset
+    Booster
+    CVBooster
 
 Training API
 ------------
 
-.. autofunction:: lightgbm.train
+.. autosummary::
+    :toctree: pythonapi/
 
-.. autofunction:: lightgbm.cv
-
+    train
+    cv
 
 Scikit-learn API
 ----------------
 
-.. autoclass:: lightgbm.LGBMModel
-    :members:
-    :inherited-members:
-    :show-inheritance:
+.. autosummary::
+    :toctree: pythonapi/
 
-.. autoclass:: lightgbm.LGBMClassifier
-    :members:
-    :inherited-members:
-    :show-inheritance:
+    LGBMModel
+    LGBMClassifier
+    LGBMRegressor
+    LGBMRanker
 
-.. autoclass:: lightgbm.LGBMRegressor
-    :members:
-    :inherited-members:
-    :show-inheritance:
+Dask API
+--------
 
-.. autoclass:: lightgbm.LGBMRanker
-    :members:
-    :inherited-members:
-    :show-inheritance:
+.. autosummary::
+    :toctree: pythonapi/
 
+    DaskLGBMClassifier
+    DaskLGBMRegressor
+    DaskLGBMRanker
 
 Callbacks
 ---------
 
-.. autofunction:: lightgbm.early_stopping
+.. autosummary::
+    :toctree: pythonapi/
 
-.. autofunction:: lightgbm.print_evaluation
-
-.. autofunction:: lightgbm.record_evaluation
-
-.. autofunction:: lightgbm.reset_parameter
-
+    early_stopping
+    print_evaluation
+    record_evaluation
+    reset_parameter
 
 Plotting
 --------
 
-.. autofunction:: lightgbm.plot_importance
+.. autosummary::
+    :toctree: pythonapi/
 
-.. autofunction:: lightgbm.plot_metric
+    plot_importance
+    plot_split_value_histogram
+    plot_metric
+    plot_tree
+    create_tree_digraph
 
-.. autofunction:: lightgbm.plot_tree
+Utilities
+---------
 
-.. autofunction:: lightgbm.create_tree_digraph
+.. autosummary::
+    :toctree: pythonapi/
+
+    register_logger

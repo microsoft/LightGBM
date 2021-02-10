@@ -1,13 +1,16 @@
 [checking]
+maxrequestspersecond=1
 recursionlevel=1
 anchors=1
 sslverify=0
+threads=1
 
 [filtering]
 ignore=
-  public.tableau.com
-  http://www.intel.com/software/products/support
+  pythonapi/lightgbm\..*\.html.*
+  http.*amd.com/.*
 ignorewarnings=http-robots-denied,https-certificate-error
+checkextern=1
 
 [output]
 # Set to 1 if you want see the full output, not only warnings and errors

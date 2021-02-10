@@ -1,10 +1,18 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
 
+#include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 
-#include <cstring>
+#include <string>
+#include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <memory>
 #include <vector>
 
 #include "binary_objective.hpp"
@@ -17,6 +25,10 @@ class MulticlassSoftmax: public ObjectiveFunction {
  public:
   explicit MulticlassSoftmax(const Config& config) {
     num_class_ = config.num_class;
+    // This factor is to rescale the redundant form of K-classification, to the non-redundant form.
+    // In the traditional settings of K-classification, there is one redundant class, whose output is set to 0 (like the class 0 in binary classification).
+    // This is from the Friedman GBDT paper.
+    factor_ = static_cast<double>(num_class_) / (num_class_ - 1.0f);
   }
 
   explicit MulticlassSoftmax(const std::vector<std::string>& strs) {
@@ -32,6 +44,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     if (num_class_ < 0) {
       Log::Fatal("Objective should contain num_class field");
     }
+    factor_ = static_cast<double>(num_class_) / (num_class_ - 1.0f);
   }
 
   ~MulticlassSoftmax() {
@@ -59,6 +72,12 @@ class MulticlassSoftmax: public ObjectiveFunction {
     if (weights_ == nullptr) {
       sum_weight = num_data_;
     }
+    if (Network::num_machines() > 1) {
+      sum_weight = Network::GlobalSyncUpBySum(sum_weight);
+      for (int i = 0; i < num_class_; ++i) {
+        class_init_probs_[i] = Network::GlobalSyncUpBySum(class_init_probs_[i]);
+      }
+    }
     for (int i = 0; i < num_class_; ++i) {
       class_init_probs_[i] /= sum_weight;
     }
@@ -83,7 +102,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
           } else {
             gradients[idx] = static_cast<score_t>(p);
           }
-          hessians[idx] = static_cast<score_t>(2.0f * p * (1.0f - p));
+          hessians[idx] = static_cast<score_t>(factor_ * p * (1.0f - p));
         }
       }
     } else {
@@ -104,7 +123,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
           } else {
             gradients[idx] = static_cast<score_t>((p) * weights_[i]);
           }
-          hessians[idx] = static_cast<score_t>((2.0f * p * (1.0f - p))* weights_[i]);
+          hessians[idx] = static_cast<score_t>((factor_ * p * (1.0f - p))* weights_[i]);
         }
       }
     }
@@ -147,6 +166,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
   }
 
  private:
+  double factor_;
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of classes */
@@ -207,8 +227,8 @@ class MulticlassOVA: public ObjectiveFunction {
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
     for (int i = 0; i < num_class_; ++i) {
-      int64_t bias = static_cast<int64_t>(num_data_) * i;
-      binary_loss_[i]->GetGradients(score + bias, gradients + bias, hessians + bias);
+      int64_t offset = static_cast<int64_t>(num_data_) * i;
+      binary_loss_[i]->GetGradients(score + offset, gradients + offset, hessians + offset);
     }
   }
 

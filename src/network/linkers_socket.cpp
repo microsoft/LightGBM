@@ -1,19 +1,23 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifdef USE_SOCKET
-#include "linkers.h"
 
+#include <LightGBM/config.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/text_reader.h>
 
-#include <LightGBM/config.h>
-
+#include <algorithm>
+#include <chrono>
 #include <cstring>
-
+#include <string>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <thread>
-#include <chrono>
-#include <string>
+
+#include "linkers.h"
 
 namespace LightGBM {
 
@@ -88,7 +92,7 @@ void Linkers::ParseMachineList(const std::string& machines, const std::string& f
   }
   for (auto& line : lines) {
     line = Common::Trim(line);
-    if (line.find_first_of("rank=") != std::string::npos) {
+    if (line.find("rank=") != std::string::npos) {
       std::vector<std::string> str_after_split = Common::Split(line.c_str(), '=');
       Common::Atoi(str_after_split[1].c_str(), &rank_);
       continue;
@@ -183,25 +187,31 @@ void Linkers::Construct() {
   listener_->SetTimeout(socket_timeout_);
   listener_->Listen(incoming_cnt);
   std::thread listen_thread(&Linkers::ListenThread, this, incoming_cnt);
-  const int connect_fail_retry_cnt = 20;
-  const int connect_fail_delay_time = 10 * 1000;  // 10s
+  const int connect_fail_constant_factor = 20;
+  const int connect_fail_retries_scale_factor = static_cast<int>(num_machines_ / connect_fail_constant_factor);
+  const int connect_fail_retry_cnt = std::max(connect_fail_constant_factor, connect_fail_retries_scale_factor);
+  const int connect_fail_retry_first_delay_interval = 200;  // 0.2 s
+  const float connect_fail_retry_delay_factor = 1.3f;
   // start connect
   for (auto it = need_connect.begin(); it != need_connect.end(); ++it) {
     int out_rank = it->first;
     // let smaller rank connect to larger rank
     if (out_rank > rank_) {
-      TcpSocket cur_socket;
+      int connect_fail_delay_time = connect_fail_retry_first_delay_interval;
       for (int i = 0; i < connect_fail_retry_cnt; ++i) {
+        TcpSocket cur_socket;
         if (cur_socket.Connect(client_ips_[out_rank].c_str(), client_ports_[out_rank])) {
+          // send local rank
+          cur_socket.Send(reinterpret_cast<const char*>(&rank_), sizeof(rank_));
+          SetLinker(out_rank, cur_socket);
           break;
         } else {
           Log::Warning("Connecting to rank %d failed, waiting for %d milliseconds", out_rank, connect_fail_delay_time);
+          cur_socket.Close();
           std::this_thread::sleep_for(std::chrono::milliseconds(connect_fail_delay_time));
+          connect_fail_delay_time = static_cast<int>(connect_fail_delay_time * connect_fail_retry_delay_factor);
         }
       }
-      // send local rank
-      cur_socket.Send(reinterpret_cast<const char*>(&rank_), sizeof(rank_));
-      SetLinker(out_rank, cur_socket);
     }
   }
   // wait for listener

@@ -1,16 +1,28 @@
+# Tiny Distroless Dockerfile for LightGBM GPU CLI-only Version
+
+`dockerfile-cli-only-distroless.gpu` - A multi-stage build based on the `nvidia/opencl:devel-ubuntu18.04` (build) and `distroless/cc-debian10` (production) images. LightGBM (CLI-only) can be utilized in GPU and CPU modes. The resulting image size is around 15 MB.
+
+---
+
+# Small Dockerfile for LightGBM GPU CLI-only Version
+
+`dockerfile-cli-only.gpu` - A multi-stage build based on the `nvidia/opencl:devel` (build) and `nvidia/opencl:runtime` (production) images. LightGBM (CLI-only) can be utilized in GPU and CPU modes. The resulting image size is around 100 MB.
+
+---
+
 # Dockerfile for LightGBM GPU Version with Python
 
-A docker file with LightGBM utilizing nvidia-docker. The file is based on the nvidia/cuda:8.0 image. LightGBM can be utilized in GPU and CPU modes and via Python (2.7 & 3.5)
+`dockerfile.gpu` - A docker file with LightGBM utilizing nvidia-docker. The file is based on the `nvidia/cuda:8.0-cudnn5-devel` image.
+LightGBM can be utilized in GPU and CPU modes and via Python.
 
 ## Contents
 
 - LightGBM (cpu + gpu)
-- Python 2.7 (Conda) + scikit-learn notebooks pandas matplotlib
-- Python 3.5 (Conda) + scikit-learn notebooks pandas matplotlib
+- Python 3.8 (conda) + scikit-learn, notebooks, pandas, matplotlib
 
-Running the container starts a jupyter notebook at localhost:8888
+Running the container starts a Jupyter Notebook at `localhost:8888`.
 
-jupyter password: keras
+Jupyter password: `keras`.
 
 ## Requirements
 

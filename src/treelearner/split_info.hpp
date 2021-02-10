@@ -1,13 +1,18 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_TREELEARNER_SPLIT_INFO_HPP_
 #define LIGHTGBM_TREELEARNER_SPLIT_INFO_HPP_
 
 #include <LightGBM/meta.h>
 
+#include <limits>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <limits>
 #include <functional>
+#include <vector>
 
 namespace LightGBM {
 
@@ -43,10 +48,8 @@ struct SplitInfo {
   /*! \brief True if default split is left */
   bool default_left = true;
   int8_t monotone_type = 0;
-  double min_constraint = -std::numeric_limits<double>::max();
-  double max_constraint = std::numeric_limits<double>::max();
   inline static int Size(int max_cat_threshold) {
-    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 9 + sizeof(data_size_t) * 2 + max_cat_threshold * sizeof(uint32_t) + sizeof(int8_t);
+    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 7 + sizeof(data_size_t) * 2 + max_cat_threshold * sizeof(uint32_t) + sizeof(int8_t);
   }
 
   inline void CopyTo(char* buffer) const {
@@ -76,10 +79,6 @@ struct SplitInfo {
     buffer += sizeof(default_left);
     std::memcpy(buffer, &monotone_type, sizeof(monotone_type));
     buffer += sizeof(monotone_type);
-    std::memcpy(buffer, &min_constraint, sizeof(min_constraint));
-    buffer += sizeof(min_constraint);
-    std::memcpy(buffer, &max_constraint, sizeof(max_constraint));
-    buffer += sizeof(max_constraint);
     std::memcpy(buffer, &num_cat_threshold, sizeof(num_cat_threshold));
     buffer += sizeof(num_cat_threshold);
     std::memcpy(buffer, cat_threshold.data(), sizeof(uint32_t) * num_cat_threshold);
@@ -112,10 +111,6 @@ struct SplitInfo {
     buffer += sizeof(default_left);
     std::memcpy(&monotone_type, buffer, sizeof(monotone_type));
     buffer += sizeof(monotone_type);
-    std::memcpy(&min_constraint, buffer, sizeof(min_constraint));
-    buffer += sizeof(min_constraint);
-    std::memcpy(&max_constraint, buffer, sizeof(max_constraint));
-    buffer += sizeof(max_constraint);
     std::memcpy(&num_cat_threshold, buffer, sizeof(num_cat_threshold));
     buffer += sizeof(num_cat_threshold);
     cat_threshold.resize(num_cat_threshold);

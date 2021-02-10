@@ -1,12 +1,17 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_BOOSTING_H_
 #define LIGHTGBM_BOOSTING_H_
 
-#include <LightGBM/meta.h>
 #include <LightGBM/config.h>
+#include <LightGBM/meta.h>
 
-#include <vector>
 #include <string>
 #include <map>
+#include <unordered_map>
+#include <vector>
 
 namespace LightGBM {
 
@@ -118,7 +123,7 @@ class LIGHTGBM_EXPORT Boosting {
   */
   virtual void GetPredictAt(int data_idx, double* result, int64_t* out_len) = 0;
 
-  virtual int NumPredictOneRow(int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const = 0;
+  virtual int NumPredictOneRow(int start_iteration, int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform
@@ -161,18 +166,20 @@ class LIGHTGBM_EXPORT Boosting {
   * \brief Feature contributions for the model's prediction of one record
   * \param feature_values Feature value on this record
   * \param output Prediction result for this record
-  * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all models are evaluated.
   */
-  virtual void PredictContrib(const double* features, double* output,
-                              const PredictionEarlyStopInstance* early_stop) const = 0;
+  virtual void PredictContrib(const double* features, double* output) const = 0;
+
+  virtual void PredictContribByMap(const std::unordered_map<int, double>& features,
+                                   std::vector<std::unordered_map<int, double>>* output) const = 0;
 
   /*!
   * \brief Dump model to json format string
   * \param start_iteration The model will be saved start from
   * \param num_iteration Number of iterations that want to dump, -1 means dump all
+  * \param feature_importance_type Type of feature importance, 0: split, 1: gain
   * \return Json format string of model
   */
-  virtual std::string DumpModel(int start_iteration, int num_iteration) const = 0;
+  virtual std::string DumpModel(int start_iteration, int num_iteration, int feature_importance_type) const = 0;
 
   /*!
   * \brief Translate model to if-else statement
@@ -193,19 +200,20 @@ class LIGHTGBM_EXPORT Boosting {
   * \brief Save model to file
   * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
-  * \param is_finish Is training finished or not
+  * \param feature_importance_type Type of feature importance, 0: split, 1: gain
   * \param filename Filename that want to save to
   * \return true if succeeded
   */
-  virtual bool SaveModelToFile(int start_iteration, int num_iterations, const char* filename) const = 0;
+  virtual bool SaveModelToFile(int start_iteration, int num_iterations, int feature_importance_type, const char* filename) const = 0;
 
   /*!
   * \brief Save model to string
   * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
+  * \param feature_importance_type Type of feature importance, 0: split, 1: gain
   * \return Non-empty string if succeeded
   */
-  virtual std::string SaveModelToString(int start_iteration, int num_iterations) const = 0;
+  virtual std::string SaveModelToString(int start_iteration, int num_iterations, int feature_importance_type) const = 0;
 
   /*!
   * \brief Restore from a serialized string
@@ -222,6 +230,18 @@ class LIGHTGBM_EXPORT Boosting {
   * \return vector of feature_importance
   */
   virtual std::vector<double> FeatureImportance(int num_iteration, int importance_type) const = 0;
+
+  /*!
+  * \brief Calculate upper bound value
+  * \return max possible value
+  */
+  virtual double GetUpperBoundValue() const = 0;
+
+  /*!
+  * \brief Calculate lower bound value
+  * \return min possible value
+  */
+  virtual double GetLowerBoundValue() const = 0;
 
   /*!
   * \brief Get max feature index of this model
@@ -264,10 +284,11 @@ class LIGHTGBM_EXPORT Boosting {
 
   /*!
   * \brief Initial work for the prediction
+  * \param start_iteration Start index of the iteration to predict
   * \param num_iteration number of used iteration
   * \param is_pred_contrib
   */
-  virtual void InitPredict(int num_iteration, bool is_pred_contrib) = 0;
+  virtual void InitPredict(int start_iteration, int num_iteration, bool is_pred_contrib) = 0;
 
   /*!
   * \brief Name of submodel
@@ -291,6 +312,8 @@ class LIGHTGBM_EXPORT Boosting {
   * \return The boosting object
   */
   static Boosting* CreateBoosting(const std::string& type, const char* filename);
+
+  virtual bool IsLinear() const { return false; }
 };
 
 class GBDTBase : public Boosting {

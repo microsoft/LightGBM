@@ -1,0 +1,19 @@
+root = true
+
+[*]
+charset=utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+indent_style = space
+indent_size = 2
+
+[*.{py,sh,js}]
+indent_size = 4
+
+# Placeholder files
+[{*.gitkeep,__init__.py}]
+insert_final_newline = none
+
+# Tabs matter for Makefile and .gitmodules
+[{makefile*,Makefile*,*.mk,*.mak,*.makefile,*.Makefile,GNUmakefile,BSDmakefile,make.bat,Makevars*,*.gitmodules}]
+indent_style = tab

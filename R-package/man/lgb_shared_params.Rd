@@ -4,23 +4,60 @@
 \alias{lgb_shared_params}
 \title{Shared parameter docs}
 \arguments{
-\item{callbacks}{list of callback functions
-List of callback functions that are applied at each iteration.}
+\item{callbacks}{List of callback functions that are applied at each iteration.}
 
-\item{data}{a \code{lgb.Dataset} object, used for training}
+\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
+may allow you to pass other types of data like \code{matrix} and then separately supply
+\code{label} as a keyword argument.}
 
-\item{early_stopping_rounds}{int
-Activates early stopping.
-Requires at least one validation data and one metric
-If there's more than one, will check all of them except the training data
-Returns the model with (best_iter + early_stopping_rounds)
-If early stopping occurs, the model will have 'best_iter' field}
+\item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
+and one metric. If there's more than one, will check all of them
+except the training data. Returns the model with (best_iter + early_stopping_rounds).
+If early stopping occurs, the model will have 'best_iter' field.}
+
+\item{eval}{evaluation function(s). This can be a character vector, function, or list with a mixture of
+            strings and functions.
+
+            \itemize{
+                \item{\bold{a. character vector}:
+                    If you provide a character vector to this argument, it should contain strings with valid
+                    evaluation metrics.
+                    See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#metric}{
+                    The "metric" section of the documentation}
+                    for a list of valid metrics.
+                }
+                \item{\bold{b. function}:
+                     You can provide a custom evaluation function. This
+                     should accept the keyword arguments \code{preds} and \code{dtrain} and should return a named
+                     list with three elements:
+                     \itemize{
+                         \item{\code{name}: A string with the name of the metric, used for printing
+                             and storing results.
+                         }
+                         \item{\code{value}: A single number indicating the value of the metric for the
+                             given predictions and true values
+                         }
+                         \item{
+                             \code{higher_better}: A boolean indicating whether higher values indicate a better fit.
+                             For example, this would be \code{FALSE} for metrics like MAE or RMSE.
+                         }
+                     }
+                }
+                \item{\bold{c. list}:
+                    If a list is given, it should only contain character vectors and functions.
+                    These should follow the requirements from the descriptions above.
+                }
+            }}
 
 \item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
 \item{nrounds}{number of training rounds}
+
+\item{obj}{objective function, can be character or custom objective function. Examples include
+\code{regression}, \code{regression_l1}, \code{huber},
+\code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
 
 \item{params}{List of parameters}
 
@@ -29,3 +66,21 @@ If early stopping occurs, the model will have 'best_iter' field}
 \description{
 Parameter docs shared by \code{lgb.train}, \code{lgb.cv}, and \code{lightgbm}
 }
+\section{Early Stopping}{
+
+
+         "early stopping" refers to stopping the training process if the model's performance on a given
+         validation set does not improve for several consecutive iterations.
+
+         If multiple arguments are given to \code{eval}, their order will be preserved. If you enable
+         early stopping by setting \code{early_stopping_rounds} in \code{params}, by default all
+         metrics will be considered for early stopping.
+
+         If you want to only consider the first metric for early stopping, pass
+         \code{first_metric_only = TRUE} in \code{params}. Note that if you also specify \code{metric}
+         in \code{params}, that metric will be considered the "first" one. If you omit \code{metric},
+         a default metric will be used based on your choice for the parameter \code{obj} (keyword argument)
+         or \code{objective} (passed into \code{params}).
+}
+
+\keyword{internal}

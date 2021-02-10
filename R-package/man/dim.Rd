@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgb.Dataset.R
 \name{dim.lgb.Dataset}
 \alias{dim.lgb.Dataset}
-\title{Dimensions of an lgb.Dataset}
+\title{Dimensions of an \code{lgb.Dataset}}
 \usage{
 \method{dim}{lgb.Dataset}(x, ...)
 }
@@ -22,7 +22,7 @@ Note: since \code{nrow} and \code{ncol} internally use \code{dim}, they can also
 be directly used with an \code{lgb.Dataset} object.
 }
 \examples{
-library(lightgbm)
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -30,5 +30,5 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 stopifnot(nrow(dtrain) == nrow(train$data))
 stopifnot(ncol(dtrain) == ncol(train$data))
 stopifnot(all(dim(dtrain) == dim(train$data)))
-
+}
 }

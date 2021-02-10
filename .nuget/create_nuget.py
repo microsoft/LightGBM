@@ -26,16 +26,16 @@ if __name__ == "__main__":
     copy_file(os.path.join(source, "lib_lightgbm.dylib"), os.path.join(osx_folder_path, "lib_lightgbm.dylib"))
     copy_file(os.path.join(source, "lib_lightgbm.dll"), os.path.join(windows_folder_path, "lib_lightgbm.dll"))
     copy_file(os.path.join(source, "lightgbm.exe"), os.path.join(windows_folder_path, "lightgbm.exe"))
-    version = open(os.path.join(current_dir, os.path.pardir, 'VERSION.txt')).read().strip()
-    nuget_str = '''<?xml version="1.0"?>
+    version = open(os.path.join(current_dir, os.path.pardir, 'VERSION.txt')).read().strip().replace('rc', '-rc')
+    nuget_str = r"""<?xml version="1.0"?>
     <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>
         <id>LightGBM</id>
         <version>%s</version>
         <authors>Guolin Ke</authors>
         <owners>Guolin Ke</owners>
-        <licenseUrl>https://github.com/Microsoft/LightGBM/blob/master/LICENSE</licenseUrl>
-        <projectUrl>https://github.com/Microsoft/LightGBM</projectUrl>
+        <licenseUrl>https://github.com/microsoft/LightGBM/blob/master/LICENSE</licenseUrl>
+        <projectUrl>https://github.com/microsoft/LightGBM</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A fast, distributed, high performance gradient boosting framework</description>
         <copyright>Copyright %d @ Microsoft</copyright>
@@ -47,8 +47,8 @@ if __name__ == "__main__":
         <file src="runtimes\**" target="runtimes"/>
         </files>
     </package>
-    ''' % (version, datetime.datetime.now().year)
-    prop_str = '''
+    """ % (version, datetime.datetime.now().year)
+    prop_str = r"""
     <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <ItemGroup Condition="Exists('packages.config') OR
                             Exists('$(MSBuildProjectName).packages.config') OR
@@ -65,8 +65,8 @@ if __name__ == "__main__":
         </Content>
     </ItemGroup>
     </Project>
-    '''
-    target_str = '''
+    """
+    target_str = r"""
     <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <EnableLightGBMUnsupportedPlatformTargetCheck Condition="'$(EnableLightGBMUnsupportedPlatformTargetCheck)' == ''">true</EnableLightGBMUnsupportedPlatformTargetCheck>
@@ -80,7 +80,7 @@ if __name__ == "__main__":
             Text="LightGBM currently supports 'x64' processor architectures. Please ensure your application is targeting 'x64'." />
     </Target>
     </Project>
-    '''
+    """
     with open(os.path.join(current_dir, "LightGBM.nuspec"), "w") as nuget_file:
         nuget_file.write(nuget_str)
     with open(os.path.join(current_dir, "build", "LightGBM.props"), "w") as prop_file:

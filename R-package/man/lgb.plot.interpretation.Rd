@@ -4,8 +4,13 @@
 \alias{lgb.plot.interpretation}
 \title{Plot feature contribution as a bar graph}
 \usage{
-lgb.plot.interpretation(tree_interpretation_dt, top_n = 10, cols = 1,
-  left_margin = 10, cex = NULL)
+lgb.plot.interpretation(
+  tree_interpretation_dt,
+  top_n = 10L,
+  cols = 1L,
+  left_margin = 10L,
+  cex = NULL
+)
 }
 \arguments{
 \item{tree_interpretation_dt}{a \code{data.table} returned by \code{\link{lgb.interprete}}.}
@@ -25,26 +30,45 @@ The \code{lgb.plot.interpretation} function creates a \code{barplot}.
 Plot previously calculated feature contribution as a bar graph.
 }
 \details{
-The graph represents each feature as a horizontal bar of length proportional to the defined contribution of a feature.
-Features are shown ranked in a decreasing contribution order.
+The graph represents each feature as a horizontal bar of length proportional to the defined
+contribution of a feature. Features are shown ranked in a decreasing contribution order.
 }
 \examples{
-library(lightgbm)
-Sigmoid <- function(x) {1 / (1 + exp(-x))}
-Logit <- function(x) {log(x / (1 - x))}
+\donttest{
+Logit <- function(x) {
+  log(x / (1.0 - x))
+}
 data(agaricus.train, package = "lightgbm")
-train <- agaricus.train
-dtrain <- lgb.Dataset(train$data, label = train$label)
-setinfo(dtrain, "init_score", rep(Logit(mean(train$label)), length(train$label)))
+labels <- agaricus.train$label
+dtrain <- lgb.Dataset(
+  agaricus.train$data
+  , label = labels
+)
+setinfo(dtrain, "init_score", rep(Logit(mean(labels)), length(labels)))
+
 data(agaricus.test, package = "lightgbm")
-test <- agaricus.test
 
-params <- list(objective = "binary",
-              learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-              min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
-              model <- lgb.train(params, dtrain, 20)
-model <- lgb.train(params, dtrain, 20)
+params <- list(
+  objective = "binary"
+  , learning_rate = 0.1
+  , max_depth = -1L
+  , min_data_in_leaf = 1L
+  , min_sum_hessian_in_leaf = 1.0
+)
+model <- lgb.train(
+  params = params
+  , data = dtrain
+  , nrounds = 5L
+)
 
-tree_interpretation <- lgb.interprete(model, test$data, 1:5)
-lgb.plot.interpretation(tree_interpretation[[1]], top_n = 10)
+tree_interpretation <- lgb.interprete(
+  model = model
+  , data = agaricus.test$data
+  , idxset = 1L:5L
+)
+lgb.plot.interpretation(
+  tree_interpretation_dt = tree_interpretation[[1L]]
+  , top_n = 3L
+)
+}
 }

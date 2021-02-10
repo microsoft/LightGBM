@@ -1,11 +1,13 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/metric.h>
-
 #include <LightGBM/utils/log.h>
 
-#include <cmath>
-
-#include <vector>
 #include <algorithm>
+#include <cmath>
+#include <vector>
 
 namespace LightGBM {
 
@@ -16,13 +18,14 @@ const data_size_t DCGCalculator::kMaxPosition = 10000;
 
 
 void DCGCalculator::DefaultEvalAt(std::vector<int>* eval_at) {
-  if (eval_at->empty()) {
+  auto& ref_eval_at = *eval_at;
+  if (ref_eval_at.empty()) {
     for (int i = 1; i <= 5; ++i) {
-      eval_at->push_back(i);
+      ref_eval_at.push_back(i);
     }
   } else {
     for (size_t i = 0; i < eval_at->size(); ++i) {
-      CHECK(eval_at->at(i) > 0);
+      CHECK_GT(ref_eval_at[i], 0);
     }
   }
 }
@@ -156,8 +159,13 @@ void DCGCalculator::CheckLabel(const label_t* label, data_size_t num_data) {
       Log::Fatal("label should be int type (met %f) for ranking task,\n"
                  "for the gain of label, please set the label_gain parameter", label[i]);
     }
-    if (static_cast<size_t>(label[i]) >= label_gain_.size() || label[i] < 0) {
-      Log::Fatal("label (%d) excel the max range %d", label[i], label_gain_.size());
+
+    if (label[i] < 0) {
+      Log::Fatal("Label should be non-negative (met %f) for ranking task", label[i]);
+    }
+
+    if (static_cast<size_t>(label[i]) >= label_gain_.size()) {
+      Log::Fatal("Label %zu is not less than the number of label mappings (%zu)", static_cast<size_t>(label[i]), label_gain_.size());
     }
   }
 }

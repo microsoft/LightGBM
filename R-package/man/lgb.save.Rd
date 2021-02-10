@@ -20,6 +20,7 @@ lgb.Booster
 Save LightGBM model
 }
 \examples{
+\donttest{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -29,13 +30,15 @@ test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 params <- list(objective = "regression", metric = "l2")
 valids <- list(test = dtest)
-model <- lgb.train(params,
-                   dtrain,
-                   100,
-                   valids,
-                   min_data = 1,
-                   learning_rate = 1,
-                   early_stopping_rounds = 10)
-lgb.save(model, "model.txt")
-
+model <- lgb.train(
+  params = params
+  , data = dtrain
+  , nrounds = 10L
+  , valids = valids
+  , min_data = 1L
+  , learning_rate = 1.0
+  , early_stopping_rounds = 5L
+)
+lgb.save(model, tempfile(fileext = ".txt"))
+}
 }

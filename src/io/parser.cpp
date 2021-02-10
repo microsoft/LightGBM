@@ -1,8 +1,14 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include "parser.hpp"
 
-#include <iostream>
+#include <string>
+#include <algorithm>
 #include <fstream>
 #include <functional>
+#include <iostream>
 #include <memory>
 
 namespace LightGBM {
@@ -22,13 +28,13 @@ void GetStatistic(const char* str, int* comma_cnt, int* tab_cnt, int* colon_cnt)
   }
 }
 
-int GetLabelIdxForLibsvm(std::string& str, int num_features, int label_idx) {
+int GetLabelIdxForLibsvm(const std::string& str, int num_features, int label_idx) {
   if (num_features <= 0) {
     return label_idx;
   }
-  str = Common::Trim(str);
-  auto pos_space = str.find_first_of(" \f\n\r\t\v");
-  auto pos_colon = str.find_first_of(":");
+  auto str2 = Common::Trim(str);
+  auto pos_space = str2.find_first_of(" \f\n\r\t\v");
+  auto pos_colon = str2.find_first_of(":");
   if (pos_space == std::string::npos || pos_space < pos_colon) {
     return label_idx;
   } else {
@@ -36,12 +42,12 @@ int GetLabelIdxForLibsvm(std::string& str, int num_features, int label_idx) {
   }
 }
 
-int GetLabelIdxForTSV(std::string& str, int num_features, int label_idx) {
+int GetLabelIdxForTSV(const std::string& str, int num_features, int label_idx) {
   if (num_features <= 0) {
     return label_idx;
   }
-  str = Common::Trim(str);
-  auto tokens = Common::Split(str.c_str(), '\t');
+  auto str2 = Common::Trim(str);
+  auto tokens = Common::Split(str2.c_str(), '\t');
   if (static_cast<int>(tokens.size()) == num_features) {
     return -1;
   } else {
@@ -49,12 +55,12 @@ int GetLabelIdxForTSV(std::string& str, int num_features, int label_idx) {
   }
 }
 
-int GetLabelIdxForCSV(std::string& str, int num_features, int label_idx) {
+int GetLabelIdxForCSV(const std::string& str, int num_features, int label_idx) {
   if (num_features <= 0) {
     return label_idx;
   }
-  str = Common::Trim(str);
-  auto tokens = Common::Split(str.c_str(), ',');
+  auto str2 = Common::Trim(str);
+  auto tokens = Common::Split(str2.c_str(), ',');
   if (static_cast<int>(tokens.size()) == num_features) {
     return -1;
   } else {
@@ -69,62 +75,119 @@ enum DataType {
   LIBSVM
 };
 
-void getline(std::stringstream& ss, std::string& line, const VirtualFileReader* reader, std::vector<char>& buffer, size_t buffer_size) {
-  std::getline(ss, line);
-  while (ss.eof()) {
-    size_t read_len = reader->Read(buffer.data(), buffer_size);
+void GetLine(std::stringstream* ss, std::string* line, const VirtualFileReader* reader, std::vector<char>* buffer, size_t buffer_size) {
+  std::getline(*ss, *line);
+  while (ss->eof()) {
+    size_t read_len = reader->Read(buffer->data(), buffer_size);
     if (read_len <= 0) {
       break;
     }
-    ss.clear();
-    ss.str(std::string(buffer.data(), read_len));
+    ss->clear();
+    ss->str(std::string(buffer->data(), read_len));
     std::string tmp;
-    std::getline(ss, tmp);
-    line += tmp;
+    std::getline(*ss, tmp);
+    *line += tmp;
   }
 }
 
-Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx) {
+std::vector<std::string> ReadKLineFromFile(const char* filename, bool header, int k) {
   auto reader = VirtualFileReader::Make(filename);
   if (!reader->Init()) {
-    Log::Fatal("Data file %s doesn't exist", filename);
+    Log::Fatal("Data file %s doesn't exist.", filename);
   }
-  std::string line1, line2;
-  size_t buffer_size = 64 * 1024;
+  std::vector<std::string> ret;
+  std::string cur_line;
+  const size_t buffer_size = 1024 * 1024;
   auto buffer = std::vector<char>(buffer_size);
   size_t read_len = reader->Read(buffer.data(), buffer_size);
   if (read_len <= 0) {
-    Log::Fatal("Data file %s couldn't be read", filename);
+    Log::Fatal("Data file %s couldn't be read.", filename);
   }
-
-  std::stringstream tmp_file(std::string(buffer.data(), read_len));
+  std::string read_str = std::string(buffer.data(), read_len);
+  std::stringstream tmp_file(read_str);
   if (header) {
     if (!tmp_file.eof()) {
-      getline(tmp_file, line1, reader.get(), buffer, buffer_size);
+      GetLine(&tmp_file, &cur_line, reader.get(), &buffer, buffer_size);
     }
   }
-  if (!tmp_file.eof()) {
-    getline(tmp_file, line1, reader.get(), buffer, buffer_size);
-  } else {
-    Log::Fatal("Data file %s should have at least one line", filename);
+  for (int i = 0; i < k; ++i) {
+    if (!tmp_file.eof()) {
+      GetLine(&tmp_file, &cur_line, reader.get(), &buffer, buffer_size);
+      cur_line = Common::Trim(cur_line);
+      if (!cur_line.empty()) {
+        ret.push_back(cur_line);
+      }
+    } else {
+      break;
+    }
   }
-  if (!tmp_file.eof()) {
-    getline(tmp_file, line2, reader.get(), buffer, buffer_size);
-  } else {
-    Log::Warning("Data file %s only has one line", filename);
+  if (ret.empty()) {
+    Log::Fatal("Data file %s should have at least one line.", filename);
+  } else if (ret.size() == 1) {
+    Log::Warning("Data file %s only has one line.", filename);
   }
-  int comma_cnt = 0, comma_cnt2 = 0;
-  int tab_cnt = 0, tab_cnt2 = 0;
-  int colon_cnt = 0, colon_cnt2 = 0;
-  // Get some statistic from 2 line
-  GetStatistic(line1.c_str(), &comma_cnt, &tab_cnt, &colon_cnt);
-  GetStatistic(line2.c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
+  return ret;
+}
 
+int GetNumColFromLIBSVMFile(const char* filename, bool header) {
+  auto reader = VirtualFileReader::Make(filename);
+  if (!reader->Init()) {
+    Log::Fatal("Data file %s doesn't exist.", filename);
+  }
+  std::vector<std::string> ret;
+  std::string cur_line;
+  const size_t buffer_size = 1024 * 1024;
+  auto buffer = std::vector<char>(buffer_size);
+  size_t read_len = reader->Read(buffer.data(), buffer_size);
+  if (read_len <= 0) {
+    Log::Fatal("Data file %s couldn't be read.", filename);
+  }
+  std::string read_str = std::string(buffer.data(), read_len);
+  std::stringstream tmp_file(read_str);
+  if (header) {
+    if (!tmp_file.eof()) {
+      GetLine(&tmp_file, &cur_line, reader.get(), &buffer, buffer_size);
+    }
+  }
+  int max_col_idx = 0;
+  int max_line_idx = 0;
+  const int stop_round = 1 << 7;
+  const int max_line = 1 << 13;
+  for (int i = 0; i < max_line; ++i) {
+    if (!tmp_file.eof()) {
+      GetLine(&tmp_file, &cur_line, reader.get(), &buffer, buffer_size);
+      cur_line = Common::Trim(cur_line);
+      auto colon_pos = cur_line.find_last_of(":");
+      auto space_pos = cur_line.find_last_of(" \f\t\v");
+      auto sub_str = cur_line.substr(space_pos + 1, space_pos - colon_pos - 1);
+      int cur_idx = 0;
+      Common::Atoi(sub_str.c_str(), &cur_idx);
+      if (cur_idx > max_col_idx) {
+        max_col_idx = cur_idx;
+        max_line_idx = i;
+      }
+      if (i - max_line_idx >= stop_round) {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
+  CHECK_GT(max_col_idx, 0);
+  return max_col_idx;
+}
 
-
+DataType GetDataType(const char* filename, bool header,
+                     const std::vector<std::string>& lines, int* num_col) {
   DataType type = DataType::INVALID;
-  if (line2.size() == 0) {
-    // if only have one line on file
+  if (lines.empty()) {
+    return type;
+  }
+  int comma_cnt = 0;
+  int tab_cnt = 0;
+  int colon_cnt = 0;
+  GetStatistic(lines[0].c_str(), &comma_cnt, &tab_cnt, &colon_cnt);
+  if (lines.size() == 1) {
     if (colon_cnt > 0) {
       type = DataType::LIBSVM;
     } else if (tab_cnt > 0) {
@@ -132,36 +195,66 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
     } else if (comma_cnt > 0) {
       type = DataType::CSV;
     }
-  } else {
+  } else if (lines.size() > 1) {
+    int comma_cnt2 = 0;
+    int tab_cnt2 = 0;
+    int colon_cnt2 = 0;
+    GetStatistic(lines[1].c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
     if (colon_cnt > 0 || colon_cnt2 > 0) {
       type = DataType::LIBSVM;
     } else if (tab_cnt == tab_cnt2 && tab_cnt > 0) {
       type = DataType::TSV;
-      CHECK(tab_cnt == tab_cnt2);
     } else if (comma_cnt == comma_cnt2 && comma_cnt > 0) {
       type = DataType::CSV;
-      CHECK(comma_cnt == comma_cnt2);
+    }
+    if (type == DataType::TSV || type == DataType::CSV) {
+      // valid the type
+      for (size_t i = 2; i < lines.size(); ++i) {
+        GetStatistic(lines[i].c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
+        if (type == DataType::TSV && tab_cnt2 != tab_cnt) {
+          type = DataType::INVALID;
+          break;
+        } else if (type == DataType::CSV && comma_cnt != comma_cnt2) {
+          type = DataType::INVALID;
+          break;
+        }
+      }
     }
   }
+  if (type == DataType::LIBSVM) {
+    int max_col_idx = GetNumColFromLIBSVMFile(filename, header);
+    *num_col = max_col_idx + 1;
+  } else if (type == DataType::CSV) {
+    *num_col = comma_cnt + 1;
+  } else if (type == DataType::TSV) {
+    *num_col = tab_cnt + 1;
+  }
+  return type;
+}
+
+Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx) {
+  const int n_read_line = 32;
+  auto lines = ReadKLineFromFile(filename, header, n_read_line);
+  int num_col = 0;
+  DataType type = GetDataType(filename, header, lines, &num_col);
   if (type == DataType::INVALID) {
-    Log::Fatal("Unknown format of training data");
+    Log::Fatal("Unknown format of training data.");
   }
   std::unique_ptr<Parser> ret;
+  int output_label_index = -1;
   if (type == DataType::LIBSVM) {
-    label_idx = GetLabelIdxForLibsvm(line1, num_features, label_idx);
-    ret.reset(new LibSVMParser(label_idx));
-  }
-  else if (type == DataType::TSV) {
-    label_idx = GetLabelIdxForTSV(line1, num_features, label_idx);
-    ret.reset(new TSVParser(label_idx, tab_cnt + 1));
-  }
-  else if (type == DataType::CSV) {
-    label_idx = GetLabelIdxForCSV(line1, num_features, label_idx);
-    ret.reset(new CSVParser(label_idx, comma_cnt + 1));
+    output_label_index = GetLabelIdxForLibsvm(lines[0], num_features, label_idx);
+    ret.reset(new LibSVMParser(output_label_index, num_col));
+  } else if (type == DataType::TSV) {
+    output_label_index = GetLabelIdxForTSV(lines[0], num_features, label_idx);
+    ret.reset(new TSVParser(output_label_index, num_col));
+  } else if (type == DataType::CSV) {
+    output_label_index = GetLabelIdxForCSV(lines[0], num_features, label_idx);
+    ret.reset(new CSVParser(output_label_index, num_col));
   }
 
-  if (label_idx < 0) {
-    Log::Info("Data file %s doesn't contain a label column", filename);
+  if (output_label_index < 0 && label_idx >= 0) {
+    Log::Info("Data file %s doesn't contain a label column.", filename);
   }
   return ret.release();
 }

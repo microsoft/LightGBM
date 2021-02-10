@@ -1,14 +1,17 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_NETWORK_H_
 #define LIGHTGBM_NETWORK_H_
 
+#include <LightGBM/config.h>
+#include <LightGBM/meta.h>
 #include <LightGBM/utils/log.h>
 
-#include <LightGBM/meta.h>
-#include <LightGBM/config.h>
-
 #include <functional>
-#include <vector>
 #include <memory>
+#include <vector>
 
 namespace LightGBM {
 
@@ -20,7 +23,7 @@ class BruckMap {
  public:
   /*! \brief The communication times for one all gather operation */
   int k;
-  /*! \brief in_ranks[i] means the incomming rank on i-th communication */
+  /*! \brief in_ranks[i] means the incoming rank on i-th communication */
   std::vector<int> in_ranks;
   /*! \brief out_ranks[i] means the out rank on i-th communication */
   std::vector<int> out_ranks;
@@ -52,7 +55,7 @@ enum RecursiveHalvingNodeType {
 /*! \brief Network structure for recursive halving algorithm */
 class RecursiveHalvingMap {
  public:
-  /*! \brief Communication times for one recursize halving algorithm  */
+  /*! \brief Communication times for one recursive halving algorithm  */
   int k;
   /*! \brief Node type */
   RecursiveHalvingNodeType type;
@@ -163,7 +166,7 @@ class Network {
                             const ReduceFunction& reducer);
 
   template<class T>
-  static T GlobalSyncUpByMin(T& local) {
+  static T GlobalSyncUpByMin(T local) {
     T global = local;
     Allreduce(reinterpret_cast<char*>(&local),
               sizeof(local), sizeof(local),
@@ -185,9 +188,8 @@ class Network {
     });
     return global;
   }
-
   template<class T>
-  static T GlobalSyncUpByMax(T& local) {
+  static T GlobalSyncUpByMax(T local) {
     T global = local;
     Allreduce(reinterpret_cast<char*>(&local),
               sizeof(local), sizeof(local),
@@ -211,32 +213,37 @@ class Network {
   }
 
   template<class T>
-  static T GlobalSyncUpByMean(T& local) {
+  static T GlobalSyncUpBySum(T local) {
     T global = (T)0;
     Allreduce(reinterpret_cast<char*>(&local),
-              sizeof(local), sizeof(local),
-              reinterpret_cast<char*>(&global),
-              [](const char* src, char* dst, int type_size, comm_size_t len) {
-      comm_size_t used_size = 0;
-      const T *p1;
-      T *p2;
-      while (used_size < len) {
-        p1 = reinterpret_cast<const T *>(src);
-        p2 = reinterpret_cast<T *>(dst);
-        *p2 += *p1;
-        src += type_size;
-        dst += type_size;
-        used_size += type_size;
-      }
-    });
-    return static_cast<T>(global / num_machines_);
+      sizeof(local), sizeof(local),
+      reinterpret_cast<char*>(&global),
+      [](const char* src, char* dst, int type_size, comm_size_t len) {
+        comm_size_t used_size = 0;
+        const T* p1;
+        T* p2;
+        while (used_size < len) {
+          p1 = reinterpret_cast<const T*>(src);
+          p2 = reinterpret_cast<T*>(dst);
+          *p2 += *p1;
+          src += type_size;
+          dst += type_size;
+          used_size += type_size;
+        }
+      });
+    return static_cast<T>(global);
   }
 
   template<class T>
-  static void GlobalSum(std::vector<T>& local) {
-    std::vector<T> global(local.size(), 0);
-    Allreduce(reinterpret_cast<char*>(local.data()),
-              static_cast<comm_size_t>(sizeof(T) * local.size()), sizeof(T),
+  static T GlobalSyncUpByMean(T local) {
+    return static_cast<T>(GlobalSyncUpBySum(local) / num_machines_);
+  }
+
+  template<class T>
+  static std::vector<T> GlobalSum(std::vector<T>* local) {
+    std::vector<T> global(local->size(), 0);
+    Allreduce(reinterpret_cast<char*>(local->data()),
+              static_cast<comm_size_t>(sizeof(T) * local->size()), sizeof(T),
               reinterpret_cast<char*>(global.data()),
               [](const char* src, char* dst, int type_size, comm_size_t len) {
       comm_size_t used_size = 0;
@@ -251,9 +258,20 @@ class Network {
         used_size += type_size;
       }
     });
-    for (size_t i = 0; i < local.size(); ++i) {
-      local[i] = global[i];
+    return global;
+  }
+
+  template<class T>
+  static std::vector<T> GlobalArray(T local) {
+    std::vector<T> global(num_machines_, 0);
+    int type_size = sizeof(T);
+    std::vector<comm_size_t> block_start(num_machines_);
+    std::vector<comm_size_t> block_len(num_machines_, type_size);
+    for (int i = 1; i < num_machines_; ++i) {
+      block_start[i] = block_start[i - 1] + block_len[i - 1];
     }
+    Allgather(reinterpret_cast<char*>(&local), block_start.data(), block_len.data(), reinterpret_cast<char*>(global.data()), type_size*num_machines_);
+    return global;
   }
 
  private:

@@ -1,22 +1,28 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 
-#include <LightGBM/utils/random.h>
-#include <LightGBM/utils/array_args.h>
 #include <LightGBM/dataset.h>
-#include <LightGBM/tree.h>
 #include <LightGBM/feature_group.h>
-#include "feature_histogram.hpp"
-#include "serial_tree_learner.h"
-#include "data_partition.hpp"
-#include "split_info.hpp"
-#include "leaf_splits.hpp"
+#include <LightGBM/tree.h>
+#include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/random.h>
 
-#include <cstdio>
-#include <vector>
-#include <random>
+#include <string>
 #include <cmath>
+#include <cstdio>
 #include <memory>
+#include <random>
+#include <vector>
+
+#include "data_partition.hpp"
+#include "feature_histogram.hpp"
+#include "leaf_splits.hpp"
+#include "serial_tree_learner.h"
+#include "split_info.hpp"
 
 #ifdef USE_GPU
 
@@ -28,9 +34,9 @@
 #include <boost/compute/container/vector.hpp>
 #include <boost/align/aligned_allocator.hpp>
 
-using namespace json11;
-
 namespace LightGBM {
+
+using json11::Json;
 
 /*!
 * \brief GPU-based parallel learning algorithm.
@@ -40,15 +46,15 @@ class GPUTreeLearner: public SerialTreeLearner {
   explicit GPUTreeLearner(const Config* tree_config);
   ~GPUTreeLearner();
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
-  void ResetTrainingData(const Dataset* train_data) override;
-  Tree* Train(const score_t* gradients, const score_t *hessians,
-              bool is_constant_hessian, Json& forced_split_json) override;
+  void ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) override;
+  void ResetIsConstantHessian(bool is_constant_hessian) override;
+  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) override;
 
-  void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
-    SerialTreeLearner::SetBaggingData(used_indices, num_data);
-    // determine if we are using bagging before we construct the data partition
-    // thus we can start data movement to GPU earlier
-    if (used_indices != nullptr) {
+  void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
+    SerialTreeLearner::SetBaggingData(subset, used_indices, num_data);
+    if (subset == nullptr && used_indices != nullptr) {
+      // determine if we are using bagging before we construct the data partition
+      // thus we can start data movement to GPU earlier
       if (num_data != num_data_) {
         use_bagging_ = true;
         return;
@@ -60,7 +66,7 @@ class GPUTreeLearner: public SerialTreeLearner {
  protected:
   void BeforeTrain() override;
   bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
-  void FindBestSplits() override;
+  void FindBestSplits(const Tree* tree) override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
   void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
 
@@ -70,12 +76,7 @@ class GPUTreeLearner: public SerialTreeLearner {
       uint8_t s[4];
   };
 
-  /*! \brief Single precision histogram entiry for GPU */
-  struct GPUHistogramBinEntry {
-    score_t sum_gradients;
-    score_t sum_hessians;
-    uint32_t cnt;
-  };
+  typedef float gpu_hist_t;
 
   /*!
   * \brief Find the best number of workgroups processing one feature for maximizing efficiency
@@ -104,7 +105,7 @@ class GPUTreeLearner: public SerialTreeLearner {
 
   /*!
    * \brief Returns OpenCL kernel build log when compiled with option opts
-   * \param opts OpenCL build options 
+   * \param opts OpenCL build options
    * \return OpenCL build log
   */
   std::string GetBuildLog(const std::string &opts);
@@ -114,7 +115,7 @@ class GPUTreeLearner: public SerialTreeLearner {
   */
   void SetupKernelArguments();
 
-  /*! 
+  /*!
    * \brief Compute GPU feature histogram for the current leaf.
    *        Indices, gradients and hessians have been copied to the device.
    * \param leaf_num_data Number of data on current leaf
@@ -127,10 +128,10 @@ class GPUTreeLearner: public SerialTreeLearner {
    * \param histograms Destination of histogram results from GPU.
   */
   template <typename HistType>
-  void WaitAndGetHistograms(HistogramBinEntry* histograms);
+  void WaitAndGetHistograms(hist_t* histograms);
 
   /*!
-   * \brief Construct GPU histogram asynchronously. 
+   * \brief Construct GPU histogram asynchronously.
    *        Interface is similar to Dataset::ConstructHistograms().
    * \param is_feature_used A predicate vector for enabling each feature
    * \param data_indices Array of data example IDs to be included in histogram, will be copied to GPU.
@@ -138,9 +139,9 @@ class GPUTreeLearner: public SerialTreeLearner {
    * \param num_data Number of data examples to be included in histogram
    * \param gradients Array of gradients for all examples.
    * \param hessians Array of hessians for all examples.
-   * \param ordered_gradients Ordered gradients will be generated and copied to GPU when gradients is not nullptr, 
+   * \param ordered_gradients Ordered gradients will be generated and copied to GPU when gradients is not nullptr,
    *                     Set gradients to nullptr to skip copy to GPU.
-   * \param ordered_hessians Ordered hessians will be generated and copied to GPU when hessians is not nullptr, 
+   * \param ordered_hessians Ordered hessians will be generated and copied to GPU when hessians is not nullptr,
    *                     Set hessians to nullptr to skip copy to GPU.
    * \return true if GPU kernel is launched, false if GPU is not used
   */
@@ -167,29 +168,29 @@ class GPUTreeLearner: public SerialTreeLearner {
   /*! \brief GPU command queue object */
   boost::compute::command_queue queue_;
   /*! \brief GPU kernel for 256 bins */
-  const char *kernel256_src_ =
+  const char *kernel256_src_ = {
   #include "ocl/histogram256.cl"
-  ;
+  };
   /*! \brief GPU kernel for 64 bins */
-  const char *kernel64_src_ =
+  const char *kernel64_src_ = {
   #include "ocl/histogram64.cl"
-  ;
+  };
   /*! \brief GPU kernel for 16 bins */
-  const char *kernel16_src_ =
+  const char *kernel16_src_ = {
   #include "ocl/histogram16.cl"
-  ;
+  };
   /*! \brief Currently used kernel source */
   std::string kernel_source_;
   /*! \brief Currently used kernel name */
   std::string kernel_name_;
 
-  /*! \brief a array of histogram kernels with different number
+  /*! \brief an array of histogram kernels with different number
      of workgroups per feature */
   std::vector<boost::compute::kernel> histogram_kernels_;
-  /*! \brief a array of histogram kernels with different number
+  /*! \brief an array of histogram kernels with different number
      of workgroups per feature, with all features enabled to avoid branches */
   std::vector<boost::compute::kernel> histogram_allfeats_kernels_;
-  /*! \brief a array of histogram kernels with different number
+  /*! \brief an array of histogram kernels with different number
      of workgroups per feature, and processing the whole dataset */
   std::vector<boost::compute::kernel> histogram_fulldata_kernels_;
   /*! \brief total number of feature-groups */
@@ -204,7 +205,7 @@ class GPUTreeLearner: public SerialTreeLearner {
   /*! \brief total number of dense feature-group tuples on GPU.
    * Each feature tuple is 4-byte (4 features if each feature takes a byte) */
   int num_dense_feature4_;
-  /*! \brief Max number of bins of training data, used to determine 
+  /*! \brief Max number of bins of training data, used to determine
    * which GPU kernel to use */
   int max_num_bin_;
   /*! \brief Used GPU kernel bin size (64, 256) */
@@ -270,7 +271,9 @@ namespace LightGBM {
 
 class GPUTreeLearner: public SerialTreeLearner {
  public:
-  #pragma warning(disable : 4702)
+  #ifdef _MSC_VER
+    #pragma warning(disable : 4702)
+  #endif
   explicit GPUTreeLearner(const Config* tree_config) : SerialTreeLearner(tree_config) {
     Log::Fatal("GPU Tree Learner was not enabled in this build.\n"
                "Please recompile with CMake option -DUSE_GPU=1");
@@ -282,4 +285,3 @@ class GPUTreeLearner: public SerialTreeLearner {
 #endif   // USE_GPU
 
 #endif   // LightGBM_TREELEARNER_GPU_TREE_LEARNER_H_
-

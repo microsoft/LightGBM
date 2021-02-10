@@ -1,11 +1,17 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_METRIC_REGRESSION_METRIC_HPP_
 #define LIGHTGBM_METRIC_REGRESSION_METRIC_HPP_
 
 #include <LightGBM/metric.h>
-
 #include <LightGBM/utils/log.h>
 
+#include <string>
+#include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace LightGBM {
 /*!
@@ -142,7 +148,7 @@ class L2Metric: public RegressionMetric<L2Metric> {
   }
 };
 
-/*! \brief L2 loss for regression task */
+/*! \brief Quantile loss for regression task */
 class QuantileMetric : public RegressionMetric<QuantileMetric> {
  public:
   explicit QuantileMetric(const Config& config) :RegressionMetric<QuantileMetric>(config) {
@@ -265,7 +271,7 @@ class GammaMetric : public RegressionMetric<GammaMetric> {
   }
 
   inline static void CheckLabel(label_t label) {
-    CHECK(label > 0);
+    CHECK_GT(label, 0);
   }
 };
 
@@ -281,13 +287,13 @@ class GammaDevianceMetric : public RegressionMetric<GammaDevianceMetric> {
     return tmp - Common::SafeLog(tmp) - 1;
   }
   inline static const char* Name() {
-    return "gamma-deviance";
+    return "gamma_deviance";
   }
   inline static double AverageLoss(double sum_loss, double) {
     return sum_loss * 2;
   }
   inline static void CheckLabel(label_t label) {
-    CHECK(label > 0);
+    CHECK_GT(label, 0);
   }
 };
 

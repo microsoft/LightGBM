@@ -9,14 +9,17 @@ lgb.Dataset.construct(dataset)
 \arguments{
 \item{dataset}{Object of class \code{lgb.Dataset}}
 }
+\value{
+constructed dataset
+}
 \description{
 Construct Dataset explicitly
 }
 \examples{
-library(lightgbm)
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 lgb.Dataset.construct(dtrain)
-
+}
 }

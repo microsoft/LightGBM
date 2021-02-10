@@ -10,27 +10,27 @@ slice(dataset, ...)
 \method{slice}{lgb.Dataset}(dataset, idxset, ...)
 }
 \arguments{
-\item{dataset}{Object of class "lgb.Dataset"}
+\item{dataset}{Object of class \code{lgb.Dataset}}
 
 \item{...}{other parameters (currently not used)}
 
-\item{idxset}{a integer vector of indices of rows needed}
+\item{idxset}{an integer vector of indices of rows needed}
 }
 \value{
 constructed sub dataset
 }
 \description{
 Get a new \code{lgb.Dataset} containing the specified rows of
-original lgb.Dataset object
+             original \code{lgb.Dataset} object
 }
 \examples{
-library(lightgbm)
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 
-dsub <- lightgbm::slice(dtrain, 1:42)
+dsub <- lightgbm::slice(dtrain, seq_len(42L))
 lgb.Dataset.construct(dsub)
 labels <- lightgbm::getinfo(dsub, "label")
-
+}
 }

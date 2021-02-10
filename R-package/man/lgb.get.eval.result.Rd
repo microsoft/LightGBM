@@ -4,28 +4,36 @@
 \alias{lgb.get.eval.result}
 \title{Get record evaluation result from booster}
 \usage{
-lgb.get.eval.result(booster, data_name, eval_name, iters = NULL,
-  is_err = FALSE)
+lgb.get.eval.result(
+  booster,
+  data_name,
+  eval_name,
+  iters = NULL,
+  is_err = FALSE
+)
 }
 \arguments{
 \item{booster}{Object of class \code{lgb.Booster}}
 
-\item{data_name}{name of dataset}
+\item{data_name}{Name of the dataset to return evaluation results for.}
 
-\item{eval_name}{name of evaluation}
+\item{eval_name}{Name of the evaluation metric to return results for.}
 
-\item{iters}{iterations, NULL will return all}
+\item{iters}{An integer vector of iterations you want to get evaluation results for. If NULL
+(the default), evaluation results for all iterations will be returned.}
 
 \item{is_err}{TRUE will return evaluation error instead}
 }
 \value{
-vector of evaluation result
+numeric vector of evaluation result
 }
 \description{
-Get record evaluation result from booster
+Given a \code{lgb.Booster}, return evaluation results for a
+             particular metric on a particular dataset.
 }
 \examples{
-library(lightgbm)
+\donttest{
+# train a regression model
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -34,13 +42,22 @@ test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 params <- list(objective = "regression", metric = "l2")
 valids <- list(test = dtest)
-model <- lgb.train(params,
-                   dtrain,
-                   100,
-                   valids,
-                   min_data = 1,
-                   learning_rate = 1,
-                   early_stopping_rounds = 10)
-lgb.get.eval.result(model, "test", "l2")
+model <- lgb.train(
+  params = params
+  , data = dtrain
+  , nrounds = 5L
+  , valids = valids
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 
+# Examine valid data_name values
+print(setdiff(names(model$record_evals), "start_iter"))
+
+# Examine valid eval_name values for dataset "test"
+print(names(model$record_evals[["test"]]))
+
+# Get L2 values for "test" dataset
+lgb.get.eval.result(model, "test", "l2")
+}
 }

@@ -1,3 +1,12 @@
 [submodule "include/boost/compute"]
-	path = compute
+	path = external_libs/compute
 	url = https://github.com/boostorg/compute
+[submodule "eigen"]
+	path = external_libs/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+[submodule "external_libs/fmt"]
+	path = external_libs/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "external_libs/fast_double_parser"]
+	path = external_libs/fast_double_parser
+	url = https://github.com/lemire/fast_double_parser.git

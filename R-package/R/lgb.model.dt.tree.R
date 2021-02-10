@@ -1,82 +1,90 @@
-#' Parse a LightGBM model json dump
-#'
-#' Parse a LightGBM model json dump into a \code{data.table} structure.
-#'
+#' @name lgb.model.dt.tree
+#' @title Parse a LightGBM model json dump
+#' @description Parse a LightGBM model json dump into a \code{data.table} structure.
 #' @param model object of class \code{lgb.Booster}
 #' @param num_iteration number of iterations you want to predict with. NULL or
 #'                      <= 0 means use best iteration
-#'
 #' @return
 #' A \code{data.table} with detailed information about model trees' nodes and leafs.
 #'
 #' The columns of the \code{data.table} are:
 #'
 #' \itemize{
-#'  \item \code{tree_index}: ID of a tree in a model (integer)
-#'  \item \code{split_index}: ID of a node in a tree (integer)
-#'  \item \code{split_feature}: for a node, it's a feature name (character);
-#'                              for a leaf, it simply labels it as \code{"NA"}
-#'  \item \code{node_parent}: ID of the parent node for current node (integer)
-#'  \item \code{leaf_index}: ID of a leaf in a tree (integer)
-#'  \item \code{leaf_parent}: ID of the parent node for current leaf (integer)
-#'  \item \code{split_gain}: Split gain of a node
-#'  \item \code{threshold}: Splitting threshold value of a node
-#'  \item \code{decision_type}: Decision type of a node
-#'  \item \code{default_left}: Determine how to handle NA value, TRUE -> Left, FALSE -> Right
-#'  \item \code{internal_value}: Node value
-#'  \item \code{internal_count}: The number of observation collected by a node
-#'  \item \code{leaf_value}: Leaf value
-#'  \item \code{leaf_count}: The number of observation collected by a leaf
+#'  \item{\code{tree_index}: ID of a tree in a model (integer)}
+#'  \item{\code{split_index}: ID of a node in a tree (integer)}
+#'  \item{\code{split_feature}: for a node, it's a feature name (character);
+#'                              for a leaf, it simply labels it as \code{"NA"}}
+#'  \item{\code{node_parent}: ID of the parent node for current node (integer)}
+#'  \item{\code{leaf_index}: ID of a leaf in a tree (integer)}
+#'  \item{\code{leaf_parent}: ID of the parent node for current leaf (integer)}
+#'  \item{\code{split_gain}: Split gain of a node}
+#'  \item{\code{threshold}: Splitting threshold value of a node}
+#'  \item{\code{decision_type}: Decision type of a node}
+#'  \item{\code{default_left}: Determine how to handle NA value, TRUE -> Left, FALSE -> Right}
+#'  \item{\code{internal_value}: Node value}
+#'  \item{\code{internal_count}: The number of observation collected by a node}
+#'  \item{\code{leaf_value}: Leaf value}
+#'  \item{\code{leaf_count}: The number of observation collected by a leaf}
 #' }
 #'
 #' @examples
-#'
+#' \donttest{
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #'
-#' params <- list(objective = "binary",
-#'               learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-#'               min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
-#'               model <- lgb.train(params, dtrain, 20)
-#' model <- lgb.train(params, dtrain, 20)
+#' params <- list(
+#'   objective = "binary"
+#'   , learning_rate = 0.01
+#'   , num_leaves = 63L
+#'   , max_depth = -1L
+#'   , min_data_in_leaf = 1L
+#'   , min_sum_hessian_in_leaf = 1.0
+#' )
+#' model <- lgb.train(params, dtrain, 10L)
 #'
 #' tree_dt <- lgb.model.dt.tree(model)
-#'
-#' @importFrom magrittr %>%
-#' @importFrom data.table := data.table rbindlist
+#' }
+#' @importFrom data.table := rbindlist
 #' @importFrom jsonlite fromJSON
 #' @export
 lgb.model.dt.tree <- function(model, num_iteration = NULL) {
 
   # Dump json model first
-  json_model <- lgb.dump(model, num_iteration = num_iteration)
+  json_model <- lgb.dump(booster = model, num_iteration = num_iteration)
 
   # Parse json model second
-  parsed_json_model <- jsonlite::fromJSON(json_model,
-                                          simplifyVector = TRUE,
-                                          simplifyDataFrame = FALSE,
-                                          simplifyMatrix = FALSE,
-                                          flatten = FALSE)
+  parsed_json_model <- jsonlite::fromJSON(
+    txt = json_model
+    , simplifyVector = TRUE
+    , simplifyDataFrame = FALSE
+    , simplifyMatrix = FALSE
+    , flatten = FALSE
+  )
 
   # Parse tree model third
   tree_list <- lapply(parsed_json_model$tree_info, single.tree.parse)
 
   # Combine into single data.table fourth
-  tree_dt <- data.table::rbindlist(tree_list, use.names = TRUE)
+  tree_dt <- data.table::rbindlist(l = tree_list, use.names = TRUE)
 
-  # Lookup sequence
-  tree_dt[, split_feature := Lookup(split_feature,
-                                    seq.int(from = 0, to = parsed_json_model$max_feature_idx),
-                                    parsed_json_model$feature_names)]
+  # Substitute feature index with the actual feature name
 
-  # Return tree
+  # Since the index comes from C++ (which is 0-indexed), be sure
+  # to add 1 (e.g. index 28 means the 29th feature in feature_names)
+  split_feature_indx <- tree_dt[, split_feature] + 1L
+
+  # Get corresponding feature names. Positions in split_feature_indx
+  # which are NA will result in an NA feature name
+  feature_names <- parsed_json_model$feature_names[split_feature_indx]
+  tree_dt[, split_feature := feature_names]
+
   return(tree_dt)
 
 }
 
 
-#' @importFrom data.table data.table rbindlist
+#' @importFrom data.table := data.table rbindlist
 single.tree.parse <- function(lgb_tree) {
 
   # Traverse tree function
@@ -85,23 +93,30 @@ single.tree.parse <- function(lgb_tree) {
     if (is.null(env)) {
       # Setup initial default data.table with default types
       env <- new.env(parent = emptyenv())
-      env$single_tree_dt <- data.table::data.table(tree_index = integer(0),
-                                                   depth = integer(0),
-                                                   split_index = integer(0),
-                                                   split_feature = integer(0),
-                                                   node_parent = integer(0),
-                                                   leaf_index = integer(0),
-                                                   leaf_parent = integer(0),
-                                                   split_gain = numeric(0),
-                                                   threshold = numeric(0),
-                                                   decision_type = character(0),
-                                                   default_left = character(0),
-                                                   internal_value = integer(0),
-                                                   internal_count = integer(0),
-                                                   leaf_value = integer(0),
-                                                   leaf_count = integer(0))
+      env$single_tree_dt <- data.table::data.table(
+        tree_index = integer(0L)
+        , depth = integer(0L)
+        , split_index = integer(0L)
+        , split_feature = integer(0L)
+        , node_parent = integer(0L)
+        , leaf_index = integer(0L)
+        , leaf_parent = integer(0L)
+        , split_gain = numeric(0L)
+        , threshold = numeric(0L)
+        , decision_type = character(0L)
+        , default_left = character(0L)
+        , internal_value = integer(0L)
+        , internal_count = integer(0L)
+        , leaf_value = integer(0L)
+        , leaf_count = integer(0L)
+      )
       # start tree traversal
-      pre_order_traversal(env, tree_node_leaf, current_depth, parent_index)
+      pre_order_traversal(
+        env = env
+        , tree_node_leaf = tree_node_leaf
+        , current_depth = current_depth
+        , parent_index = parent_index
+      )
     } else {
 
       # Check if split index is not null in leaf
@@ -123,14 +138,18 @@ single.tree.parse <- function(lgb_tree) {
                                                     fill = TRUE)
 
         # Traverse tree again both left and right
-        pre_order_traversal(env,
-                            tree_node_leaf$left_child,
-                            current_depth = current_depth + 1L,
-                            parent_index = tree_node_leaf$split_index)
-        pre_order_traversal(env,
-                            tree_node_leaf$right_child,
-                            current_depth = current_depth + 1L,
-                            parent_index = tree_node_leaf$split_index)
+        pre_order_traversal(
+          env = env
+          , tree_node_leaf = tree_node_leaf$left_child
+          , current_depth = current_depth + 1L
+          , parent_index = tree_node_leaf$split_index
+        )
+        pre_order_traversal(
+          env = env
+          , tree_node_leaf = tree_node_leaf$right_child
+          , current_depth = current_depth + 1L
+          , parent_index = tree_node_leaf$split_index
+        )
 
       } else if (!is.null(tree_node_leaf$leaf_index)) {
 
@@ -156,17 +175,6 @@ single.tree.parse <- function(lgb_tree) {
   # Store index
   single_tree_dt[, tree_index := lgb_tree$tree_index]
 
-  # Return tree
   return(single_tree_dt)
-
-}
-
-#' @importFrom magrittr %>% extract inset
-Lookup <- function(key, key_lookup, value_lookup, missing = NA) {
-
-  # Match key by looked up key
-  match(key, key_lookup) %>%
-    magrittr::extract(value_lookup, .) %>%
-    magrittr::inset(. , is.na(.), missing)
 
 }

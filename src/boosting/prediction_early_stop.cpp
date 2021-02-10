@@ -1,14 +1,17 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <LightGBM/prediction_early_stop.h>
+
 #include <LightGBM/utils/log.h>
 
-#include <algorithm>
-#include <vector>
-#include <cmath>
 #include <limits>
+#include <algorithm>
+#include <cmath>
+#include <vector>
 
-namespace {
-
-using namespace LightGBM;
+namespace LightGBM {
 
 PredictionEarlyStopInstance CreateNone(const PredictionEarlyStopConfig&) {
   return PredictionEarlyStopInstance{
@@ -69,10 +72,6 @@ PredictionEarlyStopInstance CreateBinary(const PredictionEarlyStopConfig& config
   };
 }
 
-}  // namespace
-
-namespace LightGBM {
-
 PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(const std::string& type,
                                                               const PredictionEarlyStopConfig& config) {
   if (type == "none") {
@@ -82,8 +81,11 @@ PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(const std::string&
   } else if (type == "binary") {
     return CreateBinary(config);
   } else {
-    throw std::runtime_error("Unknown early stopping type: " + type);
+    Log::Fatal("Unknown early stopping type: %s", type.c_str());
   }
+
+  // Fix for compiler warnings about reaching end of control
+  return CreateNone(config);
 }
 
 }  // namespace LightGBM

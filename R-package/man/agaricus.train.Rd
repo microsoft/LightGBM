@@ -4,22 +4,22 @@
 \name{agaricus.train}
 \alias{agaricus.train}
 \title{Training part from Mushroom Data Set}
-\format{A list containing a label vector, and a dgCMatrix object with 6513
-rows and 127 variables}
+\format{
+A list containing a label vector, and a dgCMatrix object with 6513
+rows and 127 variables
+}
 \usage{
 data(agaricus.train)
 }
 \description{
 This data set is originally from the Mushroom data set,
-UCI Machine Learning Repository.
-}
-\details{
-This data set includes the following fields:
+             UCI Machine Learning Repository.
+             This data set includes the following fields:
 
-\itemize{
- \item \code{label} the label for each record
- \item \code{data} a sparse Matrix of \code{dgCMatrix} class, with 126 columns.
-}
+              \itemize{
+                  \item{\code{label}: the label for each record}
+                  \item{\code{data}: a sparse Matrix of \code{dgCMatrix} class, with 126 columns.}
+               }
 }
 \references{
 https://archive.ics.uci.edu/ml/datasets/Mushroom

@@ -1,0 +1,184 @@
+name: R-package
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  test:
+    name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }}, ${{ matrix.build_type }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          ################
+          # CMake builds #
+          ################
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 3.6
+            build_type: cmake
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
+            build_type: cmake
+          - os: ubuntu-latest
+            task: r-package
+            compiler: clang
+            r_version: 3.6
+            build_type: cmake
+          - os: ubuntu-latest
+            task: r-package
+            compiler: clang
+            r_version: 4.0
+            build_type: cmake
+          - os: macOS-latest
+            task: r-package
+            compiler: gcc
+            r_version: 3.6
+            build_type: cmake
+          - os: macOS-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
+            build_type: cmake
+          - os: macOS-latest
+            task: r-package
+            compiler: clang
+            r_version: 3.6
+            build_type: cmake
+          - os: macOS-latest
+            task: r-package
+            compiler: clang
+            r_version: 4.0
+            build_type: cmake
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
+            toolchain: MSYS
+            r_version: 4.0
+            build_type: cmake
+          # Visual Studio 2017
+          - os: windows-2016
+            task: r-package
+            compiler: MSVC
+            toolchain: MSVC
+            r_version: 3.6
+            build_type: cmake
+          # Visual Studio 2019
+          - os: windows-2019
+            task: r-package
+            compiler: MSVC
+            toolchain: MSVC
+            r_version: 4.0
+            build_type: cmake
+          ###############
+          # CRAN builds #
+          ###############
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
+            toolchain: MINGW
+            r_version: 3.6
+            build_type: cran
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
+            toolchain: MSYS
+            r_version: 4.0
+            build_type: cran
+          - os: ubuntu-latest
+            task: r-package
+            compiler: gcc
+            r_version: 4.0
+            build_type: cran
+          - os: macOS-latest
+            task: r-package
+            compiler: clang
+            r_version: 4.0
+            build_type: cran
+    steps:
+      - name: Prevent conversion of line endings on Windows
+        if: startsWith(matrix.os, 'windows')
+        shell: pwsh
+        run: git config --global core.autocrlf false
+      - name: Checkout repository
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Install pandoc
+        uses: r-lib/actions/setup-pandoc@v1
+      - name: Setup and run tests on Linux and macOS
+        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          export TASK="${{ matrix.task }}"
+          export COMPILER="${{ matrix.compiler }}"
+          export GITHUB_ACTIONS="true"
+          if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
+              export OS_NAME="macos"
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              export OS_NAME="linux"
+          fi
+          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export R_VERSION="${{ matrix.r_version }}"
+          export R_BUILD_TYPE="${{ matrix.build_type }}"
+          $GITHUB_WORKSPACE/.ci/setup.sh
+          $GITHUB_WORKSPACE/.ci/test.sh
+      - name: Setup and run tests on Windows
+        if: startsWith(matrix.os, 'windows')
+        shell: pwsh -command ". {0}"
+        run: |
+          $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
+          $env:TOOLCHAIN = "${{ matrix.toolchain }}"
+          $env:R_VERSION = "${{ matrix.r_version }}"
+          $env:R_BUILD_TYPE = "${{ matrix.build_type }}"
+          $env:COMPILER = "${{ matrix.compiler }}"
+          $env:GITHUB_ACTIONS = "true"
+          $env:TASK = "${{ matrix.task }}"
+          & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
+  test-r-sanitizers:
+    name: r-package (ubuntu-latest, R-devel, GCC ASAN/UBSAN)
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    container: rhub/rocker-gcc-san
+    steps:
+      - name: Install Git before checkout
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y git
+      - name: Checkout repository
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Install packages
+        shell: bash
+        run: |
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.r-project.org')"
+          sh build-cran-package.sh
+          Rdevel CMD INSTALL lightgbm_*.tar.gz || exit -1
+      - name: Run tests with sanitizers
+        shell: bash
+        run: |
+          cd R-package/tests
+          Rscriptdevel testthat.R 2>&1 > ubsan-tests.log
+          cat ubsan-tests.log
+          exit $(cat ubsan-tests.log | grep --count "runtime error")
+  all-successful:
+    # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
+    runs-on: ubuntu-latest
+    needs: [test, test-r-sanitizers]
+    steps:
+    - name: Note that all tests succeeded
+      run: echo "🎉"

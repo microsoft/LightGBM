@@ -1,13 +1,19 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_OBJECTIVE_XENTROPY_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_XENTROPY_OBJECTIVE_HPP_
 
-#include <LightGBM/objective_function.h>
 #include <LightGBM/meta.h>
-
+#include <LightGBM/objective_function.h>
 #include <LightGBM/utils/common.h>
 
-#include <cstring>
+#include <string>
+#include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <vector>
 
 /*
  * Implements gradients and hessians for the following point losses.
@@ -37,10 +43,11 @@ namespace LightGBM {
 */
 class CrossEntropy: public ObjectiveFunction {
  public:
-  explicit CrossEntropy(const Config&) {
-  }
+  explicit CrossEntropy(const Config& config)
+      : deterministic_(config.deterministic) {}
 
-  explicit CrossEntropy(const std::vector<std::string>&) {
+  explicit CrossEntropy(const std::vector<std::string>&)
+      : deterministic_(false) {
   }
 
   ~CrossEntropy() {}
@@ -57,7 +64,7 @@ class CrossEntropy: public ObjectiveFunction {
     if (weights_ != nullptr) {
       label_t minw;
       double sumw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (label_t*)nullptr, &sumw);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr), &sumw);
       if (minw < 0.0f) {
         Log::Fatal("[%s]: at least one weight is negative", GetName());
       }
@@ -88,7 +95,7 @@ class CrossEntropy: public ObjectiveFunction {
   }
 
   const char* GetName() const override {
-    return "xentropy";
+    return "cross_entropy";
   }
 
   // convert score to a probability
@@ -107,14 +114,16 @@ class CrossEntropy: public ObjectiveFunction {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:suml, sumw)
+      #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
+
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += label_[i] * weights_[i];
         sumw += weights_[i];
       }
     } else {
       sumw = static_cast<double>(num_data_);
-      #pragma omp parallel for schedule(static) reduction(+:suml)
+      #pragma omp parallel for schedule(static) reduction(+:suml) if (!deterministic_)
+
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += label_[i];
       }
@@ -134,6 +143,7 @@ class CrossEntropy: public ObjectiveFunction {
   const label_t* label_;
   /*! \brief Weights for data */
   const label_t* weights_;
+  const bool deterministic_;
 };
 
 /*!
@@ -141,12 +151,13 @@ class CrossEntropy: public ObjectiveFunction {
 */
 class CrossEntropyLambda: public ObjectiveFunction {
  public:
-  explicit CrossEntropyLambda(const Config&) {
+  explicit CrossEntropyLambda(const Config& config)
+      : deterministic_(config.deterministic) {
     min_weight_ = max_weight_ = 0.0f;
   }
 
-  explicit CrossEntropyLambda(const std::vector<std::string>&) {
-  }
+  explicit CrossEntropyLambda(const std::vector<std::string>&)
+      : deterministic_(false) {}
 
   ~CrossEntropyLambda() {}
 
@@ -160,7 +171,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
     Log::Info("[%s:%s]: (objective) labels passed interval [0, 1] check",  GetName(), __func__);
 
     if (weights_ != nullptr) {
-      Common::ObtainMinMaxSum(weights_, num_data_, &min_weight_, &max_weight_, (label_t*)nullptr);
+      Common::ObtainMinMaxSum(weights_, num_data_, &min_weight_, &max_weight_, static_cast<label_t*>(nullptr));
       if (min_weight_ <= 0.0f) {
         Log::Fatal("[%s]: at least one weight is non-positive", GetName());
       }
@@ -207,7 +218,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
   }
 
   const char* GetName() const override {
-    return "xentlambda";
+    return "cross_entropy_lambda";
   }
 
   //
@@ -233,14 +244,16 @@ class CrossEntropyLambda: public ObjectiveFunction {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:suml, sumw)
+      #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
+
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += label_[i] * weights_[i];
         sumw += weights_[i];
       }
     } else {
       sumw = static_cast<double>(num_data_);
-      #pragma omp parallel for schedule(static) reduction(+:suml)
+      #pragma omp parallel for schedule(static) reduction(+:suml) if (!deterministic_)
+
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += label_[i];
       }
@@ -251,7 +264,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
     return initscore;
   }
 
-private:
+ private:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer for label */
@@ -262,6 +275,7 @@ private:
   label_t min_weight_;
   /*! \brief Maximum weight found during init */
   label_t max_weight_;
+  const bool deterministic_;
 };
 
 }  // end namespace LightGBM

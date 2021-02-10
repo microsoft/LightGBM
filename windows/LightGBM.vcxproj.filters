@@ -34,6 +34,9 @@
     <Filter Include="include\LightGBM\utils">
       <UniqueIdentifier>{bf66b9f7-015e-404d-8098-4353abc46956}</UniqueIdentifier>
     </Filter>
+    <Filter Include="include\LightGBM\utils\yamc">
+      <UniqueIdentifier>{fa3b4166-a8fd-4030-b80d-c167089332c7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\boosting\gbdt.h">
@@ -55,9 +58,6 @@
       <Filter>src\boosting</Filter>
     </ClInclude>
     <ClInclude Include="..\src\io\dense_bin.hpp">
-      <Filter>src\io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\io\ordered_sparse_bin.hpp">
       <Filter>src\io</Filter>
     </ClInclude>
     <ClInclude Include="..\src\io\parser.hpp">
@@ -141,6 +141,9 @@
     <ClInclude Include="..\include\LightGBM\utils\common.h">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\locale_context.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\LightGBM\utils\log.h">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
@@ -177,20 +180,11 @@
     <ClInclude Include="..\src\boosting\goss.hpp">
       <Filter>src\boosting</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\io\dense_nbits_bin.hpp">
-      <Filter>src\io</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\LightGBM\utils\openmp_wrapper.h">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
     <ClInclude Include="..\src\metric\map_metric.hpp">
       <Filter>src\metric</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\LightGBM\lightgbm_R.h">
-      <Filter>include\LightGBM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\LightGBM\R_object_helper.h">
-      <Filter>include\LightGBM</Filter>
     </ClInclude>
     <ClInclude Include="..\src\boosting\rf.hpp">
       <Filter>src\boosting</Filter>
@@ -204,8 +198,35 @@
     <ClInclude Include="..\include\LightGBM\utils\file_io.h">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\LightGBM\json11.hpp">
+    <ClInclude Include="..\src\treelearner\cost_effective_gradient_boosting.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\io\multi_val_dense_bin.hpp">
+      <Filter>src\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\io\multi_val_sparse_bin.hpp">
+      <Filter>src\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\json11.h">
       <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\col_sampler.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\yamc\yamc_shared_lock.hpp">
+      <Filter>include\LightGBM\utils\yamc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\yamc\yamc_rwlock_sched.hpp">
+      <Filter>include\LightGBM\utils\yamc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\yamc\alternate_shared_mutex.hpp">
+      <Filter>include\LightGBM\utils\yamc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\monotone_constraints.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\linear_tree_learner.h">
+      <Filter>src\treelearner</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -287,9 +308,6 @@
     <ClCompile Include="..\src\boosting\prediction_early_stop.cpp">
       <Filter>src\boosting</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\lightgbm_R.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\boosting\gbdt_model_text.cpp">
       <Filter>src\boosting</Filter>
     </ClCompile>
@@ -301,6 +319,12 @@
     </ClCompile>
     <ClCompile Include="..\src\io\config_auto.cpp">
       <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\train_share_states.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\treelearner\linear_tree_learner.cpp">
+      <Filter>src\treelearner</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

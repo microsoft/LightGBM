@@ -3,16 +3,10 @@
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
-        brew upgrade cmake  # CMake >=3.12 is needed to find OpenMP at macOS
         if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_8.3.3.app/Contents/Developer
+            sudo xcode-select -s /Applications/Xcode_9.4.1.app/Contents/Developer || exit -1
         fi
-    else
-        if [[ $TRAVIS == "true" ]]; then
-#            rm '/usr/local/include/c++'  # previous variant to deal with conflict link
-#            brew cask uninstall oclint  #  reserve variant to deal with conflict link
-            brew link --overwrite gcc
-        fi
+    else  # gcc
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
         fi
@@ -20,40 +14,95 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
     fi
-    wget -q -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
+    if [[ $TASK == "swig" ]]; then
+        brew install swig
+    fi
+    curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
-    if [[ $AZURE == "true" ]] && [[ $COMPILER == "clang" ]]; then
+    if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+        # fixes error "unable to initialize frontend: Dialog"
+        # https://github.com/moby/moby/issues/27988#issuecomment-462809153
+        echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
+
         sudo apt-get update
-        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 100
-        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 100
-        sudo apt-get install --no-install-recommends -y libomp-dev
+        sudo apt-get install -y --no-install-recommends \
+            software-properties-common
+
+        sudo add-apt-repository -y ppa:git-core/ppa
+        sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends \
+            apt-utils \
+            build-essential \
+            ca-certificates \
+            cmake \
+            curl \
+            git \
+            iputils-ping \
+            jq \
+            libcurl4 \
+            libicu66 \
+            libssl1.1 \
+            libunwind8 \
+            locales \
+            netcat \
+            unzip \
+            zip
+        if [[ $COMPILER == "clang" ]]; then
+            sudo apt-get install --no-install-recommends -y \
+                clang \
+                libomp-dev
+        fi
+
+        export LANG="en_US.UTF-8"
+        export LC_ALL="${LANG}"
+        sudo locale-gen ${LANG}
+        sudo update-locale
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
     fi
     if [[ $TASK == "gpu" ]]; then
-        if [[ $TRAVIS == "true" ]]; then
-            sudo add-apt-repository ppa:kzemek/boost -y
-        fi
+        sudo add-apt-repository ppa:mhier/libboost-latest -y
         sudo apt-get update
-        sudo apt-get install --no-install-recommends -y libboost1.58-dev libboost-system1.58-dev libboost-filesystem1.58-dev ocl-icd-opencl-dev
-        cd $HOME_DIRECTORY
-        wget -q https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
-        tar -xjf AMD-APP-SDK*.tar.bz2
+        sudo apt-get install --no-install-recommends -y libboost1.74-dev ocl-icd-opencl-dev
+        cd $BUILD_DIRECTORY  # to avoid permission errors
+        curl -sL -o AMD-APP-SDKInstaller.tar.bz2 https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+        tar -xjf AMD-APP-SDKInstaller.tar.bz2
         mkdir -p $OPENCL_VENDOR_PATH
         mkdir -p $AMDAPPSDK_PATH
         sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK_PATH
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
-    if [[ $TRAVIS == "true" ]] || [[ $TASK == "gpu" ]]; then
-        wget -q -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-Linux-x86_64.sh
+    if [[ $TASK == "cuda" ]]; then
+        echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+        apt-get update
+        apt-get install --no-install-recommends -y \
+            curl \
+            lsb-release \
+            software-properties-common
+        if [[ $COMPILER == "clang" ]]; then
+            apt-get install --no-install-recommends -y \
+                clang \
+                libomp-dev
+        fi
+        curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
+        apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
+        apt-get update
+        apt-get install --no-install-recommends -y \
+            cmake
+    fi
+    if [[ $SETUP_CONDA != "false" ]]; then
+        curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     fi
 fi
 
-if [[ $TRAVIS == "true" ]] || [[ $OS_NAME == "macos" ]] || [[ $TASK == "gpu" ]]; then
-    sh conda.sh -b -p $CONDA
+if [[ "${TASK}" != "r-package" ]]; then
+    if [[ $SETUP_CONDA != "false" ]]; then
+        sh conda.sh -b -p $CONDA
+    fi
+    conda config --set always_yes yes --set changeps1 no
+    conda update -q -y conda
 fi
-conda config --set always_yes yes --set changeps1 no
-conda update -q conda

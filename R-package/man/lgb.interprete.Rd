@@ -11,24 +11,26 @@ lgb.interprete(model, data, idxset, num_iteration = NULL)
 
 \item{data}{a matrix object or a dgCMatrix object.}
 
-\item{idxset}{a integer vector of indices of rows needed.}
+\item{idxset}{an integer vector of indices of rows needed.}
 
 \item{num_iteration}{number of iteration want to predict with, NULL or <= 0 means use best iteration.}
 }
 \value{
-For regression, binary classification and lambdarank model, a \code{list} of \code{data.table} with the following columns:
-\itemize{
-  \item \code{Feature} Feature names in the model.
-  \item \code{Contribution} The total contribution of this feature's splits.
-}
-For multiclass classification, a \code{list} of \code{data.table} with the Feature column and Contribution columns to each class.
+For regression, binary classification and lambdarank model, a \code{list} of \code{data.table}
+        with the following columns:
+        \itemize{
+            \item{\code{Feature}: Feature names in the model.}
+            \item{\code{Contribution}: The total contribution of this feature's splits.}
+        }
+        For multiclass classification, a \code{list} of \code{data.table} with the Feature column and
+        Contribution columns to each class.
 }
 \description{
 Computes feature contribution components of rawscore prediction.
 }
 \examples{
-Sigmoid <- function(x) 1 / (1 + exp(-x))
-Logit <- function(x) log(x / (1 - x))
+\donttest{
+Logit <- function(x) log(x / (1.0 - x))
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -38,14 +40,17 @@ test <- agaricus.test
 
 params <- list(
     objective = "binary"
-    , learning_rate = 0.01
-    , num_leaves = 63
-    , max_depth = -1
-    , min_data_in_leaf = 1
-    , min_sum_hessian_in_leaf = 1
+    , learning_rate = 0.1
+    , max_depth = -1L
+    , min_data_in_leaf = 1L
+    , min_sum_hessian_in_leaf = 1.0
 )
-model <- lgb.train(params, dtrain, 20)
+model <- lgb.train(
+    params = params
+    , data = dtrain
+    , nrounds = 3L
+)
 
-tree_interpretation <- lgb.interprete(model, test$data, 1:5)
-
+tree_interpretation <- lgb.interprete(model, test$data, 1L:5L)
+}
 }

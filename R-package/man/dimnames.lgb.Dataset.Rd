@@ -15,23 +15,28 @@
 \item{value}{a list of two elements: the first one is ignored
 and the second one is column names}
 }
+\value{
+A list with the dimension names of the dataset
+
+A list with the dimension names of the dataset
+}
 \description{
 Only column names are supported for \code{lgb.Dataset}, thus setting of
-row names would have no effect and returned row names would be NULL.
+             row names would have no effect and returned row names would be NULL.
 }
 \details{
 Generic \code{dimnames} methods are used by \code{colnames}.
 Since row names are irrelevant, it is recommended to use \code{colnames} directly.
 }
 \examples{
-library(lightgbm)
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 lgb.Dataset.construct(dtrain)
 dimnames(dtrain)
 colnames(dtrain)
-colnames(dtrain) <- make.names(1:ncol(train$data))
+colnames(dtrain) <- make.names(seq_len(ncol(train$data)))
 print(dtrain, verbose = TRUE)
-
+}
 }

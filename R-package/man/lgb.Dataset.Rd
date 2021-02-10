@@ -2,11 +2,18 @@
 % Please edit documentation in R/lgb.Dataset.R
 \name{lgb.Dataset}
 \alias{lgb.Dataset}
-\title{Construct lgb.Dataset object}
+\title{Construct \code{lgb.Dataset} object}
 \usage{
-lgb.Dataset(data, params = list(), reference = NULL, colnames = NULL,
-  categorical_feature = NULL, free_raw_data = TRUE, info = list(),
-  ...)
+lgb.Dataset(
+  data,
+  params = list(),
+  reference = NULL,
+  colnames = NULL,
+  categorical_feature = NULL,
+  free_raw_data = TRUE,
+  info = list(),
+  ...
+)
 }
 \arguments{
 \item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
@@ -21,7 +28,7 @@ lgb.Dataset(data, params = list(), reference = NULL, colnames = NULL,
 
 \item{free_raw_data}{TRUE for need to free raw data after construct}
 
-\item{info}{a list of information of the lgb.Dataset object}
+\item{info}{a list of information of the \code{lgb.Dataset} object}
 
 \item{...}{other information to pass to \code{info} or parameters pass to \code{params}}
 }
@@ -29,16 +36,17 @@ lgb.Dataset(data, params = list(), reference = NULL, colnames = NULL,
 constructed dataset
 }
 \description{
-Construct lgb.Dataset object from dense matrix, sparse matrix
-or local file (that was created previously by saving an \code{lgb.Dataset}).
+Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
+             or local file (that was created previously by saving an \code{lgb.Dataset}).
 }
 \examples{
-library(lightgbm)
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
-lgb.Dataset.save(dtrain, "lgb.Dataset.data")
-dtrain <- lgb.Dataset("lgb.Dataset.data")
+data_file <- tempfile(fileext = ".data")
+lgb.Dataset.save(dtrain, data_file)
+dtrain <- lgb.Dataset(data_file)
 lgb.Dataset.construct(dtrain)
-
+}
 }

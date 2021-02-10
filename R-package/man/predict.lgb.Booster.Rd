@@ -4,20 +4,37 @@
 \alias{predict.lgb.Booster}
 \title{Predict method for LightGBM model}
 \usage{
-\method{predict}{lgb.Booster}(object, data, num_iteration = NULL,
-  rawscore = FALSE, predleaf = FALSE, predcontrib = FALSE,
-  header = FALSE, reshape = FALSE, ...)
+\method{predict}{lgb.Booster}(
+  object,
+  data,
+  start_iteration = NULL,
+  num_iteration = NULL,
+  rawscore = FALSE,
+  predleaf = FALSE,
+  predcontrib = FALSE,
+  header = FALSE,
+  reshape = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
 \item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
 
-\item{num_iteration}{number of iteration want to predict with, NULL or <= 0 means use best iteration}
+\item{start_iteration}{int or None, optional (default=None)
+Start index of the iteration to predict.
+If None or <= 0, starts from the first iteration.}
+
+\item{num_iteration}{int or None, optional (default=None)
+Limit number of iterations in the prediction.
+If None, if the best iteration exists and start_iteration is None or <= 0, the
+best iteration is used; otherwise, all iterations from start_iteration are used.
+If <= 0, all iterations from start_iteration are used (no limits).}
 
 \item{rawscore}{whether the prediction should be returned in the for of original untransformed
-sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE} for
-logistic regression would result in predictions for log-odds instead of probabilities.}
+sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
+for logistic regression would result in predictions for log-odds instead of probabilities.}
 
 \item{predleaf}{whether predict leaf index instead.}
 
@@ -33,18 +50,18 @@ the \code{lgb.Booster} object passed to \code{object}.}
 }
 \value{
 For regression or binary classification, it returns a vector of length \code{nrows(data)}.
-For multiclass classification, either a \code{num_class * nrows(data)} vector or
-a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
-the \code{reshape} value.
+        For multiclass classification, either a \code{num_class * nrows(data)} vector or
+        a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
+        the \code{reshape} value.
 
-When \code{predleaf = TRUE}, the output is a matrix object with the
-number of columns corresponding to the number of trees.
+        When \code{predleaf = TRUE}, the output is a matrix object with the
+        number of columns corresponding to the number of trees.
 }
 \description{
 Predicted values based on class \code{lgb.Booster}
 }
 \examples{
-library(lightgbm)
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -53,13 +70,14 @@ test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 params <- list(objective = "regression", metric = "l2")
 valids <- list(test = dtest)
-model <- lgb.train(params,
-                   dtrain,
-                   100,
-                   valids,
-                   min_data = 1,
-                   learning_rate = 1,
-                   early_stopping_rounds = 10)
+model <- lgb.train(
+  params = params
+  , data = dtrain
+  , nrounds = 5L
+  , valids = valids
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 preds <- predict(model, test$data)
-
+}
 }

@@ -1,42 +1,41 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_UTILS_ARRAY_AGRS_H_
 #define LIGHTGBM_UTILS_ARRAY_AGRS_H_
 
-#include <vector>
-#include <algorithm>
 #include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/threading.h>
+
+#include <algorithm>
+#include <utility>
+#include <vector>
 
 namespace LightGBM {
 
 /*!
-* \brief Contains some operation for a array, e.g. ArgMax, TopK.
+* \brief Contains some operation for an array, e.g. ArgMax, TopK.
 */
 template<typename VAL_T>
 class ArrayArgs {
  public:
   inline static size_t ArgMaxMT(const std::vector<VAL_T>& array) {
-    int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-    {
-      num_threads = omp_get_num_threads();
-    }
-    int step = std::max(1, (static_cast<int>(array.size()) + num_threads - 1) / num_threads);
+    int num_threads = OMP_NUM_THREADS();
     std::vector<size_t> arg_maxs(num_threads, 0);
-    #pragma omp parallel for schedule(static, 1)
-    for (int i = 0; i < num_threads; ++i) {
-      size_t start = step * i;
-      if (start >= array.size()) { continue; }
-      size_t end = std::min(array.size(), start + step);
-      size_t arg_max = start;
-      for (size_t j = start + 1; j < end; ++j) {
-        if (array[j] > array[arg_max]) {
-          arg_max = j;
-        }
-      }
-      arg_maxs[i] = arg_max;
-    }
+    int n_blocks = Threading::For<size_t>(
+        0, array.size(), 1024,
+        [&array, &arg_maxs](int i, size_t start, size_t end) {
+          size_t arg_max = start;
+          for (size_t j = start + 1; j < end; ++j) {
+            if (array[j] > array[arg_max]) {
+              arg_max = j;
+            }
+          }
+          arg_maxs[i] = arg_max;
+        });
     size_t ret = arg_maxs[0];
-    for (int i = 1; i < num_threads; ++i) {
+    for (int i = 1; i < n_blocks; ++i) {
       if (array[arg_maxs[i]] > array[ret]) {
         ret = arg_maxs[i];
       }
@@ -110,7 +109,7 @@ class ArrayArgs {
     std::vector<VAL_T>& ref = *arr;
     VAL_T v = ref[end - 1];
     for (;;) {
-      while (ref[++i] > v);
+      while (ref[++i] > v) {}
       while (v > ref[--j]) { if (j == start) { break; } }
       if (i >= j) { break; }
       std::swap(ref[i], ref[j]);
@@ -189,4 +188,3 @@ class ArrayArgs {
 }  // namespace LightGBM
 
 #endif   // LightGBM_UTILS_ARRAY_AGRS_H_
-

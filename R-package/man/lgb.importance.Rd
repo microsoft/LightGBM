@@ -14,28 +14,35 @@ lgb.importance(model, percentage = TRUE)
 \value{
 For a tree model, a \code{data.table} with the following columns:
 \itemize{
-  \item \code{Feature} Feature names in the model.
-  \item \code{Gain} The total gain of this feature's splits.
-  \item \code{Cover} The number of observation related to this feature.
-  \item \code{Frequency} The number of times a feature splited in trees.
+  \item{\code{Feature}: Feature names in the model.}
+  \item{\code{Gain}: The total gain of this feature's splits.}
+  \item{\code{Cover}: The number of observation related to this feature.}
+  \item{\code{Frequency}: The number of times a feature splited in trees.}
 }
 }
 \description{
 Creates a \code{data.table} of feature importances in a model.
 }
 \examples{
-library(lightgbm)
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 
-params <- list(objective = "binary",
-              learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-              min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
-              model <- lgb.train(params, dtrain, 20)
-model <- lgb.train(params, dtrain, 20)
+params <- list(
+  objective = "binary"
+  , learning_rate = 0.1
+  , max_depth = -1L
+  , min_data_in_leaf = 1L
+  , min_sum_hessian_in_leaf = 1.0
+)
+model <- lgb.train(
+    params = params
+    , data = dtrain
+    , nrounds = 5L
+)
 
 tree_imp1 <- lgb.importance(model, percentage = TRUE)
 tree_imp2 <- lgb.importance(model, percentage = FALSE)
-
+}
 }

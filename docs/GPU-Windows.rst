@@ -77,9 +77,9 @@ OpenCL SDK Installation
 Installing the appropriate OpenCL SDK requires you to download the correct vendor source SDK.
 You need to know what you are going to use LightGBM!
 
--  For running on Intel, get `Intel SDK for OpenCL`_ (NOT RECOMMENDED).
+-  For running on Intel, get `Intel SDK for OpenCL`_ (**NOT RECOMMENDED**).
 
--  For running on AMD, get `AMD APP SDK`_ (you may want to replace the ``OpenCL.dll`` from GPU driver package with the one from the SDK, if the one shipped with the driver lacks some functions).
+-  For running on AMD, get AMD APP SDK (downloads `for Linux`_ and `for Windows`_). You may want to replace the ``OpenCL.dll`` from the GPU driver package with the one from the SDK, if the one shipped with the driver lacks some functions.
 
 -  For running on NVIDIA, get `CUDA Toolkit`_.
 
@@ -135,13 +135,7 @@ To check whether you need 32-bit or 64-bit MinGW for R, install LightGBM as usua
 If it says ``mingw_64`` then you need the 64-bit version (PATH with ``c:\Rtools\bin;c:\Rtools\mingw_64\bin``),
 otherwise you need the 32-bit version (``c:\Rtools\bin;c:\Rtools\mingw_32\bin``), the latter being a very rare and untested case.
 
-Quick installation of LightGBM can be done using:
-
-.. code:: r
-
-    devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
-    
---------------
+NOTE: If you are using `Rtools` 4.0 or later, the path will have `mingw64` instead of `mingw_64` (PATH with `C:\rtools40\mingw64\bin`), and `mingw32` instead of `mingw_32` (`C:\rtools40\mingw32\bin`). The 32-bit version remains an unsupported solution under Rtools 4.0.
 
 Download the prebuilt Boost
 ---------------------------
@@ -257,7 +251,7 @@ Now, we can fetch LightGBM repository for GitHub. Run Git Bash and the following
     cd C:/
     mkdir github_repos
     cd github_repos
-    git clone --recursive https://github.com/Microsoft/LightGBM
+    git clone --recursive https://github.com/microsoft/LightGBM
 
 Your LightGBM repository copy should now be under ``C:\github_repos\LightGBM``.
 You are free to use any folder you want, but you have to adapt.
@@ -317,7 +311,7 @@ Installing CMake requires one download first and then a lot of configuration for
 
        Looking for CL_VERSION_2_0
        Looking for CL_VERSION_2_0 - found
-       Found OpenCL: C:/Windows/System32/OpenCL.dll (found version "2.0") 
+       Found OpenCL: C:/Windows/System32/OpenCL.dll (found version "2.0")
        OpenCL include directory:C:/Program Files (x86)/AMD APP SDK/3.0/include
        Boost version: 1.63.0
        Found the following Boost libraries:
@@ -404,7 +398,7 @@ Now that you compiled LightGBM, you try it... and you always see a segmentation 
    :align: center
    :target: ./_static/images/screenshot-segmentation-fault.png
 
-Please check if you are using the right device (``Using GPU device: ...``). You can find a list of your OpenCL devices using `GPUCapsViewer`_, and make sure you are using a discrete (AMD/NVIDIA) GPU if you have both integrated (Intel) and discrete GPUs installed. 
+Please check if you are using the right device (``Using GPU device: ...``). You can find a list of your OpenCL devices using `GPUCapsViewer`_, and make sure you are using a discrete (AMD/NVIDIA) GPU if you have both integrated (Intel) and discrete GPUs installed.
 Also, try to set ``gpu_device_id = 0`` and ``gpu_platform_id = 0`` or ``gpu_device_id = -1`` and ``gpu_platform_id = -1`` to use the first platform and device or the default platform and device.
 If it still does not work, then you should follow all the steps below.
 
@@ -459,7 +453,7 @@ You will probably get something similar to this:
 
     Program received signal SIGSEGV, Segmentation fault.
     0x00007ffbb37c11f1 in strlen () from C:\Windows\system32\msvcrt.dll
-    (gdb) 
+    (gdb)
 
 There, write ``backtrace`` and press the Enter key as many times as gdb requests two choices:
 
@@ -543,7 +537,7 @@ Right-click the command prompt, click "Mark", and select all the text from the f
     [New Thread 105220.0x1a62c]
     [LightGBM] [Info] Using GPU Device: Oland, Vendor: Advanced Micro Devices, Inc.
     [LightGBM] [Info] Compiling OpenCL Kernel with 256 bins...
-    
+
     Program received signal SIGSEGV, Segmentation fault.
     0x00007ffbb37c11f1 in strlen () from C:\Windows\system32\msvcrt.dll
     (gdb) backtrace
@@ -579,7 +573,9 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
-.. _AMD APP SDK: https://github.com/fireice-uk/xmr-stak/issues/1511
+.. _for Linux: https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+
+.. _for Windows: https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe
 
 .. _Khronos official OpenCL headers: https://github.com/KhronosGroup/OpenCL-Headers
 
@@ -587,9 +583,9 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _Boost: https://www.boost.org/users/history/
 
-.. _Prebuilt Boost x86_64: https://dl.fedoraproject.org/pub/fedora/linux/releases/29/Everything/x86_64/os/Packages/m/mingw64-boost-static-1.66.0-2.fc29.noarch.rpm
+.. _Prebuilt Boost x86_64: https://mirror.linux-ia64.org/fedora/linux/releases/32/Everything/x86_64/os/Packages/m/mingw64-boost-static-1.66.0-6.fc32.noarch.rpm
 
-.. _Prebuilt Boost i686: https://dl.fedoraproject.org/pub/fedora/linux/releases/29/Everything/x86_64/os/Packages/m/mingw32-boost-static-1.66.0-2.fc29.noarch.rpm
+.. _Prebuilt Boost i686: https://mirror.linux-ia64.org/fedora/linux/releases/32/Everything/x86_64/os/Packages/m/mingw32-boost-static-1.66.0-6.fc32.noarch.rpm
 
 .. _7zip: https://www.7-zip.org/download.html
 
@@ -597,6 +593,6 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _CMake: https://cmake.org/download/
 
-.. _here: https://github.com/Microsoft/LightGBM/issues
+.. _here: https://github.com/microsoft/LightGBM/issues
 
 .. _GPUCapsViewer: http://www.ozone3d.net/gpu_caps_viewer/

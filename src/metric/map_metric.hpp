@@ -1,12 +1,17 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_METRIC_MAP_METRIC_HPP_
 #define LIGHTGBM_METRIC_MAP_METRIC_HPP_
-#include <LightGBM/metric.h>
 
+#include <LightGBM/metric.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
-
 #include <LightGBM/utils/openmp_wrapper.h>
 
+#include <string>
+#include <algorithm>
 #include <sstream>
 #include <vector>
 
@@ -18,12 +23,6 @@ class MapMetric:public Metric {
     // get eval position
     eval_at_ = config.eval_at;
     DCGCalculator::DefaultEvalAt(&eval_at_);
-    // get number of threads
-    #pragma omp parallel
-    #pragma omp master
-    {
-      num_threads_ = omp_get_num_threads();
-    }
   }
 
   ~MapMetric() {
@@ -105,8 +104,9 @@ class MapMetric:public Metric {
   }
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     // some buffers for multi-threading sum up
+    int num_threads = OMP_NUM_THREADS();
     std::vector<std::vector<double>> result_buffer_;
-    for (int i = 0; i < num_threads_; ++i) {
+    for (int i = 0; i < num_threads; ++i) {
       result_buffer_.emplace_back(eval_at_.size(), 0.0f);
     }
     std::vector<double> tmp_map(eval_at_.size(), 0.0f);
@@ -134,7 +134,7 @@ class MapMetric:public Metric {
     // Get final average MAP
     std::vector<double> result(eval_at_.size(), 0.0f);
     for (size_t j = 0; j < result.size(); ++j) {
-      for (int i = 0; i < num_threads_; ++i) {
+      for (int i = 0; i < num_threads; ++i) {
         result[j] += result_buffer_[i][j];
       }
       result[j] /= sum_query_weights_;
@@ -157,8 +157,6 @@ class MapMetric:public Metric {
   double sum_query_weights_;
   /*! \brief Evaluate position of Nmap */
   std::vector<data_size_t> eval_at_;
-  /*! \brief Number of threads */
-  int num_threads_;
   std::vector<std::string> name_;
   std::vector<data_size_t> npos_per_query_;
 };

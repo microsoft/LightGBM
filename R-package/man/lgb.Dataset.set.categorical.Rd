@@ -9,21 +9,25 @@ lgb.Dataset.set.categorical(dataset, categorical_feature)
 \arguments{
 \item{dataset}{object of class \code{lgb.Dataset}}
 
-\item{categorical_feature}{categorical features}
+\item{categorical_feature}{categorical features. This can either be a character vector of feature
+names or an integer vector with the indices of the features (e.g.
+\code{c(1L, 10L)} to say "the first and tenth columns").}
 }
 \value{
-passed dataset
+the dataset you passed in
 }
 \description{
-Set categorical feature of \code{lgb.Dataset}
+Set the categorical features of an \code{lgb.Dataset} object. Use this function
+             to tell LightGBM which features should be treated as categorical.
 }
 \examples{
-library(lightgbm)
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
-lgb.Dataset.save(dtrain, "lgb.Dataset.data")
-dtrain <- lgb.Dataset("lgb.Dataset.data")
-lgb.Dataset.set.categorical(dtrain, 1:2)
-
+data_file <- tempfile(fileext = ".data")
+lgb.Dataset.save(dtrain, data_file)
+dtrain <- lgb.Dataset(data_file)
+lgb.Dataset.set.categorical(dtrain, 1L:2L)
+}
 }

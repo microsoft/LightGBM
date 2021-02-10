@@ -1,29 +1,30 @@
+.. role:: raw-html(raw)
+    :format: html
+
 LightGBM FAQ
-============
+############
 
-**Contents**
+.. contents:: LightGBM Frequently Asked Questions
+    :depth: 1
+    :local:
+    :backlinks: none
 
--  `Critical <#critical>`__
+------
 
--  `LightGBM <#lightgbm>`__
+Critical Issues
+===============
 
--  `R-package <#r-package>`__
+A **critical issue** could be a *crash*, *prediction error*, *nonsense output*, or something else requiring immediate attention.
 
--  `Python-package <#python-package>`__
+Please post such an issue in the `Microsoft/LightGBM repository <https://github.com/microsoft/LightGBM/issues>`__.
 
---------------
-
-Critical
-~~~~~~~~
-
-Please post an issue in `Microsoft/LightGBM repository <https://github.com/Microsoft/LightGBM/issues>`__ for any
-LightGBM issues you encounter. For critical issues (crash, prediction error, nonsense outputs...), you may also ping a
-member of the core team according to the relevant area of expertise by mentioning them with the arobase (@) symbol:
+You may also ping a member of the core team according to the relevant area of expertise by mentioning them with the arabase (@) symbol:
 
 -  `@guolinke <https://github.com/guolinke>`__ **Guolin Ke** (C++ code / R-package / Python-package)
 -  `@chivee <https://github.com/chivee>`__ **Qiwei Ye** (C++ code / Python-package)
+-  `@btrotta <https://github.com/btrotta>`__ **Belinda Trotta** (C++ code)
 -  `@Laurae2 <https://github.com/Laurae2>`__ **Damien Soukhavong** (R-package)
--  `@jameslamb <https://github.com/jameslamb>`__ **James Lamb** (R-package)
+-  `@jameslamb <https://github.com/jameslamb>`__ **James Lamb** (R-package / Dask-package)
 -  `@wxchan <https://github.com/wxchan>`__ **Wenxuan Chen** (Python-package)
 -  `@henry0312 <https://github.com/henry0312>`__ **Tsukasa Omoto** (Python-package)
 -  `@StrikerRUS <https://github.com/StrikerRUS>`__ **Nikita Titov** (Python-package)
@@ -47,188 +48,257 @@ When submitting issues, please keep in mind that this is largely a volunteer eff
 
 --------------
 
-LightGBM
-~~~~~~~~
+General LightGBM Questions
+==========================
 
--  **Question 1**: Where do I find more details about LightGBM parameters?
+.. contents::
+    :local:
+    :backlinks: none
 
--  **Solution 1**: Take a look at `Parameters <./Parameters.rst>`__ and the `Laurae++/Parameters <https://sites.google.com/view/lauraepp/parameters>`__ website.
+1. Where do I find more details about LightGBM parameters?
+----------------------------------------------------------
 
---------------
+Take a look at `Parameters <./Parameters.rst>`__ and the `Laurae++/Parameters <https://sites.google.com/view/lauraepp/parameters>`__ website.
 
--  **Question 2**: On datasets with millions of features, training does not start (or starts after a very long time).
+2. On datasets with millions of features, training does not start (or starts after a very long time).
+-----------------------------------------------------------------------------------------------------
 
--  **Solution 2**: Use a smaller value for ``bin_construct_sample_cnt`` and a larger value for ``min_data``.
+Use a smaller value for ``bin_construct_sample_cnt`` and a larger value for ``min_data``.
 
---------------
+3. When running LightGBM on a large dataset, my computer runs out of RAM.
+-------------------------------------------------------------------------
 
--  **Question 3**: When running LightGBM on a large dataset, my computer runs out of RAM.
+**Multiple Solutions**: set the ``histogram_pool_size`` parameter to the MB you want to use for LightGBM (histogram\_pool\_size + dataset size = approximately RAM used),
+lower ``num_leaves`` or lower ``max_bin`` (see `Microsoft/LightGBM#562 <https://github.com/microsoft/LightGBM/issues/562>`__).
 
--  **Solution 3**: Multiple solutions: set the ``histogram_pool_size`` parameter to the MB you want to use for LightGBM (histogram\_pool\_size + dataset size = approximately RAM used),
-   lower ``num_leaves`` or lower ``max_bin`` (see `Microsoft/LightGBM#562 <https://github.com/Microsoft/LightGBM/issues/562>`__).
+4. I am using Windows. Should I use Visual Studio or MinGW for compiling LightGBM?
+----------------------------------------------------------------------------------
 
---------------
+Visual Studio `performs best for LightGBM <https://github.com/microsoft/LightGBM/issues/542>`__.
 
--  **Question 4**: I am using Windows. Should I use Visual Studio or MinGW for compiling LightGBM?
+5. When using LightGBM GPU, I cannot reproduce results over several runs.
+-------------------------------------------------------------------------
 
--  **Solution 4**: Visual Studio `performs best for LightGBM <https://github.com/Microsoft/LightGBM/issues/542>`__.
+This is normal and expected behaviour, but you may try to use ``gpu_use_dp = true`` for reproducibility
+(see `Microsoft/LightGBM#560 <https://github.com/microsoft/LightGBM/pull/560#issuecomment-304561654>`__).
+You may also use the CPU version.
 
---------------
+6. Bagging is not reproducible when changing the number of threads.
+-------------------------------------------------------------------
 
--  **Question 5**: When using LightGBM GPU, I cannot reproduce results over several runs.
+:raw-html:`<strike>`
+LightGBM bagging is multithreaded, so its output depends on the number of threads used.
+There is `no workaround currently <https://github.com/microsoft/LightGBM/issues/632>`__.
+:raw-html:`</strike>`
 
--  **Solution 5**: This is normal and expected behaviour, but you may try to use ``gpu_use_dp = true`` for reproducibility
-   (see `Microsoft/LightGBM#560 <https://github.com/Microsoft/LightGBM/pull/560#issuecomment-304561654>`__).
-   You may also use the CPU version.
+Starting from `#2804 <https://github.com/microsoft/LightGBM/pull/2804>`__ bagging result doesn't depend on the number of threads.
+So this issue should be solved in the latest version.
 
---------------
+7. I tried to use Random Forest mode, and LightGBM crashes!
+-----------------------------------------------------------
 
--  **Question 6**: Bagging is not reproducible when changing the number of threads.
+This is expected behaviour for arbitrary parameters. To enable Random Forest,
+you must use ``bagging_fraction`` and ``feature_fraction`` different from 1, along with a ``bagging_freq``.
+`This thread <https://github.com/microsoft/LightGBM/issues/691>`__ includes an example.
 
--  **Solution 6**: LightGBM bagging is multithreaded, so its output depends on the number of threads used.
-   There is `no workaround currently <https://github.com/Microsoft/LightGBM/issues/632>`__.
+8. CPU usage is low (like 10%) in Windows when using LightGBM on very large datasets with many-core systems.
+------------------------------------------------------------------------------------------------------------
 
---------------
+Please use `Visual Studio <https://visualstudio.microsoft.com/downloads/>`__
+as it may be `10x faster than MinGW <https://github.com/microsoft/LightGBM/issues/749>`__ especially for very large trees.
 
--  **Question 7**: I tried to use Random Forest mode, and LightGBM crashes!
+9. When I'm trying to specify a categorical column with the ``categorical_feature`` parameter, I get the following sequence of warnings, but there are no negative values in the column.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--  **Solution 7**: This is expected behaviour for arbitrary parameters. To enable Random Forest,
-   you must use ``bagging_fraction`` and ``feature_fraction`` different from 1, along with a ``bagging_freq``.
-   `This thread <https://github.com/Microsoft/LightGBM/issues/691>`__ includes an example.
+.. code-block:: console
 
---------------
+   [LightGBM] [Warning] Met negative value in categorical features, will convert it to NaN
+   [LightGBM] [Warning] There are no meaningful features, as all feature values are constant.
 
--  **Question 8**: CPU usage is low (like 10%) in Windows when using LightGBM on very large datasets with many-core systems.
+The column you're trying to pass via ``categorical_feature`` likely contains very large values.
+Categorical features in LightGBM are limited by int32 range,
+so you cannot pass values that are greater than ``Int32.MaxValue`` (2147483647) as categorical features (see `Microsoft/LightGBM#1359 <https://github.com/microsoft/LightGBM/issues/1359>`__).
+You should convert them to integers ranging from zero to the number of categories first.
 
--  **Solution 8**: Please use `Visual Studio <https://visualstudio.microsoft.com/downloads/>`__
-   as it may be `10x faster than MinGW <https://github.com/Microsoft/LightGBM/issues/749>`__ especially for very large trees.
+10. LightGBM crashes randomly with the error like: ``Initializing libiomp5.dylib, but found libomp.dylib already initialized.``
+-------------------------------------------------------------------------------------------------------------------------------
 
---------------
+.. code-block:: console
 
--  **Question 9**: When I'm trying to specify a categorical column with the ``categorical_feature`` parameter,
-   I get the following sequence of warnings, but there are no negative values in the column.
+   OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized.
+   OMP: Hint: This means that multiple copies of the OpenMP runtime have been linked into the program. That is dangerous, since it can degrade performance or cause incorrect results. The best thing to do is to ensure that only a single OpenMP runtime is linked into the process, e.g. by avoiding static linking of the OpenMP runtime in any library. As an unsafe, unsupported, undocumented workaround you can set the environment variable KMP_DUPLICATE_LIB_OK=TRUE to allow the program to continue to execute, but that may cause crashes or silently produce incorrect results. For more information, please see http://www.intel.com/software/products/support/.
 
-   ::
+**Possible Cause**: This error means that you have multiple OpenMP libraries installed on your machine and they conflict with each other.
+(File extensions in the error message may differ depending on the operating system).
 
-       [LightGBM] [Warning] Met negative value in categorical features, will convert it to NaN
-       [LightGBM] [Warning] There are no meaningful features, as all feature values are constant.
+If you are using Python distributed by Conda, then it is highly likely that the error is caused by the ``numpy`` package from Conda which includes the ``mkl`` package which in turn conflicts with the system-wide library.
+In this case you can update the ``numpy`` package in Conda or replace the Conda's OpenMP library instance with system-wide one by creating a symlink to it in Conda environment folder ``$CONDA_PREFIX/lib``.
 
--  **Solution 9**: The column you're trying to pass via ``categorical_feature`` likely contains very large values.
-   Categorical features in LightGBM are limited by int32 range,
-   so you cannot pass values that are greater than ``Int32.MaxValue`` (2147483647) as categorical features (see `Microsoft/LightGBM#1359 <https://github.com/Microsoft/LightGBM/issues/1359>`__).
-   You should convert them to integers ranging from zero to the number of categories first.
+**Solution**: Assuming you are using macOS with Homebrew, the command which overwrites OpenMP library files in the current active Conda environment with symlinks to the system-wide library ones installed by Homebrew:
 
---------------
+.. code-block:: bash
 
--  **Question 10**: LightGBM crashes randomly with the error like this.
+   ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib
 
-   ::
+The described above fix worked fine before the release of OpenMP 8.0.0 version.
+Starting from 8.0.0 version, Homebrew formula for OpenMP includes ``-DLIBOMP_INSTALL_ALIASES=OFF`` option which leads to that the fix doesn't work anymore.
+However, you can create symlinks to library aliases manually:
 
-       OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized.
-       OMP: Hint: This means that multiple copies of the OpenMP runtime have been linked into the program. That is dangerous, since it can degrade performance or cause incorrect results. The best thing to do is to ensure that only a single OpenMP runtime is linked into the process, e.g. by avoiding static linking of the OpenMP runtime in any library. As an unsafe, unsupported, undocumented workaround you can set the environment variable KMP_DUPLICATE_LIB_OK=TRUE to allow the program to continue to execute, but that may cause crashes or silently produce incorrect results. For more information, please see http://www.intel.com/software/products/support/.
+.. code-block:: bash
 
--  **Solution 10**: File extensions in the error message may differ depending on the operating system.
-   This error means that you have multiple OpenMP libraries installed on your machine and they conflict with each other.
+   for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do sudo ln -sf "$(brew --cellar libomp)"/*/lib/libomp.dylib $CONDA_PREFIX/lib/$LIBOMP_ALIAS; done
 
-   If you are using Python distributed by Conda, then it is highly likely that the error is caused by the ``numpy`` package from Conda which includes the ``mkl`` package which in turn conflicts with the system-wide library.
-   In this case you can update the ``numpy`` package in Conda or replace the Conda's OpenMP library instance with system-wide one by creating a symlink to it in Conda environment folder ``$CONDA_PREFIX/lib``.
+Another workaround would be removing MKL optimizations from Conda's packages completely:
 
-   Assuming you are using macOS with Homebrew, the command which overwrites OpenMP library files in the current active Conda environment with symlinks to the system-wide library ones installed by Homebrew:
+.. code-block:: bash
 
-   ::
+    conda install nomkl
 
-       ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib
+If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
 
-   If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
+11. LightGBM hangs when multithreading (OpenMP) and using forking in Linux at the same time.
+--------------------------------------------------------------------------------------------
 
---------------
+Use ``nthreads=1`` to disable multithreading of LightGBM. There is a bug with OpenMP which hangs forked sessions
+with multithreading activated. A more expensive solution is to use new processes instead of using fork, however,
+keep in mind it is creating new processes where you have to copy memory and load libraries (example: if you want to
+fork 16 times your current process, then you will require to make 16 copies of your dataset in memory)
+(see `Microsoft/LightGBM#1789 <https://github.com/microsoft/LightGBM/issues/1789#issuecomment-433713383>`__).
 
--  **Question 11**: LightGBM hangs when multithreading (OpenMP) and using forking in Linux at the same time.
+An alternative, if multithreading is really necessary inside the forked sessions, would be to compile LightGBM with
+Intel toolchain. Intel compilers are unaffected by this bug.
 
--  **Solution 11**: Use ``nthreads=1`` to disable multithreading of LightGBM. There is a bug with OpenMP which hangs forked sessions with multithreading activated. A more expensive solution is to use new processes instead of using fork, however, keep in mind it is creating new processes where you have to copy memory and load libraries (example: if you want to fork 16 times your current process, then you will require to make 16 copies of your dataset in memory) (see `Microsoft/LightGBM#1789 <https://github.com/Microsoft/LightGBM/issues/1789#issuecomment-433713383>`__).
-   
-   An alternative, if multithreading is really necessary inside the forked sessions, would be to compile LightGBM with Intel toolchain. Intel compilers are unaffected by this bug.
-   
-   For C/C++ users, any OpenMP feature cannot be used before the fork happens. If an OpenMP feature is used before the fork happens (ex: using OpenMP for forking), OpenMP will hang inside the forked sessions. Use new processes instead and copy memory as required by creating new processes instead of forking (or, use Intel compilers).
+For C/C++ users, any OpenMP feature cannot be used before the fork happens. If an OpenMP feature is used before the
+fork happens (example: using OpenMP for forking), OpenMP will hang inside the forked sessions. Use new processes instead
+and copy memory as required by creating new processes instead of forking (or, use Intel compilers).
 
---------------
+Cloud platform container services may cause LightGBM to hang, if they use Linux fork to run multiple containers on a 
+single instance. For example, LightGBM hangs in AWS Batch array jobs, which `use the ECS agent 
+<https://aws.amazon.com/batch/faqs/#Features>`__ to manage multiple running jobs. Setting ``nthreads=1`` mitigates the issue.
+
+12. Why is early stopping not enabled by default in LightGBM?
+-------------------------------------------------------------
+
+Early stopping involves choosing a validation set, a special type of holdout which is used to evaluate the current state of the model after each iteration to see if training can stop.
+
+In ``LightGBM``, `we have decided to require that users specify this set directly <./Parameters.rst#valid>`_. Many options exist for splitting training data into training, test, and validation sets.
+
+The appropriate splitting strategy depends on the task and domain of the data, information that a modeler has but which ``LightGBM`` as a general-purpose tool does not.
+
+13. Does LightGBM support direct loading data from zero-based or one-based LibSVM format file?
+----------------------------------------------------------------------------------------------
+
+LightGBM supports loading data from zero-based LibSVM format file directly.
+
+14. Why CMake cannot find the compiler when compiling LightGBM with MinGW?
+--------------------------------------------------------------------------
+
+.. code-block:: bash
+
+    CMake Error: CMAKE_C_COMPILER not set, after EnableLanguage
+    CMake Error: CMAKE_CXX_COMPILER not set, after EnableLanguage
+
+This is a known issue of CMake when using MinGW. The easiest solution is to run again your ``cmake`` command to bypass the one time stopper from CMake. Or you can upgrade your version of CMake to at least version 3.17.0.
+
+See `Microsoft/LightGBM#3060 <https://github.com/microsoft/LightGBM/issues/3060#issuecomment-626338538>`__ for more details.
+
+15. Where can I find LightGBM's logo to use it in my presentation?
+------------------------------------------------------------------
+
+You can find LightGBM's logo in different file formats and resolutions `here <https://github.com/microsoft/LightGBM/tree/master/docs/logo>`__.
+
+------
 
 R-package
-~~~~~~~~~
+=========
 
--  **Question 1**: Any training command using LightGBM does not work after an error occurred during the training of a previous LightGBM model.
+.. contents::
+    :local:
+    :backlinks: none
 
--  **Solution 1**: Run ``lgb.unloader(wipe = TRUE)`` in the R console, and recreate the LightGBM datasets (this will wipe all LightGBM-related variables).
-   Due to the pointers, choosing to not wipe variables will not fix the error.
-   This is a known issue: `Microsoft/LightGBM#698 <https://github.com/Microsoft/LightGBM/issues/698>`__.
+1. Any training command using LightGBM does not work after an error occurred during the training of a previous LightGBM model.
+------------------------------------------------------------------------------------------------------------------------------
 
---------------
+Run ``lgb.unloader(wipe = TRUE)`` in the R console, and recreate the LightGBM datasets (this will wipe all LightGBM-related variables).
+Due to the pointers, choosing to not wipe variables will not fix the error.
+This is a known issue: `Microsoft/LightGBM#698 <https://github.com/microsoft/LightGBM/issues/698>`__.
 
--  **Question 2**: I used ``setinfo``, tried to print my ``lgb.Dataset``, and now the R console froze!
+2. I used ``setinfo()``, tried to print my ``lgb.Dataset``, and now the R console froze!
+----------------------------------------------------------------------------------------
 
--  **Solution 2**: Avoid printing the ``lgb.Dataset`` after using ``setinfo``.
-   This is a known bug: `Microsoft/LightGBM#539 <https://github.com/Microsoft/LightGBM/issues/539>`__.
+Avoid printing the ``lgb.Dataset`` after using ``setinfo``.
+This is a known bug: `Microsoft/LightGBM#539 <https://github.com/microsoft/LightGBM/issues/539>`__.
 
---------------
+3. ``error in data.table::data.table()...argument 2 is NULL``
+-------------------------------------------------------------
+
+If you are experiencing this error when running ``lightgbm``, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_ and later in `#2989 <https://github.com/microsoft/LightGBM/pull/2989#issuecomment-614374151>`_. We have seen that some in some situations, using ``data.table`` 1.11.x results in this error. To get around this, you can upgrade your version of ``data.table`` to at least version 1.12.0.
+
+------
 
 Python-package
-~~~~~~~~~~~~~~
+==============
 
--  **Question 1**: I see error messages like this when install from GitHub using ``python setup.py install``.
+.. contents::
+    :local:
+    :backlinks: none
 
-   ::
+1. ``Error: setup script specifies an absolute path`` when installing from GitHub using ``python setup.py install``.
+--------------------------------------------------------------------------------------------------------------------
 
-       error: Error: setup script specifies an absolute path:
-       /Users/Microsoft/LightGBM/python-package/lightgbm/../../lib_lightgbm.so
-       setup() arguments must *always* be /-separated paths relative to the setup.py directory, *never* absolute paths.
+.. code-block:: console
 
--  **Solution 1**: This error should be solved in latest version.
-   If you still meet this error, try to remove ``lightgbm.egg-info`` folder in your Python-package and reinstall,
-   or check `this thread on stackoverflow <http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path>`__.
+   error: Error: setup script specifies an absolute path:
+   /Users/Microsoft/LightGBM/python-package/lightgbm/../../lib_lightgbm.so
+   setup() arguments must *always* be /-separated paths relative to the setup.py directory, *never* absolute paths.
 
---------------
+This error should be solved in latest version.
+If you still meet this error, try to remove ``lightgbm.egg-info`` folder in your Python-package and reinstall,
+or check `this thread on stackoverflow <http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path>`__.
 
--  **Question 2**: I see error messages like
+2. Error messages: ``Cannot ... before construct dataset``.
+-----------------------------------------------------------
 
-   ::
+I see error messages like...
 
-       Cannot get/set label/weight/init_score/group/num_data/num_feature before construct dataset
+.. code-block:: console
 
-   but I've already constructed a dataset by some code like
+   Cannot get/set label/weight/init_score/group/num_data/num_feature before construct dataset
 
-   ::
+but I've already constructed a dataset by some code like:
 
-       train = lightgbm.Dataset(X_train, y_train)
+.. code-block:: python
 
-   or error messages like
+    train = lightgbm.Dataset(X_train, y_train)
 
-   ::
+or error messages like
 
-       Cannot set predictor/reference/categorical feature after freed raw data, set free_raw_data=False when construct Dataset to avoid this.
+.. code-block:: console
 
--  **Solution 2**: Because LightGBM constructs bin mappers to build trees, and train and valid Datasets within one Booster share the same bin mappers,
-   categorical features and feature names etc., the Dataset objects are constructed when constructing a Booster.
-   If you set ``free_raw_data=True`` (default), the raw data (with Python data struct) will be freed.
-   So, if you want to:
+    Cannot set predictor/reference/categorical feature after freed raw data, set free_raw_data=False when construct Dataset to avoid this.
 
-   -  get label (or weight/init\_score/group/data) before constructing a dataset, it's same as get ``self.label``;
+**Solution**: Because LightGBM constructs bin mappers to build trees, and train and valid Datasets within one Booster share the same bin mappers,
+categorical features and feature names etc., the Dataset objects are constructed when constructing a Booster.
+If you set ``free_raw_data=True`` (default), the raw data (with Python data struct) will be freed.
+So, if you want to:
 
-   -  set label (or weight/init\_score/group) before constructing a dataset, it's same as ``self.label=some_label_array``;
+-  get label (or weight/init\_score/group/data) before constructing a dataset, it's same as get ``self.label``;
 
-   -  get num\_data (or num\_feature) before constructing a dataset, you can get data with ``self.data``.
-      Then, if your data is ``numpy.ndarray``, use some code like ``self.data.shape``. But do not do this after subsetting the Dataset, because you'll get always ``None``;
+-  set label (or weight/init\_score/group) before constructing a dataset, it's same as ``self.label=some_label_array``;
 
-   -  set predictor (or reference/categorical feature) after constructing a dataset,
-      you should set ``free_raw_data=False`` or init a Dataset object with the same raw data.
+-  get num\_data (or num\_feature) before constructing a dataset, you can get data with ``self.data``.
+   Then, if your data is ``numpy.ndarray``, use some code like ``self.data.shape``. But do not do this after subsetting the Dataset, because you'll get always ``None``;
 
---------------
+-  set predictor (or reference/categorical feature) after constructing a dataset,
+   you should set ``free_raw_data=False`` or init a Dataset object with the same raw data.
 
--  **Question 3**: I encounter segmentation faults (segfaults) randomly after installing LightGBM from PyPI using ``pip install lightgbm``.
+3. I encounter segmentation faults (segfaults) randomly after installing LightGBM from PyPI using ``pip install lightgbm``.
+---------------------------------------------------------------------------------------------------------------------------
 
--  **Solution 3**: We are doing our best to provide universal wheels which have high running speed and are compatible with any hardware, OS, compiler, etc. at the same time.
-   However, sometimes it's just impossible to guarantee the possibility of usage of LightGBM in any specific environment (see `Microsoft/LightGBM#1743 <https://github.com/Microsoft/LightGBM/issues/1743>`__).
+We are doing our best to provide universal wheels which have high running speed and are compatible with any hardware, OS, compiler, etc. at the same time.
+However, sometimes it's just impossible to guarantee the possibility of usage of LightGBM in any specific environment (see `Microsoft/LightGBM#1743 <https://github.com/microsoft/LightGBM/issues/1743>`__).
 
-   Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary :all: lightgbm``.
-   For the OS-specific prerequisites see `this guide <https://github.com/Microsoft/LightGBM/blob/master/python-package/README.rst#build-from-sources>`__.
+Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary :all: lightgbm``.
+For the OS-specific prerequisites see `this guide <https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst#user-content-build-from-sources>`__.
 
-   Also, feel free to post a new issue in our GitHub repository. We always look at each case individually and try to find a root cause.
+Also, feel free to post a new issue in our GitHub repository. We always look at each case individually and try to find a root cause.

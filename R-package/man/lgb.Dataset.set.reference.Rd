@@ -12,13 +12,13 @@ lgb.Dataset.set.reference(dataset, reference)
 \item{reference}{object of class \code{lgb.Dataset}}
 }
 \value{
-passed dataset
+the dataset you passed in
 }
 \description{
 If you want to use validation data, you should set reference to training data
 }
 \examples{
-library(lightgbm)
+\donttest{
 data(agaricus.train, package ="lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -26,5 +26,5 @@ data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 dtest <- lgb.Dataset(test$data, test = train$label)
 lgb.Dataset.set.reference(dtest, dtrain)
-
+}
 }

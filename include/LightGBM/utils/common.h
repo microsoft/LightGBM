@@ -1,29 +1,72 @@
-#ifndef LIGHTGBM_UTILS_COMMON_FUN_H_
-#define LIGHTGBM_UTILS_COMMON_FUN_H_
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
+#ifndef LIGHTGBM_UTILS_COMMON_H_
+#define LIGHTGBM_UTILS_COMMON_H_
 
+#if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
+#include <LightGBM/utils/common_legacy_solaris.h>
+#endif
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
-#include <cstdio>
+#include <limits>
 #include <string>
-#include <vector>
-#include <sstream>
-#include <cstdint>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <functional>
-#include <memory>
-#include <iterator>
-#include <type_traits>
 #include <iomanip>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <sstream>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#if (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
+#define FMT_HEADER_ONLY
+#include "../../../external_libs/fmt/include/fmt/format.h"
+#endif
+#include "../../../external_libs/fast_double_parser/include/fast_double_parser.h"
 
 #ifdef _MSC_VER
-#include "intrin.h"
+#include <intrin.h>
+#pragma intrinsic(_BitScanReverse)
+#endif
+
+#if defined(_MSC_VER)
+#include <malloc.h>
+#elif MM_MALLOC
+#include <mm_malloc.h>
+// https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
+// https://www.oreilly.com/library/view/mac-os-x/0596003560/ch05s01s02.html
+#elif defined(__GNUC__) && defined(HAVE_MALLOC_H)
+  #include <malloc.h>
+  #define _mm_malloc(a, b) memalign(b, a)
+  #define _mm_free(a) free(a)
+#else
+#include <stdlib.h>
+#define _mm_malloc(a, b) malloc(a)
+#define _mm_free(a) free(a)
 #endif
 
 namespace LightGBM {
 
 namespace Common {
+
+/*!
+* Imbues the stream with the C locale.
+*/
+static void C_stringstream(std::stringstream &ss) {
+  ss.imbue(std::locale::classic());
+}
 
 inline static char tolower(char in) {
   if (in <= 'Z' && in >= 'A')
@@ -75,6 +118,30 @@ inline static std::vector<std::string> Split(const char* c_str, char delimiter) 
   }
   if (i < pos) {
     ret.push_back(str.substr(i));
+  }
+  return ret;
+}
+
+inline static std::vector<std::string> SplitBrackets(const char* c_str, char left_delimiter, char right_delimiter) {
+  std::vector<std::string> ret;
+  std::string str(c_str);
+  size_t i = 0;
+  size_t pos = 0;
+  bool open = false;
+  while (pos < str.length()) {
+    if (str[pos] == left_delimiter) {
+      open = true;
+      ++pos;
+      i = pos;
+    } else if (str[pos] == right_delimiter && open) {
+      if (i < pos) {
+        ret.push_back(str.substr(i, pos - i));
+      }
+      open = false;
+      ++pos;
+    } else {
+      ++pos;
+    }
   }
   return ret;
 }
@@ -279,97 +346,6 @@ inline static bool AtofAndCheck(const char* p, double* out) {
   return true;
 }
 
-inline static unsigned CountDecimalDigit32(uint32_t n) {
-#if defined(_MSC_VER) || defined(__GNUC__)
-  static const uint32_t powers_of_10[] = {
-    0,
-    10,
-    100,
-    1000,
-    10000,
-    100000,
-    1000000,
-    10000000,
-    100000000,
-    1000000000
-  };
-#ifdef _MSC_VER
-  unsigned long i = 0;
-  _BitScanReverse(&i, n | 1);
-  uint32_t t = (i + 1) * 1233 >> 12;
-#elif __GNUC__
-  uint32_t t = (32 - __builtin_clz(n | 1)) * 1233 >> 12;
-#endif
-  return t - (n < powers_of_10[t]) + 1;
-#else
-  if (n < 10) return 1;
-  if (n < 100) return 2;
-  if (n < 1000) return 3;
-  if (n < 10000) return 4;
-  if (n < 100000) return 5;
-  if (n < 1000000) return 6;
-  if (n < 10000000) return 7;
-  if (n < 100000000) return 8;
-  if (n < 1000000000) return 9;
-  return 10;
-#endif
-}
-
-inline static void Uint32ToStr(uint32_t value, char* buffer) {
-  const char kDigitsLut[200] = {
-    '0', '0', '0', '1', '0', '2', '0', '3', '0', '4', '0', '5', '0', '6', '0', '7', '0', '8', '0', '9',
-    '1', '0', '1', '1', '1', '2', '1', '3', '1', '4', '1', '5', '1', '6', '1', '7', '1', '8', '1', '9',
-    '2', '0', '2', '1', '2', '2', '2', '3', '2', '4', '2', '5', '2', '6', '2', '7', '2', '8', '2', '9',
-    '3', '0', '3', '1', '3', '2', '3', '3', '3', '4', '3', '5', '3', '6', '3', '7', '3', '8', '3', '9',
-    '4', '0', '4', '1', '4', '2', '4', '3', '4', '4', '4', '5', '4', '6', '4', '7', '4', '8', '4', '9',
-    '5', '0', '5', '1', '5', '2', '5', '3', '5', '4', '5', '5', '5', '6', '5', '7', '5', '8', '5', '9',
-    '6', '0', '6', '1', '6', '2', '6', '3', '6', '4', '6', '5', '6', '6', '6', '7', '6', '8', '6', '9',
-    '7', '0', '7', '1', '7', '2', '7', '3', '7', '4', '7', '5', '7', '6', '7', '7', '7', '8', '7', '9',
-    '8', '0', '8', '1', '8', '2', '8', '3', '8', '4', '8', '5', '8', '6', '8', '7', '8', '8', '8', '9',
-    '9', '0', '9', '1', '9', '2', '9', '3', '9', '4', '9', '5', '9', '6', '9', '7', '9', '8', '9', '9'
-  };
-  unsigned digit = CountDecimalDigit32(value);
-  buffer += digit;
-  *buffer = '\0';
-
-  while (value >= 100) {
-    const unsigned i = (value % 100) << 1;
-    value /= 100;
-    *--buffer = kDigitsLut[i + 1];
-    *--buffer = kDigitsLut[i];
-  }
-
-  if (value < 10) {
-    *--buffer = char(value) + '0';
-  }
-  else {
-    const unsigned i = value << 1;
-    *--buffer = kDigitsLut[i + 1];
-    *--buffer = kDigitsLut[i];
-  }
-}
-
-inline static void Int32ToStr(int32_t value, char* buffer) {
-  uint32_t u = static_cast<uint32_t>(value);
-  if (value < 0) {
-    *buffer++ = '-';
-    u = ~u + 1;
-  }
-  Uint32ToStr(u, buffer);
-}
-
-inline static void DoubleToStr(double value, char* buffer, size_t
-                               #ifdef _MSC_VER
-                               buffer_len
-                               #endif
-) {
-  #ifdef _MSC_VER
-  sprintf_s(buffer, buffer_len, "%.17g", value);
-  #else
-  sprintf(buffer, "%.17g", value);
-  #endif
-}
-
 inline static const char* SkipSpaceAndTab(const char* p) {
   while (*p == ' ' || *p == '\t') {
     ++p;
@@ -391,69 +367,6 @@ inline static std::vector<T2> ArrayCast(const std::vector<T>& arr) {
     ret[i] = static_cast<T2>(arr[i]);
   }
   return ret;
-}
-
-template<typename T, bool is_float, bool is_unsign>
-struct __TToStringHelperFast {
-  void operator()(T value, char* buffer, size_t) const {
-    Int32ToStr(value, buffer);
-  }
-};
-
-template<typename T>
-struct __TToStringHelperFast<T, true, false> {
-  void operator()(T value, char* buffer, size_t
-                  #ifdef _MSC_VER
-                  buf_len
-                  #endif
-                  ) const {
-    #ifdef _MSC_VER
-    sprintf_s(buffer, buf_len, "%g", value);
-    #else
-    sprintf(buffer, "%g", value);
-    #endif
-  }
-};
-
-template<typename T>
-struct __TToStringHelperFast<T, false, true> {
-  void operator()(T value, char* buffer, size_t) const {
-    Uint32ToStr(value, buffer);
-  }
-};
-
-template<typename T>
-inline static std::string ArrayToStringFast(const std::vector<T>& arr, size_t n) {
-  if (arr.empty() || n == 0) {
-    return std::string("");
-  }
-  __TToStringHelperFast<T, std::is_floating_point<T>::value, std::is_unsigned<T>::value> helper;
-  const size_t buf_len = 16;
-  std::vector<char> buffer(buf_len);
-  std::stringstream str_buf;
-  helper(arr[0], buffer.data(), buf_len);
-  str_buf << buffer.data();
-  for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    helper(arr[i], buffer.data(), buf_len);
-    str_buf << ' ' << buffer.data();
-  }
-  return str_buf.str();
-}
-
-inline static std::string ArrayToString(const std::vector<double>& arr, size_t n) {
-  if (arr.empty() || n == 0) {
-    return std::string("");
-  }
-  const size_t buf_len = 32;
-  std::vector<char> buffer(buf_len);
-  std::stringstream str_buf;
-  DoubleToStr(arr[0], buffer.data(), buf_len);
-  str_buf << buffer.data();
-  for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    DoubleToStr(arr[i], buffer.data(), buf_len);
-    str_buf << ' ' << buffer.data();
-  }
-  return str_buf.str();
 }
 
 template<typename T, bool is_float>
@@ -485,12 +398,23 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
 }
 
 template<typename T>
+inline static std::vector<std::vector<T>> StringToArrayofArrays(
+    const std::string& str, char left_bracket, char right_bracket, char delimiter) {
+  std::vector<std::string> strs = SplitBrackets(str.c_str(), left_bracket, right_bracket);
+  std::vector<std::vector<T>> ret;
+  for (const auto& s : strs) {
+    ret.push_back(StringToArray<T>(s, delimiter));
+  }
+  return ret;
+}
+
+template<typename T>
 inline static std::vector<T> StringToArray(const std::string& str, int n) {
   if (n == 0) {
     return std::vector<T>();
   }
   std::vector<std::string> strs = Split(str.c_str(), ' ');
-  CHECK(strs.size() == static_cast<size_t>(n));
+  CHECK_EQ(strs.size(), static_cast<size_t>(n));
   std::vector<T> ret;
   ret.reserve(strs.size());
   __StringToTHelper<T, std::is_floating_point<T>::value> helper;
@@ -532,11 +456,14 @@ inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
 }
 
 template<typename T>
-inline static std::string Join(const std::vector<T>& strs, const char* delimiter) {
+inline static std::string Join(const std::vector<T>& strs, const char* delimiter, const bool force_C_locale = false) {
   if (strs.empty()) {
     return std::string("");
   }
   std::stringstream str_buf;
+  if (force_C_locale) {
+    C_stringstream(str_buf);
+  }
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << strs[0];
   for (size_t i = 1; i < strs.size(); ++i) {
@@ -546,14 +473,35 @@ inline static std::string Join(const std::vector<T>& strs, const char* delimiter
   return str_buf.str();
 }
 
+template<>
+inline std::string Join<int8_t>(const std::vector<int8_t>& strs, const char* delimiter, const bool force_C_locale) {
+  if (strs.empty()) {
+    return std::string("");
+  }
+  std::stringstream str_buf;
+  if (force_C_locale) {
+    C_stringstream(str_buf);
+  }
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+  str_buf << static_cast<int16_t>(strs[0]);
+  for (size_t i = 1; i < strs.size(); ++i) {
+    str_buf << delimiter;
+    str_buf << static_cast<int16_t>(strs[i]);
+  }
+  return str_buf.str();
+}
+
 template<typename T>
-inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter) {
+inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter, const bool force_C_locale = false) {
   if (end - start <= 0) {
     return std::string("");
   }
   start = std::min(start, static_cast<size_t>(strs.size()) - 1);
   end = std::min(end, static_cast<size_t>(strs.size()));
   std::stringstream str_buf;
+  if (force_C_locale) {
+    C_stringstream(str_buf);
+  }
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << strs[start];
   for (size_t i = start + 1; i < end; ++i) {
@@ -575,7 +523,7 @@ inline static int64_t Pow2RoundUp(int64_t x) {
 }
 
 /*!
- * \brief Do inplace softmax transformaton on p_rec
+ * \brief Do inplace softmax transformation on p_rec
  * \param p_rec The input/output vector of the values.
  */
 inline static void Softmax(std::vector<double>* p_rec) {
@@ -612,17 +560,19 @@ inline static void Softmax(const double* input, double* output, int len) {
 template<typename T>
 std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<T>>& input) {
   std::vector<const T*> ret;
-  for (size_t i = 0; i < input.size(); ++i) {
-    ret.push_back(input.at(i).get());
+  for (auto t = input.begin(); t !=input.end(); ++t) {
+    ret.push_back(t->get());
   }
   return ret;
 }
 
 template<typename T1, typename T2>
-inline static void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t start, bool is_reverse = false) {
+inline static void SortForPair(std::vector<T1>* keys, std::vector<T2>* values, size_t start, bool is_reverse = false) {
   std::vector<std::pair<T1, T2>> arr;
-  for (size_t i = start; i < keys.size(); ++i) {
-    arr.emplace_back(keys[i], values[i]);
+  auto& ref_key = *keys;
+  auto& ref_value = *values;
+  for (size_t i = start; i < keys->size(); ++i) {
+    arr.emplace_back(ref_key[i], ref_value[i]);
   }
   if (!is_reverse) {
     std::stable_sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
@@ -634,16 +584,17 @@ inline static void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, s
     });
   }
   for (size_t i = start; i < arr.size(); ++i) {
-    keys[i] = arr[i].first;
-    values[i] = arr[i].second;
+    ref_key[i] = arr[i].first;
+    ref_value[i] = arr[i].second;
   }
 }
 
 template <typename T>
-inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>& data) {
-  std::vector<T*> ptr(data.size());
-  for (size_t i = 0; i < data.size(); ++i) {
-    ptr[i] = data[i].data();
+inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>* data) {
+  std::vector<T*> ptr(data->size());
+  auto& ref_data = *data;
+  for (size_t i = 0; i < data->size(); ++i) {
+    ptr[i] = ref_data[i].data();
   }
   return ptr;
 }
@@ -658,7 +609,9 @@ inline static std::vector<int> VectorSize(const std::vector<std::vector<T>>& dat
 }
 
 inline static double AvoidInf(double x) {
-  if (x >= 1e300) {
+  if (std::isnan(x)) {
+    return 0.0;
+  } else if (x >= 1e300) {
     return 1e300;
   } else if (x <= -1e300) {
     return -1e300;
@@ -668,7 +621,9 @@ inline static double AvoidInf(double x) {
 }
 
 inline static float AvoidInf(float x) {
-  if (x >= 1e38) {
+  if (std::isnan(x)) {
+    return 0.0f;
+  } else if (x >= 1e38) {
     return 1e38f;
   } else if (x <= -1e38) {
     return -1e38f;
@@ -686,12 +641,7 @@ template<typename _RanIt, typename _Pr, typename _VTRanIt> inline
 static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t len = _Last - _First;
   const size_t kMinInnerLen = 1024;
-  int num_threads = 1;
-  #pragma omp parallel
-  #pragma omp master
-  {
-    num_threads = omp_get_num_threads();
-  }
+  int num_threads = OMP_NUM_THREADS();
   if (len <= kMinInnerLen || num_threads <= 1) {
     std::sort(_First, _Last, _Pred);
     return;
@@ -699,7 +649,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t inner_size = (len + num_threads - 1) / num_threads;
   inner_size = std::max(inner_size, kMinInnerLen);
   num_threads = static_cast<int>((len + inner_size - 1) / inner_size);
-  #pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static, 1)
   for (int i = 0; i < num_threads; ++i) {
     size_t left = inner_size*i;
     size_t right = left + inner_size;
@@ -809,6 +759,23 @@ inline static void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) 
   }
 }
 
+inline static std::vector<uint32_t> EmptyBitset(int n) {
+  int size = n / 32;
+  if (n % 32 != 0) ++size;
+  return std::vector<uint32_t>(size);
+}
+
+template<typename T>
+inline static void InsertBitset(std::vector<uint32_t>* vec, const T val) {
+  auto& ref_v = *vec;
+  int i1 = val / 32;
+  int i2 = val % 32;
+  if (static_cast<int>(vec->size()) < i1 + 1) {
+    vec->resize(i1 + 1, 0);
+  }
+  ref_v[i1] |= (1 << i2);
+}
+
 template<typename T>
 inline static std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
   std::vector<uint32_t> ret;
@@ -839,7 +806,7 @@ inline static bool CheckDoubleEqualOrdered(double a, double b) {
 }
 
 inline static double GetDoubleUpperBound(double a) {
-  return std::nextafter(a, INFINITY);;
+  return std::nextafter(a, INFINITY);
 }
 
 inline static size_t GetLine(const char* str) {
@@ -874,8 +841,390 @@ static T SafeLog(T x) {
   }
 }
 
+inline bool CheckAllowedJSON(const std::string& s) {
+  unsigned char char_code;
+  for (auto c : s) {
+    char_code = static_cast<unsigned char>(c);
+    if (char_code == 34      // "
+        || char_code == 44   // ,
+        || char_code == 58   // :
+        || char_code == 91   // [
+        || char_code == 93   // ]
+        || char_code == 123  // {
+        || char_code == 125  // }
+        ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline int RoundInt(double x) {
+  return static_cast<int>(x + 0.5f);
+}
+
+template <typename T, std::size_t N = 32>
+class AlignmentAllocator {
+ public:
+  typedef T value_type;
+  typedef std::size_t size_type;
+  typedef std::ptrdiff_t difference_type;
+
+  typedef T* pointer;
+  typedef const T* const_pointer;
+
+  typedef T& reference;
+  typedef const T& const_reference;
+
+  inline AlignmentAllocator() throw() {}
+
+  template <typename T2>
+  inline AlignmentAllocator(const AlignmentAllocator<T2, N>&) throw() {}
+
+  inline ~AlignmentAllocator() throw() {}
+
+  inline pointer adress(reference r) {
+    return &r;
+  }
+
+  inline const_pointer adress(const_reference r) const {
+    return &r;
+  }
+
+  inline pointer allocate(size_type n) {
+    return (pointer)_mm_malloc(n * sizeof(value_type), N);
+  }
+
+  inline void deallocate(pointer p, size_type) {
+    _mm_free(p);
+  }
+
+  inline void construct(pointer p, const value_type& wert) {
+    new (p) value_type(wert);
+  }
+
+  inline void destroy(pointer p) {
+    p->~value_type();
+  }
+
+  inline size_type max_size() const throw() {
+    return size_type(-1) / sizeof(value_type);
+  }
+
+  template <typename T2>
+  struct rebind {
+    typedef AlignmentAllocator<T2, N> other;
+  };
+
+  bool operator!=(const AlignmentAllocator<T, N>& other) const {
+    return !(*this == other);
+  }
+
+  // Returns true if and only if storage allocated from *this
+  // can be deallocated from other, and vice versa.
+  // Always returns true for stateless allocators.
+  bool operator==(const AlignmentAllocator<T, N>&) const {
+    return true;
+  }
+};
+
+class Timer {
+ public:
+  Timer() {
+#ifdef TIMETAG
+    int num_threads = OMP_NUM_THREADS();
+    start_time_.resize(num_threads);
+    stats_.resize(num_threads);
+#endif  // TIMETAG
+  }
+
+  ~Timer() { Print(); }
+
+#ifdef TIMETAG
+  void Start(const std::string& name) {
+    auto tid = omp_get_thread_num();
+    start_time_[tid][name] = std::chrono::steady_clock::now();
+  }
+
+  void Stop(const std::string& name) {
+    auto cur_time = std::chrono::steady_clock::now();
+    auto tid = omp_get_thread_num();
+    if (stats_[tid].find(name) == stats_[tid].end()) {
+      stats_[tid][name] = std::chrono::duration<double, std::milli>(0);
+    }
+    stats_[tid][name] += cur_time - start_time_[tid][name];
+  }
+
+#else
+  void Start(const std::string&) {}
+
+  void Stop(const std::string&) {}
+#endif  // TIMETAG
+
+  void Print() const {
+#ifdef TIMETAG
+    std::unordered_map<std::string, std::chrono::duration<double, std::milli>>
+        stats(stats_[0].begin(), stats_[0].end());
+    for (size_t i = 1; i < stats_.size(); ++i) {
+      for (auto it = stats_[i].begin(); it != stats_[i].end(); ++it) {
+        if (stats.find(it->first) == stats.end()) {
+          stats[it->first] = it->second;
+        } else {
+          stats[it->first] += it->second;
+        }
+      }
+    }
+    std::map<std::string, std::chrono::duration<double, std::milli>> ordered(
+        stats.begin(), stats.end());
+    for (auto it = ordered.begin(); it != ordered.end(); ++it) {
+      Log::Info("%s costs:\t %f", it->first.c_str(), it->second * 1e-3);
+    }
+#endif  // TIMETAG
+  }
+#ifdef TIMETAG
+  std::vector<
+      std::unordered_map<std::string, std::chrono::steady_clock::time_point>>
+      start_time_;
+  std::vector<std::unordered_map<std::string,
+                                 std::chrono::duration<double, std::milli>>>
+      stats_;
+#endif  // TIMETAG
+};
+
+// Note: this class is not thread-safe, don't use it inside omp blocks
+class FunctionTimer {
+ public:
+#ifdef TIMETAG
+  FunctionTimer(const std::string& name, Timer& timer) : timer_(timer) {
+    timer.Start(name);
+    name_ = name;
+  }
+
+  ~FunctionTimer() { timer_.Stop(name_); }
+
+ private:
+  std::string name_;
+  Timer& timer_;
+#else
+  FunctionTimer(const std::string&, Timer&) {}
+#endif  // TIMETAG
+};
+
 }  // namespace Common
+
+extern Common::Timer global_timer;
+
+
+/*!
+* Provides locale-independent alternatives to Common's methods.
+* Essential to make models robust to locale settings.
+*/
+namespace CommonC {
+
+template<typename T>
+inline static std::string Join(const std::vector<T>& strs, const char* delimiter) {
+  return LightGBM::Common::Join(strs, delimiter, true);
+}
+
+template<typename T>
+inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter) {
+  return LightGBM::Common::Join(strs, start, end, delimiter, true);
+}
+
+inline static const char* Atof(const char* p, double* out) {
+  return LightGBM::Common::Atof(p, out);
+}
+
+template<typename T, bool is_float>
+struct __StringToTHelperFast {
+  const char* operator()(const char*p, T* out) const {
+    return LightGBM::Common::Atoi(p, out);
+  }
+};
+
+/*!
+* \warning Beware that ``Common::Atof`` in ``__StringToTHelperFast``,
+*          has **less** floating point precision than ``__StringToTHelper``.
+*          Both versions are kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
+*          Check ``StringToArrayFast`` and ``StringToArray`` for more details on this.
+*/
+template<typename T>
+struct __StringToTHelperFast<T, true> {
+  const char* operator()(const char*p, T* out) const {
+    double tmp = 0.0f;
+    auto ret = Atof(p, &tmp);
+    *out = static_cast<T>(tmp);
+    return ret;
+  }
+};
+
+template<typename T, bool is_float>
+struct __StringToTHelper {
+  T operator()(const std::string& str) const {
+    T ret = 0;
+    LightGBM::Common::Atoi(str.c_str(), &ret);
+    return ret;
+  }
+};
+
+/*!
+* \warning Beware that ``Common::Atof`` in ``__StringToTHelperFast``,
+*          has **less** floating point precision than ``__StringToTHelper``.
+*          Both versions are kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
+*          Check ``StringToArrayFast`` and ``StringToArray`` for more details on this.
+* \note It is possible that ``fast_double_parser::parse_number`` is faster than ``Common::Atof``.
+*/
+template<typename T>
+struct __StringToTHelper<T, true> {
+  T operator()(const std::string& str) const {
+    double tmp;
+
+    // Fast (common) path: For numeric inputs in RFC 7159 format:
+    const bool fast_parse_succeeded = fast_double_parser::parse_number(str.c_str(), &tmp);
+
+    // Rare path: Not in RFC 7159 format. Possible "inf", "nan", etc. Fallback to standard library:
+    if (!fast_parse_succeeded) {
+      std::stringstream ss;
+      Common::C_stringstream(ss);
+      ss << str;
+      ss >> tmp;
+    }
+
+    return static_cast<T>(tmp);
+  }
+};
+
+
+/*!
+* \warning Beware that due to internal use of ``Common::Atof`` in ``__StringToTHelperFast``,
+*          this method has less precision for floating point numbers than ``StringToArray``,
+*          which calls ``__StringToTHelper``.
+*          As such, ``StringToArrayFast`` and ``StringToArray`` are not equivalent!
+*          Both versions were kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
+*/
+template<typename T>
+inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
+  if (n == 0) {
+    return std::vector<T>();
+  }
+  auto p_str = str.c_str();
+  __StringToTHelperFast<T, std::is_floating_point<T>::value> helper;
+  std::vector<T> ret(n);
+  for (int i = 0; i < n; ++i) {
+    p_str = helper(p_str, &ret[i]);
+  }
+  return ret;
+}
+
+/*!
+* \warning Do not replace calls to this method by ``StringToArrayFast``.
+*          This method is more precise for floating point numbers.
+*          Check ``StringToArrayFast`` for more details.
+*/
+template<typename T>
+inline static std::vector<T> StringToArray(const std::string& str, int n) {
+  if (n == 0) {
+    return std::vector<T>();
+  }
+  std::vector<std::string> strs = LightGBM::Common::Split(str.c_str(), ' ');
+  CHECK_EQ(strs.size(), static_cast<size_t>(n));
+  std::vector<T> ret;
+  ret.reserve(strs.size());
+  __StringToTHelper<T, std::is_floating_point<T>::value> helper;
+  for (const auto& s : strs) {
+    ret.push_back(helper(s));
+  }
+  return ret;
+}
+
+/*!
+* \warning Do not replace calls to this method by ``StringToArrayFast``.
+*          This method is more precise for floating point numbers.
+*          Check ``StringToArrayFast`` for more details.
+*/
+template<typename T>
+inline static std::vector<T> StringToArray(const std::string& str, char delimiter) {
+  std::vector<std::string> strs = LightGBM::Common::Split(str.c_str(), delimiter);
+  std::vector<T> ret;
+  ret.reserve(strs.size());
+  __StringToTHelper<T, std::is_floating_point<T>::value> helper;
+  for (const auto& s : strs) {
+    ret.push_back(helper(s));
+  }
+  return ret;
+}
+
+#if (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
+/*!
+* Safely formats a value onto a buffer according to a format string and null-terminates it.
+*
+* \note It checks that the full value was written or forcefully aborts.
+*       This safety check serves to prevent incorrect internal API usage.
+*       Correct usage will never incur in this problem:
+*         - The received buffer size shall be sufficient at all times for the input format string and value.
+*/
+template <typename T>
+inline static void format_to_buf(char* buffer, const size_t buf_len, const char* format, const T value) {
+    auto result = fmt::format_to_n(buffer, buf_len, format, value);
+    if (result.size >= buf_len) {
+      Log::Fatal("Numerical conversion failed. Buffer is too small.");
+    }
+    buffer[result.size] = '\0';
+}
+
+template<typename T, bool is_float, bool high_precision>
+struct __TToStringHelper {
+  void operator()(T value, char* buffer, size_t buf_len) const {
+    format_to_buf(buffer, buf_len, "{}", value);
+  }
+};
+
+template<typename T>
+struct __TToStringHelper<T, true, false> {
+  void operator()(T value, char* buffer, size_t buf_len) const {
+    format_to_buf(buffer, buf_len, "{:g}", value);
+  }
+};
+
+template<typename T>
+struct __TToStringHelper<T, true, true> {
+  void operator()(T value, char* buffer, size_t buf_len) const {
+    format_to_buf(buffer, buf_len, "{:.17g}", value);
+  }
+};
+
+/*!
+* Converts an array to a string with with values separated by the space character.
+* This method replaces Common's ``ArrayToString`` and ``ArrayToStringFast`` functionality
+* and is locale-independent.
+* 
+* \note If ``high_precision_output`` is set to true,
+*       floating point values are output with more digits of precision.
+*/
+template<bool high_precision_output = false, typename T>
+inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
+  if (arr.empty() || n == 0) {
+    return std::string("");
+  }
+  __TToStringHelper<T, std::is_floating_point<T>::value, high_precision_output> helper;
+  const size_t buf_len = high_precision_output ? 32 : 16;
+  std::vector<char> buffer(buf_len);
+  std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
+  helper(arr[0], buffer.data(), buf_len);
+  str_buf << buffer.data();
+  for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
+    helper(arr[i], buffer.data(), buf_len);
+    str_buf << ' ' << buffer.data();
+  }
+  return str_buf.str();
+}
+#endif  // (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
+
+
+}  // namespace CommonC
+
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_UTILS_COMMON_FUN_H_
+#endif  // LIGHTGBM_UTILS_COMMON_H_

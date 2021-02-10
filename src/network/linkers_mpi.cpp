@@ -1,4 +1,9 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifdef USE_MPI
+
 #include "linkers.h"
 
 namespace LightGBM {
@@ -22,11 +27,35 @@ Linkers::Linkers(Config) {
 }
 
 Linkers::~Linkers() {
-  if (is_init_) {
+  // Don't call MPI_Finalize() here: If the destructor was called because only this node had an exception, calling MPI_Finalize() will cause all nodes to hang.
+  // Instead we will handle finalize/abort for MPI in main().
+}
+
+bool Linkers::IsMpiInitialized() {
+  int is_mpi_init;
+  MPI_SAFE_CALL(MPI_Initialized(&is_mpi_init));
+  return is_mpi_init;
+}
+
+void Linkers::MpiFinalizeIfIsParallel() {
+  if (IsMpiInitialized()) {
+    Log::Debug("Finalizing MPI session.");
     MPI_SAFE_CALL(MPI_Finalize());
   }
 }
 
+void Linkers::MpiAbortIfIsParallel() {
+  try {
+    if (IsMpiInitialized()) {
+      std::cerr << "Aborting MPI communication." << std::endl << std::flush;
+      MPI_SAFE_CALL(MPI_Abort(MPI_COMM_WORLD, -1));;
+    }
+  }
+  catch (...) {
+    std::cerr << "Exception was raised before aborting MPI. Aborting process..." << std::endl << std::flush;
+    abort();
+  }
+}
 
 }  // namespace LightGBM
 #endif  // USE_MPI

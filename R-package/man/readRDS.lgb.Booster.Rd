@@ -2,9 +2,9 @@
 % Please edit documentation in R/readRDS.lgb.Booster.R
 \name{readRDS.lgb.Booster}
 \alias{readRDS.lgb.Booster}
-\title{readRDS for lgb.Booster models}
+\title{readRDS for \code{lgb.Booster} models}
 \usage{
-readRDS.lgb.Booster(file = "", refhook = NULL)
+readRDS.lgb.Booster(file, refhook = NULL)
 }
 \arguments{
 \item{file}{a connection or the name of the file where the R object is saved to or read from.}
@@ -12,12 +12,13 @@ readRDS.lgb.Booster(file = "", refhook = NULL)
 \item{refhook}{a hook function for handling reference objects.}
 }
 \value{
-lgb.Booster.
+\code{lgb.Booster}
 }
 \description{
-Attempts to load a model using RDS.
+Attempts to load a model stored in a \code{.rds} file, using \code{\link[base]{readRDS}}
 }
 \examples{
+\donttest{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -27,14 +28,17 @@ test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 params <- list(objective = "regression", metric = "l2")
 valids <- list(test = dtest)
-model <- lgb.train(params,
-                   dtrain,
-                   100,
-                   valids,
-                   min_data = 1,
-                   learning_rate = 1,
-                   early_stopping_rounds = 10)
-saveRDS.lgb.Booster(model, "model.rds")
-new_model <- readRDS.lgb.Booster("model.rds")
-
+model <- lgb.train(
+  params = params
+  , data = dtrain
+  , nrounds = 10L
+  , valids = valids
+  , min_data = 1L
+  , learning_rate = 1.0
+  , early_stopping_rounds = 5L
+)
+model_file <- tempfile(fileext = ".rds")
+saveRDS.lgb.Booster(model, model_file)
+new_model <- readRDS.lgb.Booster(model_file)
+}
 }

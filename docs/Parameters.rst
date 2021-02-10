@@ -45,19 +45,21 @@ Core Parameters
 
    -  ``predict``, for prediction, aliases: ``prediction``, ``test``
 
-   -  ``convert_model``, for converting model file into if-else format, see more information in `IO Parameters <#io-parameters>`__
+   -  ``convert_model``, for converting model file into if-else format, see more information in `Convert Parameters <#convert-parameters>`__
 
    -  ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
 
+   -  ``save_binary``, load train (and validation) data then save dataset to binary file. Typical usage: ``save_binary`` first, then run multiple ``train`` tasks in parallel using the saved binary file
+
    -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
 
--  ``objective`` :raw-html:`<a id="objective" title="Permalink to this parameter" href="#objective">&#x1F517;&#xFE0E;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``, aliases: ``objective_type``, ``app``, ``application``
+-  ``objective`` :raw-html:`<a id="objective" title="Permalink to this parameter" href="#objective">&#x1F517;&#xFE0E;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gamma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``cross_entropy``, ``cross_entropy_lambda``, ``lambdarank``, ``rank_xendcg``, aliases: ``objective_type``, ``app``, ``application``
 
    -  regression application
 
-      -  ``regression_l2``, L2 loss, aliases: ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
+      -  ``regression``, L2 loss, aliases: ``regression_l2``, ``l2``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
 
-      -  ``regression_l1``, L1 loss, aliases: ``mean_absolute_error``, ``mae``
+      -  ``regression_l1``, L1 loss, aliases: ``l1``, ``mean_absolute_error``, ``mae``
 
       -  ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__
 
@@ -69,11 +71,15 @@ Core Parameters
 
       -  ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
 
-      -  ``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed <https://en.wikipedia.org/wiki/Gamma_distribution#Applications>`__
+      -  ``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed <https://en.wikipedia.org/wiki/Gamma_distribution#Occurrence_and_applications>`__
 
-      -  ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Applications>`__
+      -  ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Occurrence_and_applications>`__
 
-   -  ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression). Requires labels in {0, 1}; see ``cross-entropy`` application for general probability labels in [0, 1]
+   -  binary classification application
+
+      -  ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression)
+
+      -  requires labels in {0, 1}; see ``cross-entropy`` application for general probability labels in [0, 1]
 
    -  multi-class classification application
 
@@ -85,21 +91,23 @@ Core Parameters
 
    -  cross-entropy application
 
-      -  ``xentropy``, objective function for cross-entropy (with optional linear weights), aliases: ``cross_entropy``
+      -  ``cross_entropy``, objective function for cross-entropy (with optional linear weights), aliases: ``xentropy``
 
-      -  ``xentlambda``, alternative parameterization of cross-entropy, aliases: ``cross_entropy_lambda``
+      -  ``cross_entropy_lambda``, alternative parameterization of cross-entropy, aliases: ``xentlambda``
 
       -  label is anything in interval [0, 1]
 
-   -  ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ application
+   -  ranking application
 
-      -  label should be ``int`` type in lambdarank tasks, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
+      -  ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
 
-      -  `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label
+      -  ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
 
-      -  all values in ``label`` must be smaller than number of elements in ``label_gain``
+      -  ``rank_xendcg`` is faster than and achieves the similar performance as ``lambdarank``
 
--  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``gbrt``, ``rf``, ``random_forest``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
+      -  label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
+
+-  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
 
    -  ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
 
@@ -108,6 +116,28 @@ Core Parameters
    -  ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
 
    -  ``goss``, Gradient-based One-Side Sampling
+
+      -  **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
+
+-  ``linear_tree`` :raw-html:`<a id="linear_tree" title="Permalink to this parameter" href="#linear_tree">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  fit piecewise linear gradient boosting tree
+
+      -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
+
+      -  the linear model at each leaf includes all the numerical features in that leaf's branch
+
+      -  categorical features are used for splits as normal but are not used in the linear models
+
+      -  missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
+
+      -  it is recommended to rescale data before training so that features have similar mean and standard deviation
+
+      -  **Note**: only works with CPU and ``serial`` tree learner
+
+      -  **Note**: ``regression_l1`` objective is not supported with linear tree boosting
+
+      -  **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
 
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
@@ -135,7 +165,7 @@ Core Parameters
 
    -  in ``dart``, it also affects on normalization weights of dropped trees
 
--  ``num_leaves`` :raw-html:`<a id="num_leaves" title="Permalink to this parameter" href="#num_leaves">&#x1F517;&#xFE0E;</a>`, default = ``31``, type = int, aliases: ``num_leaf``, ``max_leaves``, ``max_leaf``, constraints: ``num_leaves > 1``
+-  ``num_leaves`` :raw-html:`<a id="num_leaves" title="Permalink to this parameter" href="#num_leaves">&#x1F517;&#xFE0E;</a>`, default = ``31``, type = int, aliases: ``num_leaf``, ``max_leaves``, ``max_leaf``, constraints: ``1 < num_leaves <= 131072``
 
    -  max number of leaves in one tree
 
@@ -165,6 +195,8 @@ Core Parameters
 
    -  for parallel learning, do not use all CPU cores because this will cause poor performance for the network communication
 
+   -  **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
+
 -  ``device_type`` :raw-html:`<a id="device_type" title="Permalink to this parameter" href="#device_type">&#x1F517;&#xFE0E;</a>`, default = ``cpu``, type = enum, options: ``cpu``, ``gpu``, aliases: ``device``
 
    -  device for the tree learning, you can use GPU to achieve the faster learning
@@ -183,18 +215,76 @@ Core Parameters
 
    -  this seed has lower priority in comparison with other seeds, which means that it will be overridden, if you set other seeds explicitly
 
+-  ``deterministic`` :raw-html:`<a id="deterministic" title="Permalink to this parameter" href="#deterministic">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  used only with ``cpu`` device type
+
+   -  setting this to ``true`` should ensure the stable results when using the same data and the same parameters (and different ``num_threads``)
+
+   -  when you use the different seeds, different LightGBM versions, the binaries compiled by different compilers, or in different systems, the results are expected to be different
+
+   -  you can `raise issues <https://github.com/microsoft/LightGBM/issues>`__ in LightGBM GitHub repo when you meet the unstable results
+
+   -  **Note**: setting this to ``true`` may slow down the training
+
 Learning Control Parameters
 ---------------------------
+
+-  ``force_col_wise`` :raw-html:`<a id="force_col_wise" title="Permalink to this parameter" href="#force_col_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  used only with ``cpu`` device type
+
+   -  set this to ``true`` to force col-wise histogram building
+
+   -  enabling this is recommended when:
+
+      -  the number of columns is large, or the total number of bins is large
+
+      -  ``num_threads`` is large, e.g. ``> 20``
+
+      -  you want to reduce memory cost
+
+   -  **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
+
+   -  **Note**: this parameter cannot be used at the same time with ``force_row_wise``, choose only one of them
+
+-  ``force_row_wise`` :raw-html:`<a id="force_row_wise" title="Permalink to this parameter" href="#force_row_wise">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  used only with ``cpu`` device type
+
+   -  set this to ``true`` to force row-wise histogram building
+
+   -  enabling this is recommended when:
+
+      -  the number of data points is large, and the total number of bins is relatively small
+
+      -  ``num_threads`` is relatively small, e.g. ``<= 16``
+
+      -  you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
+
+   -  **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
+
+   -  **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
+
+   -  **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
+
+-  ``histogram_pool_size`` :raw-html:`<a id="histogram_pool_size" title="Permalink to this parameter" href="#histogram_pool_size">&#x1F517;&#xFE0E;</a>`, default = ``-1.0``, type = double, aliases: ``hist_pool_size``
+
+   -  max cache size in MB for historical histogram
+
+   -  ``< 0`` means no limit
 
 -  ``max_depth`` :raw-html:`<a id="max_depth" title="Permalink to this parameter" href="#max_depth">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
    -  limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
 
-   -  ``< 0`` means no limit
+   -  ``<= 0`` means no limit
 
 -  ``min_data_in_leaf`` :raw-html:`<a id="min_data_in_leaf" title="Permalink to this parameter" href="#min_data_in_leaf">&#x1F517;&#xFE0E;</a>`, default = ``20``, type = int, aliases: ``min_data_per_leaf``, ``min_data``, ``min_child_samples``, constraints: ``min_data_in_leaf >= 0``
 
    -  minimal number of data in one leaf. Can be used to deal with over-fitting
+
+   -  **Note**: this is an approximation based on the Hessian, so occasionally you may observe splits which produce leaf nodes that have less than this many observations
 
 -  ``min_sum_hessian_in_leaf`` :raw-html:`<a id="min_sum_hessian_in_leaf" title="Permalink to this parameter" href="#min_sum_hessian_in_leaf">&#x1F517;&#xFE0E;</a>`, default = ``1e-3``, type = double, aliases: ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``, ``min_child_weight``, constraints: ``min_sum_hessian_in_leaf >= 0.0``
 
@@ -210,11 +300,43 @@ Learning Control Parameters
 
    -  **Note**: to enable bagging, ``bagging_freq`` should be set to a non zero value as well
 
+-  ``pos_bagging_fraction`` :raw-html:`<a id="pos_bagging_fraction" title="Permalink to this parameter" href="#pos_bagging_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``pos_sub_row``, ``pos_subsample``, ``pos_bagging``, constraints: ``0.0 < pos_bagging_fraction <= 1.0``
+
+   -  used only in ``binary`` application
+
+   -  used for imbalanced binary classification problem, will randomly sample ``#pos_samples * pos_bagging_fraction`` positive samples in bagging
+
+   -  should be used together with ``neg_bagging_fraction``
+
+   -  set this to ``1.0`` to disable
+
+   -  **Note**: to enable this, you need to set ``bagging_freq`` and ``neg_bagging_fraction`` as well
+
+   -  **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
+
+   -  **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+
+-  ``neg_bagging_fraction`` :raw-html:`<a id="neg_bagging_fraction" title="Permalink to this parameter" href="#neg_bagging_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``neg_sub_row``, ``neg_subsample``, ``neg_bagging``, constraints: ``0.0 < neg_bagging_fraction <= 1.0``
+
+   -  used only in ``binary`` application
+
+   -  used for imbalanced binary classification problem, will randomly sample ``#neg_samples * neg_bagging_fraction`` negative samples in bagging
+
+   -  should be used together with ``pos_bagging_fraction``
+
+   -  set this to ``1.0`` to disable
+
+   -  **Note**: to enable this, you need to set ``bagging_freq`` and ``pos_bagging_fraction`` as well
+
+   -  **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
+
+   -  **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+
 -  ``bagging_freq`` :raw-html:`<a id="bagging_freq" title="Permalink to this parameter" href="#bagging_freq">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``subsample_freq``
 
    -  frequency for bagging
 
-   -  ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration
+   -  ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration. Every ``k``-th iteration, LightGBM will randomly select ``bagging_fraction * 100 %`` of the data to use for the next ``k`` iterations
 
    -  **Note**: to enable bagging, ``bagging_fraction`` should be set to value smaller than ``1.0`` as well
 
@@ -224,21 +346,51 @@ Learning Control Parameters
 
 -  ``feature_fraction`` :raw-html:`<a id="feature_fraction" title="Permalink to this parameter" href="#feature_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
 
-   -  LightGBM will randomly select part of features on each iteration if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
+   -  LightGBM will randomly select a subset of features on each iteration (tree) if ``feature_fraction`` is smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
 
    -  can be used to speed up training
 
    -  can be used to deal with over-fitting
 
+-  ``feature_fraction_bynode`` :raw-html:`<a id="feature_fraction_bynode" title="Permalink to this parameter" href="#feature_fraction_bynode">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature_bynode``, ``colsample_bynode``, constraints: ``0.0 < feature_fraction_bynode <= 1.0``
+
+   -  LightGBM will randomly select a subset of features on each tree node if ``feature_fraction_bynode`` is smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features at each tree node
+
+   -  can be used to deal with over-fitting
+
+   -  **Note**: unlike ``feature_fraction``, this cannot speed up training
+
+   -  **Note**: if both ``feature_fraction`` and ``feature_fraction_bynode`` are smaller than ``1.0``, the final fraction of each node is ``feature_fraction * feature_fraction_bynode``
+
 -  ``feature_fraction_seed`` :raw-html:`<a id="feature_fraction_seed" title="Permalink to this parameter" href="#feature_fraction_seed">&#x1F517;&#xFE0E;</a>`, default = ``2``, type = int
 
    -  random seed for ``feature_fraction``
 
--  ``early_stopping_round`` :raw-html:`<a id="early_stopping_round" title="Permalink to this parameter" href="#early_stopping_round">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``early_stopping_rounds``, ``early_stopping``
+-  ``extra_trees`` :raw-html:`<a id="extra_trees" title="Permalink to this parameter" href="#extra_trees">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  use extremely randomized trees
+
+   -  if set to ``true``, when evaluating node splits LightGBM will check only one randomly-chosen threshold for each feature
+
+   -  can be used to speed up training
+
+   -  can be used to deal with over-fitting
+
+-  ``extra_seed`` :raw-html:`<a id="extra_seed" title="Permalink to this parameter" href="#extra_seed">&#x1F517;&#xFE0E;</a>`, default = ``6``, type = int
+
+   -  random seed for selecting thresholds when ``extra_trees`` is true
+
+-  ``early_stopping_round`` :raw-html:`<a id="early_stopping_round" title="Permalink to this parameter" href="#early_stopping_round">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``early_stopping_rounds``, ``early_stopping``, ``n_iter_no_change``
 
    -  will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
 
    -  ``<= 0`` means disable
+
+   -  can be used to speed up training
+
+-  ``first_metric_only`` :raw-html:`<a id="first_metric_only" title="Permalink to this parameter" href="#first_metric_only">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping
 
 -  ``max_delta_step`` :raw-html:`<a id="max_delta_step" title="Permalink to this parameter" href="#max_delta_step">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``max_tree_output``, ``max_leaf_output``
 
@@ -256,9 +408,15 @@ Learning Control Parameters
 
    -  L2 regularization
 
+-  ``linear_lambda`` :raw-html:`<a id="linear_lambda" title="Permalink to this parameter" href="#linear_lambda">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``linear_lambda >= 0.0``
+
+   -  linear tree regularization, corresponds to the parameter ``lambda`` in Eq. 3 of `Gradient Boosting with Piece-Wise Linear Regression Trees <https://arxiv.org/pdf/1802.05640.pdf>`__
+
 -  ``min_gain_to_split`` :raw-html:`<a id="min_gain_to_split" title="Permalink to this parameter" href="#min_gain_to_split">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``min_split_gain``, constraints: ``min_gain_to_split >= 0.0``
 
    -  the minimal gain to perform split
+
+   -  can be used to speed up training
 
 -  ``drop_rate`` :raw-html:`<a id="drop_rate" title="Permalink to this parameter" href="#drop_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.1``, type = double, aliases: ``rate_drop``, constraints: ``0.0 <= drop_rate <= 1.0``
 
@@ -318,13 +476,15 @@ Learning Control Parameters
 
    -  used for the categorical features
 
-   -  limit the max threshold points in categorical features
+   -  limit number of split points considered for categorical features. See `the documentation on how LightGBM finds optimal splits for categorical features <./Features.rst#optimal-split-for-categorical-features>`_ for more details
+
+   -  can be used to speed up training
 
 -  ``cat_l2`` :raw-html:`<a id="cat_l2" title="Permalink to this parameter" href="#cat_l2">&#x1F517;&#xFE0E;</a>`, default = ``10.0``, type = double, constraints: ``cat_l2 >= 0.0``
 
    -  used for the categorical features
 
-   -  L2 regularization in categorcial split
+   -  L2 regularization in categorical split
 
 -  ``cat_smooth`` :raw-html:`<a id="cat_smooth" title="Permalink to this parameter" href="#cat_smooth">&#x1F517;&#xFE0E;</a>`, default = ``10.0``, type = double, constraints: ``cat_smooth >= 0.0``
 
@@ -338,7 +498,7 @@ Learning Control Parameters
 
 -  ``top_k`` :raw-html:`<a id="top_k" title="Permalink to this parameter" href="#top_k">&#x1F517;&#xFE0E;</a>`, default = ``20``, type = int, aliases: ``topk``, constraints: ``top_k > 0``
 
-   -  used in `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
+   -  used only in ``voting`` tree learner, refer to `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
 
    -  set this to larger value for more accurate result, but it will slow down the training speed
 
@@ -349,6 +509,26 @@ Learning Control Parameters
    -  ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
 
    -  you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
+
+-  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = enum, options: ``basic``, ``intermediate``, ``advanced``, aliases: ``monotone_constraining_method``, ``mc_method``
+
+   -  used only if ``monotone_constraints`` is set
+
+   -  monotone constraints method
+
+      -  ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
+
+      -  ``intermediate``, a `more advanced method <https://hal.archives-ouvertes.fr/hal-02862802/document>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
+
+      -  ``advanced``, an `even more advanced method <https://hal.archives-ouvertes.fr/hal-02862802/document>`__, which may slow the library. However, this method is even less constraining than the intermediate method and should again significantly improve the results
+
+-  ``monotone_penalty`` :raw-html:`<a id="monotone_penalty" title="Permalink to this parameter" href="#monotone_penalty">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``monotone_splits_penalty``, ``ms_penalty``, ``mc_penalty``, constraints: ``monotone_penalty >= 0.0``
+
+   -  used only if ``monotone_constraints`` is set
+
+   -  `monotone penalty <https://hal.archives-ouvertes.fr/hal-02862802/document>`__: a penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
+
+   -  if ``0.0`` (the default), no penalization is applied
 
 -  ``feature_contri`` :raw-html:`<a id="feature_contri" title="Permalink to this parameter" href="#feature_contri">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-double, aliases: ``feature_contrib``, ``fc``, ``fp``, ``feature_penalty``
 
@@ -366,7 +546,7 @@ Learning Control Parameters
 
    -  **Note**: the forced split logic will be ignored, if the split makes gain worse
 
-   -  see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
+   -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
 
 -  ``refit_decay_rate`` :raw-html:`<a id="refit_decay_rate" title="Permalink to this parameter" href="#refit_decay_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.9``, type = double, constraints: ``0.0 <= refit_decay_rate <= 1.0``
 
@@ -374,60 +554,61 @@ Learning Control Parameters
 
    -  used only in ``refit`` task in CLI version or as argument in ``refit`` function in language-specific package
 
-IO Parameters
--------------
+-  ``cegb_tradeoff`` :raw-html:`<a id="cegb_tradeoff" title="Permalink to this parameter" href="#cegb_tradeoff">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``cegb_tradeoff >= 0.0``
+
+   -  cost-effective gradient boosting multiplier for all penalties
+
+-  ``cegb_penalty_split`` :raw-html:`<a id="cegb_penalty_split" title="Permalink to this parameter" href="#cegb_penalty_split">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``cegb_penalty_split >= 0.0``
+
+   -  cost-effective gradient-boosting penalty for splitting a node
+
+-  ``cegb_penalty_feature_lazy`` :raw-html:`<a id="cegb_penalty_feature_lazy" title="Permalink to this parameter" href="#cegb_penalty_feature_lazy">&#x1F517;&#xFE0E;</a>`, default = ``0,0,...,0``, type = multi-double
+
+   -  cost-effective gradient boosting penalty for using a feature
+
+   -  applied per data point
+
+-  ``cegb_penalty_feature_coupled`` :raw-html:`<a id="cegb_penalty_feature_coupled" title="Permalink to this parameter" href="#cegb_penalty_feature_coupled">&#x1F517;&#xFE0E;</a>`, default = ``0,0,...,0``, type = multi-double
+
+   -  cost-effective gradient boosting penalty for using a feature
+
+   -  applied once per forest
+
+-  ``path_smooth`` :raw-html:`<a id="path_smooth" title="Permalink to this parameter" href="#path_smooth">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = double, constraints: ``path_smooth >=  0.0``
+
+   -  controls smoothing applied to tree nodes
+
+   -  helps prevent overfitting on leaves with few samples
+
+   -  if set to zero, no smoothing is applied
+
+   -  if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``
+
+   -  larger values give stronger regularization
+
+      -  the weight of each node is ``(n / path_smooth) * w + w_p / (n / path_smooth + 1)``, where ``n`` is the number of samples in the node, ``w`` is the optimal node weight to minimise the loss (approximately ``-sum_gradients / sum_hessians``), and ``w_p`` is the weight of the parent node
+
+      -  note that the parent output ``w_p`` itself has smoothing applied, unless it is the root node, so that the smoothing effect accumulates with the tree depth
+
+-  ``interaction_constraints`` :raw-html:`<a id="interaction_constraints" title="Permalink to this parameter" href="#interaction_constraints">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+
+   -  controls which features can appear in the same branch
+
+   -  by default interaction constraints are disabled, to enable them you can specify
+
+      -  for CLI, lists separated by commas, e.g. ``[0,1,2],[2,3]``
+
+      -  for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
+
+      -  for R-package, list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``. Numeric vectors should use 1-based indexing, where ``1L`` is the first feature, ``2L`` is the second feature, etc
+
+   -  any two features can only appear in the same branch only if there exists a constraint containing both features
 
 -  ``verbosity`` :raw-html:`<a id="verbosity" title="Permalink to this parameter" href="#verbosity">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``verbose``
 
    -  controls the level of LightGBM's verbosity
 
    -  ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
-
--  ``max_bin`` :raw-html:`<a id="max_bin" title="Permalink to this parameter" href="#max_bin">&#x1F517;&#xFE0E;</a>`, default = ``255``, type = int, constraints: ``max_bin > 1``
-
-   -  max number of bins that feature values will be bucketed in
-
-   -  small number of bins may reduce training accuracy but may increase general power (deal with over-fitting)
-
-   -  LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
-
--  ``min_data_in_bin`` :raw-html:`<a id="min_data_in_bin" title="Permalink to this parameter" href="#min_data_in_bin">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int, constraints: ``min_data_in_bin > 0``
-
-   -  minimal number of data inside one bin
-
-   -  use this to avoid one-data-one-bin (potential over-fitting)
-
--  ``bin_construct_sample_cnt`` :raw-html:`<a id="bin_construct_sample_cnt" title="Permalink to this parameter" href="#bin_construct_sample_cnt">&#x1F517;&#xFE0E;</a>`, default = ``200000``, type = int, aliases: ``subsample_for_bin``, constraints: ``bin_construct_sample_cnt > 0``
-
-   -  number of data that sampled to construct histogram bins
-
-   -  setting this to larger value will give better training result, but will increase data loading time
-
-   -  set this to larger value if data is very sparse
-
--  ``histogram_pool_size`` :raw-html:`<a id="histogram_pool_size" title="Permalink to this parameter" href="#histogram_pool_size">&#x1F517;&#xFE0E;</a>`, default = ``-1.0``, type = double, aliases: ``hist_pool_size``
-
-   -  max cache size in MB for historical histogram
-
-   -  ``< 0`` means no limit
-
--  ``data_random_seed`` :raw-html:`<a id="data_random_seed" title="Permalink to this parameter" href="#data_random_seed">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``data_seed``
-
-   -  random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
-
--  ``output_model`` :raw-html:`<a id="output_model" title="Permalink to this parameter" href="#output_model">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
-
-   -  filename of output model in training
-
-   -  **Note**: can be used only in CLI version
-
--  ``snapshot_freq`` :raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" href="#snapshot_freq">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int, aliases: ``save_period``
-
-   -  frequency of saving model file snapshot
-
-   -  set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
-
-   -  **Note**: can be used only in CLI version
 
 -  ``input_model`` :raw-html:`<a id="input_model" title="Permalink to this parameter" href="#input_model">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``model_input``, ``model_in``
 
@@ -439,35 +620,71 @@ IO Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``output_result`` :raw-html:`<a id="output_result" title="Permalink to this parameter" href="#output_result">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_predict_result.txt``, type = string, aliases: ``predict_result``, ``prediction_result``, ``predict_name``, ``prediction_name``, ``pred_name``, ``name_pred``
+-  ``output_model`` :raw-html:`<a id="output_model" title="Permalink to this parameter" href="#output_model">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
 
-   -  filename of prediction result in ``prediction`` task
+   -  filename of output model in training
 
    -  **Note**: can be used only in CLI version
 
--  ``initscore_filename`` :raw-html:`<a id="initscore_filename" title="Permalink to this parameter" href="#initscore_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``init_score_filename``, ``init_score_file``, ``init_score``, ``input_init_score``
+-  ``saved_feature_importance_type`` :raw-html:`<a id="saved_feature_importance_type" title="Permalink to this parameter" href="#saved_feature_importance_type">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int
 
-   -  path of file with training initial scores
+   -  the feature importance type in the saved model file
 
-   -  if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
+   -  ``0``: count-based feature importance (numbers of splits are counted); ``1``: gain-based feature importance (values of gain are counted)
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: can be used only in CLI version
 
--  ``valid_data_initscores`` :raw-html:`<a id="valid_data_initscores" title="Permalink to this parameter" href="#valid_data_initscores">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``valid_data_init_scores``, ``valid_init_score_file``, ``valid_init_score``
+-  ``snapshot_freq`` :raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" href="#snapshot_freq">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int, aliases: ``save_period``
 
-   -  path(s) of file(s) with validation initial scores
+   -  frequency of saving model file snapshot
 
-   -  if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
+   -  set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
 
-   -  separate by ``,`` for multi-validation data
+   -  **Note**: can be used only in CLI version
 
-   -  **Note**: works only in case of loading data directly from file
+IO Parameters
+-------------
 
--  ``pre_partition`` :raw-html:`<a id="pre_partition" title="Permalink to this parameter" href="#pre_partition">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_pre_partition``
+Dataset Parameters
+~~~~~~~~~~~~~~~~~~
 
-   -  used for parallel learning (excluding the ``feature_parallel`` mode)
+-  ``max_bin`` :raw-html:`<a id="max_bin" title="Permalink to this parameter" href="#max_bin">&#x1F517;&#xFE0E;</a>`, default = ``255``, type = int, constraints: ``max_bin > 1``
 
-   -  ``true`` if training data are pre-partitioned, and different machines use different partitions
+   -  max number of bins that feature values will be bucketed in
+
+   -  small number of bins may reduce training accuracy but may increase general power (deal with over-fitting)
+
+   -  LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
+
+-  ``max_bin_by_feature`` :raw-html:`<a id="max_bin_by_feature" title="Permalink to this parameter" href="#max_bin_by_feature">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-int
+
+   -  max number of bins for each feature
+
+   -  if not specified, will use ``max_bin`` for all features
+
+-  ``min_data_in_bin`` :raw-html:`<a id="min_data_in_bin" title="Permalink to this parameter" href="#min_data_in_bin">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int, constraints: ``min_data_in_bin > 0``
+
+   -  minimal number of data inside one bin
+
+   -  use this to avoid one-data-one-bin (potential over-fitting)
+
+-  ``bin_construct_sample_cnt`` :raw-html:`<a id="bin_construct_sample_cnt" title="Permalink to this parameter" href="#bin_construct_sample_cnt">&#x1F517;&#xFE0E;</a>`, default = ``200000``, type = int, aliases: ``subsample_for_bin``, constraints: ``bin_construct_sample_cnt > 0``
+
+   -  number of data that sampled to construct feature discrete bins
+
+   -  setting this to larger value will give better training result, but may increase data loading time
+
+   -  set this to larger value if data is very sparse
+
+   -  **Note**: don't set this to small values, otherwise, you may encounter unexpected errors and poor accuracy
+
+-  ``data_random_seed`` :raw-html:`<a id="data_random_seed" title="Permalink to this parameter" href="#data_random_seed">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``data_seed``
+
+   -  random seed for sampling data to construct histogram bins
+
+-  ``is_enable_sparse`` :raw-html:`<a id="is_enable_sparse" title="Permalink to this parameter" href="#is_enable_sparse">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool, aliases: ``is_sparse``, ``enable_sparse``, ``sparse``
+
+   -  used to enable/disable sparse optimization
 
 -  ``enable_bundle`` :raw-html:`<a id="enable_bundle" title="Permalink to this parameter" href="#enable_bundle">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool, aliases: ``is_enable_bundle``, ``bundle``
 
@@ -475,31 +692,29 @@ IO Parameters
 
    -  **Note**: disabling this may cause the slow training speed for sparse datasets
 
--  ``max_conflict_rate`` :raw-html:`<a id="max_conflict_rate" title="Permalink to this parameter" href="#max_conflict_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``0.0 <= max_conflict_rate < 1.0``
-
-   -  max conflict rate for bundles in EFB
-
-   -  set this to ``0.0`` to disallow the conflict and provide more accurate results
-
-   -  set this to a larger value to achieve faster speed
-
--  ``is_enable_sparse`` :raw-html:`<a id="is_enable_sparse" title="Permalink to this parameter" href="#is_enable_sparse">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool, aliases: ``is_sparse``, ``enable_sparse``, ``sparse``
-
-   -  used to enable/disable sparse optimization
-
--  ``sparse_threshold`` :raw-html:`<a id="sparse_threshold" title="Permalink to this parameter" href="#sparse_threshold">&#x1F517;&#xFE0E;</a>`, default = ``0.8``, type = double, constraints: ``0.0 < sparse_threshold <= 1.0``
-
-   -  the threshold of zero elements percentage for treating a feature as a sparse one
-
 -  ``use_missing`` :raw-html:`<a id="use_missing" title="Permalink to this parameter" href="#use_missing">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
    -  set this to ``false`` to disable the special handle of missing value
 
 -  ``zero_as_missing`` :raw-html:`<a id="zero_as_missing" title="Permalink to this parameter" href="#zero_as_missing">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
-   -  set this to ``true`` to treat all zero as missing values (including the unshown values in libsvm/sparse matrices)
+   -  set this to ``true`` to treat all zero as missing values (including the unshown values in LibSVM / sparse matrices)
 
    -  set this to ``false`` to use ``na`` for representing missing values
+
+-  ``feature_pre_filter`` :raw-html:`<a id="feature_pre_filter" title="Permalink to this parameter" href="#feature_pre_filter">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
+
+   -  set this to ``true`` (the default) to tell LightGBM to ignore the features that are unsplittable based on ``min_data_in_leaf``
+
+   -  as dataset object is initialized only once and cannot be changed after that, you may need to set this to ``false`` when searching parameters with ``min_data_in_leaf``, otherwise features are filtered by ``min_data_in_leaf`` firstly if you don't reconstruct dataset object
+
+   -  **Note**: setting this to ``false`` may slow down the training
+
+-  ``pre_partition`` :raw-html:`<a id="pre_partition" title="Permalink to this parameter" href="#pre_partition">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_pre_partition``
+
+   -  used for parallel learning (excluding the ``feature_parallel`` mode)
+
+   -  ``true`` if training data are pre-partitioned, and different machines use different partitions
 
 -  ``two_round`` :raw-html:`<a id="two_round" title="Permalink to this parameter" href="#two_round">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``two_round_loading``, ``use_two_round_loading``
 
@@ -508,12 +723,6 @@ IO Parameters
    -  by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed, but may cause run out of memory error when the data file is very big
 
    -  **Note**: works only in case of loading data directly from file
-
--  ``save_binary`` :raw-html:`<a id="save_binary" title="Permalink to this parameter" href="#save_binary">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
-
-   -  if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
-
-   -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
 
 -  ``header`` :raw-html:`<a id="header" title="Permalink to this parameter" href="#header">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``has_header``
 
@@ -553,7 +762,7 @@ IO Parameters
 
    -  **Note**: works only in case of loading data directly from file
 
-   -  **Note**: data should be grouped by query\_id
+   -  **Note**: data should be grouped by query\_id, for more information, see `Query Data <#query-data>`__
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0 and query\_id is column\_1, the correct parameter is ``query=0``
 
@@ -579,7 +788,7 @@ IO Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``categorical_feature=name:c1,c2,c3`` means c1, c2 and c3 are categorical features
 
-   -  **Note**: only supports categorical with ``int`` type
+   -  **Note**: only supports categorical with ``int`` type (not applicable for data represented as pandas DataFrame in Python-package)
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
 
@@ -588,6 +797,43 @@ IO Parameters
    -  **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers starting from zero
 
    -  **Note**: all negative values will be treated as **missing values**
+
+   -  **Note**: the output cannot be monotonically constrained with respect to a categorical feature
+
+-  ``forcedbins_filename`` :raw-html:`<a id="forcedbins_filename" title="Permalink to this parameter" href="#forcedbins_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+
+   -  path to a ``.json`` file that specifies bin upper bounds for some or all features
+
+   -  ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
+
+   -  see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
+
+-  ``save_binary`` :raw-html:`<a id="save_binary" title="Permalink to this parameter" href="#save_binary">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
+
+   -  if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
+
+   -  **Note**: ``init_score`` is not saved in binary file
+
+   -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
+
+Predict Parameters
+~~~~~~~~~~~~~~~~~~
+
+-  ``start_iteration_predict`` :raw-html:`<a id="start_iteration_predict" title="Permalink to this parameter" href="#start_iteration_predict">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int
+
+   -  used only in ``prediction`` task
+
+   -  used to specify from which iteration to start the prediction
+
+   -  ``<= 0`` means from the first iteration
+
+-  ``num_iteration_predict`` :raw-html:`<a id="num_iteration_predict" title="Permalink to this parameter" href="#num_iteration_predict">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
+
+   -  used only in ``prediction`` task
+
+   -  used to specify how many trained iterations will be used in prediction
+
+   -  ``<= 0`` means no limit
 
 -  ``predict_raw_score`` :raw-html:`<a id="predict_raw_score" title="Permalink to this parameter" href="#predict_raw_score">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_predict_raw_score``, ``predict_rawscore``, ``raw_score``
 
@@ -613,13 +859,19 @@ IO Parameters
 
    -  **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/slundberg/shap>`__
 
--  ``num_iteration_predict`` :raw-html:`<a id="num_iteration_predict" title="Permalink to this parameter" href="#num_iteration_predict">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
+   -  **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
+
+-  ``predict_disable_shape_check`` :raw-html:`<a id="predict_disable_shape_check" title="Permalink to this parameter" href="#predict_disable_shape_check">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
    -  used only in ``prediction`` task
 
-   -  used to specify how many trained iterations will be used in prediction
+   -  control whether or not LightGBM raises an error when you try to predict on data with a different number of features than the training data
 
-   -  ``<= 0`` means no limit
+   -  if ``false`` (the default), a fatal error will be raised if the number of features in the dataset you predict on differs from the number seen during training
+
+   -  if ``true``, LightGBM will attempt to predict on whatever data you provide. This is dangerous because you might get incorrect predictions, but you could use it in situations where it is difficult or expensive to generate some features and you are very confident that they were never chosen for splits in the model
+
+   -  **Note**: be very careful setting this parameter to ``true``
 
 -  ``pred_early_stop`` :raw-html:`<a id="pred_early_stop" title="Permalink to this parameter" href="#pred_early_stop">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
@@ -639,11 +891,22 @@ IO Parameters
 
    -  the threshold of margin in early-stopping prediction
 
+-  ``output_result`` :raw-html:`<a id="output_result" title="Permalink to this parameter" href="#output_result">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_predict_result.txt``, type = string, aliases: ``predict_result``, ``prediction_result``, ``predict_name``, ``prediction_name``, ``pred_name``, ``name_pred``
+
+   -  used only in ``prediction`` task
+
+   -  filename of prediction result
+
+   -  **Note**: can be used only in CLI version
+
+Convert Parameters
+~~~~~~~~~~~~~~~~~~
+
 -  ``convert_model_language`` :raw-html:`<a id="convert_model_language" title="Permalink to this parameter" href="#convert_model_language">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
 
    -  used only in ``convert_model`` task
 
-   -  only ``cpp`` is supported yet
+   -  only ``cpp`` is supported yet; for conversion model to other languages consider using `m2cgen <https://github.com/BayesWitnesses/m2cgen>`__ utility
 
    -  if ``convert_model_language`` is set and ``task=train``, the model will be also converted
 
@@ -660,23 +923,33 @@ IO Parameters
 Objective Parameters
 --------------------
 
+-  ``objective_seed`` :raw-html:`<a id="objective_seed" title="Permalink to this parameter" href="#objective_seed">&#x1F517;&#xFE0E;</a>`, default = ``5``, type = int
+
+   -  used only in ``rank_xendcg`` objective
+
+   -  random seed for objectives, if random process is needed
+
 -  ``num_class`` :raw-html:`<a id="num_class" title="Permalink to this parameter" href="#num_class">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``num_classes``, constraints: ``num_class > 0``
 
    -  used only in ``multi-class`` classification application
 
 -  ``is_unbalance`` :raw-html:`<a id="is_unbalance" title="Permalink to this parameter" href="#is_unbalance">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``unbalance``, ``unbalanced_sets``
 
-   -  used only in ``binary`` application
+   -  used only in ``binary`` and ``multiclassova`` applications
 
    -  set this to ``true`` if training data are unbalanced
+
+   -  **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
 
    -  **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
 
 -  ``scale_pos_weight`` :raw-html:`<a id="scale_pos_weight" title="Permalink to this parameter" href="#scale_pos_weight">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``scale_pos_weight > 0.0``
 
-   -  used only in ``binary`` application
+   -  used only in ``binary`` and ``multiclassova`` applications
 
    -  weight of labels with positive class
+
+   -  **Note**: while enabling this should increase the overall performance metric of your model, it will also result in poor estimates of the individual class probabilities
 
    -  **Note**: this parameter cannot be used at the same time with ``is_unbalance``, choose only **one** of them
 
@@ -688,7 +961,7 @@ Objective Parameters
 
 -  ``boost_from_average`` :raw-html:`<a id="boost_from_average" title="Permalink to this parameter" href="#boost_from_average">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
-   -  used only in ``regression``, ``binary`` and ``cross-entropy`` applications
+   -  used only in ``regression``, ``binary``, ``multiclassova`` and ``cross-entropy`` applications
 
    -  adjusts initial score to the mean of labels for faster convergence
 
@@ -728,11 +1001,21 @@ Objective Parameters
 
    -  set this closer to ``1`` to shift towards a **Poisson** distribution
 
--  ``max_position`` :raw-html:`<a id="max_position" title="Permalink to this parameter" href="#max_position">&#x1F517;&#xFE0E;</a>`, default = ``20``, type = int, constraints: ``max_position > 0``
+-  ``lambdarank_truncation_level`` :raw-html:`<a id="lambdarank_truncation_level" title="Permalink to this parameter" href="#lambdarank_truncation_level">&#x1F517;&#xFE0E;</a>`, default = ``30``, type = int, constraints: ``lambdarank_truncation_level > 0``
 
    -  used only in ``lambdarank`` application
 
-   -  optimizes `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ at this position
+   -  controls the number of top-results to focus on during training, refer to "truncation level" in the Sec. 3 of `LambdaMART paper <https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/MSR-TR-2010-82.pdf>`__
+
+   -  this parameter is closely related to the desirable cutoff ``k`` in the metric **NDCG@k** that we aim at optimizing the ranker for. The optimal setting for this parameter is likely to be slightly higher than ``k`` (e.g., ``k + 3``) to include more pairs of documents to train on, but perhaps not too high to avoid deviating too much from the desired target metric **NDCG@k**
+
+-  ``lambdarank_norm`` :raw-html:`<a id="lambdarank_norm" title="Permalink to this parameter" href="#lambdarank_norm">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
+
+   -  used only in ``lambdarank`` application
+
+   -  set this to ``true`` to normalize the lambdas for different queries, and improve the performance for unbalanced data
+
+   -  set this to ``false`` to enforce the original lambdarank algorithm
 
 -  ``label_gain`` :raw-html:`<a id="label_gain" title="Permalink to this parameter" href="#label_gain">&#x1F517;&#xFE0E;</a>`, default = ``0,1,3,7,15,31,63,...,2^30-1``, type = multi-double
 
@@ -757,7 +1040,7 @@ Metric Parameters
 
       -  ``l2``, square loss, aliases: ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
 
-      -  ``l2_root``, root square loss, aliases: ``root_mean_squared_error``, ``rmse``
+      -  ``rmse``, root square loss, aliases: ``root_mean_squared_error``, ``l2_root``
 
       -  ``quantile``, `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
 
@@ -775,31 +1058,37 @@ Metric Parameters
 
       -  ``tweedie``, negative log-likelihood for **Tweedie** regression
 
-      -  ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__, aliases: ``lambdarank``
+      -  ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__, aliases: ``lambdarank``, ``rank_xendcg``, ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
 
       -  ``map``, `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__, aliases: ``mean_average_precision``
 
       -  ``auc``, `AUC <https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve>`__
 
+      -  ``average_precision``, `average precision score <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__
+
       -  ``binary_logloss``, `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__, aliases: ``binary``
 
       -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
+
+      -  ``auc_mu``, `AUC-mu <http://proceedings.mlr.press/v97/kleiman19a/kleiman19a.pdf>`__
 
       -  ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
 
       -  ``multi_error``, error rate for multi-class classification
 
-      -  ``xentropy``, cross-entropy (with optional linear weights), aliases: ``cross_entropy``
+      -  ``cross_entropy``, cross-entropy (with optional linear weights), aliases: ``xentropy``
 
-      -  ``xentlambda``, "intensity-weighted" cross-entropy, aliases: ``cross_entropy_lambda``
+      -  ``cross_entropy_lambda``, "intensity-weighted" cross-entropy, aliases: ``xentlambda``
 
-      -  ``kldiv``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kullback_leibler``
+      -  ``kullback_leibler``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kldiv``
 
    -  support multiple metrics, separated by ``,``
 
 -  ``metric_freq`` :raw-html:`<a id="metric_freq" title="Permalink to this parameter" href="#metric_freq">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``output_freq``, constraints: ``metric_freq > 0``
 
    -  frequency for metric output
+
+   -  **Note**: can be used only in CLI version
 
 -  ``is_provide_training_metric`` :raw-html:`<a id="is_provide_training_metric" title="Permalink to this parameter" href="#is_provide_training_metric">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``training_metric``, ``is_training_metric``, ``train_metric``
 
@@ -812,6 +1101,30 @@ Metric Parameters
    -  used only with ``ndcg`` and ``map`` metrics
 
    -  `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ and `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__ evaluation positions, separated by ``,``
+
+-  ``multi_error_top_k`` :raw-html:`<a id="multi_error_top_k" title="Permalink to this parameter" href="#multi_error_top_k">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``multi_error_top_k > 0``
+
+   -  used only with ``multi_error`` metric
+
+   -  threshold for top-k multi-error metric
+
+   -  the error on each sample is ``0`` if the true class is among the top ``multi_error_top_k`` predictions, and ``1`` otherwise
+
+      -  more precisely, the error on a sample is ``0`` if there are at least ``num_classes - multi_error_top_k`` predictions strictly less than the prediction on the true class
+
+   -  when ``multi_error_top_k=1`` this is equivalent to the usual multi-error metric
+
+-  ``auc_mu_weights`` :raw-html:`<a id="auc_mu_weights" title="Permalink to this parameter" href="#auc_mu_weights">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-double
+
+   -  used only with ``auc_mu`` metric
+
+   -  list representing flattened matrix (in row-major order) giving loss weights for classification errors
+
+   -  list should have ``n * n`` elements, where ``n`` is the number of classes
+
+   -  the matrix co-ordinate ``[i, j]`` should correspond to the ``i * n + j``-th element of the list
+
+   -  if not specified, will use equal weights for all classes
 
 Network Parameters
 ------------------
@@ -837,6 +1150,8 @@ Network Parameters
    -  path of file that lists machines for this parallel learning application
 
    -  each line contains one IP and one port for one machine. The format is ``ip port`` (space as a separator)
+
+   -  **Note**: can be used only in CLI version
 
 -  ``machines`` :raw-html:`<a id="machines" title="Permalink to this parameter" href="#machines">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``workers``, ``nodes``
 
@@ -865,6 +1180,14 @@ GPU Parameters
 
    -  set this to ``true`` to use double precision math on GPU (by default single precision is used)
 
+   -  **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is currently supported
+
+-  ``num_gpu`` :raw-html:`<a id="num_gpu" title="Permalink to this parameter" href="#num_gpu">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``num_gpu > 0``
+
+   -  number of GPUs
+
+   -  **Note**: can be used only in CUDA implementation
+
 .. end params list
 
 Others
@@ -885,10 +1208,8 @@ LightGBM supports continued training with initial scores. It uses an additional 
 It means the initial score of the first data row is ``0.5``, second is ``-0.1``, and so on.
 The initial score file corresponds with data file line by line, and has per score per line.
 
-And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and in the same folder as the data file.
+And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and placed in the same folder as the data file.
 In this case, LightGBM will auto load initial score file if it exists.
-
-Otherwise, you should specify the path to the custom named file with initial scores by the ``initscore_filename`` `parameter <#initscore_filename>`__.
 
 Weight Data
 ~~~~~~~~~~~
@@ -913,7 +1234,8 @@ Also, you can include weight column in your data file. Please refer to the ``wei
 Query Data
 ~~~~~~~~~~
 
-For LambdaRank learning, it needs query information for training data.
+For learning to rank, it needs query information for training data.
+
 LightGBM uses an additional file to store query data, like the following:
 
 ::
@@ -923,7 +1245,13 @@ LightGBM uses an additional file to store query data, like the following:
     67
     ...
 
-It means first ``27`` lines samples belong to one query and next ``18`` lines belong to another, and so on.
+For wrapper libraries like in Python and R, this information can also be provided as an array-like via the Dataset parameter ``group``.
+
+::
+
+    [27, 18, 67, ...]
+
+For example, if you have a 112-document dataset with ``group = [27, 18, 67]``, that means that you have 3 groups, where the first 27 records are in the first group, records 28-45 are in the second group, and records 46-112 are in the third group.
 
 **Note**: data should be ordered by the query.
 

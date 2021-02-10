@@ -1,19 +1,26 @@
+/*!
+ * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_BOOSTING_RF_H_
 #define LIGHTGBM_BOOSTING_RF_H_
 
 #include <LightGBM/boosting.h>
 #include <LightGBM/metric.h>
-#include "score_updater.hpp"
-#include "gbdt.h"
 
-#include <cstdio>
-#include <vector>
 #include <string>
+#include <cstdio>
 #include <fstream>
+#include <memory>
+#include <utility>
+#include <vector>
+
+#include "gbdt.h"
+#include "score_updater.hpp"
 
 namespace LightGBM {
 /*!
-* \brief Rondom Forest implementation
+* \brief Random Forest implementation
 */
 class RF : public GBDT {
  public:
@@ -34,9 +41,9 @@ class RF : public GBDT {
         MultiplyScore(cur_tree_id, 1.0f / num_init_iteration_);
       }
     } else {
-      CHECK(train_data->metadata().init_score() == nullptr);
+      CHECK_EQ(train_data->metadata().init_score(), nullptr);
     }
-    CHECK(num_tree_per_iteration_ == num_class_);
+    CHECK_EQ(num_tree_per_iteration_, num_class_);
     // not shrinkage rate for the RF
     shrinkage_rate_ = 1.0f;
     // only boosting one time
@@ -63,7 +70,7 @@ class RF : public GBDT {
         train_score_updater_->MultiplyScore(1.0f / (iter_ + num_init_iteration_), cur_tree_id);
       }
     }
-    CHECK(num_tree_per_iteration_ == num_class_);
+    CHECK_EQ(num_tree_per_iteration_, num_class_);
     // only boosting one time
     Boosting();
     if (is_use_subset_ && bag_data_cnt_ < num_data_) {
@@ -74,7 +81,7 @@ class RF : public GBDT {
 
   void Boosting() override {
     if (objective_function_ == nullptr) {
-      Log::Fatal("No object function provided");
+      Log::Fatal("RF mode do not support custom objective function, please use built-in objectives.");
     }
     init_scores_.resize(num_tree_per_iteration_, 0.0);
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
@@ -84,9 +91,9 @@ class RF : public GBDT {
     std::vector<double> tmp_scores(total_size, 0.0f);
     #pragma omp parallel for schedule(static)
     for (int j = 0; j < num_tree_per_iteration_; ++j) {
-      size_t bias = static_cast<size_t>(j)* num_data_;
+      size_t offset = static_cast<size_t>(j)* num_data_;
       for (data_size_t i = 0; i < num_data_; ++i) {
-        tmp_scores[bias + i] = init_scores_[j];
+        tmp_scores[offset + i] = init_scores_[j];
       }
     }
     objective_function_->
@@ -96,17 +103,17 @@ class RF : public GBDT {
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) override {
     // bagging logic
     Bagging(iter_);
-    CHECK(gradients == nullptr);
-    CHECK(hessians == nullptr);
+    CHECK_EQ(gradients, nullptr);
+    CHECK_EQ(hessians, nullptr);
 
     gradients = gradients_.data();
     hessians = hessians_.data();
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      std::unique_ptr<Tree> new_tree(new Tree(2));
-      size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
+      std::unique_ptr<Tree> new_tree(new Tree(2, false, false));
+      size_t offset = static_cast<size_t>(cur_tree_id)* num_data_;
       if (class_need_train_[cur_tree_id]) {
-        auto grad = gradients + bias;
-        auto hess = hessians + bias;
+        auto grad = gradients + offset;
+        auto hess = hessians + offset;
 
         // need to copy gradients for bagging subset.
         if (is_use_subset_ && bag_data_cnt_ < num_data_) {
@@ -118,12 +125,13 @@ class RF : public GBDT {
           hess = tmp_hess_.data();
         }
 
-        new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_,
-          forced_splits_json_));
+        new_tree.reset(tree_learner_->Train(grad, hess, false));
       }
 
       if (new_tree->num_leaves() > 1) {
-        tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, init_scores_[cur_tree_id],
+        double pred = init_scores_[cur_tree_id];
+        auto residual_getter = [pred](const label_t* label, int i) {return static_cast<double>(label[i]) - pred; };
+        tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, residual_getter,
           num_data_, bag_data_indices_.data(), bag_data_cnt_);
         if (std::fabs(init_scores_[cur_tree_id]) > kEpsilon) {
           new_tree->AddBias(init_scores_[cur_tree_id]);

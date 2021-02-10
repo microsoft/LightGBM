@@ -28,11 +28,11 @@ data(bank, package = "lightgbm")
 str(bank)
 
 # We are dividing the dataset into two: one train, one validation
-bank_train <- bank[1:4000, ]
-bank_test <- bank[4001:4521, ]
+bank_train <- bank[1L:4000L, ]
+bank_test <- bank[4001L:4521L, ]
 
 # We must now transform the data to fit in LightGBM
-# For this task, we use lgb.prepare
+# For this task, we use lgb.convert_with_rules
 # The function transforms the data into a fittable data
 #
 # Classes 'data.table' and 'data.frame':	521 obs. of  17 variables:
@@ -53,40 +53,49 @@ bank_test <- bank[4001:4521, ]
 # $ previous : int  1 0 0 0 0 2 0 0 0 1 ...
 # $ poutcome : num  1 4 4 4 4 1 4 4 4 3 ...
 # $ y        : num  1 1 1 1 1 1 1 1 1 2 ...
-bank_rules <- lgb.prepare_rules(data = bank_train)
+bank_rules <- lgb.convert_with_rules(data = bank_train)
 bank_train <- bank_rules$data
-bank_test <- lgb.prepare_rules(data = bank_test, rules = bank_rules$rules)$data
+bank_test <- lgb.convert_with_rules(data = bank_test, rules = bank_rules$rules)$data
 str(bank_test)
 
 # Remove 1 to label because it must be between 0 and 1
-bank_train$y <- bank_train$y - 1
-bank_test$y <- bank_test$y - 1
+bank_train$y <- bank_train$y - 1L
+bank_test$y <- bank_test$y - 1L
 
 # Data input to LightGBM must be a matrix, without the label
-my_data_train <- as.matrix(bank_train[, 1:16, with = FALSE])
-my_data_test <- as.matrix(bank_test[, 1:16, with = FALSE])
+my_data_train <- as.matrix(bank_train[, 1L:16L, with = FALSE])
+my_data_test <- as.matrix(bank_test[, 1L:16L, with = FALSE])
 
 # Creating the LightGBM dataset with categorical features
 # The categorical features can be passed to lgb.train to not copy and paste a lot
-dtrain <- lgb.Dataset(data = my_data_train,
-                      label = bank_train$y,
-                      categorical_feature = c(2, 3, 4, 5, 7, 8, 9, 11, 16))
-dtest <- lgb.Dataset.create.valid(dtrain,
-                                  data = my_data_test,
-                                  label = bank_test$y)
+dtrain <- lgb.Dataset(
+    data = my_data_train
+    , label = bank_train$y
+    , categorical_feature = c(2L, 3L, 4L, 5L, 7L, 8L, 9L, 11L, 16L)
+)
+dtest <- lgb.Dataset.create.valid(
+    dtrain
+    , data = my_data_test
+    , label = bank_test$y
+)
 
 # We can now train a model
-model <- lgb.train(list(objective = "binary",
-                        metric = "l2",
-                        min_data = 1,
-                        learning_rate = 0.1,
-                        min_data = 0,
-                        min_hessian = 1,
-                        max_depth = 2),
-                   dtrain,
-                   100,
-                   valids = list(train = dtrain, valid = dtest))
+params <- list(
+    objective = "binary"
+    , metric = "l2"
+    , min_data = 1L
+    , learning_rate = 0.1
+    , min_data = 0L
+    , min_hessian = 1.0
+    , max_depth = 2L
+)
+model <- lgb.train(
+    params = params
+    , data = dtrain
+    , nrounds = 100L
+    , valids = list(train = dtrain, valid = dtest)
+)
 
 # Try to find split_feature: 11
 # If you find it, it means it used a categorical feature in the first tree
-lgb.dump(model, num_iteration = 1)
+lgb.dump(model, num_iteration = 1L)

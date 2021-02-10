@@ -38,9 +38,7 @@ How to Achieve Good Speedup on GPU
     Also make sure your system is idle (especially when using a shared computer) to get accuracy performance measurements.
 
 #.  GPU works best on large scale and dense datasets. If dataset is too small, computing it on GPU is inefficient as the data transfer overhead can be significant.
-    For dataset with a mixture of sparse and dense features, you can control the ``sparse_threshold`` parameter to make sure there are enough dense features to process on the GPU.
     If you have categorical features, use the ``categorical_column`` option and input them into LightGBM directly; do not convert them into one-hot variables.
-    Make sure to check the run log and look at the reported number of sparse and dense features.
 
 #.  To get good speedup with GPU, it is suggested to use a smaller number of bins.
     Setting ``max_bin=63`` is recommended, as it usually does not noticeably affect training accuracy on large datasets, but GPU training can be significantly faster than using the default bin size of 255.
@@ -119,14 +117,13 @@ The following shows the training configuration we used:
     min_data_in_leaf = 1
     min_sum_hessian_in_leaf = 100
     ndcg_eval_at = 1,3,5,10
-    sparse_threshold=1.0
     device = gpu
     gpu_platform_id = 0
     gpu_device_id = 0
     num_thread = 28
 
 We use the configuration shown above, except for the Bosch dataset, we use a smaller ``learning_rate=0.015`` and set ``min_sum_hessian_in_leaf=5``.
-For all GPU training we set ``sparse_threshold=1``, and vary the max number of bins (255, 63 and 15).
+For all GPU training we vary the max number of bins (255, 63 and 15).
 The GPU implementation is from commit `0bb4a82`_ of LightGBM, when the GPU support was just merged in.
 
 The following table lists the accuracy on test set that CPU and GPU learner can achieve after 500 iterations.
@@ -208,6 +205,6 @@ Huan Zhang, Si Si and Cho-Jui Hsieh. `GPU Acceleration for Large-scale Tree Boos
 
 .. _link6: http://stat-computing.org/dataexpo/2009/
 
-.. _0bb4a82: https://github.com/Microsoft/LightGBM/commit/0bb4a82
+.. _0bb4a82: https://github.com/microsoft/LightGBM/commit/0bb4a82
 
 .. _GPU Acceleration for Large-scale Tree Boosting: https://arxiv.org/abs/1706.08359

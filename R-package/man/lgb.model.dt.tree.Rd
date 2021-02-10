@@ -18,38 +18,42 @@ A \code{data.table} with detailed information about model trees' nodes and leafs
 The columns of the \code{data.table} are:
 
 \itemize{
- \item \code{tree_index}: ID of a tree in a model (integer)
- \item \code{split_index}: ID of a node in a tree (integer)
- \item \code{split_feature}: for a node, it's a feature name (character);
-                             for a leaf, it simply labels it as \code{"NA"}
- \item \code{node_parent}: ID of the parent node for current node (integer)
- \item \code{leaf_index}: ID of a leaf in a tree (integer)
- \item \code{leaf_parent}: ID of the parent node for current leaf (integer)
- \item \code{split_gain}: Split gain of a node
- \item \code{threshold}: Splitting threshold value of a node
- \item \code{decision_type}: Decision type of a node
- \item \code{default_left}: Determine how to handle NA value, TRUE -> Left, FALSE -> Right
- \item \code{internal_value}: Node value
- \item \code{internal_count}: The number of observation collected by a node
- \item \code{leaf_value}: Leaf value
- \item \code{leaf_count}: The number of observation collected by a leaf
+ \item{\code{tree_index}: ID of a tree in a model (integer)}
+ \item{\code{split_index}: ID of a node in a tree (integer)}
+ \item{\code{split_feature}: for a node, it's a feature name (character);
+                             for a leaf, it simply labels it as \code{"NA"}}
+ \item{\code{node_parent}: ID of the parent node for current node (integer)}
+ \item{\code{leaf_index}: ID of a leaf in a tree (integer)}
+ \item{\code{leaf_parent}: ID of the parent node for current leaf (integer)}
+ \item{\code{split_gain}: Split gain of a node}
+ \item{\code{threshold}: Splitting threshold value of a node}
+ \item{\code{decision_type}: Decision type of a node}
+ \item{\code{default_left}: Determine how to handle NA value, TRUE -> Left, FALSE -> Right}
+ \item{\code{internal_value}: Node value}
+ \item{\code{internal_count}: The number of observation collected by a node}
+ \item{\code{leaf_value}: Leaf value}
+ \item{\code{leaf_count}: The number of observation collected by a leaf}
 }
 }
 \description{
 Parse a LightGBM model json dump into a \code{data.table} structure.
 }
 \examples{
-
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 
-params <- list(objective = "binary",
-              learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-              min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
-              model <- lgb.train(params, dtrain, 20)
-model <- lgb.train(params, dtrain, 20)
+params <- list(
+  objective = "binary"
+  , learning_rate = 0.01
+  , num_leaves = 63L
+  , max_depth = -1L
+  , min_data_in_leaf = 1L
+  , min_sum_hessian_in_leaf = 1.0
+)
+model <- lgb.train(params, dtrain, 10L)
 
 tree_dt <- lgb.model.dt.tree(model)
-
+}
 }

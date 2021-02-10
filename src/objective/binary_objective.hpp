@@ -1,10 +1,18 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_
 
+#include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 
-#include <cstring>
+#include <string>
+#include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <vector>
 
 namespace LightGBM {
 /*!
@@ -12,7 +20,9 @@ namespace LightGBM {
 */
 class BinaryLogloss: public ObjectiveFunction {
  public:
-  explicit BinaryLogloss(const Config& config, std::function<bool(label_t)> is_pos = nullptr) {
+  explicit BinaryLogloss(const Config& config,
+                         std::function<bool(label_t)> is_pos = nullptr)
+      : deterministic_(config.deterministic) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);
@@ -28,7 +38,8 @@ class BinaryLogloss: public ObjectiveFunction {
     }
   }
 
-  explicit BinaryLogloss(const std::vector<std::string>& strs) {
+  explicit BinaryLogloss(const std::vector<std::string>& strs)
+      : deterministic_(false) {
     sigmoid_ = -1;
     for (auto str : strs) {
       auto tokens = Common::Split(str.c_str(), ':');
@@ -51,11 +62,6 @@ class BinaryLogloss: public ObjectiveFunction {
     weights_ = metadata.weights();
     data_size_t cnt_positive = 0;
     data_size_t cnt_negative = 0;
-    // REMOVEME: remove the warning after 2.4 version release
-    Log::Warning("Starting from the 2.1.2 version, default value for "
-                 "the \"boost_from_average\" parameter in \"binary\" objective is true.\n"
-                 "This may cause significantly different results comparing to the previous versions of LightGBM.\n"
-                 "Try to set boost_from_average=false, if your old models produce bad results");
     // count for positive and negative samples
     #pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
     for (data_size_t i = 0; i < num_data_; ++i) {
@@ -64,6 +70,11 @@ class BinaryLogloss: public ObjectiveFunction {
       } else {
         ++cnt_negative;
       }
+    }
+    num_pos_data_ = cnt_positive;
+    if (Network::num_machines() > 1) {
+      cnt_positive = Network::GlobalSyncUpBySum(cnt_positive);
+      cnt_negative = Network::GlobalSyncUpBySum(cnt_negative);
     }
     need_train_ = true;
     if (cnt_negative == 0 || cnt_positive == 0) {
@@ -129,14 +140,14 @@ class BinaryLogloss: public ObjectiveFunction {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:suml, sumw)
+      #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]) * weights_[i];
         sumw += weights_[i];
       }
     } else {
       sumw = static_cast<double>(num_data_);
-      #pragma omp parallel for schedule(static) reduction(+:suml)
+      #pragma omp parallel for schedule(static) reduction(+:suml) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]);
       }
@@ -172,9 +183,13 @@ class BinaryLogloss: public ObjectiveFunction {
 
   bool NeedAccuratePrediction() const override { return false; }
 
+  data_size_t NumPositiveData() const override { return num_pos_data_; }
+
  private:
   /*! \brief Number of data */
   data_size_t num_data_;
+  /*! \brief Number of positive samples */
+  data_size_t num_pos_data_;
   /*! \brief Pointer of label */
   const label_t* label_;
   /*! \brief True if using unbalance training */
@@ -190,6 +205,7 @@ class BinaryLogloss: public ObjectiveFunction {
   double scale_pos_weight_;
   std::function<bool(label_t)> is_pos_;
   bool need_train_;
+  const bool deterministic_;
 };
 
 }  // namespace LightGBM

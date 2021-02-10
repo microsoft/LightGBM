@@ -1,9 +1,16 @@
+/*!
+ * Copyright (c) 2018 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
+ */
 #include <LightGBM/utils/file_io.h>
+
 #include <LightGBM/utils/log.h>
 
 #include <algorithm>
 #include <sstream>
 #include <unordered_map>
+
 #ifdef USE_HDFS
 #include <hdfs.h>
 #endif
@@ -11,7 +18,8 @@
 namespace LightGBM {
 
 struct LocalFile : VirtualFileReader, VirtualFileWriter {
-  LocalFile(const std::string& filename, const std::string& mode) : filename_(filename), mode_(mode) {}
+  LocalFile(const std::string& filename, const std::string& mode)
+      : filename_(filename), mode_(mode) {}
   virtual ~LocalFile() {
     if (file_ != NULL) {
       fclose(file_);
@@ -48,11 +56,14 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
   const std::string mode_;
 };
 
-const std::string kHdfsProto = "hdfs://";
+const char* kHdfsProto = "hdfs://";
 
 #ifdef USE_HDFS
+const size_t kHdfsProtoLength = static_cast<size_t>(strlen(kHdfsProto));
+
 struct HDFSFile : VirtualFileReader, VirtualFileWriter {
-  HDFSFile(const std::string& filename, int flags) : filename_(filename), flags_(flags) {}
+  HDFSFile(const std::string& filename, int flags)
+      : filename_(filename), flags_(flags) {}
   ~HDFSFile() {
     if (file_ != NULL) {
       hdfsCloseFile(fs_, file_);
@@ -64,7 +75,8 @@ struct HDFSFile : VirtualFileReader, VirtualFileWriter {
       if (fs_ == NULL) {
         fs_ = GetHDFSFileSystem(filename_);
       }
-      if (fs_ != NULL && (flags_ == O_WRONLY || 0 == hdfsExists(fs_, filename_.c_str()))) {
+      if (fs_ != NULL &&
+          (flags_ == O_WRONLY || 0 == hdfsExists(fs_, filename_.c_str()))) {
         file_ = hdfsOpenFile(fs_, filename_.c_str(), flags_, 0, 0, 0);
       }
     }
@@ -88,11 +100,12 @@ struct HDFSFile : VirtualFileReader, VirtualFileWriter {
 
  private:
   template <typename BufferType>
-  using fileOp = tSize(*)(hdfsFS, hdfsFile, BufferType, tSize);
+  using fileOp = tSize (*)(hdfsFS, hdfsFile, BufferType, tSize);
 
   template <typename BufferType>
-  inline size_t FileOperation(BufferType data, size_t bytes, fileOp<BufferType> op) const {
-    char* buffer = (char *)data;
+  inline size_t FileOperation(BufferType data, size_t bytes,
+                              fileOp<BufferType> op) const {
+    char* buffer = const_cast<char*>(static_cast<const char*>(data));
     size_t remain = bytes;
     while (remain != 0) {
       size_t nmax = static_cast<size_t>(std::numeric_limits<tSize>::max());
@@ -111,12 +124,12 @@ struct HDFSFile : VirtualFileReader, VirtualFileWriter {
   }
 
   static hdfsFS GetHDFSFileSystem(const std::string& uri) {
-    size_t end = uri.find("/", kHdfsProto.length());
+    size_t end = uri.find("/", kHdfsProtoLength);
     if (uri.find(kHdfsProto) != 0 || end == std::string::npos) {
       Log::Warning("Bad HDFS uri, no namenode found [%s]", uri.c_str());
       return NULL;
     }
-    std::string hostport = uri.substr(kHdfsProto.length(), end - kHdfsProto.length());
+    std::string hostport = uri.substr(kHdfsProtoLength, end - kHdfsProtoLength);
     if (fs_cache_.count(hostport) == 0) {
       fs_cache_[hostport] = MakeHDFSFileSystem(hostport);
     }
@@ -143,36 +156,44 @@ struct HDFSFile : VirtualFileReader, VirtualFileWriter {
   static std::unordered_map<std::string, hdfsFS> fs_cache_;
 };
 
-std::unordered_map<std::string, hdfsFS> HDFSFile::fs_cache_ = std::unordered_map<std::string, hdfsFS>();
+std::unordered_map<std::string, hdfsFS> HDFSFile::fs_cache_ =
+    std::unordered_map<std::string, hdfsFS>();
 
 #define WITH_HDFS(x) x
 #else
 #define WITH_HDFS(x) Log::Fatal("HDFS support is not enabled")
 #endif  // USE_HDFS
 
-std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(const std::string& filename) {
+std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(
+    const std::string& filename) {
+#ifdef USE_HDFS
   if (0 == filename.find(kHdfsProto)) {
-    WITH_HDFS(return std::unique_ptr<VirtualFileReader>(new HDFSFile(filename, O_RDONLY)));
-  } else {
-    return std::unique_ptr<VirtualFileReader>(new LocalFile(filename, "rb"));
+    WITH_HDFS(return std::unique_ptr<VirtualFileReader>(
+        new HDFSFile(filename, O_RDONLY)));
   }
+#endif
+  return std::unique_ptr<VirtualFileReader>(new LocalFile(filename, "rb"));
 }
 
-std::unique_ptr<VirtualFileWriter> VirtualFileWriter::Make(const std::string& filename) {
+std::unique_ptr<VirtualFileWriter> VirtualFileWriter::Make(
+    const std::string& filename) {
+#ifdef USE_HDFS
   if (0 == filename.find(kHdfsProto)) {
-    WITH_HDFS(return std::unique_ptr<VirtualFileWriter>(new HDFSFile(filename, O_WRONLY)));
-  } else {
-    return std::unique_ptr<VirtualFileWriter>(new LocalFile(filename, "wb"));
+    WITH_HDFS(return std::unique_ptr<VirtualFileWriter>(
+        new HDFSFile(filename, O_WRONLY)));
   }
+#endif
+  return std::unique_ptr<VirtualFileWriter>(new LocalFile(filename, "wb"));
 }
 
 bool VirtualFileWriter::Exists(const std::string& filename) {
+#ifdef USE_HDFS
   if (0 == filename.find(kHdfsProto)) {
     WITH_HDFS(HDFSFile file(filename, O_RDONLY); return file.Exists());
-  } else {
-      LocalFile file(filename, "rb");
-      return file.Exists();
   }
+#endif
+  LocalFile file(filename, "rb");
+  return file.Exists();
 }
 
 }  // namespace LightGBM

@@ -4,13 +4,25 @@
 \alias{lightgbm}
 \title{Train a LightGBM model}
 \usage{
-lightgbm(data, label = NULL, weight = NULL, params = list(),
-  nrounds = 10, verbose = 1, eval_freq = 1L,
-  early_stopping_rounds = NULL, save_name = "lightgbm.model",
-  init_model = NULL, callbacks = list(), ...)
+lightgbm(
+  data,
+  label = NULL,
+  weight = NULL,
+  params = list(),
+  nrounds = 10L,
+  verbose = 1L,
+  eval_freq = 1L,
+  early_stopping_rounds = NULL,
+  save_name = "lightgbm.model",
+  init_model = NULL,
+  callbacks = list(),
+  ...
+)
 }
 \arguments{
-\item{data}{a \code{lgb.Dataset} object, used for training}
+\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
+may allow you to pass other types of data like \code{matrix} and then separately supply
+\code{label} as a keyword argument.}
 
 \item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}}
 
@@ -24,41 +36,60 @@ lightgbm(data, label = NULL, weight = NULL, params = list(),
 
 \item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
 
-\item{early_stopping_rounds}{int
-Activates early stopping.
-Requires at least one validation data and one metric
-If there's more than one, will check all of them except the training data
-Returns the model with (best_iter + early_stopping_rounds)
-If early stopping occurs, the model will have 'best_iter' field}
+\item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
+and one metric. If there's more than one, will check all of them
+except the training data. Returns the model with (best_iter + early_stopping_rounds).
+If early stopping occurs, the model will have 'best_iter' field.}
 
 \item{save_name}{File name to use when writing the trained model to disk. Should end in ".model".}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
-\item{callbacks}{list of callback functions
-List of callback functions that are applied at each iteration.}
+\item{callbacks}{List of callback functions that are applied at each iteration.}
 
 \item{...}{Additional arguments passed to \code{\link{lgb.train}}. For example
 \itemize{
-   \item{valids}{a list of \code{lgb.Dataset} objects, used for validation}
-   \item{obj}{objective function, can be character or custom objective function. Examples include
+   \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}
+   \item{\code{obj}: objective function, can be character or custom objective function. Examples include
               \code{regression}, \code{regression_l1}, \code{huber},
                \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
-   \item{eval}{evaluation function, can be (a list of) character or custom eval function}
-   \item{record}{Boolean, TRUE will record iteration message to \code{booster$record_evals}}
-   \item{colnames}{feature names, if not null, will use this to overwrite the names in dataset}
-   \item{categorical_feature}{list of str or int. type int represents index, type str represents feature names}
-   \item{reset_data}{Boolean, setting it to TRUE (not the default value) will transform the booster model
+   \item{\code{eval}: evaluation function, can be (a list of) character or custom eval function}
+   \item{\code{record}: Boolean, TRUE will record iteration message to \code{booster$record_evals}}
+   \item{\code{colnames}: feature names, if not null, will use this to overwrite the names in dataset}
+   \item{\code{categorical_feature}: categorical features. This can either be a character vector of feature
+                       names or an integer vector with the indices of the features (e.g. \code{c(1L, 10L)} to
+                       say "the first and tenth columns").}
+   \item{\code{reset_data}: Boolean, setting it to TRUE (not the default value) will transform the booster model
                      into a predictor model which frees up memory and the original datasets}
-    \item{boosting}{Boosting type. \code{"gbdt"} or \code{"dart"}}
-    \item{num_leaves}{number of leaves in one tree. defaults to 127}
-    \item{max_depth}{Limit the max depth for tree model. This is used to deal with
+    \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
+    \item{\code{num_leaves}: Maximum number of leaves in one tree.}
+    \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
                      overfit when #data is small. Tree still grow by leaf-wise.}
-     \item{num_threads}{Number of threads for LightGBM. For the best speed, set this to
+     \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
                         the number of real CPU cores, not the number of threads (most
                         CPU using hyper-threading to generate 2 threads per CPU core).}
 }}
 }
-\description{
-Simple interface for training an LightGBM model.
+\value{
+a trained \code{lgb.Booster}
 }
+\description{
+Simple interface for training a LightGBM model.
+}
+\section{Early Stopping}{
+
+
+         "early stopping" refers to stopping the training process if the model's performance on a given
+         validation set does not improve for several consecutive iterations.
+
+         If multiple arguments are given to \code{eval}, their order will be preserved. If you enable
+         early stopping by setting \code{early_stopping_rounds} in \code{params}, by default all
+         metrics will be considered for early stopping.
+
+         If you want to only consider the first metric for early stopping, pass
+         \code{first_metric_only = TRUE} in \code{params}. Note that if you also specify \code{metric}
+         in \code{params}, that metric will be considered the "first" one. If you omit \code{metric},
+         a default metric will be used based on your choice for the parameter \code{obj} (keyword argument)
+         or \code{objective} (passed into \code{params}).
+}
+

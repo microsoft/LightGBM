@@ -1,22 +1,25 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_NETWORK_LINKERS_H_
 #define LIGHTGBM_NETWORK_LINKERS_H_
 
-#include <LightGBM/network.h>
-#include <LightGBM/meta.h>
 #include <LightGBM/config.h>
+#include <LightGBM/meta.h>
+#include <LightGBM/network.h>
+#include <LightGBM/utils/common.h>
 
-
+#include <string>
 #include <algorithm>
 #include <chrono>
 #include <ctime>
+#include <memory>
 #include <thread>
 #include <vector>
-#include <string>
-#include <memory>
 
 #ifdef USE_SOCKET
 #include "socket_wrapper.hpp"
-#include <LightGBM/utils/common.h>
 #endif
 
 #ifdef USE_MPI
@@ -27,7 +30,7 @@
 namespace LightGBM {
 
 /*!
-* \brief An network basic communication warpper.
+* \brief A network basic communication warpper.
 * Will warp low level communication methods, e.g. mpi, socket and so on.
 * This class will wrap all linkers to other machines if needs
 */
@@ -49,7 +52,7 @@ class Linkers {
   * \brief Recv data, blocking
   * \param rank Which rank will send data to local machine
   * \param data Pointer of receive data
-  * \prama len Recv size, will block until recive len size of data
+  * \param len Recv size, will block until recive len size of data
   */
   inline void Recv(int rank, char* data, int len) const;
 
@@ -59,7 +62,7 @@ class Linkers {
   * \brief Send data, blocking
   * \param rank Which rank local machine will send to
   * \param data Pointer of send data
-  * \prama len Send size
+  * \param len Send size
   */
   inline void Send(int rank, char* data, int len) const;
 
@@ -68,10 +71,10 @@ class Linkers {
   * \brief Send and Recv at same time, blocking
   * \param send_rank
   * \param send_data
-  * \prama send_len
+  * \param send_len
   * \param recv_rank
   * \param recv_data
-  * \prama recv_len
+  * \param recv_len
   */
   inline void SendRecv(int send_rank, char* send_data, int send_len,
                        int recv_rank, char* recv_data, int recv_len);
@@ -135,6 +138,24 @@ class Linkers {
 
   #endif  // USE_SOCKET
 
+  #ifdef USE_MPI
+
+  /*!
+  * \brief Check if MPI has been initialized
+  */
+  static bool IsMpiInitialized();
+
+  /*!
+  * \brief Finalize the MPI session if it was initialized
+  */
+  static void MpiFinalizeIfIsParallel();
+
+  /*!
+  * \brief Abort the MPI session if it was initialized (called in case there was a error that needs abrupt ending)
+  */
+  static void MpiAbortIfIsParallel();
+
+  #endif
 
  private:
   /*! \brief Rank of local machine */

@@ -1,37 +1,48 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
 #define LIGHTGBM_NETWORK_SOCKET_WRAPPER_HPP_
 #ifdef USE_SOCKET
 
+#include <LightGBM/utils/log.h>
+
+#include <string>
+#include <cerrno>
+#include <cstdlib>
+#include <unordered_set>
+
 #if defined(_WIN32)
+
 #ifdef _MSC_VER
 #define NOMINMAX
 #endif
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 
 #else
 
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
-#include <cerrno>
-#include <unistd.h>
-#include <arpa/inet.h>
 #include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <ifaddrs.h>
 #include <netinet/tcp.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
+// ifaddrs.h is not available on Solaris 10
+#if (defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))
+  #include "ifaddrs_patch.h"
+#else
+  #include <ifaddrs.h>
 #endif
 
-#include <LightGBM/utils/log.h>
-
-#include <cstdlib>
-
-#include <unordered_set>
-#include <string>
+#endif  // defined(_WIN32)
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Ws2_32.lib")
@@ -173,7 +184,7 @@ class TcpSocket {
     PIP_ADAPTER_INFO pAdapter = NULL;
     DWORD dwRetVal = 0;
     ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
-    pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(sizeof(IP_ADAPTER_INFO));
+    pAdapterInfo = reinterpret_cast<IP_ADAPTER_INFO *>(MALLOC(sizeof(IP_ADAPTER_INFO)));
     if (pAdapterInfo == NULL) {
       Log::Fatal("GetAdaptersinfo error: allocating memory");
     }
@@ -181,7 +192,7 @@ class TcpSocket {
     // the necessary size into the ulOutBufLen variable
     if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
       FREE(pAdapterInfo);
-      pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(ulOutBufLen);
+      pAdapterInfo = reinterpret_cast<IP_ADAPTER_INFO *>(MALLOC(ulOutBufLen));
       if (pAdapterInfo == NULL) {
         Log::Fatal("GetAdaptersinfo error: allocating memory");
       }
@@ -213,6 +224,7 @@ class TcpSocket {
         continue;
       }
       if (ifa->ifa_addr->sa_family == AF_INET) {
+        // NOLINTNEXTLINE
         tmpAddrPtr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
         char addressBuffer[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);

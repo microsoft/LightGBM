@@ -1,11 +1,17 @@
+/*!
+ * Copyright (c) 2018 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_UTILS_FILE_IO_H_
 #define LIGHTGBM_UTILS_FILE_IO_H_
 
-#include <memory>
-#include <iostream>
+#include <string>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
+#include <memory>
+#include <vector>
 
 namespace LightGBM {
 
@@ -26,6 +32,16 @@ struct VirtualFileWriter {
    * \return Number of bytes written
    */
   virtual size_t Write(const void* data, size_t bytes) const = 0;
+
+  size_t AlignedWrite(const void* data, size_t bytes, size_t alignment = 8) const {
+    auto ret = Write(data, bytes);
+    if (bytes % alignment != 0) {
+      size_t padding = AlignedSize(bytes, alignment) - bytes;
+      std::vector<char> tmp(padding, 0);
+      ret += Write(tmp.data(), padding);
+    }
+    return ret;
+  }
   /*!
    * \brief Create appropriate writer for filename
    * \param filename Filename of the data
@@ -38,6 +54,14 @@ struct VirtualFileWriter {
    * \return True when the file exists
    */
   static bool Exists(const std::string& filename);
+
+  static size_t AlignedSize(size_t bytes, size_t alignment = 8) {
+    if (bytes % alignment == 0) {
+      return bytes;
+    } else {
+      return bytes / alignment * alignment + alignment;
+    }
+  }
 };
 
 /**

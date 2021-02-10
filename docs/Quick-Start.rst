@@ -18,7 +18,7 @@ Follow the `Installation Guide <./Installation-Guide.rst>`__ to install LightGBM
 Training Data Format
 --------------------
 
-LightGBM supports input data files with `CSV`_, `TSV`_ and `LibSVM`_ formats.
+LightGBM supports input data files with `CSV`_, `TSV`_ and `LibSVM`_ (zero-based) formats.
 
 Files could be both with and without `headers <./Parameters.rst#header>`__.
 
@@ -71,13 +71,13 @@ For example, the following command line will keep ``num_trees=10`` and ignore th
 Examples
 --------
 
--  `Binary Classification <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification>`__
+-  `Binary Classification <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification>`__
 
--  `Regression <https://github.com/Microsoft/LightGBM/tree/master/examples/regression>`__
+-  `Regression <https://github.com/microsoft/LightGBM/tree/master/examples/regression>`__
 
--  `Lambdarank <https://github.com/Microsoft/LightGBM/tree/master/examples/lambdarank>`__
+-  `Lambdarank <https://github.com/microsoft/LightGBM/tree/master/examples/lambdarank>`__
 
--  `Parallel Learning <https://github.com/Microsoft/LightGBM/tree/master/examples/parallel_learning>`__
+-  `Parallel Learning <https://github.com/microsoft/LightGBM/tree/master/examples/parallel_learning>`__
 
 .. _CSV: https://en.wikipedia.org/wiki/Comma-separated_values
 

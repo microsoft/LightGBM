@@ -2,25 +2,31 @@
 % Please edit documentation in R/lgb.unloader.R
 \name{lgb.unloader}
 \alias{lgb.unloader}
-\title{LightGBM unloading error fix}
+\title{Remove lightgbm and its objects from an environment}
 \usage{
 lgb.unloader(restore = TRUE, wipe = FALSE, envir = .GlobalEnv)
 }
 \arguments{
-\item{restore}{Whether to reload \code{LightGBM} immediately after detaching from R. Defaults to \code{TRUE} which means automatically reload \code{LightGBM} once unloading is performed.}
+\item{restore}{Whether to reload \code{LightGBM} immediately after detaching from R.
+Defaults to \code{TRUE} which means automatically reload \code{LightGBM} once
+unloading is performed.}
 
-\item{wipe}{Whether to wipe all \code{lgb.Dataset} and \code{lgb.Booster} from the global environment. Defaults to \code{FALSE} which means to not remove them.}
+\item{wipe}{Whether to wipe all \code{lgb.Dataset} and \code{lgb.Booster} from the global
+environment. Defaults to \code{FALSE} which means to not remove them.}
 
-\item{envir}{The environment to perform wiping on if \code{wipe == TRUE}. Defaults to \code{.GlobalEnv} which is the global environment.}
+\item{envir}{The environment to perform wiping on if \code{wipe == TRUE}. Defaults to
+\code{.GlobalEnv} which is the global environment.}
 }
 \value{
 NULL invisibly.
 }
 \description{
-Attempts to unload LightGBM packages so you can remove objects cleanly without having to restart R. This is useful for instance if an object becomes stuck for no apparent reason and you do not want to restart R to fix the lost object.
+Attempts to unload LightGBM packages so you can remove objects cleanly without
+             having to restart R. This is useful for instance if an object becomes stuck for no
+             apparent reason and you do not want to restart R to fix the lost object.
 }
 \examples{
-library(lightgbm)
+\donttest{
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -29,18 +35,20 @@ test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 params <- list(objective = "regression", metric = "l2")
 valids <- list(test = dtest)
-model <- lgb.train(params,
-                   dtrain,
-                   100,
-                   valids,
-                   min_data = 1,
-                   learning_rate = 1,
-                   early_stopping_rounds = 10)
+model <- lgb.train(
+  params = params
+  , data = dtrain
+  , nrounds = 5L
+  , valids = valids
+  , min_data = 1L
+  , learning_rate = 1.0
+)
+
 lgb.unloader(restore = FALSE, wipe = FALSE, envir = .GlobalEnv)
 rm(model, dtrain, dtest) # Not needed if wipe = TRUE
 gc() # Not needed if wipe = TRUE
 
 library(lightgbm)
 # Do whatever you want again with LightGBM without object clashing
-
+}
 }

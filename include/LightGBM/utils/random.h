@@ -1,11 +1,14 @@
+/*!
+ * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #ifndef LIGHTGBM_UTILS_RANDOM_H_
 #define LIGHTGBM_UTILS_RANDOM_H_
 
 #include <cstdint>
-
 #include <random>
-#include <vector>
 #include <set>
+#include <vector>
 
 namespace LightGBM {
 
@@ -26,7 +29,7 @@ class Random {
   /*!
   * \brief Constructor, with specific seed
   */
-  Random(int seed) {
+  explicit Random(int seed) {
     x = seed;
   }
   /*!
@@ -81,10 +84,10 @@ class Random {
       }
     } else {
       std::set<int> sample_set;
-      while (static_cast<int>(sample_set.size()) < K) {
-        int next = RandInt32() % N;
-        if (sample_set.count(next) == 0) {
-          sample_set.insert(next);
+      for (int r = N - K; r < N; ++r) {
+        int v = NextInt(0, r);
+        if (!sample_set.insert(v).second) {
+          sample_set.insert(r);
         }
       }
       for (auto iter = sample_set.begin(); iter != sample_set.end(); ++iter) {

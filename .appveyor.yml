@@ -1,56 +1,43 @@
-﻿version: 2.2.4.{build}
+version: 3.1.1.99.{build}
 
 image: Visual Studio 2015
 platform: x64
 configuration:  # a trick to construct a build matrix with multiple Python versions
-  - 3.6
+  - 3.7
+
+# only build pull requests and
+# commits to 'master'
+branches:
+  only:
+    - master
 
 environment:
   matrix:
     - COMPILER: MSVC
+      TASK: python
     - COMPILER: MINGW
+      TASK: python
 
-clone_depth: 50
+clone_depth: 5
 
 install:
-  - git submodule update --init --recursive  # get `compute` folder
+  - git submodule update --init --recursive  # get `external_libs` folder
   - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # delete sh.exe from PATH (mingw32-make fix)
-  - set PATH=C:\mingw-w64\x86_64-7.3.0-posix-seh-rt_v5-rev0\mingw64\bin;%PATH%
+  - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
-  - ps: >-
+  - set CONDA_ENV="test-env"
+  - ps: |
       switch ($env:PYTHON_VERSION) {
-          "2.7" {$env:MINICONDA = """C:\Miniconda-x64"""}
-          "3.5" {$env:MINICONDA = """C:\Miniconda35-x64"""}
-          "3.6" {$env:MINICONDA = """C:\Miniconda36-x64"""}
-          "3.7" {$env:MINICONDA = """C:\Miniconda37-x64"""}
-          default {$env:MINICONDA = """C:\Miniconda37-x64"""}
+          "3.6" {$env:MINICONDA = "C:\Miniconda36-x64"}
+          "3.7" {$env:MINICONDA = "C:\Miniconda37-x64"}
+          default {$env:MINICONDA = "C:\Miniconda37-x64"}
       }
-  - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
-  - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q -y conda
-  - conda create -q -y -n test-env python=%PYTHON_VERSION% matplotlib nose numpy pandas psutil pytest python-graphviz scikit-learn scipy
-  - activate test-env
+      $env:PATH = "$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
+      $env:BUILD_SOURCESDIRECTORY = "$env:APPVEYOR_BUILD_FOLDER"
+      $env:LGB_VER = (Get-Content $env:APPVEYOR_BUILD_FOLDER\VERSION.txt).trim()
 
-build_script:
-  - cd %APPVEYOR_BUILD_FOLDER%\python-package
-  - IF "%COMPILER%"=="MINGW" (
-    python setup.py install --mingw)
-    ELSE (
-    python setup.py install)
+build: false
 
 test_script:
-  - pytest %APPVEYOR_BUILD_FOLDER%\tests\python_package_test
-  - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide
-  - ps: >-
-      @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"  # prevent interactive window mode
-      (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"
-  - ps: >-
-      foreach ($file in @(Get-ChildItem *.py)) {
-        @("import sys, warnings", "warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: sys.stdout.write(warnings.formatwarning(message, category, filename, lineno, line))") + (Get-Content $file) | Set-Content $file
-        python $file
-        if (!$?) { $host.SetShouldExit(-1) }
-      }  # run all examples
-  - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide\notebooks
-  - conda install -q -y -n test-env ipywidgets notebook
-  - jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb  # run all notebooks
+  - conda init powershell
+  - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test_windows.ps1
