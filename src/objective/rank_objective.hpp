@@ -141,8 +141,7 @@ class LambdarankNDCG : public RankingObjective {
     ConstructSigmoidTable();
 
     // initialize position bias vectors
-    InitPositionBiases();
-    InitPositionGradients();
+    InitPositionBiasesAndGradients();
   }
 
   void GetGradients(const double* score, score_t* gradients,
@@ -150,7 +149,7 @@ class LambdarankNDCG : public RankingObjective {
     RankingObjective::GetGradients(score, gradients, hessians);
 
     if (unbiased_) {
-      UpdatePositionBiases();
+      UpdatePositionBiasesAndGradients();
     }
   }
 
@@ -293,35 +292,40 @@ class LambdarankNDCG : public RankingObjective {
     }
   }
 
-  void InitPositionBiases() {
+  void InitPositionBiasesAndGradients() {
     i_biases_pow_.resize(truncation_level_);
     j_biases_pow_.resize(truncation_level_);
-    for (int i = 0; i < truncation_level_; ++i) {
-      i_biases_pow_[i] = 1.0f;
-      j_biases_pow_[i] = 1.0f;
-    }
-  }
-
-  void InitPositionGradients() {
     i_costs_.resize(truncation_level_);
     j_costs_.resize(truncation_level_);
+
     for (int i = 0; i < truncation_level_; ++i) {
+      // init position biases
+      i_biases_pow_[i] = 1.0f;
+      j_biases_pow_[i] = 1.0f;
+
+      // init position gradients
       i_costs_[i] = 0.0f;
       j_costs_[i] = 0.0f;
     }
 
+    // init gradient buffers for gathering results across threads
     for (int i = 0; i < num_threads_; i++) {
       i_costs_buffer_.emplace_back(truncation_level_, 0.0f);
       j_costs_buffer_.emplace_back(truncation_level_, 0.0f);
     }
   }
 
-  void UpdatePositionBiases() const {
+  void UpdatePositionBiasesAndGradients() const {
     // accumulate the parallel results
     for (int i = 0; i < num_threads_; i++) {
       for (int j = 0; j < truncation_level_; ++j) {
+        
         i_costs_[j] += i_costs_buffer_[i][j];
         j_costs_[j] += j_costs_buffer_[i][j];
+
+        // clear buffer for next run
+        i_costs_buffer_[i][j] = 0.0f;
+        j_costs_buffer_[i][j] = 0.0f;
       }
     }
 
@@ -337,14 +341,6 @@ class LambdarankNDCG : public RankingObjective {
       // Clear position info
       i_costs_[i] = 0.0f;
       j_costs_[i] = 0.0f;
-    }
-
-    // Clear Buffer
-    for (int i = 0; i < num_threads_; i++) {
-      for (int j = 0; j < truncation_level_; ++j) {
-        i_costs_buffer_[i][j] = 0.0f;
-        j_costs_buffer_[i][j] = 0.0f;
-      }
     }
   }
 
