@@ -144,6 +144,7 @@ def _train_part(
     worker_address_to_port: Dict[str, int],
     return_model: bool,
     time_out: int = 120,
+    evals_provided: bool = False,
     **kwargs: Any
 ) -> Optional[LGBMModel]:
     local_worker_address = get_worker().address
@@ -176,23 +177,78 @@ def _train_part(
     else:
         group = None
 
-    if 'eval_set' in list_of_parts[0]:
-        eval_set = list()
-        eval_sets = [x['eval_set'] for x in list_of_parts]
-        for i, e_set in enumerate(eval_sets):
-            if e_set == '__train__':
-                eval_set.append((data, label))
-            else:
-                eval_set.append((_concat(e_set[0]), _concat(e_set[1])))
+    # construct local eval_set data.
+    local_evals, local_eval_sample_weights, local_eval_groups = None, None, None
+    n_evals = max([len(x.get('eval_set', [])) for x in list_of_parts])
+    eval_weight_provided = any([x.get('eval_sample_weight') for x in list_of_parts])
+    if n_evals:
+
+        local_evals = []
+        if eval_weight_provided:
+            local_eval_sample_weights = list()
+        if is_ranker:
+            local_eval_groups = list()
+
+        # consolidate parts of each individual (X, y) eval set and _concat them, also sample weights and group.
+        for j in range(n_evals):
+            e_x, e_y, e_w, e_g = [], [], [], []
+            for i, part in enumerate(list_of_parts):
+
+                if not part.get('eval_set'):
+                    continue
+
+                # possible that not each part contains parts of every (X, y) set.
+                if j >= len(part['eval_set']):
+                    continue
+
+                e_set = part['eval_set'][j]
+                if e_set == '__train__':
+                    e_x.append(part['data'])
+                    e_y.append(part['label'])
+                else:
+                    x, y = e_set
+                    e_x.extend(x)
+                    e_y.extend(y)
+
+                e_weight = part.get('eval_sample_weight')
+                if e_weight:
+                    if e_weight == '__sample_weight__':
+                        e_w.append(part['weight'])
+                    else:
+                        e_w.extend(e_weight)
+
+                e_group = part.get('eval_group')
+                if e_group:
+                    if e_group == '__group__':
+                        e_g.append(part['group'])
+                    else:
+                        e_g.extend(e_group)
+
+            local_evals.append((_concat(e_x), _concat(e_y)))
+
+            if eval_weight_provided:
+                local_eval_sample_weights.append(_concat(e_w))
+            if is_ranker:
+                local_eval_groups.append(_concat(e_g))
+
+        for j in range(len(local_evals)):
+            print(f'local_evals[{j}] shape = {local_evals[j][0].shape, local_evals[j][1].shape}')
     else:
-        eval_set=None
+        # when eval_set has been provided to fit, but no eval data has been provided to worker throws exceptions.
+        if evals_provided:
+            msg = "eval_set was provided but worker %s was not allocated validation data. Try rebalancing data across workers."
+            raise RuntimeError(msg % local_worker_address)
+
+        print('local_evals = None, kwargs["eval_metric"] = None')
 
     try:
         model = model_factory(**params)
         if is_ranker:
-            model.fit(data, label, sample_weight=weight, group=group, eval_set=eval_set, **kwargs)
+            model.fit(data, label, sample_weight=weight, group=group, eval_set=local_evals,
+                      eval_sample_weight=local_eval_sample_weights, eval_group=local_eval_groups, **kwargs)
         else:
-            model.fit(data, label, sample_weight=weight, eval_set=eval_set, **kwargs)
+            model.fit(data, label, sample_weight=weight, eval_set=local_evals,
+                      eval_sample_weight=local_eval_sample_weights, **kwargs)
 
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
@@ -220,6 +276,8 @@ def _train(
     sample_weight: Optional[_DaskCollection] = None,
     group: Optional[_DaskCollection] = None,
     eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
+    eval_sample_weight: Optional[List[_DaskCollection]] = None,
+    eval_group: Optional[List[_DaskCollection]] = None,
     **kwargs: Any
 ) -> LGBMModel:
     """Inner train routine.
@@ -245,7 +303,11 @@ def _train(
         For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
     eval_set : List or None, optional (default=None)
-        List of (X, y) tuple pairs to use as validation sets, were X and y are dask data collections.
+        List of (X, y) tuple pairs to use as validation sets, where X and y are dask data collections.
+    eval_sample_weight: List or None, optional (default=None)
+        List of dask Array or dask Series, weights for each validation set in eval_set.
+    eval_group: List or None, optional (default=None)
+        List of dask Array or dask Series, group/query for each validation set in eval_set.
     **kwargs
         Other parameters passed to ``fit`` method of the local underlying model.
 
@@ -312,15 +374,29 @@ def _train(
     # X and y are each delayed sub-lists of original eval dask Collections.
     if eval_set:
         eval_sets = defaultdict(list)
+        if eval_sample_weight:
+            eval_sample_weights = defaultdict(list)
+        if eval_group:
+            eval_groups = defaultdict(list)
+
         for i, (X, y) in enumerate(eval_set):
 
             if id(X) == id(data):
-                for j in range(n_parts):
-                    eval_sets[j].append('__train__')
+                for parts_idx in range(n_parts):
+                    eval_sets[parts_idx].append('__train__')
+                    if eval_sample_weight:
+                        eval_sample_weights[parts_idx].append('__sample_weight__')
+                    if eval_group:
+                        eval_groups[parts_idx].append('__group__')
+
                 continue
 
             eval_x_parts = _split_to_parts(data=X, is_matrix=True)
             eval_y_parts = _split_to_parts(data=y, is_matrix=False)
+            if eval_sample_weight:
+                eval_w_parts = _split_to_parts(data=eval_sample_weight, is_matrix=False)
+            if eval_group:
+                eval_g_parts = _split_to_parts(data=eval_group, is_matrix=False)
 
             # ensure that all evaluation parts map uniquely to one part.
             for j in range(len(eval_x_parts)):
@@ -328,18 +404,34 @@ def _train(
                 init_eval_set = j < n_parts
 
                 x_e, y_e = eval_x_parts[j], eval_y_parts[j]
+                if eval_sample_weight:
+                    w_e = eval_w_parts[j]
+                if eval_group:
+                    g_e = eval_g_parts[j]
 
                 if init_eval_set:
                     eval_sets[parts_idx].append(([x_e], [y_e]))
+                    if eval_sample_weight:
+                        eval_sample_weights[parts_idx].append([w_e])
+                    if eval_group:
+                        eval_groups[parts_idx].append([g_e])
 
                 else:
                     n_evals = len(eval_sets[parts_idx]) - 1
                     eval_sets[parts_idx][n_evals][0].append(x_e)
                     eval_sets[parts_idx][n_evals][1].append(y_e)
+                    if eval_sample_weight:
+                        eval_sample_weights[parts_idx][n_evals].append(w_e)
+                    if eval_group:
+                        eval_groups[parts_idx][n_evals].append(g_e)
 
         # assign sub-eval_set to worker parts.
         for i, e_set in eval_sets.items():
             parts[i]['eval_set'] = e_set
+            if eval_sample_weight:
+                parts[i]['eval_sample_weight'] = eval_sample_weights[i]
+            if eval_group:
+                parts[i]['eval_group'] = eval_groups[i]
 
     # Start computation in the background
     parts = list(map(delayed, parts))
@@ -379,6 +471,7 @@ def _train(
             worker_address_to_port=worker_address_to_port,
             time_out=params.get('time_out', 120),
             return_model=(worker == master_worker),
+            evals_provided=eval_set is not None,
             **kwargs
         )
         for worker, list_of_parts in worker_map.items()
@@ -656,7 +749,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
-            eval_set=eval_set
+            eval_set=eval_set,
             **kwargs
         )
 

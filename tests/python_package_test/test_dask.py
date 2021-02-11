@@ -647,8 +647,8 @@ def test_ranker(output, client, listen_port, group):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-@pytest.mark.parameterize('eval_size', [[(1), (0.5)], [0.5]])
-@pytest.mark.parameterize('task', ['classification', 'regression']) #, 'ranking'])
+@pytest.mark.parametrize('eval_size', [[1, 0.5], [0.8]])
+@pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
 def test_early_stopping(task, eval_size, client, listen_port):
 
     if task == 'ranking':
@@ -662,6 +662,7 @@ def test_early_stopping(task, eval_size, client, listen_port):
         X, y, w, dX, dy, dw = _create_data(
             objective=task,
             output='array',
+            chunk_size=10,
         )
         dg = None
         if task == 'classification':
@@ -669,15 +670,16 @@ def test_early_stopping(task, eval_size, client, listen_port):
             eval_metric = ['binary_error']
         elif task == 'regression':
             model_factory = lgb.DaskLGBMRegressor
-            eval_metric = ['mae']
+            eval_metric = ['l2']
 
     full_trees = 200
     params = {
         "random_state": 42,
         "n_estimators": full_trees,
-        "num_leaves": 20,
+        "num_leaves": 50,
         "min_child_samples": 1,
-        "verbose": 5
+        "verbose": 5,
+        "first_metric_only": True
     }
 
     dask_model = model_factory(
@@ -685,18 +687,25 @@ def test_early_stopping(task, eval_size, client, listen_port):
         , **params
     )
 
-    eval_set = list()
+    eval_set, eval_sample_weight, eval_group = [], [], []
     for e_size in eval_size:
         if e_size == 1:
             eval_set.append((dX, dy))
+            eval_sample_weight.append(dw)
+            eval_group.append(dg)
         else:
             eval_partitions = int(max(1, np.floor(e_size * dX.npartitions)))
             eval_set.append((dX.partitions[0:eval_partitions], dy.partitions[0:eval_partitions]))
+            eval_sample_weight.append(dw.partitions[0:eval_partitions])
+            eval_group.append(dg.partitions[0:eval_partitions])
 
     dask_model = dask_model.fit(dX, dy, group=dg, eval_set=eval_set,
-                                eval_metric=eval_metric, early_stopping_rounds=10, first_metric_only=True)
+                                eval_sample_weight=eval_sample_weight, eval_group=eval_group,
+                                eval_metric=eval_metric, early_stopping_rounds=5)
     local_model = dask_model.to_local()
-    assert local_model.Booster.num_trees() < full_trees
+    assert local_model.booster_.num_trees() < full_trees
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
 @pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
