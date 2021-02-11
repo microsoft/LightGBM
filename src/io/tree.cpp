@@ -376,7 +376,7 @@ std::string Tree::ToString() const {
 
   if (is_linear_) {
     str_buf << "leaf_const="
-      << ArrayToString(leaf_const_, num_leaves_) << '\n';
+      << ArrayToString<true>(leaf_const_, num_leaves_) << '\n';
     std::vector<int> num_feat(num_leaves_);
     for (int i = 0; i < num_leaves_; ++i) {
       num_feat[i] = static_cast<int>(leaf_coeff_[i].size());
@@ -394,7 +394,7 @@ std::string Tree::ToString() const {
     str_buf << "leaf_coeff=";
     for (int i = 0; i < num_leaves_; ++i) {
       if (num_feat[i] > 0) {
-        str_buf << ArrayToString(leaf_coeff_[i], leaf_coeff_[i].size()) << ' ';
+        str_buf << ArrayToString<true>(leaf_coeff_[i], leaf_coeff_[i].size()) << ' ';
       }
       str_buf << ' ';
     }
