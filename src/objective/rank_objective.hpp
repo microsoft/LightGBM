@@ -157,36 +157,65 @@ class LambdarankNDCG : public RankingObjective {
                                       const label_t* label, const double* score,
                                       score_t* lambdas,
                                       score_t* hessians) const override {
+    //
+    // query_id  : the query for which we are computing gradients
+    // cnt       : number of documents returned for the query
+    // label     : the Y values (relevance labels) for each document
+    // score     : current predicted score for the associated document
+    // lambdas   : array updated in place, gradients for this query
+    // hessians  : array updated in place, second derivs for this query
+    //
+
+    // queries are processed in parallel
+    // get id for current thread so safely accumulate bias corrections
     const int tid = omp_get_thread_num();  // get thread id
 
     // get max DCG on current query
     const double inverse_max_dcg = inverse_max_dcgs_[query_id];
+
     // initialize with zero
     for (data_size_t i = 0; i < cnt; ++i) {
       lambdas[i] = 0.0f;
       hessians[i] = 0.0f;
     }
+
     // get sorted indices for scores
+    // by first fill the vector 0, 1, ... cnt-1
     std::vector<data_size_t> sorted_idx(cnt);
     for (data_size_t i = 0; i < cnt; ++i) {
       sorted_idx[i] = i;
     }
+
+    // and then sort the result indices by score descending
+    // eg [3, 2, 4, 1] means document 3 currently has highest score, document 1 lowest
     std::stable_sort(
         sorted_idx.begin(), sorted_idx.end(),
         [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
+
     // get best and worst score
     const double best_score = score[sorted_idx[0]];
+
+    // worst score should be last item of sorted_idx
+    // if that item is env min score (-inf), take the one before it
     data_size_t worst_idx = cnt - 1;
     if (worst_idx > 0 && score[sorted_idx[worst_idx]] == kMinScore) {
       worst_idx -= 1;
     }
     const double worst_score = score[sorted_idx[worst_idx]];
+
+    // accumulator for lambdas used in normalization when norm_ = true
     double sum_lambdas = 0.0;
+
     // start accmulate lambdas by pairs that contain at least one document above truncation level
+    // working across the cnt number of documents for the query
+    // this going in order of score desc since start w sorted_idx[0]
     for (data_size_t i = 0; i < cnt - 1 && i < truncation_level_; ++i) {
       if (score[sorted_idx[i]] == kMinScore) { continue; }
+
+      // compare doc i to all other docs j of differing level of relevance
       for (data_size_t j = i + 1; j < cnt; ++j) {
         if (score[sorted_idx[j]] == kMinScore) { continue; }
+
         // skip pairs with the same labels
         if (label[sorted_idx[i]] == label[sorted_idx[j]]) { continue; }
 
@@ -198,51 +227,132 @@ class LambdarankNDCG : public RankingObjective {
           high_rank = j;
           low_rank = i;
         }
-        const data_size_t high = sorted_idx[high_rank];
-        const int high_label = static_cast<int>(label[high]);
+
+        // info of more relevant doc
+        const data_size_t high = sorted_idx[high_rank];  // doc index in query results
+        const int high_label = static_cast<int>(label[high]);  // label (Y)
         const double high_score = score[high];
-        const double high_label_gain = label_gain_[high_label];
-        const double high_discount = DCGCalculator::GetDiscount(high_rank);
+        const double high_label_gain = label_gain_[high_label];  // default: 2^high_label - 1
+        const double high_discount = DCGCalculator::GetDiscount(high_rank);  // 1/log2(2 + i)
+
+        // info of less relevant doc
         const data_size_t low = sorted_idx[low_rank];
         const int low_label = static_cast<int>(label[low]);
         const double low_score = score[low];
         const double low_label_gain = label_gain_[low_label];
         const double low_discount = DCGCalculator::GetDiscount(low_rank);
 
+        //
+        // note on subsequent comments
+        // in the papers, we assume i is more relevant than j
+        // formula numbers are from unbiased lambdamart paper
+        //
+        // si - sj
         const double delta_score = high_score - low_score;
 
         // get dcg gap
+        // default: 2^i - 2^j > 0
         const double dcg_gap = high_label_gain - low_label_gain;
+
         // get discount of this pair
+        // |1/log2(2 + i) - 1/log2(2 + j)|
         const double paired_discount = fabs(high_discount - low_discount);
+
         // get delta NDCG
+        // (2^i - 2^j) * |1/log2(2 + i) - 1/log2(2 + j)| / max_dcg
         double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
-        // regular the delta_pair_NDCG by score distance
+
+        // regularize the delta_pair_NDCG by score distance
         if ((norm_ || unbiased_) && best_score != worst_score) {
           delta_pair_NDCG /= (0.01f + fabs(delta_score));
         }
+
         // calculate lambda for this pair
-        double p_lambda = GetSigmoid(delta_score);
-        double p_hessian = p_lambda * (1.0f - p_lambda);  // check that 1.0 instead of 2.0 is ok
+        // part of (34)
+        // (34) and (36) are used to get the unbiased gradient estimates
+        // in original this first p_lambda is double what it should be but ends up not mattering
+        double p_lambda = GetSigmoid(delta_score);  // 1 / (1 + e^(sigmoid_ * (si - sj)))
+
+        // d/dx {part of (34)} from above
+        // ** confirmed wrong in original **
+        // see subsequent p_hessian comments, but appears to be wrong
+        // if sigmoid_ was meant to be 2 in the paper, that would be multiplied out front
+        // it wouldn't be lambda * (2 - lambda) but instead 2 * lambda (1 - lambda)
+        double p_hessian = p_lambda * (1.0f - p_lambda);
 
         if (unbiased_) {
-          // check that 1.0 instead of 2.0 is ok
-          // might need a sigmoid_ thrown in somewhere
-          double p_cost = log(1.0f / (1.0f - p_lambda)) * delta_pair_NDCG;  // log(1+e^(-sigma*(si-sj)))
+          // formula (37)
+          // used to get t+ and t- from (30)/(31) respectively
+          // ** confirmed correct here and (accidentally) in original **
+          // orig has log(2/(2 - p_lambda))
+          //   let bad_exp = e^(2 * sigmoid_ * (si - sj))
+          //   let bad_denom = 1 + bad_exp
+          //
+          //   2/(2-(2/bad_denom))
+          //   2 / { (2*bad_denom - 2)/bad_denom }
+          //   2*bad_denom / (2 * (bad_denom - 1))
+          //   bad_denom / bad_exp
+          //   {1 + bad_exp} / bad_exp
+          //   1 + 1/bad_exp
+          //   1 + e^{-2*sigmoid_ * (si - sj)}
+          //     ... so i think w the weird swaps/hard coded 2s and sigmoid_ = 1 2/(2-lambda) is right
+          //     ... which means 1/(1-lambda) is correct here
+          double p_cost = log(1.0f / (1.0f - p_lambda)) * delta_pair_NDCG;
 
-          // orig has += high_sum_cost_i
-          // but that is just an in loop accumulator to avoid element look up
-          // that var that can be removed, lookup is fine
+          // formula (30)
+          // more relevant (clicked) gets debiased by less relevant (unclicked)
           i_costs_buffer_[tid][high_rank] += p_cost / j_biases_pow_[low_rank];
+
+          // formula (31)
+          // and vice versa
           j_costs_buffer_[tid][low_rank] += p_cost / i_biases_pow_[high_rank];
         }
 
         // update
+        // ** confirmed p_lambda is correct **
+        // rest of (34) with formula (36) for debiasing
         // orig doesn't have sigmoid_
+        // if not unbiased_
+        //    {1/(1 + e^(sigmoid_ * (si - sj)))} * -sigmoid_ * (2^i - 2^j) * |1/log2(2 + i) - 1/log2(2 + j)| * (1/max_dcg)
+        // note that orig has
+        //    {2/(1 + e^(2 * sigmoid_ * (si - sj)))} * -1 * (2^i - 2^j) * |1/log2(2 + i) - 1/log2(2 + j)| * (1/max_dcg)
+        //    the 2 in the numerator and sigmoid_ missing from second term (delta_pair_NDCG) even out
+        //    the 2 * sigmoid_ * (si - sj) in the exponent, however, makes no sense
+        //    it appears the tests on that repo used an unset (default) sigmoid config value, which is 1
+        //    this means that the paper's sigmoid_table_ denominator was computed correctly for sigmoid_ = 2
+        //    as is described at (34) even though it was set for 1
+        //    also means that leaving it out from p_lambda was (accidentally) fine
         p_lambda *= -sigmoid_ * delta_pair_NDCG / i_biases_pow_[high_rank] / j_biases_pow_[low_rank];
 
-        // orig has 2.0 * delta / bias related to always defaulting sigmoid to 2
-        // this has a sigmoid_^2, check impact
+        // remainder of d/dx {(34) and (36) for debiasing}
+        // ** confirmed wrong **
+        // if not unbiased
+        //    let good_exp = e^(sigmoid_ * (si - sj))
+        //    let good_denom = 1 + good_exp
+        //
+        //    p_lambda * (1.0f - p_lambda) * sigmoid_ * sigmoid_ * delta_pair_ndcg
+        //    {1/good_denom} * (1 - 1/good_denom) * sigmoid_ * sigmoid_ * delta_pair_ndcg
+        //    {1/good_denom} * ((good_denom - 1)/good_denom) * sigmoid_ * sigmoid_ * delta_pair_ndcg
+        //    sigmoid_ * sigmoid_ * good_exp * delta_pair_ndcg / {good_denom^2}
+        //
+        // orig has
+        //    let bad_exp = e^(2 * sigmoid_ * (si - sj))
+        //    let bad_denom = 1 + bad_exp
+        //
+        //    p_lambda * (2 - p_lambda) * 2 * delta_pair_ndcg
+        //    {2/bad_denom} * (2 - (2/bad_denom)) * 2 * delta_pair_ndcg
+        //    {2/bad_denom} * (2*(bad_denom - 1)/bad_denom) * 2 * delta_pair_ndcg
+        //    2 * 2 * 2 * (bad_denom - 1) * delta_pair_ndcg / (bad_denom^2)
+        //    2 * 2 * 2 * bad_exp * delta_pair_ndcg / (bad_denom^2)
+        //
+        //    if, as in the original ...
+        //      * you WANT sigmoid_ = 2
+        //      * but actually leave it as 1
+        //      * and add 2s in as hardcoded constants
+        //    then you end up w bad_denom == good_denom and
+        //      2 * 2 * 2 * good_exp * delta_pair_ndcg / (good_denom^2)
+        //      2 * sigmoid_ * sigmoid_ * good_exp * delta_pair_ndcg / {good_denom^2}
+        //    and this has 1 too many 2s compared to what's here
         p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG / i_biases_pow_[high_rank] / j_biases_pow_[low_rank];
 
         lambdas[low] -= static_cast<score_t>(p_lambda);
@@ -388,10 +498,10 @@ class LambdarankNDCG : public RankingObjective {
   double sigmoid_table_idx_factor_;
 
   // bias correction variables
-  /*! \brief power of position biases */
+  /*! \brief power of (click) position biases */
   mutable std::vector<label_t> i_biases_pow_;
 
-  /*! \brief power of position biases */
+  /*! \brief power of (unclick) position biases */
   mutable std::vector<label_t> j_biases_pow_;
 
   // mutable double position cost;
