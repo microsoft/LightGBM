@@ -116,6 +116,7 @@ class LambdarankNDCG : public RankingObjective {
     }
 
     num_threads_ = omp_get_num_threads();
+    position_bias_regularizer = 1.0f / (1.0f + eta_);
   }
 
   explicit LambdarankNDCG(const std::vector<std::string>& strs)
@@ -442,8 +443,8 @@ class LambdarankNDCG : public RankingObjective {
 
     for (int i = 0; i < truncation_level_; ++i) {
       // Update bias
-      i_biases_pow_[i] = pow(i_costs_[i] / i_costs_[0], eta_);
-      j_biases_pow_[i] = pow(j_costs_[i] / j_costs_[0], eta_);
+      i_biases_pow_[i] = pow(i_costs_[i] / i_costs_[0], position_bias_regularizer);
+      j_biases_pow_[i] = pow(j_costs_[i] / j_costs_[0], position_bias_regularizer);
     }
 
     for (int i = 0; i < truncation_level_; ++i) {
@@ -515,6 +516,9 @@ class LambdarankNDCG : public RankingObjective {
   bool unbiased_;
   /*! \brief Number of exponent */
   double eta_;
+
+  /*! \brief position bias regularize exponent, 1 / (1 + eta) */
+  double position_bias_regularizer;
 
   /*! \brief Number of threads */
   int num_threads_;
