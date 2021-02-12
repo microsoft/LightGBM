@@ -1115,19 +1115,14 @@ if sk_version < parse_version("0.23"):
         if xfail_checks and check_name in xfail_checks:
             warnings.warn(xfail_checks[check_name], SkipTestWarning)
             raise SkipTest
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-           s.bind(('127.0.0.1', 12400))
-        estimator.set_params(client=client, local_listen_port=12400, time_out=5)
+        estimator.set_params(client=client, time_out=5)
         name = estimator.__class__.__name__
         check(name, estimator)
         client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 else:
     @parametrize_with_checks(list(_tested_estimators()))
     def test_sklearn_integration(estimator, check, client):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-           s.bind(('127.0.0.1', 12400))
-        estimator.set_params(client=client, local_listen_port=12400, time_out=5)
+        estimator.set_params(client=client, time_out=5)
         check(estimator)
 
         client.close(timeout=CLIENT_CLOSE_TIMEOUT)
-        
