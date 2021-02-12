@@ -54,7 +54,6 @@ The R package of LightGBM offers two ways to do so:
 - `lgb.train`: This is the main training logic. It offers full flexibility but requires data created by the `lgb.Dataset` function.
 - `lightgbm`: Simpler, but less flexible. Data can be passed without having to bother with `lgb.Dataset`.
 
-Let's illustrate both logics:
 
 ### Using the `lightgbm` function
 

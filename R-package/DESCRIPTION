@@ -46,8 +46,8 @@ VignetteBuilder:
     knitr
 Suggests:
     knitr,
-    rmarkdown,
     processx,
+    rmarkdown,
     testthat
 Depends:
     R (>= 3.5),
