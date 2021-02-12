@@ -2,7 +2,7 @@
 title:
   "Basic Walkthrough"
 description: >
-  This vignette illustrates the basics of LightGBM.
+  This vignette describes how to train a LightGBM model for binary classification.
 bibliography: "biblio.bib"
 link-citations: true
 output: rmarkdown::html_vignette
