@@ -135,7 +135,7 @@ def is_numpy_column_array(data):
 
 
 def numpy_1d_array_to_dtype(array, dtype):
-    """Convert 1d array to dtype"""
+    """Convert 1d array to dtype."""
     if array.dtype == dtype:
         return array
     return array.astype(dtype=dtype, copy=False)
