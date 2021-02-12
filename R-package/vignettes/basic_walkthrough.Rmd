@@ -15,9 +15,9 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  warning = FALSE,
+  , collapse = TRUE
+  , comment = "#>"
+  , warning = FALSE
   message = FALSE
 )
 ```
@@ -116,4 +116,3 @@ if (file.exists("lightgbm.model")) {
 ```
 
 ## References
-
