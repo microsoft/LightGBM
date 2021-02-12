@@ -105,7 +105,7 @@ fit <- lgb.train(
 )
 ```
 
-Try it out! If you get stuck, visit LightGBM's [online docu](https://lightgbm.readthedocs.io/en/latest/) for more details.
+Try it out! If you get stuck, visit LightGBM's [documentation](https://lightgbm.readthedocs.io/en/latest/R/index.html) for more details.
 
 ```{r, echo = FALSE, results = "hide"}
 # Cleanup
