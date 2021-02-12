@@ -99,7 +99,7 @@ fi
 
 # Manually install Depends and Imports libraries + 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
-packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
+packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat', 'knitr', 'rmarkdown')"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'both'"
 fi
