@@ -5,6 +5,7 @@ import inspect
 import pickle
 import socket
 from itertools import groupby
+from platform import machine
 from os import getenv
 from sys import platform
 
@@ -42,7 +43,8 @@ group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
-    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface')
+    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
+    pytest.mark.skipif(machine() != 'x86_64', reason='Fails to run with non-x86_64 architecture')
 ]
 
 
