@@ -57,7 +57,7 @@ The R package of LightGBM offers two ways to do so:
 
 ### Using the `lightgbm()` function
 
-In a first step, we will make sure that all data is numeric. Then, we will fit the model by the `lightgbm` function and check how the distribution of the predictions looks like. 
+In a first step, we will make sure that all data is numeric. Then, we will fit the model by the `lightgbm()` function and check how the distribution of the predictions looks like. 
 
 ```{r}
 # Numeric response and feature matrix
@@ -81,7 +81,7 @@ summary(predict(fit, X))
 
 It seems to have worked! And we can see that the predictions are indeed probabilities between 0 and 1.
 
-### Using the `lgb.train` function
+### Using the `lgb.train()` function
 
 Alternatively, we can go for the more flexible interface `lgb.train`. Here, as an additional step, we need to prepare `y` and `X` by the data API `lgb.Dataset` of LightGBM. Parameters are passed to `lgb.train` as a named list.
 
