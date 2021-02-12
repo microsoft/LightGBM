@@ -1109,16 +1109,25 @@ if sk_version < parse_version("0.23"):
         "estimator, check",
         _generate_checks_per_estimator(_yield_all_checks, _tested_estimators()),
     )
-    def test_sklearn_integration(estimator, check):
+    def test_sklearn_integration(estimator, check, client):
         xfail_checks = estimator._get_tags()["_xfail_checks"]
         check_name = check.__name__ if hasattr(check, "__name__") else check.func.__name__
         if xfail_checks and check_name in xfail_checks:
             warnings.warn(xfail_checks[check_name], SkipTestWarning)
             raise SkipTest
-        estimator.set_params(min_child_samples=1, min_data_in_bin=1)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+           s.bind(('127.0.0.1', 12400))
+        estimator.set_params(client=client, local_listen_port=12400, time_out=5)
         name = estimator.__class__.__name__
         check(name, estimator)
+        client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 else:
     @parametrize_with_checks(list(_tested_estimators()))
-    def test_sklearn_integration(estimator, check, request):
+    def test_sklearn_integration(estimator, check, client):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+           s.bind(('127.0.0.1', 12400))
+        estimator.set_params(client=client, local_listen_port=12400, time_out=5)
         check(estimator)
+
+        client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+        
