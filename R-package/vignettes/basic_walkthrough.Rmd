@@ -51,7 +51,7 @@ Building a strong LightGBM model typically involves a little bit of hyperparamet
 
 The R package of LightGBM offers two ways to do so:
 
-- `lgb.train`: This is the main training logic. It offers full flexibility but requires data created by the `lgb.Dataset` function.
+- `lgb.train()`: This is the main training logic. It offers full flexibility but requires a `Dataset` object created by the `lgb.Dataset()` function.
 - `lightgbm()`: Simpler, but less flexible. Data can be passed without having to bother with `lgb.Dataset()`.
 
 
