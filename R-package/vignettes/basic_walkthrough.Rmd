@@ -47,7 +47,7 @@ table(bank$y)
 
 ## Training the model
 
-Building a strong LightGBM model typically involves a little bit of hyperparameter tuning. To keep things as simple as possible, we skip this step here and directly jump into fitting a first model.
+Building a strong LightGBM model typically involves a little bit of hyperparameter tuning. Follow the steps below to train a simple {lightgbm} model for binary classification.
 
 The R package of LightGBM offers two ways to do so:
 
