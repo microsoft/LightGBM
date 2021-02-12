@@ -379,7 +379,7 @@ def test_choose_param_value():
 
 
 @pytest.mark.parametrize(
-    'y', 
+    'y',
     [
         np.random.rand(10),
         np.random.rand(10, 1),
