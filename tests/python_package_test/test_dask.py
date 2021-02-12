@@ -30,6 +30,16 @@ from sklearn.datasets import make_blobs, make_regression
 
 from .utils import make_ranking
 
+from pkg_resources import parse_version
+from sklearn import __version__ as sk_version
+sk_version = parse_version(sk_version)
+if sk_version < parse_version("0.23"):
+    import warnings
+    from sklearn.exceptions import SkipTestWarning
+    from sklearn.utils.estimator_checks import _yield_all_checks, SkipTest
+else:
+    from sklearn.utils.estimator_checks import parametrize_with_checks
+
 
 # time, in seconds, to wait for the Dask client to close. Used to avoid teardown errors
 # see https://distributed.dask.org/en/latest/api.html#distributed.Client.close
@@ -1078,3 +1088,37 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
     for param in dask_spec.args:
         error_msg = f"param '{param}' has different default values in the methods"
         assert dask_params[param].default == sklearn_params[param].default, error_msg
+
+
+def _tested_estimators():
+    for Estimator in [lgb.DaskLGBMClassifier, lgb.DaskLGBMRegressor]:
+        yield Estimator()
+
+
+if sk_version < parse_version("0.23"):
+    def _generate_checks_per_estimator(check_generator, estimators):
+        for estimator in estimators:
+            name = estimator.__class__.__name__
+            for check in check_generator(name, estimator):
+                yield estimator, check
+
+    @pytest.mark.skipif(
+        sk_version < parse_version("0.21"), reason="scikit-learn version is less than 0.21"
+    )
+    @pytest.mark.parametrize(
+        "estimator, check",
+        _generate_checks_per_estimator(_yield_all_checks, _tested_estimators()),
+    )
+    def test_sklearn_integration(estimator, check):
+        xfail_checks = estimator._get_tags()["_xfail_checks"]
+        check_name = check.__name__ if hasattr(check, "__name__") else check.func.__name__
+        if xfail_checks and check_name in xfail_checks:
+            warnings.warn(xfail_checks[check_name], SkipTestWarning)
+            raise SkipTest
+        estimator.set_params(min_child_samples=1, min_data_in_bin=1)
+        name = estimator.__class__.__name__
+        check(name, estimator)
+else:
+    @parametrize_with_checks(list(_tested_estimators()))
+    def test_sklearn_integration(estimator, check, request):
+        check(estimator)
