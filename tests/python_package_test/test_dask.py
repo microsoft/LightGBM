@@ -1108,3 +1108,26 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
     for param in dask_spec.args:
         error_msg = f"param '{param}' has different default values in the methods"
         assert dask_params[param].default == sklearn_params[param].default, error_msg
+
+
+def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
+    client,
+    listen_port
+):
+    _, _, _, dX, dy, dw = _create_data(
+        objective='regression',
+        output='dataframe'
+    )
+    dy = dy.to_dask_array(lengths=True)
+    dy = dy.reshape(-1, 1)
+    assert len(dy.shape) == 2 and dy.shape[1] == 1
+
+    params = {
+        'n_estimators': 1,
+        'num_leaves': 3,
+        'local_listen_port': listen_port,
+        'time_out': 5
+    }
+    model = lgb.DaskLGBMRegressor(**params).fit(dX, dy, sample_weight=dw)
+    assert model.booster_
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)

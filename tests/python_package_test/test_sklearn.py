@@ -1191,3 +1191,12 @@ def test_parameters_default_constructible(estimator):
     name, Estimator = estimator.__class__.__name__, estimator.__class__
     # Test that estimators are default-constructible
     check_parameters_default_constructible(name, Estimator)
+
+
+def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array():
+    pd = pytest.importorskip("pandas")
+    X, y = load_boston(return_X_y=True)
+    X = pd.DataFrame(X)
+    y = y.reshape(-1, 1)
+    with pytest.warns(UserWarning, match='column vector to 1d array'):
+        lgb.LGBMRegressor().fit(X, y)
