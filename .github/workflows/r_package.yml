@@ -165,7 +165,7 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.r-project.org')"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat', 'knitr', 'rmarkdown'), repos = 'https://cran.r-project.org')"
           sh build-cran-package.sh
           Rdevel CMD INSTALL lightgbm_*.tar.gz || exit -1
       - name: Run tests with sanitizers
