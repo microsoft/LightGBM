@@ -3,6 +3,7 @@ import os
 
 import lightgbm as lgb
 import numpy as np
+import pandas as pd
 import pytest
 
 from scipy import sparse
@@ -375,3 +376,36 @@ def test_choose_param_value():
         "num_trees": 81
     }
     assert original_params == expected_params
+
+
+@pytest.mark.parametrize(
+    'y', 
+    [
+        np.random.rand(10),
+        np.random.rand(10, 1),
+        [1] * 10,
+        pd.Series(np.random.rand(10)),
+        pd.Series(['a', 'b']),
+        [[1], [2]]
+    ])
+@pytest.mark.parametrize('dtype', [np.float32, np.float64])
+def test_list_to_1d_numpy(y, dtype):
+    if isinstance(y, np.ndarray):
+        if len(y.shape) == 2:
+            with pytest.warns(UserWarning, match='column vector to 1d array'):
+                lgb.basic.list_to_1d_numpy(y)
+            return
+    elif isinstance(y, list):
+        if isinstance(y[0], list):
+            with pytest.raises(TypeError):
+                lgb.basic.list_to_1d_numpy(y)
+            return
+    else:
+        if y.dtype == object:
+            with pytest.raises(ValueError):
+                lgb.basic.list_to_1d_numpy(y)
+            return
+
+    result = lgb.basic.list_to_1d_numpy(y, dtype=dtype)
+    assert result.size == 10
+    assert result.dtype == dtype
