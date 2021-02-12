@@ -55,7 +55,7 @@ The R package of LightGBM offers two ways to do so:
 - `lightgbm()`: Simpler, but less flexible. Data can be passed without having to bother with `lgb.Dataset()`.
 
 
-### Using the `lightgbm` function
+### Using the `lightgbm()` function
 
 In a first step, we will make sure that all data is numeric. Then, we will fit the model by the `lightgbm` function and check how the distribution of the predictions looks like. 
 
