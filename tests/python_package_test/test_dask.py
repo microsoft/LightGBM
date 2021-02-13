@@ -1129,20 +1129,22 @@ def test_init_score(
     }
     init_score = np.repeat(init_score, y.size)
     local_model = local_model_factory(**params)
+    local_model_no_init = local_model_factory(**params)
     if task == 'ranking':
         local_model.fit(X, y, sample_weight=w, init_score=init_score, group=g)
+        local_model_no_init.fit(X, y, sample_weight=w, group=g)
     else:
         local_model.fit(X, y, sample_weight=w, init_score=init_score)
+        local_model_no_init.fit(X, y, sample_weight=w)
     local_preds = local_model.predict(X)
+    local_no_init_preds = local_model_no_init.predict(X)
 
     dask_init_score = da.from_array(init_score, chunks=y.size)
+    if output == 'dataframe':
+        dask_init_score = dd.from_array(dask_init_score)
     dask_model = dask_model_factory(client=client, **params)
     dask_model.fit(dX, dy, sample_weight=dw, init_score=dask_init_score, group=dg)
     dask_preds = dask_model.predict(dX).compute()
 
-    dask_model_no_init = dask_model_factory(client=client, **params)
-    dask_model_no_init.fit(dX, dy, sample_weight=dw, group=dg)
-    dask_no_init_preds = dask_model_no_init.predict(dX).compute()
-
     assert assert_eq(local_preds, dask_preds)
-    assert ~np.allclose(dask_preds, dask_no_init_preds)  # default init is 0
+    assert ~np.allclose(local_preds, local_no_init_preds)
