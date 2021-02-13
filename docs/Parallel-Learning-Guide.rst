@@ -1,7 +1,7 @@
-Parallel Learning Guide
-=======================
+Distributed Learning Guide
+==========================
 
-This is a guide for parallel learning of LightGBM.
+This guide describes distributed learning in LightGBM. Distributed learning allows the use of multiple machines to produce a single model.
 
 Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first.
 
@@ -17,8 +17,13 @@ Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first
    Also you can use `Kubeflow XGBoost Operator`_ to train LightGBM model.
    Please check `this example`_ for how to do this.
 
+How Distributed LightGBM Works
+------------------------------
+
+This section describes how distributed learning in LightGBM works. To learn how to do this in various programming languages, please see `Integrations`_.
+
 Choose Appropriate Parallel Algorithm
--------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 LightGBM provides 3 parallel learning algorithms now.
 
@@ -44,18 +49,49 @@ These algorithms are suited for different scenarios, which is listed in the foll
 
 More details about these parallel algorithms can be found in `optimization in parallel learning <./Features.rst#optimization-in-parallel-learning>`__.
 
+Integrations
+------------
+
+There are several available options for distributed learning with LightGBM.
+
+Apache Spark
+^^^^^^^^^^^^
+
+Apache Spark users can use `MMLSpark`_ for machine learning workflows with LightGBM. This project is not maintained by LightGBM's maintainers.
+
+See `this example`_ and the `the MMLSpark documentation`_ for additional information on using LightGBM on Spark.
+
+Dask
+^^^^
+
+.. versionadded:: 3.2.0
+
+LightGBM's Python package supports distributed learning via `Dask`_. This integration is maintained by LightGBM's maintainers.
+
+Kubeflow
+^^^^^^^^
+
+`Kubeflow Fairing`_ supports LightGBM distributed training. `These examples`_ show how to get started with LightGBM and Kubeflow Fairing in a hybrid cloud environment.
+
+Kubeflow users can also use the `Kubeflow XGBoost Operator`_ for machine learning workflows with LightGBM. You can see `this example`_ for more details.
+
+Kubeflow integrations for LightGBM are not maintained by LightGBM's maintainers.
+
+LightGBM CLI
+^^^^^^^^^^^^
+
 Build Parallel Version
-----------------------
+''''''''''''''''''''''
 
 Default build version support parallel learning based on the socket.
 
 If you need to build parallel version with MPI support, please refer to `Installation Guide <./Installation-Guide.rst#build-mpi-version>`__.
 
 Preparation
------------
+'''''''''''
 
 Socket Version
-^^^^^^^^^^^^^^
+**************
 
 It needs to collect IP of all machines that want to run parallel learning in and allocate one TCP port (assume 12345 here) for all machines,
 and change firewall rules to allow income of this port (12345). Then write these IP and ports in one file (assume ``mlist.txt``), like following:
@@ -66,7 +102,7 @@ and change firewall rules to allow income of this port (12345). Then write these
     machine2_ip 12345
 
 MPI Version
-^^^^^^^^^^^
+***********
 
 It needs to collect IP (or hostname) of all machines that want to run parallel learning in.
 Then write these IP in one file (assume ``mlist.txt``) like following:
@@ -79,10 +115,10 @@ Then write these IP in one file (assume ``mlist.txt``) like following:
 **Note**: For Windows users, need to start "smpd" to start MPI service. More details can be found `here`_.
 
 Run Parallel Learning
----------------------
+'''''''''''''''''''''
 
 Socket Version
-^^^^^^^^^^^^^^
+**************
 
 1. Edit following parameters in config file:
 
@@ -103,7 +139,7 @@ Socket Version
    For Linux: ``./lightgbm config=your_config_file``
 
 MPI Version
-^^^^^^^^^^^
+***********
 
 1. Edit following parameters in config file:
 
@@ -130,13 +166,17 @@ MPI Version
        mpiexec --machinefile mlist.txt ./lightgbm config=your_config_file
 
 Example
-^^^^^^^
+'''''''
 
 -  `A simple parallel example`_
+
+.. _Dask: https://docs.dask.org/en/latest/
 
 .. _MMLSpark: https://aka.ms/spark
 
 .. _The following example: https://github.com/Azure/mmlspark/blob/master/notebooks/samples/LightGBM%20-%20Quantile%20Regression%20for%20Drug%20Discovery.ipynb
+
+.. _the MMLSpark Documentation: https://github.com/Azure/mmlspark/blob/master/docs/lightgbm.md
 
 .. _Kubeflow Fairing: https://www.kubeflow.org/docs/components/fairing/fairing-overview
 
