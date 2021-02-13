@@ -647,17 +647,21 @@ def test_ranker(output, client, listen_port, group):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-@pytest.mark.parametrize('eval_size', [[1, 0.5], [0.8]])
+@pytest.mark.parametrize('eval_sizes', [[0.9], [1, 0.5], [0]])
 @pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
-def test_early_stopping(task, eval_size, client, listen_port):
+def test_early_stopping(task, eval_sizes, client, listen_port):
 
+    # shrink chunk_size so there is high likelihood that each worker
+    # gets a little bit of eval_set.
     if task == 'ranking':
         X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
-            output='array',
-            group=None
+            output='dataframe',
+            group=group_sizes,
+            chunk_size=10
         )
         model_factory = lgb.DaskLGBMRanker
         eval_metric=['ndcg']
+        eval_group = []
     else:
         X, y, w, dX, dy, dw = _create_data(
             objective=task,
@@ -665,6 +669,7 @@ def test_early_stopping(task, eval_size, client, listen_port):
             chunk_size=10,
         )
         dg = None
+        eval_group = None
         if task == 'classification':
             model_factory = lgb.DaskLGBMClassifier
             eval_metric = ['binary_error']
@@ -676,7 +681,7 @@ def test_early_stopping(task, eval_size, client, listen_port):
     params = {
         "random_state": 42,
         "n_estimators": full_trees,
-        "num_leaves": 50,
+        "num_leaves": 31,
         "min_child_samples": 1,
         "verbose": 5,
         "first_metric_only": True
@@ -687,23 +692,49 @@ def test_early_stopping(task, eval_size, client, listen_port):
         , **params
     )
 
-    eval_set, eval_sample_weight, eval_group = [], [], []
-    for e_size in eval_size:
-        if e_size == 1:
+    eval_set, eval_sample_weight = [], []
+    for eval_size in eval_sizes:
+        if eval_size == 1:
             eval_set.append((dX, dy))
             eval_sample_weight.append(dw)
-            eval_group.append(dg)
+
+            if task == 'ranking':
+                eval_group.append(dg)
         else:
-            eval_partitions = int(max(1, np.floor(e_size * dX.npartitions)))
+            eval_partitions = int(max(1, np.floor(eval_size * dX.npartitions)))
             eval_set.append((dX.partitions[0:eval_partitions], dy.partitions[0:eval_partitions]))
             eval_sample_weight.append(dw.partitions[0:eval_partitions])
-            eval_group.append(dg.partitions[0:eval_partitions])
 
-    dask_model = dask_model.fit(dX, dy, group=dg, eval_set=eval_set,
-                                eval_sample_weight=eval_sample_weight, eval_group=eval_group,
-                                eval_metric=eval_metric, early_stopping_rounds=5)
-    local_model = dask_model.to_local()
-    assert local_model.booster_.num_trees() < full_trees
+            if task == 'ranking':
+                eval_group.append(dg.partitions[0:eval_partitions])
+
+    # when eval_size is exactly 1 partition, not enough eval_set data to reach each worker.
+    if eval_sizes == [0]:
+        with pytest.raises(RuntimeError, match='eval_set was provided but worker .* was not allocated validation data'):
+            dask_model.fit(dX, dy, group=dg, eval_set=eval_set,
+                           eval_sample_weight=eval_sample_weight, eval_group=eval_group,
+                           eval_metric=eval_metric, early_stopping_rounds=5)
+
+    else:
+        dask_model = dask_model.fit(dX, dy, group=dg, eval_set=eval_set,
+                                    eval_sample_weight=eval_sample_weight, eval_group=eval_group,
+                                    eval_metric=eval_metric, early_stopping_rounds=5)
+        fitted_trees = dask_model.to_local().booster_.num_trees()
+        assert fitted_trees < full_trees
+
+        # be sure that model still produces decent output.
+        p1 = dask_model.predict(dX)
+        if task == 'classification':
+            print(f'_accuracy_score(dy, p1) = {_accuracy_score(dy, p1)}')
+            _accuracy_score(dy, p1) > 0.8
+
+        elif task == 'regression':
+            print(f'_r2_score(dy, p1) = {_r2_score(dy, p1)}')
+            _r2_score(dy, p1) > 0.8
+
+        else:
+            print(f'spearmanr(p1.compute(), y).correlation = {spearmanr(p1.compute(), y).correlation}')
+            assert spearmanr(p1.compute(), y).correlation > 0.8
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 

@@ -178,77 +178,73 @@ def _train_part(
         group = None
 
     # construct local eval_set data.
-    local_evals, local_eval_sample_weights, local_eval_groups = None, None, None
+    local_eval_set, local_eval_sample_weight, local_eval_group = None, None, None
     n_evals = max([len(x.get('eval_set', [])) for x in list_of_parts])
-    eval_weight_provided = any([x.get('eval_sample_weight') for x in list_of_parts])
+    has_eval_weights = any([x.get('eval_sample_weight') is not None for x in list_of_parts])
     if n_evals:
 
-        local_evals = []
-        if eval_weight_provided:
-            local_eval_sample_weights = list()
+        local_eval_set = []
+        if has_eval_weights:
+            local_eval_sample_weight = list()
         if is_ranker:
-            local_eval_groups = list()
+            local_eval_group = list()
 
-        # consolidate parts of each individual (X, y) eval set and _concat them, also sample weights and group.
-        for j in range(n_evals):
-            e_x, e_y, e_w, e_g = [], [], [], []
-            for i, part in enumerate(list_of_parts):
+        # consolidate parts of each individual eval component.
+        for i in range(n_evals):
+            x_e, y_e, w_e, g_e = [], [], [], []
+            for part in list_of_parts:
 
                 if not part.get('eval_set'):
                     continue
 
-                # possible that not each part contains parts of every (X, y) set.
-                if j >= len(part['eval_set']):
+                # possible that not each part contains parts of each individual (X, y) eval set.
+                if i >= len(part['eval_set']):
                     continue
 
-                e_set = part['eval_set'][j]
-                if e_set == '__train__':
-                    e_x.append(part['data'])
-                    e_y.append(part['label'])
+                eval_set = part['eval_set'][i]
+                if eval_set == '__train__':
+                    x_e.append(part['data'])
+                    y_e.append(part['label'])
                 else:
-                    x, y = e_set
-                    e_x.extend(x)
-                    e_y.extend(y)
+                    x, y = eval_set
+                    x_e.extend(x)
+                    y_e.extend(y)
 
-                e_weight = part.get('eval_sample_weight')
-                if e_weight:
-                    if e_weight == '__sample_weight__':
-                        e_w.append(part['weight'])
+                eval_weight = part.get('eval_sample_weight')
+                if eval_weight:
+                    if eval_weight[i] == '__sample_weight__':
+                        w_e.append(part['weight'])
                     else:
-                        e_w.extend(e_weight)
+                        w_e.extend(eval_weight[i])
 
-                e_group = part.get('eval_group')
-                if e_group:
-                    if e_group == '__group__':
-                        e_g.append(part['group'])
+                eval_group = part.get('eval_group')
+                if eval_group:
+                    if eval_group[i] == '__group__':
+                        g_e.append(part['group'])
                     else:
-                        e_g.extend(e_group)
+                        g_e.extend(eval_group[i])
 
-            local_evals.append((_concat(e_x), _concat(e_y)))
+            # _concat each eval component.
+            local_eval_set.append((_concat(x_e), _concat(y_e)))
+            if w_e:
+                local_eval_sample_weight.append(_concat(w_e))
+            if g_e:
+                local_eval_group.append(_concat(g_e))
 
-            if eval_weight_provided:
-                local_eval_sample_weights.append(_concat(e_w))
-            if is_ranker:
-                local_eval_groups.append(_concat(e_g))
-
-        for j in range(len(local_evals)):
-            print(f'local_evals[{j}] shape = {local_evals[j][0].shape, local_evals[j][1].shape}')
     else:
-        # when eval_set has been provided to fit, but no eval data has been provided to worker throws exceptions.
+        # when a worker receives no eval_set while other workers have eval data, causes LightGBMExceptions.
         if evals_provided:
             msg = "eval_set was provided but worker %s was not allocated validation data. Try rebalancing data across workers."
             raise RuntimeError(msg % local_worker_address)
 
-        print('local_evals = None, kwargs["eval_metric"] = None')
-
     try:
         model = model_factory(**params)
         if is_ranker:
-            model.fit(data, label, sample_weight=weight, group=group, eval_set=local_evals,
-                      eval_sample_weight=local_eval_sample_weights, eval_group=local_eval_groups, **kwargs)
+            model.fit(data, label, sample_weight=weight, group=group, eval_set=local_eval_set,
+                      eval_sample_weight=local_eval_sample_weight, eval_group=local_eval_group, **kwargs)
         else:
-            model.fit(data, label, sample_weight=weight, eval_set=local_evals,
-                      eval_sample_weight=local_eval_sample_weights, **kwargs)
+            model.fit(data, label, sample_weight=weight, eval_set=local_eval_set,
+                      eval_sample_weight=local_eval_sample_weight, **kwargs)
 
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
@@ -302,11 +298,11 @@ def _train(
         sum(group) = n_samples.
         For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-    eval_set : List or None, optional (default=None)
-        List of (X, y) tuple pairs to use as validation sets, where X and y are dask data collections.
-    eval_sample_weight: List or None, optional (default=None)
+    eval_set : List of (X, y) tuples of Dask data collections, or None, optional (default=None)
+        List of (X, y) tuple pairs to use as validation sets.
+    eval_sample_weight: List of Dask data collections or None, optional (default=None)
         List of dask Array or dask Series, weights for each validation set in eval_set.
-    eval_group: List or None, optional (default=None)
+    eval_group: List of Dask data collections or None, optional (default=None)
         List of dask Array or dask Series, group/query for each validation set in eval_set.
     **kwargs
         Other parameters passed to ``fit`` method of the local underlying model.
@@ -381,57 +377,76 @@ def _train(
 
         for i, (X, y) in enumerate(eval_set):
 
-            if id(X) == id(data):
+            # when individual eval set is equivalent to training data, skip recomputing parts.
+            if id(X) == id(data) and id(y) == id(label):
                 for parts_idx in range(n_parts):
                     eval_sets[parts_idx].append('__train__')
-                    if eval_sample_weight:
-                        eval_sample_weights[parts_idx].append('__sample_weight__')
-                    if eval_group:
-                        eval_groups[parts_idx].append('__group__')
 
-                continue
+            else:
+                eval_x_parts = _split_to_parts(data=X, is_matrix=True)
+                eval_y_parts = _split_to_parts(data=y, is_matrix=False)
 
-            eval_x_parts = _split_to_parts(data=X, is_matrix=True)
-            eval_y_parts = _split_to_parts(data=y, is_matrix=False)
+                for j in range(len(eval_x_parts)):
+                    parts_idx = j % n_parts
+
+                    x_e, y_e = eval_x_parts[j], eval_y_parts[j]
+
+                    if j < n_parts:
+                        eval_sets[parts_idx].append(([x_e], [y_e]))
+
+                    else:
+                        # n_evals = len(eval_sets[parts_idx]) - 1
+                        eval_sets[parts_idx][-1][0].append(x_e)
+                        eval_sets[parts_idx][-1][1].append(y_e)
+
             if eval_sample_weight:
-                eval_w_parts = _split_to_parts(data=eval_sample_weight, is_matrix=False)
-            if eval_group:
-                eval_g_parts = _split_to_parts(data=eval_group, is_matrix=False)
-
-            # ensure that all evaluation parts map uniquely to one part.
-            for j in range(len(eval_x_parts)):
-                parts_idx = j % n_parts
-                init_eval_set = j < n_parts
-
-                x_e, y_e = eval_x_parts[j], eval_y_parts[j]
-                if eval_sample_weight:
-                    w_e = eval_w_parts[j]
-                if eval_group:
-                    g_e = eval_g_parts[j]
-
-                if init_eval_set:
-                    eval_sets[parts_idx].append(([x_e], [y_e]))
-                    if eval_sample_weight:
-                        eval_sample_weights[parts_idx].append([w_e])
-                    if eval_group:
-                        eval_groups[parts_idx].append([g_e])
+                if id(eval_sample_weight[i]) == id(sample_weight):
+                    for parts_idx in range(n_parts):
+                        eval_sample_weights[parts_idx].append('__sample_weight__')
 
                 else:
-                    n_evals = len(eval_sets[parts_idx]) - 1
-                    eval_sets[parts_idx][n_evals][0].append(x_e)
-                    eval_sets[parts_idx][n_evals][1].append(y_e)
-                    if eval_sample_weight:
-                        eval_sample_weights[parts_idx][n_evals].append(w_e)
-                    if eval_group:
-                        eval_groups[parts_idx][n_evals].append(g_e)
+                    eval_w_parts = _split_to_parts(data=eval_sample_weight[i], is_matrix=False)
 
-        # assign sub-eval_set to worker parts.
-        for i, e_set in eval_sets.items():
-            parts[i]['eval_set'] = e_set
-            if eval_sample_weight:
-                parts[i]['eval_sample_weight'] = eval_sample_weights[i]
+                    # ensure that all evaluation parts map uniquely to one part.
+                    for j in range(len(eval_w_parts)):
+                        parts_idx = j % n_parts
+
+                        w_e = eval_w_parts[j]
+
+                        if j < n_parts:
+                            eval_sample_weights[parts_idx].append([w_e])
+
+                        else:
+                            # n_evals = len(eval_sample_weights[parts_idx]) - 1
+                            eval_sample_weights[parts_idx][-1].append(w_e)
+
             if eval_group:
-                parts[i]['eval_group'] = eval_groups[i]
+                if id(eval_group[i]) == id(group):
+                    for parts_idx in range(n_parts):
+                        eval_groups[parts_idx].append('__group__')
+
+                else:
+                    eval_g_parts = _split_to_parts(data=eval_group[i], is_matrix=False)
+
+                    # ensure that all evaluation parts map uniquely to one part.
+                    for j in range(len(eval_g_parts)):
+                        parts_idx = j % n_parts
+                        g_e = eval_g_parts[j]
+
+                        if j < n_parts:
+                            eval_groups[parts_idx].append([g_e])
+
+                        else:
+                            # n_evals = len(eval_groups[parts_idx]) - 1
+                            eval_groups[parts_idx][-1].append(g_e)
+
+        # assign sub-eval_set components to worker parts.
+        for parts_idx, e_set in eval_sets.items():
+            parts[parts_idx]['eval_set'] = e_set
+            if eval_sample_weight:
+                parts[parts_idx]['eval_sample_weight'] = eval_sample_weights[parts_idx]
+            if eval_group:
+                parts[parts_idx]['eval_group'] = eval_groups[parts_idx]
 
     # Start computation in the background
     parts = list(map(delayed, parts))
@@ -623,6 +638,8 @@ class _DaskLGBMModel:
         sample_weight: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
+        eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_group: Optional[List[_DaskCollection]] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
@@ -638,8 +655,10 @@ class _DaskLGBMModel:
             params=params,
             model_factory=model_factory,
             sample_weight=sample_weight,
-            eval_set=eval_set,
             group=group,
+            eval_set=eval_set,
+            eval_sample_weight=eval_sample_weight,
+            eval_group=eval_group,
             **kwargs
         )
 
@@ -738,11 +757,13 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         sample_weight: Optional[_DaskCollection] = None,
         init_score: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
+        eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_init_score: Optional[List[_DaskCollection]] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
-        if init_score is not None:
-            raise RuntimeError('init_score is not currently supported in lightgbm.dask')
+        if init_score is not None or eval_init_score is not None:
+            raise RuntimeError('init_score and eval_init_score are not currently supported in lightgbm.dask')
 
         return self._fit(
             model_factory=LGBMClassifier,
@@ -750,6 +771,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             y=y,
             sample_weight=sample_weight,
             eval_set=eval_set,
+            eval_sample_weight=eval_sample_weight,
             **kwargs
         )
 
@@ -861,11 +883,13 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         sample_weight: Optional[_DaskCollection] = None,
         init_score: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
+        eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_init_score: Optional[List[_DaskCollection]] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        if init_score is not None:
-            raise RuntimeError('init_score is not currently supported in lightgbm.dask')
+        if init_score is not None or eval_init_score is not None:
+            raise RuntimeError('init_score and eval_init_score are not currently supported in lightgbm.dask')
 
         return self._fit(
             model_factory=LGBMRegressor,
@@ -873,6 +897,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             y=y,
             sample_weight=sample_weight,
             eval_set=eval_set,
+            eval_sample_weight=eval_sample_weight,
             **kwargs
         )
 
@@ -973,11 +998,14 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         init_score: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
+        eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_init_score: Optional[List[_DaskCollection]] = None,
+        eval_group: Optional[List[_DaskCollection]] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
-        if init_score is not None:
-            raise RuntimeError('init_score is not currently supported in lightgbm.dask')
+        if init_score is not None or eval_init_score is not None:
+            raise RuntimeError('init_score and eval_init_score are not currently supported in lightgbm.dask')
 
         return self._fit(
             model_factory=LGBMRanker,
@@ -986,6 +1014,8 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             sample_weight=sample_weight,
             group=group,
             eval_set=eval_set,
+            eval_sample_weight=eval_sample_weight,
+            eval_group=eval_group,
             **kwargs
         )
 
