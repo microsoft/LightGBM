@@ -3,7 +3,6 @@ import os
 
 import lightgbm as lgb
 import numpy as np
-import pandas as pd
 import pytest
 
 from scipy import sparse
@@ -379,26 +378,29 @@ def test_choose_param_value():
 
 
 @pytest.mark.parametrize(
-    'y',
+    ('y', 'is_series'),
     [
-        np.random.rand(10),
-        np.random.rand(10, 1),
-        [1] * 10,
-        pd.Series(np.random.rand(10)),
-        pd.Series(['a', 'b']),
-        [[1], [2]]
+        (np.random.rand(10), False),
+        (np.random.rand(10, 1), False),
+        ([1] * 10, False),
+        (np.random.rand(10), True),
+        (['a', 'b'], True),
+        ([[1], [2]], False)
     ])
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
-def test_list_to_1d_numpy(y, dtype):
+def test_list_to_1d_numpy(y, is_series, dtype):
+    if is_series:
+        pd = pytest.importorskip('pandas')
+        y = pd.Series(y)
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
-        with pytest.warns(UserWarning, match='column vector to 1d array'):
+        with pytest.warns(UserWarning, match='column-vector'):
             lgb.basic.list_to_1d_numpy(y)
         return
     elif isinstance(y, list) and isinstance(y[0], list):
         with pytest.raises(TypeError):
             lgb.basic.list_to_1d_numpy(y)
         return
-    elif isinstance(y, pd.Series) and y.dtype == object:
+    elif is_series and y.dtype == object:
         with pytest.raises(ValueError):
             lgb.basic.list_to_1d_numpy(y)
         return

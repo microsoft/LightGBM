@@ -18,7 +18,8 @@ from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOu
                                  RegressorChain)
 from sklearn.utils.validation import check_is_fitted
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud
+from .utils import (load_boston, load_breast_cancer, load_digits, load_iris,
+                    load_linnerud, make_ranking)
 
 sk_version = parse_version(sk_version)
 if sk_version < parse_version("0.23"):
@@ -1193,10 +1194,23 @@ def test_parameters_default_constructible(estimator):
     check_parameters_default_constructible(name, Estimator)
 
 
-def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array():
+@pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
+def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task):
     pd = pytest.importorskip("pandas")
-    X, y = load_boston(return_X_y=True)
+    if task == 'ranking':
+        X, y, g = make_ranking()
+        g = np.bincount(g)
+        model = lgb.LGBMRanker()
+    elif task == 'classification':
+        X, y = load_iris(return_X_y=True)
+        model = lgb.LGBMClassifier()
+    elif task == 'regression':
+        X, y = load_boston(return_X_y=True)
+        model = lgb.LGBMRegressor()
     X = pd.DataFrame(X)
     y = y.reshape(-1, 1)
-    with pytest.warns(UserWarning, match='column vector to 1d array'):
-        lgb.LGBMRegressor().fit(X, y)
+    with pytest.warns(UserWarning, match='column-vector'):
+        if task == 'ranking':
+            model.fit(X, y, group=g)
+        else:
+            model.fit(X, y)

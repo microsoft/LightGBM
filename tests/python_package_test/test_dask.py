@@ -196,6 +196,15 @@ def _unpickle(filepath, serializer):
         raise ValueError(f'Unrecognized serializer type: {serializer}')
 
 
+def collection_to_single_partition(collection):
+    """Merge the parts of a Dask collection into a single partition."""
+    if collection is None:
+        return
+    if isinstance(collection, da.Array):
+        return collection.rechunk(*collection.shape)
+    return collection.repartition(npartitions=1)
+
+
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('centers', data_centers)
 def test_classifier(output, centers, client, listen_port):
@@ -999,14 +1008,6 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(client, tas
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
-    def collection_to_single_partition(collection):
-        """Merge the parts of a Dask collection into a single partition."""
-        if collection is None:
-            return
-        if isinstance(collection, da.Array):
-            return collection.rechunk(*collection.shape)
-        return collection.repartition(npartitions=1)
-
     if task == 'ranking':
         X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
             output=output,
@@ -1110,24 +1111,56 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
         assert dask_params[param].default == sklearn_params[param].default, error_msg
 
 
+@pytest.mark.parametrize('task', tasks)
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
+    task,
     client,
     listen_port
 ):
-    _, _, _, dX, dy, dw = _create_data(
-        objective='regression',
-        output='dataframe'
-    )
+    if task == 'ranking':
+        _, _, _, _, dX, dy, dw, dg = _create_ranking_data(
+            output='dataframe',
+            group=None
+        )
+        model_factory = lgb.DaskLGBMRanker
+    else:
+        _, _, _, dX, dy, dw = _create_data(
+            objective=task,
+            output='dataframe',
+        )
+        dg = None
+        if task == 'classification':
+            model_factory = lgb.DaskLGBMClassifier
+        elif task == 'regression':
+            model_factory = lgb.DaskLGBMRegressor
     dy = dy.to_dask_array(lengths=True)
-    dy = dy.reshape(-1, 1)
-    assert len(dy.shape) == 2 and dy.shape[1] == 1
+    dy_col_array = dy.reshape(-1, 1)
+    assert len(dy_col_array.shape) == 2 and dy_col_array.shape[1] == 1
+
+    # training on multiple workers can lead to different results
+    # we make sure to train on only one worker to compare the results
+    dX = collection_to_single_partition(dX)
+    dy = collection_to_single_partition(dy)
+    dw = collection_to_single_partition(dw)
+    dg = collection_to_single_partition(dg)
+    dy_col_array = collection_to_single_partition(dy_col_array)
 
     params = {
         'n_estimators': 1,
         'num_leaves': 3,
+        'random_state': 0,
         'local_listen_port': listen_port,
         'time_out': 5
     }
-    model = lgb.DaskLGBMRegressor(**params).fit(dX, dy, sample_weight=dw)
-    assert model.booster_
+    model_1d = model_factory(**params)
+    model_1d.fit(dX, dy, sample_weight=dw, group=dg)
+    assert model_1d.fitted_
+    preds_1d = model_1d.predict(dX).compute()
+
+    model_2d = model_factory(**params)
+    model_2d.fit(dX, dy_col_array, sample_weight=dw, group=dg)
+    assert model_2d.fitted_
+    preds_2d = model_2d.predict(dX).compute()
+
+    assert_eq(preds_1d, preds_2d)
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)

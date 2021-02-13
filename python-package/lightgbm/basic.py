@@ -151,7 +151,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     if is_numpy_1d_array(data):
         return numpy_1d_array_to_dtype(data, dtype)
     elif is_numpy_column_array(data):
-        _log_warning('Converting column vector to 1d array')
+        _log_warning('Converting column-vector to 1d array')
         array = data.ravel()
         return numpy_1d_array_to_dtype(array, dtype)
     elif is_1d_list(data):
