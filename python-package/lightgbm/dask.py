@@ -173,22 +173,21 @@ def _train_part(
     data = _concat([x['data'] for x in list_of_parts])
     label = _concat([x['label'] for x in list_of_parts])
 
-    if 'weight' in list_of_parts[0]:
-        weight = _concat([x['weight'] for x in list_of_parts])
-    else:
-        weight = None
+    def concat_if_is_in_parts(key):
+        if key not in list_of_parts[0]:
+            return None
+        return _concat([x[key] for x in list_of_parts])
 
-    if 'group' in list_of_parts[0]:
-        group = _concat([x['group'] for x in list_of_parts])
-    else:
-        group = None
+    weight = concat_if_is_in_parts('weight')
+    init_score = concat_if_is_in_parts('init_score')
+    group = concat_if_is_in_parts('group')
 
     try:
         model = model_factory(**params)
         if is_ranker:
-            model.fit(data, label, sample_weight=weight, group=group, **kwargs)
+            model.fit(data, label, sample_weight=weight, init_score=init_score, group=group, **kwargs)
         else:
-            model.fit(data, label, sample_weight=weight, **kwargs)
+            model.fit(data, label, sample_weight=weight, init_score=init_score, **kwargs)
 
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
@@ -214,6 +213,7 @@ def _train(
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
     sample_weight: Optional[_DaskCollection] = None,
+    init_score: Optional[_DaskCollection] = None,
     group: Optional[_DaskCollection] = None,
     **kwargs: Any
 ) -> LGBMModel:
@@ -233,6 +233,8 @@ def _train(
         Class of the local underlying model.
     sample_weight : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
+    init_score : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+        Init score of training data.
     group : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Group/query data.
         Only used in the learning-to-rank task.
@@ -290,15 +292,16 @@ def _train(
     label_parts = _split_to_parts(data=label, is_matrix=False)
     parts = [{'data': x, 'label': y} for (x, y) in zip(data_parts, label_parts)]
 
-    if sample_weight is not None:
-        weight_parts = _split_to_parts(data=sample_weight, is_matrix=False)
+    def add_to_parts(data, name, is_matrix=False):
+        if data is None:
+            return
+        new_parts = _split_to_parts(data=data, is_matrix=is_matrix)
         for i in range(len(parts)):
-            parts[i]['weight'] = weight_parts[i]
+            parts[i][name] = new_parts[i]
 
-    if group is not None:
-        group_parts = _split_to_parts(data=group, is_matrix=False)
-        for i in range(len(parts)):
-            parts[i]['group'] = group_parts[i]
+    add_to_parts(sample_weight, 'weight')
+    add_to_parts(init_score, 'init_score')
+    add_to_parts(group, 'group')
 
     # Start computation in the background
     parts = list(map(delayed, parts))
@@ -604,6 +607,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
+        init_score: Optional[_DaskCollection] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
@@ -612,6 +616,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
+            init_score=init_score,
             **kwargs
         )
 
@@ -755,6 +760,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
+        init_score: Optional[_DaskCollection] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
@@ -763,6 +769,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
+            init_score=init_score,
             **kwargs
         )
 
@@ -892,14 +899,12 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
-        if init_score is not None:
-            raise RuntimeError('init_score is not currently supported in lightgbm.dask')
-
         return self._fit(
             model_factory=LGBMRanker,
             X=X,
             y=y,
             sample_weight=sample_weight,
+            init_score=init_score,
             group=group,
             **kwargs
         )
