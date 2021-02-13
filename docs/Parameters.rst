@@ -139,7 +139,7 @@ Core Parameters
 
       -  **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
 
-      -  **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves.
+      -  **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
 
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 

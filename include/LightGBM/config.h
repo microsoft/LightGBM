@@ -158,7 +158,7 @@ struct Config {
   // descl2 = **Note**: only works with CPU and ``serial`` tree learner
   // descl2 = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
   // descl2 = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
-  // descl2 = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves.
+  // descl2 = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
   bool linear_tree = false;
 
   // alias = train, train_data, train_data_file, data_filename
