@@ -1200,17 +1200,28 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
     if task == 'ranking':
         X, y, g = make_ranking()
         g = np.bincount(g)
-        model = lgb.LGBMRanker()
+        model_factory = lgb.LGBMRanker
     elif task == 'classification':
         X, y = load_iris(return_X_y=True)
-        model = lgb.LGBMClassifier()
+        model_factory = lgb.LGBMClassifier
     elif task == 'regression':
         X, y = load_boston(return_X_y=True)
-        model = lgb.LGBMRegressor()
+        model_factory = lgb.LGBMRegressor
     X = pd.DataFrame(X)
-    y = y.reshape(-1, 1)
+    y_col_array = y.reshape(-1, 1)
+    params = {
+        'n_estimators': 1,
+        'num_leaves': 3,
+        'random_state': 0
+    }
     with pytest.warns(UserWarning, match='column-vector'):
         if task == 'ranking':
-            model.fit(X, y, group=g)
+            model_1d = model_factory(**params).fit(X, y, group=g)
+            model_2d = model_factory(**params).fit(X, y_col_array, group=g)
         else:
-            model.fit(X, y)
+            model_1d = model_factory(**params).fit(X, y)
+            model_2d = model_factory(**params).fit(X, y_col_array)
+
+    preds_1d = model_1d.predict(X)
+    preds_2d = model_2d.predict(X)
+    assert np.allclose(preds_1d, preds_2d)
