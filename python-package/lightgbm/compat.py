@@ -7,6 +7,7 @@ try:
     from pandas import Series as pd_Series
     from pandas import concat
     from pandas.api.types import is_sparse as is_dtype_sparse
+
     PANDAS_INSTALLED = True
 except ImportError:
     PANDAS_INSTALLED = False
@@ -27,6 +28,7 @@ except ImportError:
 """matplotlib"""
 try:
     import matplotlib
+
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -34,6 +36,7 @@ except ImportError:
 """graphviz"""
 try:
     import graphviz
+
     GRAPHVIZ_INSTALLED = True
 except ImportError:
     GRAPHVIZ_INSTALLED = False
@@ -41,6 +44,7 @@ except ImportError:
 """datatable"""
 try:
     import datatable
+
     if hasattr(datatable, "Frame"):
         dt_DataTable = datatable.Frame
     else:
@@ -62,6 +66,7 @@ try:
     from sklearn.utils.class_weight import compute_sample_weight
     from sklearn.utils.multiclass import check_classification_targets
     from sklearn.utils.validation import assert_all_finite, check_array, check_X_y
+
     try:
         from sklearn.exceptions import NotFittedError
         from sklearn.model_selection import GroupKFold, StratifiedKFold
@@ -115,6 +120,7 @@ try:
     from dask.dataframe import DataFrame as dask_DataFrame
     from dask.dataframe import Series as dask_Series
     from dask.distributed import Client, default_client, get_worker, wait
+
     DASK_INSTALLED = True
 except ImportError:
     DASK_INSTALLED = False

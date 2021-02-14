@@ -36,14 +36,31 @@ except ImportError:
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-if os.path.isfile(os.path.join(dir_path, 'VERSION.txt')):
-    with open(os.path.join(dir_path, 'VERSION.txt')) as version_file:
+if os.path.isfile(os.path.join(dir_path, "VERSION.txt")):
+    with open(os.path.join(dir_path, "VERSION.txt")) as version_file:
         __version__ = version_file.read().strip()
 
-__all__ = ['Dataset', 'Booster', 'CVBooster',
-           'register_logger',
-           'train', 'cv',
-           'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
-           'DaskLGBMRegressor', 'DaskLGBMClassifier', 'DaskLGBMRanker',
-           'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
-           'plot_importance', 'plot_split_value_histogram', 'plot_metric', 'plot_tree', 'create_tree_digraph']
+__all__ = [
+    "Dataset",
+    "Booster",
+    "CVBooster",
+    "register_logger",
+    "train",
+    "cv",
+    "LGBMModel",
+    "LGBMRegressor",
+    "LGBMClassifier",
+    "LGBMRanker",
+    "DaskLGBMRegressor",
+    "DaskLGBMClassifier",
+    "DaskLGBMRanker",
+    "print_evaluation",
+    "record_evaluation",
+    "reset_parameter",
+    "early_stopping",
+    "plot_importance",
+    "plot_split_value_histogram",
+    "plot_metric",
+    "plot_tree",
+    "create_tree_digraph",
+]

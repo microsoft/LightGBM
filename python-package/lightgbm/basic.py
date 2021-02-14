@@ -57,8 +57,8 @@ def _normalize_native_string(func):
     @wraps(func)
     def wrapper(msg):
         nonlocal msg_normalized
-        if msg.strip() == '':
-            msg = ''.join(msg_normalized)
+        if msg.strip() == "":
+            msg = "".join(msg_normalized)
             msg_normalized = []
             return func(msg)
         else:
@@ -82,7 +82,7 @@ def _log_native(msg):
 
 def _log_callback(msg):
     """Redirect logs from native library into Python."""
-    _log_native("{0:s}".format(msg.decode('utf-8')))
+    _log_native("{0:s}".format(msg.decode("utf-8")))
 
 
 def _load_lib():
@@ -95,7 +95,7 @@ def _load_lib():
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
     lib.callback = callback(_log_callback)
     if lib.LGBM_RegisterLogCallback(lib.callback) != 0:
-        raise LightGBMError(lib.LGBM_GetLastError().decode('utf-8'))
+        raise LightGBMError(lib.LGBM_GetLastError().decode("utf-8"))
     return lib
 
 
@@ -114,7 +114,7 @@ def _safe_call(ret):
         The return value from C API calls.
     """
     if ret != 0:
-        raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
+        raise LightGBMError(_LIB.LGBM_GetLastError().decode("utf-8"))
 
 
 def is_numeric(obj):
@@ -138,7 +138,7 @@ def is_1d_list(data):
     return isinstance(data, list) and (not data or is_numeric(data[0]))
 
 
-def list_to_1d_numpy(data, dtype=np.float32, name='list'):
+def list_to_1d_numpy(data, dtype=np.float32, name="list"):
     """Convert data to numpy 1-D array."""
     if is_numpy_1d_array(data):
         if data.dtype == dtype:
@@ -149,11 +149,17 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, pd_Series):
         if _get_bad_pandas_dtypes([data.dtypes]):
-            raise ValueError('Series.dtypes must be int, float or bool')
-        return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
+            raise ValueError("Series.dtypes must be int, float or bool")
+        return np.array(
+            data, dtype=dtype, copy=False
+        )  # SparseArray should be supported as well
     else:
-        raise TypeError("Wrong type({0}) for {1}.\n"
-                        "It should be list, numpy 1-D array or pandas Series".format(type(data).__name__, name))
+        raise TypeError(
+            "Wrong type({0}) for {1}.\n"
+            "It should be list, numpy 1-D array or pandas Series".format(
+                type(data).__name__, name
+            )
+        )
 
 
 def cfloat32_array_to_numpy(cptr, length):
@@ -161,7 +167,7 @@ def cfloat32_array_to_numpy(cptr, length):
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
         return np.fromiter(cptr, dtype=np.float32, count=length)
     else:
-        raise RuntimeError('Expected float pointer')
+        raise RuntimeError("Expected float pointer")
 
 
 def cfloat64_array_to_numpy(cptr, length):
@@ -169,7 +175,7 @@ def cfloat64_array_to_numpy(cptr, length):
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
         return np.fromiter(cptr, dtype=np.float64, count=length)
     else:
-        raise RuntimeError('Expected double pointer')
+        raise RuntimeError("Expected double pointer")
 
 
 def cint32_array_to_numpy(cptr, length):
@@ -177,7 +183,7 @@ def cint32_array_to_numpy(cptr, length):
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
         return np.fromiter(cptr, dtype=np.int32, count=length)
     else:
-        raise RuntimeError('Expected int32 pointer')
+        raise RuntimeError("Expected int32 pointer")
 
 
 def cint64_array_to_numpy(cptr, length):
@@ -185,12 +191,12 @@ def cint64_array_to_numpy(cptr, length):
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
         return np.fromiter(cptr, dtype=np.int64, count=length)
     else:
-        raise RuntimeError('Expected int64 pointer')
+        raise RuntimeError("Expected int64 pointer")
 
 
 def c_str(string):
     """Convert a Python string to C string."""
-    return ctypes.c_char_p(string.encode('utf-8'))
+    return ctypes.c_char_p(string.encode("utf-8"))
 
 
 def c_array(ctype, values):
@@ -215,18 +221,21 @@ def param_dict_to_str(data):
     pairs = []
     for key, val in data.items():
         if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
+
             def to_string(x):
                 if isinstance(x, list):
-                    return "[{}]".format(','.join(map(str, x)))
+                    return "[{}]".format(",".join(map(str, x)))
                 else:
                     return str(x)
-            pairs.append(str(key) + '=' + ','.join(map(to_string, val)))
+
+            pairs.append(str(key) + "=" + ",".join(map(to_string, val)))
         elif isinstance(val, (str, NUMERIC_TYPES)) or is_numeric(val):
-            pairs.append(str(key) + '=' + str(val))
+            pairs.append(str(key) + "=" + str(val))
         elif val is not None:
-            raise TypeError('Unknown type of parameter:%s, got:%s'
-                            % (key, type(val).__name__))
-    return ' '.join(pairs)
+            raise TypeError(
+                "Unknown type of parameter:%s, got:%s" % (key, type(val).__name__)
+            )
+    return " ".join(pairs)
 
 
 class _TempFile:
@@ -263,90 +272,65 @@ class LGBMDeprecationWarning(UserWarning):
 
 
 class _ConfigAliases:
-    aliases = {"bin_construct_sample_cnt": {"bin_construct_sample_cnt",
-                                            "subsample_for_bin"},
-               "boosting": {"boosting",
-                            "boosting_type",
-                            "boost"},
-               "categorical_feature": {"categorical_feature",
-                                       "cat_feature",
-                                       "categorical_column",
-                                       "cat_column"},
-               "data_random_seed": {"data_random_seed",
-                                    "data_seed"},
-               "early_stopping_round": {"early_stopping_round",
-                                        "early_stopping_rounds",
-                                        "early_stopping",
-                                        "n_iter_no_change"},
-               "enable_bundle": {"enable_bundle",
-                                 "is_enable_bundle",
-                                 "bundle"},
-               "eval_at": {"eval_at",
-                           "ndcg_eval_at",
-                           "ndcg_at",
-                           "map_eval_at",
-                           "map_at"},
-               "group_column": {"group_column",
-                                "group",
-                                "group_id",
-                                "query_column",
-                                "query",
-                                "query_id"},
-               "header": {"header",
-                          "has_header"},
-               "ignore_column": {"ignore_column",
-                                 "ignore_feature",
-                                 "blacklist"},
-               "is_enable_sparse": {"is_enable_sparse",
-                                    "is_sparse",
-                                    "enable_sparse",
-                                    "sparse"},
-               "label_column": {"label_column",
-                                "label"},
-               "local_listen_port": {"local_listen_port",
-                                     "local_port",
-                                     "port"},
-               "machines": {"machines",
-                            "workers",
-                            "nodes"},
-               "metric": {"metric",
-                          "metrics",
-                          "metric_types"},
-               "num_class": {"num_class",
-                             "num_classes"},
-               "num_iterations": {"num_iterations",
-                                  "num_iteration",
-                                  "n_iter",
-                                  "num_tree",
-                                  "num_trees",
-                                  "num_round",
-                                  "num_rounds",
-                                  "num_boost_round",
-                                  "n_estimators"},
-               "num_machines": {"num_machines",
-                                "num_machine"},
-               "num_threads": {"num_threads",
-                               "num_thread",
-                               "nthread",
-                               "nthreads",
-                               "n_jobs"},
-               "objective": {"objective",
-                             "objective_type",
-                             "app",
-                             "application"},
-               "pre_partition": {"pre_partition",
-                                 "is_pre_partition"},
-               "tree_learner": {"tree_learner",
-                                "tree",
-                                "tree_type",
-                                "tree_learner_type"},
-               "two_round": {"two_round",
-                             "two_round_loading",
-                             "use_two_round_loading"},
-               "verbosity": {"verbosity",
-                             "verbose"},
-               "weight_column": {"weight_column",
-                                 "weight"}}
+    aliases = {
+        "bin_construct_sample_cnt": {"bin_construct_sample_cnt", "subsample_for_bin"},
+        "boosting": {"boosting", "boosting_type", "boost"},
+        "categorical_feature": {
+            "categorical_feature",
+            "cat_feature",
+            "categorical_column",
+            "cat_column",
+        },
+        "data_random_seed": {"data_random_seed", "data_seed"},
+        "early_stopping_round": {
+            "early_stopping_round",
+            "early_stopping_rounds",
+            "early_stopping",
+            "n_iter_no_change",
+        },
+        "enable_bundle": {"enable_bundle", "is_enable_bundle", "bundle"},
+        "eval_at": {"eval_at", "ndcg_eval_at", "ndcg_at", "map_eval_at", "map_at"},
+        "group_column": {
+            "group_column",
+            "group",
+            "group_id",
+            "query_column",
+            "query",
+            "query_id",
+        },
+        "header": {"header", "has_header"},
+        "ignore_column": {"ignore_column", "ignore_feature", "blacklist"},
+        "is_enable_sparse": {
+            "is_enable_sparse",
+            "is_sparse",
+            "enable_sparse",
+            "sparse",
+        },
+        "label_column": {"label_column", "label"},
+        "local_listen_port": {"local_listen_port", "local_port", "port"},
+        "machines": {"machines", "workers", "nodes"},
+        "metric": {"metric", "metrics", "metric_types"},
+        "num_class": {"num_class", "num_classes"},
+        "num_iterations": {
+            "num_iterations",
+            "num_iteration",
+            "n_iter",
+            "num_tree",
+            "num_trees",
+            "num_round",
+            "num_rounds",
+            "num_boost_round",
+            "n_estimators",
+        },
+        "num_machines": {"num_machines", "num_machine"},
+        "num_threads": {"num_threads", "num_thread", "nthread", "nthreads", "n_jobs"},
+        "objective": {"objective", "objective_type", "app", "application"},
+        "pre_partition": {"pre_partition", "is_pre_partition"},
+        "tree_learner": {"tree_learner", "tree", "tree_type", "tree_learner_type"},
+        "two_round": {"two_round", "two_round_loading", "use_two_round_loading"},
+        "verbosity": {"verbosity", "verbose"},
+        "weight_column": {"weight_column", "weight"},
+    }
 
     @classmethod
     def get(cls, *args):
@@ -356,7 +340,9 @@ class _ConfigAliases:
         return ret
 
 
-def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_value: Any) -> Dict[str, Any]:
+def _choose_param_value(
+    main_param_name: str, params: Dict[str, Any], default_value: Any
+) -> Dict[str, Any]:
     """Get a single parameter value, accounting for aliases.
 
     Parameters
@@ -422,22 +408,28 @@ C_API_FEATURE_IMPORTANCE_SPLIT = 0
 C_API_FEATURE_IMPORTANCE_GAIN = 1
 
 """Data type of data field"""
-FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
-                     "weight": C_API_DTYPE_FLOAT32,
-                     "init_score": C_API_DTYPE_FLOAT64,
-                     "group": C_API_DTYPE_INT32}
+FIELD_TYPE_MAPPER = {
+    "label": C_API_DTYPE_FLOAT32,
+    "weight": C_API_DTYPE_FLOAT32,
+    "init_score": C_API_DTYPE_FLOAT64,
+    "group": C_API_DTYPE_INT32,
+}
 
 """String name to int feature importance type mapper"""
-FEATURE_IMPORTANCE_TYPE_MAPPER = {"split": C_API_FEATURE_IMPORTANCE_SPLIT,
-                                  "gain": C_API_FEATURE_IMPORTANCE_GAIN}
+FEATURE_IMPORTANCE_TYPE_MAPPER = {
+    "split": C_API_FEATURE_IMPORTANCE_SPLIT,
+    "gain": C_API_FEATURE_IMPORTANCE_GAIN,
+}
 
 
 def convert_from_sliced_object(data):
     """Fix the memory of multi-dimensional sliced object."""
     if isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         if not data.flags.c_contiguous:
-            _log_warning("Usage of np.ndarray subset (sliced data) is not recommended "
-                         "due to it will double the peak memory cost in LightGBM.")
+            _log_warning(
+                "Usage of np.ndarray subset (sliced data) is not recommended "
+                "due to it will double the peak memory cost in LightGBM."
+            )
             return np.copy(data)
     return data
 
@@ -456,11 +448,16 @@ def c_float_array(data):
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
             type_data = C_API_DTYPE_FLOAT64
         else:
-            raise TypeError("Expected np.float32 or np.float64, met type({})"
-                            .format(data.dtype))
+            raise TypeError(
+                "Expected np.float32 or np.float64, met type({})".format(data.dtype)
+            )
     else:
         raise TypeError("Unknown type({})".format(type(data).__name__))
-    return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
+    return (
+        ptr_data,
+        type_data,
+        data,
+    )  # return `data` to avoid the temporary copy is freed
 
 
 def c_int_array(data):
@@ -477,64 +474,93 @@ def c_int_array(data):
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_int64))
             type_data = C_API_DTYPE_INT64
         else:
-            raise TypeError("Expected np.int32 or np.int64, met type({})"
-                            .format(data.dtype))
+            raise TypeError(
+                "Expected np.int32 or np.int64, met type({})".format(data.dtype)
+            )
     else:
         raise TypeError("Unknown type({})".format(type(data).__name__))
-    return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
+    return (
+        ptr_data,
+        type_data,
+        data,
+    )  # return `data` to avoid the temporary copy is freed
 
 
 def _get_bad_pandas_dtypes(dtypes):
-    pandas_dtype_mapper = {'int8': 'int', 'int16': 'int', 'int32': 'int',
-                           'int64': 'int', 'uint8': 'int', 'uint16': 'int',
-                           'uint32': 'int', 'uint64': 'int', 'bool': 'int',
-                           'float16': 'float', 'float32': 'float', 'float64': 'float'}
-    bad_indices = [i for i, dtype in enumerate(dtypes) if (dtype.name not in pandas_dtype_mapper
-                                                           and (not is_dtype_sparse(dtype)
-                                                                or dtype.subtype.name not in pandas_dtype_mapper))]
+    pandas_dtype_mapper = {
+        "int8": "int",
+        "int16": "int",
+        "int32": "int",
+        "int64": "int",
+        "uint8": "int",
+        "uint16": "int",
+        "uint32": "int",
+        "uint64": "int",
+        "bool": "int",
+        "float16": "float",
+        "float32": "float",
+        "float64": "float",
+    }
+    bad_indices = [
+        i
+        for i, dtype in enumerate(dtypes)
+        if (
+            dtype.name not in pandas_dtype_mapper
+            and (
+                not is_dtype_sparse(dtype)
+                or dtype.subtype.name not in pandas_dtype_mapper
+            )
+        )
+    ]
     return bad_indices
 
 
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, pd_DataFrame):
         if len(data.shape) != 2 or data.shape[0] < 1:
-            raise ValueError('Input data must be 2 dimensional and non empty.')
-        if feature_name == 'auto' or feature_name is None:
+            raise ValueError("Input data must be 2 dimensional and non empty.")
+        if feature_name == "auto" or feature_name is None:
             data = data.rename(columns=str)
-        cat_cols = list(data.select_dtypes(include=['category']).columns)
+        cat_cols = list(data.select_dtypes(include=["category"]).columns)
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
             pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
         else:
             if len(cat_cols) != len(pandas_categorical):
-                raise ValueError('train and valid dataset categorical_feature do not match.')
+                raise ValueError(
+                    "train and valid dataset categorical_feature do not match."
+                )
             for col, category in zip(cat_cols, pandas_categorical):
                 if list(data[col].cat.categories) != list(category):
                     data[col] = data[col].cat.set_categories(category)
         if len(cat_cols):  # cat_cols is list
             data = data.copy()  # not alter origin DataFrame
-            data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
+            data[cat_cols] = (
+                data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
+            )
         if categorical_feature is not None:
             if feature_name is None:
                 feature_name = list(data.columns)
-            if categorical_feature == 'auto':  # use cat cols from DataFrame
+            if categorical_feature == "auto":  # use cat cols from DataFrame
                 categorical_feature = cat_cols_not_ordered
             else:  # use cat cols specified by user
                 categorical_feature = list(categorical_feature)
-        if feature_name == 'auto':
+        if feature_name == "auto":
             feature_name = list(data.columns)
         bad_indices = _get_bad_pandas_dtypes(data.dtypes)
         if bad_indices:
-            raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
-                             "Did not expect the data types in the following fields: "
-                             + ', '.join(data.columns[bad_indices]))
+            raise ValueError(
+                "DataFrame.dtypes for data must be int, float or bool.\n"
+                "Did not expect the data types in the following fields: "
+                + ", ".join(data.columns[bad_indices])
+            )
         data = data.values
         if data.dtype != np.float32 and data.dtype != np.float64:
             data = data.astype(np.float32)
     else:
-        if feature_name == 'auto':
+        if feature_name == "auto":
             feature_name = None
-        if categorical_feature == 'auto':
+        if categorical_feature == "auto":
             categorical_feature = None
     return data, feature_name, categorical_feature, pandas_categorical
 
@@ -542,29 +568,31 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
 def _label_from_pandas(label):
     if isinstance(label, pd_DataFrame):
         if len(label.columns) > 1:
-            raise ValueError('DataFrame for label cannot have multiple columns')
+            raise ValueError("DataFrame for label cannot have multiple columns")
         if _get_bad_pandas_dtypes(label.dtypes):
-            raise ValueError('DataFrame.dtypes for label must be int, float or bool')
+            raise ValueError("DataFrame.dtypes for label must be int, float or bool")
         label = np.ravel(label.values.astype(np.float32, copy=False))
     return label
 
 
 def _dump_pandas_categorical(pandas_categorical, file_name=None):
-    pandas_str = ('\npandas_categorical:'
-                  + json.dumps(pandas_categorical, default=json_default_with_numpy)
-                  + '\n')
+    pandas_str = (
+        "\npandas_categorical:"
+        + json.dumps(pandas_categorical, default=json_default_with_numpy)
+        + "\n"
+    )
     if file_name is not None:
-        with open(file_name, 'a') as f:
+        with open(file_name, "a") as f:
             f.write(pandas_str)
     return pandas_str
 
 
 def _load_pandas_categorical(file_name=None, model_str=None):
-    pandas_key = 'pandas_categorical:'
+    pandas_key = "pandas_categorical:"
     offset = -len(pandas_key)
     if file_name is not None:
         max_offset = -os.path.getsize(file_name)
-        with open(file_name, 'rb') as f:
+        with open(file_name, "rb") as f:
             while True:
                 if offset < max_offset:
                     offset = max_offset
@@ -573,14 +601,14 @@ def _load_pandas_categorical(file_name=None, model_str=None):
                 if len(lines) >= 2:
                     break
                 offset *= 2
-        last_line = lines[-1].decode('utf-8').strip()
+        last_line = lines[-1].decode("utf-8").strip()
         if not last_line.startswith(pandas_key):
-            last_line = lines[-2].decode('utf-8').strip()
+            last_line = lines[-2].decode("utf-8").strip()
     elif model_str is not None:
-        idx = model_str.rfind('\n', 0, offset)
+        idx = model_str.rfind("\n", 0, offset)
         last_line = model_str[idx:].strip()
     if last_line.startswith(pandas_key):
-        return json.loads(last_line[len(pandas_key):])
+        return json.loads(last_line[len(pandas_key) :])
     else:
         return None
 
@@ -613,14 +641,17 @@ class _InnerPredictor:
         if model_file is not None:
             """Prediction task"""
             out_num_iterations = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
-                c_str(model_file),
-                ctypes.byref(out_num_iterations),
-                ctypes.byref(self.handle)))
+            _safe_call(
+                _LIB.LGBM_BoosterCreateFromModelfile(
+                    c_str(model_file),
+                    ctypes.byref(out_num_iterations),
+                    ctypes.byref(self.handle),
+                )
+            )
             out_num_class = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterGetNumClasses(
-                self.handle,
-                ctypes.byref(out_num_class)))
+            _safe_call(
+                _LIB.LGBM_BoosterGetNumClasses(self.handle, ctypes.byref(out_num_class))
+            )
             self.num_class = out_num_class.value
             self.num_total_iteration = out_num_iterations.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
@@ -628,14 +659,14 @@ class _InnerPredictor:
             self.__is_manage_handle = False
             self.handle = booster_handle
             out_num_class = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterGetNumClasses(
-                self.handle,
-                ctypes.byref(out_num_class)))
+            _safe_call(
+                _LIB.LGBM_BoosterGetNumClasses(self.handle, ctypes.byref(out_num_class))
+            )
             self.num_class = out_num_class.value
             self.num_total_iteration = self.current_iteration()
             self.pandas_categorical = None
         else:
-            raise TypeError('Need model_file or booster_handle to create a predictor')
+            raise TypeError("Need model_file or booster_handle to create a predictor")
 
         pred_parameter = {} if pred_parameter is None else pred_parameter
         self.pred_parameter = param_dict_to_str(pred_parameter)
@@ -649,12 +680,20 @@ class _InnerPredictor:
 
     def __getstate__(self):
         this = self.__dict__.copy()
-        this.pop('handle', None)
+        this.pop("handle", None)
         return this
 
-    def predict(self, data, start_iteration=0, num_iteration=-1,
-                raw_score=False, pred_leaf=False, pred_contrib=False, data_has_header=False,
-                is_reshape=True):
+    def predict(
+        self,
+        data,
+        start_iteration=0,
+        num_iteration=-1,
+        raw_score=False,
+        pred_leaf=False,
+        pred_contrib=False,
+        data_has_header=False,
+        is_reshape=True,
+    ):
         """Predict logic.
 
         Parameters
@@ -685,7 +724,9 @@ class _InnerPredictor:
             Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
         """
         if isinstance(data, Dataset):
-            raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
+            raise TypeError(
+                "Cannot use Dataset instance for prediction, please use raw data instead"
+            )
         data = _data_from_pandas(data, None, None, self.pandas_categorical)[0]
         predict_type = C_API_PREDICT_NORMAL
         if raw_score:
@@ -698,40 +739,57 @@ class _InnerPredictor:
 
         if isinstance(data, str):
             with _TempFile() as f:
-                _safe_call(_LIB.LGBM_BoosterPredictForFile(
-                    self.handle,
-                    c_str(data),
-                    ctypes.c_int(int_data_has_header),
-                    ctypes.c_int(predict_type),
-                    ctypes.c_int(start_iteration),
-                    ctypes.c_int(num_iteration),
-                    c_str(self.pred_parameter),
-                    c_str(f.name)))
+                _safe_call(
+                    _LIB.LGBM_BoosterPredictForFile(
+                        self.handle,
+                        c_str(data),
+                        ctypes.c_int(int_data_has_header),
+                        ctypes.c_int(predict_type),
+                        ctypes.c_int(start_iteration),
+                        ctypes.c_int(num_iteration),
+                        c_str(self.pred_parameter),
+                        c_str(f.name),
+                    )
+                )
                 lines = f.readlines()
                 nrow = len(lines)
-                preds = [float(token) for line in lines for token in line.split('\t')]
+                preds = [float(token) for line in lines for token in line.split("\t")]
                 preds = np.array(preds, dtype=np.float64, copy=False)
         elif isinstance(data, scipy.sparse.csr_matrix):
-            preds, nrow = self.__pred_for_csr(data, start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_csr(
+                data, start_iteration, num_iteration, predict_type
+            )
         elif isinstance(data, scipy.sparse.csc_matrix):
-            preds, nrow = self.__pred_for_csc(data, start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_csc(
+                data, start_iteration, num_iteration, predict_type
+            )
         elif isinstance(data, np.ndarray):
-            preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_np2d(
+                data, start_iteration, num_iteration, predict_type
+            )
         elif isinstance(data, list):
             try:
                 data = np.array(data)
             except BaseException:
-                raise ValueError('Cannot convert data list to numpy array.')
-            preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type)
+                raise ValueError("Cannot convert data list to numpy array.")
+            preds, nrow = self.__pred_for_np2d(
+                data, start_iteration, num_iteration, predict_type
+            )
         elif isinstance(data, dt_DataTable):
-            preds, nrow = self.__pred_for_np2d(data.to_numpy(), start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_np2d(
+                data.to_numpy(), start_iteration, num_iteration, predict_type
+            )
         else:
             try:
-                _log_warning('Converting data to scipy sparse matrix.')
+                _log_warning("Converting data to scipy sparse matrix.")
                 csr = scipy.sparse.csr_matrix(data)
             except BaseException:
-                raise TypeError('Cannot predict data for type {}'.format(type(data).__name__))
-            preds, nrow = self.__pred_for_csr(csr, start_iteration, num_iteration, predict_type)
+                raise TypeError(
+                    "Cannot predict data for type {}".format(type(data).__name__)
+                )
+            preds, nrow = self.__pred_for_csr(
+                csr, start_iteration, num_iteration, predict_type
+            )
         if pred_leaf:
             preds = preds.astype(np.int32)
         is_sparse = scipy.sparse.issparse(preds) or isinstance(preds, list)
@@ -739,57 +797,71 @@ class _InnerPredictor:
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
             else:
-                raise ValueError('Length of predict result (%d) cannot be divide nrow (%d)'
-                                 % (preds.size, nrow))
+                raise ValueError(
+                    "Length of predict result (%d) cannot be divide nrow (%d)"
+                    % (preds.size, nrow)
+                )
         return preds
 
     def __get_num_preds(self, start_iteration, num_iteration, nrow, predict_type):
         """Get size of prediction result."""
         if nrow > MAX_INT32:
-            raise LightGBMError('LightGBM cannot perform prediction for data'
-                                'with number of rows greater than MAX_INT32 (%d).\n'
-                                'You can split your data into chunks'
-                                'and then concatenate predictions for them' % MAX_INT32)
+            raise LightGBMError(
+                "LightGBM cannot perform prediction for data"
+                "with number of rows greater than MAX_INT32 (%d).\n"
+                "You can split your data into chunks"
+                "and then concatenate predictions for them" % MAX_INT32
+            )
         n_preds = ctypes.c_int64(0)
-        _safe_call(_LIB.LGBM_BoosterCalcNumPredict(
-            self.handle,
-            ctypes.c_int(nrow),
-            ctypes.c_int(predict_type),
-            ctypes.c_int(start_iteration),
-            ctypes.c_int(num_iteration),
-            ctypes.byref(n_preds)))
+        _safe_call(
+            _LIB.LGBM_BoosterCalcNumPredict(
+                self.handle,
+                ctypes.c_int(nrow),
+                ctypes.c_int(predict_type),
+                ctypes.c_int(start_iteration),
+                ctypes.c_int(num_iteration),
+                ctypes.byref(n_preds),
+            )
+        )
         return n_preds.value
 
     def __pred_for_np2d(self, mat, start_iteration, num_iteration, predict_type):
         """Predict for a 2-D numpy matrix."""
         if len(mat.shape) != 2:
-            raise ValueError('Input numpy.ndarray or list must be 2 dimensional')
+            raise ValueError("Input numpy.ndarray or list must be 2 dimensional")
 
-        def inner_predict(mat, start_iteration, num_iteration, predict_type, preds=None):
+        def inner_predict(
+            mat, start_iteration, num_iteration, predict_type, preds=None
+        ):
             if mat.dtype == np.float32 or mat.dtype == np.float64:
                 data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
             else:  # change non-float data to float data, need to copy
                 data = np.array(mat.reshape(mat.size), dtype=np.float32)
             ptr_data, type_ptr_data, _ = c_float_array(data)
-            n_preds = self.__get_num_preds(start_iteration, num_iteration, mat.shape[0], predict_type)
+            n_preds = self.__get_num_preds(
+                start_iteration, num_iteration, mat.shape[0], predict_type
+            )
             if preds is None:
                 preds = np.zeros(n_preds, dtype=np.float64)
             elif len(preds.shape) != 1 or len(preds) != n_preds:
                 raise ValueError("Wrong length of pre-allocated predict array")
             out_num_preds = ctypes.c_int64(0)
-            _safe_call(_LIB.LGBM_BoosterPredictForMat(
-                self.handle,
-                ptr_data,
-                ctypes.c_int(type_ptr_data),
-                ctypes.c_int(mat.shape[0]),
-                ctypes.c_int(mat.shape[1]),
-                ctypes.c_int(C_API_IS_ROW_MAJOR),
-                ctypes.c_int(predict_type),
-                ctypes.c_int(start_iteration),
-                ctypes.c_int(num_iteration),
-                c_str(self.pred_parameter),
-                ctypes.byref(out_num_preds),
-                preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+            _safe_call(
+                _LIB.LGBM_BoosterPredictForMat(
+                    self.handle,
+                    ptr_data,
+                    ctypes.c_int(type_ptr_data),
+                    ctypes.c_int(mat.shape[0]),
+                    ctypes.c_int(mat.shape[1]),
+                    ctypes.c_int(C_API_IS_ROW_MAJOR),
+                    ctypes.c_int(predict_type),
+                    ctypes.c_int(start_iteration),
+                    ctypes.c_int(num_iteration),
+                    c_str(self.pred_parameter),
+                    ctypes.byref(out_num_preds),
+                    preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                )
+            )
             if n_preds != out_num_preds.value:
                 raise ValueError("Wrong length for predict results")
             return preds, mat.shape[0]
@@ -798,19 +870,39 @@ class _InnerPredictor:
         if nrow > MAX_INT32:
             sections = np.arange(start=MAX_INT32, stop=nrow, step=MAX_INT32)
             # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
-            n_preds = [self.__get_num_preds(start_iteration, num_iteration, i, predict_type) for i in np.diff([0] + list(sections) + [nrow])]
+            n_preds = [
+                self.__get_num_preds(start_iteration, num_iteration, i, predict_type)
+                for i in np.diff([0] + list(sections) + [nrow])
+            ]
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.zeros(sum(n_preds), dtype=np.float64)
-            for chunk, (start_idx_pred, end_idx_pred) in zip(np.array_split(mat, sections),
-                                                             zip(n_preds_sections, n_preds_sections[1:])):
+            for chunk, (start_idx_pred, end_idx_pred) in zip(
+                np.array_split(mat, sections),
+                zip(n_preds_sections, n_preds_sections[1:]),
+            ):
                 # avoid memory consumption by arrays concatenation operations
-                inner_predict(chunk, start_iteration, num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
+                inner_predict(
+                    chunk,
+                    start_iteration,
+                    num_iteration,
+                    predict_type,
+                    preds[start_idx_pred:end_idx_pred],
+                )
             return preds, nrow
         else:
             return inner_predict(mat, start_iteration, num_iteration, predict_type)
 
-    def __create_sparse_native(self, cs, out_shape, out_ptr_indptr, out_ptr_indices, out_ptr_data,
-                               indptr_type, data_type, is_csr=True):
+    def __create_sparse_native(
+        self,
+        cs,
+        out_shape,
+        out_ptr_indptr,
+        out_ptr_indices,
+        out_ptr_data,
+        indptr_type,
+        data_type,
+        is_csr=True,
+    ):
         # create numpy array from output arrays
         data_indices_len = out_shape[0]
         indptr_len = out_shape[1]
@@ -832,34 +924,52 @@ class _InnerPredictor:
         # for CSC there is extra column added
         if not is_csr:
             per_class_indptr_shape += 1
-        out_indptr_arrays = np.split(out_indptr, out_indptr.shape[0] / per_class_indptr_shape)
+        out_indptr_arrays = np.split(
+            out_indptr, out_indptr.shape[0] / per_class_indptr_shape
+        )
         # reformat output into a csr or csc matrix or list of csr or csc matrices
         cs_output_matrices = []
         offset = 0
         for cs_indptr in out_indptr_arrays:
             matrix_indptr_len = cs_indptr[cs_indptr.shape[0] - 1]
-            cs_indices = out_indices[offset + cs_indptr[0]:offset + matrix_indptr_len]
-            cs_data = out_data[offset + cs_indptr[0]:offset + matrix_indptr_len]
+            cs_indices = out_indices[offset + cs_indptr[0] : offset + matrix_indptr_len]
+            cs_data = out_data[offset + cs_indptr[0] : offset + matrix_indptr_len]
             offset += matrix_indptr_len
             # same shape as input csr or csc matrix except extra column for expected value
             cs_shape = [cs.shape[0], cs.shape[1] + 1]
             # note: make sure we copy data as it will be deallocated next
             if is_csr:
-                cs_output_matrices.append(scipy.sparse.csr_matrix((cs_data, cs_indices, cs_indptr), cs_shape))
+                cs_output_matrices.append(
+                    scipy.sparse.csr_matrix((cs_data, cs_indices, cs_indptr), cs_shape)
+                )
             else:
-                cs_output_matrices.append(scipy.sparse.csc_matrix((cs_data, cs_indices, cs_indptr), cs_shape))
+                cs_output_matrices.append(
+                    scipy.sparse.csc_matrix((cs_data, cs_indices, cs_indptr), cs_shape)
+                )
         # free the temporary native indptr, indices, and data
-        _safe_call(_LIB.LGBM_BoosterFreePredictSparse(out_ptr_indptr, out_ptr_indices, out_ptr_data,
-                                                      ctypes.c_int(indptr_type), ctypes.c_int(data_type)))
+        _safe_call(
+            _LIB.LGBM_BoosterFreePredictSparse(
+                out_ptr_indptr,
+                out_ptr_indices,
+                out_ptr_data,
+                ctypes.c_int(indptr_type),
+                ctypes.c_int(data_type),
+            )
+        )
         if len(cs_output_matrices) == 1:
             return cs_output_matrices[0]
         return cs_output_matrices
 
     def __pred_for_csr(self, csr, start_iteration, num_iteration, predict_type):
         """Predict for a CSR data."""
-        def inner_predict(csr, start_iteration, num_iteration, predict_type, preds=None):
+
+        def inner_predict(
+            csr, start_iteration, num_iteration, predict_type, preds=None
+        ):
             nrow = len(csr.indptr) - 1
-            n_preds = self.__get_num_preds(start_iteration, num_iteration, nrow, predict_type)
+            n_preds = self.__get_num_preds(
+                start_iteration, num_iteration, nrow, predict_type
+            )
             if preds is None:
                 preds = np.zeros(n_preds, dtype=np.float64)
             elif len(preds.shape) != 1 or len(preds) != n_preds:
@@ -872,22 +982,25 @@ class _InnerPredictor:
             assert csr.shape[1] <= MAX_INT32
             csr_indices = csr.indices.astype(np.int32, copy=False)
 
-            _safe_call(_LIB.LGBM_BoosterPredictForCSR(
-                self.handle,
-                ptr_indptr,
-                ctypes.c_int32(type_ptr_indptr),
-                csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-                ptr_data,
-                ctypes.c_int(type_ptr_data),
-                ctypes.c_int64(len(csr.indptr)),
-                ctypes.c_int64(len(csr.data)),
-                ctypes.c_int64(csr.shape[1]),
-                ctypes.c_int(predict_type),
-                ctypes.c_int(start_iteration),
-                ctypes.c_int(num_iteration),
-                c_str(self.pred_parameter),
-                ctypes.byref(out_num_preds),
-                preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+            _safe_call(
+                _LIB.LGBM_BoosterPredictForCSR(
+                    self.handle,
+                    ptr_indptr,
+                    ctypes.c_int32(type_ptr_indptr),
+                    csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                    ptr_data,
+                    ctypes.c_int(type_ptr_data),
+                    ctypes.c_int64(len(csr.indptr)),
+                    ctypes.c_int64(len(csr.data)),
+                    ctypes.c_int64(csr.shape[1]),
+                    ctypes.c_int(predict_type),
+                    ctypes.c_int(start_iteration),
+                    ctypes.c_int(num_iteration),
+                    c_str(self.pred_parameter),
+                    ctypes.byref(out_num_preds),
+                    preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                )
+            )
             if n_preds != out_num_preds.value:
                 raise ValueError("Wrong length for predict results")
             return preds, nrow
@@ -907,49 +1020,77 @@ class _InnerPredictor:
             else:
                 out_ptr_data = ctypes.POINTER(ctypes.c_double)()
             out_shape = np.zeros(2, dtype=np.int64)
-            _safe_call(_LIB.LGBM_BoosterPredictSparseOutput(
-                self.handle,
-                ptr_indptr,
-                ctypes.c_int32(type_ptr_indptr),
-                csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-                ptr_data,
-                ctypes.c_int(type_ptr_data),
-                ctypes.c_int64(len(csr.indptr)),
-                ctypes.c_int64(len(csr.data)),
-                ctypes.c_int64(csr.shape[1]),
-                ctypes.c_int(predict_type),
-                ctypes.c_int(start_iteration),
-                ctypes.c_int(num_iteration),
-                c_str(self.pred_parameter),
-                ctypes.c_int(matrix_type),
-                out_shape.ctypes.data_as(ctypes.POINTER(ctypes.c_int64)),
-                ctypes.byref(out_ptr_indptr),
-                ctypes.byref(out_ptr_indices),
-                ctypes.byref(out_ptr_data)))
-            matrices = self.__create_sparse_native(csr, out_shape, out_ptr_indptr, out_ptr_indices, out_ptr_data,
-                                                   type_ptr_indptr, type_ptr_data, is_csr=True)
+            _safe_call(
+                _LIB.LGBM_BoosterPredictSparseOutput(
+                    self.handle,
+                    ptr_indptr,
+                    ctypes.c_int32(type_ptr_indptr),
+                    csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                    ptr_data,
+                    ctypes.c_int(type_ptr_data),
+                    ctypes.c_int64(len(csr.indptr)),
+                    ctypes.c_int64(len(csr.data)),
+                    ctypes.c_int64(csr.shape[1]),
+                    ctypes.c_int(predict_type),
+                    ctypes.c_int(start_iteration),
+                    ctypes.c_int(num_iteration),
+                    c_str(self.pred_parameter),
+                    ctypes.c_int(matrix_type),
+                    out_shape.ctypes.data_as(ctypes.POINTER(ctypes.c_int64)),
+                    ctypes.byref(out_ptr_indptr),
+                    ctypes.byref(out_ptr_indices),
+                    ctypes.byref(out_ptr_data),
+                )
+            )
+            matrices = self.__create_sparse_native(
+                csr,
+                out_shape,
+                out_ptr_indptr,
+                out_ptr_indices,
+                out_ptr_data,
+                type_ptr_indptr,
+                type_ptr_data,
+                is_csr=True,
+            )
             nrow = len(csr.indptr) - 1
             return matrices, nrow
 
         if predict_type == C_API_PREDICT_CONTRIB:
-            return inner_predict_sparse(csr, start_iteration, num_iteration, predict_type)
+            return inner_predict_sparse(
+                csr, start_iteration, num_iteration, predict_type
+            )
         nrow = len(csr.indptr) - 1
         if nrow > MAX_INT32:
-            sections = [0] + list(np.arange(start=MAX_INT32, stop=nrow, step=MAX_INT32)) + [nrow]
+            sections = (
+                [0]
+                + list(np.arange(start=MAX_INT32, stop=nrow, step=MAX_INT32))
+                + [nrow]
+            )
             # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
-            n_preds = [self.__get_num_preds(start_iteration, num_iteration, i, predict_type) for i in np.diff(sections)]
+            n_preds = [
+                self.__get_num_preds(start_iteration, num_iteration, i, predict_type)
+                for i in np.diff(sections)
+            ]
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.zeros(sum(n_preds), dtype=np.float64)
-            for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip(zip(sections, sections[1:]),
-                                                                            zip(n_preds_sections, n_preds_sections[1:])):
+            for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip(
+                zip(sections, sections[1:]), zip(n_preds_sections, n_preds_sections[1:])
+            ):
                 # avoid memory consumption by arrays concatenation operations
-                inner_predict(csr[start_idx:end_idx], start_iteration, num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
+                inner_predict(
+                    csr[start_idx:end_idx],
+                    start_iteration,
+                    num_iteration,
+                    predict_type,
+                    preds[start_idx_pred:end_idx_pred],
+                )
             return preds, nrow
         else:
             return inner_predict(csr, start_iteration, num_iteration, predict_type)
 
     def __pred_for_csc(self, csc, start_iteration, num_iteration, predict_type):
         """Predict for a CSC data."""
+
         def inner_predict_sparse(csc, start_iteration, num_iteration, predict_type):
             ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
             ptr_data, type_ptr_data, _ = c_float_array(csc.data)
@@ -965,7 +1106,64 @@ class _InnerPredictor:
             else:
                 out_ptr_data = ctypes.POINTER(ctypes.c_double)()
             out_shape = np.zeros(2, dtype=np.int64)
-            _safe_call(_LIB.LGBM_BoosterPredictSparseOutput(
+            _safe_call(
+                _LIB.LGBM_BoosterPredictSparseOutput(
+                    self.handle,
+                    ptr_indptr,
+                    ctypes.c_int32(type_ptr_indptr),
+                    csc_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                    ptr_data,
+                    ctypes.c_int(type_ptr_data),
+                    ctypes.c_int64(len(csc.indptr)),
+                    ctypes.c_int64(len(csc.data)),
+                    ctypes.c_int64(csc.shape[0]),
+                    ctypes.c_int(predict_type),
+                    ctypes.c_int(start_iteration),
+                    ctypes.c_int(num_iteration),
+                    c_str(self.pred_parameter),
+                    ctypes.c_int(matrix_type),
+                    out_shape.ctypes.data_as(ctypes.POINTER(ctypes.c_int64)),
+                    ctypes.byref(out_ptr_indptr),
+                    ctypes.byref(out_ptr_indices),
+                    ctypes.byref(out_ptr_data),
+                )
+            )
+            matrices = self.__create_sparse_native(
+                csc,
+                out_shape,
+                out_ptr_indptr,
+                out_ptr_indices,
+                out_ptr_data,
+                type_ptr_indptr,
+                type_ptr_data,
+                is_csr=False,
+            )
+            nrow = csc.shape[0]
+            return matrices, nrow
+
+        nrow = csc.shape[0]
+        if nrow > MAX_INT32:
+            return self.__pred_for_csr(
+                csc.tocsr(), start_iteration, num_iteration, predict_type
+            )
+        if predict_type == C_API_PREDICT_CONTRIB:
+            return inner_predict_sparse(
+                csc, start_iteration, num_iteration, predict_type
+            )
+        n_preds = self.__get_num_preds(
+            start_iteration, num_iteration, nrow, predict_type
+        )
+        preds = np.zeros(n_preds, dtype=np.float64)
+        out_num_preds = ctypes.c_int64(0)
+
+        ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
+        ptr_data, type_ptr_data, _ = c_float_array(csc.data)
+
+        assert csc.shape[0] <= MAX_INT32
+        csc_indices = csc.indices.astype(np.int32, copy=False)
+
+        _safe_call(
+            _LIB.LGBM_BoosterPredictForCSC(
                 self.handle,
                 ptr_indptr,
                 ctypes.c_int32(type_ptr_indptr),
@@ -979,47 +1177,10 @@ class _InnerPredictor:
                 ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
                 c_str(self.pred_parameter),
-                ctypes.c_int(matrix_type),
-                out_shape.ctypes.data_as(ctypes.POINTER(ctypes.c_int64)),
-                ctypes.byref(out_ptr_indptr),
-                ctypes.byref(out_ptr_indices),
-                ctypes.byref(out_ptr_data)))
-            matrices = self.__create_sparse_native(csc, out_shape, out_ptr_indptr, out_ptr_indices, out_ptr_data,
-                                                   type_ptr_indptr, type_ptr_data, is_csr=False)
-            nrow = csc.shape[0]
-            return matrices, nrow
-
-        nrow = csc.shape[0]
-        if nrow > MAX_INT32:
-            return self.__pred_for_csr(csc.tocsr(), start_iteration, num_iteration, predict_type)
-        if predict_type == C_API_PREDICT_CONTRIB:
-            return inner_predict_sparse(csc, start_iteration, num_iteration, predict_type)
-        n_preds = self.__get_num_preds(start_iteration, num_iteration, nrow, predict_type)
-        preds = np.zeros(n_preds, dtype=np.float64)
-        out_num_preds = ctypes.c_int64(0)
-
-        ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
-        ptr_data, type_ptr_data, _ = c_float_array(csc.data)
-
-        assert csc.shape[0] <= MAX_INT32
-        csc_indices = csc.indices.astype(np.int32, copy=False)
-
-        _safe_call(_LIB.LGBM_BoosterPredictForCSC(
-            self.handle,
-            ptr_indptr,
-            ctypes.c_int32(type_ptr_indptr),
-            csc_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-            ptr_data,
-            ctypes.c_int(type_ptr_data),
-            ctypes.c_int64(len(csc.indptr)),
-            ctypes.c_int64(len(csc.data)),
-            ctypes.c_int64(csc.shape[0]),
-            ctypes.c_int(predict_type),
-            ctypes.c_int(start_iteration),
-            ctypes.c_int(num_iteration),
-            c_str(self.pred_parameter),
-            ctypes.byref(out_num_preds),
-            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+                ctypes.byref(out_num_preds),
+                preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+            )
+        )
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
@@ -1033,19 +1194,31 @@ class _InnerPredictor:
             The index of the current iteration.
         """
         out_cur_iter = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterGetCurrentIteration(
-            self.handle,
-            ctypes.byref(out_cur_iter)))
+        _safe_call(
+            _LIB.LGBM_BoosterGetCurrentIteration(
+                self.handle, ctypes.byref(out_cur_iter)
+            )
+        )
         return out_cur_iter.value
 
 
 class Dataset:
     """Dataset in LightGBM."""
 
-    def __init__(self, data, label=None, reference=None,
-                 weight=None, group=None, init_score=None, silent=False,
-                 feature_name='auto', categorical_feature='auto', params=None,
-                 free_raw_data=True):
+    def __init__(
+        self,
+        data,
+        label=None,
+        reference=None,
+        weight=None,
+        group=None,
+        init_score=None,
+        silent=False,
+        feature_name="auto",
+        categorical_feature="auto",
+        params=None,
+        free_raw_data=True,
+    ):
         """Initialize Dataset.
 
         Parameters
@@ -1123,26 +1296,28 @@ class Dataset:
         """
         if self.params is not None:
             # no min_data, nthreads and verbose in this function
-            dataset_params = _ConfigAliases.get("bin_construct_sample_cnt",
-                                                "categorical_feature",
-                                                "data_random_seed",
-                                                "enable_bundle",
-                                                "feature_pre_filter",
-                                                "forcedbins_filename",
-                                                "group_column",
-                                                "header",
-                                                "ignore_column",
-                                                "is_enable_sparse",
-                                                "label_column",
-                                                "linear_tree",
-                                                "max_bin",
-                                                "max_bin_by_feature",
-                                                "min_data_in_bin",
-                                                "pre_partition",
-                                                "two_round",
-                                                "use_missing",
-                                                "weight_column",
-                                                "zero_as_missing")
+            dataset_params = _ConfigAliases.get(
+                "bin_construct_sample_cnt",
+                "categorical_feature",
+                "data_random_seed",
+                "enable_bundle",
+                "feature_pre_filter",
+                "forcedbins_filename",
+                "group_column",
+                "header",
+                "ignore_column",
+                "is_enable_sparse",
+                "label_column",
+                "linear_tree",
+                "max_bin",
+                "max_bin_by_feature",
+                "min_data_in_bin",
+                "pre_partition",
+                "two_round",
+                "use_missing",
+                "weight_column",
+                "zero_as_missing",
+            )
             return {k: v for k, v in self.params.items() if k in dataset_params}
 
     def _free_handle(self):
@@ -1158,28 +1333,35 @@ class Dataset:
         data_has_header = False
         if isinstance(data, str):
             # check data has header or not
-            data_has_header = any(self.params.get(alias, False) for alias in _ConfigAliases.get("header"))
+            data_has_header = any(
+                self.params.get(alias, False) for alias in _ConfigAliases.get("header")
+            )
         num_data = self.num_data()
         if predictor is not None:
-            init_score = predictor.predict(data,
-                                           raw_score=True,
-                                           data_has_header=data_has_header,
-                                           is_reshape=False)
+            init_score = predictor.predict(
+                data, raw_score=True, data_has_header=data_has_header, is_reshape=False
+            )
             if used_indices is not None:
                 assert not self.need_slice
                 if isinstance(data, str):
-                    sub_init_score = np.zeros(num_data * predictor.num_class, dtype=np.float32)
+                    sub_init_score = np.zeros(
+                        num_data * predictor.num_class, dtype=np.float32
+                    )
                     assert num_data == len(used_indices)
                     for i in range(len(used_indices)):
                         for j in range(predictor.num_class):
-                            sub_init_score[i * predictor.num_class + j] = init_score[used_indices[i] * predictor.num_class + j]
+                            sub_init_score[i * predictor.num_class + j] = init_score[
+                                used_indices[i] * predictor.num_class + j
+                            ]
                     init_score = sub_init_score
             if predictor.num_class > 1:
                 # need to regroup init_score
                 new_init_score = np.zeros(init_score.size, dtype=np.float32)
                 for i in range(num_data):
                     for j in range(predictor.num_class):
-                        new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
+                        new_init_score[j * num_data + i] = init_score[
+                            i * predictor.num_class + j
+                        ]
                 init_score = new_init_score
         elif self.init_score is not None:
             init_score = np.zeros(self.init_score.shape, dtype=np.float32)
@@ -1187,34 +1369,57 @@ class Dataset:
             return self
         self.set_init_score(init_score)
 
-    def _lazy_init(self, data, label=None, reference=None,
-                   weight=None, group=None, init_score=None, predictor=None,
-                   silent=False, feature_name='auto',
-                   categorical_feature='auto', params=None):
+    def _lazy_init(
+        self,
+        data,
+        label=None,
+        reference=None,
+        weight=None,
+        group=None,
+        init_score=None,
+        predictor=None,
+        silent=False,
+        feature_name="auto",
+        categorical_feature="auto",
+        params=None,
+    ):
         if data is None:
             self.handle = None
             return self
         if reference is not None:
             self.pandas_categorical = reference.pandas_categorical
             categorical_feature = reference.categorical_feature
-        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data,
-                                                                                             feature_name,
-                                                                                             categorical_feature,
-                                                                                             self.pandas_categorical)
+        (
+            data,
+            feature_name,
+            categorical_feature,
+            self.pandas_categorical,
+        ) = _data_from_pandas(
+            data, feature_name, categorical_feature, self.pandas_categorical
+        )
         label = _label_from_pandas(label)
 
         # process for args
         params = {} if params is None else params
-        args_names = (getattr(self.__class__, '_lazy_init')
-                      .__code__
-                      .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount])
+        args_names = getattr(self.__class__, "_lazy_init").__code__.co_varnames[
+            : getattr(self.__class__, "_lazy_init").__code__.co_argcount
+        ]
         for key, _ in params.items():
             if key in args_names:
-                _log_warning('{0} keyword has been found in `params` and will be ignored.\n'
-                             'Please use {0} argument of the Dataset constructor to pass this parameter.'
-                             .format(key))
+                _log_warning(
+                    "{0} keyword has been found in `params` and will be ignored.\n"
+                    "Please use {0} argument of the Dataset constructor to pass this parameter.".format(
+                        key
+                    )
+                )
         # user can set verbose with params, it has higher priority
-        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
+        if (
+            not any(
+                verbose_alias in params
+                for verbose_alias in _ConfigAliases.get("verbosity")
+            )
+            and silent
+        ):
             params["verbose"] = -1
         # get categorical features
         if categorical_feature is not None:
@@ -1228,14 +1433,19 @@ class Dataset:
                 elif isinstance(name, int):
                     categorical_indices.add(name)
                 else:
-                    raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature"
-                                    .format(type(name).__name__, name))
+                    raise TypeError(
+                        "Wrong type({}) or unknown name({}) in categorical_feature".format(
+                            type(name).__name__, name
+                        )
+                    )
             if categorical_indices:
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     if cat_alias in params:
-                        _log_warning('{} in param dict is overridden.'.format(cat_alias))
+                        _log_warning(
+                            "{} in param dict is overridden.".format(cat_alias)
+                        )
                         params.pop(cat_alias, None)
-                params['categorical_column'] = sorted(categorical_indices)
+                params["categorical_column"] = sorted(categorical_indices)
 
         params_str = param_dict_to_str(params)
         self.params = params
@@ -1244,22 +1454,29 @@ class Dataset:
         if isinstance(reference, Dataset):
             ref_dataset = reference.construct().handle
         elif reference is not None:
-            raise TypeError('Reference dataset should be None or dataset instance')
+            raise TypeError("Reference dataset should be None or dataset instance")
         # start construct data
         if isinstance(data, str):
             self.handle = ctypes.c_void_p()
-            _safe_call(_LIB.LGBM_DatasetCreateFromFile(
-                c_str(data),
-                c_str(params_str),
-                ref_dataset,
-                ctypes.byref(self.handle)))
+            _safe_call(
+                _LIB.LGBM_DatasetCreateFromFile(
+                    c_str(data),
+                    c_str(params_str),
+                    ref_dataset,
+                    ctypes.byref(self.handle),
+                )
+            )
         elif isinstance(data, scipy.sparse.csr_matrix):
             self.__init_from_csr(data, params_str, ref_dataset)
         elif isinstance(data, scipy.sparse.csc_matrix):
             self.__init_from_csc(data, params_str, ref_dataset)
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(data, params_str, ref_dataset)
-        elif isinstance(data, list) and len(data) > 0 and all(isinstance(x, np.ndarray) for x in data):
+        elif (
+            isinstance(data, list)
+            and len(data) > 0
+            and all(isinstance(x, np.ndarray) for x in data)
+        ):
             self.__init_from_list_np2d(data, params_str, ref_dataset)
         elif isinstance(data, dt_DataTable):
             self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
@@ -1268,7 +1485,9 @@ class Dataset:
                 csr = scipy.sparse.csr_matrix(data)
                 self.__init_from_csr(csr, params_str, ref_dataset)
             except BaseException:
-                raise TypeError('Cannot initialize Dataset from {}'.format(type(data).__name__))
+                raise TypeError(
+                    "Cannot initialize Dataset from {}".format(type(data).__name__)
+                )
         if label is not None:
             self.set_label(label)
         if self.get_label() is None:
@@ -1279,19 +1498,21 @@ class Dataset:
             self.set_group(group)
         if isinstance(predictor, _InnerPredictor):
             if self._predictor is None and init_score is not None:
-                _log_warning("The init_score will be overridden by the prediction of init_model.")
+                _log_warning(
+                    "The init_score will be overridden by the prediction of init_model."
+                )
             self._set_init_score_by_predictor(predictor, data)
         elif init_score is not None:
             self.set_init_score(init_score)
         elif predictor is not None:
-            raise TypeError('Wrong predictor type {}'.format(type(predictor).__name__))
+            raise TypeError("Wrong predictor type {}".format(type(predictor).__name__))
         # set feature names
         return self.set_feature_name(feature_name)
 
     def __init_from_np2d(self, mat, params_str, ref_dataset):
         """Initialize data from a 2-D numpy matrix."""
         if len(mat.shape) != 2:
-            raise ValueError('Input numpy.ndarray must be 2 dimensional')
+            raise ValueError("Input numpy.ndarray must be 2 dimensional")
 
         self.handle = ctypes.c_void_p()
         if mat.dtype == np.float32 or mat.dtype == np.float64:
@@ -1300,15 +1521,18 @@ class Dataset:
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
 
         ptr_data, type_ptr_data, _ = c_float_array(data)
-        _safe_call(_LIB.LGBM_DatasetCreateFromMat(
-            ptr_data,
-            ctypes.c_int(type_ptr_data),
-            ctypes.c_int(mat.shape[0]),
-            ctypes.c_int(mat.shape[1]),
-            ctypes.c_int(C_API_IS_ROW_MAJOR),
-            c_str(params_str),
-            ref_dataset,
-            ctypes.byref(self.handle)))
+        _safe_call(
+            _LIB.LGBM_DatasetCreateFromMat(
+                ptr_data,
+                ctypes.c_int(type_ptr_data),
+                ctypes.c_int(mat.shape[0]),
+                ctypes.c_int(mat.shape[1]),
+                ctypes.c_int(C_API_IS_ROW_MAJOR),
+                c_str(params_str),
+                ref_dataset,
+                ctypes.byref(self.handle),
+            )
+        )
         return self
 
     def __init_from_list_np2d(self, mats, params_str, ref_dataset):
@@ -1325,10 +1549,10 @@ class Dataset:
 
         for i, mat in enumerate(mats):
             if len(mat.shape) != 2:
-                raise ValueError('Input numpy.ndarray must be 2 dimensional')
+                raise ValueError("Input numpy.ndarray must be 2 dimensional")
 
             if mat.shape[1] != ncol:
-                raise ValueError('Input arrays must have same number of columns')
+                raise ValueError("Input arrays must have same number of columns")
 
             nrow[i] = mat.shape[0]
 
@@ -1339,28 +1563,33 @@ class Dataset:
 
             chunk_ptr_data, chunk_type_ptr_data, holder = c_float_array(mats[i])
             if type_ptr_data is not None and chunk_type_ptr_data != type_ptr_data:
-                raise ValueError('Input chunks must have same type')
+                raise ValueError("Input chunks must have same type")
             ptr_data[i] = chunk_ptr_data
             type_ptr_data = chunk_type_ptr_data
             holders.append(holder)
 
         self.handle = ctypes.c_void_p()
-        _safe_call(_LIB.LGBM_DatasetCreateFromMats(
-            ctypes.c_int(len(mats)),
-            ctypes.cast(ptr_data, ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
-            ctypes.c_int(type_ptr_data),
-            nrow.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-            ctypes.c_int(ncol),
-            ctypes.c_int(C_API_IS_ROW_MAJOR),
-            c_str(params_str),
-            ref_dataset,
-            ctypes.byref(self.handle)))
+        _safe_call(
+            _LIB.LGBM_DatasetCreateFromMats(
+                ctypes.c_int(len(mats)),
+                ctypes.cast(ptr_data, ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
+                ctypes.c_int(type_ptr_data),
+                nrow.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                ctypes.c_int(ncol),
+                ctypes.c_int(C_API_IS_ROW_MAJOR),
+                c_str(params_str),
+                ref_dataset,
+                ctypes.byref(self.handle),
+            )
+        )
         return self
 
     def __init_from_csr(self, csr, params_str, ref_dataset):
         """Initialize data from a CSR matrix."""
         if len(csr.indices) != len(csr.data):
-            raise ValueError('Length mismatch: {} vs {}'.format(len(csr.indices), len(csr.data)))
+            raise ValueError(
+                "Length mismatch: {} vs {}".format(len(csr.indices), len(csr.data))
+            )
         self.handle = ctypes.c_void_p()
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
@@ -1369,24 +1598,29 @@ class Dataset:
         assert csr.shape[1] <= MAX_INT32
         csr_indices = csr.indices.astype(np.int32, copy=False)
 
-        _safe_call(_LIB.LGBM_DatasetCreateFromCSR(
-            ptr_indptr,
-            ctypes.c_int(type_ptr_indptr),
-            csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-            ptr_data,
-            ctypes.c_int(type_ptr_data),
-            ctypes.c_int64(len(csr.indptr)),
-            ctypes.c_int64(len(csr.data)),
-            ctypes.c_int64(csr.shape[1]),
-            c_str(params_str),
-            ref_dataset,
-            ctypes.byref(self.handle)))
+        _safe_call(
+            _LIB.LGBM_DatasetCreateFromCSR(
+                ptr_indptr,
+                ctypes.c_int(type_ptr_indptr),
+                csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                ptr_data,
+                ctypes.c_int(type_ptr_data),
+                ctypes.c_int64(len(csr.indptr)),
+                ctypes.c_int64(len(csr.data)),
+                ctypes.c_int64(csr.shape[1]),
+                c_str(params_str),
+                ref_dataset,
+                ctypes.byref(self.handle),
+            )
+        )
         return self
 
     def __init_from_csc(self, csc, params_str, ref_dataset):
         """Initialize data from a CSC matrix."""
         if len(csc.indices) != len(csc.data):
-            raise ValueError('Length mismatch: {} vs {}'.format(len(csc.indices), len(csc.data)))
+            raise ValueError(
+                "Length mismatch: {} vs {}".format(len(csc.indices), len(csc.data))
+            )
         self.handle = ctypes.c_void_p()
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
@@ -1395,18 +1629,21 @@ class Dataset:
         assert csc.shape[0] <= MAX_INT32
         csc_indices = csc.indices.astype(np.int32, copy=False)
 
-        _safe_call(_LIB.LGBM_DatasetCreateFromCSC(
-            ptr_indptr,
-            ctypes.c_int(type_ptr_indptr),
-            csc_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-            ptr_data,
-            ctypes.c_int(type_ptr_data),
-            ctypes.c_int64(len(csc.indptr)),
-            ctypes.c_int64(len(csc.data)),
-            ctypes.c_int64(csc.shape[0]),
-            c_str(params_str),
-            ref_dataset,
-            ctypes.byref(self.handle)))
+        _safe_call(
+            _LIB.LGBM_DatasetCreateFromCSC(
+                ptr_indptr,
+                ctypes.c_int(type_ptr_indptr),
+                csc_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                ptr_data,
+                ctypes.c_int(type_ptr_data),
+                ctypes.c_int64(len(csc.indptr)),
+                ctypes.c_int64(len(csc.data)),
+                ctypes.c_int64(csc.shape[0]),
+                c_str(params_str),
+                ref_dataset,
+                ctypes.byref(self.handle),
+            )
+        )
         return self
 
     def construct(self):
@@ -1421,52 +1658,91 @@ class Dataset:
             if self.reference is not None:
                 reference_params = self.reference.get_params()
                 if self.get_params() != reference_params:
-                    _log_warning('Overriding the parameters from Reference Dataset.')
+                    _log_warning("Overriding the parameters from Reference Dataset.")
                     self._update_params(reference_params)
                 if self.used_indices is None:
                     # create valid
-                    self._lazy_init(self.data, label=self.label, reference=self.reference,
-                                    weight=self.weight, group=self.group,
-                                    init_score=self.init_score, predictor=self._predictor,
-                                    silent=self.silent, feature_name=self.feature_name, params=self.params)
+                    self._lazy_init(
+                        self.data,
+                        label=self.label,
+                        reference=self.reference,
+                        weight=self.weight,
+                        group=self.group,
+                        init_score=self.init_score,
+                        predictor=self._predictor,
+                        silent=self.silent,
+                        feature_name=self.feature_name,
+                        params=self.params,
+                    )
                 else:
                     # construct subset
-                    used_indices = list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
+                    used_indices = list_to_1d_numpy(
+                        self.used_indices, np.int32, name="used_indices"
+                    )
                     assert used_indices.flags.c_contiguous
                     if self.reference.group is not None:
-                        group_info = np.array(self.reference.group).astype(np.int32, copy=False)
-                        _, self.group = np.unique(np.repeat(range(len(group_info)), repeats=group_info)[self.used_indices],
-                                                  return_counts=True)
+                        group_info = np.array(self.reference.group).astype(
+                            np.int32, copy=False
+                        )
+                        _, self.group = np.unique(
+                            np.repeat(range(len(group_info)), repeats=group_info)[
+                                self.used_indices
+                            ],
+                            return_counts=True,
+                        )
                     self.handle = ctypes.c_void_p()
                     params_str = param_dict_to_str(self.params)
-                    _safe_call(_LIB.LGBM_DatasetGetSubset(
-                        self.reference.construct().handle,
-                        used_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-                        ctypes.c_int(used_indices.shape[0]),
-                        c_str(params_str),
-                        ctypes.byref(self.handle)))
+                    _safe_call(
+                        _LIB.LGBM_DatasetGetSubset(
+                            self.reference.construct().handle,
+                            used_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                            ctypes.c_int(used_indices.shape[0]),
+                            c_str(params_str),
+                            ctypes.byref(self.handle),
+                        )
+                    )
                     if not self.free_raw_data:
                         self.get_data()
                     if self.group is not None:
                         self.set_group(self.group)
                     if self.get_label() is None:
                         raise ValueError("Label should not be None.")
-                    if isinstance(self._predictor, _InnerPredictor) and self._predictor is not self.reference._predictor:
+                    if (
+                        isinstance(self._predictor, _InnerPredictor)
+                        and self._predictor is not self.reference._predictor
+                    ):
                         self.get_data()
-                        self._set_init_score_by_predictor(self._predictor, self.data, used_indices)
+                        self._set_init_score_by_predictor(
+                            self._predictor, self.data, used_indices
+                        )
             else:
                 # create train
-                self._lazy_init(self.data, label=self.label,
-                                weight=self.weight, group=self.group,
-                                init_score=self.init_score, predictor=self._predictor,
-                                silent=self.silent, feature_name=self.feature_name,
-                                categorical_feature=self.categorical_feature, params=self.params)
+                self._lazy_init(
+                    self.data,
+                    label=self.label,
+                    weight=self.weight,
+                    group=self.group,
+                    init_score=self.init_score,
+                    predictor=self._predictor,
+                    silent=self.silent,
+                    feature_name=self.feature_name,
+                    categorical_feature=self.categorical_feature,
+                    params=self.params,
+                )
             if self.free_raw_data:
                 self.data = None
         return self
 
-    def create_valid(self, data, label=None, weight=None, group=None,
-                     init_score=None, silent=False, params=None):
+    def create_valid(
+        self,
+        data,
+        label=None,
+        weight=None,
+        group=None,
+        init_score=None,
+        silent=False,
+        params=None,
+    ):
         """Create validation data align with current Dataset.
 
         Parameters
@@ -1496,9 +1772,17 @@ class Dataset:
         valid : Dataset
             Validation Dataset with reference to self.
         """
-        ret = Dataset(data, label=label, reference=self,
-                      weight=weight, group=group, init_score=init_score,
-                      silent=silent, params=params, free_raw_data=self.free_raw_data)
+        ret = Dataset(
+            data,
+            label=label,
+            reference=self,
+            weight=weight,
+            group=group,
+            init_score=init_score,
+            silent=silent,
+            params=params,
+            free_raw_data=self.free_raw_data,
+        )
         ret._predictor = self._predictor
         ret.pandas_categorical = self.pandas_categorical
         return ret
@@ -1520,9 +1804,14 @@ class Dataset:
         """
         if params is None:
             params = self.params
-        ret = Dataset(None, reference=self, feature_name=self.feature_name,
-                      categorical_feature=self.categorical_feature, params=params,
-                      free_raw_data=self.free_raw_data)
+        ret = Dataset(
+            None,
+            reference=self,
+            feature_name=self.feature_name,
+            categorical_feature=self.categorical_feature,
+            params=params,
+            free_raw_data=self.free_raw_data,
+        )
         ret._predictor = self._predictor
         ret.pandas_categorical = self.pandas_categorical
         ret.used_indices = sorted(used_indices)
@@ -1546,9 +1835,9 @@ class Dataset:
         self : Dataset
             Returns self.
         """
-        _safe_call(_LIB.LGBM_DatasetSaveBinary(
-            self.construct().handle,
-            c_str(filename)))
+        _safe_call(
+            _LIB.LGBM_DatasetSaveBinary(self.construct().handle, c_str(filename))
+        )
         return self
 
     def _update_params(self, params):
@@ -1567,15 +1856,15 @@ class Dataset:
             update()
         elif params is not None:
             ret = _LIB.LGBM_DatasetUpdateParamChecking(
-                c_str(param_dict_to_str(self.params)),
-                c_str(param_dict_to_str(params)))
+                c_str(param_dict_to_str(self.params)), c_str(param_dict_to_str(params))
+            )
             if ret != 0:
                 # could be updated if data is not freed
                 if self.data is not None:
                     update()
                     self._free_handle()
                 else:
-                    raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
+                    raise LightGBMError(_LIB.LGBM_GetLastError().decode("utf-8"))
         return self
 
     def _reverse_update_params(self):
@@ -1603,17 +1892,20 @@ class Dataset:
             raise Exception("Cannot set %s before construct dataset" % field_name)
         if data is None:
             # set to None
-            _safe_call(_LIB.LGBM_DatasetSetField(
-                self.handle,
-                c_str(field_name),
-                None,
-                ctypes.c_int(0),
-                ctypes.c_int(FIELD_TYPE_MAPPER[field_name])))
+            _safe_call(
+                _LIB.LGBM_DatasetSetField(
+                    self.handle,
+                    c_str(field_name),
+                    None,
+                    ctypes.c_int(0),
+                    ctypes.c_int(FIELD_TYPE_MAPPER[field_name]),
+                )
+            )
             return self
         dtype = np.float32
-        if field_name == 'group':
+        if field_name == "group":
             dtype = np.int32
-        elif field_name == 'init_score':
+        elif field_name == "init_score":
             dtype = np.float64
         data = list_to_1d_numpy(data, dtype, name=field_name)
         if data.dtype == np.float32 or data.dtype == np.float64:
@@ -1621,15 +1913,20 @@ class Dataset:
         elif data.dtype == np.int32:
             ptr_data, type_data, _ = c_int_array(data)
         else:
-            raise TypeError("Expected np.float32/64 or np.int32, met type({})".format(data.dtype))
+            raise TypeError(
+                "Expected np.float32/64 or np.int32, met type({})".format(data.dtype)
+            )
         if type_data != FIELD_TYPE_MAPPER[field_name]:
             raise TypeError("Input type error for set_field")
-        _safe_call(_LIB.LGBM_DatasetSetField(
-            self.handle,
-            c_str(field_name),
-            ptr_data,
-            ctypes.c_int(len(data)),
-            ctypes.c_int(type_data)))
+        _safe_call(
+            _LIB.LGBM_DatasetSetField(
+                self.handle,
+                c_str(field_name),
+                ptr_data,
+                ctypes.c_int(len(data)),
+                ctypes.c_int(type_data),
+            )
+        )
         self.version += 1
         return self
 
@@ -1651,22 +1948,31 @@ class Dataset:
         tmp_out_len = ctypes.c_int()
         out_type = ctypes.c_int()
         ret = ctypes.POINTER(ctypes.c_void_p)()
-        _safe_call(_LIB.LGBM_DatasetGetField(
-            self.handle,
-            c_str(field_name),
-            ctypes.byref(tmp_out_len),
-            ctypes.byref(ret),
-            ctypes.byref(out_type)))
+        _safe_call(
+            _LIB.LGBM_DatasetGetField(
+                self.handle,
+                c_str(field_name),
+                ctypes.byref(tmp_out_len),
+                ctypes.byref(ret),
+                ctypes.byref(out_type),
+            )
+        )
         if out_type.value != FIELD_TYPE_MAPPER[field_name]:
             raise TypeError("Return type error for get_field")
         if tmp_out_len.value == 0:
             return None
         if out_type.value == C_API_DTYPE_INT32:
-            return cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
+            return cint32_array_to_numpy(
+                ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value
+            )
         elif out_type.value == C_API_DTYPE_FLOAT32:
-            return cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
+            return cfloat32_array_to_numpy(
+                ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value
+            )
         elif out_type.value == C_API_DTYPE_FLOAT64:
-            return cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
+            return cfloat64_array_to_numpy(
+                ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value
+            )
         else:
             raise TypeError("Unknown type")
 
@@ -1689,17 +1995,23 @@ class Dataset:
             if self.categorical_feature is None:
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
-            elif categorical_feature == 'auto':
-                _log_warning('Using categorical_feature in Dataset.')
+            elif categorical_feature == "auto":
+                _log_warning("Using categorical_feature in Dataset.")
                 return self
             else:
-                _log_warning('categorical_feature in Dataset is overridden.\n'
-                             'New categorical_feature is {}'.format(sorted(list(categorical_feature))))
+                _log_warning(
+                    "categorical_feature in Dataset is overridden.\n"
+                    "New categorical_feature is {}".format(
+                        sorted(list(categorical_feature))
+                    )
+                )
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
         else:
-            raise LightGBMError("Cannot set categorical feature after freed raw data, "
-                                "set free_raw_data=False when construct Dataset to avoid this.")
+            raise LightGBMError(
+                "Cannot set categorical feature after freed raw data, "
+                "set free_raw_data=False when construct Dataset to avoid this."
+            )
 
     def _set_predictor(self, predictor):
         """Set predictor for continued training.
@@ -1707,19 +2019,30 @@ class Dataset:
         It is not recommended for user to call this function.
         Please use init_model argument in engine.train() or engine.cv() instead.
         """
-        if predictor is self._predictor and (predictor is None or predictor.current_iteration() == self._predictor.current_iteration()):
+        if predictor is self._predictor and (
+            predictor is None
+            or predictor.current_iteration() == self._predictor.current_iteration()
+        ):
             return self
         if self.handle is None:
             self._predictor = predictor
         elif self.data is not None:
             self._predictor = predictor
             self._set_init_score_by_predictor(self._predictor, self.data)
-        elif self.used_indices is not None and self.reference is not None and self.reference.data is not None:
+        elif (
+            self.used_indices is not None
+            and self.reference is not None
+            and self.reference.data is not None
+        ):
             self._predictor = predictor
-            self._set_init_score_by_predictor(self._predictor, self.reference.data, self.used_indices)
+            self._set_init_score_by_predictor(
+                self._predictor, self.reference.data, self.used_indices
+            )
         else:
-            raise LightGBMError("Cannot set predictor after freed raw data, "
-                                "set free_raw_data=False when construct Dataset to avoid this.")
+            raise LightGBMError(
+                "Cannot set predictor after freed raw data, "
+                "set free_raw_data=False when construct Dataset to avoid this."
+            )
         return self
 
     def set_reference(self, reference):
@@ -1735,9 +2058,9 @@ class Dataset:
         self : Dataset
             Dataset with set reference.
         """
-        self.set_categorical_feature(reference.categorical_feature) \
-            .set_feature_name(reference.feature_name) \
-            ._set_predictor(reference._predictor)
+        self.set_categorical_feature(reference.categorical_feature).set_feature_name(
+            reference.feature_name
+        )._set_predictor(reference._predictor)
         # we're done if self and reference share a common upstrem reference
         if self.get_ref_chain().intersection(reference.get_ref_chain()):
             return self
@@ -1745,8 +2068,10 @@ class Dataset:
             self.reference = reference
             return self._free_handle()
         else:
-            raise LightGBMError("Cannot set reference after freed raw data, "
-                                "set free_raw_data=False when construct Dataset to avoid this.")
+            raise LightGBMError(
+                "Cannot set reference after freed raw data, "
+                "set free_raw_data=False when construct Dataset to avoid this."
+            )
 
     def set_feature_name(self, feature_name):
         """Set feature name.
@@ -1761,17 +2086,27 @@ class Dataset:
         self : Dataset
             Dataset with set feature name.
         """
-        if feature_name != 'auto':
+        if feature_name != "auto":
             self.feature_name = feature_name
-        if self.handle is not None and feature_name is not None and feature_name != 'auto':
+        if (
+            self.handle is not None
+            and feature_name is not None
+            and feature_name != "auto"
+        ):
             if len(feature_name) != self.num_feature():
-                raise ValueError("Length of feature_name({}) and num_feature({}) don't match"
-                                 .format(len(feature_name), self.num_feature()))
+                raise ValueError(
+                    "Length of feature_name({}) and num_feature({}) don't match".format(
+                        len(feature_name), self.num_feature()
+                    )
+                )
             c_feature_name = [c_str(name) for name in feature_name]
-            _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
-                self.handle,
-                c_array(ctypes.c_char_p, c_feature_name),
-                ctypes.c_int(len(feature_name))))
+            _safe_call(
+                _LIB.LGBM_DatasetSetFeatureNames(
+                    self.handle,
+                    c_array(ctypes.c_char_p, c_feature_name),
+                    ctypes.c_int(len(feature_name)),
+                )
+            )
         return self
 
     def set_label(self, label):
@@ -1789,9 +2124,11 @@ class Dataset:
         """
         self.label = label
         if self.handle is not None:
-            label = list_to_1d_numpy(_label_from_pandas(label), name='label')
-            self.set_field('label', label)
-            self.label = self.get_field('label')  # original values can be modified at cpp side
+            label = list_to_1d_numpy(_label_from_pandas(label), name="label")
+            self.set_field("label", label)
+            self.label = self.get_field(
+                "label"
+            )  # original values can be modified at cpp side
         return self
 
     def set_weight(self, weight):
@@ -1811,9 +2148,11 @@ class Dataset:
             weight = None
         self.weight = weight
         if self.handle is not None and weight is not None:
-            weight = list_to_1d_numpy(weight, name='weight')
-            self.set_field('weight', weight)
-            self.weight = self.get_field('weight')  # original values can be modified at cpp side
+            weight = list_to_1d_numpy(weight, name="weight")
+            self.set_field("weight", weight)
+            self.weight = self.get_field(
+                "weight"
+            )  # original values can be modified at cpp side
         return self
 
     def set_init_score(self, init_score):
@@ -1831,9 +2170,11 @@ class Dataset:
         """
         self.init_score = init_score
         if self.handle is not None and init_score is not None:
-            init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
-            self.set_field('init_score', init_score)
-            self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
+            init_score = list_to_1d_numpy(init_score, np.float64, name="init_score")
+            self.set_field("init_score", init_score)
+            self.init_score = self.get_field(
+                "init_score"
+            )  # original values can be modified at cpp side
         return self
 
     def set_group(self, group):
@@ -1855,8 +2196,8 @@ class Dataset:
         """
         self.group = group
         if self.handle is not None and group is not None:
-            group = list_to_1d_numpy(group, np.int32, name='group')
-            self.set_field('group', group)
+            group = list_to_1d_numpy(group, np.int32, name="group")
+            self.set_field("group", group)
         return self
 
     def get_feature_name(self):
@@ -1873,23 +2214,32 @@ class Dataset:
         tmp_out_len = ctypes.c_int(0)
         reserved_string_buffer_size = 255
         required_string_buffer_size = ctypes.c_size_t(0)
-        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range(num_feature)]
-        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
-        _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
-            self.handle,
-            ctypes.c_int(num_feature),
-            ctypes.byref(tmp_out_len),
-            ctypes.c_size_t(reserved_string_buffer_size),
-            ctypes.byref(required_string_buffer_size),
-            ptr_string_buffers))
+        string_buffers = [
+            ctypes.create_string_buffer(reserved_string_buffer_size)
+            for i in range(num_feature)
+        ]
+        ptr_string_buffers = (ctypes.c_char_p * num_feature)(
+            *map(ctypes.addressof, string_buffers)
+        )
+        _safe_call(
+            _LIB.LGBM_DatasetGetFeatureNames(
+                self.handle,
+                ctypes.c_int(num_feature),
+                ctypes.byref(tmp_out_len),
+                ctypes.c_size_t(reserved_string_buffer_size),
+                ctypes.byref(required_string_buffer_size),
+                ptr_string_buffers,
+            )
+        )
         if num_feature != tmp_out_len.value:
             raise ValueError("Length of feature names doesn't equal with num_feature")
         if reserved_string_buffer_size < required_string_buffer_size.value:
             raise BufferError(
-                "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
-                .format(reserved_string_buffer_size, required_string_buffer_size.value)
+                "Allocated feature name buffer size ({}) was inferior to the needed size ({}).".format(
+                    reserved_string_buffer_size, required_string_buffer_size.value
+                )
             )
-        return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
+        return [string_buffers[i].value.decode("utf-8") for i in range(num_feature)]
 
     def get_label(self):
         """Get the label of the Dataset.
@@ -1900,7 +2250,7 @@ class Dataset:
             The label information from the Dataset.
         """
         if self.label is None:
-            self.label = self.get_field('label')
+            self.label = self.get_field("label")
         return self.label
 
     def get_weight(self):
@@ -1912,7 +2262,7 @@ class Dataset:
             Weight for each data point from the Dataset.
         """
         if self.weight is None:
-            self.weight = self.get_field('weight')
+            self.weight = self.get_field("weight")
         return self.weight
 
     def get_init_score(self):
@@ -1924,7 +2274,7 @@ class Dataset:
             Init score of Booster.
         """
         if self.init_score is None:
-            self.init_score = self.get_field('init_score')
+            self.init_score = self.get_field("init_score")
         return self.init_score
 
     def get_data(self):
@@ -1937,22 +2287,32 @@ class Dataset:
         """
         if self.handle is None:
             raise Exception("Cannot get data before construct Dataset")
-        if self.need_slice and self.used_indices is not None and self.reference is not None:
+        if (
+            self.need_slice
+            and self.used_indices is not None
+            and self.reference is not None
+        ):
             self.data = self.reference.data
             if self.data is not None:
-                if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
+                if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(
+                    self.data
+                ):
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
                 elif isinstance(self.data, dt_DataTable):
                     self.data = self.data[self.used_indices, :]
                 else:
-                    _log_warning("Cannot subset {} type of raw data.\n"
-                                 "Returning original raw data".format(type(self.data).__name__))
+                    _log_warning(
+                        "Cannot subset {} type of raw data.\n"
+                        "Returning original raw data".format(type(self.data).__name__)
+                    )
             self.need_slice = False
         if self.data is None:
-            raise LightGBMError("Cannot call `get_data` after freed raw data, "
-                                "set free_raw_data=False when construct Dataset to avoid this.")
+            raise LightGBMError(
+                "Cannot call `get_data` after freed raw data, "
+                "set free_raw_data=False when construct Dataset to avoid this."
+            )
         return self.data
 
     def get_group(self):
@@ -1968,7 +2328,7 @@ class Dataset:
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         """
         if self.group is None:
-            self.group = self.get_field('group')
+            self.group = self.get_field("group")
             if self.group is not None:
                 # group data from LightGBM is boundaries data, need to convert to group size
                 self.group = np.diff(self.group)
@@ -1984,8 +2344,7 @@ class Dataset:
         """
         if self.handle is not None:
             ret = ctypes.c_int()
-            _safe_call(_LIB.LGBM_DatasetGetNumData(self.handle,
-                                                   ctypes.byref(ret)))
+            _safe_call(_LIB.LGBM_DatasetGetNumData(self.handle, ctypes.byref(ret)))
             return ret.value
         else:
             raise LightGBMError("Cannot get num_data before construct dataset")
@@ -2000,8 +2359,7 @@ class Dataset:
         """
         if self.handle is not None:
             ret = ctypes.c_int()
-            _safe_call(_LIB.LGBM_DatasetGetNumFeature(self.handle,
-                                                      ctypes.byref(ret)))
+            _safe_call(_LIB.LGBM_DatasetGetNumFeature(self.handle, ctypes.byref(ret)))
             return ret.value
         else:
             raise LightGBMError("Cannot get num_feature before construct dataset")
@@ -2052,7 +2410,9 @@ class Dataset:
             Dataset with the new features added.
         """
         if self.handle is None or other.handle is None:
-            raise ValueError('Both source and target Datasets must be constructed before adding features')
+            raise ValueError(
+                "Both source and target Datasets must be constructed before adding features"
+            )
         _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self.handle, other.handle))
         was_none = self.data is None
         old_self_data_type = type(self.data).__name__
@@ -2072,55 +2432,87 @@ class Dataset:
                     self.data = None
             elif scipy.sparse.issparse(self.data):
                 sparse_format = self.data.getformat()
-                if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(other.data):
-                    self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
+                if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(
+                    other.data
+                ):
+                    self.data = scipy.sparse.hstack(
+                        (self.data, other.data), format=sparse_format
+                    )
                 elif isinstance(other.data, pd_DataFrame):
-                    self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
+                    self.data = scipy.sparse.hstack(
+                        (self.data, other.data.values), format=sparse_format
+                    )
                 elif isinstance(other.data, dt_DataTable):
-                    self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
+                    self.data = scipy.sparse.hstack(
+                        (self.data, other.data.to_numpy()), format=sparse_format
+                    )
                 else:
                     self.data = None
             elif isinstance(self.data, pd_DataFrame):
                 if not PANDAS_INSTALLED:
-                    raise LightGBMError("Cannot add features to DataFrame type of raw data "
-                                        "without pandas installed")
+                    raise LightGBMError(
+                        "Cannot add features to DataFrame type of raw data "
+                        "without pandas installed"
+                    )
                 if isinstance(other.data, np.ndarray):
-                    self.data = concat((self.data, pd_DataFrame(other.data)),
-                                       axis=1, ignore_index=True)
+                    self.data = concat(
+                        (self.data, pd_DataFrame(other.data)), axis=1, ignore_index=True
+                    )
                 elif scipy.sparse.issparse(other.data):
-                    self.data = concat((self.data, pd_DataFrame(other.data.toarray())),
-                                       axis=1, ignore_index=True)
+                    self.data = concat(
+                        (self.data, pd_DataFrame(other.data.toarray())),
+                        axis=1,
+                        ignore_index=True,
+                    )
                 elif isinstance(other.data, pd_DataFrame):
-                    self.data = concat((self.data, other.data),
-                                       axis=1, ignore_index=True)
+                    self.data = concat(
+                        (self.data, other.data), axis=1, ignore_index=True
+                    )
                 elif isinstance(other.data, dt_DataTable):
-                    self.data = concat((self.data, pd_DataFrame(other.data.to_numpy())),
-                                       axis=1, ignore_index=True)
+                    self.data = concat(
+                        (self.data, pd_DataFrame(other.data.to_numpy())),
+                        axis=1,
+                        ignore_index=True,
+                    )
                 else:
                     self.data = None
             elif isinstance(self.data, dt_DataTable):
                 if isinstance(other.data, np.ndarray):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data)))
+                    self.data = dt_DataTable(
+                        np.hstack((self.data.to_numpy(), other.data))
+                    )
                 elif scipy.sparse.issparse(other.data):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
+                    self.data = dt_DataTable(
+                        np.hstack((self.data.to_numpy(), other.data.toarray()))
+                    )
                 elif isinstance(other.data, pd_DataFrame):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
+                    self.data = dt_DataTable(
+                        np.hstack((self.data.to_numpy(), other.data.values))
+                    )
                 elif isinstance(other.data, dt_DataTable):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
+                    self.data = dt_DataTable(
+                        np.hstack((self.data.to_numpy(), other.data.to_numpy()))
+                    )
                 else:
                     self.data = None
             else:
                 self.data = None
         if self.data is None:
-            err_msg = ("Cannot add features from {} type of raw data to "
-                       "{} type of raw data.\n").format(type(other.data).__name__,
-                                                        old_self_data_type)
-            err_msg += ("Set free_raw_data=False when construct Dataset to avoid this"
-                        if was_none else "Freeing raw data")
+            err_msg = (
+                "Cannot add features from {} type of raw data to "
+                "{} type of raw data.\n"
+            ).format(type(other.data).__name__, old_self_data_type)
+            err_msg += (
+                "Set free_raw_data=False when construct Dataset to avoid this"
+                if was_none
+                else "Freeing raw data"
+            )
             _log_warning(err_msg)
         self.feature_name = self.get_feature_name()
-        _log_warning("Reseting categorical features.\n"
-                     "You can set new categorical features via ``set_categorical_feature`` method")
+        _log_warning(
+            "Reseting categorical features.\n"
+            "You can set new categorical features via ``set_categorical_feature`` method"
+        )
         self.categorical_feature = "auto"
         self.pandas_categorical = None
         return self
@@ -2140,16 +2532,16 @@ class Dataset:
         self : Dataset
             Returns self.
         """
-        _safe_call(_LIB.LGBM_DatasetDumpText(
-            self.construct().handle,
-            c_str(filename)))
+        _safe_call(_LIB.LGBM_DatasetDumpText(self.construct().handle, c_str(filename)))
         return self
 
 
 class Booster:
     """Booster in LightGBM."""
 
-    def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent=False):
+    def __init__(
+        self, params=None, train_set=None, model_file=None, model_str=None, silent=False
+    ):
         """Initialize the Booster.
 
         Parameters
@@ -2175,17 +2567,24 @@ class Booster:
         self.best_score = {}
         params = {} if params is None else deepcopy(params)
         # user can set verbose with params, it has higher priority
-        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
+        if (
+            not any(
+                verbose_alias in params
+                for verbose_alias in _ConfigAliases.get("verbosity")
+            )
+            and silent
+        ):
             params["verbose"] = -1
         if train_set is not None:
             # Training task
             if not isinstance(train_set, Dataset):
-                raise TypeError('Training data should be Dataset instance, met {}'
-                                .format(type(train_set).__name__))
+                raise TypeError(
+                    "Training data should be Dataset instance, met {}".format(
+                        type(train_set).__name__
+                    )
+                )
             params = _choose_param_value(
-                main_param_name="machines",
-                params=params,
-                default_value=None
+                main_param_name="machines", params=params, default_value=None
             )
             # if "machines" is given, assume user wants to do distributed learning, and set up network
             if params["machines"] is None:
@@ -2193,28 +2592,28 @@ class Booster:
             else:
                 machines = params["machines"]
                 if isinstance(machines, str):
-                    num_machines_from_machine_list = len(machines.split(','))
+                    num_machines_from_machine_list = len(machines.split(","))
                 elif isinstance(machines, (list, set)):
                     num_machines_from_machine_list = len(machines)
-                    machines = ','.join(machines)
+                    machines = ",".join(machines)
                 else:
                     raise ValueError("Invalid machines in params.")
 
                 params = _choose_param_value(
                     main_param_name="num_machines",
                     params=params,
-                    default_value=num_machines_from_machine_list
+                    default_value=num_machines_from_machine_list,
                 )
                 params = _choose_param_value(
                     main_param_name="local_listen_port",
                     params=params,
-                    default_value=12400
+                    default_value=12400,
                 )
                 self.set_network(
                     machines=machines,
                     local_listen_port=params["local_listen_port"],
                     listen_time_out=params.get("time_out", 120),
-                    num_machines=params["num_machines"]
+                    num_machines=params["num_machines"],
                 )
             # construct booster object
             train_set.construct()
@@ -2222,10 +2621,11 @@ class Booster:
             params.update(train_set.get_params())
             params_str = param_dict_to_str(params)
             self.handle = ctypes.c_void_p()
-            _safe_call(_LIB.LGBM_BoosterCreate(
-                train_set.handle,
-                c_str(params_str),
-                ctypes.byref(self.handle)))
+            _safe_call(
+                _LIB.LGBM_BoosterCreate(
+                    train_set.handle, c_str(params_str), ctypes.byref(self.handle)
+                )
+            )
             # save reference to data
             self.train_set = train_set
             self.valid_sets = []
@@ -2233,13 +2633,13 @@ class Booster:
             self.__num_dataset = 1
             self.__init_predictor = train_set._predictor
             if self.__init_predictor is not None:
-                _safe_call(_LIB.LGBM_BoosterMerge(
-                    self.handle,
-                    self.__init_predictor.handle))
+                _safe_call(
+                    _LIB.LGBM_BoosterMerge(self.handle, self.__init_predictor.handle)
+                )
             out_num_class = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterGetNumClasses(
-                self.handle,
-                ctypes.byref(out_num_class)))
+            _safe_call(
+                _LIB.LGBM_BoosterGetNumClasses(self.handle, ctypes.byref(out_num_class))
+            )
             self.__num_class = out_num_class.value
             # buffer for inner predict
             self.__inner_predict_buffer = [None]
@@ -2251,21 +2651,26 @@ class Booster:
             # Prediction task
             out_num_iterations = ctypes.c_int(0)
             self.handle = ctypes.c_void_p()
-            _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
-                c_str(model_file),
-                ctypes.byref(out_num_iterations),
-                ctypes.byref(self.handle)))
+            _safe_call(
+                _LIB.LGBM_BoosterCreateFromModelfile(
+                    c_str(model_file),
+                    ctypes.byref(out_num_iterations),
+                    ctypes.byref(self.handle),
+                )
+            )
             out_num_class = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterGetNumClasses(
-                self.handle,
-                ctypes.byref(out_num_class)))
+            _safe_call(
+                _LIB.LGBM_BoosterGetNumClasses(self.handle, ctypes.byref(out_num_class))
+            )
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
         elif model_str is not None:
             self.model_from_string(model_str, not silent)
         else:
-            raise TypeError('Need at least one training dataset or model file or model string '
-                            'to create Booster instance')
+            raise TypeError(
+                "Need at least one training dataset or model file or model string "
+                "to create Booster instance"
+            )
         self.params = params
 
     def __del__(self):
@@ -2290,23 +2695,26 @@ class Booster:
 
     def __getstate__(self):
         this = self.__dict__.copy()
-        handle = this['handle']
-        this.pop('train_set', None)
-        this.pop('valid_sets', None)
+        handle = this["handle"]
+        this.pop("train_set", None)
+        this.pop("valid_sets", None)
         if handle is not None:
             this["handle"] = self.model_to_string(num_iteration=-1)
         return this
 
     def __setstate__(self, state):
-        model_str = state.get('handle', None)
+        model_str = state.get("handle", None)
         if model_str is not None:
             handle = ctypes.c_void_p()
             out_num_iterations = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
-                c_str(model_str),
-                ctypes.byref(out_num_iterations),
-                ctypes.byref(handle)))
-            state['handle'] = handle
+            _safe_call(
+                _LIB.LGBM_BoosterLoadModelFromString(
+                    c_str(model_str),
+                    ctypes.byref(out_num_iterations),
+                    ctypes.byref(handle),
+                )
+            )
+            state["handle"] = handle
         self.__dict__.update(state)
 
     def free_dataset(self):
@@ -2317,8 +2725,8 @@ class Booster:
         self : Booster
             Booster without Datasets.
         """
-        self.__dict__.pop('train_set', None)
-        self.__dict__.pop('valid_sets', None)
+        self.__dict__.pop("train_set", None)
+        self.__dict__.pop("valid_sets", None)
         self.__num_dataset = 0
         return self
 
@@ -2327,8 +2735,9 @@ class Booster:
         self.__is_predicted_cur_iter = []
         return self
 
-    def set_network(self, machines, local_listen_port=12400,
-                    listen_time_out=120, num_machines=1):
+    def set_network(
+        self, machines, local_listen_port=12400, listen_time_out=120, num_machines=1
+    ):
         """Set the network configuration.
 
         Parameters
@@ -2347,10 +2756,14 @@ class Booster:
         self : Booster
             Booster with set network.
         """
-        _safe_call(_LIB.LGBM_NetworkInit(c_str(machines),
-                                         ctypes.c_int(local_listen_port),
-                                         ctypes.c_int(listen_time_out),
-                                         ctypes.c_int(num_machines)))
+        _safe_call(
+            _LIB.LGBM_NetworkInit(
+                c_str(machines),
+                ctypes.c_int(local_listen_port),
+                ctypes.c_int(listen_time_out),
+                ctypes.c_int(num_machines),
+            )
+        )
         self.network = True
         return self
 
@@ -2395,109 +2808,119 @@ class Booster:
             Returns a pandas DataFrame of the parsed model.
         """
         if not PANDAS_INSTALLED:
-            raise LightGBMError('This method cannot be run without pandas installed')
+            raise LightGBMError("This method cannot be run without pandas installed")
 
         if self.num_trees() == 0:
-            raise LightGBMError('There are no trees in this Booster and thus nothing to parse')
+            raise LightGBMError(
+                "There are no trees in this Booster and thus nothing to parse"
+            )
 
         def _is_split_node(tree):
-            return 'split_index' in tree.keys()
+            return "split_index" in tree.keys()
 
-        def create_node_record(tree, node_depth=1, tree_index=None,
-                               feature_names=None, parent_node=None):
-
+        def create_node_record(
+            tree, node_depth=1, tree_index=None, feature_names=None, parent_node=None
+        ):
             def _get_node_index(tree, tree_index):
-                tree_num = str(tree_index) + '-' if tree_index is not None else ''
+                tree_num = str(tree_index) + "-" if tree_index is not None else ""
                 is_split = _is_split_node(tree)
-                node_type = 'S' if is_split else 'L'
+                node_type = "S" if is_split else "L"
                 # if a single node tree it won't have `leaf_index` so return 0
-                node_num = str(tree.get('split_index' if is_split else 'leaf_index', 0))
+                node_num = str(tree.get("split_index" if is_split else "leaf_index", 0))
                 return tree_num + node_type + node_num
 
             def _get_split_feature(tree, feature_names):
                 if _is_split_node(tree):
                     if feature_names is not None:
-                        feature_name = feature_names[tree['split_feature']]
+                        feature_name = feature_names[tree["split_feature"]]
                     else:
-                        feature_name = tree['split_feature']
+                        feature_name = tree["split_feature"]
                 else:
                     feature_name = None
                 return feature_name
 
             def _is_single_node_tree(tree):
-                return set(tree.keys()) == {'leaf_value'}
+                return set(tree.keys()) == {"leaf_value"}
 
             # Create the node record, and populate universal data members
             node = OrderedDict()
-            node['tree_index'] = tree_index
-            node['node_depth'] = node_depth
-            node['node_index'] = _get_node_index(tree, tree_index)
-            node['left_child'] = None
-            node['right_child'] = None
-            node['parent_index'] = parent_node
-            node['split_feature'] = _get_split_feature(tree, feature_names)
-            node['split_gain'] = None
-            node['threshold'] = None
-            node['decision_type'] = None
-            node['missing_direction'] = None
-            node['missing_type'] = None
-            node['value'] = None
-            node['weight'] = None
-            node['count'] = None
+            node["tree_index"] = tree_index
+            node["node_depth"] = node_depth
+            node["node_index"] = _get_node_index(tree, tree_index)
+            node["left_child"] = None
+            node["right_child"] = None
+            node["parent_index"] = parent_node
+            node["split_feature"] = _get_split_feature(tree, feature_names)
+            node["split_gain"] = None
+            node["threshold"] = None
+            node["decision_type"] = None
+            node["missing_direction"] = None
+            node["missing_type"] = None
+            node["value"] = None
+            node["weight"] = None
+            node["count"] = None
 
             # Update values to reflect node type (leaf or split)
             if _is_split_node(tree):
-                node['left_child'] = _get_node_index(tree['left_child'], tree_index)
-                node['right_child'] = _get_node_index(tree['right_child'], tree_index)
-                node['split_gain'] = tree['split_gain']
-                node['threshold'] = tree['threshold']
-                node['decision_type'] = tree['decision_type']
-                node['missing_direction'] = 'left' if tree['default_left'] else 'right'
-                node['missing_type'] = tree['missing_type']
-                node['value'] = tree['internal_value']
-                node['weight'] = tree['internal_weight']
-                node['count'] = tree['internal_count']
+                node["left_child"] = _get_node_index(tree["left_child"], tree_index)
+                node["right_child"] = _get_node_index(tree["right_child"], tree_index)
+                node["split_gain"] = tree["split_gain"]
+                node["threshold"] = tree["threshold"]
+                node["decision_type"] = tree["decision_type"]
+                node["missing_direction"] = "left" if tree["default_left"] else "right"
+                node["missing_type"] = tree["missing_type"]
+                node["value"] = tree["internal_value"]
+                node["weight"] = tree["internal_weight"]
+                node["count"] = tree["internal_count"]
             else:
-                node['value'] = tree['leaf_value']
+                node["value"] = tree["leaf_value"]
                 if not _is_single_node_tree(tree):
-                    node['weight'] = tree['leaf_weight']
-                    node['count'] = tree['leaf_count']
+                    node["weight"] = tree["leaf_weight"]
+                    node["count"] = tree["leaf_count"]
 
             return node
 
-        def tree_dict_to_node_list(tree, node_depth=1, tree_index=None,
-                                   feature_names=None, parent_node=None):
+        def tree_dict_to_node_list(
+            tree, node_depth=1, tree_index=None, feature_names=None, parent_node=None
+        ):
 
-            node = create_node_record(tree,
-                                      node_depth=node_depth,
-                                      tree_index=tree_index,
-                                      feature_names=feature_names,
-                                      parent_node=parent_node)
+            node = create_node_record(
+                tree,
+                node_depth=node_depth,
+                tree_index=tree_index,
+                feature_names=feature_names,
+                parent_node=parent_node,
+            )
 
             res = [node]
 
             if _is_split_node(tree):
                 # traverse the next level of the tree
-                children = ['left_child', 'right_child']
+                children = ["left_child", "right_child"]
                 for child in children:
                     subtree_list = tree_dict_to_node_list(
                         tree[child],
                         node_depth=node_depth + 1,
                         tree_index=tree_index,
                         feature_names=feature_names,
-                        parent_node=node['node_index'])
+                        parent_node=node["node_index"],
+                    )
                     # In tree format, "subtree_list" is a list of node records (dicts),
                     # and we add node to the list.
                     res.extend(subtree_list)
             return res
 
         model_dict = self.dump_model()
-        feature_names = model_dict['feature_names']
+        feature_names = model_dict["feature_names"]
         model_list = []
-        for tree in model_dict['tree_info']:
-            model_list.extend(tree_dict_to_node_list(tree['tree_structure'],
-                                                     tree_index=tree['tree_index'],
-                                                     feature_names=feature_names))
+        for tree in model_dict["tree_info"]:
+            model_list.extend(
+                tree_dict_to_node_list(
+                    tree["tree_structure"],
+                    tree_index=tree["tree_index"],
+                    feature_names=feature_names,
+                )
+            )
 
         return pd_DataFrame(model_list, columns=model_list[0].keys())
 
@@ -2533,14 +2956,17 @@ class Booster:
             Booster with set validation data.
         """
         if not isinstance(data, Dataset):
-            raise TypeError('Validation data should be Dataset instance, met {}'
-                            .format(type(data).__name__))
+            raise TypeError(
+                "Validation data should be Dataset instance, met {}".format(
+                    type(data).__name__
+                )
+            )
         if data._predictor is not self.__init_predictor:
-            raise LightGBMError("Add validation data failed, "
-                                "you should use same predictor for these data")
-        _safe_call(_LIB.LGBM_BoosterAddValidData(
-            self.handle,
-            data.construct().handle))
+            raise LightGBMError(
+                "Add validation data failed, "
+                "you should use same predictor for these data"
+            )
+        _safe_call(_LIB.LGBM_BoosterAddValidData(self.handle, data.construct().handle))
         self.valid_sets.append(data)
         self.name_valid_sets.append(name)
         self.__num_dataset += 1
@@ -2563,9 +2989,7 @@ class Booster:
         """
         params_str = param_dict_to_str(params)
         if params_str:
-            _safe_call(_LIB.LGBM_BoosterResetParameter(
-                self.handle,
-                c_str(params_str)))
+            _safe_call(_LIB.LGBM_BoosterResetParameter(self.handle, c_str(params_str)))
         self.params.update(params)
         return self
 
@@ -2606,32 +3030,44 @@ class Booster:
             train_set = self.train_set
             is_the_same_train_set = False
         else:
-            is_the_same_train_set = train_set is self.train_set and self.train_set_version == train_set.version
+            is_the_same_train_set = (
+                train_set is self.train_set
+                and self.train_set_version == train_set.version
+            )
         if train_set is not None and not is_the_same_train_set:
             if not isinstance(train_set, Dataset):
-                raise TypeError('Training data should be Dataset instance, met {}'
-                                .format(type(train_set).__name__))
+                raise TypeError(
+                    "Training data should be Dataset instance, met {}".format(
+                        type(train_set).__name__
+                    )
+                )
             if train_set._predictor is not self.__init_predictor:
-                raise LightGBMError("Replace training data failed, "
-                                    "you should use same predictor for these data")
+                raise LightGBMError(
+                    "Replace training data failed, "
+                    "you should use same predictor for these data"
+                )
             self.train_set = train_set
-            _safe_call(_LIB.LGBM_BoosterResetTrainingData(
-                self.handle,
-                self.train_set.construct().handle))
+            _safe_call(
+                _LIB.LGBM_BoosterResetTrainingData(
+                    self.handle, self.train_set.construct().handle
+                )
+            )
             self.__inner_predict_buffer[0] = None
             self.train_set_version = self.train_set.version
         is_finished = ctypes.c_int(0)
         if fobj is None:
             if self.__set_objective_to_none:
-                raise LightGBMError('Cannot update due to null objective function.')
-            _safe_call(_LIB.LGBM_BoosterUpdateOneIter(
-                self.handle,
-                ctypes.byref(is_finished)))
+                raise LightGBMError("Cannot update due to null objective function.")
+            _safe_call(
+                _LIB.LGBM_BoosterUpdateOneIter(self.handle, ctypes.byref(is_finished))
+            )
             self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
             return is_finished.value == 1
         else:
             if not self.__set_objective_to_none:
-                self.reset_parameter({"objective": "none"}).__set_objective_to_none = True
+                self.reset_parameter(
+                    {"objective": "none"}
+                ).__set_objective_to_none = True
             grad, hess = fobj(self.__inner_predict(0), self.train_set)
             return self.__boost(grad, hess)
 
@@ -2657,19 +3093,25 @@ class Booster:
         is_finished : bool
             Whether the boost was successfully finished.
         """
-        grad = list_to_1d_numpy(grad, name='gradient')
-        hess = list_to_1d_numpy(hess, name='hessian')
+        grad = list_to_1d_numpy(grad, name="gradient")
+        hess = list_to_1d_numpy(hess, name="hessian")
         assert grad.flags.c_contiguous
         assert hess.flags.c_contiguous
         if len(grad) != len(hess):
-            raise ValueError("Lengths of gradient({}) and hessian({}) don't match"
-                             .format(len(grad), len(hess)))
+            raise ValueError(
+                "Lengths of gradient({}) and hessian({}) don't match".format(
+                    len(grad), len(hess)
+                )
+            )
         is_finished = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterUpdateOneIterCustom(
-            self.handle,
-            grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-            hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-            ctypes.byref(is_finished)))
+        _safe_call(
+            _LIB.LGBM_BoosterUpdateOneIterCustom(
+                self.handle,
+                grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                ctypes.byref(is_finished),
+            )
+        )
         self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return is_finished.value == 1
 
@@ -2681,8 +3123,7 @@ class Booster:
         self : Booster
             Booster with rolled back one iteration.
         """
-        _safe_call(_LIB.LGBM_BoosterRollbackOneIter(
-            self.handle))
+        _safe_call(_LIB.LGBM_BoosterRollbackOneIter(self.handle))
         self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return self
 
@@ -2695,9 +3136,11 @@ class Booster:
             The index of the current iteration.
         """
         out_cur_iter = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterGetCurrentIteration(
-            self.handle,
-            ctypes.byref(out_cur_iter)))
+        _safe_call(
+            _LIB.LGBM_BoosterGetCurrentIteration(
+                self.handle, ctypes.byref(out_cur_iter)
+            )
+        )
         return out_cur_iter.value
 
     def num_model_per_iteration(self):
@@ -2709,9 +3152,11 @@ class Booster:
             The number of models per iteration.
         """
         model_per_iter = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterNumModelPerIteration(
-            self.handle,
-            ctypes.byref(model_per_iter)))
+        _safe_call(
+            _LIB.LGBM_BoosterNumModelPerIteration(
+                self.handle, ctypes.byref(model_per_iter)
+            )
+        )
         return model_per_iter.value
 
     def num_trees(self):
@@ -2723,9 +3168,9 @@ class Booster:
             The number of weak sub-models.
         """
         num_trees = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterNumberOfTotalModel(
-            self.handle,
-            ctypes.byref(num_trees)))
+        _safe_call(
+            _LIB.LGBM_BoosterNumberOfTotalModel(self.handle, ctypes.byref(num_trees))
+        )
         return num_trees.value
 
     def upper_bound(self):
@@ -2737,9 +3182,7 @@ class Booster:
             Upper bound value of the model.
         """
         ret = ctypes.c_double(0)
-        _safe_call(_LIB.LGBM_BoosterGetUpperBoundValue(
-            self.handle,
-            ctypes.byref(ret)))
+        _safe_call(_LIB.LGBM_BoosterGetUpperBoundValue(self.handle, ctypes.byref(ret)))
         return ret.value
 
     def lower_bound(self):
@@ -2751,9 +3194,7 @@ class Booster:
             Lower bound value of the model.
         """
         ret = ctypes.c_double(0)
-        _safe_call(_LIB.LGBM_BoosterGetLowerBoundValue(
-            self.handle,
-            ctypes.byref(ret)))
+        _safe_call(_LIB.LGBM_BoosterGetLowerBoundValue(self.handle, ctypes.byref(ret)))
         return ret.value
 
     def eval(self, data, name, feval=None):
@@ -2869,10 +3310,15 @@ class Booster:
         result : list
             List with evaluation results.
         """
-        return [item for i in range(1, self.__num_dataset)
-                for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
+        return [
+            item
+            for i in range(1, self.__num_dataset)
+            for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)
+        ]
 
-    def save_model(self, filename, num_iteration=None, start_iteration=0, importance_type='split'):
+    def save_model(
+        self, filename, num_iteration=None, start_iteration=0, importance_type="split"
+    ):
         """Save Booster to file.
 
         Parameters
@@ -2898,12 +3344,15 @@ class Booster:
         if num_iteration is None:
             num_iteration = self.best_iteration
         importance_type_int = FEATURE_IMPORTANCE_TYPE_MAPPER[importance_type]
-        _safe_call(_LIB.LGBM_BoosterSaveModel(
-            self.handle,
-            ctypes.c_int(start_iteration),
-            ctypes.c_int(num_iteration),
-            ctypes.c_int(importance_type_int),
-            c_str(filename)))
+        _safe_call(
+            _LIB.LGBM_BoosterSaveModel(
+                self.handle,
+                ctypes.c_int(start_iteration),
+                ctypes.c_int(num_iteration),
+                ctypes.c_int(importance_type_int),
+                c_str(filename),
+            )
+        )
         _dump_pandas_categorical(self.pandas_categorical, filename)
         return self
 
@@ -2923,10 +3372,11 @@ class Booster:
         self : Booster
             Booster with shuffled models.
         """
-        _safe_call(_LIB.LGBM_BoosterShuffleModels(
-            self.handle,
-            ctypes.c_int(start_iteration),
-            ctypes.c_int(end_iteration)))
+        _safe_call(
+            _LIB.LGBM_BoosterShuffleModels(
+                self.handle, ctypes.c_int(start_iteration), ctypes.c_int(end_iteration)
+            )
+        )
         return self
 
     def model_from_string(self, model_str, verbose=True):
@@ -2949,21 +3399,29 @@ class Booster:
         self._free_buffer()
         self.handle = ctypes.c_void_p()
         out_num_iterations = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
-            c_str(model_str),
-            ctypes.byref(out_num_iterations),
-            ctypes.byref(self.handle)))
+        _safe_call(
+            _LIB.LGBM_BoosterLoadModelFromString(
+                c_str(model_str),
+                ctypes.byref(out_num_iterations),
+                ctypes.byref(self.handle),
+            )
+        )
         out_num_class = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterGetNumClasses(
-            self.handle,
-            ctypes.byref(out_num_class)))
+        _safe_call(
+            _LIB.LGBM_BoosterGetNumClasses(self.handle, ctypes.byref(out_num_class))
+        )
         if verbose:
-            _log_info('Finished loading model, total used %d iterations' % int(out_num_iterations.value))
+            _log_info(
+                "Finished loading model, total used %d iterations"
+                % int(out_num_iterations.value)
+            )
         self.__num_class = out_num_class.value
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
 
-    def model_to_string(self, num_iteration=None, start_iteration=0, importance_type='split'):
+    def model_to_string(
+        self, num_iteration=None, start_iteration=0, importance_type="split"
+    ):
         """Save Booster to string.
 
         Parameters
@@ -2991,32 +3449,40 @@ class Booster:
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
         ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
-        _safe_call(_LIB.LGBM_BoosterSaveModelToString(
-            self.handle,
-            ctypes.c_int(start_iteration),
-            ctypes.c_int(num_iteration),
-            ctypes.c_int(importance_type_int),
-            ctypes.c_int64(buffer_len),
-            ctypes.byref(tmp_out_len),
-            ptr_string_buffer))
+        _safe_call(
+            _LIB.LGBM_BoosterSaveModelToString(
+                self.handle,
+                ctypes.c_int(start_iteration),
+                ctypes.c_int(num_iteration),
+                ctypes.c_int(importance_type_int),
+                ctypes.c_int64(buffer_len),
+                ctypes.byref(tmp_out_len),
+                ptr_string_buffer,
+            )
+        )
         actual_len = tmp_out_len.value
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
             ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
-            _safe_call(_LIB.LGBM_BoosterSaveModelToString(
-                self.handle,
-                ctypes.c_int(start_iteration),
-                ctypes.c_int(num_iteration),
-                ctypes.c_int(importance_type_int),
-                ctypes.c_int64(actual_len),
-                ctypes.byref(tmp_out_len),
-                ptr_string_buffer))
-        ret = string_buffer.value.decode('utf-8')
+            _safe_call(
+                _LIB.LGBM_BoosterSaveModelToString(
+                    self.handle,
+                    ctypes.c_int(start_iteration),
+                    ctypes.c_int(num_iteration),
+                    ctypes.c_int(importance_type_int),
+                    ctypes.c_int64(actual_len),
+                    ctypes.byref(tmp_out_len),
+                    ptr_string_buffer,
+                )
+            )
+        ret = string_buffer.value.decode("utf-8")
         ret += _dump_pandas_categorical(self.pandas_categorical)
         return ret
 
-    def dump_model(self, num_iteration=None, start_iteration=0, importance_type='split'):
+    def dump_model(
+        self, num_iteration=None, start_iteration=0, importance_type="split"
+    ):
         """Dump Booster to JSON format.
 
         Parameters
@@ -3044,35 +3510,51 @@ class Booster:
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
         ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
-        _safe_call(_LIB.LGBM_BoosterDumpModel(
-            self.handle,
-            ctypes.c_int(start_iteration),
-            ctypes.c_int(num_iteration),
-            ctypes.c_int(importance_type_int),
-            ctypes.c_int64(buffer_len),
-            ctypes.byref(tmp_out_len),
-            ptr_string_buffer))
+        _safe_call(
+            _LIB.LGBM_BoosterDumpModel(
+                self.handle,
+                ctypes.c_int(start_iteration),
+                ctypes.c_int(num_iteration),
+                ctypes.c_int(importance_type_int),
+                ctypes.c_int64(buffer_len),
+                ctypes.byref(tmp_out_len),
+                ptr_string_buffer,
+            )
+        )
         actual_len = tmp_out_len.value
         # if buffer length is not long enough, reallocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
             ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
-            _safe_call(_LIB.LGBM_BoosterDumpModel(
-                self.handle,
-                ctypes.c_int(start_iteration),
-                ctypes.c_int(num_iteration),
-                ctypes.c_int(importance_type_int),
-                ctypes.c_int64(actual_len),
-                ctypes.byref(tmp_out_len),
-                ptr_string_buffer))
-        ret = json.loads(string_buffer.value.decode('utf-8'))
-        ret['pandas_categorical'] = json.loads(json.dumps(self.pandas_categorical,
-                                                          default=json_default_with_numpy))
+            _safe_call(
+                _LIB.LGBM_BoosterDumpModel(
+                    self.handle,
+                    ctypes.c_int(start_iteration),
+                    ctypes.c_int(num_iteration),
+                    ctypes.c_int(importance_type_int),
+                    ctypes.c_int64(actual_len),
+                    ctypes.byref(tmp_out_len),
+                    ptr_string_buffer,
+                )
+            )
+        ret = json.loads(string_buffer.value.decode("utf-8"))
+        ret["pandas_categorical"] = json.loads(
+            json.dumps(self.pandas_categorical, default=json_default_with_numpy)
+        )
         return ret
 
-    def predict(self, data, start_iteration=0, num_iteration=None,
-                raw_score=False, pred_leaf=False, pred_contrib=False,
-                data_has_header=False, is_reshape=True, **kwargs):
+    def predict(
+        self,
+        data,
+        start_iteration=0,
+        num_iteration=None,
+        raw_score=False,
+        pred_leaf=False,
+        pred_contrib=False,
+        data_has_header=False,
+        is_reshape=True,
+        **kwargs
+    ):
         """Make a prediction.
 
         Parameters
@@ -3123,9 +3605,16 @@ class Booster:
                 num_iteration = self.best_iteration
             else:
                 num_iteration = -1
-        return predictor.predict(data, start_iteration, num_iteration,
-                                 raw_score, pred_leaf, pred_contrib,
-                                 data_has_header, is_reshape)
+        return predictor.predict(
+            data,
+            start_iteration,
+            num_iteration,
+            raw_score,
+            pred_leaf,
+            pred_contrib,
+            data_has_header,
+            is_reshape,
+        )
 
     def refit(self, data, label, decay_rate=0.9, **kwargs):
         """Refit the existing Booster by new data.
@@ -3150,30 +3639,26 @@ class Booster:
             Refitted Booster.
         """
         if self.__set_objective_to_none:
-            raise LightGBMError('Cannot refit due to null objective function.')
+            raise LightGBMError("Cannot refit due to null objective function.")
         predictor = self._to_predictor(deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_bool(False)
-        _safe_call(_LIB.LGBM_BoosterGetLinear(
-            self.handle,
-            ctypes.byref(out_is_linear)))
+        _safe_call(_LIB.LGBM_BoosterGetLinear(self.handle, ctypes.byref(out_is_linear)))
         new_params = deepcopy(self.params)
         new_params["linear_tree"] = out_is_linear.value
         train_set = Dataset(data, label, silent=True, params=new_params)
-        new_params['refit_decay_rate'] = decay_rate
+        new_params["refit_decay_rate"] = decay_rate
         new_booster = Booster(new_params, train_set)
         # Copy models
-        _safe_call(_LIB.LGBM_BoosterMerge(
-            new_booster.handle,
-            predictor.handle))
+        _safe_call(_LIB.LGBM_BoosterMerge(new_booster.handle, predictor.handle))
         leaf_preds = leaf_preds.reshape(-1)
         ptr_data, _, _ = c_int_array(leaf_preds)
-        _safe_call(_LIB.LGBM_BoosterRefit(
-            new_booster.handle,
-            ptr_data,
-            ctypes.c_int(nrow),
-            ctypes.c_int(ncol)))
+        _safe_call(
+            _LIB.LGBM_BoosterRefit(
+                new_booster.handle, ptr_data, ctypes.c_int(nrow), ctypes.c_int(ncol)
+            )
+        )
         new_booster.network = self.network
         new_booster.__attr = self.__attr.copy()
         return new_booster
@@ -3194,16 +3679,21 @@ class Booster:
             The output of the leaf.
         """
         ret = ctypes.c_double(0)
-        _safe_call(_LIB.LGBM_BoosterGetLeafValue(
-            self.handle,
-            ctypes.c_int(tree_id),
-            ctypes.c_int(leaf_id),
-            ctypes.byref(ret)))
+        _safe_call(
+            _LIB.LGBM_BoosterGetLeafValue(
+                self.handle,
+                ctypes.c_int(tree_id),
+                ctypes.c_int(leaf_id),
+                ctypes.byref(ret),
+            )
+        )
         return ret.value
 
     def _to_predictor(self, pred_parameter=None):
         """Convert to predictor."""
-        predictor = _InnerPredictor(booster_handle=self.handle, pred_parameter=pred_parameter)
+        predictor = _InnerPredictor(
+            booster_handle=self.handle, pred_parameter=pred_parameter
+        )
         predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
@@ -3216,9 +3706,9 @@ class Booster:
             The number of features.
         """
         out_num_feature = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterGetNumFeature(
-            self.handle,
-            ctypes.byref(out_num_feature)))
+        _safe_call(
+            _LIB.LGBM_BoosterGetNumFeature(self.handle, ctypes.byref(out_num_feature))
+        )
         return out_num_feature.value
 
     def feature_name(self):
@@ -3234,25 +3724,34 @@ class Booster:
         tmp_out_len = ctypes.c_int(0)
         reserved_string_buffer_size = 255
         required_string_buffer_size = ctypes.c_size_t(0)
-        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range(num_feature)]
-        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
-        _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
-            self.handle,
-            ctypes.c_int(num_feature),
-            ctypes.byref(tmp_out_len),
-            ctypes.c_size_t(reserved_string_buffer_size),
-            ctypes.byref(required_string_buffer_size),
-            ptr_string_buffers))
+        string_buffers = [
+            ctypes.create_string_buffer(reserved_string_buffer_size)
+            for i in range(num_feature)
+        ]
+        ptr_string_buffers = (ctypes.c_char_p * num_feature)(
+            *map(ctypes.addressof, string_buffers)
+        )
+        _safe_call(
+            _LIB.LGBM_BoosterGetFeatureNames(
+                self.handle,
+                ctypes.c_int(num_feature),
+                ctypes.byref(tmp_out_len),
+                ctypes.c_size_t(reserved_string_buffer_size),
+                ctypes.byref(required_string_buffer_size),
+                ptr_string_buffers,
+            )
+        )
         if num_feature != tmp_out_len.value:
             raise ValueError("Length of feature names doesn't equal with num_feature")
         if reserved_string_buffer_size < required_string_buffer_size.value:
             raise BufferError(
-                "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
-                .format(reserved_string_buffer_size, required_string_buffer_size.value)
+                "Allocated feature name buffer size ({}) was inferior to the needed size ({}).".format(
+                    reserved_string_buffer_size, required_string_buffer_size.value
+                )
             )
-        return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
+        return [string_buffers[i].value.decode("utf-8") for i in range(num_feature)]
 
-    def feature_importance(self, importance_type='split', iteration=None):
+    def feature_importance(self, importance_type="split", iteration=None):
         """Get feature importances.
 
         Parameters
@@ -3275,11 +3774,14 @@ class Booster:
             iteration = self.best_iteration
         importance_type_int = FEATURE_IMPORTANCE_TYPE_MAPPER[importance_type]
         result = np.zeros(self.num_feature(), dtype=np.float64)
-        _safe_call(_LIB.LGBM_BoosterFeatureImportance(
-            self.handle,
-            ctypes.c_int(iteration),
-            ctypes.c_int(importance_type_int),
-            result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+        _safe_call(
+            _LIB.LGBM_BoosterFeatureImportance(
+                self.handle,
+                ctypes.c_int(iteration),
+                ctypes.c_int(importance_type_int),
+                result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+            )
+        )
         if importance_type_int == 0:
             return result.astype(np.int32)
         else:
@@ -3318,27 +3820,30 @@ class Booster:
         result_array_like : numpy array or pandas DataFrame (if pandas is installed)
             If ``xgboost_style=True``, the histogram of used splitting values for the specified feature.
         """
+
         def add(root):
             """Recursively add thresholds."""
-            if 'split_index' in root:  # non-leaf
+            if "split_index" in root:  # non-leaf
                 if feature_names is not None and isinstance(feature, str):
-                    split_feature = feature_names[root['split_feature']]
+                    split_feature = feature_names[root["split_feature"]]
                 else:
-                    split_feature = root['split_feature']
+                    split_feature = root["split_feature"]
                 if split_feature == feature:
-                    if isinstance(root['threshold'], str):
-                        raise LightGBMError('Cannot compute split value histogram for the categorical feature')
+                    if isinstance(root["threshold"], str):
+                        raise LightGBMError(
+                            "Cannot compute split value histogram for the categorical feature"
+                        )
                     else:
-                        values.append(root['threshold'])
-                add(root['left_child'])
-                add(root['right_child'])
+                        values.append(root["threshold"])
+                add(root["left_child"])
+                add(root["right_child"])
 
         model = self.dump_model()
-        feature_names = model.get('feature_names')
-        tree_infos = model['tree_info']
+        feature_names = model.get("feature_names")
+        tree_infos = model["tree_info"]
         values = []
         for tree_info in tree_infos:
-            add(tree_info['tree_structure'])
+            add(tree_info["tree_structure"])
 
         if bins is None or isinstance(bins, int) and xgboost_style:
             n_unique = len(np.unique(values))
@@ -3348,7 +3853,7 @@ class Booster:
             ret = np.column_stack((bin_edges[1:], hist))
             ret = ret[ret[:, 1] > 0]
             if PANDAS_INSTALLED:
-                return pd_DataFrame(ret, columns=['SplitValue', 'Count'])
+                return pd_DataFrame(ret, columns=["SplitValue", "Count"])
             else:
                 return ret
         else:
@@ -3363,16 +3868,25 @@ class Booster:
         if self.__num_inner_eval > 0:
             result = np.zeros(self.__num_inner_eval, dtype=np.float64)
             tmp_out_len = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterGetEval(
-                self.handle,
-                ctypes.c_int(data_idx),
-                ctypes.byref(tmp_out_len),
-                result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+            _safe_call(
+                _LIB.LGBM_BoosterGetEval(
+                    self.handle,
+                    ctypes.c_int(data_idx),
+                    ctypes.byref(tmp_out_len),
+                    result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                )
+            )
             if tmp_out_len.value != self.__num_inner_eval:
                 raise ValueError("Wrong length of eval results")
             for i in range(self.__num_inner_eval):
-                ret.append((data_name, self.__name_inner_eval[i],
-                            result[i], self.__higher_better_inner_eval[i]))
+                ret.append(
+                    (
+                        data_name,
+                        self.__name_inner_eval[i],
+                        result[i],
+                        self.__higher_better_inner_eval[i],
+                    )
+                )
         if callable(feval):
             feval = [feval]
         if feval is not None:
@@ -3405,14 +3919,21 @@ class Booster:
         # avoid to predict many time in one iteration
         if not self.__is_predicted_cur_iter[data_idx]:
             tmp_out_len = ctypes.c_int64(0)
-            data_ptr = self.__inner_predict_buffer[data_idx].ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-            _safe_call(_LIB.LGBM_BoosterGetPredict(
-                self.handle,
-                ctypes.c_int(data_idx),
-                ctypes.byref(tmp_out_len),
-                data_ptr))
+            data_ptr = self.__inner_predict_buffer[data_idx].ctypes.data_as(
+                ctypes.POINTER(ctypes.c_double)
+            )
+            _safe_call(
+                _LIB.LGBM_BoosterGetPredict(
+                    self.handle,
+                    ctypes.c_int(data_idx),
+                    ctypes.byref(tmp_out_len),
+                    data_ptr,
+                )
+            )
             if tmp_out_len.value != len(self.__inner_predict_buffer[data_idx]):
-                raise ValueError("Wrong length of predict results for data %d" % (data_idx))
+                raise ValueError(
+                    "Wrong length of predict results for data %d" % (data_idx)
+                )
             self.__is_predicted_cur_iter[data_idx] = True
         return self.__inner_predict_buffer[data_idx]
 
@@ -3422,9 +3943,9 @@ class Booster:
             self.__need_reload_eval_info = False
             out_num_eval = ctypes.c_int(0)
             # Get num of inner evals
-            _safe_call(_LIB.LGBM_BoosterGetEvalCounts(
-                self.handle,
-                ctypes.byref(out_num_eval)))
+            _safe_call(
+                _LIB.LGBM_BoosterGetEvalCounts(self.handle, ctypes.byref(out_num_eval))
+            )
             self.__num_inner_eval = out_num_eval.value
             if self.__num_inner_eval > 0:
                 # Get name of evals
@@ -3432,27 +3953,41 @@ class Booster:
                 reserved_string_buffer_size = 255
                 required_string_buffer_size = ctypes.c_size_t(0)
                 string_buffers = [
-                    ctypes.create_string_buffer(reserved_string_buffer_size) for i in range(self.__num_inner_eval)
+                    ctypes.create_string_buffer(reserved_string_buffer_size)
+                    for i in range(self.__num_inner_eval)
                 ]
-                ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
-                _safe_call(_LIB.LGBM_BoosterGetEvalNames(
-                    self.handle,
-                    ctypes.c_int(self.__num_inner_eval),
-                    ctypes.byref(tmp_out_len),
-                    ctypes.c_size_t(reserved_string_buffer_size),
-                    ctypes.byref(required_string_buffer_size),
-                    ptr_string_buffers))
+                ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(
+                    *map(ctypes.addressof, string_buffers)
+                )
+                _safe_call(
+                    _LIB.LGBM_BoosterGetEvalNames(
+                        self.handle,
+                        ctypes.c_int(self.__num_inner_eval),
+                        ctypes.byref(tmp_out_len),
+                        ctypes.c_size_t(reserved_string_buffer_size),
+                        ctypes.byref(required_string_buffer_size),
+                        ptr_string_buffers,
+                    )
+                )
                 if self.__num_inner_eval != tmp_out_len.value:
-                    raise ValueError("Length of eval names doesn't equal with num_evals")
+                    raise ValueError(
+                        "Length of eval names doesn't equal with num_evals"
+                    )
                 if reserved_string_buffer_size < required_string_buffer_size.value:
                     raise BufferError(
-                        "Allocated eval name buffer size ({}) was inferior to the needed size ({})."
-                        .format(reserved_string_buffer_size, required_string_buffer_size.value)
+                        "Allocated eval name buffer size ({}) was inferior to the needed size ({}).".format(
+                            reserved_string_buffer_size,
+                            required_string_buffer_size.value,
+                        )
                     )
-                self.__name_inner_eval = \
-                    [string_buffers[i].value.decode('utf-8') for i in range(self.__num_inner_eval)]
-                self.__higher_better_inner_eval = \
-                    [name.startswith(('auc', 'ndcg@', 'map@', 'average_precision')) for name in self.__name_inner_eval]
+                self.__name_inner_eval = [
+                    string_buffers[i].value.decode("utf-8")
+                    for i in range(self.__num_inner_eval)
+                ]
+                self.__higher_better_inner_eval = [
+                    name.startswith(("auc", "ndcg@", "map@", "average_precision"))
+                    for name in self.__name_inner_eval
+                ]
 
     def attr(self, key):
         """Get attribute string from the Booster.

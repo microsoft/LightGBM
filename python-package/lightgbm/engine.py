@@ -18,13 +18,24 @@ from .basic import (
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 
-def train(params, train_set, num_boost_round=100,
-          valid_sets=None, valid_names=None,
-          fobj=None, feval=None, init_model=None,
-          feature_name='auto', categorical_feature='auto',
-          early_stopping_rounds=None, evals_result=None,
-          verbose_eval=True, learning_rates=None,
-          keep_training_booster=False, callbacks=None):
+def train(
+    params,
+    train_set,
+    num_boost_round=100,
+    valid_sets=None,
+    valid_names=None,
+    fobj=None,
+    feval=None,
+    init_model=None,
+    feature_name="auto",
+    categorical_feature="auto",
+    early_stopping_rounds=None,
+    evals_result=None,
+    verbose_eval=True,
+    learning_rates=None,
+    keep_training_booster=False,
+    callbacks=None,
+):
     """Perform the training with given parameters.
 
     Parameters
@@ -148,18 +159,22 @@ def train(params, train_set, num_boost_round=100,
     if fobj is not None:
         for obj_alias in _ConfigAliases.get("objective"):
             params.pop(obj_alias, None)
-        params['objective'] = 'none'
+        params["objective"] = "none"
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             num_boost_round = params.pop(alias)
-            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning(
+                "Found `{}` in params. Will use it instead of argument".format(alias)
+            )
     params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             early_stopping_rounds = params.pop(alias)
-            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning(
+                "Found `{}` in params. Will use it instead of argument".format(alias)
+            )
     params["early_stopping_round"] = early_stopping_rounds
-    first_metric_only = params.get('first_metric_only', False)
+    first_metric_only = params.get("first_metric_only", False)
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
@@ -174,10 +189,9 @@ def train(params, train_set, num_boost_round=100,
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
 
-    train_set._update_params(params) \
-             ._set_predictor(predictor) \
-             .set_feature_name(feature_name) \
-             .set_categorical_feature(categorical_feature)
+    train_set._update_params(params)._set_predictor(predictor).set_feature_name(
+        feature_name
+    ).set_categorical_feature(categorical_feature)
 
     is_valid_contain_train = False
     train_data_name = "training"
@@ -197,17 +211,19 @@ def train(params, train_set, num_boost_round=100,
                 continue
             if not isinstance(valid_data, Dataset):
                 raise TypeError("Training only accepts Dataset object")
-            reduced_valid_sets.append(valid_data._update_params(params).set_reference(train_set))
+            reduced_valid_sets.append(
+                valid_data._update_params(params).set_reference(train_set)
+            )
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
             else:
-                name_valid_sets.append('valid_' + str(i))
+                name_valid_sets.append("valid_" + str(i))
     # process callbacks
     if callbacks is None:
         callbacks = set()
     else:
         for i, cb in enumerate(callbacks):
-            cb.__dict__.setdefault('order', i - len(callbacks))
+            cb.__dict__.setdefault("order", i - len(callbacks))
         callbacks = set(callbacks)
 
     # Most of legacy advanced options becomes callbacks
@@ -217,7 +233,11 @@ def train(params, train_set, num_boost_round=100,
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
+        callbacks.add(
+            callback.early_stopping(
+                early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)
+            )
+        )
 
     if learning_rates is not None:
         callbacks.add(callback.reset_parameter(learning_rate=learning_rates))
@@ -225,10 +245,12 @@ def train(params, train_set, num_boost_round=100,
     if evals_result is not None:
         callbacks.add(callback.record_evaluation(evals_result))
 
-    callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
+    callbacks_before_iter = {
+        cb for cb in callbacks if getattr(cb, "before_iteration", False)
+    }
     callbacks_after_iter = callbacks - callbacks_before_iter
-    callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
-    callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
+    callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter("order"))
+    callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter("order"))
 
     # construct booster
     try:
@@ -246,12 +268,16 @@ def train(params, train_set, num_boost_round=100,
     # start training
     for i in range(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
-            cb(callback.CallbackEnv(model=booster,
-                                    params=params,
-                                    iteration=i,
-                                    begin_iteration=init_iteration,
-                                    end_iteration=init_iteration + num_boost_round,
-                                    evaluation_result_list=None))
+            cb(
+                callback.CallbackEnv(
+                    model=booster,
+                    params=params,
+                    iteration=i,
+                    begin_iteration=init_iteration,
+                    end_iteration=init_iteration + num_boost_round,
+                    evaluation_result_list=None,
+                )
+            )
 
         booster.update(fobj=fobj)
 
@@ -263,12 +289,16 @@ def train(params, train_set, num_boost_round=100,
             evaluation_result_list.extend(booster.eval_valid(feval))
         try:
             for cb in callbacks_after_iter:
-                cb(callback.CallbackEnv(model=booster,
-                                        params=params,
-                                        iteration=i,
-                                        begin_iteration=init_iteration,
-                                        end_iteration=init_iteration + num_boost_round,
-                                        evaluation_result_list=evaluation_result_list))
+                cb(
+                    callback.CallbackEnv(
+                        model=booster,
+                        params=params,
+                        iteration=i,
+                        begin_iteration=init_iteration,
+                        end_iteration=init_iteration + num_boost_round,
+                        evaluation_result_list=evaluation_result_list,
+                    )
+                )
         except callback.EarlyStopException as earlyStopException:
             booster.best_iteration = earlyStopException.best_iteration + 1
             evaluation_result_list = earlyStopException.best_score
@@ -310,38 +340,62 @@ class CVBooster:
 
     def __getattr__(self, name):
         """Redirect methods call of CVBooster."""
+
         def handler_function(*args, **kwargs):
             """Call methods with each booster, and concatenate their results."""
             ret = []
             for booster in self.boosters:
                 ret.append(getattr(booster, name)(*args, **kwargs))
             return ret
+
         return handler_function
 
 
-def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True,
-                  shuffle=True, eval_train_metric=False):
+def _make_n_folds(
+    full_data,
+    folds,
+    nfold,
+    params,
+    seed,
+    fpreproc=None,
+    stratified=True,
+    shuffle=True,
+    eval_train_metric=False,
+):
     """Make a n-fold list of Booster from random indices."""
     full_data = full_data.construct()
     num_data = full_data.num_data()
     if folds is not None:
-        if not hasattr(folds, '__iter__') and not hasattr(folds, 'split'):
-            raise AttributeError("folds should be a generator or iterator of (train_idx, test_idx) tuples "
-                                 "or scikit-learn splitter object with split method")
-        if hasattr(folds, 'split'):
+        if not hasattr(folds, "__iter__") and not hasattr(folds, "split"):
+            raise AttributeError(
+                "folds should be a generator or iterator of (train_idx, test_idx) tuples "
+                "or scikit-learn splitter object with split method"
+            )
+        if hasattr(folds, "split"):
             group_info = full_data.get_group()
             if group_info is not None:
                 group_info = np.array(group_info, dtype=np.int32, copy=False)
                 flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             else:
                 flatted_group = np.zeros(num_data, dtype=np.int32)
-            folds = folds.split(X=np.zeros(num_data), y=full_data.get_label(), groups=flatted_group)
+            folds = folds.split(
+                X=np.zeros(num_data), y=full_data.get_label(), groups=flatted_group
+            )
     else:
-        if any(params.get(obj_alias, "") in {"lambdarank", "rank_xendcg", "xendcg",
-                                             "xe_ndcg", "xe_ndcg_mart", "xendcg_mart"}
-               for obj_alias in _ConfigAliases.get("objective")):
+        if any(
+            params.get(obj_alias, "")
+            in {
+                "lambdarank",
+                "rank_xendcg",
+                "xendcg",
+                "xe_ndcg",
+                "xe_ndcg_mart",
+                "xendcg_mart",
+            }
+            for obj_alias in _ConfigAliases.get("objective")
+        ):
             if not SKLEARN_INSTALLED:
-                raise LightGBMError('scikit-learn is required for ranking cv')
+                raise LightGBMError("scikit-learn is required for ranking cv")
             # ranking task, split according to groups
             group_info = np.array(full_data.get_group(), dtype=np.int32, copy=False)
             flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
@@ -349,8 +403,10 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
         elif stratified:
             if not SKLEARN_INSTALLED:
-                raise LightGBMError('scikit-learn is required for stratified cv')
-            skf = _LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
+                raise LightGBMError("scikit-learn is required for stratified cv")
+            skf = _LGBMStratifiedKFold(
+                n_splits=nfold, shuffle=shuffle, random_state=seed
+            )
             folds = skf.split(X=np.zeros(num_data), y=full_data.get_label())
         else:
             if shuffle:
@@ -358,8 +414,11 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             else:
                 randidx = np.arange(num_data)
             kstep = int(num_data / nfold)
-            test_id = [randidx[i: i + kstep] for i in range(0, num_data, kstep)]
-            train_id = [np.concatenate([test_id[i] for i in range(nfold) if k != i]) for k in range(nfold)]
+            test_id = [randidx[i : i + kstep] for i in range(0, num_data, kstep)]
+            train_id = [
+                np.concatenate([test_id[i] for i in range(nfold) if k != i])
+                for k in range(nfold)
+            ]
             folds = zip(train_id, test_id)
 
     ret = CVBooster()
@@ -373,8 +432,8 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             tparam = params
         cvbooster = Booster(tparam, train_set)
         if eval_train_metric:
-            cvbooster.add_valid(train_set, 'train')
-        cvbooster.add_valid(valid_set, 'valid')
+            cvbooster.add_valid(train_set, "train")
+        cvbooster.add_valid(valid_set, "valid")
         ret._append(cvbooster)
     return ret
 
@@ -392,17 +451,34 @@ def _agg_cv_result(raw_results, eval_train_metric=False):
             metric_type[key] = one_line[3]
             cvmap.setdefault(key, [])
             cvmap[key].append(one_line[2])
-    return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
+    return [
+        ("cv_agg", k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()
+    ]
 
 
-def cv(params, train_set, num_boost_round=100,
-       folds=None, nfold=5, stratified=True, shuffle=True,
-       metrics=None, fobj=None, feval=None, init_model=None,
-       feature_name='auto', categorical_feature='auto',
-       early_stopping_rounds=None, fpreproc=None,
-       verbose_eval=None, show_stdv=True, seed=0,
-       callbacks=None, eval_train_metric=False,
-       return_cvbooster=False):
+def cv(
+    params,
+    train_set,
+    num_boost_round=100,
+    folds=None,
+    nfold=5,
+    stratified=True,
+    shuffle=True,
+    metrics=None,
+    fobj=None,
+    feval=None,
+    init_model=None,
+    feature_name="auto",
+    categorical_feature="auto",
+    early_stopping_rounds=None,
+    fpreproc=None,
+    verbose_eval=None,
+    show_stdv=True,
+    seed=0,
+    callbacks=None,
+    eval_train_metric=False,
+    return_cvbooster=False,
+):
     """Perform the cross-validation with given paramaters.
 
     Parameters
@@ -528,18 +604,22 @@ def cv(params, train_set, num_boost_round=100,
     if fobj is not None:
         for obj_alias in _ConfigAliases.get("objective"):
             params.pop(obj_alias, None)
-        params['objective'] = 'none'
+        params["objective"] = "none"
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
-            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning(
+                "Found `{}` in params. Will use it instead of argument".format(alias)
+            )
             num_boost_round = params.pop(alias)
     params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
-            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning(
+                "Found `{}` in params. Will use it instead of argument".format(alias)
+            )
             early_stopping_rounds = params.pop(alias)
     params["early_stopping_round"] = early_stopping_rounds
-    first_metric_only = params.get('first_metric_only', False)
+    first_metric_only = params.get("first_metric_only", False)
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
@@ -553,66 +633,86 @@ def cv(params, train_set, num_boost_round=100,
     if metrics is not None:
         for metric_alias in _ConfigAliases.get("metric"):
             params.pop(metric_alias, None)
-        params['metric'] = metrics
+        params["metric"] = metrics
 
-    train_set._update_params(params) \
-             ._set_predictor(predictor) \
-             .set_feature_name(feature_name) \
-             .set_categorical_feature(categorical_feature)
+    train_set._update_params(params)._set_predictor(predictor).set_feature_name(
+        feature_name
+    ).set_categorical_feature(categorical_feature)
 
     results = collections.defaultdict(list)
-    cvfolds = _make_n_folds(train_set, folds=folds, nfold=nfold,
-                            params=params, seed=seed, fpreproc=fpreproc,
-                            stratified=stratified, shuffle=shuffle,
-                            eval_train_metric=eval_train_metric)
+    cvfolds = _make_n_folds(
+        train_set,
+        folds=folds,
+        nfold=nfold,
+        params=params,
+        seed=seed,
+        fpreproc=fpreproc,
+        stratified=stratified,
+        shuffle=shuffle,
+        eval_train_metric=eval_train_metric,
+    )
 
     # setup callbacks
     if callbacks is None:
         callbacks = set()
     else:
         for i, cb in enumerate(callbacks):
-            cb.__dict__.setdefault('order', i - len(callbacks))
+            cb.__dict__.setdefault("order", i - len(callbacks))
         callbacks = set(callbacks)
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
+        callbacks.add(
+            callback.early_stopping(
+                early_stopping_rounds, first_metric_only, verbose=False
+            )
+        )
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
     elif isinstance(verbose_eval, int):
         callbacks.add(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
 
-    callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
+    callbacks_before_iter = {
+        cb for cb in callbacks if getattr(cb, "before_iteration", False)
+    }
     callbacks_after_iter = callbacks - callbacks_before_iter
-    callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
-    callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
+    callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter("order"))
+    callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter("order"))
 
     for i in range(num_boost_round):
         for cb in callbacks_before_iter:
-            cb(callback.CallbackEnv(model=cvfolds,
-                                    params=params,
-                                    iteration=i,
-                                    begin_iteration=0,
-                                    end_iteration=num_boost_round,
-                                    evaluation_result_list=None))
+            cb(
+                callback.CallbackEnv(
+                    model=cvfolds,
+                    params=params,
+                    iteration=i,
+                    begin_iteration=0,
+                    end_iteration=num_boost_round,
+                    evaluation_result_list=None,
+                )
+            )
         cvfolds.update(fobj=fobj)
         res = _agg_cv_result(cvfolds.eval_valid(feval), eval_train_metric)
         for _, key, mean, _, std in res:
-            results[key + '-mean'].append(mean)
-            results[key + '-stdv'].append(std)
+            results[key + "-mean"].append(mean)
+            results[key + "-stdv"].append(std)
         try:
             for cb in callbacks_after_iter:
-                cb(callback.CallbackEnv(model=cvfolds,
-                                        params=params,
-                                        iteration=i,
-                                        begin_iteration=0,
-                                        end_iteration=num_boost_round,
-                                        evaluation_result_list=res))
+                cb(
+                    callback.CallbackEnv(
+                        model=cvfolds,
+                        params=params,
+                        iteration=i,
+                        begin_iteration=0,
+                        end_iteration=num_boost_round,
+                        evaluation_result_list=res,
+                    )
+                )
         except callback.EarlyStopException as earlyStopException:
             cvfolds.best_iteration = earlyStopException.best_iteration + 1
             for k in results:
-                results[k] = results[k][:cvfolds.best_iteration]
+                results[k] = results[k][: cvfolds.best_iteration]
             break
 
     if return_cvbooster:
-        results['cvbooster'] = cvfolds
+        results["cvbooster"] = cvfolds
 
     return dict(results)

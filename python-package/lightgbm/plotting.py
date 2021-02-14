@@ -10,24 +10,38 @@ from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
 from .sklearn import LGBMModel
 
 
-def _check_not_tuple_of_2_elements(obj, obj_name='obj'):
+def _check_not_tuple_of_2_elements(obj, obj_name="obj"):
     """Check object is not tuple or does not have 2 elements."""
     if not isinstance(obj, tuple) or len(obj) != 2:
-        raise TypeError('%s must be a tuple of 2 elements.' % obj_name)
+        raise TypeError("%s must be a tuple of 2 elements." % obj_name)
 
 
 def _float2str(value, precision=None):
-    return ("{0:.{1}f}".format(value, precision)
-            if precision is not None and not isinstance(value, str)
-            else str(value))
+    return (
+        "{0:.{1}f}".format(value, precision)
+        if precision is not None and not isinstance(value, str)
+        else str(value)
+    )
 
 
-def plot_importance(booster, ax=None, height=0.2,
-                    xlim=None, ylim=None, title='Feature importance',
-                    xlabel='Feature importance', ylabel='Features',
-                    importance_type='split', max_num_features=None,
-                    ignore_zero=True, figsize=None, dpi=None, grid=True,
-                    precision=3, **kwargs):
+def plot_importance(
+    booster,
+    ax=None,
+    height=0.2,
+    xlim=None,
+    ylim=None,
+    title="Feature importance",
+    xlabel="Feature importance",
+    ylabel="Features",
+    importance_type="split",
+    max_num_features=None,
+    ignore_zero=True,
+    figsize=None,
+    dpi=None,
+    grid=True,
+    precision=3,
+    **kwargs
+):
     """Plot model's feature importances.
 
     Parameters
@@ -80,12 +94,12 @@ def plot_importance(booster, ax=None, height=0.2,
     if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
     else:
-        raise ImportError('You must install matplotlib to plot importance.')
+        raise ImportError("You must install matplotlib to plot importance.")
 
     if isinstance(booster, LGBMModel):
         booster = booster.booster_
     elif not isinstance(booster, Booster):
-        raise TypeError('booster must be Booster or LGBMModel.')
+        raise TypeError("booster must be Booster or LGBMModel.")
 
     importance = booster.feature_importance(importance_type=importance_type)
     feature_name = booster.feature_name()
@@ -102,28 +116,31 @@ def plot_importance(booster, ax=None, height=0.2,
 
     if ax is None:
         if figsize is not None:
-            _check_not_tuple_of_2_elements(figsize, 'figsize')
+            _check_not_tuple_of_2_elements(figsize, "figsize")
         _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
     ylocs = np.arange(len(values))
-    ax.barh(ylocs, values, align='center', height=height, **kwargs)
+    ax.barh(ylocs, values, align="center", height=height, **kwargs)
 
     for x, y in zip(values, ylocs):
-        ax.text(x + 1, y,
-                _float2str(x, precision) if importance_type == 'gain' else x,
-                va='center')
+        ax.text(
+            x + 1,
+            y,
+            _float2str(x, precision) if importance_type == "gain" else x,
+            va="center",
+        )
 
     ax.set_yticks(ylocs)
     ax.set_yticklabels(labels)
 
     if xlim is not None:
-        _check_not_tuple_of_2_elements(xlim, 'xlim')
+        _check_not_tuple_of_2_elements(xlim, "xlim")
     else:
         xlim = (0, max(values) * 1.1)
     ax.set_xlim(xlim)
 
     if ylim is not None:
-        _check_not_tuple_of_2_elements(ylim, 'ylim')
+        _check_not_tuple_of_2_elements(ylim, "ylim")
     else:
         ylim = (-1, len(values))
     ax.set_ylim(ylim)
@@ -138,11 +155,22 @@ def plot_importance(booster, ax=None, height=0.2,
     return ax
 
 
-def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=0.8,
-                               xlim=None, ylim=None,
-                               title='Split value histogram for feature with @index/name@ @feature@',
-                               xlabel='Feature split value', ylabel='Count',
-                               figsize=None, dpi=None, grid=True, **kwargs):
+def plot_split_value_histogram(
+    booster,
+    feature,
+    bins=None,
+    ax=None,
+    width_coef=0.8,
+    xlim=None,
+    ylim=None,
+    title="Split value histogram for feature with @index/name@ @feature@",
+    xlabel="Feature split value",
+    ylabel="Count",
+    figsize=None,
+    dpi=None,
+    grid=True,
+    **kwargs
+):
     """Plot split value histogram for the specified feature of the model.
 
     Parameters
@@ -197,29 +225,33 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
         import matplotlib.pyplot as plt
         from matplotlib.ticker import MaxNLocator
     else:
-        raise ImportError('You must install matplotlib to plot split value histogram.')
+        raise ImportError("You must install matplotlib to plot split value histogram.")
 
     if isinstance(booster, LGBMModel):
         booster = booster.booster_
     elif not isinstance(booster, Booster):
-        raise TypeError('booster must be Booster or LGBMModel.')
+        raise TypeError("booster must be Booster or LGBMModel.")
 
-    hist, bins = booster.get_split_value_histogram(feature=feature, bins=bins, xgboost_style=False)
+    hist, bins = booster.get_split_value_histogram(
+        feature=feature, bins=bins, xgboost_style=False
+    )
     if np.count_nonzero(hist) == 0:
-        raise ValueError('Cannot plot split value histogram, '
-                         'because feature {} was not used in splitting'.format(feature))
+        raise ValueError(
+            "Cannot plot split value histogram, "
+            "because feature {} was not used in splitting".format(feature)
+        )
     width = width_coef * (bins[1] - bins[0])
     centred = (bins[:-1] + bins[1:]) / 2
 
     if ax is None:
         if figsize is not None:
-            _check_not_tuple_of_2_elements(figsize, 'figsize')
+            _check_not_tuple_of_2_elements(figsize, "figsize")
         _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
-    ax.bar(centred, hist, align='center', width=width, **kwargs)
+    ax.bar(centred, hist, align="center", width=width, **kwargs)
 
     if xlim is not None:
-        _check_not_tuple_of_2_elements(xlim, 'xlim')
+        _check_not_tuple_of_2_elements(xlim, "xlim")
     else:
         range_result = bins[-1] - bins[0]
         xlim = (bins[0] - range_result * 0.2, bins[-1] + range_result * 0.2)
@@ -227,14 +259,16 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
 
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     if ylim is not None:
-        _check_not_tuple_of_2_elements(ylim, 'ylim')
+        _check_not_tuple_of_2_elements(ylim, "ylim")
     else:
         ylim = (0, max(hist) * 1.1)
     ax.set_ylim(ylim)
 
     if title is not None:
-        title = title.replace('@feature@', str(feature))
-        title = title.replace('@index/name@', ('name' if isinstance(feature, str) else 'index'))
+        title = title.replace("@feature@", str(feature))
+        title = title.replace(
+            "@index/name@", ("name" if isinstance(feature, str) else "index")
+        )
         ax.set_title(title)
     if xlabel is not None:
         ax.set_xlabel(xlabel)
@@ -244,11 +278,20 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
     return ax
 
 
-def plot_metric(booster, metric=None, dataset_names=None,
-                ax=None, xlim=None, ylim=None,
-                title='Metric during training',
-                xlabel='Iterations', ylabel='auto',
-                figsize=None, dpi=None, grid=True):
+def plot_metric(
+    booster,
+    metric=None,
+    dataset_names=None,
+    ax=None,
+    xlim=None,
+    ylim=None,
+    title="Metric during training",
+    xlabel="Iterations",
+    ylabel="auto",
+    figsize=None,
+    dpi=None,
+    grid=True,
+):
     """Plot one metric during training.
 
     Parameters
@@ -294,29 +337,29 @@ def plot_metric(booster, metric=None, dataset_names=None,
     if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
     else:
-        raise ImportError('You must install matplotlib to plot metric.')
+        raise ImportError("You must install matplotlib to plot metric.")
 
     if isinstance(booster, LGBMModel):
         eval_results = deepcopy(booster.evals_result_)
     elif isinstance(booster, dict):
         eval_results = deepcopy(booster)
     else:
-        raise TypeError('booster must be dict or LGBMModel.')
+        raise TypeError("booster must be dict or LGBMModel.")
 
     num_data = len(eval_results)
 
     if not num_data:
-        raise ValueError('eval results cannot be empty.')
+        raise ValueError("eval results cannot be empty.")
 
     if ax is None:
         if figsize is not None:
-            _check_not_tuple_of_2_elements(figsize, 'figsize')
+            _check_not_tuple_of_2_elements(figsize, "figsize")
         _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
     if dataset_names is None:
         dataset_names = iter(eval_results.keys())
     elif not isinstance(dataset_names, (list, tuple, set)) or not dataset_names:
-        raise ValueError('dataset_names should be iterable and cannot be empty')
+        raise ValueError("dataset_names should be iterable and cannot be empty")
     else:
         dataset_names = iter(dataset_names)
 
@@ -329,7 +372,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
         metric, results = metrics_for_one.popitem()
     else:
         if metric not in metrics_for_one:
-            raise KeyError('No given metric in eval results.')
+            raise KeyError("No given metric in eval results.")
         results = metrics_for_one[metric]
     num_iteration, max_result, min_result = len(results), max(results), min(results)
     x_ = range(num_iteration)
@@ -338,25 +381,27 @@ def plot_metric(booster, metric=None, dataset_names=None,
     for name in dataset_names:
         metrics_for_one = eval_results[name]
         results = metrics_for_one[metric]
-        max_result, min_result = max(max(results), max_result), min(min(results), min_result)
+        max_result, min_result = max(max(results), max_result), min(
+            min(results), min_result
+        )
         ax.plot(x_, results, label=name)
 
-    ax.legend(loc='best')
+    ax.legend(loc="best")
 
     if xlim is not None:
-        _check_not_tuple_of_2_elements(xlim, 'xlim')
+        _check_not_tuple_of_2_elements(xlim, "xlim")
     else:
         xlim = (0, num_iteration)
     ax.set_xlim(xlim)
 
     if ylim is not None:
-        _check_not_tuple_of_2_elements(ylim, 'ylim')
+        _check_not_tuple_of_2_elements(ylim, "ylim")
     else:
         range_result = max_result - min_result
         ylim = (min_result - range_result * 0.2, max_result + range_result * 0.2)
     ax.set_ylim(ylim)
 
-    if ylabel == 'auto':
+    if ylabel == "auto":
         ylabel = metric
 
     if title is not None:
@@ -369,8 +414,15 @@ def plot_metric(booster, metric=None, dataset_names=None,
     return ax
 
 
-def _to_graphviz(tree_info, show_info, feature_names, precision=3,
-                 orientation='horizontal', constraints=None, **kwargs):
+def _to_graphviz(
+    tree_info,
+    show_info,
+    feature_names,
+    precision=3,
+    orientation="horizontal",
+    constraints=None,
+    **kwargs
+):
     """Convert specified tree to graphviz instance.
 
     See:
@@ -379,58 +431,78 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
     if GRAPHVIZ_INSTALLED:
         from graphviz import Digraph
     else:
-        raise ImportError('You must install graphviz to plot tree.')
+        raise ImportError("You must install graphviz to plot tree.")
 
     def add(root, total_count, parent=None, decision=None):
         """Recursively add node or edge."""
-        if 'split_index' in root:  # non-leaf
-            l_dec = 'yes'
-            r_dec = 'no'
-            if root['decision_type'] == '<=':
+        if "split_index" in root:  # non-leaf
+            l_dec = "yes"
+            r_dec = "no"
+            if root["decision_type"] == "<=":
                 lte_symbol = "&#8804;"
                 operator = lte_symbol
-            elif root['decision_type'] == '==':
+            elif root["decision_type"] == "==":
                 operator = "="
             else:
-                raise ValueError('Invalid decision type in tree model.')
-            name = 'split{0}'.format(root['split_index'])
+                raise ValueError("Invalid decision type in tree model.")
+            name = "split{0}".format(root["split_index"])
             if feature_names is not None:
-                label = '<B>{0}</B> {1} '.format(feature_names[root['split_feature']], operator)
+                label = "<B>{0}</B> {1} ".format(
+                    feature_names[root["split_feature"]], operator
+                )
             else:
-                label = 'feature <B>{0}</B> {1} '.format(root['split_feature'], operator)
-            label += '<B>{0}</B>'.format(_float2str(root['threshold'], precision))
-            for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
+                label = "feature <B>{0}</B> {1} ".format(
+                    root["split_feature"], operator
+                )
+            label += "<B>{0}</B>".format(_float2str(root["threshold"], precision))
+            for info in [
+                "split_gain",
+                "internal_value",
+                "internal_weight",
+                "internal_count",
+                "data_percentage",
+            ]:
                 if info in show_info:
-                    output = info.split('_')[-1]
-                    if info in {'split_gain', 'internal_value', 'internal_weight'}:
-                        label += '<br/>{0} {1}'.format(_float2str(root[info], precision), output)
-                    elif info == 'internal_count':
-                        label += '<br/>{0}: {1}'.format(output, root[info])
+                    output = info.split("_")[-1]
+                    if info in {"split_gain", "internal_value", "internal_weight"}:
+                        label += "<br/>{0} {1}".format(
+                            _float2str(root[info], precision), output
+                        )
+                    elif info == "internal_count":
+                        label += "<br/>{0}: {1}".format(output, root[info])
                     elif info == "data_percentage":
-                        label += '<br/>{0}% of data'.format(_float2str(root['internal_count'] / total_count * 100, 2))
+                        label += "<br/>{0}% of data".format(
+                            _float2str(root["internal_count"] / total_count * 100, 2)
+                        )
 
             fillcolor = "white"
             style = ""
             if constraints:
-                if constraints[root['split_feature']] == 1:
+                if constraints[root["split_feature"]] == 1:
                     fillcolor = "#ddffdd"  # light green
-                if constraints[root['split_feature']] == -1:
+                if constraints[root["split_feature"]] == -1:
                     fillcolor = "#ffdddd"  # light red
                 style = "filled"
             label = "<" + label + ">"
-            graph.node(name, label=label, shape="rectangle", style=style, fillcolor=fillcolor)
-            add(root['left_child'], total_count, name, l_dec)
-            add(root['right_child'], total_count, name, r_dec)
+            graph.node(
+                name, label=label, shape="rectangle", style=style, fillcolor=fillcolor
+            )
+            add(root["left_child"], total_count, name, l_dec)
+            add(root["right_child"], total_count, name, r_dec)
         else:  # leaf
-            name = 'leaf{0}'.format(root['leaf_index'])
-            label = 'leaf {0}: '.format(root['leaf_index'])
-            label += '<B>{0}</B>'.format(_float2str(root['leaf_value'], precision))
-            if 'leaf_weight' in show_info:
-                label += '<br/>{0} weight'.format(_float2str(root['leaf_weight'], precision))
-            if 'leaf_count' in show_info:
-                label += '<br/>count: {0}'.format(root['leaf_count'])
+            name = "leaf{0}".format(root["leaf_index"])
+            label = "leaf {0}: ".format(root["leaf_index"])
+            label += "<B>{0}</B>".format(_float2str(root["leaf_value"], precision))
+            if "leaf_weight" in show_info:
+                label += "<br/>{0} weight".format(
+                    _float2str(root["leaf_weight"], precision)
+                )
+            if "leaf_count" in show_info:
+                label += "<br/>count: {0}".format(root["leaf_count"])
             if "data_percentage" in show_info:
-                label += '<br/>{0}% of data'.format(_float2str(root['leaf_count'] / total_count * 100, 2))
+                label += "<br/>{0}% of data".format(
+                    _float2str(root["leaf_count"] / total_count * 100, 2)
+                )
             label = "<" + label + ">"
             graph.node(name, label=label)
         if parent is not None:
@@ -439,8 +511,8 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
     graph = Digraph(**kwargs)
     rankdir = "LR" if orientation == "horizontal" else "TB"
     graph.attr("graph", nodesep="0.05", ranksep="0.3", rankdir=rankdir)
-    if "internal_count" in tree_info['tree_structure']:
-        add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"])
+    if "internal_count" in tree_info["tree_structure"]:
+        add(tree_info["tree_structure"], tree_info["tree_structure"]["internal_count"])
     else:
         raise Exception("Cannot plot trees with no split")
 
@@ -465,8 +537,14 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
     return graph
 
 
-def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
-                        orientation='horizontal', **kwargs):
+def create_tree_digraph(
+    booster,
+    tree_index=0,
+    show_info=None,
+    precision=3,
+    orientation="horizontal",
+    **kwargs
+):
     """Create a digraph representation of specified tree.
 
     Each node in the graph represents a node in the tree.
@@ -517,33 +595,49 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
     if isinstance(booster, LGBMModel):
         booster = booster.booster_
     elif not isinstance(booster, Booster):
-        raise TypeError('booster must be Booster or LGBMModel.')
+        raise TypeError("booster must be Booster or LGBMModel.")
 
     model = booster.dump_model()
-    tree_infos = model['tree_info']
-    if 'feature_names' in model:
-        feature_names = model['feature_names']
+    tree_infos = model["tree_info"]
+    if "feature_names" in model:
+        feature_names = model["feature_names"]
     else:
         feature_names = None
 
-    monotone_constraints = model.get('monotone_constraints', None)
+    monotone_constraints = model.get("monotone_constraints", None)
 
     if tree_index < len(tree_infos):
         tree_info = tree_infos[tree_index]
     else:
-        raise IndexError('tree_index is out of range.')
+        raise IndexError("tree_index is out of range.")
 
     if show_info is None:
         show_info = []
 
-    graph = _to_graphviz(tree_info, show_info, feature_names, precision,
-                         orientation, monotone_constraints, **kwargs)
+    graph = _to_graphviz(
+        tree_info,
+        show_info,
+        feature_names,
+        precision,
+        orientation,
+        monotone_constraints,
+        **kwargs
+    )
 
     return graph
 
 
-def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
-              show_info=None, precision=3, orientation='horizontal', **kwargs):
+def plot_tree(
+    booster,
+    ax=None,
+    tree_index=0,
+    figsize=None,
+    dpi=None,
+    show_info=None,
+    precision=3,
+    orientation="horizontal",
+    **kwargs
+):
     """Plot specified tree.
 
     Each node in the graph represents a node in the tree.
@@ -602,22 +696,27 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
         import matplotlib.image as image
         import matplotlib.pyplot as plt
     else:
-        raise ImportError('You must install matplotlib to plot tree.')
+        raise ImportError("You must install matplotlib to plot tree.")
 
     if ax is None:
         if figsize is not None:
-            _check_not_tuple_of_2_elements(figsize, 'figsize')
+            _check_not_tuple_of_2_elements(figsize, "figsize")
         _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
-    graph = create_tree_digraph(booster=booster, tree_index=tree_index,
-                                show_info=show_info, precision=precision,
-                                orientation=orientation, **kwargs)
+    graph = create_tree_digraph(
+        booster=booster,
+        tree_index=tree_index,
+        show_info=show_info,
+        precision=precision,
+        orientation=orientation,
+        **kwargs
+    )
 
     s = BytesIO()
-    s.write(graph.pipe(format='png'))
+    s.write(graph.pipe(format="png"))
     s.seek(0)
     img = image.imread(s)
 
     ax.imshow(img)
-    ax.axis('off')
+    ax.axis("off")
     return ax
