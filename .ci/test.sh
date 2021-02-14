@@ -57,7 +57,7 @@ if [[ $TASK == "lint" ]]; then
             "r-lintr>=2.0"
     pip install --user cpplint mypy
     echo "Linting Python code"
-    pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
+    pycodestyle --ignore=E203,E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
     mypy --ignore-missing-imports python-package/ || true
     echo "Linting R code"
