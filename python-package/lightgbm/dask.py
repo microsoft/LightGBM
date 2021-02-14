@@ -305,7 +305,7 @@ def _train(
     wait(parts)
 
     for part in parts:
-        if part.status == 'error': # type: ignore
+        if part.status == 'error':  # type: ignore
             return part  # trigger error locally
 
     # Find locations of all parts and map them to particular Dask workers

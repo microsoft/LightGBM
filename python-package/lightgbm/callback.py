@@ -25,7 +25,7 @@ class EarlyStopException(Exception):
 
 
 # Callback environment used by callbacks
-CallbackEnv = collections.namedtuple( # type: ignore
+CallbackEnv = collections.namedtuple(
     "LightGBMCallbackEnv",
     ["model",
      "params",
