@@ -36,7 +36,7 @@ For more details, please refer to `Features <./Features.rst>`__.
    C API <C-API>
    Python API <Python-API>
    R API <https://lightgbm.readthedocs.io/en/latest/R/reference/>
-   Parallel Learning Guide <Parallel-Learning-Guide>
+   Distributed Learning Guide <Parallel-Learning-Guide>
    GPU Tutorial <GPU-Tutorial>
    Advanced Topics <Advanced-Topics>
    FAQ <FAQ>
