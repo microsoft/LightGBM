@@ -1092,6 +1092,8 @@ struct __StringToTHelper<T, true> {
         tmp = -std::numeric_limits<double>::infinity();
       else if (strlower == std::string("nan"))
         tmp = std::numeric_limits<double>::quiet_NaN();
+      else if (strlower == std::string("-nan"))
+        tmp = -std::numeric_limits<double>::quiet_NaN();
       else
         Log::Fatal("Failed to parse double: %s", str.c_str());
     }
