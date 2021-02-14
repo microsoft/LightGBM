@@ -4,19 +4,22 @@ import itertools
 import math
 import os
 import pickle
-import psutil
 import random
 
-import lightgbm as lgb
 import numpy as np
-from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_csc
-from sklearn.datasets import load_svmlight_file, make_multilabel_classification
-from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score, average_precision_score
-from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
+import psutil
 import pytest
+from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
+from sklearn.datasets import load_svmlight_file, make_multilabel_classification
+from sklearn.metrics import (average_precision_score, log_loss,
+                             mean_absolute_error, mean_squared_error,
+                             roc_auc_score)
+from sklearn.model_selection import (GroupKFold, TimeSeriesSplit,
+                                     train_test_split)
+
+import lightgbm as lgb
 
 from .utils import load_boston, load_breast_cancer, load_digits, load_iris
-
 
 decreasing_generator = itertools.count(0, -1)
 
