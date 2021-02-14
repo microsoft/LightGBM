@@ -5,27 +5,15 @@ This guide describes distributed learning in LightGBM. Distributed learning allo
 
 Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first.
 
-**List of external libraries in which LightGBM can be used in a distributed fashion**
-
--  `Dask API of LightGBM <./Python-API.rst#dask-api>`__ (formerly it was a separate package) allows to create ML workflow on Dask distributed data structures.
-
--  `MMLSpark`_ integrates LightGBM into Apache Spark ecosystem.
-   `The following example`_ demonstrates how easy it's possible to utilize the great power of Spark.
-
--  `Kubeflow Fairing`_ suggests using LightGBM in a Kubernetes cluster.
-   `These examples`_ help to get started with LightGBM in a hybrid cloud environment.
-   Also you can use `Kubeflow XGBoost Operator`_ to train LightGBM model.
-   Please check `this example`_ for how to do this.
-
 How Distributed LightGBM Works
 ------------------------------
 
-This section describes how distributed learning in LightGBM works. To learn how to do this in various programming languages, please see `Integrations`_.
+This section describes how distributed learning in LightGBM works. To learn how to do this in various programming languages and frameworks, please see `Integrations`_.
 
 Choose Appropriate Parallel Algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-LightGBM provides 3 parallel learning algorithms now.
+LightGBM provides 3 parallel learning algorithms.
 
 +--------------------+---------------------------+
 | Parallel Algorithm | How to Use                |
