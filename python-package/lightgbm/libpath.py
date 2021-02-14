@@ -1,7 +1,6 @@
 # coding: utf-8
 """Find the path to LightGBM dynamic library files."""
 import os
-
 from platform import system
 
 

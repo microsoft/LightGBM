@@ -1,20 +1,21 @@
 # coding: utf-8
 import os
 
-import lightgbm as lgb
 import numpy as np
 import pytest
-
 from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
+
+import lightgbm as lgb
 
 from .utils import load_breast_cancer
 
 
 def test_basic(tmp_path):
-    X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
-                                                        test_size=0.1, random_state=2)
+    X_train, X_test, y_train, y_test = train_test_split(
+        *load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2
+    )
     train_data = lgb.Dataset(X_train, label=y_train)
     valid_data = train_data.create_valid(X_test, label=y_test)
 
@@ -26,7 +27,7 @@ def test_basic(tmp_path):
         "verbose": -1,
         "num_threads": 1,
         "max_bin": 255,
-        "gpu_use_dp": True
+        "gpu_use_dp": True,
     }
     bst = lgb.Booster(params, train_data)
     bst.add_valid(valid_data, "valid_1")
@@ -59,7 +60,11 @@ def test_basic(tmp_path):
     np.testing.assert_array_equal(pred_from_matr, pred_from_model_file)
 
     # check early stopping is working. Make it stop very early, so the scores should be very close to zero
-    pred_parameter = {"pred_early_stop": True, "pred_early_stop_freq": 5, "pred_early_stop_margin": 1.5}
+    pred_parameter = {
+        "pred_early_stop": True,
+        "pred_early_stop_freq": 5,
+        "pred_early_stop_margin": 1.5,
+    }
     pred_early_stopping = bst.predict(X_test, **pred_parameter)
     # scores likely to be different, but prediction should still be the same
     np.testing.assert_array_equal(np.sign(pred_from_matr), np.sign(pred_early_stopping))
@@ -67,43 +72,72 @@ def test_basic(tmp_path):
     # test that shape is checked during prediction
     bad_X_test = X_test[:, 1:]
     bad_shape_error_msg = "The number of features in data*"
-    np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
-                                   bst.predict, bad_X_test)
-    np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
-                                   bst.predict, sparse.csr_matrix(bad_X_test))
-    np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
-                                   bst.predict, sparse.csc_matrix(bad_X_test))
+    np.testing.assert_raises_regex(
+        lgb.basic.LightGBMError, bad_shape_error_msg, bst.predict, bad_X_test
+    )
+    np.testing.assert_raises_regex(
+        lgb.basic.LightGBMError,
+        bad_shape_error_msg,
+        bst.predict,
+        sparse.csr_matrix(bad_X_test),
+    )
+    np.testing.assert_raises_regex(
+        lgb.basic.LightGBMError,
+        bad_shape_error_msg,
+        bst.predict,
+        sparse.csc_matrix(bad_X_test),
+    )
     with open(tname, "w+b") as f:
         dump_svmlight_file(bad_X_test, y_test, f)
-    np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
-                                   bst.predict, tname)
+    np.testing.assert_raises_regex(
+        lgb.basic.LightGBMError, bad_shape_error_msg, bst.predict, tname
+    )
     with open(tname, "w+b") as f:
         dump_svmlight_file(X_test, y_test, f, zero_based=False)
-    np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
-                                   bst.predict, tname)
+    np.testing.assert_raises_regex(
+        lgb.basic.LightGBMError, bad_shape_error_msg, bst.predict, tname
+    )
 
 
 def test_chunked_dataset():
-    X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1,
-                                                        random_state=2)
+    X_train, X_test, y_train, y_test = train_test_split(
+        *load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2
+    )
 
     chunk_size = X_train.shape[0] // 10 + 1
-    X_train = [X_train[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_train.shape[0] // chunk_size + 1)]
-    X_test = [X_test[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_test.shape[0] // chunk_size + 1)]
+    X_train = [
+        X_train[i * chunk_size : (i + 1) * chunk_size, :]
+        for i in range(X_train.shape[0] // chunk_size + 1)
+    ]
+    X_test = [
+        X_test[i * chunk_size : (i + 1) * chunk_size, :]
+        for i in range(X_test.shape[0] // chunk_size + 1)
+    ]
 
-    train_data = lgb.Dataset(X_train, label=y_train, params={"bin_construct_sample_cnt": 100})
-    valid_data = train_data.create_valid(X_test, label=y_test, params={"bin_construct_sample_cnt": 100})
+    train_data = lgb.Dataset(
+        X_train, label=y_train, params={"bin_construct_sample_cnt": 100}
+    )
+    valid_data = train_data.create_valid(
+        X_test, label=y_test, params={"bin_construct_sample_cnt": 100}
+    )
     train_data.construct()
     valid_data.construct()
 
 
 def test_chunked_dataset_linear():
-    X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1,
-                                                        random_state=2)
+    X_train, X_test, y_train, y_test = train_test_split(
+        *load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2
+    )
     chunk_size = X_train.shape[0] // 10 + 1
-    X_train = [X_train[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_train.shape[0] // chunk_size + 1)]
-    X_test = [X_test[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_test.shape[0] // chunk_size + 1)]
-    params = {"bin_construct_sample_cnt": 100, 'linear_tree': True}
+    X_train = [
+        X_train[i * chunk_size : (i + 1) * chunk_size, :]
+        for i in range(X_train.shape[0] // chunk_size + 1)
+    ]
+    X_test = [
+        X_test[i * chunk_size : (i + 1) * chunk_size, :]
+        for i in range(X_test.shape[0] // chunk_size + 1)
+    ]
+    params = {"bin_construct_sample_cnt": 100, "linear_tree": True}
     train_data = lgb.Dataset(X_train, label=y_train, params=params)
     valid_data = train_data.create_valid(X_test, label=y_test, params=params)
     train_data.construct()
@@ -111,10 +145,18 @@ def test_chunked_dataset_linear():
 
 
 def test_subset_group():
-    X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                       '../../examples/lambdarank/rank.train'))
-    q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                      '../../examples/lambdarank/rank.train.query'))
+    X_train, y_train = load_svmlight_file(
+        os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "../../examples/lambdarank/rank.train",
+        )
+    )
+    q_train = np.loadtxt(
+        os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "../../examples/lambdarank/rank.train.query",
+        )
+    )
     lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
     assert len(lgb_train.get_group()) == 201
     subset = lgb_train.subset(list(range(10))).construct()
@@ -153,7 +195,7 @@ def test_add_features_throws_if_datasets_unconstructed():
 def test_add_features_equal_data_on_alternating_used_unused(tmp_path):
     X = np.random.random((100, 5))
     X[:, [1, 3]] = 0
-    names = ['col_%d' % i for i in range(5)]
+    names = ["col_%d" % i for i in range(5)]
     for j in range(1, 5):
         d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
         d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
@@ -163,9 +205,9 @@ def test_add_features_equal_data_on_alternating_used_unused(tmp_path):
         d = lgb.Dataset(X, feature_name=names).construct()
         dname = str(tmp_path / "d.txt")
         d._dump_text(dname)
-        with open(d1name, 'rt') as d1f:
+        with open(d1name, "rt") as d1f:
             d1txt = d1f.read()
-        with open(dname, 'rt') as df:
+        with open(dname, "rt") as df:
             dtxt = df.read()
         assert dtxt == d1txt
 
@@ -173,7 +215,7 @@ def test_add_features_equal_data_on_alternating_used_unused(tmp_path):
 def test_add_features_same_booster_behaviour(tmp_path):
     X = np.random.random((100, 5))
     X[:, [1, 3]] = 0
-    names = ['col_%d' % i for i in range(5)]
+    names = ["col_%d" % i for i in range(5)]
     for j in range(1, 5):
         d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
         d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
@@ -191,9 +233,9 @@ def test_add_features_same_booster_behaviour(tmp_path):
         d1name = str(tmp_path / "d1.txt")
         b1.save_model(d1name)
         b.save_model(dname)
-        with open(dname, 'rt') as df:
+        with open(dname, "rt") as df:
             dtxt = df.read()
-        with open(d1name, 'rt') as d1f:
+        with open(d1name, "rt") as d1f:
             d1txt = d1f.read()
         assert dtxt == d1txt
 
@@ -204,7 +246,7 @@ def test_add_features_from_different_sources():
     n_col = 5
     X = np.random.random((n_row, n_col))
     xxs = [X, sparse.csr_matrix(X), pd.DataFrame(X)]
-    names = ['col_%d' % i for i in range(n_col)]
+    names = ["col_%d" % i for i in range(n_col)]
     for x_1 in xxs:
         # test that method works even with free_raw_data=True
         d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=True).construct()
@@ -214,8 +256,11 @@ def test_add_features_from_different_sources():
 
         # test that method works but sets raw data to None in case of immergeable data types
         d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=False).construct()
-        d2 = lgb.Dataset([X[:n_row // 2, :], X[n_row // 2:, :]],
-                         feature_name=names, free_raw_data=False).construct()
+        d2 = lgb.Dataset(
+            [X[: n_row // 2, :], X[n_row // 2 :, :]],
+            feature_name=names,
+            free_raw_data=False,
+        ).construct()
         d1.add_features_from(d2)
         assert d1.data is None
 
@@ -228,7 +273,7 @@ def test_add_features_from_different_sources():
             d1.add_features_from(d2)
             assert isinstance(d1.get_data(), original_type)
             assert d1.get_data().shape == (n_row, n_col * idx)
-            res_feature_names += ['D{}_{}'.format(idx, name) for name in names]
+            res_feature_names += ["D{}_{}".format(idx, name) for name in names]
             assert d1.feature_name == res_feature_names
 
 
@@ -236,7 +281,7 @@ def test_cegb_affects_behavior(tmp_path):
     X = np.random.random((100, 5))
     X[:, [1, 3]] = 0
     y = np.random.random(100)
-    names = ['col_%d' % i for i in range(5)]
+    names = ["col_%d" % i for i in range(5)]
     ds = lgb.Dataset(X, feature_name=names).construct()
     ds.set_label(y)
     base = lgb.Booster(train_set=ds)
@@ -244,19 +289,21 @@ def test_cegb_affects_behavior(tmp_path):
         base.update()
     basename = str(tmp_path / "basename.txt")
     base.save_model(basename)
-    with open(basename, 'rt') as f:
+    with open(basename, "rt") as f:
         basetxt = f.read()
     # Set extremely harsh penalties, so CEGB will block most splits.
-    cases = [{'cegb_penalty_feature_coupled': [50, 100, 10, 25, 30]},
-             {'cegb_penalty_feature_lazy': [1, 2, 3, 4, 5]},
-             {'cegb_penalty_split': 1}]
+    cases = [
+        {"cegb_penalty_feature_coupled": [50, 100, 10, 25, 30]},
+        {"cegb_penalty_feature_lazy": [1, 2, 3, 4, 5]},
+        {"cegb_penalty_split": 1},
+    ]
     for case in cases:
         booster = lgb.Booster(train_set=ds, params=case)
         for k in range(10):
             booster.update()
         casename = str(tmp_path / "casename.txt")
         booster.save_model(casename)
-        with open(casename, 'rt') as f:
+        with open(casename, "rt") as f:
             casetxt = f.read()
         assert basetxt != casetxt
 
@@ -265,16 +312,24 @@ def test_cegb_scaling_equalities(tmp_path):
     X = np.random.random((100, 5))
     X[:, [1, 3]] = 0
     y = np.random.random(100)
-    names = ['col_%d' % i for i in range(5)]
+    names = ["col_%d" % i for i in range(5)]
     ds = lgb.Dataset(X, feature_name=names).construct()
     ds.set_label(y)
     # Compare pairs of penalties, to ensure scaling works as intended
-    pairs = [({'cegb_penalty_feature_coupled': [1, 2, 1, 2, 1]},
-              {'cegb_penalty_feature_coupled': [0.5, 1, 0.5, 1, 0.5], 'cegb_tradeoff': 2}),
-             ({'cegb_penalty_feature_lazy': [0.01, 0.02, 0.03, 0.04, 0.05]},
-              {'cegb_penalty_feature_lazy': [0.005, 0.01, 0.015, 0.02, 0.025], 'cegb_tradeoff': 2}),
-             ({'cegb_penalty_split': 1},
-              {'cegb_penalty_split': 2, 'cegb_tradeoff': 0.5})]
+    pairs = [
+        (
+            {"cegb_penalty_feature_coupled": [1, 2, 1, 2, 1]},
+            {"cegb_penalty_feature_coupled": [0.5, 1, 0.5, 1, 0.5], "cegb_tradeoff": 2},
+        ),
+        (
+            {"cegb_penalty_feature_lazy": [0.01, 0.02, 0.03, 0.04, 0.05]},
+            {
+                "cegb_penalty_feature_lazy": [0.005, 0.01, 0.015, 0.02, 0.025],
+                "cegb_tradeoff": 2,
+            },
+        ),
+        ({"cegb_penalty_split": 1}, {"cegb_penalty_split": 2, "cegb_tradeoff": 0.5}),
+    ]
     for (p1, p2) in pairs:
         booster1 = lgb.Booster(train_set=ds, params=p1)
         booster2 = lgb.Booster(train_set=ds, params=p2)
@@ -285,32 +340,34 @@ def test_cegb_scaling_equalities(tmp_path):
         # Reset booster1's parameters to p2, so the parameter section of the file matches.
         booster1.reset_parameter(p2)
         booster1.save_model(p1name)
-        with open(p1name, 'rt') as f:
+        with open(p1name, "rt") as f:
             p1txt = f.read()
         p2name = str(tmp_path / "p2.txt")
         booster2.save_model(p2name)
-        with open(p2name, 'rt') as f:
+        with open(p2name, "rt") as f:
             p2txt = f.read()
         assert p1txt == p2txt
 
 
 def test_consistent_state_for_dataset_fields():
-
     def check_asserts(data):
         np.testing.assert_allclose(data.label, data.get_label())
-        np.testing.assert_allclose(data.label, data.get_field('label'))
+        np.testing.assert_allclose(data.label, data.get_field("label"))
         assert not np.isnan(data.label[0])
         assert not np.isinf(data.label[1])
         np.testing.assert_allclose(data.weight, data.get_weight())
-        np.testing.assert_allclose(data.weight, data.get_field('weight'))
+        np.testing.assert_allclose(data.weight, data.get_field("weight"))
         assert not np.isnan(data.weight[0])
         assert not np.isinf(data.weight[1])
         np.testing.assert_allclose(data.init_score, data.get_init_score())
-        np.testing.assert_allclose(data.init_score, data.get_field('init_score'))
+        np.testing.assert_allclose(data.init_score, data.get_field("init_score"))
         assert not np.isnan(data.init_score[0])
         assert not np.isinf(data.init_score[1])
-        assert np.all(np.isclose([data.label[0], data.weight[0], data.init_score[0]],
-                                 data.label[0]))
+        assert np.all(
+            np.isclose(
+                [data.label[0], data.weight[0], data.init_score[0]], data.label[0]
+            )
+        )
         assert data.label[1] == pytest.approx(data.weight[1])
         assert data.feature_name == data.get_feature_name()
 
@@ -318,10 +375,10 @@ def test_consistent_state_for_dataset_fields():
     sequence = np.ones(y.shape[0])
     sequence[0] = np.nan
     sequence[1] = np.inf
-    feature_names = ['f{0}'.format(i) for i in range(X.shape[1])]
-    lgb_data = lgb.Dataset(X, sequence,
-                           weight=sequence, init_score=sequence,
-                           feature_name=feature_names).construct()
+    feature_names = ["f{0}".format(i) for i in range(X.shape[1])]
+    lgb_data = lgb.Dataset(
+        X, sequence, weight=sequence, init_score=sequence, feature_name=feature_names
+    ).construct()
     check_asserts(lgb_data)
     lgb_data = lgb.Dataset(X, y).construct()
     lgb_data.set_label(sequence)
@@ -337,14 +394,12 @@ def test_choose_param_value():
         "local_listen_port": 1234,
         "port": 2222,
         "metric": "auc",
-        "num_trees": 81
+        "num_trees": 81,
     }
 
     # should resolve duplicate aliases, and prefer the main parameter
     params = lgb.basic._choose_param_value(
-        main_param_name="local_listen_port",
-        params=original_params,
-        default_value=5555
+        main_param_name="local_listen_port", params=original_params, default_value=5555
     )
     assert params["local_listen_port"] == 1234
     assert "port" not in params
@@ -352,18 +407,14 @@ def test_choose_param_value():
     # should choose a value from an alias and set that value on main param
     # if only an alias is used
     params = lgb.basic._choose_param_value(
-        main_param_name="num_iterations",
-        params=params,
-        default_value=17
+        main_param_name="num_iterations", params=params, default_value=17
     )
     assert params["num_iterations"] == 81
     assert "num_trees" not in params
 
     # should use the default if main param and aliases are missing
     params = lgb.basic._choose_param_value(
-        main_param_name="learning_rate",
-        params=params,
-        default_value=0.789
+        main_param_name="learning_rate", params=params, default_value=0.789
     )
     assert params["learning_rate"] == 0.789
 
@@ -372,6 +423,6 @@ def test_choose_param_value():
         "local_listen_port": 1234,
         "port": 2222,
         "metric": "auc",
-        "num_trees": 81
+        "num_trees": 81,
     }
     assert original_params == expected_params

@@ -31,8 +31,16 @@ def load_linnerud(**kwargs):
     return sklearn.datasets.load_linnerud(**kwargs)
 
 
-def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
-                 group=None, random_gs=False, avg_gs=10, random_state=0):
+def make_ranking(
+    n_samples=100,
+    n_features=20,
+    n_informative=5,
+    gmax=2,
+    group=None,
+    random_gs=False,
+    avg_gs=10,
+    random_state=0,
+):
     """Generate a learning-to-rank dataset - feature vectors grouped together with
     integer-valued graded relevance scores. Replace this with a sklearn.datasets function
     if ranking objective becomes supported in sklearn.datasets module.
@@ -78,11 +86,13 @@ def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
     relvalues = range(gmax + 1)
 
     # build y/target and group-id vectors with user-specified group sizes.
-    if group is not None and hasattr(group, '__len__'):
+    if group is not None and hasattr(group, "__len__"):
         n_samples = np.sum(group)
 
         for i, gsize in enumerate(group):
-            y_vec = np.concatenate((y_vec, rnd_generator.choice(relvalues, size=gsize, replace=True)))
+            y_vec = np.concatenate(
+                (y_vec, rnd_generator.choice(relvalues, size=gsize, replace=True))
+            )
             group_id_vec = np.concatenate((group_id_vec, [i] * gsize))
 
     # build y/target and group-id vectors according to n_samples, avg_gs, and random_gs.
@@ -94,7 +104,9 @@ def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
             if gsize < 1:
                 continue
 
-            y_vec = np.append(y_vec, rnd_generator.choice(relvalues, size=gsize, replace=True))
+            y_vec = np.append(
+                y_vec, rnd_generator.choice(relvalues, size=gsize, replace=True)
+            )
             group_id_vec = np.append(group_id_vec, [gid] * gsize)
             gid += 1
 
