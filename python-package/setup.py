@@ -5,16 +5,15 @@ import os
 import struct
 import subprocess
 import sys
-
+from distutils.dir_util import copy_tree, create_tree, remove_tree
+from distutils.file_util import copy_file
 from platform import system
+
 from setuptools import find_packages, setup
 from setuptools.command.install import install
 from setuptools.command.install_lib import install_lib
 from setuptools.command.sdist import sdist
-from distutils.dir_util import copy_tree, create_tree, remove_tree
-from distutils.file_util import copy_file
 from wheel.bdist_wheel import bdist_wheel
-
 
 LIGHTGBM_OPTIONS = [
     ('mingw', 'm', 'Compile with MinGW'),
