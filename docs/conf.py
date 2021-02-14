@@ -20,16 +20,16 @@
 import datetime
 import os
 import sys
-import sphinx
-
 from distutils.dir_util import copy_tree
+from re import compile
+from subprocess import PIPE, Popen
+from unittest.mock import Mock
+
+import sphinx
 from docutils.nodes import reference
 from docutils.parsers.rst import Directive
 from docutils.transforms import Transform
-from re import compile
 from sphinx.errors import VersionRequirementError
-from subprocess import PIPE, Popen
-from unittest.mock import Mock
 
 CURR_PATH = os.path.abspath(os.path.dirname(__file__))
 LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'python-package')
