@@ -824,8 +824,8 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
         return self
 
     _base_doc = LGBMModel.fit.__doc__
-    _base_doc = (_base_doc[:_base_doc.find('group :')]
-                 + _base_doc[_base_doc.find('eval_set :'):])
+    _base_doc = (_base_doc[:_base_doc.find('group :')]  # type: ignore
+                 + _base_doc[_base_doc.find('eval_set :'):])  # type: ignore
     _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
                  + _base_doc[_base_doc.find('eval_init_score :'):])
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
@@ -897,8 +897,8 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         return self
 
     _base_doc = LGBMModel.fit.__doc__
-    _base_doc = (_base_doc[:_base_doc.find('group :')]
-                 + _base_doc[_base_doc.find('eval_set :'):])
+    _base_doc = (_base_doc[:_base_doc.find('group :')]  # type: ignore
+                 + _base_doc[_base_doc.find('eval_set :'):])  # type: ignore
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
                    + _base_doc[_base_doc.find('eval_metric :'):])
 
@@ -989,8 +989,8 @@ class LGBMRanker(LGBMModel):
         return self
 
     _base_doc = LGBMModel.fit.__doc__
-    fit.__doc__ = (_base_doc[:_base_doc.find('eval_class_weight :')]
-                   + _base_doc[_base_doc.find('eval_init_score :'):])
+    fit.__doc__ = (_base_doc[:_base_doc.find('eval_class_weight :')]  # type: ignore
+                   + _base_doc[_base_doc.find('eval_init_score :'):])  # type: ignore
     _base_doc = fit.__doc__
     _before_early_stop, _early_stop, _after_early_stop = _base_doc.partition('early_stopping_rounds :')
     fit.__doc__ = (_before_early_stop

@@ -9,7 +9,7 @@ It is based on dask-lightgbm, which was based on dask-xgboost.
 import socket
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union, Set
 from urllib.parse import urlparse
 
 import numpy as np
@@ -77,7 +77,6 @@ def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Itera
         A free port on the machine referenced by ``worker_ip``.
     """
     max_tries = 1000
-    out_port = None
     found_port = False
     for i in range(max_tries):
         out_port = local_listen_port + i
@@ -117,7 +116,7 @@ def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], loc
     result : Dict[str, int]
         Dictionary where keys are worker addresses and values are an open port for LightGBM to use.
     """
-    lightgbm_ports = set()
+    lightgbm_ports: Set[int] = set()
     worker_ip_to_port = {}
     for worker_address in worker_addresses:
         port = client.submit(
@@ -306,11 +305,11 @@ def _train(
     wait(parts)
 
     for part in parts:
-        if part.status == 'error':
+        if part.status == 'error':  # type: ignore
             return part  # trigger error locally
 
     # Find locations of all parts and map them to particular Dask workers
-    key_to_part_dict = {part.key: part for part in parts}
+    key_to_part_dict = {part.key: part for part in parts}  # type: ignore
     who_has = client.who_has(parts)
     worker_map = defaultdict(list)
     for key, workers in who_has.items():
