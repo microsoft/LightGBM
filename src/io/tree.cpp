@@ -769,7 +769,7 @@ Tree::Tree(const char* str, size_t* used_len) {
 
   if (is_linear_) {
     if (key_vals.count("leaf_const")) {
-      leaf_const_ = Common::StringToArrayFast<double>(key_vals["leaf_const"], num_leaves_);
+      leaf_const_ = Common::StringToArray<double>(key_vals["leaf_const"], num_leaves_);
     } else {
       leaf_const_.resize(num_leaves_);
     }
@@ -791,7 +791,7 @@ Tree::Tree(const char* str, size_t* used_len) {
       }
       std::vector<double> all_leaf_coeff;
       if (key_vals.count("leaf_coeff")) {
-        all_leaf_coeff = Common::StringToArrayFast<double>(key_vals["leaf_coeff"], total_num_feat);
+        all_leaf_coeff = Common::StringToArray<double>(key_vals["leaf_coeff"], total_num_feat);
       }
       int sum_num_feat = 0;
       for (int i = 0; i < num_leaves_; ++i) {
