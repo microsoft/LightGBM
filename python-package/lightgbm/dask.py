@@ -284,15 +284,16 @@ def _train(
     data_parts = _split_to_parts(data=data, is_matrix=True)
     label_parts = _split_to_parts(data=label, is_matrix=False)
     parts = [{'data': x, 'label': y} for (x, y) in zip(data_parts, label_parts)]
+    n_parts = len(parts)
 
     if sample_weight is not None:
         weight_parts = _split_to_parts(data=sample_weight, is_matrix=False)
-        for i in range(len(parts)):
+        for i in range(n_parts):
             parts[i]['weight'] = weight_parts[i]
 
     if group is not None:
         group_parts = _split_to_parts(data=group, is_matrix=False)
-        for i in range(len(parts)):
+        for i in range(n_parts):
             parts[i]['group'] = group_parts[i]
 
     # Start computation in the background
