@@ -6,7 +6,7 @@ from io import BytesIO
 import numpy as np
 
 from .basic import Booster, _log_warning
-from .compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED
+from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
 from .sklearn import LGBMModel
 
 
@@ -599,8 +599,8 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
         The plot with single tree.
     """
     if MATPLOTLIB_INSTALLED:
-        import matplotlib.pyplot as plt
         import matplotlib.image as image
+        import matplotlib.pyplot as plt
     else:
         raise ImportError('You must install matplotlib to plot tree.')
 
