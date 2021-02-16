@@ -251,8 +251,13 @@ def _train_part(
                 **kwargs
             )
         else:
-            model.fit(data, label, sample_weight=weight, eval_set=local_eval_set,
-                      eval_sample_weight=local_eval_sample_weight, **kwargs)
+            model.fit(
+                data,
+                label,
+                sample_weight=weight,
+                eval_set=local_eval_set,
+                eval_sample_weight=local_eval_sample_weight, **kwargs
+            )
 
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
