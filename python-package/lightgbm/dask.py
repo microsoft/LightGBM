@@ -607,7 +607,15 @@ class _DaskLGBMModel:
             **kwargs
         )
 
-        self.set_params(**model.get_params())
+        # network parameters might be edited during the training process based on the current state of
+        # the Dask cluster at the time of training. Those changes shouldn't be saved on the model because
+        # the Dask cluster is assumed to be temporary
+        params_after_training = model.get_params()
+        params_after_training.pop("local_listen_port", None)
+        params_after_training.pop("machines", None)
+        params_after_training.pop("num_machines", None)
+
+        self.set_params(**params_after_training)
         self._copy_extra_params(model, self)
 
         return self
