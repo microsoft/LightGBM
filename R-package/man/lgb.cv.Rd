@@ -114,7 +114,7 @@ If early stopping occurs, the model will have 'best_iter' field.}
 
 \item{reset_data}{Boolean, setting it to TRUE (not the default value) will transform the booster model
 into a predictor model which frees up memory and the original datasets}
- 
+
 \item{train_folds}{\code{list} specifying which indicies to use for training. If \code{NULL}
 (the default) all indices not specified in \code{folds} will be used for training.}
 
