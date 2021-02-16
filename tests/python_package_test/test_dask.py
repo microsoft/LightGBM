@@ -33,7 +33,6 @@ from sklearn.datasets import make_blobs, make_regression
 
 from .utils import make_ranking
 
-
 # time, in seconds, to wait for the Dask client to close. Used to avoid teardown errors
 # see https://distributed.dask.org/en/latest/api.html#distributed.Client.close
 CLIENT_CLOSE_TIMEOUT = 120
