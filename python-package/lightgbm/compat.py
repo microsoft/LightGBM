@@ -3,9 +3,9 @@
 
 """pandas"""
 try:
-    from pandas import concat
-    from pandas import Series as pd_Series
     from pandas import DataFrame as pd_DataFrame
+    from pandas import Series as pd_Series
+    from pandas import concat
     from pandas.api.types import is_sparse as is_dtype_sparse
     PANDAS_INSTALLED = True
 except ImportError:
@@ -57,17 +57,16 @@ except ImportError:
 
 """sklearn"""
 try:
-    from sklearn.base import BaseEstimator
-    from sklearn.base import RegressorMixin, ClassifierMixin
+    from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
     from sklearn.preprocessing import LabelEncoder
     from sklearn.utils.class_weight import compute_sample_weight
     from sklearn.utils.multiclass import check_classification_targets
-    from sklearn.utils.validation import assert_all_finite, check_X_y, check_array
+    from sklearn.utils.validation import assert_all_finite, check_array, check_X_y
     try:
-        from sklearn.model_selection import StratifiedKFold, GroupKFold
         from sklearn.exceptions import NotFittedError
+        from sklearn.model_selection import GroupKFold, StratifiedKFold
     except ImportError:
-        from sklearn.cross_validation import StratifiedKFold, GroupKFold
+        from sklearn.cross_validation import GroupKFold, StratifiedKFold
         from sklearn.utils.validation import NotFittedError
     try:
         from sklearn.utils.validation import _check_sample_weight
