@@ -173,14 +173,20 @@ def _train_part(
     data = _concat([x['data'] for x in list_of_parts])
     label = _concat([x['label'] for x in list_of_parts])
 
-    def concat_if_is_in_parts(key):
-        if key not in list_of_parts[0]:
-            return None
-        return _concat([x[key] for x in list_of_parts])
+    if 'weight' in list_of_parts[0]:
+        weight = _concat([x['weight'] for x in list_of_parts])
+    else:
+        weight = None
 
-    weight = concat_if_is_in_parts('weight')
-    init_score = concat_if_is_in_parts('init_score')
-    group = concat_if_is_in_parts('group')
+    if 'group' in list_of_parts[0]:
+        group = _concat([x['group'] for x in list_of_parts])
+    else:
+        group = None
+
+    if 'init_score' in list_of_parts[0]:
+        init_score = _concat([x['init_score'] for x in list_of_parts])
+    else:
+        init_score = None
 
     try:
         model = model_factory(**params)
@@ -292,16 +298,20 @@ def _train(
     label_parts = _split_to_parts(data=label, is_matrix=False)
     parts = [{'data': x, 'label': y} for (x, y) in zip(data_parts, label_parts)]
 
-    def add_to_parts(data, name, is_matrix=False):
-        if data is None:
-            return
-        new_parts = _split_to_parts(data=data, is_matrix=is_matrix)
+    if sample_weight is not None:
+        weight_parts = _split_to_parts(data=sample_weight, is_matrix=False)
         for i in range(len(parts)):
-            parts[i][name] = new_parts[i]
+            parts[i]['weight'] = weight_parts[i]
 
-    add_to_parts(sample_weight, 'weight')
-    add_to_parts(init_score, 'init_score')
-    add_to_parts(group, 'group')
+    if group is not None:
+        group_parts = _split_to_parts(data=group, is_matrix=False)
+        for i in range(len(parts)):
+            parts[i]['group'] = group_parts[i]
+
+    if init_score is not None:
+        group_parts = _split_to_parts(data=init_score, is_matrix=False)
+        for i in range(len(parts)):
+            parts[i]['init_score'] = group_parts[i]
 
     # Start computation in the background
     parts = list(map(delayed, parts))
