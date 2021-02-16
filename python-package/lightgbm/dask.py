@@ -240,8 +240,16 @@ def _train_part(
     try:
         model = model_factory(**params)
         if is_ranker:
-            model.fit(data, label, sample_weight=weight, group=group, eval_set=local_eval_set,
-                      eval_sample_weight=local_eval_sample_weight, eval_group=local_eval_group, **kwargs)
+            model.fit(
+                data,
+                label,
+                sample_weight=weight,
+                group=group,
+                eval_set=local_eval_set,
+                eval_sample_weight=local_eval_sample_weight,
+                eval_group=local_eval_group,
+                **kwargs
+            )
         else:
             model.fit(data, label, sample_weight=weight, eval_set=local_eval_set,
                       eval_sample_weight=local_eval_sample_weight, **kwargs)
