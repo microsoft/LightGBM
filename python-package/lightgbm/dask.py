@@ -404,7 +404,8 @@ def _train(
                 for j in range(len(eval_x_parts)):
                     parts_idx = j % n_parts
 
-                    x_e, y_e = eval_x_parts[j], eval_y_parts[j]
+                    x_e = eval_x_parts[j]
+                    y_e = eval_y_parts[j]
 
                     if j < n_parts:
                         eval_sets[parts_idx].append(([x_e], [y_e]))
