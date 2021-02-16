@@ -319,7 +319,7 @@ def _train(
     eval_set : List of (X, y) tuples of Dask data collections, or None, optional (default=None)
         List of (X, y) tuple pairs to use as validation sets.
     eval_sample_weight: List of Dask data collections or None, optional (default=None)
-        List of dask Array or dask Series, weights for each validation set in eval_set.
+        List of Dask Array or Dask Series, weights for each validation set in eval_set.
     eval_group: List of Dask data collections or None, optional (default=None)
         List of dask Array or dask Series, group/query for each validation set in eval_set.
     **kwargs
