@@ -1,10 +1,9 @@
 # coding: utf-8
 import os
 
+import lightgbm as lgb
 import numpy as np
 from sklearn.datasets import load_svmlight_file
-
-import lightgbm as lgb
 
 
 class FileLoader:

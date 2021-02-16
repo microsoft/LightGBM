@@ -3,11 +3,10 @@
 
 import os
 
+import lightgbm as lgb
 import numpy as np
 import pytest
 from sklearn.metrics import log_loss
-
-import lightgbm as lgb
 
 from .utils import load_breast_cancer
 

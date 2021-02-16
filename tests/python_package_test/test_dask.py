@@ -8,9 +8,8 @@ from itertools import groupby
 from os import getenv
 from sys import platform
 
-import pytest
-
 import lightgbm as lgb
+import pytest
 
 if not platform.startswith('linux'):
     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
