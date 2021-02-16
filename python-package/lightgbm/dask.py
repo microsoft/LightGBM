@@ -178,7 +178,9 @@ def _train_part(
         group = None
 
     # construct local eval_set data.
-    local_eval_set, local_eval_sample_weight, local_eval_group = None, None, None
+    local_eval_set = None
+    local_eval_sample_weight = None
+    local_eval_group = None
     n_evals = max([len(x.get('eval_set', [])) for x in list_of_parts])
     has_eval_weights = any([x.get('eval_sample_weight') is not None for x in list_of_parts])
     if n_evals:
