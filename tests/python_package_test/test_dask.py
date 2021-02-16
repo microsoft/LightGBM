@@ -740,7 +740,7 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
         p1 = dask_model.predict(dX)
         if task == 'classification':
             print(f'_accuracy_score(dy, p1) = {_accuracy_score(dy, p1)}')
-            _accuracy_score(dy, p1) > 0.8
+            assert _accuracy_score(dy, p1) > 0.8
 
         elif task == 'regression':
             print(f'_r2_score(dy, p1) = {_r2_score(dy, p1)}')
