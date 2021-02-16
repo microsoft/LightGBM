@@ -893,7 +893,7 @@ def test_find_open_port_works():
             local_listen_port=12400,
             ports_to_skip=set()
         )
-        assert new_port == 12401
+        assert new_port > 12400
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
         s_1.bind((worker_ip, 12400))
@@ -904,7 +904,7 @@ def test_find_open_port_works():
                 local_listen_port=12400,
                 ports_to_skip=set()
             )
-            assert new_port == 12402
+            assert new_port > 12402
 
 
 def test_warns_and_continues_on_unrecognized_tree_learner(client):
