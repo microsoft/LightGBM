@@ -651,31 +651,71 @@ def test_ranker(output, client, listen_port, group):
 @pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
 def test_early_stopping(task, eval_sizes, client, listen_port):
 
-    # shrink chunk_size so there is high likelihood that each worker
-    # gets a little bit of eval_set.
+    # use larger number of samples to prevent faux early stopping whereby
+    # boosting stops on accident because each worker has few data points and achieves 0 loss.
+    n_samples = 1000
+    eval_set = []
+    eval_sample_weight = []
+
     if task == 'ranking':
         X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
+            n_samples=n_samples,
             output='dataframe',
-            group=group_sizes,
-            chunk_size=10
+            chunk_size=10,
+            random_gs=True
         )
         model_factory = lgb.DaskLGBMRanker
-        eval_metric=['ndcg']
+        eval_metric=['ndcg', 'map']
         eval_group = []
+
+        # create eval* datasets for ranking task.
+        for eval_size in eval_sizes:
+            if eval_size == 1:
+                dX_e = dX
+                dy_e = dy
+                dw_e = dw
+                dg_e = dg
+            else:
+                _, _, _, _, dX_e, dy_e, dw_e, dg_e = _create_ranking_data(
+                    n_samples=max(200, int(n_samples * eval_size)),
+                    output='dataframe',
+                    chunk_size=10,
+                    random_gs=True
+                )
+            eval_set.append((dX_e, dy_e))
+            eval_sample_weight.append(dw_e)
+            eval_group.append(dg_e)
+
     else:
         X, y, w, dX, dy, dw = _create_data(
+            n_samples=n_samples,
             objective=task,
             output='array',
-            chunk_size=10,
+            chunk_size=10
         )
         dg = None
         eval_group = None
         if task == 'classification':
             model_factory = lgb.DaskLGBMClassifier
-            eval_metric = ['binary_error']
+            eval_metric = ['binary_error', 'auc']
         elif task == 'regression':
             model_factory = lgb.DaskLGBMRegressor
-            eval_metric = ['l2']
+            eval_metric = ['rmse']
+
+        for eval_size in eval_sizes:
+            if eval_size == 1:
+                dX_e = dX
+                dy_e = dy
+                dw_e = dw
+            else:
+                _, _, _, dX_e, dy_e, dw_e = _create_data(
+                    n_samples=max(200, int(n_samples * eval_size)),
+                    objective=task,
+                    output='array',
+                    chunk_size=10
+                )
+            eval_set.append((dX_e, dy_e))
+            eval_sample_weight.append(dw_e)
 
     full_trees = 200
     params = {
@@ -692,22 +732,6 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
         , **params
     )
 
-    eval_set, eval_sample_weight = [], []
-    for eval_size in eval_sizes:
-        if eval_size == 1:
-            eval_set.append((dX, dy))
-            eval_sample_weight.append(dw)
-
-            if task == 'ranking':
-                eval_group.append(dg)
-        else:
-            eval_partitions = int(max(1, np.floor(eval_size * dX.npartitions)))
-            eval_set.append((dX.partitions[0:eval_partitions], dy.partitions[0:eval_partitions]))
-            eval_sample_weight.append(dw.partitions[0:eval_partitions])
-
-            if task == 'ranking':
-                eval_group.append(dg.partitions[0:eval_partitions])
-
     # when eval_size is exactly 1 partition, not enough eval_set data to reach each worker.
     if eval_sizes == [0]:
         with pytest.raises(RuntimeError, match='eval_set was provided but worker .* was not allocated validation data'):
@@ -719,7 +743,7 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
                 eval_sample_weight=eval_sample_weight,
                 eval_group=eval_group,
                 eval_metric=eval_metric,
-                early_stopping_rounds=5
+                early_stopping_rounds=1
             )
 
     else:
@@ -731,7 +755,7 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
             eval_sample_weight=eval_sample_weight,
             eval_group=eval_group,
             eval_metric=eval_metric,
-            early_stopping_rounds=5
+            early_stopping_rounds=1
         )
         fitted_trees = dask_model.booster_.num_trees()
         assert fitted_trees < full_trees
@@ -739,16 +763,111 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
         # be sure that model still produces decent output.
         p1 = dask_model.predict(dX)
         if task == 'classification':
-            print(f'_accuracy_score(dy, p1) = {_accuracy_score(dy, p1)}')
-            assert _accuracy_score(dy, p1) > 0.8
+            p1_acc = _accuracy_score(dy, p1)
+            msg = f'binary accuracy score of predictions with actuals was <= 0.8 ({p1_acc})'
+            assert p1_acc > 0.8, msg
 
         elif task == 'regression':
-            print(f'_r2_score(dy, p1) = {_r2_score(dy, p1)}')
-            assert _r2_score(dy, p1) > 0.8
+            p1_r2 = _r2_score(dy, p1)
+            msg = f'r2 score of predictions with actuals was <= 0.8 ({p1_r2})'
+            assert _r2_score(dy, p1) > 0.8, msg
 
         else:
-            print(f'spearmanr(p1.compute(), y).correlation = {spearmanr(p1.compute(), y).correlation}')
-            assert spearmanr(p1.compute(), y).correlation > 0.8
+            p1_cor = spearmanr(p1.compute(), y).correlation
+            msg = f'spearman correlation of predictions with actuals was < 0.8 ({p1_cor})'
+            assert p1_cor > 0.8, msg
+
+        # check that evals_result contains expected data and other attributes tied to early stopping.
+        evals_result = dask_model.evals_result_
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
+@pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
+def test_eval_set_without_early_stopping(task, client, listen_port):
+
+    n_samples = 100
+    eval_set = []
+    eval_sample_weight = []
+
+    if task == 'ranking':
+        X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
+            n_samples=n_samples,
+            output='dataframe',
+            chunk_size=10,
+            random_gs=True
+        )
+        model_factory = lgb.DaskLGBMRanker
+        eval_metric=['ndcg', 'map']
+        eval_group = []
+
+        # create eval* dataset
+        _, _, _, _, dX_e, dy_e, dw_e, dg_e = _create_ranking_data(
+            n_samples=n_samples,
+            output='dataframe',
+            chunk_size=10,
+            random_gs=True
+        )
+        eval_set.append((dX_e, dy_e))
+        eval_sample_weight.append(dw_e)
+        eval_group.append(dg_e)
+
+    else:
+        X, y, w, dX, dy, dw = _create_data(
+            n_samples=n_samples,
+            objective=task,
+            output='array',
+            chunk_size=10
+        )
+        dg = None
+        eval_group = None
+        if task == 'classification':
+            model_factory = lgb.DaskLGBMClassifier
+            eval_metric = ['binary_error', 'auc']
+        elif task == 'regression':
+            model_factory = lgb.DaskLGBMRegressor
+            eval_metric = ['l2', 'l1']
+
+        _, _, _, dX_e, dy_e, dw_e = _create_data(
+            n_samples=n_samples,
+            objective=task,
+            output='array',
+            chunk_size=10
+        )
+        eval_set.append((dX_e, dy_e))
+        eval_sample_weight.append(dw_e)
+
+    full_trees = 200
+    params = {
+        "random_state": 42,
+        "n_estimators": full_trees,
+        "num_leaves": 31,
+        "min_child_samples": 1,
+        "verbose": 5
+    }
+
+    dask_model = model_factory(
+        client=client
+        , **params
+    )
+
+    dask_model = dask_model.fit(
+        dX,
+        dy,
+        group=dg,
+        eval_set=eval_set,
+        eval_sample_weight=eval_sample_weight,
+        eval_group=eval_group,
+        eval_metric=eval_metric,
+        early_stopping_rounds=None
+    )
+
+    # check that early stopping was not applied.
+    fitted_trees = dask_model.booster_.num_trees()
+    assert fitted_trees == full_trees
+
+    # check that evals_result contains expected data.
+    evals_result = dask_model.evals_result_
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 

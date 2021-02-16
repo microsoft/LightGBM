@@ -418,7 +418,7 @@ def _train(
                         eval_sets[parts_idx][-1][1].append(y_e)
 
             if eval_sample_weight:
-                if id(eval_sample_weight[i]) == id(sample_weight):
+                if eval_sample_weight[i] is sample_weight:
                     for parts_idx in range(n_parts):
                         eval_sample_weights[parts_idx].append('__sample_weight__')
 
@@ -439,7 +439,7 @@ def _train(
                             eval_sample_weights[parts_idx][-1].append(w_e)
 
             if eval_group:
-                if id(eval_group[i]) == id(group):
+                if eval_group[i] is group:
                     for parts_idx in range(n_parts):
                         eval_groups[parts_idx].append('__group__')
 
