@@ -16,7 +16,7 @@ import numpy as np
 import scipy.sparse as ss
 
 from .basic import (_LIB, LightGBMError, _choose_param_value, _ConfigAliases,
-                    _log_warning, _safe_call)
+                    _log_info, _log_warning, _safe_call)
 from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED,
                      Client, LGBMNotFittedError, concat, dask_Array,
                      dask_DataFrame, dask_Series, default_client, delayed,
@@ -198,25 +198,35 @@ def _split_to_parts(data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
     return parts
 
 
-def _machine_list_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[str, int]:
+def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[str, int]:
     """
     Given ``machine_list`` and a list of Dask worker addresses, return a mapping
     where the keys are ``worker_addresses`` and the values are ports from
     ``machine_list``.
+
+    Parameters
+    ----------
+    machines : str
+        A comma-delimited list of workers, of the form ``ip1:port,ip2:port``.
+    worker_addresses : list of str
+        A list of Dask worker addresses, of the form ``{protocol}{hostname}:{port}``, where ``port`` is the port Dask's scheduler uses to talk to that worker.
+
+    Returns
+    -------
+    result : Dict[str, int]
+        Dictionary where keys are work addresses in the form expected by Dask and values are a port for LightGBM to use.
     """
     machine_addresses = machines.split(",")
-    machine_list_host_to_port = {}
+    machine_to_port = {}
     for address in machine_addresses:
-        parsed = urlparse(address)
-        hostname = parsed.hostname
-        port = parsed.port
-        ports_for_host = machine_list_host_to_port.get(hostname, set())
-        machine_list_host_to_port[hostname] = ports_for_host.add(port)
+        host, port = address.split(":")
+        machine_to_port[host] = machine_to_port.get(host, set())
+        machine_to_port[host].add(int(port))
 
     out = {}
     for address in worker_addresses:
         worker_host = urlparse(address).hostname
-        out[worker_host] = machine_list_host_to_port[worker_host].pop()
+        out[address] = machine_to_port[worker_host].pop()
 
     return out
 
@@ -260,6 +270,33 @@ def _train(
     -------
     model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Returns fitted underlying model.
+
+    Note
+    ----
+
+    This method handles setting up the following network parameters based on information
+    about the Dask cluster referenced by ``client``.
+
+    * ``local_listen_port``: port that each LightGBM worker opens a listening socket on,
+        to accept connections from other workers. This can be differ from LightGBM worker
+        to LightGBM worker, but does not have to.
+    * ``machines``: a list of all machines in the cluster, plus a port to communicate
+        over during initial setup of LightGBM's network
+    * ``num_machines``: number of LightGBM workers
+    * ``timeout``: time in minutes to wait before closing unused sockets
+
+    The default behavior of this function is to generate ``machines`` from the list of
+    Dask workers which hold some piece of the training data, and to search for an open
+    port on each worker to be used as ``local_listen_port``.
+
+    If ``machines`` is provided explicitly in ``params``, this function uses the hosts
+    and ports in that list directly, and does not do any searching. This means that if
+    any of the Dask workers are missing from the list or any of those ports are not free
+    when training starts, training will fail.
+
+    If ``local_listen_port`` is provided in ``params`` and ``machines`` is not, this function
+    constructs ``machines`` from the list of Dask workers which hold some piece of the
+    training data, assuming that each one will use the same ``local_listen_port``.
     """
     params = deepcopy(params)
 
@@ -334,9 +371,8 @@ def _train(
     master_worker_address = next(iter(worker_map))
     worker_ncores = client.ncores()
 
-    # Network::Init() needs to be called once per worker at the
-    # beginning of training. If machine_list is provided, use
-    # that to get parameters for that call. If not, search.
+    # resolve aliases for network parameters and pop the result off params.
+    # these values are added back in calls to `_train_part()`
     params = _choose_param_value(
         main_param_name="local_listen_port",
         params=params,
@@ -351,25 +387,32 @@ def _train(
     )
     machines = params.pop("machines")
 
-    # * if `machines` provided: just use that
-    # * if `local_listen_port` provided but no `machines`: generate `machines` from
-    #   list of Dask workers that have a piece of the training data, all using
-    #   `local_listen_port`
-    # * neither `machines` nor `local_listen_port` provided: get random ports
-    #   to construct machine list
+    # figure out network params 
     worker_addresses = worker_map.keys()
     if machines is not None:
-        worker_address_to_port = _machine_list_to_worker_map(
+        _log_info("Using passed-in 'machines' parameter")
+        worker_address_to_port = _machines_to_worker_map(
             machines=machines,
             worker_addresses=worker_addresses
         )
     else:
         if listen_port_in_params:
+            _log_info("Using passed-in 'local_listen_port' for all workers")
+            unique_hosts = set([urlparse(a).hostname for a in worker_addresses])
+            if len(unique_hosts) < len(worker_addresses):
+                msg = (
+                    "'local_listen_port' was provided in Dask training parameters, but at least one "
+                    "machine in the cluster has multiple Dask worker processes running on it. Please omit "
+                    "'local_listen_port' or pass 'machines'."
+                )
+                raise LightGBMError(msg)
+
             worker_address_to_port = {
-                urlparse(address).hostname: local_listen_port
+                address: local_listen_port
                 for address in worker_addresses
             }
         else:
+            _log_info("Finding random open ports for workers")
             worker_address_to_port = _find_ports_for_workers(
                 client=client,
                 worker_addresses=worker_map.keys(),
