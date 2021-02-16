@@ -408,7 +408,6 @@ def _train(
                         eval_sets[parts_idx].append(([x_e], [y_e]))
 
                     else:
-                        # n_evals = len(eval_sets[parts_idx]) - 1
                         eval_sets[parts_idx][-1][0].append(x_e)
                         eval_sets[parts_idx][-1][1].append(y_e)
 
