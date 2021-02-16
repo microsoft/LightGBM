@@ -391,7 +391,7 @@ def _train(
         for i, (X, y) in enumerate(eval_set):
 
             # when individual eval set is equivalent to training data, skip recomputing parts.
-            if id(X) == id(data) and id(y) == id(label):
+            if X is data and y is label
                 for parts_idx in range(n_parts):
                     eval_sets[parts_idx].append('__train__')
 
