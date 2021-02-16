@@ -46,8 +46,6 @@ fi
 
 if [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
-        isort \
-        mypy \
         pycodestyle \
         pydocstyle \
         r-stringi  # stringi needs to be installed separate from r-lintr to avoid issues like 'unable to load shared object stringi.so'
@@ -57,7 +55,7 @@ if [[ $TASK == "lint" ]]; then
             libxml2 \
             "r-xfun>=0.19" \
             "r-lintr>=2.0"
-    pip install --user cpplint
+    pip install --user cpplint isort mypy
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
