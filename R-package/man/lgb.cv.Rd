@@ -19,13 +19,13 @@ lgb.cv(
   showsd = TRUE,
   stratified = TRUE,
   folds = NULL,
-  train_folds = NULL,
   init_model = NULL,
   colnames = NULL,
   categorical_feature = NULL,
   early_stopping_rounds = NULL,
   callbacks = list(),
   reset_data = FALSE,
+  train_folds = NULL,
   ...
 )
 }
@@ -97,9 +97,6 @@ by the values of outcome labels.}
 (each element must be a vector of test fold's indices). When folds are supplied,
 the \code{nfold} and \code{stratified} parameters are ignored.}
 
-\item{train_folds}{\code{list} specifying which indicies to use for training. If \code{NULL}
-(the default) all indices not specified in \code{folds} will be used for training.}
-
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
 \item{colnames}{feature names, if not null, will use this to overwrite the names in dataset}
@@ -117,6 +114,9 @@ If early stopping occurs, the model will have 'best_iter' field.}
 
 \item{reset_data}{Boolean, setting it to TRUE (not the default value) will transform the booster model
 into a predictor model which frees up memory and the original datasets}
+ 
+ \item{train_folds}{\code{list} specifying which indicies to use for training. If \code{NULL}
+(the default) all indices not specified in \code{folds} will be used for training.}
 
 \item{...}{other parameters, see Parameters.rst for more information. A few key parameters:
 \itemize{
