@@ -1094,7 +1094,7 @@ for check_name in _check_names:
     if check_func:
         sklearn_checks_to_run.append(check_func)
  
- def _tested_estimators():
+def _tested_estimators():
     for Estimator in [lgb.DaskLGBMClassifier, lgb.DaskLGBMRegressor]:
         yield Estimator()
 
