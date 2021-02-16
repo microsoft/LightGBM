@@ -8,8 +8,10 @@ from itertools import groupby
 from os import getenv
 from sys import platform
 
-import lightgbm as lgb
 import pytest
+
+import lightgbm as lgb
+
 if not platform.startswith('linux'):
     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
@@ -21,15 +23,14 @@ import dask.dataframe as dd
 import joblib
 import numpy as np
 import pandas as pd
-from scipy.stats import spearmanr
 from dask.array.utils import assert_eq
-from dask.distributed import default_client, Client, LocalCluster, wait
+from dask.distributed import Client, LocalCluster, default_client, wait
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
 from scipy.sparse import csr_matrix
+from scipy.stats import spearmanr
 from sklearn.datasets import make_blobs, make_regression
 
 from .utils import make_ranking
-
 
 # time, in seconds, to wait for the Dask client to close. Used to avoid teardown errors
 # see https://distributed.dask.org/en/latest/api.html#distributed.Client.close

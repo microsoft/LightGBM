@@ -14,7 +14,8 @@ from typing import Any, Dict
 import numpy as np
 import scipy.sparse
 
-from .compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat, is_dtype_sparse, dt_DataTable
+from .compat import (PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse,
+                     pd_DataFrame, pd_Series)
 from .libpath import find_lib_path
 
 
