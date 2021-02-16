@@ -321,7 +321,7 @@ def _train(
     eval_sample_weight: List of Dask data collections or None, optional (default=None)
         List of Dask Array or Dask Series, weights for each validation set in eval_set.
     eval_group: List of Dask data collections or None, optional (default=None)
-        List of dask Array or dask Series, group/query for each validation set in eval_set.
+        List of Dask Array or Dask Series, group/query for each validation set in eval_set.
     **kwargs
         Other parameters passed to ``fit`` method of the local underlying model.
 
