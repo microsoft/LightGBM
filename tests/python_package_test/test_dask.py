@@ -744,7 +744,7 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
 
         elif task == 'regression':
             print(f'_r2_score(dy, p1) = {_r2_score(dy, p1)}')
-            _r2_score(dy, p1) > 0.8
+            assert _r2_score(dy, p1) > 0.8
 
         else:
             print(f'spearmanr(p1.compute(), y).correlation = {spearmanr(p1.compute(), y).correlation}')
