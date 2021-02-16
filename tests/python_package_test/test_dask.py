@@ -348,13 +348,6 @@ def test_training_does_not_fail_on_port_conflicts(client):
     lightgbm_default_port = 12400
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(('127.0.0.1', lightgbm_default_port))
-
-        # TODO: this is failing because after the first run, the parameters
-        #       like 'machines' get copied back to the model object, and then
-        #       the second run goes with hard-coded ports and fails with the
-        #       'failed binding port' error.
-        #
-        #       also, this is probably why the new test added in this PR is failing
         dask_classifier = lgb.DaskLGBMClassifier(
             client=client,
             time_out=5,

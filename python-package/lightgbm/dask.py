@@ -592,10 +592,6 @@ class _DaskLGBMModel:
         params = self.get_params(True)
         params.pop("client", None)
 
-        ############################
-        # --- no network params ---#
-        ############################
-
         model = _train(
             client=_get_dask_client(self.client),
             data=X,
@@ -607,18 +603,14 @@ class _DaskLGBMModel:
             **kwargs
         )
 
-        # network parameters might be edited during the training process based on the current state of
-        # the Dask cluster at the time of training. Those changes shouldn't be saved on the model because
-        # the Dask cluster is assumed to be temporary
-        params_after_training = model.get_params()
-        self.set_params(**params_after_training)
-        self._copy_extra_params(model, self)
-
         # if network parameters were updated during training, remove them so that
         # they're generated dynamically on every run based on the Dask cluster you're
         # connected to and which workers have pieces of the training data
         for param in _ConfigAliases.get('local_listen_port', 'machines', 'num_machines', 'timeout'):
-            self._other_params.pop(param, None)
+            model._other_params.pop(param, None)
+
+        self.set_params(**model.get_params())
+        self._copy_extra_params(model, self)
 
         return self
 
@@ -636,8 +628,7 @@ class _DaskLGBMModel:
         attributes = source.__dict__
         extra_param_names = set(attributes.keys()).difference(params.keys())
         for name in extra_param_names:
-            if name not in ["local_listen_port", "machines", "num_machines"]:
-                setattr(dest, name, attributes[name])
+            setattr(dest, name, attributes[name])
 
 
 class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
