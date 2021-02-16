@@ -32,6 +32,8 @@ CVBooster <- R6::R6Class(
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
 #'              (each element must be a vector of test fold's indices). When folds are supplied,
 #'              the \code{nfold} and \code{stratified} parameters are ignored.
+#' @param train_folds \code{list} specifying which indicies to use for training. If \code{NULL}
+#'                    (the default) all indices not specified in \code{folds} will be used for training.
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature categorical features. This can either be a character vector of feature
 #'                            names or an integer vector with the indices of the features (e.g.
@@ -83,6 +85,7 @@ lgb.cv <- function(params = list()
                    , showsd = TRUE
                    , stratified = TRUE
                    , folds = NULL
+                   , train_folds = NULL
                    , init_model = NULL
                    , colnames = NULL
                    , categorical_feature = NULL
@@ -302,7 +305,14 @@ lgb.cv <- function(params = list()
       } else {
         test_indices <- folds[[k]]
       }
-      train_indices <- seq_len(nrow(data))[-test_indices]
+      
+      # Generate train_indices from either the train_folds argument 
+      # or as the opposite of (test)folds argument:
+      if (!is.null(train_folds)) {
+        train_indices <- train_folds[[k]]
+      } else {
+        train_indices <- seq_len(nrow(data))[-test_indices]
+      }
 
       # set up test set
       indexDT <- data.table::data.table(
