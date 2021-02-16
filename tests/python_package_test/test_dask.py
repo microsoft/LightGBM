@@ -5,8 +5,8 @@ import inspect
 import pickle
 import socket
 from itertools import groupby
-from platform import machine
 from os import getenv
+from platform import machine
 from sys import platform
 
 import pytest
