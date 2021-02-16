@@ -23,6 +23,7 @@ import dask.dataframe as dd
 import joblib
 import numpy as np
 import pandas as pd
+import sklearn.utils.estimator_checks as sklearn_checks
 from dask.array.utils import assert_eq
 from dask.distributed import Client, LocalCluster, default_client, wait
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
@@ -1082,39 +1083,34 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
         assert dask_params[param].default == sklearn_params[param].default, error_msg
 
 
-def _tested_estimators():
+_check_names = [
+    "check_estimator_get_tags_default_keys",
+    "check_get_params_invariance",
+    "check_set_params"
+]
+sklearn_checks_to_run = []
+for check_name in _check_names:
+    check_func = getattr(sklearn_checks, check_name, None)
+    if check_func:
+        sklearn_checks_to_run.append(check_func)
+ 
+ def _tested_estimators():
     for Estimator in [lgb.DaskLGBMClassifier, lgb.DaskLGBMRegressor]:
         yield Estimator()
 
 
-if sk_version < parse_version("0.23"):
-    def _generate_checks_per_estimator(check_generator, estimators):
-        for estimator in estimators:
-            name = estimator.__class__.__name__
-            for check in check_generator(name, estimator):
-                yield estimator, check
+@pytest.mark.parametrize("estimator", _tested_estimators())
+@pytest.mark.parametrize("check", sklearn_checks_to_run)
+def test_sklearn_integration(estimator, check, client):
+    estimator.set_params(local_listen_port=18000, time_out=5)
+    name = type(estimator).__name__
+    check(name, estimator)
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
-    @pytest.mark.skipif(
-        sk_version < parse_version("0.21"), reason="scikit-learn version is less than 0.21"
-    )
-    @pytest.mark.parametrize(
-        "estimator, check",
-        _generate_checks_per_estimator(_yield_all_checks, _tested_estimators()),
-    )
-    def test_sklearn_integration(estimator, check, client):
-        xfail_checks = estimator._get_tags()["_xfail_checks"]
-        check_name = check.__name__ if hasattr(check, "__name__") else check.func.__name__
-        if xfail_checks and check_name in xfail_checks:
-            warnings.warn(xfail_checks[check_name], SkipTestWarning)
-            raise SkipTest
-        estimator.set_params(client=client, time_out=5)
-        name = estimator.__class__.__name__
-        check(name, estimator)
-        client.close(timeout=CLIENT_CLOSE_TIMEOUT)
-else:
-    @parametrize_with_checks(list(_tested_estimators()))
-    def test_sklearn_integration(estimator, check, client):
-        estimator.set_params(client=client, time_out=5)
-        check(estimator)
 
-        client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+# this test is separate because it takes a not-yet-constructed estimator
+@pytest.mark.parametrize("estimator", list(_tested_estimators()))
+def test_parameters_default_constructible(estimator):
+    name, Estimator = estimator.__class__.__name__, estimator.__class__
+    sklearn_checks.check_parameters_default_constructible(name, Estimator)
+    
