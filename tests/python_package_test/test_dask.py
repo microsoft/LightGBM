@@ -733,7 +733,7 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
             eval_metric=eval_metric,
             early_stopping_rounds=5
         )
-        fitted_trees = dask_model.to_local().booster_.num_trees()
+        fitted_trees = dask_model.booster_.num_trees()
         assert fitted_trees < full_trees
 
         # be sure that model still produces decent output.
