@@ -378,30 +378,21 @@ def test_choose_param_value():
 
 
 @pytest.mark.parametrize(
-    ('y', 'is_series'),
+    'y',
     [
-        (np.random.rand(10), False),
-        (np.random.rand(10, 1), False),
-        ([1] * 10, False),
-        (np.random.rand(10), True),
-        (['a', 'b'], True),
-        ([[1], [2]], False)
+        np.random.rand(10),
+        np.random.rand(10, 1),
+        [1] * 10,
+        [[1], [2]]
     ])
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
-def test_list_to_1d_numpy(y, is_series, dtype):
-    if is_series:
-        pd = pytest.importorskip('pandas')
-        y = pd.Series(y)
+def test_list_to_1d_numpy(y, dtype):
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match='column-vector'):
             lgb.basic.list_to_1d_numpy(y)
         return
     elif isinstance(y, list) and isinstance(y[0], list):
         with pytest.raises(TypeError):
-            lgb.basic.list_to_1d_numpy(y)
-        return
-    elif is_series and y.dtype == object:
-        with pytest.raises(ValueError):
             lgb.basic.list_to_1d_numpy(y)
         return
     result = lgb.basic.list_to_1d_numpy(y, dtype=dtype)
