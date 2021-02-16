@@ -120,15 +120,18 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   }                                                                           \
   for (data_size_t i = start; i < end; ++i) {                                 \
     int node = 0;                                                             \
-    while (node >= 0) {                                                       \
-      node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node,            \
-                          default_bins[node], max_bins[node]);                \
+    if (num_leaves_ > 1) {                                                    \
+      while (node >= 0) {                                                     \
+        node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node,          \
+                            default_bins[node], max_bins[node]);              \
+      }                                                                       \
+      node = ~node;                                                           \
     }                                                                         \
-    double add_score = leaf_const_[~node];                                    \
+    double add_score = leaf_const_[node];                                     \
     bool nan_found = false;                                                   \
-    const double* coeff_ptr = leaf_coeff_[~node].data();                      \
-    const float** data_ptr = feat_ptr[~node].data();                          \
-    for (size_t j = 0; j < leaf_features_inner_[~node].size(); ++j) {         \
+    const double* coeff_ptr = leaf_coeff_[node].data();                       \
+    const float** data_ptr = feat_ptr[node].data();                           \
+    for (size_t j = 0; j < leaf_features_inner_[node].size(); ++j) {          \
        float feat_val = data_ptr[j][(data_idx)];                              \
        if (std::isnan(feat_val)) {                                            \
           nan_found = true;                                                   \
@@ -137,7 +140,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
        add_score += coeff_ptr[j] * feat_val;                                  \
     }                                                                         \
     if (nan_found) {                                                          \
-       score[(data_idx)] += leaf_value_[~node];                               \
+       score[(data_idx)] += leaf_value_[node];                                \
     } else {                                                                  \
       score[(data_idx)] += add_score;                                         \
     }                                                                         \
