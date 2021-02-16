@@ -85,13 +85,13 @@ lgb.cv <- function(params = list()
                    , showsd = TRUE
                    , stratified = TRUE
                    , folds = NULL
-                   , train_folds = NULL
                    , init_model = NULL
                    , colnames = NULL
                    , categorical_feature = NULL
                    , early_stopping_rounds = NULL
                    , callbacks = list()
                    , reset_data = FALSE
+                   , train_folds = NULL
                    , ...
                    ) {
 
