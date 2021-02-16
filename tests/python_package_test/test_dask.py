@@ -1093,7 +1093,8 @@ for check_name in _check_names:
     check_func = getattr(sklearn_checks, check_name, None)
     if check_func:
         sklearn_checks_to_run.append(check_func)
- 
+
+
 def _tested_estimators():
     for Estimator in [lgb.DaskLGBMClassifier, lgb.DaskLGBMRegressor]:
         yield Estimator()
@@ -1113,4 +1114,3 @@ def test_sklearn_integration(estimator, check, client):
 def test_parameters_default_constructible(estimator):
     name, Estimator = estimator.__class__.__name__, estimator.__class__
     sklearn_checks.check_parameters_default_constructible(name, Estimator)
-    
