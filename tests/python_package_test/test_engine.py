@@ -11,11 +11,8 @@ import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
 from sklearn.datasets import load_svmlight_file, make_multilabel_classification
-from sklearn.metrics import (average_precision_score, log_loss,
-                             mean_absolute_error, mean_squared_error,
-                             roc_auc_score)
-from sklearn.model_selection import (GroupKFold, TimeSeriesSplit,
-                                     train_test_split)
+from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
+from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
 import lightgbm as lgb
 

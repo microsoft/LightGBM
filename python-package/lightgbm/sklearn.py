@@ -5,14 +5,10 @@ from inspect import signature
 
 import numpy as np
 
-from .basic import (Dataset, LightGBMError, _choose_param_value,
-                    _ConfigAliases, _log_warning)
-from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError,
-                     _LGBMAssertAllFinite, _LGBMCheckArray,
-                     _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight,
-                     _LGBMCheckXY, _LGBMClassifierBase,
-                     _LGBMComputeSampleWeight, _LGBMLabelEncoder,
-                     _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
+from .basic import Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _log_warning
+from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
+                     _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
+                     _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
                      pd_DataFrame)
 from .engine import train
 

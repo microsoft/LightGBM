@@ -61,8 +61,7 @@ try:
     from sklearn.preprocessing import LabelEncoder
     from sklearn.utils.class_weight import compute_sample_weight
     from sklearn.utils.multiclass import check_classification_targets
-    from sklearn.utils.validation import (assert_all_finite, check_array,
-                                          check_X_y)
+    from sklearn.utils.validation import assert_all_finite, check_array, check_X_y
     try:
         from sklearn.exceptions import NotFittedError
         from sklearn.model_selection import GroupKFold, StratifiedKFold

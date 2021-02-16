@@ -7,8 +7,7 @@ from operator import attrgetter
 import numpy as np
 
 from . import callback
-from .basic import (Booster, Dataset, LightGBMError, _ConfigAliases,
-                    _InnerPredictor, _log_warning)
+from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor, _log_warning
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 
