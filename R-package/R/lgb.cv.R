@@ -32,7 +32,7 @@ CVBooster <- R6::R6Class(
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
 #'              (each element must be a vector of test fold's indices). When folds are supplied,
 #'              the \code{nfold} and \code{stratified} parameters are ignored.
-#' @param train_folds \code{list} specifying which indicies to use for training. If \code{NULL}
+#' @param train_folds \code{list} specifying which indices to use for training. If \code{NULL}
 #'                    (the default) all indices not specified in \code{folds} will be used for training.
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature categorical features. This can either be a character vector of feature
