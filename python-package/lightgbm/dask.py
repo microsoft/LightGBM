@@ -20,7 +20,7 @@ from .basic import (_LIB, LightGBMError, _choose_param_value, _ConfigAliases,
 from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED,
                      Client, LGBMNotFittedError, concat, dask_Array,
                      dask_DataFrame, dask_Series, default_client, delayed,
-                     get_worker, pd_DataFrame, pd_Series, wait)
+                     pd_DataFrame, pd_Series, wait)
 from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor,
                       _lgbmmodel_doc_fit, _lgbmmodel_doc_predict)
 
@@ -143,22 +143,18 @@ def _train_part(
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
     list_of_parts: List[Dict[str, _DaskPart]],
-    worker_address_to_port: Dict[str, int],
+    machines: str,
+    local_listen_port: int,
+    num_machines: int,
     return_model: bool,
     time_out: int = 120,
     **kwargs: Any
 ) -> Optional[LGBMModel]:
-    local_worker_address = get_worker().address
-    machine_list = ','.join([
-        '%s:%d' % (urlparse(worker_address).hostname, port)
-        for worker_address, port
-        in worker_address_to_port.items()
-    ])
     network_params = {
-        'machines': machine_list,
-        'local_listen_port': worker_address_to_port[local_worker_address],
+        'machines': machines,
+        'local_listen_port': local_listen_port,
         'time_out': time_out,
-        'num_machines': len(worker_address_to_port)
+        'num_machines': num_machines
     }
     params.update(network_params)
 
@@ -200,6 +196,29 @@ def _split_to_parts(data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
             assert parts.ndim == 1 or parts.shape[1] == 1
         parts = parts.flatten().tolist()
     return parts
+
+
+def _machine_list_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[str, int]:
+    """
+    Given ``machine_list`` and a list of Dask worker addresses, return a mapping
+    where the keys are ``worker_addresses`` and the values are ports from
+    ``machine_list``.
+    """
+    machine_addresses = machines.split(",")
+    machine_list_host_to_port = {}
+    for address in machine_addresses:
+        parsed = urlparse(address)
+        hostname = parsed.hostname
+        port = parsed.port
+        ports_for_host = machine_list_host_to_port.get(hostname, set())
+        machine_list_host_to_port[hostname] = ports_for_host.add(port)
+
+    out = {}
+    for address in worker_addresses:
+        worker_host = urlparse(address).hostname
+        out[worker_host] = machine_list_host_to_port[worker_host].pop()
+
+    return out
 
 
 def _train(
@@ -244,11 +263,12 @@ def _train(
     """
     params = deepcopy(params)
 
-    params = _choose_param_value(
-        main_param_name="local_listen_port",
-        params=params,
-        default_value=12400
-    )
+    # capture whether local_listen_port or its aliases were provided
+    port_aliases = _ConfigAliases.get('local_listen_port')
+    listen_port_in_params = False
+    for param in params.keys():
+        if param in port_aliases:
+            listen_port_in_params = True
 
     params = _choose_param_value(
         main_param_name="tree_learner",
@@ -274,10 +294,9 @@ def _train(
         )
 
     # Some passed-in parameters can be removed:
-    #   * 'machines': constructed automatically from Dask worker list
     #   * 'num_machines': set automatically from Dask worker list
     #   * 'num_threads': overridden to match nthreads on each Dask process
-    for param_alias in _ConfigAliases.get('machines', 'num_machines', 'num_threads'):
+    for param_alias in _ConfigAliases.get('num_machines', 'num_threads'):
         params.pop(param_alias, None)
 
     # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality
@@ -312,31 +331,73 @@ def _train(
     for key, workers in who_has.items():
         worker_map[next(iter(workers))].append(key_to_part_dict[key])
 
-    master_worker = next(iter(worker_map))
+    master_worker_address = next(iter(worker_map))
     worker_ncores = client.ncores()
 
-    # find an open port on each worker. note that multiple workers can run
-    # on the same machine, so this needs to ensure that each one gets its
-    # own port
-    worker_address_to_port = _find_ports_for_workers(
-        client=client,
-        worker_addresses=worker_map.keys(),
-        local_listen_port=params["local_listen_port"]
+    # Network::Init() needs to be called once per worker at the
+    # beginning of training. If machine_list is provided, use
+    # that to get parameters for that call. If not, search.
+    params = _choose_param_value(
+        main_param_name="local_listen_port",
+        params=params,
+        default_value=12400
     )
+    local_listen_port = params.pop("local_listen_port")
+
+    params = _choose_param_value(
+        main_param_name="machines",
+        params=params,
+        default_value=None
+    )
+    machines = params.pop("machines")
+
+    # * if `machines` provided: just use that
+    # * if `local_listen_port` provided but no `machines`: generate `machines` from
+    #   list of Dask workers that have a piece of the training data, all using
+    #   `local_listen_port`
+    # * neither `machines` nor `local_listen_port` provided: get random ports
+    #   to construct machine list
+    worker_addresses = worker_map.keys()
+    if machines is not None:
+        worker_address_to_port = _machine_list_to_worker_map(
+            machines=machines,
+            worker_addresses=worker_addresses
+        )
+    else:
+        if listen_port_in_params:
+            worker_address_to_port = {
+                urlparse(address).hostname: local_listen_port
+                for address in worker_addresses
+            }
+        else:
+            worker_address_to_port = _find_ports_for_workers(
+                client=client,
+                worker_addresses=worker_map.keys(),
+                local_listen_port=local_listen_port
+            )
+        machines = ','.join([
+            '%s:%d' % (urlparse(worker_address).hostname, port)
+            for worker_address, port
+            in worker_address_to_port.items()
+        ])
+
+    num_machines = len(worker_address_to_port)
 
     # Tell each worker to train on the parts that it has locally
     futures_classifiers = [
         client.submit(
             _train_part,
             model_factory=model_factory,
-            params={**params, 'num_threads': worker_ncores[worker]},
+            params={**params, 'num_threads': worker_ncores[worker_address]},
             list_of_parts=list_of_parts,
-            worker_address_to_port=worker_address_to_port,
+            machines=machines,
+            local_listen_port=worker_address_to_port[worker_address],
+            num_machines=num_machines,
             time_out=params.get('time_out', 120),
-            return_model=(worker == master_worker),
+            return_model=(worker_address == master_worker_address),
             **kwargs
         )
-        for worker, list_of_parts in worker_map.items()
+        for worker_address, list_of_parts in worker_map.items()
     ]
 
     results = client.gather(futures_classifiers)
