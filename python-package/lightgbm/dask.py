@@ -15,10 +15,9 @@ from urllib.parse import urlparse
 import numpy as np
 import scipy.sparse as ss
 
-from .basic import _LIB, LightGBMError, _choose_param_value, _ConfigAliases, _log_warning, _safe_call
+from .basic import _LIB, LightGBMError, _choose_param_value, _ConfigAliases, _log_info, _log_warning, _safe_call
 from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
-                     dask_Array, dask_DataFrame, dask_Series, default_client, delayed, pd_DataFrame,
-                     pd_Series, wait)
+                     dask_Array, dask_DataFrame, dask_Series, default_client, delayed, pd_DataFrame, pd_Series, wait)
 from .sklearn import LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _lgbmmodel_doc_fit, _lgbmmodel_doc_predict
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
@@ -384,7 +383,7 @@ def _train(
     )
     machines = params.pop("machines")
 
-    # figure out network params 
+    # figure out network params
     worker_addresses = worker_map.keys()
     if machines is not None:
         _log_info("Using passed-in 'machines' parameter")
@@ -593,6 +592,10 @@ class _DaskLGBMModel:
         params = self.get_params(True)
         params.pop("client", None)
 
+        ############################
+        # --- no network params ---#
+        ############################
+
         model = _train(
             client=_get_dask_client(self.client),
             data=X,
@@ -608,12 +611,14 @@ class _DaskLGBMModel:
         # the Dask cluster at the time of training. Those changes shouldn't be saved on the model because
         # the Dask cluster is assumed to be temporary
         params_after_training = model.get_params()
-        params_after_training.pop("local_listen_port", None)
-        params_after_training.pop("machines", None)
-        params_after_training.pop("num_machines", None)
-
         self.set_params(**params_after_training)
         self._copy_extra_params(model, self)
+
+        # if network parameters were updated during training, remove them so that
+        # they're generated dynamically on every run based on the Dask cluster you're
+        # connected to and which workers have pieces of the training data
+        for param in _ConfigAliases.get('local_listen_port', 'machines', 'num_machines', 'timeout'):
+            self._other_params.pop(param, None)
 
         return self
 
@@ -631,7 +636,8 @@ class _DaskLGBMModel:
         attributes = source.__dict__
         extra_param_names = set(attributes.keys()).difference(params.keys())
         for name in extra_param_names:
-            setattr(dest, name, attributes[name])
+            if name not in ["local_listen_port", "machines", "num_machines"]:
+                setattr(dest, name, attributes[name])
 
 
 class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
