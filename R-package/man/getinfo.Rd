@@ -18,8 +18,6 @@ getinfo(dataset, ...)
 }
 \value{
 info data
-
-info data
 }
 \description{
 Get one attribute of a \code{lgb.Dataset}

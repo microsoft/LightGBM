@@ -9,24 +9,20 @@ It is based on dask-lightgbm, which was based on dask-xgboost.
 import socket
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union, Set
 from urllib.parse import urlparse
 
 import numpy as np
 import scipy.sparse as ss
 
-from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
-from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
-                     SKLEARN_INSTALLED, LGBMNotFittedError,
-                     DASK_INSTALLED, dask_DataFrame, dask_Array, dask_Series, delayed, Client, default_client, get_worker, wait)
-from .sklearn import (
-    _lgbmmodel_doc_fit,
-    _lgbmmodel_doc_predict,
-    LGBMClassifier,
-    LGBMModel,
-    LGBMRegressor,
-    LGBMRanker
-)
+from .basic import (_LIB, LightGBMError, _choose_param_value, _ConfigAliases,
+                    _log_warning, _safe_call)
+from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED,
+                     Client, LGBMNotFittedError, concat, dask_Array,
+                     dask_DataFrame, dask_Series, default_client, delayed,
+                     get_worker, pd_DataFrame, pd_Series, wait)
+from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor,
+                      _lgbmmodel_doc_fit, _lgbmmodel_doc_predict)
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
@@ -77,7 +73,6 @@ def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Itera
         A free port on the machine referenced by ``worker_ip``.
     """
     max_tries = 1000
-    out_port = None
     found_port = False
     for i in range(max_tries):
         out_port = local_listen_port + i
@@ -117,7 +112,7 @@ def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], loc
     result : Dict[str, int]
         Dictionary where keys are worker addresses and values are an open port for LightGBM to use.
     """
-    lightgbm_ports = set()
+    lightgbm_ports: Set[int] = set()
     worker_ip_to_port = {}
     for worker_address in worker_addresses:
         port = client.submit(
@@ -289,15 +284,16 @@ def _train(
     data_parts = _split_to_parts(data=data, is_matrix=True)
     label_parts = _split_to_parts(data=label, is_matrix=False)
     parts = [{'data': x, 'label': y} for (x, y) in zip(data_parts, label_parts)]
+    n_parts = len(parts)
 
     if sample_weight is not None:
         weight_parts = _split_to_parts(data=sample_weight, is_matrix=False)
-        for i in range(len(parts)):
+        for i in range(n_parts):
             parts[i]['weight'] = weight_parts[i]
 
     if group is not None:
         group_parts = _split_to_parts(data=group, is_matrix=False)
-        for i in range(len(parts)):
+        for i in range(n_parts):
             parts[i]['group'] = group_parts[i]
 
     # Start computation in the background
@@ -306,11 +302,11 @@ def _train(
     wait(parts)
 
     for part in parts:
-        if part.status == 'error':
+        if part.status == 'error':  # type: ignore
             return part  # trigger error locally
 
     # Find locations of all parts and map them to particular Dask workers
-    key_to_part_dict = {part.key: part for part in parts}
+    key_to_part_dict = {part.key: part for part in parts}  # type: ignore
     who_has = client.who_has(parts)
     worker_map = defaultdict(list)
     for key, workers in who_has.items():

@@ -1,7 +1,6 @@
 # coding: utf-8
 import ctypes
 import os
-
 from platform import system
 
 import numpy as np
