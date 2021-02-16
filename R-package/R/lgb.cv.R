@@ -32,8 +32,6 @@ CVBooster <- R6::R6Class(
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
 #'              (each element must be a vector of test fold's indices). When folds are supplied,
 #'              the \code{nfold} and \code{stratified} parameters are ignored.
-#' @param train_folds \code{list} specifying which indices to use for training. If \code{NULL}
-#'                    (the default) all indices not specified in \code{folds} will be used for training.
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature categorical features. This can either be a character vector of feature
 #'                            names or an integer vector with the indices of the features (e.g.
@@ -41,6 +39,8 @@ CVBooster <- R6::R6Class(
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets
+#' @param train_folds \code{list} specifying which indices to use for training. If \code{NULL}
+#'                    (the default) all indices not specified in \code{folds} will be used for training.
 #' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
 #'            \itemize{
 #'                \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
