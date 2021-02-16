@@ -19,6 +19,7 @@ lgb.cv(
   showsd = TRUE,
   stratified = TRUE,
   folds = NULL,
+  train_folds = NULL,
   init_model = NULL,
   colnames = NULL,
   categorical_feature = NULL,
@@ -95,6 +96,9 @@ by the values of outcome labels.}
 \item{folds}{\code{list} provides a possibility to use a list of pre-defined CV folds
 (each element must be a vector of test fold's indices). When folds are supplied,
 the \code{nfold} and \code{stratified} parameters are ignored.}
+
+\item{train_folds}{\code{list} specifying which indicies to use for training. If \code{NULL}
+(the default) all indices not specified in \code{folds} will be used for training.}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
