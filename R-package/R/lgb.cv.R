@@ -306,7 +306,7 @@ lgb.cv <- function(params = list()
         test_indices <- folds[[k]]
       }
       
-      # Generate train_indices from either the train_folds argument 
+      # Generate train_indices from either the train_folds argument
       # or as the opposite of (test)folds argument:
       if (!is.null(train_folds)) {
         train_indices <- train_folds[[k]]
