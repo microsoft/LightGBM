@@ -193,7 +193,10 @@ def _train_part(
 
         # consolidate parts of each individual eval component.
         for i in range(n_evals):
-            x_e, y_e, w_e, g_e = [], [], [], []
+            x_e = []
+            y_e = []
+            w_e = []
+            g_e = []
             for part in list_of_parts:
 
                 if not part.get('eval_set'):
