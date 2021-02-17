@@ -195,7 +195,8 @@ def _split_to_parts(data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
 
 
 def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[str, int]:
-    """
+    """Create a worker_map from machines list.
+
     Given ``machines`` and a list of Dask worker addresses, return a mapping where the keys are
     ``worker_addresses`` and the values are ports from ``machines``.
 
