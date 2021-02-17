@@ -1038,19 +1038,31 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
     if task == 'ranking':
         _, _, _, _, dX, dy, _, dg = _create_ranking_data(
             output=output,
-            group=None
+            group=None,
+            chunk_size=10,
         )
         dask_model_factory = lgb.DaskLGBMRanker
     else:
         _, _, _, dX, dy, _ = _create_data(
             objective=task,
-            output=output
+            output=output,
+            chunk_size=10,
         )
         dg = None
         if task == 'classification':
             dask_model_factory = lgb.DaskLGBMClassifier
         elif task == 'regression':
             dask_model_factory = lgb.DaskLGBMRegressor
+
+    # rebalance data to be sure that each worker has a piece of the data
+    if output == 'array':
+        dX = dX.persist()
+        dy = dy.persist()
+        _ = wait([dX, dy])
+        if dg is not None:
+            dg = dg.persist()
+            _ = wait(dg)
+        client.rebalance()
 
     # model 1 - no network parameters givem
     dask_model1 = dask_model_factory(
@@ -1093,7 +1105,6 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
             dask_model3.fit(dX, dy, group=dg)
         else:
             dask_model3.fit(dX, dy)
-
 
 @pytest.mark.parametrize(
     "classes",
