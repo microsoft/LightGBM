@@ -723,7 +723,7 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
         "n_estimators": full_trees,
         "num_leaves": 31,
         "min_child_samples": 1,
-        "verbose": 5,
+        "verbose": True,
         "first_metric_only": True
     }
 
@@ -783,10 +783,12 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
+@pytest.mark.parametrize('eval_names', [['specified'], None])
 @pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
-def test_eval_set_without_early_stopping(task, client, listen_port):
+def test_eval_set_without_early_stopping(eval_names, task, client, listen_port):
 
-    n_samples = 100
+    n_samples = 1000
+    n_eval_samples = 500
     eval_set = []
     eval_sample_weight = []
 
@@ -801,9 +803,9 @@ def test_eval_set_without_early_stopping(task, client, listen_port):
         eval_metric=['ndcg', 'map']
         eval_group = []
 
-        # create eval* dataset
+        # create eval data.
         _, _, _, _, dX_e, dy_e, dw_e, dg_e = _create_ranking_data(
-            n_samples=n_samples,
+            n_samples=n_eval_samples,
             output='dataframe',
             chunk_size=10,
             random_gs=True
@@ -829,7 +831,7 @@ def test_eval_set_without_early_stopping(task, client, listen_port):
             eval_metric = ['l2', 'l1']
 
         _, _, _, dX_e, dy_e, dw_e = _create_data(
-            n_samples=n_samples,
+            n_samples=n_eval_samples,
             objective=task,
             output='array',
             chunk_size=10
@@ -837,13 +839,13 @@ def test_eval_set_without_early_stopping(task, client, listen_port):
         eval_set.append((dX_e, dy_e))
         eval_sample_weight.append(dw_e)
 
-    full_trees = 200
+    full_trees = 100
     params = {
         "random_state": 42,
         "n_estimators": full_trees,
         "num_leaves": 31,
         "min_child_samples": 1,
-        "verbose": 5
+        "verbose": True
     }
 
     dask_model = model_factory(
@@ -856,6 +858,7 @@ def test_eval_set_without_early_stopping(task, client, listen_port):
         dy,
         group=dg,
         eval_set=eval_set,
+        eval_names=eval_names,
         eval_sample_weight=eval_sample_weight,
         eval_group=eval_group,
         eval_metric=eval_metric,
@@ -868,6 +871,14 @@ def test_eval_set_without_early_stopping(task, client, listen_port):
 
     # check that evals_result contains expected data.
     evals_result = dask_model.evals_result_
+    evals_result_name = list(evals_result.keys())[0]
+    if eval_names:
+        assert evals_result_name == eval_names[0]
+    else:
+        assert evals_result_name == 'valid_0'
+    assert all([metric in evals_result[evals_result_name] for metric in eval_metric])
+    for metric in eval_metric:
+        assert len(evals_result[evals_result_name][metric]) == full_trees
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 

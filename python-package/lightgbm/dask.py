@@ -186,10 +186,11 @@ def _train_part(
     if n_evals:
 
         local_eval_set = []
+        eval_names = []
         if has_eval_weights:
-            local_eval_sample_weight = list()
+            local_eval_sample_weight = []
         if is_ranker:
-            local_eval_group = list()
+            local_eval_group = []
 
         # consolidate parts of each individual eval component.
         for i in range(n_evals):
@@ -229,6 +230,11 @@ def _train_part(
                     else:
                         g_e.extend(eval_group[i])
 
+                local_eval_names = part.get('eval_names')
+                if local_eval_names:
+                    if len(local_eval_names) > len(eval_names):
+                        eval_names = local_eval_names
+
             # _concat each eval component.
             local_eval_set.append((_concat(x_e), _concat(y_e)))
             if w_e:
@@ -253,6 +259,7 @@ def _train_part(
                 eval_set=local_eval_set,
                 eval_sample_weight=local_eval_sample_weight,
                 eval_group=local_eval_group,
+                eval_names=eval_names if eval_names else None,
                 **kwargs
             )
         else:
@@ -261,7 +268,9 @@ def _train_part(
                 label,
                 sample_weight=weight,
                 eval_set=local_eval_set,
-                eval_sample_weight=local_eval_sample_weight, **kwargs
+                eval_sample_weight=local_eval_sample_weight,
+                eval_names=eval_names if eval_names else None,
+                **kwargs
             )
 
     finally:
@@ -290,6 +299,7 @@ def _train(
     sample_weight: Optional[_DaskCollection] = None,
     group: Optional[_DaskCollection] = None,
     eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
+    eval_names: Optional[List[str]] = None,
     eval_sample_weight: Optional[List[_DaskCollection]] = None,
     eval_group: Optional[List[_DaskCollection]] = None,
     **kwargs: Any
@@ -318,6 +328,8 @@ def _train(
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
     eval_set : List of (X, y) tuples of Dask data collections, or None, optional (default=None)
         List of (X, y) tuple pairs to use as validation sets.
+    eval_names: List of strings or None, optional (default=None))
+        Names of eval_set.
     eval_sample_weight: List of Dask data collections or None, optional (default=None)
         List of Dask Array or Dask Series, weights for each validation set in eval_set.
     eval_group: List of Dask data collections or None, optional (default=None)
@@ -396,7 +408,7 @@ def _train(
         for i, (X, y) in enumerate(eval_set):
 
             # when individual eval set is equivalent to training data, skip recomputing parts.
-            if X is data and y is label
+            if X is data and y is label:
                 for parts_idx in range(n_parts):
                     eval_sets[parts_idx].append('__train__')
 
@@ -461,6 +473,8 @@ def _train(
         # assign sub-eval_set components to worker parts.
         for parts_idx, e_set in eval_sets.items():
             parts[parts_idx]['eval_set'] = e_set
+            if eval_names:
+                parts[parts_idx]['eval_names'] = [eval_names[i] for i in range(len(e_set))]
             if eval_sample_weight:
                 parts[parts_idx]['eval_sample_weight'] = eval_sample_weights[parts_idx]
             if eval_group:
@@ -654,17 +668,33 @@ class _DaskLGBMModel:
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
+        init_score: Optional[List[_DaskCollection]] = None,
         group: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
+        eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_class_weight: Optional[Union[dict, str]] = None,
+        eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskCollection]] = None,
+        eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+        eval_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
             raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
 
+        not_supported = ['init_score', 'eval_init_score', 'eval_class_weight']
+        for ns in not_supported:
+            if eval(ns) is not None:
+                raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
+
         params = self.get_params(True)
         params.pop("client", None)
+
+        if eval_metric:
+            kwargs['eval_metric'] = eval_metric
+        if eval_stopping_rounds:
+            kwargs['eval_stopping_rounds'] = eval_stopping_rounds
 
         model = _train(
             client=_get_dask_client(self.client),
@@ -675,6 +705,7 @@ class _DaskLGBMModel:
             sample_weight=sample_weight,
             group=group,
             eval_set=eval_set,
+            eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
             eval_group=eval_group,
             **kwargs
@@ -775,13 +806,24 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         sample_weight: Optional[_DaskCollection] = None,
         init_score: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
+        eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_class_weight: Optional[List[_DaskCollection]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
+        eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+        eval_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
-        if init_score is not None or eval_init_score is not None:
-            raise RuntimeError('init_score and eval_init_score are not currently supported in lightgbm.dask')
+        not_supported = ['init_score', 'eval_init_score', 'eval_class_weight']
+        for ns in not_supported:
+            if eval(ns) is not None:
+                raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
+
+        if eval_metric:
+            kwargs['eval_metric'] = eval_metric
+        if eval_stopping_rounds:
+            kwargs['eval_stopping_rounds'] = eval_stopping_rounds
 
         return self._fit(
             model_factory=LGBMClassifier,
@@ -789,6 +831,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             y=y,
             sample_weight=sample_weight,
             eval_set=eval_set,
+            eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
             **kwargs
         )
@@ -901,13 +944,24 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         sample_weight: Optional[_DaskCollection] = None,
         init_score: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
+        eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_class_weight: Optional[List[_DaskCollection]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
+        eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+        eval_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        if init_score is not None or eval_init_score is not None:
-            raise RuntimeError('init_score and eval_init_score are not currently supported in lightgbm.dask')
+        not_supported = ['init_score', 'eval_init_score', 'eval_class_weight']
+        for ns in not_supported:
+            if eval(ns) is not None:
+                raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
+
+        if eval_metric:
+            kwargs['eval_metric'] = eval_metric
+        if eval_stopping_rounds:
+            kwargs['eval_stopping_rounds'] = eval_stopping_rounds
 
         return self._fit(
             model_factory=LGBMRegressor,
@@ -915,6 +969,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             y=y,
             sample_weight=sample_weight,
             eval_set=eval_set,
+            eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
             **kwargs
         )
@@ -1016,14 +1071,25 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         init_score: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
+        eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_class_weight: Optional[List[_DaskCollection]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskCollection]] = None,
+        eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+        eval_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
-        if init_score is not None or eval_init_score is not None:
-            raise RuntimeError('init_score and eval_init_score are not currently supported in lightgbm.dask')
+        not_supported = ['init_score', 'eval_init_score', 'eval_class_weight']
+        for ns in not_supported:
+            if eval(ns) is not None:
+                raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
+
+        if eval_metric:
+            kwargs['eval_metric'] = eval_metric
+        if eval_stopping_rounds:
+            kwargs['eval_stopping_rounds'] = eval_stopping_rounds
 
         return self._fit(
             model_factory=LGBMRanker,
@@ -1032,6 +1098,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             sample_weight=sample_weight,
             group=group,
             eval_set=eval_set,
+            eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
             eval_group=eval_group,
             **kwargs
