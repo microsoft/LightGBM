@@ -885,27 +885,27 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                     assert_eq(preds_orig_local, preds_loaded_model_local)
 
 
-def test_find_open_port_works():
+def test_find_open_port_works(listen_port):
     worker_ip = '127.0.0.1'
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((worker_ip, 12400))
+        s.bind((worker_ip, listen_port))
         new_port = lgb.dask._find_open_port(
             worker_ip=worker_ip,
-            local_listen_port=12400,
+            local_listen_port=listen_port,
             ports_to_skip=set()
         )
-        assert new_port >= 12401
+        assert new_port > listen_port
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
-        s_1.bind((worker_ip, 12400))
+        s_1.bind((worker_ip, listen_port))
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_2:
-            s_2.bind((worker_ip, 12401))
+            s_2.bind((worker_ip, listen_port + 1))
             new_port = lgb.dask._find_open_port(
                 worker_ip=worker_ip,
-                local_listen_port=12400,
+                local_listen_port=listen_port,
                 ports_to_skip=set()
             )
-            assert new_port >= 12402
+            assert new_port > listen_port + 1
 
 
 def test_warns_and_continues_on_unrecognized_tree_learner(client):
