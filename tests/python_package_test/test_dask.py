@@ -1117,6 +1117,6 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
         'time_out': 5
     }
     model = model_factory(**params)
-    model.fit(dX, dy, sample_weight=dw, group=dg)
+    model.fit(dX, dy_col_array, sample_weight=dw, group=dg)
     assert model.fitted_
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
