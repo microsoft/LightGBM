@@ -8,6 +8,7 @@ from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
+from lightgbm.compat import PANDAS_INSTALLED, pd_Series
 
 from .utils import load_breast_cancer
 
@@ -377,11 +378,14 @@ def test_choose_param_value():
     assert original_params == expected_params
 
 
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
 @pytest.mark.parametrize(
     'y',
     [
         np.random.rand(10),
         np.random.rand(10, 1),
+        pd_Series(np.random.rand(10)),
+        pd_Series(['a', 'b']),
         [1] * 10,
         [[1], [2]]
     ])
@@ -393,6 +397,10 @@ def test_list_to_1d_numpy(y, dtype):
         return
     elif isinstance(y, list) and isinstance(y[0], list):
         with pytest.raises(TypeError):
+            lgb.basic.list_to_1d_numpy(y)
+        return
+    elif isinstance(y, pd_Series) and y.dtype == object:
+        with pytest.raises(ValueError):
             lgb.basic.list_to_1d_numpy(y)
         return
     result = lgb.basic.list_to_1d_numpy(y, dtype=dtype)
