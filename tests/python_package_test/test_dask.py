@@ -1082,16 +1082,16 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
         assert dask_params[param].default == sklearn_params[param].default, error_msg
 
 
-_check_names = [
-    "check_estimator_get_tags_default_keys",
-    "check_get_params_invariance",
-    "check_set_params"
-]
-sklearn_checks_to_run = []
-for check_name in _check_names:
-    check_func = getattr(sklearn_checks, check_name, None)
-    if check_func:
-        sklearn_checks_to_run.append(check_func)
+def sklearn_checks_to_run():
+    check_names = [
+        "check_estimator_get_tags_default_keys",
+        "check_get_params_invariance",
+        "check_set_params"
+    ]
+    for check_name in check_names:
+        check_func = getattr(sklearn_checks, check_name, None)
+        if check_func:
+            yield check_func
 
 
 def _tested_estimators():
@@ -1100,7 +1100,7 @@ def _tested_estimators():
 
 
 @pytest.mark.parametrize("estimator", _tested_estimators())
-@pytest.mark.parametrize("check", sklearn_checks_to_run)
+@pytest.mark.parametrize("check", sklearn_checks_to_run())
 def test_sklearn_integration(estimator, check, client):
     estimator.set_params(local_listen_port=18000, time_out=5)
     name = type(estimator).__name__
