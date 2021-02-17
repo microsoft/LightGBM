@@ -18,8 +18,7 @@ from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
 
-from .utils import (load_boston, load_breast_cancer, load_digits, load_iris,
-                    load_linnerud, make_ranking)
+from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking
 
 sk_version = parse_version(sk_version)
 if sk_version < parse_version("0.23"):
