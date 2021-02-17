@@ -1052,25 +1052,26 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
         elif task == 'regression':
             dask_model_factory = lgb.DaskLGBMRegressor
 
-    # training should fail because LightGBM will try to use the same
-    # port for multiple worker processes on the same machine
-    # model 1 - local_listen_port given
+    # model 1 - no network parameters givem
     dask_model1 = dask_model_factory(
         n_estimators=5,
-        num_leaves=10,
-        local_listen_port=listen_port
+        num_leaves=5,
     )
-    error_msg = "has multiple Dask worker processes running on it"
-    with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
-        if task == 'ranking':
-            dask_model1.fit(dX, dy, group=dg)
-        else:
-            dask_model1.fit(dX, dy)
+    if task == 'ranking':
+        dask_model1.fit(dX, dy, group=dg)
+    else:
+        dask_model1.fit(dX, dy)
+    assert dask_model1.fitted_
 
-    # model 2 - no network parameters givem
-    dask_model2= dask_model_factory(
-        n_estimators=10,
-        num_leaves=10,
+    # model 2 - machines given
+    n_workers = len(client.scheduler_info()['workers'])
+    dask_model2 = dask_model_factory(
+        n_estimators=5,
+        num_leaves=5,
+        machines=",".join([
+            "127.0.0.1:" + str(_find_random_open_port())
+            for _ in range(n_workers)
+        ]),
     )
     if task == 'ranking':
         dask_model2.fit(dX, dy, group=dg)
@@ -1078,21 +1079,20 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
         dask_model2.fit(dX, dy)
     assert dask_model2.fitted_
 
-    # model 3 - machines given
-    n_workers = len(client.scheduler_info()['workers'])
+    # model 3 - local_listen_port given
+    # training should fail because LightGBM will try to use the same
+    # port for multiple worker processes on the same machine
     dask_model3 = dask_model_factory(
-        n_estimators=10,
-        num_leaves=10,
-        machines=",".join([
-            "127.0.0.1:" + str(_find_random_open_port())
-            for _ in range(n_workers)
-        ]),
+        n_estimators=5,
+        num_leaves=5,
+        local_listen_port=listen_port
     )
-    if task == 'ranking':
-        dask_model3.fit(dX, dy, group=dg)
-    else:
-        dask_model3.fit(dX, dy)
-    assert dask_model3.fitted_
+    error_msg = "has multiple Dask worker processes running on it"
+    with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
+        if task == 'ranking':
+            dask_model3.fit(dX, dy, group=dg)
+        else:
+            dask_model3.fit(dX, dy)
 
 
 @pytest.mark.parametrize(

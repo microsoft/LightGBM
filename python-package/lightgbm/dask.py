@@ -196,9 +196,8 @@ def _split_to_parts(data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
 
 def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[str, int]:
     """
-    Given ``machine_list`` and a list of Dask worker addresses, return a mapping
-    where the keys are ``worker_addresses`` and the values are ports from
-    ``machine_list``.
+    Given ``machines`` and a list of Dask worker addresses, return a mapping where the keys are
+    ``worker_addresses`` and the values are ports from ``machines``.
 
     Parameters
     ----------
@@ -364,7 +363,7 @@ def _train(
     for key, workers in who_has.items():
         worker_map[next(iter(workers))].append(key_to_part_dict[key])
 
-    master_worker_address = next(iter(worker_map))
+    master_worker = next(iter(worker_map))
     worker_ncores = client.ncores()
 
     # resolve aliases for network parameters and pop the result off params.
@@ -427,16 +426,16 @@ def _train(
         client.submit(
             _train_part,
             model_factory=model_factory,
-            params={**params, 'num_threads': worker_ncores[worker_address]},
+            params={**params, 'num_threads': worker_ncores[worker]},
             list_of_parts=list_of_parts,
             machines=machines,
-            local_listen_port=worker_address_to_port[worker_address],
+            local_listen_port=worker_address_to_port[worker],
             num_machines=num_machines,
             time_out=params.get('time_out', 120),
-            return_model=(worker_address == master_worker_address),
+            return_model=(worker == master_worker),
             **kwargs
         )
-        for worker_address, list_of_parts in worker_map.items()
+        for worker, list_of_parts in worker_map.items()
     ]
 
     results = client.gather(futures_classifiers)
