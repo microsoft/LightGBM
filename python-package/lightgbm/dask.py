@@ -305,9 +305,9 @@ def _train(
             parts[i]['group'] = group_parts[i]
 
     if init_score is not None:
-        group_parts = _split_to_parts(data=init_score, is_matrix=False)
-        for i in range(len(parts)):
-            parts[i]['init_score'] = group_parts[i]
+        init_score_parts = _split_to_parts(data=init_score, is_matrix=False)
+        for i in range(n_parts):
+            parts[i]['init_score'] = init_score_parts[i]
 
     # Start computation in the background
     parts = list(map(delayed, parts))
@@ -496,6 +496,7 @@ class _DaskLGBMModel:
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
+        init_score: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
@@ -512,6 +513,7 @@ class _DaskLGBMModel:
             params=params,
             model_factory=model_factory,
             sample_weight=sample_weight,
+            init_score=init_score,
             group=group,
             **kwargs
         )
@@ -783,11 +785,12 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
     # DaskLGBMRegressor does not support init_score, evaluation data, or early stopping
-    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
+    _base_doc = (_base_doc[:_base_doc.find('eval_set :')]
                  + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
@@ -919,11 +922,12 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
     # DaskLGBMRanker does not support init_score, evaluation data, or early stopping
-    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
+    _base_doc = (_base_doc[:_base_doc.find('eval_set:')]
                  + _base_doc[_base_doc.find('init_score :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('eval_set :')]

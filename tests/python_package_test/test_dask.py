@@ -197,15 +197,6 @@ def _unpickle(filepath, serializer):
         raise ValueError(f'Unrecognized serializer type: {serializer}')
 
 
-def collection_to_single_partition(collection):
-    """Merge the parts of a Dask collection into a single partition."""
-    if collection is None:
-        return
-    if isinstance(collection, da.Array):
-        return collection.rechunk(*collection.shape)
-    return collection.repartition(npartitions=1)
-
-
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('centers', data_centers)
 def test_classifier(output, centers, client, listen_port):
@@ -979,6 +970,14 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(client, tas
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
+    def collection_to_single_partition(collection):
+        """Merge the parts of a Dask collection into a single partition."""
+        if collection is None:
+            return
+        if isinstance(collection, da.Array):
+            return collection.rechunk(*collection.shape)
+        return collection.repartition(npartitions=1)
+
     if task == 'ranking':
         X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
             output=output,
@@ -1084,7 +1083,7 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
 
 @pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('output', data_output)
-@pytest.mark.parametrize('init_score', [-1, 1])
+@pytest.mark.parametrize('init_score', [0.25, 0.75])
 def test_init_score(
     task,
     output,
@@ -1100,8 +1099,8 @@ def test_init_score(
             output=output,
             group=None
         )
-        dask_model_factory = lgb.DaskLGBMRanker
         local_model_factory = lgb.LGBMRanker
+        dask_model_factory = lgb.DaskLGBMRanker
     else:
         X, y, w, dX, dy, dw = _create_data(
             objective=task,
@@ -1109,43 +1108,43 @@ def test_init_score(
         )
         dg = None
         if task == 'classification':
-            dask_model_factory = lgb.DaskLGBMClassifier
             local_model_factory = lgb.LGBMClassifier
+            dask_model_factory = lgb.DaskLGBMClassifier
         elif task == 'regression':
-            dask_model_factory = lgb.DaskLGBMRegressor
             local_model_factory = lgb.LGBMRegressor
-    # training on multiple workers can lead to different results
-    # we make sure to train on only one worker to compare the results
-    dX = collection_to_single_partition(dX)
-    dy = collection_to_single_partition(dy)
-    dw = collection_to_single_partition(dw)
-    dg = collection_to_single_partition(dg)
+            dask_model_factory = lgb.DaskLGBMRegressor
 
     params = {
         'n_estimators': 1,
-        'num_leaves': 3,
+        'num_leaves': 2,
         'random_state': 0,
         'local_listen_port': listen_port,
         'time_out': 5
     }
-    init_score = np.repeat(init_score, y.size)
+    init_scores = np.full(y.size, fill_value=init_score)
     local_model = local_model_factory(**params)
-    local_model_no_init = local_model_factory(**params)
     if task == 'ranking':
-        local_model.fit(X, y, sample_weight=w, init_score=init_score, group=g)
-        local_model_no_init.fit(X, y, sample_weight=w, group=g)
+        local_model.fit(X, y, sample_weight=w, init_score=init_scores, group=g)
     else:
-        local_model.fit(X, y, sample_weight=w, init_score=init_score)
-        local_model_no_init.fit(X, y, sample_weight=w)
+        local_model.fit(X, y, sample_weight=w, init_score=init_scores)
     local_preds = local_model.predict(X)
-    local_no_init_preds = local_model_no_init.predict(X)
 
-    dask_init_score = da.from_array(init_score, chunks=y.size)
-    if output == 'dataframe':
-        dask_init_score = dd.from_array(dask_init_score)
     dask_model = dask_model_factory(client=client, **params)
-    dask_model.fit(dX, dy, sample_weight=dw, init_score=dask_init_score, group=dg)
-    dask_preds = dask_model.predict(dX).compute()
+    dask_model.fit(dX, dy, sample_weight=dw, group=dg)
 
-    assert assert_eq(local_preds, dask_preds)
-    assert ~np.allclose(local_preds, local_no_init_preds)
+    if output.startswith('dataframe'):
+        dask_init_scores = dy.map_partitions(lambda x: pd.Series([init_score] * x.size))
+    else:
+        dask_init_scores = da.full_like(dy, fill_value=init_score, dtype='float')
+    dask_with_init_score = dask_model_factory(client=client, **params)
+    dask_with_init_score.fit(dX, dy, sample_weight=dw, init_score=dask_init_scores, group=dg)
+    if task == 'classification':
+        dask_preds = dask_model.predict_proba(dX).compute()
+        dask_with_init_score_preds = dask_with_init_score.predict_proba(dX).compute()
+    else:
+        dask_preds = dask_model.predict(dX).compute()
+        dask_with_init_score_preds = dask_with_init_score.predict(dX).compute()
+
+    # assert assert_eq(local_preds, dask_with_init_score_preds)
+    assert not np.allclose(dask_preds, dask_with_init_score_preds)
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
