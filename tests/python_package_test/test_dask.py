@@ -894,7 +894,7 @@ def test_find_open_port_works(listen_port):
             local_listen_port=listen_port,
             ports_to_skip=set()
         )
-        assert new_port > listen_port
+        assert listen_port < new_port < listen_port + 1000
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
         s_1.bind((worker_ip, listen_port))
@@ -905,7 +905,7 @@ def test_find_open_port_works(listen_port):
                 local_listen_port=listen_port,
                 ports_to_skip=set()
             )
-            assert new_port > listen_port + 1
+            assert listen_port + 1 < new_port < listen_port + 1000
 
 
 def test_warns_and_continues_on_unrecognized_tree_learner(client):
