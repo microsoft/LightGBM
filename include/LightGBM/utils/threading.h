@@ -78,7 +78,9 @@ class Threading {
       OMP_LOOP_EX_BEGIN();
       INDEX_T inner_start = start + num_inner * i;
       INDEX_T inner_end = std::min(end, inner_start + num_inner);
-      inner_fun(i, inner_start, inner_end);
+      if (inner_start < inner_end) {
+          inner_fun(i, inner_start, inner_end);
+      }
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();

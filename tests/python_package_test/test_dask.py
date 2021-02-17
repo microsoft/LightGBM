@@ -6,10 +6,13 @@ import pickle
 import socket
 from itertools import groupby
 from os import getenv
+from platform import machine
 from sys import platform
 
-import lightgbm as lgb
 import pytest
+
+import lightgbm as lgb
+
 if not platform.startswith('linux'):
     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
@@ -21,15 +24,14 @@ import dask.dataframe as dd
 import joblib
 import numpy as np
 import pandas as pd
-from scipy.stats import spearmanr
 from dask.array.utils import assert_eq
-from dask.distributed import default_client, Client, LocalCluster, wait
+from dask.distributed import Client, LocalCluster, default_client, wait
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
 from scipy.sparse import csr_matrix
+from scipy.stats import spearmanr
 from sklearn.datasets import make_blobs, make_regression
 
 from .utils import make_ranking
-
 
 # time, in seconds, to wait for the Dask client to close. Used to avoid teardown errors
 # see https://distributed.dask.org/en/latest/api.html#distributed.Client.close
@@ -42,7 +44,8 @@ group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
-    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface')
+    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
+    pytest.mark.skipif(machine() != 'x86_64', reason='Fails to run with non-x86_64 architecture')
 ]
 
 
@@ -210,11 +213,6 @@ def test_classifier(output, centers, client, listen_port):
         "num_leaves": 10
     }
 
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
-
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
         time_out=5,
@@ -282,11 +280,6 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
         "n_estimators": 10,
         "num_leaves": 10
     }
-
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
 
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
@@ -379,11 +372,6 @@ def test_regressor(output, client, listen_port):
         "num_leaves": 10
     }
 
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
-
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         time_out=5,
@@ -460,11 +448,6 @@ def test_regressor_pred_contrib(output, client, listen_port):
         "num_leaves": 10
     }
 
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
-
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         time_out=5,
@@ -519,11 +502,6 @@ def test_regressor_quantile(output, client, listen_port, alpha):
         "num_leaves": 10
     }
 
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
-
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         local_listen_port=listen_port,
@@ -575,7 +553,7 @@ def test_ranker(output, client, listen_port, group):
             group=group,
         )
 
-    # rebalance small dask.array dataset for better performance.
+    # rebalance small dask.Array dataset for better performance.
     if output == 'array':
         dX = dX.persist()
         dy = dy.persist()
@@ -584,7 +562,7 @@ def test_ranker(output, client, listen_port, group):
         _ = wait([dX, dy, dw, dg])
         client.rebalance()
 
-    # use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
+    # use many trees + leaves to overfit, help ensure that Dask data-parallel strategy matches that of
     # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
     params = {
         "random_state": 42,
@@ -592,11 +570,6 @@ def test_ranker(output, client, listen_port, group):
         "num_leaves": 20,
         "min_child_samples": 1
     }
-
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
 
     dask_ranker = lgb.DaskLGBMRanker(
         client=client,
