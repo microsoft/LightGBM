@@ -1106,6 +1106,7 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
         else:
             dask_model3.fit(dX, dy)
 
+
 @pytest.mark.parametrize(
     "classes",
     [
