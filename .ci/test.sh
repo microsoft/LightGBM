@@ -20,8 +20,8 @@ cd $BUILD_DIRECTORY
 
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     cd $BUILD_DIRECTORY/docs
-    conda install -q -y -n $CONDA_ENV -c conda-forge doxygen
-    pip install --user -r requirements.txt rstcheck
+    conda install -q -y -n $CONDA_ENV -c conda-forge doxygen rstcheck
+    pip install --user -r requirements.txt
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
@@ -55,10 +55,11 @@ if [[ $TASK == "lint" ]]; then
             libxml2 \
             "r-xfun>=0.19" \
             "r-lintr>=2.0"
-    pip install --user cpplint mypy
+    pip install --user cpplint isort mypy
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
+    isort . --check-only || exit -1
     mypy --ignore-missing-imports python-package/ || true
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
@@ -126,9 +127,15 @@ elif [[ $TASK == "bdist" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
     else
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --python-tag py3 || exit -1
+        ARCH=$(uname -m)
+        if [[ $ARCH == "x86_64" ]]; then
+            PLATFORM="manylinux1_x86_64"
+        else
+            PLATFORM="manylinux2014_$ARCH"
+        fi
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=$PLATFORM --python-tag py3 || exit -1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-            cp dist/lightgbm-$LGB_VER-py3-none-manylinux1_x86_64.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
+            cp dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
     fi
     pip install --user $BUILD_DIRECTORY/python-package/dist/*.whl || exit -1

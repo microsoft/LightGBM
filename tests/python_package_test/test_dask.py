@@ -6,10 +6,13 @@ import pickle
 import socket
 from itertools import groupby
 from os import getenv
+from platform import machine
 from sys import platform
 
-import lightgbm as lgb
 import pytest
+
+import lightgbm as lgb
+
 if not platform.startswith('linux'):
     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
@@ -21,15 +24,15 @@ import dask.dataframe as dd
 import joblib
 import numpy as np
 import pandas as pd
-from scipy.stats import spearmanr
+import sklearn.utils.estimator_checks as sklearn_checks
 from dask.array.utils import assert_eq
-from dask.distributed import default_client, Client, LocalCluster, wait
+from dask.distributed import Client, LocalCluster, default_client, wait
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
 from scipy.sparse import csr_matrix
+from scipy.stats import spearmanr
 from sklearn.datasets import make_blobs, make_regression
 
 from .utils import make_ranking
-
 
 # time, in seconds, to wait for the Dask client to close. Used to avoid teardown errors
 # see https://distributed.dask.org/en/latest/api.html#distributed.Client.close
@@ -42,7 +45,8 @@ group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
-    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface')
+    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
+    pytest.mark.skipif(machine() != 'x86_64', reason='Fails to run with non-x86_64 architecture')
 ]
 
 
@@ -882,27 +886,27 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                     assert_eq(preds_orig_local, preds_loaded_model_local)
 
 
-def test_find_open_port_works():
+def test_find_open_port_works(listen_port):
     worker_ip = '127.0.0.1'
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((worker_ip, 12400))
+        s.bind((worker_ip, listen_port))
         new_port = lgb.dask._find_open_port(
             worker_ip=worker_ip,
-            local_listen_port=12400,
+            local_listen_port=listen_port,
             ports_to_skip=set()
         )
-        assert new_port == 12401
+        assert listen_port < new_port < listen_port + 1000
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
-        s_1.bind((worker_ip, 12400))
+        s_1.bind((worker_ip, listen_port))
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_2:
-            s_2.bind((worker_ip, 12401))
+            s_2.bind((worker_ip, listen_port + 1))
             new_port = lgb.dask._find_open_port(
                 worker_ip=worker_ip,
-                local_listen_port=12400,
+                local_listen_port=listen_port,
                 ports_to_skip=set()
             )
-            assert new_port == 12402
+            assert listen_port + 1 < new_port < listen_port + 1000
 
 
 def test_warns_and_continues_on_unrecognized_tree_learner(client):
@@ -1078,3 +1082,36 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
     for param in dask_spec.args:
         error_msg = f"param '{param}' has different default values in the methods"
         assert dask_params[param].default == sklearn_params[param].default, error_msg
+
+
+def sklearn_checks_to_run():
+    check_names = [
+        "check_estimator_get_tags_default_keys",
+        "check_get_params_invariance",
+        "check_set_params"
+    ]
+    for check_name in check_names:
+        check_func = getattr(sklearn_checks, check_name, None)
+        if check_func:
+            yield check_func
+
+
+def _tested_estimators():
+    for Estimator in [lgb.DaskLGBMClassifier, lgb.DaskLGBMRegressor]:
+        yield Estimator()
+
+
+@pytest.mark.parametrize("estimator", _tested_estimators())
+@pytest.mark.parametrize("check", sklearn_checks_to_run())
+def test_sklearn_integration(estimator, check, client):
+    estimator.set_params(local_listen_port=18000, time_out=5)
+    name = type(estimator).__name__
+    check(name, estimator)
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
+# this test is separate because it takes a not-yet-constructed estimator
+@pytest.mark.parametrize("estimator", list(_tested_estimators()))
+def test_parameters_default_constructible(estimator):
+    name, Estimator = estimator.__class__.__name__, estimator.__class__
+    sklearn_checks.check_parameters_default_constructible(name, Estimator)
