@@ -1084,7 +1084,7 @@ struct __StringToTHelper<T, true> {
 
     // Rare path: Not in RFC 7159 format. Possible "inf", "nan", etc.
     if (!fast_parse_succeeded) {
-      std::string strlower(str); 
+      std::string strlower(str);
       std::transform(strlower.begin(), strlower.end(), strlower.begin(), [](int c) -> char { return static_cast<char>(::tolower(c)); });
       if (strlower == std::string("inf"))
         tmp = std::numeric_limits<double>::infinity();
