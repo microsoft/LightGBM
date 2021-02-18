@@ -21,7 +21,7 @@ LightGBM is a gradient boosting framework that uses tree based learning algorith
 - Faster training speed and higher efficiency.
 - Lower memory usage.
 - Better accuracy.
-- Support of parallel and GPU learning.
+- Support of parallel, distributed, and GPU learning.
 - Capable of handling large-scale data.
 
 For further details, please refer to [Features](https://github.com/microsoft/LightGBM/blob/master/docs/Features.rst).
@@ -40,7 +40,7 @@ Next you may want to read:
 - [**Examples**](https://github.com/microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks.
 - [**Features**](https://github.com/microsoft/LightGBM/blob/master/docs/Features.rst) and algorithms supported by LightGBM.
 - [**Parameters**](https://github.com/microsoft/LightGBM/blob/master/docs/Parameters.rst) is an exhaustive list of customization you can make.
-- [**Parallel Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
+- [**Distributed Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
 - [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
 - [**Optuna Hyperparameter Tuner**](https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258) provides automated tuning for LightGBM hyperparameters ([code examples](https://github.com/optuna/optuna/blob/master/examples/)).
 
