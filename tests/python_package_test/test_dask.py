@@ -648,14 +648,22 @@ def test_ranker(output, client, listen_port, group):
 
 
 @pytest.mark.parametrize('eval_sizes', [[0.9], [1, 0.5], [0]])
+@pytest.mark.parametrize('eval_names_prefix', ['specified', None])
 @pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
-def test_early_stopping(task, eval_sizes, client, listen_port):
+def test_early_stopping(task, eval_names_prefix, eval_sizes, client, listen_port):
 
     # use larger number of samples to prevent faux early stopping whereby
     # boosting stops on accident because each worker has few data points and achieves 0 loss.
     n_samples = 1000
+    n_eval_sets = len(eval_sizes)
+    early_stopping_rounds = 1
     eval_set = []
     eval_sample_weight = []
+
+    if eval_names_prefix:
+        eval_names = [eval_names_prefix + f'_{i}' for i in range(len(eval_sizes))]
+    else:
+        eval_names = None
 
     if task == 'ranking':
         X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
@@ -665,7 +673,7 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
             random_gs=True
         )
         model_factory = lgb.DaskLGBMRanker
-        eval_metric=['ndcg', 'map']
+        eval_metrics = ['ndcg', 'map']
         eval_group = []
 
         # create eval* datasets for ranking task.
@@ -677,7 +685,7 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
                 dg_e = dg
             else:
                 _, _, _, _, dX_e, dy_e, dw_e, dg_e = _create_ranking_data(
-                    n_samples=max(200, int(n_samples * eval_size)),
+                    n_samples=max(10, int(n_samples * eval_size)),
                     output='dataframe',
                     chunk_size=10,
                     random_gs=True
@@ -697,10 +705,10 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
         eval_group = None
         if task == 'classification':
             model_factory = lgb.DaskLGBMClassifier
-            eval_metric = ['binary_error', 'auc']
+            eval_metrics = ['binary_error', 'auc']
         elif task == 'regression':
             model_factory = lgb.DaskLGBMRegressor
-            eval_metric = ['rmse']
+            eval_metrics = ['rmse']
 
         for eval_size in eval_sizes:
             if eval_size == 1:
@@ -709,7 +717,7 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
                 dw_e = dw
             else:
                 _, _, _, dX_e, dy_e, dw_e = _create_data(
-                    n_samples=max(200, int(n_samples * eval_size)),
+                    n_samples=max(10, int(n_samples * eval_size)),
                     objective=task,
                     output='array',
                     chunk_size=10
@@ -740,10 +748,11 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
                 dy,
                 group=dg,
                 eval_set=eval_set,
+                eval_names=eval_names,
                 eval_sample_weight=eval_sample_weight,
                 eval_group=eval_group,
-                eval_metric=eval_metric,
-                early_stopping_rounds=1
+                eval_metric=eval_metrics,
+                early_stopping_rounds=early_stopping_rounds
             )
 
     else:
@@ -752,13 +761,15 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
             dy,
             group=dg,
             eval_set=eval_set,
+            eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
             eval_group=eval_group,
-            eval_metric=eval_metric,
-            early_stopping_rounds=1
+            eval_metric=eval_metrics,
+            early_stopping_rounds=early_stopping_rounds
         )
         fitted_trees = dask_model.booster_.num_trees()
         assert fitted_trees < full_trees
+        assert dask_model.best_iteration_ < full_trees
 
         # be sure that model still produces decent output.
         p1 = dask_model.predict(dX)
@@ -777,15 +788,36 @@ def test_early_stopping(task, eval_sizes, client, listen_port):
             msg = f'spearman correlation of predictions with actuals was < 0.8 ({p1_cor})'
             assert p1_cor > 0.8, msg
 
-        # check that evals_result contains expected data and other attributes tied to early stopping.
+        # check that evals_result contains expected eval_set names when provided.
+        n_rounds_tried = dask_model.best_iteration_ + early_stopping_rounds
         evals_result = dask_model.evals_result_
+        assert len(evals_result) == n_eval_sets
+        evals_result_names = list(evals_result.keys())
+        if eval_names:
+            assert all(x in eval_names for x in evals_result_names)
+
+        # check that evals_result names still default to "training" or "valid_xx" when eval_names not provided.
+        for evals_result_name in evals_result_names:
+            if not eval_names:
+                assert evals_result_name.startswith('training') or evals_result_name.startswith('valid')
+
+            # check that eval_metric(s) are contained in evals_result dicts.
+            for i, eval_metric in enumerate(eval_metrics):
+                assert eval_metric in evals_result[evals_result_name]
+
+                # len of each eval_metric should be number of fitted trees + early_stopping_rounds.
+                assert evals_result[evals_result_name][eval_metric] == n_rounds_tried
+
+                # stopping decision should have been made based on the best score of the first of eval_metrics.
+                if i == 0:
+                    assert_eq(dask_model.best_score_, min(evals_result[evals_result_name][eval_metric]))
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-@pytest.mark.parametrize('eval_names', [['specified'], None])
+@pytest.mark.parametrize('eval_names_prefix', ['specified', None])
 @pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
-def test_eval_set_without_early_stopping(eval_names, task, client, listen_port):
+def test_eval_set_without_early_stopping(eval_names_prefix, task, client, listen_port):
 
     n_samples = 1000
     n_eval_samples = 500
@@ -800,7 +832,7 @@ def test_eval_set_without_early_stopping(eval_names, task, client, listen_port):
             random_gs=True
         )
         model_factory = lgb.DaskLGBMRanker
-        eval_metric=['ndcg', 'map']
+        eval_metrics = ['ndcg', 'map']
         eval_group = []
 
         # create eval data.
@@ -825,10 +857,10 @@ def test_eval_set_without_early_stopping(eval_names, task, client, listen_port):
         eval_group = None
         if task == 'classification':
             model_factory = lgb.DaskLGBMClassifier
-            eval_metric = ['binary_error', 'auc']
+            eval_metrics = ['binary_error', 'auc']
         elif task == 'regression':
             model_factory = lgb.DaskLGBMRegressor
-            eval_metric = ['l2', 'l1']
+            eval_metrics = ['l2', 'l1']
 
         _, _, _, dX_e, dy_e, dw_e = _create_data(
             n_samples=n_eval_samples,
@@ -838,6 +870,11 @@ def test_eval_set_without_early_stopping(eval_names, task, client, listen_port):
         )
         eval_set.append((dX_e, dy_e))
         eval_sample_weight.append(dw_e)
+
+    if eval_names_prefix:
+        eval_names = [eval_names_prefix + f'_{i}' for i in range(len(eval_set))]
+    else:
+        eval_names = None
 
     full_trees = 100
     params = {
@@ -861,7 +898,7 @@ def test_eval_set_without_early_stopping(eval_names, task, client, listen_port):
         eval_names=eval_names,
         eval_sample_weight=eval_sample_weight,
         eval_group=eval_group,
-        eval_metric=eval_metric,
+        eval_metric=eval_metrics,
         early_stopping_rounds=None
     )
 
@@ -876,8 +913,8 @@ def test_eval_set_without_early_stopping(eval_names, task, client, listen_port):
         assert evals_result_name == eval_names[0]
     else:
         assert evals_result_name == 'valid_0'
-    assert all([metric in evals_result[evals_result_name] for metric in eval_metric])
-    for metric in eval_metric:
+    assert all([metric in evals_result[evals_result_name] for metric in eval_metrics])
+    for metric in eval_metrics:
         assert len(evals_result[evals_result_name][metric]) == full_trees
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
