@@ -13,7 +13,7 @@ This section describes how distributed learning in LightGBM works. To learn how 
 Choose Appropriate Parallel Algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-LightGBM provides 3 parallel learning algorithms.
+LightGBM provides 3 distributed learning algorithms.
 
 +--------------------+---------------------------+
 | Parallel Algorithm | How to Use                |
@@ -35,7 +35,7 @@ These algorithms are suited for different scenarios, which is listed in the foll
 | **#feature is large**   | Feature Parallel  | Voting Parallel |
 +-------------------------+-------------------+-----------------+
 
-More details about these parallel algorithms can be found in `optimization in parallel learning <./Features.rst#optimization-in-parallel-learning>`__.
+More details about these parallel algorithms can be found in `optimization in distributed learning <./Features.rst#optimization-in-distributed-learning>`__.
 
 Integrations
 ------------
@@ -68,20 +68,17 @@ Kubeflow integrations for LightGBM are not maintained by LightGBM's maintainers.
 LightGBM CLI
 ^^^^^^^^^^^^
 
-Build Parallel Version
-''''''''''''''''''''''
-
-Default build version support parallel learning based on the socket.
-
-If you need to build parallel version with MPI support, please refer to `Installation Guide <./Installation-Guide.rst#build-mpi-version>`__.
-
 Preparation
 '''''''''''
+
+By default, distributed learning with LightGBM uses socket-based communication.
+
+If you need to build parallel version with MPI support, please refer to `Installation Guide <./Installation-Guide.rst#build-mpi-version>`__.
 
 Socket Version
 **************
 
-It needs to collect IP of all machines that want to run parallel learning in and allocate one TCP port (assume 12345 here) for all machines,
+It needs to collect IP of all machines that want to run distributed learning in and allocate one TCP port (assume 12345 here) for all machines,
 and change firewall rules to allow income of this port (12345). Then write these IP and ports in one file (assume ``mlist.txt``), like following:
 
 .. code::
@@ -92,7 +89,7 @@ and change firewall rules to allow income of this port (12345). Then write these
 MPI Version
 ***********
 
-It needs to collect IP (or hostname) of all machines that want to run parallel learning in.
+It needs to collect IP (or hostname) of all machines that want to run distributed learning in.
 Then write these IP in one file (assume ``mlist.txt``) like following:
 
 .. code::
@@ -102,8 +99,8 @@ Then write these IP in one file (assume ``mlist.txt``) like following:
 
 **Note**: For Windows users, need to start "smpd" to start MPI service. More details can be found `here`_.
 
-Run Parallel Learning
-'''''''''''''''''''''
+Run Distributed Learning
+''''''''''''''''''''''''
 
 Socket Version
 **************

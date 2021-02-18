@@ -183,7 +183,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   // don't support query id in data file when training in parallel
   if (num_machines > 1 && !config_.pre_partition) {
     if (group_idx_ > 0) {
-      Log::Fatal("Using a query id without pre-partitioning the data file is not supported for parallel training.\n"
+      Log::Fatal("Using a query id without pre-partitioning the data file is not supported for distributed training.\n"
                  "Please use an additional query file or pre-partition the data");
     }
   }
