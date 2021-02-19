@@ -159,7 +159,7 @@ MPI Version
 Example
 '''''''
 
--  `A simple parallel example`_
+-  `A simple distributed learning example`_
 
 .. _Dask: https://docs.dask.org/en/latest/
 
@@ -179,4 +179,4 @@ Example
 
 .. _here: https://www.youtube.com/watch?v=iqzXhp5TxUY
 
-.. _A simple parallel example: https://github.com/microsoft/lightgbm/tree/master/examples/parallel_learning
+.. _A simple distributed learning example: https://github.com/microsoft/lightgbm/tree/master/examples/parallel_learning
