@@ -281,7 +281,7 @@ class LambdarankNDCG : public RankingObjective {
         double p_hessian = p_lambda * (1.0f - p_lambda);
 
         int debias_high_rank = static_cast<int>(std::min(high, truncation_level_ - 1));
-        int debias_low_rank = static_cast<int>(std::min(low, truncation_level_ - 1));        
+        int debias_low_rank = static_cast<int>(std::min(low, truncation_level_ - 1));
 
         if (unbiased_) {
           // formula (37)
@@ -312,7 +312,7 @@ class LambdarankNDCG : public RankingObjective {
         sum_lambdas -= 2 * p_lambda;
       }
     }
-    
+
     if (norm_ && sum_lambdas > 0) {
       double norm_factor = std::log2(1 + sum_lambdas) / sum_lambdas;
       for (data_size_t i = 0; i < cnt; ++i) {
