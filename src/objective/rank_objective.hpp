@@ -115,7 +115,12 @@ class LambdarankNDCG : public RankingObjective {
       Log::Fatal("Sigmoid param %f should be greater than zero", sigmoid_);
     }
 
-    num_threads_ = omp_get_num_threads();
+    #pragma omp parallel
+    #pragma omp master
+    {
+      num_threads_ = omp_get_num_threads();
+    }
+
     position_bias_regularizer = 1.0f / (1.0f + eta_);
   }
 
@@ -149,9 +154,7 @@ class LambdarankNDCG : public RankingObjective {
                     score_t* hessians) const override {
     RankingObjective::GetGradients(score, gradients, hessians);
 
-    if (unbiased_) {
-      UpdatePositionBiasesAndGradients();
-    }
+    if (unbiased_) { UpdatePositionBiasesAndGradients(); }
   }
 
   inline void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt,
@@ -207,7 +210,7 @@ class LambdarankNDCG : public RankingObjective {
     // accumulator for lambdas used in normalization when norm_ = true
     double sum_lambdas = 0.0;
 
-    // start accmulate lambdas by pairs that contain at least one document above truncation level
+    // accmulate lambdas by pairs that contain at least one document above truncation level
     // working across the cnt number of documents for the query
     // this going in order of score desc since start w sorted_idx[0]
     for (data_size_t i = 0; i < cnt - 1 && i < truncation_level_; ++i) {
@@ -220,6 +223,7 @@ class LambdarankNDCG : public RankingObjective {
         // skip pairs with the same labels
         if (label[sorted_idx[i]] == label[sorted_idx[j]]) { continue; }
 
+        // determine more relevant document pair
         data_size_t high_rank, low_rank;
         if (label[sorted_idx[i]] > label[sorted_idx[j]]) {
           high_rank = i;
@@ -232,7 +236,7 @@ class LambdarankNDCG : public RankingObjective {
         // info of more relevant doc
         const data_size_t high = sorted_idx[high_rank];  // doc index in query results
         const int high_label = static_cast<int>(label[high]);  // label (Y)
-        const double high_score = score[high];
+        const double high_score = score[high];  // current model predicted score
         const double high_label_gain = label_gain_[high_label];  // default: 2^high_label - 1
         const double high_discount = DCGCalculator::GetDiscount(high_rank);  // 1/log2(2 + i)
 
@@ -245,7 +249,7 @@ class LambdarankNDCG : public RankingObjective {
 
         //
         // note on subsequent comments
-        // in the papers, we assume i is more relevant than j
+        // in the papers, customary to assume i is more relevant than j
         // formula numbers are from unbiased lambdamart paper
         //
         // si - sj
@@ -271,90 +275,33 @@ class LambdarankNDCG : public RankingObjective {
         // calculate lambda for this pair
         // part of (34)
         // (34) and (36) are used to get the unbiased gradient estimates
-        // in original this first p_lambda is double what it should be but ends up not mattering
         double p_lambda = GetSigmoid(delta_score);  // 1 / (1 + e^(sigmoid_ * (si - sj)))
 
         // d/dx {part of (34)} from above
-        // ** confirmed wrong in original **
-        // see subsequent p_hessian comments, but appears to be wrong
-        // if sigmoid_ was meant to be 2 in the paper, that would be multiplied out front
-        // it wouldn't be lambda * (2 - lambda) but instead 2 * lambda (1 - lambda)
         double p_hessian = p_lambda * (1.0f - p_lambda);
+
+        int debias_high_rank = static_cast<int>(std::min(high, truncation_level_ - 1));
+        int debias_low_rank = static_cast<int>(std::min(low, truncation_level_ - 1));        
 
         if (unbiased_) {
           // formula (37)
           // used to get t+ and t- from (30)/(31) respectively
-          // ** confirmed correct here and (accidentally) in original **
-          // orig has log(2/(2 - p_lambda))
-          //   let bad_exp = e^(2 * sigmoid_ * (si - sj))
-          //   let bad_denom = 1 + bad_exp
-          //
-          //   2/(2-(2/bad_denom))
-          //   2 / { (2*bad_denom - 2)/bad_denom }
-          //   2*bad_denom / (2 * (bad_denom - 1))
-          //   bad_denom / bad_exp
-          //   {1 + bad_exp} / bad_exp
-          //   1 + 1/bad_exp
-          //   1 + e^{-2*sigmoid_ * (si - sj)}
-          //     ... so i think w the weird swaps/hard coded 2s and sigmoid_ = 1 2/(2-lambda) is right
-          //     ... which means 1/(1-lambda) is correct here
           double p_cost = log(1.0f / (1.0f - p_lambda)) * delta_pair_NDCG;
 
           // formula (30)
           // more relevant (clicked) gets debiased by less relevant (unclicked)
-          i_costs_buffer_[tid][high_rank] += p_cost / j_biases_pow_[low_rank];
+          i_costs_buffer_[tid][debias_high_rank] += p_cost / j_biases_pow_[debias_low_rank];
 
-          // formula (31)
-          // and vice versa
-          j_costs_buffer_[tid][low_rank] += p_cost / i_biases_pow_[high_rank];
+          // // formula (31)
+          // // and vice versa
+          j_costs_buffer_[tid][debias_low_rank] += p_cost / i_biases_pow_[debias_high_rank];
         }
 
-        // update
-        // ** confirmed p_lambda is correct **
-        // rest of (34) with formula (36) for debiasing
-        // orig doesn't have sigmoid_
-        // if not unbiased_
-        //    {1/(1 + e^(sigmoid_ * (si - sj)))} * -sigmoid_ * (2^i - 2^j) * |1/log2(2 + i) - 1/log2(2 + j)| * (1/max_dcg)
-        // note that orig has
-        //    {2/(1 + e^(2 * sigmoid_ * (si - sj)))} * -1 * (2^i - 2^j) * |1/log2(2 + i) - 1/log2(2 + j)| * (1/max_dcg)
-        //    the 2 in the numerator and sigmoid_ missing from second term (delta_pair_NDCG) even out
-        //    the 2 * sigmoid_ * (si - sj) in the exponent, however, makes no sense
-        //    it appears the tests on that repo used an unset (default) sigmoid config value, which is 1
-        //    this means that the paper's sigmoid_table_ denominator was computed correctly for sigmoid_ = 2
-        //    as is described at (34) even though it was set for 1
-        //    also means that leaving it out from p_lambda was (accidentally) fine
-        p_lambda *= -sigmoid_ * delta_pair_NDCG / i_biases_pow_[high_rank] / j_biases_pow_[low_rank];
+        // update {(34) and (36) for debiasing}
+        p_lambda *= -sigmoid_ * delta_pair_NDCG / i_biases_pow_[debias_high_rank] / j_biases_pow_[debias_low_rank];
 
         // remainder of d/dx {(34) and (36) for debiasing}
-        // ** confirmed wrong **
-        // if not unbiased
-        //    let good_exp = e^(sigmoid_ * (si - sj))
-        //    let good_denom = 1 + good_exp
-        //
-        //    p_lambda * (1.0f - p_lambda) * sigmoid_ * sigmoid_ * delta_pair_ndcg
-        //    {1/good_denom} * (1 - 1/good_denom) * sigmoid_ * sigmoid_ * delta_pair_ndcg
-        //    {1/good_denom} * ((good_denom - 1)/good_denom) * sigmoid_ * sigmoid_ * delta_pair_ndcg
-        //    sigmoid_ * sigmoid_ * good_exp * delta_pair_ndcg / {good_denom^2}
-        //
-        // orig has
-        //    let bad_exp = e^(2 * sigmoid_ * (si - sj))
-        //    let bad_denom = 1 + bad_exp
-        //
-        //    p_lambda * (2 - p_lambda) * 2 * delta_pair_ndcg
-        //    {2/bad_denom} * (2 - (2/bad_denom)) * 2 * delta_pair_ndcg
-        //    {2/bad_denom} * (2*(bad_denom - 1)/bad_denom) * 2 * delta_pair_ndcg
-        //    2 * 2 * 2 * (bad_denom - 1) * delta_pair_ndcg / (bad_denom^2)
-        //    2 * 2 * 2 * bad_exp * delta_pair_ndcg / (bad_denom^2)
-        //
-        //    if, as in the original ...
-        //      * you WANT sigmoid_ = 2
-        //      * but actually leave it as 1
-        //      * and add 2s in as hardcoded constants
-        //    then you end up w bad_denom == good_denom and
-        //      2 * 2 * 2 * good_exp * delta_pair_ndcg / (good_denom^2)
-        //      2 * sigmoid_ * sigmoid_ * good_exp * delta_pair_ndcg / {good_denom^2}
-        //    and this has 1 too many 2s compared to what's here
-        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG / i_biases_pow_[high_rank] / j_biases_pow_[low_rank];
+        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG / i_biases_pow_[debias_high_rank] / j_biases_pow_[debias_low_rank];
 
         lambdas[low] -= static_cast<score_t>(p_lambda);
         hessians[low] += static_cast<score_t>(p_hessian);
@@ -365,7 +312,7 @@ class LambdarankNDCG : public RankingObjective {
         sum_lambdas -= 2 * p_lambda;
       }
     }
-
+    
     if (norm_ && sum_lambdas > 0) {
       double norm_factor = std::log2(1 + sum_lambdas) / sum_lambdas;
       for (data_size_t i = 0; i < cnt; ++i) {
@@ -429,25 +376,29 @@ class LambdarankNDCG : public RankingObjective {
   void UpdatePositionBiasesAndGradients() const {
     // accumulate the parallel results
     for (int i = 0; i < num_threads_; i++) {
-      for (int j = 0; j < truncation_level_; ++j) {
+      for (int j = 0; j < truncation_level_; j++) {
         i_costs_[j] += i_costs_buffer_[i][j];
         j_costs_[j] += j_costs_buffer_[i][j];
+      }
+    }
 
+    for (int i = 0; i < num_threads_; i++) {
+      for (int j = 0; j < truncation_level_; j++) {
         // clear buffer for next run
         i_costs_buffer_[i][j] = 0.0f;
         j_costs_buffer_[i][j] = 0.0f;
       }
     }
 
-    LogDebugPositionBiases();
-
-    for (int i = 0; i < truncation_level_; ++i) {
+    for (int i = 0; i < truncation_level_; i++) {
       // Update bias
       i_biases_pow_[i] = pow(i_costs_[i] / i_costs_[0], position_bias_regularizer);
       j_biases_pow_[i] = pow(j_costs_[i] / j_costs_[0], position_bias_regularizer);
     }
 
-    for (int i = 0; i < truncation_level_; ++i) {
+    LogDebugPositionBiases();
+
+    for (int i = 0; i < truncation_level_; i++) {
       // Clear position info
       i_costs_[i] = 0.0f;
       j_costs_[i] = 0.0f;
@@ -463,17 +414,19 @@ class LambdarankNDCG : public RankingObjective {
                     << std::setw(15) << "bias_i"
                     << std::setw(15) << "bias_j"
                     << std::setw(15) << "i_cost"
-                    << std::setw(15) << "j_cost";
+                    << std::setw(15) << "j_cost"
+                    << std::endl;
     Log::Debug(message_stream.str().c_str());
+    message_stream.str("");
 
     for (int i = 0; i < truncation_level_; ++i) {
       message_stream  << std::setw(10) << i
                       << std::setw(15) << i_biases_pow_[i]
                       << std::setw(15) << j_biases_pow_[i]
                       << std::setw(15) << i_costs_[i]
-                      << std::setw(15) << j_costs_[i]
-                      << std::endl;
+                      << std::setw(15) << j_costs_[i];
       Log::Debug(message_stream.str().c_str());
+      message_stream.str("");
     }
   }
 
@@ -512,12 +465,15 @@ class LambdarankNDCG : public RankingObjective {
   mutable std::vector<label_t> j_costs_;
   mutable std::vector<std::vector<label_t>> j_costs_buffer_;
 
-  /*! \brief Should use unbiased lambdarank */
+  /*! 
+   * \brief Should use lambdarank with position bias correction
+   * [arxiv.org/pdf/1809.05818.pdf]
+   */
   bool unbiased_;
-  /*! \brief Number of exponent */
+  /*! \brief Position bias regularizer norm */
   double eta_;
 
-  /*! \brief position bias regularize exponent, 1 / (1 + eta) */
+  /*! \brief Position bias regularizer exponent, 1 / (1 + eta) */
   double position_bias_regularizer;
 
   /*! \brief Number of threads */
