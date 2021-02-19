@@ -274,7 +274,7 @@ def _train(
     about the Dask cluster referenced by ``client``.
 
     * ``local_listen_port``: port that each LightGBM worker opens a listening socket on,
-            to accept connections from other workers. This can be differ from LightGBM worker
+            to accept connections from other workers. This can differ from LightGBM worker
             to LightGBM worker, but does not have to.
     * ``machines``: a comma-delimited list of all workers in the cluster, in the
             form ``ip:port,ip:port``. If running multiple Dask workers on the same host, use different
