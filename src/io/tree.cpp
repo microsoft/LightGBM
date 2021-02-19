@@ -376,7 +376,7 @@ std::string Tree::ToString() const {
 
   if (is_linear_) {
     str_buf << "leaf_const="
-      << ArrayToString(leaf_const_, num_leaves_) << '\n';
+      << ArrayToString<true>(leaf_const_, num_leaves_) << '\n';
     std::vector<int> num_feat(num_leaves_);
     for (int i = 0; i < num_leaves_; ++i) {
       num_feat[i] = static_cast<int>(leaf_coeff_[i].size());
@@ -394,7 +394,7 @@ std::string Tree::ToString() const {
     str_buf << "leaf_coeff=";
     for (int i = 0; i < num_leaves_; ++i) {
       if (num_feat[i] > 0) {
-        str_buf << ArrayToString(leaf_coeff_[i], leaf_coeff_[i].size()) << ' ';
+        str_buf << ArrayToString<true>(leaf_coeff_[i], leaf_coeff_[i].size()) << ' ';
       }
       str_buf << ' ';
     }
@@ -769,7 +769,7 @@ Tree::Tree(const char* str, size_t* used_len) {
 
   if (is_linear_) {
     if (key_vals.count("leaf_const")) {
-      leaf_const_ = Common::StringToArrayFast<double>(key_vals["leaf_const"], num_leaves_);
+      leaf_const_ = Common::StringToArray<double>(key_vals["leaf_const"], num_leaves_);
     } else {
       leaf_const_.resize(num_leaves_);
     }
@@ -791,7 +791,7 @@ Tree::Tree(const char* str, size_t* used_len) {
       }
       std::vector<double> all_leaf_coeff;
       if (key_vals.count("leaf_coeff")) {
-        all_leaf_coeff = Common::StringToArrayFast<double>(key_vals["leaf_coeff"], total_num_feat);
+        all_leaf_coeff = Common::StringToArray<double>(key_vals["leaf_coeff"], total_num_feat);
       }
       int sum_num_feat = 0;
       for (int i = 0; i < num_leaves_; ++i) {
