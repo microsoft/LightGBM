@@ -556,16 +556,6 @@ def _predict(
         raise TypeError('Data must be either Dask Array or Dask DataFrame. Got %s.' % str(type(data)))
 
 
-# relying on the default port being 12400 in a firewall-constrained environment will
-# not work because by default the Dask interface searches for ports randomly to reduce the overhead of network setup
-_dasklgbmmodel_doc_network_params_warning = (
-    ' ' * 4 + '.. warning::\n'
-    + '\n'
-    + ' ' * 16 + 'If communication between the workers in your Dask cluster is constrained by firewall rules, set ``machines`` or ``local_listen_port`` explicitly. \n'
-    + ' ' * 16 + 'If these are missing, LightGBM will use random open ports for communication between workers.\n'
-)
-
-
 class _DaskLGBMModel:
 
     @property
@@ -708,9 +698,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     # the note on custom objective functions in LGBMModel.__init__ is not
     # currently relevant for the Dask estimators
-    _base_doc = _base_doc[:_base_doc.find('Note\n')]
-
-    __init__.__doc__ = _base_doc + _dasklgbmmodel_doc_network_params_warning
+    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_getstate()
@@ -861,9 +849,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
     # the note on custom objective functions in LGBMModel.__init__ is not
     # currently relevant for the Dask estimators
-    _base_doc = _base_doc[:_base_doc.find('Note\n')]
-
-    __init__.__doc__ = _base_doc + _dasklgbmmodel_doc_network_params_warning
+    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_getstate()
@@ -995,9 +981,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
     # the note on custom objective functions in LGBMModel.__init__ is not
     # currently relevant for the Dask estimators
-    _base_doc = _base_doc[:_base_doc.find('Note\n')]
-
-    __init__.__doc__ = _base_doc + _dasklgbmmodel_doc_network_params_warning
+    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_getstate()
