@@ -1,6 +1,8 @@
 Distributed Learning Guide
 ==========================
 
+.. _Parallel Learning Guid:
+
 This guide describes distributed learning in LightGBM. Distributed learning allows the use of multiple machines to produce a single model.
 
 Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first.
@@ -65,6 +67,8 @@ Kubeflow users can also use the `Kubeflow XGBoost Operator`_ for machine learnin
 
 Kubeflow integrations for LightGBM are not maintained by LightGBM's maintainers.
 
+.. _Build Parallel Version:
+
 LightGBM CLI
 ^^^^^^^^^^^^
 
@@ -98,6 +102,8 @@ Then write these IP in one file (assume ``mlist.txt``) like following:
     machine2_ip
 
 **Note**: For Windows users, need to start "smpd" to start MPI service. More details can be found `here`_.
+
+.. _Run Parallel Learning:
 
 Run Distributed Learning
 ''''''''''''''''''''''''

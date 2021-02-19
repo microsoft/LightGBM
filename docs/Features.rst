@@ -72,6 +72,8 @@ It only needs to use some collective communication algorithms, like "All reduce"
 LightGBM implements state-of-art algorithms\ `[9] <#references>`__.
 These collective communication algorithms can provide much better performance than point-to-point communication.
 
+.. _Optimization in Parallel Learning:
+
 Optimization in Distributed Learning
 ------------------------------------
 
