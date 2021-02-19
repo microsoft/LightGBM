@@ -623,7 +623,7 @@ def test_ranker(output, client, listen_port, group):
 
 
 @pytest.mark.parametrize('task', tasks)
-@pytest.mark.parametrize('eval_sizes', [[0.9], [1, 0.5], [0]])
+@pytest.mark.parametrize('eval_sizes', [[0.9], [0.5, 1], [0]])
 @pytest.mark.parametrize('eval_names_prefix', ['specified', None])
 def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, client, listen_port):
 
@@ -666,6 +666,7 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
                     chunk_size=10,
                     random_gs=True
                 )
+
             eval_set.append((dX_e, dy_e))
             eval_sample_weight.append(dw_e)
             eval_group.append(dg_e)
@@ -761,7 +762,7 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
         elif task == 'regression':
             p1_r2 = _r2_score(dy, p1)
             msg = f'r2 score of predictions with actuals was <= 0.8 ({p1_r2})'
-            assert _r2_score(dy, p1) > 0.8, msg
+            assert p1_r2 > 0.8, msg
 
         else:
             p1_cor = spearmanr(p1.compute(), y).correlation
@@ -794,7 +795,7 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
                 # stopping decision should have been made based on the best score of the first of eval_metrics.
                 if i == 0:
                     best_score = dask_model.best_score_[evals_result_name][metric]
-                    assert_eq(best_score, min(evals_result[evals_result_name][metric]))
+                    assert_eq(best_score, min(evals_result[evals_result_name][metric]), atol=0.2)
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
