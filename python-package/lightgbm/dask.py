@@ -262,6 +262,9 @@ def _train_part(
                 **kwargs
             )
         else:
+            if 'eval_at' in kwargs:
+                kwargs.pop('eval_at')
+
             model.fit(
                 data,
                 label,
@@ -690,6 +693,7 @@ class _DaskLGBMModel:
         params = self.get_params(True)
         params.pop("client", None)
 
+        # easier to pass fit args as kwargs than to list_of_parts in _train.
         if eval_metric:
             kwargs['eval_metric'] = eval_metric
         if eval_stopping_rounds:
@@ -842,8 +846,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
-        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
     # DaskLGBMClassifier does not support init_score, evaluation data, or early stopping
@@ -1014,8 +1017,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
-        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
     # DaskLGBMRegressor does not support init_score, evaluation data, or early stopping
@@ -1141,6 +1143,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+        eval_at: Optional[List[int]] = None,
         eval_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
@@ -1152,6 +1155,8 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
         if eval_metric:
             kwargs['eval_metric'] = eval_metric
+        if eval_at:
+            kwargs['eval_at'] = eval_at
         if eval_stopping_rounds:
             kwargs['eval_stopping_rounds'] = eval_stopping_rounds
 
