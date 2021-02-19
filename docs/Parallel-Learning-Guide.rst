@@ -15,7 +15,7 @@ This section describes how distributed learning in LightGBM works. To learn how 
 Choose Appropriate Parallel Algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-LightGBM provides 3 distributed learning algorithms.
+LightGBM provides 3 distributed learning algorithms now.
 
 +--------------------+---------------------------+
 | Parallel Algorithm | How to Use                |
@@ -42,7 +42,7 @@ More details about these parallel algorithms can be found in `optimization in di
 Integrations
 ------------
 
-There are several available options for distributed learning with LightGBM.
+This section describes how to run distributed LightGBM training in various programming languages and frameworks. To learn how distributed learning in LightGBM works generally, please see `How Distributed LightGBM Works <#how-distributed-lightgbm-works>`__.
 
 Apache Spark
 ^^^^^^^^^^^^
@@ -75,10 +75,10 @@ Kubeflow integrations for LightGBM are not maintained by LightGBM's maintainers.
 
   The Kubeflow integrations for LightGBM are not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/kubeflow/fairing/issues or https://github.com/kubeflow/xgboost-operator/issues.
 
-.. _Build Parallel Version:
-
 LightGBM CLI
 ^^^^^^^^^^^^
+
+.. _Build Parallel Version:
 
 Preparation
 '''''''''''
@@ -111,10 +111,10 @@ Then write these IP in one file (assume ``mlist.txt``) like following:
 
 **Note**: For Windows users, need to start "smpd" to start MPI service. More details can be found `here`_.
 
-.. _Run Parallel Learning:
-
 Run Distributed Learning
 ''''''''''''''''''''''''
+
+.. _Run Parallel Learning:
 
 Socket Version
 **************
