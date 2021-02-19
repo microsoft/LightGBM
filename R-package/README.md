@@ -356,7 +356,7 @@ rhub::check(
 
 Alternatively, GitHub Actions can run code above for you. On a pull request, create a comment with this phrase:
 
-> /gha run r-solais
+> /gha run r-solaris
 
 **NOTE:** Please do this only once you see that other R tests on a pull request are passing. R Hub is a free resource with limited capacity, and we want to be respectful community members.
 

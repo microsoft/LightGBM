@@ -1,25 +1,25 @@
 # coding: utf-8
-"""Distributed training with LightGBM and Dask.distributed.
+"""Distributed training with LightGBM and dask.distributed.
 
 This module enables you to perform distributed training with LightGBM on
-Dask.Array and Dask.DataFrame collections.
+dask.Array and dask.DataFrame collections.
 
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
 import socket
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type, Tuple, Union
 from urllib.parse import urlparse
 
 import numpy as np
 import scipy.sparse as ss
 
-from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
-from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
-                     SKLEARN_INSTALLED, LGBMNotFittedError,
-                     DASK_INSTALLED, dask_DataFrame, dask_Array, dask_Series, delayed, Client, default_client, get_worker, wait)
-from .sklearn import LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
+from .basic import _LIB, LightGBMError, _choose_param_value, _ConfigAliases, _log_warning, _safe_call
+from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
+                     dask_Array, dask_DataFrame, dask_Series, default_client, delayed, get_worker, pd_DataFrame,
+                     pd_Series, wait)
+from .sklearn import LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _lgbmmodel_doc_fit, _lgbmmodel_doc_predict
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
@@ -70,7 +70,6 @@ def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Itera
         A free port on the machine referenced by ``worker_ip``.
     """
     max_tries = 1000
-    out_port = None
     found_port = False
     for i in range(max_tries):
         out_port = local_listen_port + i
@@ -110,7 +109,7 @@ def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], loc
     result : Dict[str, int]
         Dictionary where keys are worker addresses and values are an open port for LightGBM to use.
     """
-    lightgbm_ports = set()
+    lightgbm_ports: Set[int] = set()
     worker_ip_to_port = {}
     for worker_address in worker_addresses:
         port = client.submit(
@@ -310,17 +309,17 @@ def _train(
     ----------
     client : dask.distributed.Client
         Dask client.
-    data : dask Array or dask DataFrame of shape = [n_samples, n_features]
+    data : Dask Array or Dask DataFrame of shape = [n_samples, n_features]
         Input feature matrix.
-    label : dask Array, dask DataFrame or dask Series of shape = [n_samples]
+    label : Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]
         The target values (class labels in classification, real numbers in regression).
     params : dict
         Parameters passed to constructor of the local underlying model.
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Class of the local underlying model.
-    sample_weight : dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+    sample_weight : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
-    group : dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+    group : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Group/query data.
         Only used in the learning-to-rank task.
         sum(group) = n_samples.
@@ -486,11 +485,11 @@ def _train(
     wait(parts)
 
     for part in parts:
-        if part.status == 'error':
+        if part.status == 'error':  # type: ignore
             return part  # trigger error locally
 
     # Find locations of all parts and map them to particular Dask workers
-    key_to_part_dict = {part.key: part for part in parts}
+    key_to_part_dict = {part.key: part for part in parts}  # type: ignore
     who_has = client.who_has(parts)
     worker_map = defaultdict(list)
     for key, workers in who_has.items():
@@ -584,7 +583,7 @@ def _predict(
     ----------
     model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Fitted underlying model.
-    data : dask Array or dask DataFrame of shape = [n_samples, n_features]
+    data : Dask Array or Dask DataFrame of shape = [n_samples, n_features]
         Input feature matrix.
     raw_score : bool, optional (default=False)
         Whether to predict raw scores.
@@ -601,11 +600,11 @@ def _predict(
 
     Returns
     -------
-    predicted_result : dask Array of shape = [n_samples] or shape = [n_samples, n_classes]
+    predicted_result : Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]
         The predicted values.
-    X_leaves : dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
+    X_leaves : Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
         If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-    X_SHAP_values : dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
+    X_SHAP_values : Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
         If ``pred_contrib=True``, the feature contributions for each sample.
     """
     if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
@@ -636,7 +635,7 @@ def _predict(
             **kwargs
         )
     else:
-        raise TypeError('Data must be either dask Array or dask DataFrame. Got %s.' % str(type(data)))
+        raise TypeError('Data must be either Dask Array or Dask DataFrame. Got %s.' % str(type(data)))
 
 
 class _DaskLGBMModel:
@@ -789,12 +788,16 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     _base_doc = LGBMClassifier.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    __init__.__doc__ = (
+    _base_doc = (
         _before_kwargs
         + 'client : dask.distributed.Client or None, optional (default=None)\n'
         + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
+
+    # the note on custom objective functions in LGBMModel.__init__ is not
+    # currently relevant for the Dask estimators
+    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_getstate()
@@ -836,7 +839,23 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             **kwargs
         )
 
-    fit.__doc__ = LGBMClassifier.fit.__doc__
+    _base_doc = _lgbmmodel_doc_fit.format(
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
+        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+    )
+
+    # DaskLGBMClassifier does not support init_score, evaluation data, or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
+                 + _base_doc[_base_doc.find('verbose :'):])
+
+    # DaskLGBMClassifier support for callbacks and init_model is not tested
+    fit.__doc__ = (
+        _base_doc[:_base_doc.find('callbacks :')]
+        + '**kwargs\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMClassifier.fit()``.\n'
+    )
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
@@ -847,7 +866,14 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             **kwargs
         )
 
-    predict.__doc__ = LGBMClassifier.predict.__doc__
+    predict.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted value for each sample.",
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        output_name="predicted_result",
+        predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
+        X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+    )
 
     def predict_proba(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict_proba."""
@@ -858,7 +884,14 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             **kwargs
         )
 
-    predict_proba.__doc__ = LGBMClassifier.predict_proba.__doc__
+    predict_proba.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted probability for each class for each sample.",
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        output_name="predicted_probability",
+        predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
+        X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+    )
 
     def to_local(self) -> LGBMClassifier:
         """Create regular version of lightgbm.LGBMClassifier from the distributed version.
@@ -927,12 +960,16 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
     _base_doc = LGBMRegressor.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    __init__.__doc__ = (
+    _base_doc = (
         _before_kwargs
         + 'client : dask.distributed.Client or None, optional (default=None)\n'
         + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
+
+    # the note on custom objective functions in LGBMModel.__init__ is not
+    # currently relevant for the Dask estimators
+    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_getstate()
@@ -974,7 +1011,23 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             **kwargs
         )
 
-    fit.__doc__ = LGBMRegressor.fit.__doc__
+    _base_doc = _lgbmmodel_doc_fit.format(
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
+        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+    )
+
+    # DaskLGBMRegressor does not support init_score, evaluation data, or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
+                 + _base_doc[_base_doc.find('verbose :'):])
+
+    # DaskLGBMRegressor support for callbacks and init_model is not tested
+    fit.__doc__ = (
+        _base_doc[:_base_doc.find('callbacks :')]
+        + '**kwargs\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMRegressor.fit()``.\n'
+    )
 
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
@@ -984,7 +1037,14 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             **kwargs
         )
 
-    predict.__doc__ = LGBMRegressor.predict.__doc__
+    predict.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted value for each sample.",
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        output_name="predicted_result",
+        predicted_result_shape="Dask Array of shape = [n_samples]",
+        X_leaves_shape="Dask Array of shape = [n_samples, n_trees]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1]"
+    )
 
     def to_local(self) -> LGBMRegressor:
         """Create regular version of lightgbm.LGBMRegressor from the distributed version.
@@ -1053,12 +1113,16 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
     _base_doc = LGBMRanker.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    __init__.__doc__ = (
+    _base_doc = (
         _before_kwargs
         + 'client : dask.distributed.Client or None, optional (default=None)\n'
         + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
+
+    # the note on custom objective functions in LGBMModel.__init__ is not
+    # currently relevant for the Dask estimators
+    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_getstate()
@@ -1104,13 +1168,39 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             **kwargs
         )
 
-    fit.__doc__ = LGBMRanker.fit.__doc__
+    _base_doc = _lgbmmodel_doc_fit.format(
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
+        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+    )
+
+    # DaskLGBMRanker does not support init_score, evaluation data, or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
+                 + _base_doc[_base_doc.find('init_score :'):])
+
+    _base_doc = (_base_doc[:_base_doc.find('eval_set :')]
+                 + _base_doc[_base_doc.find('verbose :'):])
+
+    # DaskLGBMRanker support for callbacks and init_model is not tested
+    fit.__doc__ = (
+        _base_doc[:_base_doc.find('callbacks :')]
+        + '**kwargs\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMRanker.fit()``.\n'
+    )
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
         return _predict(self.to_local(), X, **kwargs)
 
-    predict.__doc__ = LGBMRanker.predict.__doc__
+    predict.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted value for each sample.",
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        output_name="predicted_result",
+        predicted_result_shape="Dask Array of shape = [n_samples]",
+        X_leaves_shape="Dask Array of shape = [n_samples, n_trees]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1]"
+    )
 
     def to_local(self) -> LGBMRanker:
         """Create regular version of lightgbm.LGBMRanker from the distributed version.

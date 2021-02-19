@@ -1,13 +1,13 @@
 # coding: utf-8
 import os
 
-import lightgbm as lgb
 import numpy as np
 import pytest
-
 from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
+
+import lightgbm as lgb
 
 from .utils import load_breast_cancer
 

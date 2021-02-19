@@ -6,10 +6,13 @@ import pickle
 import socket
 from itertools import groupby
 from os import getenv
+from platform import machine
 from sys import platform
 
-import lightgbm as lgb
 import pytest
+
+import lightgbm as lgb
+
 if not platform.startswith('linux'):
     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
@@ -21,27 +24,29 @@ import dask.dataframe as dd
 import joblib
 import numpy as np
 import pandas as pd
-from scipy.stats import spearmanr
+import sklearn.utils.estimator_checks as sklearn_checks
 from dask.array.utils import assert_eq
-from dask.distributed import default_client, Client, LocalCluster, wait
+from dask.distributed import Client, LocalCluster, default_client, wait
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
 from scipy.sparse import csr_matrix
+from scipy.stats import spearmanr
 from sklearn.datasets import make_blobs, make_regression
 
 from .utils import make_ranking
-
 
 # time, in seconds, to wait for the Dask client to close. Used to avoid teardown errors
 # see https://distributed.dask.org/en/latest/api.html#distributed.Client.close
 CLIENT_CLOSE_TIMEOUT = 120
 
+tasks = ['classification', 'regression', 'ranking']
 data_output = ['array', 'scipy_csr_matrix', 'dataframe', 'dataframe-with-categorical']
 data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
-    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface')
+    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
+    pytest.mark.skipif(machine() != 'x86_64', reason='Fails to run with non-x86_64 architecture')
 ]
 
 
@@ -209,11 +214,6 @@ def test_classifier(output, centers, client, listen_port):
         "num_leaves": 10
     }
 
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
-
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
         time_out=5,
@@ -281,11 +281,6 @@ def test_classifier_pred_contrib(output, centers, client, listen_port):
         "n_estimators": 10,
         "num_leaves": 10
     }
-
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
 
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
@@ -378,11 +373,6 @@ def test_regressor(output, client, listen_port):
         "num_leaves": 10
     }
 
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
-
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         time_out=5,
@@ -459,11 +449,6 @@ def test_regressor_pred_contrib(output, client, listen_port):
         "num_leaves": 10
     }
 
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
-
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         time_out=5,
@@ -518,11 +503,6 @@ def test_regressor_quantile(output, client, listen_port, alpha):
         "num_leaves": 10
     }
 
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
-
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         local_listen_port=listen_port,
@@ -574,7 +554,7 @@ def test_ranker(output, client, listen_port, group):
             group=group,
         )
 
-    # rebalance small dask.array dataset for better performance.
+    # rebalance small dask.Array dataset for better performance.
     if output == 'array':
         dX = dX.persist()
         dy = dy.persist()
@@ -583,7 +563,7 @@ def test_ranker(output, client, listen_port, group):
         _ = wait([dX, dy, dw, dg])
         client.rebalance()
 
-    # use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
+    # use many trees + leaves to overfit, help ensure that Dask data-parallel strategy matches that of
     # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
     params = {
         "random_state": 42,
@@ -591,11 +571,6 @@ def test_ranker(output, client, listen_port, group):
         "num_leaves": 20,
         "min_child_samples": 1
     }
-
-    if output == 'dataframe-with-categorical':
-        params["categorical_feature"] = [
-            i for i, col in enumerate(dX.columns) if col.startswith('cat_')
-        ]
 
     dask_ranker = lgb.DaskLGBMRanker(
         client=client,
@@ -647,10 +622,10 @@ def test_ranker(output, client, listen_port, group):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
+@pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('eval_sizes', [[0.9], [1, 0.5], [0]])
 @pytest.mark.parametrize('eval_names_prefix', ['specified', None])
-@pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
-def test_early_stopping(task, eval_names_prefix, eval_sizes, client, listen_port):
+def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, client, listen_port):
 
     # use larger number of samples to prevent faux early stopping whereby
     # boosting stops on accident because each worker has few data points and achieves 0 loss.
@@ -732,7 +707,8 @@ def test_early_stopping(task, eval_names_prefix, eval_sizes, client, listen_port
         "num_leaves": 31,
         "min_child_samples": 1,
         "verbose": True,
-        "first_metric_only": True
+        "first_metric_only": True,
+        "local_listen_port": listen_port
     }
 
     dask_model = model_factory(
@@ -802,22 +778,23 @@ def test_early_stopping(task, eval_names_prefix, eval_sizes, client, listen_port
                 assert evals_result_name.startswith('training') or evals_result_name.startswith('valid')
 
             # check that eval_metric(s) are contained in evals_result dicts.
-            for i, eval_metric in enumerate(eval_metrics):
-                assert eval_metric in evals_result[evals_result_name]
+            for i, metric in enumerate(eval_metrics):
+                assert metric in evals_result[evals_result_name]
 
                 # len of each eval_metric should be number of fitted trees + early_stopping_rounds.
-                assert evals_result[evals_result_name][eval_metric] == n_rounds_tried
+                assert len(evals_result[evals_result_name][metric]) == n_rounds_tried
 
                 # stopping decision should have been made based on the best score of the first of eval_metrics.
                 if i == 0:
-                    assert_eq(dask_model.best_score_, min(evals_result[evals_result_name][eval_metric]))
+                    best_score = dask_model.best_score_[evals_result_name][metric]
+                    assert_eq(best_score, min(evals_result[evals_result_name][metric]))
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
+@pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('eval_names_prefix', ['specified', None])
-@pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
-def test_eval_set_without_early_stopping(eval_names_prefix, task, client, listen_port):
+def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen_port):
 
     n_samples = 1000
     n_eval_samples = 500
@@ -905,8 +882,9 @@ def test_eval_set_without_early_stopping(eval_names_prefix, task, client, listen
     # check that early stopping was not applied.
     fitted_trees = dask_model.booster_.num_trees()
     assert fitted_trees == full_trees
+    assert dask_model.best_iteration_ is None
 
-    # check that evals_result contains expected data.
+    # check that evals_result_ contains expected data.
     evals_result = dask_model.evals_result_
     evals_result_name = list(evals_result.keys())[0]
     if eval_names:
@@ -920,7 +898,7 @@ def test_eval_set_without_early_stopping(eval_names_prefix, task, client, listen
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-@pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
+@pytest.mark.parametrize('task', tasks)
 def test_training_works_if_client_not_provided_or_set_after_construction(task, listen_port, client):
     if task == 'ranking':
         _, _, _, _, dX, dy, _, dg = _create_ranking_data(
@@ -996,7 +974,7 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, l
 
 
 @pytest.mark.parametrize('serializer', ['pickle', 'joblib', 'cloudpickle'])
-@pytest.mark.parametrize('task', ['classification', 'regression', 'ranking'])
+@pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('set_client', [True, False])
 def test_model_and_local_version_are_picklable_whether_or_not_client_set_explicitly(serializer, task, set_client, listen_port, tmp_path):
 
@@ -1184,27 +1162,27 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                     assert_eq(preds_orig_local, preds_loaded_model_local)
 
 
-def test_find_open_port_works():
+def test_find_open_port_works(listen_port):
     worker_ip = '127.0.0.1'
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((worker_ip, 12400))
+        s.bind((worker_ip, listen_port))
         new_port = lgb.dask._find_open_port(
             worker_ip=worker_ip,
-            local_listen_port=12400,
+            local_listen_port=listen_port,
             ports_to_skip=set()
         )
-        assert new_port == 12401
+        assert listen_port < new_port < listen_port + 1000
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
-        s_1.bind((worker_ip, 12400))
+        s_1.bind((worker_ip, listen_port))
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_2:
-            s_2.bind((worker_ip, 12401))
+            s_2.bind((worker_ip, listen_port + 1))
             new_port = lgb.dask._find_open_port(
                 worker_ip=worker_ip,
-                local_listen_port=12400,
+                local_listen_port=listen_port,
                 ports_to_skip=set()
             )
-            assert new_port == 12402
+            assert listen_port + 1 < new_port < listen_port + 1000
 
 
 def test_warns_and_continues_on_unrecognized_tree_learner(client):
@@ -1265,6 +1243,72 @@ def test_errors(c, s, a, b):
         assert 'foo' in str(info.value)
 
 
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
+def test_training_succeeds_even_if_some_workers_do_not_have_any_data(client, task, output):
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
+
+    def collection_to_single_partition(collection):
+        """Merge the parts of a Dask collection into a single partition."""
+        if collection is None:
+            return
+        if isinstance(collection, da.Array):
+            return collection.rechunk(*collection.shape)
+        return collection.repartition(npartitions=1)
+
+    if task == 'ranking':
+        X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
+            output=output,
+            group=None
+        )
+        dask_model_factory = lgb.DaskLGBMRanker
+        local_model_factory = lgb.LGBMRanker
+    else:
+        X, y, w, dX, dy, dw = _create_data(
+            objective=task,
+            output=output
+        )
+        g = None
+        dg = None
+        if task == 'classification':
+            dask_model_factory = lgb.DaskLGBMClassifier
+            local_model_factory = lgb.LGBMClassifier
+        elif task == 'regression':
+            dask_model_factory = lgb.DaskLGBMRegressor
+            local_model_factory = lgb.LGBMRegressor
+
+    dX = collection_to_single_partition(dX)
+    dy = collection_to_single_partition(dy)
+    dw = collection_to_single_partition(dw)
+    dg = collection_to_single_partition(dg)
+
+    n_workers = len(client.scheduler_info()['workers'])
+    assert n_workers > 1
+    assert dX.npartitions == 1
+
+    params = {
+        'time_out': 5,
+        'random_state': 42,
+        'num_leaves': 10
+    }
+
+    dask_model = dask_model_factory(tree='data', client=client, **params)
+    dask_model.fit(dX, dy, group=dg, sample_weight=dw)
+    dask_preds = dask_model.predict(dX).compute()
+
+    local_model = local_model_factory(**params)
+    if task == 'ranking':
+        local_model.fit(X, y, group=g, sample_weight=w)
+    else:
+        local_model.fit(X, y, sample_weight=w)
+    local_preds = local_model.predict(X)
+
+    assert assert_eq(dask_preds, local_preds)
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
 @pytest.mark.parametrize(
     "classes",
     [
@@ -1314,3 +1358,36 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
     for param in dask_spec.args:
         error_msg = f"param '{param}' has different default values in the methods"
         assert dask_params[param].default == sklearn_params[param].default, error_msg
+
+
+def sklearn_checks_to_run():
+    check_names = [
+        "check_estimator_get_tags_default_keys",
+        "check_get_params_invariance",
+        "check_set_params"
+    ]
+    for check_name in check_names:
+        check_func = getattr(sklearn_checks, check_name, None)
+        if check_func:
+            yield check_func
+
+
+def _tested_estimators():
+    for Estimator in [lgb.DaskLGBMClassifier, lgb.DaskLGBMRegressor]:
+        yield Estimator()
+
+
+@pytest.mark.parametrize("estimator", _tested_estimators())
+@pytest.mark.parametrize("check", sklearn_checks_to_run())
+def test_sklearn_integration(estimator, check, client):
+    estimator.set_params(local_listen_port=18000, time_out=5)
+    name = type(estimator).__name__
+    check(name, estimator)
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
+# this test is separate because it takes a not-yet-constructed estimator
+@pytest.mark.parametrize("estimator", list(_tested_estimators()))
+def test_parameters_default_constructible(estimator):
+    name, Estimator = estimator.__class__.__name__, estimator.__class__
+    sklearn_checks.check_parameters_default_constructible(name, Estimator)
