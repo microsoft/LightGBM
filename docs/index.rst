@@ -17,7 +17,7 @@ Welcome to LightGBM's documentation!
 - Faster training speed and higher efficiency.
 - Lower memory usage.
 - Better accuracy.
-- Support of parallel and GPU learning.
+- Support of parallel, distributed, and GPU learning.
 - Capable of handling large-scale data.
 
 For more details, please refer to `Features <./Features.rst>`__.
