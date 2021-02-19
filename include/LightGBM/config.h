@@ -200,7 +200,7 @@ struct Config {
   // desc = ``feature``, feature parallel tree learner, aliases: ``feature_parallel``
   // desc = ``data``, data parallel tree learner, aliases: ``data_parallel``
   // desc = ``voting``, voting parallel tree learner, aliases: ``voting_parallel``
-  // desc = refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
+  // desc = refer to `Distributed Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
   std::string tree_learner = "serial";
 
   // alias = num_thread, nthread, nthreads, n_jobs

@@ -77,7 +77,7 @@ Examples
 
 -  `Lambdarank <https://github.com/microsoft/LightGBM/tree/master/examples/lambdarank>`__
 
--  `Parallel Learning <https://github.com/microsoft/LightGBM/tree/master/examples/parallel_learning>`__
+-  `Distributed Learning <https://github.com/microsoft/LightGBM/tree/master/examples/parallel_learning>`__
 
 .. _CSV: https://en.wikipedia.org/wiki/Comma-separated_values
 
