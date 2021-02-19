@@ -1,7 +1,7 @@
 Distributed Learning Guide
 ==========================
 
-.. _Parallel Learning Guid:
+.. _Parallel Learning Guide:
 
 This guide describes distributed learning in LightGBM. Distributed learning allows the use of multiple machines to produce a single model.
 
@@ -10,7 +10,7 @@ Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first
 How Distributed LightGBM Works
 ------------------------------
 
-This section describes how distributed learning in LightGBM works. To learn how to do this in various programming languages and frameworks, please see `Integrations`_.
+This section describes how distributed learning in LightGBM works. To learn how to do this in various programming languages and frameworks, please see `Integrations <#integrations>`_.
 
 Choose Appropriate Parallel Algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -49,7 +49,11 @@ Apache Spark
 
 Apache Spark users can use `MMLSpark`_ for machine learning workflows with LightGBM. This project is not maintained by LightGBM's maintainers.
 
-See `this example`_ and the `the MMLSpark documentation`_ for additional information on using LightGBM on Spark.
+See `this MMLSpark example`_ and the `the MMLSpark documentation`_ for additional information on using LightGBM on Spark.
+
+.. note::
+
+  ``MMLSpark`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/Azure/mmlspark/issues.
 
 Dask
 ^^^^
@@ -66,6 +70,10 @@ Kubeflow
 Kubeflow users can also use the `Kubeflow XGBoost Operator`_ for machine learning workflows with LightGBM. You can see `this example`_ for more details.
 
 Kubeflow integrations for LightGBM are not maintained by LightGBM's maintainers.
+
+.. note::
+
+  The Kubeflow integrations for LightGBM are not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/kubeflow/fairing/issues or https://github.com/kubeflow/xgboost-operator/issues.
 
 .. _Build Parallel Version:
 
@@ -165,7 +173,7 @@ Example
 
 .. _MMLSpark: https://aka.ms/spark
 
-.. _The following example: https://github.com/Azure/mmlspark/blob/master/notebooks/samples/LightGBM%20-%20Quantile%20Regression%20for%20Drug%20Discovery.ipynb
+.. _this MMLSpark example: https://github.com/Azure/mmlspark/blob/master/notebooks/samples/LightGBM%20-%20Quantile%20Regression%20for%20Drug%20Discovery.ipynb
 
 .. _the MMLSpark Documentation: https://github.com/Azure/mmlspark/blob/master/docs/lightgbm.md
 
