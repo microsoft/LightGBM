@@ -649,6 +649,7 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
         )
         model_factory = lgb.DaskLGBMRanker
         eval_metrics = ['ndcg', 'map']
+        eval_at = [5, 10]
         eval_group = []
 
         # create eval* datasets for ranking task.
@@ -677,6 +678,7 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
             chunk_size=10
         )
         dg = None
+        eval_at = None
         eval_group = None
         if task == 'classification':
             model_factory = lgb.DaskLGBMClassifier
@@ -706,7 +708,6 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
         "n_estimators": full_trees,
         "num_leaves": 31,
         "min_child_samples": 1,
-        "verbose": True,
         "first_metric_only": True,
         "local_listen_port": listen_port
     }
@@ -728,7 +729,8 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
                 eval_sample_weight=eval_sample_weight,
                 eval_group=eval_group,
                 eval_metric=eval_metrics,
-                early_stopping_rounds=early_stopping_rounds
+                early_stopping_rounds=early_stopping_rounds,
+                eval_at=eval_at
             )
 
     else:
@@ -741,7 +743,9 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
             eval_sample_weight=eval_sample_weight,
             eval_group=eval_group,
             eval_metric=eval_metrics,
-            early_stopping_rounds=early_stopping_rounds
+            early_stopping_rounds=early_stopping_rounds,
+            eval_at=eval_at,
+            verbose=True
         )
         fitted_trees = dask_model.booster_.num_trees()
         assert fitted_trees < full_trees
@@ -772,13 +776,16 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
         if eval_names:
             assert all(x in eval_names for x in evals_result_names)
 
-        # check that evals_result names still default to "training" or "valid_xx" when eval_names not provided.
+        # check that evals_result names default to "training" or "valid_xx" without eval_names.
         for evals_result_name in evals_result_names:
             if not eval_names:
                 assert evals_result_name.startswith('training') or evals_result_name.startswith('valid')
 
             # check that eval_metric(s) are contained in evals_result dicts.
             for i, metric in enumerate(eval_metrics):
+                if task == 'ranking':
+                    metric += f'@{eval_at[i]}'
+
                 assert metric in evals_result[evals_result_name]
 
                 # len of each eval_metric should be number of fitted trees + early_stopping_rounds.
@@ -810,6 +817,7 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen
         )
         model_factory = lgb.DaskLGBMRanker
         eval_metrics = ['ndcg', 'map']
+        eval_at = [5, 10]
         eval_group = []
 
         # create eval data.
@@ -831,6 +839,7 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen
             chunk_size=10
         )
         dg = None
+        eval_at = None
         eval_group = None
         if task == 'classification':
             model_factory = lgb.DaskLGBMClassifier
@@ -859,7 +868,6 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen
         "n_estimators": full_trees,
         "num_leaves": 31,
         "min_child_samples": 1,
-        "verbose": True
     }
 
     dask_model = model_factory(
@@ -876,7 +884,9 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen
         eval_sample_weight=eval_sample_weight,
         eval_group=eval_group,
         eval_metric=eval_metrics,
-        early_stopping_rounds=None
+        early_stopping_rounds=None,
+        eval_at=eval_at,
+        verbose=True
     )
 
     # check that early stopping was not applied.
@@ -891,8 +901,12 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen
         assert evals_result_name == eval_names[0]
     else:
         assert evals_result_name == 'valid_0'
+
     assert all([metric in evals_result[evals_result_name] for metric in eval_metrics])
     for metric in eval_metrics:
+        if task == 'ranking':
+            metric += f'@{eval_at[i]}'
+
         assert len(evals_result[evals_result_name][metric]) == full_trees
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
