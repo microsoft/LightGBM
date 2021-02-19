@@ -1,7 +1,7 @@
 Parallel Learning Guide
 =======================
 
-This is a guide for parallel learning of LightGBM.
+This guide describes distributed learning in LightGBM. Distributed learning allows the use of multiple machines to produce a single model.
 
 Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first.
 
@@ -20,7 +20,7 @@ Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first
 Choose Appropriate Parallel Algorithm
 -------------------------------------
 
-LightGBM provides 3 parallel learning algorithms now.
+LightGBM provides 3 distributed learning algorithms now.
 
 +--------------------+---------------------------+
 | Parallel Algorithm | How to Use                |
@@ -57,7 +57,7 @@ Preparation
 Socket Version
 ^^^^^^^^^^^^^^
 
-It needs to collect IP of all machines that want to run parallel learning in and allocate one TCP port (assume 12345 here) for all machines,
+It needs to collect IP of all machines that want to run distributed learning in and allocate one TCP port (assume 12345 here) for all machines,
 and change firewall rules to allow income of this port (12345). Then write these IP and ports in one file (assume ``mlist.txt``), like following:
 
 .. code::
@@ -68,7 +68,7 @@ and change firewall rules to allow income of this port (12345). Then write these
 MPI Version
 ^^^^^^^^^^^
 
-It needs to collect IP (or hostname) of all machines that want to run parallel learning in.
+It needs to collect IP (or hostname) of all machines that want to run distributed learning in.
 Then write these IP in one file (assume ``mlist.txt``) like following:
 
 .. code::
@@ -132,7 +132,7 @@ MPI Version
 Example
 ^^^^^^^
 
--  `A simple parallel example`_
+-  `A simple distributed learning example`_
 
 .. _MMLSpark: https://aka.ms/spark
 
@@ -148,4 +148,4 @@ Example
 
 .. _here: https://www.youtube.com/watch?v=iqzXhp5TxUY
 
-.. _A simple parallel example: https://github.com/microsoft/lightgbm/tree/master/examples/parallel_learning
+.. _A simple distributed learning example: https://github.com/microsoft/lightgbm/tree/master/examples/parallel_learning

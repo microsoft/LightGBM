@@ -1,4 +1,4 @@
-OPTION(USE_MPI "Enable MPI-based parallel learning" OFF)
+OPTION(USE_MPI "Enable MPI-based distributed learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-accelerated training" OFF)
 OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)

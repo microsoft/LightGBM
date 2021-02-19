@@ -2333,7 +2333,7 @@ class Booster:
         listen_time_out : int, optional (default=120)
             Socket time-out in minutes.
         num_machines : int, optional (default=1)
-            The number of machines for parallel learning application.
+            The number of machines for distributed learning application.
 
         Returns
         -------
