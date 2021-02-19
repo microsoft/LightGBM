@@ -22,7 +22,7 @@ Metadata::Metadata() {
 
 void Metadata::Init(const char* data_filename) {
   data_filename_ = data_filename;
-  // for lambdarank, it needs query data for partition data in distributed learning
+  // for lambdarank, it needs query data for partition data in parallel learning
   LoadQueryBoundaries();
   LoadWeights();
   LoadQueryWeights();
@@ -187,7 +187,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     }
   } else {
     if (!queries_.empty()) {
-      Log::Fatal("Cannot used query_id for distributed training");
+      Log::Fatal("Cannot used query_id for parallel training");
     }
     data_size_t num_used_data = static_cast<data_size_t>(used_data_indices.size());
     // check weights

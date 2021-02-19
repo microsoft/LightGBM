@@ -200,7 +200,7 @@ struct Config {
   // desc = ``feature``, feature parallel tree learner, aliases: ``feature_parallel``
   // desc = ``data``, data parallel tree learner, aliases: ``data_parallel``
   // desc = ``voting``, voting parallel tree learner, aliases: ``voting_parallel``
-  // desc = refer to `Distributed Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
+  // desc = refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
   std::string tree_learner = "serial";
 
   // alias = num_thread, nthread, nthreads, n_jobs
@@ -209,7 +209,7 @@ struct Config {
   // desc = for the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPUs use `hyper-threading <https://en.wikipedia.org/wiki/Hyper-threading>`__ to generate 2 threads per CPU core)
   // desc = do not set it too large if your dataset is small (for instance, do not use 64 threads for a dataset with 10,000 rows)
   // desc = be aware a task manager or any similar CPU monitoring tool might report that cores not being fully utilized. **This is normal**
-  // desc = for distributed learning, do not use all CPU cores because this will cause poor performance for the network communication
+  // desc = for parallel learning, do not use all CPU cores because this will cause poor performance for the network communication
   // desc = **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
   int num_threads = 0;
 
@@ -634,7 +634,7 @@ struct Config {
   bool feature_pre_filter = true;
 
   // alias = is_pre_partition
-  // desc = used for distributed learning (excluding the ``feature_parallel`` mode)
+  // desc = used for parallel learning (excluding the ``feature_parallel`` mode)
   // desc = ``true`` if training data are pre-partitioned, and different machines use different partitions
   bool pre_partition = false;
 
@@ -961,7 +961,7 @@ struct Config {
 
   // check = >0
   // alias = num_machine
-  // desc = the number of machines for distributed learning application
+  // desc = the number of machines for parallel learning application
   // desc = this parameter is needed to be set in both **socket** and **mpi** versions
   int num_machines = 1;
 
@@ -976,7 +976,7 @@ struct Config {
   int time_out = 120;
 
   // alias = machine_list_file, machine_list, mlist
-  // desc = path of file that lists machines for this distributed learning application
+  // desc = path of file that lists machines for this parallel learning application
   // desc = each line contains one IP and one port for one machine. The format is ``ip port`` (space as a separator)
   // desc = **Note**: can be used only in CLI version
   std::string machine_list_filename = "";
