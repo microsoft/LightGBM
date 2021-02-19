@@ -712,8 +712,8 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
     }
 
     dask_model = model_factory(
-        client=client
-        , **params
+        client=client,
+        **params
     )
 
     # when eval_size is exactly 1 partition, not enough eval_set data to reach each worker.
@@ -863,8 +863,8 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen
     }
 
     dask_model = model_factory(
-        client=client
-        , **params
+        client=client,
+        **params
     )
 
     dask_model = dask_model.fit(
