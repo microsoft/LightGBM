@@ -49,7 +49,7 @@ Apache Spark
 
 Apache Spark users can use `MMLSpark`_ for machine learning workflows with LightGBM. This project is not maintained by LightGBM's maintainers.
 
-See `this MMLSpark example`_ and the `the MMLSpark documentation`_ for additional information on using LightGBM on Spark.
+See `this MMLSpark example`_ and `the MMLSpark documentation`_ for additional information on using LightGBM on Spark.
 
 .. note::
 
@@ -85,7 +85,7 @@ Preparation
 
 By default, distributed learning with LightGBM uses socket-based communication.
 
-If you need to build parallel version with MPI support, please refer to `Installation Guide <./Installation-Guide.rst#build-mpi-version>`__.
+If you need to build distributed version with MPI support, please refer to `Installation Guide <./Installation-Guide.rst#build-mpi-version>`__.
 
 Socket Version
 **************
