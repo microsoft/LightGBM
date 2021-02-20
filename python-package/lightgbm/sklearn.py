@@ -201,13 +201,13 @@ _lgbmmodel_doc_fit = (
         A list of (X, y) tuple pairs to use as validation sets.
     eval_names : list of strings or None, optional (default=None)
         Names of eval_set.
-    eval_sample_weight : list of arrays or None, optional (default=None)
+    eval_sample_weight : {eval_sample_weight_shape}
         Weights of eval data.
     eval_class_weight : list or None, optional (default=None)
         Class weights of eval data.
-    eval_init_score : list of arrays or None, optional (default=None)
+    eval_init_score : {eval_init_score_shape}
         Init score of eval data.
-    eval_group : list of arrays or None, optional (default=None)
+    eval_group : {eval_group_shape}
         Group data of eval data.
     eval_metric : string, callable, list or None, optional (default=None)
         If string, it should be a built-in evaluation metric to use.
@@ -706,7 +706,10 @@ class LGBMModel(_LGBMModelBase):
         X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
         y_shape="array-like of shape = [n_samples]",
         sample_weight_shape="array-like of shape = [n_samples] or None, optional (default=None)",
-        group_shape="array-like or None, optional (default=None)"
+        group_shape="array-like or None, optional (default=None)",
+        eval_sample_weight_shape="list of arrays or None, optional (default=None)",
+        eval_init_score_shape="list of arrays or None, optional (default=None)",
+        eval_group_shape="list of arrays or None, optional (default=None)"
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
 
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,

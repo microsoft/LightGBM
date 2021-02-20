@@ -822,7 +822,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
-        not_supported = ['init_score', 'eval_init_score', 'eval_class_weight']
+        not_supported = ['init_score', 'eval_class_weight', 'eval_init_score']
         for ns in not_supported:
             if eval(ns) is not None:
                 raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
@@ -847,12 +847,18 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        eval_sample_weight_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
+        eval_init_score_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
+        eval_group_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)'
     )
 
-    # DaskLGBMClassifier does not support init_score, evaluation data, or early stopping
+    # DaskLGBMClassifier does not support init_score, eval_class_weight, or eval_init_score
     _base_doc = (_base_doc[:_base_doc.find('init_score :')]
-                 + _base_doc[_base_doc.find('verbose :'):])
+                 + _base_doc[_base_doc.find('init_score :'):])
+
+    _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
+                 + _base_doc[_base_doc.find('eval_init_score :'):])
 
     # DaskLGBMClassifier support for callbacks and init_model is not tested
     fit.__doc__ = (
@@ -987,14 +993,13 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskCollection]] = None,
-        eval_class_weight: Optional[List[_DaskCollection]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
         eval_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        not_supported = ['init_score', 'eval_init_score', 'eval_class_weight']
+        not_supported = ['init_score', 'eval_init_score']
         for ns in not_supported:
             if eval(ns) is not None:
                 raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
@@ -1019,12 +1024,18 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        eval_sample_weight_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
+        eval_init_score_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
+        eval_group_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)'
     )
 
-    # DaskLGBMRegressor does not support init_score, evaluation data, or early stopping
+    # DaskLGBMRegressor does not support init_score or eval_init_score
     _base_doc = (_base_doc[:_base_doc.find('init_score :')]
-                 + _base_doc[_base_doc.find('verbose :'):])
+                 + _base_doc[_base_doc.find('init_score :'):])
+
+    _base_doc = (_base_doc[:_base_doc.find('eval_init_weight :')]
+                 + _base_doc[_base_doc.find('eval_init_score :'):])
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
     fit.__doc__ = (
@@ -1179,15 +1190,18 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        eval_sample_weight_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
+        eval_init_score_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
+        eval_group_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)'
     )
 
-    # DaskLGBMRanker does not support init_score, evaluation data, or early stopping
+    # DaskLGBMRanker does not support init_score or eval_init_score.
     _base_doc = (_base_doc[:_base_doc.find('init_score :')]
                  + _base_doc[_base_doc.find('init_score :'):])
 
-    _base_doc = (_base_doc[:_base_doc.find('eval_set :')]
-                 + _base_doc[_base_doc.find('verbose :'):])
+    _base_doc = (_base_doc[:_base_doc.find('eval_init_score :')]
+                 + _base_doc[_base_doc.find('eval_init_score :'):])
 
     # DaskLGBMRanker support for callbacks and init_model is not tested
     fit.__doc__ = (
