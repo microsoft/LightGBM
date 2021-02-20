@@ -631,7 +631,7 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
     # boosting stops on accident because each worker has few data points and achieves 0 loss.
     n_samples = 1000
     n_eval_sets = len(eval_sizes)
-    early_stopping_rounds = 1
+    early_stopping_rounds = 5
     eval_set = []
     eval_sample_weight = []
 
@@ -660,12 +660,15 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
                 dw_e = dw
                 dg_e = dg
             else:
-                _, _, _, _, dX_e, dy_e, dw_e, dg_e = _create_ranking_data(
+                _, _, _, _, dX_e, dy_e, _, dg_e = _create_ranking_data(
                     n_samples=max(10, int(n_samples * eval_size)),
                     output='dataframe',
                     chunk_size=10,
                     random_gs=True
                 )
+                # Do not use separate set of random sample weights for eval set, as this will
+                # prevent random validation set from being useful for early stopping.
+                dw_e = None
 
             eval_set.append((dX_e, dy_e))
             eval_sample_weight.append(dw_e)
@@ -694,12 +697,14 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
                 dy_e = dy
                 dw_e = dw
             else:
-                _, _, _, dX_e, dy_e, dw_e = _create_data(
+                _, _, _, dX_e, dy_e, _ = _create_data(
                     n_samples=max(10, int(n_samples * eval_size)),
                     objective=task,
                     output='array',
                     chunk_size=10
                 )
+                dw_e = None
+
             eval_set.append((dX_e, dy_e))
             eval_sample_weight.append(dw_e)
 
@@ -807,10 +812,9 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen
     n_samples = 1000
     n_eval_samples = 500
     eval_set = []
-    eval_sample_weight = []
 
     if task == 'ranking':
-        X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
+        _, _, _, _, dX, dy, _, dg = _create_ranking_data(
             n_samples=n_samples,
             output='dataframe',
             chunk_size=10,
@@ -822,18 +826,17 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen
         eval_group = []
 
         # create eval data.
-        _, _, _, _, dX_e, dy_e, dw_e, dg_e = _create_ranking_data(
+        _, _, _, _, dX_e, dy_e, _, dg_e = _create_ranking_data(
             n_samples=n_eval_samples,
             output='dataframe',
             chunk_size=10,
             random_gs=True
         )
         eval_set.append((dX_e, dy_e))
-        eval_sample_weight.append(dw_e)
         eval_group.append(dg_e)
 
     else:
-        X, y, w, dX, dy, dw = _create_data(
+        _, _, _, dX, dy, _ = _create_data(
             n_samples=n_samples,
             objective=task,
             output='array',
@@ -849,14 +852,13 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen
             model_factory = lgb.DaskLGBMRegressor
             eval_metrics = ['l2', 'l1']
 
-        _, _, _, dX_e, dy_e, dw_e = _create_data(
+        _, _, _, dX_e, dy_e, _ = _create_data(
             n_samples=n_eval_samples,
             objective=task,
             output='array',
             chunk_size=10
         )
         eval_set.append((dX_e, dy_e))
-        eval_sample_weight.append(dw_e)
 
     if eval_names_prefix:
         eval_names = [eval_names_prefix + f'_{i}' for i in range(len(eval_set))]
@@ -882,7 +884,6 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen
         group=dg,
         eval_set=eval_set,
         eval_names=eval_names,
-        eval_sample_weight=eval_sample_weight,
         eval_group=eval_group,
         eval_metric=eval_metrics,
         early_stopping_rounds=None,
