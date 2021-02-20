@@ -10,6 +10,11 @@
  * Some tests require visual assessment.
  * We should move this to googletest/Catch2 in the future
  * and get rid of the tests that require visual checks.
+ *
+ * To test use: `g++ -o t test_ChunkedArray_manually.cpp && ./t`
+ *
+ * The program should exit without errors. The outputs can be useful to
+ * debug memory layout issues.
  */
 
 #include <stdio.h>
