@@ -6,10 +6,10 @@
  * and get rid of the tests that require visual checks.
  */
 
-#include <iostream>
-#include <sstream>
 #include <stdio.h>
 #include <assert.h>
+#include <iostream>
+#include <sstream>
 
 #include "ChunkedArray.hpp"
 using namespace std;
@@ -28,7 +28,7 @@ size_t _get_merged_array_size(ChunkedArray<T> &ca) {
         return 0;
     } else {
         size_t prior_chunks_total_size = (ca.get_chunks_count() - 1) * ca.get_chunk_size();
-        return prior_chunks_total_size + ca.get_current_chunk_added_count();
+        return prior_chunks_total_size + ca.get_last_chunk_add_count();
     }
 }
 
@@ -38,10 +38,9 @@ void print_container_stats(ChunkedArray<T> &ca) {
            " > Should result in single array of size %ld.\n\n",
         ca.get_chunks_count(),
         ca.get_chunk_size(),
-        ca.get_current_chunk_added_count(),
+        ca.get_last_chunk_add_count(),
         ca.get_add_count(),
-        _get_merged_array_size(ca)
-    );
+        _get_merged_array_size(ca));
 }
 
 template <typename T>
@@ -124,8 +123,8 @@ void test_data_layout(ChunkedArray<T> &ca, const std::vector<T> &ref, bool data_
         ss_ref << ref[i] << " ";
     }
 
-    _print_chunked_data(ca, data, ss); // Dump chunked data to this same string format.
-    assert (ss_ref.str() == ss.str());
+    _print_chunked_data(ca, data, ss);  // Dump chunked data to this same string format.
+    assert(ss_ref.str() == ss.str());
 }
 
 /**
@@ -135,26 +134,26 @@ void test_clear() {
     // Set-up with some data
     const std::vector<int> ref2 = {1, 2, 5, -1};
     ChunkedArray<int> ca = ChunkedArray<int>(chunk_size);
-    for (auto v: ref) {
+    for (auto v : ref) {
         ca.add(v);
     }
-    test_coalesce_to(ca, ref); // Should have the same contents.
+    test_coalesce_to(ca, ref);  // Should have the same contents.
 
     // Clear & re-use:
     ca.clear();
-    for (auto v: ref2) {
-        ca.add(v); // Fill with new contents.
+    for (auto v : ref2) {
+        ca.add(v);  // Fill with new contents.
     }
 
     // Ensure it still works:
-    test_coalesce_to(ca, ref2); // Should match the new reference content.
+    test_coalesce_to(ca, ref2);  // Should match the new reference content.
 }
 
 int main() {
     // Initialize test variables. ////////////////////////////////////////////////////
     ChunkedArray<int> ca = ChunkedArray<int>(chunk_size);
-    for (auto v: ref) {
-        ca.add(v); // Indirectly test insertions through the retrieval tests.
+    for (auto v : ref) {
+        ca.add(v);  // Indirectly test insertions through the retrieval tests.
     }
 
     // Tests /////////////////////////////////////////////////////////////////////////
@@ -173,7 +172,7 @@ int main() {
     print_ChunkedArray_contents(ca);
     print_data<int>(ca);
     print_void_data<int>(ca);
-    ca.release(); ca.release(); print_container_stats(ca); // Check double free behaviour.
+    ca.release(); ca.release(); print_container_stats(ca);  // Check double free behaviour.
     cout << "Done!" << endl;
     return 0;
 }

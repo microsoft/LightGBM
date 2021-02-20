@@ -1,12 +1,13 @@
 #ifndef __CHUNKED_ARRAY_H__
 #define __CHUNKED_ARRAY_H__
 
+#include <stdint.h>
+#include <assert.h>
+
 #include <new>
 #include <vector>
 #include <algorithm>
 
-#include <stdint.h>
-#include <assert.h>
 
 /**
  * Container that manages a dynamic array of fixed-length chunks.
@@ -15,7 +16,7 @@
  * memory. It can be used with either a high or low-level API.
  *
  * The high-level API allocates chunks as needed, manages addresses automatically and keeps
- * track of number of inserted elements, but is not thread-safe (ok as usually input is a streaming iterator).
+ * track of number of inserted elements, but is not thread-safe (this is ok as usually input is a streaming iterator).
  * For parallel input sources the low-level API must be used.
  *
  * Note: When using this for `LGBM_DatasetCreateFromMats` use a
@@ -48,47 +49,60 @@
  *
  */
 template <class T>
-class ChunkedArray
-{
+class ChunkedArray {
   public:
     ChunkedArray(size_t chunk_size)
-      : _chunk_size(chunk_size), _current_chunks_idx(0), _current_chunk_idx(0)
-    {
+      : _chunk_size(chunk_size), _last_chunk_idx(0), _last_idx_in_last_chunk(0) {
        new_chunk();
     }
 
-    ~ChunkedArray()
-    {
+    ~ChunkedArray() {
         release();
     }
 
     /**
      * Adds a value to the chunks sequentially.
      * If the last chunk is full it creates a new one and appends to it.
+     *
+     * @param value value to insert.
      */
     void add(T value) {
-        if (! within_bounds(_current_chunks_idx, _current_chunk_idx)) {
+        if (!within_bounds(_last_chunk_idx, _last_idx_in_last_chunk)) {
             new_chunk();
-            _current_chunks_idx += 1;
-            _current_chunk_idx = 0;
+            ++_last_chunk_idx;
+            _last_idx_in_last_chunk = 0;
         }
 
-        assert (setitem(_current_chunks_idx, _current_chunk_idx, value) == 0);
-        _current_chunk_idx += 1;
+        assert (setitem(_last_chunk_idx, _last_idx_in_last_chunk, value) == 0);
+        ++_last_idx_in_last_chunk;
     }
 
+    /**
+     * @return Number of add() calls.
+     */
     size_t get_add_count() const {
-        return _current_chunks_idx * _chunk_size + _current_chunk_idx;
+        return _last_chunk_idx * _chunk_size + _last_idx_in_last_chunk;
     }
 
+    /**
+     * @return Number of allocated chunks.
+     */
     size_t get_chunks_count() const {
         return _chunks.size();
     }
 
-    size_t get_current_chunk_added_count() const {
-        return _current_chunk_idx;
+    /**
+     * @return Number of elemends add()'ed in the last chunk.
+     */
+    size_t get_last_chunk_add_count() const {
+        return _last_idx_in_last_chunk;
     }
 
+    /**
+     * Getter for the chunk size set at the constructor.
+     *
+     * @return Return the size of chunks.
+     */
     size_t get_chunk_size() const {
         return _chunk_size;
     }
@@ -98,8 +112,7 @@ class ChunkedArray
      *
      * @return T** pointer to raw data.
      */
-    T **data() noexcept
-    {
+    T **data() noexcept {
         return _chunks.data();
     }
 
@@ -109,14 +122,15 @@ class ChunkedArray
      *
      * @return void** pointer to raw data.
      */
-    void **data_as_void() noexcept
-    {
+    void **data_as_void() noexcept {
         return reinterpret_cast<void**>(_chunks.data());
     }
 
     /**
-     * Coalesces (copies chunked data) to an array of the same type.
+     * Coalesces (copies chunked data) to a contiguous array of the same type.
      * It assumes that ``other`` has enough space to receive that data.
+     *
+     * @param other array with elements T of size >= this->get_add_count().
      */
     void coalesce_to(T *other) const {
         if (this->empty()) {
@@ -134,7 +148,7 @@ class ChunkedArray
             }
         }
         // Copy filled values from last chunk only:
-        const size_t last_chunk_elems = this->get_current_chunk_added_count();
+        const size_t last_chunk_elems = this->get_last_chunk_add_count();
         T* chunk_ptr = _chunks[full_chunks];
         for(size_t chunk_pos = 0; chunk_pos < last_chunk_elems; ++chunk_pos) {
             other[i++] = chunk_ptr[chunk_pos];
@@ -144,33 +158,32 @@ class ChunkedArray
     /**
      * Return value from array of chunks.
      *
-     * @param chunks_index index of the chunk
+     * @param chunk_index index of the chunk
      * @param index index within chunk
      * @param on_fail_value sentinel value. If out of bounds returns that value.
      *
      * @return pointer or nullptr if index is out of bounds.
      */
-    T getitem(size_t chunks_index, size_t index, T on_fail_value) noexcept
-    {
-        if (within_bounds(chunks_index, index))
-            return _chunks[chunks_index][index];
+    T getitem(size_t chunk_index, size_t index_within_chunk, T on_fail_value) noexcept {
+        if (within_bounds(chunk_index, index_within_chunk))
+            return _chunks[chunk_index][index_within_chunk];
         else
             return on_fail_value;
     }
 
     /**
+     * Sets the value at a specific address in one of the chunks.
      *
-     * @param chunks_index index of the chunk
-     * @param index index within chunk
+     * @param chunk_index index of the chunk
+     * @param index_within_chunk index within chunk
      * @param value value to store
      *
      * @return 0 = success, -1 = out of bounds access.
      */
-    int setitem(size_t chunks_index, size_t index, T value) noexcept
-    {
-        if (within_bounds(chunks_index, index))
+    int setitem(size_t chunk_index, size_t index_within_chunk, T value) noexcept {
+        if (within_bounds(chunk_index, index_within_chunk))
         {
-            _chunks[chunks_index][index] = value;
+            _chunks[chunk_index][index_within_chunk] = value;
             return 0;
         } else {
             return -1;
@@ -181,8 +194,7 @@ class ChunkedArray
      * To reset storage call this.
      * Will release existing resources and prepare for reuse.
      */
-    void clear() noexcept
-    {
+    void clear() noexcept {
         release();
         new_chunk();
     }
@@ -190,51 +202,54 @@ class ChunkedArray
     /**
      * Returns true if is empty.
      */
-    bool empty() const noexcept
-    {
-        return get_current_chunk_added_count() == 0;
+    bool empty() const noexcept {
+        return get_last_chunk_add_count() == 0;
     }
 
     /**
      * Deletes all the allocated chunks.
      * Do not use container after this! See ``clear()`` instead.
      */
-    void release() noexcept
-    {
+    void release() noexcept {
         std::for_each(_chunks.begin(), _chunks.end(), [](T* c) { delete[] c; });
         _chunks.clear();
         _chunks.shrink_to_fit();
-        _current_chunks_idx = 0;
-        _current_chunk_idx = 0;
+        _last_chunk_idx = 0;
+        _last_idx_in_last_chunk = 0;
     }
 
-    inline bool within_bounds(size_t chunks_index, size_t index) {
-        return (chunks_index < _chunks.size()) && (index < _chunk_size);
+    /**
+     * As the array is dynamic, checks whether a given address is currently within bounds.
+     *
+     * @param chunk_index index of the chunk
+     * @param index_within_chunk index within that chunk
+     * @return true if that chunk is already allocated and index_within_chunk < chunk size.
+     */
+    inline bool within_bounds(size_t chunk_index, size_t index_within_chunk) {
+        return (chunk_index < _chunks.size()) && (index_within_chunk < _chunk_size);
     }
 
     /**
      * Adds a new chunk to the array of chunks. Not thread-safe.
      */
-    void new_chunk()
-    {
+    void new_chunk() {
         _chunks.push_back(new (std::nothrow) T[_chunk_size]);
 
         // Check memory allocation success:
-        if (! _chunks[_chunks.size()-1]) {
+        if (!_chunks[_chunks.size()-1]) {
             release();
-            throw std::bad_alloc();
+            throw std::bad_alloc("Couldn't add more chunks to ChunkedArray. Released memory!");
         }
     }
 
   private:
-
     const size_t _chunk_size;
     std::vector<T*> _chunks;
 
-    // For add() interface & some of the get_*() queries:
-    size_t _current_chunks_idx; //<! Index of chunks
-    size_t _current_chunk_idx;  //<! Index within chunk
+    // For the add() interface & some of the get_*() queries:
+    size_t _last_chunk_idx;  //<! Index of chunks
+    size_t _last_idx_in_last_chunk;  //<! Index within chunk
 };
 
 
-#endif // __CHUNKED_ARRAY_H__
+#endif  // __CHUNKED_ARRAY_H__
