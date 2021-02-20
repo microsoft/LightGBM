@@ -10,7 +10,7 @@ Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first
 How Distributed LightGBM Works
 ------------------------------
 
-This section describes how distributed learning in LightGBM works. To learn how to do this in various programming languages and frameworks, please see `Integrations <#integrations>`_.
+This section describes how distributed learning in LightGBM works. To learn how to do this in various programming languages and frameworks, please see `Integrations <#integrations>`__.
 
 Choose Appropriate Parallel Algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
