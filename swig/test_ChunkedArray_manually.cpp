@@ -1,3 +1,9 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ *
+ * Author: Alberto Ferreira
+ */
 /**
  * Tests for ChunkedArray.
  *
@@ -12,18 +18,19 @@
 #include <sstream>
 
 #include "ChunkedArray.hpp"
-using namespace std;
+using std::cout;
+using std::endl;
 
-using intChunkedArray=ChunkedArray<int>;
+using intChunkedArray = ChunkedArray<int>;
 using doubleChunkedArray = ChunkedArray<double>;
 
 // Test data
-const int out_of_bounds = 4; // test get outside bounds.
+const int out_of_bounds = 4;  // test get outside bounds.
 const size_t chunk_size = 3;
 const std::vector<int> ref = {1, 2, 3, 4, 5, 6, 7};
 
 template<class T>
-size_t _get_merged_array_size(ChunkedArray<T> &ca) {
+size_t _get_merged_array_size(const ChunkedArray<T> &ca) {
     if (ca.empty()) {
         return 0;
     } else {
@@ -33,7 +40,7 @@ size_t _get_merged_array_size(ChunkedArray<T> &ca) {
 }
 
 template<class T>
-void print_container_stats(ChunkedArray<T> &ca) {
+void print_container_stats(const ChunkedArray<T> &ca) {
     printf("\n\nContainer stats: %ld chunks of size %ld with %ld item(s) on last chunk (#elements=%ld).\n"
            " > Should result in single array of size %ld.\n\n",
         ca.get_chunks_count(),
@@ -44,7 +51,7 @@ void print_container_stats(ChunkedArray<T> &ca) {
 }
 
 template <typename T>
-void _print_chunked_data(ChunkedArray<T> &x, T** data, std::ostream &o = std::cout) {
+void _print_chunked_data(const ChunkedArray<T> &x, T** data, std::ostream &o = std::cout) {
   int chunk = 0;
   int pos = 0;
 
@@ -61,27 +68,26 @@ void _print_chunked_data(ChunkedArray<T> &x, T** data, std::ostream &o = std::co
 }
 
 template <typename T>
-void print_data(ChunkedArray<T> &x) {
-  T **data = x.data();
+void print_data(ChunkedArray<T> *x) {
+  T **data = x->data();
   cout << "Printing from T** data(): \n";
-  _print_chunked_data(x, data);
+  _print_chunked_data(*x, data);
   cout << "\n^ Print complete ^\n";
 }
 
 template <typename T>
-void print_void_data(ChunkedArray<T> &x) {
-  T **data = reinterpret_cast<T**>(x.data_as_void());
+void print_void_data(ChunkedArray<T> *x) {
+  T **data = reinterpret_cast<T**>(x->data_as_void());
   cout << "Printing from reinterpret_cast<T**>(data_as_void()):\n";
-  _print_chunked_data(x, data);
+  _print_chunked_data(*x, data);
   cout << "\n^ Print complete ^\n";
 }
 
 template <typename T>
-void print_ChunkedArray_contents(ChunkedArray<T> &ca) {
+void print_ChunkedArray_contents(const ChunkedArray<T> &ca) {
     int chunk = 0;
     int pos = 0;
     for (int i = 0; i < ca.get_add_count() + out_of_bounds; ++i) {
-
         bool within_added = i < ca.get_add_count();
         bool within_bounds = ca.within_bounds(chunk, pos);
         cout << "@(" << chunk << "," << pos << ") = " << ca.getitem(chunk, pos, 10)
@@ -113,7 +119,7 @@ void test_coalesce_to(const intChunkedArray &ca, const std::vector<int> &ref) {
  * that the data was stored correctly and with the correct memory layout.
  */
 template <typename T>
-void test_data_layout(ChunkedArray<T> &ca, const std::vector<T> &ref, bool data_as_void) {
+void test_data_layout(ChunkedArray<T> *ca, const std::vector<T> &ref, bool data_as_void) {
     std::stringstream ss, ss_ref;
     T **data = data_as_void? reinterpret_cast<T**>(ca.data_as_void()) : ca.data();
     // Dump each chunk represented by a line with elements split by space:
@@ -162,16 +168,16 @@ int main() {
     test_coalesce_to(ca, ref);
 
     // Test chunked data layout for retrieval:
-    test_data_layout<int>(ca, ref, false);
-    test_data_layout<int>(ca, ref, true);
+    test_data_layout<int>(&ca, ref, false);
+    test_data_layout<int>(&ca, ref, true);
 
     test_clear();
 
     // For manual verification - useful outputs //////////////////////////////////////
     print_container_stats(ca);
     print_ChunkedArray_contents(ca);
-    print_data<int>(ca);
-    print_void_data<int>(ca);
+    print_data<int>(&ca);
+    print_void_data<int>(&ca);
     ca.release(); ca.release(); print_container_stats(ca);  // Check double free behaviour.
     cout << "Done!" << endl;
     return 0;

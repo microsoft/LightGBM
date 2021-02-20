@@ -1,3 +1,9 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ *
+ * Author: Alberto Ferreira
+ */
 #ifndef __CHUNKED_ARRAY_H__
 #define __CHUNKED_ARRAY_H__
 
@@ -50,8 +56,8 @@
  */
 template <class T>
 class ChunkedArray {
-  public:
-    ChunkedArray(size_t chunk_size)
+ public:
+    explicit ChunkedArray(size_t chunk_size)
       : _chunk_size(chunk_size), _last_chunk_idx(0), _last_idx_in_last_chunk(0) {
        new_chunk();
     }
@@ -73,7 +79,7 @@ class ChunkedArray {
             _last_idx_in_last_chunk = 0;
         }
 
-        assert (setitem(_last_chunk_idx, _last_idx_in_last_chunk, value) == 0);
+        assert(setitem(_last_chunk_idx, _last_idx_in_last_chunk, value) == 0);
         ++_last_idx_in_last_chunk;
     }
 
@@ -141,16 +147,16 @@ class ChunkedArray {
 
         // Copy full chunks:
         size_t i = 0;
-        for(size_t chunk = 0; chunk < full_chunks; ++chunk) {
+        for (size_t chunk = 0; chunk < full_chunks; ++chunk) {
             T* chunk_ptr = _chunks[chunk];
-            for(size_t chunk_pos = 0; chunk_pos < _chunk_size; ++chunk_pos) {
+            for (size_t chunk_pos = 0; chunk_pos < _chunk_size; ++chunk_pos) {
                 other[i++] = chunk_ptr[chunk_pos];
             }
         }
         // Copy filled values from last chunk only:
         const size_t last_chunk_elems = this->get_last_chunk_add_count();
         T* chunk_ptr = _chunks[full_chunks];
-        for(size_t chunk_pos = 0; chunk_pos < last_chunk_elems; ++chunk_pos) {
+        for (size_t chunk_pos = 0; chunk_pos < last_chunk_elems; ++chunk_pos) {
             other[i++] = chunk_ptr[chunk_pos];
         }
     }
@@ -164,7 +170,7 @@ class ChunkedArray {
      *
      * @return pointer or nullptr if index is out of bounds.
      */
-    T getitem(size_t chunk_index, size_t index_within_chunk, T on_fail_value) noexcept {
+    T getitem(size_t chunk_index, size_t index_within_chunk, T on_fail_value) const noexcept {
         if (within_bounds(chunk_index, index_within_chunk))
             return _chunks[chunk_index][index_within_chunk];
         else
@@ -181,8 +187,7 @@ class ChunkedArray {
      * @return 0 = success, -1 = out of bounds access.
      */
     int setitem(size_t chunk_index, size_t index_within_chunk, T value) noexcept {
-        if (within_bounds(chunk_index, index_within_chunk))
-        {
+        if (within_bounds(chunk_index, index_within_chunk)) {
             _chunks[chunk_index][index_within_chunk] = value;
             return 0;
         } else {
@@ -225,7 +230,7 @@ class ChunkedArray {
      * @param index_within_chunk index within that chunk
      * @return true if that chunk is already allocated and index_within_chunk < chunk size.
      */
-    inline bool within_bounds(size_t chunk_index, size_t index_within_chunk) {
+    inline bool within_bounds(size_t chunk_index, size_t index_within_chunk) const {
         return (chunk_index < _chunks.size()) && (index_within_chunk < _chunk_size);
     }
 
@@ -238,11 +243,11 @@ class ChunkedArray {
         // Check memory allocation success:
         if (!_chunks[_chunks.size()-1]) {
             release();
-            throw std::bad_alloc("Couldn't add more chunks to ChunkedArray. Released memory!");
+            throw std::bad_alloc();
         }
     }
 
-  private:
+ private:
     const size_t _chunk_size;
     std::vector<T*> _chunks;
 
