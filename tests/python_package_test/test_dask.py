@@ -59,10 +59,13 @@ def listen_port():
 listen_port.port = 13000
 
 
-def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs):
+def _create_ranking_data(n_samples=100, output='array', chunk_size=50, random_weights=True, **kwargs):
     X, y, g = make_ranking(n_samples=n_samples, random_state=42, **kwargs)
     rnd = np.random.RandomState(42)
-    w = rnd.rand(X.shape[0]) * 0.01
+    w = rnd.random(X.shape[0]) * 0.01
+    if not random_weights:
+        w = np.ones([X.shape[0]])
+
     g_rle = np.array([len(list(grp)) for _, grp in groupby(g)])
 
     if output.startswith('dataframe'):
@@ -115,15 +118,20 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
     return X, y, w, g_rle, dX, dy, dw, dg
 
 
-def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size=50):
+def _create_data(objective, n_samples=100, n_features=None, centers=2, output='array', chunk_size=50, random_weights=True):
     if objective == 'classification':
-        X, y = make_blobs(n_samples=n_samples, centers=centers, random_state=42)
+        n_features = n_features if n_features else 2
+        X, y = make_blobs(n_samples=n_samples, n_features=n_features, centers=centers, random_state=42)
     elif objective == 'regression':
-        X, y = make_regression(n_samples=n_samples, random_state=42)
+        n_features = n_features if n_features else 100
+        X, y = make_regression(n_samples=n_samples, n_features=n_features, random_state=42)
     else:
         raise ValueError("Unknown objective '%s'" % objective)
     rnd = np.random.RandomState(42)
+
     weights = rnd.random(X.shape[0]) * 0.01
+    if not random_weights:
+        weights = np.ones([X.shape[0]])
 
     if output == 'array':
         dX = da.from_array(X, (chunk_size, X.shape[1]))
@@ -630,8 +638,9 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
     # use larger number of samples to prevent faux early stopping whereby
     # boosting stops on accident because each worker has few data points and achieves 0 loss.
     n_samples = 1000
+    n_features = 10
     n_eval_sets = len(eval_sizes)
-    early_stopping_rounds = 5
+    early_stopping_rounds = 1
     eval_set = []
     eval_sample_weight = []
 
@@ -641,14 +650,19 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
         eval_names = None
 
     if task == 'ranking':
+        # Do not use random sample weights for eval set, as this will
+        # prevent random validation set from being useful for early stopping.
+        # Use fewer features to eliminate chance of terminating too much early by having fit to noise.
         X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
             n_samples=n_samples,
+            n_features=n_features,
             output='dataframe',
             chunk_size=10,
-            random_gs=True
+            random_gs=True,
+            random_weights=False
         )
         model_factory = lgb.DaskLGBMRanker
-        eval_metrics = ['ndcg', 'map']
+        eval_metrics = ['ndcg']
         eval_at = [5, 10]
         eval_group = []
 
@@ -660,15 +674,14 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
                 dw_e = dw
                 dg_e = dg
             else:
-                _, _, _, _, dX_e, dy_e, _, dg_e = _create_ranking_data(
+                _, _, _, _, dX_e, dy_e, dw_e, dg_e = _create_ranking_data(
                     n_samples=max(10, int(n_samples * eval_size)),
+                    n_features=n_features,
                     output='dataframe',
                     chunk_size=10,
-                    random_gs=True
+                    random_gs=True,
+                    random_weights=False
                 )
-                # Do not use separate set of random sample weights for eval set, as this will
-                # prevent random validation set from being useful for early stopping.
-                dw_e = None
 
             eval_set.append((dX_e, dy_e))
             eval_sample_weight.append(dw_e)
@@ -677,9 +690,11 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
     else:
         X, y, w, dX, dy, dw = _create_data(
             n_samples=n_samples,
+            n_features=n_features,
             objective=task,
             output='array',
-            chunk_size=10
+            chunk_size=10,
+            random_weights=False
         )
         dg = None
         eval_at = None
@@ -697,13 +712,14 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
                 dy_e = dy
                 dw_e = dw
             else:
-                _, _, _, dX_e, dy_e, _ = _create_data(
+                _, _, _, dX_e, dy_e, dw_e = _create_data(
                     n_samples=max(10, int(n_samples * eval_size)),
+                    n_features=n_features,
                     objective=task,
                     output='array',
-                    chunk_size=10
+                    chunk_size=10,
+                    random_weights=False
                 )
-                dw_e = None
 
             eval_set.append((dX_e, dy_e))
             eval_sample_weight.append(dw_e)
@@ -713,7 +729,6 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
         "random_state": 42,
         "n_estimators": full_trees,
         "num_leaves": 31,
-        "min_child_samples": 1,
         "first_metric_only": True,
         "local_listen_port": listen_port
     }
@@ -867,10 +882,8 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen
 
     full_trees = 100
     params = {
-        "random_state": 42,
         "n_estimators": full_trees,
-        "num_leaves": 31,
-        "min_child_samples": 1,
+        "num_leaves": 5
     }
 
     dask_model = model_factory(
@@ -905,7 +918,7 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client, listen
         assert evals_result_name == 'valid_0'
 
     assert all([metric in evals_result[evals_result_name] for metric in eval_metrics])
-    for metric in eval_metrics:
+    for i, metric in enumerate(eval_metrics):
         if task == 'ranking':
             metric += f'@{eval_at[i]}'
 
