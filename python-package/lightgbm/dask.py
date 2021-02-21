@@ -298,7 +298,14 @@ def _train(
     params = deepcopy(params)
 
     # capture whether local_listen_port or its aliases were provided
-    listen_port_in_params = any(alias in params for alias in _ConfigAliases.get("local_listen_port"))
+    listen_port_in_params = any(
+        alias in params for alias in _ConfigAliases.get("local_listen_port")
+    )
+
+    # capture whether machines or its aliases were provided
+    machines_in_params = any(
+        alias in params for alias in _ConfigAliases.get("machines")
+    )
 
     params = _choose_param_value(
         main_param_name="tree_learner",
@@ -440,7 +447,24 @@ def _train(
 
     results = client.gather(futures_classifiers)
     results = [v for v in results if v]
-    return results[0]
+    model = results[0]
+
+    # if network parameters were changed during training, remove them from the
+    # returned moodel so that they're generated dynamically on every run based
+    # on the Dask cluster you're connected to and which workers have pieces of
+    # the training data
+    if not listen_port_in_params:
+        for param in _ConfigAliases.get('local_listen_port'):
+            model._other_params.pop(param, None)
+
+    if not machines_in_params:
+        for param in _ConfigAliases.get('machines'):
+            model._other_params.pop(param, None)
+
+    for param in _ConfigAliases.get('num_machines', 'timeout'):
+        model._other_params.pop(param, None)
+
+    return model
 
 
 def _predict_part(
@@ -601,12 +625,6 @@ class _DaskLGBMModel:
             group=group,
             **kwargs
         )
-
-        # if network parameters were updated during training, remove them so that
-        # they're generated dynamically on every run based on the Dask cluster you're
-        # connected to and which workers have pieces of the training data
-        for param in _ConfigAliases.get('local_listen_port', 'machines', 'num_machines', 'timeout'):
-            model._other_params.pop(param, None)
 
         self.set_params(**model.get_params())
         self._lgb_dask_copy_extra_params(model, self)

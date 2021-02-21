@@ -1030,8 +1030,8 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(client, tas
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-@pytest.mark.parametrize('task', tasks)
-@pytest.mark.parametrize('output', data_output)
+@pytest.mark.parametrize('task', [tasks[0]])
+@pytest.mark.parametrize('output', [data_output[0]])
 def test_network_params_not_required_but_respected_if_given(client, task, output, listen_port):
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
@@ -1075,22 +1075,42 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
     else:
         dask_model1.fit(dX, dy)
     assert dask_model1.fitted_
+    params = dask_model1.get_params()
+    assert 'local_listen_port' not in params
+    assert 'machines' not in params
 
     # model 2 - machines given
     n_workers = len(client.scheduler_info()['workers'])
+    open_ports = [_find_random_open_port() for _ in range(n_workers)]
     dask_model2 = dask_model_factory(
         n_estimators=5,
         num_leaves=5,
         machines=",".join([
-            "127.0.0.1:" + str(_find_random_open_port())
-            for _ in range(n_workers)
+            "127.0.0.1:" + str(port)
+            for port in open_ports
         ]),
     )
+
+    # bind one of the ports referenced in "machines", to check that "machines"
+    # is being used
+    error_msg = f"Binding port {open_ports[0]} failed"
+    with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('127.0.0.1', open_ports[0]))
+            if task == 'ranking':
+                dask_model2.fit(dX, dy, group=dg)
+            else:
+                dask_model2.fit(dX, dy)
+
+    # with that port released, training should succeed
     if task == 'ranking':
         dask_model2.fit(dX, dy, group=dg)
     else:
         dask_model2.fit(dX, dy)
     assert dask_model2.fitted_
+    params = dask_model2.get_params()
+    assert 'local_listen_port' not in params
+    assert 'machines' in params
 
     # model 3 - local_listen_port given
     # training should fail because LightGBM will try to use the same
