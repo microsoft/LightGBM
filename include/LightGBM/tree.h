@@ -575,7 +575,7 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
 
 inline double Tree::Predict(const double* feature_values) const {
   if (is_linear_) {
-      int leaf = GetLeaf(feature_values);
+      int leaf = (num_leaves_ > 1) ? GetLeaf(feature_values) : 0;
       double output = leaf_const_[leaf];
       bool nan_found = false;
       for (size_t i = 0; i < leaf_features_[leaf].size(); ++i) {
@@ -605,7 +605,7 @@ inline double Tree::Predict(const double* feature_values) const {
 
 inline double Tree::PredictByMap(const std::unordered_map<int, double>& feature_values) const {
   if (is_linear_) {
-    int leaf = GetLeafByMap(feature_values);
+    int leaf = (num_leaves_ > 1) ? GetLeafByMap(feature_values) : 0;
     double output = leaf_const_[leaf];
     bool nan_found = false;
     for (size_t i = 0; i < leaf_features_[leaf].size(); ++i) {
