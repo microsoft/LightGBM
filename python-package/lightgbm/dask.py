@@ -567,7 +567,7 @@ class _DaskLGBMModel:
 
         return _get_dask_client(client=self.client)
 
-    def _lgb_getstate(self) -> Dict[Any, Any]:
+    def _lgb_dask_getstate(self) -> Dict[Any, Any]:
         """Remove un-picklable attributes before serialization."""
         client = self.__dict__.pop("client", None)
         self._other_params.pop("client", None)
@@ -576,7 +576,7 @@ class _DaskLGBMModel:
         self.client = client
         return out
 
-    def _fit(
+    def _lgb_dask_fit(
         self,
         model_factory: Type[LGBMModel],
         X: _DaskMatrixLike,
@@ -609,20 +609,20 @@ class _DaskLGBMModel:
             model._other_params.pop(param, None)
 
         self.set_params(**model.get_params())
-        self._copy_extra_params(model, self)
+        self._lgb_dask_copy_extra_params(model, self)
 
         return self
 
-    def _to_local(self, model_factory: Type[LGBMModel]) -> LGBMModel:
+    def _lgb_dask_to_local(self, model_factory: Type[LGBMModel]) -> LGBMModel:
         params = self.get_params()
         params.pop("client", None)
         model = model_factory(**params)
-        self._copy_extra_params(self, model)
+        self._lgb_dask_copy_extra_params(self, model)
         model._other_params.pop("client", None)
         return model
 
     @staticmethod
-    def _copy_extra_params(source: Union["_DaskLGBMModel", LGBMModel], dest: Union["_DaskLGBMModel", LGBMModel]) -> None:
+    def _lgb_dask_copy_extra_params(source: Union["_DaskLGBMModel", LGBMModel], dest: Union["_DaskLGBMModel", LGBMModel]) -> None:
         params = source.get_params()
         attributes = source.__dict__
         extra_param_names = set(attributes.keys()).difference(params.keys())
@@ -698,7 +698,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
-        return self._lgb_getstate()
+        return self._lgb_dask_getstate()
 
     def fit(
         self,
@@ -708,7 +708,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
-        return self._fit(
+        return self._lgb_dask_fit(
             model_factory=LGBMClassifier,
             X=X,
             y=y,
@@ -778,7 +778,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         model : lightgbm.LGBMClassifier
             Local underlying model.
         """
-        return self._to_local(LGBMClassifier)
+        return self._lgb_dask_to_local(LGBMClassifier)
 
 
 class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
@@ -849,7 +849,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
-        return self._lgb_getstate()
+        return self._lgb_dask_getstate()
 
     def fit(
         self,
@@ -859,7 +859,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        return self._fit(
+        return self._lgb_dask_fit(
             model_factory=LGBMRegressor,
             X=X,
             y=y,
@@ -910,7 +910,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         model : lightgbm.LGBMRegressor
             Local underlying model.
         """
-        return self._to_local(LGBMRegressor)
+        return self._lgb_dask_to_local(LGBMRegressor)
 
 
 class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
@@ -981,7 +981,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
-        return self._lgb_getstate()
+        return self._lgb_dask_getstate()
 
     def fit(
         self,
@@ -996,7 +996,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         if init_score is not None:
             raise RuntimeError('init_score is not currently supported in lightgbm.dask')
 
-        return self._fit(
+        return self._lgb_dask_fit(
             model_factory=LGBMRanker,
             X=X,
             y=y,
@@ -1047,4 +1047,4 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         model : lightgbm.LGBMRanker
             Local underlying model.
         """
-        return self._to_local(LGBMRanker)
+        return self._lgb_dask_to_local(LGBMRanker)
