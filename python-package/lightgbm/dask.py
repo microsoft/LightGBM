@@ -213,10 +213,9 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
         Dictionary where keys are work addresses in the form expected by Dask and values are a port for LightGBM to use.
     """
     machine_addresses = machines.split(",")
-    machine_to_port = {}
+    machine_to_port = defaultdict(set)
     for address in machine_addresses:
         host, port = address.split(":")
-        machine_to_port[host] = machine_to_port.get(host, set())
         machine_to_port[host].add(int(port))
 
     out = {}
@@ -279,9 +278,9 @@ def _train(
     * ``machines``: a comma-delimited list of all workers in the cluster, in the
             form ``ip:port,ip:port``. If running multiple Dask workers on the same host, use different
             ports for each worker. For example, for ``LocalCluster(n_workers=3)``, you might
-            pass ``"127.0.0.1:12400,127.0.0.1:12401,127.0.0.1:12402"```.
-    * ``num_machines``: number of LightGBM workers
-    * ``timeout``: time in minutes to wait before closing unused sockets
+            pass ``"127.0.0.1:12400,127.0.0.1:12401,127.0.0.1:12402"``.
+    * ``num_machines``: number of LightGBM workers.
+    * ``timeout``: time in minutes to wait before closing unused sockets.
 
     The default behavior of this function is to generate ``machines`` from the list of
     Dask workers which hold some piece of the training data, and to search for an open
@@ -299,11 +298,7 @@ def _train(
     params = deepcopy(params)
 
     # capture whether local_listen_port or its aliases were provided
-    port_aliases = _ConfigAliases.get('local_listen_port')
-    listen_port_in_params = False
-    for param in params.keys():
-        if param in port_aliases:
-            listen_port_in_params = True
+    listen_port_in_params = any(alias in params for alias in _ConfigAliases.get("local_listen_port"))
 
     params = _choose_param_value(
         main_param_name="tree_learner",
@@ -332,7 +327,9 @@ def _train(
     #   * 'num_machines': set automatically from Dask worker list
     #   * 'num_threads': overridden to match nthreads on each Dask process
     for param_alias in _ConfigAliases.get('num_machines', 'num_threads'):
-        params.pop(param_alias, None)
+        if param_alias in params:
+            _log_warning(f"Parameter {param_alias} will be ignored.")
+            params.pop(param_alias)
 
     # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality
     data_parts = _split_to_parts(data=data, is_matrix=True)
