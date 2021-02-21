@@ -62,7 +62,7 @@ Parameters Tuning
 Parallel Learning
 -----------------
 
--  Refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__.
+-  Refer to `Distributed Learning Guide <./Parallel-Learning-Guide.rst>`__.
 
 GPU Support
 -----------

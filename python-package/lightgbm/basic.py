@@ -168,7 +168,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
 def cfloat32_array_to_numpy(cptr, length):
     """Convert a ctypes float pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
-        return np.fromiter(cptr, dtype=np.float32, count=length)
+        return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
     else:
         raise RuntimeError('Expected float pointer')
 
@@ -176,7 +176,7 @@ def cfloat32_array_to_numpy(cptr, length):
 def cfloat64_array_to_numpy(cptr, length):
     """Convert a ctypes double pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
-        return np.fromiter(cptr, dtype=np.float64, count=length)
+        return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
     else:
         raise RuntimeError('Expected double pointer')
 
@@ -184,7 +184,7 @@ def cfloat64_array_to_numpy(cptr, length):
 def cint32_array_to_numpy(cptr, length):
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
-        return np.fromiter(cptr, dtype=np.int32, count=length)
+        return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
     else:
         raise RuntimeError('Expected int32 pointer')
 
@@ -192,7 +192,7 @@ def cint32_array_to_numpy(cptr, length):
 def cint64_array_to_numpy(cptr, length):
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
-        return np.fromiter(cptr, dtype=np.int64, count=length)
+        return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
     else:
         raise RuntimeError('Expected int64 pointer')
 
@@ -2349,7 +2349,7 @@ class Booster:
         listen_time_out : int, optional (default=120)
             Socket time-out in minutes.
         num_machines : int, optional (default=1)
-            The number of machines for parallel learning application.
+            The number of machines for distributed learning application.
 
         Returns
         -------
