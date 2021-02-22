@@ -1030,8 +1030,8 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(client, tas
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-@pytest.mark.parametrize('task', [tasks[0]])
-@pytest.mark.parametrize('output', [data_output[0]])
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
 def test_network_params_not_required_but_respected_if_given(client, task, output, listen_port):
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
@@ -1056,14 +1056,8 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
             dask_model_factory = lgb.DaskLGBMRegressor
 
     # rebalance data to be sure that each worker has a piece of the data
-    # if output == 'array':
-    #     dX = dX.persist()
-    #     dy = dy.persist()
-    #     _ = wait([dX, dy])
-    #     if dg is not None:
-    #         dg = dg.persist()
-    #         _ = wait(dg)
-    #     client.rebalance()
+    if output == 'array':
+        client.rebalance()
 
     # model 1 - no network parameters givem
     dask_model1 = dask_model_factory(
@@ -1091,7 +1085,6 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
         ]),
     )
 
-    # with that port released, training should succeed
     if task == 'ranking':
         dask_model2.fit(dX, dy, group=dg)
     else:
@@ -1116,9 +1109,11 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
         else:
             dask_model3.fit(dX, dy)
 
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
-@pytest.mark.parametrize('task', [tasks[0]])
-@pytest.mark.parametrize('output', [data_output[0]])
+
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
 def test_machines_should_be_used_if_provided(task, output):
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
@@ -1146,18 +1141,11 @@ def test_machines_should_be_used_if_provided(task, output):
 
             # rebalance data to be sure that each worker has a piece of the data
             if output == 'array':
-                dX = dX.persist()
-                dy = dy.persist()
-                _ = wait([dX, dy])
-                if dg is not None:
-                    dg = dg.persist()
-                    _ = wait(dg)
                 client.rebalance()
 
-            # model 2 - machines given
             n_workers = len(client.scheduler_info()['workers'])
             open_ports = [_find_random_open_port() for _ in range(n_workers)]
-            dask_model2 = dask_model_factory(
+            dask_model = dask_model_factory(
                 n_estimators=5,
                 num_leaves=5,
                 machines=",".join([
@@ -1166,16 +1154,16 @@ def test_machines_should_be_used_if_provided(task, output):
                 ]),
             )
 
-            # with that port released, training should succeed
-            with pytest.raises(lgb.basic.LightGBMError):
+            # test that "machines" is actually respected by creating a socket that uses
+            # one of the ports mentioned in "machines"
+            error_msg = "Binding port %s failed" % open_ports[0]
+            with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.bind(('127.0.0.1', open_ports[0]))
-                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                        s.bind(('127.0.0.1', open_ports[1]))
-                        if task == 'ranking':
-                            dask_model2.fit(dX, dy, group=dg)
-                        else:
-                            dask_model2.fit(dX, dy)
+                    if task == 'ranking':
+                        dask_model.fit(dX, dy, group=dg)
+                    else:
+                        dask_model.fit(dX, dy)
 
 
 @pytest.mark.parametrize(
