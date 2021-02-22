@@ -59,8 +59,10 @@ Parameters Tuning
 
 -  Refer to `Parameters Tuning <./Parameters-Tuning.rst>`__.
 
-Parallel Learning
------------------
+.. _Parallel Learning:
+
+Distributed Learning
+--------------------
 
 -  Refer to `Distributed Learning Guide <./Parallel-Learning-Guide.rst>`__.
 

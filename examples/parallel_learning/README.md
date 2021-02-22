@@ -1,5 +1,6 @@
-Parallel Learning Example
-=========================
+Distributed Learning Example
+============================
+<a name="parallel-learning-example"></a>
 
 Here is an example for LightGBM to perform distributed learning for 2 machines.
 
