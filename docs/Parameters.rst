@@ -863,7 +863,7 @@ Predict Parameters
 
    -  **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
 
-   -  **Note**: this feature is not implemented for linear trees, and the output will not be correct
+   -  **Note**: this feature is not implemented for linear trees
 
 -  ``predict_disable_shape_check`` :raw-html:`<a id="predict_disable_shape_check" title="Permalink to this parameter" href="#predict_disable_shape_check">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 

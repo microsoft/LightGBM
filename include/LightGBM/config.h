@@ -747,7 +747,7 @@ struct Config {
   // desc = produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
   // desc = **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/slundberg/shap>`__
   // desc = **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
-  // desc = **Note**: this feature is not implemented for linear trees, and the output will not be correct
+  // desc = **Note**: this feature is not implemented for linear trees
   bool predict_contrib = false;
 
   // [no-save]

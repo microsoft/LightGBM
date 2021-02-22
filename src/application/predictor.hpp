@@ -86,8 +86,7 @@ class Predictor {
       };
     } else if (predict_contrib) {
       if (boosting_->IsLinear()) {
-        Log::Warning("Predicting SHAP feature contributions is not implemented for linear trees. "
-          "Results will be incorrect.");
+        Log::Fatal("Predicting SHAP feature contributions is not implemented for linear trees.");
       }
       predict_fun_ = [=](const std::vector<std::pair<int, double>>& features,
                          double* output) {
