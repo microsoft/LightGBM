@@ -1118,52 +1118,51 @@ def test_machines_should_be_used_if_provided(task, output):
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
-    with LocalCluster(n_workers=2) as cluster:
-        with Client(cluster) as client:
-            if task == 'ranking':
-                _, _, _, _, dX, dy, _, dg = _create_ranking_data(
-                    output=output,
-                    group=None,
-                    chunk_size=10,
-                )
-                dask_model_factory = lgb.DaskLGBMRanker
-            else:
-                _, _, _, dX, dy, _ = _create_data(
-                    objective=task,
-                    output=output,
-                    chunk_size=10,
-                )
-                dg = None
-                if task == 'classification':
-                    dask_model_factory = lgb.DaskLGBMClassifier
-                elif task == 'regression':
-                    dask_model_factory = lgb.DaskLGBMRegressor
-
-            # rebalance data to be sure that each worker has a piece of the data
-            if output == 'array':
-                client.rebalance()
-
-            n_workers = len(client.scheduler_info()['workers'])
-            open_ports = [_find_random_open_port() for _ in range(n_workers)]
-            dask_model = dask_model_factory(
-                n_estimators=5,
-                num_leaves=5,
-                machines=",".join([
-                    "127.0.0.1:" + str(port)
-                    for port in open_ports
-                ]),
+    with LocalCluster(n_workers=2) as cluster, Client(cluster) as client:
+        if task == 'ranking':
+            _, _, _, _, dX, dy, _, dg = _create_ranking_data(
+                output=output,
+                group=None,
+                chunk_size=10,
             )
+            dask_model_factory = lgb.DaskLGBMRanker
+        else:
+            _, _, _, dX, dy, _ = _create_data(
+                objective=task,
+                output=output,
+                chunk_size=10,
+            )
+            dg = None
+            if task == 'classification':
+                dask_model_factory = lgb.DaskLGBMClassifier
+            elif task == 'regression':
+                dask_model_factory = lgb.DaskLGBMRegressor
 
-            # test that "machines" is actually respected by creating a socket that uses
-            # one of the ports mentioned in "machines"
-            error_msg = "Binding port %s failed" % open_ports[0]
-            with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.bind(('127.0.0.1', open_ports[0]))
-                    if task == 'ranking':
-                        dask_model.fit(dX, dy, group=dg)
-                    else:
-                        dask_model.fit(dX, dy)
+        # rebalance data to be sure that each worker has a piece of the data
+        if output == 'array':
+            client.rebalance()
+
+        n_workers = len(client.scheduler_info()['workers'])
+        open_ports = [_find_random_open_port() for _ in range(n_workers)]
+        dask_model = dask_model_factory(
+            n_estimators=5,
+            num_leaves=5,
+            machines=",".join([
+                "127.0.0.1:" + str(port)
+                for port in open_ports
+            ]),
+        )
+
+        # test that "machines" is actually respected by creating a socket that uses
+        # one of the ports mentioned in "machines"
+        error_msg = "Binding port %s failed" % open_ports[0]
+        with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('127.0.0.1', open_ports[0]))
+                if task == 'ranking':
+                    dask_model.fit(dX, dy, group=dg)
+                else:
+                    dask_model.fit(dX, dy)
 
 
 @pytest.mark.parametrize(
