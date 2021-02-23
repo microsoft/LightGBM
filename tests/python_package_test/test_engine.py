@@ -2604,7 +2604,7 @@ def test_save_and_load_linear(tmp_path):
     np.testing.assert_allclose(pred_2, pred_3)
 
 
-def test_single_leaf_linear():
+def test_linear_single_leaf():
     X_train, y_train = load_breast_cancer(return_X_y=True)
     train_data = lgb.Dataset(X_train, label=y_train)
     params = {
@@ -2614,7 +2614,7 @@ def test_single_leaf_linear():
     }
     bst = lgb.train(params, train_data, num_boost_round=5)
     y_pred = bst.predict(X_train)
-    assert log_loss(y_train, y_pred) == pytest.approx(0)
+    assert log_loss(y_train, y_pred) < pytest.approx(0.661)
 
 
 def test_predict_with_start_iteration():
