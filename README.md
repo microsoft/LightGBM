@@ -58,10 +58,9 @@ Some old update logs are available at [Key Events](https://github.com/microsoft/
 
 External (Unofficial) Repositories
 ----------------------------------
+FLAML (AutoML library for efficient hyperparameter optimization): https://github.com/microsoft/FLAML
 
 Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
-
-FLAML (AutoML library for efficient hyperparameter optimization): https://github.com/microsoft/FLAML
 
 Julia-package: https://github.com/IQVIA-ML/LightGBM.jl
 
