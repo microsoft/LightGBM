@@ -28,7 +28,7 @@ LightGBM uses histogram-based algorithms\ `[4, 5, 6] <#references>`__, which buc
 
    -  No need to store additional information for pre-sorting feature values
 
--  **Reduce communication cost for parallel learning**
+-  **Reduce communication cost for distributed learning**
 
 Sparse Optimization
 -------------------
@@ -68,14 +68,16 @@ More specifically, LightGBM sorts the histogram (for a categorical feature) acco
 Optimization in Network Communication
 -------------------------------------
 
-It only needs to use some collective communication algorithms, like "All reduce", "All gather" and "Reduce scatter", in parallel learning of LightGBM.
+It only needs to use some collective communication algorithms, like "All reduce", "All gather" and "Reduce scatter", in distributed learning of LightGBM.
 LightGBM implements state-of-art algorithms\ `[9] <#references>`__.
 These collective communication algorithms can provide much better performance than point-to-point communication.
 
-Optimization in Parallel Learning
----------------------------------
+.. _Optimization in Parallel Learning:
 
-LightGBM provides the following parallel learning algorithms.
+Optimization in Distributed Learning
+------------------------------------
+
+LightGBM provides the following distributed learning algorithms.
 
 Feature Parallel
 ~~~~~~~~~~~~~~~~

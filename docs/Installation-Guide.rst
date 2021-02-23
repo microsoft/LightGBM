@@ -348,7 +348,7 @@ Build MPI Version
 The default build version of LightGBM is based on socket. LightGBM also supports MPI.
 `MPI`_ is a high performance communication approach with `RDMA`_ support.
 
-If you need to run a parallel learning application with high performance communication, you can build the LightGBM with MPI support.
+If you need to run a distributed learning application with high performance communication, you can build the LightGBM with MPI support.
 
 Windows
 ^^^^^^^
