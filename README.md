@@ -42,7 +42,7 @@ Next you may want to read:
 - [**Parameters**](https://github.com/microsoft/LightGBM/blob/master/docs/Parameters.rst) is an exhaustive list of customization you can make.
 - [**Distributed Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
 - [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
-- [**Optuna Hyperparameter Tuner**](https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258) provides automated tuning for LightGBM hyperparameters ([code examples](https://github.com/optuna/optuna/blob/master/examples/)).
+- [**Optuna Hyperparameter Tuner**](https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258) ([code examples](https://github.com/optuna/optuna/blob/master/examples/)) and [**FLAML**](https://www.microsoft.com/en-us/research/project/fast-and-lightweight-automl-for-large-scale-data/articles/flaml-a-fast-and-lightweight-automl-library/) ([code examples](https://github.com/microsoft/FLAML/blob/main/notebook/flaml_lightgbm.ipynb)) provide automated tuning for LightGBM hyperparameters.
 
 Documentation for contributors:
 
@@ -60,6 +60,8 @@ External (Unofficial) Repositories
 ----------------------------------
 
 Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
+
+FLAML (AutoML library for efficient hyperparameter optimization): https://github.com/microsoft/FLAML
 
 Julia-package: https://github.com/IQVIA-ML/LightGBM.jl
 
