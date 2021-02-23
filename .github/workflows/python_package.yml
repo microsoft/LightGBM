@@ -3,7 +3,7 @@ name: Python-package
 on:
   push:
     branches:
-    - master
+    - single_leaf_test
   pull_request:
     branches:
     - master
