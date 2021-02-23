@@ -7,7 +7,7 @@ This page contains parameters tuning guides for different scenarios.
 
 -  `Parameters <./Parameters.rst>`__
 -  `Python API <./Python-API.rst>`__
--  `FLAML`_  for automated hyperparameter tuning
+-  `FLAML`_ for automated hyperparameter tuning
 -  `Optuna`_ for automated hyperparameter tuning
 
 Tune Parameters for the Leaf-wise (Best-first) Tree
