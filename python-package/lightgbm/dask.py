@@ -400,7 +400,7 @@ def _train(
     else:
         if listen_port_in_params:
             _log_info("Using passed-in 'local_listen_port' for all workers")
-            unique_hosts = set([urlparse(a).hostname for a in worker_addresses])
+            unique_hosts = set(urlparse(a).hostname for a in worker_addresses)
             if len(unique_hosts) < len(worker_addresses):
                 msg = (
                     "'local_listen_port' was provided in Dask training parameters, but at least one "

@@ -1059,7 +1059,7 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
     if output == 'array':
         client.rebalance()
 
-    # model 1 - no network parameters givem
+    # model 1 - no network parameters given
     dask_model1 = dask_model_factory(
         n_estimators=5,
         num_leaves=5,
