@@ -114,14 +114,13 @@ try:
     from dask.array import Array as dask_Array
     from dask.dataframe import DataFrame as dask_DataFrame
     from dask.dataframe import Series as dask_Series
-    from dask.distributed import Client, default_client, get_worker, wait
+    from dask.distributed import Client, default_client, wait
     DASK_INSTALLED = True
 except ImportError:
     DASK_INSTALLED = False
     delayed = None
     Client = object
     default_client = None
-    get_worker = None
     wait = None
 
     class dask_Array:

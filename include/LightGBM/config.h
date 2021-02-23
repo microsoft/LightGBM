@@ -967,6 +967,7 @@ struct Config {
   int num_machines = 1;
 
   // check = >0
+  // default = 12400 (random for Dask-package)
   // alias = local_port, port
   // desc = TCP listen port for local machines
   // desc = **Note**: don't forget to allow this port in firewall settings before training
