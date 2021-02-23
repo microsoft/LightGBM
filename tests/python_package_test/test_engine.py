@@ -2614,7 +2614,7 @@ def test_linear_single_leaf():
     }
     bst = lgb.train(params, train_data, num_boost_round=5)
     y_pred = bst.predict(X_train)
-    assert log_loss(y_train, y_pred) < pytest.approx(0.661)
+    assert log_loss(y_train, y_pred) < 0.661
 
 
 def test_predict_with_start_iteration():
