@@ -350,10 +350,9 @@ def _train(
             }
         else:
             _log_info("Finding random open ports for workers")
-            worker_address_to_port = _find_random_open_port(
-                client=client,
-                worker_addresses=worker_addresses,
-                local_listen_port=local_listen_port
+            worker_address_to_port = client.run(
+                _find_random_open_port,
+                workers=list(worker_addresses)
             )
         machines = ','.join([
             '%s:%d' % (urlparse(worker_address).hostname, port)

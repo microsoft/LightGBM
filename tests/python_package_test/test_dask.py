@@ -335,11 +335,17 @@ def test_classifier_pred_contrib(output, centers, client):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-def test_different_ports_on_local_cluster(client):
+def test_find_random_open_port(client):
     for _ in range(5):
         worker_address_to_port = client.run(lgb.dask._find_random_open_port)
         found_ports = worker_address_to_port.values()
+        # check that found ports are different for same address (LocalCluster)
         assert len(set(found_ports)) == len(found_ports)
+        # check that the ports are indeed open
+        for port in found_ports:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('', port))
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
 def test_training_does_not_fail_on_port_conflicts(client):
@@ -882,29 +888,6 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
 
                     assert_eq(preds_orig, preds_loaded_model)
                     assert_eq(preds_orig_local, preds_loaded_model_local)
-
-
-def test_find_open_port_works(listen_port):
-    worker_ip = '127.0.0.1'
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((worker_ip, listen_port))
-        new_port = lgb.dask._find_open_port(
-            worker_ip=worker_ip,
-            local_listen_port=listen_port,
-            ports_to_skip=set()
-        )
-        assert listen_port < new_port < listen_port + 1000
-
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
-        s_1.bind((worker_ip, listen_port))
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_2:
-            s_2.bind((worker_ip, listen_port + 1))
-            new_port = lgb.dask._find_open_port(
-                worker_ip=worker_ip,
-                local_listen_port=listen_port,
-                ports_to_skip=set()
-            )
-            assert listen_port + 1 < new_port < listen_port + 1000
 
 
 def test_warns_and_continues_on_unrecognized_tree_learner(client):
