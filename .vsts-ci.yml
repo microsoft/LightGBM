@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - dask_test_fit
+    - master
   tags:
     include:
     - v*
