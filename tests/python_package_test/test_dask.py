@@ -1081,9 +1081,9 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
         assert dask_params[param].default == sklearn_params[param].default, error_msg
 
 
-@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('task', ['classification', 'regression'])
 @pytest.mark.parametrize('output', data_output)
-@pytest.mark.parametrize('init_score', [0.25, 0.75])
+@pytest.mark.parametrize('init_score', [0.1, 0.9])
 def test_init_score(
     task,
     output,
@@ -1116,6 +1116,7 @@ def test_init_score(
 
     params = {
         'n_estimators': 1,
+        'force_row_wise': True,
         'num_leaves': 2,
         'random_state': 0,
         'local_listen_port': listen_port,
@@ -1127,7 +1128,6 @@ def test_init_score(
         local_model.fit(X, y, sample_weight=w, init_score=init_scores, group=g)
     else:
         local_model.fit(X, y, sample_weight=w, init_score=init_scores)
-    local_preds = local_model.predict(X)
 
     dask_model = dask_model_factory(client=client, **params)
     dask_model.fit(dX, dy, sample_weight=dw, group=dg)
@@ -1139,12 +1139,14 @@ def test_init_score(
     dask_with_init_score = dask_model_factory(client=client, **params)
     dask_with_init_score.fit(dX, dy, sample_weight=dw, init_score=dask_init_scores, group=dg)
     if task == 'classification':
-        dask_preds = dask_model.predict_proba(dX).compute()
-        dask_with_init_score_preds = dask_with_init_score.predict_proba(dX).compute()
+        local_preds = local_model.predict_proba(X)[:, 1]
+        dask_preds = dask_model.predict_proba(dX).compute()[:, 1]
+        dask_with_init_score_preds = dask_with_init_score.predict_proba(dX).compute()[:, 1]
     else:
+        local_preds = local_model.predict(X)
         dask_preds = dask_model.predict(dX).compute()
         dask_with_init_score_preds = dask_with_init_score.predict(dX).compute()
 
-    # assert assert_eq(local_preds, dask_with_init_score_preds)
+    assert assert_eq(local_preds, dask_with_init_score_preds)
     assert not np.allclose(dask_preds, dask_with_init_score_preds)
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
