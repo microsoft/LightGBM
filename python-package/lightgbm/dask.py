@@ -417,7 +417,7 @@ def _train(
             _log_info("Finding random open ports for workers")
             worker_address_to_port = _find_ports_for_workers(
                 client=client,
-                worker_addresses=worker_map.keys(),
+                worker_addresses=worker_addresses,
                 local_listen_port=local_listen_port
             )
         machines = ','.join([
