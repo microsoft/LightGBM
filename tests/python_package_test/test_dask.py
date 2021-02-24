@@ -1198,6 +1198,43 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
         assert dask_params[param].default == sklearn_params[param].default, error_msg
 
 
+@pytest.mark.parametrize('task', tasks)
+def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
+    task,
+    client,
+):
+    if task == 'ranking':
+        _, _, _, _, dX, dy, dw, dg = _create_ranking_data(
+            output='dataframe',
+            group=None
+        )
+        model_factory = lgb.DaskLGBMRanker
+    else:
+        _, _, _, dX, dy, dw = _create_data(
+            objective=task,
+            output='dataframe',
+        )
+        dg = None
+        if task == 'classification':
+            model_factory = lgb.DaskLGBMClassifier
+        elif task == 'regression':
+            model_factory = lgb.DaskLGBMRegressor
+    dy = dy.to_dask_array(lengths=True)
+    dy_col_array = dy.reshape(-1, 1)
+    assert len(dy_col_array.shape) == 2 and dy_col_array.shape[1] == 1
+
+    params = {
+        'n_estimators': 1,
+        'num_leaves': 3,
+        'random_state': 0,
+        'time_out': 5
+    }
+    model = model_factory(**params)
+    model.fit(dX, dy_col_array, sample_weight=dw, group=dg)
+    assert model.fitted_
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
 def sklearn_checks_to_run():
     check_names = [
         "check_estimator_get_tags_default_keys",
