@@ -825,7 +825,7 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
 
                     else:
                         assert_eq(best_score, min(evals_result[evals_result_name][metric]), atol=0.03)
-                        assert abs(best_iter_zero_indexed- np.argin(evals_result[evals_result_name][metric])) \
+                        assert abs(best_iter_zero_indexed - np.argmin(evals_result[evals_result_name][metric])) \
                                <= early_stopping_rounds
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
