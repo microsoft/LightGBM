@@ -2604,6 +2604,19 @@ def test_save_and_load_linear(tmp_path):
     np.testing.assert_allclose(pred_2, pred_3)
 
 
+def test_linear_single_leaf():
+    X_train, y_train = load_breast_cancer(return_X_y=True)
+    train_data = lgb.Dataset(X_train, label=y_train)
+    params = {
+        "objective": "binary",
+        "linear_tree": True,
+        "min_sum_hessian": 5000
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    y_pred = bst.predict(X_train)
+    assert log_loss(y_train, y_pred) < 0.661
+
+
 def test_predict_with_start_iteration():
     def inner_test(X, y, params, early_stopping_rounds):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
