@@ -174,14 +174,6 @@ def _accuracy_score(dy_true, dy_pred):
     return da.average(dy_true == dy_pred).compute()
 
 
-def _find_random_open_port() -> int:
-    """Find a random open port on localhost"""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', 0))
-        port = s.getsockname()[1]
-    return port
-
-
 def _pickle(obj, filepath, serializer):
     if serializer == 'pickle':
         with open(filepath, 'wb') as f:
@@ -340,6 +332,19 @@ def test_classifier_pred_contrib(output, centers, client):
             base_value_col = num_features * (i + 1) + i
             assert len(np.unique(preds_with_contrib[:, base_value_col]) == 1)
 
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
+def test_find_random_open_port(client):
+    for _ in range(5):
+        worker_address_to_port = client.run(lgb.dask._find_random_open_port)
+        found_ports = worker_address_to_port.values()
+        # check that found ports are different for same address (LocalCluster)
+        assert len(set(found_ports)) == len(found_ports)
+        # check that the ports are indeed open
+        for port in found_ports:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('', port))
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
@@ -885,29 +890,6 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                     assert_eq(preds_orig_local, preds_loaded_model_local)
 
 
-def test_find_open_port_works(listen_port):
-    worker_ip = '127.0.0.1'
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((worker_ip, listen_port))
-        new_port = lgb.dask._find_open_port(
-            worker_ip=worker_ip,
-            local_listen_port=listen_port,
-            ports_to_skip=set()
-        )
-        assert listen_port < new_port < listen_port + 1000
-
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
-        s_1.bind((worker_ip, listen_port))
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_2:
-            s_2.bind((worker_ip, listen_port + 1))
-            new_port = lgb.dask._find_open_port(
-                worker_ip=worker_ip,
-                local_listen_port=listen_port,
-                ports_to_skip=set()
-            )
-            assert listen_port + 1 < new_port < listen_port + 1000
-
-
 def test_warns_and_continues_on_unrecognized_tree_learner(client):
     X = da.random.random((1e3, 10))
     y = da.random.random((1e3, 1))
@@ -1075,7 +1057,7 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
 
     # model 2 - machines given
     n_workers = len(client.scheduler_info()['workers'])
-    open_ports = [_find_random_open_port() for _ in range(n_workers)]
+    open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
     dask_model2 = dask_model_factory(
         n_estimators=5,
         num_leaves=5,
@@ -1143,7 +1125,7 @@ def test_machines_should_be_used_if_provided(task, output):
             client.rebalance()
 
         n_workers = len(client.scheduler_info()['workers'])
-        open_ports = [_find_random_open_port() for _ in range(n_workers)]
+        open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
         dask_model = dask_model_factory(
             n_estimators=5,
             num_leaves=5,
