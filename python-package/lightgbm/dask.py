@@ -17,7 +17,8 @@ import scipy.sparse as ss
 
 from .basic import _LIB, LightGBMError, _choose_param_value, _ConfigAliases, _log_info, _log_warning, _safe_call
 from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
-                     dask_Array, dask_DataFrame, dask_Series, default_client, delayed, pd_DataFrame, pd_Series, wait)
+                     dask_Array, dask_DataFrame, dask_Series, default_client, delayed, get_worker, pd_DataFrame,
+                     pd_Series, wait)
 from .sklearn import LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _lgbmmodel_doc_fit, _lgbmmodel_doc_predict
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
@@ -239,6 +240,7 @@ def _train_part(
     else:
         # when a worker receives no eval_set while other workers have eval data, causes LightGBMExceptions.
         if evals_provided:
+            local_worker_address = get_worker().address
             msg = "eval_set was provided but worker %s was not allocated validation data. Try rebalancing data across workers."
             raise RuntimeError(msg % local_worker_address)
 
