@@ -1125,7 +1125,7 @@ def test_machines_should_be_used_if_provided(task, output):
             client.rebalance()
 
         n_workers = len(client.scheduler_info()['workers'])
-        open_ports = [_find_random_open_port() for _ in range(n_workers)]
+        open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
         dask_model = dask_model_factory(
             n_estimators=5,
             num_leaves=5,
