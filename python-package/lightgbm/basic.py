@@ -134,8 +134,8 @@ def is_numpy_column_array(data):
     return len(shape) == 2 and shape[1] == 1
 
 
-def numpy_1d_array_to_dtype(array, dtype):
-    """Convert 1d array to dtype."""
+def cast_numpy_1d_array_to_dtype(array, dtype):
+    """Cast numpy 1d array to given dtype."""
     if array.dtype == dtype:
         return array
     return array.astype(dtype=dtype, copy=False)
@@ -149,11 +149,11 @@ def is_1d_list(data):
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
     if is_numpy_1d_array(data):
-        return numpy_1d_array_to_dtype(data, dtype)
+        return cast_numpy_1d_array_to_dtype(data, dtype)
     elif is_numpy_column_array(data):
         _log_warning('Converting column-vector to 1d array')
         array = data.ravel()
-        return numpy_1d_array_to_dtype(array, dtype)
+        return cast_numpy_1d_array_to_dtype(array, dtype)
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, pd_Series):

@@ -1224,4 +1224,4 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
 
     preds_1d = model_1d.predict(X)
     preds_2d = model_2d.predict(X)
-    assert np.allclose(preds_1d, preds_2d)
+    np.testing.assert_array_equal(preds_1d, preds_2d)

@@ -1088,7 +1088,6 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
     task,
     client,
-    listen_port
 ):
     if task == 'ranking':
         _, _, _, _, dX, dy, dw, dg = _create_ranking_data(
@@ -1114,7 +1113,6 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
         'n_estimators': 1,
         'num_leaves': 3,
         'random_state': 0,
-        'local_listen_port': listen_port,
         'time_out': 5
     }
     model = model_factory(**params)
