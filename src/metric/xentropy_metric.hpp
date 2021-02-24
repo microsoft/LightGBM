@@ -281,12 +281,10 @@ class KullbackLeiblerDivergence : public Metric {
     // evaluate offset term
     presum_label_entropy_ = 0.0f;
     if (weights_ == nullptr) {
-    //  #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data; ++i) {
         presum_label_entropy_ += YentLoss(label_[i]);
       }
     } else {
-    //  #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data; ++i) {
         presum_label_entropy_ += YentLoss(label_[i]) * weights_[i];
       }

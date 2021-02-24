@@ -85,6 +85,9 @@ class Predictor {
         }
       };
     } else if (predict_contrib) {
+      if (boosting_->IsLinear()) {
+        Log::Fatal("Predicting SHAP feature contributions is not implemented for linear trees.");
+      }
       predict_fun_ = [=](const std::vector<std::pair<int, double>>& features,
                          double* output) {
         int tid = omp_get_thread_num();

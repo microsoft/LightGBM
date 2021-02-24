@@ -10,7 +10,7 @@ Light Gradient Boosting Machine
 [![Azure Pipelines Build Status](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_apis/build/status/Microsoft.LightGBM?branchName=master)](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_build/latest?definitionId=1)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
-![Link checks](https://github.com/microsoft/LightGBM/workflows/Link%20checks/badge.svg)
+[![Link checks](https://github.com/microsoft/LightGBM/workflows/Link%20checks/badge.svg)](https://github.com/microsoft/LightGBM/actions?query=workflow%3A%22Link+checks%22)
 [![License](https://img.shields.io/github/license/microsoft/lightgbm.svg)](https://github.com/microsoft/LightGBM/blob/master/LICENSE)
 [![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg?logo=python&logoColor=white)](https://pypi.org/project/lightgbm)
 [![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg?logo=pypi&logoColor=white)](https://pypi.org/project/lightgbm)
@@ -21,14 +21,14 @@ LightGBM is a gradient boosting framework that uses tree based learning algorith
 - Faster training speed and higher efficiency.
 - Lower memory usage.
 - Better accuracy.
-- Support of parallel and GPU learning.
+- Support of parallel, distributed, and GPU learning.
 - Capable of handling large-scale data.
 
 For further details, please refer to [Features](https://github.com/microsoft/LightGBM/blob/master/docs/Features.rst).
 
 Benefitting from these advantages, LightGBM is being widely-used in many [winning solutions](https://github.com/microsoft/LightGBM/blob/master/examples/README.md#machine-learning-challenge-winning-solutions) of machine learning competitions.
 
-[Comparison experiments](https://github.com/microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, [parallel experiments](https://github.com/microsoft/LightGBM/blob/master/docs/Experiments.rst#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings.
+[Comparison experiments](https://github.com/microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, [distributed learning experiments](https://github.com/microsoft/LightGBM/blob/master/docs/Experiments.rst#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings.
 
 Get Started and Documentation
 -----------------------------
@@ -40,7 +40,7 @@ Next you may want to read:
 - [**Examples**](https://github.com/microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks.
 - [**Features**](https://github.com/microsoft/LightGBM/blob/master/docs/Features.rst) and algorithms supported by LightGBM.
 - [**Parameters**](https://github.com/microsoft/LightGBM/blob/master/docs/Parameters.rst) is an exhaustive list of customization you can make.
-- [**Parallel Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
+- [**Distributed Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
 - [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
 - [**Optuna Hyperparameter Tuner**](https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258) provides automated tuning for LightGBM hyperparameters ([code examples](https://github.com/optuna/optuna/blob/master/examples/)).
 
@@ -92,6 +92,8 @@ LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 Ruby gem: https://github.com/ankane/lightgbm
 
 LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
+
+lightgbm-rs (Rust binding): https://github.com/vaaaaanquish/lightgbm-rs
 
 MLflow (experiment tracking, model monitoring framework): https://github.com/mlflow/mlflow
 

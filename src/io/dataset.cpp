@@ -1232,7 +1232,7 @@ void Dataset::ConstructHistogramsInner(
   }
 }
 
-// explicitly initilize template methods, for cross module call
+// explicitly initialize template methods, for cross module call
 template void Dataset::ConstructHistogramsInner<true, true>(
     const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
     data_size_t num_data, const score_t* gradients, const score_t* hessians,

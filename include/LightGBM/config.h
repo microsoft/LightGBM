@@ -27,7 +27,7 @@ namespace LightGBM {
 
 /*! \brief Types of tasks */
 enum TaskType {
-  kTrain, kPredict, kConvertModel, KRefitTree
+  kTrain, kPredict, kConvertModel, KRefitTree, kSaveBinary
 };
 const int kDefaultNumLeaves = 31;
 
@@ -102,6 +102,7 @@ struct Config {
   // desc = ``predict``, for prediction, aliases: ``prediction``, ``test``
   // desc = ``convert_model``, for converting model file into if-else format, see more information in `Convert Parameters <#convert-parameters>`__
   // desc = ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
+  // desc = ``save_binary``, load train (and validation) data then save dataset to binary file. Typical usage: ``save_binary`` first, then run multiple ``train`` tasks in parallel using the saved binary file
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
   TaskType task = TaskType::kTrain;
 
@@ -157,6 +158,7 @@ struct Config {
   // descl2 = **Note**: only works with CPU and ``serial`` tree learner
   // descl2 = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
   // descl2 = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
+  // descl2 = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
   bool linear_tree = false;
 
   // alias = train, train_data, train_data_file, data_filename
@@ -198,7 +200,7 @@ struct Config {
   // desc = ``feature``, feature parallel tree learner, aliases: ``feature_parallel``
   // desc = ``data``, data parallel tree learner, aliases: ``data_parallel``
   // desc = ``voting``, voting parallel tree learner, aliases: ``voting_parallel``
-  // desc = refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
+  // desc = refer to `Distributed Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
   std::string tree_learner = "serial";
 
   // alias = num_thread, nthread, nthreads, n_jobs
@@ -207,7 +209,7 @@ struct Config {
   // desc = for the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPUs use `hyper-threading <https://en.wikipedia.org/wiki/Hyper-threading>`__ to generate 2 threads per CPU core)
   // desc = do not set it too large if your dataset is small (for instance, do not use 64 threads for a dataset with 10,000 rows)
   // desc = be aware a task manager or any similar CPU monitoring tool might report that cores not being fully utilized. **This is normal**
-  // desc = for parallel learning, do not use all CPU cores because this will cause poor performance for the network communication
+  // desc = for distributed learning, do not use all CPU cores because this will cause poor performance for the network communication
   // desc = **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
   int num_threads = 0;
 
@@ -632,7 +634,7 @@ struct Config {
   bool feature_pre_filter = true;
 
   // alias = is_pre_partition
-  // desc = used for parallel learning (excluding the ``feature_parallel`` mode)
+  // desc = used for distributed learning (excluding the ``feature_parallel`` mode)
   // desc = ``true`` if training data are pre-partitioned, and different machines use different partitions
   bool pre_partition = false;
 
@@ -745,6 +747,7 @@ struct Config {
   // desc = produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
   // desc = **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/slundberg/shap>`__
   // desc = **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
+  // desc = **Note**: this feature is not implemented for linear trees
   bool predict_contrib = false;
 
   // [no-save]
@@ -959,11 +962,12 @@ struct Config {
 
   // check = >0
   // alias = num_machine
-  // desc = the number of machines for parallel learning application
+  // desc = the number of machines for distributed learning application
   // desc = this parameter is needed to be set in both **socket** and **mpi** versions
   int num_machines = 1;
 
   // check = >0
+  // default = 12400 (random for Dask-package)
   // alias = local_port, port
   // desc = TCP listen port for local machines
   // desc = **Note**: don't forget to allow this port in firewall settings before training
@@ -974,7 +978,7 @@ struct Config {
   int time_out = 120;
 
   // alias = machine_list_file, machine_list, mlist
-  // desc = path of file that lists machines for this parallel learning application
+  // desc = path of file that lists machines for this distributed learning application
   // desc = each line contains one IP and one port for one machine. The format is ``ip port`` (space as a separator)
   // desc = **Note**: can be used only in CLI version
   std::string machine_list_filename = "";

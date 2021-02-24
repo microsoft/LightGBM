@@ -24,7 +24,7 @@ jobs:
         with:
           fetch-depth: 5
           submodules: false
-      - name: Check that all tests succeeded
+      - name: Setup and run tests
         run: |
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniconda
