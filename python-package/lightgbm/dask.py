@@ -632,11 +632,12 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
-    # DaskLGBMClassifier does not support init_score, evaluation data, or early stopping
-    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
+    # DaskLGBMClassifier does not support evaluation data, or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
                  + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMClassifier support for callbacks and init_model is not tested
@@ -789,8 +790,8 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
-    # DaskLGBMRegressor does not support init_score, evaluation data, or early stopping
-    _base_doc = (_base_doc[:_base_doc.find('eval_set :')]
+    # DaskLGBMRegressor does not support evaluation data, or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
                  + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
@@ -926,10 +927,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
-    # DaskLGBMRanker does not support init_score, evaluation data, or early stopping
-    _base_doc = (_base_doc[:_base_doc.find('eval_set:')]
-                 + _base_doc[_base_doc.find('init_score :'):])
-
+    # DaskLGBMRanker does not support evaluation data, or early stopping
     _base_doc = (_base_doc[:_base_doc.find('eval_set :')]
                  + _base_doc[_base_doc.find('verbose :'):])
 

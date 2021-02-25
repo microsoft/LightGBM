@@ -193,7 +193,7 @@ _lgbmmodel_doc_fit = (
         The target values (class labels in classification, real numbers in regression).
     sample_weight : {sample_weight_shape}
         Weights of training data.
-    init_score : array-like of shape = [n_samples] or None, optional (default=None)
+    init_score : {init_score_shape}
         Init score of training data.
     group : {group_shape}
         Group/query data.
@@ -710,6 +710,7 @@ class LGBMModel(_LGBMModelBase):
         X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
         y_shape="array-like of shape = [n_samples]",
         sample_weight_shape="array-like of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="array-like of shape = [n_samples] or None, optional (default=None)",
         group_shape="array-like or None, optional (default=None)"
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
 
