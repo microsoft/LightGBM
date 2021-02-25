@@ -100,11 +100,7 @@ conda install -q -y -n $CONDA_ENV cloudpickle dask distributed joblib matplotlib
 
 # graphviz must come from conda-forge to avoid this on some linux distros:
 # https://github.com/conda-forge/graphviz-feedstock/issues/18
-conda install -q -y \
-    -n $CONDA_ENV \
-    -c conda-forge \
-        python-graphviz \
-        xorg-libxau
+conda install -q -y -n $CONDA_ENV -c conda-forge python-graphviz
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
