@@ -1186,6 +1186,7 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
         assert dask_params[param].default == sklearn_params[param].default, error_msg
 
 
+@pytest.mark.parametrize('task', tasks)
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
     task,
     client,
