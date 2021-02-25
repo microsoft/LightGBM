@@ -1255,3 +1255,57 @@ def test_sklearn_integration(estimator, check, client):
 def test_parameters_default_constructible(estimator):
     name, Estimator = estimator.__class__.__name__, estimator.__class__
     sklearn_checks.check_parameters_default_constructible(name, Estimator)
+
+
+@pytest.mark.parametrize('task', ['binary_classification', 'multi-class_classification', 'regression'])
+@pytest.mark.parametrize('output', data_output)
+def test_predict_with_raw_score(task, output, client):
+    if task.endswith('classification'):
+        objective = 'classification'
+        model_factory = lgb.DaskLGBMClassifier
+    elif task == 'regression':
+        objective = 'regression'
+        model_factory = lgb.DaskLGBMRegressor
+
+    if task.startswith('multi'):
+        n_centers = 3
+    else:
+        n_centers = 2
+    _, _, _, dX, dy, _ = _create_data(
+        objective=objective,
+        output=output,
+        centers=n_centers
+    )
+    params = {
+        'client': client,
+        'n_estimators': 1,
+        'num_leaves': 2,
+        'time_out': 5,
+        'min_sum_hessian': 0
+    }
+    model = model_factory(**params)
+    model.fit(dX, dy)
+    raw_predictions = model.predict(dX, raw_score=True).compute()
+    computed_mean = np.mean(raw_predictions, axis=0)
+
+    def compute_expected_predictions_mean(tree_df: pd.DataFrame):
+        """Computes the expected mean of the predictions from the dataframe of a tree with two leaves."""
+        leafs_df = tree_df.iloc[1:]  # remove root node
+        leafs_weights = leafs_df['weight'].values
+        leafs_values = leafs_df['value'].values
+        return leafs_values @ leafs_weights / leafs_weights.sum()
+
+    trees_df = model.booster_.trees_to_dataframe()
+    if task == 'multi-class_classification':
+        expected_mean = []
+        for i in range(3):  # we test for three classes
+            class_df = trees_df[trees_df.tree_index == i]
+            expected_class_mean = compute_expected_predictions_mean(class_df)
+            expected_mean.append(expected_class_mean)
+    else:
+        expected_mean = compute_expected_predictions_mean(trees_df)
+    np.testing.assert_almost_equal(computed_mean, expected_mean)
+
+    if task.endswith('classification'):
+        raw_probabilities = model.predict_proba(dX, raw_score=True).compute()
+        assert_eq(raw_predictions, raw_probabilities)
