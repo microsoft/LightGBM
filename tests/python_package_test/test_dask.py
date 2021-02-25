@@ -1188,7 +1188,7 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
 
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
     task,
-    client
+    client,
 ):
     if task == 'ranking':
         _, _, _, _, dX, dy, dw, dg = _create_ranking_data(
