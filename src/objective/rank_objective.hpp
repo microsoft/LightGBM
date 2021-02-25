@@ -104,7 +104,7 @@ class LambdarankNDCG : public RankingObjective {
         norm_(config.lambdarank_norm),
         truncation_level_(config.lambdarank_truncation_level),
         unbiased_(config.lambdarank_unbiased),
-        eta_(config.lambdarank_eta) {
+        bias_p_norm_(config.lambdarank_bias_p_norm) {
     label_gain_ = config.label_gain;
     // initialize DCG calculator
     DCGCalculator::DefaultLabelGain(&label_gain_);
@@ -121,7 +121,7 @@ class LambdarankNDCG : public RankingObjective {
       num_threads_ = omp_get_num_threads();
     }
 
-    position_bias_regularizer = 1.0f / (1.0f + eta_);
+    position_bias_regularizer = 1.0f / (1.0f + bias_p_norm_);
   }
 
   explicit LambdarankNDCG(const std::vector<std::string>& strs)
@@ -470,10 +470,11 @@ class LambdarankNDCG : public RankingObjective {
    * [arxiv.org/pdf/1809.05818.pdf]
    */
   bool unbiased_;
-  /*! \brief Position bias regularizer norm */
-  double eta_;
 
-  /*! \brief Position bias regularizer exponent, 1 / (1 + eta) */
+  /*! \brief Position bias regularizer norm */
+  double bias_p_norm_;
+
+  /*! \brief Position bias regularizer exponent, 1 / (1 + bias_p_norm_) */
   double position_bias_regularizer;
 
   /*! \brief Number of threads */

@@ -889,8 +889,7 @@ struct Config {
 
   // check = >=0.0
   // desc = used only in ``lambdarank`` application where ``lambdarank_unbiased = true``
-  // desc = position bias ratio regularizer exponent will be set to ``1 / (1 + eta)``
-  double lambdarank_eta = 0.5;
+  double lambdarank_bias_p_norm = 0.5;
 
   #pragma endregion
 
