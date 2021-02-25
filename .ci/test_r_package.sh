@@ -100,10 +100,12 @@ fi
 # Manually install Depends and Imports libraries + 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
+compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
-    packages+=", type = 'both'"
+    packages+=", type = 'binary'"
+    compile_from_source="never"
 fi
-Rscript --vanilla -e "options(install.packages.compile.from.source = 'both'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
+Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
 cd ${BUILD_DIRECTORY}
 

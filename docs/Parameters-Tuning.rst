@@ -7,6 +7,7 @@ This page contains parameters tuning guides for different scenarios.
 
 -  `Parameters <./Parameters.rst>`__
 -  `Python API <./Python-API.rst>`__
+-  `FLAML`_ for automated hyperparameter tuning
 -  `Optuna`_ for automated hyperparameter tuning
 
 Tune Parameters for the Leaf-wise (Best-first) Tree
@@ -214,3 +215,5 @@ Deal with Over-fitting
 -  Try increasing ``path_smooth``
 
 .. _Optuna: https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258
+
+.. _FLAML: https://github.com/microsoft/FLAML
