@@ -1033,11 +1033,10 @@ Objective Parameters
 
    -  used only in ``lambdarank`` application where ``lambdarank_unbiased = true``
 
--  ``lambdarank_eta`` :raw-html:`<a id="lambdarank_eta" title="Permalink to this parameter" href="#lambdarank_eta">&#x1F517;&#xFE0E;</a>`, default = ``0.5``, type = double, constraints: ``lambdarank_eta >= 0.0``
+-  ``lambdarank_bias_p_norm`` :raw-html:`<a id="lambdarank_bias_p_norm" title="Permalink to this parameter" href="#lambdarank_bias_p_norm">&#x1F517;&#xFE0E;</a>`, default = ``0.5``, type = double, constraints: ``lambdarank_bias_p_norm >= 0.0``
 
    -  used only in ``lambdarank`` application where ``lambdarank_unbiased = true``
 
-   -  position bias ratio regularizer exponent will be set to ``1 / (1 + eta)``
 
 Metric Parameters
 -----------------
