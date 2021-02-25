@@ -3,6 +3,7 @@
 
 import inspect
 import pickle
+import random
 import socket
 from itertools import groupby
 from os import getenv
@@ -1226,11 +1227,9 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
 
 @pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('output', data_output)
-@pytest.mark.parametrize('init_score', [0.25, 0.75])
 def test_init_score(
         task,
         output,
-        init_score,
         client):
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
@@ -1257,6 +1256,7 @@ def test_init_score(
         'num_leaves': 2,
         'time_out': 5
     }
+    init_score = random.random()
     if output.startswith('dataframe'):
         init_scores = dy.map_partitions(lambda x: pd.Series([init_score] * x.size))
     else:
@@ -1264,7 +1264,7 @@ def test_init_score(
     model = model_factory(client=client, **params)
     model.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
     # value of the root node is 0 when init_score is set
-    assert model._Booster.trees_to_dataframe()['value'][0] == 0
+    assert model.booster_.trees_to_dataframe()['value'][0] == 0
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
