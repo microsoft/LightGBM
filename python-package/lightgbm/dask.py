@@ -174,6 +174,7 @@ def _train_part(
 
     # construct local eval_set data.
     local_eval_set = None
+    local_eval_names = None
     local_eval_sample_weight = None
     local_eval_group = None
     n_evals = max([len(x.get('eval_set', [])) for x in list_of_parts])
@@ -181,7 +182,6 @@ def _train_part(
     if n_evals:
 
         local_eval_set = []
-        eval_names = []
         if has_eval_weights:
             local_eval_sample_weight = []
         if is_ranker:
@@ -225,10 +225,12 @@ def _train_part(
                     else:
                         g_e.extend(eval_group[i])
 
-                local_eval_names = part.get('eval_names')
-                if local_eval_names:
-                    if len(local_eval_names) > len(eval_names):
-                        eval_names = local_eval_names
+                eval_names = part.get('eval_names')
+                if eval_names:
+                    if not local_eval_names:
+                        local_eval_names = eval_names
+                    elif len(eval_names) > len(local_eval_names):
+                        local_eval_names = eval_names
 
             # _concat each eval component.
             local_eval_set.append((_concat(x_e), _concat(y_e)))
@@ -255,7 +257,7 @@ def _train_part(
                 eval_set=local_eval_set,
                 eval_sample_weight=local_eval_sample_weight,
                 eval_group=local_eval_group,
-                eval_names=eval_names if eval_names else None,
+                eval_names=local_eval_names,
                 **kwargs
             )
         else:
@@ -268,7 +270,7 @@ def _train_part(
                 sample_weight=weight,
                 eval_set=local_eval_set,
                 eval_sample_weight=local_eval_sample_weight,
-                eval_names=eval_names if eval_names else None,
+                eval_names=local_eval_names,
                 **kwargs
             )
 
