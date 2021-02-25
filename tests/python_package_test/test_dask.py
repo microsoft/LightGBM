@@ -1226,6 +1226,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
 
 @pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('output', data_output)
+@pytest.mark.parametrize('init_score', [0.25, 0.75])
 def test_init_score(
         task,
         output,
@@ -1236,6 +1237,13 @@ def test_init_score(
 
     if task == 'ranking':
         _, _, _, _, dX, dy, dw, dg = _create_ranking_data(
+            output=output,
+            group=None
+        )
+        model_factory = lgb.DaskLGBMRanker
+    else:
+        _, _, _, dX, dy, dw = _create_data(
+            objective=task,
             output=output,
         )
         dg = None
