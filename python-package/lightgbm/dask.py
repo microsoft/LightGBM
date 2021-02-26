@@ -809,7 +809,7 @@ class _DaskLGBMModel:
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
-        eval_stopping_rounds: Optional[int] = None,
+        early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
@@ -826,8 +826,8 @@ class _DaskLGBMModel:
         # easier to pass fit args as kwargs than to list_of_parts in _train.
         if eval_metric:
             kwargs['eval_metric'] = eval_metric
-        if eval_stopping_rounds:
-            kwargs['eval_stopping_rounds'] = eval_stopping_rounds
+        if early_stopping_rounds:
+            kwargs['early_stopping_rounds'] = early_stopping_rounds
 
         model = _train(
             client=_get_dask_client(self.client),
@@ -948,7 +948,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         eval_class_weight: Optional[List[_DaskCollection]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
-        eval_stopping_rounds: Optional[int] = None,
+        early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
@@ -959,8 +959,8 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
         if eval_metric:
             kwargs['eval_metric'] = eval_metric
-        if eval_stopping_rounds:
-            kwargs['eval_stopping_rounds'] = eval_stopping_rounds
+        if early_stopping_rounds:
+            kwargs['early_stopping_rounds'] = early_stopping_rounds
 
         return self._lgb_dask_fit(
             model_factory=LGBMClassifier,
@@ -1125,7 +1125,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         eval_sample_weight: Optional[List[_DaskCollection]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
-        eval_stopping_rounds: Optional[int] = None,
+        early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
@@ -1136,8 +1136,8 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
         if eval_metric:
             kwargs['eval_metric'] = eval_metric
-        if eval_stopping_rounds:
-            kwargs['eval_stopping_rounds'] = eval_stopping_rounds
+        if early_stopping_rounds:
+            kwargs['early_stopping_rounds'] = early_stopping_rounds
 
         return self._lgb_dask_fit(
             model_factory=LGBMRegressor,
@@ -1282,16 +1282,15 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskCollection]] = None,
-        eval_class_weight: Optional[List[_DaskCollection]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
         eval_at: Optional[List[int]] = None,
-        eval_stopping_rounds: Optional[int] = None,
+        early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
-        not_supported = ['init_score', 'eval_init_score', 'eval_class_weight']
+        not_supported = ['init_score', 'eval_init_score']
         for ns in not_supported:
             if eval(ns) is not None:
                 raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
@@ -1300,8 +1299,8 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             kwargs['eval_metric'] = eval_metric
         if eval_at:
             kwargs['eval_at'] = eval_at
-        if eval_stopping_rounds:
-            kwargs['eval_stopping_rounds'] = eval_stopping_rounds
+        if early_stopping_rounds:
+            kwargs['early_stopping_rounds'] = early_stopping_rounds
 
         return self._lgb_dask_fit(
             model_factory=LGBMRanker,

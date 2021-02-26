@@ -928,11 +928,11 @@ def test_eval_set_without_early_stopping(task, eval_names_prefix, client):
     else:
         assert evals_result_name == 'valid_0'
 
-    assert all([metric in evals_result[evals_result_name] for metric in eval_metrics])
     for i, metric in enumerate(eval_metrics):
         if task == 'ranking':
             metric += f'@{eval_at[i]}'
 
+        assert metric in evals_result[evals_result_name]
         assert len(evals_result[evals_result_name][metric]) == full_trees
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
