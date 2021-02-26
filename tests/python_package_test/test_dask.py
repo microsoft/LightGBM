@@ -1309,3 +1309,5 @@ def test_predict_with_raw_score(task, output, client):
     if task.endswith('classification'):
         raw_probabilities = model.predict_proba(dX, raw_score=True).compute()
         assert_eq(raw_predictions, raw_probabilities)
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
