@@ -106,7 +106,7 @@ Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); insta
 if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
     Download-File-With-Retries "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/miktexsetup-4.1-x86.zip" -destfile "miktexsetup.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup.zip", "miktex")
+    [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup.zip", "miktexsetup_standalone")
     Write-Output "Setting up MiKTeX"
     .\miktex\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
     Write-Output "Installing MiKTeX"
