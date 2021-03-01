@@ -57,7 +57,7 @@ $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
-$env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
+$env:CTAN_PACKAGE_ARCHIVE = "https://mirror.las.iastate.edu/tex-archive/systems/win32/miktex/tm/packages/"
 
 # hack to get around this:
 # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
