@@ -70,6 +70,7 @@ LightGBM adds nodes to trees based on the gain from adding that node, regardless
 
 .. image:: ./_static/images/leaf-wise.png
    :align: center
+   :alt: A diagram depicting leaf wise tree growth in which only the node with the highest loss change is split and not bother with the rest of the nodes in the same level. This results in an asymmetrical tree where subsequent splitting is happenning only on one side of the tree.
 
 Because of this growth strategy, it isn't straightforward to use ``max_depth`` alone to limit the complexity of trees. The ``num_leaves`` parameter sets the maximum number of nodes per tree. Decrease ``num_leaves`` to reduce training time.
 

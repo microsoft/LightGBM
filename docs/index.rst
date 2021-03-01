@@ -6,6 +6,7 @@
 .. image:: ./logo/LightGBM_logo_black_text.svg
    :align: center
    :width: 600
+   :alt: The Light G. B. M. logo with black text.
 
 |
 

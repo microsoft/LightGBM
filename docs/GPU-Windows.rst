@@ -46,18 +46,21 @@ To modify PATH, just follow the pictures after going to the ``Control Panel``:
 .. image:: ./_static/images/screenshot-system.png
    :align: center
    :target: ./_static/images/screenshot-system.png
+   :alt: A screenshot of the System option under System and Security of the Control Panel
 
 Then, go to ``Advanced`` > ``Environment Variables...``:
 
 .. image:: ./_static/images/screenshot-advanced-system-settings.png
    :align: center
    :target: ./_static/images/screenshot-advanced-system-settings.png
+   :alt: A screenshot of the System Properties window
 
 Under ``System variables``, the variable ``Path``:
 
 .. image:: ./_static/images/screenshot-environment-variables.png
    :align: center
    :target: ./_static/images/screenshot-environment-variables.png
+   :alt: A screenshot of the Environment variables window with variable path selected under the system variables
 
 --------------
 
@@ -105,6 +108,7 @@ You may choose a version other than the most recent one if you need a previous M
 .. image:: ./_static/images/screenshot-mingw-installation.png
    :align: center
    :target: ./_static/images/screenshot-mingw-installation.png
+   :alt: A screenshot of the Min G. W. installation setup settings window
 
 Then, add to your PATH the following (to adjust to your MinGW version):
 
@@ -123,6 +127,7 @@ You can check which MinGW version you are using by running the following in a co
 .. image:: ./_static/images/screenshot-r-mingw-used.png
    :align: center
    :target: ./_static/images/screenshot-r-mingw-used.png
+   :alt: A screenshot of the administrator command prompt where G. C. C. version is being checked 
 
 To check whether you need 32-bit or 64-bit MinGW for R, install LightGBM as usual and check for the following:
 
@@ -220,6 +225,7 @@ This is what you should (approximately) get at the end of Boost compilation:
 .. image:: ./_static/images/screenshot-boost-compiled.png
    :align: center
    :target: ./_static/images/screenshot-boost-compiled.png
+   :alt: A screenshot of the command prompt that ends with text that reads - updated 14621 targets
 
 If you are getting an error:
 
@@ -243,6 +249,7 @@ Installing Git for Windows is straightforward, use the following `link`_.
 .. image:: ./_static/images/screenshot-git-for-windows.png
    :align: center
    :target: ./_static/images/screenshot-git-for-windows.png
+   :alt: A screenshot of the website to download git that shows various versions of git compatible with 32 bit and 64 bit Windows separately
 
 Now, we can fetch LightGBM repository for GitHub. Run Git Bash and the following command:
 
@@ -270,6 +277,7 @@ Installing CMake requires one download first and then a lot of configuration for
 .. image:: ./_static/images/screenshot-downloading-cmake.png
    :align: center
    :target: ./_static/images/screenshot-downloading-cmake.png
+   :alt: A screenshot of the binary distributions of c-make for downloading on Windows 64 bit
 
 -  Download `CMake`_ (3.8 or higher)
 
@@ -288,10 +296,12 @@ Installing CMake requires one download first and then a lot of configuration for
    .. image:: ./_static/images/screenshot-create-directory.png
       :align: center
       :target: ./_static/images/screenshot-create-directory.png
+      :alt: A screenshot with a pop-up window that reads - Build directory does not exist, should I recreate it? 
 
    .. image:: ./_static/images/screenshot-mingw-makefiles-to-use.png
       :align: center
       :target: ./_static/images/screenshot-mingw-makefiles-to-use.png
+      :alt: A screenshot that asks to sepcify the generator for the project which should be selected as Min G W makefiles and selected as the use default native compilers option
 
 -  Lookup for ``USE_GPU`` and check the checkbox
 
