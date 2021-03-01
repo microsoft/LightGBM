@@ -62,6 +62,99 @@ Dask
 
 LightGBM's Python package supports distributed learning via `Dask`_. This integration is maintained by LightGBM's maintainers.
 
+Quick Dask Examples
+'''''''''''''''''''
+
+Dask-Based Training
+'''''''''''''''''''
+
+This section contains detailed information on performing LightGBM distributed training using Dask.
+
+Configuring the Dask Cluster
+****************************
+
+**Allocating Threads**
+
+When setting up a Dask cluster for training, give each Dask worker process at least two threads. If you do not do this, training might be substantially slower because communication work and training work will block each other.
+
+If you do not have other significant processes competing with Dask for resources, just accept the default ``nthreads`` from your chosen ``dask.distributed`` cluster.
+
+.. code:: python
+
+  from distributed import Client, LocalCluster
+
+  cluster = LocalCluster(n_workers=3)
+  client = Client(cluster)
+
+**Managing Memory**
+
+Use the Dask diagnostic dashboard or your preferred monitoring tool to monitor Dask workers' memory consumption during training. As described in `the Dask worker documentation`_, Dask workers will automatically start spilling data to Disk if memory consumptio gets too high. This can substantially slow down computations, since disk I/O is usually much slower than reading the same data from memory.
+
+  `At 60% of memory load, [Dask will] spill least recently used data to disk`
+
+To reduce the risk of hitting memory limits, consider restarting each worker process before running any data loading or training code.
+
+.. code:: python
+
+  client.restart()
+
+Setting Up Training Data
+*************************
+
+The estimators in ``lightgbm.dask`` expect that matrix-like or array-like data are provided in Dask DataFrame, Dask Array, or (in some cases) Dask Series format. See `the Dask DataFrame documentation`_ and `the Dask Array documentation`_ for more information on how to create such data structures.
+
+.. image:: ./_static/images/dask-initial-setup.svg
+  :align: center
+  :width: 600px
+  :alt: On the left, rectangles showing a 5 by 5 grid for a local dataset. On the right, two circles representing Dask workers, one with a 3 by 5 grid and one with a 2 by 5 grid.
+  :target: ./_static/images/dask-initial-setup.svg
+
+While setting up for training, ``lightgbm`` will concatenate all of the partitions on a work into a single dataset. Distributed training then proceeds with one LightGBM worker process per Dask worker.
+
+.. image:: ./_static/images/dask-concat.svg
+  :align: center
+  :width: 600px
+  :alt: A section labeled "before" showing two grids and a section labeled "after" showing a single grid that looks like the two from "before" stacked one on top of the other.
+  :target: ./_static/images/dask-concat.svg
+
+When setting up data partitioning for LightGBM training with Dask, try to follow these suggestions:
+
+* ensure that each worker in the cluster has a piece of the training data
+* try to give each worker roughly the same amount of data, especially if your dataset is small
+* if you plan to train multiple models (for example, to tune hyperparameters) on the same data use ``distributed.Client.persist()`` before training to materialize the data one time
+
+Using a Specific Dask Client
+****************************
+
+In most situations, you should not need to tell ``lightgbm.dask`` to use a specific Dask client. By default, whenever you use code from that module LightGBM will call ``distributed.default_client()`` to find the most recent created client.
+
+However, you might want to explicitly control the Dask client used by LightGBM if you have multiple active clients in the same session. This is useful in more complex workflows like running multiple training jobs on different Dask clusters.
+
+LightGBM's Dask estimators support setting an attribute ``client`` to control the client that is used.
+
+.. code:: python
+
+  import lightgbm as lgb
+  from distributed import LocalCluster, Client
+
+  cluster = LocalCluster()
+  client = Client(cluster)
+
+  # option 1: keyword argumentt in constructor
+  clf = lgb.DaskLGBMClassifier(client=client)
+
+  # option 2: set_params() after construction
+  clf = lgb.DaskLGBMClassifier()
+  clf.set_params(client=client)
+
+Note that the ``client`` for an estimator will not be stored if the model object is pickled. If you want to control the client used by a model object loaded from disk, use ``set_params()`` after loading. For more details on that, see `Saving Dask Models <#saving-dask-models>`__.
+
+Using Specific Ports
+********************
+
+Saving Dask Models
+''''''''''''''''''
+
 Kubeflow
 ^^^^^^^^
 
@@ -174,6 +267,12 @@ Example
 .. _MMLSpark: https://aka.ms/spark
 
 .. _this MMLSpark example: https://github.com/Azure/mmlspark/blob/master/notebooks/samples/LightGBM%20-%20Quantile%20Regression%20for%20Drug%20Discovery.ipynb
+
+.. _the Dask Array documentation: https://docs.dask.org/en/latest/array.html
+
+.. _the Dask DataFrame documentation: https://docs.dask.org/en/latest/dataframe.html
+
+.. _the Dask worker documentation: https://distributed.dask.org/en/latest/worker.html#memory-management
 
 .. _the MMLSpark Documentation: https://github.com/Azure/mmlspark/blob/master/docs/lightgbm.md
 
