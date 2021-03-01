@@ -126,7 +126,7 @@ When setting up data partitioning for LightGBM training with Dask, try to follow
 Using a Specific Dask Client
 ****************************
 
-In most situations, you should not need to tell ``lightgbm.dask`` to use a specific Dask client. By default, whenever you use code from that module LightGBM will call ``distributed.default_client()`` to find the most recent created client.
+In most situations, you should not need to tell ``lightgbm.dask`` to use a specific Dask client. By default, the client returned by ``distributed.default_client()`` will be used.
 
 However, you might want to explicitly control the Dask client used by LightGBM if you have multiple active clients in the same session. This is useful in more complex workflows like running multiple training jobs on different Dask clusters.
 
@@ -141,19 +141,167 @@ LightGBM's Dask estimators support setting an attribute ``client`` to control th
   client = Client(cluster)
 
   # option 1: keyword argumentt in constructor
-  clf = lgb.DaskLGBMClassifier(client=client)
+  dask_model = lgb.DaskLGBMClassifier(client=client)
 
   # option 2: set_params() after construction
-  clf = lgb.DaskLGBMClassifier()
-  clf.set_params(client=client)
+  dask_model = lgb.DaskLGBMClassifier()
+  dask_model.set_params(client=client)
 
 Note that the ``client`` for an estimator will not be stored if the model object is pickled. If you want to control the client used by a model object loaded from disk, use ``set_params()`` after loading. For more details on that, see `Saving Dask Models <#saving-dask-models>`__.
 
 Using Specific Ports
 ********************
 
+At the beginning of training, ``lightgbm.dask`` sets up a LightGBM network where each Dask worker runs one long-running task that acts as a LightGBM worker. During training, LightGBM workers communicate with each other over TCP sockets. By default, random open ports are used when creating these sockets.
+
+If the communication between Dask workers in the cluster used for training is restricted by firewall rules, you must tell LightGBM exactly what ports to use.
+
+**Option 1: Provide a specific list of addresses and ports**
+
+LightGBM supports a parameter ``machines``, a comma-delimited string where each entry refers to one worker (host name or IP) and a port that that worker will accept connections on. If you provide this parameter to the estimators in ``lightgbm.dask``, LightGBM will not search randomly for ports.
+
+For example, consider the case where you are running one Dask worker process on each of the following IP addresses:
+
+::
+
+  10.0.1.0
+  10.0.2.0
+  10.0.3.0
+
+You could edit your firewall rules to open one additional port on each of these hosts, then provide ``machines`` directly.
+
+.. code:: python
+
+  import lightgbm as lgb
+
+  machines = "10.0.1.0:12401,10.0.2.0:12402,10.0.3.0:15000"
+  dask_model = lgb.DaskLGBMRegressor(machines=machines)
+
+If you are running multiple Dask worker processes on any machine, be sure that there are multiple entries for that IP address, with different ports. For example, if you were running a cluster with ``nprocs=2`` (2 Dask worker processes per machine), you might open two additional ports on each of these hosts, then provide ``machines`` as follows.
+
+.. code:: python
+
+  import lightgbm as lgb
+
+  machines = ",".join([
+    "10.0.1.0:16000",
+    "10.0.1.0:16001",
+    "10.0.2.0:16000",
+    "10.0.2.0:16001",
+  ])
+  dask_model = lgb.DaskLGBMRegressor(machines=machines)
+
+.. warning::
+
+  Providing ``machines`` gives you complete control over the networking details of training, but it also makes the training process fragile. Training will fail if you use ``machines`` and any of the following are true:
+
+  * any of the ports mentioned in ``machines`` are not open when training begins
+  * some partitions of the training data are held by machines that that are not present in ``machines``
+  * some machines mentioned in ``machines`` do not hold any of the training data
+
+**Option 2: specify one port to use on every worker**
+
+If you are only running one Dask worker process on each host, and if you can reliably identify a port that is open on every host, using ``machines`` is unnecessarily complicated. If ``local_listen_port`` is given and ``machines`` is not, LightGBM will not search for ports randomly, but it will limit the list of addresses in the LightGBM network to those Dask workers that have a piece of the training data.
+
+For example, consider the case where you are running one Dask worker process on each of the following IP addresses:
+
+::
+
+  10.0.1.0
+  10.0.2.0
+  10.0.3.0
+
+You could edit your firewall rules to allow communication between any of the workers over one port, then provide that port via parameter ``local_listen_port``.
+
+.. code:: python
+
+  import lightgbm as lgb
+
+  dask_model = lgb.DaskLGBMRegressor(local_listen_port=12400)
+
+.. warning::
+
+  Providing ``local_listen_port`` is slightly less fragile than ``machines`` because LightGBM will automatically figure out which workers have pieces of the training data. However, using this method, training can fail if any of the following are true:
+
+  * the port ``local_listen_port`` is not open on any of the worker hosts
+  * any machine has multiple Dask worker processes running on it
+
 Saving Dask Models
 ''''''''''''''''''
+
+After training with Dask, you have several options for saving a fitted model.
+
+**Option 1: pickle the Dask estimator**
+
+LightGBM's Dask estimators can be pickled directly with ``cloudpickle``, ``joblib``, or ``pickle``.
+
+.. code:: python
+
+  import dask.array as da
+  import pickle
+  import lightgbm as lgb
+  from distributed import Client, LocalCluster
+
+  cluster = LocalCluster(n_workers=2)
+  client = Client(cluster)
+
+  X = da.random.random((1000, 10), (500, 10))
+  y = da.random.random((1000,))
+
+  dask_model = lgb.DaskLGBMRegressor()
+  dask_model.fit(X, y)
+
+  with open("dask-model.pkl", "wb") as f:
+      pickle.dump(dask_model, f)
+
+A model saved this way can then later be loaded with whichever serialization library you used to save it.
+
+.. code:: python
+
+  import pickle
+  with open("dask-model.pkl", "rb") as f:
+      dask_model = pickle.load(f)
+
+.. note::
+
+  If you explicitly set a Dask client (see `Using a Specific Dask Client <#using-a-specific-dask-client>`__), it will not be saved when pickling the estimator. When loading a Dask estimator from disk, if you need to use a specific client you can add it after loading with ``dask_model.set_params(client=client)``.
+
+**Option 2: pickle the sklearn estimator**
+
+The estimators available from ``lightgbm.dask`` can be converted to an instance of the equivalent class from ``lightgbm.sklearn``. Choosing this option allows you to use Dask for training but avoid depending on any Dask libraries at scoring time.
+
+.. code:: python
+
+  import dask.array as da
+  import pickle
+  import lightgbm as lgb
+  from distributed import Client, LocalCluster
+
+  cluster = LocalCluster(n_workers=2)
+  client = Client(cluster)
+
+  X = da.random.random((1000, 10), (500, 10))
+  y = da.random.random((1000,))
+
+  dask_model = lgb.DaskLGBMRegressor()
+  dask_model.fit(X, y)
+
+  # convert to sklearn equivalent
+  sklearn_model = dask_model.to_local()
+
+  print(type(sklearn_model))
+  #> lightgbm.sklearn.LGBMRegressor
+
+  with open("sklearn-model.pkl", "wb") as f:
+      pickle.dump(sklearn_model, f)
+
+A model saved this way can then later be loaded with whichever serialization library you used to save it.
+
+.. code:: python
+
+  import pickle
+  with open("sklearn-model.pkl", "rb") as f:
+      sklearn_model = pickle.load(f)
 
 Kubeflow
 ^^^^^^^^
