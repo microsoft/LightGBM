@@ -937,7 +937,7 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
   DatasetLoader loader(config, nullptr, 1, nullptr);
   *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
                                         num_sample_row,
-                                        static_cast<data_size_t>(num_total_row));
+                                        static_cast<data_size_t>(num_total_row), "");
   API_END();
 }
 
@@ -959,6 +959,7 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
                          int32_t nrow,
                          int32_t ncol,
                          int32_t start_row) {
+  Log::Info("start_row %d nrow: %d", start_row, nrow);
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
@@ -976,6 +977,7 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
   }
   OMP_THROW_EX();
   if (start_row + nrow == p_dataset->num_data()) {
+    Log::Info("Dataset PushRows FinishLoad");
     p_dataset->FinishLoad();
   }
   API_END();
@@ -1014,6 +1016,7 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
   API_END();
 }
 
+
 int LGBM_DatasetCreateFromMat(const void* data,
                               int data_type,
                               int32_t nrow,
@@ -1031,6 +1034,35 @@ int LGBM_DatasetCreateFromMat(const void* data,
                                     parameters,
                                     reference,
                                     out);
+}
+
+
+static inline std::vector<int32_t> CreateSampleIndices(const Config& config, int32_t total_nrow) {
+  Random rand(config.data_random_seed);
+  int sample_cnt = static_cast<int>(total_nrow < config.bin_construct_sample_cnt ? total_nrow : config.bin_construct_sample_cnt);
+  return rand.Sample(total_nrow, sample_cnt);
+}
+
+
+int LGBM_SampleIndices(int32_t total_nrow,
+                const char* parameters,
+                void* out) {
+  // This API is to keep python binding's behavior the same with C++ implementation.
+  // Sample count, random seed etc. should be provided in parameters.
+  API_BEGIN();
+  if (out == nullptr) {
+    Log::Fatal("sample indicies output is nullptr");
+  }
+  auto param = Config::Str2Map(parameters);
+  Config config;
+  config.Set(param);
+
+  auto sample_indices = CreateSampleIndices(config, total_nrow);
+
+  static_assert (sizeof(int) == 4, "int size is not 4");
+  memcpy(out, sample_indices.data(), sizeof(int32_t) * sample_indices.size());
+
+  API_END();
 }
 
 
@@ -1092,7 +1124,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              ncol,
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, total_nrow));
+                                             sample_cnt, total_nrow, ""));
   } else {
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
@@ -1171,7 +1203,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow));
+                                             sample_cnt, nrow, ""));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1242,7 +1274,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow));
+                                             sample_cnt, nrow, ""));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1318,7 +1350,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(sample_values.size()),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow));
+                                             sample_cnt, nrow, ""));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(

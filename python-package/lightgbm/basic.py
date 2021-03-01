@@ -1115,12 +1115,127 @@ class Dataset:
         self.feature_penalty = None
         self.monotone_constraints = None
         self.version = 0
+        self._start_row = 0 # Used when pushing rows one by one.
 
     def __del__(self):
         try:
             self._free_handle()
         except AttributeError:
             pass
+
+    # TODO how to keep the default value the same with C++ config.h
+    DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT = 200000
+
+    def create_sample_indices(self, total_nrow):
+        """Create sample indices for the given parameter of the Dataset.
+
+        Parameters
+        ----------
+        total_nrow: int
+            Total number of rows to sample from.
+            If Dataset has multiple input data, this should be the sum of rows of every file.
+
+        Returns
+        -------
+        indices: numpy array
+            Indices for sampled data.
+        """
+        param_str = param_dict_to_str(self.params)
+        sample_cnt = self.params.get("bin_construct_sample_cnt",
+                                     self.DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT)
+        indices = np.zeros(sample_cnt, dtype=np.int32)
+        ptr_data, _, _ = c_int_array(indices)
+
+        _safe_call(_LIB.LGBM_SampleIndices(
+            ctypes.c_int(total_nrow),
+            c_str(param_str),
+            ptr_data,
+        ))
+        return indices
+
+    def init_from_sample(self, sample_data, sample_indices, sample_cnt, total_nrow):
+        """Get the used parameters in the Dataset.
+
+        Parameters
+        ----------
+        sample_data: 2d numpy array (dtype must be double, in F order)
+            Sample data value in row major order.
+            Note: each column contains len(sample_indices[i]) number of values.
+        sample_indices: List[List[int]]
+            Sample data row index for each column.
+        sample_cnt: int
+            Number of samples.
+        total_nrow: int
+            Total number of rows for all input file.
+
+        Returns
+        -------
+        self : Dataset
+            Constructed Dataset object.
+        """
+        if len(sample_data.shape) != 2:
+            raise ValueError('sample_data numpy.ndarray must be 2 dimensional')
+        assert sample_data.dtype == np.double, "sample data type {} is not double".format(sample_data.dtype)
+        assert sample_data.shape[1] == len(sample_indices), "#sample data column != #column indices"
+
+        ncol = len(sample_indices)
+
+        for i in range(ncol):
+            if sample_indices[i].dtype != np.int32:
+                raise ValueError("sample_indices[{}] type {} is not int32".format(i, sample_indices[i].dtype))
+
+        # c type: double**
+        # each double* element points to start of each column of sample data.
+        sample_col_ptr = (ctypes.POINTER(ctypes.c_double) * ncol)()
+        # c type int**
+        # each int* points to start of indices for each column
+        indices_col_ptr = (ctypes.POINTER(ctypes.c_int32) * ncol)()
+        for i in range(ncol):
+            sample_col_ptr[i] = c_float_array(sample_data[:, i])[0]
+            indices_col_ptr[i] = c_int_array(sample_indices[i])[0]
+
+        num_per_col = np.array([len(d) for d in sample_indices], dtype=np.int32)
+        num_per_col_ptr, _, _ = c_int_array(num_per_col)
+
+        self.handle = ctypes.c_void_p()
+        params_str = param_dict_to_str(self.params)
+        _safe_call(_LIB.LGBM_DatasetCreateFromSampledColumn(
+            ctypes.cast(sample_col_ptr, ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
+            ctypes.cast(indices_col_ptr, ctypes.POINTER(ctypes.POINTER(ctypes.c_int32))),
+            ctypes.c_int32(ncol),
+            num_per_col_ptr,
+            ctypes.c_int32(sample_cnt),
+            ctypes.c_int32(total_nrow),
+            c_str(params_str),
+            ctypes.byref(self.handle),
+        ))
+        return self
+
+    def push_rows(self, data):
+        """Add rows to Dataset.
+
+        Args:
+            data: numpy 1-D array
+
+        Returns
+        -------
+        self : Dataset
+            Dataset object.
+        """
+        nrow, ncol = data.shape
+        data = np.array(data.reshape(data.size), dtype=data.dtype, copy=False)
+        data_ptr, data_type, _ = c_float_array(data)
+
+        _safe_call(_LIB.LGBM_DatasetPushRows(
+            self.handle,
+            data_ptr,
+            data_type,
+            ctypes.c_int32(nrow),
+            ctypes.c_int32(ncol),
+            ctypes.c_int32(self._start_row),
+        ))
+        self._start_row += nrow
+        return self
 
     def get_params(self):
         """Get the used parameters in the Dataset.

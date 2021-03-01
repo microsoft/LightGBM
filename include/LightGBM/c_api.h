@@ -215,6 +215,17 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                                 DatasetHandle* out);
 
 /*!
+ * \brief Create sample indices for total nrow.
+ * \param total_nrow Number of all data rows
+ * \param parameters Additional parameters, specify sample count and random seed in parameter
+ * \param[out] out Created indices, type is int32_t, caller should insure out contains enough space to hold indices
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t total_nrow,
+                       const char* parameters,
+                       void* out);
+
+/*!
  * \brief Create dataset from dense matrix.
  * \param data Pointer to the data space
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
