@@ -1258,7 +1258,7 @@ def test_sklearn_integration(estimator, check, client):
 @pytest.mark.parametrize("estimator", list(_tested_estimators()))
 def test_parameters_default_constructible(estimator):
     name = estimator.__class__.__name__
-    if sk_version > parse_version("0.23"):
+    if sk_version >= parse_version("0.24"):
         Estimator = estimator
     else:
         Estimator = estimator.__class__
