@@ -122,9 +122,10 @@ std::vector<std::vector<int>> FindGroups(
     const data_size_t cur_non_zero_cnt =
         is_filtered_feature ? 0 : num_per_col[fidx];
     std::vector<int> available_groups;
-    for (int gid = 0; gid < static_cast<int>(features_in_group.size()); ++gid) {
-      auto cur_num_bin = group_num_bin[gid] + bin_mappers[fidx]->num_bin() +
+    auto bin_part = bin_mappers[fidx]->num_bin() +
                          (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0);
+    for (int gid = 0; gid < static_cast<int>(features_in_group.size()); ++gid) {
+      auto cur_num_bin = group_num_bin[gid] + bin_part;
       if (group_total_data_cnt[gid] + cur_non_zero_cnt <=
           total_sample_cnt + single_val_max_conflict_cnt) {
         if (!is_use_gpu || cur_num_bin <= max_bin_per_group) {
