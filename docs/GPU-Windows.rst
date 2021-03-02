@@ -46,18 +46,21 @@ To modify PATH, just follow the pictures after going to the ``Control Panel``:
 .. image:: ./_static/images/screenshot-system.png
    :align: center
    :target: ./_static/images/screenshot-system.png
+   :alt: A screenshot of the System option under System and Security of the Control Panel
 
 Then, go to ``Advanced`` > ``Environment Variables...``:
 
 .. image:: ./_static/images/screenshot-advanced-system-settings.png
    :align: center
    :target: ./_static/images/screenshot-advanced-system-settings.png
+   :alt: A screenshot of the System Properties window
 
 Under ``System variables``, the variable ``Path``:
 
 .. image:: ./_static/images/screenshot-environment-variables.png
    :align: center
    :target: ./_static/images/screenshot-environment-variables.png
+   :alt: A screenshot of the Environment variables window with variable path selected under the system variables
 
 --------------
 
@@ -105,6 +108,7 @@ You may choose a version other than the most recent one if you need a previous M
 .. image:: ./_static/images/screenshot-mingw-installation.png
    :align: center
    :target: ./_static/images/screenshot-mingw-installation.png
+   :alt: A screenshot of the Min G. W. installation setup settings window
 
 Then, add to your PATH the following (to adjust to your MinGW version):
 
@@ -123,6 +127,7 @@ You can check which MinGW version you are using by running the following in a co
 .. image:: ./_static/images/screenshot-r-mingw-used.png
    :align: center
    :target: ./_static/images/screenshot-r-mingw-used.png
+   :alt: A screenshot of the administrator command prompt where G. C. C. version is being checked 
 
 To check whether you need 32-bit or 64-bit MinGW for R, install LightGBM as usual and check for the following:
 
@@ -220,6 +225,7 @@ This is what you should (approximately) get at the end of Boost compilation:
 .. image:: ./_static/images/screenshot-boost-compiled.png
    :align: center
    :target: ./_static/images/screenshot-boost-compiled.png
+   :alt: A screenshot of the command prompt that ends with text that reads - updated 14621 targets
 
 If you are getting an error:
 
@@ -243,6 +249,7 @@ Installing Git for Windows is straightforward, use the following `link`_.
 .. image:: ./_static/images/screenshot-git-for-windows.png
    :align: center
    :target: ./_static/images/screenshot-git-for-windows.png
+   :alt: A screenshot of the website to download git that shows various versions of git compatible with 32 bit and 64 bit Windows separately
 
 Now, we can fetch LightGBM repository for GitHub. Run Git Bash and the following command:
 
@@ -270,6 +277,7 @@ Installing CMake requires one download first and then a lot of configuration for
 .. image:: ./_static/images/screenshot-downloading-cmake.png
    :align: center
    :target: ./_static/images/screenshot-downloading-cmake.png
+   :alt: A screenshot of the binary distributions of c-make for downloading on Windows 64 bit
 
 -  Download `CMake`_ (3.8 or higher)
 
@@ -288,16 +296,19 @@ Installing CMake requires one download first and then a lot of configuration for
    .. image:: ./_static/images/screenshot-create-directory.png
       :align: center
       :target: ./_static/images/screenshot-create-directory.png
+      :alt: A screenshot with a pop-up window that reads - Build directory does not exist, should I recreate it? 
 
    .. image:: ./_static/images/screenshot-mingw-makefiles-to-use.png
       :align: center
       :target: ./_static/images/screenshot-mingw-makefiles-to-use.png
+      :alt: A screenshot that asks to sepcify the generator for the project which should be selected as Min G W makefiles and selected as the use default native compilers option
 
 -  Lookup for ``USE_GPU`` and check the checkbox
 
    .. image:: ./_static/images/screenshot-use-gpu.png
       :align: center
       :target: ./_static/images/screenshot-use-gpu.png
+      :alt: A screenshot of the C Make window where the checkbox with the test Use G P U is checked.
 
 -  Click ``Configure``
 
@@ -306,6 +317,7 @@ Installing CMake requires one download first and then a lot of configuration for
    .. image:: ./_static/images/screenshot-configured-lightgbm.png
       :align: center
       :target: ./_static/images/screenshot-configured-lightgbm.png
+      :alt: A screenshot of the C Make window after clicking on the configure button
 
    ::
 
@@ -366,6 +378,7 @@ You can do everything in the Git Bash console you left open:
 .. image:: ./_static/images/screenshot-lightgbm-with-gpu-support-compiled.png
    :align: center
    :target: ./_static/images/screenshot-lightgbm-with-gpu-support-compiled.png
+      :alt: A screenshot of the gitbash window with Light G B M successfully installed
 
 If everything was done correctly, you now compiled CLI LightGBM with GPU support!
 
@@ -382,6 +395,7 @@ You can now test LightGBM directly in CLI in a **command prompt** (not Git Bash)
 .. image:: ./_static/images/screenshot-lightgbm-in-cli-with-gpu.png
    :align: center
    :target: ./_static/images/screenshot-lightgbm-in-cli-with-gpu.png
+      :alt: A screenshot of the command prompt where a binary classification model is being trained using Light G B M
 
 Congratulations for reaching this stage!
 
@@ -397,6 +411,7 @@ Now that you compiled LightGBM, you try it... and you always see a segmentation 
 .. image:: ./_static/images/screenshot-segmentation-fault.png
    :align: center
    :target: ./_static/images/screenshot-segmentation-fault.png
+   :alt: A screenshot of the command prompt where a segmentation fault has occured while using Light B G M
 
 Please check if you are using the right device (``Using GPU device: ...``). You can find a list of your OpenCL devices using `GPUCapsViewer`_, and make sure you are using a discrete (AMD/NVIDIA) GPU if you have both integrated (Intel) and discrete GPUs installed.
 Also, try to set ``gpu_device_id = 0`` and ``gpu_platform_id = 0`` or ``gpu_device_id = -1`` and ``gpu_platform_id = -1`` to use the first platform and device or the default platform and device.
@@ -411,6 +426,7 @@ You will have to redo the compilation steps for LightGBM to add debugging mode. 
 .. image:: ./_static/images/screenshot-files-to-remove.png
    :align: center
    :target: ./_static/images/screenshot-files-to-remove.png
+   :alt: A screenshot of the Light G B M folder with 1 folder and 3 files selected to be removed
 
 Once you removed the file, go into CMake, and follow the usual steps.
 Before clicking "Generate", click on "Add Entry":
@@ -418,12 +434,14 @@ Before clicking "Generate", click on "Add Entry":
 .. image:: ./_static/images/screenshot-added-manual-entry-in-cmake.png
    :align: center
    :target: ./_static/images/screenshot-added-manual-entry-in-cmake.png
+   :alt: A screenshot of the Cache Entry popup where the name is set to C Make_Build_Type in all caps, the type is set to STRING in all caps and the value is set to Debug
 
 In addition, click on Configure and Generate:
 
 .. image:: ./_static/images/screenshot-configured-and-generated-cmake.png
    :align: center
    :target: ./_static/images/screenshot-configured-and-generated-cmake.png
+   :alt: A screenshot of the C Make window after clicking on configure and generate
 
 And then, follow the regular LightGBM CLI installation from there.
 
@@ -437,6 +455,7 @@ open a command prompt and run the following:
 .. image:: ./_static/images/screenshot-debug-run.png
    :align: center
    :target: ./_static/images/screenshot-debug-run.png
+   :alt: A screenshot of the command prompt after the command above is run
 
 Type ``run`` and press the Enter key.
 
