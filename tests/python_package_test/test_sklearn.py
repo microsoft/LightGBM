@@ -111,7 +111,7 @@ def test_multiclass():
     assert gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
-def test_lambdarank():
+def lambdarank_test_runner(lambdarank_unbiased=False, **kwargs):
     X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                        '../../examples/lambdarank/rank.train'))
     X_test, y_test = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -120,13 +120,25 @@ def test_lambdarank():
                                       '../../examples/lambdarank/rank.train.query'))
     q_test = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                      '../../examples/lambdarank/rank.test.query'))
-    gbm = lgb.LGBMRanker(n_estimators=50)
+    gbm = lgb.LGBMRanker(n_estimators=50, lambdarank_unbiased=lambdarank_unbiased, **kwargs)
     gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
             eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
             callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))])
+    return gbm
+
+def test_lambdarank():
+    gbm = lambdarank_test_runner()
+    print(gbm.best_iteration_)
     assert gbm.best_iteration_ <= 24
     assert gbm.best_score_['valid_0']['ndcg@1'] > 0.5674
     assert gbm.best_score_['valid_0']['ndcg@3'] > 0.578
+
+
+def test_lambdarank_unbiased():
+    gbm = lambdarank_test_runner(lambdarank_unbiased=True, sigmoid=2)
+    assert gbm.best_iteration_ <= 24
+    assert gbm.best_score_['valid_0']['ndcg@1'] > 0.569
+    assert gbm.best_score_['valid_0']['ndcg@3'] > 0.62
 
 
 def test_xendcg():
