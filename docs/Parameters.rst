@@ -229,7 +229,7 @@ Core Parameters
 
    -  **Note**: setting this to ``true`` may slow down the training
 
-   -  **Note**: to avoid potential unstability due to numerical issues, please set ``force_col_wise=true`` or ``force_row_wise=true`` when setting ``deterministic=true``
+   -  **Note**: to avoid potential instability due to numerical issues, please set ``force_col_wise=true`` or ``force_row_wise=true`` when setting ``deterministic=true``
 
 Learning Control Parameters
 ---------------------------
