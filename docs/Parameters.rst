@@ -1029,10 +1029,6 @@ Objective Parameters
 
    -  set this to ``true`` to use the position bias correction of `Unbiased LambdaMART <https://arxiv.org/pdf/1809.05818.pdf>`__
 
--  ``lambdarank_position_bins`` :raw-html:`<a id="lambdarank_position_bins" title="Permalink to this parameter" href="#lambdarank_position_bins">&#x1F517;&#xFE0E;</a>`, default = ``12``, type = int, constraints: ``lambdarank_position_bins > 0``
-
-   -  used only in ``lambdarank`` application where ``lambdarank_unbiased = true``
-
 -  ``lambdarank_bias_p_norm`` :raw-html:`<a id="lambdarank_bias_p_norm" title="Permalink to this parameter" href="#lambdarank_bias_p_norm">&#x1F517;&#xFE0E;</a>`, default = ``0.5``, type = double, constraints: ``lambdarank_bias_p_norm >= 0.0``
 
    -  used only in ``lambdarank`` application where ``lambdarank_unbiased = true``
