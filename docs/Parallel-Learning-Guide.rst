@@ -65,8 +65,94 @@ LightGBM's Python package supports distributed learning via `Dask`_. This integr
 Quick Dask Examples
 '''''''''''''''''''
 
-Dask-Based Training
-'''''''''''''''''''
+Theses examples show minimal code needed to train a LightGBM model using Dask. See the other sections after this for more details.
+
+**Classification**
+
+For multiclass classification, set ``centers=3`` below.
+
+.. code:: python
+
+  import dask.array as da
+  import lightgbm as lgb
+  from distributed import Client, LocalCluster
+  from sklearn.datasets import make_blobs
+
+  X, y = make_blobs(n_samples=1000, n_features=50, centers=2)
+
+  cluster = LocalCluster(n_workers=2)
+  client = Client(cluster)
+
+  dX = da.from_array(X, chunks=(100, 50))
+  dy = da.from_array(y, chunks=(100,))
+
+  dask_model = lgb.DaskLGBMClassifier()
+  dask_model.fit(dX, dy)
+
+**Ranking**
+
+.. code:: python
+
+  IN PROGRESS
+
+  import dask.array as da
+  import lightgbm as lgb
+  import numpy as np
+  import urllib.request
+  from sklearn.datasets import load_svmlight_file
+  from distributed import Client, LocalCluster
+
+  base_url = "https://raw.githubusercontent.com/microsoft/LightGBM/master/examples/lambdarank"
+
+  with urllib.request.urlopen(f"{base_url}/rank.train") as f:
+      X, y = load_svmlight_file(f)
+
+  with urllib.request.urlopen(f"{base_url}/rank.train.query") as f:
+      group = np.loadtxt(f)
+
+  cluster = LocalCluster(n_workers=2)
+  client = Client(cluster)
+
+  # split training data into two partitions
+  rows_in_part1 = int(np.sum(group[:100]))
+  num_features = X.shape[1]
+
+  dX = da.from_array(
+    x=X,
+    chunks=[
+      (rows_in_part1, -1),
+      (X.shape[0] - rows_in_part1, -1)
+    ]
+  )
+
+  dy = da.from_array(y)
+  dg = da.from_array(group)
+
+  dask_model = lgb.DaskLGBMRanker()
+  dask_model.fit(dX, dy, group=dg)
+
+**Regression**
+
+.. code:: python
+
+  import dask.array as da
+  import lightgbm as lgb
+  from distributed import Client, LocalCluster
+  from sklearn.datasets import make_regression
+
+  X, y = make_blobs(n_samples=1000, n_features=50)
+
+  cluster = LocalCluster(n_workers=2)
+  client = Client(cluster)
+
+  dX = da.from_array(X, chunks=(100, 50))
+  dy = da.from_array(y, chunks=(100,))
+
+  dask_model = lgb.DaskLGBMRegressor()
+  dask_model.fit(dX, dy)
+
+Training with Dask
+''''''''''''''''''
 
 This section contains detailed information on performing LightGBM distributed training using Dask.
 
@@ -226,8 +312,13 @@ You could edit your firewall rules to allow communication between any of the wor
   * the port ``local_listen_port`` is not open on any of the worker hosts
   * any machine has multiple Dask worker processes running on it
 
-Saving Dask Models
+Dask-Based Scoring
 ''''''''''''''''''
+
+
+
+Scoring with Dask
+'''''''''''''''''
 
 After training with Dask, you have several options for saving a fitted model.
 
@@ -246,7 +337,7 @@ LightGBM's Dask estimators can be pickled directly with ``cloudpickle``, ``jobli
   client = Client(cluster)
 
   X = da.random.random((1000, 10), (500, 10))
-  y = da.random.random((1000,))
+  y = da.random.random((1000,), (500,))
 
   dask_model = lgb.DaskLGBMRegressor()
   dask_model.fit(X, y)
@@ -281,7 +372,7 @@ The estimators available from ``lightgbm.dask`` can be converted to an instance 
   client = Client(cluster)
 
   X = da.random.random((1000, 10), (500, 10))
-  y = da.random.random((1000,))
+  y = da.random.random((1000,), (500,))
 
   dask_model = lgb.DaskLGBMRegressor()
   dask_model.fit(X, y)
@@ -302,6 +393,36 @@ A model saved this way can then later be loaded with whichever serialization lib
   import pickle
   with open("sklearn-model.pkl", "rb") as f:
       sklearn_model = pickle.load(f)
+
+**Option 3: save the LightGBM Booster**
+
+The lowest-level model object in LightGBM is the ``lightgbm.Booster``. After training, you can extract a Booster from the Dask estimator.
+
+.. code:: python
+
+  import dask.array as da
+  import pickle
+  import lightgbm as lgb
+  from distributed import Client, LocalCluster
+
+  cluster = LocalCluster(n_workers=2)
+  client = Client(cluster)
+
+  X = da.random.random((1000, 10), (500, 10))
+  y = da.random.random((1000,), (500,))
+
+  dask_model = lgb.DaskLGBMRegressor()
+  dask_model.fit(X, y)
+
+  # convert to sklearn equivalent
+  bst = dask_model.booster_
+
+From the point forward, you can use any of the following methods to save the Booster.
+
+* serialize with ``cloudpickle``, ``joblib``, or ``pickle``
+* ``bst.dump_model()``: dump the model to a dictionary which could be written out as JSON
+* ``bst.model_to_string()``: dump the model to a string in memory
+* ``bst.save_model()``: write the output of ``bst.model_to_string()`` to a text file
 
 Kubeflow
 ^^^^^^^^
