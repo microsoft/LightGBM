@@ -286,7 +286,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "lambdarank_norm",
   "label_gain",
   "lambdarank_unbiased",
-  "lambdarank_position_bins",
   "lambdarank_bias_p_norm",
   "metric",
   "metric_freq",
@@ -593,9 +592,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetBool(params, "lambdarank_unbiased", &lambdarank_unbiased);
 
-  GetInt(params, "lambdarank_position_bins", &lambdarank_position_bins);
-  CHECK_GT(lambdarank_position_bins, 0);
-
   GetDouble(params, "lambdarank_bias_p_norm", &lambdarank_bias_p_norm);
   CHECK_GE(lambdarank_bias_p_norm, 0.0);
 
@@ -733,7 +729,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[lambdarank_norm: " << lambdarank_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
   str_buf << "[lambdarank_unbiased: " << lambdarank_unbiased << "]\n";
-  str_buf << "[lambdarank_position_bins: " << lambdarank_position_bins << "]\n";
   str_buf << "[lambdarank_bias_p_norm: " << lambdarank_bias_p_norm << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
