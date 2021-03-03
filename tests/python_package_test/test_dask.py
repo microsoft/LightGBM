@@ -1267,7 +1267,7 @@ def test_predict_with_raw_score(task, output, client):
         objective = 'regression'
         model_factory = lgb.DaskLGBMRegressor
 
-    if task.startswith('multi'):
+    if task == 'multi-class_classification':
         n_centers = 3
     else:
         n_centers = 2
@@ -1290,10 +1290,10 @@ def test_predict_with_raw_score(task, output, client):
 
     def compute_expected_predictions_mean(tree_df: pd.DataFrame):
         """Computes the expected mean of the predictions from the dataframe of a tree with two leaves."""
-        leafs_df = tree_df.iloc[1:]  # remove root node
-        leafs_weights = leafs_df['weight'].values
-        leafs_values = leafs_df['value'].values
-        return leafs_values @ leafs_weights / leafs_weights.sum()
+        leaf_values = tree_df['value']
+        leaf_weights = tree_df['weight']
+        sum_weights = leaf_weights[1] + leaf_weights[2]
+        return leaf_values[1] * (leaf_weights[1]/sum_weights) + leaf_values[2] * (leaf_weights[2]/sum_weights)
 
     trees_df = model.booster_.trees_to_dataframe()
     if task == 'multi-class_classification':
@@ -1307,7 +1307,7 @@ def test_predict_with_raw_score(task, output, client):
     np.testing.assert_almost_equal(computed_mean, expected_mean)
 
     if task.endswith('classification'):
-        raw_probabilities = model.predict_proba(dX, raw_score=True).compute()
-        assert_eq(raw_predictions, raw_probabilities)
+        pred_proba_raw = model.predict_proba(dX, raw_score=True).compute()
+        assert_eq(raw_predictions, pred_proba_raw)
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
