@@ -1260,7 +1260,7 @@ def test_init_score(
     if output.startswith('dataframe'):
         init_scores = dy.map_partitions(lambda x: pd.Series([init_score] * x.size))
     else:
-        init_scores = da.full_like(dy, fill_value=init_score, dtype='float')
+        init_scores = da.full_like(dy, fill_value=init_score, dtype=np.float64)
     model = model_factory(client=client, **params)
     model.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
     # value of the root node is 0 when init_score is set
