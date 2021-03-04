@@ -4,26 +4,54 @@ import numpy as np
 from sklearn.datasets import load_svmlight_file
 from distributed import Client, LocalCluster
 
-X, y = load_svmlight_file("../lambdarank/rank.train")
-group = np.loadtxt("../lambdarank/rank.train.query")
+if __name__ == "__main__":
 
-cluster = LocalCluster(n_workers=2)
-client = Client(cluster)
+    print("loading data")
 
-# split training data into two partitions
-rows_in_part1 = int(np.sum(group[:100]))
-num_features = X.shape[1]
+    X, y = load_svmlight_file("../lambdarank/rank.train")
+    group = np.loadtxt("../lambdarank/rank.train.query")
 
-dX = da.from_array(
-  x=X,
-  chunks=[
-    (rows_in_part1, num_features),
-    (X.shape[0] - rows_in_part1, num_features)
-  ]
-)
+    print("initializing a Dask cluster")
 
-dy = da.from_array(y)
-dg = da.from_array(group)
+    cluster = LocalCluster(n_workers=2)
+    client = Client(cluster)
 
-dask_model = lgb.DaskLGBMRanker()
-dask_model.fit(dX, dy, group=dg)
+    print("created a Dask LocalCluster")
+
+    print("distributing training data on the Dask cluster")
+
+    # split training data into two partitions
+    rows_in_part1 = int(np.sum(group[:100]))
+    rows_in_part2 = X.shape[0] - rows_in_part1
+    num_features = X.shape[1]
+
+    # make this array dense because we're splitting across
+    # a sparse boundary to partition the data
+    X = X.todense()
+
+    dX = da.from_array(
+      x=X,
+      chunks=[
+        (rows_in_part1, rows_in_part2),
+        (num_features, )
+      ]
+    )
+    dy = da.from_array(
+        x=y,
+        chunks=[
+            (rows_in_part1, rows_in_part2),
+        ]
+    )
+    dg = da.from_array(
+        x=group,
+        chunks=[
+            (100, group.size - 100)
+        ]
+    )
+
+    print("beginning training")
+
+    dask_model = lgb.DaskLGBMRanker()
+    dask_model.fit(dX, dy, group=dg)
+
+    print("done training")
