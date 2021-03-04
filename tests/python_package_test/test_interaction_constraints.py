@@ -1,7 +1,8 @@
-import lightgbm as lgb
 import numpy as np
 import pandas as pd
 import pytest
+
+import lightgbm as lgb
 
 
 def simple_pd(X, estimator, feature, values):
@@ -96,8 +97,12 @@ def get_boosting_params():
     return boosting_params
 
 
-@pytest.mark.parametrize("monotone_constraints_method", ["basic", "intermediate", "advanced"])
-def test_interaction_constraints(make_data, get_boosting_params, monotone_constraints_method):
+@pytest.mark.parametrize(
+    "monotone_constraints_method", ["basic", "intermediate", "advanced"]
+)
+def test_interaction_constraints(
+    make_data, get_boosting_params, monotone_constraints_method
+):
 
     df, features, outcome = make_data
     data = lgb.Dataset(df[features], df[outcome])
@@ -110,7 +115,8 @@ def test_interaction_constraints(make_data, get_boosting_params, monotone_constr
     feature_sets = [[f"x{f}" for f in fs] for fs in feature_sets]
     tree_features = find_interactions(gbm, feature_sets)
 
-    # Should not find any co-occurances in a given tree, since above we're disallowing all interactions.
+    # Should not find any co-occurances in a given tree,
+    # since above we're disallowing all interactions.
     assert not tree_features["has_interaction"].any()
 
     # Check monotonicity
