@@ -3,6 +3,7 @@
 
 import inspect
 import pickle
+import random
 import socket
 from itertools import groupby
 from os import getenv
@@ -1224,6 +1225,50 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
     model = model_factory(**params)
     model.fit(dX, dy_col_array, sample_weight=dw, group=dg)
     assert model.fitted_
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
+def test_init_score(
+        task,
+        output,
+        client):
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
+
+    if task == 'ranking':
+        _, _, _, _, dX, dy, dw, dg = _create_ranking_data(
+            output=output,
+            group=None
+        )
+        model_factory = lgb.DaskLGBMRanker
+    else:
+        _, _, _, dX, dy, dw = _create_data(
+            objective=task,
+            output=output,
+        )
+        dg = None
+        if task == 'classification':
+            model_factory = lgb.DaskLGBMClassifier
+        elif task == 'regression':
+            model_factory = lgb.DaskLGBMRegressor
+
+    params = {
+        'n_estimators': 1,
+        'num_leaves': 2,
+        'time_out': 5
+    }
+    init_score = random.random()
+    if output.startswith('dataframe'):
+        init_scores = dy.map_partitions(lambda x: pd.Series([init_score] * x.size))
+    else:
+        init_scores = da.full_like(dy, fill_value=init_score, dtype=np.float64)
+    model = model_factory(client=client, **params)
+    model.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
+    # value of the root node is 0 when init_score is set
+    assert model.booster_.trees_to_dataframe()['value'][0] == 0
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
