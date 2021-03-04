@@ -62,32 +62,11 @@ Dask
 
 LightGBM's Python package supports distributed learning via `Dask`_. This integration is maintained by LightGBM's maintainers.
 
-Quick Dask Examples
-'''''''''''''''''''
+Dask Examples
+'''''''''''''
 
-Theses examples show minimal code needed to train a LightGBM model using Dask. See the other sections after this for more details.
+For sample code using ``lightgbm.dask``, see `these Dask examples`__ .
 
-**Classification**
-
-For multiclass classification, set ``centers=3`` below.
-
-.. code:: python
-
-  import dask.array as da
-  import lightgbm as lgb
-  from distributed import Client, LocalCluster
-  from sklearn.datasets import make_blobs
-
-  X, y = make_blobs(n_samples=1000, n_features=50, centers=2)
-
-  cluster = LocalCluster(n_workers=2)
-  client = Client(cluster)
-
-  dX = da.from_array(X, chunks=(100, 50))
-  dy = da.from_array(y, chunks=(100,))
-
-  dask_model = lgb.DaskLGBMClassifier()
-  dask_model.fit(dX, dy)
 
 **Ranking**
 
@@ -135,21 +114,6 @@ For multiclass classification, set ``centers=3`` below.
 
 .. code:: python
 
-  import dask.array as da
-  import lightgbm as lgb
-  from distributed import Client, LocalCluster
-  from sklearn.datasets import make_regression
-
-  X, y = make_blobs(n_samples=1000, n_features=50)
-
-  cluster = LocalCluster(n_workers=2)
-  client = Client(cluster)
-
-  dX = da.from_array(X, chunks=(100, 50))
-  dy = da.from_array(y, chunks=(100,))
-
-  dask_model = lgb.DaskLGBMRegressor()
-  dask_model.fit(dX, dy)
 
 Training with Dask
 ''''''''''''''''''
@@ -544,6 +508,8 @@ Example
 .. _the Dask worker documentation: https://distributed.dask.org/en/latest/worker.html#memory-management
 
 .. _the MMLSpark Documentation: https://github.com/Azure/mmlspark/blob/master/docs/lightgbm.md
+
+.. _these Dask examples: https://github.com/microsoft/lightgbm/tree/master/examples/parallel_learning
 
 .. _Kubeflow Fairing: https://www.kubeflow.org/docs/components/fairing/fairing-overview
 
