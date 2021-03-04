@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+
 def simple_pd(X, estimator, feature, values):
     """Calculate simple partial dependency."""
     Xc = X.copy()
@@ -22,6 +23,7 @@ def simple_pds(df, estimator, features):
         )
         pds[feat] = pd.DataFrame(data={feat: values, "y": yps})
     return pds
+
 
 @pytest.fixture
 def make_data():
@@ -101,7 +103,7 @@ def test_interaction_constraints(make_data, get_boosting_params, monotone_constr
     data = lgb.Dataset(df[features], df[outcome])
 
     boosting_params = get_boosting_params
-    boosting_params.update({"monotone_constraints_method" : monotone_constraints_method})
+    boosting_params.update({"monotone_constraints_method": monotone_constraints_method})
     gbm = lgb.train(boosting_params, data)
 
     feature_sets = [[0], [1], [2]]
@@ -109,10 +111,7 @@ def test_interaction_constraints(make_data, get_boosting_params, monotone_constr
     tree_features = find_interactions(gbm, feature_sets)
 
     # Should not find any co-occurances in a given tree, since above we're disallowing all interactions.
-    if tree_features["has_interaction"].any():
-        print(tree_features.loc[tree_features["has_interaction"] == True].head())
-
-    assert tree_features["has_interaction"].any() == False
+    assert not tree_features["has_interaction"].any()
 
     # Check monotonicity
     pds = simple_pds(df, gbm, features)
