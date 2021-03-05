@@ -60,60 +60,12 @@ Dask
 
 .. versionadded:: 3.2.0
 
-LightGBM's Python package supports distributed learning via `Dask`_. This integration is maintained by LightGBM's maintainers.
+LightGBM's Python package supports distributed learning via `Dask`_.
 
 Dask Examples
 '''''''''''''
 
-For sample code using ``lightgbm.dask``, see `these Dask examples`__ .
-
-
-**Ranking**
-
-.. code:: python
-
-  IN PROGRESS
-
-  import dask.array as da
-  import lightgbm as lgb
-  import numpy as np
-  import urllib.request
-  from sklearn.datasets import load_svmlight_file
-  from distributed import Client, LocalCluster
-
-  base_url = "https://raw.githubusercontent.com/microsoft/LightGBM/master/examples/lambdarank"
-
-  with urllib.request.urlopen(f"{base_url}/rank.train") as f:
-      X, y = load_svmlight_file(f)
-
-  with urllib.request.urlopen(f"{base_url}/rank.train.query") as f:
-      group = np.loadtxt(f)
-
-  cluster = LocalCluster(n_workers=2)
-  client = Client(cluster)
-
-  # split training data into two partitions
-  rows_in_part1 = int(np.sum(group[:100]))
-  num_features = X.shape[1]
-
-  dX = da.from_array(
-    x=X,
-    chunks=[
-      (rows_in_part1, -1),
-      (X.shape[0] - rows_in_part1, -1)
-    ]
-  )
-
-  dy = da.from_array(y)
-  dg = da.from_array(group)
-
-  dask_model = lgb.DaskLGBMRanker()
-  dask_model.fit(dX, dy, group=dg)
-
-**Regression**
-
-.. code:: python
-
+For sample code using ``lightgbm.dask``, see `these Dask examples`_ .
 
 Training with Dask
 ''''''''''''''''''
@@ -138,7 +90,7 @@ If you do not have other significant processes competing with Dask for resources
 
 **Managing Memory**
 
-Use the Dask diagnostic dashboard or your preferred monitoring tool to monitor Dask workers' memory consumption during training. As described in `the Dask worker documentation`_, Dask workers will automatically start spilling data to Disk if memory consumptio gets too high. This can substantially slow down computations, since disk I/O is usually much slower than reading the same data from memory.
+Use the Dask diagnostic dashboard or your preferred monitoring tool to monitor Dask workers' memory consumption during training. As described in `the Dask worker documentation`_, Dask workers will automatically start spilling data to Disk if memory consumption gets too high. This can substantially slow down computations, since disk I/O is usually much slower than reading the same data from memory.
 
   `At 60% of memory load, [Dask will] spill least recently used data to disk`
 
@@ -159,7 +111,7 @@ The estimators in ``lightgbm.dask`` expect that matrix-like or array-like data a
   :alt: On the left, rectangles showing a 5 by 5 grid for a local dataset. On the right, two circles representing Dask workers, one with a 3 by 5 grid and one with a 2 by 5 grid.
   :target: ./_static/images/dask-initial-setup.svg
 
-While setting up for training, ``lightgbm`` will concatenate all of the partitions on a work into a single dataset. Distributed training then proceeds with one LightGBM worker process per Dask worker.
+While setting up for training, ``lightgbm`` will concatenate all of the partitions on a worker into a single dataset. Distributed training then proceeds with one LightGBM worker process per Dask worker.
 
 .. image:: ./_static/images/dask-concat.svg
   :align: center
@@ -169,9 +121,9 @@ While setting up for training, ``lightgbm`` will concatenate all of the partitio
 
 When setting up data partitioning for LightGBM training with Dask, try to follow these suggestions:
 
-* ensure that each worker in the cluster has a piece of the training data
+* ensure that each worker in the cluster has some of the training data
 * try to give each worker roughly the same amount of data, especially if your dataset is small
-* if you plan to train multiple models (for example, to tune hyperparameters) on the same data use ``distributed.Client.persist()`` before training to materialize the data one time
+* if you plan to train multiple models (for example, to tune hyperparameters) on the same data, use ``client.persist()`` before training to materialize the data one time
 
 Using a Specific Dask Client
 ****************************
@@ -190,14 +142,12 @@ LightGBM's Dask estimators support setting an attribute ``client`` to control th
   cluster = LocalCluster()
   client = Client(cluster)
 
-  # option 1: keyword argumentt in constructor
+  # option 1: keyword argument in constructor
   dask_model = lgb.DaskLGBMClassifier(client=client)
 
   # option 2: set_params() after construction
   dask_model = lgb.DaskLGBMClassifier()
   dask_model.set_params(client=client)
-
-Note that the ``client`` for an estimator will not be stored if the model object is pickled. If you want to control the client used by a model object loaded from disk, use ``set_params()`` after loading. For more details on that, see `Saving Dask Models <#saving-dask-models>`__.
 
 Using Specific Ports
 ********************
@@ -218,7 +168,7 @@ For example, consider the case where you are running one Dask worker process on 
   10.0.2.0
   10.0.3.0
 
-You could edit your firewall rules to open one additional port on each of these hosts, then provide ``machines`` directly.
+You could edit your firewall rules to allow traffic on one additional port on each of these hosts, then provide ``machines`` directly.
 
 .. code:: python
 
@@ -227,7 +177,7 @@ You could edit your firewall rules to open one additional port on each of these 
   machines = "10.0.1.0:12401,10.0.2.0:12402,10.0.3.0:15000"
   dask_model = lgb.DaskLGBMRegressor(machines=machines)
 
-If you are running multiple Dask worker processes on any machine, be sure that there are multiple entries for that IP address, with different ports. For example, if you were running a cluster with ``nprocs=2`` (2 Dask worker processes per machine), you might open two additional ports on each of these hosts, then provide ``machines`` as follows.
+If you are running multiple Dask worker processes on physical host in the cluster, be sure that there are multiple entries for that IP address, with different ports. For example, if you were running a cluster with ``nprocs=2`` (2 Dask worker processes per machine), you might open two additional ports on each of these hosts, then provide ``machines`` as follows.
 
 .. code:: python
 
@@ -276,13 +226,17 @@ You could edit your firewall rules to allow communication between any of the wor
   * the port ``local_listen_port`` is not open on any of the worker hosts
   * any machine has multiple Dask worker processes running on it
 
-Dask-Based Scoring
+Prediction with Dask
+''''''''''''''''''''
+
+The estimators from ``lightgbm.dask`` can be used to create predictions based on data stored in Dask collections. In that interface, ``.predict()`` expects a Dask Array or Dask DataFrame, and returns a Dask Array of predictions.
+
+See `the Dask prediction example`_ for some sample code that shows how to perform Dask-based prediction.
+
+For model evaluation, consider using `the metrics functions from dask-ml`_. Those functions are intended to provide the same API as equivalent functions in ``sklearn.metrics``, but they use distributed computation powered by Dask to compute metrics without all of the input data ever needing to be on a single machine.
+
+Saving Dask Models
 ''''''''''''''''''
-
-
-
-Scoring with Dask
-'''''''''''''''''
 
 After training with Dask, you have several options for saving a fitted model.
 
@@ -505,11 +459,15 @@ Example
 
 .. _the Dask DataFrame documentation: https://docs.dask.org/en/latest/dataframe.html
 
+.. _the Dask prediction example: https://github.com/microsoft/lightgbm/tree/master/examples/dask/prediction.py
+
 .. _the Dask worker documentation: https://distributed.dask.org/en/latest/worker.html#memory-management
+
+.. _the metrics functions from dask-ml: https://ml.dask.org/modules/api.html#dask-ml-metrics-metrics
 
 .. _the MMLSpark Documentation: https://github.com/Azure/mmlspark/blob/master/docs/lightgbm.md
 
-.. _these Dask examples: https://github.com/microsoft/lightgbm/tree/master/examples/parallel_learning
+.. _these Dask examples: https://github.com/microsoft/lightgbm/tree/master/examples/dask
 
 .. _Kubeflow Fairing: https://www.kubeflow.org/docs/components/fairing/fairing-overview
 

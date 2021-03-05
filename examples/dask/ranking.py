@@ -30,11 +30,11 @@ if __name__ == "__main__":
     X = X.todense()
 
     dX = da.from_array(
-      x=X,
-      chunks=[
-        (rows_in_part1, rows_in_part2),
-        (num_features, )
-      ]
+        x=X,
+        chunks=[
+            (rows_in_part1, rows_in_part2),
+            (num_features, )
+        ]
     )
     dy = da.from_array(
         x=y,
