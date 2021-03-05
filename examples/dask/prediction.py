@@ -32,7 +32,7 @@ if __name__ == "__main__":
     print("predicting on the training data")
 
     preds = dask_model.predict(dX)
-    
+
     # the code below uses sklearn.metrics, but this requires pulling all of the
     # predictions and target values back from workers to the client
     #
