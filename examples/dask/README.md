@@ -11,11 +11,15 @@ After installing the package and its dependencies, any of the examples here can 
 python binary-classification.py
 ```
 
-**Quick Examples**
-
 The examples listed below contain minimal code showing how to train LightGBM models using Dask.
+
+**Training**
 
 * [binary-classification.py](./binary-classification.py)
 * [multiclass-classification.py](./multiclass-classification.py)
 * [ranking.py](./ranking.py)
 * [regression.py](./regression.py)
+
+**Prediction**
+
+* [prediction.py](./prediction.py)
