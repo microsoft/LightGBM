@@ -7,7 +7,3 @@ find_library(LSan_LIBRARY
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LSan DEFAULT_MSG
   LSan_LIBRARY)
-
-mark_as_advanced(
-  LSan_LIBRARY
-  LSan_LIB_NAME)

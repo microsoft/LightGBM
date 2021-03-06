@@ -7,7 +7,3 @@ find_library(TSan_LIBRARY
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(TSan DEFAULT_MSG
   TSan_LIBRARY)
-
-mark_as_advanced(
-  TSan_LIBRARY
-  TSan_LIB_NAME)
