@@ -1,7 +1,8 @@
 import dask.array as da
-import lightgbm as lgb
 from distributed import Client, LocalCluster
 from sklearn.datasets import make_regression
+
+import lightgbm as lgb
 
 if __name__ == "__main__":
 

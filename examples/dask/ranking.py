@@ -1,8 +1,9 @@
 import dask.array as da
-import lightgbm as lgb
 import numpy as np
-from sklearn.datasets import load_svmlight_file
 from distributed import Client, LocalCluster
+from sklearn.datasets import load_svmlight_file
+
+import lightgbm as lgb
 
 if __name__ == "__main__":
 
