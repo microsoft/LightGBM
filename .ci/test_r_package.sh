@@ -27,8 +27,8 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.0.3
-    export R_LINUX_VERSION="4.0.3-1.1804.0"
+    export R_MAC_VERSION=4.0.4
+    export R_LINUX_VERSION="4.0.4-1.1804.0"
     export R_APT_REPO="bionic-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
@@ -81,7 +81,7 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo tlmgr --verify-repo=none update --self
     sudo tlmgr --verify-repo=none install inconsolata helvetic
 
-    wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
+    curl -sL https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -o R.pkg
     sudo installer \
         -pkg $(pwd)/R.pkg \
         -target /
@@ -100,10 +100,12 @@ fi
 # Manually install Depends and Imports libraries + 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
+compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
+    compile_from_source="never"
 fi
-Rscript --vanilla -e "install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
+Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
 cd ${BUILD_DIRECTORY}
 

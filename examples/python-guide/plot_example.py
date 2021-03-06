@@ -1,6 +1,7 @@
 # coding: utf-8
-import lightgbm as lgb
 import pandas as pd
+
+import lightgbm as lgb
 
 if lgb.compat.MATPLOTLIB_INSTALLED:
     import matplotlib.pyplot as plt

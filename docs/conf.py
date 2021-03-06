@@ -20,16 +20,16 @@
 import datetime
 import os
 import sys
-import sphinx
-
 from distutils.dir_util import copy_tree
+from re import compile
+from subprocess import PIPE, Popen
+from unittest.mock import Mock
+
+import sphinx
 from docutils.nodes import reference
 from docutils.parsers.rst import Directive
 from docutils.transforms import Transform
-from re import compile
 from sphinx.errors import VersionRequirementError
-from subprocess import PIPE, Popen
-from unittest.mock import Mock
 
 CURR_PATH = os.path.abspath(os.path.dirname(__file__))
 LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'python-package')
@@ -74,7 +74,7 @@ C_API = os.environ.get('C_API', '').lower().strip() != 'no'
 RTD = bool(os.environ.get('READTHEDOCS', ''))
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
+needs_sphinx = '2.1.0'  # Due to sphinx.ext.napoleon, autodoc_typehints
 if needs_sphinx > sphinx.__version__:
     message = 'This project needs at least Sphinx v%s' % needs_sphinx
     raise VersionRequirementError(message)
@@ -96,6 +96,9 @@ autodoc_default_options = {
     "inherited-members": True,
     "show-inheritance": True,
 }
+
+# hide type hints in API docs
+autodoc_typehints = "none"
 
 # Generate autosummary pages. Output should be set with: `:toctree: pythonapi/`
 autosummary_generate = ['Python-API.rst']

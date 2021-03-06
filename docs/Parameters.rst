@@ -49,6 +49,8 @@ Core Parameters
 
    -  ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
 
+   -  ``save_binary``, load train (and validation) data then save dataset to binary file. Typical usage: ``save_binary`` first, then run multiple ``train`` tasks in parallel using the saved binary file
+
    -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
 
 -  ``objective`` :raw-html:`<a id="objective" title="Permalink to this parameter" href="#objective">&#x1F517;&#xFE0E;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gamma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``cross_entropy``, ``cross_entropy_lambda``, ``lambdarank``, ``rank_xendcg``, aliases: ``objective_type``, ``app``, ``application``
@@ -137,6 +139,8 @@ Core Parameters
 
       -  **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
 
+      -  **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
+
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
    -  path of training data, LightGBM will train from this data
@@ -177,7 +181,7 @@ Core Parameters
 
    -  ``voting``, voting parallel tree learner, aliases: ``voting_parallel``
 
-   -  refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
+   -  refer to `Distributed Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
 
 -  ``num_threads`` :raw-html:`<a id="num_threads" title="Permalink to this parameter" href="#num_threads">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``num_thread``, ``nthread``, ``nthreads``, ``n_jobs``
 
@@ -191,7 +195,7 @@ Core Parameters
 
    -  be aware a task manager or any similar CPU monitoring tool might report that cores not being fully utilized. **This is normal**
 
-   -  for parallel learning, do not use all CPU cores because this will cause poor performance for the network communication
+   -  for distributed learning, do not use all CPU cores because this will cause poor performance for the network communication
 
    -  **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
 
@@ -224,6 +228,8 @@ Core Parameters
    -  you can `raise issues <https://github.com/microsoft/LightGBM/issues>`__ in LightGBM GitHub repo when you meet the unstable results
 
    -  **Note**: setting this to ``true`` may slow down the training
+
+   -  **Note**: to avoid potential instability due to numerical issues, please set ``force_col_wise=true`` or ``force_row_wise=true`` when setting ``deterministic=true``
 
 Learning Control Parameters
 ---------------------------
@@ -710,7 +716,7 @@ Dataset Parameters
 
 -  ``pre_partition`` :raw-html:`<a id="pre_partition" title="Permalink to this parameter" href="#pre_partition">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_pre_partition``
 
-   -  used for parallel learning (excluding the ``feature_parallel`` mode)
+   -  used for distributed learning (excluding the ``feature_parallel`` mode)
 
    -  ``true`` if training data are pre-partitioned, and different machines use different partitions
 
@@ -858,6 +864,8 @@ Predict Parameters
    -  **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/slundberg/shap>`__
 
    -  **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
+
+   -  **Note**: this feature is not implemented for linear trees
 
 -  ``predict_disable_shape_check`` :raw-html:`<a id="predict_disable_shape_check" title="Permalink to this parameter" href="#predict_disable_shape_check">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
@@ -1129,11 +1137,11 @@ Network Parameters
 
 -  ``num_machines`` :raw-html:`<a id="num_machines" title="Permalink to this parameter" href="#num_machines">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``num_machine``, constraints: ``num_machines > 0``
 
-   -  the number of machines for parallel learning application
+   -  the number of machines for distributed learning application
 
    -  this parameter is needed to be set in both **socket** and **mpi** versions
 
--  ``local_listen_port`` :raw-html:`<a id="local_listen_port" title="Permalink to this parameter" href="#local_listen_port">&#x1F517;&#xFE0E;</a>`, default = ``12400``, type = int, aliases: ``local_port``, ``port``, constraints: ``local_listen_port > 0``
+-  ``local_listen_port`` :raw-html:`<a id="local_listen_port" title="Permalink to this parameter" href="#local_listen_port">&#x1F517;&#xFE0E;</a>`, default = ``12400 (random for Dask-package)``, type = int, aliases: ``local_port``, ``port``, constraints: ``local_listen_port > 0``
 
    -  TCP listen port for local machines
 
@@ -1145,9 +1153,11 @@ Network Parameters
 
 -  ``machine_list_filename`` :raw-html:`<a id="machine_list_filename" title="Permalink to this parameter" href="#machine_list_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``machine_list_file``, ``machine_list``, ``mlist``
 
-   -  path of file that lists machines for this parallel learning application
+   -  path of file that lists machines for this distributed learning application
 
    -  each line contains one IP and one port for one machine. The format is ``ip port`` (space as a separator)
+
+   -  **Note**: can be used only in CLI version
 
 -  ``machines`` :raw-html:`<a id="machines" title="Permalink to this parameter" href="#machines">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``workers``, ``nodes``
 
@@ -1174,7 +1184,9 @@ GPU Parameters
 
 -  ``gpu_use_dp`` :raw-html:`<a id="gpu_use_dp" title="Permalink to this parameter" href="#gpu_use_dp">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
-   -  set this to ``true`` to use double precision math on GPU (by default single precision is used in OpenCL implementation and double precision is used in CUDA implementation)
+   -  set this to ``true`` to use double precision math on GPU (by default single precision is used)
+
+   -  **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is currently supported
 
 -  ``num_gpu`` :raw-html:`<a id="num_gpu" title="Permalink to this parameter" href="#num_gpu">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``num_gpu > 0``
 

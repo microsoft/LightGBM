@@ -5,16 +5,15 @@ import os
 import struct
 import subprocess
 import sys
-
+from distutils.dir_util import copy_tree, create_tree, remove_tree
+from distutils.file_util import copy_file
 from platform import system
+
 from setuptools import find_packages, setup
 from setuptools.command.install import install
 from setuptools.command.install_lib import install_lib
 from setuptools.command.sdist import sdist
-from distutils.dir_util import copy_tree, create_tree, remove_tree
-from distutils.file_util import copy_file
 from wheel.bdist_wheel import bdist_wheel
-
 
 LIGHTGBM_OPTIONS = [
     ('mingw', 'm', 'Compile with MinGW'),
@@ -163,7 +162,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
         else:
             status = 1
             lib_path = os.path.join(CURRENT_DIR, "compile", "windows", "x64", "DLL", "lib_lightgbm.dll")
-            if not any((use_gpu, use_mpi, use_hdfs, nomp, bit32, integrated_opencl)):
+            if not any((use_gpu, use_cuda, use_mpi, use_hdfs, nomp, bit32, integrated_opencl)):
                 logger.info("Starting to compile with MSBuild from existing solution file.")
                 platform_toolsets = ("v142", "v141", "v140")
                 for pt in platform_toolsets:
@@ -322,7 +321,7 @@ if __name__ == "__main__":
     if os.path.isfile(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt')):
         copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
                   os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'),
-                  verbose=0)
+                  verbose=0)  # type:ignore
     version = open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'), encoding='utf-8').read().strip()
     readme = open(os.path.join(CURRENT_DIR, 'README.rst'), encoding='utf-8').read()
 
@@ -374,4 +373,5 @@ if __name__ == "__main__":
                        'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',
                        'Programming Language :: Python :: 3.8',
+                       'Programming Language :: Python :: 3.9',
                        'Topic :: Scientific/Engineering :: Artificial Intelligence'])
