@@ -1295,10 +1295,10 @@ def test_monotone_constraints(test_with_interaction_constraints):
             # trees start at position 1.
             tree_str = gbm.model_to_string().split("Tree")[1:]
             feature_sets = []
-            for i, tree in enumerate(tree_str):
+            for tree in tree_str:
                 # split_features are in 4th line.
                 features = tree.splitlines()[3].split("=")[1].split(" ")
-                features = set([f"Column_{f}" for f in features])
+                features = set(f"Column_{f}" for f in features)
                 feature_sets.append(features)
             return np.array(feature_sets)
 
@@ -1307,10 +1307,7 @@ def test_monotone_constraints(test_with_interaction_constraints):
             for fs in feature_sets:
                 if len(treef.intersection(fs)) > 0:
                     n += 1
-            if n > 1:
-                return True
-            else:
-                return False
+            return n > 1
 
         tree_features = parse_tree_features(gbm)
         has_interaction_flag = np.array(
