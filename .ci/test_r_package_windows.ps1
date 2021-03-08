@@ -31,9 +31,9 @@ function Run-R-Code-Redirect-Stderr {
 # Remove all items matching some pattern from PATH environment variable
 function Remove-From-Path {
   param(
-    [string]$item_to_remove
+    [string]$pattern_to_remove
   )
-  $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$item_to_remove" }) -join ';'
+  $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
 }
 
 # remove some details that exist in the GitHub Actions images which might
