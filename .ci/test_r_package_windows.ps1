@@ -33,7 +33,7 @@ function Remove-From-Path {
   param(
     [string]$item_to_remove
   )
-  $env:path = ($env:path.Split(';') | Where-Object { $_ -notmatch "$item_to_remove" }) -join ';'
+  $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$item_to_remove" }) -join ';'
 }
 
 # remove some details that exist in the GitHub Actions images which might
