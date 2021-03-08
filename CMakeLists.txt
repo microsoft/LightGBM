@@ -1,4 +1,4 @@
-OPTION(USE_MPI "Enable MPI-based parallel learning" OFF)
+OPTION(USE_MPI "Enable MPI-based distributed learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-accelerated training" OFF)
 OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
@@ -26,22 +26,11 @@ elseif(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
 elseif(USE_CUDA)
   cmake_minimum_required(VERSION 3.16)
-elseif(__BUILD_FOR_R)
-  cmake_minimum_required(VERSION 3.6)
 else()
   cmake_minimum_required(VERSION 3.0)
 endif()
 
-if(__BUILD_FOR_R)
-  # Should be always before PROJECT command
-  set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
-endif(__BUILD_FOR_R)
-
-if(USE_CUDA)
-  PROJECT(lightgbm LANGUAGES C CXX CUDA)
-else()
-  PROJECT(lightgbm LANGUAGES C CXX)
-endif()
+PROJECT(lightgbm LANGUAGES C CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
@@ -104,6 +93,12 @@ if(USE_SWIG)
   endif()
 endif(USE_SWIG)
 
+SET(EIGEN_DIR "${PROJECT_SOURCE_DIR}/external_libs/eigen")
+include_directories(${EIGEN_DIR})
+
+# See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
+ADD_DEFINITIONS(-DEIGEN_MPL2_ONLY)
+
 if(__BUILD_FOR_R)
     list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
     find_package(LibR REQUIRED)
@@ -132,22 +127,18 @@ else()
 endif(USE_MPI)
 
 if(USE_CUDA)
+    SET(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
+    enable_language(CUDA)
     SET(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
 endif(USE_CUDA)
 
 if(USE_OPENMP)
     find_package(OpenMP REQUIRED)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-else()
-    # Ignore unknown #pragma warning
-    if((CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-      OR (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
-    endif()
 endif(USE_OPENMP)
 
 if(USE_GPU)
-    SET(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/compute/include)
+    SET(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/external_libs/compute/include)
     include_directories(${BOOST_COMPUTE_HEADER_DIR})
     find_package(OpenCL REQUIRED)
     include_directories(${OpenCL_INCLUDE_DIRS})
@@ -174,10 +165,17 @@ if(__INTEGRATE_OPENCL)
 endif(__INTEGRATE_OPENCL)
 
 if(USE_CUDA)
-    find_package(CUDA REQUIRED)
+    find_package(CUDA 9.0 REQUIRED)
     include_directories(${CUDA_INCLUDE_DIRS})
     LIST(APPEND CMAKE_CUDA_FLAGS -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall)
-    CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS 6.0 6.1 6.2 7.0 7.5+PTX)
+
+    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0")
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "10.0")
+        list(APPEND CUDA_ARCHS "7.5")
+    endif()
+    list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
+    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
+    CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS ${CUDA_ARCHS})
 
     LIST(APPEND CMAKE_CUDA_FLAGS ${CUDA_ARCH_FLAGS})
     if(USE_DEBUG)
@@ -283,6 +281,9 @@ if(UNIX OR MINGW OR CYGWIN)
     if(USE_SWIG)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
     endif()
+    if(NOT USE_OPENMP)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-unused-private-field")
+    endif()
 endif()
 
 if(WIN32 AND MINGW)
@@ -332,7 +333,6 @@ if(USE_MPI)
 endif(USE_MPI)
 
 file(GLOB SOURCES
-    src/application/*.cpp
     src/boosting/*.cpp
     src/io/*.cpp
     src/metric/*.cpp
@@ -344,7 +344,7 @@ if(USE_CUDA)
 endif(USE_CUDA)
 )
 
-add_executable(lightgbm src/main.cpp ${SOURCES})
+add_executable(lightgbm src/main.cpp src/application/application.cpp ${SOURCES})
 list(APPEND SOURCES "src/c_api.cpp")
 
 # Only build the R part of the library if building for

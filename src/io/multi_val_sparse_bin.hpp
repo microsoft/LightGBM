@@ -46,6 +46,8 @@ class MultiValSparseBin : public MultiValBin {
     return estimate_element_per_row_;
   }
 
+  const std::vector<uint32_t>& offsets() const override { return offsets_; }
+
   void PushOneRow(int tid, data_size_t idx,
                   const std::vector<uint32_t>& values) override {
     const int pre_alloc_size = 50;
@@ -114,6 +116,7 @@ class MultiValSparseBin : public MultiValBin {
     data_size_t i = start;
     hist_t* grad = out;
     hist_t* hess = out + 1;
+    const VAL_T* data_ptr = data_.data();
     if (USE_PREFETCH) {
       const data_size_t pf_offset = 32 / sizeof(VAL_T);
       const data_size_t pf_end = end - pf_offset;
@@ -127,18 +130,15 @@ class MultiValSparseBin : public MultiValBin {
           PREFETCH_T0(hessians + pf_idx);
         }
         PREFETCH_T0(row_ptr_.data() + pf_idx);
-        PREFETCH_T0(data_.data() + row_ptr_[pf_idx]);
+        PREFETCH_T0(data_ptr + row_ptr_[pf_idx]);
         const auto j_start = RowPtr(idx);
         const auto j_end = RowPtr(idx + 1);
+        const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
+        const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
         for (auto j = j_start; j < j_end; ++j) {
-          const auto ti = static_cast<uint32_t>(data_[j]) << 1;
-          if (ORDERED) {
-            grad[ti] += gradients[i];
-            hess[ti] += hessians[i];
-          } else {
-            grad[ti] += gradients[idx];
-            hess[ti] += hessians[idx];
-          }
+          const auto ti = static_cast<uint32_t>(data_ptr[j]) << 1;
+          grad[ti] += gradient;
+          hess[ti] += hessian;
         }
       }
     }
@@ -146,15 +146,12 @@ class MultiValSparseBin : public MultiValBin {
       const auto idx = USE_INDICES ? data_indices[i] : i;
       const auto j_start = RowPtr(idx);
       const auto j_end = RowPtr(idx + 1);
+      const score_t gradient = ORDERED ? gradients[i] : gradients[idx];
+      const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
       for (auto j = j_start; j < j_end; ++j) {
-        const auto ti = static_cast<uint32_t>(data_[j]) << 1;
-        if (ORDERED) {
-          grad[ti] += gradients[i];
-          hess[ti] += hessians[i];
-        } else {
-          grad[ti] += gradients[idx];
-          hess[ti] += hessians[idx];
-        }
+        const auto ti = static_cast<uint32_t>(data_ptr[j]) << 1;
+        grad[ti] += gradient;
+        hess[ti] += hessian;
       }
     }
   }
@@ -183,13 +180,14 @@ class MultiValSparseBin : public MultiValBin {
   }
 
   MultiValBin* CreateLike(data_size_t num_data, int num_bin, int,
-                          double estimate_element_per_row) const override {
+                          double estimate_element_per_row,
+                          const std::vector<uint32_t>& /*offsets*/) const override {
     return new MultiValSparseBin<INDEX_T, VAL_T>(num_data, num_bin,
                                                  estimate_element_per_row);
   }
 
   void ReSize(data_size_t num_data, int num_bin, int,
-              double estimate_element_per_row) override {
+              double estimate_element_per_row, const std::vector<uint32_t>& /*offsets*/) override {
     num_data_ = num_data;
     num_bin_ = num_bin;
     estimate_element_per_row_ = estimate_element_per_row;
@@ -302,6 +300,7 @@ class MultiValSparseBin : public MultiValBin {
   std::vector<std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, 32>>>
       t_data_;
   std::vector<INDEX_T> t_size_;
+  std::vector<uint32_t> offsets_;
 
   MultiValSparseBin<INDEX_T, VAL_T>(
       const MultiValSparseBin<INDEX_T, VAL_T>& other)

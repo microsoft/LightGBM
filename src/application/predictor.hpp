@@ -85,6 +85,9 @@ class Predictor {
         }
       };
     } else if (predict_contrib) {
+      if (boosting_->IsLinear()) {
+        Log::Fatal("Predicting SHAP feature contributions is not implemented for linear trees.");
+      }
       predict_fun_ = [=](const std::vector<std::pair<int, double>>& features,
                          double* output) {
         int tid = omp_get_thread_num();
@@ -251,10 +254,9 @@ class Predictor {
 
  private:
   void CopyToPredictBuffer(double* pred_buf, const std::vector<std::pair<int, double>>& features) {
-    int loop_size = static_cast<int>(features.size());
-    for (int i = 0; i < loop_size; ++i) {
-      if (features[i].first < num_feature_) {
-        pred_buf[features[i].first] = features[i].second;
+    for (const auto &feature : features) {
+      if (feature.first < num_feature_) {
+        pred_buf[feature.first] = feature.second;
       }
     }
   }
@@ -263,10 +265,9 @@ class Predictor {
     if (features.size() > static_cast<size_t>(buf_size / 2)) {
       std::memset(pred_buf, 0, sizeof(double)*(buf_size));
     } else {
-      int loop_size = static_cast<int>(features.size());
-      for (int i = 0; i < loop_size; ++i) {
-        if (features[i].first < num_feature_) {
-          pred_buf[features[i].first] = 0.0f;
+      for (const auto &feature : features) {
+        if (feature.first < num_feature_) {
+          pred_buf[feature.first] = 0.0f;
         }
       }
     }
@@ -274,10 +275,9 @@ class Predictor {
 
   std::unordered_map<int, double> CopyToPredictMap(const std::vector<std::pair<int, double>>& features) {
     std::unordered_map<int, double> buf;
-    int loop_size = static_cast<int>(features.size());
-    for (int i = 0; i < loop_size; ++i) {
-      if (features[i].first < num_feature_) {
-        buf[features[i].first] = features[i].second;
+    for (const auto &feature : features) {
+      if (feature.first < num_feature_) {
+        buf[feature.first] = feature.second;
       }
     }
     return buf;

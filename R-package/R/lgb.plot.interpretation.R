@@ -87,7 +87,7 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
 
     # Only one class, plot straight away
     multiple.tree.plot.interpretation(
-      tree_interpretation_dt
+      tree_interpretation = tree_interpretation_dt
       , top_n = top_n
       , title = NULL
       , cex = cex
@@ -111,12 +111,12 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
       # Prepare interpretation, perform T, get the names, and plot straight away
       plot_dt <- tree_interpretation_dt[, c(1L, i + 1L), with = FALSE]
       data.table::setnames(
-        plot_dt
+        x = plot_dt
         , old = names(plot_dt)
         , new = c("Feature", "Contribution")
       )
       multiple.tree.plot.interpretation(
-        plot_dt
+        tree_interpretation = plot_dt
         , top_n = top_n
         , title = paste("Class", i - 1L)
         , cex = cex
@@ -124,6 +124,7 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
 
     }
   }
+  return(invisible(NULL))
 }
 
 #' @importFrom graphics barplot

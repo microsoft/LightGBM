@@ -24,7 +24,7 @@ You can find below a table of correspondence:
 
 Legend:
 
-\* AMD APP SDK is deprecated. On Windows, OpenCL is included in AMD graphics driver. On Linux, newer generation AMD cards are supported by the `ROCm`_ driver. You can download an archived copy of AMD APP SDK for Linux from `our GitHub repo`_.
+\* AMD APP SDK is deprecated. On Windows, OpenCL is included in AMD graphics driver. On Linux, newer generation AMD cards are supported by the `ROCm`_ driver. You can download an archived copy of AMD APP SDK from our GitHub repo (`for Linux`_ and `for Windows`_).
 
 
 --------------
@@ -159,7 +159,9 @@ Known issues:
 
 .. _ROCm: https://rocmdocs.amd.com/en/latest/
 
-.. _our GitHub repo: https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+.. _for Linux: https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+
+.. _for Windows: https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe
 
 .. _NVIDIA CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 

@@ -1,7 +1,7 @@
 LightGBM Python-package
 =======================
 
-|License| |Python Versions| |PyPI Version| |Downloads|
+|License| |Python Versions| |PyPI Version| |Downloads| |API Docs|
 
 Installation
 ------------
@@ -13,15 +13,16 @@ Preparation
 
 `setuptools <https://pypi.org/project/setuptools>`_ is needed.
 
-Install from `PyPI <https://pypi.org/project/lightgbm>`_ Using ``pip``
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Install from `PyPI <https://pypi.org/project/lightgbm>`_
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 .. code:: sh
 
     pip install lightgbm
- 
 
 You may need to install `wheel <https://pythonwheels.com>`_ via ``pip install wheel`` first.
+
+Compiled library that is included in the wheel file supports both **GPU** and **CPU** versions out of the box. This feature is experimental and available only for **Windows** currently. To use **GPU** version you only need to install OpenCL Runtime libraries. For NVIDIA and AMD GPU they are included in the ordinary drivers for your graphics card, so no action is required. If you would like your AMD or Intel CPU to act like a GPU (for testing and debugging) you can install `AMD APP SDK <https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe>`_.
 
 For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
 
@@ -34,7 +35,6 @@ For **macOS** (we provide wheels for 3 newest macOS versions) users:
 - For version smaller than 2.2.1 and not smaller than 2.1.2, **gcc-8** with **OpenMP** support must be installed first. Refer to `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__ for installation of **gcc-8** with **OpenMP** support.
 
 - For version smaller than 2.1.2, **gcc-7** with **OpenMP** is required.
-
 
 Build from Sources
 ******************
@@ -60,7 +60,7 @@ Build Threadless Version
 
     pip install lightgbm --install-option=--nomp
 
-All remarks, except the **OpenMP** requirement for **macOS** users, from `Build from Sources section <#build-from-sources>`__ are actual in this case.
+All requirements, except the **OpenMP** requirement for **macOS** users, from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
 It is **strongly not recommended** to use this version of LightGBM!
 
@@ -71,7 +71,7 @@ Build MPI Version
 
     pip install lightgbm --install-option=--mpi
 
-All remarks from `Build from Sources section <#build-from-sources>`__ are actual in this case.
+All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
 For **Windows** users, compilation with **MinGW-w64** is not supported and `CMake`_ (version 3.8 or higher) is strongly required.
 
@@ -84,7 +84,7 @@ Build GPU Version
 
     pip install lightgbm --install-option=--gpu
 
-All remarks from `Build from Sources section <#build-from-sources>`__ are actual in this case.
+All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
 For **Windows** users, `CMake`_ (version 3.8 or higher) is strongly required.
 
@@ -109,6 +109,17 @@ All available options:
 - opencl-library
 
 For more details see `FindBoost <https://cmake.org/cmake/help/latest/module/FindBoost.html>`__ and `FindOpenCL <https://cmake.org/cmake/help/latest/module/FindOpenCL.html>`__.
+
+Build CUDA Version
+~~~~~~~~~~~~~~~~~~
+
+.. code:: sh
+
+    pip install lightgbm --install-option=--cuda
+
+All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well, and `CMake`_ (version 3.16 or higher) is strongly required.
+
+**CUDA** library (version 9.0 or higher) is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version-experimental>`__.
 
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
@@ -142,10 +153,21 @@ By default, installation in environment with 32-bit Python is prohibited. Howeve
 
 It is **strongly not recommended** to use this version of LightGBM!
 
+Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+If you use ``conda`` to manage Python dependencies, you can install LightGBM using ``conda install``.
+
+**Note**: The `lightgbm conda-forge feedstock <https://github.com/conda-forge/lightgbm-feedstock>`_ is not maintained by LightGBM maintainers.
+
+.. code:: sh
+
+    conda install -c conda-forge lightgbm
+
 Install from GitHub
 '''''''''''''''''''
 
-All remarks from `Build from Sources section <#build-from-sources>`__ are actual in this case.
+All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
 For **Windows** users, if you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log, you should install `CMake`_ (version 3.8 or higher).
 
@@ -158,19 +180,37 @@ For **Windows** users, if you get any errors during installation and there is th
 
 Note: ``sudo`` (or administrator rights in **Windows**) may be needed to perform the command.
 
-Run ``python setup.py install --nomp`` to disable **OpenMP** support. All remarks from `Build Threadless Version section <#build-threadless-version>`__ are actual in this case.
+Run ``python setup.py install --nomp`` to disable **OpenMP** support. All requirements from `Build Threadless Version section <#build-threadless-version>`__ apply for this installation option as well.
 
-Run ``python setup.py install --mpi`` to enable **MPI** support. All remarks from `Build MPI Version section <#build-mpi-version>`__ are actual in this case.
+Run ``python setup.py install --mpi`` to enable **MPI** support. All requirements from `Build MPI Version section <#build-mpi-version>`__ apply for this installation option as well.
 
-Run ``python setup.py install --mingw``, if you want to use **MinGW-w64** on **Windows** instead of **Visual Studio**. All remarks from `Build with MinGW-w64 on Windows section <#build-with-mingw-w64-on-windows>`__ are actual in this case.
+Run ``python setup.py install --mingw``, if you want to use **MinGW-w64** on **Windows** instead of **Visual Studio**. All requirements from `Build with MinGW-w64 on Windows section <#build-with-mingw-w64-on-windows>`__ apply for this installation option as well.
 
-Run ``python setup.py install --gpu`` to enable GPU support. All remarks from `Build GPU Version section <#build-gpu-version>`__ are actual in this case. To pass additional options to **CMake** use the following syntax: ``python setup.py install --gpu --opencl-include-dir=/usr/local/cuda/include/``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
+Run ``python setup.py install --gpu`` to enable GPU support. All requirements from `Build GPU Version section <#build-gpu-version>`__ apply for this installation option as well. To pass additional options to **CMake** use the following syntax: ``python setup.py install --gpu --opencl-include-dir=/usr/local/cuda/include/``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
 
-Run ``python setup.py install --hdfs`` to enable HDFS support. All remarks from `Build HDFS Version section <#build-hdfs-version>`__ are actual in this case.
+Run ``python setup.py install --cuda`` to enable CUDA support. All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
 
-Run ``python setup.py install --bit32``, if you want to use 32-bit version. All remarks from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ are actual in this case.
+Run ``python setup.py install --hdfs`` to enable HDFS support. All requirements from `Build HDFS Version section <#build-hdfs-version>`__ apply for this installation option as well.
+
+Run ``python setup.py install --bit32``, if you want to use 32-bit version. All requirements from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ apply for this installation option as well.
 
 If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``python setup.py install --precompile``.
+
+Build Wheel File
+****************
+
+You can use ``python setup.py bdist_wheel`` instead of ``python setup.py install`` to build wheel file and use it for installation later. This might be useful for systems with restricted or completely without network access.
+
+Install Dask-package
+''''''''''''''''''''
+
+To install all additional dependencies required for Dask-package, you can append ``[dask]`` to LightGBM package name:
+
+.. code:: sh
+
+    pip install lightgbm[dask]
+
+Or replace ``python setup.py install`` with ``pip install -e .[dask]`` if you are installing the package from source files.
 
 Troubleshooting
 ---------------
@@ -199,4 +239,6 @@ Documentation strings (docstrings) are written in the NumPy style.
    :target: https://pypi.org/project/lightgbm
 .. |Downloads| image:: https://pepy.tech/badge/lightgbm
    :target: https://pepy.tech/project/lightgbm
+.. |API Docs| image:: https://readthedocs.org/projects/lightgbm/badge/?version=latest
+   :target: https://lightgbm.readthedocs.io/en/latest/Python-API.html
 .. _CMake: https://cmake.org/

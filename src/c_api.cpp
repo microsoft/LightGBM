@@ -72,8 +72,6 @@ class SingleRowPredictor {
       is_raw_score = true;
     } else if (predict_type == C_API_PREDICT_CONTRIB) {
       predict_contrib = true;
-    } else {
-      is_raw_score = false;
     }
     early_stop_ = config.pred_early_stop;
     early_stop_freq_ = config.pred_early_stop_freq;
@@ -289,18 +287,23 @@ class Booster {
           "You need to set `feature_pre_filter=false` to dynamically change "
           "the `min_data_in_leaf`.");
     }
+    if (new_param.count("linear_tree") && (new_config.linear_tree != old_config.linear_tree)) {
+      Log::Fatal("Cannot change linear_tree after constructed Dataset handle.");
+    }
   }
 
   void ResetConfig(const char* parameters) {
     UNIQUE_LOCK(mutex_)
     auto param = Config::Str2Map(parameters);
-    if (param.count("num_class")) {
+    Config new_config;
+    new_config.Set(param);
+    if (param.count("num_class") && new_config.num_class != config_.num_class) {
       Log::Fatal("Cannot change num_class during training");
     }
-    if (param.count("boosting")) {
+    if (param.count("boosting") && new_config.boosting != config_.boosting) {
       Log::Fatal("Cannot change boosting during training");
     }
-    if (param.count("metric")) {
+    if (param.count("metric") && new_config.metric != config_.metric) {
       Log::Fatal("Cannot change metric during training");
     }
     CheckDatasetResetConfig(config_, param);
@@ -386,7 +389,7 @@ class Booster {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n"\
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
     }
-    SHARED_LOCK(mutex_)
+    UNIQUE_LOCK(mutex_)
     const auto& single_row_predictor = single_row_predictor_[predict_type];
     auto one_row = get_row_fun(0);
     auto pred_wrt_ptr = out_result;
@@ -413,9 +416,8 @@ class Booster {
       is_raw_score = false;
     }
 
-    Predictor predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
+    return Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
-    return predictor;
   }
 
   void Predict(int start_iteration, int num_iteration, int predict_type, int nrow, int ncol,
@@ -960,6 +962,9 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
+  if (p_dataset->has_raw()) {
+    p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
+  }
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
@@ -990,14 +995,16 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
+  if (p_dataset->has_raw()) {
+    p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
+  }
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
-    p_dataset->PushOneRow(tid,
-                          static_cast<data_size_t>(start_row + i), one_row);
+    p_dataset->PushOneRow(tid, static_cast<data_size_t>(start_row + i), one_row);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
@@ -1090,6 +1097,9 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
+    if (ret->has_raw()) {
+      ret->ResizeRaw(total_nrow);
+    }
   }
   int32_t start_row = 0;
   for (int j = 0; j < nmat; ++j) {
@@ -1166,6 +1176,9 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
+    if (ret->has_raw()) {
+      ret->ResizeRaw(nrow);
+    }
   }
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
@@ -1234,6 +1247,9 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
+    if (ret->has_raw()) {
+      ret->ResizeRaw(nrow);
+    }
   }
 
   OMP_INIT_EX();
@@ -1326,12 +1342,12 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
         row_idx = pair.first;
         // no more data
         if (row_idx < 0) { break; }
-        ret->PushOneData(tid, row_idx, group, sub_feature, pair.second);
+        ret->PushOneData(tid, row_idx, group, feature_idx, sub_feature, pair.second);
       }
     } else {
       for (int row_idx = 0; row_idx < nrow; ++row_idx) {
         auto val = col_it.Get(row_idx);
-        ret->PushOneData(tid, row_idx, group, sub_feature, val);
+        ret->PushOneData(tid, row_idx, group, feature_idx, sub_feature, val);
       }
     }
     OMP_LOOP_EX_END();
@@ -1597,6 +1613,13 @@ int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetBoosting()->NumberOfClasses();
+  API_END();
+}
+
+int LGBM_BoosterGetLinear(BoosterHandle handle, bool* out) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out = ref_booster->GetBoosting()->IsLinear();
   API_END();
 }
 
@@ -2309,48 +2332,37 @@ int LGBM_NetworkInitWithFunctions(int num_machines, int rank,
 
 // ---- start of some help functions
 
+
+template<typename T>
+std::function<std::vector<double>(int row_idx)>
+RowFunctionFromDenseMatric_helper(const void* data, int num_row, int num_col, int is_row_major) {
+  const T* data_ptr = reinterpret_cast<const T*>(data);
+  if (is_row_major) {
+    return [=] (int row_idx) {
+      std::vector<double> ret(num_col);
+      auto tmp_ptr = data_ptr + static_cast<size_t>(num_col) * row_idx;
+      for (int i = 0; i < num_col; ++i) {
+        ret[i] = static_cast<double>(*(tmp_ptr + i));
+      }
+      return ret;
+    };
+  } else {
+    return [=] (int row_idx) {
+      std::vector<double> ret(num_col);
+      for (int i = 0; i < num_col; ++i) {
+        ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
+      }
+      return ret;
+    };
+  }
+}
+
 std::function<std::vector<double>(int row_idx)>
 RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major) {
   if (data_type == C_API_DTYPE_FLOAT32) {
-    const float* data_ptr = reinterpret_cast<const float*>(data);
-    if (is_row_major) {
-      return [=] (int row_idx) {
-        std::vector<double> ret(num_col);
-        auto tmp_ptr = data_ptr + static_cast<size_t>(num_col) * row_idx;
-        for (int i = 0; i < num_col; ++i) {
-          ret[i] = static_cast<double>(*(tmp_ptr + i));
-        }
-        return ret;
-      };
-    } else {
-      return [=] (int row_idx) {
-        std::vector<double> ret(num_col);
-        for (int i = 0; i < num_col; ++i) {
-          ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
-        }
-        return ret;
-      };
-    }
+    return RowFunctionFromDenseMatric_helper<float>(data, num_row, num_col, is_row_major);
   } else if (data_type == C_API_DTYPE_FLOAT64) {
-    const double* data_ptr = reinterpret_cast<const double*>(data);
-    if (is_row_major) {
-      return [=] (int row_idx) {
-        std::vector<double> ret(num_col);
-        auto tmp_ptr = data_ptr + static_cast<size_t>(num_col) * row_idx;
-        for (int i = 0; i < num_col; ++i) {
-          ret[i] = static_cast<double>(*(tmp_ptr + i));
-        }
-        return ret;
-      };
-    } else {
-      return [=] (int row_idx) {
-        std::vector<double> ret(num_col);
-        for (int i = 0; i < num_col; ++i) {
-          ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
-        }
-        return ret;
-      };
-    }
+    return RowFunctionFromDenseMatric_helper<double>(data, num_row, num_col, is_row_major);
   }
   Log::Fatal("Unknown data type in RowFunctionFromDenseMatric");
   return nullptr;
@@ -2392,136 +2404,78 @@ RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type) {
   };
 }
 
+template<typename T, typename T1, typename T2>
+std::function<std::vector<std::pair<int, double>>(T idx)>
+RowFunctionFromCSR_helper(const void* indptr, const int32_t* indices, const void* data) {
+  const T1* data_ptr = reinterpret_cast<const T1*>(data);
+  const T2* ptr_indptr = reinterpret_cast<const T2*>(indptr);
+  return [=] (T idx) {
+    std::vector<std::pair<int, double>> ret;
+    int64_t start = ptr_indptr[idx];
+    int64_t end = ptr_indptr[idx + 1];
+    if (end - start > 0)  {
+      ret.reserve(end - start);
+    }
+    for (int64_t i = start; i < end; ++i) {
+      ret.emplace_back(indices[i], data_ptr[i]);
+    }
+    return ret;
+  };
+}
+
 template<typename T>
 std::function<std::vector<std::pair<int, double>>(T idx)>
 RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, const void* data, int data_type, int64_t , int64_t ) {
   if (data_type == C_API_DTYPE_FLOAT32) {
-    const float* data_ptr = reinterpret_cast<const float*>(data);
     if (indptr_type == C_API_DTYPE_INT32) {
-      const int32_t* ptr_indptr = reinterpret_cast<const int32_t*>(indptr);
-      return [=] (T idx) {
-        std::vector<std::pair<int, double>> ret;
-        int64_t start = ptr_indptr[idx];
-        int64_t end = ptr_indptr[idx + 1];
-        if (end - start > 0)  {
-          ret.reserve(end - start);
-        }
-        for (int64_t i = start; i < end; ++i) {
-          ret.emplace_back(indices[i], data_ptr[i]);
-        }
-        return ret;
-      };
+     return RowFunctionFromCSR_helper<T, float, int32_t>(indptr, indices, data);
     } else if (indptr_type == C_API_DTYPE_INT64) {
-      const int64_t* ptr_indptr = reinterpret_cast<const int64_t*>(indptr);
-      return [=] (T idx) {
-        std::vector<std::pair<int, double>> ret;
-        int64_t start = ptr_indptr[idx];
-        int64_t end = ptr_indptr[idx + 1];
-        if (end - start > 0)  {
-          ret.reserve(end - start);
-        }
-        for (int64_t i = start; i < end; ++i) {
-          ret.emplace_back(indices[i], data_ptr[i]);
-        }
-        return ret;
-      };
+     return RowFunctionFromCSR_helper<T, float, int64_t>(indptr, indices, data);
     }
   } else if (data_type == C_API_DTYPE_FLOAT64) {
-    const double* data_ptr = reinterpret_cast<const double*>(data);
     if (indptr_type == C_API_DTYPE_INT32) {
-      const int32_t* ptr_indptr = reinterpret_cast<const int32_t*>(indptr);
-      return [=] (T idx) {
-        std::vector<std::pair<int, double>> ret;
-        int64_t start = ptr_indptr[idx];
-        int64_t end = ptr_indptr[idx + 1];
-        if (end - start > 0)  {
-          ret.reserve(end - start);
-        }
-        for (int64_t i = start; i < end; ++i) {
-          ret.emplace_back(indices[i], data_ptr[i]);
-        }
-        return ret;
-      };
+     return RowFunctionFromCSR_helper<T, double, int32_t>(indptr, indices, data);
     } else if (indptr_type == C_API_DTYPE_INT64) {
-      const int64_t* ptr_indptr = reinterpret_cast<const int64_t*>(indptr);
-      return [=] (T idx) {
-        std::vector<std::pair<int, double>> ret;
-        int64_t start = ptr_indptr[idx];
-        int64_t end = ptr_indptr[idx + 1];
-        if (end - start > 0)  {
-          ret.reserve(end - start);
-        }
-        for (int64_t i = start; i < end; ++i) {
-          ret.emplace_back(indices[i], data_ptr[i]);
-        }
-        return ret;
-      };
+     return RowFunctionFromCSR_helper<T, double, int64_t>(indptr, indices, data);
     }
   }
   Log::Fatal("Unknown data type in RowFunctionFromCSR");
   return nullptr;
 }
 
+
+
+template <typename T1, typename T2>
+std::function<std::pair<int, double>(int idx)> IterateFunctionFromCSC_helper(const void* col_ptr, const int32_t* indices, const void* data, int col_idx) {
+  const T1* data_ptr = reinterpret_cast<const T1*>(data);
+  const T2* ptr_col_ptr = reinterpret_cast<const T2*>(col_ptr);
+  int64_t start = ptr_col_ptr[col_idx];
+  int64_t end = ptr_col_ptr[col_idx + 1];
+  return [=] (int offset) {
+    int64_t i = static_cast<int64_t>(start + offset);
+    if (i >= end) {
+      return std::make_pair(-1, 0.0);
+    }
+    int idx = static_cast<int>(indices[i]);
+    double val = static_cast<double>(data_ptr[i]);
+    return std::make_pair(idx, val);
+  };
+}
+
 std::function<std::pair<int, double>(int idx)>
 IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices, const void* data, int data_type, int64_t ncol_ptr, int64_t , int col_idx) {
   CHECK(col_idx < ncol_ptr && col_idx >= 0);
   if (data_type == C_API_DTYPE_FLOAT32) {
-    const float* data_ptr = reinterpret_cast<const float*>(data);
     if (col_ptr_type == C_API_DTYPE_INT32) {
-      const int32_t* ptr_col_ptr = reinterpret_cast<const int32_t*>(col_ptr);
-      int64_t start = ptr_col_ptr[col_idx];
-      int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int offset) {
-        int64_t i = static_cast<int64_t>(start + offset);
-        if (i >= end) {
-          return std::make_pair(-1, 0.0);
-        }
-        int idx = static_cast<int>(indices[i]);
-        double val = static_cast<double>(data_ptr[i]);
-        return std::make_pair(idx, val);
-      };
+      return IterateFunctionFromCSC_helper<float, int32_t>(col_ptr, indices, data, col_idx);
     } else if (col_ptr_type == C_API_DTYPE_INT64) {
-      const int64_t* ptr_col_ptr = reinterpret_cast<const int64_t*>(col_ptr);
-      int64_t start = ptr_col_ptr[col_idx];
-      int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int offset) {
-        int64_t i = static_cast<int64_t>(start + offset);
-        if (i >= end) {
-          return std::make_pair(-1, 0.0);
-        }
-        int idx = static_cast<int>(indices[i]);
-        double val = static_cast<double>(data_ptr[i]);
-        return std::make_pair(idx, val);
-      };
+      return IterateFunctionFromCSC_helper<float, int64_t>(col_ptr, indices, data, col_idx);
     }
   } else if (data_type == C_API_DTYPE_FLOAT64) {
-    const double* data_ptr = reinterpret_cast<const double*>(data);
     if (col_ptr_type == C_API_DTYPE_INT32) {
-      const int32_t* ptr_col_ptr = reinterpret_cast<const int32_t*>(col_ptr);
-      int64_t start = ptr_col_ptr[col_idx];
-      int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int offset) {
-        int64_t i = static_cast<int64_t>(start + offset);
-        if (i >= end) {
-          return std::make_pair(-1, 0.0);
-        }
-        int idx = static_cast<int>(indices[i]);
-        double val = static_cast<double>(data_ptr[i]);
-        return std::make_pair(idx, val);
-      };
+      return IterateFunctionFromCSC_helper<double, int32_t>(col_ptr, indices, data, col_idx);
     } else if (col_ptr_type == C_API_DTYPE_INT64) {
-      const int64_t* ptr_col_ptr = reinterpret_cast<const int64_t*>(col_ptr);
-      int64_t start = ptr_col_ptr[col_idx];
-      int64_t end = ptr_col_ptr[col_idx + 1];
-      return [=] (int offset) {
-        int64_t i = static_cast<int64_t>(start + offset);
-        if (i >= end) {
-          return std::make_pair(-1, 0.0);
-        }
-        int idx = static_cast<int>(indices[i]);
-        double val = static_cast<double>(data_ptr[i]);
-        return std::make_pair(idx, val);
-      };
+      return IterateFunctionFromCSC_helper<double, int64_t>(col_ptr, indices, data, col_idx);
     }
   }
   Log::Fatal("Unknown data type in CSC matrix");

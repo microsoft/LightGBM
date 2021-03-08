@@ -1,16 +1,12 @@
 # coding: utf-8
 """Plotting library."""
-from __future__ import absolute_import, division
-
-import warnings
 from copy import deepcopy
 from io import BytesIO
 
 import numpy as np
 
-from .basic import Booster
-from .compat import (MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED,
-                     range_, zip_, string_type)
+from .basic import Booster, _log_warning
+from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
 from .sklearn import LGBMModel
 
 
@@ -22,7 +18,7 @@ def _check_not_tuple_of_2_elements(obj, obj_name='obj'):
 
 def _float2str(value, precision=None):
     return ("{0:.{1}f}".format(value, precision)
-            if precision is not None and not isinstance(value, string_type)
+            if precision is not None and not isinstance(value, str)
             else str(value))
 
 
@@ -97,12 +93,12 @@ def plot_importance(booster, ax=None, height=0.2,
     if not len(importance):
         raise ValueError("Booster's feature_importance is empty.")
 
-    tuples = sorted(zip_(feature_name, importance), key=lambda x: x[1])
+    tuples = sorted(zip(feature_name, importance), key=lambda x: x[1])
     if ignore_zero:
         tuples = [x for x in tuples if x[1] > 0]
     if max_num_features is not None and max_num_features > 0:
         tuples = tuples[-max_num_features:]
-    labels, values = zip_(*tuples)
+    labels, values = zip(*tuples)
 
     if ax is None:
         if figsize is not None:
@@ -112,7 +108,7 @@ def plot_importance(booster, ax=None, height=0.2,
     ylocs = np.arange(len(values))
     ax.barh(ylocs, values, align='center', height=height, **kwargs)
 
-    for x, y in zip_(values, ylocs):
+    for x, y in zip(values, ylocs):
         ax.text(x + 1, y,
                 _float2str(x, precision) if importance_type == 'gain' else x,
                 va='center')
@@ -238,7 +234,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
 
     if title is not None:
         title = title.replace('@feature@', str(feature))
-        title = title.replace('@index/name@', ('name' if isinstance(feature, string_type) else 'index'))
+        title = title.replace('@index/name@', ('name' if isinstance(feature, str) else 'index'))
         ax.set_title(title)
     if xlabel is not None:
         ax.set_xlabel(xlabel)
@@ -329,15 +325,14 @@ def plot_metric(booster, metric=None, dataset_names=None,
     num_metric = len(metrics_for_one)
     if metric is None:
         if num_metric > 1:
-            msg = "More than one metric available, picking one to plot."
-            warnings.warn(msg, stacklevel=2)
+            _log_warning("More than one metric available, picking one to plot.")
         metric, results = metrics_for_one.popitem()
     else:
         if metric not in metrics_for_one:
             raise KeyError('No given metric in eval results.')
         results = metrics_for_one[metric]
     num_iteration, max_result, min_result = len(results), max(results), min(results)
-    x_ = range_(num_iteration)
+    x_ = range(num_iteration)
     ax.plot(x_, results, label=name)
 
     for name in dataset_names:
@@ -474,6 +469,16 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
                         orientation='horizontal', **kwargs):
     """Create a digraph representation of specified tree.
 
+    Each node in the graph represents a node in the tree.
+
+    Non-leaf nodes have labels like ``Column_10 <= 875.9``, which means
+    "this node splits on the feature named "Column_10", with threshold 875.9".
+
+    Leaf nodes have labels like ``leaf 2: 0.422``, which means "this node is a
+    leaf node, and the predicted value for records that fall into this node
+    is 0.422". The number (``2``) is an internal unique identifier and doesn't
+    have any special meaning.
+
     .. note::
 
         For more information please visit
@@ -487,9 +492,14 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
         The index of a target tree to convert.
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
-        Possible values of list items:
-        'split_gain', 'internal_value', 'internal_count', 'internal_weight',
-        'leaf_count', 'leaf_weight', 'data_percentage'.
+
+            - ``'split_gain'`` : gain from adding this split to the model
+            - ``'internal_value'`` : raw predicted value that would be produced by this node if it was a leaf node
+            - ``'internal_count'`` : number of records from the training data that fall into this non-leaf node
+            - ``'internal_weight'`` : total weight of all nodes that fall into this non-leaf node
+            - ``'leaf_count'`` : number of records from the training data that fall into this leaf node
+            - ``'leaf_weight'`` : total weight (sum of hessian) of all observations that fall into this leaf node
+            - ``'data_percentage'`` : percentage of training data that fall into this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
     orientation : string, optional (default='horizontal')
@@ -536,6 +546,16 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
               show_info=None, precision=3, orientation='horizontal', **kwargs):
     """Plot specified tree.
 
+    Each node in the graph represents a node in the tree.
+
+    Non-leaf nodes have labels like ``Column_10 <= 875.9``, which means
+    "this node splits on the feature named "Column_10", with threshold 875.9".
+
+    Leaf nodes have labels like ``leaf 2: 0.422``, which means "this node is a
+    leaf node, and the predicted value for records that fall into this node
+    is 0.422". The number (``2``) is an internal unique identifier and doesn't
+    have any special meaning.
+
     .. note::
 
         It is preferable to use ``create_tree_digraph()`` because of its lossless quality
@@ -556,9 +576,14 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
         Resolution of the figure.
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
-        Possible values of list items:
-        'split_gain', 'internal_value', 'internal_count', 'internal_weight',
-        'leaf_count', 'leaf_weight', 'data_percentage'.
+
+            - ``'split_gain'`` : gain from adding this split to the model
+            - ``'internal_value'`` : raw predicted value that would be produced by this node if it was a leaf node
+            - ``'internal_count'`` : number of records from the training data that fall into this non-leaf node
+            - ``'internal_weight'`` : total weight of all nodes that fall into this non-leaf node
+            - ``'leaf_count'`` : number of records from the training data that fall into this leaf node
+            - ``'leaf_weight'`` : total weight (sum of hessian) of all observations that fall into this leaf node
+            - ``'data_percentage'`` : percentage of training data that fall into this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
     orientation : string, optional (default='horizontal')
@@ -574,8 +599,8 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
         The plot with single tree.
     """
     if MATPLOTLIB_INSTALLED:
-        import matplotlib.pyplot as plt
         import matplotlib.image as image
+        import matplotlib.pyplot as plt
     else:
         raise ImportError('You must install matplotlib to plot tree.')
 

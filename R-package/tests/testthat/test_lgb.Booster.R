@@ -135,7 +135,7 @@ test_that("lgb.load() gives the expected error messages given different incorrec
 
 })
 
-test_that("Loading a Booster from a file works", {
+test_that("Loading a Booster from a text file works", {
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     data(agaricus.test, package = "lightgbm")
@@ -167,6 +167,46 @@ test_that("Loading a Booster from a file works", {
     pred2 <- predict(bst2, test$data)
     expect_identical(pred, pred2)
 })
+
+test_that("boosters with linear models at leaves can be written to text file and re-loaded successfully", {
+    X <- matrix(rnorm(100L), ncol = 1L)
+    labels <- 2L * X + runif(nrow(X), 0L, 0.1)
+    dtrain <- lgb.Dataset(
+        data = X
+        , label = labels
+    )
+
+    params <- list(
+        objective = "regression"
+        , verbose = -1L
+        , metric = "mse"
+        , seed = 0L
+        , num_leaves = 2L
+    )
+
+    bst <- lgb.train(
+        data = dtrain
+        , nrounds = 10L
+        , params = params
+    )
+    expect_true(lgb.is.Booster(bst))
+
+    # save predictions, then write the model to a file and destroy it in R
+    preds <- predict(bst, X)
+    model_file <- tempfile(fileext = ".model")
+    lgb.save(bst, model_file)
+    bst$finalize()
+    expect_null(bst$.__enclos_env__$private$handle)
+    rm(bst)
+
+    # load the booster and make predictions...should be the same
+    bst2 <- lgb.load(
+        filename = model_file
+    )
+    preds2 <- predict(bst2, X)
+    expect_identical(preds, preds2)
+})
+
 
 test_that("Loading a Booster from a string works", {
     set.seed(708L)
@@ -384,6 +424,75 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
             train_set = data.frame(x = rnorm(10L))
         )
     }, regexp = "lgb.Booster.update: Only can use lgb.Dataset", fixed = TRUE)
+})
+
+test_that("Booster should store parameters and Booster$reset_parameter() should update them", {
+    data(agaricus.train, package = "lightgbm")
+    dtrain <- lgb.Dataset(
+        agaricus.train$data
+        , label = agaricus.train$label
+    )
+    # testing that this works for some cases that could break it:
+    #    - multiple metrics
+    #    - using "metric", "boosting", "num_class" in params
+    params <- list(
+        objective = "multiclass"
+        , max_depth = 4L
+        , bagging_fraction = 0.8
+        , metric = c("multi_logloss", "multi_error")
+        , boosting = "gbdt"
+        , num_class = 5L
+    )
+    bst <- Booster$new(
+        params = params
+        , train_set = dtrain
+    )
+    expect_identical(bst$params, params)
+
+    params[["bagging_fraction"]] <- 0.9
+    ret_bst <- bst$reset_parameter(params = params)
+    expect_identical(ret_bst$params, params)
+    expect_identical(bst$params, params)
+})
+
+test_that("Booster$params should include dataset params, before and after Booster$reset_parameter()", {
+    data(agaricus.train, package = "lightgbm")
+    dtrain <- lgb.Dataset(
+        agaricus.train$data
+        , label = agaricus.train$label
+        , params = list(
+            max_bin = 17L
+        )
+    )
+    params <- list(
+        objective = "binary"
+        , max_depth = 4L
+        , bagging_fraction = 0.8
+    )
+    bst <- Booster$new(
+        params = params
+        , train_set = dtrain
+    )
+    expect_identical(
+        bst$params
+        , list(
+            objective = "binary"
+            , max_depth = 4L
+            , bagging_fraction = 0.8
+            , max_bin = 17L
+        )
+    )
+
+    params[["bagging_fraction"]] <- 0.9
+    ret_bst <- bst$reset_parameter(params = params)
+    expected_params <- list(
+        objective = "binary"
+        , max_depth = 4L
+        , bagging_fraction = 0.9
+        , max_bin = 17L
+    )
+    expect_identical(ret_bst$params, expected_params)
+    expect_identical(bst$params, expected_params)
 })
 
 context("save_model")
@@ -625,4 +734,76 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
         expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L)
     }
 
+})
+
+context("saveRDS.lgb.Booster() and readRDS.lgb.Booster()")
+
+test_that("params (including dataset params) should be stored in .rds file for Booster", {
+    data(agaricus.train, package = "lightgbm")
+    dtrain <- lgb.Dataset(
+        agaricus.train$data
+        , label = agaricus.train$label
+        , params = list(
+            max_bin = 17L
+        )
+    )
+    params <- list(
+        objective = "binary"
+        , max_depth = 4L
+        , bagging_fraction = 0.8
+    )
+    bst <- Booster$new(
+        params = params
+        , train_set = dtrain
+    )
+    bst_file <- tempfile(fileext = ".rds")
+    saveRDS.lgb.Booster(bst, file = bst_file)
+
+    bst_from_file <- readRDS.lgb.Booster(file = bst_file)
+    expect_identical(
+        bst_from_file$params
+        , list(
+            objective = "binary"
+            , max_depth = 4L
+            , bagging_fraction = 0.8
+            , max_bin = 17L
+        )
+    )
+})
+
+test_that("boosters with linear models at leaves can be written to RDS and re-loaded successfully", {
+    X <- matrix(rnorm(100L), ncol = 1L)
+    labels <- 2L * X + runif(nrow(X), 0L, 0.1)
+    dtrain <- lgb.Dataset(
+        data = X
+        , label = labels
+    )
+
+    params <- list(
+        objective = "regression"
+        , verbose = -1L
+        , metric = "mse"
+        , seed = 0L
+        , num_leaves = 2L
+    )
+
+    bst <- lgb.train(
+        data = dtrain
+        , nrounds = 10L
+        , params = params
+    )
+    expect_true(lgb.is.Booster(bst))
+
+    # save predictions, then write the model to a file and destroy it in R
+    preds <- predict(bst, X)
+    model_file <- tempfile(fileext = ".rds")
+    saveRDS.lgb.Booster(bst, file = model_file)
+    bst$finalize()
+    expect_null(bst$.__enclos_env__$private$handle)
+    rm(bst)
+
+    # load the booster and make predictions...should be the same
+    bst2 <- readRDS.lgb.Booster(file = model_file)
+    preds2 <- predict(bst2, X)
+    expect_identical(preds, preds2)
 })

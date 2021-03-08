@@ -48,7 +48,7 @@ lgb.interprete <- function(model,
                            num_iteration = NULL) {
 
   # Get tree model
-  tree_dt <- lgb.model.dt.tree(model, num_iteration)
+  tree_dt <- lgb.model.dt.tree(model = model, num_iteration = num_iteration)
 
   # Check number of classes
   num_class <- model$.__enclos_env__$private$num_class
@@ -59,12 +59,12 @@ lgb.interprete <- function(model,
   # Get parsed predictions of data
   pred_mat <- t(
     model$predict(
-      data[idxset, , drop = FALSE]
+      data = data[idxset, , drop = FALSE]
       , num_iteration = num_iteration
       , predleaf = TRUE
     )
   )
-  leaf_index_dt <- data.table::as.data.table(pred_mat)
+  leaf_index_dt <- data.table::as.data.table(x = pred_mat)
   leaf_index_mat_list <- lapply(
     X = leaf_index_dt
     , FUN = function(x) matrix(x, ncol = num_class, byrow = TRUE)
@@ -81,10 +81,10 @@ lgb.interprete <- function(model,
   # Sequence over idxset
   for (i in seq_along(idxset)) {
     tree_interpretation_dt_list[[i]] <- single.row.interprete(
-      tree_dt
-      , num_class
-      , tree_index_mat_list[[i]]
-      , leaf_index_mat_list[[i]]
+      tree_dt = tree_dt
+      , num_class = num_class
+      , tree_index_mat = tree_index_mat_list[[i]]
+      , leaf_index_mat = leaf_index_mat_list[[i]]
     )
   }
 
@@ -122,18 +122,26 @@ single.tree.interprete <- function(tree_dt,
       # Not null means existing node
       this_node <- node_dt[split_index == parent_id, ]
       feature_seq <<- c(this_node[["split_feature"]], feature_seq)
-      leaf_to_root(this_node[["node_parent"]], this_node[["internal_value"]])
+      leaf_to_root(
+        parent_id = this_node[["node_parent"]]
+        , current_value = this_node[["internal_value"]]
+      )
 
     }
 
   }
 
   # Perform leaf to root conversion
-  leaf_to_root(leaf_dt[["leaf_parent"]], leaf_dt[["leaf_value"]])
+  leaf_to_root(
+    parent_id = leaf_dt[["leaf_parent"]]
+    , current_value = leaf_dt[["leaf_value"]]
+  )
 
-  data.table::data.table(
-    Feature = feature_seq
-    , Contribution = diff.default(value_seq)
+  return(
+    data.table::data.table(
+      Feature = feature_seq
+      , Contribution = diff.default(value_seq)
+    )
   )
 
 }
@@ -191,7 +199,7 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
 
     if (num_class > 1L) {
       data.table::setnames(
-        next_interp_dt
+        x = next_interp_dt
         , old = "Contribution"
         , new = paste("Class", i - 1L)
       )
@@ -221,7 +229,7 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
     for (j in 2L:ncol(tree_interpretation_dt)) {
 
       data.table::set(
-        tree_interpretation_dt
+        x = tree_interpretation_dt
         , i = which(is.na(tree_interpretation_dt[[j]]))
         , j = j
         , value = 0.0

@@ -33,6 +33,18 @@ Scikit-learn API
     LGBMRegressor
     LGBMRanker
 
+Dask API
+--------
+
+.. versionadded:: 3.2.0
+
+.. autosummary::
+    :toctree: pythonapi/
+
+    DaskLGBMClassifier
+    DaskLGBMRegressor
+    DaskLGBMRanker
+
 Callbacks
 ---------
 
@@ -55,3 +67,11 @@ Plotting
     plot_metric
     plot_tree
     create_tree_digraph
+
+Utilities
+---------
+
+.. autosummary::
+    :toctree: pythonapi/
+
+    register_logger

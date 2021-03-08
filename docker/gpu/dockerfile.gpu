@@ -38,7 +38,6 @@ RUN apt-get update && \
 apt-get install -y --no-install-recommends \
 build-essential \
 curl \
-wget \
 bzip2 \
 ca-certificates \
 libglib2.0-0 \
@@ -70,13 +69,12 @@ ENV PATH $CONDA_DIR/bin:$PATH
 
 # Install miniconda
 RUN echo "export PATH=$CONDA_DIR/bin:"'$PATH' > /etc/profile.d/conda.sh && \
-    wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+    curl -sL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p $CONDA_DIR && \
     rm ~/miniconda.sh
 
 RUN conda config --set always_yes yes --set changeps1 no && \
-    conda create -y -q -n py2 python=2.7 mkl numpy scipy scikit-learn jupyter notebook ipython pandas matplotlib && \
-    conda create -y -q -n py3 python=3.6 mkl numpy scipy scikit-learn jupyter notebook ipython pandas matplotlib
+    conda create -y -q -n py3 python=3.8 mkl numpy scipy scikit-learn jupyter notebook ipython pandas matplotlib
 
 #################################################################################################################
 #           LightGBM
@@ -90,7 +88,6 @@ RUN cd /usr/local/src && mkdir lightgbm && cd lightgbm && \
 
 ENV PATH /usr/local/src/lightgbm/LightGBM:${PATH}
 
-RUN /bin/bash -c "source activate py2 && cd /usr/local/src/lightgbm/LightGBM/python-package && python setup.py install --precompile && source deactivate"
 RUN /bin/bash -c "source activate py3 && cd /usr/local/src/lightgbm/LightGBM/python-package && python setup.py install --precompile && source deactivate"
 
 #################################################################################################################

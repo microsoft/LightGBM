@@ -5,6 +5,7 @@ function Download-File-With-Retries {
     [string]$url,
     [string]$destfile
   )
+  $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
   do {
     Write-Output "Downloading ${url}"
     sleep 5;
@@ -36,14 +37,16 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   # Rtools 3.x has to be installed at C:\Rtools\
   #     * https://stackoverflow.com/a/46619260/3986677
   $RTOOLS_INSTALL_PATH = "C:\Rtools"
-  $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH/mingw_64/bin"
+  $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\bin"
+  $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw_64\bin"
   $env:RTOOLS_EXE_FILE = "rtools35-x86_64.exe"
   $env:R_WINDOWS_VERSION = "3.6.3"
 } elseif ($env:R_MAJOR_VERSION -eq "4") {
   $RTOOLS_INSTALL_PATH = "C:\rtools40"
-  $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH/mingw64/bin"
+  $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
+  $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw64\bin"
   $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.0.3"
+  $env:R_WINDOWS_VERSION = "4.0.4"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -51,7 +54,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
 
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
-$env:PATH = "$RTOOLS_INSTALL_PATH/bin;" + "$RTOOLS_INSTALL_PATH/usr/bin;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
+$env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
@@ -59,6 +62,15 @@ $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 # hack to get around this:
 # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
 $env:_R_CHECK_SYSTEM_CLOCK_ = 0
+
+# ignore R CMD CHECK NOTE checking how long it has
+# been since the last submission
+$env:_R_CHECK_CRAN_INCOMING_REMOTE_ = 0
+
+# CRAN ignores the "installed size is too large" NOTE,
+# so our CI can too. Setting to a large value here just
+# to catch extreme problems
+$env:_R_CHECK_PKG_SIZES_THRESHOLD_ = 60
 
 if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
@@ -69,22 +81,6 @@ cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 
-if ($env:R_BUILD_TYPE -eq "cmake") {
-  $install_libs = "$env:BUILD_SOURCESDIRECTORY/R-package/src/install.libs.R"
-  if ($env:TOOLCHAIN -eq "MINGW") {
-    Write-Output "Telling R to use MinGW"
-    ((Get-Content -Path $install_libs -Raw) -Replace 'use_mingw <- FALSE','use_mingw <- TRUE') | Set-Content -Path $install_libs
-  } elseif ($env:TOOLCHAIN -eq "MSYS") {
-    Write-Output "Telling R to use MSYS"
-    ((Get-Content -Path $install_libs -Raw) -Replace 'use_msys2 <- FALSE','use_msys2 <- TRUE') | Set-Content -Path $install_libs
-  } elseif ($env:TOOLCHAIN -eq "MSVC") {
-    # no customization for MSVC
-  } else {
-    Write-Output "[ERROR] Unrecognized toolchain: $env:TOOLCHAIN"
-    Check-Output $false
-  }
-}
-
 # download R and RTools
 Write-Output "Downloading R and Rtools"
 Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
@@ -92,7 +88,7 @@ Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/
 
 # Install R
 Write-Output "Installing R"
-Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64" ; Check-Output $?
+Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386" ; Check-Output $?
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
@@ -118,7 +114,6 @@ if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
     Write-Output "Done installing MiKTeX"
 
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE, error_on_status = TRUE)" ; Check-Output $?
-    conda install -q -y --no-deps pandoc
 }
 
 Write-Output "Building R package"
@@ -130,7 +125,19 @@ if ($env:COMPILER -ne "MSVC") {
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
   if ($env:R_BUILD_TYPE -eq "cmake") {
-    Run-R-Code-Redirect-Stderr "commandArgs <- function(...){'--skip-install'}; source('build_r.R')"; Check-Output $?
+    if ($env:TOOLCHAIN -eq "MINGW") {
+      Write-Output "Telling R to use MinGW"
+      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-mingw')"
+    } elseif ($env:TOOLCHAIN -eq "MSYS") {
+      Write-Output "Telling R to use MSYS"
+      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-msys2')"
+    } elseif ($env:TOOLCHAIN -eq "MSVC") {
+      $env:BUILD_R_FLAGS = "'--skip-install'"
+    } else {
+      Write-Output "[ERROR] Unrecognized toolchain: $env:TOOLCHAIN"
+      Check-Output $false
+    }
+    Run-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
@@ -159,23 +166,11 @@ if ($env:COMPILER -ne "MSVC") {
   Check-Output $check_succeeded
 
   Write-Output "Looking for issues with R CMD check results"
-  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
-      echo "ERRORs have been found by R CMD check!"
-      Check-Output $False
-  }
-  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "WARNING" -CaseSensitive -Quiet) {
-      echo "WARNINGS have been found by R CMD check!"
+  if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "NOTE|WARNING|ERROR" -CaseSensitive -Quiet) {
+      echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
       Check-Output $False
   }
 
-  $note_str = Get-Content -Path "${LOG_FILE_NAME}" | Select-String -Pattern '.*Status.* NOTE' | Out-String ; Check-Output $?
-  $relevant_line = $note_str -match '(\d+) NOTE'
-  $NUM_CHECK_NOTES = $matches[1]
-  $ALLOWED_CHECK_NOTES = 2
-  if ([int]$NUM_CHECK_NOTES -gt $ALLOWED_CHECK_NOTES) {
-      Write-Output "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
-      Check-Output $False
-  }
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"

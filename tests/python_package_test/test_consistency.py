@@ -1,13 +1,13 @@
 # coding: utf-8
 import os
-import unittest
 
-import lightgbm as lgb
 import numpy as np
 from sklearn.datasets import load_svmlight_file
 
+import lightgbm as lgb
 
-class FileLoader(object):
+
+class FileLoader:
 
     def __init__(self, directory, prefix, config_file='train.conf'):
         directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), directory)
@@ -64,65 +64,80 @@ class FileLoader(object):
         return os.path.join(self.directory, self.prefix + suffix)
 
 
-class TestEngine(unittest.TestCase):
+def test_binary():
+    fd = FileLoader('../../examples/binary_classification', 'binary')
+    X_train, y_train, _ = fd.load_dataset('.train')
+    X_test, _, X_test_fn = fd.load_dataset('.test')
+    weight_train = fd.load_field('.train.weight')
+    lgb_train = lgb.Dataset(X_train, y_train, params=fd.params, weight=weight_train)
+    gbm = lgb.LGBMClassifier(**fd.params)
+    gbm.fit(X_train, y_train, sample_weight=weight_train)
+    sk_pred = gbm.predict_proba(X_test)[:, 1]
+    fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
+    fd.file_load_check(lgb_train, '.train')
 
-    def test_binary(self):
-        fd = FileLoader('../../examples/binary_classification', 'binary')
-        X_train, y_train, _ = fd.load_dataset('.train')
-        X_test, _, X_test_fn = fd.load_dataset('.test')
-        weight_train = fd.load_field('.train.weight')
-        lgb_train = lgb.Dataset(X_train, y_train, params=fd.params, weight=weight_train)
-        gbm = lgb.LGBMClassifier(**fd.params)
-        gbm.fit(X_train, y_train, sample_weight=weight_train)
-        sk_pred = gbm.predict_proba(X_test)[:, 1]
-        fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
-        fd.file_load_check(lgb_train, '.train')
 
-    def test_multiclass(self):
-        fd = FileLoader('../../examples/multiclass_classification', 'multiclass')
-        X_train, y_train, _ = fd.load_dataset('.train')
-        X_test, _, X_test_fn = fd.load_dataset('.test')
-        lgb_train = lgb.Dataset(X_train, y_train)
-        gbm = lgb.LGBMClassifier(**fd.params)
-        gbm.fit(X_train, y_train)
-        sk_pred = gbm.predict_proba(X_test)
-        fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
-        fd.file_load_check(lgb_train, '.train')
+def test_binary_linear():
+    fd = FileLoader('../../examples/binary_classification', 'binary', 'train_linear.conf')
+    X_train, y_train, _ = fd.load_dataset('.train')
+    X_test, _, X_test_fn = fd.load_dataset('.test')
+    weight_train = fd.load_field('.train.weight')
+    lgb_train = lgb.Dataset(X_train, y_train, params=fd.params, weight=weight_train)
+    gbm = lgb.LGBMClassifier(**fd.params)
+    gbm.fit(X_train, y_train, sample_weight=weight_train)
+    sk_pred = gbm.predict_proba(X_test)[:, 1]
+    fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
+    fd.file_load_check(lgb_train, '.train')
 
-    def test_regression(self):
-        fd = FileLoader('../../examples/regression', 'regression')
-        X_train, y_train, _ = fd.load_dataset('.train')
-        X_test, _, X_test_fn = fd.load_dataset('.test')
-        init_score_train = fd.load_field('.train.init')
-        lgb_train = lgb.Dataset(X_train, y_train, init_score=init_score_train)
-        gbm = lgb.LGBMRegressor(**fd.params)
-        gbm.fit(X_train, y_train, init_score=init_score_train)
-        sk_pred = gbm.predict(X_test)
-        fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
-        fd.file_load_check(lgb_train, '.train')
 
-    def test_lambdarank(self):
-        fd = FileLoader('../../examples/lambdarank', 'rank')
-        X_train, y_train, _ = fd.load_dataset('.train', is_sparse=True)
-        X_test, _, X_test_fn = fd.load_dataset('.test', is_sparse=True)
-        group_train = fd.load_field('.train.query')
-        lgb_train = lgb.Dataset(X_train, y_train, group=group_train)
-        params = dict(fd.params)
-        params['force_col_wise'] = True
-        gbm = lgb.LGBMRanker(**params)
-        gbm.fit(X_train, y_train, group=group_train)
-        sk_pred = gbm.predict(X_test)
-        fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
-        fd.file_load_check(lgb_train, '.train')
+def test_multiclass():
+    fd = FileLoader('../../examples/multiclass_classification', 'multiclass')
+    X_train, y_train, _ = fd.load_dataset('.train')
+    X_test, _, X_test_fn = fd.load_dataset('.test')
+    lgb_train = lgb.Dataset(X_train, y_train)
+    gbm = lgb.LGBMClassifier(**fd.params)
+    gbm.fit(X_train, y_train)
+    sk_pred = gbm.predict_proba(X_test)
+    fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
+    fd.file_load_check(lgb_train, '.train')
 
-    def test_xendcg(self):
-        fd = FileLoader('../../examples/xendcg', 'rank')
-        X_train, y_train, _ = fd.load_dataset('.train', is_sparse=True)
-        X_test, _, X_test_fn = fd.load_dataset('.test', is_sparse=True)
-        group_train = fd.load_field('.train.query')
-        lgb_train = lgb.Dataset(X_train, y_train, group=group_train)
-        gbm = lgb.LGBMRanker(**fd.params)
-        gbm.fit(X_train, y_train, group=group_train)
-        sk_pred = gbm.predict(X_test)
-        fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
-        fd.file_load_check(lgb_train, '.train')
+
+def test_regression():
+    fd = FileLoader('../../examples/regression', 'regression')
+    X_train, y_train, _ = fd.load_dataset('.train')
+    X_test, _, X_test_fn = fd.load_dataset('.test')
+    init_score_train = fd.load_field('.train.init')
+    lgb_train = lgb.Dataset(X_train, y_train, init_score=init_score_train)
+    gbm = lgb.LGBMRegressor(**fd.params)
+    gbm.fit(X_train, y_train, init_score=init_score_train)
+    sk_pred = gbm.predict(X_test)
+    fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
+    fd.file_load_check(lgb_train, '.train')
+
+
+def test_lambdarank():
+    fd = FileLoader('../../examples/lambdarank', 'rank')
+    X_train, y_train, _ = fd.load_dataset('.train', is_sparse=True)
+    X_test, _, X_test_fn = fd.load_dataset('.test', is_sparse=True)
+    group_train = fd.load_field('.train.query')
+    lgb_train = lgb.Dataset(X_train, y_train, group=group_train)
+    params = dict(fd.params)
+    params['force_col_wise'] = True
+    gbm = lgb.LGBMRanker(**params)
+    gbm.fit(X_train, y_train, group=group_train)
+    sk_pred = gbm.predict(X_test)
+    fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
+    fd.file_load_check(lgb_train, '.train')
+
+
+def test_xendcg():
+    fd = FileLoader('../../examples/xendcg', 'rank')
+    X_train, y_train, _ = fd.load_dataset('.train', is_sparse=True)
+    X_test, _, X_test_fn = fd.load_dataset('.test', is_sparse=True)
+    group_train = fd.load_field('.train.query')
+    lgb_train = lgb.Dataset(X_train, y_train, group=group_train)
+    gbm = lgb.LGBMRanker(**fd.params)
+    gbm.fit(X_train, y_train, group=group_train)
+    sk_pred = gbm.predict(X_test)
+    fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
+    fd.file_load_check(lgb_train, '.train')

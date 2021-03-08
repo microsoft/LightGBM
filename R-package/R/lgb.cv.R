@@ -9,10 +9,11 @@ CVBooster <- R6::R6Class(
     boosters = list(),
     initialize = function(x) {
       self$boosters <- x
+      return(invisible(NULL))
     },
     reset_parameter = function(new_params) {
       for (x in boosters) { x$reset_parameter(new_params) }
-      self
+      return(invisible(self))
     }
   )
 )
@@ -96,18 +97,18 @@ lgb.cv <- function(params = list()
   }
 
   # If 'data' is not an lgb.Dataset, try to construct one using 'label'
-  if (!lgb.is.Dataset(data)) {
+  if (!lgb.is.Dataset(x = data)) {
     if (is.null(label)) {
       stop("'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'")
     }
-    data <- lgb.Dataset(data, label = label)
+    data <- lgb.Dataset(data = data, label = label)
   }
 
   # Setup temporary variables
   params <- append(params, list(...))
   params$verbose <- verbose
-  params <- lgb.check.obj(params, obj)
-  params <- lgb.check.eval(params, eval)
+  params <- lgb.check.obj(params = params, obj = obj)
+  params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
   eval_functions <- list(NULL)
 
@@ -152,8 +153,8 @@ lgb.cv <- function(params = list()
 
   # Check for boosting from a trained model
   if (is.character(init_model)) {
-    predictor <- Predictor$new(init_model)
-  } else if (lgb.is.Booster(init_model)) {
+    predictor <- Predictor$new(modelfile = init_model)
+  } else if (lgb.is.Booster(x = init_model)) {
     predictor <- init_model$to_predictor()
   }
 
@@ -164,6 +165,10 @@ lgb.cv <- function(params = list()
   }
   end_iteration <- begin_iteration + params[["num_iterations"]] - 1L
 
+  # Construct datasets, if needed
+  data$update_params(params = params)
+  data$construct()
+
   # Check interaction constraints
   cnames <- NULL
   if (!is.null(colnames)) {
@@ -171,31 +176,28 @@ lgb.cv <- function(params = list()
   } else if (!is.null(data$get_colnames())) {
     cnames <- data$get_colnames()
   }
-  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params, cnames)
+  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params = params, column_names = cnames)
 
   # Check for weights
   if (!is.null(weight)) {
-    data$setinfo("weight", weight)
+    data$setinfo(name = "weight", info = weight)
   }
 
   # Update parameters with parsed parameters
-  data$update_params(params)
+  data$update_params(params = params)
 
   # Create the predictor set
-  data$.__enclos_env__$private$set_predictor(predictor)
+  data$.__enclos_env__$private$set_predictor(predictor = predictor)
 
   # Write column names
   if (!is.null(colnames)) {
-    data$set_colnames(colnames)
+    data$set_colnames(colnames = colnames)
   }
 
   # Write categorical features
   if (!is.null(categorical_feature)) {
-    data$set_categorical_feature(categorical_feature)
+    data$set_categorical_feature(categorical_feature = categorical_feature)
   }
-
-  # Construct datasets, if needed
-  data$construct()
 
   # Check for folds
   if (!is.null(folds)) {
@@ -220,8 +222,8 @@ lgb.cv <- function(params = list()
       nfold = nfold
       , nrows = nrow(data)
       , stratified = stratified
-      , label = getinfo(data, "label")
-      , group = getinfo(data, "group")
+      , label = getinfo(dataset = data, name = "label")
+      , group = getinfo(dataset = data, name = "group")
       , params = params
     )
 
@@ -229,12 +231,12 @@ lgb.cv <- function(params = list()
 
   # Add printing log callback
   if (verbose > 0L && eval_freq > 0L) {
-    callbacks <- add.cb(callbacks, cb.print.evaluation(eval_freq))
+    callbacks <- add.cb(cb_list = callbacks, cb = cb.print.evaluation(period = eval_freq))
   }
 
   # Add evaluation log callback
   if (record) {
-    callbacks <- add.cb(callbacks, cb.record.evaluation())
+    callbacks <- add.cb(cb_list = callbacks, cb = cb.record.evaluation())
   }
 
   # Did user pass parameters that indicate they want to use early stopping?
@@ -267,8 +269,8 @@ lgb.cv <- function(params = list()
   # If user supplied early_stopping_rounds, add the early stopping callback
   if (using_early_stopping) {
     callbacks <- add.cb(
-      callbacks
-      , cb.early.stop(
+      cb_list = callbacks
+      , cb = cb.early.stop(
         stopping_rounds = early_stopping_rounds
         , first_metric_only = isTRUE(params[["first_metric_only"]])
         , verbose = verbose
@@ -276,7 +278,7 @@ lgb.cv <- function(params = list()
     )
   }
 
-  cb <- categorize.callbacks(callbacks)
+  cb <- categorize.callbacks(cb_list = callbacks)
 
   # Construct booster for each fold. The data.table() code below is used to
   # guarantee that indices are sorted while keeping init_score and weight together
@@ -295,8 +297,8 @@ lgb.cv <- function(params = list()
       if (folds_have_group) {
         test_indices <- folds[[k]]$fold
         test_group_indices <- folds[[k]]$group
-        test_groups <- getinfo(data, "group")[test_group_indices]
-        train_groups <- getinfo(data, "group")[-test_group_indices]
+        test_groups <- getinfo(dataset = data, name = "group")[test_group_indices]
+        train_groups <- getinfo(dataset = data, name = "group")[-test_group_indices]
       } else {
         test_indices <- folds[[k]]
       }
@@ -305,32 +307,32 @@ lgb.cv <- function(params = list()
       # set up test set
       indexDT <- data.table::data.table(
         indices = test_indices
-        , weight = getinfo(data, "weight")[test_indices]
-        , init_score = getinfo(data, "init_score")[test_indices]
+        , weight = getinfo(dataset = data, name = "weight")[test_indices]
+        , init_score = getinfo(dataset = data, name = "init_score")[test_indices]
       )
-      data.table::setorderv(indexDT, "indices", order = 1L)
+      data.table::setorderv(x = indexDT, cols = "indices", order = 1L)
       dtest <- slice(data, indexDT$indices)
-      setinfo(dtest, "weight", indexDT$weight)
-      setinfo(dtest, "init_score", indexDT$init_score)
+      setinfo(dataset = dtest, name = "weight", info = indexDT$weight)
+      setinfo(dataset = dtest, name = "init_score", info = indexDT$init_score)
 
       # set up training set
       indexDT <- data.table::data.table(
         indices = train_indices
-        , weight = getinfo(data, "weight")[train_indices]
-        , init_score = getinfo(data, "init_score")[train_indices]
+        , weight = getinfo(dataset = data, name = "weight")[train_indices]
+        , init_score = getinfo(dataset = data, name = "init_score")[train_indices]
       )
-      data.table::setorderv(indexDT, "indices", order = 1L)
+      data.table::setorderv(x = indexDT, cols = "indices", order = 1L)
       dtrain <- slice(data, indexDT$indices)
-      setinfo(dtrain, "weight", indexDT$weight)
-      setinfo(dtrain, "init_score", indexDT$init_score)
+      setinfo(dataset = dtrain, name = "weight", info = indexDT$weight)
+      setinfo(dataset = dtrain, name = "init_score", info = indexDT$init_score)
 
       if (folds_have_group) {
-        setinfo(dtest, "group", test_groups)
-        setinfo(dtrain, "group", train_groups)
+        setinfo(dataset = dtest, name = "group", info = test_groups)
+        setinfo(dataset = dtrain, name = "group", info = train_groups)
       }
 
-      booster <- Booster$new(params, dtrain)
-      booster$add_valid(dtest, "valid")
+      booster <- Booster$new(params = params, train_set = dtrain)
+      booster$add_valid(data = dtest, name = "valid")
       return(
         list(booster = booster)
       )
@@ -338,7 +340,7 @@ lgb.cv <- function(params = list()
   )
 
   # Create new booster
-  cv_booster <- CVBooster$new(bst_folds)
+  cv_booster <- CVBooster$new(x = bst_folds)
 
   # Callback env
   env <- CB_ENV$new()
@@ -368,7 +370,7 @@ lgb.cv <- function(params = list()
     })
 
     # Prepare collection of evaluation results
-    merged_msg <- lgb.merge.cv.result(msg)
+    merged_msg <- lgb.merge.cv.result(msg = msg)
 
     # Write evaluation result in environment
     env$eval_list <- merged_msg$eval_list
@@ -445,8 +447,8 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
     if (isTRUE(stratified) && params$objective %in% c("binary", "multiclass") && length(label) == length(rnd_idx)) {
 
       y <- label[rnd_idx]
-      y <- factor(y)
-      folds <- lgb.stratified.folds(y, nfold)
+      y <- as.factor(y)
+      folds <- lgb.stratified.folds(y = y, k = nfold)
 
     } else {
 
@@ -495,7 +497,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 }
 
 # Creates CV folds stratified by the values of y.
-# It was borrowed from caret::lgb.stratified.folds and simplified
+# It was borrowed from caret::createFolds and simplified
 # by always returning an unnamed list of fold indices.
 #' @importFrom stats quantile
 lgb.stratified.folds <- function(y, k = 10L) {
@@ -529,7 +531,7 @@ lgb.stratified.folds <- function(y, k = 10L) {
 
     ## Reset levels so that the possible levels and
     ## the levels in the vector are the same
-    y <- factor(as.character(y))
+    y <- as.factor(as.character(y))
     numInClass <- table(y)
     foldVector <- vector(mode = "integer", length(y))
 
@@ -562,7 +564,7 @@ lgb.stratified.folds <- function(y, k = 10L) {
 
   out <- split(seq(along = y), foldVector)
   names(out) <- NULL
-  out
+  return(out)
 }
 
 lgb.merge.cv.result <- function(msg, showsd = TRUE) {
@@ -614,9 +616,11 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
   }
 
   # Return errors
-  list(
-    eval_list = ret_eval
-    , eval_err_list = ret_eval_err
+  return(
+    list(
+      eval_list = ret_eval
+      , eval_err_list = ret_eval_err
+    )
   )
 
 }

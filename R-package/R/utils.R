@@ -1,9 +1,9 @@
 lgb.is.Booster <- function(x) {
-  lgb.check.r6.class(x, "lgb.Booster")
+  return(lgb.check.r6.class(object = x, name = "lgb.Booster"))
 }
 
 lgb.is.Dataset <- function(x) {
-  lgb.check.r6.class(x, "lgb.Dataset")
+  return(lgb.check.r6.class(object = x, name = "lgb.Dataset"))
 }
 
 lgb.null.handle <- function() {
@@ -15,7 +15,7 @@ lgb.null.handle <- function() {
 }
 
 lgb.is.null.handle <- function(x) {
-  is.null(x) || is.na(x)
+  return(is.null(x) || is.na(x))
 }
 
 lgb.encode.char <- function(arr, len) {
@@ -53,7 +53,10 @@ lgb.last_error <- function() {
     )
   }
 
-  stop("api error: ", lgb.encode.char(err_msg, act_len))
+  stop("api error: ", lgb.encode.char(arr = err_msg, len = act_len))
+
+  return(invisible(NULL))
+
 }
 
 lgb.call <- function(fun_name, ret, ...) {
@@ -95,16 +98,16 @@ lgb.call.return.str <- function(fun_name, ...) {
   buf <- raw(buf_len)
 
   # Call buffer
-  buf <- lgb.call(fun_name, ret = buf, ..., buf_len, act_len)
+  buf <- lgb.call(fun_name = fun_name, ret = buf, ..., buf_len, act_len)
 
   # Check for buffer content
   if (act_len > buf_len) {
     buf_len <- act_len
     buf <- raw(buf_len)
-    buf <- lgb.call(fun_name, ret = buf, ..., buf_len, act_len)
+    buf <- lgb.call(fun_name = fun_name, ret = buf, ..., buf_len, act_len)
   }
 
-  return(lgb.encode.char(buf, act_len))
+  return(lgb.encode.char(arr = buf, len = act_len))
 
 }
 
@@ -163,10 +166,10 @@ lgb.params2str <- function(params, ...) {
 
   # Check ret length
   if (length(ret) == 0L) {
-    return(lgb.c_str(""))
+    return(lgb.c_str(x = ""))
   }
 
-  return(lgb.c_str(paste0(ret, collapse = " ")))
+  return(lgb.c_str(x = paste0(ret, collapse = " ")))
 
 }
 
@@ -232,14 +235,14 @@ lgb.c_str <- function(x) {
 
   ret <- charToRaw(as.character(x))
   ret <- c(ret, as.raw(0L))
-  ret
+  return(ret)
 
 }
 
 lgb.check.r6.class <- function(object, name) {
 
   # Check for non-existence of R6 class or named class
-  all(c("R6", name) %in% class(object))
+  return(all(c("R6", name) %in% class(object)))
 
 }
 

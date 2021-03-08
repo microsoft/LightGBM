@@ -18,8 +18,6 @@ getinfo(dataset, ...)
 }
 \value{
 info data
-
-info data
 }
 \description{
 Get one attribute of a \code{lgb.Dataset}
@@ -30,7 +28,11 @@ The \code{name} field can be one of the following:
 \itemize{
     \item \code{label}: label lightgbm learn from ;
     \item \code{weight}: to do a weight rescale ;
-    \item \code{group}: group size ;
+    \item{\code{group}: used for learning-to-rank tasks. An integer vector describing how to
+        group rows together as ordered results from the same set of candidate results to be ranked.
+        For example, if you have a 100-document dataset with \code{group = c(10, 20, 40, 10, 10, 10)},
+        that means that you have 6 groups, where the first 10 records are in the first group,
+        records 11-30 are in the second group, etc.}
     \item \code{init_score}: initial score is the base prediction lightgbm will boost from.
 }
 }

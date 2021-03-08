@@ -1,0 +1,30 @@
+name: Optional checks
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  all-successful:
+    timeout-minutes: 120
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 5
+          submodules: false
+      - name: Check that all tests succeeded
+        run: |
+            workflows=(
+                "R valgrind tests;r-valgrind"
+                "Solaris CRAN check;r-solaris"
+            )
+            for i in "${workflows[@]}"; do
+                workflow_name=${i%;*}
+                trigger_phrase=${i#*;}
+                python "$GITHUB_WORKSPACE/.ci/get_workflow_status.py" "$trigger_phrase" \
+                || { echo "The last reported status from workflow \"$workflow_name\" is failure. Commit fixes and rerun the workflow."; \
+                exit -1; }
+            done

@@ -20,8 +20,6 @@ setinfo(dataset, ...)
 }
 \value{
 the dataset you passed in
-
-the dataset you passed in
 }
 \description{
 Set one attribute of a \code{lgb.Dataset}
@@ -35,8 +33,9 @@ The \code{name} field can be one of the following:
     \item{\code{init_score}: initial score is the base prediction lightgbm will boost from}
     \item{\code{group}: used for learning-to-rank tasks. An integer vector describing how to
         group rows together as ordered results from the same set of candidate results to be ranked.
-        For example, if you have a 1000-row dataset that contains 250 4-document query results,
-        set this to \code{rep(4L, 250L)}}
+        For example, if you have a 100-document dataset with \code{group = c(10, 20, 40, 10, 10, 10)},
+        that means that you have 6 groups, where the first 10 records are in the first group,
+        records 11-30 are in the second group, etc.}
 }
 }
 \examples{

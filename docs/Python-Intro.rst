@@ -14,7 +14,7 @@ This document gives a basic walkthrough of LightGBM Python-package.
 Install
 -------
 
-You can install LightGBM via pip
+The preferred way to install LightGBM is via pip:
 
 ::
 
@@ -97,7 +97,7 @@ In LightGBM, the validation data should be aligned with training data.
     train_data = lgb.Dataset(data, label=label, feature_name=['c1', 'c2', 'c3'], categorical_feature=['c3'])
 
 LightGBM can use categorical features as input directly.
-It doesn't need to convert to one-hot coding, and is much faster than one-hot coding (about 8x speed-up).
+It doesn't need to convert to one-hot encoding, and is much faster than one-hot encoding (about 8x speed-up).
 
 **Note**: You should convert your categorical features to ``int`` type before you construct ``Dataset``.
 

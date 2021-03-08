@@ -74,6 +74,8 @@ cb.reset.parameters <- function(new_params) {
 
     }
 
+    return(invisible(NULL))
+
   }
 
   callback <- function(env) {
@@ -95,15 +97,17 @@ cb.reset.parameters <- function(new_params) {
     })
 
     if (!is.null(env$model)) {
-      env$model$reset_parameter(params = pars)
+      return(env$model$reset_parameter(params = pars))
     }
+
+    return(invisible(NULL))
 
   }
 
   attr(callback, "call") <- match.call()
   attr(callback, "is_pre_iteration") <- TRUE
   attr(callback, "name") <- "cb.reset.parameters"
-  callback
+  return(callback)
 }
 
 # Format the evaluation metric string
@@ -116,9 +120,9 @@ format.eval.string <- function(eval_res, eval_err = NULL) {
 
   # Check for empty evaluation error
   if (!is.null(eval_err)) {
-    sprintf("%s\'s %s:%g+%g", eval_res$data_name, eval_res$name, eval_res$value, eval_err)
+    return(sprintf("%s\'s %s:%g+%g", eval_res$data_name, eval_res$name, eval_res$value, eval_err))
   } else {
-    sprintf("%s\'s %s:%g", eval_res$data_name, eval_res$name, eval_res$value)
+    return(sprintf("%s\'s %s:%g", eval_res$data_name, eval_res$name, eval_res$value))
   }
 
 }
@@ -150,7 +154,7 @@ merge.eval.string <- function(env) {
 
   }
 
-  paste0(msg, collapse = "  ")
+  return(paste0(msg, collapse = "  "))
 
 }
 
@@ -180,13 +184,15 @@ cb.print.evaluation <- function(period = 1L) {
 
     }
 
+    return(invisible(NULL))
+
   }
 
   # Store attributes
   attr(callback, "call") <- match.call()
   attr(callback, "name") <- "cb.print.evaluation"
 
-  callback
+  return(callback)
 
 }
 
@@ -253,13 +259,15 @@ cb.record.evaluation <- function() {
 
     }
 
+    return(invisible(NULL))
+
   }
 
   # Store attributes
   attr(callback, "call") <- match.call()
   attr(callback, "name") <- "cb.record.evaluation"
 
-  callback
+  return(callback)
 
 }
 
@@ -311,6 +319,8 @@ cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = 
 
     }
 
+    return(invisible(NULL))
+
   }
 
   # Create callback
@@ -318,7 +328,7 @@ cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = 
 
     # Check for empty evaluation
     if (is.null(eval_len)) {
-      init(env)
+      init(env = env)
     }
 
     # Store iteration
@@ -392,18 +402,21 @@ cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = 
         env$met_early_stop <- TRUE
       }
     }
+
+    return(invisible(NULL))
+
   }
 
   attr(callback, "call") <- match.call()
   attr(callback, "name") <- "cb.early.stop"
 
-  callback
+  return(callback)
 
 }
 
 # Extract callback names from the list of callbacks
 callback.names <- function(cb_list) {
-  unlist(lapply(cb_list, attr, "name"))
+  return(unlist(lapply(cb_list, attr, "name")))
 }
 
 add.cb <- function(cb_list, cb) {
@@ -426,22 +439,24 @@ add.cb <- function(cb_list, cb) {
   }
 
   # Return element
-  cb_list
+  return(cb_list)
 
 }
 
 categorize.callbacks <- function(cb_list) {
 
   # Check for pre-iteration or post-iteration
-  list(
-    pre_iter = Filter(function(x) {
-      pre <- attr(x, "is_pre_iteration")
-      !is.null(pre) && pre
-    }, cb_list),
-    post_iter = Filter(function(x) {
-      pre <- attr(x, "is_pre_iteration")
-      is.null(pre) || !pre
-    }, cb_list)
+  return(
+    list(
+      pre_iter = Filter(function(x) {
+        pre <- attr(x, "is_pre_iteration")
+        !is.null(pre) && pre
+      }, cb_list),
+      post_iter = Filter(function(x) {
+        pre <- attr(x, "is_pre_iteration")
+        is.null(pre) || !pre
+      }, cb_list)
+    )
   )
 
 }

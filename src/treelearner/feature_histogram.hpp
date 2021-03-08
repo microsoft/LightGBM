@@ -944,16 +944,20 @@ class FeatureHistogram {
         is_splittable_ = true;
         // better split point
         if (current_gain > best_gain) {
+          if (USE_MC) {
+            best_right_constraints = constraints->RightToBasicConstraint();
+            best_left_constraints = constraints->LeftToBasicConstraint();
+            if (best_right_constraints.min > best_right_constraints.max ||
+                best_left_constraints.min > best_left_constraints.max) {
+              continue;
+            }
+          }
           best_left_count = left_count;
           best_sum_left_gradient = sum_left_gradient;
           best_sum_left_hessian = sum_left_hessian;
           // left is <= threshold, right is > threshold.  so this is t-1
           best_threshold = static_cast<uint32_t>(t - 1 + offset);
           best_gain = current_gain;
-          if (USE_MC) {
-            best_right_constraints = constraints->RightToBasicConstraint();
-            best_left_constraints = constraints->LeftToBasicConstraint();
-          }
         }
       }
     } else {
@@ -1033,15 +1037,19 @@ class FeatureHistogram {
         is_splittable_ = true;
         // better split point
         if (current_gain > best_gain) {
+          if (USE_MC) {
+            best_right_constraints = constraints->RightToBasicConstraint();
+            best_left_constraints = constraints->LeftToBasicConstraint();
+            if (best_right_constraints.min > best_right_constraints.max ||
+                best_left_constraints.min > best_left_constraints.max) {
+              continue;
+            }
+          }
           best_left_count = left_count;
           best_sum_left_gradient = sum_left_gradient;
           best_sum_left_hessian = sum_left_hessian;
           best_threshold = static_cast<uint32_t>(t + offset);
           best_gain = current_gain;
-          if (USE_MC) {
-            best_right_constraints = constraints->RightToBasicConstraint();
-            best_left_constraints = constraints->LeftToBasicConstraint();
-          }
         }
       }
     }
@@ -1173,36 +1181,9 @@ class HistogramPool {
     }
   }
 
-  static int GetNumTotalHistogramBins(const Dataset* train_data,
-    bool is_hist_colwise, std::vector<int>* offsets) {
-    int num_total_bin = static_cast<int>(train_data->NumTotalBin());
-    offsets->clear();
-    if (is_hist_colwise) {
-      int offset = 0;
-      for (int j = 0; j < train_data->num_features(); ++j) {
-        offset += train_data->SubFeatureBinOffset(j);
-        offsets->push_back(offset);
-        auto num_bin = train_data->FeatureNumBin(j);
-        if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
-          num_bin -= 1;
-        }
-        offset += num_bin;
-      }
-    } else {
-      num_total_bin = 1;
-      for (int j = 0; j < train_data->num_features(); ++j) {
-        offsets->push_back(num_total_bin);
-        num_total_bin += train_data->FeatureBinMapper(j)->num_bin();
-        if (train_data->FeatureBinMapper(j)->GetMostFreqBin() == 0) {
-          num_total_bin -= 1;
-        }
-      }
-    }
-    return num_total_bin;
-  }
-
-  void DynamicChangeSize(const Dataset* train_data, bool is_hist_colwise,
-                         const Config* config, int cache_size, int total_size) {
+  void DynamicChangeSize(const Dataset* train_data, int num_total_bin,
+                        const std::vector<uint32_t>& offsets, const Config* config,
+                        int cache_size, int total_size) {
     if (feature_metas_.empty()) {
       SetFeatureInfo<true, true>(train_data, config, &feature_metas_);
       uint64_t bin_cnt_over_features = 0;
@@ -1219,9 +1200,6 @@ class HistogramPool {
       pool_.resize(cache_size);
       data_.resize(cache_size);
     }
-    std::vector<int> offsets;
-    int num_total_bin =
-        this->GetNumTotalHistogramBins(train_data, is_hist_colwise, &offsets);
     OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
     for (int i = old_cache_size; i < cache_size; ++i) {
