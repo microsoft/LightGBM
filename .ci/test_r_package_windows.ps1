@@ -28,6 +28,24 @@ function Run-R-Code-Redirect-Stderr {
   Rscript --vanilla -e $decorated_code
 }
 
+# Remove all items matching some pattern from PATH environment variable
+function Remove-From-Path {
+  param(
+    [string]$item_to_remove
+  )
+  $env:path = ($env:path.Split(';') | Where-Object { $_ -notmatch "$item_to_remove" }) -join ';'
+}
+
+# remove some details that exist in the GitHub Actions images which might
+# cause conflicts with R and other components installed by this script
+$env:RTOOLS40_HOME = ""
+Remove-From-Path ".*chocolatey.*"
+Remove-From-Path ".*Chocolatey.*"
+Remove-From-Path ".*Git.*mingw64.*"
+Remove-From-Path ".*msys64.*"
+Remove-From-Path ".*rtools40.*"
+Remove-From-Path ".*Strawberry.*"
+
 # Get details needed for installing R components
 #
 # NOTES:
@@ -94,6 +112,10 @@ Write-Output "Done installing R"
 Write-Output "Installing Rtools"
 ./Rtools.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH ; Check-Output $?
 Write-Output "Done installing Rtools"
+
+# wait for all Rtools files to be written
+Write-Output "Sleeping to allow Rtools install to finish"
+Start-Sleep -Seconds 60
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
