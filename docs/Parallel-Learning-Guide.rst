@@ -90,7 +90,7 @@ If you do not have other significant processes competing with Dask for resources
 
 **Managing Memory**
 
-Use the Dask diagnostic dashboard or your preferred monitoring tool to monitor Dask workers' memory consumption during training. As described in `the Dask worker documentation`_, Dask workers will automatically start spilling data to Disk if memory consumption gets too high. This can substantially slow down computations, since disk I/O is usually much slower than reading the same data from memory.
+Use the Dask diagnostic dashboard or your preferred monitoring tool to monitor Dask workers' memory consumption during training. As described in `the Dask worker documentation`_, Dask workers will automatically start spilling data to disk if memory consumption gets too high. This can substantially slow down computations, since disk I/O is usually much slower than reading the same data from memory.
 
   `At 60% of memory load, [Dask will] spill least recently used data to disk`
 
@@ -137,7 +137,7 @@ LightGBM's Dask estimators support setting an attribute ``client`` to control th
 .. code:: python
 
   import lightgbm as lgb
-  from distributed import LocalCluster, Client
+  from distributed import Client, LocalCluster
 
   cluster = LocalCluster()
   client = Client(cluster)
@@ -156,7 +156,7 @@ At the beginning of training, ``lightgbm.dask`` sets up a LightGBM network where
 
 If the communication between Dask workers in the cluster used for training is restricted by firewall rules, you must tell LightGBM exactly what ports to use.
 
-**Option 1: Provide a specific list of addresses and ports**
+**Option 1: provide a specific list of addresses and ports**
 
 LightGBM supports a parameter ``machines``, a comma-delimited string where each entry refers to one worker (host name or IP) and a port that that worker will accept connections on. If you provide this parameter to the estimators in ``lightgbm.dask``, LightGBM will not search randomly for ports.
 
@@ -282,7 +282,7 @@ The estimators available from ``lightgbm.dask`` can be converted to an instance 
 .. code:: python
 
   import dask.array as da
-  import pickle
+  import joblib
   import lightgbm as lgb
   from distributed import Client, LocalCluster
 
@@ -301,16 +301,15 @@ The estimators available from ``lightgbm.dask`` can be converted to an instance 
   print(type(sklearn_model))
   #> lightgbm.sklearn.LGBMRegressor
 
-  with open("sklearn-model.pkl", "wb") as f:
-      pickle.dump(sklearn_model, f)
+  joblib.dump(sklearn_model, "sklearn-model.joblib")
 
 A model saved this way can then later be loaded with whichever serialization library you used to save it.
 
 .. code:: python
 
-  import pickle
-  with open("sklearn-model.pkl", "rb") as f:
-      sklearn_model = pickle.load(f)
+  import joblib
+
+  sklearn_model = joblib.load("sklearn-model.joblib")
 
 **Option 3: save the LightGBM Booster**
 
@@ -332,10 +331,10 @@ The lowest-level model object in LightGBM is the ``lightgbm.Booster``. After tra
   dask_model = lgb.DaskLGBMRegressor()
   dask_model.fit(X, y)
 
-  # convert to sklearn equivalent
+  # get underlying Booster object
   bst = dask_model.booster_
 
-From the point forward, you can use any of the following methods to save the Booster.
+From the point forward, you can use any of the following methods to save the Booster:
 
 * serialize with ``cloudpickle``, ``joblib``, or ``pickle``
 * ``bst.dump_model()``: dump the model to a dictionary which could be written out as JSON

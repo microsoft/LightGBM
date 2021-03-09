@@ -34,7 +34,7 @@ if __name__ == "__main__":
         x=X,
         chunks=[
             (rows_in_part1, rows_in_part2),
-            (num_features, )
+            (num_features,)
         ]
     )
     dy = da.from_array(

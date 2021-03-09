@@ -38,7 +38,7 @@ if __name__ == "__main__":
     # predictions and target values back from workers to the client
     #
     # for larger datasets, consider the metrics from dask-ml instead
-    # https://github.com/dask/dask-ml/tree/main/dask_ml/metrics
+    # https://ml.dask.org/modules/api.html#dask-ml-metrics-metrics
     print("computing MSE")
 
     preds_local = preds.compute()
