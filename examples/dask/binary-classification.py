@@ -26,5 +26,6 @@ if __name__ == "__main__":
 
     dask_model = lgb.DaskLGBMClassifier(n_estimators=10)
     dask_model.fit(dX, dy)
+    assert dask_model.fitted_
 
     print("done training")

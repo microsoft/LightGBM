@@ -52,7 +52,8 @@ if __name__ == "__main__":
 
     print("beginning training")
 
-    dask_model = lgb.DaskLGBMRanker()
+    dask_model = lgb.DaskLGBMRanker(n_estimators=10)
     dask_model.fit(dX, dy, group=dg)
+    assert dask_model.fitted_
 
     print("done training")

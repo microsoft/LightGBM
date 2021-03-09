@@ -24,7 +24,8 @@ if __name__ == "__main__":
 
     print("beginning training")
 
-    dask_model = lgb.DaskLGBMRegressor()
+    dask_model = lgb.DaskLGBMRegressor(n_estimators=10)
     dask_model.fit(dX, dy)
+    assert dask_model.fitted_
 
     print("done training")
