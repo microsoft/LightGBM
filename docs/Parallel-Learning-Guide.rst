@@ -318,7 +318,6 @@ The lowest-level model object in LightGBM is the ``lightgbm.Booster``. After tra
 .. code:: python
 
   import dask.array as da
-  import pickle
   import lightgbm as lgb
   from distributed import Client, LocalCluster
 
