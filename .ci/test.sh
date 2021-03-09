@@ -103,7 +103,7 @@ conda install -q -y -n $CONDA_ENV cloudpickle joblib matplotlib numpy pandas psu
 #
 # dask and distributed must come from conda-forge because they need to be kept
 # in sync and conda-forge packages are updated more quickly (automatically based
-# on pushes to PyPi)
+# on pushes to PyPI)
 conda install -q -y \
     -n $CONDA_ENV \
     -c conda-forge \
