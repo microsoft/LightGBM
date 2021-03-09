@@ -92,6 +92,12 @@ $env:_R_CHECK_CRAN_INCOMING_REMOTE_ = 0
 # to catch extreme problems
 $env:_R_CHECK_PKG_SIZES_THRESHOLD_ = 60
 
+# don't fail builds for long-running examples unless they're very long.
+# See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
+if ($env:R_BUILD_TYPE -ne "cran") {
+    $env:_R_CHECK_EXAMPLE_TIMING_THRESHOLD_ = 30
+}
+
 if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
   $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
