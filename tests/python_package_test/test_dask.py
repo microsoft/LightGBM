@@ -134,9 +134,9 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
 def _create_data(objective, n_samples=100, output='array', chunk_size=50):
     if objective.endswith('classification'):
         if objective == 'binary-classification':
-            centers = 2
+            centers = [[-4, -4], [4, 4]]
         elif objective == 'multiclass-classification':
-            centers = 3
+            centers = [[-4, -4], [4, 4], [-4, 4]]
         else:
             raise ValueError(f"Unknown classification task '{objective}'")
         X, y = make_blobs(n_samples=n_samples, centers=centers, random_state=42)
@@ -1222,7 +1222,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-@pytest.mark.parametrize('task', ['binary-classification', 'ranking', 'regression'])
+@pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('output', data_output)
 def test_init_score(task, output, client):
     if task == 'ranking' and output == 'scipy_csr_matrix':
@@ -1248,10 +1248,14 @@ def test_init_score(task, output, client):
         'time_out': 5
     }
     init_score = random.random()
+    size_factor = 1
+    if task == 'multiclass-classification':
+        size_factor = 3 # have to specify one init_score for each sample and class
+
     if output.startswith('dataframe'):
-        init_scores = dy.map_partitions(lambda x: pd.Series([init_score] * x.size))
+        init_scores = dy.map_partitions(lambda x: pd.Series([init_score] * x.size * size_factor))
     else:
-        init_scores = da.full_like(dy, fill_value=init_score, dtype=np.float64)
+        init_scores = dy.map_blocks(lambda x: np.repeat(init_score, x.size * size_factor))
     model = model_factory(client=client, **params)
     model.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
     # value of the root node is 0 when init_score is set
