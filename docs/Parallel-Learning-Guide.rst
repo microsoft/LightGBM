@@ -458,7 +458,7 @@ Example
 
 .. _the Dask DataFrame documentation: https://docs.dask.org/en/latest/dataframe.html
 
-.. _the Dask prediction example: https://github.com/microsoft/lightgbm/tree/master/examples/dask/prediction.py
+.. _the Dask prediction example: https://github.com/microsoft/lightgbm/tree/master/examples/python-guide/dask/prediction.py
 
 .. _the Dask worker documentation: https://distributed.dask.org/en/latest/worker.html#memory-management
 
@@ -466,7 +466,7 @@ Example
 
 .. _the MMLSpark Documentation: https://github.com/Azure/mmlspark/blob/master/docs/lightgbm.md
 
-.. _these Dask examples: https://github.com/microsoft/lightgbm/tree/master/examples/dask
+.. _these Dask examples: https://github.com/microsoft/lightgbm/tree/master/examples/python-guide/dask
 
 .. _Kubeflow Fairing: https://www.kubeflow.org/docs/components/fairing/fairing-overview
 
