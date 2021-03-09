@@ -46,6 +46,8 @@ Remove-From-Path ".*msys64.*"
 Remove-From-Path ".*rtools40.*"
 Remove-From-Path ".*Strawberry.*"
 
+Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
+
 # Get details needed for installing R components
 #
 # NOTES:
@@ -110,12 +112,8 @@ Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT 
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
-./Rtools.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH ; Check-Output $?
+Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
 Write-Output "Done installing Rtools"
-
-# wait for all Rtools files to be written
-Write-Output "Sleeping to allow Rtools install to finish"
-Start-Sleep -Seconds 60
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
