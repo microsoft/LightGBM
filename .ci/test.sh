@@ -96,13 +96,19 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV cloudpickle dask distributed joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
+conda install -q -y -n $CONDA_ENV cloudpickle joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
 
 # graphviz must come from conda-forge to avoid this on some linux distros:
 # https://github.com/conda-forge/graphviz-feedstock/issues/18
+#
+# dask and distributed must come from conda-forge because they need to be kept
+# in sync and conda-forge packages are updated more quickly (automatically based
+# on pushes to PyPi)
 conda install -q -y \
     -n $CONDA_ENV \
     -c conda-forge \
+        'dask>=2021.3.0' \
+        'distributed>=2021.3.0' \
         python-graphviz \
         xorg-libxau
 
