@@ -20,6 +20,12 @@ export _R_CHECK_CRAN_INCOMING_REMOTE_=0
 # to catch extreme problems
 export _R_CHECK_PKG_SIZES_THRESHOLD_=60
 
+# don't fail builds for long-running examples unless they're very long
+# See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
+if [[ $R_BUILD_TYPE != "cran" ]]; then
+    export _R_CHECK_EXAMPLE_TIMING_THRESHOLD_=30
+fi
+
 # Get details needed for installing R components
 R_MAJOR_VERSION=( ${R_VERSION//./ } )
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
