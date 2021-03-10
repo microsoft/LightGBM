@@ -28,6 +28,26 @@ function Run-R-Code-Redirect-Stderr {
   Rscript --vanilla -e $decorated_code
 }
 
+# Remove all items matching some pattern from PATH environment variable
+function Remove-From-Path {
+  param(
+    [string]$pattern_to_remove
+  )
+  $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
+}
+
+# remove some details that exist in the GitHub Actions images which might
+# cause conflicts with R and other components installed by this script
+$env:RTOOLS40_HOME = ""
+Remove-From-Path ".*chocolatey.*"
+Remove-From-Path ".*Chocolatey.*"
+Remove-From-Path ".*Git.*mingw64.*"
+Remove-From-Path ".*msys64.*"
+Remove-From-Path ".*rtools40.*"
+Remove-From-Path ".*Strawberry.*"
+
+Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
+
 # Get details needed for installing R components
 #
 # NOTES:
@@ -98,7 +118,7 @@ Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT 
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
-./Rtools.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH ; Check-Output $?
+Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
