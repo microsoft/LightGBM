@@ -1057,11 +1057,7 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
 
     # model 2 - machines given
     n_workers = len(client.scheduler_info()['workers'])
-    while True:
-        open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
-        if len(set(open_ports)) == len(open_ports):
-            break
-
+    open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
     dask_model2 = dask_model_factory(
         n_estimators=5,
         num_leaves=5,
