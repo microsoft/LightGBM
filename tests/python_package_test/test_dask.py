@@ -14,8 +14,8 @@ import pytest
 
 import lightgbm as lgb
 
-if not platform.startswith('linux'):
-    pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
+# if not platform.startswith('linux'):
+#     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
     pytest.skip('Dask is not installed', allow_module_level=True)
 
@@ -1116,6 +1116,7 @@ def test_machines_should_be_used_if_provided(task, output):
             client.rebalance()
 
         n_workers = len(client.scheduler_info()['workers'])
+        assert n_workers > 1
         open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
         dask_model = dask_model_factory(
             n_estimators=5,
@@ -1133,6 +1134,17 @@ def test_machines_should_be_used_if_provided(task, output):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.bind(('127.0.0.1', open_ports[0]))
                 dask_model.fit(dX, dy, group=dg)
+
+        # an informative error should be raised if "machines" has duplicates
+        one_open_port = lgb.dask._find_random_open_port()
+        dask_model.set_params(
+            machines=",".join([
+                "127.0.0.1:" + str(one_open_port)
+                for _ in range(n_workers)
+            ])
+        )
+        with pytest.raises(ValueError, match="Found duplicates in 'machines'"):
+            dask_model.fit(dX, dy, group=dg)
 
 
 @pytest.mark.parametrize(
