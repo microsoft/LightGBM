@@ -153,6 +153,10 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
         Dictionary where keys are work addresses in the form expected by Dask and values are a port for LightGBM to use.
     """
     machine_addresses = machines.split(",")
+
+    if len(set(machine_addresses)) != len(machine_addresses):
+        raise ValueError(f"Found duplicates in 'machines' ({machines}). Each entry in 'machines' must be a unique IP-port combination.")
+
     machine_to_port = defaultdict(set)
     for address in machine_addresses:
         host, port = address.split(":")
