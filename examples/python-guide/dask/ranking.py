@@ -1,3 +1,6 @@
+import os
+import sys
+
 import dask.array as da
 import numpy as np
 from distributed import Client, LocalCluster
@@ -6,11 +9,16 @@ from sklearn.datasets import load_svmlight_file
 import lightgbm as lgb
 
 if __name__ == "__main__":
+    if not sys.platform.startswith('linux'):
+        print('lightgbm.dask is currently supported in Linux environments')
+        sys.exit(0)
 
     print("loading data")
 
-    X, y = load_svmlight_file("../lambdarank/rank.train")
-    group = np.loadtxt("../lambdarank/rank.train.query")
+    X, y = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                           '../../lambdarank/rank.train'))
+    group = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                    '../../lambdarank/rank.train.query'))
 
     print("initializing a Dask cluster")
 
