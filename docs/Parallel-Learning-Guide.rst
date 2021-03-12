@@ -65,7 +65,7 @@ LightGBM's Python package supports distributed learning via `Dask`_. This integr
 Dask Examples
 '''''''''''''
 
-For sample code using ``lightgbm.dask``, see `these Dask examples`_ .
+For sample code using ``lightgbm.dask``, see `these Dask examples`_.
 
 Training with Dask
 ''''''''''''''''''
@@ -121,9 +121,9 @@ While setting up for training, ``lightgbm`` will concatenate all of the partitio
 
 When setting up data partitioning for LightGBM training with Dask, try to follow these suggestions:
 
-* ensure that each worker in the cluster has some of the training data
-* try to give each worker roughly the same amount of data, especially if your dataset is small
-* if you plan to train multiple models (for example, to tune hyperparameters) on the same data, use ``client.persist()`` before training to materialize the data one time
+* ensure that each worker in the cluster has some of the training data;
+* try to give each worker roughly the same amount of data, especially if your dataset is small;
+* if you plan to train multiple models (for example, to tune hyperparameters) on the same data, use ``client.persist()`` before training to materialize the data one time.
 
 Using a Specific Dask Client
 ****************************
@@ -195,9 +195,9 @@ If you are running multiple Dask worker processes on physical host in the cluste
 
   Providing ``machines`` gives you complete control over the networking details of training, but it also makes the training process fragile. Training will fail if you use ``machines`` and any of the following are true:
 
-  * any of the ports mentioned in ``machines`` are not open when training begins
-  * some partitions of the training data are held by machines that that are not present in ``machines``
-  * some machines mentioned in ``machines`` do not hold any of the training data
+  * any of the ports mentioned in ``machines`` are not open when training begins;
+  * some partitions of the training data are held by machines that that are not present in ``machines``;
+  * some machines mentioned in ``machines`` do not hold any of the training data.
 
 **Option 2: specify one port to use on every worker**
 
@@ -223,8 +223,8 @@ You could edit your firewall rules to allow communication between any of the wor
 
   Providing ``local_listen_port`` is slightly less fragile than ``machines`` because LightGBM will automatically figure out which workers have pieces of the training data. However, using this method, training can fail if any of the following are true:
 
-  * the port ``local_listen_port`` is not open on any of the worker hosts
-  * any machine has multiple Dask worker processes running on it
+  * the port ``local_listen_port`` is not open on any of the worker hosts;
+  * any machine has multiple Dask worker processes running on it.
 
 Prediction with Dask
 ''''''''''''''''''''
@@ -335,10 +335,10 @@ The lowest-level model object in LightGBM is the ``lightgbm.Booster``. After tra
 
 From the point forward, you can use any of the following methods to save the Booster:
 
-* serialize with ``cloudpickle``, ``joblib``, or ``pickle``
-* ``bst.dump_model()``: dump the model to a dictionary which could be written out as JSON
-* ``bst.model_to_string()``: dump the model to a string in memory
-* ``bst.save_model()``: write the output of ``bst.model_to_string()`` to a text file
+* serialize with ``cloudpickle``, ``joblib``, or ``pickle``;
+* ``bst.dump_model()``: dump the model to a dictionary which could be written out as JSON;
+* ``bst.model_to_string()``: dump the model to a string in memory;
+* ``bst.save_model()``: write the output of ``bst.model_to_string()`` to a text file.
 
 Kubeflow
 ^^^^^^^^
