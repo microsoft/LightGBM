@@ -3,6 +3,7 @@
 
 import inspect
 import pickle
+import random
 import socket
 from itertools import groupby
 from os import getenv
@@ -28,20 +29,35 @@ import sklearn.utils.estimator_checks as sklearn_checks
 from dask.array.utils import assert_eq
 from dask.distributed import Client, LocalCluster, default_client, wait
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
+from pkg_resources import parse_version
 from scipy.sparse import csr_matrix
 from scipy.stats import spearmanr
+from sklearn import __version__ as sk_version
 from sklearn.datasets import make_blobs, make_regression
 
 from .utils import make_ranking
+
+sk_version = parse_version(sk_version)
 
 # time, in seconds, to wait for the Dask client to close. Used to avoid teardown errors
 # see https://distributed.dask.org/en/latest/api.html#distributed.Client.close
 CLIENT_CLOSE_TIMEOUT = 120
 
-tasks = ['classification', 'regression', 'ranking']
+tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ranking']
 data_output = ['array', 'scipy_csr_matrix', 'dataframe', 'dataframe-with-categorical']
-data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
+task_to_dask_factory = {
+    'regression': lgb.DaskLGBMRegressor,
+    'binary-classification': lgb.DaskLGBMClassifier,
+    'multiclass-classification': lgb.DaskLGBMClassifier,
+    'ranking': lgb.DaskLGBMRanker
+}
+task_to_local_factory = {
+    'regression': lgb.LGBMRegressor,
+    'binary-classification': lgb.LGBMClassifier,
+    'multiclass-classification': lgb.LGBMClassifier,
+    'ranking': lgb.LGBMRanker
+}
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
@@ -115,8 +131,14 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
     return X, y, w, g_rle, dX, dy, dw, dg
 
 
-def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size=50):
-    if objective == 'classification':
+def _create_data(objective, n_samples=100, output='array', chunk_size=50):
+    if objective.endswith('classification'):
+        if objective == 'binary-classification':
+            centers = [[-4, -4], [4, 4]]
+        elif objective == 'multiclass-classification':
+            centers = [[-4, -4], [4, 4], [-4, 4]]
+        else:
+            raise ValueError(f"Unknown classification task '{objective}'")
         X, y = make_blobs(n_samples=n_samples, centers=centers, random_state=42)
     elif objective == 'regression':
         X, y = make_regression(n_samples=n_samples, random_state=42)
@@ -201,12 +223,11 @@ def _unpickle(filepath, serializer):
 
 
 @pytest.mark.parametrize('output', data_output)
-@pytest.mark.parametrize('centers', data_centers)
-def test_classifier(output, centers, client):
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
+def test_classifier(output, task, client):
     X, y, w, dX, dy, dw = _create_data(
-        objective='classification',
-        output=output,
-        centers=centers
+        objective=task,
+        output=output
     )
 
     params = {
@@ -268,12 +289,11 @@ def test_classifier(output, centers, client):
 
 
 @pytest.mark.parametrize('output', data_output)
-@pytest.mark.parametrize('centers', data_centers)
-def test_classifier_pred_contrib(output, centers, client):
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
+def test_classifier_pred_contrib(output, task, client):
     X, y, w, dX, dy, dw = _create_data(
-        objective='classification',
-        output=output,
-        centers=centers
+        objective=task,
+        output=output
     )
 
     params = {
@@ -349,7 +369,7 @@ def test_find_random_open_port(client):
 
 
 def test_training_does_not_fail_on_port_conflicts(client):
-    _, _, _, dX, dy, dw = _create_data('classification', output='array')
+    _, _, _, dX, dy, dw = _create_data('binary-classification', output='array')
 
     lightgbm_default_port = 12400
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -635,17 +655,13 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, c
             output='array',
             group=None
         )
-        model_factory = lgb.DaskLGBMRanker
     else:
         _, _, _, dX, dy, _ = _create_data(
             objective=task,
             output='array',
         )
         dg = None
-        if task == 'classification':
-            model_factory = lgb.DaskLGBMClassifier
-        elif task == 'regression':
-            model_factory = lgb.DaskLGBMRegressor
+    model_factory = task_to_dask_factory[task]
 
     params = {
         "time_out": 5,
@@ -739,12 +755,7 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                         )
                         dg_2 = None
 
-                    if task == 'ranking':
-                        model_factory = lgb.DaskLGBMRanker
-                    elif task == 'classification':
-                        model_factory = lgb.DaskLGBMClassifier
-                    elif task == 'regression':
-                        model_factory = lgb.DaskLGBMRegressor
+                    model_factory = task_to_dask_factory[task]
 
                     params = {
                         "time_out": 5,
@@ -965,8 +976,6 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(client, tas
             output=output,
             group=None
         )
-        dask_model_factory = lgb.DaskLGBMRanker
-        local_model_factory = lgb.LGBMRanker
     else:
         X, y, w, dX, dy, dw = _create_data(
             objective=task,
@@ -974,12 +983,9 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(client, tas
         )
         g = None
         dg = None
-        if task == 'classification':
-            dask_model_factory = lgb.DaskLGBMClassifier
-            local_model_factory = lgb.LGBMClassifier
-        elif task == 'regression':
-            dask_model_factory = lgb.DaskLGBMRegressor
-            local_model_factory = lgb.LGBMRegressor
+
+    dask_model_factory = task_to_dask_factory[task]
+    local_model_factory = task_to_local_factory[task]
 
     dX = collection_to_single_partition(dX)
     dy = collection_to_single_partition(dy)
@@ -1024,7 +1030,6 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
             group=None,
             chunk_size=10,
         )
-        dask_model_factory = lgb.DaskLGBMRanker
     else:
         _, _, _, dX, dy, _ = _create_data(
             objective=task,
@@ -1032,10 +1037,8 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
             chunk_size=10,
         )
         dg = None
-        if task == 'classification':
-            dask_model_factory = lgb.DaskLGBMClassifier
-        elif task == 'regression':
-            dask_model_factory = lgb.DaskLGBMRegressor
+
+    dask_model_factory = task_to_dask_factory[task]
 
     # rebalance data to be sure that each worker has a piece of the data
     if output == 'array':
@@ -1098,7 +1101,6 @@ def test_machines_should_be_used_if_provided(task, output):
                 group=None,
                 chunk_size=10,
             )
-            dask_model_factory = lgb.DaskLGBMRanker
         else:
             _, _, _, dX, dy, _ = _create_data(
                 objective=task,
@@ -1106,16 +1108,15 @@ def test_machines_should_be_used_if_provided(task, output):
                 chunk_size=10,
             )
             dg = None
-            if task == 'classification':
-                dask_model_factory = lgb.DaskLGBMClassifier
-            elif task == 'regression':
-                dask_model_factory = lgb.DaskLGBMRegressor
+
+        dask_model_factory = task_to_dask_factory[task]
 
         # rebalance data to be sure that each worker has a piece of the data
         if output == 'array':
             client.rebalance()
 
         n_workers = len(client.scheduler_info()['workers'])
+        assert n_workers > 1
         open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
         dask_model = dask_model_factory(
             n_estimators=5,
@@ -1133,6 +1134,17 @@ def test_machines_should_be_used_if_provided(task, output):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.bind(('127.0.0.1', open_ports[0]))
                 dask_model.fit(dX, dy, group=dg)
+
+        # an informative error should be raised if "machines" has duplicates
+        one_open_port = lgb.dask._find_random_open_port()
+        dask_model.set_params(
+            machines=",".join([
+                "127.0.0.1:" + str(one_open_port)
+                for _ in range(n_workers)
+            ])
+        )
+        with pytest.raises(ValueError, match="Found duplicates in 'machines'"):
+            dask_model.fit(dX, dy, group=dg)
 
 
 @pytest.mark.parametrize(
@@ -1196,17 +1208,15 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
             output='dataframe',
             group=None
         )
-        model_factory = lgb.DaskLGBMRanker
     else:
         _, _, _, dX, dy, dw = _create_data(
             objective=task,
             output='dataframe',
         )
         dg = None
-        if task == 'classification':
-            model_factory = lgb.DaskLGBMClassifier
-        elif task == 'regression':
-            model_factory = lgb.DaskLGBMRegressor
+
+    model_factory = task_to_dask_factory[task]
+
     dy = dy.to_dask_array(lengths=True)
     dy_col_array = dy.reshape(-1, 1)
     assert len(dy_col_array.shape) == 2 and dy_col_array.shape[1] == 1
@@ -1220,6 +1230,51 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
     model = model_factory(**params)
     model.fit(dX, dy_col_array, sample_weight=dw, group=dg)
     assert model.fitted_
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
+def test_init_score(task, output, client):
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
+
+    if task == 'ranking':
+        _, _, _, _, dX, dy, dw, dg = _create_ranking_data(
+            output=output,
+            group=None
+        )
+    else:
+        _, _, _, dX, dy, dw = _create_data(
+            objective=task,
+            output=output,
+        )
+        dg = None
+
+    model_factory = task_to_dask_factory[task]
+
+    params = {
+        'n_estimators': 1,
+        'num_leaves': 2,
+        'time_out': 5
+    }
+    init_score = random.random()
+    # init_scores must be a 1D array, even for multiclass classification
+    # where you need to provide 1 score per class for each row in X
+    # https://github.com/microsoft/LightGBM/issues/4046
+    size_factor = 1
+    if task == 'multiclass-classification':
+        size_factor = 3  # number of classes
+
+    if output.startswith('dataframe'):
+        init_scores = dy.map_partitions(lambda x: pd.Series([init_score] * x.size * size_factor))
+    else:
+        init_scores = dy.map_blocks(lambda x: np.repeat(init_score, x.size * size_factor))
+    model = model_factory(client=client, **params)
+    model.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
+    # value of the root node is 0 when init_score is set
+    assert model.booster_.trees_to_dataframe()['value'][0] == 0
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -1253,7 +1308,11 @@ def test_sklearn_integration(estimator, check, client):
 # this test is separate because it takes a not-yet-constructed estimator
 @pytest.mark.parametrize("estimator", list(_tested_estimators()))
 def test_parameters_default_constructible(estimator):
-    name, Estimator = estimator.__class__.__name__, estimator.__class__
+    name = estimator.__class__.__name__
+    if sk_version >= parse_version("0.24"):
+        Estimator = estimator
+    else:
+        Estimator = estimator.__class__
     sklearn_checks.check_parameters_default_constructible(name, Estimator)
 
 
