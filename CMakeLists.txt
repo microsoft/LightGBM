@@ -6,6 +6,12 @@ OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
 OPTION(USE_CUDA "Enable CUDA-accelerated training (EXPERIMENTAL)" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
+OPTION(USE_SANITIZER "Use santizer flags" OFF)
+SET(SANITIZER_PATH "" CACHE STRING "Path to sanitizer libs")
+SET(ENABLED_SANITIZERS "address" "leak" "undefined" CACHE STRING
+  "Semicolon separated list of sanitizer names. E.g 'address;leak'. Supported sanitizers are
+address, leak, undefined and thread.")
+OPTION(BUILD_CPP_TEST "Build C++ tests with Google Test" OFF)
 OPTION(BUILD_STATIC_LIB "Build static library" OFF)
 OPTION(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 OPTION(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
@@ -25,6 +31,14 @@ else()
 endif()
 
 PROJECT(lightgbm LANGUAGES C CXX)
+
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
+
+#-- Sanitizer
+if (USE_SANITIZER)
+  include(cmake/Sanitizer.cmake)
+  enable_sanitizers("${ENABLED_SANITIZERS}")
+endif (USE_SANITIZER)
 
 if(__INTEGRATE_OPENCL)
   set(__INTEGRATE_OPENCL ON CACHE BOOL "" FORCE)
@@ -450,6 +464,25 @@ if(__BUILD_FOR_R)
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
   endif(MSVC)
 endif(__BUILD_FOR_R)
+
+#-- Google C++ tests
+if(BUILD_CPP_TEST)
+  find_package(GTest CONFIG)
+  if(NOT GTEST_FOUND)
+    message(STATUS "Did not find Google Test in the system root. Fetching Google Test now...")
+    include(FetchContent)
+    FetchContent_Declare(
+      googletest
+      GIT_REPOSITORY https://github.com/google/googletest.git
+      GIT_TAG        release-1.10.0
+    )
+    FetchContent_MakeAvailable(googletest)
+    add_library(GTest::GTest ALIAS gtest)
+  endif()
+  file(GLOB CPP_TEST_SOURCES tests/cpp_test/*.cpp)
+  add_executable(testlightgbm ${CPP_TEST_SOURCES} ${SOURCES})
+  target_link_libraries(testlightgbm PRIVATE GTest::GTest)
+endif()
 
 install(TARGETS lightgbm _lightgbm
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
