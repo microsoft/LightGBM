@@ -1316,25 +1316,25 @@ def test_parameters_default_constructible(estimator):
     sklearn_checks.check_parameters_default_constructible(name, Estimator)
 
 
-@pytest.mark.parametrize('task', ['binary_classification', 'multi-class_classification', 'regression'])
+@pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('output', data_output)
 def test_predict_with_raw_score(task, output, client):
-    if task.endswith('classification'):
-        objective = 'classification'
-        model_factory = lgb.DaskLGBMClassifier
-    elif task == 'regression':
-        objective = 'regression'
-        model_factory = lgb.DaskLGBMRegressor
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
-    if task == 'multi-class_classification':
-        n_centers = 3
+    if task == 'ranking':
+        _, _, _, _, dX, dy, _, dg = _create_ranking_data(
+            output=output,
+            group=None
+        )
     else:
-        n_centers = 2
-    _, _, _, dX, dy, _ = _create_data(
-        objective=objective,
-        output=output,
-        centers=n_centers
-    )
+        _, _, _, dX, dy, _ = _create_data(
+            objective=task,
+            output=output,
+        )
+        dg = None
+
+    model_factory = task_to_dask_factory[task]
     params = {
         'client': client,
         'n_estimators': 1,
@@ -1343,27 +1343,31 @@ def test_predict_with_raw_score(task, output, client):
         'min_sum_hessian': 0
     }
     model = model_factory(**params)
-    model.fit(dX, dy)
+    model.fit(dX, dy, group=dg)
     raw_predictions = model.predict(dX, raw_score=True).compute()
-    computed_mean = np.mean(raw_predictions, axis=0)
+    actual_mean = np.mean(raw_predictions, axis=0)
 
     def compute_expected_predictions_mean(tree_df: pd.DataFrame):
         """Computes the expected mean of the predictions from the dataframe of a tree with two leaves."""
-        leaf_values = tree_df['value']
-        leaf_weights = tree_df['weight']
+        leaf_values = tree_df['value'].values
+        leaf_weights = tree_df['weight'].values
         sum_weights = leaf_weights[1] + leaf_weights[2]
         return leaf_values[1] * (leaf_weights[1]/sum_weights) + leaf_values[2] * (leaf_weights[2]/sum_weights)
 
     trees_df = model.booster_.trees_to_dataframe()
-    if task == 'multi-class_classification':
+    if task == 'multiclass-classification':
         expected_mean = []
-        for i in range(3):  # we test for three classes
+        for i in range(model.n_classes_):
             class_df = trees_df[trees_df.tree_index == i]
             expected_class_mean = compute_expected_predictions_mean(class_df)
             expected_mean.append(expected_class_mean)
     else:
         expected_mean = compute_expected_predictions_mean(trees_df)
-    np.testing.assert_almost_equal(computed_mean, expected_mean)
+
+    if task == 'ranking':
+        assert abs(actual_mean - expected_mean) < 0.1
+    else:
+        np.testing.assert_almost_equal(actual_mean, expected_mean)
 
     if task.endswith('classification'):
         pred_proba_raw = model.predict_proba(dX, raw_score=True).compute()
