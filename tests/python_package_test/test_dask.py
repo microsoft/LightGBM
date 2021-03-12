@@ -1352,7 +1352,7 @@ def test_predict_with_raw_score(task, output, client):
         leaf_values = tree_df['value'].values
         leaf_weights = tree_df['weight'].values
         sum_weights = leaf_weights[1] + leaf_weights[2]
-        return leaf_values[1] * (leaf_weights[1]/sum_weights) + leaf_values[2] * (leaf_weights[2]/sum_weights)
+        return leaf_values[1] * (leaf_weights[1] / sum_weights) + leaf_values[2] * (leaf_weights[2] / sum_weights)
 
     trees_df = model.booster_.trees_to_dataframe()
     if task == 'multiclass-classification':
