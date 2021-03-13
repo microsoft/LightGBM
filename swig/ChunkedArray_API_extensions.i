@@ -3,10 +3,10 @@
  */
 
 %{
-#include "../swig/ChunkedArray.hpp"
+#include "../include/LightGBM/utils/ChunkedArray.hpp"
 %}
 
-%include "../swig/ChunkedArray.hpp"
+%include "../include/LightGBM/utils/ChunkedArray.hpp"
 
 %template(intChunkedArray) ChunkedArray<int32_t>;
 %template(floatChunkedArray) ChunkedArray<float>;
