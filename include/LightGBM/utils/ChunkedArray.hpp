@@ -145,7 +145,6 @@ class ChunkedArray {
      *            Otherwise, exports only up to `get_add_count()` addresses.
      */
     void coalesce_to(T *other, bool all_valid_addresses = false) const {
-
         const size_t full_chunks = this->get_chunks_count() - 1;
 
         // Copy full chunks:
