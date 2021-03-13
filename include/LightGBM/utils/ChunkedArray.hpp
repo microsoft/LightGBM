@@ -59,6 +59,9 @@ class ChunkedArray {
  public:
     explicit ChunkedArray(size_t chunk_size)
       : _chunk_size(chunk_size), _last_chunk_idx(0), _last_idx_in_last_chunk(0) {
+      if (chunk_size == 0) {
+        throw std::length_error("ChunkedArray chunk size must be larger than 0!");
+      }
        new_chunk();
     }
 
@@ -137,11 +140,11 @@ class ChunkedArray {
      * It assumes that ``other`` has enough space to receive that data.
      *
      * @param other array with elements T of size >= this->get_add_count().
+     * @param all_valid_addresses
+     *            If true exports values from all valid addresses independently of add() count.
+     *            Otherwise, exports only up to `get_add_count()` addresses.
      */
-    void coalesce_to(T *other) const {
-        if (this->empty()) {
-            return;
-        }
+    void coalesce_to(T *other, bool all_valid_addresses = false) const {
 
         const size_t full_chunks = this->get_chunks_count() - 1;
 
@@ -149,15 +152,15 @@ class ChunkedArray {
         size_t i = 0;
         for (size_t chunk = 0; chunk < full_chunks; ++chunk) {
             T* chunk_ptr = _chunks[chunk];
-            for (size_t chunk_pos = 0; chunk_pos < _chunk_size; ++chunk_pos) {
-                other[i++] = chunk_ptr[chunk_pos];
+            for (size_t in_chunk_idx = 0; in_chunk_idx < _chunk_size; ++in_chunk_idx) {
+                other[i++] = chunk_ptr[in_chunk_idx];
             }
         }
         // Copy filled values from last chunk only:
-        const size_t last_chunk_elems = this->get_last_chunk_add_count();
+        const size_t last_chunk_elems_to_copy = all_valid_addresses ? _chunk_size : this->get_last_chunk_add_count();
         T* chunk_ptr = _chunks[full_chunks];
-        for (size_t chunk_pos = 0; chunk_pos < last_chunk_elems; ++chunk_pos) {
-            other[i++] = chunk_ptr[chunk_pos];
+        for (size_t in_chunk_idx = 0; in_chunk_idx < last_chunk_elems_to_copy; ++in_chunk_idx) {
+            other[i++] = chunk_ptr[in_chunk_idx];
         }
     }
 
@@ -202,13 +205,6 @@ class ChunkedArray {
     void clear() noexcept {
         release();
         new_chunk();
-    }
-
-    /**
-     * Returns true if is empty.
-     */
-    bool empty() const noexcept {
-        return get_last_chunk_add_count() == 0;
     }
 
     /**
