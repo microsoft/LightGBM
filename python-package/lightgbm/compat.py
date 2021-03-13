@@ -14,8 +14,14 @@ except ImportError:
     class pd_Series:  # type: ignore
         """Dummy class for pandas.Series."""
 
+        pass
+
+
     class pd_DataFrame:  # type: ignore
         """Dummy class for pandas.DataFrame."""
+
+        pass
+
 
     concat = None
     is_dtype_sparse = None
@@ -47,6 +53,8 @@ except ImportError:
 
     class dt_DataTable:  # type: ignore
         """Dummy class for datatable.DataTable."""
+
+        pass
 
 
 """sklearn"""
