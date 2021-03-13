@@ -162,6 +162,8 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       for (size_t i = 0; i < tmp_buffer.size(); ++i) {
         query_boundaries_[i + 1] = query_boundaries_[i] + tmp_buffer[i];
       }
+      Log::Info("Number of queries: %i. Average number of rows per query: %f.",
+        static_cast<int>(num_queries_), static_cast<double>(num_data_) / num_queries_);
       LoadQueryWeights();
       queries_.clear();
     }
