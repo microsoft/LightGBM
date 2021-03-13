@@ -11,10 +11,10 @@ try:
 except ImportError:
     PANDAS_INSTALLED = False
 
-    class pd_Series: # type: ignore
+    class pd_Series:  # type: ignore
         """Dummy class for pandas.Series."""
 
-    class pd_DataFrame: # type: ignore
+    class pd_DataFrame:  # type: ignore
         """Dummy class for pandas.DataFrame."""
 
     concat = None
@@ -45,7 +45,7 @@ try:
 except ImportError:
     DATATABLE_INSTALLED = False
 
-    class dt_DataTable: # type: ignore
+    class dt_DataTable:  # type: ignore
         """Dummy class for datatable.DataTable."""
 
 
@@ -117,11 +117,19 @@ except ImportError:
     default_client = None
     wait = None
 
-    class dask_Array: # type: ignore
+    class dask_Array:  # type: ignore
         """Dummy class for dask.array.Array."""
 
-    class dask_DataFrame: # type: ignore
+        pass
+
+
+    class dask_DataFrame:  # type: ignore
         """Dummy class for dask.dataframe.DataFrame."""
 
-    class dask_Series: # type: ignore
+        pass
+
+
+    class dask_Series:  # type: ignore
         """Dummy class for dask.dataframe.Series."""
+
+        pass
