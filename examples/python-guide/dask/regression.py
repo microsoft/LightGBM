@@ -1,5 +1,3 @@
-import sys
-
 import dask.array as da
 from distributed import Client, LocalCluster
 from sklearn.datasets import make_regression
@@ -7,10 +5,6 @@ from sklearn.datasets import make_regression
 import lightgbm as lgb
 
 if __name__ == "__main__":
-    if not sys.platform.startswith('linux'):
-        print('lightgbm.dask is currently supported in Linux environments')
-        sys.exit(0)
-
     print("loading data")
 
     X, y = make_regression(n_samples=1000, n_features=50)
