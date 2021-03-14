@@ -2336,13 +2336,13 @@ class Booster:
         self.__is_predicted_cur_iter = []
         return self
 
-    def set_network(self, machines, local_listen_port=12400,
-                    listen_time_out=120, num_machines=1):
+    def set_network(self, machines: str, local_listen_port: int = 12400,
+                    listen_time_out: int = 120, num_machines: int = 1) -> "Booster":
         """Set the network configuration.
 
         Parameters
         ----------
-        machines : list, set or string
+        machines : string
             Names of machines.
         local_listen_port : int, optional (default=12400)
             TCP listen port for local machines.
