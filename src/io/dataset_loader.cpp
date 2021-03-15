@@ -250,11 +250,6 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
-  data_size_t num_queries = dataset->metadata_.num_queries();
-  if (num_queries > 0) {
-    Log::Debug("Number of queries in %s: %i. Average number of rows per query: %f.",
-      filename, static_cast<int>(num_queries), static_cast<double>(dataset->num_data_) / num_queries);
-  }
   // need to check training data
   CheckDataset(dataset.get(), is_load_from_binary);
 
