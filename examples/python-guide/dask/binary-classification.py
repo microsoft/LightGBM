@@ -5,7 +5,6 @@ from sklearn.datasets import make_blobs
 import lightgbm as lgb
 
 if __name__ == "__main__":
-
     print("loading data")
 
     X, y = make_blobs(n_samples=1000, n_features=50, centers=2)
