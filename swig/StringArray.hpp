@@ -4,8 +4,8 @@
  *
  * Author: Alberto Ferreira
  */
-#ifndef __STRING_ARRAY_H__
-#define __STRING_ARRAY_H__
+#ifndef LIGHTGBM_SWIG_STRING_ARRAY_H_
+#define LIGHTGBM_SWIG_STRING_ARRAY_H_
 
 #include <algorithm>
 #include <new>
@@ -77,7 +77,7 @@ class StringArray {
      */
     int setitem(size_t index, const std::string &content) noexcept {
         if (_in_bounds(index) && content.size() < _string_size) {
-            std::strcpy(_array[index], content.c_str()); // NOLINT
+            std::strcpy(_array[index], content.c_str());  // NOLINT
             return 0;
         } else {
             return -1;
@@ -137,4 +137,4 @@ class StringArray {
     std::vector<char*> _array;
 };
 
-#endif  // __STRING_ARRAY_H__
+#endif  // LIGHTGBM_SWIG_STRING_ARRAY_H_

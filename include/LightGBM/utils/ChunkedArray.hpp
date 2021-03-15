@@ -4,8 +4,8 @@
  *
  * Author: Alberto Ferreira
  */
-#ifndef __CHUNKED_ARRAY_H__
-#define __CHUNKED_ARRAY_H__
+#ifndef LIGHTGBM_UTILS_CHUNKED_ARRAY_H_
+#define LIGHTGBM_UTILS_CHUNKED_ARRAY_H_
 
 #include <stdint.h>
 #include <assert.h>
@@ -37,7 +37,7 @@
  *  2. data() or void_data()     # retrieves a T** or void** pointer (useful for `LGBM_DatasetCreateFromMats`).
  *
  * Useful query methods (all O(1)):
- *  - get_add_count()   # total count of added elements
+ *  - get_add_count()   # total count of added elements.
  *  - get_chunks_count()  # how many chunks are currently allocated.
  *  - get_current_chunk_added_count()  # for the last add() chunk, how many items there are.
  *  - get_chunk_size()    # Get constant chunk_size from constructor call.
@@ -252,4 +252,4 @@ class ChunkedArray {
 };
 
 
-#endif  // __CHUNKED_ARRAY_H__
+#endif  // LIGHTGBM_UTILS_CHUNKED_ARRAY_H_
