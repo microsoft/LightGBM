@@ -9,7 +9,7 @@ from copy import deepcopy
 from functools import wraps
 from logging import Logger
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict
+from typing import Any, Dict, List, Set, Union
 
 import numpy as np
 import scipy.sparse
@@ -2336,8 +2336,13 @@ class Booster:
         self.__is_predicted_cur_iter = []
         return self
 
-    def set_network(self, machines, local_listen_port=12400,
-                    listen_time_out=120, num_machines=1):
+    def set_network(
+        self,
+        machines: Union[List[str], Set[str], str],
+        local_listen_port: int = 12400,
+        listen_time_out: int = 120,
+        num_machines: int = 1
+    ) -> "Booster":
         """Set the network configuration.
 
         Parameters
@@ -2356,6 +2361,8 @@ class Booster:
         self : Booster
             Booster with set network.
         """
+        if isinstance(machines, (list, set)):
+            machines = ','.join(machines)
         _safe_call(_LIB.LGBM_NetworkInit(c_str(machines),
                                          ctypes.c_int(local_listen_port),
                                          ctypes.c_int(listen_time_out),
