@@ -37,6 +37,7 @@ class NDCGMetric:public Metric {
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
+    DCGCalculator::CheckMetadata(metadata, num_queries_);
     DCGCalculator::CheckLabel(label_, num_data_);
     // get query boundaries
     query_boundaries_ = metadata.query_boundaries();
