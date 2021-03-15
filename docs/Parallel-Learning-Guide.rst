@@ -62,10 +62,14 @@ Dask
 
 LightGBM's Python package supports distributed learning via `Dask`_. This integration is maintained by LightGBM's maintainers.
 
+.. warning::
+
+    Dask integration is only tested on Linux.
+
 Dask Examples
 '''''''''''''
 
-For sample code using ``lightgbm.dask``, see `these Dask examples`_ .
+For sample code using ``lightgbm.dask``, see `these Dask examples`_.
 
 Training with Dask
 ''''''''''''''''''
