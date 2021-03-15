@@ -162,8 +162,6 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       for (size_t i = 0; i < tmp_buffer.size(); ++i) {
         query_boundaries_[i + 1] = query_boundaries_[i] + tmp_buffer[i];
       }
-      Log::Debug("Number of queries in %s: %i. Average number of rows per query: %f.",
-        data_filename_.c_str(), static_cast<int>(num_queries_), static_cast<double>(num_data_) / num_queries_);
       LoadQueryWeights();
       queries_.clear();
     }
@@ -278,6 +276,10 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     }
     // re-load query weight
     LoadQueryWeights();
+  }
+  if (num_queries_ > 0) {
+    Log::Debug("Number of queries in %s: %i. Average number of rows per query: %f.",
+      data_filename_.c_str(), static_cast<int>(num_queries_), static_cast<double>(num_data_) / num_queries_);
   }
 }
 
