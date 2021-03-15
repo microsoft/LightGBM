@@ -16,12 +16,10 @@ except ImportError:
 
         pass
 
-
     class pd_DataFrame:  # type: ignore
         """Dummy class for pandas.DataFrame."""
 
         pass
-
 
     concat = None
     is_dtype_sparse = None
@@ -130,12 +128,10 @@ except ImportError:
 
         pass
 
-
     class dask_DataFrame:  # type: ignore
         """Dummy class for dask.dataframe.DataFrame."""
 
         pass
-
 
     class dask_Series:  # type: ignore
         """Dummy class for dask.dataframe.Series."""
