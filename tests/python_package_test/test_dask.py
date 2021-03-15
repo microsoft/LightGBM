@@ -1003,6 +1003,8 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
+    client.wait_for_workers(2)
+
     _, _, _, _, dX, dy, _, dg = _create_data(
         objective=task,
         output=output,
