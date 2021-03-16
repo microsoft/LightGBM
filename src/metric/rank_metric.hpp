@@ -37,7 +37,6 @@ class NDCGMetric:public Metric {
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
-    DCGCalculator::CheckMetadata(metadata, num_queries_);
     DCGCalculator::CheckLabel(label_, num_data_);
     // get query boundaries
     query_boundaries_ = metadata.query_boundaries();
@@ -45,6 +44,7 @@ class NDCGMetric:public Metric {
       Log::Fatal("The NDCG metric requires query information");
     }
     num_queries_ = metadata.num_queries();
+    DCGCalculator::CheckMetadata(metadata, num_queries_);
     // get query weights
     query_weights_ = metadata.query_weights();
     if (query_weights_ == nullptr) {
