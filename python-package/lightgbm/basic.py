@@ -1,5 +1,6 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
+import abc
 import ctypes
 import json
 import os
@@ -9,13 +10,18 @@ from copy import deepcopy
 from functools import wraps
 from logging import Logger
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, List, Set, Union
+from typing import Any, Dict, List, Set, Union, Iterable
 
 import numpy as np
 import scipy.sparse
 
 from .compat import PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
+
+
+# TODO: how to keep the default values the same with C++ config.h
+ZERO_THRESHOLD = 1e-35
+DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT = 200000
 
 
 class _DummyLogger:
@@ -591,6 +597,61 @@ def _load_pandas_categorical(file_name=None, model_str=None):
         return None
 
 
+class Sequence(object):
+    """Generic data access interface.
+
+    Object should support the following operations:
+
+        # Get total row number.
+        >>> len(seq)
+        # Random access by row index. Use for data sampling.
+        >>> seq[10]
+        # Range data access. Use to read data in batch when constructing Dataset.
+        >>> seq[0:100]
+        # Optionally specify batch_size to control range data read size.
+        >>> seq.batch_size
+
+    With random access, data sampling does not need to go through all data.
+    With range data access, there's no need to read all data into memory thus
+    reduce memory usage.
+    """
+    __metaclass__ = abc.ABCMeta
+
+    batch_size = 4096  # Defaults to read 4K rows in each batch.
+
+    @abc.abstractmethod
+    def __getitem__(self, idx):  # type: (Union[int, slice]) -> np.ndarray
+        """Return data for given row index.
+
+        A basic implementation should look like this:
+
+        .. code-block:: python
+
+            if isinstance(idx, numbers.Integral):
+                return self.__get_one_line__(idx)
+            elif isinstance(idx, slice):
+                return np.stack(self.__get_one_line__(i) for i in range(idx.start, idx.stop))
+            else:
+                raise TypeError("Sequence index must be integer or slice, got {}".format(type(idx)))
+
+        Parameters
+        ----------
+        idx : int, slice[int]
+            Item index.
+
+        Returns
+        -------
+        result : numpy 1-D array, numpy 2-D array
+            1-D array if idx is int, 2-D array if idx is slice
+        """
+        raise NotImplementedError("remove this line if subclassing")
+
+    @abc.abstractmethod
+    def __len__(self):  # type: () -> int
+        """Return row count of this sequence """
+        raise NotImplementedError
+
+
 class _InnerPredictor:
     """_InnerPredictor of LightGBM.
 
@@ -1119,9 +1180,6 @@ class Dataset:
         except AttributeError:
             pass
 
-    # TODO how to keep the default value the same with C++ config.h
-    DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT = 200000
-
     def create_sample_indices(self, total_nrow):
         """Create sample indices for the given parameter of the Dataset.
 
@@ -1137,8 +1195,8 @@ class Dataset:
             Indices for sampled data.
         """
         param_str = param_dict_to_str(self.params)
-        sample_cnt = self.params.get("bin_construct_sample_cnt",
-                                     self.DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT)
+        sample_cnt = self.params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
+        sample_cnt = min(sample_cnt, total_nrow)
         indices = np.zeros(sample_cnt, dtype=np.int32)
         ptr_data, _, _ = c_int_array(indices)
 
@@ -1154,10 +1212,9 @@ class Dataset:
 
         Parameters
         ----------
-        sample_data: 2d numpy array (dtype must be double, in F order)
-            Sample data value in row major order.
-            Note: each column contains len(sample_indices[i]) number of values.
-        sample_indices: List[List[int]]
+        sample_data: List[np.array[float64]]
+            Sample data for each column
+        sample_indices: List[np.array[int]]
             Sample data row index for each column.
         sample_cnt: int
             Number of samples.
@@ -1169,14 +1226,13 @@ class Dataset:
         self : Dataset
             Constructed Dataset object.
         """
-        if len(sample_data.shape) != 2:
-            raise ValueError('sample_data numpy.ndarray must be 2 dimensional')
-        assert sample_data.dtype == np.double, "sample data type {} is not double".format(sample_data.dtype)
-        assert sample_data.shape[1] == len(sample_indices), "#sample data column != #column indices"
+        assert len(sample_data) == len(sample_indices), "#sample data column != #column indices"
 
         ncol = len(sample_indices)
 
         for i in range(ncol):
+            if sample_data[i].dtype != np.double:
+                raise ValueError("sample data type {} is not double".format(sample_data.dtype))
             if sample_indices[i].dtype != np.int32:
                 raise ValueError("sample_indices[{}] type {} is not int32".format(i, sample_indices[i].dtype))
 
@@ -1187,7 +1243,7 @@ class Dataset:
         # each int* points to start of indices for each column
         indices_col_ptr = (ctypes.POINTER(ctypes.c_int32) * ncol)()
         for i in range(ncol):
-            sample_col_ptr[i] = c_float_array(sample_data[:, i])[0]
+            sample_col_ptr[i] = c_float_array(sample_data[i])[0]
             indices_col_ptr[i] = c_int_array(sample_indices[i])[0]
 
         num_per_col = np.array([len(d) for d in sample_indices], dtype=np.int32)
@@ -1377,8 +1433,15 @@ class Dataset:
             self.__init_from_csc(data, params_str, ref_dataset)
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(data, params_str, ref_dataset)
-        elif isinstance(data, list) and len(data) > 0 and all(isinstance(x, np.ndarray) for x in data):
-            self.__init_from_list_np2d(data, params_str, ref_dataset)
+        elif isinstance(data, Sequence):
+            self.__init_from_seqs([data], params_str, ref_dataset)
+        elif isinstance(data, list) and len(data) > 0:
+            if all(isinstance(x, np.ndarray) for x in data):
+                self.__init_from_list_np2d(data, params_str, ref_dataset)
+            elif all(isinstance(x, Sequence) for x in data):
+                self.__init_from_seqs(data, params_str, ref_dataset)
+            else:
+                raise TypeError('Data list can only be of ndarray or Sequence')
         elif isinstance(data, dt_DataTable):
             self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
@@ -1405,6 +1468,74 @@ class Dataset:
             raise TypeError(f'Wrong predictor type {type(predictor).__name__}')
         # set feature names
         return self.set_feature_name(feature_name)
+
+    def __yield_row_from(self, seqs, indices):
+        # type: (List[Sequence], Iterable[int]) -> ...
+        offset = 0
+        seq_id = 0
+        seq = seqs[seq_id]
+        for row_id in indices:
+            assert row_id >= offset, "sample indices are expected to be monotonic"
+            while row_id >= offset + len(seq):
+                offset += len(seq)
+                seq_id += 1
+                seq = seqs[seq_id]
+            id_in_seq = row_id - offset
+            row = seq[int(id_in_seq)]
+            yield row
+
+    def __sample(self, seqs, total_nrow):
+        # type: (List[Sequence], int, int) -> (np.ndarray, List[np.ndarray])
+        """Data Sampling.
+
+        Mimics behavior in c_api.cpp:LGBM_DatasetCreateFromMats()
+
+        Returns
+        -------
+            sampled_rows, sampled_row_indices
+        """
+        indices = self.create_sample_indices(total_nrow)
+
+        # Select sampled rows, transpose to column order.
+        sampled = [row for row in self.__yield_row_from(seqs, indices)]
+        sampled = np.array(sampled)
+        sampled = sampled.T
+
+        filtered = []
+        filtered_idx = []
+        sampled_row_range = np.arange(len(indices), dtype=np.int32)
+        for col in sampled:
+            col_predicate = (np.abs(col) > ZERO_THRESHOLD) | np.isnan(col)
+            filtered_col = col[col_predicate]
+            filtered_row_idx = sampled_row_range[col_predicate]
+
+            filtered.append(filtered_col)
+            filtered_idx.append(filtered_row_idx)
+
+        return filtered, filtered_idx
+
+    def __init_from_seqs(self, seqs, params_str, ref_dataset):
+        # type: (List[Sequence], str, Dataset) -> None
+        """
+        Initialize data from a Sequence object.
+        Sequence: Generic Data Access Object
+            Supports random access and access by batch if properly defined by user
+        """
+        total_nrow = sum(len(seq) for seq in seqs)
+        ncol = len(seqs[0][0])
+        sample_cnt = self.params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
+        sample_cnt = min(sample_cnt, total_nrow)
+
+        sample_data, col_indices = self.__sample(seqs, total_nrow)
+        self.init_from_sample(sample_data, col_indices, sample_cnt, total_nrow)
+
+        for seq in seqs:
+            nrow = len(seq)
+            batch_size = seq.batch_size or Sequence.batch_size
+            for start in range(0, nrow, batch_size):
+                end = min(start+batch_size, nrow)
+                self.push_rows(seq[start:end])
+
 
     def __init_from_np2d(self, mat, params_str, ref_dataset):
         """Initialize data from a 2-D numpy matrix."""
