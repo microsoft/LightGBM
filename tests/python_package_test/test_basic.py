@@ -1,6 +1,7 @@
 # coding: utf-8
 import os
 
+import filecmp
 import numpy as np
 import pytest
 from scipy import sparse
@@ -9,9 +10,14 @@ from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_Series
-
 from .utils import load_breast_cancer
 
+def rm_files(files):
+    if not isinstance(files, list):
+        files = [files]
+    for file in files:
+        if os.path.exists(file):
+            os.remove(file)
 
 def test_basic(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
@@ -82,6 +88,88 @@ def test_basic(tmp_path):
         dump_svmlight_file(X_test, y_test, f, zero_based=False)
     np.testing.assert_raises_regex(lgb.basic.LightGBMError, bad_shape_error_msg,
                                    bst.predict, tname)
+
+
+class NumpySequence(lgb.Sequence):
+    def __init__(self, ndarray):
+        self.ndarray = ndarray
+
+    def __getitem__(self, idx):
+        # The simple implementation is just a single "return self.ndarray[idx]"
+        # The following is for demo and testing purpose.
+        if isinstance(idx, int):
+            return self.__get_one_line__(idx)
+        elif isinstance(idx, slice):
+            if not (idx.step is None or idx.step is 1):
+                raise NotImplementedError("No need to implement, caller will not set step by now")
+            return self.ndarray[idx.start: idx.stop]
+        else:
+            raise TypeError("Sequence Index must be an integer/list/slice, got {}".format(type(idx)))
+
+    def __get_one_line__(self, idx):
+        return self.ndarray[idx]
+
+    def __len__(self):
+        return len(self.ndarray)
+
+
+@pytest.mark.parametrize('sample_count', [2, 5])
+@pytest.mark.parametrize('batch_size', [3, 20, None])
+@pytest.mark.parametrize('include_0', [False, True])
+@pytest.mark.parametrize('include_nan', [False, True])
+@pytest.mark.parametrize('num_seq', [1, 3])
+def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_seq):
+    rm_files(["seq.truth.bin", "seq.seq.bin"])
+
+    params = {
+        "bin_construct_sample_cnt": sample_count,
+    }
+
+    nrow = 31
+    half_nrow = nrow//2
+    ncol = 11
+    data = np.arange(nrow*ncol).reshape((nrow, ncol)).astype('float64')
+
+    # total col
+    if include_0:
+        data[:, 0] = 0
+    if include_nan:
+        data[:, 1] = np.nan
+
+    # half col
+    if include_nan:
+        # nan col
+        data[0:half_nrow, 2] = np.nan
+    if include_0:
+        # 0 col
+        data[0:half_nrow, 3] = 0
+
+    # nan + 0 col
+    if include_nan:
+        data[0:half_nrow, 4] = np.nan
+    if include_0:
+        data[half_nrow:-2, 4] = 0
+
+    # X, Y split
+    X = data[:, :-1]
+    Y = data[:, -1]
+    # truth
+    ds = lgb.Dataset(X, label=Y, params=params)
+    ds.save_binary(str(tmpdir/"seq.truth.bin"))
+    # seq
+    if num_seq == 1:
+        seqs = NumpySequence(X)
+    else:
+        seqs = []
+        seq_size = nrow//num_seq
+        for start in range(0, nrow, seq_size):
+            end = min(start + seq_size, nrow)
+            seq = NumpySequence(X[start:end])
+            seq.batch_size = batch_size
+            seqs.append(seq)
+    ds = lgb.Dataset(seqs, label=Y, params=params)
+    ds.save_binary(str(tmpdir/"seq.seq.bin"))
+    assert filecmp.cmp(tmpdir/"seq.truth.bin", tmpdir/"seq.seq.bin")
 
 
 def test_chunked_dataset():

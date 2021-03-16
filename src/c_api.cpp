@@ -959,7 +959,7 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
                          int32_t nrow,
                          int32_t ncol,
                          int32_t start_row) {
-  Log::Info("start_row %d nrow: %d", start_row, nrow);
+  Log::Debug("DatasetPushRows start_row: %d nrow: %d", start_row, nrow);
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
@@ -977,7 +977,7 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
   }
   OMP_THROW_EX();
   if (start_row + nrow == p_dataset->num_data()) {
-    Log::Info("Dataset PushRows FinishLoad");
+    Log::Debug("DatasetPushRows FinishLoad");
     p_dataset->FinishLoad();
   }
   API_END();
