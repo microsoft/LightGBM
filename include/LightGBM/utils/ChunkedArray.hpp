@@ -7,13 +7,14 @@
 #ifndef LIGHTGBM_UTILS_CHUNKED_ARRAY_H_
 #define LIGHTGBM_UTILS_CHUNKED_ARRAY_H_
 
+#include <LightGBM/utils/log.h>
+
 #include <stdint.h>
 
 #include <new>
 #include <vector>
 #include <algorithm>
 
-#include <LightGBM/utils/log.h>
 
 namespace LightGBM {
 
@@ -254,6 +255,6 @@ class ChunkedArray {
 };
 
 
-}  // End LightGBM namespace
+}  // namespace LightGBM
 
 #endif  // LIGHTGBM_UTILS_CHUNKED_ARRAY_H_
