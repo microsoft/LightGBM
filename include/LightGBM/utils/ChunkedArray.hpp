@@ -8,12 +8,14 @@
 #define LIGHTGBM_UTILS_CHUNKED_ARRAY_H_
 
 #include <stdint.h>
-#include <assert.h>
 
 #include <new>
 #include <vector>
 #include <algorithm>
 
+#include <LightGBM/utils/log.h>
+
+namespace LightGBM {
 
 /**
  * Container that manages a dynamic array of fixed-length chunks.
@@ -82,7 +84,7 @@ class ChunkedArray {
             _last_idx_in_last_chunk = 0;
         }
 
-        assert(setitem(_last_chunk_idx, _last_idx_in_last_chunk, value) == 0);
+        CHECK_EQ(setitem(_last_chunk_idx, _last_idx_in_last_chunk, value), 0);
         ++_last_idx_in_last_chunk;
     }
 
@@ -251,5 +253,7 @@ class ChunkedArray {
     size_t _last_idx_in_last_chunk;  //<! Index within chunk
 };
 
+
+}  // End LightGBM namespace
 
 #endif  // LIGHTGBM_UTILS_CHUNKED_ARRAY_H_

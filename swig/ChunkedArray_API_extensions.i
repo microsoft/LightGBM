@@ -10,6 +10,8 @@
 
 %include "../include/LightGBM/utils/ChunkedArray.hpp"
 
+using LightGBM::ChunkedArray;
+
 %template(int32ChunkedArray) ChunkedArray<int32_t>;
 /* Unfortunately, for the time being,
  * SWIG has issues generating the overloads to coalesce_to()

@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 #include "../include/LightGBM/utils/ChunkedArray.hpp"
 
+using LightGBM::ChunkedArray;
+
 /*!
   Helper util to compare two vectors.
 
