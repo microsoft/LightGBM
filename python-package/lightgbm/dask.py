@@ -1285,7 +1285,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
-        eval_at: Optional[List[int]] = None,
+        eval_at: Optional[Tuple[int]] = (1, 2, 3, 4, 5),
         early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
