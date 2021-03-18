@@ -5,7 +5,7 @@
  * Author: Alberto Ferreira
  */
 #include <gtest/gtest.h>
-#include "../include/LightGBM/utils/ChunkedArray.hpp"
+#include "../include/LightGBM/utils/chunked_array.hpp"
 
 using LightGBM::ChunkedArray;
 

@@ -5,10 +5,10 @@
  */
 
 %{
-#include "../include/LightGBM/utils/ChunkedArray.hpp"
+#include "../include/LightGBM/utils/chunked_array.hpp"
 %}
 
-%include "../include/LightGBM/utils/ChunkedArray.hpp"
+%include "../include/LightGBM/utils/chunked_array.hpp"
 
 using LightGBM::ChunkedArray;
 
