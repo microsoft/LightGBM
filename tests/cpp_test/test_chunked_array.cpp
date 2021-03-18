@@ -69,7 +69,7 @@ class ChunkedArrayTest : public testing::Test {
 
 /*! ChunkedArray cannot be built from chunks of size 0. */
 TEST_F(ChunkedArrayTest, constructorWithChunkSize0Throws) {
-  ASSERT_THROW(ChunkedArray<int> ca(0), std::length_error);
+  ASSERT_THROW(ChunkedArray<int> ca(0), std::runtime_error);
 }
 
 /*! get_chunk_size() should return the size used in the constructor */

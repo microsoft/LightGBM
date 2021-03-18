@@ -11,9 +11,9 @@
 
 #include <stdint.h>
 
+#include <algorithm>
 #include <new>
 #include <vector>
-#include <algorithm>
 
 
 namespace LightGBM {
@@ -43,7 +43,7 @@ namespace LightGBM {
  *  - get_add_count()   # total count of added elements.
  *  - get_chunks_count()  # how many chunks are currently allocated.
  *  - get_current_chunk_added_count()  # for the last add() chunk, how many items there are.
- *  - get_chunk_size()    # Get constant chunk_size from constructor call.
+ *  - get_chunk_size()    # get constant chunk_size from constructor call.
  *
  *  With those you can generate int32_t sizes[]. Last chunk can be smaller than chunk_size, so, for any i:
  *    - sizes[i<last] = get_chunk_size()
@@ -63,7 +63,7 @@ class ChunkedArray {
     explicit ChunkedArray(size_t chunk_size)
       : _chunk_size(chunk_size), _last_chunk_idx(0), _last_idx_in_last_chunk(0) {
       if (chunk_size == 0) {
-        throw std::length_error("ChunkedArray chunk size must be larger than 0!");
+        Log::Fatal("ChunkedArray chunk size must be larger than 0!");
       }
        new_chunk();
     }
@@ -170,7 +170,7 @@ class ChunkedArray {
      * Return value from array of chunks.
      *
      * @param chunk_index index of the chunk
-     * @param index index within chunk
+     * @param index_within_chunk index within chunk
      * @param on_fail_value sentinel value. If out of bounds returns that value.
      *
      * @return pointer or nullptr if index is out of bounds.
@@ -241,7 +241,7 @@ class ChunkedArray {
         // Check memory allocation success:
         if (!_chunks[_chunks.size()-1]) {
             release();
-            throw std::bad_alloc();
+            Log::Fatal("Memory exhausted! Cannot allocate new ChunkedArray chunk.");
         }
     }
 

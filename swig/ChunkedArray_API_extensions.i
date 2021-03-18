@@ -1,5 +1,5 @@
 /**
- * Wrap ChunkedArray.hpp class for SWIG usage.
+ * Wrap chunked_array.hpp class for SWIG usage.
  *
  * Author: Alberto Ferreira
  */
