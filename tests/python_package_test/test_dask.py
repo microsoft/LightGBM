@@ -1294,29 +1294,15 @@ def test_predict_with_raw_score(task, output, client):
     model = model_factory(**params)
     model.fit(dX, dy, group=dg)
     raw_predictions = model.predict(dX, raw_score=True).compute()
-    actual_mean = np.mean(raw_predictions, axis=0)
-
-    def compute_expected_predictions_mean(tree_df: pd.DataFrame):
-        """Computes the expected mean of the predictions from the dataframe of a tree with two leaves."""
-        leaf_values = tree_df['value'].values
-        leaf_weights = tree_df['weight'].values
-        sum_weights = leaf_weights[1] + leaf_weights[2]
-        return leaf_values[1] * (leaf_weights[1] / sum_weights) + leaf_values[2] * (leaf_weights[2] / sum_weights)
 
     trees_df = model.booster_.trees_to_dataframe()
+    leaves_df = trees_df[trees_df.node_depth == 2]
     if task == 'multiclass-classification':
-        expected_mean = []
         for i in range(model.n_classes_):
-            class_df = trees_df[trees_df.tree_index == i]
-            expected_class_mean = compute_expected_predictions_mean(class_df)
-            expected_mean.append(expected_class_mean)
+            class_df = leaves_df[leaves_df.tree_index == i]
+            assert set(raw_predictions[:, i]) == set(class_df['value'])
     else:
-        expected_mean = compute_expected_predictions_mean(trees_df)
-
-    if task == 'ranking':
-        assert abs(actual_mean - expected_mean) < 0.1
-    else:
-        np.testing.assert_almost_equal(actual_mean, expected_mean)
+        assert set(raw_predictions) == set(leaves_df['value'])
 
     if task.endswith('classification'):
         pred_proba_raw = model.predict_proba(dX, raw_score=True).compute()
