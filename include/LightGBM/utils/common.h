@@ -18,6 +18,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <iomanip>
@@ -328,6 +329,26 @@ inline static const char* Atof(const char* p, double* out) {
   }
 
   return p;
+}
+
+// Use fast_double_parse and strtod (if parse failed) to parse double.
+inline static const char* AtofPrecise(const char* p, double* out) {
+  const char* end = fast_double_parser::parse_number(p, out);
+
+  if (end != nullptr) {
+    return end;
+  }
+
+  // Rare path: Not in RFC 7159 format. Possible "inf", "nan", etc. Fallback to standard library:
+  char* end2;
+  *out = std::strtod(p, &end2);  // strtod is locale aware.
+  if (end2 == p) {
+    Log::Fatal("no conversion to double for: %s", p);
+  }
+  if (errno == ERANGE) {
+    Log::Fatal("convert to double got underflow or overflow: %s", p);
+  }
+  return end2;
 }
 
 inline static bool AtoiAndCheck(const char* p, int* out) {

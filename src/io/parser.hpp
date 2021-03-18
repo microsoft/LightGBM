@@ -15,6 +15,16 @@
 
 namespace LightGBM {
 
+#ifdef USE_PRECISE_TEXT_PARSER
+static const char* TextParserAtof(const char* p, double* out) {
+  return Common::AtofPrecise(p, out);
+}
+#else
+static const char* TextParserAtof(const char* p, double* out) {
+  return Common::Atof(p, out);
+}
+#endif
+
 class CSVParser: public Parser {
  public:
   explicit CSVParser(int label_idx, int total_columns)
@@ -27,7 +37,7 @@ class CSVParser: public Parser {
     int offset = 0;
     *out_label = 0.0f;
     while (*str != '\0') {
-      str = Common::Atof(str, &val);
+      str = TextParserAtof(str, &val);
       if (idx == label_idx_) {
         *out_label = val;
         offset = -1;
@@ -63,7 +73,7 @@ class TSVParser: public Parser {
     double val = 0.0f;
     int offset = 0;
     while (*str != '\0') {
-      str = Common::Atof(str, &val);
+      str = TextParserAtof(str, &val);
       if (idx == label_idx_) {
         *out_label = val;
         offset = -1;
@@ -101,7 +111,7 @@ class LibSVMParser: public Parser {
     int idx = 0;
     double val = 0.0f;
     if (label_idx_ == 0) {
-      str = Common::Atof(str, &val);
+      str = TextParserAtof(str, &val);
       *out_label = val;
       str = Common::SkipSpaceAndTab(str);
     }
