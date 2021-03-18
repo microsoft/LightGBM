@@ -6,7 +6,6 @@ from sklearn.metrics import mean_squared_error
 import lightgbm as lgb
 
 if __name__ == "__main__":
-
     print("loading data")
 
     X, y = make_regression(n_samples=1000, n_features=50)

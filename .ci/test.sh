@@ -96,19 +96,13 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV cloudpickle joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
+conda install -q -y -n $CONDA_ENV cloudpickle dask distributed joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
 
 # graphviz must come from conda-forge to avoid this on some linux distros:
 # https://github.com/conda-forge/graphviz-feedstock/issues/18
-#
-# dask and distributed must come from conda-forge because they need to be kept
-# in sync and conda-forge packages are updated more quickly (automatically based
-# on pushes to PyPI)
 conda install -q -y \
     -n $CONDA_ENV \
     -c conda-forge \
-        'dask>=2021.3.0' \
-        'distributed>=2021.3.0' \
         python-graphviz \
         xorg-libxau
 
@@ -224,7 +218,7 @@ import matplotlib\
 matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
-    for f in *.py; do python $f || exit -1; done  # run all examples
+    for f in *.py **/*.py; do python $f || exit -1; done  # run all examples
     cd $BUILD_DIRECTORY/examples/python-guide/notebooks
     conda install -q -y -n $CONDA_ENV ipywidgets notebook
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks

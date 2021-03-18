@@ -120,6 +120,7 @@ class LambdarankNDCG : public RankingObjective {
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     RankingObjective::Init(metadata, num_data);
+    DCGCalculator::CheckMetadata(metadata, num_queries_);
     DCGCalculator::CheckLabel(label_, num_data_);
     inverse_max_dcgs_.resize(num_queries_);
 #pragma omp parallel for schedule(static)
