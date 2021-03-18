@@ -1277,17 +1277,11 @@ def test_predict_with_raw_score(task, output, client):
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
-    if task == 'ranking':
-        _, _, _, _, dX, dy, _, dg = _create_ranking_data(
-            output=output,
-            group=None
-        )
-    else:
-        _, _, _, dX, dy, _ = _create_data(
-            objective=task,
-            output=output,
-        )
-        dg = None
+    _, _, _, _, dX, dy, _, dg = _create_data(
+        objective=task,
+        output=output,
+        group=None
+    )
 
     model_factory = task_to_dask_factory[task]
     params = {
