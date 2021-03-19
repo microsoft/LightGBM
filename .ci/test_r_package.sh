@@ -59,6 +59,7 @@ if [[ $OS_NAME == "linux" ]]; then
             devscripts \
             r-base-dev=${R_LINUX_VERSION} \
             texinfo \
+            texlive-latex-extra \
             texlive-latex-recommended \
             texlive-fonts-recommended \
             texlive-fonts-extra \
