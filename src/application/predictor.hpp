@@ -163,7 +163,7 @@ class Predictor {
   void Predict(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check) {
     auto writer = VirtualFileWriter::Make(result_filename);
     if (!writer->Init()) {
-      Log::Fatal("Prediction results file %s cannot be found", result_filename);
+      Log::Fatal("Prediction results file %s cannot be created", result_filename);
     }
     auto label_idx = header ? -1 : boosting_->LabelIdx();
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, header, boosting_->MaxFeatureIdx() + 1, label_idx));
