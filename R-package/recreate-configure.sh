@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # recreates 'configure' from 'configure.ac'
-# this script should run on Ubuntu 18.04
+# this script should run on Ubuntu 20.04
 AUTOCONF_VERSION=$(cat R-package/AUTOCONF_UBUNTU_VERSION)
 
 # R packages cannot have versions like 3.0.0rc1, but
