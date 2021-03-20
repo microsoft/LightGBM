@@ -44,6 +44,7 @@ sk_version = parse_version(sk_version)
 CLIENT_CLOSE_TIMEOUT = 120
 
 tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ranking']
+distributed_training_algorithms = ['data_parallel', 'voting_parallel']
 data_output = ['array', 'scipy_csr_matrix', 'dataframe', 'dataframe-with-categorical']
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 task_to_dask_factory = {
@@ -231,13 +232,15 @@ def _unpickle(filepath, serializer):
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
-def test_classifier(output, task, client):
+@pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
+def test_classifier(output, task, tree_learner, client):
     X, y, w, _, dX, dy, dw, _ = _create_data(
         objective=task,
         output=output
     )
 
     params = {
+        "tree_learner": tree_learner,
         "n_estimators": 10,
         "num_leaves": 10
     }
@@ -399,7 +402,8 @@ def test_training_does_not_fail_on_port_conflicts(client):
 
 
 @pytest.mark.parametrize('output', data_output)
-def test_regressor(output, client):
+@pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
+def test_regressor(output, tree_learner, client):
     X, y, w, _, dX, dy, dw, _ = _create_data(
         objective='regression',
         output=output
@@ -413,7 +417,7 @@ def test_regressor(output, client):
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         time_out=5,
-        tree='data',
+        tree=tree_learner,
         **params
     )
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw)
@@ -573,7 +577,8 @@ def test_regressor_quantile(output, client, alpha):
 
 @pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])
 @pytest.mark.parametrize('group', [None, group_sizes])
-def test_ranker(output, client, group):
+@pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
+def test_ranker(output, group, tree_learner, client):
     if output == 'dataframe-with-categorical':
         X, y, w, g, dX, dy, dw, dg = _create_data(
             objective='ranking',
@@ -610,7 +615,7 @@ def test_ranker(output, client, group):
     dask_ranker = lgb.DaskLGBMRanker(
         client=client,
         time_out=5,
-        tree_learner_type='data_parallel',
+        tree_learner_type=tree_learner,
         **params
     )
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg)
