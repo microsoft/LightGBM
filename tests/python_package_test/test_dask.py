@@ -59,12 +59,10 @@ def listen_port():
 listen_port.port = 13000
 
 
-def _create_ranking_data(n_samples=100, output='array', chunk_size=50, random_weights=True, **kwargs):
+def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs):
     X, y, g = make_ranking(n_samples=n_samples, random_state=42, **kwargs)
     rnd = np.random.RandomState(42)
     w = rnd.random(X.shape[0]) * 0.01
-    if not random_weights:
-        w = np.ones([X.shape[0]])
 
     g_rle = np.array([len(list(grp)) for _, grp in groupby(g)])
 
@@ -118,20 +116,16 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, random_we
     return X, y, w, g_rle, dX, dy, dw, dg
 
 
-def _create_data(objective, n_samples=100, n_features=None, centers=2, output='array', chunk_size=50, random_weights=True):
+def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size=50):
     if objective == 'classification':
-        n_features = n_features if n_features else 2
-        X, y = make_blobs(n_samples=n_samples, n_features=n_features, centers=centers, random_state=42)
+        X, y = make_blobs(n_samples=n_samples, centers=centers, random_state=42)
     elif objective == 'regression':
-        n_features = n_features if n_features else 100
-        X, y = make_regression(n_samples=n_samples, n_features=n_features, random_state=42)
+        X, y = make_regression(n_samples=n_samples, random_state=42)
     else:
         raise ValueError("Unknown objective '%s'" % objective)
     rnd = np.random.RandomState(42)
 
     weights = rnd.random(X.shape[0]) * 0.01
-    if not random_weights:
-        weights = np.ones([X.shape[0]])
 
     if output == 'array':
         dX = da.from_array(X, (chunk_size, X.shape[1]))
@@ -632,18 +626,18 @@ def test_ranker(output, client, group):
 
 
 @pytest.mark.parametrize('task', tasks)
-@pytest.mark.parametrize('eval_sizes', [[0.9], [0.5, 1], [0]])
+@pytest.mark.parametrize('output', ['array', 'dataframe'])
+@pytest.mark.parametrize('eval_sizes', [[0.9], [0.5, 1, 1.5], [0]])
 @pytest.mark.parametrize('eval_names_prefix', ['specified', None])
-def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, client):
+def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix, client):
 
-    # use larger number of samples to prevent faux early stopping whereby
-    # boosting stops on accident because each worker has few data points and achieves 0 loss.
+    # use larger trainset to prevent premature stopping due to zero loss, causing num_trees() < n_estimators.
     n_samples = 1000
-    n_features = 10
+    chunksize = 10
     n_eval_sets = len(eval_sizes)
-    early_stopping_rounds = 1
     eval_set = []
     eval_sample_weight = []
+    rnd = np.random.RandomState(42)
 
     if eval_names_prefix:
         eval_names = [eval_names_prefix + f'_{i}' for i in range(len(eval_sizes))]
@@ -651,51 +645,22 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
         eval_names = None
 
     if task == 'ranking':
-        # Do not use random sample weights for eval set, as this will
-        # prevent random validation set from being useful for early stopping.
-        # Use fewer features to eliminate chance of terminating too much early by having fit to noise.
         X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
             n_samples=n_samples,
-            n_features=n_features,
-            output='dataframe',
-            chunk_size=10,
-            random_gs=True,
-            random_weights=False
+            output=output,
+            chunk_size=chunksize
         )
         model_factory = lgb.DaskLGBMRanker
         eval_metrics = ['ndcg']
-        eval_at = [5, 10]
+        eval_at = (5, 6)
         eval_group = []
-
-        # create eval* datasets for ranking task.
-        for eval_size in eval_sizes:
-            if eval_size == 1:
-                dX_e = dX
-                dy_e = dy
-                dw_e = dw
-                dg_e = dg
-            else:
-                _, _, _, _, dX_e, dy_e, dw_e, dg_e = _create_ranking_data(
-                    n_samples=max(10, int(n_samples * eval_size)),
-                    n_features=n_features,
-                    output='dataframe',
-                    chunk_size=10,
-                    random_gs=True,
-                    random_weights=False
-                )
-
-            eval_set.append((dX_e, dy_e))
-            eval_sample_weight.append(dw_e)
-            eval_group.append(dg_e)
 
     else:
         X, y, w, dX, dy, dw = _create_data(
             n_samples=n_samples,
-            n_features=n_features,
             objective=task,
-            output='array',
-            chunk_size=10,
-            random_weights=False
+            output=output,
+            chunk_size=chunksize
         )
         dg = None
         eval_at = None
@@ -707,233 +672,96 @@ def test_eval_set_with_early_stopping(task, eval_sizes, eval_names_prefix, clien
             model_factory = lgb.DaskLGBMRegressor
             eval_metrics = ['rmse']
 
-        for eval_size in eval_sizes:
-            if eval_size == 1:
-                dX_e = dX
-                dy_e = dy
-                dw_e = dw
+    # create eval_sets by creating new datasets or copying training data.
+    for eval_size in eval_sizes:
+        if eval_size == 1:
+            dX_e = dX
+            dy_e = dy
+            dw_e = dw
+            dg_e = dg
+        else:
+            n_eval_samples = max(chunksize, int(n_samples * eval_size))
+            if task == 'ranking':
+                _, _, _, _, dX_e, dy_e, dw_e, dg_e = _create_ranking_data(
+                    n_samples=n_eval_samples,
+                    output=output,
+                    chunk_size=chunksize
+                )
             else:
                 _, _, _, dX_e, dy_e, dw_e = _create_data(
-                    n_samples=max(10, int(n_samples * eval_size)),
-                    n_features=n_features,
+                    n_samples=n_eval_samples,
                     objective=task,
-                    output='array',
-                    chunk_size=10,
-                    random_weights=False
+                    output=output,
+                    chunk_size=chunksize
                 )
 
-            eval_set.append((dX_e, dy_e))
-            eval_sample_weight.append(dw_e)
+        eval_set.append((dX_e, dy_e))
+        eval_sample_weight.append(dw_e)
 
-    full_trees = 200
+        if task == 'ranking':
+            eval_group.append(dg_e)
+
+    full_trees = 50
     params = {
         "random_state": 42,
         "n_estimators": full_trees,
-        "num_leaves": 31,
-        "first_metric_only": True
+        "num_leaves": 2
     }
-
     dask_model = model_factory(
         client=client,
         **params
     )
 
-    # when eval_size is exactly 1 partition, not enough eval_set data to reach each worker.
-    if eval_sizes == [0]:
-        with pytest.raises(RuntimeError, match='eval_set was provided but worker .* was not allocated validation data'):
-            dask_model.fit(
-                dX,
-                dy,
-                group=dg,
-                eval_set=eval_set,
-                eval_names=eval_names,
-                eval_sample_weight=eval_sample_weight,
-                eval_group=eval_group,
-                eval_metric=eval_metrics,
-                early_stopping_rounds=early_stopping_rounds,
-                eval_at=eval_at
-            )
-
-    else:
-        dask_model = dask_model.fit(
-            dX,
-            dy,
-            group=dg,
-            eval_set=eval_set,
-            eval_names=eval_names,
-            eval_sample_weight=eval_sample_weight,
-            eval_group=eval_group,
-            eval_metric=eval_metrics,
-            early_stopping_rounds=early_stopping_rounds,
-            eval_at=eval_at,
-            verbose=True
+    fit_params = {
+        'X': dX,
+        'y': dy,
+        'eval_set': eval_set,
+        'eval_names': eval_names,
+        'eval_sample_weight': eval_sample_weight,
+        'eval_metric': eval_metrics,
+        'verbose': False
+    }
+    if task == 'ranking':
+        fit_params.update(
+            {'group': dg,
+             'eval_group': eval_group,
+             'eval_at': eval_at}
         )
-        fitted_trees = dask_model.booster_.num_trees()
-        assert fitted_trees < full_trees
-        assert dask_model.best_iteration_ < full_trees
 
-        # be sure that model still produces decent output.
-        p1 = dask_model.predict(dX)
-        if task == 'classification':
-            p1_acc = _accuracy_score(dy, p1)
-            msg = f'binary accuracy score of predictions with actuals was <= 0.8 ({p1_acc})'
-            assert p1_acc > 0.8, msg
+    if eval_sizes == [0]:
+        with pytest.warns(UserWarning, match='Worker (.*) was not allocated eval_set data. Therefore evals_result_ and best_score_ data may be unreliable.'):
+            dask_model.fit(**fit_params)
+    else:
+        dask_model = dask_model.fit(**fit_params)
 
-        elif task == 'regression':
-            p1_r2 = _r2_score(dy, p1)
-            msg = f'r2 score of predictions with actuals was <= 0.8 ({p1_r2})'
-            assert p1_r2 > 0.8, msg
+        # check that early stopping was not applied.
+        assert dask_model.booster_.num_trees() == full_trees
+        assert not dask_model.best_iteration_
 
-        else:
-            p1_cor = spearmanr(p1.compute(), y).correlation
-            msg = f'spearman correlation of predictions with actuals was < 0.8 ({p1_cor})'
-            assert p1_cor > 0.8, msg
-
-        # check that evals_result contains expected eval_set names when provided.
-        n_rounds_tried = dask_model.best_iteration_ + early_stopping_rounds
+        # checks that evals_result_ and best_score_ contain expected data and eval_set names.
         evals_result = dask_model.evals_result_
+        best_scores = dask_model.best_score_
         assert len(evals_result) == n_eval_sets
-        evals_result_names = list(evals_result.keys())
-        if eval_names:
-            assert all(x in eval_names for x in evals_result_names)
+        assert len(best_scores) == n_eval_sets
 
-        # check that evals_result names default to "training" or "valid_xx" without eval_names.
-        for evals_result_name in evals_result_names:
-            if not eval_names:
-                assert evals_result_name.startswith('training') or evals_result_name.startswith('valid')
+        for eval_name in evals_result:
+            assert eval_name in dask_model.best_score_
+            if eval_names:
+                assert eval_name in eval_names
+            else:
+                if eval_name == 'training':
+                    assert 1 in eval_sizes
+                else:
+                    eval_name.startswith('valid')
 
-            # check that eval_metric(s) are contained in evals_result dicts.
+            # check that each of eval_metrics calculated on all eval sets.
             for i, metric in enumerate(eval_metrics):
                 if task == 'ranking':
                     metric += f'@{eval_at[i]}'
 
-                assert metric in evals_result[evals_result_name]
-
-                # len of each eval_metric should be number of fitted trees + early_stopping_rounds.
-                assert len(evals_result[evals_result_name][metric]) == n_rounds_tried
-
-                # stopping decision should have been made based on the best score of the first of eval_metrics.
-                if i == 0:
-                    best_score = dask_model.best_score_[evals_result_name][metric]
-                    best_iter_zero_indexed = dask_model.best_iteration_ - 1
-
-                    # distinguish between is_higher_better metrics.
-                    if metric in ['ndcg']:
-                        assert_eq(best_score, max(evals_result[evals_result_name][metric]), atol=0.03)
-                        assert abs(best_iter_zero_indexed - np.argmax(evals_result[evals_result_name][metric])) \
-                               <= early_stopping_rounds
-
-                    else:
-                        assert_eq(best_score, min(evals_result[evals_result_name][metric]), atol=0.03)
-                        assert abs(best_iter_zero_indexed - np.argmin(evals_result[evals_result_name][metric])) \
-                               <= early_stopping_rounds
-
-    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
-
-
-@pytest.mark.parametrize('task', tasks)
-@pytest.mark.parametrize('eval_names_prefix', ['specified', None])
-def test_eval_set_without_early_stopping(task, eval_names_prefix, client):
-
-    n_samples = 1000
-    n_eval_samples = 500
-    eval_set = []
-
-    if task == 'ranking':
-        _, _, _, _, dX, dy, _, dg = _create_ranking_data(
-            n_samples=n_samples,
-            output='dataframe',
-            chunk_size=10,
-            random_gs=True
-        )
-        model_factory = lgb.DaskLGBMRanker
-        eval_metrics = ['ndcg', 'map']
-        eval_at = [5, 10]
-        eval_group = []
-
-        # create eval data.
-        _, _, _, _, dX_e, dy_e, _, dg_e = _create_ranking_data(
-            n_samples=n_eval_samples,
-            output='dataframe',
-            chunk_size=10,
-            random_gs=True
-        )
-        eval_set.append((dX_e, dy_e))
-        eval_group.append(dg_e)
-
-    else:
-        _, _, _, dX, dy, _ = _create_data(
-            n_samples=n_samples,
-            objective=task,
-            output='array',
-            chunk_size=10
-        )
-        dg = None
-        eval_at = None
-        eval_group = None
-        if task == 'classification':
-            model_factory = lgb.DaskLGBMClassifier
-            eval_metrics = ['binary_error', 'auc']
-        elif task == 'regression':
-            model_factory = lgb.DaskLGBMRegressor
-            eval_metrics = ['l2', 'l1']
-
-        _, _, _, dX_e, dy_e, _ = _create_data(
-            n_samples=n_eval_samples,
-            objective=task,
-            output='array',
-            chunk_size=10
-        )
-        eval_set.append((dX_e, dy_e))
-
-    if eval_names_prefix:
-        eval_names = [eval_names_prefix + f'_{i}' for i in range(len(eval_set))]
-    else:
-        eval_names = None
-
-    full_trees = 100
-    params = {
-        "n_estimators": full_trees,
-        "num_leaves": 5
-    }
-
-    dask_model = model_factory(
-        client=client,
-        **params
-    )
-
-    dask_model = dask_model.fit(
-        dX,
-        dy,
-        group=dg,
-        eval_set=eval_set,
-        eval_names=eval_names,
-        eval_group=eval_group,
-        eval_metric=eval_metrics,
-        early_stopping_rounds=None,
-        eval_at=eval_at,
-        verbose=True
-    )
-
-    # check that early stopping was not applied.
-    fitted_trees = dask_model.booster_.num_trees()
-    assert fitted_trees == full_trees
-    assert dask_model.best_iteration_ is None
-
-    # check that evals_result_ contains expected data.
-    evals_result = dask_model.evals_result_
-    evals_result_name = list(evals_result.keys())[0]
-    if eval_names:
-        assert evals_result_name == eval_names[0]
-    else:
-        assert evals_result_name == 'valid_0'
-
-    for i, metric in enumerate(eval_metrics):
-        if task == 'ranking':
-            metric += f'@{eval_at[i]}'
-
-        assert metric in evals_result[evals_result_name]
-        assert len(evals_result[evals_result_name][metric]) == full_trees
+                assert metric in evals_result[eval_name]
+                assert metric in best_scores[eval_name]
+                assert len(evals_result[eval_name][metric]) == full_trees
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 

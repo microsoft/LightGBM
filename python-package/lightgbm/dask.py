@@ -17,7 +17,7 @@ import scipy.sparse as ss
 
 from .basic import _LIB, LightGBMError, _choose_param_value, _ConfigAliases, _log_info, _log_warning, _safe_call
 from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
-                     dask_Array, dask_DataFrame, dask_Series, default_client, delayed, get_worker, pd_DataFrame,
+                     dask_Array, dask_DataFrame, dask_Series, default_client, delayed, pd_DataFrame,
                      pd_Series, wait)
 from .sklearn import LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _lgbmmodel_doc_fit, _lgbmmodel_doc_predict
 
@@ -145,7 +145,6 @@ def _train_part(
     num_machines: int,
     return_model: bool,
     time_out: int = 120,
-    evals_provided: bool = False,
     **kwargs: Any
 ) -> Optional[LGBMModel]:
     network_params = {
@@ -238,13 +237,6 @@ def _train_part(
                 local_eval_sample_weight.append(_concat(w_e))
             if g_e:
                 local_eval_group.append(_concat(g_e))
-
-    else:
-        # when a worker receives no eval_set while other workers have eval data, causes LightGBMExceptions.
-        if evals_provided:
-            local_worker_address = get_worker().address
-            msg = "eval_set was provided but worker %s was not allocated validation data. Try rebalancing data across workers."
-            raise RuntimeError(msg % local_worker_address)
 
     try:
         model = model_factory(**params)
@@ -514,7 +506,6 @@ def _train(
                             eval_sample_weights[parts_idx].append([w_e])
 
                         else:
-                            # n_evals = len(eval_sample_weights[parts_idx]) - 1
                             eval_sample_weights[parts_idx][-1].append(w_e)
 
             if eval_group:
@@ -534,7 +525,6 @@ def _train(
                             eval_groups[parts_idx].append([g_e])
 
                         else:
-                            # n_evals = len(eval_groups[parts_idx]) - 1
                             eval_groups[parts_idx][-1].append(g_e)
 
         # assign sub-eval_set components to worker parts.
@@ -562,6 +552,22 @@ def _train(
     worker_map = defaultdict(list)
     for key, workers in who_has.items():
         worker_map[next(iter(workers))].append(key_to_part_dict[key])
+
+    # Check that all workers were provided some of eval_set. Otherwise warn user that validation
+    # data artifacts may not be populated depending on worker returning final estimator.
+    if eval_set:
+        for worker in worker_map:
+            has_eval_set = False
+            for part in worker_map[worker]:
+                if 'eval_set' in part.result():
+                    has_eval_set = True
+                    break
+
+            if not has_eval_set:
+                _log_warning(
+                    "Worker %s was not allocated eval_set data. Therefore evals_result_ and best_score_ data may be unreliable." \
+                    "Try rebalancing data across workers." % worker
+                )
 
     master_worker = next(iter(worker_map))
     worker_ncores = client.ncores()
@@ -633,7 +639,6 @@ def _train(
             num_machines=num_machines,
             time_out=params.get('time_out', 120),
             return_model=(worker == master_worker),
-            evals_provided=eval_set is not None,
             **kwargs
         )
         for worker, list_of_parts in worker_map.items()
@@ -815,7 +820,7 @@ class _DaskLGBMModel:
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
             raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
 
-        not_supported = ['init_score', 'eval_init_score', 'eval_class_weight']
+        not_supported = ['init_score', 'eval_init_score', 'eval_class_weight', 'early_stopping_rounds']
         for ns in not_supported:
             if eval(ns) is not None:
                 raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
@@ -826,8 +831,6 @@ class _DaskLGBMModel:
         # easier to pass fit args as kwargs than to list_of_parts in _train.
         if eval_metric:
             kwargs['eval_metric'] = eval_metric
-        if early_stopping_rounds:
-            kwargs['early_stopping_rounds'] = early_stopping_rounds
 
         model = _train(
             client=_get_dask_client(self.client),
@@ -952,15 +955,13 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
-        not_supported = ['init_score', 'eval_class_weight', 'eval_init_score']
+        not_supported = ['init_score', 'eval_class_weight', 'eval_init_score', 'early_stopping_rounds']
         for ns in not_supported:
             if eval(ns) is not None:
                 raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
 
         if eval_metric:
             kwargs['eval_metric'] = eval_metric
-        if early_stopping_rounds:
-            kwargs['early_stopping_rounds'] = early_stopping_rounds
 
         return self._lgb_dask_fit(
             model_factory=LGBMClassifier,
@@ -989,6 +990,9 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
                  + _base_doc[_base_doc.find('eval_init_score :'):])
+
+    _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
+                 + _base_doc[_base_doc.find('early_stopping_rounds :'):])
 
     # DaskLGBMClassifier support for callbacks and init_model is not tested
     fit.__doc__ = (
@@ -1129,15 +1133,13 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        not_supported = ['init_score', 'eval_init_score']
+        not_supported = ['init_score', 'eval_init_score', 'early_stopping_rounds']
         for ns in not_supported:
             if eval(ns) is not None:
                 raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
 
         if eval_metric:
             kwargs['eval_metric'] = eval_metric
-        if early_stopping_rounds:
-            kwargs['early_stopping_rounds'] = early_stopping_rounds
 
         return self._lgb_dask_fit(
             model_factory=LGBMRegressor,
@@ -1166,6 +1168,9 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
     _base_doc = (_base_doc[:_base_doc.find('eval_init_weight :')]
                  + _base_doc[_base_doc.find('eval_init_score :'):])
+
+    _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
+                 + _base_doc[_base_doc.find('early_stopping_rounds :'):])
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
     fit.__doc__ = (
@@ -1290,7 +1295,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
-        not_supported = ['init_score', 'eval_init_score']
+        not_supported = ['init_score', 'eval_init_score', 'early_stopping_rounds']
         for ns in not_supported:
             if eval(ns) is not None:
                 raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
@@ -1299,8 +1304,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             kwargs['eval_metric'] = eval_metric
         if eval_at:
             kwargs['eval_at'] = eval_at
-        if early_stopping_rounds:
-            kwargs['early_stopping_rounds'] = early_stopping_rounds
 
         return self._lgb_dask_fit(
             model_factory=LGBMRanker,
@@ -1325,12 +1328,14 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_group_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)'
     )
 
-    # DaskLGBMRanker does not support init_score or eval_init_score.
     _base_doc = (_base_doc[:_base_doc.find('init_score :')]
                  + _base_doc[_base_doc.find('init_score :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('eval_init_score :')]
                  + _base_doc[_base_doc.find('eval_init_score :'):])
+
+    _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
+                 + _base_doc[_base_doc.find('early_stopping_rounds :'):])
 
     # DaskLGBMRanker support for callbacks and init_model is not tested
     fit.__doc__ = (
