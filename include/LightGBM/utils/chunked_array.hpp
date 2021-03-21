@@ -239,7 +239,7 @@ class ChunkedArray {
         _chunks.push_back(new (std::nothrow) T[_chunk_size]);
 
         // Check memory allocation success:
-        if (!_chunks[_chunks.size()-1]) {
+        if (!_chunks[_chunks.size() - 1]) {
             release();
             Log::Fatal("Memory exhausted! Cannot allocate new ChunkedArray chunk.");
         }
