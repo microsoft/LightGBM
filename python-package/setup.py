@@ -83,8 +83,10 @@ def copy_files(integrated_opencl=False, use_gpu=False):
                   os.path.join(CURRENT_DIR, "compile", "CMakeLists.txt"),
                   verbose=0)
         if integrated_opencl:
-            copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeIntegratedOpenCL.cmake"),
-                      os.path.join(CURRENT_DIR, "compile", "CMakeIntegratedOpenCL.cmake"),
+            if not os.path.exists(os.path.join(CURRENT_DIR, "compile", "cmake")):
+                os.makedirs(os.path.join(CURRENT_DIR, "compile", "cmake"))
+            copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "cmake", "IntegratedOpenCL.cmake"),
+                      os.path.join(CURRENT_DIR, "compile", "cmake", "IntegratedOpenCL.cmake"),
                       verbose=0)
 
 

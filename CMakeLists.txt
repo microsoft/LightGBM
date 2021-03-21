@@ -100,7 +100,6 @@ include_directories(${EIGEN_DIR})
 ADD_DEFINITIONS(-DEIGEN_MPL2_ONLY)
 
 if(__BUILD_FOR_R)
-    list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
     message(STATUS "LIBR_INCLUDE_DIRS: ${LIBR_INCLUDE_DIRS}")
@@ -157,7 +156,7 @@ endif(USE_GPU)
 
 if(__INTEGRATE_OPENCL)
     if(WIN32)
-        include(CMakeIntegratedOpenCL.cmake)
+        include(cmake/IntegratedOpenCL.cmake)
         ADD_DEFINITIONS(-DUSE_GPU)
     else()
         message(FATAL_ERROR "Integrated OpenCL build is available only for Windows")
@@ -418,10 +417,10 @@ if(USE_GPU)
 endif(USE_GPU)
 
 if(__INTEGRATE_OPENCL)
-  # targets OpenCL and Boost are added in CMakeIntegratedOpenCL.cmake
+  # targets OpenCL and Boost are added in IntegratedOpenCL.cmake
   add_dependencies(lightgbm OpenCL Boost)
   add_dependencies(_lightgbm OpenCL Boost)
-  # variables INTEGRATED_OPENCL_* are set in CMakeIntegratedOpenCL.cmake
+  # variables INTEGRATED_OPENCL_* are set in IntegratedOpenCL.cmake
   target_include_directories(lightgbm PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
   target_include_directories(_lightgbm PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
   target_compile_definitions(lightgbm PRIVATE ${INTEGRATED_OPENCL_DEFINITIONS})

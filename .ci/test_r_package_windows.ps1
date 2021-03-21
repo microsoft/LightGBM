@@ -90,7 +90,7 @@ $env:_R_CHECK_CRAN_INCOMING_REMOTE_ = 0
 # CRAN ignores the "installed size is too large" NOTE,
 # so our CI can too. Setting to a large value here just
 # to catch extreme problems
-$env:_R_CHECK_PKG_SIZES_THRESHOLD_ = 60
+$env:_R_CHECK_PKG_SIZES_THRESHOLD_ = 100
 
 # don't fail builds for long-running examples unless they're very long.
 # See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
