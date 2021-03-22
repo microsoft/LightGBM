@@ -44,7 +44,7 @@ sk_version = parse_version(sk_version)
 CLIENT_CLOSE_TIMEOUT = 120
 
 tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ranking']
-distributed_training_algorithms = ['data_parallel', 'voting_parallel']
+distributed_training_algorithms = ['data', 'voting']
 data_output = ['array', 'scipy_csr_matrix', 'dataframe', 'dataframe-with-categorical']
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 task_to_dask_factory = {
@@ -910,6 +910,24 @@ def test_warns_and_continues_on_unrecognized_tree_learner(client):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('tree_learner', ['data_parallel', 'voting_parallel'])
+def test_training_respects_tree_learner_aliases(task, tree_learner, client):
+    _, _, _, _, dX, dy, dw, dg = _create_data(objective=task, output='array')
+    dask_factory = task_to_dask_factory[task]
+    dask_model = dask_factory(
+        client=client,
+        tree_learner=tree_learner,
+        time_out=5,
+        n_estimators=10,
+        num_leaves=15
+    )
+    dask_model.fit(dX, dy, sample_weight=dw, group=dg)
+
+    assert dask_model.fitted_
+    assert dask_model.get_params()['tree_learner'] == tree_learner
+
+
 def test_error_on_feature_parallel_tree_learner(client):
     X = da.random.random((1_000, 10), chunks=(500, 10))
     y = da.random.random((1_000, 1), chunks=500)
@@ -920,7 +938,7 @@ def test_error_on_feature_parallel_tree_learner(client):
         n_estimators=1,
         num_leaves=2
     )
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(lgb.basic.LightGBMError, match='Do not support feature parallel in c api'):
         dask_regressor = dask_regressor.fit(X, y)
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
