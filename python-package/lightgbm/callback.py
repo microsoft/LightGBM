@@ -17,6 +17,7 @@ class CallbackWithAttributes(Protocol):
 def callback_attr_decorator(func: Any) -> CallbackWithAttributes:
     return func
 
+
 class EarlyStopException(Exception):
     """Exception of early stopping."""
 
@@ -115,7 +116,7 @@ def record_evaluation(eval_result: dict) -> CallbackWithAttributes:
     return _callback
 
 
-def reset_parameter(**kwargs: Union[list,Callable]) -> CallbackWithAttributes:
+def reset_parameter(**kwargs: Union[list, Callable]) -> CallbackWithAttributes:
     """Create a callback that resets the parameter after the first iteration.
 
     .. note::
