@@ -45,6 +45,7 @@ else  # Linux
             libssl1.1 \
             libunwind8 \
             libxau-dev \
+            libxrender1 \
             locales \
             netcat \
             unzip \
