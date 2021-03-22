@@ -18,7 +18,7 @@ from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud
+from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking
 
 sk_version = parse_version(sk_version)
 if sk_version < parse_version("0.23"):
@@ -1192,3 +1192,36 @@ def test_parameters_default_constructible(estimator):
     name, Estimator = estimator.__class__.__name__, estimator.__class__
     # Test that estimators are default-constructible
     check_parameters_default_constructible(name, Estimator)
+
+
+@pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
+def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task):
+    pd = pytest.importorskip("pandas")
+    if task == 'ranking':
+        X, y, g = make_ranking()
+        g = np.bincount(g)
+        model_factory = lgb.LGBMRanker
+    elif task == 'classification':
+        X, y = load_iris(return_X_y=True)
+        model_factory = lgb.LGBMClassifier
+    elif task == 'regression':
+        X, y = load_boston(return_X_y=True)
+        model_factory = lgb.LGBMRegressor
+    X = pd.DataFrame(X)
+    y_col_array = y.reshape(-1, 1)
+    params = {
+        'n_estimators': 1,
+        'num_leaves': 3,
+        'random_state': 0
+    }
+    with pytest.warns(UserWarning, match='column-vector'):
+        if task == 'ranking':
+            model_1d = model_factory(**params).fit(X, y, group=g)
+            model_2d = model_factory(**params).fit(X, y_col_array, group=g)
+        else:
+            model_1d = model_factory(**params).fit(X, y)
+            model_2d = model_factory(**params).fit(X, y_col_array)
+
+    preds_1d = model_1d.predict(X)
+    preds_2d = model_2d.predict(X)
+    np.testing.assert_array_equal(preds_1d, preds_2d)

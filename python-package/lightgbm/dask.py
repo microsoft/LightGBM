@@ -46,83 +46,18 @@ def _get_dask_client(client: Optional[Client]) -> Client:
         return client
 
 
-def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
-    """Find an open port.
-
-    This function tries to find a free port on the machine it's run on. It is intended to
-    be run once on each Dask worker, sequentially.
-
-    Parameters
-    ----------
-    worker_ip : str
-        IP address for the Dask worker.
-    local_listen_port : int
-        First port to try when searching for open ports.
-    ports_to_skip: Iterable[int]
-        An iterable of integers referring to ports that should be skipped. Since multiple Dask
-        workers can run on the same physical machine, this method may be called multiple times
-        on the same machine. ``ports_to_skip`` is used to ensure that LightGBM doesn't try to use
-        the same port for two worker processes running on the same machine.
+def _find_random_open_port() -> int:
+    """Find a random open port on localhost.
 
     Returns
     -------
     port : int
-        A free port on the machine referenced by ``worker_ip``.
+        A free port on localhost
     """
-    max_tries = 1000
-    found_port = False
-    for i in range(max_tries):
-        out_port = local_listen_port + i
-        if out_port in ports_to_skip:
-            continue
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind((worker_ip, out_port))
-            found_port = True
-            break
-        # if unavailable, you'll get OSError: Address already in use
-        except OSError:
-            continue
-    if not found_port:
-        msg = "LightGBM tried %s:%d-%d and could not create a connection. Try setting local_listen_port to a different value."
-        raise RuntimeError(msg % (worker_ip, local_listen_port, out_port))
-    return out_port
-
-
-def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], local_listen_port: int) -> Dict[str, int]:
-    """Find an open port on each worker.
-
-    LightGBM distributed training uses TCP sockets by default, and this method is used to
-    identify open ports on each worker so LightGBM can reliable create those sockets.
-
-    Parameters
-    ----------
-    client : dask.distributed.Client
-        Dask client.
-    worker_addresses : Iterable[str]
-        An iterable of addresses for workers in the cluster. These are strings of the form ``<protocol>://<host>:port``.
-    local_listen_port : int
-        First port to try when searching for open ports.
-
-    Returns
-    -------
-    result : Dict[str, int]
-        Dictionary where keys are worker addresses and values are an open port for LightGBM to use.
-    """
-    lightgbm_ports: Set[int] = set()
-    worker_ip_to_port = {}
-    for worker_address in worker_addresses:
-        port = client.submit(
-            func=_find_open_port,
-            workers=[worker_address],
-            worker_ip=urlparse(worker_address).hostname,
-            local_listen_port=local_listen_port,
-            ports_to_skip=lightgbm_ports
-        ).result()
-        lightgbm_ports.add(port)
-        worker_ip_to_port[worker_address] = port
-
-    return worker_ip_to_port
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        port = s.getsockname()[1]
+    return port
 
 
 def _concat(seq: List[_DaskPart]) -> _DaskPart:
@@ -170,6 +105,11 @@ def _train_part(
         group = _concat([x['group'] for x in list_of_parts])
     else:
         group = None
+
+    if 'init_score' in list_of_parts[0]:
+        init_score = _concat([x['init_score'] for x in list_of_parts])
+    else:
+        init_score = None
 
     # construct local eval_set data.
     local_eval_set = None
@@ -245,6 +185,7 @@ def _train_part(
                 data,
                 label,
                 sample_weight=weight,
+                init_score=init_score,
                 group=group,
                 eval_set=local_eval_set,
                 eval_sample_weight=local_eval_sample_weight,
@@ -260,6 +201,7 @@ def _train_part(
                 data,
                 label,
                 sample_weight=weight,
+                init_score=init_score,
                 eval_set=local_eval_set,
                 eval_sample_weight=local_eval_sample_weight,
                 eval_names=local_eval_names,
@@ -302,6 +244,10 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
         Dictionary where keys are work addresses in the form expected by Dask and values are a port for LightGBM to use.
     """
     machine_addresses = machines.split(",")
+
+    if len(set(machine_addresses)) != len(machine_addresses):
+        raise ValueError(f"Found duplicates in 'machines' ({machines}). Each entry in 'machines' must be a unique IP-port combination.")
+
     machine_to_port = defaultdict(set)
     for address in machine_addresses:
         host, port = address.split(":")
@@ -322,6 +268,7 @@ def _train(
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
     sample_weight: Optional[_DaskCollection] = None,
+    init_score: Optional[_DaskCollection] = None,
     group: Optional[_DaskCollection] = None,
     eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
     eval_names: Optional[List[str]] = None,
@@ -345,6 +292,8 @@ def _train(
         Class of the local underlying model.
     sample_weight : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
+    init_score : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+        Init score of training data.
     group : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Group/query data.
         Only used in the learning-to-rank task.
@@ -454,6 +403,11 @@ def _train(
         group_parts = _split_to_parts(data=group, is_matrix=False)
         for i in range(n_parts):
             parts[i]['group'] = group_parts[i]
+
+    if init_score is not None:
+        init_score_parts = _split_to_parts(data=init_score, is_matrix=False)
+        for i in range(n_parts):
+            parts[i]['init_score'] = init_score_parts[i]
 
     # evals_set will to be re-constructed into smaller lists of (X, y) tuples, where
     # X and y are each delayed sub-lists of original eval dask Collections.
@@ -614,10 +568,9 @@ def _train(
             }
         else:
             _log_info("Finding random open ports for workers")
-            worker_address_to_port = _find_ports_for_workers(
-                client=client,
-                worker_addresses=worker_addresses,
-                local_listen_port=local_listen_port
+            worker_address_to_port = client.run(
+                _find_random_open_port,
+                workers=list(worker_addresses)
             )
         machines = ','.join([
             '%s:%d' % (urlparse(worker_address).hostname, port)
@@ -805,7 +758,7 @@ class _DaskLGBMModel:
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
-        init_score: Optional[List[_DaskCollection]] = None,
+        init_score: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
@@ -839,6 +792,7 @@ class _DaskLGBMModel:
             params=params,
             model_factory=model_factory,
             sample_weight=sample_weight,
+            init_score=init_score,
             group=group,
             eval_set=eval_set,
             eval_names=eval_names,
@@ -955,7 +909,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
-        not_supported = ['init_score', 'eval_class_weight', 'eval_init_score', 'early_stopping_rounds']
+        not_supported = ['eval_class_weight', 'eval_init_score', 'early_stopping_rounds']
         for ns in not_supported:
             if eval(ns) is not None:
                 raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
@@ -968,6 +922,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
+            init_score=init_score,
             eval_set=eval_set,
             eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
@@ -978,18 +933,19 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         eval_sample_weight_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
         eval_init_score_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
         eval_group_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)'
     )
 
-    # DaskLGBMClassifier does not support init_score, eval_class_weight, or eval_init_score
-    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
-                 + _base_doc[_base_doc.find('init_score :'):])
+    # DaskLGBMClassifier does not support group, eval_class_weight, eval_init_score, eval_group, early_stopping_rounds.
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
+                 + _base_doc[_base_doc.find('group :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
-                 + _base_doc[_base_doc.find('eval_init_score :'):])
+                 + _base_doc[_base_doc.find('eval_group :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
                  + _base_doc[_base_doc.find('early_stopping_rounds :'):])
@@ -1133,7 +1089,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        not_supported = ['init_score', 'eval_init_score', 'early_stopping_rounds']
+        not_supported = ['eval_init_score', 'early_stopping_rounds']
         for ns in not_supported:
             if eval(ns) is not None:
                 raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
@@ -1146,6 +1102,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
+            init_score=init_score,
             eval_set=eval_set,
             eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
@@ -1156,18 +1113,19 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         eval_sample_weight_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
         eval_init_score_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
         eval_group_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)'
     )
 
-    # DaskLGBMRegressor does not support init_score or eval_init_score
-    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
-                 + _base_doc[_base_doc.find('init_score :'):])
+    # DaskLGBMRegressor does not support group, eval_class_weight, eval_init_score, eval_group, early_stopping_rounds.
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
+                 + _base_doc[_base_doc.find('group :'):])
 
-    _base_doc = (_base_doc[:_base_doc.find('eval_init_weight :')]
-                 + _base_doc[_base_doc.find('eval_init_score :'):])
+    _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
+                 + _base_doc[_base_doc.find('eval_group :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
                  + _base_doc[_base_doc.find('early_stopping_rounds :'):])
@@ -1295,7 +1253,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
-        not_supported = ['init_score', 'eval_init_score', 'early_stopping_rounds']
+        not_supported = ['eval_init_score', 'early_stopping_rounds']
         for ns in not_supported:
             if eval(ns) is not None:
                 raise RuntimeError(f'{ns} is not currently supported in lightgbm.dask')
@@ -1310,6 +1268,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
+            init_score=init_score,
             group=group,
             eval_set=eval_set,
             eval_names=eval_names,
@@ -1322,16 +1281,15 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         eval_sample_weight_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
         eval_init_score_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
         eval_group_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)'
     )
 
-    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
-                 + _base_doc[_base_doc.find('init_score :'):])
-
-    _base_doc = (_base_doc[:_base_doc.find('eval_init_score :')]
+    # DaskLGBMRanker does not support eval_class_weight, eval_init_score or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
                  + _base_doc[_base_doc.find('eval_init_score :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]

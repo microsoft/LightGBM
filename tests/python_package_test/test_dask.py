@@ -3,6 +3,7 @@
 
 import inspect
 import pickle
+import random
 import socket
 from itertools import groupby
 from os import getenv
@@ -28,20 +29,35 @@ import sklearn.utils.estimator_checks as sklearn_checks
 from dask.array.utils import assert_eq
 from dask.distributed import Client, LocalCluster, default_client, wait
 from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
+from pkg_resources import parse_version
 from scipy.sparse import csr_matrix
 from scipy.stats import spearmanr
+from sklearn import __version__ as sk_version
 from sklearn.datasets import make_blobs, make_regression
 
 from .utils import make_ranking
+
+sk_version = parse_version(sk_version)
 
 # time, in seconds, to wait for the Dask client to close. Used to avoid teardown errors
 # see https://distributed.dask.org/en/latest/api.html#distributed.Client.close
 CLIENT_CLOSE_TIMEOUT = 120
 
-tasks = ['classification', 'regression', 'ranking']
+tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ranking']
 data_output = ['array', 'scipy_csr_matrix', 'dataframe', 'dataframe-with-categorical']
-data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
+task_to_dask_factory = {
+    'regression': lgb.DaskLGBMRegressor,
+    'binary-classification': lgb.DaskLGBMClassifier,
+    'multiclass-classification': lgb.DaskLGBMClassifier,
+    'ranking': lgb.DaskLGBMRanker
+}
+task_to_local_factory = {
+    'regression': lgb.LGBMRegressor,
+    'binary-classification': lgb.LGBMClassifier,
+    'multiclass-classification': lgb.LGBMClassifier,
+    'ranking': lgb.LGBMRanker
+}
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
@@ -116,11 +132,24 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
     return X, y, w, g_rle, dX, dy, dw, dg
 
 
-def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size=50):
-    if objective == 'classification':
+def _create_data(objective, n_samples=100, output='array', chunk_size=50, **kwargs):
+    if objective.endswith('classification'):
+        if objective == 'binary-classification':
+            centers = [[-4, -4], [4, 4]]
+        elif objective == 'multiclass-classification':
+            centers = [[-4, -4], [4, 4], [-4, 4]]
+        else:
+            raise ValueError(f"Unknown classification task '{objective}'")
         X, y = make_blobs(n_samples=n_samples, centers=centers, random_state=42)
     elif objective == 'regression':
         X, y = make_regression(n_samples=n_samples, random_state=42)
+    elif objective == 'ranking':
+        return _create_ranking_data(
+            n_samples=n_samples,
+            output=output,
+            chunk_size=chunk_size,
+            **kwargs
+        )
     else:
         raise ValueError("Unknown objective '%s'" % objective)
     rnd = np.random.RandomState(42)
@@ -163,7 +192,7 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
     else:
         raise ValueError("Unknown output type '%s'" % output)
 
-    return X, y, weights, dX, dy, dw
+    return X, y, weights, None, dX, dy, dw, None
 
 
 def _r2_score(dy_true, dy_pred):
@@ -174,14 +203,6 @@ def _r2_score(dy_true, dy_pred):
 
 def _accuracy_score(dy_true, dy_pred):
     return da.average(dy_true == dy_pred).compute()
-
-
-def _find_random_open_port() -> int:
-    """Find a random open port on localhost"""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', 0))
-        port = s.getsockname()[1]
-    return port
 
 
 def _pickle(obj, filepath, serializer):
@@ -211,12 +232,11 @@ def _unpickle(filepath, serializer):
 
 
 @pytest.mark.parametrize('output', data_output)
-@pytest.mark.parametrize('centers', data_centers)
-def test_classifier(output, centers, client):
-    X, y, w, dX, dy, dw = _create_data(
-        objective='classification',
-        output=output,
-        centers=centers
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
+def test_classifier(output, task, client):
+    X, y, w, _, dX, dy, dw, _ = _create_data(
+        objective=task,
+        output=output
     )
 
     params = {
@@ -278,12 +298,11 @@ def test_classifier(output, centers, client):
 
 
 @pytest.mark.parametrize('output', data_output)
-@pytest.mark.parametrize('centers', data_centers)
-def test_classifier_pred_contrib(output, centers, client):
-    X, y, w, dX, dy, dw = _create_data(
-        objective='classification',
-        output=output,
-        centers=centers
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
+def test_classifier_pred_contrib(output, task, client):
+    X, y, w, _, dX, dy, dw, _ = _create_data(
+        objective=task,
+        output=output
     )
 
     params = {
@@ -345,8 +364,21 @@ def test_classifier_pred_contrib(output, centers, client):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
+def test_find_random_open_port(client):
+    for _ in range(5):
+        worker_address_to_port = client.run(lgb.dask._find_random_open_port)
+        found_ports = worker_address_to_port.values()
+        # check that found ports are different for same address (LocalCluster)
+        assert len(set(found_ports)) == len(found_ports)
+        # check that the ports are indeed open
+        for port in found_ports:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('', port))
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
 def test_training_does_not_fail_on_port_conflicts(client):
-    _, _, _, dX, dy, dw = _create_data('classification', output='array')
+    _, _, _, _, dX, dy, dw, _ = _create_data('binary-classification', output='array')
 
     lightgbm_default_port = 12400
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -370,7 +402,7 @@ def test_training_does_not_fail_on_port_conflicts(client):
 
 @pytest.mark.parametrize('output', data_output)
 def test_regressor(output, client):
-    X, y, w, dX, dy, dw = _create_data(
+    X, y, w, _, dX, dy, dw, _ = _create_data(
         objective='regression',
         output=output
     )
@@ -445,7 +477,7 @@ def test_regressor(output, client):
 
 @pytest.mark.parametrize('output', data_output)
 def test_regressor_pred_contrib(output, client):
-    X, y, w, dX, dy, dw = _create_data(
+    X, y, w, _, dX, dy, dw, _ = _create_data(
         objective='regression',
         output=output
     )
@@ -495,7 +527,7 @@ def test_regressor_pred_contrib(output, client):
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('alpha', [.1, .5, .9])
 def test_regressor_quantile(output, client, alpha):
-    X, y, w, dX, dy, dw = _create_data(
+    X, y, w, _, dX, dy, dw, _ = _create_data(
         objective='regression',
         output=output
     )
@@ -544,18 +576,19 @@ def test_regressor_quantile(output, client, alpha):
 @pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])
 @pytest.mark.parametrize('group', [None, group_sizes])
 def test_ranker(output, client, group):
-
     if output == 'dataframe-with-categorical':
-        X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
+        X, y, w, g, dX, dy, dw, dg = _create_data(
+            objective='ranking',
             output=output,
             group=group,
             n_features=1,
             n_informative=1
         )
     else:
-        X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
+        X, y, w, g, dX, dy, dw, dg = _create_data(
+            objective='ranking',
             output=output,
-            group=group,
+            group=group
         )
 
     # rebalance small dask.Array dataset for better performance.
@@ -631,9 +664,10 @@ def test_ranker(output, client, group):
 @pytest.mark.parametrize('eval_names_prefix', ['specified', None])
 def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix, client):
 
-    # use larger trainset to prevent premature stopping due to zero loss, causing num_trees() < n_estimators.
+    # Use larger trainset to prevent premature stopping due to zero loss, causing num_trees() < n_estimators.
+    # Use small chunk_size to avoid single-worker allocation of eval data partitions.
     n_samples = 1000
-    chunksize = 10
+    chunk_size = 10
     n_eval_sets = len(eval_sizes)
     eval_set = []
     eval_sample_weight = []
@@ -644,32 +678,26 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
     else:
         eval_names = None
 
+    X, y, w, g, dX, dy, dw, dg = _create_data(
+        objective=task,
+        n_samples=n_samples,
+        output=output,
+        chunk_size=chunk_size
+    )
+
     if task == 'ranking':
-        X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
-            n_samples=n_samples,
-            output=output,
-            chunk_size=chunksize
-        )
-        model_factory = lgb.DaskLGBMRanker
         eval_metrics = ['ndcg']
         eval_at = (5, 6)
         eval_group = []
 
     else:
-        X, y, w, dX, dy, dw = _create_data(
-            n_samples=n_samples,
-            objective=task,
-            output=output,
-            chunk_size=chunksize
-        )
-        dg = None
         eval_at = None
         eval_group = None
-        if task == 'classification':
-            model_factory = lgb.DaskLGBMClassifier
+        if task == 'binary-classification':
             eval_metrics = ['binary_error', 'auc']
+        elif task == 'multiclass-classification':
+            eval_metrics = ['multi_error', 'multi_logloss']
         elif task == 'regression':
-            model_factory = lgb.DaskLGBMRegressor
             eval_metrics = ['rmse']
 
     # create eval_sets by creating new datasets or copying training data.
@@ -680,33 +708,27 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
             dw_e = dw
             dg_e = dg
         else:
-            n_eval_samples = max(chunksize, int(n_samples * eval_size))
-            if task == 'ranking':
-                _, _, _, _, dX_e, dy_e, dw_e, dg_e = _create_ranking_data(
-                    n_samples=n_eval_samples,
-                    output=output,
-                    chunk_size=chunksize
-                )
-            else:
-                _, _, _, dX_e, dy_e, dw_e = _create_data(
-                    n_samples=n_eval_samples,
-                    objective=task,
-                    output=output,
-                    chunk_size=chunksize
-                )
+            n_eval_samples = max(chunk_size, int(n_samples * eval_size))
+            _, _, _, _, dX_e, dy_e, dw_e, dg_e = _create_data(
+                objective=task,
+                n_samples=n_eval_samples,
+                output=output,
+                chunk_size=chunk_size
+            )
 
         eval_set.append((dX_e, dy_e))
         eval_sample_weight.append(dw_e)
-
         if task == 'ranking':
             eval_group.append(dg_e)
 
-    full_trees = 50
+    fit_trees = 50
     params = {
         "random_state": 42,
-        "n_estimators": full_trees,
+        "n_estimators": fit_trees,
         "num_leaves": 2
     }
+
+    model_factory = task_to_dask_factory[task]
     dask_model = model_factory(
         client=client,
         **params
@@ -734,9 +756,15 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
     else:
         dask_model = dask_model.fit(**fit_params)
 
+        # total number of trees scales up for ova classifier.
+        if task == 'multiclass-classification':
+            model_trees = fit_trees * dask_model.n_classes_
+        else:
+            model_trees = fit_trees
+
         # check that early stopping was not applied.
-        assert dask_model.booster_.num_trees() == full_trees
-        assert not dask_model.best_iteration_
+        assert dask_model.booster_.num_trees() == model_trees
+        assert dask_model.best_iteration_ is None
 
         # checks that evals_result_ and best_score_ contain expected data and eval_set names.
         evals_result = dask_model.evals_result_
@@ -761,29 +789,19 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
 
                 assert metric in evals_result[eval_name]
                 assert metric in best_scores[eval_name]
-                assert len(evals_result[eval_name][metric]) == full_trees
+                assert len(evals_result[eval_name][metric]) == fit_trees
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
 @pytest.mark.parametrize('task', tasks)
 def test_training_works_if_client_not_provided_or_set_after_construction(task, client):
-    if task == 'ranking':
-        _, _, _, _, dX, dy, _, dg = _create_ranking_data(
-            output='array',
-            group=None
-        )
-        model_factory = lgb.DaskLGBMRanker
-    else:
-        _, _, _, dX, dy, _ = _create_data(
-            objective=task,
-            output='array',
-        )
-        dg = None
-        if task == 'classification':
-            model_factory = lgb.DaskLGBMClassifier
-        elif task == 'regression':
-            model_factory = lgb.DaskLGBMRegressor
+    _, _, _, _, dX, dy, _, dg = _create_data(
+        objective=task,
+        output='array',
+        group=None
+    )
+    model_factory = task_to_dask_factory[task]
 
     params = {
         "time_out": 5,
@@ -845,210 +863,166 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, c
 @pytest.mark.parametrize('set_client', [True, False])
 def test_model_and_local_version_are_picklable_whether_or_not_client_set_explicitly(serializer, task, set_client, tmp_path):
 
-    with LocalCluster(n_workers=2, threads_per_worker=1) as cluster1:
-        with Client(cluster1) as client1:
-
-            # data on cluster1
-            if task == 'ranking':
-                X_1, _, _, _, dX_1, dy_1, _, dg_1 = _create_ranking_data(
-                    output='array',
-                    group=None
-                )
-            else:
-                X_1, _, _, dX_1, dy_1, _ = _create_data(
-                    objective=task,
-                    output='array',
-                )
-                dg_1 = None
-
-            with LocalCluster(n_workers=2, threads_per_worker=1) as cluster2:
-                with Client(cluster2) as client2:
-
-                    # create identical data on cluster2
-                    if task == 'ranking':
-                        X_2, _, _, _, dX_2, dy_2, _, dg_2 = _create_ranking_data(
-                            output='array',
-                            group=None
-                        )
-                    else:
-                        X_2, _, _, dX_2, dy_2, _ = _create_data(
-                            objective=task,
-                            output='array',
-                        )
-                        dg_2 = None
-
-                    if task == 'ranking':
-                        model_factory = lgb.DaskLGBMRanker
-                    elif task == 'classification':
-                        model_factory = lgb.DaskLGBMClassifier
-                    elif task == 'regression':
-                        model_factory = lgb.DaskLGBMRegressor
-
-                    params = {
-                        "time_out": 5,
-                        "n_estimators": 1,
-                        "num_leaves": 2
-                    }
-
-                    # at this point, the result of default_client() is client2 since it was the most recently
-                    # created. So setting client to client1 here to test that you can select a non-default client
-                    assert default_client() == client2
-                    if set_client:
-                        params.update({"client": client1})
-
-                    # unfitted model should survive pickling round trip, and pickling
-                    # shouldn't have side effects on the model object
-                    dask_model = model_factory(**params)
-                    local_model = dask_model.to_local()
-                    if set_client:
-                        assert dask_model.client == client1
-                    else:
-                        assert dask_model.client is None
-
-                    with pytest.raises(lgb.compat.LGBMNotFittedError, match='Cannot access property client_ before calling fit'):
-                        dask_model.client_
-
-                    assert "client" not in local_model.get_params()
-                    assert getattr(local_model, "client", None) is None
-
-                    tmp_file = str(tmp_path / "model-1.pkl")
-                    _pickle(
-                        obj=dask_model,
-                        filepath=tmp_file,
-                        serializer=serializer
-                    )
-                    model_from_disk = _unpickle(
-                        filepath=tmp_file,
-                        serializer=serializer
-                    )
-
-                    local_tmp_file = str(tmp_path / "local-model-1.pkl")
-                    _pickle(
-                        obj=local_model,
-                        filepath=local_tmp_file,
-                        serializer=serializer
-                    )
-                    local_model_from_disk = _unpickle(
-                        filepath=local_tmp_file,
-                        serializer=serializer
-                    )
-
-                    assert model_from_disk.client is None
-
-                    if set_client:
-                        assert dask_model.client == client1
-                    else:
-                        assert dask_model.client is None
-
-                    with pytest.raises(lgb.compat.LGBMNotFittedError, match='Cannot access property client_ before calling fit'):
-                        dask_model.client_
-
-                    # client will always be None after unpickling
-                    if set_client:
-                        from_disk_params = model_from_disk.get_params()
-                        from_disk_params.pop("client", None)
-                        dask_params = dask_model.get_params()
-                        dask_params.pop("client", None)
-                        assert from_disk_params == dask_params
-                    else:
-                        assert model_from_disk.get_params() == dask_model.get_params()
-                    assert local_model_from_disk.get_params() == local_model.get_params()
-
-                    # fitted model should survive pickling round trip, and pickling
-                    # shouldn't have side effects on the model object
-                    if set_client:
-                        dask_model.fit(dX_1, dy_1, group=dg_1)
-                    else:
-                        dask_model.fit(dX_2, dy_2, group=dg_2)
-                    local_model = dask_model.to_local()
-
-                    assert "client" not in local_model.get_params()
-                    with pytest.raises(AttributeError):
-                        local_model.client
-                        local_model.client_
-
-                    tmp_file2 = str(tmp_path / "model-2.pkl")
-                    _pickle(
-                        obj=dask_model,
-                        filepath=tmp_file2,
-                        serializer=serializer
-                    )
-                    fitted_model_from_disk = _unpickle(
-                        filepath=tmp_file2,
-                        serializer=serializer
-                    )
-
-                    local_tmp_file2 = str(tmp_path / "local-model-2.pkl")
-                    _pickle(
-                        obj=local_model,
-                        filepath=local_tmp_file2,
-                        serializer=serializer
-                    )
-                    local_fitted_model_from_disk = _unpickle(
-                        filepath=local_tmp_file2,
-                        serializer=serializer
-                    )
-
-                    if set_client:
-                        assert dask_model.client == client1
-                        assert dask_model.client_ == client1
-                    else:
-                        assert dask_model.client is None
-                        assert dask_model.client_ == default_client()
-                        assert dask_model.client_ == client2
-
-                    assert isinstance(fitted_model_from_disk, model_factory)
-                    assert fitted_model_from_disk.client is None
-                    assert fitted_model_from_disk.client_ == default_client()
-                    assert fitted_model_from_disk.client_ == client2
-
-                    # client will always be None after unpickling
-                    if set_client:
-                        from_disk_params = fitted_model_from_disk.get_params()
-                        from_disk_params.pop("client", None)
-                        dask_params = dask_model.get_params()
-                        dask_params.pop("client", None)
-                        assert from_disk_params == dask_params
-                    else:
-                        assert fitted_model_from_disk.get_params() == dask_model.get_params()
-                    assert local_fitted_model_from_disk.get_params() == local_model.get_params()
-
-                    if set_client:
-                        preds_orig = dask_model.predict(dX_1).compute()
-                        preds_loaded_model = fitted_model_from_disk.predict(dX_1).compute()
-                        preds_orig_local = local_model.predict(X_1)
-                        preds_loaded_model_local = local_fitted_model_from_disk.predict(X_1)
-                    else:
-                        preds_orig = dask_model.predict(dX_2).compute()
-                        preds_loaded_model = fitted_model_from_disk.predict(dX_2).compute()
-                        preds_orig_local = local_model.predict(X_2)
-                        preds_loaded_model_local = local_fitted_model_from_disk.predict(X_2)
-
-                    assert_eq(preds_orig, preds_loaded_model)
-                    assert_eq(preds_orig_local, preds_loaded_model_local)
-
-
-def test_find_open_port_works(listen_port):
-    worker_ip = '127.0.0.1'
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((worker_ip, listen_port))
-        new_port = lgb.dask._find_open_port(
-            worker_ip=worker_ip,
-            local_listen_port=listen_port,
-            ports_to_skip=set()
+    with LocalCluster(n_workers=2, threads_per_worker=1) as cluster1, Client(cluster1) as client1:
+        # data on cluster1
+        X_1, _, _, _, dX_1, dy_1, _, dg_1 = _create_data(
+            objective=task,
+            output='array',
+            group=None
         )
-        assert listen_port < new_port < listen_port + 1000
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
-        s_1.bind((worker_ip, listen_port))
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_2:
-            s_2.bind((worker_ip, listen_port + 1))
-            new_port = lgb.dask._find_open_port(
-                worker_ip=worker_ip,
-                local_listen_port=listen_port,
-                ports_to_skip=set()
+        with LocalCluster(n_workers=2, threads_per_worker=1) as cluster2, Client(cluster2) as client2:
+            # create identical data on cluster2
+            X_2, _, _, _, dX_2, dy_2, _, dg_2 = _create_data(
+                objective=task,
+                output='array',
+                group=None
             )
-            assert listen_port + 1 < new_port < listen_port + 1000
+
+            model_factory = task_to_dask_factory[task]
+
+            params = {
+                "time_out": 5,
+                "n_estimators": 1,
+                "num_leaves": 2
+            }
+
+            # at this point, the result of default_client() is client2 since it was the most recently
+            # created. So setting client to client1 here to test that you can select a non-default client
+            assert default_client() == client2
+            if set_client:
+                params.update({"client": client1})
+
+            # unfitted model should survive pickling round trip, and pickling
+            # shouldn't have side effects on the model object
+            dask_model = model_factory(**params)
+            local_model = dask_model.to_local()
+            if set_client:
+                assert dask_model.client == client1
+            else:
+                assert dask_model.client is None
+
+            with pytest.raises(lgb.compat.LGBMNotFittedError, match='Cannot access property client_ before calling fit'):
+                dask_model.client_
+
+            assert "client" not in local_model.get_params()
+            assert getattr(local_model, "client", None) is None
+
+            tmp_file = str(tmp_path / "model-1.pkl")
+            _pickle(
+                obj=dask_model,
+                filepath=tmp_file,
+                serializer=serializer
+            )
+            model_from_disk = _unpickle(
+                filepath=tmp_file,
+                serializer=serializer
+            )
+
+            local_tmp_file = str(tmp_path / "local-model-1.pkl")
+            _pickle(
+                obj=local_model,
+                filepath=local_tmp_file,
+                serializer=serializer
+            )
+            local_model_from_disk = _unpickle(
+                filepath=local_tmp_file,
+                serializer=serializer
+            )
+
+            assert model_from_disk.client is None
+
+            if set_client:
+                assert dask_model.client == client1
+            else:
+                assert dask_model.client is None
+
+            with pytest.raises(lgb.compat.LGBMNotFittedError, match='Cannot access property client_ before calling fit'):
+                dask_model.client_
+
+            # client will always be None after unpickling
+            if set_client:
+                from_disk_params = model_from_disk.get_params()
+                from_disk_params.pop("client", None)
+                dask_params = dask_model.get_params()
+                dask_params.pop("client", None)
+                assert from_disk_params == dask_params
+            else:
+                assert model_from_disk.get_params() == dask_model.get_params()
+            assert local_model_from_disk.get_params() == local_model.get_params()
+
+            # fitted model should survive pickling round trip, and pickling
+            # shouldn't have side effects on the model object
+            if set_client:
+                dask_model.fit(dX_1, dy_1, group=dg_1)
+            else:
+                dask_model.fit(dX_2, dy_2, group=dg_2)
+            local_model = dask_model.to_local()
+
+            assert "client" not in local_model.get_params()
+            with pytest.raises(AttributeError):
+                local_model.client
+                local_model.client_
+
+            tmp_file2 = str(tmp_path / "model-2.pkl")
+            _pickle(
+                obj=dask_model,
+                filepath=tmp_file2,
+                serializer=serializer
+            )
+            fitted_model_from_disk = _unpickle(
+                filepath=tmp_file2,
+                serializer=serializer
+            )
+
+            local_tmp_file2 = str(tmp_path / "local-model-2.pkl")
+            _pickle(
+                obj=local_model,
+                filepath=local_tmp_file2,
+                serializer=serializer
+            )
+            local_fitted_model_from_disk = _unpickle(
+                filepath=local_tmp_file2,
+                serializer=serializer
+            )
+
+            if set_client:
+                assert dask_model.client == client1
+                assert dask_model.client_ == client1
+            else:
+                assert dask_model.client is None
+                assert dask_model.client_ == default_client()
+                assert dask_model.client_ == client2
+
+            assert isinstance(fitted_model_from_disk, model_factory)
+            assert fitted_model_from_disk.client is None
+            assert fitted_model_from_disk.client_ == default_client()
+            assert fitted_model_from_disk.client_ == client2
+
+            # client will always be None after unpickling
+            if set_client:
+                from_disk_params = fitted_model_from_disk.get_params()
+                from_disk_params.pop("client", None)
+                dask_params = dask_model.get_params()
+                dask_params.pop("client", None)
+                assert from_disk_params == dask_params
+            else:
+                assert fitted_model_from_disk.get_params() == dask_model.get_params()
+            assert local_fitted_model_from_disk.get_params() == local_model.get_params()
+
+            if set_client:
+                preds_orig = dask_model.predict(dX_1).compute()
+                preds_loaded_model = fitted_model_from_disk.predict(dX_1).compute()
+                preds_orig_local = local_model.predict(X_1)
+                preds_loaded_model_local = local_fitted_model_from_disk.predict(X_1)
+            else:
+                preds_orig = dask_model.predict(dX_2).compute()
+                preds_loaded_model = fitted_model_from_disk.predict(dX_2).compute()
+                preds_orig_local = local_model.predict(X_2)
+                preds_loaded_model_local = local_fitted_model_from_disk.predict(X_2)
+
+            assert_eq(preds_orig, preds_loaded_model)
+            assert_eq(preds_orig_local, preds_loaded_model_local)
 
 
 def test_warns_and_continues_on_unrecognized_tree_learner(client):
@@ -1121,26 +1095,14 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(client, tas
             return collection.rechunk(*collection.shape)
         return collection.repartition(npartitions=1)
 
-    if task == 'ranking':
-        X, y, w, g, dX, dy, dw, dg = _create_ranking_data(
-            output=output,
-            group=None
-        )
-        dask_model_factory = lgb.DaskLGBMRanker
-        local_model_factory = lgb.LGBMRanker
-    else:
-        X, y, w, dX, dy, dw = _create_data(
-            objective=task,
-            output=output
-        )
-        g = None
-        dg = None
-        if task == 'classification':
-            dask_model_factory = lgb.DaskLGBMClassifier
-            local_model_factory = lgb.LGBMClassifier
-        elif task == 'regression':
-            dask_model_factory = lgb.DaskLGBMRegressor
-            local_model_factory = lgb.LGBMRegressor
+    X, y, w, g, dX, dy, dw, dg = _create_data(
+        objective=task,
+        output=output,
+        group=None
+    )
+
+    dask_model_factory = task_to_dask_factory[task]
+    local_model_factory = task_to_local_factory[task]
 
     dX = collection_to_single_partition(dX)
     dy = collection_to_single_partition(dy)
@@ -1179,24 +1141,16 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
-    if task == 'ranking':
-        _, _, _, _, dX, dy, _, dg = _create_ranking_data(
-            output=output,
-            group=None,
-            chunk_size=10,
-        )
-        dask_model_factory = lgb.DaskLGBMRanker
-    else:
-        _, _, _, dX, dy, _ = _create_data(
-            objective=task,
-            output=output,
-            chunk_size=10,
-        )
-        dg = None
-        if task == 'classification':
-            dask_model_factory = lgb.DaskLGBMClassifier
-        elif task == 'regression':
-            dask_model_factory = lgb.DaskLGBMRegressor
+    client.wait_for_workers(2)
+
+    _, _, _, _, dX, dy, _, dg = _create_data(
+        objective=task,
+        output=output,
+        chunk_size=10,
+        group=None
+    )
+
+    dask_model_factory = task_to_dask_factory[task]
 
     # rebalance data to be sure that each worker has a piece of the data
     if output == 'array':
@@ -1207,10 +1161,7 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
         n_estimators=5,
         num_leaves=5,
     )
-    if task == 'ranking':
-        dask_model1.fit(dX, dy, group=dg)
-    else:
-        dask_model1.fit(dX, dy)
+    dask_model1.fit(dX, dy, group=dg)
     assert dask_model1.fitted_
     params = dask_model1.get_params()
     assert 'local_listen_port' not in params
@@ -1218,7 +1169,7 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
 
     # model 2 - machines given
     n_workers = len(client.scheduler_info()['workers'])
-    open_ports = [_find_random_open_port() for _ in range(n_workers)]
+    open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
     dask_model2 = dask_model_factory(
         n_estimators=5,
         num_leaves=5,
@@ -1228,10 +1179,7 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
         ]),
     )
 
-    if task == 'ranking':
-        dask_model2.fit(dX, dy, group=dg)
-    else:
-        dask_model2.fit(dX, dy)
+    dask_model2.fit(dX, dy, group=dg)
     assert dask_model2.fitted_
     params = dask_model2.get_params()
     assert 'local_listen_port' not in params
@@ -1247,10 +1195,7 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
     )
     error_msg = "has multiple Dask worker processes running on it"
     with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
-        if task == 'ranking':
-            dask_model3.fit(dX, dy, group=dg)
-        else:
-            dask_model3.fit(dX, dy)
+        dask_model3.fit(dX, dy, group=dg)
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
@@ -1262,31 +1207,22 @@ def test_machines_should_be_used_if_provided(task, output):
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
     with LocalCluster(n_workers=2) as cluster, Client(cluster) as client:
-        if task == 'ranking':
-            _, _, _, _, dX, dy, _, dg = _create_ranking_data(
-                output=output,
-                group=None,
-                chunk_size=10,
-            )
-            dask_model_factory = lgb.DaskLGBMRanker
-        else:
-            _, _, _, dX, dy, _ = _create_data(
-                objective=task,
-                output=output,
-                chunk_size=10,
-            )
-            dg = None
-            if task == 'classification':
-                dask_model_factory = lgb.DaskLGBMClassifier
-            elif task == 'regression':
-                dask_model_factory = lgb.DaskLGBMRegressor
+        _, _, _, _, dX, dy, _, dg = _create_data(
+            objective=task,
+            output=output,
+            chunk_size=10,
+            group=None
+        )
+
+        dask_model_factory = task_to_dask_factory[task]
 
         # rebalance data to be sure that each worker has a piece of the data
         if output == 'array':
             client.rebalance()
 
         n_workers = len(client.scheduler_info()['workers'])
-        open_ports = [_find_random_open_port() for _ in range(n_workers)]
+        assert n_workers > 1
+        open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
         dask_model = dask_model_factory(
             n_estimators=5,
             num_leaves=5,
@@ -1302,10 +1238,18 @@ def test_machines_should_be_used_if_provided(task, output):
         with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.bind(('127.0.0.1', open_ports[0]))
-                if task == 'ranking':
-                    dask_model.fit(dX, dy, group=dg)
-                else:
-                    dask_model.fit(dX, dy)
+                dask_model.fit(dX, dy, group=dg)
+
+        # an informative error should be raised if "machines" has duplicates
+        one_open_port = lgb.dask._find_random_open_port()
+        dask_model.set_params(
+            machines=",".join([
+                "127.0.0.1:" + str(one_open_port)
+                for _ in range(n_workers)
+            ])
+        )
+        with pytest.raises(ValueError, match="Found duplicates in 'machines'"):
+            dask_model.fit(dX, dy, group=dg)
 
 
 @pytest.mark.parametrize(
@@ -1359,6 +1303,75 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
         assert dask_params[param].default == sklearn_params[param].default, error_msg
 
 
+@pytest.mark.parametrize('task', tasks)
+def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(
+    task,
+    client,
+):
+    _, _, _, _, dX, dy, dw, dg = _create_data(
+        objective=task,
+        output='dataframe',
+        group=None
+    )
+
+    model_factory = task_to_dask_factory[task]
+
+    dy = dy.to_dask_array(lengths=True)
+    dy_col_array = dy.reshape(-1, 1)
+    assert len(dy_col_array.shape) == 2 and dy_col_array.shape[1] == 1
+
+    params = {
+        'n_estimators': 1,
+        'num_leaves': 3,
+        'random_state': 0,
+        'time_out': 5
+    }
+    model = model_factory(**params)
+    model.fit(dX, dy_col_array, sample_weight=dw, group=dg)
+    assert model.fitted_
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
+def test_init_score(task, output, client):
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
+
+    _, _, _, _, dX, dy, dw, dg = _create_data(
+        objective=task,
+        output=output,
+        group=None
+    )
+
+    model_factory = task_to_dask_factory[task]
+
+    params = {
+        'n_estimators': 1,
+        'num_leaves': 2,
+        'time_out': 5
+    }
+    init_score = random.random()
+    # init_scores must be a 1D array, even for multiclass classification
+    # where you need to provide 1 score per class for each row in X
+    # https://github.com/microsoft/LightGBM/issues/4046
+    size_factor = 1
+    if task == 'multiclass-classification':
+        size_factor = 3  # number of classes
+
+    if output.startswith('dataframe'):
+        init_scores = dy.map_partitions(lambda x: pd.Series([init_score] * x.size * size_factor))
+    else:
+        init_scores = dy.map_blocks(lambda x: np.repeat(init_score, x.size * size_factor))
+    model = model_factory(client=client, **params)
+    model.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
+    # value of the root node is 0 when init_score is set
+    assert model.booster_.trees_to_dataframe()['value'][0] == 0
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
 def sklearn_checks_to_run():
     check_names = [
         "check_estimator_get_tags_default_keys",
@@ -1388,5 +1401,9 @@ def test_sklearn_integration(estimator, check, client):
 # this test is separate because it takes a not-yet-constructed estimator
 @pytest.mark.parametrize("estimator", list(_tested_estimators()))
 def test_parameters_default_constructible(estimator):
-    name, Estimator = estimator.__class__.__name__, estimator.__class__
+    name = estimator.__class__.__name__
+    if sk_version >= parse_version("0.24"):
+        Estimator = estimator
+    else:
+        Estimator = estimator.__class__
     sklearn_checks.check_parameters_default_constructible(name, Estimator)

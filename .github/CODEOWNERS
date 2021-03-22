@@ -11,24 +11,24 @@
 
 # other catch-alls that will get matched if specific rules below are not matched
 *.R    @Laurae2 @jameslamb
-*.py    @StrikerRUS @chivee @wxchan @henry0312
-*.cpp    @guolinke @chivee @btrotta
-*.h    @guolinke @chivee @btrotta
+*.py    @StrikerRUS @chivee @wxchan @henry0312 @shiyu1994
+*.cpp    @guolinke @chivee @btrotta @shiyu1994
+*.h    @guolinke @chivee @btrotta @shiyu1994
 
 # main C++ code
-include/    @guolinke @chivee @btrotta
-src/    @guolinke @chivee @btrotta
-CMakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12 @btrotta
-tests/c_api_test/    @guolinke @chivee @btrotta
-tests/cpp_test/    @guolinke @chivee @btrotta
-tests/data/    @guolinke @chivee @btrotta
-windows/    @guolinke @chivee @btrotta @StrikerRUS
+include/    @guolinke @chivee @btrotta @shiyu1994
+src/    @guolinke @chivee @btrotta @shiyu1994
+CMakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12 @btrotta @shiyu1994
+tests/c_api_test/    @guolinke @chivee @btrotta @shiyu1994
+tests/cpp_test/    @guolinke @chivee @btrotta @shiyu1994
+tests/data/    @guolinke @chivee @btrotta @shiyu1994
+windows/    @guolinke @chivee @btrotta @StrikerRUS @shiyu1994
 
 # R code
 R-package/    @Laurae2 @jameslamb
 
 # Python code
-python-package/    @StrikerRUS @chivee @wxchan @henry0312
+python-package/    @StrikerRUS @chivee @wxchan @henry0312 @shiyu1994
 
 # Dask integration
 python-package/lightgbm/dask.py    @jameslamb
@@ -46,15 +46,15 @@ examples/     @StrikerRUS @jameslamb @guolinke
 
 # docker setup
 docker/    @StrikerRUS @jameslamb
-docker/dockerfile-cli    @guolinke @chivee
+docker/dockerfile-cli    @guolinke @chivee @shiyu1994
 docker/gpu/    @huanzhang12
-docker/dockerfile-python    @StrikerRUS @chivee @wxchan @henry0312
+docker/dockerfile-python    @StrikerRUS @chivee @wxchan @henry0312 @shiyu1994
 docker/dockerfile-r    @Laurae2 @jameslamb
 
 # GPU code
 docs/GPU-*.rst    @huanzhang12
-src/treelearner/gpu_tree_learner.cpp    @huanzhang12 @guolinke @chivee
-src/treelearner/tree_learner.cpp    @huanzhang12 @guolinke @chivee
+src/treelearner/gpu_tree_learner.cpp    @huanzhang12 @guolinke @chivee @shiyu1994
+src/treelearner/tree_learner.cpp    @huanzhang12 @guolinke @chivee @shiyu1994
 
 # JAVA code
-swig/    @imatiach-msft
+swig/    @guolinke @chivee @shiyu1994
