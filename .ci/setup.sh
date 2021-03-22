@@ -83,6 +83,8 @@ else  # Linux
         apt-get update
         apt-get install --no-install-recommends -y \
             curl \
+            libxau-dev \
+            libxrender1 \
             lsb-release \
             software-properties-common
         if [[ $COMPILER == "clang" ]]; then
