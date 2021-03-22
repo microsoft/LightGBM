@@ -44,6 +44,7 @@ else  # Linux
             libicu66 \
             libssl1.1 \
             libunwind8 \
+            libxau6 \
             locales \
             netcat \
             unzip \
