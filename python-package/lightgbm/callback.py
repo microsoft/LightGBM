@@ -17,8 +17,7 @@ class CallbackWithAttributes(Protocol):
 
 
 def callback_attr_decorator(func: Any) -> CallbackWithAttributes:
-    """This is a decorator to be used when declaring the _callback function."""
-
+    """Prevents function attributes from raising mypy errors."""
     return func
 
 
