@@ -10,11 +10,13 @@ from .basic import _ConfigAliases, _log_info, _log_warning
 
 
 class CallbackWithAttributes(Protocol):
+    """Allows the creation of function attributes without making mypy raise errors."""
     order: int
     before_iteration: bool
 
 
 def callback_attr_decorator(func: Any) -> CallbackWithAttributes:
+    """Decorator to be used when declaring the _callback function"""
     return func
 
 
