@@ -103,8 +103,7 @@ conda install -q -y -n $CONDA_ENV cloudpickle dask distributed joblib matplotlib
 conda install -q -y \
     -n $CONDA_ENV \
     -c conda-forge \
-        python-graphviz \
-        xorg-libxau
+        python-graphviz
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
