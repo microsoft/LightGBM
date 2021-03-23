@@ -277,7 +277,7 @@ Installing CMake requires one download first and then a lot of configuration for
 .. image:: ./_static/images/screenshot-downloading-cmake.png
    :align: center
    :target: ./_static/images/screenshot-downloading-cmake.png
-   :alt: A screenshot of the binary distributions of c-make for downloading on Windows 64 bit
+   :alt: A screenshot of the binary distributions of C Make for downloading on 64 bit Windows
 
 -  Download `CMake`_ (3.8 or higher)
 
@@ -378,7 +378,7 @@ You can do everything in the Git Bash console you left open:
 .. image:: ./_static/images/screenshot-lightgbm-with-gpu-support-compiled.png
    :align: center
    :target: ./_static/images/screenshot-lightgbm-with-gpu-support-compiled.png
-      :alt: A screenshot of the gitbash window with Light G B M successfully installed
+      :alt: A screenshot of the git bash window with Light G B M successfully installed
 
 If everything was done correctly, you now compiled CLI LightGBM with GPU support!
 
