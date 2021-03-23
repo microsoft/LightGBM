@@ -671,6 +671,8 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
     n_eval_sets = len(eval_sizes)
     eval_set = []
     eval_sample_weight = []
+    eval_class_weight = None
+    eval_init_score = None
     rnd = np.random.RandomState(42)
 
     if eval_names_prefix:
@@ -693,8 +695,13 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
     else:
         eval_at = None
         eval_group = None
+
+        # add eval_init_score for binary-classification task.
         if task == 'binary-classification':
             eval_metrics = ['binary_error', 'auc']
+            eval_class_weight = []
+            eval_init_score = []
+            init_score_value = np.log(np.mean(y) / (1 - np.mean(y)))
         elif task == 'multiclass-classification':
             eval_metrics = ['multi_error', 'multi_logloss']
         elif task == 'regression':
@@ -703,13 +710,14 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
     # create eval_sets by creating new datasets or copying training data.
     for eval_size in eval_sizes:
         if eval_size == 1:
+            n_eval_samples = n_samples
             dX_e = dX
             dy_e = dy
             dw_e = dw
             dg_e = dg
         else:
             n_eval_samples = max(chunk_size, int(n_samples * eval_size))
-            _, _, _, _, dX_e, dy_e, dw_e, dg_e = _create_data(
+            _, y_e, _, _, dX_e, dy_e, dw_e, dg_e = _create_data(
                 objective=task,
                 n_samples=n_eval_samples,
                 output=output,
@@ -720,6 +728,14 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
         eval_sample_weight.append(dw_e)
         if task == 'ranking':
             eval_group.append(dg_e)
+        if task == 'binary-classification':
+            n_classes = len(np.unique(y_e))
+            eval_class_weight.append({v: i + 1 for i, v in enumerate(range(n_classes)})
+            if output == 'dataframe':
+                d_init_score = dy_e.map_partitionss(lambda x: pd.Series([init_score_value] * x.size))
+            else:
+                d_init_score = dy_e.map_blocks(lambda x: np.repeat(init_score_value, x.size))
+            eval_init_score.append(d_init_score)
 
     fit_trees = 50
     params = {
@@ -740,6 +756,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
         'eval_set': eval_set,
         'eval_names': eval_names,
         'eval_sample_weight': eval_sample_weight,
+        'eval_init_score': eval_init_score,
         'eval_metric': eval_metrics,
         'verbose': False
     }
@@ -749,6 +766,8 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
              'eval_group': eval_group,
              'eval_at': eval_at}
         )
+    elif task == 'binary-classification':
+        fit_params.update({'eval_class_weight': eval_class_weight})
 
     if eval_sizes == [0]:
         with pytest.warns(UserWarning, match='Worker (.*) was not allocated eval_set data. Therefore evals_result_ and best_score_ data may be unreliable.'):
