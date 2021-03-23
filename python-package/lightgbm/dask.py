@@ -562,7 +562,7 @@ def _train(
 
             if not has_eval_set:
                 _log_warning(
-                    "Worker %s was not allocated eval_set data. Therefore evals_result_ and best_score_ data may be unreliable." \
+                    "Worker %s was not allocated eval_set data. Therefore evals_result_ and best_score_ data may be unreliable."
                     "Try rebalancing data across workers." % worker
                 )
 
