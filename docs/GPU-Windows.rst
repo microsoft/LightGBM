@@ -127,7 +127,7 @@ You can check which MinGW version you are using by running the following in a co
 .. image:: ./_static/images/screenshot-r-mingw-used.png
    :align: center
    :target: ./_static/images/screenshot-r-mingw-used.png
-   :alt: A screenshot of the administrator command prompt where G. C. C. version is being checked 
+   :alt: A screenshot of the administrator command prompt where G C C version is being checked 
 
 To check whether you need 32-bit or 64-bit MinGW for R, install LightGBM as usual and check for the following:
 
