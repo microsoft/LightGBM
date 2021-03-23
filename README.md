@@ -82,6 +82,8 @@ ONNXMLTools (ONNX converter): https://github.com/onnx/onnxmltools
 
 SHAP (model output explainer): https://github.com/slundberg/shap
 
+dtreeviz (decision tree visualization and model interpretation): https://github.com/parrt/dtreeviz
+
 MMLSpark (LightGBM on Spark): https://github.com/Azure/mmlspark
 
 Kubeflow Fairing (LightGBM on Kubernetes): https://github.com/kubeflow/fairing
@@ -99,8 +101,6 @@ LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
 lightgbm-rs (Rust binding): https://github.com/vaaaaanquish/lightgbm-rs
 
 MLflow (experiment tracking, model monitoring framework): https://github.com/mlflow/mlflow
-
-https://github.com/parrt/dtreeviz/releases/tag/1.2
 
 `{treesnip}` (R `{parsnip}`-compliant interface): https://github.com/curso-r/treesnip
 
