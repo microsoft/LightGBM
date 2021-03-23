@@ -411,7 +411,7 @@ Now that you compiled LightGBM, you try it... and you always see a segmentation 
 .. image:: ./_static/images/screenshot-segmentation-fault.png
    :align: center
    :target: ./_static/images/screenshot-segmentation-fault.png
-   :alt: A screenshot of the command prompt where a segmentation fault has occured while using Light B G M
+   :alt: A screenshot of the command prompt where a segmentation fault has occurred while using Light G B M
 
 Please check if you are using the right device (``Using GPU device: ...``). You can find a list of your OpenCL devices using `GPUCapsViewer`_, and make sure you are using a discrete (AMD/NVIDIA) GPU if you have both integrated (Intel) and discrete GPUs installed.
 Also, try to set ``gpu_device_id = 0`` and ``gpu_platform_id = 0`` or ``gpu_device_id = -1`` and ``gpu_platform_id = -1`` to use the first platform and device or the default platform and device.
