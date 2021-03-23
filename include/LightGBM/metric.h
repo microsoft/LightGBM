@@ -103,6 +103,14 @@ class DCGCalculator {
   static double CalMaxDCGAtK(data_size_t k,
     const label_t* label, data_size_t num_data);
 
+
+  /*!
+  * \brief Check the metadata for NDCG and lambdarank
+  * \param metadata Metadata
+  * \param num_queries Number of queries
+  */
+  static void CheckMetadata(const Metadata& metadata, data_size_t num_queries);
+
   /*!
   * \brief Check the label range for NDCG and lambdarank
   * \param label Pointer of label

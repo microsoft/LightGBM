@@ -9,7 +9,7 @@ It is based on dask-lightgbm, which was based on dask-xgboost.
 import socket
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 from urllib.parse import urlparse
 
 import numpy as np
@@ -105,12 +105,17 @@ def _train_part(
     else:
         group = None
 
+    if 'init_score' in list_of_parts[0]:
+        init_score = _concat([x['init_score'] for x in list_of_parts])
+    else:
+        init_score = None
+
     try:
         model = model_factory(**params)
         if is_ranker:
-            model.fit(data, label, sample_weight=weight, group=group, **kwargs)
+            model.fit(data, label, sample_weight=weight, init_score=init_score, group=group, **kwargs)
         else:
-            model.fit(data, label, sample_weight=weight, **kwargs)
+            model.fit(data, label, sample_weight=weight, init_score=init_score, **kwargs)
 
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
@@ -148,6 +153,10 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
         Dictionary where keys are work addresses in the form expected by Dask and values are a port for LightGBM to use.
     """
     machine_addresses = machines.split(",")
+
+    if len(set(machine_addresses)) != len(machine_addresses):
+        raise ValueError(f"Found duplicates in 'machines' ({machines}). Each entry in 'machines' must be a unique IP-port combination.")
+
     machine_to_port = defaultdict(set)
     for address in machine_addresses:
         host, port = address.split(":")
@@ -168,6 +177,7 @@ def _train(
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
     sample_weight: Optional[_DaskCollection] = None,
+    init_score: Optional[_DaskCollection] = None,
     group: Optional[_DaskCollection] = None,
     **kwargs: Any
 ) -> LGBMModel:
@@ -187,6 +197,8 @@ def _train(
         Class of the local underlying model.
     sample_weight : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
+    init_score : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+        Init score of training data.
     group : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Group/query data.
         Only used in the learning-to-rank task.
@@ -288,6 +300,11 @@ def _train(
         group_parts = _split_to_parts(data=group, is_matrix=False)
         for i in range(n_parts):
             parts[i]['group'] = group_parts[i]
+
+    if init_score is not None:
+        init_score_parts = _split_to_parts(data=init_score, is_matrix=False)
+        for i in range(n_parts):
+            parts[i]['init_score'] = init_score_parts[i]
 
     # Start computation in the background
     parts = list(map(delayed, parts))
@@ -540,6 +557,7 @@ class _DaskLGBMModel:
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
+        init_score: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
@@ -556,6 +574,7 @@ class _DaskLGBMModel:
             params=params,
             model_factory=model_factory,
             sample_weight=sample_weight,
+            init_score=init_score,
             group=group,
             **kwargs
         )
@@ -657,6 +676,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
+        init_score: Optional[_DaskCollection] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
@@ -665,6 +685,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
+            init_score=init_score,
             **kwargs
         )
 
@@ -672,11 +693,12 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
-    # DaskLGBMClassifier does not support init_score, evaluation data, or early stopping
-    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
+    # DaskLGBMClassifier does not support evaluation data, or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
                  + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMClassifier support for callbacks and init_model is not tested
@@ -808,6 +830,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
+        init_score: Optional[_DaskCollection] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
@@ -816,6 +839,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             X=X,
             y=y,
             sample_weight=sample_weight,
+            init_score=init_score,
             **kwargs
         )
 
@@ -823,11 +847,12 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
-    # DaskLGBMRegressor does not support init_score, evaluation data, or early stopping
-    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
+    # DaskLGBMRegressor does not support evaluation data, or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
                  + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
@@ -945,14 +970,12 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
-        if init_score is not None:
-            raise RuntimeError('init_score is not currently supported in lightgbm.dask')
-
         return self._lgb_dask_fit(
             model_factory=LGBMRanker,
             X=X,
             y=y,
             sample_weight=sample_weight,
+            init_score=init_score,
             group=group,
             **kwargs
         )
@@ -961,13 +984,11 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
     )
 
-    # DaskLGBMRanker does not support init_score, evaluation data, or early stopping
-    _base_doc = (_base_doc[:_base_doc.find('init_score :')]
-                 + _base_doc[_base_doc.find('init_score :'):])
-
+    # DaskLGBMRanker does not support evaluation data, or early stopping
     _base_doc = (_base_doc[:_base_doc.find('eval_set :')]
                  + _base_doc[_base_doc.find('verbose :'):])
 

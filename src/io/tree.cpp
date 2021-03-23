@@ -698,6 +698,8 @@ Tree::Tree(const char* str, size_t* used_len) {
     int is_linear_int;
     Common::Atoi(key_vals["is_linear"].c_str(), &is_linear_int);
     is_linear_ = static_cast<bool>(is_linear_int);
+  } else {
+    is_linear_ = false;
   }
 
   if ((num_leaves_ <= 1) && !is_linear_) {
