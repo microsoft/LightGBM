@@ -108,7 +108,7 @@ You may choose a version other than the most recent one if you need a previous M
 .. image:: ./_static/images/screenshot-mingw-installation.png
    :align: center
    :target: ./_static/images/screenshot-mingw-installation.png
-   :alt: A screenshot of the Min G. W. installation setup settings window
+   :alt: A screenshot of the Min G W installation setup settings window
 
 Then, add to your PATH the following (to adjust to your MinGW version):
 
