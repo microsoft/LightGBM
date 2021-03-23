@@ -100,6 +100,8 @@ lightgbm-rs (Rust binding): https://github.com/vaaaaanquish/lightgbm-rs
 
 MLflow (experiment tracking, model monitoring framework): https://github.com/mlflow/mlflow
 
+https://github.com/parrt/dtreeviz/releases/tag/1.2
+
 `{treesnip}` (R `{parsnip}`-compliant interface): https://github.com/curso-r/treesnip
 
 `{mlr3learners.lightgbm}` (R `{mlr3}`-compliant interface): https://github.com/mlr3learners/mlr3learners.lightgbm
