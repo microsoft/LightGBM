@@ -660,7 +660,7 @@ def test_ranker(output, client, group):
 
 @pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('output', ['array', 'dataframe'])
-@pytest.mark.parametrize('eval_sizes', [[0.9], [0.5, 1, 1.5], [0]])
+@pytest.mark.parametrize('eval_sizes', [[0.5, 1, 1.5], [0]])
 @pytest.mark.parametrize('eval_names_prefix', ['specified', None])
 def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix, client):
 
@@ -676,6 +676,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
     rnd = np.random.RandomState(42)
 
     if eval_names_prefix:
+        # only provide first 2 eval_sets a name, so names for eval_sets after 2 are named "valid_<2+>".
         eval_names = [eval_names_prefix + f'_{i}' for i in range(len(eval_sizes))]
     else:
         eval_names = None
@@ -696,12 +697,11 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
         eval_at = None
         eval_group = None
 
-        # add eval_init_score for binary-classification task.
+        # test eval_class_weight, eval_init_score on binary-classification task.
         if task == 'binary-classification':
             eval_metrics = ['binary_error', 'auc']
             eval_class_weight = []
             eval_init_score = []
-            init_score_value = np.log(np.mean(y) / (1 - np.mean(y)))
         elif task == 'multiclass-classification':
             eval_metrics = ['multi_error', 'multi_logloss']
         elif task == 'regression':
@@ -711,6 +711,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
     for eval_size in eval_sizes:
         if eval_size == 1:
             n_eval_samples = n_samples
+            y_e = y
             dX_e = dX
             dy_e = dy
             dw_e = dw
@@ -728,13 +729,17 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
         eval_sample_weight.append(dw_e)
         if task == 'ranking':
             eval_group.append(dg_e)
+
         if task == 'binary-classification':
-            n_classes = len(np.unique(y_e))
-            eval_class_weight.append({v: i + 1 for i, v in enumerate(range(n_classes)})
-            if output == 'dataframe':
-                d_init_score = dy_e.map_partitionss(lambda x: pd.Series([init_score_value] * x.size))
+            n_neg = np.sum(y_e == 0)
+            n_pos = np.sum(y_e == 1)
+            eval_class_weight.append({0: n_neg / n_pos, 1: n_pos / n_neg})
+            init_score_value = np.log(np.mean(y_e) / (1 - np.mean(y_e)))
+            if 'dataframe' in output:
+                d_init_score = dy_e.map_partitions(lambda x: pd.Series([init_score_value] * x.size))
             else:
                 d_init_score = dy_e.map_blocks(lambda x: np.repeat(init_score_value, x.size))
+
             eval_init_score.append(d_init_score)
 
     fit_trees = 50
@@ -758,7 +763,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
         'eval_sample_weight': eval_sample_weight,
         'eval_init_score': eval_init_score,
         'eval_metric': eval_metrics,
-        'verbose': False
+        'verbose': True
     }
     if task == 'ranking':
         fit_params.update(
@@ -794,7 +799,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
         for eval_name in evals_result:
             assert eval_name in dask_model.best_score_
             if eval_names:
-                assert eval_name in eval_names
+                assert eval_name in eval_names + ['valid_2']
             else:
                 if eval_name == 'training':
                     assert 1 in eval_sizes
