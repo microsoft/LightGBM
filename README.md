@@ -84,6 +84,8 @@ ONNXMLTools (ONNX converter): https://github.com/onnx/onnxmltools
 
 SHAP (model output explainer): https://github.com/slundberg/shap
 
+dtreeviz (decision tree visualization and model interpretation): https://github.com/parrt/dtreeviz
+
 MMLSpark (LightGBM on Spark): https://github.com/Azure/mmlspark
 
 Kubeflow Fairing (LightGBM on Kubernetes): https://github.com/kubeflow/fairing
