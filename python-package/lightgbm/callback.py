@@ -4,12 +4,10 @@ import collections
 from operator import gt, lt
 from typing import Any, Callable, List, Union
 
-from typing_extensions import Protocol
-
 from .basic import _ConfigAliases, _log_info, _log_warning
 
 
-class CallbackWithAttributes(Protocol):
+class CallbackWithAttributes():
     """Allows the creation of function attributes without making mypy raise errors."""
 
     order: int
