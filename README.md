@@ -80,6 +80,8 @@ leaves (Go model applier): https://github.com/dmitryikh/leaves
 
 ONNXMLTools (ONNX converter): https://github.com/onnx/onnxmltools
 
+Hummingbird (model compiler into tensor computations): https://github.com/microsoft/hummingbird
+
 SHAP (model output explainer): https://github.com/slundberg/shap
 
 MMLSpark (LightGBM on Spark): https://github.com/Azure/mmlspark
