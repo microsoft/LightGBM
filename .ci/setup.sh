@@ -98,7 +98,7 @@ else  # Linux
         apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
         apt-get update
         apt-get install --no-install-recommends -y \
-            cmake=3.19.5-0kitware1
+            cmake=3.19.5
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
         ARCH=$(uname -m)
