@@ -78,7 +78,7 @@ listen_port.port = 13000
 def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs):
     X, y, g = make_ranking(n_samples=n_samples, random_state=42, **kwargs)
     rnd = np.random.RandomState(42)
-    w = rnd.random(X.shape[0]) * 0.01
+    w = rnd.rand(X.shape[0]) * 0.01
 
     g_rle = np.array([len(list(grp)) for _, grp in groupby(g)])
 
