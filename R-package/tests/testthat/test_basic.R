@@ -1883,7 +1883,7 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
-    , categorical_featurs = 1L
+    , categorical_features = 1L
   )
 
   dtrain <- .new_dataset()
