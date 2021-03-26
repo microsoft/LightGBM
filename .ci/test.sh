@@ -64,7 +64,7 @@ if [[ $TASK == "lint" ]]; then
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
-    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package || exit -1
+    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package ./swig || exit -1
     exit 0
 fi
 
@@ -103,8 +103,7 @@ conda install -q -y -n $CONDA_ENV cloudpickle dask distributed joblib matplotlib
 conda install -q -y \
     -n $CONDA_ENV \
     -c conda-forge \
-        python-graphviz \
-        xorg-libxau
+        python-graphviz
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
@@ -218,7 +217,7 @@ import matplotlib\
 matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
-    for f in *.py; do python $f || exit -1; done  # run all examples
+    for f in *.py **/*.py; do python $f || exit -1; done  # run all examples
     cd $BUILD_DIRECTORY/examples/python-guide/notebooks
     conda install -q -y -n $CONDA_ENV ipywidgets notebook
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks

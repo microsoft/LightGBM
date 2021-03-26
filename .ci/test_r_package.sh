@@ -18,7 +18,13 @@ export _R_CHECK_CRAN_INCOMING_REMOTE_=0
 # CRAN ignores the "installed size is too large" NOTE,
 # so our CI can too. Setting to a large value here just
 # to catch extreme problems
-export _R_CHECK_PKG_SIZES_THRESHOLD_=60
+export _R_CHECK_PKG_SIZES_THRESHOLD_=100
+
+# don't fail builds for long-running examples unless they're very long.
+# See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
+if [[ $R_BUILD_TYPE != "cran" ]]; then
+    export _R_CHECK_EXAMPLE_TIMING_THRESHOLD_=30
+fi
 
 # Get details needed for installing R components
 R_MAJOR_VERSION=( ${R_VERSION//./ } )
@@ -27,8 +33,8 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.0.3
-    export R_LINUX_VERSION="4.0.3-1.1804.0"
+    export R_MAC_VERSION=4.0.4
+    export R_LINUX_VERSION="4.0.4-1.1804.0"
     export R_APT_REPO="bionic-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
@@ -53,6 +59,7 @@ if [[ $OS_NAME == "linux" ]]; then
             devscripts \
             r-base-dev=${R_LINUX_VERSION} \
             texinfo \
+            texlive-latex-extra \
             texlive-latex-recommended \
             texlive-fonts-recommended \
             texlive-fonts-extra \
@@ -100,10 +107,12 @@ fi
 # Manually install Depends and Imports libraries + 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
+compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
-    packages+=", type = 'both'"
+    packages+=", type = 'binary'"
+    compile_from_source="never"
 fi
-Rscript --vanilla -e "options(install.packages.compile.from.source = 'both'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
+Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
 cd ${BUILD_DIRECTORY}
 
