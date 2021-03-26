@@ -86,7 +86,7 @@ jobs:
             $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
             $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
             EOF
-            docker run --env-file docker.env -v "$GITHUB_WORKSPACE":"$ROOT_DOCKER_FOLDER" --rm --gpus all "nvidia/cuda:${{ matrix.cuda_version }}-devel" /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
+            docker run --env-file docker.env -v "$GITHUB_WORKSPACE":"$ROOT_DOCKER_FOLDER" --rm --gpus all "nvcr.io/nvidia/cuda:${{ matrix.cuda_version }}-devel" /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
     runs-on: ubuntu-latest
