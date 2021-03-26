@@ -9,7 +9,7 @@ It is based on dask-lightgbm, which was based on dask-xgboost.
 import socket
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
 from urllib.parse import urlparse
 
 import numpy as np
@@ -218,8 +218,6 @@ def _train_part(
                 **kwargs
             )
         else:
-            if 'eval_at' in kwargs:
-                kwargs.pop('eval_at')
             if local_eval_class_weight:
                 kwargs['eval_class_weight'] = local_eval_class_weight
 
@@ -303,6 +301,8 @@ def _train(
     eval_class_weight: Optional[List[Union[dict, str]]] = None,
     eval_init_score: Optional[List[_DaskCollection]] = None,
     eval_group: Optional[List[_DaskCollection]] = None,
+    eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+    eval_at: Optional[Union[Iterable[int], str]] = None,
     **kwargs: Any
 ) -> LGBMModel:
     """Inner train routine.
@@ -341,6 +341,12 @@ def _train(
         List of Dask Array or Dask Series, init model score for each validation set in eval_set.
     eval_group: List of Dask data collections or None, optional (default=None)
         List of Dask Array or Dask Series, group/query for each validation set in eval_set.
+    eval_metric: String, callable, list or None, optional (default=None)
+        If string, built-in evaluation metric; if callable, a custom evaluation metric.
+        Can also be a list of built-in metric strs and/or custom evaluation metrics.
+    eval_at: str or Iterable of int, optional (default=None)
+        Depth thresholds at which to apply ranking metrics on eval_set data. Only applicable to ndcg and map metrics.
+        If str, must be comma-separated set of ints.
     **kwargs
         Other parameters passed to ``fit`` method of the local underlying model.
 
@@ -564,6 +570,12 @@ def _train(
                     "Worker %s was not allocated eval_set data. Therefore evals_result_ and best_score_ data may be unreliable."
                     "Try rebalancing data across workers." % worker
                 )
+
+    # append eval_metric, eval_at fit arguments to kwargs.
+    if eval_metric:
+        kwargs['eval_metric'] = eval_metric
+    if eval_at:
+        kwargs['eval_at'] = eval_at
 
     master_worker = next(iter(worker_map))
     worker_ncores = client.ncores()
@@ -809,6 +821,7 @@ class _DaskLGBMModel:
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+        eval_at: Optional[Union[Iterable[int], str]] = None,
         early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
@@ -820,10 +833,6 @@ class _DaskLGBMModel:
 
         params = self.get_params(True)
         params.pop("client", None)
-
-        # easier to pass fit args as kwargs than to list_of_parts in _train.
-        if eval_metric:
-            kwargs['eval_metric'] = eval_metric
 
         model = _train(
             client=_get_dask_client(self.client),
@@ -840,6 +849,8 @@ class _DaskLGBMModel:
             eval_class_weight=eval_class_weight,
             eval_init_score=eval_init_score,
             eval_group=eval_group,
+            eval_metric=eval_metric,
+            eval_at=eval_at,
             **kwargs
         )
 
@@ -954,9 +965,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         if early_stopping_rounds is not None:
             raise RuntimeError('early_stopping_rounds is not currently supported in lightgbm.dask')
 
-        if eval_metric:
-            kwargs['eval_metric'] = eval_metric
-
         return self._lgb_dask_fit(
             model_factory=LGBMClassifier,
             X=X,
@@ -968,6 +976,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             eval_sample_weight=eval_sample_weight,
             eval_class_weight=eval_class_weight,
             eval_init_score=eval_init_score,
+            eval_metric=eval_metric,
             **kwargs
         )
 
@@ -1134,9 +1143,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         if early_stopping_rounds is not None:
             raise RuntimeError('early_stopping_rounds is not currently supported in lightgbm.dask')
 
-        if eval_metric:
-            kwargs['eval_metric'] = eval_metric
-
         return self._lgb_dask_fit(
             model_factory=LGBMRegressor,
             X=X,
@@ -1147,6 +1153,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
             eval_init_score=eval_init_score,
+            eval_metric=eval_metric,
             **kwargs
         )
 
@@ -1292,19 +1299,13 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
-        eval_at: Optional[Tuple[int]] = (1, 2, 3, 4, 5),
+        eval_at: Optional[Union[Iterable[int], str]] = (1, 2, 3, 4, 5),
         early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
         if early_stopping_rounds is not None:
             raise RuntimeError('early_stopping_rounds is not currently supported in lightgbm.dask')
-
-        # pass fit arguments as kwargs rather than data in delayed parts.
-        if eval_metric:
-            kwargs['eval_metric'] = eval_metric
-        if eval_at:
-            kwargs['eval_at'] = eval_at
 
         return self._lgb_dask_fit(
             model_factory=LGBMRanker,
@@ -1318,6 +1319,8 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             eval_sample_weight=eval_sample_weight,
             eval_init_score=eval_init_score,
             eval_group=eval_group,
+            eval_metric=eval_metric,
+            eval_at=eval_at,
             **kwargs
         )
 
