@@ -70,6 +70,8 @@ JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
 
 Treelite (model compiler for efficient deployment): https://github.com/dmlc/treelite
 
+Hummingbird (model compiler into tensor computations): https://github.com/microsoft/hummingbird
+
 cuML Forest Inference Library (GPU-accelerated inference): https://github.com/rapidsai/cuml
 
 daal4py (Intel CPU-accelerated inference): https://github.com/IntelPython/daal4py
@@ -81,6 +83,8 @@ leaves (Go model applier): https://github.com/dmitryikh/leaves
 ONNXMLTools (ONNX converter): https://github.com/onnx/onnxmltools
 
 SHAP (model output explainer): https://github.com/slundberg/shap
+
+dtreeviz (decision tree visualization and model interpretation): https://github.com/parrt/dtreeviz
 
 MMLSpark (LightGBM on Spark): https://github.com/Azure/mmlspark
 
