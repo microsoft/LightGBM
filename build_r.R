@@ -316,6 +316,14 @@ for (submodule in list.dirs(
 }
 
 # copy files into the place CMake expects
+CMAKE_MODULES_R_DIR <- file.path(TEMP_SOURCE_DIR, "cmake", "modules")
+dir.create(CMAKE_MODULES_R_DIR, recursive = TRUE)
+result <- file.copy(
+  from = file.path("cmake", "modules", "FindLibR.cmake")
+  , to = sprintf("%s/", CMAKE_MODULES_R_DIR)
+  , overwrite = TRUE
+)
+.handle_result(result)
 for (src_file in c("lightgbm_R.cpp", "lightgbm_R.h", "R_object_helper.h")) {
   result <- file.copy(
     from = file.path(TEMP_SOURCE_DIR, src_file)

@@ -3,9 +3,7 @@
 import datetime
 import os
 import sys
-
 from distutils.file_util import copy_file
-
 
 if __name__ == "__main__":
     source = sys.argv[1]

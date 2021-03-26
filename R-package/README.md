@@ -291,20 +291,20 @@ This section briefly explains the key files for building a CRAN package. To upda
 At build time, `configure` will be run and used to create a file `Makevars`, using `Makevars.in` as a template.
 
 1. Edit `configure.ac`.
-2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 18.04.
+2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 20.04.
 
-    If you have an Ubuntu 18.04 environment available, run the provided script from the root of the `LightGBM` repository.
+    If you have an Ubuntu 20.04 environment available, run the provided script from the root of the `LightGBM` repository.
 
     ```shell
     ./R-package/recreate-configure.sh
     ```
 
-    If you do not have easy access to an Ubuntu 18.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
+    If you do not have easy access to an Ubuntu 20.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
 
     ```shell
     docker run \
         -v $(pwd):/opt/LightGBM \
-        -t ubuntu:18.04 \
+        -t ubuntu:20.04 \
         /bin/bash -c "cd /opt/LightGBM && ./R-package/recreate-configure.sh"
     ```
 
@@ -353,6 +353,12 @@ rhub::check(
     )
 )
 ```
+
+Alternatively, GitHub Actions can run code above for you. On a pull request, create a comment with this phrase:
+
+> /gha run r-solaris
+
+**NOTE:** Please do this only once you see that other R tests on a pull request are passing. R Hub is a free resource with limited capacity, and we want to be respectful community members.
 
 #### UBSAN
 

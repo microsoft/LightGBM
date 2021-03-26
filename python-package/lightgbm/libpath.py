@@ -1,11 +1,11 @@
 # coding: utf-8
 """Find the path to LightGBM dynamic library files."""
 import os
-
 from platform import system
+from typing import List
 
 
-def find_lib_path():
+def find_lib_path() -> List[str]:
     """Find the path to LightGBM library files.
 
     Returns

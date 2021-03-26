@@ -204,6 +204,10 @@ You can use ``python setup.py bdist_wheel`` instead of ``python setup.py install
 Install Dask-package
 ''''''''''''''''''''
 
+.. warning::
+
+    Dask-package is only tested on Linux.
+
 To install all additional dependencies required for Dask-package, you can append ``[dask]`` to LightGBM package name:
 
 .. code:: sh

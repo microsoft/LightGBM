@@ -17,8 +17,6 @@ and the second one is column names}
 }
 \value{
 A list with the dimension names of the dataset
-
-A list with the dimension names of the dataset
 }
 \description{
 Only column names are supported for \code{lgb.Dataset}, thus setting of

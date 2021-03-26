@@ -1,0 +1,71 @@
+name: Solaris CRAN check
+
+on:
+  repository_dispatch:
+    types: [gha_run_r_solaris]
+
+jobs:
+  test:
+    name: solaris-cran
+    timeout-minutes: 120
+    runs-on: ubuntu-latest
+    container: rocker/r-base
+    env:
+      SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
+    steps:
+      - name: Install essential software before checkout
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y \
+            curl \
+            git \
+            jq
+      - name: Checkout repository
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 5
+          submodules: true
+          repository: microsoft/LightGBM
+          ref: "refs/pull/${{ github.event.client_payload.pr_number }}/merge"
+      - name: Send init status
+        if: ${{ always() }}
+        run: |
+          $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "pending" "${{ github.event.client_payload.pr_sha }}"
+          $GITHUB_WORKSPACE/.ci/append_comment.sh \
+            "${{ github.event.client_payload.comment_number }}" \
+            "Workflow **${{ github.workflow }}** has been triggered! 🚀\r\n${GITHUB_SERVER_URL}/microsoft/LightGBM/actions/runs/${GITHUB_RUN_ID}"
+      - name: Run tests on Solaris
+        shell: bash
+        run: |
+          sh build-cran-package.sh || exit -1
+          apt-get install --no-install-recommends -y \
+              libcurl4-openssl-dev \
+              libxml2-dev \
+              libssl-dev
+          log_file="$GITHUB_WORKSPACE/rhub_logs.txt"
+          Rscript -e "install.packages('rhub', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org')"
+          Rscript $GITHUB_WORKSPACE/.ci/run_rhub_solaris_checks.R $(pwd)/lightgbm_*.tar.gz $log_file || exit -1
+      - name: Send final status
+        if: ${{ always() }}
+        run: |
+          $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}" "${{ github.event.client_payload.pr_sha }}"
+          body=""
+          while IFS= read -r line; do
+              platform=${line%@*}
+              url=${line#*@}
+              body="${body}**${platform}**: ${url}\r\n"
+          done < "$GITHUB_WORKSPACE/rhub_logs.txt" || true
+          body="${body}Reports also have been sent to LightGBM public e-mail: http://www.yopmail.com/lightgbm_rhub_checks\r\n"
+          body="${body}Status: ${{ job.status }}."
+          $GITHUB_WORKSPACE/.ci/append_comment.sh \
+            "${{ github.event.client_payload.comment_number }}" \
+            "$body"
+      - name: Rerun workflow-indicator
+        if: ${{ always() }}
+        run: |
+          bash $GITHUB_WORKSPACE/.ci/rerun_workflow.sh \
+            "optional_checks.yml" \
+            "${{ github.event.client_payload.pr_number }}" \
+            "${{ github.event.client_payload.pr_branch }}" \
+            || true
