@@ -434,8 +434,8 @@ def test_regressor(output, client):
     p2 = local_regressor.predict(X)
 
     # Scores should be the same
-    assert_eq(s1, s2, atol=.01)
-    assert_eq(s1, s1_local, atol=0.003)
+    assert_eq(s1, s2, atol=0.01)
+    assert_eq(s1, s1_local)
 
     # Predictions should be roughly the same.
     assert_eq(p1, p1_local)
@@ -451,8 +451,8 @@ def test_regressor(output, client):
     assert np.min(pred_leaf_vals) >= 0
     assert len(np.unique(pred_leaf_vals)) <= params['num_leaves']
 
-    assert_eq(y, p1, rtol=1., atol=50.)
-    assert_eq(y, p2, rtol=1., atol=50.)
+    assert_eq(p1, y, rtol=0.5, atol=50.)
+    assert_eq(p2, y, rtol=0.5, atol=50.)
 
     # be sure LightGBM actually used at least one categorical column,
     # and that it was correctly treated as a categorical feature
