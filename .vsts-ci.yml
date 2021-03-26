@@ -206,7 +206,7 @@ jobs:
       title: '$(Build.SourceBranchName)'
       assets: |
         $(Build.SourcesDirectory)/binaries/PackageAssets/*
-        $(Build.SourcesDirectory)/R/*
+        $(Build.SourcesDirectory)/R/R-package/*
         $(Build.ArtifactStagingDirectory)/nuget/*.nupkg
         $(Build.ArtifactStagingDirectory)/archives/*
       assetUploadMode: 'delete'
