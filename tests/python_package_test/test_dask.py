@@ -659,10 +659,13 @@ def test_ranker(output, client, group):
 
 
 @pytest.mark.parametrize('task', tasks)
-@pytest.mark.parametrize('output', ['array', 'dataframe'])
+@pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('eval_sizes', [[0.5, 1, 1.5], [0]])
 @pytest.mark.parametrize('eval_names_prefix', ['specified', None])
 def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix, client):
+
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
     # Use larger trainset to prevent premature stopping due to zero loss, causing num_trees() < n_estimators.
     # Use small chunk_size to avoid single-worker allocation of eval data partitions.
