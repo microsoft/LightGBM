@@ -25,14 +25,6 @@ jobs:
           "${{ github.event.comment.id }}" \
           "gha_run_r_valgrind"
 
-    - name: Trigger R artifact builds
-      if: github.event.comment.body == '/gha run build-r-artifacts'
-      run: |
-        $GITHUB_WORKSPACE/.ci/trigger_dispatch_run.sh \
-          "${{ github.event.issue.pull_request.url }}" \
-          "${{ github.event.comment.id }}" \
-          "gha_run_build_r_artifacts"
-
     - name: Trigger R Solaris CRAN checks
       if: github.event.comment.body == '/gha run r-solaris'
       run: |
