@@ -994,16 +994,12 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(client, tas
 
 
 @pytest.mark.parametrize('task', tasks)
-@pytest.mark.parametrize('output', data_output)
-def test_network_params_not_required_but_respected_if_given(client, task, output, listen_port):
-    if task == 'ranking' and output == 'scipy_csr_matrix':
-        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
-
+def test_network_params_not_required_but_respected_if_given(client, task, listen_port):
     client.wait_for_workers(2)
 
     _, _, _, _, dX, dy, _, dg = _create_data(
         objective=task,
-        output=output,
+        output='array',
         chunk_size=10,
         group=None
     )
@@ -1011,8 +1007,7 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
     dask_model_factory = task_to_dask_factory[task]
 
     # rebalance data to be sure that each worker has a piece of the data
-    if output == 'array':
-        client.rebalance()
+    client.rebalance()
 
     # model 1 - no network parameters given
     dask_model1 = dask_model_factory(
