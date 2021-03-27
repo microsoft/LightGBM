@@ -16,7 +16,7 @@ class _CallbackWithAttributes:
 
 def _callback_attr_decorator(func: Any) -> _CallbackWithAttributes:
     """Adds more specific type annotation for callback functions.
-    
+
     This decorator informs type checkers like mypy that callback functions have attributes
     like ``before_iteration`` and ``order``.
     """
