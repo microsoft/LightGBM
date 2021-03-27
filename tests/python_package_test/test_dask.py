@@ -1054,15 +1054,11 @@ def test_network_params_not_required_but_respected_if_given(client, task, listen
 
 
 @pytest.mark.parametrize('task', tasks)
-@pytest.mark.parametrize('output', data_output)
-def test_machines_should_be_used_if_provided(task, output):
-    if task == 'ranking' and output == 'scipy_csr_matrix':
-        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
-
+def test_machines_should_be_used_if_provided(task):
     with LocalCluster(n_workers=2) as cluster, Client(cluster) as client:
         _, _, _, _, dX, dy, _, dg = _create_data(
             objective=task,
-            output=output,
+            output='array',
             chunk_size=10,
             group=None
         )
@@ -1070,8 +1066,7 @@ def test_machines_should_be_used_if_provided(task, output):
         dask_model_factory = task_to_dask_factory[task]
 
         # rebalance data to be sure that each worker has a piece of the data
-        if output == 'array':
-            client.rebalance()
+        client.rebalance()
 
         n_workers = len(client.scheduler_info()['workers'])
         assert n_workers > 1
