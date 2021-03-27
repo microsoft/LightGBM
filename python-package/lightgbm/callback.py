@@ -7,14 +7,14 @@ from typing import Any, Callable, Dict, List, Union
 from .basic import _ConfigAliases, _log_info, _log_warning
 
 
-class CallbackWithAttributes():
+class _CallbackWithAttributes:
     """Allows the creation of function attributes without making mypy raise errors."""
 
     order: int
     before_iteration: bool
 
 
-def callback_attr_decorator(func: Any) -> CallbackWithAttributes:
+def _callback_attr_decorator(func: Any) -> CallbackWithAttributes:
     """Prevents function attributes from raising mypy errors."""
     return func
 
