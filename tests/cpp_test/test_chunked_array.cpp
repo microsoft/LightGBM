@@ -253,6 +253,7 @@ TEST_F(ChunkedArrayTest, testDataLayoutWithAdvancedInsertionAPI) {
   ca_.coalesce_to(coalesced_out.data(), true);  // Export all valid addresses.
   for (size_t i = 0; i < ref_values.size(); ++i) {
     if (ref_values[i] != UNITIALIZED) {
+      // Test in 2 ways that the values are correctly laid out in memory:
       EXPECT_EQ(ca_.getitem(i / CHUNK_SIZE, i % CHUNK_SIZE, INVALID), ref_values[i]);
       EXPECT_EQ(coalesced_out[i], ref_values[i]);
     }
