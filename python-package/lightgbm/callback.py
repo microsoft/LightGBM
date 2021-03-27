@@ -85,7 +85,7 @@ def print_evaluation(period: int = 1, show_stdv: bool = True) -> CallbackWithAtt
     return _callback
 
 
-def record_evaluation(eval_result: dict) -> CallbackWithAttributes:
+def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> CallbackWithAttributes:
     """Create a callback that records the evaluation history into ``eval_result``.
 
     Parameters
