@@ -8,14 +8,18 @@ from .basic import _ConfigAliases, _log_info, _log_warning
 
 
 class _CallbackWithAttributes:
-    """Allows the creation of function attributes without making mypy raise errors."""
+    """Bare type used to tell type checkers which attributes callback functions have"""
 
     order: int
     before_iteration: bool
 
 
 def _callback_attr_decorator(func: Any) -> _CallbackWithAttributes:
-    """Prevents function attributes from raising mypy errors."""
+    """Adds more specific type annotation for callback functions.
+    
+    This decorator informs type checkers like mypy that callback functions have attributes
+    like ``before_iteration`` and ``order``.
+    """
     return func
 
 
