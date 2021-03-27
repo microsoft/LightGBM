@@ -2,7 +2,7 @@
 """Callbacks library."""
 import collections
 from operator import gt, lt
-from typing import Any, Callable, List, Union
+from typing import Any, Callable, Dict, List, Union
 
 from .basic import _ConfigAliases, _log_info, _log_warning
 
