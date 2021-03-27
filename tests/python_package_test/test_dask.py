@@ -254,7 +254,6 @@ def test_classifier(output, task, boosting_type, client):
     elif boosting_type == 'goss':
         params['top_rate'] = 0.5
 
-
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
         time_out=5,
