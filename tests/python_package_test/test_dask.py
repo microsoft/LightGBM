@@ -1265,3 +1265,43 @@ def test_parameters_default_constructible(estimator):
     else:
         Estimator = estimator.__class__
     sklearn_checks.check_parameters_default_constructible(name, Estimator)
+
+
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
+def test_predict_with_raw_score(task, output, client):
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
+
+    _, _, _, _, dX, dy, _, dg = _create_data(
+        objective=task,
+        output=output,
+        group=None
+    )
+
+    model_factory = task_to_dask_factory[task]
+    params = {
+        'client': client,
+        'n_estimators': 1,
+        'num_leaves': 2,
+        'time_out': 5,
+        'min_sum_hessian': 0
+    }
+    model = model_factory(**params)
+    model.fit(dX, dy, group=dg)
+    raw_predictions = model.predict(dX, raw_score=True).compute()
+
+    trees_df = model.booster_.trees_to_dataframe()
+    leaves_df = trees_df[trees_df.node_depth == 2]
+    if task == 'multiclass-classification':
+        for i in range(model.n_classes_):
+            class_df = leaves_df[leaves_df.tree_index == i]
+            assert set(raw_predictions[:, i]) == set(class_df['value'])
+    else:
+        assert set(raw_predictions) == set(leaves_df['value'])
+
+    if task.endswith('classification'):
+        pred_proba_raw = model.predict_proba(dX, raw_score=True).compute()
+        assert_eq(raw_predictions, pred_proba_raw)
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)

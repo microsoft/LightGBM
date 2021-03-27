@@ -449,7 +449,7 @@ def _predict_part(
 
     # dask.DataFrame.map_partitions() expects each call to return a pandas DataFrame or Series
     if isinstance(part, pd_DataFrame):
-        if pred_proba or pred_contrib or pred_leaf:
+        if len(result.shape) == 2:
             result = pd_DataFrame(result, index=part.index)
         else:
             result = pd_Series(result, index=part.index, name='predictions')
@@ -510,10 +510,6 @@ def _predict(
             **kwargs
         ).values
     elif isinstance(data, dask_Array):
-        if pred_proba:
-            kwargs['chunks'] = (data.chunks[0], (model.n_classes_,))
-        else:
-            kwargs['drop_axis'] = 1
         return data.map_blocks(
             _predict_part,
             model=model,
@@ -522,7 +518,7 @@ def _predict(
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,
             dtype=dtype,
-            **kwargs
+            drop_axis=1
         )
     else:
         raise TypeError('Data must be either Dask Array or Dask DataFrame. Got %s.' % str(type(data)))
