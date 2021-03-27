@@ -14,7 +14,7 @@ class _CallbackWithAttributes:
     before_iteration: bool
 
 
-def _callback_attr_decorator(func: Any) -> CallbackWithAttributes:
+def _callback_attr_decorator(func: Any) -> _CallbackWithAttributes:
     """Prevents function attributes from raising mypy errors."""
     return func
 
@@ -61,7 +61,7 @@ def _format_eval_result(value: list, show_stdv: bool = True) -> str:
         raise ValueError("Wrong metric value")
 
 
-def print_evaluation(period: int = 1, show_stdv: bool = True) -> CallbackWithAttributes:
+def print_evaluation(period: int = 1, show_stdv: bool = True) -> _CallbackWithAttributes:
     """Create a callback that prints the evaluation results.
 
     Parameters
@@ -76,7 +76,7 @@ def print_evaluation(period: int = 1, show_stdv: bool = True) -> CallbackWithAtt
     callback : function
         The callback that prints the evaluation results every ``period`` iteration(s).
     """
-    @callback_attr_decorator
+    @_callback_attr_decorator
     def _callback(env: CallbackEnv) -> None:
         if period > 0 and env.evaluation_result_list and (env.iteration + 1) % period == 0:
             result = '\t'.join([_format_eval_result(x, show_stdv) for x in env.evaluation_result_list])
@@ -85,7 +85,7 @@ def print_evaluation(period: int = 1, show_stdv: bool = True) -> CallbackWithAtt
     return _callback
 
 
-def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> CallbackWithAttributes:
+def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> _CallbackWithAttributes:
     """Create a callback that records the evaluation history into ``eval_result``.
 
     Parameters
@@ -107,7 +107,7 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> CallbackW
             eval_result.setdefault(data_name, collections.OrderedDict())
             eval_result[data_name].setdefault(eval_name, [])
 
-    @callback_attr_decorator
+    @_callback_attr_decorator
     def _callback(env: CallbackEnv) -> None:
         if not eval_result:
             _init(env)
@@ -117,7 +117,7 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> CallbackW
     return _callback
 
 
-def reset_parameter(**kwargs: Union[list, Callable]) -> CallbackWithAttributes:
+def reset_parameter(**kwargs: Union[list, Callable]) -> _CallbackWithAttributes:
     """Create a callback that resets the parameter after the first iteration.
 
     .. note::
@@ -138,7 +138,7 @@ def reset_parameter(**kwargs: Union[list, Callable]) -> CallbackWithAttributes:
     callback : function
         The callback that resets the parameter after the first iteration.
     """
-    @callback_attr_decorator
+    @_callback_attr_decorator
     def _callback(env: CallbackEnv) -> None:
         new_parameters = {}
         for key, value in kwargs.items():
@@ -159,7 +159,7 @@ def reset_parameter(**kwargs: Union[list, Callable]) -> CallbackWithAttributes:
     return _callback
 
 
-def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True) -> CallbackWithAttributes:
+def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True) -> _CallbackWithAttributes:
     """Create a callback that activates early stopping.
 
     Activates early stopping.
@@ -225,7 +225,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
                     _log_info("Evaluated only: {}".format(eval_name_splitted[-1]))
             raise EarlyStopException(best_iter[i], best_score_list[i])
 
-    @callback_attr_decorator
+    @_callback_attr_decorator
     def _callback(env: CallbackEnv) -> None:
         if not cmp_op:
             _init(env)
