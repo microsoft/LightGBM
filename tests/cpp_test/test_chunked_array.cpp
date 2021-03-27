@@ -218,7 +218,7 @@ TEST_F(ChunkedArrayTest, testDataLayoutWithAdvancedInsertionAPI) {
   const size_t N_TRIALS = MAX_CHUNKS_SEARCH * MAX_IN_CHUNK_SEARCH_IDX * 100;
   const int INVALID = -1;  // A negative value signaling the requested value lives in an invalid address.
   const int UNITIALIZED = -99;  // A negative value to signal this was never updated.
-  std::vector<int> overriden_trials_values(MAX_CHUNKS_SEARCH * CHUNK_SIZE, UNITIALIZED);
+  std::vector<int> ref_values(MAX_CHUNKS_SEARCH * CHUNK_SIZE, UNITIALIZED);  // Memorize latest inserted values.
 
   // Each outer loop iteration changes the test by adding +1 chunk. We start with 1 chunk only:
   for (size_t chunks = 1; chunks < MAX_CHUNKS_SEARCH; ++chunks) {
@@ -241,7 +241,7 @@ TEST_F(ChunkedArrayTest, testDataLayoutWithAdvancedInsertionAPI) {
         EXPECT_EQ(ca_.getitem(trial_chunk, trial_in_chunk_idx, INVALID), trial_value);
 
         // Also store the just-stored value for future tracking:
-        overriden_trials_values[trial_chunk * CHUNK_SIZE + trial_in_chunk_idx] = trial_value;
+        ref_values[trial_chunk * CHUNK_SIZE + trial_in_chunk_idx] = trial_value;
       }
     }
 
@@ -251,10 +251,10 @@ TEST_F(ChunkedArrayTest, testDataLayoutWithAdvancedInsertionAPI) {
   // Final check: ensure even with overrides, all valid insertions store the latest value at that address:
   std::vector<int> coalesced_out(MAX_CHUNKS_SEARCH * CHUNK_SIZE, UNITIALIZED);
   ca_.coalesce_to(coalesced_out.data(), true);  // Export all valid addresses.
-  for (size_t i = 0; i < overriden_trials_values.size(); ++i) {
-    if (overriden_trials_values[i] != UNITIALIZED) {
-      EXPECT_EQ(ca_.getitem(i / CHUNK_SIZE, i % CHUNK_SIZE, INVALID), overriden_trials_values[i]);
-      EXPECT_EQ(coalesced_out[i], overriden_trials_values[i]);
+  for (size_t i = 0; i < ref_values.size(); ++i) {
+    if (ref_values[i] != UNITIALIZED) {
+      EXPECT_EQ(ca_.getitem(i / CHUNK_SIZE, i % CHUNK_SIZE, INVALID), ref_values[i]);
+      EXPECT_EQ(coalesced_out[i], ref_values[i]);
     }
   }
 }
