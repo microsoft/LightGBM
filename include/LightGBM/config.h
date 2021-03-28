@@ -215,7 +215,7 @@ struct Config {
 
   // [doc-only]
   // type = enum
-  // options = cpu, gpu
+  // options = cpu, gpu, cuda
   // alias = device
   // desc = device for the tree learning, you can use GPU to achieve the faster learning
   // desc = **Note**: it is recommended to use the smaller ``max_bin`` (e.g. 63) to get the better speed up
