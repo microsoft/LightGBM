@@ -10,6 +10,7 @@ RUN apt-get update && \
         build-essential \
         gcc \
         g++ \
+        curl \
         git && \
     # python environment
     curl -sL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o conda.sh && \
