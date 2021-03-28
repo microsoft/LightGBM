@@ -25,6 +25,8 @@ tests/data/    @guolinke @chivee @btrotta @shiyu1994
 windows/    @guolinke @chivee @btrotta @StrikerRUS @shiyu1994
 
 # R code
+build_r.R    @jameslamb @StrikerRUS
+build-cran-package.sh    @jameslamb @StrikerRUS
 R-package/    @Laurae2 @jameslamb
 
 # Python code
