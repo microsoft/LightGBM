@@ -601,7 +601,8 @@ def _load_pandas_categorical(file_name=None, model_str=None):
 
 
 class Sequence(object):
-    """Generic data access interface.
+    """
+    Generic data access interface.
 
     Object should support the following operations:
 
@@ -618,12 +619,23 @@ class Sequence(object):
     With range data access, there's no need to read all data into memory thus
     reduce memory usage.
     """
+
     __metaclass__ = abc.ABCMeta
 
     batch_size = 4096  # Defaults to read 4K rows in each batch.
 
     @staticmethod
     def is_class(obj):
+        """Check if objection is instance of class Sequence.
+
+        Args:
+        -------
+            obj ([any]): object to be checked
+
+        Returns
+        -------
+            [bool]: is Sequence class
+        """
         if isinstance(obj, list) or hasattr(obj, "getformat"):
             return False
         return hasattr(obj, "__getitem__") and hasattr(obj, "__len__")
@@ -657,7 +669,7 @@ class Sequence(object):
 
     @abc.abstractmethod
     def __len__(self):  # type: () -> int
-        """Return row count of this sequence """
+        """Return row count of this sequence."""
         raise NotImplementedError
 
 
@@ -1498,7 +1510,7 @@ class Dataset:
 
     def __sample(self, seqs, total_nrow):
         # type: (List[Sequence], int, int) -> (np.ndarray, List[np.ndarray])
-        """Data Sampling.
+        """Sample data from seqs.
 
         Mimics behavior in c_api.cpp:LGBM_DatasetCreateFromMats()
 
@@ -1530,6 +1542,7 @@ class Dataset:
         # type: (List[Sequence], str, Dataset) -> None
         """
         Initialize data from a Sequence object.
+
         Sequence: Generic Data Access Object
             Supports random access and access by batch if properly defined by user
         """
