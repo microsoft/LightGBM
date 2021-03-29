@@ -41,7 +41,7 @@ if ($env:TASK -eq "swig") {
   Exit 0
 }
 
-conda install -q -y -n $env:CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy ; Check-Output $?
+conda install -q -y -n $env:CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy h5py ; Check-Output $?
 
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
