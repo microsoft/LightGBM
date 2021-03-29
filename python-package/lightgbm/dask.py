@@ -404,6 +404,13 @@ def _train(
     num_machines = len(worker_address_to_port)
 
     # Tell each worker to train on the parts that it has locally
+    #
+    # This code treates ``_train_part()`` calls as not "pure" because:
+    #     1. there is randomness in the training process unless parameters ``seed``
+    #        and ``is_deterministic`` are set
+    #     2. even with those parameters set, the output of one ``_train_part()`` call
+    #        relies on global state (it and all the other LightGBM training processes
+    #        coordinate with each other)
     futures_classifiers = [
         client.submit(
             _train_part,
@@ -415,6 +422,9 @@ def _train(
             num_machines=num_machines,
             time_out=params.get('time_out', 120),
             return_model=(worker == master_worker),
+            workers=[worker],
+            allow_other_workers=False,
+            pure=False,
             **kwargs
         )
         for worker, list_of_parts in worker_map.items()
