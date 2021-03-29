@@ -171,7 +171,7 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
 
 
 def _worker_map_has_duplicates(worker_map: Dict[str, int]) -> bool:
-    """Check if there are any duplicate IP-port pairs in a ``worker_map``"""
+    """Check if there are any duplicate IP-port pairs in a ``worker_map``."""
     host_to_port = defaultdict(set)
     for worker, port in worker_map.items():
         host = urlparse(worker).hostname
