@@ -15,4 +15,3 @@ def gen_csv(fname, nrow, ncol):
 if __name__ == '__main__':
     import argh
     argh.dispatch_command(gen_csv)
-
