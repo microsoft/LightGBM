@@ -1182,7 +1182,7 @@ class Dataset:
         self.feature_penalty = None
         self.monotone_constraints = None
         self.version = 0
-        self._start_row = 0 # Used when pushing rows one by one.
+        self._start_row = 0  # Used when pushing rows one by one.
 
     def __del__(self):
         try:
@@ -1545,9 +1545,8 @@ class Dataset:
             nrow = len(seq)
             batch_size = seq.batch_size or Sequence.batch_size
             for start in range(0, nrow, batch_size):
-                end = min(start+batch_size, nrow)
+                end = min(start + batch_size, nrow)
                 self.push_rows(seq[start:end])
-
 
     def __init_from_np2d(self, mat, params_str, ref_dataset):
         """Initialize data from a 2-D numpy matrix."""

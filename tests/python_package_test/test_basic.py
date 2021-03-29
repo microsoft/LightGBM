@@ -12,12 +12,14 @@ import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_Series
 from .utils import load_breast_cancer
 
+
 def rm_files(files):
     if not isinstance(files, list):
         files = [files]
     for file in files:
         if os.path.exists(file):
             os.remove(file)
+
 
 def test_basic(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
@@ -126,9 +128,9 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_
     }
 
     nrow = 31
-    half_nrow = nrow//2
+    half_nrow = nrow // 2
     ncol = 11
-    data = np.arange(nrow*ncol).reshape((nrow, ncol)).astype('float64')
+    data = np.arange(nrow * ncol).reshape((nrow, ncol)).astype('float64')
 
     # total col
     if include_0:
@@ -155,21 +157,21 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_
     Y = data[:, -1]
     # truth
     ds = lgb.Dataset(X, label=Y, params=params)
-    ds.save_binary(str(tmpdir/"seq.truth.bin"))
+    ds.save_binary(str(tmpdir / "seq.truth.bin"))
     # seq
     if num_seq == 1:
         seqs = NumpySequence(X)
     else:
         seqs = []
-        seq_size = nrow//num_seq
+        seq_size = nrow // num_seq
         for start in range(0, nrow, seq_size):
             end = min(start + seq_size, nrow)
             seq = NumpySequence(X[start:end])
             seq.batch_size = batch_size
             seqs.append(seq)
     ds = lgb.Dataset(seqs, label=Y, params=params)
-    ds.save_binary(str(tmpdir/"seq.seq.bin"))
-    assert filecmp.cmp(tmpdir/"seq.truth.bin", tmpdir/"seq.seq.bin")
+    ds.save_binary(str(tmpdir / "seq.seq.bin"))
+    assert filecmp.cmp(tmpdir / "seq.truth.bin", tmpdir / "seq.seq.bin")
 
 
 def test_chunked_dataset():
