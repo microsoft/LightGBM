@@ -1100,22 +1100,8 @@ struct __StringToTHelper<T, true> {
   T operator()(const std::string& str) const {
     double tmp;
 
-    // Fast (common) path: For numeric inputs in RFC 7159 format:
-    const bool fast_parse_succeeded = fast_double_parser::parse_number(str.c_str(), &tmp);
-
-    // Rare path: Not in RFC 7159 format. Possible "inf", "nan", etc.
-    if (!fast_parse_succeeded) {
-      std::string strlower(str);
-      std::transform(strlower.begin(), strlower.end(), strlower.begin(), [](int c) -> char { return static_cast<char>(::tolower(c)); });
-      if (strlower == std::string("inf"))
-        tmp = std::numeric_limits<double>::infinity();
-      else if (strlower == std::string("-inf"))
-        tmp = -std::numeric_limits<double>::infinity();
-      else if (strlower == std::string("nan"))
-        tmp = std::numeric_limits<double>::quiet_NaN();
-      else if (strlower == std::string("-nan"))
-        tmp = -std::numeric_limits<double>::quiet_NaN();
-      else
+    const char* end = Common::AtofPrecise(str.c_str(), &tmp);
+    if (end == str.c_str()) {
         Log::Fatal("Failed to parse double: %s", str.c_str());
     }
 
