@@ -226,6 +226,7 @@ import matplotlib\
 matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
+    conda install -q -y -n $CONDA_ENV h5py # requirements for example
     for f in *.py **/*.py; do python $f || exit -1; done  # run all examples
     cd $BUILD_DIRECTORY/examples/python-guide/notebooks
     conda install -q -y -n $CONDA_ENV ipywidgets notebook
