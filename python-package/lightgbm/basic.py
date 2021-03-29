@@ -622,6 +622,12 @@ class Sequence(object):
 
     batch_size = 4096  # Defaults to read 4K rows in each batch.
 
+    @staticmethod
+    def is_class(obj):
+        if isinstance(obj, list):
+            return False
+        return hasattr(obj, "__getitem__") and hasattr(obj, "__len__")
+
     @abc.abstractmethod
     def __getitem__(self, idx):  # type: (Union[int, slice]) -> np.ndarray
         """Return data for given row index.
@@ -1439,15 +1445,15 @@ class Dataset:
             self.__init_from_csc(data, params_str, ref_dataset)
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(data, params_str, ref_dataset)
-        elif isinstance(data, Sequence):
-            self.__init_from_seqs([data], params_str, ref_dataset)
         elif isinstance(data, list) and len(data) > 0:
             if all(isinstance(x, np.ndarray) for x in data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)
-            elif all(isinstance(x, Sequence) for x in data):
+            elif all(Sequence.is_class(x) for x in data):
                 self.__init_from_seqs(data, params_str, ref_dataset)
             else:
                 raise TypeError('Data list can only be of ndarray or Sequence')
+        elif Sequence.is_class(data):
+            self.__init_from_seqs([data], params_str, ref_dataset)
         elif isinstance(data, dt_DataTable):
             self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
