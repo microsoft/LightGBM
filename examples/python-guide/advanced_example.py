@@ -50,7 +50,7 @@ print('Starting training...')
 gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=10,
-                valid_sets=lgb_train,  # eval training data
+                valid_sets=lgb_eval,  # eval training data
                 feature_name=feature_name,
                 categorical_feature=[21])
 
