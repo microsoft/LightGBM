@@ -10,14 +10,13 @@ from copy import deepcopy
 from functools import wraps
 from logging import Logger
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, List, Set, Union, Iterable
+from typing import Any, Dict, Iterable, List, Set, Union
 
 import numpy as np
 import scipy.sparse
 
 from .compat import PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
-
 
 # TODO: how to keep the default values the same with C++ config.h
 ZERO_THRESHOLD = 1e-35

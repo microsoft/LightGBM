@@ -1,7 +1,7 @@
 # coding: utf-8
+import filecmp
 import os
 
-import filecmp
 import numpy as np
 import pytest
 from scipy import sparse
@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_Series
+
 from .utils import load_breast_cancer
 
 
