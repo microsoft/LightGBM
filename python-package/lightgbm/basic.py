@@ -1488,7 +1488,7 @@ class Dataset:
                 seq = seqs[seq_id]
             id_in_seq = row_id - offset
             row = seq[int(id_in_seq)]
-            yield row
+            yield row if row.flags['OWNDATA'] else row.copy()
 
     def __sample(self, seqs, total_nrow):
         # type: (List[Sequence], int, int) -> (np.ndarray, List[np.ndarray])
