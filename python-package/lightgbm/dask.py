@@ -391,6 +391,8 @@ def _train(
             num_machines=num_machines,
             time_out=params.get('time_out', 120),
             return_model=(worker == master_worker),
+            workers=[worker],
+            allow_other_workers=False,
             **kwargs
         )
         for worker, list_of_parts in worker_map.items()
