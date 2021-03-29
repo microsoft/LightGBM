@@ -170,6 +170,18 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
     return out
 
 
+def _worker_map_has_duplicates(worker_map: Dict[str, int]) -> bool:
+    """Check if there are any duplicate IP-port pairs in a ``worker_map``"""
+    host_to_port = defaultdict(set)
+    for worker, port in worker_map.items():
+        host = urlparse(worker).hostname
+        if port in host_to_port[host]:
+            return True
+        else:
+            host_to_port[host].add(port)
+    return False
+
+
 def _train(
     client: Client,
     data: _DaskMatrixLike,
@@ -371,6 +383,18 @@ def _train(
                 _find_random_open_port,
                 workers=list(worker_addresses)
             )
+            # handle the case where _find_random_open_port() produces duplicates
+            retries_left = 10
+            while _worker_map_has_duplicates(worker_address_to_port) and retries_left > 0:
+                retries_left -= 1
+                _log_warning(
+                    "Searching for random ports generated duplicates. Trying again (will try %i more times after this)." % retries_left
+                )
+                worker_address_to_port = client.run(
+                    _find_random_open_port,
+                    workers=list(worker_addresses)
+                )
+
         machines = ','.join([
             '%s:%d' % (urlparse(worker_address).hostname, port)
             for worker_address, port

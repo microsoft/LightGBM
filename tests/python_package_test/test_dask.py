@@ -377,6 +377,27 @@ def test_find_random_open_port(client):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
+def test_worker_map_has_duplicates():
+    map_with_duplicates = worker_map = {
+        'tcp://127.0.0.1:8786': 123,
+        'tcp://127.0.0.1:8788': 123,
+        'tcp://10.1.1.2:15001': 123
+    }
+    assert lgb.dask._worker_map_has_duplicates(map_with_duplicates)
+
+    map_without_duplicates = {
+        'tcp://127.0.0.1:8786': 12405,
+        'tcp://10.1.1.2:15001': 12405
+    }
+    assert lgb.dask._worker_map_has_duplicates(map_without_duplicates) is False
+
+    localcluster_map_without_duplicates = {
+        'tcp://127.0.0.1:708': 12405,
+        'tcp://127.0.0.1:312': 12405,
+    }
+    assert lgb.dask._worker_map_has_duplicates(map_without_duplicates) is False
+
+
 def test_training_does_not_fail_on_port_conflicts(client):
     _, _, _, _, dX, dy, dw, _ = _create_data('binary-classification', output='array')
 
