@@ -621,7 +621,7 @@ class Sequence(object):
 
     @staticmethod
     def is_class(obj):
-        if isinstance(obj, list):
+        if isinstance(obj, list) or hasattr(obj, "getformat"):
             return False
         return hasattr(obj, "__getitem__") and hasattr(obj, "__len__")
 
