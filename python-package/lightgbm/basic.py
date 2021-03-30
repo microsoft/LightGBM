@@ -161,8 +161,8 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
             raise ValueError('Series.dtypes must be int, float or bool')
         return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
     else:
-        raise TypeError("Wrong type({0}) for {1}.\n"
-                        "It should be list, numpy 1-D array or pandas Series".format(type(data).__name__, name))
+        raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
+                        "It should be list, numpy 1-D array or pandas Series")
 
 
 def cfloat32_array_to_numpy(cptr, length):
@@ -226,15 +226,14 @@ def param_dict_to_str(data):
         if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
             def to_string(x):
                 if isinstance(x, list):
-                    return "[{}]".format(','.join(map(str, x)))
+                    return f"[{ ','.join(map(str, x)) }]"
                 else:
                     return str(x)
-            pairs.append(str(key) + '=' + ','.join(map(to_string, val)))
+            pairs.append(f"{key}={ ','.join(map(to_string, val)) }")
         elif isinstance(val, (str, NUMERIC_TYPES)) or is_numeric(val):
-            pairs.append(str(key) + '=' + str(val))
+            pairs.append(f"{key}={val}")
         elif val is not None:
-            raise TypeError('Unknown type of parameter:%s, got:%s'
-                            % (key, type(val).__name__))
+            raise TypeError(f'Unknown type of parameter:{key}, got:{type(val).__name__}')
     return ' '.join(pairs)
 
 
@@ -465,10 +464,9 @@ def c_float_array(data):
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
             type_data = C_API_DTYPE_FLOAT64
         else:
-            raise TypeError("Expected np.float32 or np.float64, met type({})"
-                            .format(data.dtype))
+            raise TypeError(f"Expected np.float32 or np.float64, met type({data.dtype})")
     else:
-        raise TypeError("Unknown type({})".format(type(data).__name__))
+        raise TypeError(f"Unknown type({type(data).__name__})")
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
@@ -486,10 +484,9 @@ def c_int_array(data):
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_int64))
             type_data = C_API_DTYPE_INT64
         else:
-            raise TypeError("Expected np.int32 or np.int64, met type({})"
-                            .format(data.dtype))
+            raise TypeError(f"Expected np.int32 or np.int64, met type({data.dtype})")
     else:
-        raise TypeError("Unknown type({})".format(type(data).__name__))
+        raise TypeError(f"Unknown type({type(data).__name__})")
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
@@ -559,9 +556,7 @@ def _label_from_pandas(label):
 
 
 def _dump_pandas_categorical(pandas_categorical, file_name=None):
-    pandas_str = ('\npandas_categorical:'
-                  + json.dumps(pandas_categorical, default=json_default_with_numpy)
-                  + '\n')
+    pandas_str = (f'\npandas_categorical:{json.dumps(pandas_categorical, default=json_default_with_numpy)}\n')
     if file_name is not None:
         with open(file_name, 'a') as f:
             f.write(pandas_str)
@@ -739,7 +734,7 @@ class _InnerPredictor:
                 _log_warning('Converting data to scipy sparse matrix.')
                 csr = scipy.sparse.csr_matrix(data)
             except BaseException:
-                raise TypeError('Cannot predict data for type {}'.format(type(data).__name__))
+                raise TypeError(f'Cannot predict data for type {type(data).__name__}')
             preds, nrow = self.__pred_for_csr(csr, start_iteration, num_iteration, predict_type)
         if pred_leaf:
             preds = preds.astype(np.int32)
@@ -748,17 +743,16 @@ class _InnerPredictor:
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
             else:
-                raise ValueError('Length of predict result (%d) cannot be divide nrow (%d)'
-                                 % (preds.size, nrow))
+                raise ValueError(f'Length of predict result ({preds.size}) cannot be divide nrow ({nrow})')
         return preds
 
     def __get_num_preds(self, start_iteration, num_iteration, nrow, predict_type):
         """Get size of prediction result."""
         if nrow > MAX_INT32:
-            raise LightGBMError('LightGBM cannot perform prediction for data'
-                                'with number of rows greater than MAX_INT32 (%d).\n'
+            raise LightGBMError(f'LightGBM cannot perform prediction for data'
+                                'with number of rows greater than MAX_INT32 ({MAX_INT32}).\n'
                                 'You can split your data into chunks'
-                                'and then concatenate predictions for them' % MAX_INT32)
+                                'and then concatenate predictions for them')
         n_preds = ctypes.c_int64(0)
         _safe_call(_LIB.LGBM_BoosterCalcNumPredict(
             self.handle,
@@ -1219,9 +1213,8 @@ class Dataset:
                       .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount])
         for key, _ in params.items():
             if key in args_names:
-                _log_warning('{0} keyword has been found in `params` and will be ignored.\n'
-                             'Please use {0} argument of the Dataset constructor to pass this parameter.'
-                             .format(key))
+                _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n \
+                             Please use {key} argument of the Dataset constructor to pass this parameter.')
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
@@ -1237,12 +1230,11 @@ class Dataset:
                 elif isinstance(name, int):
                     categorical_indices.add(name)
                 else:
-                    raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature"
-                                    .format(type(name).__name__, name))
+                    raise TypeError(f"Wrong type({type(name).__name__}) or unknown name({name}) in categorical_feature")
             if categorical_indices:
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     if cat_alias in params:
-                        _log_warning('{} in param dict is overridden.'.format(cat_alias))
+                        _log_warning(f'{cat_alias} in param dict is overridden.')
                         params.pop(cat_alias, None)
                 params['categorical_column'] = sorted(categorical_indices)
 
@@ -1277,7 +1269,7 @@ class Dataset:
                 csr = scipy.sparse.csr_matrix(data)
                 self.__init_from_csr(csr, params_str, ref_dataset)
             except BaseException:
-                raise TypeError('Cannot initialize Dataset from {}'.format(type(data).__name__))
+                raise TypeError(f'Cannot initialize Dataset from {type(data).__name__}')
         if label is not None:
             self.set_label(label)
         if self.get_label() is None:
@@ -1293,7 +1285,7 @@ class Dataset:
         elif init_score is not None:
             self.set_init_score(init_score)
         elif predictor is not None:
-            raise TypeError('Wrong predictor type {}'.format(type(predictor).__name__))
+            raise TypeError(f'Wrong predictor type {type(predictor).__name__}')
         # set feature names
         return self.set_feature_name(feature_name)
 
@@ -1369,7 +1361,7 @@ class Dataset:
     def __init_from_csr(self, csr, params_str, ref_dataset):
         """Initialize data from a CSR matrix."""
         if len(csr.indices) != len(csr.data):
-            raise ValueError('Length mismatch: {} vs {}'.format(len(csr.indices), len(csr.data)))
+            raise ValueError(f'Length mismatch: {len(csr.indices)} vs {len(csr.data)}')
         self.handle = ctypes.c_void_p()
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
@@ -1395,7 +1387,7 @@ class Dataset:
     def __init_from_csc(self, csc, params_str, ref_dataset):
         """Initialize data from a CSC matrix."""
         if len(csc.indices) != len(csc.data):
-            raise ValueError('Length mismatch: {} vs {}'.format(len(csc.indices), len(csc.data)))
+            raise ValueError(f'Length mismatch: {len(csc.indices)} vs {len(csc.data)}')
         self.handle = ctypes.c_void_p()
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
@@ -1630,7 +1622,7 @@ class Dataset:
         elif data.dtype == np.int32:
             ptr_data, type_data, _ = c_int_array(data)
         else:
-            raise TypeError("Expected np.float32/64 or np.int32, met type({})".format(data.dtype))
+            raise TypeError(f"Expected np.float32/64 or np.int32, met type({data.dtype})")
         if type_data != FIELD_TYPE_MAPPER[field_name]:
             raise TypeError("Input type error for set_field")
         _safe_call(_LIB.LGBM_DatasetSetField(
@@ -1656,7 +1648,7 @@ class Dataset:
             A numpy array with information from the Dataset.
         """
         if self.handle is None:
-            raise Exception("Cannot get %s before construct Dataset" % field_name)
+            raise Exception(f"Cannot get {field_name} before construct Dataset")
         tmp_out_len = ctypes.c_int()
         out_type = ctypes.c_int()
         ret = ctypes.POINTER(ctypes.c_void_p)()
@@ -1702,8 +1694,8 @@ class Dataset:
                 _log_warning('Using categorical_feature in Dataset.')
                 return self
             else:
-                _log_warning('categorical_feature in Dataset is overridden.\n'
-                             'New categorical_feature is {}'.format(sorted(list(categorical_feature))))
+                _log_warning(f'categorical_feature in Dataset is overridden.\n \
+                             New categorical_feature is {sorted(list(categorical_feature)}')
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
         else:
@@ -1774,8 +1766,7 @@ class Dataset:
             self.feature_name = feature_name
         if self.handle is not None and feature_name is not None and feature_name != 'auto':
             if len(feature_name) != self.num_feature():
-                raise ValueError("Length of feature_name({}) and num_feature({}) don't match"
-                                 .format(len(feature_name), self.num_feature()))
+                raise ValueError(f"Length of feature_name({len(feature_name)}) and num_feature({self.num_feature}) don't match")
             c_feature_name = [c_str(name) for name in feature_name]
             _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
                 self.handle,
@@ -1895,8 +1886,8 @@ class Dataset:
             raise ValueError("Length of feature names doesn't equal with num_feature")
         if reserved_string_buffer_size < required_string_buffer_size.value:
             raise BufferError(
-                "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
-                .format(reserved_string_buffer_size, required_string_buffer_size.value)
+                f"Allocated feature name buffer size ({reserved_string_buffer_size}) was"
+                f"inferior to the needed size ({required_string_buffer_size.value})."
             )
         return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
@@ -1956,8 +1947,8 @@ class Dataset:
                 elif isinstance(self.data, dt_DataTable):
                     self.data = self.data[self.used_indices, :]
                 else:
-                    _log_warning("Cannot subset {} type of raw data.\n"
-                                 "Returning original raw data".format(type(self.data).__name__))
+                    _log_warning(f"Cannot subset {type(self.data).__name__} type of raw data.\n"
+                                 "Returning original raw data")
             self.need_slice = False
         if self.data is None:
             raise LightGBMError("Cannot call `get_data` after freed raw data, "
@@ -2121,9 +2112,8 @@ class Dataset:
             else:
                 self.data = None
         if self.data is None:
-            err_msg = ("Cannot add features from {} type of raw data to "
-                       "{} type of raw data.\n").format(type(other.data).__name__,
-                                                        old_self_data_type)
+            err_msg = (f"Cannot add features from {type(other.data).__name__} type of raw data to "
+                       f"{old_self_data_type} type of raw data.\n")
             err_msg += ("Set free_raw_data=False when construct Dataset to avoid this"
                         if was_none else "Freeing raw data")
             _log_warning(err_msg)
@@ -2189,8 +2179,7 @@ class Booster:
         if train_set is not None:
             # Training task
             if not isinstance(train_set, Dataset):
-                raise TypeError('Training data should be Dataset instance, met {}'
-                                .format(type(train_set).__name__))
+                raise TypeError(f'Training data should be Dataset instance, met {type(train_set).__name__}')
             params = _choose_param_value(
                 main_param_name="machines",
                 params=params,
@@ -2549,8 +2538,7 @@ class Booster:
             Booster with set validation data.
         """
         if not isinstance(data, Dataset):
-            raise TypeError('Validation data should be Dataset instance, met {}'
-                            .format(type(data).__name__))
+            raise TypeError(f'Validation data should be Dataset instance, met {type(data).__name__}')
         if data._predictor is not self.__init_predictor:
             raise LightGBMError("Add validation data failed, "
                                 "you should use same predictor for these data")
@@ -2625,8 +2613,7 @@ class Booster:
             is_the_same_train_set = train_set is self.train_set and self.train_set_version == train_set.version
         if train_set is not None and not is_the_same_train_set:
             if not isinstance(train_set, Dataset):
-                raise TypeError('Training data should be Dataset instance, met {}'
-                                .format(type(train_set).__name__))
+                raise TypeError(f'Training data should be Dataset instance, met {type(train_set).__name__)}')
             if train_set._predictor is not self.__init_predictor:
                 raise LightGBMError("Replace training data failed, "
                                     "you should use same predictor for these data")
@@ -2678,8 +2665,7 @@ class Booster:
         assert grad.flags.c_contiguous
         assert hess.flags.c_contiguous
         if len(grad) != len(hess):
-            raise ValueError("Lengths of gradient({}) and hessian({}) don't match"
-                             .format(len(grad), len(hess)))
+            raise ValueError(f"Lengths of gradient({len(grad)}) and hessian({len(hess)}) don't match")
         is_finished = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterUpdateOneIterCustom(
             self.handle,
@@ -2974,7 +2960,7 @@ class Booster:
             self.handle,
             ctypes.byref(out_num_class)))
         if verbose:
-            _log_info('Finished loading model, total used %d iterations' % int(out_num_iterations.value))
+            _log_info(f'Finished loading model, total used { int(out_num_iterations.value) } iterations')
         self.__num_class = out_num_class.value
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
@@ -3263,9 +3249,7 @@ class Booster:
             raise ValueError("Length of feature names doesn't equal with num_feature")
         if reserved_string_buffer_size < required_string_buffer_size.value:
             raise BufferError(
-                "Allocated feature name buffer size ({}) was inferior to the needed size ({})."
-                .format(reserved_string_buffer_size, required_string_buffer_size.value)
-            )
+                f"Allocated feature name buffer size ({reserved_string_buffer_size}) was inferior to the needed size ({required_string_buffer_size.value)}.")
         return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
     def feature_importance(self, importance_type='split', iteration=None):
@@ -3428,7 +3412,7 @@ class Booster:
                 ctypes.byref(tmp_out_len),
                 data_ptr))
             if tmp_out_len.value != len(self.__inner_predict_buffer[data_idx]):
-                raise ValueError("Wrong length of predict results for data %d" % (data_idx))
+                raise ValueError(f"Wrong length of predict results for data {data_idx}")
             self.__is_predicted_cur_iter[data_idx] = True
         return self.__inner_predict_buffer[data_idx]
 
@@ -3462,9 +3446,7 @@ class Booster:
                     raise ValueError("Length of eval names doesn't equal with num_evals")
                 if reserved_string_buffer_size < required_string_buffer_size.value:
                     raise BufferError(
-                        "Allocated eval name buffer size ({}) was inferior to the needed size ({})."
-                        .format(reserved_string_buffer_size, required_string_buffer_size.value)
-                    )
+                        f"Allocated eval name buffer size ({reserved_string_buffer_size}) was inferior to the needed size ({required_string_vuffer_size.value}).")
                 self.__name_inner_eval = \
                     [string_buffers[i].value.decode('utf-8') for i in range(self.__num_inner_eval)]
                 self.__higher_better_inner_eval = \
