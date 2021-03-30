@@ -278,12 +278,13 @@ def test_classifier(output, task, boosting_type, client):
         assert_eq(s1, s2, atol=0.01)
         assert_eq(p1_proba, p2_proba, atol=0.8)
     else:
+        assert_eq(s1, s2)
         assert_eq(p1, p2)
+        assert_eq(p1, y)
+        assert_eq(p2, y)
         assert_eq(p1_proba, p2_proba, atol=0.03)
-        assert_eq(y, p1)
-        assert_eq(y, p2)
         assert_eq(p1_local, p2)
-        assert_eq(y, p1_local)
+        assert_eq(p1_local, y)
 
     # pref_leaf values should have the right shape
     # and values that look like valid tree nodes
