@@ -374,6 +374,13 @@ def _train(
     num_machines = len(worker_address_to_port)
 
     # Tell each worker to train on the parts that it has locally
+    #
+    # This code treates ``_train_part()`` calls as not "pure" because:
+    #     1. there is randomness in the training process unless parameters ``seed``
+    #        and ``is_deterministic`` are set
+    #     2. even with those parameters set, the output of one ``_train_part()`` call
+    #        relies on global state (it and all the other LightGBM training processes
+    #        coordinate with each other)
     futures_classifiers = [
         client.submit(
             _train_part,
@@ -385,6 +392,9 @@ def _train(
             num_machines=num_machines,
             time_out=params.get('time_out', 120),
             return_model=(worker == master_worker),
+            workers=[worker],
+            allow_other_workers=False,
+            pure=False,
             **kwargs
         )
         for worker, list_of_parts in worker_map.items()
@@ -443,7 +453,7 @@ def _predict_part(
 
     # dask.DataFrame.map_partitions() expects each call to return a pandas DataFrame or Series
     if isinstance(part, pd_DataFrame):
-        if pred_proba or pred_contrib or pred_leaf:
+        if len(result.shape) == 2:
             result = pd_DataFrame(result, index=part.index)
         else:
             result = pd_Series(result, index=part.index, name='predictions')
@@ -504,10 +514,6 @@ def _predict(
             **kwargs
         ).values
     elif isinstance(data, dask_Array):
-        if pred_proba:
-            kwargs['chunks'] = (data.chunks[0], (model.n_classes_,))
-        else:
-            kwargs['drop_axis'] = 1
         return data.map_blocks(
             _predict_part,
             model=model,
@@ -516,7 +522,7 @@ def _predict(
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,
             dtype=dtype,
-            **kwargs
+            drop_axis=1
         )
     else:
         raise TypeError('Data must be either Dask Array or Dask DataFrame. Got %s.' % str(type(data)))

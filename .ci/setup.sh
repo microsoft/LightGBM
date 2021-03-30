@@ -44,7 +44,8 @@ else  # Linux
             libicu66 \
             libssl1.1 \
             libunwind8 \
-            libxau-dev \
+            libxau6 \
+            libxext6 \
             libxrender1 \
             locales \
             netcat \
@@ -83,7 +84,8 @@ else  # Linux
         apt-get update
         apt-get install --no-install-recommends -y \
             curl \
-            libxau-dev \
+            libxau6 \
+            libxext6 \
             libxrender1 \
             lsb-release \
             software-properties-common
@@ -95,8 +97,14 @@ else  # Linux
         curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
         apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
         apt-get update
-        apt-get install --no-install-recommends -y \
-            cmake
+        if [[ $COMPILER == "clang" ]]; then
+            apt-get install --no-install-recommends -y \
+                cmake="3.19.5-0kitware1" \
+                cmake-data="3.19.5-0kitware1"
+        else
+            apt-get install --no-install-recommends -y \
+                cmake
+        fi
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
         ARCH=$(uname -m)

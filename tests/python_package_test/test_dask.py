@@ -132,7 +132,7 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
     return X, y, w, g_rle, dX, dy, dw, dg
 
 
-def _create_data(objective, n_samples=100, output='array', chunk_size=50, **kwargs):
+def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **kwargs):
     if objective.endswith('classification'):
         if objective == 'binary-classification':
             centers = [[-4, -4], [4, 4]]
@@ -142,7 +142,7 @@ def _create_data(objective, n_samples=100, output='array', chunk_size=50, **kwar
             raise ValueError(f"Unknown classification task '{objective}'")
         X, y = make_blobs(n_samples=n_samples, centers=centers, random_state=42)
     elif objective == 'regression':
-        X, y = make_regression(n_samples=n_samples, random_state=42)
+        X, y = make_regression(n_samples=n_samples, n_features=4, n_informative=2, random_state=42)
     elif objective == 'ranking':
         return _create_ranking_data(
             n_samples=n_samples,
@@ -162,7 +162,7 @@ def _create_data(objective, n_samples=100, output='array', chunk_size=50, **kwar
     elif output.startswith('dataframe'):
         X_df = pd.DataFrame(X, columns=['feature_%d' % i for i in range(X.shape[1])])
         if output == 'dataframe-with-categorical':
-            num_cat_cols = 5
+            num_cat_cols = 2
             for i in range(num_cat_cols):
                 col_name = "cat_col" + str(i)
                 cat_values = rnd.choice(['a', 'b'], X.shape[0])
@@ -173,13 +173,15 @@ def _create_data(objective, n_samples=100, output='array', chunk_size=50, **kwar
                 X_df[col_name] = cat_series
                 X = np.hstack((X, cat_series.cat.codes.values.reshape(-1, 1)))
 
-            # for the small data sizes used in tests, it's hard to get LGBMRegressor to choose
-            # categorical features for splits. So for regression tests with categorical features,
-            # _create_data() returns a DataFrame with ONLY categorical features
+            # make one categorical feature relevant to the target
+            cat_col_is_a = X_df['cat_col0'] == 'a'
             if objective == 'regression':
-                cat_cols = [col for col in X_df.columns if col.startswith('cat_col')]
-                X_df = X_df[cat_cols]
-                X = X[:, -num_cat_cols:]
+                y = np.where(cat_col_is_a, y, 2 * y)
+            elif objective == 'binary-classification':
+                y = np.where(cat_col_is_a, y, 1 - y)
+            elif objective == 'multiclass-classification':
+                n_classes = 3
+                y = np.where(cat_col_is_a, y, (1 + y) % n_classes)
         y_df = pd.Series(y, name='target')
         dX = dd.from_pandas(X_df, chunksize=chunk_size)
         dy = dd.from_pandas(y_df, chunksize=chunk_size)
@@ -241,8 +243,8 @@ def test_classifier(output, task, tree_learner, client):
 
     params = {
         "tree_learner": tree_learner,
-        "n_estimators": 10,
-        "num_leaves": 10
+        "n_estimators": 50,
+        "num_leaves": 31
     }
 
     dask_classifier = lgb.DaskLGBMClassifier(
@@ -268,7 +270,7 @@ def test_classifier(output, task, tree_learner, client):
     assert_eq(p1, p2)
     assert_eq(y, p1)
     assert_eq(y, p2)
-    assert_eq(p1_proba, p2_proba, atol=0.3)
+    assert_eq(p1_proba, p2_proba, atol=0.01)
     assert_eq(p1_local, p2)
     assert_eq(y, p1_local)
 
@@ -411,7 +413,8 @@ def test_regressor(output, tree_learner, client):
 
     params = {
         "random_state": 42,
-        "num_leaves": 10
+        "num_leaves": 31,
+        "n_estimators": 20,
     }
 
     dask_regressor = lgb.DaskLGBMRegressor(
@@ -424,8 +427,7 @@ def test_regressor(output, tree_learner, client):
     p1 = dask_regressor.predict(dX)
     p1_pred_leaf = dask_regressor.predict(dX, pred_leaf=True)
 
-    if not output.startswith('dataframe'):
-        s1 = _r2_score(dy, p1)
+    s1 = _r2_score(dy, p1)
     p1 = p1.compute()
     p1_local = dask_regressor.to_local().predict(X)
     s1_local = dask_regressor.to_local().score(X, y)
@@ -436,9 +438,8 @@ def test_regressor(output, tree_learner, client):
     p2 = local_regressor.predict(X)
 
     # Scores should be the same
-    if not output.startswith('dataframe'):
-        assert_eq(s1, s2, atol=.01)
-        assert_eq(s1, s1_local, atol=.003)
+    assert_eq(s1, s2, atol=0.01)
+    assert_eq(s1, s1_local)
 
     # Predictions should be roughly the same.
     assert_eq(p1, p1_local)
@@ -454,13 +455,8 @@ def test_regressor(output, tree_learner, client):
     assert np.min(pred_leaf_vals) >= 0
     assert len(np.unique(pred_leaf_vals)) <= params['num_leaves']
 
-    # The checks below are skipped
-    # for the categorical data case because it's difficult to get
-    # a good fit from just categoricals for a regression problem
-    # with small data
-    if output != 'dataframe-with-categorical':
-        assert_eq(y, p1, rtol=1., atol=100.)
-        assert_eq(y, p2, rtol=1., atol=50.)
+    assert_eq(p1, y, rtol=0.5, atol=50.)
+    assert_eq(p2, y, rtol=0.5, atol=50.)
 
     # be sure LightGBM actually used at least one categorical column,
     # and that it was correctly treated as a categorical feature
@@ -1017,16 +1013,12 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(client, tas
 
 
 @pytest.mark.parametrize('task', tasks)
-@pytest.mark.parametrize('output', data_output)
-def test_network_params_not_required_but_respected_if_given(client, task, output, listen_port):
-    if task == 'ranking' and output == 'scipy_csr_matrix':
-        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
-
+def test_network_params_not_required_but_respected_if_given(client, task, listen_port):
     client.wait_for_workers(2)
 
     _, _, _, _, dX, dy, _, dg = _create_data(
         objective=task,
-        output=output,
+        output='array',
         chunk_size=10,
         group=None
     )
@@ -1034,8 +1026,7 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
     dask_model_factory = task_to_dask_factory[task]
 
     # rebalance data to be sure that each worker has a piece of the data
-    if output == 'array':
-        client.rebalance()
+    client.rebalance()
 
     # model 1 - no network parameters given
     dask_model1 = dask_model_factory(
@@ -1082,15 +1073,11 @@ def test_network_params_not_required_but_respected_if_given(client, task, output
 
 
 @pytest.mark.parametrize('task', tasks)
-@pytest.mark.parametrize('output', data_output)
-def test_machines_should_be_used_if_provided(task, output):
-    if task == 'ranking' and output == 'scipy_csr_matrix':
-        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
-
+def test_machines_should_be_used_if_provided(task):
     with LocalCluster(n_workers=2) as cluster, Client(cluster) as client:
         _, _, _, _, dX, dy, _, dg = _create_data(
             objective=task,
-            output=output,
+            output='array',
             chunk_size=10,
             group=None
         )
@@ -1098,8 +1085,7 @@ def test_machines_should_be_used_if_provided(task, output):
         dask_model_factory = task_to_dask_factory[task]
 
         # rebalance data to be sure that each worker has a piece of the data
-        if output == 'array':
-            client.rebalance()
+        client.rebalance()
 
         n_workers = len(client.scheduler_info()['workers'])
         assert n_workers > 1
@@ -1288,3 +1274,43 @@ def test_parameters_default_constructible(estimator):
     else:
         Estimator = estimator.__class__
     sklearn_checks.check_parameters_default_constructible(name, Estimator)
+
+
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
+def test_predict_with_raw_score(task, output, client):
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
+
+    _, _, _, _, dX, dy, _, dg = _create_data(
+        objective=task,
+        output=output,
+        group=None
+    )
+
+    model_factory = task_to_dask_factory[task]
+    params = {
+        'client': client,
+        'n_estimators': 1,
+        'num_leaves': 2,
+        'time_out': 5,
+        'min_sum_hessian': 0
+    }
+    model = model_factory(**params)
+    model.fit(dX, dy, group=dg)
+    raw_predictions = model.predict(dX, raw_score=True).compute()
+
+    trees_df = model.booster_.trees_to_dataframe()
+    leaves_df = trees_df[trees_df.node_depth == 2]
+    if task == 'multiclass-classification':
+        for i in range(model.n_classes_):
+            class_df = leaves_df[leaves_df.tree_index == i]
+            assert set(raw_predictions[:, i]) == set(class_df['value'])
+    else:
+        assert set(raw_predictions) == set(leaves_df['value'])
+
+    if task.endswith('classification'):
+        pred_proba_raw = model.predict_proba(dX, raw_score=True).compute()
+        assert_eq(raw_predictions, pred_proba_raw)
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)

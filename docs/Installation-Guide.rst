@@ -117,22 +117,12 @@ Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 macOS
 ~~~~~
 
-On macOS LightGBM can be installed using **Homebrew**, or can be built using **CMake** and **Apple Clang** or **gcc**.
+On macOS LightGBM can be built using **CMake** and **Apple Clang** or **gcc**.
 
 Apple Clang
 ^^^^^^^^^^^
 
 Only **Apple Clang** version 8.1 or higher is supported.
-
-Install Using ``Homebrew``
-**************************
-
-.. code::
-
-  brew install lightgbm
-
-Build from GitHub
-*****************
 
 1. Install `CMake`_ (3.16 or higher):
 
@@ -498,7 +488,7 @@ Build GPU Version
 Linux
 ^^^^^
 
-On Linux a GPU version of LightGBM can be built using **OpenCL**, **Boost**, **CMake** and **gcc** or **Clang**.
+On Linux a GPU version of LightGBM (``device_type=gpu``) can be built using **OpenCL**, **Boost**, **CMake** and **gcc** or **Clang**.
 
 The following dependencies should be installed before compilation:
 
@@ -530,7 +520,7 @@ To build LightGBM GPU version, run the following commands:
 Windows
 ^^^^^^^
 
-On Windows a GPU version of LightGBM can be built using **OpenCL**, **Boost**, **CMake** and **VS Build Tools** or **MinGW**.
+On Windows a GPU version of LightGBM (``device_type=gpu``) can be built using **OpenCL**, **Boost**, **CMake** and **VS Build Tools** or **MinGW**.
 
 If you use **MinGW**, the build procedure is similar to the build on Linux. Refer to `GPU Windows Compilation <./GPU-Windows.rst>`__ to get more details.
 
@@ -581,9 +571,9 @@ Refer to `GPU Docker folder <https://github.com/microsoft/LightGBM/tree/master/d
 Build CUDA Version (Experimental)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The `original GPU build <#build-gpu-version>`__ of LightGBM is based on OpenCL.
+The `original GPU build <#build-gpu-version>`__ of LightGBM (``device_type=gpu``) is based on OpenCL.
 
-The CUDA-based build is a separate implementation and requires an NVIDIA graphics card with compute capability 6.0 and higher. It should be considered experimental, and we suggest using it only when it is impossible to use OpenCL version (for example, on IBM POWER microprocessors).
+The CUDA-based build (``device_type=cuda``) is a separate implementation and requires an NVIDIA graphics card with compute capability 6.0 and higher. It should be considered experimental, and we suggest using it only when it is impossible to use OpenCL version (for example, on IBM POWER microprocessors).
 
 **Note**: only Linux is supported, other operating systems are not supported yet.
 
