@@ -425,7 +425,7 @@ def _train(
     #
     # This code treates ``_train_part()`` calls as not "pure" because:
     #     1. there is randomness in the training process unless parameters ``seed``
-    #        and ``is_deterministic`` are set
+    #        and ``deterministic`` are set
     #     2. even with those parameters set, the output of one ``_train_part()`` call
     #        relies on global state (it and all the other LightGBM training processes
     #        coordinate with each other)
