@@ -396,15 +396,16 @@ def test_possibly_fix_worker_map(capsys, client):
     assert retry_msg not in capsys.readouterr().out
 
     # should handle worker maps with duplicates
-    map_without_duplicates = {
+    map_with_duplicates = {
         worker_address: 12400
         for i, worker_address in enumerate(worker_addresses)
     }
     patched_map = lgb.dask._possibly_fix_worker_map_duplicates(
         client=client,
-        worker_map=map_without_duplicates
+        worker_map=map_with_duplicates
     )
     assert retry_msg in capsys.readouterr().out
+    assert len(set(patched_map.values())) == len(worker_addresses)
 
 
 def test_training_does_not_fail_on_port_conflicts(client):

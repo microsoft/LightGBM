@@ -171,7 +171,7 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
 
 
 def _possibly_fix_worker_map_duplicates(worker_map: Dict[str, int], client: Client) -> Dict[str, int]:
-    """Fix any duplicate IP-port pairs in a ``worker_map``"""
+    """Fix any duplicate IP-port pairs in a ``worker_map``."""
     worker_map = deepcopy(worker_map)
     workers_that_need_new_ports = []
     host_to_port = defaultdict(set)
