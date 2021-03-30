@@ -45,6 +45,7 @@ CLIENT_CLOSE_TIMEOUT = 120
 
 tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ranking']
 data_output = ['array', 'scipy_csr_matrix', 'dataframe', 'dataframe-with-categorical']
+boosting_types = ['gbdt', 'dart', 'goss', 'rf']
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 task_to_dask_factory = {
     'regression': lgb.DaskLGBMRegressor,
@@ -233,16 +234,25 @@ def _unpickle(filepath, serializer):
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
-def test_classifier(output, task, client):
+@pytest.mark.parametrize('boosting_type', boosting_types)
+def test_classifier(output, task, boosting_type, client):
     X, y, w, _, dX, dy, dw, _ = _create_data(
         objective=task,
         output=output
     )
 
     params = {
+        "boosting_type": boosting_type,
         "n_estimators": 50,
         "num_leaves": 31
     }
+    if boosting_type == 'rf':
+        params.update({
+            'bagging_freq': 1,
+            'bagging_fraction': 0.9,
+        })
+    elif boosting_type == 'goss':
+        params['top_rate'] = 0.5
 
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
@@ -263,13 +273,18 @@ def test_classifier(output, task, client):
     p2_proba = local_classifier.predict_proba(X)
     s2 = local_classifier.score(X, y)
 
-    assert_eq(s1, s2)
-    assert_eq(p1, p2)
-    assert_eq(y, p1)
-    assert_eq(y, p2)
-    assert_eq(p1_proba, p2_proba, atol=0.01)
-    assert_eq(p1_local, p2)
-    assert_eq(y, p1_local)
+    if boosting_type == 'rf' and output == 'dataframe-with-categorical':
+        # https://github.com/microsoft/LightGBM/issues/4118
+        assert_eq(s1, s2, atol=0.01)
+        assert_eq(p1_proba, p2_proba, atol=0.8)
+    else:
+        assert_eq(s1, s2)
+        assert_eq(p1, p2)
+        assert_eq(p1, y)
+        assert_eq(p2, y)
+        assert_eq(p1_proba, p2_proba, atol=0.03)
+        assert_eq(p1_local, p2)
+        assert_eq(p1_local, y)
 
     # pref_leaf values should have the right shape
     # and values that look like valid tree nodes
@@ -401,17 +416,24 @@ def test_training_does_not_fail_on_port_conflicts(client):
 
 
 @pytest.mark.parametrize('output', data_output)
-def test_regressor(output, client):
+@pytest.mark.parametrize('boosting_type', boosting_types)
+def test_regressor(output, boosting_type, client):
     X, y, w, _, dX, dy, dw, _ = _create_data(
         objective='regression',
         output=output
     )
 
     params = {
+        "boosting_type": boosting_type,
         "random_state": 42,
         "num_leaves": 31,
         "n_estimators": 20,
     }
+    if boosting_type == 'rf':
+        params.update({
+            'bagging_freq': 1,
+            'bagging_fraction': 0.9,
+        })
 
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
@@ -569,7 +591,8 @@ def test_regressor_quantile(output, client, alpha):
 
 @pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])
 @pytest.mark.parametrize('group', [None, group_sizes])
-def test_ranker(output, client, group):
+@pytest.mark.parametrize('boosting_type', boosting_types)
+def test_ranker(output, group, boosting_type, client):
     if output == 'dataframe-with-categorical':
         X, y, w, g, dX, dy, dw, dg = _create_data(
             objective='ranking',
@@ -597,11 +620,17 @@ def test_ranker(output, client, group):
     # use many trees + leaves to overfit, help ensure that Dask data-parallel strategy matches that of
     # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
     params = {
+        "boosting_type": boosting_type,
         "random_state": 42,
         "n_estimators": 50,
         "num_leaves": 20,
         "min_child_samples": 1
     }
+    if boosting_type == 'rf':
+        params.update({
+            'bagging_freq': 1,
+            'bagging_fraction': 0.9,
+        })
 
     dask_ranker = lgb.DaskLGBMRanker(
         client=client,
