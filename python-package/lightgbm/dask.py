@@ -170,16 +170,37 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
     return out
 
 
-def _worker_map_has_duplicates(worker_map: Dict[str, int]) -> bool:
-    """Check if there are any duplicate IP-port pairs in a ``worker_map``."""
+def _possibly_fix_worker_map_duplicates(worker_map: Dict[str, int], client: Client) -> Dict[str, int]:
+    """Fix any duplicate IP-port pairs in a ``worker_map``"""
+    worker_map = deepcopy(worker_map)
+    workers_that_need_new_ports = []
     host_to_port = defaultdict(set)
     for worker, port in worker_map.items():
         host = urlparse(worker).hostname
         if port in host_to_port[host]:
-            return True
+            workers_that_need_new_ports.append(worker)
         else:
             host_to_port[host].add(port)
-    return False
+
+    # if any duplicates were found, search for new ports one by one
+    for worker in workers_that_need_new_ports:
+        _log_info(f"Searching for a LightGBM training port for worker '{worker}'")
+        host = urlparse(worker).hostname
+        retries_remaining = 100
+        while retries_remaining > 0:
+            retries_remaining -= 1
+            new_port = client.submit(
+                _find_random_open_port,
+                workers=[worker],
+                allow_other_workers=False,
+                pure=False
+            ).result()
+            if new_port not in host_to_port[host]:
+                worker_map[worker] = new_port
+                host_to_port[host].add(new_port)
+                break
+
+    return worker_map
 
 
 def _train(
@@ -379,21 +400,18 @@ def _train(
             }
         else:
             _log_info("Finding random open ports for workers")
+            # this approach with client.run() is faster than searching for ports
+            # serially, but can produce duplicates sometimes. Try the fast approach one
+            # time, then pass it through a function that will use a slower but more reliable
+            # approach if duplicates are found.
             worker_address_to_port = client.run(
                 _find_random_open_port,
                 workers=list(worker_addresses)
             )
-            # handle the case where _find_random_open_port() produces duplicates
-            retries_left = 10
-            while _worker_map_has_duplicates(worker_address_to_port) and retries_left > 0:
-                retries_left -= 1
-                _log_warning(
-                    "Searching for random ports generated duplicates. Trying again (will try %i more times after this)." % retries_left
-                )
-                worker_address_to_port = client.run(
-                    _find_random_open_port,
-                    workers=list(worker_addresses)
-                )
+            worker_address_to_port = _possibly_fix_worker_map_duplicates(
+                worker_map=worker_address_to_port,
+                client=client
+            )
 
         machines = ','.join([
             '%s:%d' % (urlparse(worker_address).hostname, port)

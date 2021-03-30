@@ -377,25 +377,34 @@ def test_find_random_open_port(client):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-def test_worker_map_has_duplicates():
-    map_with_duplicates = worker_map = {
-        'tcp://127.0.0.1:8786': 123,
-        'tcp://127.0.0.1:8788': 123,
-        'tcp://10.1.1.2:15001': 123
-    }
-    assert lgb.dask._worker_map_has_duplicates(map_with_duplicates)
+def test_possibly_fix_worker_map(capsys, client):
+    client.wait_for_workers(2)
+    worker_addresses = list(client.scheduler_info()["workers"].keys())
 
+    retry_msg = 'Searching for a LightGBM training port for worker'
+
+    # should handle worker maps without any duplicates
     map_without_duplicates = {
-        'tcp://127.0.0.1:8786': 12405,
-        'tcp://10.1.1.2:15001': 12405
+        worker_address: 12400 + i
+        for i, worker_address in enumerate(worker_addresses)
     }
-    assert lgb.dask._worker_map_has_duplicates(map_without_duplicates) is False
+    patched_map = lgb.dask._possibly_fix_worker_map_duplicates(
+        client=client,
+        worker_map=map_without_duplicates
+    )
+    assert patched_map == map_without_duplicates
+    assert retry_msg not in capsys.readouterr().out
 
-    localcluster_map_without_duplicates = {
-        'tcp://127.0.0.1:708': 12405,
-        'tcp://127.0.0.1:312': 12405,
+    # should handle worker maps with duplicates
+    map_without_duplicates = {
+        worker_address: 12400
+        for i, worker_address in enumerate(worker_addresses)
     }
-    assert lgb.dask._worker_map_has_duplicates(map_without_duplicates) is False
+    patched_map = lgb.dask._possibly_fix_worker_map_duplicates(
+        client=client,
+        worker_map=map_without_duplicates
+    )
+    assert retry_msg in capsys.readouterr().out
 
 
 def test_training_does_not_fail_on_port_conflicts(client):
