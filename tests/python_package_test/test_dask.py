@@ -276,7 +276,7 @@ def test_classifier(output, task, boosting_type, tree_learner, client):
     p2_proba = local_classifier.predict_proba(X)
     s2 = local_classifier.score(X, y)
 
-    if boosting_type == 'rf' and output == 'dataframe-with-categorical':
+    if boosting_type == 'rf':
         # https://github.com/microsoft/LightGBM/issues/4118
         assert_eq(s1, s2, atol=0.01)
         assert_eq(p1_proba, p2_proba, atol=0.8)
