@@ -200,6 +200,11 @@ def _possibly_fix_worker_map_duplicates(worker_map: Dict[str, int], client: Clie
                 host_to_port[host].add(new_port)
                 break
 
+        if retries_remaining == 0:
+            raise LightGBMError(
+                "Failed to find an open port. Try re-running training or explicitly setting 'machines' or 'local_listen_port'."
+            )
+
     return worker_map
 
 
