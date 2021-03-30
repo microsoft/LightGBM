@@ -113,5 +113,5 @@ A = [experiment('binary', label_type='binary', data=DATA)['time']
      for k in range(K)]
 B = [experiment('xentropy', label_type='binary', data=DATA)['time']
      for k in range(K)]
-print('Best `binary` time: ' + str(min(A)))
-print('Best `xentropy` time: ' + str(min(B)))
+print(f'Best `binary` time: { min(A) }')
+print(f'Best `xentropy` time: { min(B) }')

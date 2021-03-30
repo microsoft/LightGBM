@@ -171,20 +171,20 @@ def set_one_var_from_string(name, param_type, checks):
     ret = ""
     univar_mapper = {"int": "GetInt", "double": "GetDouble", "bool": "GetBool", "std::string": "GetString"}
     if "vector" not in param_type:
-        ret += "  %s(params, \"%s\", &%s);\n" % (univar_mapper[param_type], name, name)
+        ret += f"  {univar_mapper[param_type]}(params, \"{name}\", &{name});\n"
         if len(checks) > 0:
             check_mapper = {"<": "LT", ">": "GT", "<=": "LE", ">=": "GE"}
             for check in checks:
                 value, sign = parse_check(check)
-                ret += "  CHECK_%s(%s, %s);\n" % (check_mapper[sign], name, value)
+                ret += f"  CHECK_{check_mapper[sign]}({name}, {value});\n"
         ret += "\n"
     else:
-        ret += "  if (GetString(params, \"%s\", &tmp_str)) {\n" % (name)
+        ret += f"  if (GetString(params, \"{name}\", &tmp_str)) {\n"
         type2 = param_type.split("<")[1][:-1]
         if type2 == "std::string":
-            ret += "    %s = Common::Split(tmp_str.c_str(), ',');\n" % (name)
+            ret += f"    {name} = Common::Split(tmp_str.c_str(), ',');\n"
         else:
-            ret += "    %s = Common::StringToArray<%s>(tmp_str, ',');\n" % (name, type2)
+            ret += f"    {name} = Common::StringToArray<{type2}>(tmp_str, ',');\n"
         ret += "  }\n\n"
     return ret
 
@@ -205,7 +205,7 @@ def gen_parameter_description(sections, descriptions, params_rst):
     lvl_mapper = {1: '-', 2: '~'}
     for (section_name, section_lvl), section_params in zip(sections, descriptions):
         heading_sign = lvl_mapper[section_lvl]
-        params_to_write.append('{0}\n{1}'.format(section_name, heading_sign * len(section_name)))
+        params_to_write.append(f'{section_name}\n{ header_sign * len(section_name) }'
         for param_desc in section_params:
             name = param_desc['name'][0]
             default_raw = param_desc['default'][0]
@@ -213,12 +213,14 @@ def gen_parameter_description(sections, descriptions, params_rst):
             param_type = param_desc.get('type', param_desc['inner_type'])[0].split(':')[-1].split('<')[-1].strip('>')
             options = param_desc.get('options', [])
             if len(options) > 0:
-                options_str = ', options: ``{0}``'.format('``, ``'.join([x.strip() for x in options[0].split(',')]))
+                opts = '``, ``'.join([x.strip() for x in options[0].split(',')])
+                options_str = f', options: ``{opt}``'
             else:
                 options_str = ''
             aliases = param_desc.get('alias', [])
             if len(aliases) > 0:
-                aliases_str = ', aliases: ``{0}``'.format('``, ``'.join([x.strip() for x in aliases[0].split(',')]))
+                aliases = '``, ``'.join([x.strip() for x in aliases[0].split(',')]) 
+                aliases_str = ', aliases: ``{aliases}``'
             else:
                 aliases_str = ''
             checks = sorted(param_desc.get('check', []))
@@ -226,13 +228,13 @@ def gen_parameter_description(sections, descriptions, params_rst):
             if checks_len > 1:
                 number1, sign1 = parse_check(checks[0])
                 number2, sign2 = parse_check(checks[1], reverse=True)
-                checks_str = ', constraints: ``{0} {1} {2} {3} {4}``'.format(number2, sign2, name, sign1, number1)
+                checks_str = f', constraints: ``{number2} {sign2} {name} {sign1} {number1}``'
             elif checks_len == 1:
                 number, sign = parse_check(checks[0])
-                checks_str = ', constraints: ``{0} {1} {2}``'.format(name, sign, number)
+                checks_str = f', constraints: ``{name} {sign} {number}``'
             else:
                 checks_str = ''
-            main_desc = '-  ``{0}`` :raw-html:`<a id="{0}" title="Permalink to this parameter" href="#{0}">&#x1F517;&#xFE0E;</a>`, default = ``{1}``, type = {2}{3}{4}{5}'.format(name, default, param_type, options_str, aliases_str, checks_str)
+            main_desc = f'-  ``{name}`` :raw-html:`<a id="{name}" title="Permalink to this parameter" href="#{name}">&#x1F517;&#xFE0E;</a>`, default = ``{default}``, type = {param_type}{options_str}{aliases_str}{checks_str}'
             params_to_write.append(main_desc)
             params_to_write.extend([' ' * 3 * int(desc[0][-1]) + '-  ' + desc[1] for desc in param_desc['desc']])
 
@@ -281,7 +283,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
     str_to_write += "  static std::unordered_map<std::string, std::string> aliases({\n"
 
     for pair in alias:
-        str_to_write += "  {\"%s\", \"%s\"},\n" % (pair[0], pair[1])
+        str_to_write += f"  {\"{pair[0]}\", \"{pair[1]}\"},\n"
     str_to_write += "  });\n"
     str_to_write += "  return aliases;\n"
     str_to_write += "}\n\n"
@@ -291,7 +293,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
     str_to_write += "  static std::unordered_set<std::string> params({\n"
 
     for name in names:
-        str_to_write += "  \"%s\",\n" % (name)
+        str_to_write += f"  \"{name}\",\n"
     str_to_write += "  });\n"
     str_to_write += "  return params;\n"
     str_to_write += "}\n\n"
@@ -321,11 +323,11 @@ def gen_parameter_code(config_hpp, config_out_cpp):
             name = y["name"][0]
             if "vector" in param_type:
                 if "int8" in param_type:
-                    str_to_write += "  str_buf << \"[%s: \" << Common::Join(Common::ArrayCast<int8_t, int>(%s), \",\") << \"]\\n\";\n" % (name, name)
+                    str_to_write += f"  str_buf << \"[{name}: \" << Common::Join(Common::ArrayCast<int8_t, int>({name}), \",\") << \"]\\n\";\n" 
                 else:
-                    str_to_write += "  str_buf << \"[%s: \" << Common::Join(%s, \",\") << \"]\\n\";\n" % (name, name)
+                    str_to_write += f"  str_buf << \"[{name}: \" << Common::Join({name}, \",\") << \"]\\n\";\n" % (name, name)
             else:
-                str_to_write += "  str_buf << \"[%s: \" << %s << \"]\\n\";\n" % (name, name)
+                str_to_write += f"  str_buf << \"[{name}: \" << {name} << \"]\\n\";\n"
     # tails
     str_to_write += "  return str_buf.str();\n"
     str_to_write += "}\n\n"
