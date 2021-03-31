@@ -392,6 +392,37 @@ def test_find_random_open_port(client):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
+def test_possibly_fix_worker_map(capsys, client):
+    client.wait_for_workers(2)
+    worker_addresses = list(client.scheduler_info()["workers"].keys())
+
+    retry_msg = 'Searching for a LightGBM training port for worker'
+
+    # should handle worker maps without any duplicates
+    map_without_duplicates = {
+        worker_address: 12400 + i
+        for i, worker_address in enumerate(worker_addresses)
+    }
+    patched_map = lgb.dask._possibly_fix_worker_map_duplicates(
+        client=client,
+        worker_map=map_without_duplicates
+    )
+    assert patched_map == map_without_duplicates
+    assert retry_msg not in capsys.readouterr().out
+
+    # should handle worker maps with duplicates
+    map_with_duplicates = {
+        worker_address: 12400
+        for i, worker_address in enumerate(worker_addresses)
+    }
+    patched_map = lgb.dask._possibly_fix_worker_map_duplicates(
+        client=client,
+        worker_map=map_with_duplicates
+    )
+    assert retry_msg in capsys.readouterr().out
+    assert len(set(patched_map.values())) == len(worker_addresses)
+
+
 def test_training_does_not_fail_on_port_conflicts(client):
     _, _, _, _, dX, dy, dw, _ = _create_data('binary-classification', output='array')
 
