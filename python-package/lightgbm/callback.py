@@ -68,7 +68,7 @@ def print_evaluation(period: int = 1, show_stdv: bool = True) -> Callable:
         if period > 0 and env.evaluation_result_list and (env.iteration + 1) % period == 0:
             result = '\t'.join([_format_eval_result(x, show_stdv) for x in env.evaluation_result_list])
             _log_info('[%d]\t%s' % (env.iteration + 1, result))
-    _callback.order = 10
+    _callback.order = 10  # type: ignore
     return _callback
 
 
@@ -99,7 +99,7 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
             _init(env)
         for data_name, eval_name, result, _ in env.evaluation_result_list:
             eval_result[data_name][eval_name].append(result)
-    _callback.order = 20
+    _callback.order = 20 # type: ignore
     return _callback
 
 
@@ -139,8 +139,8 @@ def reset_parameter(**kwargs: Union[list, Callable]) -> Callable:
         if new_parameters:
             env.model.reset_parameter(new_parameters)
             env.params.update(new_parameters)
-    _callback.before_iteration = True
-    _callback.order = 10
+    _callback.before_iteration = True # type: ignore
+    _callback.order = 10 # type: ignore
     return _callback
 
 
@@ -237,5 +237,5 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
                         _log_info("Evaluated only: {}".format(eval_name_splitted[-1]))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
             _final_iteration_check(env, eval_name_splitted, i)
-    _callback.order = 30
+    _callback.order = 30 # type: ignore
     return _callback
