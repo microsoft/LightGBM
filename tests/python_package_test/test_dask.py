@@ -935,7 +935,6 @@ def test_warns_and_continues_on_unrecognized_tree_learner(client):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-@pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('tree_learner', ['data_parallel', 'voting_parallel'])
 def test_training_respects_tree_learner_aliases(task, tree_learner, client):
     _, _, _, _, dX, dy, dw, dg = _create_data(objective=task, output='array')
@@ -954,8 +953,8 @@ def test_training_respects_tree_learner_aliases(task, tree_learner, client):
 
 
 def test_error_on_feature_parallel_tree_learner(client):
-    X = da.random.random((1_000, 10), chunks=(500, 10))
-    y = da.random.random((1_000, 1), chunks=500)
+    X = da.random.random((100, 10), chunks=(50, 10))
+    y = da.random.random(100, chunks=50)
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         time_out=5,
