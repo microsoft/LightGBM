@@ -203,7 +203,8 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
         if env.iteration == env.end_iteration - 1:
             if verbose:
                 best_score_str = '\t'.join([_format_eval_result(x) for x in best_score_list[i]])
-                _log_info(f'Did not meet early stopping. Best iteration is:\n[{best_iter[i]+1}]\t{best_score_str}'
+                _log_info('Did not meet early stopping.'
+                          f'Best iteration is:\n[{best_iter[i]+1}]\t{best_score_str}')
                 if first_metric_only:
                     _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
             raise EarlyStopException(best_iter[i], best_score_list[i])
@@ -229,7 +230,10 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                 continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
             elif env.iteration - best_iter[i] >= stopping_rounds:
                 if verbose:
-                    _log_info(f"Early stopping, best iteration is:\n[{best_iter[i]+1}]\t{ '\t'.join([_format_eval_result(x) for x in best_score_list[i]])}"
+                    _log_info(
+                        "Early stopping, best iteration is:\n'
+                        f'[{best_iter[i]+1}]\t{ '\t'.join([_format_eval_result(x) for x in best_score_list[i]])}"
+                    )
                     if first_metric_only:
                         _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
                 raise EarlyStopException(best_iter[i], best_score_list[i])
