@@ -936,7 +936,8 @@ def test_warns_and_continues_on_unrecognized_tree_learner(client):
 
 
 @pytest.mark.parametrize('tree_learner', ['data_parallel', 'voting_parallel'])
-def test_training_respects_tree_learner_aliases(task, tree_learner, client):
+def test_training_respects_tree_learner_aliases(tree_learner, client):
+    task = 'regression'
     _, _, _, _, dX, dy, dw, dg = _create_data(objective=task, output='array')
     dask_factory = task_to_dask_factory[task]
     dask_model = dask_factory(
