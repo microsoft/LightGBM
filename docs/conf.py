@@ -207,7 +207,7 @@ def generate_doxygen_xml(app):
         The application object representing the Sphinx process.
     """
     INPUT = os.path.join(CURR_PATH, os.path.pardir,
-                                       'include', 'LightGBM', 'c_api.h')
+                        'include', 'LightGBM', 'c_api.h')
     doxygen_args = [
         f"INPUT={INPUT}",
         f"OUTPUT_DIRECTORY={ os.path.join(CURR_PATH, 'doxyoutput') }",
@@ -243,7 +243,7 @@ def generate_doxygen_xml(app):
         else:
             print(output)
     except BaseException as e:
-        raise Exception(f"An error has occurred while executing Doxygen\n{e}"))
+        raise Exception(f"An error has occurred while executing Doxygen\n{e}")
 
 
 def generate_r_docs(app):
@@ -269,10 +269,10 @@ def generate_r_docs(app):
             r-roxygen2=7.1.1=r40h0357c0b_0
     source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
-    cd { os.path.join(CURR_PATH, os.path.pardir) }
+    cd {os.path.join(CURR_PATH, os.path.pardir)}
     export R_LIBS="$CONDA_PREFIX/lib/R/library"
     Rscript build_r.R || exit -1
-    cd {  os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r") }
+    cd {os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r")}
     Rscript -e "roxygen2::roxygenize(load = 'installed')" || exit -1
     Rscript -e "pkgdown::build_site( \
             lazy = FALSE \
@@ -285,7 +285,7 @@ def generate_r_docs(app):
             , new_process = TRUE \
         )
         " || exit -1
-    cd { os.path.join(CURR_PATH, os.path.pardir) }
+    cd {os.path.join(CURR_PATH, os.path.pardir)}
     """
     try:
         # Warning! The following code can cause buffer overflows on RTD.
