@@ -132,7 +132,7 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
     return X, y, w, g_rle, dX, dy, dw, dg
 
 
-def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **kwargs):
+def _create_data(objective, n_samples=1_000, output='array', chunk_size=50, **kwargs):
     if objective.endswith('classification'):
         if objective == 'binary-classification':
             centers = [[-4, -4], [4, 4]]
@@ -198,7 +198,7 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
 
 def _r2_score(dy_true, dy_pred):
     numerator = ((dy_true - dy_pred) ** 2).sum(axis=0, dtype=np.float64)
-    denominator = ((dy_true - dy_pred.mean(axis=0)) ** 2).sum(axis=0, dtype=np.float64)
+    denominator = ((dy_true - dy_true.mean(axis=0)) ** 2).sum(axis=0, dtype=np.float64)
     return (1 - numerator / denominator).compute()
 
 
@@ -273,7 +273,7 @@ def test_classifier(output, task, boosting_type, client):
     p2_proba = local_classifier.predict_proba(X)
     s2 = local_classifier.score(X, y)
 
-    if boosting_type == 'rf' and output == 'dataframe-with-categorical':
+    if boosting_type == 'rf':
         # https://github.com/microsoft/LightGBM/issues/4118
         assert_eq(s1, s2, atol=0.01)
         assert_eq(p1_proba, p2_proba, atol=0.8)
