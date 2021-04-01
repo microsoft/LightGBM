@@ -208,22 +208,22 @@ def generate_doxygen_xml(app):
     """
     INPUT = os.path.join(CURR_PATH, os.path.pardir, 'include', 'LightGBM', 'c_api.h')
     doxygen_args = [
-        f"INPUT={INPUT}",
-        f"OUTPUT_DIRECTORY={ os.path.join(CURR_PATH, 'doxyoutput') }",
-        "GENERATE_HTML=NO",
-        "GENERATE_LATEX=NO",
-        "GENERATE_XML=YES",
-        "XML_OUTPUT=xml",
-        "XML_PROGRAMLISTING=YES",
-        r'ALIASES="rst=\verbatim embed:rst:leading-asterisk"',
-        r'ALIASES+="endrst=\endverbatim"',
-        "ENABLE_PREPROCESSING=YES",
-        "MACRO_EXPANSION=YES",
-        "EXPAND_ONLY_PREDEF=NO",
-        "SKIP_FUNCTION_MACROS=NO",
-        "SORT_BRIEF_DOCS=YES",
-        "WARN_AS_ERROR=YES",
-    ]
+            f"INPUT={INPUT}",
+            f"OUTPUT_DIRECTORY={ os.path.join(CURR_PATH, 'doxyoutput') }",
+            "GENERATE_HTML=NO",
+            "GENERATE_LATEX=NO",
+            "GENERATE_XML=YES",
+            "XML_OUTPUT=xml",
+            "XML_PROGRAMLISTING=YES",
+            r'ALIASES="rst=\verbatim embed:rst:leading-asterisk"',
+            r'ALIASES+="endrst=\endverbatim"',
+            "ENABLE_PREPROCESSING=YES",
+            "MACRO_EXPANSION=YES",
+            "EXPAND_ONLY_PREDEF=NO",
+            "SKIP_FUNCTION_MACROS=NO",
+            "SORT_BRIEF_DOCS=YES",
+            "WARN_AS_ERROR=YES",
+        ]
     doxygen_input = '\n'.join(doxygen_args)
     doxygen_input = bytes(doxygen_input, "utf-8")
     if not os.path.exists(os.path.join(CURR_PATH, 'doxyoutput')):
