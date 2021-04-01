@@ -1,5 +1,6 @@
 # coding: utf-8
 import os
+from lightgbm.basic import LightGBMError
 
 import numpy as np
 import pytest
@@ -8,7 +9,7 @@ from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
-from lightgbm.compat import PANDAS_INSTALLED, pd_Series
+from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import load_breast_cancer
 
@@ -406,3 +407,30 @@ def test_list_to_1d_numpy(y, dtype):
     result = lgb.basic.list_to_1d_numpy(y, dtype=dtype)
     assert result.size == 10
     assert result.dtype == dtype
+
+
+@pytest.mark.parametrize(
+    'init_score',
+    [
+        np.random.rand(10, 3),
+        np.random.rand(10, 2),
+        pd_DataFrame(np.random.rand(10, 3)),
+        pd_DataFrame(np.random.rand(10, 2)),
+        [[1, 1, 1] for _ in range(10)],
+        [[1, 1] for _ in range(10)],
+    ]
+)
+def test_init_score_for_multiclass_classification(init_score):
+    data = np.random.rand(10, 2)
+    label = np.random.randint(low=0, high=3, size=10)
+    clf = lgb.LGBMClassifier()
+    is_wrong_2d_numpy_pandas = isinstance(init_score, (np.ndarray, pd_DataFrame)) and init_score.shape[1] == 2
+    is_wrong_2d_list = isinstance(init_score, list) and len(init_score[0]) == 2
+    shape_msg = 'Expected init_score to be of shape (10, 3). Got (10, 2).'
+    if is_wrong_2d_numpy_pandas or is_wrong_2d_list:
+        with pytest.raises(ValueError) as exc_info:
+            clf.fit(data, label, init_score=init_score)
+            assert exc_info.value.args[0] == shape_msg
+        return
+    clf.fit(data, label, init_score=init_score)
+    assert clf.fitted_

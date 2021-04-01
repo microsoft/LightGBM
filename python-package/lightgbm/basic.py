@@ -134,8 +134,8 @@ def is_numpy_column_array(data):
     return len(shape) == 2 and shape[1] == 1
 
 
-def cast_numpy_1d_array_to_dtype(array, dtype):
-    """Cast numpy 1d array to given dtype."""
+def cast_numpy_array_to_dtype(array, dtype):
+    """Cast numpy array to given dtype."""
     if array.dtype == dtype:
         return array
     return array.astype(dtype=dtype, copy=False)
@@ -149,11 +149,11 @@ def is_1d_list(data):
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
     if is_numpy_1d_array(data):
-        return cast_numpy_1d_array_to_dtype(data, dtype)
+        return cast_numpy_array_to_dtype(data, dtype)
     elif is_numpy_column_array(data):
         _log_warning('Converting column-vector to 1d array')
         array = data.ravel()
-        return cast_numpy_1d_array_to_dtype(array, dtype)
+        return cast_numpy_array_to_dtype(array, dtype)
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, pd_Series):
@@ -163,6 +163,28 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     else:
         raise TypeError("Wrong type({0}) for {1}.\n"
                         "It should be list, numpy 1-D array or pandas Series".format(type(data).__name__, name))
+
+
+def is_numpy_2d_array(data):
+    return isinstance(data, np.ndarray) and len(data.shape) == 2 and data.shape[1] > 1
+
+
+def is_2d_list(data):
+    return isinstance(data, list) and is_1d_list(data[0])
+
+
+def data_to_2d_numpy(data, dtype=np.float32, name='list'):
+    """Convert data to numpy 2-D array."""
+    if is_numpy_2d_array(data):
+        return cast_numpy_array_to_dtype(data, dtype)
+    if is_2d_list(data):
+        return np.array(data, dtype=dtype)
+    if isinstance(data, pd_DataFrame):
+        if _get_bad_pandas_dtypes(data.dtypes):
+            raise ValueError('Series.dtypes must be int, float or bool')
+        return cast_numpy_array_to_dtype(data.values, dtype)
+    raise TypeError("Wrong type({0}) for {1}.\n"
+                    "It should be list, numpy 2-D array or pandas DataFrame".format(type(data).__name__, name))
 
 
 def cfloat32_array_to_numpy(cptr, length):
@@ -1840,7 +1862,21 @@ class Dataset:
         """
         self.init_score = init_score
         if self.handle is not None and init_score is not None:
-            init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
+            try:
+                init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
+            except TypeError as err:
+                if self.params.get('num_class', 0) > 1:
+                    init_score = data_to_2d_numpy(init_score, np.float64, name='init_score')
+                    expected_samples, expected_classes = self.num_data(), self.params['num_class']
+                    n_samples, n_classes = init_score.shape
+                    if n_samples != expected_samples or n_classes != expected_classes:
+                        raise ValueError(
+                            f'Expected init_score to be of shape ({expected_samples}, {expected_classes}). '
+                            f'Got ({n_samples}, {n_classes}).')
+                    init_score = init_score.ravel()
+                    self.init_score = init_score
+                else:
+                    raise err
             self.set_field('init_score', init_score)
             self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
         return self
