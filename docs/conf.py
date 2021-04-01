@@ -207,7 +207,7 @@ def generate_doxygen_xml(app):
         The application object representing the Sphinx process.
     """
     INPUT = os.path.join(CURR_PATH, os.path.pardir,
-                            'include', 'LightGBM', 'c_api.h')
+                        'include', 'LightGBM', 'c_api.h')
     doxygen_args = [
         f"INPUT={INPUT}",
         f"OUTPUT_DIRECTORY={ os.path.join(CURR_PATH, 'doxyoutput') }",
