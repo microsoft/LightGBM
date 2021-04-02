@@ -209,7 +209,7 @@ def generate_doxygen_xml(app):
     input = os.path.join(CURR_PATH, os.path.pardir, 'include', 'LightGBM', 'c_api.h')
     doxygen_args = [
         f"INPUT={INPUT}",
-        f"OUTPUT_DIRECTORY={ os.path.join(CURR_PATH, 'doxyoutput') }",
+        f"OUTPUT_DIRECTORY={os.path.join(CURR_PATH, 'doxyoutput')}",
         "GENERATE_HTML=NO",
         "GENERATE_LATEX=NO",
         "GENERATE_XML=YES",
