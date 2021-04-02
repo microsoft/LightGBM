@@ -11,11 +11,18 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <ios>
 #include <limits>
+#include <memory>
+#include <iostream>
+#include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
+#include <map>
 
 namespace LightGBM {
 
@@ -108,6 +115,13 @@ class LambdarankNDCG : public RankingObjective {
     DCGCalculator::Init(label_gain_);
     sigmoid_table_.clear();
     inverse_max_dcgs_.clear();
+
+    // Load Position biases if any
+    LoadPositionBiasMap();
+
+    // Here initialize the position bias lookup;
+    // need to think through how to initialize the map
+
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid param %f should be greater than zero", sigmoid_);
     }
@@ -123,6 +137,7 @@ class LambdarankNDCG : public RankingObjective {
     DCGCalculator::CheckMetadata(metadata, num_queries_);
     DCGCalculator::CheckLabel(label_, num_data_);
     inverse_max_dcgs_.resize(num_queries_);
+
 #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i] = DCGCalculator::CalMaxDCGAtK(
@@ -135,6 +150,37 @@ class LambdarankNDCG : public RankingObjective {
     }
     // construct sigmoid table to speed up sigmoid transform
     ConstructSigmoidTable();
+  }
+
+  void LoadPositionBiasMap() {
+      // Example csv:
+      // i,j,position_bias
+      // 1,2,0.58374
+      // 1,3,0.34287
+
+      if (const char* position_bias_path = std::getenv("POS_BIAS_PATH")) {
+          std::fstream pb_fin;
+          pb_fin.open(position_bias_path, std::ios::in);
+
+          if (!pb_fin.is_open()) {
+            Log::Fatal("Couldn't open position bias file at path %s", position_bias_path);
+          }
+
+
+          std::string line;
+
+          data_size_t i, j;
+          double bias;
+          while(std::getline(pb_fin,line)) {
+              std::sscanf(line.c_str(),"%d,%d,%lf", &i, &j, &bias);
+          }
+
+          position_bias_lookup_[std::make_pair(i, j)] = bias;
+          position_bias_lookup_[std::make_pair(j, i)] = 1.0 / bias;
+      } else {
+          Log::Fatal("POS_BIAS_PATH environment variable not set");
+
+      }
   }
 
   inline void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt,
@@ -165,6 +211,10 @@ class LambdarankNDCG : public RankingObjective {
     const double worst_score = score[sorted_idx[worst_idx]];
     double sum_lambdas = 0.0;
     // start accmulate lambdas by pairs that contain at least one document above truncation level
+    //
+    // Gabby: I don't think this for loop needs to change. Basically I think you only want to
+    // compare examples where, without loss of generality, doc_i is clicked but doc_j isn't, which
+    // I think we're already doing based on the "skip pairs with same labels" comment below
     for (data_size_t i = 0; i < cnt - 1 && i < truncation_level_; ++i) {
       if (score[sorted_idx[i]] == kMinScore) { continue; }
       for (data_size_t j = i + 1; j < cnt; ++j) {
@@ -190,6 +240,14 @@ class LambdarankNDCG : public RankingObjective {
         const double low_label_gain = label_gain_[low_label];
         const double low_discount = DCGCalculator::GetDiscount(low_rank);
 
+        double position_bias_ratio = 1.0f;
+        if (!position_bias_lookup_.empty()) {
+            auto it = position_bias_lookup_.find(std::make_pair(high, low));
+            if (it != position_bias_lookup_.end()){
+                position_bias_ratio = it->second;
+            }
+        }
+
         const double delta_score = high_score - low_score;
 
         // get dcg gap
@@ -206,8 +264,8 @@ class LambdarankNDCG : public RankingObjective {
         double p_lambda = GetSigmoid(delta_score);
         double p_hessian = p_lambda * (1.0f - p_lambda);
         // update
-        p_lambda *= -sigmoid_ * delta_pair_NDCG;
-        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG;
+        p_lambda *= -sigmoid_ * delta_pair_NDCG * position_bias_ratio;
+        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG * position_bias_ratio;
         lambdas[low] -= static_cast<score_t>(p_lambda);
         hessians[low] += static_cast<score_t>(p_hessian);
         lambdas[high] += static_cast<score_t>(p_lambda);
@@ -268,6 +326,9 @@ class LambdarankNDCG : public RankingObjective {
   std::vector<double> sigmoid_table_;
   /*! \brief Gains for labels */
   std::vector<double> label_gain_;
+
+  std::map<std::pair<data_size_t, data_size_t>, double> position_bias_lookup_;
+
   /*! \brief Number of bins in simoid table */
   size_t _sigmoid_bins = 1024 * 1024;
   /*! \brief Minimal input of sigmoid table */
