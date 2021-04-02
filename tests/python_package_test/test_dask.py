@@ -1,6 +1,7 @@
 # coding: utf-8
 """Tests for lightgbm.dask module"""
 
+import copy
 import inspect
 import pickle
 import random
@@ -692,12 +693,9 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
     if task == 'ranking':
         eval_metrics = ['ndcg']
         eval_at = (5, 6)
+        eval_metric_names = [f'ndcg@{k}' for k in eval_at]
         eval_group = []
-
     else:
-        eval_at = None
-        eval_group = None
-
         # test eval_class_weight, eval_init_score on binary-classification task.
         if task == 'binary-classification':
             eval_metrics = ['binary_error', 'auc']
@@ -707,6 +705,8 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
             eval_metrics = ['multi_error', 'multi_logloss']
         elif task == 'regression':
             eval_metrics = ['rmse']
+
+        eval_metric_names = eval_metrics
 
     # create eval_sets by creating new datasets or copying training data.
     for eval_size in eval_sizes:
@@ -807,14 +807,98 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
                 else:
                     eval_name.startswith('valid')
 
-            # check that each of eval_metrics calculated on all eval sets.
-            for i, metric in enumerate(eval_metrics):
-                if task == 'ranking':
-                    metric += f'@{eval_at[i]}'
-
+            # check that each of eval_metrics is calculated on all eval sets.
+            for metric in eval_metric_names:
                 assert metric in evals_result[eval_name]
                 assert metric in best_scores[eval_name]
                 assert len(evals_result[eval_name][metric]) == fit_trees
+
+    client.close(timeout=CLIENT_CLOSE_TIMEOUT)
+
+
+@pytest.mark.parametrize('task', ['binary-classification', 'regression', 'ranking'])
+def test_eval_set_with_custom_eval_metric(task, client):
+
+    n_samples = 1000
+    n_eval_samples = int(n_samples * 0.5)
+    chunk_size = 10
+    output = 'array'
+    rnd = np.random.RandomState(42)
+
+    X, y, w, g, dX, dy, dw, dg = _create_data(
+        objective=task,
+        n_samples=n_samples,
+        output=output,
+        chunk_size=chunk_size
+    )
+
+    _, y_e, _, _, dX_e, dy_e, _, dg_e = _create_data(
+        objective=task,
+        n_samples=n_eval_samples,
+        output=output,
+        chunk_size=chunk_size
+    )
+
+    # define custom eval metric callable.
+    def _constant_metric(preds, train_data):
+        metric_name = 'constant_metric'
+        value = 0.708
+        is_higher_better = False
+        return metric_name, value, is_higher_better
+
+    if task == 'ranking':
+        eval_at = '5,6'
+        eval_metrics = ['ndcg']
+        eval_metric_names = [f'ndcg@{k}' for k in eval_at.split(',')] + ['constant_metric']
+    else:
+        if task == 'binary-classification':
+            eval_metrics = ['binary_error', 'auc']
+        else:
+            eval_metrics = ['rmse']
+        eval_metric_names = copy.copy(eval_metrics)
+        eval_metric_names.append('constant_metric')
+
+    eval_metrics.append(_constant_metric)
+
+    fit_trees = 50
+    params = {
+        "random_state": 42,
+        "n_estimators": fit_trees,
+        "num_leaves": 2
+    }
+    model_factory = task_to_dask_factory[task]
+    dask_model = model_factory(
+        client=client,
+        **params
+    )
+
+    eval_set = [(dX_e, dy_e)]
+    fit_params = {
+        'X': dX,
+        'y': dy,
+        'eval_set': eval_set,
+        'eval_metric': eval_metrics,
+        'verbose': True
+    }
+    if task == 'ranking':
+        fit_params.update(
+            {'group': dg,
+             'eval_group': [dg_e],
+             'eval_at': eval_at}
+        )
+
+    dask_model = dask_model.fit(**fit_params)
+
+    eval_name = 'valid_0'
+    evals_result = dask_model.evals_result_
+    assert len(evals_result) == 1
+    assert eval_name in evals_result
+
+    for metric in eval_metric_names:
+        assert metric in evals_result[eval_name]
+        assert len(evals_result[eval_name][metric]) == fit_trees
+
+    assert np.allclose(evals_result[eval_name]['constant_metric'], 0.708)
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
