@@ -1,6 +1,5 @@
 # coding: utf-8
 import os
-from lightgbm.basic import Dataset
 
 import numpy as np
 import pytest
@@ -421,7 +420,7 @@ def test_init_score_for_multiclass_classification(init_score_type):
         init_score = [[1, 1, 1] for _ in range(10)]
     data = np.random.rand(10, 2)
     label = np.random.randint(low=0, high=3, size=10)
-    ds = Dataset(data, label, init_score=init_score)
+    ds = lgb.basic.Dataset(data, label, init_score=init_score)
     ds.construct()
     init_score_array = lgb.basic.data_to_2d_numpy(init_score, dtype=np.float64)
     np.testing.assert_equal(ds.init_score, init_score_array.ravel())
