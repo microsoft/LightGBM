@@ -255,7 +255,7 @@ def test_classifier(output, task, boosting_type, tree_learner, client):
             'bagging_fraction': 0.9,
         })
     elif boosting_type == 'goss':
-        params['top_rate'] = 0.5
+        params['top_rate'] = 0.7
 
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
