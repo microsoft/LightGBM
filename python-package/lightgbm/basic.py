@@ -146,6 +146,16 @@ def is_1d_list(data):
     return isinstance(data, list) and (not data or is_numeric(data[0]))
 
 
+def is_1d_collection(data):
+    """Check whether data is a 1-D collection."""
+    return (
+        is_numpy_1d_array(data)
+        or is_numpy_column_array(data)
+        or is_1d_list(data)
+        or isinstance(data, pd_Series)
+    )
+
+
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
     if is_numpy_1d_array(data):
@@ -166,11 +176,22 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
 
 
 def is_numpy_2d_array(data):
+    """Check whether data is a numpy 2-D array."""
     return isinstance(data, np.ndarray) and len(data.shape) == 2 and data.shape[1] > 1
 
 
 def is_2d_list(data):
+    """Check whether data is a 2-D list."""
     return isinstance(data, list) and is_1d_list(data[0])
+
+
+def is_2d_collection(data):
+    """Check whether data is a 2-D collection."""
+    return (
+        is_numpy_2d_array(data)
+        or is_2d_list(data)
+        or isinstance(data, pd_DataFrame)
+    )
 
 
 def data_to_2d_numpy(data, dtype=np.float32, name='list'):
@@ -1862,21 +1883,17 @@ class Dataset:
         """
         self.init_score = init_score
         if self.handle is not None and init_score is not None:
-            try:
+            if is_1d_collection(init_score):
                 init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
-            except TypeError as err:
-                if self.params.get('num_class', 0) > 1:
-                    init_score = data_to_2d_numpy(init_score, np.float64, name='init_score')
-                    expected_samples, expected_classes = self.num_data(), self.params['num_class']
-                    n_samples, n_classes = init_score.shape
-                    if n_samples != expected_samples or n_classes != expected_classes:
-                        raise ValueError(
-                            f'Expected init_score to be of shape ({expected_samples}, {expected_classes}). '
-                            f'Got ({n_samples}, {n_classes}).')
-                    init_score = init_score.ravel()
-                    self.init_score = init_score
-                else:
-                    raise err
+            elif is_2d_collection(init_score):
+                init_score = data_to_2d_numpy(init_score, np.float64, name='init_score')
+                init_score = init_score.ravel()
+                self.init_score = init_score
+            else:
+                raise TypeError(
+                    'init_score must be list, numpy 1-D array or pandas Series.\n'
+                    'In multiclass classification init_score must be list, numpy 2-D array or pandas DataFrame.'
+                )
             self.set_field('init_score', init_score)
             self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
         return self

@@ -1,6 +1,6 @@
 # coding: utf-8
 import os
-from lightgbm.basic import LightGBMError
+from lightgbm.basic import Dataset
 
 import numpy as np
 import pytest
@@ -409,28 +409,19 @@ def test_list_to_1d_numpy(y, dtype):
     assert result.dtype == dtype
 
 
-@pytest.mark.parametrize(
-    'init_score',
-    [
-        np.random.rand(10, 3),
-        np.random.rand(10, 2),
-        pd_DataFrame(np.random.rand(10, 3)),
-        pd_DataFrame(np.random.rand(10, 2)),
-        [[1, 1, 1] for _ in range(10)],
-        [[1, 1] for _ in range(10)],
-    ]
-)
-def test_init_score_for_multiclass_classification(init_score):
+@pytest.mark.parametrize('init_score_type', ['array', 'dataframe', 'list'])
+def test_init_score_for_multiclass_classification(init_score_type):
+    if init_score_type == 'array':
+        init_score = np.random.rand(10, 3)
+    elif init_score_type == 'dataframe':
+        if not PANDAS_INSTALLED:
+            pytest.skip('Pandas is not installed.')
+        init_score = pd_DataFrame(np.random.rand(10, 3))
+    else:
+        init_score = [[1, 1, 1] for _ in range(10)]
     data = np.random.rand(10, 2)
     label = np.random.randint(low=0, high=3, size=10)
-    clf = lgb.LGBMClassifier()
-    is_wrong_2d_numpy_pandas = isinstance(init_score, (np.ndarray, pd_DataFrame)) and init_score.shape[1] == 2
-    is_wrong_2d_list = isinstance(init_score, list) and len(init_score[0]) == 2
-    shape_msg = 'Expected init_score to be of shape (10, 3). Got (10, 2).'
-    if is_wrong_2d_numpy_pandas or is_wrong_2d_list:
-        with pytest.raises(ValueError) as exc_info:
-            clf.fit(data, label, init_score=init_score)
-            assert exc_info.value.args[0] == shape_msg
-        return
-    clf.fit(data, label, init_score=init_score)
-    assert clf.fitted_
+    ds = Dataset(data, label, init_score=init_score)
+    ds.construct()
+    init_score_array = lgb.basic.data_to_2d_numpy(init_score, dtype=np.float64)
+    np.testing.assert_equal(ds.init_score, init_score_array.ravel())
