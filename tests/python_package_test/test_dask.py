@@ -204,6 +204,13 @@ def _accuracy_score(dy_true, dy_pred):
     return da.average(dy_true == dy_pred).compute()
 
 
+def _constant_metric(preds, train_data):
+    metric_name = 'constant_metric'
+    value = 0.708
+    is_higher_better = False
+    return metric_name, value, is_higher_better
+
+
 def _pickle(obj, filepath, serializer):
     if serializer == 'pickle':
         with open(filepath, 'wb') as f:
@@ -838,13 +845,6 @@ def test_eval_set_with_custom_eval_metric(task, client):
         output=output,
         chunk_size=chunk_size
     )
-
-    # define custom eval metric callable.
-    def _constant_metric(preds, train_data):
-        metric_name = 'constant_metric'
-        value = 0.708
-        is_higher_better = False
-        return metric_name, value, is_higher_better
 
     if task == 'ranking':
         eval_at = '5,6'
