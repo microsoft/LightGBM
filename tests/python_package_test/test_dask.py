@@ -44,6 +44,7 @@ sk_version = parse_version(sk_version)
 CLIENT_CLOSE_TIMEOUT = 120
 
 tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ranking']
+distributed_training_algorithms = ['data', 'voting']
 data_output = ['array', 'scipy_csr_matrix', 'dataframe', 'dataframe-with-categorical']
 boosting_types = ['gbdt', 'dart', 'goss', 'rf']
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
@@ -235,7 +236,8 @@ def _unpickle(filepath, serializer):
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
 @pytest.mark.parametrize('boosting_type', boosting_types)
-def test_classifier(output, task, boosting_type, client):
+@pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
+def test_classifier(output, task, boosting_type, tree_learner, client):
     X, y, w, _, dX, dy, dw, _ = _create_data(
         objective=task,
         output=output
@@ -243,6 +245,7 @@ def test_classifier(output, task, boosting_type, client):
 
     params = {
         "boosting_type": boosting_type,
+        "tree_learner": tree_learner,
         "n_estimators": 50,
         "num_leaves": 31
     }
@@ -448,7 +451,8 @@ def test_training_does_not_fail_on_port_conflicts(client):
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('boosting_type', boosting_types)
-def test_regressor(output, boosting_type, client):
+@pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
+def test_regressor(output, boosting_type, tree_learner, client):
     X, y, w, _, dX, dy, dw, _ = _create_data(
         objective='regression',
         output=output
@@ -469,7 +473,7 @@ def test_regressor(output, boosting_type, client):
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         time_out=5,
-        tree='data',
+        tree=tree_learner,
         **params
     )
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw)
@@ -623,7 +627,8 @@ def test_regressor_quantile(output, client, alpha):
 @pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])
 @pytest.mark.parametrize('group', [None, group_sizes])
 @pytest.mark.parametrize('boosting_type', boosting_types)
-def test_ranker(output, group, boosting_type, client):
+@pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
+def test_ranker(output, group, boosting_type, tree_learner, client):
     if output == 'dataframe-with-categorical':
         X, y, w, g, dX, dy, dw, dg = _create_data(
             objective='ranking',
@@ -666,7 +671,7 @@ def test_ranker(output, group, boosting_type, client):
     dask_ranker = lgb.DaskLGBMRanker(
         client=client,
         time_out=5,
-        tree_learner_type='data_parallel',
+        tree_learner_type=tree_learner,
         **params
     )
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg)
@@ -961,22 +966,36 @@ def test_warns_and_continues_on_unrecognized_tree_learner(client):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-def test_warns_but_makes_no_changes_for_feature_or_voting_tree_learner(client):
-    X = da.random.random((1e3, 10))
-    y = da.random.random((1e3, 1))
-    for tree_learner in ['feature_parallel', 'voting']:
-        dask_regressor = lgb.DaskLGBMRegressor(
-            client=client,
-            time_out=5,
-            tree_learner=tree_learner,
-            n_estimators=1,
-            num_leaves=2
-        )
-        with pytest.warns(UserWarning, match='Support for tree_learner %s in lightgbm' % tree_learner):
-            dask_regressor = dask_regressor.fit(X, y)
+@pytest.mark.parametrize('tree_learner', ['data_parallel', 'voting_parallel'])
+def test_training_respects_tree_learner_aliases(tree_learner, client):
+    task = 'regression'
+    _, _, _, _, dX, dy, dw, dg = _create_data(objective=task, output='array')
+    dask_factory = task_to_dask_factory[task]
+    dask_model = dask_factory(
+        client=client,
+        tree_learner=tree_learner,
+        time_out=5,
+        n_estimators=10,
+        num_leaves=15
+    )
+    dask_model.fit(dX, dy, sample_weight=dw, group=dg)
 
-        assert dask_regressor.fitted_
-        assert dask_regressor.get_params()['tree_learner'] == tree_learner
+    assert dask_model.fitted_
+    assert dask_model.get_params()['tree_learner'] == tree_learner
+
+
+def test_error_on_feature_parallel_tree_learner(client):
+    X = da.random.random((100, 10), chunks=(50, 10))
+    y = da.random.random(100, chunks=50)
+    dask_regressor = lgb.DaskLGBMRegressor(
+        client=client,
+        time_out=5,
+        tree_learner='feature_parallel',
+        n_estimators=1,
+        num_leaves=2
+    )
+    with pytest.raises(lgb.basic.LightGBMError, match='Do not support feature parallel in c api'):
+        dask_regressor = dask_regressor.fit(X, y)
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
