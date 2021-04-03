@@ -81,10 +81,10 @@ lgb.call <- function(fun_name, ret, ...) {
     )
   }
   call_state <- as.integer(call_state)
-  # Check for call state value post call
-  if (call_state != 0L) {
-    lgb.last_error()
-  }
+  # # Check for call state value post call
+  # if (call_state != 0L) {
+  #   lgb.last_error()
+  # }
 
   return(ret)
 
