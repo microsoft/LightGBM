@@ -26,6 +26,16 @@ _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
 
+class _DatasetNames():
+    """Placeholder names used by lightgbm.dask internals to say 'also evaluate the training data.'
+    This avoids duplicating the training data when the validation set refers to elements of training data.
+    """
+    TRAINSET = '__train__'
+    SAMPLE_WEIGHT = '__sample_weight__'
+    INIT_SCORE = '__init_score__'
+    GROUP = '__group__'
+
+
 def _get_dask_client(client: Optional[Client]) -> Client:
     """Choose a Dask client to use.
 
@@ -154,7 +164,7 @@ def _train_part(
                     continue
 
                 eval_set = part['eval_set'][i]
-                if eval_set == '__train__':
+                if eval_set == _DatasetNames.TRAINSET:
                     x_e.append(part['data'])
                     y_e.append(part['label'])
                 else:
@@ -163,14 +173,14 @@ def _train_part(
 
                 eval_weight = part.get('eval_sample_weight')
                 if eval_weight:
-                    if eval_weight[i] == '__sample_weight__':
+                    if eval_weight[i] == _DatasetNames.SAMPLE_WEIGHT:
                         w_e.append(part['weight'])
                     else:
                         w_e.extend(eval_weight[i])
 
                 eval_group = part.get('eval_group')
                 if eval_group:
-                    if eval_group[i] == '__group__':
+                    if eval_group[i] == _DatasetNames.GROUP:
                         g_e.append(part['group'])
                     else:
                         g_e.extend(eval_group[i])
@@ -182,7 +192,7 @@ def _train_part(
 
                 eval_init_score = part.get('eval_init_score')
                 if eval_init_score:
-                    if eval_init_score[i] == '__init_score__':
+                    if eval_init_score[i] == _DatasetNames.INIT_SCORE:
                         init_score_e.append(part['init_score'])
                     else:
                         init_score_e.extend(eval_init_score[i])
@@ -464,7 +474,7 @@ def _train(
             # when individual eval set is equivalent to training data, skip recomputing parts.
             if X is data and y is label:
                 for parts_idx in range(n_parts):
-                    eval_sets[parts_idx].append('__train__')
+                    eval_sets[parts_idx].append(_DatasetNames.TRAINSET)
             else:
                 eval_x_parts = _split_to_parts(data=X, is_matrix=True)
                 eval_y_parts = _split_to_parts(data=y, is_matrix=False)
@@ -483,7 +493,7 @@ def _train(
             if eval_sample_weight:
                 if eval_sample_weight[i] is sample_weight:
                     for parts_idx in range(n_parts):
-                        eval_sample_weights[parts_idx].append('__sample_weight__')
+                        eval_sample_weights[parts_idx].append(_DatasetNames.SAMPLE_WEIGHT)
                 else:
                     eval_w_parts = _split_to_parts(data=eval_sample_weight[i], is_matrix=False)
 
@@ -498,7 +508,7 @@ def _train(
             if eval_group:
                 if eval_group[i] is group:
                     for parts_idx in range(n_parts):
-                        eval_groups[parts_idx].append('__group__')
+                        eval_groups[parts_idx].append(_DatasetNames.GROUP)
                 else:
                     eval_g_parts = _split_to_parts(data=eval_group[i], is_matrix=False)
                     for j, g_e in enumerate(eval_g_parts):
@@ -511,7 +521,7 @@ def _train(
             if eval_init_score:
                 if eval_init_score[i] is init_score:
                     for parts_idx in range(n_parts):
-                        eval_init_scores[parts_idx].append('__init_score__')
+                        eval_init_scores[parts_idx].append(_DatasetNames.INIT_SCORE)
                 else:
                     eval_init_score_parts = _split_to_parts(data=eval_init_score[i], is_matrix=False)
                     for j, init_score_e in enumerate(eval_init_score_parts):
