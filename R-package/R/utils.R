@@ -60,31 +60,22 @@ lgb.last_error <- function() {
 }
 
 lgb.call <- function(fun_name, ret, ...) {
-  # Set call state to a zero value
-  call_state <- 0L
 
   # Check for a ret call
   if (!is.null(ret)) {
-    call_state <- .Call(
+    .Call(
       fun_name
       , ...
       , ret
-      , call_state
       , PACKAGE = "lib_lightgbm"
     )
   } else {
-    call_state <- .Call(
+    .Call(
       fun_name
       , ...
-      , call_state
       , PACKAGE = "lib_lightgbm"
     )
   }
-  call_state <- as.integer(call_state)
-  # # Check for call state value post call
-  # if (call_state != 0L) {
-  #   lgb.last_error()
-  # }
 
   return(ret)
 
