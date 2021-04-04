@@ -36,7 +36,7 @@ if __name__ == "__main__":
         <projectUrl>https://github.com/microsoft/LightGBM</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A fast, distributed, high performance gradient boosting framework</description>
-        <copyright>Copyright {datetime.datetime.now().year}@ Microsoft</copyright>
+        <copyright>Copyright {datetime.datetime.now().year} @ Microsoft</copyright>
         <tags>machine-learning data-mining distributed native boosting gbdt</tags>
         <dependencies> </dependencies>
     </metadata>
