@@ -556,10 +556,12 @@ Dataset <- R6::R6Class(
         private$params <- modifyList(private$params, params)
       } else {
         tryCatch({
+          call_state <- 0L
           .Call(
             "LGBM_DatasetUpdateParamChecking_R"
             , lgb.params2str(params = private$params)
             , lgb.params2str(params = params)
+            , call_state
             , PACKAGE = "lib_lightgbm"
           )
         }, error = function(e) {

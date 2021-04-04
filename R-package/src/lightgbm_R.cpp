@@ -28,7 +28,6 @@
 #define R_API_BEGIN() \
   try {
 
-// returning an int to avoid
 // https://github.com/wch/r-source/blob/d22ee2fc0dc8142b23eed9f46edf76ea9d3ca69a/src/main/dotcode.c#L538-L541
 #define R_API_END() } \
   catch(std::exception& ex) { R_INT_PTR(call_state)[0] = -1; LGBM_SetLastError(ex.what()); return call_state;} \
@@ -39,7 +38,7 @@
 #define CHECK_CALL(x) \
   if ((x) != 0) { \
     Rf_error(LGBM_GetLastError()); \
-    return call_state; \
+    return call_state;\
   }
 
 using LightGBM::Common::Join;
@@ -293,7 +292,8 @@ LGBM_SE LGBM_DatasetUpdateParamChecking_R(LGBM_SE old_params,
   R_API_END();
 }
 
-LGBM_SE LGBM_DatasetGetNumData_R(LGBM_SE handle, LGBM_SE out, LGBM_SE call_state) {
+LGBM_SE LGBM_DatasetGetNumData_R(LGBM_SE handle, LGBM_SE out,
+  LGBM_SE call_state) {
   int nrow;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetGetNumData(R_GET_PTR(handle), &nrow));
@@ -313,7 +313,8 @@ LGBM_SE LGBM_DatasetGetNumFeature_R(LGBM_SE handle,
 
 // --- start Booster interfaces
 
-LGBM_SE LGBM_BoosterFree_R(LGBM_SE handle, LGBM_SE call_state) {
+LGBM_SE LGBM_BoosterFree_R(LGBM_SE handle,
+  LGBM_SE call_state) {
   R_API_BEGIN();
   if (R_GET_PTR(handle) != nullptr) {
     CHECK_CALL(LGBM_BoosterFree(R_GET_PTR(handle)));
