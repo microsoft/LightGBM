@@ -25,11 +25,11 @@ if __name__ == "__main__":
     copy_file(os.path.join(source, "lib_lightgbm.dll"), os.path.join(windows_folder_path, "lib_lightgbm.dll"))
     copy_file(os.path.join(source, "lightgbm.exe"), os.path.join(windows_folder_path, "lightgbm.exe"))
     version = open(os.path.join(current_dir, os.path.pardir, 'VERSION.txt')).read().strip().replace('rc', '-rc')
-    nuget_str = r"""<?xml version="1.0"?>
+    nuget_str = f"""<?xml version="1.0"?>
     <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>
         <id>LightGBM</id>
-        <version>%s</version>
+        <version>{version, datetime.datetime.now().year}</version>
         <authors>Guolin Ke</authors>
         <owners>Guolin Ke</owners>
         <licenseUrl>https://github.com/microsoft/LightGBM/blob/master/LICENSE</licenseUrl>
@@ -45,8 +45,8 @@ if __name__ == "__main__":
         <file src="runtimes\**" target="runtimes"/>
         </files>
     </package>
-    """ % (version, datetime.datetime.now().year)
-    prop_str = r"""
+    """ 
+    prop_str = f"""
     <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <ItemGroup Condition="Exists('packages.config') OR
                             Exists('$(MSBuildProjectName).packages.config') OR
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     </ItemGroup>
     </Project>
     """
-    target_str = r"""
+    target_str = f"""
     <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <EnableLightGBMUnsupportedPlatformTargetCheck Condition="'$(EnableLightGBMUnsupportedPlatformTargetCheck)' == ''">true</EnableLightGBMUnsupportedPlatformTargetCheck>
