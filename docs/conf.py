@@ -54,7 +54,7 @@ class InternalRefTransform(Transform):
         """Apply the transform to the document tree."""
         for section in self.document.traverse(reference):
             if section.get("refuri") is not None:
-                section["refuri"] = INTERNAL_REF_REGEX.sub(f"\g<url>.html\g<anchor>{section['refuri']}")
+                section["refuri"] = INTERNAL_REF_REGEX.sub(r"\g<url>.html\g<anchor>", section["refuri"])
 
 
 class IgnoredDirective(Directive):
@@ -76,7 +76,7 @@ RTD = bool(os.environ.get('READTHEDOCS', ''))
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = '2.1.0'  # Due to sphinx.ext.napoleon, autodoc_typehints
 if needs_sphinx > sphinx.__version__:
-    message =f"This project needs at least Sphinx v{needs_sphinx}"
+    message = 'This project needs at least Sphinx v%s' % needs_sphinx
     raise VersionRequirementError(message)
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -114,7 +114,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'LightGBM'
-copyright = f"{str(datetime.datetime.now().year)}, Microsoft Corporation"
+copyright = '%s, Microsoft Corporation' % str(datetime.datetime.now().year)
 author = 'Microsoft Corporation'
 
 # The name of an image file (relative to this directory) to place at the top
