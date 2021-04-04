@@ -28,7 +28,6 @@
 #define R_API_BEGIN() \
   try {
 
-// https://github.com/wch/r-source/blob/d22ee2fc0dc8142b23eed9f46edf76ea9d3ca69a/src/main/dotcode.c#L538-L541
 #define R_API_END() } \
   catch(std::exception& ex) { R_INT_PTR(call_state)[0] = -1; LGBM_SetLastError(ex.what()); return call_state;} \
   catch(std::string& ex) { R_INT_PTR(call_state)[0] = -1; LGBM_SetLastError(ex.c_str()); return call_state; } \

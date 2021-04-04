@@ -65,7 +65,7 @@ lgb.call <- function(fun_name, ret, ...) {
 
   # Check for a ret call
   if (!is.null(ret)) {
-    .Call(
+    call_state <- .Call(
       fun_name
       , ...
       , ret
@@ -73,7 +73,7 @@ lgb.call <- function(fun_name, ret, ...) {
       , PACKAGE = "lib_lightgbm"
     )
   } else {
-    .Call(
+    call_state <- .Call(
       fun_name
       , ...
       , call_state
