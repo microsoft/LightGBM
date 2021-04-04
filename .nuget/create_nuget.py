@@ -46,7 +46,7 @@ if __name__ == "__main__":
         </files>
     </package>
     """ 
-    prop_str = f"""
+    prop_str = r"""
     <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <ItemGroup Condition="Exists('packages.config') OR
                             Exists('$(MSBuildProjectName).packages.config') OR
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     </ItemGroup>
     </Project>
     """
-    target_str = f"""
+    target_str = r"""
     <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <EnableLightGBMUnsupportedPlatformTargetCheck Condition="'$(EnableLightGBMUnsupportedPlatformTargetCheck)' == ''">true</EnableLightGBMUnsupportedPlatformTargetCheck>
