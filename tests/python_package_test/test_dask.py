@@ -990,6 +990,7 @@ def test_error_on_feature_parallel_tree_learner(cluster):
         X = da.random.random((100, 10), chunks=(50, 10))
         y = da.random.random(100, chunks=50)
         X, y = client.persist([X, y])
+        _ = wait([X, y])
         client.rebalance()
         dask_regressor = lgb.DaskLGBMRegressor(
             client=client,
