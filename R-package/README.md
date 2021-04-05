@@ -308,6 +308,10 @@ At build time, `configure` will be run and used to create a file `Makevars`, usi
 
 3. Edit `src/Makevars.in`.
 
+Alternatively, GitHub Actions can re-generate this file for you. On a pull request (only on internal one, does not work for ones from forks), create a comment with this phrase:
+
+> /gha run r-configure
+
 **Configuring for Windows**
 
 At build time, `configure.win` will be run and used to create a file `Makevars.win`, using `Makevars.win.in` as a template.

@@ -40,7 +40,7 @@ def find_lib():
     exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
 
     LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
-    logger.info("Installing lib_lightgbm from: %s" % LIB_PATH)
+    logger.info(f"Installing lib_lightgbm from: {LIB_PATH}")
     return LIB_PATH
 
 
@@ -59,7 +59,7 @@ def copy_files(integrated_opencl=False, use_gpu=False):
             create_tree(src, dst, verbose=0)
             copy_tree(src, dst, verbose=0)
         else:
-            raise Exception('Cannot copy {0} folder'.format(src))
+            raise Exception(f'Cannot copy {src} folder')
 
     if not os.path.isfile(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt')):
         copy_files_helper('include')
@@ -132,17 +132,17 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
     if use_gpu:
         cmake_cmd.append("-DUSE_GPU=ON")
         if boost_root:
-            cmake_cmd.append("-DBOOST_ROOT={0}".format(boost_root))
+            cmake_cmd.append(f"-DBOOST_ROOT={boost_root}")
         if boost_dir:
-            cmake_cmd.append("-DBoost_DIR={0}".format(boost_dir))
+            cmake_cmd.append(f"-DBoost_DIR={boost_dir}")
         if boost_include_dir:
-            cmake_cmd.append("-DBoost_INCLUDE_DIR={0}".format(boost_include_dir))
+            cmake_cmd.append(f"-DBoost_INCLUDE_DIR={boost_include_dir}")
         if boost_librarydir:
-            cmake_cmd.append("-DBOOST_LIBRARYDIR={0}".format(boost_librarydir))
+            cmake_cmd.append(f"-DBOOST_LIBRARYDIR={boost_librarydir}")
         if opencl_include_dir:
-            cmake_cmd.append("-DOpenCL_INCLUDE_DIR={0}".format(opencl_include_dir))
+            cmake_cmd.append(f"-DOpenCL_INCLUDE_DIR={opencl_include_dir}")
         if opencl_library:
-            cmake_cmd.append("-DOpenCL_LIBRARY={0}".format(opencl_library))
+            cmake_cmd.append(f"-DOpenCL_LIBRARY={opencl_library}")
     elif use_cuda:
         cmake_cmd.append("-DUSE_CUDA=ON")
     if use_mpi:
@@ -172,7 +172,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
                                           os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.sln"),
                                           "/p:Configuration=DLL",
                                           "/p:Platform=x64",
-                                          "/p:PlatformToolset={0}".format(pt)])
+                                          f"/p:PlatformToolset={pt}"])
                     if status == 0 and os.path.exists(lib_path):
                         break
                     else:
@@ -183,7 +183,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
                 arch = "Win32" if bit32 else "x64"
                 vs_versions = ("Visual Studio 16 2019", "Visual Studio 15 2017", "Visual Studio 14 2015")
                 for vs in vs_versions:
-                    logger.info("Starting to compile with %s (%s).", vs, arch)
+                    logger.info(f"Starting to compile with {vs} ({arch}).")
                     status = silent_call(cmake_cmd + ["-G", vs, "-A", arch])
                     if status == 0:
                         break
@@ -319,7 +319,7 @@ class CustomSdist(sdist):
 if __name__ == "__main__":
     CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
     LOG_PATH = os.path.join(os.path.expanduser('~'), 'LightGBM_compilation.log')
-    LOG_NOTICE = "The full version of error log was saved into {0}".format(LOG_PATH)
+    LOG_NOTICE = f"The full version of error log was saved into {LOG_PATH}"
     if os.path.isfile(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt')):
         copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
                   os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'),

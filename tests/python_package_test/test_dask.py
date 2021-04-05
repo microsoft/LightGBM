@@ -44,7 +44,9 @@ sk_version = parse_version(sk_version)
 CLIENT_CLOSE_TIMEOUT = 120
 
 tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ranking']
+distributed_training_algorithms = ['data', 'voting']
 data_output = ['array', 'scipy_csr_matrix', 'dataframe', 'dataframe-with-categorical']
+boosting_types = ['gbdt', 'dart', 'goss', 'rf']
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 task_to_dask_factory = {
     'regression': lgb.DaskLGBMRegressor,
@@ -197,7 +199,7 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
 
 def _r2_score(dy_true, dy_pred):
     numerator = ((dy_true - dy_pred) ** 2).sum(axis=0, dtype=np.float64)
-    denominator = ((dy_true - dy_pred.mean(axis=0)) ** 2).sum(axis=0, dtype=np.float64)
+    denominator = ((dy_true - dy_true.mean(axis=0)) ** 2).sum(axis=0, dtype=np.float64)
     return (1 - numerator / denominator).compute()
 
 
@@ -233,16 +235,27 @@ def _unpickle(filepath, serializer):
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
-def test_classifier(output, task, client):
+@pytest.mark.parametrize('boosting_type', boosting_types)
+@pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
+def test_classifier(output, task, boosting_type, tree_learner, client):
     X, y, w, _, dX, dy, dw, _ = _create_data(
         objective=task,
         output=output
     )
 
     params = {
+        "boosting_type": boosting_type,
+        "tree_learner": tree_learner,
         "n_estimators": 50,
         "num_leaves": 31
     }
+    if boosting_type == 'rf':
+        params.update({
+            'bagging_freq': 1,
+            'bagging_fraction': 0.9,
+        })
+    elif boosting_type == 'goss':
+        params['top_rate'] = 0.5
 
     dask_classifier = lgb.DaskLGBMClassifier(
         client=client,
@@ -263,13 +276,18 @@ def test_classifier(output, task, client):
     p2_proba = local_classifier.predict_proba(X)
     s2 = local_classifier.score(X, y)
 
-    assert_eq(s1, s2)
-    assert_eq(p1, p2)
-    assert_eq(y, p1)
-    assert_eq(y, p2)
-    assert_eq(p1_proba, p2_proba, atol=0.01)
-    assert_eq(p1_local, p2)
-    assert_eq(y, p1_local)
+    if boosting_type == 'rf':
+        # https://github.com/microsoft/LightGBM/issues/4118
+        assert_eq(s1, s2, atol=0.01)
+        assert_eq(p1_proba, p2_proba, atol=0.8)
+    else:
+        assert_eq(s1, s2)
+        assert_eq(p1, p2)
+        assert_eq(p1, y)
+        assert_eq(p2, y)
+        assert_eq(p1_proba, p2_proba, atol=0.03)
+        assert_eq(p1_local, p2)
+        assert_eq(p1_local, y)
 
     # pref_leaf values should have the right shape
     # and values that look like valid tree nodes
@@ -377,6 +395,37 @@ def test_find_random_open_port(client):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
+def test_possibly_fix_worker_map(capsys, client):
+    client.wait_for_workers(2)
+    worker_addresses = list(client.scheduler_info()["workers"].keys())
+
+    retry_msg = 'Searching for a LightGBM training port for worker'
+
+    # should handle worker maps without any duplicates
+    map_without_duplicates = {
+        worker_address: 12400 + i
+        for i, worker_address in enumerate(worker_addresses)
+    }
+    patched_map = lgb.dask._possibly_fix_worker_map_duplicates(
+        client=client,
+        worker_map=map_without_duplicates
+    )
+    assert patched_map == map_without_duplicates
+    assert retry_msg not in capsys.readouterr().out
+
+    # should handle worker maps with duplicates
+    map_with_duplicates = {
+        worker_address: 12400
+        for i, worker_address in enumerate(worker_addresses)
+    }
+    patched_map = lgb.dask._possibly_fix_worker_map_duplicates(
+        client=client,
+        worker_map=map_with_duplicates
+    )
+    assert retry_msg in capsys.readouterr().out
+    assert len(set(patched_map.values())) == len(worker_addresses)
+
+
 def test_training_does_not_fail_on_port_conflicts(client):
     _, _, _, _, dX, dy, dw, _ = _create_data('binary-classification', output='array')
 
@@ -401,22 +450,30 @@ def test_training_does_not_fail_on_port_conflicts(client):
 
 
 @pytest.mark.parametrize('output', data_output)
-def test_regressor(output, client):
+@pytest.mark.parametrize('boosting_type', boosting_types)
+@pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
+def test_regressor(output, boosting_type, tree_learner, client):
     X, y, w, _, dX, dy, dw, _ = _create_data(
         objective='regression',
         output=output
     )
 
     params = {
+        "boosting_type": boosting_type,
         "random_state": 42,
         "num_leaves": 31,
         "n_estimators": 20,
     }
+    if boosting_type == 'rf':
+        params.update({
+            'bagging_freq': 1,
+            'bagging_fraction': 0.9,
+        })
 
     dask_regressor = lgb.DaskLGBMRegressor(
         client=client,
         time_out=5,
-        tree='data',
+        tree=tree_learner,
         **params
     )
     dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw)
@@ -569,7 +626,9 @@ def test_regressor_quantile(output, client, alpha):
 
 @pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])
 @pytest.mark.parametrize('group', [None, group_sizes])
-def test_ranker(output, client, group):
+@pytest.mark.parametrize('boosting_type', boosting_types)
+@pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
+def test_ranker(output, group, boosting_type, tree_learner, client):
     if output == 'dataframe-with-categorical':
         X, y, w, g, dX, dy, dw, dg = _create_data(
             objective='ranking',
@@ -597,16 +656,22 @@ def test_ranker(output, client, group):
     # use many trees + leaves to overfit, help ensure that Dask data-parallel strategy matches that of
     # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
     params = {
+        "boosting_type": boosting_type,
         "random_state": 42,
         "n_estimators": 50,
         "num_leaves": 20,
         "min_child_samples": 1
     }
+    if boosting_type == 'rf':
+        params.update({
+            'bagging_freq': 1,
+            'bagging_fraction': 0.9,
+        })
 
     dask_ranker = lgb.DaskLGBMRanker(
         client=client,
         time_out=5,
-        tree_learner_type='data_parallel',
+        tree_learner_type=tree_learner,
         **params
     )
     dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg)
@@ -901,22 +966,36 @@ def test_warns_and_continues_on_unrecognized_tree_learner(client):
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
 
-def test_warns_but_makes_no_changes_for_feature_or_voting_tree_learner(client):
-    X = da.random.random((1e3, 10))
-    y = da.random.random((1e3, 1))
-    for tree_learner in ['feature_parallel', 'voting']:
-        dask_regressor = lgb.DaskLGBMRegressor(
-            client=client,
-            time_out=5,
-            tree_learner=tree_learner,
-            n_estimators=1,
-            num_leaves=2
-        )
-        with pytest.warns(UserWarning, match='Support for tree_learner %s in lightgbm' % tree_learner):
-            dask_regressor = dask_regressor.fit(X, y)
+@pytest.mark.parametrize('tree_learner', ['data_parallel', 'voting_parallel'])
+def test_training_respects_tree_learner_aliases(tree_learner, client):
+    task = 'regression'
+    _, _, _, _, dX, dy, dw, dg = _create_data(objective=task, output='array')
+    dask_factory = task_to_dask_factory[task]
+    dask_model = dask_factory(
+        client=client,
+        tree_learner=tree_learner,
+        time_out=5,
+        n_estimators=10,
+        num_leaves=15
+    )
+    dask_model.fit(dX, dy, sample_weight=dw, group=dg)
 
-        assert dask_regressor.fitted_
-        assert dask_regressor.get_params()['tree_learner'] == tree_learner
+    assert dask_model.fitted_
+    assert dask_model.get_params()['tree_learner'] == tree_learner
+
+
+def test_error_on_feature_parallel_tree_learner(client):
+    X = da.random.random((100, 10), chunks=(50, 10))
+    y = da.random.random(100, chunks=50)
+    dask_regressor = lgb.DaskLGBMRegressor(
+        client=client,
+        time_out=5,
+        tree_learner='feature_parallel',
+        n_estimators=1,
+        num_leaves=2
+    )
+    with pytest.raises(lgb.basic.LightGBMError, match='Do not support feature parallel in c api'):
+        dask_regressor = dask_regressor.fit(X, y)
 
     client.close(timeout=CLIENT_CLOSE_TIMEOUT)
 
