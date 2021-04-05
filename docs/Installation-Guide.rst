@@ -801,7 +801,7 @@ Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
-.. _Boost Binaries: https://bintray.com/boostorg/release/boost-binaries/_latestVersion#files
+.. _Boost Binaries: https://sourceforge.net/projects/boost/files/boost-binaries/
 
 .. _SWIG: http://www.swig.org/download.html
 
