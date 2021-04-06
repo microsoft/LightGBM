@@ -147,18 +147,12 @@ R CMD build \
 
 echo "removing object files created by vignettes"
 mkdir _tmp
-mv lightgbm*.tar.gz _tmp/
 TARBALL_NAME=lightgbm_${LGB_VERSION}.tar.gz
-# cd _tmp
-#     # tar -xvf ${TARBALL_NAME}
-#     rm ${TARBALL_NAME}
-#     # find ./ -name \*.a -type f -exec rm -rf {} +
-#     # find ./ -name \*.dll -type f -exec rm -rf {} +
-#     # find ./ -name \*.o -type f -exec rm -rf {} +
-#     # find ./ -name \*.so -type f -exec rm -rf {} +
-# cd ..
+mv ${TARBALL_NAME} _tmp/
 
 cd _tmp
+    tar -xvf ${TARBALL_NAME}
+    rm -rf ${TARBALL_NAME}
     tar \
         -czvf ${TARBALL_NAME} \
         --exclude=*.a \
