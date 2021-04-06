@@ -45,7 +45,7 @@ if __name__ == "__main__":
         <file src="runtimes\**" target="runtimes"/>
         </files>
     </package>
-    """ 
+    """
     prop_str = r"""
     <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <ItemGroup Condition="Exists('packages.config') OR
