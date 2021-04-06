@@ -63,14 +63,14 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
+            toolchain: MSYS
+            r_version: 4.0
             build_type: cmake
           - os: windows-latest
             task: r-package
             compiler: MINGW
-            toolchain: MSYS
-            r_version: 4.0
+            toolchain: MINGW
+            r_version: 3.6
             build_type: cmake
           # Visual Studio 2017
           - os: windows-2016
@@ -181,10 +181,33 @@ jobs:
           Rscriptdevel testthat.R 2>&1 > ubsan-tests.log
           cat ubsan-tests.log
           exit $(cat ubsan-tests.log | grep --count "runtime error")
+  test-r-debian-clang:
+    name: r-package (debian, R-devel, clang)
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    container: rhub/debian-clang-devel
+    steps:
+      - name: Install Git before checkout
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y git
+      - name: Checkout repository
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Install packages and run tests
+        shell: bash
+        run: |
+          export PATH=/opt/R-devel/bin/:${PATH}
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.r-project.org')"
+          sh build-cran-package.sh
+          R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
     runs-on: ubuntu-latest
-    needs: [test, test-r-sanitizers]
+    needs: [test, test-r-sanitizers, test-r-debian-clang]
     steps:
     - name: Note that all tests succeeded
       run: echo "🎉"
