@@ -209,7 +209,7 @@ def _train_part(
             if g_e:
                 local_eval_group.append(_concat(g_e))
 
-        # reconstruct eval_set-dependent fit args/kwargs.
+        # reconstruct eval_set fit args/kwargs depending on which components of eval_set are on worker.
         eval_component_idx = [i for i in range(n_evals) if i not in missing_eval_component_idx]
         if eval_names:
             local_eval_names = [eval_names[i] for i in eval_component_idx]
@@ -464,7 +464,8 @@ def _train(
     # X and y are each delayed sub-lists of original eval dask Collections.
     if eval_set:
 
-        # find maximum number of parts in an individual eval set to assist in part padding.
+        # find maximum number of parts in an individual eval set so that we can
+        # pad eval sets when they come in different sizes.
         n_largest_eval_parts = max([x[0].npartitions for x in eval_set])
 
         eval_sets = defaultdict(list)
@@ -475,31 +476,26 @@ def _train(
         if eval_init_score:
             eval_init_scores = defaultdict(list)
 
-        for i, (X, y) in enumerate(eval_set):
-            n_one_eval_parts = X.npartitions
+        for i, (X_eval, y_eval) in enumerate(eval_set):
+            n_this_eval_parts = X_eval.npartitions
 
             # when individual eval set is equivalent to training data, skip recomputing parts.
-            if X is data and y is label:
+            if X_eval is data and y_eval is label:
                 for parts_idx in range(n_parts):
                     eval_sets[parts_idx].append(_DatasetNames.TRAINSET)
             else:
-                eval_x_parts = _split_to_parts(data=X, is_matrix=True)
-                eval_y_parts = _split_to_parts(data=y, is_matrix=False)
+                eval_x_parts = _split_to_parts(data=X_eval, is_matrix=True)
+                eval_y_parts = _split_to_parts(data=y_eval, is_matrix=False)
                 for j in range(n_largest_eval_parts):
                     parts_idx = j % n_parts
 
-                    # if eval set part index refers to index of larget eval_set component, then pad. TODO: make this a one-liner: x_e = eval_x_parts[j] if j < n_one_eval_parts else None
-                    if j >= n_one_eval_parts:
-                        print(f'j={j}, n_one_eval_parts={n_one_eval_parts}, n_largest_eval_parts={n_largest_eval_parts}... adding padding!')
-                        x_e = None
-                        y_e = None
-                    else:
-                        x_e = eval_x_parts[j]
-                        y_e = eval_y_parts[j]
+                    # add None-padding for individual eval_set member if it is smaller than the largest member.
+                    x_e = eval_x_parts[j] if j < n_this_eval_parts else None
+                    y_e = eval_y_parts[j] if j < n_this_eval_parts else None
+                    print(f'j={j}, n_this_eval_parts={n_this_eval_parts}, n_largest_eval_parts={n_largest_eval_parts}... adding padding!')
 
                     if j < n_parts:
                         eval_sets[parts_idx].append(([x_e], [y_e]))
-
                     else:
                         eval_sets[parts_idx][-1][0].append(x_e)
                         eval_sets[parts_idx][-1][1].append(y_e)
@@ -513,9 +509,8 @@ def _train(
 
                     # ensure that all evaluation parts map uniquely to one part.
                     for j in range(n_largest_eval_parts):
-                        w_e = eval_w_parts[j] if j < n_one_eval_parts else None
+                        w_e = eval_w_parts[j] if j < n_this_eval_parts else None
                         parts_idx = j % n_parts
-
                         if j < n_parts:
                             eval_sample_weights[parts_idx].append([w_e])
                         else:
@@ -528,9 +523,8 @@ def _train(
                 else:
                     eval_init_score_parts = _split_to_parts(data=eval_init_score[i], is_matrix=False)
                     for j in range(n_largest_eval_parts):
-                        init_score_e = eval_init_score_parts[j] if j < n_one_eval_parts else None
+                        init_score_e = eval_init_score_parts[j] if j < n_this_eval_parts else None
                         parts_idx = j % n_parts
-
                         if j < n_parts:
                             eval_init_scores[parts_idx].append([init_score_e])
                         else:
@@ -543,9 +537,8 @@ def _train(
                 else:
                     eval_g_parts = _split_to_parts(data=eval_group[i], is_matrix=False)
                     for j in range(n_largest_eval_parts):
-                        g_e = eval_g_parts[j] if j < n_one_eval_parts else None
+                        g_e = eval_g_parts[j] if j < n_this_eval_parts else None
                         parts_idx = j % n_parts
-
                         if j < n_parts:
                             eval_groups[parts_idx].append([g_e])
                         else:
@@ -594,14 +587,14 @@ def _train(
                 )
 
     # assign general validation set settings to fit kwargs.
-    if eval_metric:
-        kwargs['eval_metric'] = eval_metric
-    if eval_at:
-        kwargs['eval_at'] = eval_at
     if eval_names:
         kwargs['eval_names'] = eval_names
     if eval_class_weight:
         kwargs['eval_class_weight'] = eval_class_weight
+    if eval_metric:
+        kwargs['eval_metric'] = eval_metric
+    if eval_at:
+        kwargs['eval_at'] = eval_at
 
     master_worker = next(iter(worker_map))
     worker_ncores = client.ncores()
