@@ -80,7 +80,7 @@ class Metadata {
 
   /*!
   * \brief Partition meta data according to local used indices if need
-  * \param num_all_data Number of total training data, including other machines' data on parallel learning
+  * \param num_all_data Number of total training data, including other machines' data on distributed learning
   * \param used_data_indices Indices of local used training data
   */
   void CheckOrPartition(data_size_t num_all_data,

@@ -19,6 +19,7 @@ python simple_example.py
 
 Examples include:
 
+- [`dask/`](./dask): examples using Dask for distributed training
 - [simple_example.py](https://github.com/microsoft/LightGBM/blob/master/examples/python-guide/simple_example.py)
     - Construct Dataset
     - Basic train and predict

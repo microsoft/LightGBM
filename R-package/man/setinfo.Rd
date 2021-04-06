@@ -20,8 +20,6 @@ setinfo(dataset, ...)
 }
 \value{
 the dataset you passed in
-
-the dataset you passed in
 }
 \description{
 Set one attribute of a \code{lgb.Dataset}

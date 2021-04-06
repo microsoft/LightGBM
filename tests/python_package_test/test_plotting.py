@@ -1,8 +1,9 @@
 # coding: utf-8
-import lightgbm as lgb
-from lightgbm.compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED
-from sklearn.model_selection import train_test_split
 import pytest
+from sklearn.model_selection import train_test_split
+
+import lightgbm as lgb
+from lightgbm.compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
 
 if MATPLOTLIB_INSTALLED:
     import matplotlib
