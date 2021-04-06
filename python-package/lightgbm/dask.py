@@ -80,6 +80,13 @@ def _concat(seq: List[_DaskPart]) -> _DaskPart:
         raise TypeError('Data must be one of: numpy arrays, pandas dataframes, sparse matrices (from scipy). Got %s.' % str(type(seq[0])))
 
 
+def _remove_list_padding(*args: Any) -> List[List[Any]]:
+    output = []
+    for arg in args:
+        output.append(list(filter(lambda z: z is not None, arg)))
+    return output
+
+
 def _train_part(
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
@@ -121,46 +128,41 @@ def _train_part(
         init_score = None
 
     # construct local eval_set data.
+    n_evals = len(list_of_parts[0].get('eval_set', []))
+    eval_names = kwargs.pop('eval_names', None)
+    eval_class_weight = kwargs.get('eval_class_weight')
     local_eval_set = None
     local_eval_names = None
     local_eval_sample_weight = None
-    local_eval_class_weight = None
     local_eval_init_score = None
     local_eval_group = None
-    n_evals = max([len(x.get('eval_set', [])) for x in list_of_parts])
+
     if n_evals:
 
-        has_eval_names = any([x.get('eval_names') is not None for x in list_of_parts])
         has_eval_sample_weight = any([x.get('eval_sample_weight') is not None for x in list_of_parts])
-        has_eval_class_weight = any([x.get('eval_class_weight') is not None for x in list_of_parts])
         has_eval_init_score = any([x.get('eval_init_score') is not None for x in list_of_parts])
 
         local_eval_set = []
-        if has_eval_names:
-            local_eval_names = []
         if has_eval_sample_weight:
             local_eval_sample_weight = []
-        if has_eval_class_weight:
-            local_eval_class_weight = []
         if has_eval_init_score:
             local_eval_init_score = []
         if is_ranker:
             local_eval_group = []
+
+        # store indices of eval_set components that were not contained within local parts.
+        missing_eval_component_idx = []
 
         # consolidate parts of each individual eval component.
         for i in range(n_evals):
             x_e = []
             y_e = []
             w_e = []
-            g_e = []
             init_score_e = []
+            g_e = []
             for part in list_of_parts:
 
                 if not part.get('eval_set'):
-                    continue
-
-                # possible that not each part contains parts of each individual (X, y) eval set.
-                if i >= len(part['eval_set']):
                     continue
 
                 eval_set = part['eval_set'][i]
@@ -178,18 +180,6 @@ def _train_part(
                     else:
                         w_e.extend(eval_weight[i])
 
-                eval_group = part.get('eval_group')
-                if eval_group:
-                    if eval_group[i] == _DatasetNames.GROUP:
-                        g_e.append(part['group'])
-                    else:
-                        g_e.extend(eval_group[i])
-
-                eval_class_weight = part.get('eval_class_weight')
-                if eval_class_weight:
-                    if len(eval_class_weight) > len(local_eval_class_weight):
-                        local_eval_class_weight = eval_class_weight
-
                 eval_init_score = part.get('eval_init_score')
                 if eval_init_score:
                     if eval_init_score[i] == _DatasetNames.INIT_SCORE:
@@ -197,19 +187,34 @@ def _train_part(
                     else:
                         init_score_e.extend(eval_init_score[i])
 
-                eval_names = part.get('eval_names')
-                if eval_names:
-                    if len(eval_names) > len(local_eval_names):
-                        local_eval_names = eval_names
+                eval_group = part.get('eval_group')
+                if eval_group:
+                    if eval_group[i] == _DatasetNames.GROUP:
+                        g_e.append(part['group'])
+                    else:
+                        g_e.extend(eval_group[i])
 
-            # _concat each eval component.
-            local_eval_set.append((_concat(x_e), _concat(y_e)))
+            # filter padding from eval parts then _concat each eval_set component.
+            x_e, y_e, w_e, init_score_e, g_e = _remove_list_padding(x_e, y_e, w_e, init_score_e, g_e)
+            if x_e:
+                local_eval_set.append((_concat(x_e), _concat(y_e)))
+            else:
+                missing_eval_component_idx.append(i)
+                continue
+
             if w_e:
                 local_eval_sample_weight.append(_concat(w_e))
             if init_score_e:
                 local_eval_init_score.append(_concat(init_score_e))
             if g_e:
                 local_eval_group.append(_concat(g_e))
+
+        # reconstruct eval_set-dependent fit args/kwargs.
+        eval_component_idx = [i for i in range(n_evals) if i not in missing_eval_component_idx]
+        if eval_names:
+            local_eval_names = [eval_names[i] for i in eval_component_idx]
+        if eval_class_weight:
+            kwargs['eval_class_weight'] = [eval_class_weight[i] for i in eval_component_idx]
 
     try:
         model = model_factory(**params)
@@ -228,9 +233,6 @@ def _train_part(
                 **kwargs
             )
         else:
-            if local_eval_class_weight:
-                kwargs['eval_class_weight'] = local_eval_class_weight
-
             model.fit(
                 data,
                 label,
@@ -461,6 +463,10 @@ def _train(
     # evals_set will to be re-constructed into smaller lists of (X, y) tuples, where
     # X and y are each delayed sub-lists of original eval dask Collections.
     if eval_set:
+
+        # find maximum number of parts in an individual eval set to assist in part padding.
+        n_largest_eval_parts = max([x[0].npartitions for x in eval_set])
+
         eval_sets = defaultdict(list)
         if eval_sample_weight:
             eval_sample_weights = defaultdict(list)
@@ -470,6 +476,7 @@ def _train(
             eval_init_scores = defaultdict(list)
 
         for i, (X, y) in enumerate(eval_set):
+            n_one_eval_parts = X.npartitions
 
             # when individual eval set is equivalent to training data, skip recomputing parts.
             if X is data and y is label:
@@ -478,10 +485,17 @@ def _train(
             else:
                 eval_x_parts = _split_to_parts(data=X, is_matrix=True)
                 eval_y_parts = _split_to_parts(data=y, is_matrix=False)
-                for j in range(len(eval_x_parts)):
+                for j in range(n_largest_eval_parts):
                     parts_idx = j % n_parts
-                    x_e = eval_x_parts[j]
-                    y_e = eval_y_parts[j]
+
+                    # if eval set part index refers to index of larget eval_set component, then pad. TODO: make this a one-liner: x_e = eval_x_parts[j] if j < n_one_eval_parts else None
+                    if j >= n_one_eval_parts:
+                        print(f'j={j}, n_one_eval_parts={n_one_eval_parts}, n_largest_eval_parts={n_largest_eval_parts}... adding padding!')
+                        x_e = None
+                        y_e = None
+                    else:
+                        x_e = eval_x_parts[j]
+                        y_e = eval_y_parts[j]
 
                     if j < n_parts:
                         eval_sets[parts_idx].append(([x_e], [y_e]))
@@ -498,25 +512,14 @@ def _train(
                     eval_w_parts = _split_to_parts(data=eval_sample_weight[i], is_matrix=False)
 
                     # ensure that all evaluation parts map uniquely to one part.
-                    for j, w_e in enumerate(eval_w_parts):
+                    for j in range(n_largest_eval_parts):
+                        w_e = eval_w_parts[j] if j < n_one_eval_parts else None
                         parts_idx = j % n_parts
+
                         if j < n_parts:
                             eval_sample_weights[parts_idx].append([w_e])
                         else:
                             eval_sample_weights[parts_idx][-1].append(w_e)
-
-            if eval_group:
-                if eval_group[i] is group:
-                    for parts_idx in range(n_parts):
-                        eval_groups[parts_idx].append(_DatasetNames.GROUP)
-                else:
-                    eval_g_parts = _split_to_parts(data=eval_group[i], is_matrix=False)
-                    for j, g_e in enumerate(eval_g_parts):
-                        parts_idx = j % n_parts
-                        if j < n_parts:
-                            eval_groups[parts_idx].append([g_e])
-                        else:
-                            eval_groups[parts_idx][-1].append(g_e)
 
             if eval_init_score:
                 if eval_init_score[i] is init_score:
@@ -524,26 +527,35 @@ def _train(
                         eval_init_scores[parts_idx].append(_DatasetNames.INIT_SCORE)
                 else:
                     eval_init_score_parts = _split_to_parts(data=eval_init_score[i], is_matrix=False)
-                    for j, init_score_e in enumerate(eval_init_score_parts):
+                    for j in range(n_largest_eval_parts):
+                        init_score_e = eval_init_score_parts[j] if j < n_one_eval_parts else None
                         parts_idx = j % n_parts
+
                         if j < n_parts:
                             eval_init_scores[parts_idx].append([init_score_e])
                         else:
                             eval_init_scores[parts_idx][-1].append(init_score_e)
 
+            if eval_group:
+                if eval_group[i] is group:
+                    for parts_idx in range(n_parts):
+                        eval_groups[parts_idx].append(_DatasetNames.GROUP)
+                else:
+                    eval_g_parts = _split_to_parts(data=eval_group[i], is_matrix=False)
+                    for j in range(n_largest_eval_parts):
+                        g_e = eval_g_parts[j] if j < n_one_eval_parts else None
+                        parts_idx = j % n_parts
+
+                        if j < n_parts:
+                            eval_groups[parts_idx].append([g_e])
+                        else:
+                            eval_groups[parts_idx][-1].append(g_e)
+
         # assign sub-eval_set components to worker parts.
         for parts_idx, e_set in eval_sets.items():
-            n_evals = len(e_set)
             parts[parts_idx]['eval_set'] = e_set
-            # user does not need to provide each eval_set a name, nor each a class_weight.
-            if eval_names:
-                n_eval_names = min(len(eval_names), n_evals)
-                parts[parts_idx]['eval_names'] = [eval_names[i] for i in range(n_eval_names)]
             if eval_sample_weight:
                 parts[parts_idx]['eval_sample_weight'] = eval_sample_weights[parts_idx]
-            if eval_class_weight:
-                n_eval_class_weights = min(len(eval_class_weight), n_evals)
-                parts[parts_idx]['eval_class_weight'] = [eval_class_weight[i] for i in range(n_eval_class_weights)]
             if eval_init_score:
                 parts[parts_idx]['eval_init_score'] = eval_init_scores[parts_idx]
             if eval_group:
@@ -581,11 +593,15 @@ def _train(
                     "Try rebalancing data across workers." % worker
                 )
 
-    # append eval_metric, eval_at fit arguments to kwargs.
+    # assign general validation set settings to fit kwargs.
     if eval_metric:
         kwargs['eval_metric'] = eval_metric
     if eval_at:
         kwargs['eval_at'] = eval_at
+    if eval_names:
+        kwargs['eval_names'] = eval_names
+    if eval_class_weight:
+        kwargs['eval_class_weight'] = eval_class_weight
 
     master_worker = next(iter(worker_map))
     worker_ncores = client.ncores()
