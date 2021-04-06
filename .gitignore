@@ -269,6 +269,7 @@ _Pvt_Extensions
 *.app
 /windows/LightGBM.VC.db
 lightgbm
+/testlightgbm
 
 # Created by https://www.gitignore.io/api/python
 
@@ -354,6 +355,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+Untitled*.ipynb
 
 # pyenv
 .python-version

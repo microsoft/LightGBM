@@ -7,6 +7,7 @@ This page contains parameters tuning guides for different scenarios.
 
 -  `Parameters <./Parameters.rst>`__
 -  `Python API <./Python-API.rst>`__
+-  `FLAML`_ for automated hyperparameter tuning
 -  `Optuna`_ for automated hyperparameter tuning
 
 Tune Parameters for the Leaf-wise (Best-first) Tree
@@ -69,6 +70,7 @@ LightGBM adds nodes to trees based on the gain from adding that node, regardless
 
 .. image:: ./_static/images/leaf-wise.png
    :align: center
+   :alt: Three consecutive images of decision trees, where each shows the tree with an additional two leaf nodes added. Shows that leaf-wise growth can result in trees that have some branches which are longer than others.
 
 Because of this growth strategy, it isn't straightforward to use ``max_depth`` alone to limit the complexity of trees. The ``num_leaves`` parameter sets the maximum number of nodes per tree. Decrease ``num_leaves`` to reduce training time.
 
@@ -214,3 +216,5 @@ Deal with Over-fitting
 -  Try increasing ``path_smooth``
 
 .. _Optuna: https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258
+
+.. _FLAML: https://github.com/microsoft/FLAML

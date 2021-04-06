@@ -416,9 +416,8 @@ class Booster {
       is_raw_score = false;
     }
 
-    Predictor predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
+    return Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
-    return predictor;
   }
 
   void Predict(int start_iteration, int num_iteration, int predict_type, int nrow, int ncol,

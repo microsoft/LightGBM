@@ -30,8 +30,8 @@
 namespace LightGBM {
 
 /*!
-* \brief A network basic communication warpper.
-* Will warp low level communication methods, e.g. mpi, socket and so on.
+* \brief A network basic communication wrapper.
+* Will wrap low level communication methods, e.g. mpi, socket and so on.
 * This class will wrap all linkers to other machines if needs
 */
 class Linkers {
@@ -52,7 +52,7 @@ class Linkers {
   * \brief Recv data, blocking
   * \param rank Which rank will send data to local machine
   * \param data Pointer of receive data
-  * \param len Recv size, will block until recive len size of data
+  * \param len Recv size, will block until receive len size of data
   */
   inline void Recv(int rank, char* data, int len) const;
 

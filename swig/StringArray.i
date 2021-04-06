@@ -1,6 +1,8 @@
 /*!
  * Copyright (c) 2020 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ *
+ * Author: Alberto Ferreira
  */
 /**
  * This wraps the StringArray.hpp class for SWIG usage,

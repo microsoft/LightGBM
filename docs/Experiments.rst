@@ -239,7 +239,7 @@ Results
 | 16       | 42 s          | 11GB                      |
 +----------+---------------+---------------------------+
 
-The results show that LightGBM achieves a linear speedup with parallel learning.
+The results show that LightGBM achieves a linear speedup with distributed learning.
 
 GPU Experiments
 ---------------
