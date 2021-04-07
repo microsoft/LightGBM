@@ -125,7 +125,7 @@ Tree* LinearTreeLearner::Train(const score_t* gradients, const score_t *hessians
     CalculateLinear<false>(tree_ptr, false, gradients_, hessians_, is_first_tree);
   }
 
-  Log::Debug("Trained a tree with leaves = %d and max_depth = %d", tree->num_leaves(), cur_depth);
+  Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
   return tree.release();
 }
 

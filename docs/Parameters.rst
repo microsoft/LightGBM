@@ -199,7 +199,7 @@ Core Parameters
 
    -  **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
 
--  ``device_type`` :raw-html:`<a id="device_type" title="Permalink to this parameter" href="#device_type">&#x1F517;&#xFE0E;</a>`, default = ``cpu``, type = enum, options: ``cpu``, ``gpu``, aliases: ``device``
+-  ``device_type`` :raw-html:`<a id="device_type" title="Permalink to this parameter" href="#device_type">&#x1F517;&#xFE0E;</a>`, default = ``cpu``, type = enum, options: ``cpu``, ``gpu``, ``cuda``, aliases: ``device``
 
    -  device for the tree learning, you can use GPU to achieve the faster learning
 

@@ -36,14 +36,12 @@ testing::AssertionResult are_vectors_equal(const std::vector<T> &a, const std::v
 
 class ChunkedArrayTest : public testing::Test {
  protected:
-
   void SetUp() override {
-
   }
 
-  void add_items_to_array(const std::vector<int> &vec, ChunkedArray<int> &ca) {
-    for (auto v: vec) {
-      ca.add(v);
+  void add_items_to_array(const std::vector<int> &vec, ChunkedArray<int> *ca) {
+    for (auto v : vec) {
+      ca->add(v);
     }
   }
 
@@ -52,7 +50,7 @@ class ChunkedArrayTest : public testing::Test {
     it would yield the same contents as vec
   */
   testing::AssertionResult coalesced_output_equals_vec(const ChunkedArray<int> &ca, const std::vector<int> &vec,
-                                                       const bool all_addresses=false) {
+                                                       const bool all_addresses = false) {
     std::vector<int> out(vec.size());
     ca.coalesce_to(out.data(), all_addresses);
     return are_vectors_equal(out, vec);
@@ -63,7 +61,7 @@ class ChunkedArrayTest : public testing::Test {
   const size_t CHUNK_SIZE = 3;
   const size_t OUT_OF_BOUNDS_OFFSET = 4;
 
-  ChunkedArray<int> ca_ = ChunkedArray<int>(CHUNK_SIZE); //<! Re-used for many tests.
+  ChunkedArray<int> ca_ = ChunkedArray<int>(CHUNK_SIZE);  //<! Re-used for many tests.
 };
 
 
@@ -97,11 +95,11 @@ TEST_F(ChunkedArrayTest, getChunkSizeIsConstant) {
   independently of the number of chunks used.
 */
 TEST_F(ChunkedArrayTest, getChunksCount) {
-  ASSERT_EQ(ca_.get_chunks_count(), 1); // ChunkedArray always starts with 1 chunk.
+  ASSERT_EQ(ca_.get_chunks_count(), 1);  // ChunkedArray always starts with 1 chunk.
 
   for (size_t i = 0; i < 3 * CHUNK_SIZE; ++i) {
     ca_.add(0);
-    int expected_chunks = int(i/CHUNK_SIZE) + 1;
+    int expected_chunks = static_cast<int>(i / CHUNK_SIZE) + 1;
     ASSERT_EQ(ca_.get_chunks_count(), expected_chunks) << "with " << i << " add() call(s) "
                                                        << "and CHUNK_SIZE==" << CHUNK_SIZE << ".";
   }
@@ -127,7 +125,7 @@ TEST_F(ChunkedArrayTest, getAddCount) {
 */
 TEST_F(ChunkedArrayTest, coalesceTo) {
   std::vector<int> out(REF_VEC.size());
-  add_items_to_array(REF_VEC, ca_);
+  add_items_to_array(REF_VEC, &ca_);
 
   ca_.coalesce_to(out.data());
 
@@ -139,13 +137,13 @@ TEST_F(ChunkedArrayTest, coalesceTo) {
 */
 TEST_F(ChunkedArrayTest, clear) {
   const std::vector<int> ref_vec2 = {1, 2, 5, -1};
-  add_items_to_array(REF_VEC, ca_);
+  add_items_to_array(REF_VEC, &ca_);
   // Start with some content:
   ASSERT_TRUE(coalesced_output_equals_vec(ca_, REF_VEC));
 
   // Clear & re-use:
   ca_.clear();
-  add_items_to_array(ref_vec2, ca_);
+  add_items_to_array(ref_vec2, &ca_);
 
   // Output should match new content:
   ASSERT_TRUE(coalesced_output_equals_vec(ca_, ref_vec2));
@@ -155,8 +153,8 @@ TEST_F(ChunkedArrayTest, clear) {
   Ensure ChunkedArray is safe against double-frees.
 */
 TEST_F(ChunkedArrayTest, doubleFreeSafe) {
-  ca_.release(); // Cannot be used any longer from now on.
-  ca_.release(); // Ensure we don't segfault.
+  ca_.release();  // Cannot be used any longer from now on.
+  ca_.release();  // Ensure we don't segfault.
 
   SUCCEED();
 }
@@ -165,12 +163,12 @@ TEST_F(ChunkedArrayTest, doubleFreeSafe) {
   Ensure size computations in the getters are correct.
 */
 TEST_F(ChunkedArrayTest, totalArraySizeMatchesLastChunkAddCount) {
-  add_items_to_array(REF_VEC, ca_);
+  add_items_to_array(REF_VEC, &ca_);
 
   const size_t first_chunks_add_count = (ca_.get_chunks_count() - 1) * ca_.get_chunk_size();
   const size_t last_chunk_add_count = ca_.get_last_chunk_add_count();
 
-  EXPECT_EQ(first_chunks_add_count, int(REF_VEC.size()/CHUNK_SIZE) * CHUNK_SIZE);
+  EXPECT_EQ(first_chunks_add_count, static_cast<int>(REF_VEC.size() / CHUNK_SIZE) * CHUNK_SIZE);
   EXPECT_EQ(last_chunk_add_count, REF_VEC.size() % CHUNK_SIZE);
   EXPECT_EQ(first_chunks_add_count + last_chunk_add_count, ca_.get_add_count());
 }
@@ -185,10 +183,10 @@ TEST_F(ChunkedArrayTest, totalArraySizeMatchesLastChunkAddCount) {
   This would occur if there was an improper data layout with the chunks.
 */
 TEST_F(ChunkedArrayTest, dataLayoutTestThroughGetitem) {
-  add_items_to_array(REF_VEC, ca_);
+  add_items_to_array(REF_VEC, &ca_);
 
   for (size_t i = 0, chunk = 0, in_chunk_idx = 0; i < REF_VEC.size(); ++i) {
-    int value = ca_.getitem(chunk, in_chunk_idx, -1); // -1 works as sentinel value (bad layout found)
+    int value = ca_.getitem(chunk, in_chunk_idx, -1);  // -1 works as sentinel value (bad layout found)
 
     EXPECT_EQ(value, REF_VEC[i]) << " for address (chunk,in_chunk_idx) = (" << chunk << "," << in_chunk_idx << ")";
 
@@ -209,7 +207,7 @@ TEST_F(ChunkedArrayTest, dataLayoutTestThroughGetitem) {
   We also gradually add more chunks to the ChunkedArray and re-run more trials
   to ensure the valid/invalid addresses are updated.
 
-  With each valid update we add to a "memory" vector the history of all the insertions.
+  With each valid update we add to a "memory" vector the latest inserted values.
   This is used at the end to ensure all values were stored properly, including after
   value overrides.
 */
@@ -218,8 +216,9 @@ TEST_F(ChunkedArrayTest, testDataLayoutWithAdvancedInsertionAPI) {
   const size_t MAX_IN_CHUNK_SEARCH_IDX = 2 * CHUNK_SIZE;
   // Number of trials for each new ChunkedArray configuration. Pass 100 times over the search space:
   const size_t N_TRIALS = MAX_CHUNKS_SEARCH * MAX_IN_CHUNK_SEARCH_IDX * 100;
-  std::vector<int> overriden_trials_values(MAX_CHUNKS_SEARCH * CHUNK_SIZE);
-  std::vector<bool> overriden_trials_mask(MAX_CHUNKS_SEARCH * CHUNK_SIZE, false);
+  const int INVALID = -1;  // A negative value signaling the requested value lives in an invalid address.
+  const int UNITIALIZED = -99;  // A negative value to signal this was never updated.
+  std::vector<int> ref_values(MAX_CHUNKS_SEARCH * CHUNK_SIZE, UNITIALIZED);  // Memorize latest inserted values.
 
   // Each outer loop iteration changes the test by adding +1 chunk. We start with 1 chunk only:
   for (size_t chunks = 1; chunks < MAX_CHUNKS_SEARCH; ++chunks) {
@@ -239,24 +238,24 @@ TEST_F(ChunkedArrayTest, testDataLayoutWithAdvancedInsertionAPI) {
       // If at valid address, check that the stored value is correct & remember it for the future:
       if (valid_address) {
         // Check the just-stored value with getitem():
-        EXPECT_EQ(ca_.getitem(trial_chunk, trial_in_chunk_idx, -1), trial_value); // -1 is the sentinel value.
+        EXPECT_EQ(ca_.getitem(trial_chunk, trial_in_chunk_idx, INVALID), trial_value);
 
         // Also store the just-stored value for future tracking:
-        overriden_trials_values[trial_chunk*CHUNK_SIZE + trial_in_chunk_idx] = trial_value;
-        overriden_trials_mask[trial_chunk*CHUNK_SIZE + trial_in_chunk_idx] = true;
+        ref_values[trial_chunk * CHUNK_SIZE + trial_in_chunk_idx] = trial_value;
       }
     }
 
-    ca_.new_chunk(); // Just finished a round of trials. Now add a new chunk. Valid addresses will be expanded.
+    ca_.new_chunk();  // Just finished a round of trials. Now add a new chunk. Valid addresses will be expanded.
   }
 
   // Final check: ensure even with overrides, all valid insertions store the latest value at that address:
-  std::vector<int> coalesced_out(MAX_CHUNKS_SEARCH * CHUNK_SIZE, -1);
-  ca_.coalesce_to(coalesced_out.data(), true); // Export all valid addresses.
-  for (size_t i = 0; i < overriden_trials_mask.size(); ++i) {
-    if (overriden_trials_mask[i]) {
-      EXPECT_EQ(ca_.getitem(i/CHUNK_SIZE, i % CHUNK_SIZE, -1), overriden_trials_values[i]);
-      EXPECT_EQ(coalesced_out[i], overriden_trials_values[i]);
+  std::vector<int> coalesced_out(MAX_CHUNKS_SEARCH * CHUNK_SIZE, UNITIALIZED);
+  ca_.coalesce_to(coalesced_out.data(), true);  // Export all valid addresses.
+  for (size_t i = 0; i < ref_values.size(); ++i) {
+    if (ref_values[i] != UNITIALIZED) {
+      // Test in 2 ways that the values are correctly laid out in memory:
+      EXPECT_EQ(ca_.getitem(i / CHUNK_SIZE, i % CHUNK_SIZE, INVALID), ref_values[i]);
+      EXPECT_EQ(coalesced_out[i], ref_values[i]);
     }
   }
 }
