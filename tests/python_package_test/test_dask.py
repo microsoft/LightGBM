@@ -960,6 +960,7 @@ def test_eval_set_with_custom_eval_metric(task, cluster):
         assert np.allclose(evals_result[eval_name]['constant_metric'], 0.708)
 
 
+@pytest.mark.parametrize('task', tasks)
 def test_training_works_if_client_not_provided_or_set_after_construction(task, cluster):
     with Client(cluster) as client:
         _, _, _, _, dX, dy, _, dg = _create_data(
