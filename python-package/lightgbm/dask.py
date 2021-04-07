@@ -28,9 +28,9 @@ _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Typ
 
 class _DatasetNames():
     """Placeholder names used by lightgbm.dask internals to say 'also evaluate the training data'.
+
     Avoid duplicating the training data when the validation set refers to elements of training data.
     """
-
     TRAINSET = '__train__'
     SAMPLE_WEIGHT = '__sample_weight__'
     INIT_SCORE = '__init_score__'
