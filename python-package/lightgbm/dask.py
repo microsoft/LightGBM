@@ -31,6 +31,7 @@ class _DatasetNames():
 
     Avoid duplicating the training data when the validation set refers to elements of training data.
     """
+
     TRAINSET = '__train__'
     SAMPLE_WEIGHT = '__sample_weight__'
     INIT_SCORE = '__init_score__'
