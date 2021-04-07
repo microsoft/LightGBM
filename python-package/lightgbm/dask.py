@@ -128,7 +128,7 @@ def _train_part(
         init_score = None
 
     # construct local eval_set data.
-    n_evals = len(list_of_parts[0].get('eval_set', []))
+    n_evals = max([len(x.get('eval_set', [])) for x in list_of_parts])
     eval_names = kwargs.pop('eval_names', None)
     eval_class_weight = kwargs.get('eval_class_weight')
     local_eval_set = None
@@ -524,7 +524,6 @@ def _train(
                     # add None-padding for individual eval_set member if it is smaller than the largest member.
                     x_e = eval_x_parts[j] if j < n_this_eval_parts else None
                     y_e = eval_y_parts[j] if j < n_this_eval_parts else None
-                    print(f'j={j}, n_this_eval_parts={n_this_eval_parts}, n_largest_eval_parts={n_largest_eval_parts}... adding padding!')
 
                     if j < n_parts:
                         eval_sets[parts_idx].append(([x_e], [y_e]))
@@ -696,7 +695,7 @@ def _train(
 
     # Tell each worker to train on the parts that it has locally
     #
-    # This code treates ``_train_part()`` calls as not "pure" because:
+    # This code creates ``_train_part()`` calls as not "pure" because:
     #     1. there is randomness in the training process unless parameters ``seed``
     #        and ``deterministic`` are set
     #     2. even with those parameters set, the output of one ``_train_part()`` call
