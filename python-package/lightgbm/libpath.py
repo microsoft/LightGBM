@@ -34,5 +34,6 @@ def find_lib_path() -> List[str]:
     lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
     if not lib_path:
         dll_path = [os.path.realpath(p) for p in dll_path]
-        raise Exception('Cannot find lightgbm library file in following paths:\n' + '\n'.join(dll_path))
+        new_line = "\n"
+        raise Exception(f'Cannot find lightgbm library file in following paths:{new_line}{new_line.join(dll_path)}')
     return lib_path
