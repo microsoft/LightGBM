@@ -18,7 +18,7 @@ env:
   # CRAN ignores the "installed size is too large" NOTE,
   # so our CI can too. Setting to a large value here just
   # to catch extreme problems
-  _R_CHECK_PKG_SIZES_THRESHOLD_: 2
+  _R_CHECK_PKG_SIZES_THRESHOLD_: 100
 
 jobs:
   test:
@@ -75,14 +75,14 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MINGW
-            toolchain: MSYS
-            r_version: 4.0
+            toolchain: MINGW
+            r_version: 3.6
             build_type: cmake
           - os: windows-latest
             task: r-package
             compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
+            toolchain: MSYS
+            r_version: 4.0
             build_type: cmake
           # Visual Studio 2017
           - os: windows-2016
