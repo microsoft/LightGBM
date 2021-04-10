@@ -18,7 +18,7 @@ env:
   # CRAN ignores the "installed size is too large" NOTE,
   # so our CI can too. Setting to a large value here just
   # to catch extreme problems
-  _R_CHECK_PKG_SIZES_THRESHOLD_: 100
+  _R_CHECK_PKG_SIZES_THRESHOLD_: 2
 
 jobs:
   test:
