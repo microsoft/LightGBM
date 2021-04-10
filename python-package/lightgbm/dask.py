@@ -273,7 +273,7 @@ def _train(
 
     if params['tree_learner'] not in {'data', 'data_parallel'}:
         _log_warning(
-            f'Support for tree_learner {params['tree_learner']} in lightgbm.dask is experimental and may break in a future release. \n'
+            f'Support for tree_learner {params["tree_learner'"} in lightgbm.dask is experimental and may break in a future release. \n'
             'Use "data" for a stable, well-tested interface.'
         )
 
