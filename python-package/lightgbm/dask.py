@@ -268,7 +268,7 @@ def _train(
         'voting_parallel'
     }
     if params["tree_learner"] not in allowed_tree_learners:
-        _log_warning(f'Parameter tree_learner set to {params['tree_learner']}, which is not allowed. Using "data" as default')
+        _log_warning(f'Parameter tree_learner set to {params["tree_learner"]}, which is not allowed. Using "data" as default')
         params['tree_learner'] = 'data'
 
     if params['tree_learner'] not in {'data', 'data_parallel'}:
