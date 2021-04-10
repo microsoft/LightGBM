@@ -1,5 +1,11 @@
 # CRAN Submission History
 
+## v3.2.0 - Submission 1 - (TBD)
+
+### CRAN response
+
+### Maintainer Notes
+
 ## v3.1.1 - Submission 1 - (December 7, 2020)
 
 ### CRAN response
