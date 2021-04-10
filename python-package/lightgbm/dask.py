@@ -67,7 +67,7 @@ def _concat(seq: List[_DaskPart]) -> _DaskPart:
     elif isinstance(seq[0], ss.spmatrix):
         return ss.vstack(seq, format='csr')
     else:
-        raise TypeError(f'Data must be one of: numpy arrays, pandas dataframes, sparse matrices (from scipy). Got {type(seq[0])}.')
+        raise TypeError('Data must be one of: numpy arrays, pandas dataframes, sparse matrices (from scipy). Got %s.' % str(type(seq[0])))
 
 
 def _train_part(
@@ -268,13 +268,13 @@ def _train(
         'voting_parallel'
     }
     if params["tree_learner"] not in allowed_tree_learners:
-        _log_warning(f'Parameter tree_learner set to {params['tree_learner']}, which is not allowed. Using "data" as default')
+        _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % params['tree_learner'])
         params['tree_learner'] = 'data'
 
     if params['tree_learner'] not in {'data', 'data_parallel'}:
         _log_warning(
-            f'Support for tree_learner {params['tree_learner']} in lightgbm.dask is experimental and may break in a future release. \n'
-            'Use "data" for a stable, well-tested interface.'
+            'Support for tree_learner %s in lightgbm.dask is experimental and may break in a future release. \n'
+            'Use "data" for a stable, well-tested interface.' % params['tree_learner']
         )
 
     # Some passed-in parameters can be removed:
@@ -372,7 +372,7 @@ def _train(
                 workers=list(worker_addresses)
             )
         machines = ','.join([
-            f'{urlparse(worker_address).hostname}:{port}'
+            '%s:%d' % (urlparse(worker_address).hostname, port)
             for worker_address, port
             in worker_address_to_port.items()
         ])
@@ -531,7 +531,7 @@ def _predict(
             drop_axis=1
         )
     else:
-        raise TypeError(f'Data must be either Dask Array or Dask DataFrame. Got {type(data)}.')
+        raise TypeError('Data must be either Dask Array or Dask DataFrame. Got %s.' % str(type(data)))
 
 
 class _DaskLGBMModel:
@@ -663,12 +663,11 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     _base_doc = LGBMClassifier.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    _base_doc = (
-        f"""{_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
-        {' ' * 12} Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime.
-        The Dask client used by this class will not be saved if the model object is pickled.
-        {' ' * 8 } {_kwargs} {_after_kwargs}"""
-    )
+    _base_doc = f"""
+          {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
+          {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
+          {_kwargs}{_after_kwargs}
+          """
 
     # the note on custom objective functions in LGBMModel.__init__ is not
     # currently relevant for the Dask estimators
@@ -708,9 +707,10 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
                  + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMClassifier support for callbacks and init_model is not tested
-    fit.__doc__ = (
-        f"{_base_doc[:_base_doc.find('callbacks :')]} **kwargs\n {' ' * 12} 'Other parameters passed through to ``LGBMClassifier.fit()``.\n'"
-    )
+     fit.__doc__ = f"""
+        {_base_doc[:_base_doc.find('callbacks :')]}**kwargs
+        Other parameters passed through to ``LGBMClassifier.fit()``
+        """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
@@ -815,11 +815,11 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
     _base_doc = LGBMRegressor.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    _base_doc = (
-        f"""{_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
-        {' ' * 12} Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
-        {' ' * 8} {_kwargs} + {_after_kwargs}"""
-    )
+     _base_doc = f"""
+        {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
+        {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
+        {_kwargs}{_after_kwargs}
+        """
 
     # the note on custom objective functions in LGBMModel.__init__ is not
     # currently relevant for the Dask estimators
@@ -855,12 +855,16 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     )
 
     # DaskLGBMRegressor does not support evaluation data, or early stopping
-    _base_doc = (_base_doc[:_base_doc.find('group :')]
-                 + _base_doc[_base_doc.find('verbose :'):])
+    fit.__doc__ = f"""
+        {_base_doc[:_base_doc.find('callbacks :')]}**kwargs
+        Other parameters passed through to ``LGBMRegressor.fit()``
+        """
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
     fit.__doc__ = (
-        f"{_base_doc[:_base_doc.find('callbacks :')]} **kwargs\n{' ' * 12} Other parameters passed through to ``LGBMRegressor.fit()``.\n"
+        _base_doc[:_base_doc.find('callbacks :')]
+        + '**kwargs\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMRegressor.fit()``.\n'
     )
 
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
@@ -947,11 +951,11 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
     _base_doc = LGBMRanker.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    _base_doc = (
-        f"""{_before_kwargs} client : dask.distributed.Client or None, optional (default=None)
-        {' ' * 12}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled
-        {' ' * 8}{_kwargs}{_after_kwargs}"""
-    )
+        _base_doc = f"""
+        {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
+        {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
+        {_kwargs}{_after_kwargs}
+        """
 
     # the note on custom objective functions in LGBMModel.__init__ is not
     # currently relevant for the Dask estimators
@@ -993,9 +997,10 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
                  + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMRanker support for callbacks and init_model is not tested
-    fit.__doc__ = (
-        f"{_base_doc[:_base_doc.find('callbacks :')]} **kwargs\n{' ' * 12}Other parameters passed through to ``LGBMRanker.fit()``.\n"
-    )
+     fit.__doc__ = f"""
+        {_base_doc[:_base_doc.find('callbacks :')]}**kwargs
+        Other parameters passed through to ``LGBMRegressor.fit()``
+        """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
