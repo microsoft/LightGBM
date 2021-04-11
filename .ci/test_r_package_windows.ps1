@@ -79,19 +79,6 @@ $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 
-# hack to get around this:
-# https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
-$env:_R_CHECK_SYSTEM_CLOCK_ = 0
-
-# ignore R CMD CHECK NOTE checking how long it has
-# been since the last submission
-$env:_R_CHECK_CRAN_INCOMING_REMOTE_ = 0
-
-# CRAN ignores the "installed size is too large" NOTE,
-# so our CI can too. Setting to a large value here just
-# to catch extreme problems
-$env:_R_CHECK_PKG_SIZES_THRESHOLD_ = 100
-
 # don't fail builds for long-running examples unless they're very long.
 # See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
 if ($env:R_BUILD_TYPE -ne "cran") {
