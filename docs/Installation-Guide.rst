@@ -774,7 +774,7 @@ Build C++ Unit Tests
 Windows
 ^^^^^^^
 
-On Windows a C++ unit tests of LightGBM can be built using **CMake** and **VS Build Tools**.
+On Windows, C++ unit tests of LightGBM can be built using **CMake** and **VS Build Tools**.
 
 1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
 
