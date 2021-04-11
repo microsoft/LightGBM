@@ -10,7 +10,7 @@
 
 ### CRAN response
 
-Package is failing checks in the `r-devel-linux-x86_64-debian-clang` environment (described [here](https://cran.r-project.org/web/checks/check_flavors.html#r-devel-linux-x86_64-debian-clang). Specifically, one unit test on the use of non-ASCII feature names in `Booster$dump_model()` fails.
+Package is failing checks in the `r-devel-linux-x86_64-debian-clang` environment (described [here](https://cran.r-project.org/web/checks/check_flavors.html#r-devel-linux-x86_64-debian-clang)). Specifically, one unit test on the use of non-ASCII feature names in `Booster$dump_model()` fails.
 
 > Apparently your package fails its checks in a strict Latin-1* locale,
 e.g. under Linux using LANG=en_US.iso88591 (see the debian-clang
