@@ -66,7 +66,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw64\bin"
   $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.0.4"
+  $env:R_WINDOWS_VERSION = "4.0.5"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -78,19 +78,6 @@ $env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/b
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
-
-# hack to get around this:
-# https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
-$env:_R_CHECK_SYSTEM_CLOCK_ = 0
-
-# ignore R CMD CHECK NOTE checking how long it has
-# been since the last submission
-$env:_R_CHECK_CRAN_INCOMING_REMOTE_ = 0
-
-# CRAN ignores the "installed size is too large" NOTE,
-# so our CI can too. Setting to a large value here just
-# to catch extreme problems
-$env:_R_CHECK_PKG_SIZES_THRESHOLD_ = 100
 
 # don't fail builds for long-running examples unless they're very long.
 # See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
