@@ -317,6 +317,14 @@ struct Config {
   // desc = **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
   double neg_bagging_fraction = 1.0;
 
+  // check = >0.0
+  // check = <=1.0
+  // desc = used in MVS boosting if ``mvs_adaptive == true`` than this value is ignored
+  double mvs_lambda = 1e-2;
+
+  // desc = use adaptive variant of mvs boosting
+  bool mvs_adaptive = false;
+
   // alias = subsample_freq
   // desc = frequency for bagging
   // desc = ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration. Every ``k``-th iteration, LightGBM will randomly select ``bagging_fraction * 100 %`` of the data to use for the next ``k`` iterations

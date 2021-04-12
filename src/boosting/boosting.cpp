@@ -8,6 +8,7 @@
 #include "gbdt.h"
 #include "goss.hpp"
 #include "rf.hpp"
+#include "mvs.hpp"
 
 namespace LightGBM {
 
@@ -42,6 +43,8 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       return new GOSS();
     } else if (type == std::string("rf")) {
       return new RF();
+    } else if (type == std::string("mvs")) {
+      return new MVS();
     } else {
       return nullptr;
     }
