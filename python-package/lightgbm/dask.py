@@ -309,12 +309,6 @@ def _train(
         _log_warning(f'Parameter tree_learner set to {params["tree_learner"]}, which is not allowed. Using "data" as default')
         params['tree_learner'] = 'data'
 
-    if params['tree_learner'] not in {'data', 'data_parallel'}:
-        _log_warning(
-            f'Support for tree_learner {params["tree_learner'"} in lightgbm.dask is experimental and may break in a future release. \n'
-            'Use "data" for a stable, well-tested interface.'
-        )
-
     # Some passed-in parameters can be removed:
     #   * 'num_machines': set automatically from Dask worker list
     #   * 'num_threads': overridden to match nthreads on each Dask process
