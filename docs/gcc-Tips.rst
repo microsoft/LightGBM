@@ -32,27 +32,34 @@ Some explanatory pictures:
 .. image:: ./_static/images/gcc-table.png
    :align: center
    :target: ./_static/images/gcc-table.png
+   :alt: picture comparing depth with number of threads with each implementation where red color means bad combination and greener areas mean good combination
 
 .. image:: ./_static/images/gcc-bars.png
    :align: center
    :target: ./_static/images/gcc-bars.png
+   :alt: picture of a simple bar chart against running time
 
 .. image:: ./_static/images/gcc-chart.png
    :align: center
    :target: ./_static/images/gcc-chart.png
+   :alt: this picture is a rendition of first where y-axis is cost and x-axis is number of threads comparing the four algorithms
 
 .. image:: ./_static/images/gcc-comparison-1.png
    :align: center
    :target: ./_static/images/gcc-comparison-1.png
+   :alt: a bar chart comapring Light G.B.M performance versus compilation flags which is maximum at depth 8 with Light G.B.M version 2, flag O 3
 
 .. image:: ./_static/images/gcc-comparison-2.png
    :align: center
    :target: ./_static/images/gcc-comparison-2.png
+   :alt: a bar chart comapring Light G.B.M cumulative performance versus compilation flags which is maximum at depth 8 with Light G.B.M version 2, flag O 3
 
 .. image:: ./_static/images/gcc-meetup-1.png
    :align: center
    :target: ./_static/images/gcc-meetup-1.png
+   :alt: comparison of cumulative speed versus the slowest algorithm at various depths with v-2, O-3 remaining constant almost in all cases
 
 .. image:: ./_static/images/gcc-meetup-2.png
    :align: center
    :target: ./_static/images/gcc-meetup-2.png
+   :alt: comparison of cumulative speed versus the slowest density of each algorithm at various depths with v-2, O-3 remaining constant almost in all cases
