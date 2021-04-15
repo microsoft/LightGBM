@@ -76,7 +76,7 @@ class _ObjectiveFunctionWrapper:
         elif argc == 3:
             grad, hess = self.func(labels, preds, dataset.get_group())
         else:
-            raise TypeError("Self-defined objective function should have 2 or 3 arguments, got %d" % argc)
+            raise TypeError(f"Self-defined objective function should have 2 or 3 arguments, got {argc}")
         """weighted for objective"""
         weight = dataset.get_weight()
         if weight is not None:
@@ -88,7 +88,7 @@ class _ObjectiveFunctionWrapper:
                 num_data = len(weight)
                 num_class = len(grad) // num_data
                 if num_class * num_data != len(grad):
-                    raise ValueError("Length of grad and hess should equal to num_class * num_data")
+                    raise ValueError(f"Length of grad and hess should equal to {num_class * num_data}")
                 for k in range(num_class):
                     for i in range(num_data):
                         idx = k * num_data + i
@@ -171,7 +171,7 @@ class _EvalFunctionWrapper:
         elif argc == 4:
             return self.func(labels, preds, dataset.get_weight(), dataset.get_group())
         else:
-            raise TypeError("Self-defined eval function should have 2, 3 or 4 arguments, got %d" % argc)
+            raise TypeError(f"Self-defined eval function should have 2, 3 or 4 arguments, got {argc}")
 
 
 # documentation templates for LGBMModel methods are shared between the classes in
@@ -718,11 +718,10 @@ class LGBMModel(_LGBMModelBase):
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
-        if self._n_features != n_features:
-            raise ValueError("Number of features of the model must "
-                             "match the input. Model n_features_ is %s and "
-                             "input n_features is %s "
-                             % (self._n_features, n_features))
+        if self._n_features != n_features: 
+            raise ValueError(f"Number of features of the model must " \
+                             f"match the input. Model n_features_ is {self._n_features} and " \
+                             f"input n_features is {n_features} ")
         return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
@@ -919,9 +918,10 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         """Docstring is set after definition, using a template."""
         result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
-            _log_warning("Cannot compute class probabilities or labels "
-                         "due to the usage of customized objective function.\n"
-                         "Returning raw scores instead.")
+            new_line = "\n"
+            _log_warning(f"Cannot compute class probabilities or labels " \
+                         f"due to the usage of customized objective function.{new_line}"
+                         f"Returning raw scores instead.")
             return result
         elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
             return result
