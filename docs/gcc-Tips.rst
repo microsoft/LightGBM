@@ -42,22 +42,22 @@ Some explanatory pictures:
 .. image:: ./_static/images/gcc-chart.png
    :align: center
    :target: ./_static/images/gcc-chart.png
-   :alt: this picture is a rendition of first where y-axis is cost and x-axis is number of threads comparing the four algorithms
+   :alt: a grid of vertical bar charts comparing run time for different combinations of max depth, compiler flags, and number of threads. The charts show that for shallow trees, using more threads is always expected to provide some reduction in run time. But for deeper trees (max depth greater than 10), using a value of num threads that is too high can actually result in slower training.
 
 .. image:: ./_static/images/gcc-comparison-1.png
    :align: center
    :target: ./_static/images/gcc-comparison-1.png
-   :alt: a bar chart comapring Light G.B.M performance versus compilation flags which is maximum at depth 8 with Light G.B.M version 2, flag O 3
+   :alt: a horizontal bar chart comparing Light G B M performance versus compilation flags. For most settings of max depth, best performance was achieved with flags dash O 3, dash M T U N E equals native.
 
 .. image:: ./_static/images/gcc-comparison-2.png
    :align: center
    :target: ./_static/images/gcc-comparison-2.png
-   :alt: a bar chart comapring Light G.B.M cumulative performance versus compilation flags which is maximum at depth 8 with Light G.B.M version 2, flag O 3
+   :alt: a set of 4 vertical bar charts comparing Light G B M performance versus compilation flags. For most settings of max depth, best performance was achieved with flags dash O 3, dash M T U N E equals native.
 
 .. image:: ./_static/images/gcc-meetup-1.png
    :align: center
    :target: ./_static/images/gcc-meetup-1.png
-   :alt: comparison of cumulative speed versus the slowest algorithm at various depths with v-2, O-3 remaining constant almost in all cases
+   :alt: grid of line charts showing the relative speed of training for different combinations of max depth, number of threads, and compilation flags. The grid shows that for models with max depth greater than 5, compiling Light G B M with default compiler flags produces faster training time than any of the customizations explored.
 
 .. image:: ./_static/images/gcc-meetup-2.png
    :align: center
