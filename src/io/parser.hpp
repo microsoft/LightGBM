@@ -15,20 +15,10 @@
 
 namespace LightGBM {
 
-#ifdef USE_PRECISE_TEXT_PARSER
-static const char* TextParserAtof(const char* p, double* out) {
-  return Common::AtofPrecise(p, out);
-}
-#else
-static const char* TextParserAtof(const char* p, double* out) {
-  return Common::Atof(p, out);
-}
-#endif
-
 class CSVParser: public Parser {
  public:
-  explicit CSVParser(int label_idx, int total_columns)
-    :label_idx_(label_idx), total_columns_(total_columns) {
+  explicit CSVParser(int label_idx, int total_columns, AtofFunc atof)
+    :label_idx_(label_idx), total_columns_(total_columns), atof_(atof) {
   }
   inline void ParseOneLine(const char* str,
     std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
@@ -37,7 +27,7 @@ class CSVParser: public Parser {
     int offset = 0;
     *out_label = 0.0f;
     while (*str != '\0') {
-      str = TextParserAtof(str, &val);
+      str = atof_(str, &val);
       if (idx == label_idx_) {
         *out_label = val;
         offset = -1;
@@ -60,12 +50,13 @@ class CSVParser: public Parser {
  private:
   int label_idx_ = 0;
   int total_columns_ = -1;
+  AtofFunc atof_;
 };
 
 class TSVParser: public Parser {
  public:
-  explicit TSVParser(int label_idx, int total_columns)
-    :label_idx_(label_idx), total_columns_(total_columns) {
+  explicit TSVParser(int label_idx, int total_columns, AtofFunc atof)
+    :label_idx_(label_idx), total_columns_(total_columns), atof_(atof) {
   }
   inline void ParseOneLine(const char* str,
     std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
@@ -73,7 +64,7 @@ class TSVParser: public Parser {
     double val = 0.0f;
     int offset = 0;
     while (*str != '\0') {
-      str = TextParserAtof(str, &val);
+      str = atof_(str, &val);
       if (idx == label_idx_) {
         *out_label = val;
         offset = -1;
@@ -96,12 +87,13 @@ class TSVParser: public Parser {
  private:
   int label_idx_ = 0;
   int total_columns_ = -1;
+  AtofFunc atof_;
 };
 
 class LibSVMParser: public Parser {
  public:
-  explicit LibSVMParser(int label_idx, int total_columns)
-    :label_idx_(label_idx), total_columns_(total_columns) {
+  explicit LibSVMParser(int label_idx, int total_columns, AtofFunc atof)
+    :label_idx_(label_idx), total_columns_(total_columns), atof_(atof) {
     if (label_idx > 0) {
       Log::Fatal("Label should be the first column in a LibSVM file");
     }
@@ -111,7 +103,7 @@ class LibSVMParser: public Parser {
     int idx = 0;
     double val = 0.0f;
     if (label_idx_ == 0) {
-      str = TextParserAtof(str, &val);
+      str = atof_(str, &val);
       *out_label = val;
       str = Common::SkipSpaceAndTab(str);
     }
@@ -136,6 +128,7 @@ class LibSVMParser: public Parser {
  private:
   int label_idx_ = 0;
   int total_columns_ = -1;
+  AtofFunc atof_;
 };
 
 }  // namespace LightGBM

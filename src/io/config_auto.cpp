@@ -261,6 +261,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "categorical_feature",
   "forcedbins_filename",
   "save_binary",
+  "precise_float_parser",
   "start_iteration_predict",
   "num_iteration_predict",
   "predict_raw_score",
@@ -526,6 +527,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetString(params, "forcedbins_filename", &forcedbins_filename);
 
   GetBool(params, "save_binary", &save_binary);
+
+  GetBool(params, "precise_float_parser", &precise_float_parser);
 
   GetInt(params, "start_iteration_predict", &start_iteration_predict);
 

@@ -252,6 +252,8 @@ class Metadata {
 /*! \brief Interface for Parser */
 class Parser {
  public:
+  typedef const char* (*AtofFunc)(const char* p, double* out);
+
   /*! \brief virtual destructor */
   virtual ~Parser() {}
 
@@ -271,9 +273,10 @@ class Parser {
   * \param filename One Filename of data
   * \param num_features Pass num_features of this data file if you know, <=0 means don't know
   * \param label_idx index of label column
+  * \param precise_float_parser using precise floating point number parsing if true
   * \return Object of parser
   */
-  static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx);
+  static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser);
 };
 
 /*! \brief The main class of data set,
