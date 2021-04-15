@@ -1,4 +1,3 @@
-OPTION(USE_PRECISE_TEXT_PARSER "Use precise double parser for text input file" OFF)
 OPTION(USE_MPI "Enable MPI-based distributed learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-accelerated training" OFF)
@@ -116,10 +115,6 @@ endif(USE_TIMETAG)
 if(USE_DEBUG)
     ADD_DEFINITIONS(-DDEBUG)
 endif(USE_DEBUG)
-
-if(USE_PRECISE_TEXT_PARSER)
-    ADD_DEFINITIONS(-DUSE_PRECISE_TEXT_PARSER)
-endif(USE_PRECISE_TEXT_PARSER)
 
 if(USE_MPI)
     find_package(MPI REQUIRED)
