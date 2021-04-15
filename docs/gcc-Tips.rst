@@ -32,7 +32,7 @@ Some explanatory pictures:
 .. image:: ./_static/images/gcc-table.png
    :align: center
    :target: ./_static/images/gcc-table.png
-   :alt: picture comparing depth with number of threads with each implementation where red color means bad combination and greener areas mean good combination
+   :alt: table comparing training runtime for different combinations of max depth, compiler flags, and number of threads. Faster training times are shown in green, slower times in red. For max depth 10 and 12, the fastest training was achieved with 5 threads and compiler flag dash O 2.
 
 .. image:: ./_static/images/gcc-bars.png
    :align: center
