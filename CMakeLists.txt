@@ -1,4 +1,4 @@
-OPTION(USE_MPI "Enable MPI-based parallel learning" OFF)
+OPTION(USE_MPI "Enable MPI-based distributed learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-accelerated training" OFF)
 OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
@@ -6,6 +6,12 @@ OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
 OPTION(USE_CUDA "Enable CUDA-accelerated training (EXPERIMENTAL)" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
+OPTION(USE_SANITIZER "Use santizer flags" OFF)
+SET(SANITIZER_PATH "" CACHE STRING "Path to sanitizer libs")
+SET(ENABLED_SANITIZERS "address" "leak" "undefined" CACHE STRING
+  "Semicolon separated list of sanitizer names. E.g 'address;leak'. Supported sanitizers are
+address, leak, undefined and thread.")
+OPTION(BUILD_CPP_TEST "Build C++ tests with Google Test" OFF)
 OPTION(BUILD_STATIC_LIB "Build static library" OFF)
 OPTION(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 OPTION(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
@@ -24,11 +30,15 @@ else()
   cmake_minimum_required(VERSION 3.0)
 endif()
 
-if(USE_CUDA)
-  PROJECT(lightgbm LANGUAGES C CXX CUDA)
-else()
-  PROJECT(lightgbm LANGUAGES C CXX)
-endif()
+PROJECT(lightgbm LANGUAGES C CXX)
+
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
+
+#-- Sanitizer
+if (USE_SANITIZER)
+  include(cmake/Sanitizer.cmake)
+  enable_sanitizers("${ENABLED_SANITIZERS}")
+endif (USE_SANITIZER)
 
 if(__INTEGRATE_OPENCL)
   set(__INTEGRATE_OPENCL ON CACHE BOOL "" FORCE)
@@ -83,14 +93,13 @@ if(USE_SWIG)
   endif()
 endif(USE_SWIG)
 
-SET(EIGEN_DIR "${PROJECT_SOURCE_DIR}/eigen")
+SET(EIGEN_DIR "${PROJECT_SOURCE_DIR}/external_libs/eigen")
 include_directories(${EIGEN_DIR})
 
 # See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
 ADD_DEFINITIONS(-DEIGEN_MPL2_ONLY)
 
 if(__BUILD_FOR_R)
-    list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
     message(STATUS "LIBR_INCLUDE_DIRS: ${LIBR_INCLUDE_DIRS}")
@@ -117,6 +126,8 @@ else()
 endif(USE_MPI)
 
 if(USE_CUDA)
+    SET(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
+    enable_language(CUDA)
     SET(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
 endif(USE_CUDA)
 
@@ -126,7 +137,7 @@ if(USE_OPENMP)
 endif(USE_OPENMP)
 
 if(USE_GPU)
-    SET(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/compute/include)
+    SET(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/external_libs/compute/include)
     include_directories(${BOOST_COMPUTE_HEADER_DIR})
     find_package(OpenCL REQUIRED)
     include_directories(${OpenCL_INCLUDE_DIRS})
@@ -145,7 +156,7 @@ endif(USE_GPU)
 
 if(__INTEGRATE_OPENCL)
     if(WIN32)
-        include(CMakeIntegratedOpenCL.cmake)
+        include(cmake/IntegratedOpenCL.cmake)
         ADD_DEFINITIONS(-DUSE_GPU)
     else()
         message(FATAL_ERROR "Integrated OpenCL build is available only for Windows")
@@ -153,10 +164,17 @@ if(__INTEGRATE_OPENCL)
 endif(__INTEGRATE_OPENCL)
 
 if(USE_CUDA)
-    find_package(CUDA REQUIRED)
+    find_package(CUDA 9.0 REQUIRED)
     include_directories(${CUDA_INCLUDE_DIRS})
     LIST(APPEND CMAKE_CUDA_FLAGS -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall)
-    CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS 6.0 6.1 6.2 7.0 7.5+PTX)
+
+    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0")
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "10.0")
+        list(APPEND CUDA_ARCHS "7.5")
+    endif()
+    list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
+    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
+    CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS ${CUDA_ARCHS})
 
     LIST(APPEND CMAKE_CUDA_FLAGS ${CUDA_ARCH_FLAGS})
     if(USE_DEBUG)
@@ -399,10 +417,10 @@ if(USE_GPU)
 endif(USE_GPU)
 
 if(__INTEGRATE_OPENCL)
-  # targets OpenCL and Boost are added in CMakeIntegratedOpenCL.cmake
+  # targets OpenCL and Boost are added in IntegratedOpenCL.cmake
   add_dependencies(lightgbm OpenCL Boost)
   add_dependencies(_lightgbm OpenCL Boost)
-  # variables INTEGRATED_OPENCL_* are set in CMakeIntegratedOpenCL.cmake
+  # variables INTEGRATED_OPENCL_* are set in IntegratedOpenCL.cmake
   target_include_directories(lightgbm PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
   target_include_directories(_lightgbm PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
   target_compile_definitions(lightgbm PRIVATE ${INTEGRATED_OPENCL_DEFINITIONS})
@@ -445,6 +463,39 @@ if(__BUILD_FOR_R)
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
   endif(MSVC)
 endif(__BUILD_FOR_R)
+
+#-- Google C++ tests
+if(BUILD_CPP_TEST)
+  find_package(GTest CONFIG)
+  if(NOT GTEST_FOUND)
+    message(STATUS "Did not find Google Test in the system root. Fetching Google Test now...")
+    include(FetchContent)
+    FetchContent_Declare(
+      googletest
+      GIT_REPOSITORY https://github.com/google/googletest.git
+      GIT_TAG        release-1.10.0
+    )
+    FetchContent_MakeAvailable(googletest)
+    add_library(GTest::GTest ALIAS gtest)
+  endif()
+  file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
+  if(MSVC)
+    set(
+      CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+    )
+    foreach(CompilerFlag ${CompilerFlags})
+      string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+    endforeach()
+  endif(MSVC)
+  add_executable(testlightgbm ${CPP_TEST_SOURCES} ${SOURCES})
+  target_link_libraries(testlightgbm PRIVATE GTest::GTest)
+endif()
 
 install(TARGETS lightgbm _lightgbm
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin

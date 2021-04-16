@@ -1,23 +1,81 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
-import copy
 import ctypes
 import json
 import os
 import warnings
-from tempfile import NamedTemporaryFile
 from collections import OrderedDict
+from copy import deepcopy
+from functools import wraps
+from logging import Logger
+from tempfile import NamedTemporaryFile
+from typing import Any, Dict, List, Set, Union
 
 import numpy as np
 import scipy.sparse
 
-from .compat import PANDAS_INSTALLED, DataFrame, Series, is_dtype_sparse, DataTable
+from .compat import PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
 
 
+class _DummyLogger:
+    def info(self, msg):
+        print(msg)
+
+    def warning(self, msg):
+        warnings.warn(msg, stacklevel=3)
+
+
+_LOGGER = _DummyLogger()
+
+
+def register_logger(logger):
+    """Register custom logger.
+
+    Parameters
+    ----------
+    logger : logging.Logger
+        Custom logger.
+    """
+    if not isinstance(logger, Logger):
+        raise TypeError("Logger should inherit logging.Logger class")
+    global _LOGGER
+    _LOGGER = logger
+
+
+def _normalize_native_string(func):
+    """Join log messages from native library which come by chunks."""
+    msg_normalized = []
+
+    @wraps(func)
+    def wrapper(msg):
+        nonlocal msg_normalized
+        if msg.strip() == '':
+            msg = ''.join(msg_normalized)
+            msg_normalized = []
+            return func(msg)
+        else:
+            msg_normalized.append(msg)
+
+    return wrapper
+
+
+def _log_info(msg):
+    _LOGGER.info(msg)
+
+
+def _log_warning(msg):
+    _LOGGER.warning(msg)
+
+
+@_normalize_native_string
+def _log_native(msg):
+    _LOGGER.info(msg)
+
+
 def _log_callback(msg):
-    """Redirect logs from native library into Python console."""
-    print("{0:s}".format(msg.decode('utf-8')), end='')
+    """Redirect logs from native library into Python."""
+    _log_native("{0:s}".format(msg.decode('utf-8')))
 
 
 def _load_lib():
@@ -68,6 +126,21 @@ def is_numpy_1d_array(data):
     return isinstance(data, np.ndarray) and len(data.shape) == 1
 
 
+def is_numpy_column_array(data):
+    """Check whether data is a column numpy array."""
+    if not isinstance(data, np.ndarray):
+        return False
+    shape = data.shape
+    return len(shape) == 2 and shape[1] == 1
+
+
+def cast_numpy_1d_array_to_dtype(array, dtype):
+    """Cast numpy 1d array to given dtype."""
+    if array.dtype == dtype:
+        return array
+    return array.astype(dtype=dtype, copy=False)
+
+
 def is_1d_list(data):
     """Check whether data is a 1-D list."""
     return isinstance(data, list) and (not data or is_numeric(data[0]))
@@ -76,13 +149,14 @@ def is_1d_list(data):
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
     if is_numpy_1d_array(data):
-        if data.dtype == dtype:
-            return data
-        else:
-            return data.astype(dtype=dtype, copy=False)
+        return cast_numpy_1d_array_to_dtype(data, dtype)
+    elif is_numpy_column_array(data):
+        _log_warning('Converting column-vector to 1d array')
+        array = data.ravel()
+        return cast_numpy_1d_array_to_dtype(array, dtype)
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
-    elif isinstance(data, Series):
+    elif isinstance(data, pd_Series):
         if _get_bad_pandas_dtypes([data.dtypes]):
             raise ValueError('Series.dtypes must be int, float or bool')
         return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
@@ -94,7 +168,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
 def cfloat32_array_to_numpy(cptr, length):
     """Convert a ctypes float pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
-        return np.fromiter(cptr, dtype=np.float32, count=length)
+        return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
     else:
         raise RuntimeError('Expected float pointer')
 
@@ -102,7 +176,7 @@ def cfloat32_array_to_numpy(cptr, length):
 def cfloat64_array_to_numpy(cptr, length):
     """Convert a ctypes double pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
-        return np.fromiter(cptr, dtype=np.float64, count=length)
+        return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
     else:
         raise RuntimeError('Expected double pointer')
 
@@ -110,7 +184,7 @@ def cfloat64_array_to_numpy(cptr, length):
 def cint32_array_to_numpy(cptr, length):
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
-        return np.fromiter(cptr, dtype=np.int32, count=length)
+        return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
     else:
         raise RuntimeError('Expected int32 pointer')
 
@@ -118,7 +192,7 @@ def cint32_array_to_numpy(cptr, length):
 def cint64_array_to_numpy(cptr, length):
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
-        return np.fromiter(cptr, dtype=np.int64, count=length)
+        return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
     else:
         raise RuntimeError('Expected int64 pointer')
 
@@ -258,6 +332,8 @@ class _ConfigAliases:
                                   "num_rounds",
                                   "num_boost_round",
                                   "n_estimators"},
+               "num_machines": {"num_machines",
+                                "num_machine"},
                "num_threads": {"num_threads",
                                "num_thread",
                                "nthread",
@@ -287,6 +363,46 @@ class _ConfigAliases:
         for i in args:
             ret |= cls.aliases.get(i, {i})
         return ret
+
+
+def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_value: Any) -> Dict[str, Any]:
+    """Get a single parameter value, accounting for aliases.
+
+    Parameters
+    ----------
+    main_param_name : str
+        Name of the main parameter to get a value for. One of the keys of ``_ConfigAliases``.
+    params : dict
+        Dictionary of LightGBM parameters.
+    default_value : Any
+        Default value to use for the parameter, if none is found in ``params``.
+
+    Returns
+    -------
+    params : dict
+        A ``params`` dict with exactly one value for ``main_param_name``, and all aliases ``main_param_name`` removed.
+        If both ``main_param_name`` and one or more aliases for it are found, the value of ``main_param_name`` will be preferred.
+    """
+    # avoid side effects on passed-in parameters
+    params = deepcopy(params)
+
+    # find a value, and remove other aliases with .pop()
+    # prefer the value of 'main_param_name' if it exists, otherwise search the aliases
+    found_value = None
+    if main_param_name in params.keys():
+        found_value = params[main_param_name]
+
+    for param in _ConfigAliases.get(main_param_name):
+        val = params.pop(param, None)
+        if found_value is None and val is not None:
+            found_value = val
+
+    if found_value is not None:
+        params[main_param_name] = found_value
+    else:
+        params[main_param_name] = default_value
+
+    return params
 
 
 MAX_INT32 = (1 << 31) - 1
@@ -329,8 +445,8 @@ def convert_from_sliced_object(data):
     """Fix the memory of multi-dimensional sliced object."""
     if isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         if not data.flags.c_contiguous:
-            warnings.warn("Usage of np.ndarray subset (sliced data) is not recommended "
-                          "due to it will double the peak memory cost in LightGBM.")
+            _log_warning("Usage of np.ndarray subset (sliced data) is not recommended "
+                         "due to it will double the peak memory cost in LightGBM.")
             return np.copy(data)
     return data
 
@@ -389,7 +505,7 @@ def _get_bad_pandas_dtypes(dtypes):
 
 
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
-    if isinstance(data, DataFrame):
+    if isinstance(data, pd_DataFrame):
         if len(data.shape) != 2 or data.shape[0] < 1:
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
@@ -433,7 +549,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
 
 
 def _label_from_pandas(label):
-    if isinstance(label, DataFrame):
+    if isinstance(label, pd_DataFrame):
         if len(label.columns) > 1:
             raise ValueError('DataFrame for label cannot have multiple columns')
         if _get_bad_pandas_dtypes(label.dtypes):
@@ -616,11 +732,11 @@ class _InnerPredictor:
             except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
             preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type)
-        elif isinstance(data, DataTable):
+        elif isinstance(data, dt_DataTable):
             preds, nrow = self.__pred_for_np2d(data.to_numpy(), start_iteration, num_iteration, predict_type)
         else:
             try:
-                warnings.warn('Converting data to scipy sparse matrix.')
+                _log_warning('Converting data to scipy sparse matrix.')
                 csr = scipy.sparse.csr_matrix(data)
             except BaseException:
                 raise TypeError('Cannot predict data for type {}'.format(type(data).__name__))
@@ -989,7 +1105,7 @@ class Dataset:
         self.silent = silent
         self.feature_name = feature_name
         self.categorical_feature = categorical_feature
-        self.params = copy.deepcopy(params)
+        self.params = deepcopy(params)
         self.free_raw_data = free_raw_data
         self.used_indices = None
         self.need_slice = True
@@ -1103,9 +1219,9 @@ class Dataset:
                       .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount])
         for key, _ in params.items():
             if key in args_names:
-                warnings.warn('{0} keyword has been found in `params` and will be ignored.\n'
-                              'Please use {0} argument of the Dataset constructor to pass this parameter.'
-                              .format(key))
+                _log_warning('{0} keyword has been found in `params` and will be ignored.\n'
+                             'Please use {0} argument of the Dataset constructor to pass this parameter.'
+                             .format(key))
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
@@ -1126,7 +1242,7 @@ class Dataset:
             if categorical_indices:
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     if cat_alias in params:
-                        warnings.warn('{} in param dict is overridden.'.format(cat_alias))
+                        _log_warning('{} in param dict is overridden.'.format(cat_alias))
                         params.pop(cat_alias, None)
                 params['categorical_column'] = sorted(categorical_indices)
 
@@ -1154,7 +1270,7 @@ class Dataset:
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif isinstance(data, list) and len(data) > 0 and all(isinstance(x, np.ndarray) for x in data):
             self.__init_from_list_np2d(data, params_str, ref_dataset)
-        elif isinstance(data, DataTable):
+        elif isinstance(data, dt_DataTable):
             self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
             try:
@@ -1172,7 +1288,7 @@ class Dataset:
             self.set_group(group)
         if isinstance(predictor, _InnerPredictor):
             if self._predictor is None and init_score is not None:
-                warnings.warn("The init_score will be overridden by the prediction of init_model.")
+                _log_warning("The init_score will be overridden by the prediction of init_model.")
             self._set_init_score_by_predictor(predictor, data)
         elif init_score is not None:
             self.set_init_score(init_score)
@@ -1314,7 +1430,7 @@ class Dataset:
             if self.reference is not None:
                 reference_params = self.reference.get_params()
                 if self.get_params() != reference_params:
-                    warnings.warn('Overriding the parameters from Reference Dataset.')
+                    _log_warning('Overriding the parameters from Reference Dataset.')
                     self._update_params(reference_params)
                 if self.used_indices is None:
                     # create valid
@@ -1447,13 +1563,13 @@ class Dataset:
     def _update_params(self, params):
         if not params:
             return self
-        params = copy.deepcopy(params)
+        params = deepcopy(params)
 
         def update():
             if not self.params:
                 self.params = params
             else:
-                self.params_back_up = copy.deepcopy(self.params)
+                self.params_back_up = deepcopy(self.params)
                 self.params.update(params)
 
         if self.handle is None:
@@ -1473,7 +1589,7 @@ class Dataset:
 
     def _reverse_update_params(self):
         if self.handle is None:
-            self.params = copy.deepcopy(self.params_back_up)
+            self.params = deepcopy(self.params_back_up)
             self.params_back_up = None
         return self
 
@@ -1583,11 +1699,11 @@ class Dataset:
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
             elif categorical_feature == 'auto':
-                warnings.warn('Using categorical_feature in Dataset.')
+                _log_warning('Using categorical_feature in Dataset.')
                 return self
             else:
-                warnings.warn('categorical_feature in Dataset is overridden.\n'
-                              'New categorical_feature is {}'.format(sorted(list(categorical_feature))))
+                _log_warning('categorical_feature in Dataset is overridden.\n'
+                             'New categorical_feature is {}'.format(sorted(list(categorical_feature))))
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
         else:
@@ -1835,13 +1951,13 @@ class Dataset:
             if self.data is not None:
                 if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
                     self.data = self.data[self.used_indices, :]
-                elif isinstance(self.data, DataFrame):
+                elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
-                elif isinstance(self.data, DataTable):
+                elif isinstance(self.data, dt_DataTable):
                     self.data = self.data[self.used_indices, :]
                 else:
-                    warnings.warn("Cannot subset {} type of raw data.\n"
-                                  "Returning original raw data".format(type(self.data).__name__))
+                    _log_warning("Cannot subset {} type of raw data.\n"
+                                 "Returning original raw data".format(type(self.data).__name__))
             self.need_slice = False
         if self.data is None:
             raise LightGBMError("Cannot call `get_data` after freed raw data, "
@@ -1957,9 +2073,9 @@ class Dataset:
                     self.data = np.hstack((self.data, other.data))
                 elif scipy.sparse.issparse(other.data):
                     self.data = np.hstack((self.data, other.data.toarray()))
-                elif isinstance(other.data, DataFrame):
+                elif isinstance(other.data, pd_DataFrame):
                     self.data = np.hstack((self.data, other.data.values))
-                elif isinstance(other.data, DataTable):
+                elif isinstance(other.data, dt_DataTable):
                     self.data = np.hstack((self.data, other.data.to_numpy()))
                 else:
                     self.data = None
@@ -1967,40 +2083,39 @@ class Dataset:
                 sparse_format = self.data.getformat()
                 if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(other.data):
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
-                elif isinstance(other.data, DataFrame):
+                elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
-                elif isinstance(other.data, DataTable):
+                elif isinstance(other.data, dt_DataTable):
                     self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
                 else:
                     self.data = None
-            elif isinstance(self.data, DataFrame):
+            elif isinstance(self.data, pd_DataFrame):
                 if not PANDAS_INSTALLED:
                     raise LightGBMError("Cannot add features to DataFrame type of raw data "
                                         "without pandas installed")
-                from pandas import concat
                 if isinstance(other.data, np.ndarray):
-                    self.data = concat((self.data, DataFrame(other.data)),
+                    self.data = concat((self.data, pd_DataFrame(other.data)),
                                        axis=1, ignore_index=True)
                 elif scipy.sparse.issparse(other.data):
-                    self.data = concat((self.data, DataFrame(other.data.toarray())),
+                    self.data = concat((self.data, pd_DataFrame(other.data.toarray())),
                                        axis=1, ignore_index=True)
-                elif isinstance(other.data, DataFrame):
+                elif isinstance(other.data, pd_DataFrame):
                     self.data = concat((self.data, other.data),
                                        axis=1, ignore_index=True)
-                elif isinstance(other.data, DataTable):
-                    self.data = concat((self.data, DataFrame(other.data.to_numpy())),
+                elif isinstance(other.data, dt_DataTable):
+                    self.data = concat((self.data, pd_DataFrame(other.data.to_numpy())),
                                        axis=1, ignore_index=True)
                 else:
                     self.data = None
-            elif isinstance(self.data, DataTable):
+            elif isinstance(self.data, dt_DataTable):
                 if isinstance(other.data, np.ndarray):
-                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data)))
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data)))
                 elif scipy.sparse.issparse(other.data):
-                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
-                elif isinstance(other.data, DataFrame):
-                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
-                elif isinstance(other.data, DataTable):
-                    self.data = DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
+                elif isinstance(other.data, pd_DataFrame):
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
+                elif isinstance(other.data, dt_DataTable):
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
                 else:
                     self.data = None
             else:
@@ -2011,10 +2126,10 @@ class Dataset:
                                                         old_self_data_type)
             err_msg += ("Set free_raw_data=False when construct Dataset to avoid this"
                         if was_none else "Freeing raw data")
-            warnings.warn(err_msg)
+            _log_warning(err_msg)
         self.feature_name = self.get_feature_name()
-        warnings.warn("Reseting categorical features.\n"
-                      "You can set new categorical features via ``set_categorical_feature`` method")
+        _log_warning("Reseting categorical features.\n"
+                     "You can set new categorical features via ``set_categorical_feature`` method")
         self.categorical_feature = "auto"
         self.pandas_categorical = None
         return self
@@ -2067,7 +2182,7 @@ class Booster:
         self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
-        params = {} if params is None else copy.deepcopy(params)
+        params = {} if params is None else deepcopy(params)
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
@@ -2076,22 +2191,40 @@ class Booster:
             if not isinstance(train_set, Dataset):
                 raise TypeError('Training data should be Dataset instance, met {}'
                                 .format(type(train_set).__name__))
-            # set network if necessary
-            for alias in _ConfigAliases.get("machines"):
-                if alias in params:
-                    machines = params[alias]
-                    if isinstance(machines, str):
-                        num_machines = len(machines.split(','))
-                    elif isinstance(machines, (list, set)):
-                        num_machines = len(machines)
-                        machines = ','.join(machines)
-                    else:
-                        raise ValueError("Invalid machines in params.")
-                    self.set_network(machines,
-                                     local_listen_port=params.get("local_listen_port", 12400),
-                                     listen_time_out=params.get("listen_time_out", 120),
-                                     num_machines=params.setdefault("num_machines", num_machines))
-                    break
+            params = _choose_param_value(
+                main_param_name="machines",
+                params=params,
+                default_value=None
+            )
+            # if "machines" is given, assume user wants to do distributed learning, and set up network
+            if params["machines"] is None:
+                params.pop("machines", None)
+            else:
+                machines = params["machines"]
+                if isinstance(machines, str):
+                    num_machines_from_machine_list = len(machines.split(','))
+                elif isinstance(machines, (list, set)):
+                    num_machines_from_machine_list = len(machines)
+                    machines = ','.join(machines)
+                else:
+                    raise ValueError("Invalid machines in params.")
+
+                params = _choose_param_value(
+                    main_param_name="num_machines",
+                    params=params,
+                    default_value=num_machines_from_machine_list
+                )
+                params = _choose_param_value(
+                    main_param_name="local_listen_port",
+                    params=params,
+                    default_value=12400
+                )
+                self.set_network(
+                    machines=machines,
+                    local_listen_port=params["local_listen_port"],
+                    listen_time_out=params.get("time_out", 120),
+                    num_machines=params["num_machines"]
+                )
             # construct booster object
             train_set.construct()
             # copy the parameters from train_set
@@ -2203,8 +2336,13 @@ class Booster:
         self.__is_predicted_cur_iter = []
         return self
 
-    def set_network(self, machines, local_listen_port=12400,
-                    listen_time_out=120, num_machines=1):
+    def set_network(
+        self,
+        machines: Union[List[str], Set[str], str],
+        local_listen_port: int = 12400,
+        listen_time_out: int = 120,
+        num_machines: int = 1
+    ) -> "Booster":
         """Set the network configuration.
 
         Parameters
@@ -2216,13 +2354,15 @@ class Booster:
         listen_time_out : int, optional (default=120)
             Socket time-out in minutes.
         num_machines : int, optional (default=1)
-            The number of machines for parallel learning application.
+            The number of machines for distributed learning application.
 
         Returns
         -------
         self : Booster
             Booster with set network.
         """
+        if isinstance(machines, (list, set)):
+            machines = ','.join(machines)
         _safe_call(_LIB.LGBM_NetworkInit(c_str(machines),
                                          ctypes.c_int(local_listen_port),
                                          ctypes.c_int(listen_time_out),
@@ -2375,7 +2515,7 @@ class Booster:
                                                      tree_index=tree['tree_index'],
                                                      feature_names=feature_names))
 
-        return DataFrame(model_list, columns=model_list[0].keys())
+        return pd_DataFrame(model_list, columns=model_list[0].keys())
 
     def set_train_data_name(self, name):
         """Set the name to the training Dataset.
@@ -2834,7 +2974,7 @@ class Booster:
             self.handle,
             ctypes.byref(out_num_class)))
         if verbose:
-            print('Finished loading model, total used %d iterations' % int(out_num_iterations.value))
+            _log_info('Finished loading model, total used %d iterations' % int(out_num_iterations.value))
         self.__num_class = out_num_class.value
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
@@ -2993,7 +3133,7 @@ class Booster:
             Prediction result.
             Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
         """
-        predictor = self._to_predictor(copy.deepcopy(kwargs))
+        predictor = self._to_predictor(deepcopy(kwargs))
         if num_iteration is None:
             if start_iteration <= 0:
                 num_iteration = self.best_iteration
@@ -3027,14 +3167,14 @@ class Booster:
         """
         if self.__set_objective_to_none:
             raise LightGBMError('Cannot refit due to null objective function.')
-        predictor = self._to_predictor(copy.deepcopy(kwargs))
+        predictor = self._to_predictor(deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_bool(False)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
             self.handle,
             ctypes.byref(out_is_linear)))
-        new_params = copy.deepcopy(self.params)
+        new_params = deepcopy(self.params)
         new_params["linear_tree"] = out_is_linear.value
         train_set = Dataset(data, label, silent=True, params=new_params)
         new_params['refit_decay_rate'] = decay_rate
@@ -3224,7 +3364,7 @@ class Booster:
             ret = np.column_stack((bin_edges[1:], hist))
             ret = ret[ret[:, 1] > 0]
             if PANDAS_INSTALLED:
-                return DataFrame(ret, columns=['SplitValue', 'Count'])
+                return pd_DataFrame(ret, columns=['SplitValue', 'Count'])
             else:
                 return ret
         else:

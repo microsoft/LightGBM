@@ -1,13 +1,14 @@
 # coding: utf-8
 import os
 
-import lightgbm as lgb
 import numpy as np
 import pytest
-
 from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
+
+import lightgbm as lgb
+from lightgbm.compat import PANDAS_INSTALLED, pd_Series
 
 from .utils import load_breast_cancer
 
@@ -108,31 +109,6 @@ def test_chunked_dataset_linear():
     valid_data = train_data.create_valid(X_test, label=y_test, params=params)
     train_data.construct()
     valid_data.construct()
-
-
-def test_save_and_load_linear(tmp_path):
-    X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1,
-                                                        random_state=2)
-    X_train = np.concatenate([np.ones((X_train.shape[0], 1)), X_train], 1)
-    X_train[:X_train.shape[0] // 2, 0] = 0
-    y_train[:X_train.shape[0] // 2] = 1
-    params = {'linear_tree': True}
-    train_data_1 = lgb.Dataset(X_train, label=y_train, params=params)
-    est_1 = lgb.train(params, train_data_1, num_boost_round=10, categorical_feature=[0])
-    pred_1 = est_1.predict(X_train)
-
-    tmp_dataset = str(tmp_path / 'temp_dataset.bin')
-    train_data_1.save_binary(tmp_dataset)
-    train_data_2 = lgb.Dataset(tmp_dataset)
-    est_2 = lgb.train(params, train_data_2, num_boost_round=10)
-    pred_2 = est_2.predict(X_train)
-    np.testing.assert_allclose(pred_1, pred_2)
-
-    model_file = str(tmp_path / 'model.txt')
-    est_2.save_model(model_file)
-    est_3 = lgb.Booster(model_file=model_file)
-    pred_3 = est_3.predict(X_train)
-    np.testing.assert_allclose(pred_2, pred_3)
 
 
 def test_subset_group():
@@ -354,3 +330,79 @@ def test_consistent_state_for_dataset_fields():
     lgb_data.set_init_score(sequence)
     lgb_data.set_feature_name(feature_names)
     check_asserts(lgb_data)
+
+
+def test_choose_param_value():
+
+    original_params = {
+        "local_listen_port": 1234,
+        "port": 2222,
+        "metric": "auc",
+        "num_trees": 81
+    }
+
+    # should resolve duplicate aliases, and prefer the main parameter
+    params = lgb.basic._choose_param_value(
+        main_param_name="local_listen_port",
+        params=original_params,
+        default_value=5555
+    )
+    assert params["local_listen_port"] == 1234
+    assert "port" not in params
+
+    # should choose a value from an alias and set that value on main param
+    # if only an alias is used
+    params = lgb.basic._choose_param_value(
+        main_param_name="num_iterations",
+        params=params,
+        default_value=17
+    )
+    assert params["num_iterations"] == 81
+    assert "num_trees" not in params
+
+    # should use the default if main param and aliases are missing
+    params = lgb.basic._choose_param_value(
+        main_param_name="learning_rate",
+        params=params,
+        default_value=0.789
+    )
+    assert params["learning_rate"] == 0.789
+
+    # all changes should be made on copies and not modify the original
+    expected_params = {
+        "local_listen_port": 1234,
+        "port": 2222,
+        "metric": "auc",
+        "num_trees": 81
+    }
+    assert original_params == expected_params
+
+
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
+@pytest.mark.parametrize(
+    'y',
+    [
+        np.random.rand(10),
+        np.random.rand(10, 1),
+        pd_Series(np.random.rand(10)),
+        pd_Series(['a', 'b']),
+        [1] * 10,
+        [[1], [2]]
+    ])
+@pytest.mark.parametrize('dtype', [np.float32, np.float64])
+def test_list_to_1d_numpy(y, dtype):
+    if isinstance(y, np.ndarray) and len(y.shape) == 2:
+        with pytest.warns(UserWarning, match='column-vector'):
+            lgb.basic.list_to_1d_numpy(y)
+        return
+    elif isinstance(y, list) and isinstance(y[0], list):
+        with pytest.raises(TypeError):
+            lgb.basic.list_to_1d_numpy(y)
+        return
+    elif isinstance(y, pd_Series) and y.dtype == object:
+        with pytest.raises(ValueError):
+            lgb.basic.list_to_1d_numpy(y)
+        return
+    result = lgb.basic.list_to_1d_numpy(y, dtype=dtype)
+    assert result.size == 10
+    assert result.dtype == dtype

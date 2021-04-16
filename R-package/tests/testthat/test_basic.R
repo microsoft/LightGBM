@@ -2,6 +2,11 @@ context("lightgbm()")
 
 ON_WINDOWS <- .Platform$OS.type == "windows"
 
+UTF8_LOCALE <- all(grepl(
+  pattern = "UTF-8$"
+  , x = Sys.getlocale(category = "LC_CTYPE")
+))
+
 data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")
 train <- agaricus.train
@@ -1229,7 +1234,7 @@ test_that("lgb.train() supports non-ASCII feature names", {
   # UTF-8 strings are not well-supported on Windows
   # * https://developer.r-project.org/Blog/public/2020/05/02/utf-8-support-on-windows/
   # * https://developer.r-project.org/Blog/public/2020/07/30/windows/utf-8-build-of-r-and-cran-packages/index.html
-  if (!ON_WINDOWS) {
+  if (UTF8_LOCALE && !ON_WINDOWS) {
     expect_identical(
       dumped_model[["feature_names"]]
       , feature_names
@@ -1883,7 +1888,7 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
-    , categorical_featurs = 1L
+    , categorical_features = 1L
   )
 
   dtrain <- .new_dataset()

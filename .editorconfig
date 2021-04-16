@@ -9,6 +9,9 @@ indent_size = 2
 
 [*.{py,sh,js}]
 indent_size = 4
+line_length = 120
+skip = external_libs
+known_first_party = lightgbm
 
 # Placeholder files
 [{*.gitkeep,__init__.py}]

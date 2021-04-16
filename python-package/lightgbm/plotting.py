@@ -1,13 +1,12 @@
 # coding: utf-8
 """Plotting library."""
-import warnings
 from copy import deepcopy
 from io import BytesIO
 
 import numpy as np
 
-from .basic import Booster
-from .compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED
+from .basic import Booster, _log_warning
+from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
 from .sklearn import LGBMModel
 
 
@@ -326,8 +325,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     num_metric = len(metrics_for_one)
     if metric is None:
         if num_metric > 1:
-            msg = "More than one metric available, picking one to plot."
-            warnings.warn(msg, stacklevel=2)
+            _log_warning("More than one metric available, picking one to plot.")
         metric, results = metrics_for_one.popitem()
     else:
         if metric not in metrics_for_one:
@@ -601,8 +599,8 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
         The plot with single tree.
     """
     if MATPLOTLIB_INSTALLED:
-        import matplotlib.pyplot as plt
         import matplotlib.image as image
+        import matplotlib.pyplot as plt
     else:
         raise ImportError('You must install matplotlib to plot tree.')
 

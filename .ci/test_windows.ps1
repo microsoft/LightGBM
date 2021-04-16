@@ -16,6 +16,14 @@ if ($env:TASK -eq "r-package") {
   Exit 0
 }
 
+if ($env:TASK -eq "cpp-tests") {
+  mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
+  cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -A x64 ..
+  cmake --build . --target testlightgbm --config Debug ; Check-Output $?
+  Start-Process -FilePath "./../Debug/testlightgbm.exe" -NoNewWindow -Wait ; Check-Output $?
+  Exit 0
+}
+
 # setup for Python
 conda init powershell
 conda activate

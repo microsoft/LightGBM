@@ -1,38 +1,80 @@
 # coding: utf-8
 """Tests for lightgbm.dask module"""
 
-import itertools
-import os
+import inspect
+import pickle
+import random
 import socket
-import sys
+from itertools import groupby
+from os import getenv
+from platform import machine
+from sys import platform
 
 import pytest
-if not sys.platform.startswith('linux'):
-    pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 
+import lightgbm as lgb
+
+if not platform.startswith('linux'):
+    pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
+if not lgb.compat.DASK_INSTALLED:
+    pytest.skip('Dask is not installed', allow_module_level=True)
+
+import cloudpickle
 import dask.array as da
 import dask.dataframe as dd
+import joblib
 import numpy as np
 import pandas as pd
-from scipy.stats import spearmanr
-import scipy.sparse
+import sklearn.utils.estimator_checks as sklearn_checks
 from dask.array.utils import assert_eq
-from dask_ml.metrics import accuracy_score, r2_score
-from distributed.utils_test import client, cluster_fixture, gen_cluster, loop
+from dask.distributed import Client, LocalCluster, default_client, wait
+from pkg_resources import parse_version
+from scipy.sparse import csr_matrix
+from scipy.stats import spearmanr
+from sklearn import __version__ as sk_version
 from sklearn.datasets import make_blobs, make_regression
-from sklearn.utils import check_random_state
 
-import lightgbm
-import lightgbm.dask as dlgbm
+from .utils import make_ranking
 
-data_output = ['array', 'scipy_csr_matrix', 'dataframe']
-data_centers = [[[-4, -4], [4, 4]], [[-4, -4], [4, 4], [-4, 4]]]
+sk_version = parse_version(sk_version)
+
+tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ranking']
+distributed_training_algorithms = ['data', 'voting']
+data_output = ['array', 'scipy_csr_matrix', 'dataframe', 'dataframe-with-categorical']
+boosting_types = ['gbdt', 'dart', 'goss', 'rf']
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
+task_to_dask_factory = {
+    'regression': lgb.DaskLGBMRegressor,
+    'binary-classification': lgb.DaskLGBMClassifier,
+    'multiclass-classification': lgb.DaskLGBMClassifier,
+    'ranking': lgb.DaskLGBMRanker
+}
+task_to_local_factory = {
+    'regression': lgb.LGBMRegressor,
+    'binary-classification': lgb.LGBMClassifier,
+    'multiclass-classification': lgb.LGBMClassifier,
+    'ranking': lgb.LGBMRanker
+}
 
 pytestmark = [
-    pytest.mark.skipif(os.getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
-    pytest.mark.skipif(os.getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface')
+    pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
+    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
+    pytest.mark.skipif(machine() != 'x86_64', reason='Fails to run with non-x86_64 architecture')
 ]
+
+
+@pytest.fixture(scope='module')
+def cluster():
+    dask_cluster = LocalCluster(n_workers=2, threads_per_worker=2, dashboard_address=None)
+    yield dask_cluster
+    dask_cluster.close()
+
+
+@pytest.fixture(scope='module')
+def cluster2():
+    dask_cluster = LocalCluster(n_workers=2, threads_per_worker=2, dashboard_address=None)
+    yield dask_cluster
+    dask_cluster.close()
 
 
 @pytest.fixture()
@@ -44,94 +86,24 @@ def listen_port():
 listen_port.port = 13000
 
 
-def _make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
-                  group=None, random_gs=False, avg_gs=10, random_state=0):
-    """Generate a learning-to-rank dataset - feature vectors grouped together with
-    integer-valued graded relevance scores. Replace this with a sklearn.datasets function
-    if ranking objective becomes supported in sklearn.datasets module.
-
-    Parameters
-    ----------
-    n_samples : int, optional (default=100)
-        Total number of documents (records) in the dataset.
-    n_features : int, optional (default=20)
-        Total number of features in the dataset.
-    n_informative : int, optional (default=5)
-        Number of features that are "informative" for ranking, as they are bias + beta * y
-        where bias and beta are standard normal variates. If this is greater than n_features, the dataset will have
-        n_features features, all will be informative.
-    group : array-like, optional (default=None)
-        1-d array or list of group sizes. When `group` is specified, this overrides n_samples, random_gs, and
-        avg_gs by simply creating groups with sizes group[0], ..., group[-1].
-    gmax : int, optional (default=2)
-        Maximum graded relevance value for creating relevance/target vector. If you set this to 2, for example, all
-        documents in a group will have relevance scores of either 0, 1, or 2.
-    random_gs : bool, optional (default=False)
-        True will make group sizes ~ Poisson(avg_gs), False will make group sizes == avg_gs.
-    avg_gs : int, optional (default=10)
-        Average number of documents (records) in each group.
-
-    Returns
-    -------
-    X : 2-d np.ndarray of shape = [n_samples (or np.sum(group)), n_features]
-        Input feature matrix for ranking objective.
-    y : 1-d np.array of shape = [n_samples (or np.sum(group))]
-        Integer-graded relevance scores.
-    group_ids : 1-d np.array of shape = [n_samples (or np.sum(group))]
-        Array of group ids, each value indicates to which group each record belongs.
-    """
-    rnd_generator = check_random_state(random_state)
-
-    y_vec, group_id_vec = np.empty((0,), dtype=int), np.empty((0,), dtype=int)
-    gid = 0
-
-    # build target, group ID vectors.
-    relvalues = range(gmax + 1)
-
-    # build y/target and group-id vectors with user-specified group sizes.
-    if group is not None and hasattr(group, '__len__'):
-        n_samples = np.sum(group)
-
-        for i, gsize in enumerate(group):
-            y_vec = np.concatenate((y_vec, rnd_generator.choice(relvalues, size=gsize, replace=True)))
-            group_id_vec = np.concatenate((group_id_vec, [i] * gsize))
-
-    # build y/target and group-id vectors according to n_samples, avg_gs, and random_gs.
-    else:
-        while len(y_vec) < n_samples:
-            gsize = avg_gs if not random_gs else rnd_generator.poisson(avg_gs)
-
-            # groups should contain > 1 element for pairwise learning objective.
-            if gsize < 1:
-                continue
-
-            y_vec = np.append(y_vec, rnd_generator.choice(relvalues, size=gsize, replace=True))
-            group_id_vec = np.append(group_id_vec, [gid] * gsize)
-            gid += 1
-
-        y_vec, group_id_vec = y_vec[:n_samples], group_id_vec[:n_samples]
-
-    # build feature data, X. Transform first few into informative features.
-    n_informative = max(min(n_features, n_informative), 0)
-    X = rnd_generator.uniform(size=(n_samples, n_features))
-
-    for j in range(n_informative):
-        bias, coef = rnd_generator.normal(size=2)
-        X[:, j] = bias + coef * y_vec
-
-    return X, y_vec, group_id_vec
-
-
 def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs):
-    X, y, g = _make_ranking(n_samples=n_samples, random_state=42, **kwargs)
+    X, y, g = make_ranking(n_samples=n_samples, random_state=42, **kwargs)
     rnd = np.random.RandomState(42)
     w = rnd.rand(X.shape[0]) * 0.01
-    g_rle = np.array([len(list(grp)) for _, grp in itertools.groupby(g)])
+    g_rle = np.array([len(list(grp)) for _, grp in groupby(g)])
 
-    if output == 'dataframe':
-
+    if output.startswith('dataframe'):
         # add target, weight, and group to DataFrame so that partitions abide by group boundaries.
         X_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(X.shape[1])])
+        if output == 'dataframe-with-categorical':
+            for i in range(5):
+                col_name = "cat_col" + str(i)
+                cat_values = rnd.choice(['a', 'b'], X.shape[0])
+                cat_series = pd.Series(
+                    cat_values,
+                    dtype='category'
+                )
+                X_df[col_name] = cat_series
         X = X_df.copy()
         X_df = X_df.assign(y=y, g=g, w=w)
 
@@ -149,9 +121,7 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
         # encode group identifiers into run-length encoding, the format LightGBMRanker is expecting
         # so that within each partition, sum(g) = n_samples.
         dg = dg.map_partitions(lambda p: p.groupby('g', sort=False).apply(lambda z: z.shape[0]))
-
     elif output == 'array':
-
         # ranking arrays: one chunk per group. Each chunk must include all columns.
         p = X.shape[1]
         dX, dy, dw, dg = [], [], [], []
@@ -166,20 +136,32 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
         dy = da.concatenate(dy, axis=0)
         dw = da.concatenate(dw, axis=0)
         dg = da.concatenate(dg, axis=0)
-
     else:
         raise ValueError('Ranking data creation only supported for Dask arrays and dataframes')
 
     return X, y, w, g_rle, dX, dy, dw, dg
 
 
-def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size=50):
-    if objective == 'classification':
+def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **kwargs):
+    if objective.endswith('classification'):
+        if objective == 'binary-classification':
+            centers = [[-4, -4], [4, 4]]
+        elif objective == 'multiclass-classification':
+            centers = [[-4, -4], [4, 4], [-4, 4]]
+        else:
+            raise ValueError(f"Unknown classification task '{objective}'")
         X, y = make_blobs(n_samples=n_samples, centers=centers, random_state=42)
     elif objective == 'regression':
-        X, y = make_regression(n_samples=n_samples, random_state=42)
+        X, y = make_regression(n_samples=n_samples, n_features=4, n_informative=2, random_state=42)
+    elif objective == 'ranking':
+        return _create_ranking_data(
+            n_samples=n_samples,
+            output=output,
+            chunk_size=chunk_size,
+            **kwargs
+        )
     else:
-        raise ValueError(objective)
+        raise ValueError("Unknown objective '%s'" % objective)
     rnd = np.random.RandomState(42)
     weights = rnd.random(X.shape[0]) * 0.01
 
@@ -187,350 +169,1204 @@ def _create_data(objective, n_samples=100, centers=2, output='array', chunk_size
         dX = da.from_array(X, (chunk_size, X.shape[1]))
         dy = da.from_array(y, chunk_size)
         dw = da.from_array(weights, chunk_size)
-    elif output == 'dataframe':
+    elif output.startswith('dataframe'):
         X_df = pd.DataFrame(X, columns=['feature_%d' % i for i in range(X.shape[1])])
+        if output == 'dataframe-with-categorical':
+            num_cat_cols = 2
+            for i in range(num_cat_cols):
+                col_name = "cat_col" + str(i)
+                cat_values = rnd.choice(['a', 'b'], X.shape[0])
+                cat_series = pd.Series(
+                    cat_values,
+                    dtype='category'
+                )
+                X_df[col_name] = cat_series
+                X = np.hstack((X, cat_series.cat.codes.values.reshape(-1, 1)))
+
+            # make one categorical feature relevant to the target
+            cat_col_is_a = X_df['cat_col0'] == 'a'
+            if objective == 'regression':
+                y = np.where(cat_col_is_a, y, 2 * y)
+            elif objective == 'binary-classification':
+                y = np.where(cat_col_is_a, y, 1 - y)
+            elif objective == 'multiclass-classification':
+                n_classes = 3
+                y = np.where(cat_col_is_a, y, (1 + y) % n_classes)
         y_df = pd.Series(y, name='target')
         dX = dd.from_pandas(X_df, chunksize=chunk_size)
         dy = dd.from_pandas(y_df, chunksize=chunk_size)
         dw = dd.from_array(weights, chunksize=chunk_size)
     elif output == 'scipy_csr_matrix':
-        dX = da.from_array(X, chunks=(chunk_size, X.shape[1])).map_blocks(scipy.sparse.csr_matrix)
+        dX = da.from_array(X, chunks=(chunk_size, X.shape[1])).map_blocks(csr_matrix)
         dy = da.from_array(y, chunks=chunk_size)
         dw = da.from_array(weights, chunk_size)
     else:
-        raise ValueError("Unknown output type %s" % output)
+        raise ValueError("Unknown output type '%s'" % output)
 
-    return X, y, weights, dX, dy, dw
+    return X, y, weights, None, dX, dy, dw, None
+
+
+def _r2_score(dy_true, dy_pred):
+    numerator = ((dy_true - dy_pred) ** 2).sum(axis=0, dtype=np.float64)
+    denominator = ((dy_true - dy_true.mean(axis=0)) ** 2).sum(axis=0, dtype=np.float64)
+    return (1 - numerator / denominator).compute()
+
+
+def _accuracy_score(dy_true, dy_pred):
+    return da.average(dy_true == dy_pred).compute()
+
+
+def _pickle(obj, filepath, serializer):
+    if serializer == 'pickle':
+        with open(filepath, 'wb') as f:
+            pickle.dump(obj, f)
+    elif serializer == 'joblib':
+        joblib.dump(obj, filepath)
+    elif serializer == 'cloudpickle':
+        with open(filepath, 'wb') as f:
+            cloudpickle.dump(obj, f)
+    else:
+        raise ValueError(f'Unrecognized serializer type: {serializer}')
+
+
+def _unpickle(filepath, serializer):
+    if serializer == 'pickle':
+        with open(filepath, 'rb') as f:
+            return pickle.load(f)
+    elif serializer == 'joblib':
+        return joblib.load(filepath)
+    elif serializer == 'cloudpickle':
+        with open(filepath, 'rb') as f:
+            return cloudpickle.load(f)
+    else:
+        raise ValueError(f'Unrecognized serializer type: {serializer}')
 
 
 @pytest.mark.parametrize('output', data_output)
-@pytest.mark.parametrize('centers', data_centers)
-def test_classifier(output, centers, client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
-
-    dask_classifier = dlgbm.DaskLGBMClassifier(
-        time_out=5,
-        local_listen_port=listen_port,
-        n_estimators=10,
-        num_leaves=10
-    )
-    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
-    p1 = dask_classifier.predict(dX)
-    p1_proba = dask_classifier.predict_proba(dX).compute()
-    s1 = accuracy_score(dy, p1)
-    p1 = p1.compute()
-
-    local_classifier = lightgbm.LGBMClassifier(n_estimators=10, num_leaves=10)
-    local_classifier.fit(X, y, sample_weight=w)
-    p2 = local_classifier.predict(X)
-    p2_proba = local_classifier.predict_proba(X)
-    s2 = local_classifier.score(X, y)
-
-    assert_eq(s1, s2)
-    assert_eq(p1, p2)
-    assert_eq(y, p1)
-    assert_eq(y, p2)
-    assert_eq(p1_proba, p2_proba, atol=0.3)
-
-    client.close()
-
-
-@pytest.mark.parametrize('output', data_output)
-@pytest.mark.parametrize('centers', data_centers)
-def test_classifier_pred_contrib(output, centers, client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('classification', output=output, centers=centers)
-
-    dask_classifier = dlgbm.DaskLGBMClassifier(
-        time_out=5,
-        local_listen_port=listen_port,
-        tree_learner='data',
-        n_estimators=10,
-        num_leaves=10
-    )
-    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
-    preds_with_contrib = dask_classifier.predict(dX, pred_contrib=True).compute()
-
-    local_classifier = lightgbm.LGBMClassifier(
-        n_estimators=10,
-        num_leaves=10
-    )
-    local_classifier.fit(X, y, sample_weight=w)
-    local_preds_with_contrib = local_classifier.predict(X, pred_contrib=True)
-
-    if output == 'scipy_csr_matrix':
-        preds_with_contrib = np.array(preds_with_contrib.todense())
-
-    # shape depends on whether it is binary or multiclass classification
-    num_features = dask_classifier.n_features_
-    num_classes = dask_classifier.n_classes_
-    if num_classes == 2:
-        expected_num_cols = num_features + 1
-    else:
-        expected_num_cols = (num_features + 1) * num_classes
-
-    # * shape depends on whether it is binary or multiclass classification
-    # * matrix for binary classification is of the form [feature_contrib, base_value],
-    #   for multi-class it's [feat_contrib_class1, base_value_class1, feat_contrib_class2, base_value_class2, etc.]
-    # * contrib outputs for distributed training are different than from local training, so we can just test
-    #   that the output has the right shape and base values are in the right position
-    assert preds_with_contrib.shape[1] == expected_num_cols
-    assert preds_with_contrib.shape == local_preds_with_contrib.shape
-
-    if num_classes == 2:
-        assert len(np.unique(preds_with_contrib[:, num_features]) == 1)
-    else:
-        for i in range(num_classes):
-            base_value_col = num_features * (i + 1) + i
-            assert len(np.unique(preds_with_contrib[:, base_value_col]) == 1)
-
-
-def test_training_does_not_fail_on_port_conflicts(client):
-    _, _, _, dX, dy, dw = _create_data('classification', output='array')
-
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('127.0.0.1', 12400))
-
-        dask_classifier = dlgbm.DaskLGBMClassifier(
-            time_out=5,
-            local_listen_port=12400,
-            n_estimators=5,
-            num_leaves=5
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
+@pytest.mark.parametrize('boosting_type', boosting_types)
+@pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
+def test_classifier(output, task, boosting_type, tree_learner, cluster):
+    with Client(cluster) as client:
+        X, y, w, _, dX, dy, dw, _ = _create_data(
+            objective=task,
+            output=output
         )
+
+        params = {
+            "boosting_type": boosting_type,
+            "tree_learner": tree_learner,
+            "n_estimators": 50,
+            "num_leaves": 31
+        }
+        if boosting_type == 'rf':
+            params.update({
+                'bagging_freq': 1,
+                'bagging_fraction': 0.9,
+            })
+        elif boosting_type == 'goss':
+            params['top_rate'] = 0.5
+
+        dask_classifier = lgb.DaskLGBMClassifier(
+            client=client,
+            time_out=5,
+            **params
+        )
+        dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
+        p1 = dask_classifier.predict(dX)
+        p1_proba = dask_classifier.predict_proba(dX).compute()
+        p1_pred_leaf = dask_classifier.predict(dX, pred_leaf=True)
+        p1_local = dask_classifier.to_local().predict(X)
+        s1 = _accuracy_score(dy, p1)
+        p1 = p1.compute()
+
+        local_classifier = lgb.LGBMClassifier(**params)
+        local_classifier.fit(X, y, sample_weight=w)
+        p2 = local_classifier.predict(X)
+        p2_proba = local_classifier.predict_proba(X)
+        s2 = local_classifier.score(X, y)
+
+        if boosting_type == 'rf':
+            # https://github.com/microsoft/LightGBM/issues/4118
+            assert_eq(s1, s2, atol=0.01)
+            assert_eq(p1_proba, p2_proba, atol=0.8)
+        else:
+            assert_eq(s1, s2)
+            assert_eq(p1, p2)
+            assert_eq(p1, y)
+            assert_eq(p2, y)
+            assert_eq(p1_proba, p2_proba, atol=0.03)
+            assert_eq(p1_local, p2)
+            assert_eq(p1_local, y)
+
+        # pref_leaf values should have the right shape
+        # and values that look like valid tree nodes
+        pred_leaf_vals = p1_pred_leaf.compute()
+        assert pred_leaf_vals.shape == (
+            X.shape[0],
+            dask_classifier.booster_.num_trees()
+        )
+        assert np.max(pred_leaf_vals) <= params['num_leaves']
+        assert np.min(pred_leaf_vals) >= 0
+        assert len(np.unique(pred_leaf_vals)) <= params['num_leaves']
+
+        # be sure LightGBM actually used at least one categorical column,
+        # and that it was correctly treated as a categorical feature
+        if output == 'dataframe-with-categorical':
+            cat_cols = [
+                col for col in dX.columns
+                if dX.dtypes[col].name == 'category'
+            ]
+            tree_df = dask_classifier.booster_.trees_to_dataframe()
+            node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
+            assert node_uses_cat_col.sum() > 0
+            assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
+
+
+@pytest.mark.parametrize('output', data_output)
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
+def test_classifier_pred_contrib(output, task, cluster):
+    with Client(cluster) as client:
+        X, y, w, _, dX, dy, dw, _ = _create_data(
+            objective=task,
+            output=output
+        )
+
+        params = {
+            "n_estimators": 10,
+            "num_leaves": 10
+        }
+
+        dask_classifier = lgb.DaskLGBMClassifier(
+            client=client,
+            time_out=5,
+            tree_learner='data',
+            **params
+        )
+        dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
+        preds_with_contrib = dask_classifier.predict(dX, pred_contrib=True).compute()
+
+        local_classifier = lgb.LGBMClassifier(**params)
+        local_classifier.fit(X, y, sample_weight=w)
+        local_preds_with_contrib = local_classifier.predict(X, pred_contrib=True)
+
+        if output == 'scipy_csr_matrix':
+            preds_with_contrib = np.array(preds_with_contrib.todense())
+
+        # be sure LightGBM actually used at least one categorical column,
+        # and that it was correctly treated as a categorical feature
+        if output == 'dataframe-with-categorical':
+            cat_cols = [
+                col for col in dX.columns
+                if dX.dtypes[col].name == 'category'
+            ]
+            tree_df = dask_classifier.booster_.trees_to_dataframe()
+            node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
+            assert node_uses_cat_col.sum() > 0
+            assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
+
+        # shape depends on whether it is binary or multiclass classification
+        num_features = dask_classifier.n_features_
+        num_classes = dask_classifier.n_classes_
+        if num_classes == 2:
+            expected_num_cols = num_features + 1
+        else:
+            expected_num_cols = (num_features + 1) * num_classes
+
+        # * shape depends on whether it is binary or multiclass classification
+        # * matrix for binary classification is of the form [feature_contrib, base_value],
+        #   for multi-class it's [feat_contrib_class1, base_value_class1, feat_contrib_class2, base_value_class2, etc.]
+        # * contrib outputs for distributed training are different than from local training, so we can just test
+        #   that the output has the right shape and base values are in the right position
+        assert preds_with_contrib.shape[1] == expected_num_cols
+        assert preds_with_contrib.shape == local_preds_with_contrib.shape
+
+        if num_classes == 2:
+            assert len(np.unique(preds_with_contrib[:, num_features]) == 1)
+        else:
+            for i in range(num_classes):
+                base_value_col = num_features * (i + 1) + i
+                assert len(np.unique(preds_with_contrib[:, base_value_col]) == 1)
+
+
+def test_find_random_open_port(cluster):
+    with Client(cluster) as client:
         for _ in range(5):
-            dask_classifier.fit(
-                X=dX,
-                y=dy,
-                sample_weight=dw,
-                client=client
+            worker_address_to_port = client.run(lgb.dask._find_random_open_port)
+            found_ports = worker_address_to_port.values()
+            # check that found ports are different for same address (LocalCluster)
+            assert len(set(found_ports)) == len(found_ports)
+            # check that the ports are indeed open
+            for port in found_ports:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.bind(('', port))
+
+
+def test_possibly_fix_worker_map(capsys, cluster):
+    with Client(cluster) as client:
+        worker_addresses = list(client.scheduler_info()["workers"].keys())
+
+        retry_msg = 'Searching for a LightGBM training port for worker'
+
+        # should handle worker maps without any duplicates
+        map_without_duplicates = {
+            worker_address: 12400 + i
+            for i, worker_address in enumerate(worker_addresses)
+        }
+        patched_map = lgb.dask._possibly_fix_worker_map_duplicates(
+            client=client,
+            worker_map=map_without_duplicates
+        )
+        assert patched_map == map_without_duplicates
+        assert retry_msg not in capsys.readouterr().out
+
+        # should handle worker maps with duplicates
+        map_with_duplicates = {
+            worker_address: 12400
+            for i, worker_address in enumerate(worker_addresses)
+        }
+        patched_map = lgb.dask._possibly_fix_worker_map_duplicates(
+            client=client,
+            worker_map=map_with_duplicates
+        )
+        assert retry_msg in capsys.readouterr().out
+        assert len(set(patched_map.values())) == len(worker_addresses)
+
+
+def test_training_does_not_fail_on_port_conflicts(cluster):
+    with Client(cluster) as client:
+        _, _, _, _, dX, dy, dw, _ = _create_data('binary-classification', output='array')
+
+        lightgbm_default_port = 12400
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('127.0.0.1', lightgbm_default_port))
+            dask_classifier = lgb.DaskLGBMClassifier(
+                client=client,
+                time_out=5,
+                n_estimators=5,
+                num_leaves=5
             )
-            assert dask_classifier.booster_
-
-    client.close()
-
-
-def test_classifier_local_predict(client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('classification', output='array')
-
-    dask_classifier = dlgbm.DaskLGBMClassifier(
-        time_out=5,
-        local_port=listen_port,
-        n_estimators=10,
-        num_leaves=10
-    )
-    dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw, client=client)
-    p1 = dask_classifier.to_local().predict(dX)
-
-    local_classifier = lightgbm.LGBMClassifier(n_estimators=10, num_leaves=10)
-    local_classifier.fit(X, y, sample_weight=w)
-    p2 = local_classifier.predict(X)
-
-    assert_eq(p1, p2)
-    assert_eq(y, p1)
-    assert_eq(y, p2)
-
-    client.close()
+            for _ in range(5):
+                dask_classifier.fit(
+                    X=dX,
+                    y=dy,
+                    sample_weight=dw,
+                )
+                assert dask_classifier.booster_
 
 
 @pytest.mark.parametrize('output', data_output)
-def test_regressor(output, client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('regression', output=output)
+@pytest.mark.parametrize('boosting_type', boosting_types)
+@pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
+def test_regressor(output, boosting_type, tree_learner, cluster):
+    with Client(cluster) as client:
+        X, y, w, _, dX, dy, dw, _ = _create_data(
+            objective='regression',
+            output=output
+        )
 
-    dask_regressor = dlgbm.DaskLGBMRegressor(
-        time_out=5,
-        local_listen_port=listen_port,
-        seed=42,
-        num_leaves=10,
-        tree='data'
-    )
-    dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
-    p1 = dask_regressor.predict(dX)
-    if output != 'dataframe':
-        s1 = r2_score(dy, p1)
-    p1 = p1.compute()
+        params = {
+            "boosting_type": boosting_type,
+            "random_state": 42,
+            "num_leaves": 31,
+            "n_estimators": 20,
+        }
+        if boosting_type == 'rf':
+            params.update({
+                'bagging_freq': 1,
+                'bagging_fraction': 0.9,
+            })
 
-    local_regressor = lightgbm.LGBMRegressor(seed=42, num_leaves=10)
-    local_regressor.fit(X, y, sample_weight=w)
-    s2 = local_regressor.score(X, y)
-    p2 = local_regressor.predict(X)
+        dask_regressor = lgb.DaskLGBMRegressor(
+            client=client,
+            time_out=5,
+            tree=tree_learner,
+            **params
+        )
+        dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw)
+        p1 = dask_regressor.predict(dX)
+        p1_pred_leaf = dask_regressor.predict(dX, pred_leaf=True)
 
-    # Scores should be the same
-    if output != 'dataframe':
-        assert_eq(s1, s2, atol=.01)
+        s1 = _r2_score(dy, p1)
+        p1 = p1.compute()
+        p1_local = dask_regressor.to_local().predict(X)
+        s1_local = dask_regressor.to_local().score(X, y)
 
-    # Predictions should be roughly the same
-    assert_eq(y, p1, rtol=1., atol=100.)
-    assert_eq(y, p2, rtol=1., atol=50.)
+        local_regressor = lgb.LGBMRegressor(**params)
+        local_regressor.fit(X, y, sample_weight=w)
+        s2 = local_regressor.score(X, y)
+        p2 = local_regressor.predict(X)
 
-    client.close()
+        # Scores should be the same
+        assert_eq(s1, s2, atol=0.01)
+        assert_eq(s1, s1_local)
+
+        # Predictions should be roughly the same.
+        assert_eq(p1, p1_local)
+
+        # pref_leaf values should have the right shape
+        # and values that look like valid tree nodes
+        pred_leaf_vals = p1_pred_leaf.compute()
+        assert pred_leaf_vals.shape == (
+            X.shape[0],
+            dask_regressor.booster_.num_trees()
+        )
+        assert np.max(pred_leaf_vals) <= params['num_leaves']
+        assert np.min(pred_leaf_vals) >= 0
+        assert len(np.unique(pred_leaf_vals)) <= params['num_leaves']
+
+        assert_eq(p1, y, rtol=0.5, atol=50.)
+        assert_eq(p2, y, rtol=0.5, atol=50.)
+
+        # be sure LightGBM actually used at least one categorical column,
+        # and that it was correctly treated as a categorical feature
+        if output == 'dataframe-with-categorical':
+            cat_cols = [
+                col for col in dX.columns
+                if dX.dtypes[col].name == 'category'
+            ]
+            tree_df = dask_regressor.booster_.trees_to_dataframe()
+            node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
+            assert node_uses_cat_col.sum() > 0
+            assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
 
 @pytest.mark.parametrize('output', data_output)
-def test_regressor_pred_contrib(output, client, listen_port):
-    X, y, w, dX, dy, dw = _create_data('regression', output=output)
+def test_regressor_pred_contrib(output, cluster):
+    with Client(cluster) as client:
+        X, y, w, _, dX, dy, dw, _ = _create_data(
+            objective='regression',
+            output=output
+        )
 
-    dask_regressor = dlgbm.DaskLGBMRegressor(
-        time_out=5,
-        local_listen_port=listen_port,
-        tree_learner='data',
-        n_estimators=10,
-        num_leaves=10
-    )
-    dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
-    preds_with_contrib = dask_regressor.predict(dX, pred_contrib=True).compute()
+        params = {
+            "n_estimators": 10,
+            "num_leaves": 10
+        }
 
-    local_regressor = lightgbm.LGBMRegressor(
-        n_estimators=10,
-        num_leaves=10
-    )
-    local_regressor.fit(X, y, sample_weight=w)
-    local_preds_with_contrib = local_regressor.predict(X, pred_contrib=True)
+        dask_regressor = lgb.DaskLGBMRegressor(
+            client=client,
+            time_out=5,
+            tree_learner='data',
+            **params
+        )
+        dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw)
+        preds_with_contrib = dask_regressor.predict(dX, pred_contrib=True).compute()
 
-    if output == "scipy_csr_matrix":
-        preds_with_contrib = np.array(preds_with_contrib.todense())
+        local_regressor = lgb.LGBMRegressor(**params)
+        local_regressor.fit(X, y, sample_weight=w)
+        local_preds_with_contrib = local_regressor.predict(X, pred_contrib=True)
 
-    # contrib outputs for distributed training are different than from local training, so we can just test
-    # that the output has the right shape and base values are in the right position
-    num_features = dX.shape[1]
-    assert preds_with_contrib.shape[1] == num_features + 1
-    assert preds_with_contrib.shape == local_preds_with_contrib.shape
+        if output == "scipy_csr_matrix":
+            preds_with_contrib = np.array(preds_with_contrib.todense())
+
+        # contrib outputs for distributed training are different than from local training, so we can just test
+        # that the output has the right shape and base values are in the right position
+        num_features = dX.shape[1]
+        assert preds_with_contrib.shape[1] == num_features + 1
+        assert preds_with_contrib.shape == local_preds_with_contrib.shape
+
+        # be sure LightGBM actually used at least one categorical column,
+        # and that it was correctly treated as a categorical feature
+        if output == 'dataframe-with-categorical':
+            cat_cols = [
+                col for col in dX.columns
+                if dX.dtypes[col].name == 'category'
+            ]
+            tree_df = dask_regressor.booster_.trees_to_dataframe()
+            node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
+            assert node_uses_cat_col.sum() > 0
+            assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('alpha', [.1, .5, .9])
-def test_regressor_quantile(output, client, listen_port, alpha):
-    X, y, w, dX, dy, dw = _create_data('regression', output=output)
-
-    dask_regressor = dlgbm.DaskLGBMRegressor(
-        local_listen_port=listen_port,
-        seed=42,
-        objective='quantile',
-        alpha=alpha,
-        n_estimators=10,
-        num_leaves=10,
-        tree_learner_type='data_parallel'
-    )
-    dask_regressor = dask_regressor.fit(dX, dy, client=client, sample_weight=dw)
-    p1 = dask_regressor.predict(dX).compute()
-    q1 = np.count_nonzero(y < p1) / y.shape[0]
-
-    local_regressor = lightgbm.LGBMRegressor(
-        seed=42,
-        objective='quantile',
-        alpha=alpha,
-        n_estimatores=10,
-        num_leaves=10
-    )
-    local_regressor.fit(X, y, sample_weight=w)
-    p2 = local_regressor.predict(X)
-    q2 = np.count_nonzero(y < p2) / y.shape[0]
-
-    # Quantiles should be right
-    np.testing.assert_allclose(q1, alpha, atol=0.2)
-    np.testing.assert_allclose(q2, alpha, atol=0.2)
-
-    client.close()
-
-
-def test_regressor_local_predict(client, listen_port):
-    X, y, _, dX, dy, dw = _create_data('regression', output='array')
-
-    dask_regressor = dlgbm.DaskLGBMRegressor(
-        local_listen_port=listen_port,
-        seed=42,
-        n_estimators=10,
-        num_leaves=10,
-        tree_type='data'
-    )
-    dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw, client=client)
-    p1 = dask_regressor.predict(dX)
-    p2 = dask_regressor.to_local().predict(X)
-    s1 = r2_score(dy, p1)
-    p1 = p1.compute()
-    s2 = dask_regressor.to_local().score(X, y)
-
-    # Predictions and scores should be the same
-    assert_eq(p1, p2)
-    assert_eq(s1, s2)
-
-    client.close()
-
-
-@pytest.mark.parametrize('output', ['array', 'dataframe'])
-@pytest.mark.parametrize('group', [None, group_sizes])
-def test_ranker(output, client, listen_port, group):
-
-    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
-
-    # use many trees + leaves to overfit, help ensure that dask data-parallel strategy matches that of
-    # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
-    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, tree_learner_type='data_parallel',
-                                       n_estimators=50, num_leaves=20, seed=42, min_child_samples=1)
-    dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg, client=client)
-    rnkvec_dask = dask_ranker.predict(dX)
-    rnkvec_dask = rnkvec_dask.compute()
-
-    local_ranker = lightgbm.LGBMRanker(n_estimators=50, num_leaves=20, seed=42, min_child_samples=1)
-    local_ranker.fit(X, y, sample_weight=w, group=g)
-    rnkvec_local = local_ranker.predict(X)
-
-    # distributed ranker should be able to rank decently well and should
-    # have high rank correlation with scores from serial ranker.
-    dcor = spearmanr(rnkvec_dask, y).correlation
-    assert dcor > 0.6
-    assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.9
-
-    client.close()
-
-
-@pytest.mark.parametrize('output', ['array', 'dataframe'])
-@pytest.mark.parametrize('group', [None, group_sizes])
-def test_ranker_local_predict(output, client, listen_port, group):
-
-    X, y, w, g, dX, dy, dw, dg = _create_ranking_data(output=output, group=group)
-
-    dask_ranker = dlgbm.DaskLGBMRanker(time_out=5, local_listen_port=listen_port, tree_learner='data',
-                                       n_estimators=10, num_leaves=10, seed=42, min_child_samples=1)
-    dask_ranker = dask_ranker.fit(dX, dy, group=dg, client=client)
-    rnkvec_dask = dask_ranker.predict(dX)
-    rnkvec_dask = rnkvec_dask.compute()
-    rnkvec_local = dask_ranker.to_local().predict(X)
-
-    # distributed and to-local scores should be the same.
-    assert_eq(rnkvec_dask, rnkvec_local)
-
-    client.close()
-
-
-def test_find_open_port_works():
-    worker_ip = '127.0.0.1'
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((worker_ip, 12400))
-        new_port = dlgbm._find_open_port(
-            worker_ip=worker_ip,
-            local_listen_port=12400,
-            ports_to_skip=set()
+def test_regressor_quantile(output, alpha, cluster):
+    with Client(cluster) as client:
+        X, y, w, _, dX, dy, dw, _ = _create_data(
+            objective='regression',
+            output=output
         )
-        assert new_port == 12401
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_1:
-        s_1.bind((worker_ip, 12400))
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s_2:
-            s_2.bind((worker_ip, 12401))
-            new_port = dlgbm._find_open_port(
-                worker_ip=worker_ip,
-                local_listen_port=12400,
-                ports_to_skip=set()
+        params = {
+            "objective": "quantile",
+            "alpha": alpha,
+            "random_state": 42,
+            "n_estimators": 10,
+            "num_leaves": 10
+        }
+
+        dask_regressor = lgb.DaskLGBMRegressor(
+            client=client,
+            tree_learner_type='data_parallel',
+            **params
+        )
+        dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw)
+        p1 = dask_regressor.predict(dX).compute()
+        q1 = np.count_nonzero(y < p1) / y.shape[0]
+
+        local_regressor = lgb.LGBMRegressor(**params)
+        local_regressor.fit(X, y, sample_weight=w)
+        p2 = local_regressor.predict(X)
+        q2 = np.count_nonzero(y < p2) / y.shape[0]
+
+        # Quantiles should be right
+        np.testing.assert_allclose(q1, alpha, atol=0.2)
+        np.testing.assert_allclose(q2, alpha, atol=0.2)
+
+        # be sure LightGBM actually used at least one categorical column,
+        # and that it was correctly treated as a categorical feature
+        if output == 'dataframe-with-categorical':
+            cat_cols = [
+                col for col in dX.columns
+                if dX.dtypes[col].name == 'category'
+            ]
+            tree_df = dask_regressor.booster_.trees_to_dataframe()
+            node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
+            assert node_uses_cat_col.sum() > 0
+            assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
+
+
+@pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])
+@pytest.mark.parametrize('group', [None, group_sizes])
+@pytest.mark.parametrize('boosting_type', boosting_types)
+@pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
+def test_ranker(output, group, boosting_type, tree_learner, cluster):
+    with Client(cluster) as client:
+        if output == 'dataframe-with-categorical':
+            X, y, w, g, dX, dy, dw, dg = _create_data(
+                objective='ranking',
+                output=output,
+                group=group,
+                n_features=1,
+                n_informative=1
             )
-            assert new_port == 12402
+        else:
+            X, y, w, g, dX, dy, dw, dg = _create_data(
+                objective='ranking',
+                output=output,
+                group=group
+            )
+
+        # rebalance small dask.Array dataset for better performance.
+        if output == 'array':
+            dX = dX.persist()
+            dy = dy.persist()
+            dw = dw.persist()
+            dg = dg.persist()
+            _ = wait([dX, dy, dw, dg])
+            client.rebalance()
+
+        # use many trees + leaves to overfit, help ensure that Dask data-parallel strategy matches that of
+        # serial learner. See https://github.com/microsoft/LightGBM/issues/3292#issuecomment-671288210.
+        params = {
+            "boosting_type": boosting_type,
+            "random_state": 42,
+            "n_estimators": 50,
+            "num_leaves": 20,
+            "min_child_samples": 1
+        }
+        if boosting_type == 'rf':
+            params.update({
+                'bagging_freq': 1,
+                'bagging_fraction': 0.9,
+            })
+
+        dask_ranker = lgb.DaskLGBMRanker(
+            client=client,
+            time_out=5,
+            tree_learner_type=tree_learner,
+            **params
+        )
+        dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg)
+        rnkvec_dask = dask_ranker.predict(dX)
+        rnkvec_dask = rnkvec_dask.compute()
+        p1_pred_leaf = dask_ranker.predict(dX, pred_leaf=True)
+        rnkvec_dask_local = dask_ranker.to_local().predict(X)
+
+        local_ranker = lgb.LGBMRanker(**params)
+        local_ranker.fit(X, y, sample_weight=w, group=g)
+        rnkvec_local = local_ranker.predict(X)
+
+        # distributed ranker should be able to rank decently well and should
+        # have high rank correlation with scores from serial ranker.
+        dcor = spearmanr(rnkvec_dask, y).correlation
+        assert dcor > 0.6
+        assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.8
+        assert_eq(rnkvec_dask, rnkvec_dask_local)
+
+        # pref_leaf values should have the right shape
+        # and values that look like valid tree nodes
+        pred_leaf_vals = p1_pred_leaf.compute()
+        assert pred_leaf_vals.shape == (
+            X.shape[0],
+            dask_ranker.booster_.num_trees()
+        )
+        assert np.max(pred_leaf_vals) <= params['num_leaves']
+        assert np.min(pred_leaf_vals) >= 0
+        assert len(np.unique(pred_leaf_vals)) <= params['num_leaves']
+
+        # be sure LightGBM actually used at least one categorical column,
+        # and that it was correctly treated as a categorical feature
+        if output == 'dataframe-with-categorical':
+            cat_cols = [
+                col for col in dX.columns
+                if dX.dtypes[col].name == 'category'
+            ]
+            tree_df = dask_ranker.booster_.trees_to_dataframe()
+            node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
+            assert node_uses_cat_col.sum() > 0
+            assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
 
-@gen_cluster(client=True, timeout=None)
-def test_errors(c, s, a, b):
-    def f(part):
-        raise Exception('foo')
+@pytest.mark.parametrize('task', tasks)
+def test_training_works_if_client_not_provided_or_set_after_construction(task, cluster):
+    with Client(cluster) as client:
+        _, _, _, _, dX, dy, _, dg = _create_data(
+            objective=task,
+            output='array',
+            group=None
+        )
+        model_factory = task_to_dask_factory[task]
 
-    df = dd.demo.make_timeseries()
-    df = df.map_partitions(f, meta=df._meta)
-    with pytest.raises(Exception) as info:
-        yield dlgbm._train(c, df, df.x, params={}, model_factory=lightgbm.LGBMClassifier)
-        assert 'foo' in str(info.value)
+        params = {
+            "time_out": 5,
+            "n_estimators": 1,
+            "num_leaves": 2
+        }
+
+        # should be able to use the class without specifying a client
+        dask_model = model_factory(**params)
+        assert dask_model.client is None
+        with pytest.raises(lgb.compat.LGBMNotFittedError, match='Cannot access property client_ before calling fit'):
+            dask_model.client_
+
+        dask_model.fit(dX, dy, group=dg)
+        assert dask_model.fitted_
+        assert dask_model.client is None
+        assert dask_model.client_ == client
+
+        preds = dask_model.predict(dX)
+        assert isinstance(preds, da.Array)
+        assert dask_model.fitted_
+        assert dask_model.client is None
+        assert dask_model.client_ == client
+
+        local_model = dask_model.to_local()
+        with pytest.raises(AttributeError):
+            local_model.client
+            local_model.client_
+
+        # should be able to set client after construction
+        dask_model = model_factory(**params)
+        dask_model.set_params(client=client)
+        assert dask_model.client == client
+
+        with pytest.raises(lgb.compat.LGBMNotFittedError, match='Cannot access property client_ before calling fit'):
+            dask_model.client_
+
+        dask_model.fit(dX, dy, group=dg)
+        assert dask_model.fitted_
+        assert dask_model.client == client
+        assert dask_model.client_ == client
+
+        preds = dask_model.predict(dX)
+        assert isinstance(preds, da.Array)
+        assert dask_model.fitted_
+        assert dask_model.client == client
+        assert dask_model.client_ == client
+
+        local_model = dask_model.to_local()
+        with pytest.raises(AttributeError):
+            local_model.client
+            local_model.client_
+
+
+@pytest.mark.parametrize('serializer', ['pickle', 'joblib', 'cloudpickle'])
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('set_client', [True, False])
+def test_model_and_local_version_are_picklable_whether_or_not_client_set_explicitly(serializer, task, set_client, tmp_path, cluster, cluster2):
+
+    with Client(cluster) as client1:
+        # data on cluster1
+        X_1, _, _, _, dX_1, dy_1, _, dg_1 = _create_data(
+            objective=task,
+            output='array',
+            group=None
+        )
+
+        with Client(cluster2) as client2:
+            # create identical data on cluster2
+            X_2, _, _, _, dX_2, dy_2, _, dg_2 = _create_data(
+                objective=task,
+                output='array',
+                group=None
+            )
+
+            model_factory = task_to_dask_factory[task]
+
+            params = {
+                "time_out": 5,
+                "n_estimators": 1,
+                "num_leaves": 2
+            }
+
+            # at this point, the result of default_client() is client2 since it was the most recently
+            # created. So setting client to client1 here to test that you can select a non-default client
+            assert default_client() == client2
+            if set_client:
+                params.update({"client": client1})
+
+            # unfitted model should survive pickling round trip, and pickling
+            # shouldn't have side effects on the model object
+            dask_model = model_factory(**params)
+            local_model = dask_model.to_local()
+            if set_client:
+                assert dask_model.client == client1
+            else:
+                assert dask_model.client is None
+
+            with pytest.raises(lgb.compat.LGBMNotFittedError, match='Cannot access property client_ before calling fit'):
+                dask_model.client_
+
+            assert "client" not in local_model.get_params()
+            assert getattr(local_model, "client", None) is None
+
+            tmp_file = str(tmp_path / "model-1.pkl")
+            _pickle(
+                obj=dask_model,
+                filepath=tmp_file,
+                serializer=serializer
+            )
+            model_from_disk = _unpickle(
+                filepath=tmp_file,
+                serializer=serializer
+            )
+
+            local_tmp_file = str(tmp_path / "local-model-1.pkl")
+            _pickle(
+                obj=local_model,
+                filepath=local_tmp_file,
+                serializer=serializer
+            )
+            local_model_from_disk = _unpickle(
+                filepath=local_tmp_file,
+                serializer=serializer
+            )
+
+            assert model_from_disk.client is None
+
+            if set_client:
+                assert dask_model.client == client1
+            else:
+                assert dask_model.client is None
+
+            with pytest.raises(lgb.compat.LGBMNotFittedError, match='Cannot access property client_ before calling fit'):
+                dask_model.client_
+
+            # client will always be None after unpickling
+            if set_client:
+                from_disk_params = model_from_disk.get_params()
+                from_disk_params.pop("client", None)
+                dask_params = dask_model.get_params()
+                dask_params.pop("client", None)
+                assert from_disk_params == dask_params
+            else:
+                assert model_from_disk.get_params() == dask_model.get_params()
+            assert local_model_from_disk.get_params() == local_model.get_params()
+
+            # fitted model should survive pickling round trip, and pickling
+            # shouldn't have side effects on the model object
+            if set_client:
+                dask_model.fit(dX_1, dy_1, group=dg_1)
+            else:
+                dask_model.fit(dX_2, dy_2, group=dg_2)
+            local_model = dask_model.to_local()
+
+            assert "client" not in local_model.get_params()
+            with pytest.raises(AttributeError):
+                local_model.client
+                local_model.client_
+
+            tmp_file2 = str(tmp_path / "model-2.pkl")
+            _pickle(
+                obj=dask_model,
+                filepath=tmp_file2,
+                serializer=serializer
+            )
+            fitted_model_from_disk = _unpickle(
+                filepath=tmp_file2,
+                serializer=serializer
+            )
+
+            local_tmp_file2 = str(tmp_path / "local-model-2.pkl")
+            _pickle(
+                obj=local_model,
+                filepath=local_tmp_file2,
+                serializer=serializer
+            )
+            local_fitted_model_from_disk = _unpickle(
+                filepath=local_tmp_file2,
+                serializer=serializer
+            )
+
+            if set_client:
+                assert dask_model.client == client1
+                assert dask_model.client_ == client1
+            else:
+                assert dask_model.client is None
+                assert dask_model.client_ == default_client()
+                assert dask_model.client_ == client2
+
+            assert isinstance(fitted_model_from_disk, model_factory)
+            assert fitted_model_from_disk.client is None
+            assert fitted_model_from_disk.client_ == default_client()
+            assert fitted_model_from_disk.client_ == client2
+
+            # client will always be None after unpickling
+            if set_client:
+                from_disk_params = fitted_model_from_disk.get_params()
+                from_disk_params.pop("client", None)
+                dask_params = dask_model.get_params()
+                dask_params.pop("client", None)
+                assert from_disk_params == dask_params
+            else:
+                assert fitted_model_from_disk.get_params() == dask_model.get_params()
+            assert local_fitted_model_from_disk.get_params() == local_model.get_params()
+
+            if set_client:
+                preds_orig = dask_model.predict(dX_1).compute()
+                preds_loaded_model = fitted_model_from_disk.predict(dX_1).compute()
+                preds_orig_local = local_model.predict(X_1)
+                preds_loaded_model_local = local_fitted_model_from_disk.predict(X_1)
+            else:
+                preds_orig = dask_model.predict(dX_2).compute()
+                preds_loaded_model = fitted_model_from_disk.predict(dX_2).compute()
+                preds_orig_local = local_model.predict(X_2)
+                preds_loaded_model_local = local_fitted_model_from_disk.predict(X_2)
+
+            assert_eq(preds_orig, preds_loaded_model)
+            assert_eq(preds_orig_local, preds_loaded_model_local)
+
+
+def test_warns_and_continues_on_unrecognized_tree_learner(cluster):
+    with Client(cluster) as client:
+        X = da.random.random((1e3, 10))
+        y = da.random.random((1e3, 1))
+        dask_regressor = lgb.DaskLGBMRegressor(
+            client=client,
+            time_out=5,
+            tree_learner='some-nonsense-value',
+            n_estimators=1,
+            num_leaves=2
+        )
+        with pytest.warns(UserWarning, match='Parameter tree_learner set to some-nonsense-value'):
+            dask_regressor = dask_regressor.fit(X, y)
+
+        assert dask_regressor.fitted_
+
+
+@pytest.mark.parametrize('tree_learner', ['data_parallel', 'voting_parallel'])
+def test_training_respects_tree_learner_aliases(tree_learner, cluster):
+    with Client(cluster) as client:
+        task = 'regression'
+        _, _, _, _, dX, dy, dw, dg = _create_data(objective=task, output='array')
+        dask_factory = task_to_dask_factory[task]
+        dask_model = dask_factory(
+            client=client,
+            tree_learner=tree_learner,
+            time_out=5,
+            n_estimators=10,
+            num_leaves=15
+        )
+        dask_model.fit(dX, dy, sample_weight=dw, group=dg)
+
+        assert dask_model.fitted_
+        assert dask_model.get_params()['tree_learner'] == tree_learner
+
+
+def test_error_on_feature_parallel_tree_learner(cluster):
+    with Client(cluster) as client:
+        X = da.random.random((100, 10), chunks=(50, 10))
+        y = da.random.random(100, chunks=50)
+        X, y = client.persist([X, y])
+        _ = wait([X, y])
+        client.rebalance()
+        dask_regressor = lgb.DaskLGBMRegressor(
+            client=client,
+            time_out=5,
+            tree_learner='feature_parallel',
+            n_estimators=1,
+            num_leaves=2
+        )
+        with pytest.raises(lgb.basic.LightGBMError, match='Do not support feature parallel in c api'):
+            dask_regressor = dask_regressor.fit(X, y)
+
+
+def test_errors(cluster):
+    with Client(cluster) as client:
+        def f(part):
+            raise Exception('foo')
+
+        df = dd.demo.make_timeseries()
+        df = df.map_partitions(f, meta=df._meta)
+        with pytest.raises(Exception) as info:
+            lgb.dask._train(
+                client=client,
+                data=df,
+                label=df.x,
+                params={},
+                model_factory=lgb.LGBMClassifier
+            )
+            assert 'foo' in str(info.value)
+
+
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
+def test_training_succeeds_even_if_some_workers_do_not_have_any_data(task, output, cluster):
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
+
+    with Client(cluster) as client:
+        def collection_to_single_partition(collection):
+            """Merge the parts of a Dask collection into a single partition."""
+            if collection is None:
+                return
+            if isinstance(collection, da.Array):
+                return collection.rechunk(*collection.shape)
+            return collection.repartition(npartitions=1)
+
+        X, y, w, g, dX, dy, dw, dg = _create_data(
+            objective=task,
+            output=output,
+            group=None
+        )
+
+        dask_model_factory = task_to_dask_factory[task]
+        local_model_factory = task_to_local_factory[task]
+
+        dX = collection_to_single_partition(dX)
+        dy = collection_to_single_partition(dy)
+        dw = collection_to_single_partition(dw)
+        dg = collection_to_single_partition(dg)
+
+        n_workers = len(client.scheduler_info()['workers'])
+        assert n_workers > 1
+        assert dX.npartitions == 1
+
+        params = {
+            'time_out': 5,
+            'random_state': 42,
+            'num_leaves': 10
+        }
+
+        dask_model = dask_model_factory(tree='data', client=client, **params)
+        dask_model.fit(dX, dy, group=dg, sample_weight=dw)
+        dask_preds = dask_model.predict(dX).compute()
+
+        local_model = local_model_factory(**params)
+        if task == 'ranking':
+            local_model.fit(X, y, group=g, sample_weight=w)
+        else:
+            local_model.fit(X, y, sample_weight=w)
+        local_preds = local_model.predict(X)
+
+        assert assert_eq(dask_preds, local_preds)
+
+
+@pytest.mark.parametrize('task', tasks)
+def test_network_params_not_required_but_respected_if_given(task, listen_port, cluster):
+    with Client(cluster) as client:
+        _, _, _, _, dX, dy, _, dg = _create_data(
+            objective=task,
+            output='array',
+            chunk_size=10,
+            group=None
+        )
+
+        dask_model_factory = task_to_dask_factory[task]
+
+        # rebalance data to be sure that each worker has a piece of the data
+        client.rebalance()
+
+        # model 1 - no network parameters given
+        dask_model1 = dask_model_factory(
+            n_estimators=5,
+            num_leaves=5,
+        )
+        dask_model1.fit(dX, dy, group=dg)
+        assert dask_model1.fitted_
+        params = dask_model1.get_params()
+        assert 'local_listen_port' not in params
+        assert 'machines' not in params
+
+        # model 2 - machines given
+        n_workers = len(client.scheduler_info()['workers'])
+        open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
+        dask_model2 = dask_model_factory(
+            n_estimators=5,
+            num_leaves=5,
+            machines=",".join([
+                "127.0.0.1:" + str(port)
+                for port in open_ports
+            ]),
+        )
+
+        dask_model2.fit(dX, dy, group=dg)
+        assert dask_model2.fitted_
+        params = dask_model2.get_params()
+        assert 'local_listen_port' not in params
+        assert 'machines' in params
+
+        # model 3 - local_listen_port given
+        # training should fail because LightGBM will try to use the same
+        # port for multiple worker processes on the same machine
+        dask_model3 = dask_model_factory(
+            n_estimators=5,
+            num_leaves=5,
+            local_listen_port=listen_port
+        )
+        error_msg = "has multiple Dask worker processes running on it"
+        with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
+            dask_model3.fit(dX, dy, group=dg)
+
+
+@pytest.mark.parametrize('task', tasks)
+def test_machines_should_be_used_if_provided(task, cluster):
+    with Client(cluster) as client:
+        _, _, _, _, dX, dy, _, dg = _create_data(
+            objective=task,
+            output='array',
+            chunk_size=10,
+            group=None
+        )
+
+        dask_model_factory = task_to_dask_factory[task]
+
+        # rebalance data to be sure that each worker has a piece of the data
+        client.rebalance()
+
+        n_workers = len(client.scheduler_info()['workers'])
+        assert n_workers > 1
+        open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
+        dask_model = dask_model_factory(
+            n_estimators=5,
+            num_leaves=5,
+            machines=",".join([
+                "127.0.0.1:" + str(port)
+                for port in open_ports
+            ]),
+        )
+
+        # test that "machines" is actually respected by creating a socket that uses
+        # one of the ports mentioned in "machines"
+        error_msg = "Binding port %s failed" % open_ports[0]
+        with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('127.0.0.1', open_ports[0]))
+                dask_model.fit(dX, dy, group=dg)
+
+        # The above error leaves a worker waiting
+        client.restart()
+
+        # an informative error should be raised if "machines" has duplicates
+        one_open_port = lgb.dask._find_random_open_port()
+        dask_model.set_params(
+            machines=",".join([
+                "127.0.0.1:" + str(one_open_port)
+                for _ in range(n_workers)
+            ])
+        )
+        with pytest.raises(ValueError, match="Found duplicates in 'machines'"):
+            dask_model.fit(dX, dy, group=dg)
+
+
+@pytest.mark.parametrize(
+    "classes",
+    [
+        (lgb.DaskLGBMClassifier, lgb.LGBMClassifier),
+        (lgb.DaskLGBMRegressor, lgb.LGBMRegressor),
+        (lgb.DaskLGBMRanker, lgb.LGBMRanker)
+    ]
+)
+def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except_client_arg(classes):
+    dask_spec = inspect.getfullargspec(classes[0])
+    sklearn_spec = inspect.getfullargspec(classes[1])
+    assert dask_spec.varargs == sklearn_spec.varargs
+    assert dask_spec.varkw == sklearn_spec.varkw
+    assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs
+    assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults
+
+    # "client" should be the only different, and the final argument
+    assert dask_spec.args[:-1] == sklearn_spec.args
+    assert dask_spec.defaults[:-1] == sklearn_spec.defaults
+    assert dask_spec.args[-1] == 'client'
+    assert dask_spec.defaults[-1] is None
+
+
+@pytest.mark.parametrize(
+    "methods",
+    [
+        (lgb.DaskLGBMClassifier.fit, lgb.LGBMClassifier.fit),
+        (lgb.DaskLGBMClassifier.predict, lgb.LGBMClassifier.predict),
+        (lgb.DaskLGBMClassifier.predict_proba, lgb.LGBMClassifier.predict_proba),
+        (lgb.DaskLGBMRegressor.fit, lgb.LGBMRegressor.fit),
+        (lgb.DaskLGBMRegressor.predict, lgb.LGBMRegressor.predict),
+        (lgb.DaskLGBMRanker.fit, lgb.LGBMRanker.fit),
+        (lgb.DaskLGBMRanker.predict, lgb.LGBMRanker.predict)
+    ]
+)
+def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
+    dask_spec = inspect.getfullargspec(methods[0])
+    sklearn_spec = inspect.getfullargspec(methods[1])
+    dask_params = inspect.signature(methods[0]).parameters
+    sklearn_params = inspect.signature(methods[1]).parameters
+    assert dask_spec.args == sklearn_spec.args[:len(dask_spec.args)]
+    assert dask_spec.varargs == sklearn_spec.varargs
+    if sklearn_spec.varkw:
+        assert dask_spec.varkw == sklearn_spec.varkw[:len(dask_spec.varkw)]
+    assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs
+    assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults
+    for param in dask_spec.args:
+        error_msg = f"param '{param}' has different default values in the methods"
+        assert dask_params[param].default == sklearn_params[param].default, error_msg
+
+
+@pytest.mark.parametrize('task', tasks)
+def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task, cluster):
+    with Client(cluster) as client:
+        _, _, _, _, dX, dy, dw, dg = _create_data(
+            objective=task,
+            output='dataframe',
+            group=None
+        )
+
+        model_factory = task_to_dask_factory[task]
+
+        dy = dy.to_dask_array(lengths=True)
+        dy_col_array = dy.reshape(-1, 1)
+        assert len(dy_col_array.shape) == 2 and dy_col_array.shape[1] == 1
+
+        params = {
+            'n_estimators': 1,
+            'num_leaves': 3,
+            'random_state': 0,
+            'time_out': 5
+        }
+        model = model_factory(**params)
+        model.fit(dX, dy_col_array, sample_weight=dw, group=dg)
+        assert model.fitted_
+
+
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
+def test_init_score(task, output, cluster):
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
+
+    with Client(cluster) as client:
+        _, _, _, _, dX, dy, dw, dg = _create_data(
+            objective=task,
+            output=output,
+            group=None
+        )
+
+        model_factory = task_to_dask_factory[task]
+
+        params = {
+            'n_estimators': 1,
+            'num_leaves': 2,
+            'time_out': 5
+        }
+        init_score = random.random()
+        # init_scores must be a 1D array, even for multiclass classification
+        # where you need to provide 1 score per class for each row in X
+        # https://github.com/microsoft/LightGBM/issues/4046
+        size_factor = 1
+        if task == 'multiclass-classification':
+            size_factor = 3  # number of classes
+
+        if output.startswith('dataframe'):
+            init_scores = dy.map_partitions(lambda x: pd.Series([init_score] * x.size * size_factor))
+        else:
+            init_scores = dy.map_blocks(lambda x: np.repeat(init_score, x.size * size_factor))
+        model = model_factory(client=client, **params)
+        model.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
+        # value of the root node is 0 when init_score is set
+        assert model.booster_.trees_to_dataframe()['value'][0] == 0
+
+
+def sklearn_checks_to_run():
+    check_names = [
+        "check_estimator_get_tags_default_keys",
+        "check_get_params_invariance",
+        "check_set_params"
+    ]
+    for check_name in check_names:
+        check_func = getattr(sklearn_checks, check_name, None)
+        if check_func:
+            yield check_func
+
+
+def _tested_estimators():
+    for Estimator in [lgb.DaskLGBMClassifier, lgb.DaskLGBMRegressor]:
+        yield Estimator()
+
+
+@pytest.mark.parametrize("estimator", _tested_estimators())
+@pytest.mark.parametrize("check", sklearn_checks_to_run())
+def test_sklearn_integration(estimator, check, cluster):
+    with Client(cluster) as client:
+        estimator.set_params(local_listen_port=18000, time_out=5)
+        name = type(estimator).__name__
+        check(name, estimator)
+
+
+# this test is separate because it takes a not-yet-constructed estimator
+@pytest.mark.parametrize("estimator", list(_tested_estimators()))
+def test_parameters_default_constructible(estimator):
+    name = estimator.__class__.__name__
+    if sk_version >= parse_version("0.24"):
+        Estimator = estimator
+    else:
+        Estimator = estimator.__class__
+    sklearn_checks.check_parameters_default_constructible(name, Estimator)
+
+
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
+def test_predict_with_raw_score(task, output, cluster):
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
+
+    with Client(cluster) as client:
+        _, _, _, _, dX, dy, _, dg = _create_data(
+            objective=task,
+            output=output,
+            group=None
+        )
+
+        model_factory = task_to_dask_factory[task]
+        params = {
+            'client': client,
+            'n_estimators': 1,
+            'num_leaves': 2,
+            'time_out': 5,
+            'min_sum_hessian': 0
+        }
+        model = model_factory(**params)
+        model.fit(dX, dy, group=dg)
+        raw_predictions = model.predict(dX, raw_score=True).compute()
+
+        trees_df = model.booster_.trees_to_dataframe()
+        leaves_df = trees_df[trees_df.node_depth == 2]
+        if task == 'multiclass-classification':
+            for i in range(model.n_classes_):
+                class_df = leaves_df[leaves_df.tree_index == i]
+                assert set(raw_predictions[:, i]) == set(class_df['value'])
+        else:
+            assert set(raw_predictions) == set(leaves_df['value'])
+
+        if task.endswith('classification'):
+            pred_proba_raw = model.predict_proba(dX, raw_score=True).compute()
+            assert_eq(raw_predictions, pred_proba_raw)

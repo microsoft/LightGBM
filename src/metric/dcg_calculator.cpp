@@ -152,6 +152,19 @@ void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const label_t* la
   }
 }
 
+void DCGCalculator::CheckMetadata(const Metadata& metadata, data_size_t num_queries) {
+  const data_size_t* query_boundaries = metadata.query_boundaries();
+  if (num_queries > 0 && query_boundaries != nullptr) {
+    for (data_size_t i = 0; i < num_queries; i++) {
+      data_size_t num_rows = query_boundaries[i + 1] - query_boundaries[i];
+      if (num_rows > kMaxPosition) {
+        Log::Fatal("Number of rows %i exceeds upper limit of %i for a query", static_cast<int>(num_rows), static_cast<int>(kMaxPosition));
+      }
+    }
+  }
+}
+
+
 void DCGCalculator::CheckLabel(const label_t* label, data_size_t num_data) {
   for (data_size_t i = 0; i < num_data; ++i) {
     label_t delta = std::fabs(label[i] - static_cast<int>(label[i]));

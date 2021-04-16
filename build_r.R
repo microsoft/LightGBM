@@ -206,18 +206,6 @@ result <- file.copy(
 )
 .handle_result(result)
 
-# compute/ is a submodule with boost, only needed if
-# building the R package with GPU support
-if (USING_GPU) {
-  result <- file.copy(
-    from = "compute/"
-    , to = sprintf("%s/", TEMP_SOURCE_DIR)
-    , recursive = TRUE
-    , overwrite = TRUE
-  )
-  .handle_result(result)
-}
-
 EIGEN_R_DIR <- file.path(TEMP_SOURCE_DIR, "include", "Eigen")
 dir.create(EIGEN_R_DIR)
 
@@ -235,7 +223,7 @@ eigen_modules <- c(
 )
 for (eigen_module in eigen_modules) {
   result <- file.copy(
-    from = file.path("eigen", "Eigen", eigen_module)
+    from = file.path("external_libs", "eigen", "Eigen", eigen_module)
     , to = EIGEN_R_DIR
     , recursive = FALSE
     , overwrite = TRUE
@@ -252,7 +240,7 @@ for (eigen_module in c(eigen_modules, "misc", "plugins")) {
   module_dir <- file.path(EIGEN_R_DIR, "src", eigen_module)
   dir.create(module_dir, recursive = TRUE)
   result <- file.copy(
-    from = sprintf("%s/", file.path("eigen", "Eigen", "src", eigen_module))
+    from = sprintf("%s/", file.path("external_libs", "eigen", "Eigen", "src", eigen_module))
     , to = sprintf("%s/", file.path(EIGEN_R_DIR, "src"))
     , recursive = TRUE
     , overwrite = TRUE
@@ -305,15 +293,37 @@ result <- file.remove(
 #------------#
 # submodules #
 #------------#
+EXTERNAL_LIBS_R_DIR <- file.path(TEMP_SOURCE_DIR, "external_libs")
+dir.create(EXTERNAL_LIBS_R_DIR)
+for (submodule in list.dirs(
+  path = "external_libs"
+  , full.names = FALSE
+  , recursive = FALSE
+)) {
+  # compute/ is a submodule with boost, only needed if
+  # building the R package with GPU support;
+  # eigen/ has a special treatment due to licensing aspects
+  if ((submodule == "compute" && !USING_GPU) || submodule == "eigen") {
+    next
+  }
+  result <- file.copy(
+    from = sprintf("%s/", file.path("external_libs", submodule))
+    , to = sprintf("%s/", EXTERNAL_LIBS_R_DIR)
+    , recursive = TRUE
+    , overwrite = TRUE
+  )
+  .handle_result(result)
+}
+
+# copy files into the place CMake expects
+CMAKE_MODULES_R_DIR <- file.path(TEMP_SOURCE_DIR, "cmake", "modules")
+dir.create(CMAKE_MODULES_R_DIR, recursive = TRUE)
 result <- file.copy(
-  from = "external_libs/"
-  , to = sprintf("%s/", TEMP_SOURCE_DIR)
-  , recursive = TRUE
+  from = file.path("cmake", "modules", "FindLibR.cmake")
+  , to = sprintf("%s/", CMAKE_MODULES_R_DIR)
   , overwrite = TRUE
 )
 .handle_result(result)
-
-# copy files into the place CMake expects
 for (src_file in c("lightgbm_R.cpp", "lightgbm_R.h", "R_object_helper.h")) {
   result <- file.copy(
     from = file.path(TEMP_SOURCE_DIR, src_file)

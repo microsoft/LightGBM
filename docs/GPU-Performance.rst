@@ -163,6 +163,7 @@ We record the wall clock time after 500 iterations, as shown in the figure below
 .. image:: ./_static/images/gpu-performance-comparison.png
    :align: center
    :target: ./_static/images/gpu-performance-comparison.png
+   :alt: A performance chart which is a record of the wall clock time after 500 iterations on G P U for Higgs, epsilon, Bosch, Microsoft L T R, Expo and Yahoo L T R and bin size of 63 performs comparatively better.
 
 When using a GPU, it is advisable to use a bin size of 63 rather than 255, because it can speed up training significantly without noticeably affecting accuracy.
 On CPU, using a smaller bin size only marginally improves performance, sometimes even slows down training,

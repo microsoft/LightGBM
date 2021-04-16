@@ -1,16 +1,16 @@
 # coding: utf-8
 """Callbacks library."""
 import collections
-import warnings
 from operator import gt, lt
+from typing import Any, Callable, Dict, List, Union
 
-from .basic import _ConfigAliases
+from .basic import _ConfigAliases, _log_info, _log_warning
 
 
 class EarlyStopException(Exception):
     """Exception of early stopping."""
 
-    def __init__(self, best_iteration, best_score):
+    def __init__(self, best_iteration: int, best_score: float) -> None:
         """Create early stopping exception.
 
         Parameters
@@ -27,7 +27,7 @@ class EarlyStopException(Exception):
 
 # Callback environment used by callbacks
 CallbackEnv = collections.namedtuple(
-    "LightGBMCallbackEnv",
+    "CallbackEnv",
     ["model",
      "params",
      "iteration",
@@ -36,7 +36,7 @@ CallbackEnv = collections.namedtuple(
      "evaluation_result_list"])
 
 
-def _format_eval_result(value, show_stdv=True):
+def _format_eval_result(value: list, show_stdv: bool = True) -> str:
     """Format metric string."""
     if len(value) == 4:
         return '%s\'s %s: %g' % (value[0], value[1], value[2])
@@ -49,7 +49,7 @@ def _format_eval_result(value, show_stdv=True):
         raise ValueError("Wrong metric value")
 
 
-def print_evaluation(period=1, show_stdv=True):
+def print_evaluation(period: int = 1, show_stdv: bool = True) -> Callable:
     """Create a callback that prints the evaluation results.
 
     Parameters
@@ -64,15 +64,15 @@ def print_evaluation(period=1, show_stdv=True):
     callback : function
         The callback that prints the evaluation results every ``period`` iteration(s).
     """
-    def _callback(env):
+    def _callback(env: CallbackEnv) -> None:
         if period > 0 and env.evaluation_result_list and (env.iteration + 1) % period == 0:
             result = '\t'.join([_format_eval_result(x, show_stdv) for x in env.evaluation_result_list])
-            print('[%d]\t%s' % (env.iteration + 1, result))
-    _callback.order = 10
+            _log_info('[%d]\t%s' % (env.iteration + 1, result))
+    _callback.order = 10  # type: ignore
     return _callback
 
 
-def record_evaluation(eval_result):
+def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
     """Create a callback that records the evaluation history into ``eval_result``.
 
     Parameters
@@ -89,21 +89,21 @@ def record_evaluation(eval_result):
         raise TypeError('eval_result should be a dictionary')
     eval_result.clear()
 
-    def _init(env):
+    def _init(env: CallbackEnv) -> None:
         for data_name, eval_name, _, _ in env.evaluation_result_list:
             eval_result.setdefault(data_name, collections.OrderedDict())
             eval_result[data_name].setdefault(eval_name, [])
 
-    def _callback(env):
+    def _callback(env: CallbackEnv) -> None:
         if not eval_result:
             _init(env)
         for data_name, eval_name, result, _ in env.evaluation_result_list:
             eval_result[data_name][eval_name].append(result)
-    _callback.order = 20
+    _callback.order = 20  # type: ignore
     return _callback
 
 
-def reset_parameter(**kwargs):
+def reset_parameter(**kwargs: Union[list, Callable]) -> Callable:
     """Create a callback that resets the parameter after the first iteration.
 
     .. note::
@@ -124,7 +124,7 @@ def reset_parameter(**kwargs):
     callback : function
         The callback that resets the parameter after the first iteration.
     """
-    def _callback(env):
+    def _callback(env: CallbackEnv) -> None:
         new_parameters = {}
         for key, value in kwargs.items():
             if isinstance(value, list):
@@ -139,12 +139,12 @@ def reset_parameter(**kwargs):
         if new_parameters:
             env.model.reset_parameter(new_parameters)
             env.params.update(new_parameters)
-    _callback.before_iteration = True
-    _callback.order = 10
+    _callback.before_iteration = True  # type: ignore
+    _callback.order = 10  # type: ignore
     return _callback
 
 
-def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
+def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True) -> Callable:
     """Create a callback that activates early stopping.
 
     Activates early stopping.
@@ -171,24 +171,23 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
     """
     best_score = []
     best_iter = []
-    best_score_list = []
+    best_score_list: list = []
     cmp_op = []
     enabled = [True]
     first_metric = ['']
 
-    def _init(env):
+    def _init(env: CallbackEnv) -> None:
         enabled[0] = not any(env.params.get(boost_alias, "") == 'dart' for boost_alias
                              in _ConfigAliases.get("boosting"))
         if not enabled[0]:
-            warnings.warn('Early stopping is not available in dart mode')
+            _log_warning('Early stopping is not available in dart mode')
             return
         if not env.evaluation_result_list:
             raise ValueError('For early stopping, '
                              'at least one dataset and eval metric is required for evaluation')
 
         if verbose:
-            msg = "Training until validation scores don't improve for {} rounds"
-            print(msg.format(stopping_rounds))
+            _log_info("Training until validation scores don't improve for {} rounds".format(stopping_rounds))
 
         # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
         first_metric[0] = env.evaluation_result_list[0][1].split(" ")[-1]
@@ -202,16 +201,16 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                 best_score.append(float('inf'))
                 cmp_op.append(lt)
 
-    def _final_iteration_check(env, eval_name_splitted, i):
+    def _final_iteration_check(env: CallbackEnv, eval_name_splitted: List[str], i: int) -> None:
         if env.iteration == env.end_iteration - 1:
             if verbose:
-                print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
+                _log_info('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
                     best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                 if first_metric_only:
-                    print("Evaluated only: {}".format(eval_name_splitted[-1]))
+                    _log_info("Evaluated only: {}".format(eval_name_splitted[-1]))
             raise EarlyStopException(best_iter[i], best_score_list[i])
 
-    def _callback(env):
+    def _callback(env: CallbackEnv) -> None:
         if not cmp_op:
             _init(env)
         if not enabled[0]:
@@ -232,11 +231,11 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                 continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
             elif env.iteration - best_iter[i] >= stopping_rounds:
                 if verbose:
-                    print('Early stopping, best iteration is:\n[%d]\t%s' % (
+                    _log_info('Early stopping, best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                     if first_metric_only:
-                        print("Evaluated only: {}".format(eval_name_splitted[-1]))
+                        _log_info("Evaluated only: {}".format(eval_name_splitted[-1]))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
             _final_iteration_check(env, eval_name_splitted, i)
-    _callback.order = 30
+    _callback.order = 30  # type: ignore
     return _callback

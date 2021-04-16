@@ -4,7 +4,7 @@ if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
         if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_9.4.1.app/Contents/Developer
+            sudo xcode-select -s /Applications/Xcode_9.4.1.app/Contents/Developer || exit -1
         fi
     else  # gcc
         if [[ $TASK != "mpi" ]]; then
@@ -17,7 +17,7 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "swig" ]]; then
         brew install swig
     fi
-    wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+    curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
@@ -35,6 +35,7 @@ else  # Linux
             apt-utils \
             build-essential \
             ca-certificates \
+            cmake \
             curl \
             git \
             iputils-ping \
@@ -43,21 +44,23 @@ else  # Linux
             libicu66 \
             libssl1.1 \
             libunwind8 \
+            libxau6 \
+            libxext6 \
+            libxrender1 \
             locales \
             netcat \
             unzip \
-            wget \
             zip
+        if [[ $COMPILER == "clang" ]]; then
+            sudo apt-get install --no-install-recommends -y \
+                clang \
+                libomp-dev
+        fi
 
         export LANG="en_US.UTF-8"
         export LC_ALL="${LANG}"
         sudo locale-gen ${LANG}
         sudo update-locale
-
-        sudo apt-get install -y --no-install-recommends \
-            cmake \
-            clang \
-            libomp-dev
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
@@ -68,8 +71,8 @@ else  # Linux
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libboost1.74-dev ocl-icd-opencl-dev
         cd $BUILD_DIRECTORY  # to avoid permission errors
-        wget -q https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
-        tar -xjf AMD-APP-SDK*.tar.bz2
+        curl -sL -o AMD-APP-SDKInstaller.tar.bz2 https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+        tar -xjf AMD-APP-SDKInstaller.tar.bz2
         mkdir -p $OPENCL_VENDOR_PATH
         mkdir -p $AMDAPPSDK_PATH
         sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK_PATH
@@ -77,14 +80,33 @@ else  # Linux
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
     if [[ $TASK == "cuda" ]]; then
+        echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
-        apt-get install --no-install-recommends -y curl wget
-        curl -sL https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh -o cmake.sh
-        chmod +x cmake.sh
-        ./cmake.sh --prefix=/usr/local --exclude-subdir
+        apt-get install --no-install-recommends -y \
+            curl \
+            libxau6 \
+            libxext6 \
+            libxrender1 \
+            lsb-release \
+            software-properties-common
+        if [[ $COMPILER == "clang" ]]; then
+            apt-get install --no-install-recommends -y \
+                clang \
+                libomp-dev
+        fi
+        curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
+        apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
+        apt-get update
+        apt-get install --no-install-recommends -y \
+            cmake
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
-        wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        ARCH=$(uname -m)
+        if [[ $ARCH == "x86_64" ]]; then
+            curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        else
+            curl -sL -o conda.sh https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh
+        fi
     fi
 fi
 

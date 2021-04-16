@@ -26,7 +26,7 @@ jobs:
             python_version: 3.6
           - os: macOS-latest
             task: sdist
-            python_version: 3.8
+            python_version: 3.9
           - os: macOS-latest
             task: bdist
             python_version: 3.8
@@ -36,7 +36,7 @@ jobs:
           - os: macOS-latest
             task: mpi
             method: source
-            python_version: 3.8
+            python_version: 3.9
           - os: macOS-latest
             task: mpi
             method: pip

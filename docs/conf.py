@@ -20,16 +20,16 @@
 import datetime
 import os
 import sys
-import sphinx
-
 from distutils.dir_util import copy_tree
+from re import compile
+from subprocess import PIPE, Popen
+from unittest.mock import Mock
+
+import sphinx
 from docutils.nodes import reference
 from docutils.parsers.rst import Directive
 from docutils.transforms import Transform
-from re import compile
 from sphinx.errors import VersionRequirementError
-from subprocess import PIPE, Popen
-from unittest.mock import Mock
 
 CURR_PATH = os.path.abspath(os.path.dirname(__file__))
 LIB_PATH = os.path.join(CURR_PATH, os.path.pardir, 'python-package')
@@ -39,7 +39,7 @@ INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#
 
 # -- mock out modules
 MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
-                'sklearn', 'matplotlib', 'pandas', 'graphviz']
+                'sklearn', 'matplotlib', 'pandas', 'graphviz', 'dask', 'dask.distributed']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
@@ -74,9 +74,9 @@ C_API = os.environ.get('C_API', '').lower().strip() != 'no'
 RTD = bool(os.environ.get('READTHEDOCS', ''))
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
+needs_sphinx = '2.1.0'  # Due to sphinx.ext.napoleon, autodoc_typehints
 if needs_sphinx > sphinx.__version__:
-    message = 'This project needs at least Sphinx v%s' % needs_sphinx
+    message = f'This project needs at least Sphinx v{needs_sphinx}'
     raise VersionRequirementError(message)
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -97,6 +97,9 @@ autodoc_default_options = {
     "show-inheritance": True,
 }
 
+# hide type hints in API docs
+autodoc_typehints = "none"
+
 # Generate autosummary pages. Output should be set with: `:toctree: pythonapi/`
 autosummary_generate = ['Python-API.rst']
 
@@ -111,7 +114,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'LightGBM'
-copyright = '%s, Microsoft Corporation' % str(datetime.datetime.now().year)
+copyright = f'{datetime.datetime.now().year}, Microsoft Corporation'
 author = 'Microsoft Corporation'
 
 # The name of an image file (relative to this directory) to place at the top
@@ -203,10 +206,10 @@ def generate_doxygen_xml(app):
     app : object
         The application object representing the Sphinx process.
     """
+    input = os.path.join(CURR_PATH, os.path.pardir, 'include', 'LightGBM', 'c_api.h')
     doxygen_args = [
-        "INPUT={}".format(os.path.join(CURR_PATH, os.path.pardir,
-                                       'include', 'LightGBM', 'c_api.h')),
-        "OUTPUT_DIRECTORY={}".format(os.path.join(CURR_PATH, 'doxyoutput')),
+        f"INPUT={input}",
+        f"OUTPUT_DIRECTORY={os.path.join(CURR_PATH, 'doxyoutput')}",
         "GENERATE_HTML=NO",
         "GENERATE_LATEX=NO",
         "GENERATE_XML=YES",
@@ -220,7 +223,6 @@ def generate_doxygen_xml(app):
         "SKIP_FUNCTION_MACROS=NO",
         "SORT_BRIEF_DOCS=YES",
         "WARN_AS_ERROR=YES",
-        "EXCLUDE_PATTERNS=*/eigen/*"
     ]
     doxygen_input = '\n'.join(doxygen_args)
     doxygen_input = bytes(doxygen_input, "utf-8")
@@ -240,7 +242,7 @@ def generate_doxygen_xml(app):
         else:
             print(output)
     except BaseException as e:
-        raise Exception("An error has occurred while executing Doxygen\n" + str(e))
+        raise Exception(f"An error has occurred while executing Doxygen\n{e}")
 
 
 def generate_r_docs(app):
@@ -251,7 +253,7 @@ def generate_r_docs(app):
     app : object
         The application object representing the Sphinx process.
     """
-    commands = """
+    commands = f"""
     /home/docs/.conda/bin/conda create \
         -q \
         -y \
@@ -266,10 +268,10 @@ def generate_r_docs(app):
             r-roxygen2=7.1.1=r40h0357c0b_0
     source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
-    cd {0}
+    cd {os.path.join(CURR_PATH, os.path.pardir)}
     export R_LIBS="$CONDA_PREFIX/lib/R/library"
     Rscript build_r.R || exit -1
-    cd {1}
+    cd {os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r")}
     Rscript -e "roxygen2::roxygenize(load = 'installed')" || exit -1
     Rscript -e "pkgdown::build_site( \
             lazy = FALSE \
@@ -282,8 +284,8 @@ def generate_r_docs(app):
             , new_process = TRUE \
         )
         " || exit -1
-    cd {0}
-    """.format(os.path.join(CURR_PATH, os.path.pardir), os.path.join(CURR_PATH, os.path.pardir, "lightgbm_r"))
+    cd {os.path.join(CURR_PATH, os.path.pardir)}
+    """
     try:
         # Warning! The following code can cause buffer overflows on RTD.
         # Consider suppressing output completely if RTD project silently fails.
@@ -299,7 +301,7 @@ def generate_r_docs(app):
         else:
             print(output)
     except BaseException as e:
-        raise Exception("An error has occurred while generating documentation for R-package\n" + str(e))
+        raise Exception(f"An error has occurred while generating documentation for R-package\n{e}")
 
 
 def setup(app):
