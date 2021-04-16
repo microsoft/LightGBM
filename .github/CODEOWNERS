@@ -20,7 +20,7 @@ include/    @guolinke @chivee @btrotta @shiyu1994
 src/    @guolinke @chivee @btrotta @shiyu1994
 CMakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12 @btrotta @shiyu1994
 tests/c_api_test/    @guolinke @chivee @btrotta @shiyu1994
-tests/cpp_test/    @guolinke @chivee @btrotta @shiyu1994
+tests/cpp_tests/    @guolinke @chivee @btrotta @shiyu1994
 tests/data/    @guolinke @chivee @btrotta @shiyu1994
 windows/    @guolinke @chivee @btrotta @StrikerRUS @shiyu1994
 
