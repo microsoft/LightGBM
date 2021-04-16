@@ -2012,14 +2012,14 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
 
 })
 
-test_that(paste0("CTR for R package works"), {
-  # test cat_converters
+test_that(paste0("Category encoding for R package works"), {
+  # test category_encoders
   set.seed(1L)
   dtrain <- lgb.Dataset(train$data, label = train$label)
   dtest <- lgb.Dataset(test$data, label = test$label, reference = dtrain)
   cat_fid <- c(1L, 2L, 3L, 4L)
-  # ``` cat_converters = "" ```   is equal to   ``` cat_converters = "raw" ```
-  params <- list(objective = "binary", categorical_feature = cat_fid, cat_converters = "")
+  # ``` category_encoders = "" ```   is equal to   ``` category_encoders = "raw" ```
+  params <- list(objective = "binary", categorical_feature = cat_fid, category_encoders = "")
   bst <- lightgbm(
     data = dtrain
     , params = params
@@ -2031,7 +2031,7 @@ test_that(paste0("CTR for R package works"), {
 
   # treat the first 4 features as categorical features
   dtrain <- lgb.Dataset(train$data, label = train$label,
-    categorical_feature = cat_fid, cat_converters = "raw")
+    categorical_feature = cat_fid, category_encoders = "raw")
   dtest <- lgb.Dataset(test$data, label = test$label,
     categorical_feature = cat_fid, reference = dtrain)
   params <- list(objective = "binary")
@@ -2049,7 +2049,7 @@ test_that(paste0("CTR for R package works"), {
     categorical_feature = cat_fid)
   dtest <- lgb.Dataset(test$data, label = test$label,
     categorical_feature = cat_fid, reference = dtrain)
-  params <- list(objective = "binary", cat_converters = "ctr,count,raw")
+  params <- list(objective = "binary", category_encoders = "target,count,raw")
   bst <- lightgbm(
     data = dtrain
     , params = params
@@ -2060,7 +2060,7 @@ test_that(paste0("CTR for R package works"), {
   pred3 <- bst$predict(test$data)
   expect_equal(dim(dtrain), c(6513L, 134L))
 
-  # test gbdt model with cat_converters
+  # test gbdt model with category_encoders
   model_file <- tempfile(fileext = ".model")
   lgb.save(bst, model_file)
   # finalize the booster and destroy it so you know we aren't cheating
@@ -2075,15 +2075,15 @@ test_that(paste0("CTR for R package works"), {
   expect_equal(pred3, pred4)
 
 
-  # test Dataset binary store with cat_converters
-  tmp_file <- tempfile(pattern = "lgb.Dataset_CTR_")
+  # test Dataset binary store with category_encoders
+  tmp_file <- tempfile(pattern = "lgb.Dataset_Category_Encoding_")
   lgb.Dataset.save(
     dataset = dtrain
     , fname = tmp_file
   )
   dtrain_read_in <- lgb.Dataset(data = tmp_file)
 
-  tmp_file <- tempfile(pattern = "lgb.Dataset_CTR2_")
+  tmp_file <- tempfile(pattern = "lgb.Dataset_Category_Encoding_2_")
   lgb.Dataset.save(
     dataset = dtest
     , fname = tmp_file

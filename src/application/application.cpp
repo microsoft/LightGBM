@@ -101,9 +101,9 @@ void Application::LoadData() {
   }
 
   Log::Debug("Loading train file...");
-  std::unique_ptr<CTRProvider> ctr_provider(nullptr);
-  if (!config_.cat_converters.empty()) {
-    ctr_provider.reset(CTRProvider::CreateCTRProvider(&config_));
+  std::unique_ptr<CategoryEncodingProvider> category_encoding_provider(nullptr);
+  if (!config_.category_encoders.empty()) {
+    category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(&config_));
   }
   DatasetLoader dataset_loader(&config_, predict_fun,
                                config_.num_class, config_.data.c_str());
@@ -111,10 +111,10 @@ void Application::LoadData() {
   if (config_.is_data_based_parallel) {
     // load data for parallel training
     train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(),
-                                                  Network::rank(), Network::num_machines(), ctr_provider.get()));
+                                                  Network::rank(), Network::num_machines(), category_encoding_provider.get()));
   } else {
     // load data for single machine
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1, ctr_provider.get()));
+    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1, category_encoding_provider.get()));
   }
   // need save binary file
   if (config_.save_binary) {
@@ -233,11 +233,11 @@ void Application::Predict() {
     }
     DatasetLoader dataset_loader(&config_, nullptr,
                                  config_.num_class, config_.data.c_str());
-    std::unique_ptr<CTRProvider> ctr_provider(nullptr);
-    if (!config_.cat_converters.empty()) {
-      ctr_provider.reset(CTRProvider::CreateCTRProvider(&config_));
+    std::unique_ptr<CategoryEncodingProvider> category_encoding_provider(nullptr);
+    if (!config_.category_encoders.empty()) {
+      category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(&config_));
     }
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1, ctr_provider.get()));
+    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1, category_encoding_provider.get()));
     train_metric_.clear();
     objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective,
                                                                     config_));

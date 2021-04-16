@@ -29,7 +29,7 @@
 #include <vector>
 
 #include "application/predictor.hpp"
-#include <LightGBM/ctr_provider.hpp>
+#include <LightGBM/category_encoding_provider.hpp>
 #include <LightGBM/utils/yamc/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/yamc/yamc_shared_lock.hpp>
 
@@ -279,9 +279,9 @@ class Booster {
     if (new_param.count("forcedbins_filename")) {
       Log::Fatal("Cannot change forced bins after constructed Dataset handle.");
     }
-    if (new_param.count("cat_converters") &&
-        new_config.cat_converters != old_config.cat_converters) {
-      Log::Fatal("Cannot change cat_converters after constructed Dataset handle.");
+    if (new_param.count("category_encoders") &&
+        new_config.category_encoders != old_config.category_encoders) {
+      Log::Fatal("Cannot change category_encoders after constructed Dataset handle.");
     }
     if (new_param.count("min_data_in_leaf") &&
         new_config.min_data_in_leaf < old_config.min_data_in_leaf &&
@@ -848,7 +848,7 @@ using LightGBM::Common::RemoveQuotationSymbol;
 using LightGBM::Common::Vector2Ptr;
 using LightGBM::Common::VectorSize;
 using LightGBM::Config;
-using LightGBM::CTRProvider;
+using LightGBM::CategoryEncodingProvider;
 using LightGBM::data_size_t;
 using LightGBM::Dataset;
 using LightGBM::DatasetLoader;
@@ -902,18 +902,18 @@ int LGBM_DatasetCreateFromFile(const char* filename,
     omp_set_num_threads(config.num_threads);
   }
 
-  std::unique_ptr<CTRProvider> ctr_provider(nullptr);
-  if (!config.cat_converters.empty()) {
-    ctr_provider.reset(CTRProvider::CreateCTRProvider(&config));
+  std::unique_ptr<CategoryEncodingProvider> category_encoding_provider(nullptr);
+  if (!config.category_encoders.empty()) {
+    category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(&config));
   }
 
   DatasetLoader loader(&config, nullptr, 1, filename);
 
   if (reference == nullptr) {
     if (Network::num_machines() == 1) {
-      *out = loader.LoadFromFile(filename, ctr_provider.get());
+      *out = loader.LoadFromFile(filename, category_encoding_provider.get());
     } else {
-      *out = loader.LoadFromFile(filename, Network::rank(), Network::num_machines(), ctr_provider.get());
+      *out = loader.LoadFromFile(filename, Network::rank(), Network::num_machines(), category_encoding_provider.get());
     }
   } else {
     *out = loader.LoadFromFileAlignWithOtherDataset(filename,
@@ -939,7 +939,7 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
     omp_set_num_threads(config.num_threads);
   }
   DatasetLoader loader(&config, nullptr, 1, nullptr);
-  // TODO(shiyu1994): in this case do we need ctr provider ? it seems that therea are no labels available.
+  // TODO(shiyu1994): in this case do we need category encoding provider ? it seems that therea are no labels available.
   *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
                                         num_sample_row,
                                         static_cast<data_size_t>(num_total_row), nullptr);
@@ -1069,20 +1069,20 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
   }
 
-  std::unique_ptr<const CTRProvider> ctr_provider;
+  std::unique_ptr<const CategoryEncodingProvider> category_encoding_provider;
   const bool is_valid = (reference != nullptr);
   if (is_valid) {
-    const CTRProvider* ctr_provider_ptr = (reinterpret_cast<const Dataset*>(reference))->ctr_provider();
-    if (ctr_provider_ptr != nullptr) {
-      ctr_provider.reset(CTRProvider::RecoverFromModelString((ctr_provider_ptr->DumpModelInfo())));
+    const CategoryEncodingProvider* category_encoding_provider_ptr = (reinterpret_cast<const Dataset*>(reference))->category_encoding_provider();
+    if (category_encoding_provider_ptr != nullptr) {
+      category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpModelInfo())));
     }
   } else {
     std::function<float(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
-    ctr_provider.reset(CTRProvider::CreateCTRProvider(
+    category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(
       &config, get_row_fun, get_label_fun, nmat, nrow, ncol));
   }
-  if (ctr_provider != nullptr) {
-    ctr_provider->WrapRowFunctions(&get_row_fun, &ncol, is_valid);
+  if (category_encoding_provider != nullptr) {
+    category_encoding_provider->WrapRowFunctions(&get_row_fun, &ncol, is_valid);
   }
   if (!is_valid) {
     // sample data first
@@ -1113,9 +1113,9 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              ncol,
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, total_nrow, ctr_provider.get()));
-    if (ctr_provider != nullptr) {
-      ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
+                                             sample_cnt, total_nrow, category_encoding_provider.get()));
+    if (category_encoding_provider != nullptr) {
+      ret->SetCategoryEncodingProvider(CategoryEncodingProvider::RecoverFromModelString(category_encoding_provider->DumpModelInfo()));
     }
   } else {
     ret.reset(new Dataset(total_nrow));
@@ -1171,20 +1171,20 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   }
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  std::unique_ptr<const CTRProvider> ctr_provider;
+  std::unique_ptr<const CategoryEncodingProvider> category_encoding_provider;
   const bool is_valid = (reference != nullptr);
   if (is_valid) {
-    const CTRProvider* ctr_provider_ptr = (reinterpret_cast<const Dataset*>(reference))->ctr_provider();
-    if (ctr_provider_ptr != nullptr) {
-      ctr_provider.reset(CTRProvider::RecoverFromModelString((ctr_provider_ptr->DumpModelInfo())));
+    const CategoryEncodingProvider* category_encoding_provider_ptr = (reinterpret_cast<const Dataset*>(reference))->category_encoding_provider();
+    if (category_encoding_provider_ptr != nullptr) {
+      category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpModelInfo())));
     }
   } else {
     std::function<float(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
-    ctr_provider.reset(CTRProvider::CreateCTRProvider(
+    category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(
       &config, get_row_fun, get_label_fun, nindptr - 1, num_col));
   }
-  if (ctr_provider != nullptr) {
-    ctr_provider->WrapRowFunction(&get_row_fun, &num_col, is_valid);
+  if (category_encoding_provider != nullptr) {
+    category_encoding_provider->WrapRowFunction(&get_row_fun, &num_col, is_valid);
   }
 
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
@@ -1212,9 +1212,9 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow, ctr_provider.get()));
-    if (ctr_provider != nullptr) {
-      ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
+                                             sample_cnt, nrow, category_encoding_provider.get()));
+    if (category_encoding_provider != nullptr) {
+      ret->SetCategoryEncodingProvider(CategoryEncodingProvider::RecoverFromModelString(category_encoding_provider->DumpModelInfo()));
     }
   } else {
     ret.reset(new Dataset(nrow));
@@ -1239,7 +1239,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   API_END();
 }
 
-// TODO(shiyu1994): This is called in mmlspark, supporting CTR mode with this function requires modifying mmlspark.
+// TODO(shiyu1994): This is called in mmlspark, supporting category encoding mode with this function requires modifying mmlspark.
 int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
                                   int num_rows,
                                   int64_t num_col,
@@ -1345,20 +1345,20 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     csc_iterators[i].reset(new CSC_RowIterator(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i));
   }
 
-  std::unique_ptr<const CTRProvider> ctr_provider;
+  std::unique_ptr<const CategoryEncodingProvider> category_encoding_provider;
   const bool is_valid = (reference != nullptr);
   if (is_valid) {
-    const CTRProvider* ctr_provider_ptr = (reinterpret_cast<const Dataset*>(reference))->ctr_provider();
-    if (ctr_provider_ptr != nullptr) {
-      ctr_provider.reset(CTRProvider::RecoverFromModelString((ctr_provider_ptr->DumpModelInfo())));
+    const CategoryEncodingProvider* category_encoding_provider_ptr = (reinterpret_cast<const Dataset*>(reference))->category_encoding_provider();
+    if (category_encoding_provider_ptr != nullptr) {
+      category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpModelInfo())));
     }
   } else {
     std::function<float(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
-    ctr_provider.reset(CTRProvider::CreateCTRProvider(
+    category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(
       &config, csc_iterators, get_label_fun, num_row, ncol_ptr - 1));
   }
-  if (ctr_provider != nullptr) {
-    ctr_provider->WrapColIters(&csc_iterators, &ncol_ptr, is_valid, num_row);
+  if (category_encoding_provider != nullptr) {
+    category_encoding_provider->WrapColIters(&csc_iterators, &ncol_ptr, is_valid, num_row);
   }
   for (const auto& csc_iter : csc_iterators) {
     csc_iter->Reset();
@@ -1391,9 +1391,9 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(sample_values.size()),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow, ctr_provider.get()));
-    if (ctr_provider != nullptr) {
-      ret->SetCTRProvider(CTRProvider::RecoverFromModelString(ctr_provider->DumpModelInfo()));
+                                             sample_cnt, nrow, category_encoding_provider.get()));
+    if (category_encoding_provider != nullptr) {
+      ret->SetCategoryEncodingProvider(CategoryEncodingProvider::RecoverFromModelString(category_encoding_provider->DumpModelInfo()));
     }
   } else {
     ret.reset(new Dataset(nrow));
@@ -1595,8 +1595,8 @@ int LGBM_DatasetGetNumOriginalFeature(DatasetHandle handle,
                               int* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
-  if (dataset->ctr_provider() != nullptr) {
-    *out = dataset->ctr_provider()->GetNumOriginalFeatures();
+  if (dataset->category_encoding_provider() != nullptr) {
+    *out = dataset->category_encoding_provider()->GetNumOriginalFeatures();
   } else {
     *out = dataset->num_total_features();
   }
@@ -1946,8 +1946,8 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
-    ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+  if (ref_booster->GetBoosting()->category_encoding_provider() != nullptr) {
+    ref_booster->GetBoosting()->category_encoding_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
   }
   int nrow = static_cast<int>(nindptr - 1);
   ref_booster->Predict(start_iteration, num_iteration, predict_type, nrow, static_cast<int>(num_col), get_row_fun,
@@ -1988,8 +1988,8 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
       Log::Fatal("The number of columns should be smaller than INT32_MAX.");
     }
     auto get_row_fun = RowFunctionFromCSR<int64_t>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-    if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
-      ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col_or_row, true);
+    if (ref_booster->GetBoosting()->category_encoding_provider() != nullptr) {
+      ref_booster->GetBoosting()->category_encoding_provider()->WrapRowFunction(&get_row_fun, &num_col_or_row, true);
     }
     int64_t nrow = nindptr - 1;
     ref_booster->PredictSparseCSR(start_iteration, num_iteration, predict_type, nrow, static_cast<int>(num_col_or_row), get_row_fun,
@@ -2016,9 +2016,9 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
       }
       return one_row;
     };
-    if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+    if (ref_booster->GetBoosting()->category_encoding_provider() != nullptr) {
       int64_t num_col = static_cast<int64_t>(ncol);
-      ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+      ref_booster->GetBoosting()->category_encoding_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
       ncol = static_cast<int>(num_col);
     }
     ref_booster->PredictSparseCSC(start_iteration, num_iteration, predict_type, num_col_or_row, ncol, get_row_fun, config,
@@ -2078,8 +2078,8 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
-    ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+  if (ref_booster->GetBoosting()->category_encoding_provider() != nullptr) {
+    ref_booster->GetBoosting()->category_encoding_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
   }
   ref_booster->SetSingleRowPredictor(start_iteration, num_iteration, predict_type, config);
   ref_booster->PredictSingleRow(predict_type, static_cast<int32_t>(num_col), get_row_fun, config, out_result, out_len);
@@ -2131,9 +2131,9 @@ int LGBM_BoosterPredictForCSRSingleRowFast(FastConfigHandle fastConfig_handle,
   FastConfig *fastConfig = reinterpret_cast<FastConfig*>(fastConfig_handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, fastConfig->data_type, nindptr, nelem);
   int32_t ncol = fastConfig->ncol;
-  if (fastConfig->booster->GetBoosting()->ctr_provider() != nullptr) {
+  if (fastConfig->booster->GetBoosting()->category_encoding_provider() != nullptr) {
     int64_t num_col = static_cast<int64_t>(ncol);
-    fastConfig->booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+    fastConfig->booster->GetBoosting()->category_encoding_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
     ncol = static_cast<int32_t>(num_col);
   }
   fastConfig->booster->PredictSingleRow(fastConfig->predict_type, ncol,
@@ -2186,9 +2186,9 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
         }
         return one_row;
       };
-  if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+  if (ref_booster->GetBoosting()->category_encoding_provider() != nullptr) {
     int64_t num_col = static_cast<int64_t>(ncol);
-    ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+    ref_booster->GetBoosting()->category_encoding_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
     ncol = static_cast<int>(num_col);
   }
   ref_booster->Predict(start_iteration, num_iteration, predict_type, static_cast<int>(num_row), ncol, get_row_fun, config,
@@ -2217,9 +2217,9 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
-  if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+  if (ref_booster->GetBoosting()->category_encoding_provider() != nullptr) {
     int64_t num_col = static_cast<int64_t>(ncol);
-    ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+    ref_booster->GetBoosting()->category_encoding_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
     ncol = static_cast<int32_t>(num_col);
   }
   ref_booster->Predict(start_iteration, num_iteration, predict_type, nrow, ncol, get_row_fun,
@@ -2247,9 +2247,9 @@ int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, ncol, data_type, is_row_major);
-  if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+  if (ref_booster->GetBoosting()->category_encoding_provider() != nullptr) {
     int64_t num_col = static_cast<int64_t>(ncol);
-    ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+    ref_booster->GetBoosting()->category_encoding_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
     ncol = static_cast<int32_t>(num_col);
   }
   ref_booster->SetSingleRowPredictor(start_iteration, num_iteration, predict_type, config);
@@ -2292,9 +2292,9 @@ int LGBM_BoosterPredictForMatSingleRowFast(FastConfigHandle fastConfig_handle,
   // Single row in row-major format:
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, fastConfig->ncol, fastConfig->data_type, 1);
   int32_t ncol = fastConfig->ncol;
-  if (fastConfig->booster->GetBoosting()->ctr_provider() != nullptr) {
+  if (fastConfig->booster->GetBoosting()->category_encoding_provider() != nullptr) {
     int64_t num_col = static_cast<int64_t>(fastConfig->ncol);
-    fastConfig->booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+    fastConfig->booster->GetBoosting()->category_encoding_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
     ncol = static_cast<int32_t>(num_col);
   }
   fastConfig->booster->PredictSingleRow(fastConfig->predict_type, ncol,
@@ -2324,9 +2324,9 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseRows(data, ncol, data_type);
-  if (ref_booster->GetBoosting()->ctr_provider() != nullptr) {
+  if (ref_booster->GetBoosting()->category_encoding_provider() != nullptr) {
     int64_t num_col = static_cast<int64_t>(ncol);
-    ref_booster->GetBoosting()->ctr_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
+    ref_booster->GetBoosting()->category_encoding_provider()->WrapRowFunction(&get_row_fun, &num_col, true);
     ncol = static_cast<int32_t>(num_col);
   }
   ref_booster->Predict(start_iteration, num_iteration, predict_type, nrow, ncol, get_row_fun, config, out_result, out_len);

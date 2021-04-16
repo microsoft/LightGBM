@@ -1057,7 +1057,7 @@ class Dataset:
     def __init__(self, data, label=None, reference=None,
                  weight=None, group=None, init_score=None, silent=False,
                  feature_name='auto', categorical_feature='auto', params=None,
-                 free_raw_data=True, cat_converters=None):
+                 free_raw_data=True, category_encoders=None):
         """Initialize Dataset.
 
         Parameters
@@ -1097,16 +1097,22 @@ class Dataset:
             Other parameters for Dataset.
         free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset.
-        cat_converters : string, optional (default='raw')
-            Ways to convert categorical features, currently supports:
-            1. ctr[:prior], where prior is a real number used to smooth the calculation of CTR values.
-            If the prior value is omitted, then the label mean will be used as prior.
-            2. count, the count of the categorical feature value in the dataset.
-            3. raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians
-            per leaf per iteration.
-            For example "ctr:0.5,ctr:0.0,count will convert each categorical feature into 3 numerical features,
-            with the 3 different ways separated by ','.
-            When cat_converters==None, it is equivalent to 'raw'.
+        category_encoders : string, optional (default='raw')
+            ways to encode categorical features into numerical values, separated by comma, currently supports:
+            1. target[:prior], where `prior` is a real number used to smooth the calculation of encoded values
+            target[:prior] is calculated as: (sum_label + prior * prior_weight) / (count + prior_weight)
+            if the prior value is missing, use the label mean of training data as default prior
+            2. count, the count of the categorical feature value in the dataset
+            3. raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians per leaf per iteration
+            for example "target:0.5,target:0.0:count will convert each categorical feature into 3 numerical features, with the 3 different ways separated by ','.
+            when category_encoders is empty, we use `raw` by default
+            the numbers and names of features will be changed when category_encoders is not `raw`
+            suppose the original name of a feature is `NAME`, the naming rules of its target and count encoding features are:
+            1. for the encoder `target` (without user specified prior), it will be named as `NAME_label_mean_prior_target_encoding_<label_mean>`
+            2. for the encoder `target:<prior>` (with user specified prior), it will be named as `NAME_target_encoding_<prior>`
+            3. for the encoder `count`, it will be named as `NAME_count_encoding`
+            Use get_feature_name() of python Booster or feature_name() of python Dataset after training to get the actual feature names used when category_encoders is set.
+            When category_encoders==None, it is equivalent to 'raw'.
         """
         self.handle = None
         self.data = data
@@ -1119,7 +1125,7 @@ class Dataset:
         self.feature_name = feature_name
 
         self.categorical_feature = categorical_feature
-        self.cat_converters = cat_converters
+        self.category_encoders = category_encoders
         self._extract_categorical_info_from_params(params)
 
         self.params = {} if params is None else deepcopy(params)
@@ -1143,13 +1149,13 @@ class Dataset:
     def _extract_categorical_info_from_params(self, params):
         if params is not None:
             categorical_feature_from_params = None
-            cat_converters_from_params = None
+            category_encoders_from_params = None
             if isinstance(params, dict):
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     if cat_alias in params:
                         categorical_feature_from_params = params.pop(cat_alias)
-                if "cat_converters" in params:
-                    cat_converters_from_params = params.pop("cat_converters")
+                if "category_encoders" in params:
+                    category_encoders_from_params = params.pop("category_encoders")
             if categorical_feature_from_params is not None:
                 if self.categorical_feature == 'auto' or self.categorical_feature is None:
                     if isinstance(categorical_feature_from_params, int):
@@ -1158,12 +1164,12 @@ class Dataset:
                 elif self.categorical_feature != categorical_feature_from_params:
                     warnings.warn("categorical_feature {0} in params will be ignored, using {1}".format(
                         categorical_feature_from_params, self.categorical_feature))
-            if cat_converters_from_params is not None:
-                if self.cat_converters is None:
-                    self.cat_converters = cat_converters_from_params
-                elif self.cat_converters != cat_converters_from_params:
-                    warnings.warn("cat_converters {0} in params will be ignored, using {1}".format(
-                        cat_converters_from_params, self.cat_converters))
+            if category_encoders_from_params is not None:
+                if self.category_encoders is None:
+                    self.category_encoders = category_encoders_from_params
+                elif self.category_encoders != category_encoders_from_params:
+                    warnings.warn("category_encoders {0} in params will be ignored, using {1}".format(
+                        category_encoders_from_params, self.category_encoders))
 
     def get_params(self):
         """Get the used parameters in the Dataset.
@@ -1177,7 +1183,7 @@ class Dataset:
             # no min_data, nthreads and verbose in this function
             dataset_params = _ConfigAliases.get("bin_construct_sample_cnt",
                                                 "categorical_feature",
-                                                "cat_converters",
+                                                "category_encoders",
                                                 "data_random_seed",
                                                 "enable_bundle",
                                                 "feature_pre_filter",
@@ -1249,9 +1255,9 @@ class Dataset:
             return self
         if reference is not None:
             self.pandas_categorical = reference.pandas_categorical
-            if self.cat_converters is not None and self.cat_converters != reference.cat_converters:
-                warnings.warn("'cat_converters' set in validation data is overridden by that of training data.")
-            self.cat_converters = reference.cat_converters
+            if self.category_encoders is not None and self.category_encoders != reference.category_encoders:
+                warnings.warn("'category_encoders' set in validation data is overridden by that of training data.")
+            self.category_encoders = reference.category_encoders
             if self.categorical_feature != 'auto' and self.categorical_feature is not None and\
                     self.categorical_feature != reference.categorical_feature:
                 warnings.warn("'categorical_feature' set in validation data is overridden by that of training data.")
@@ -1296,11 +1302,11 @@ class Dataset:
                         _log_warning('{} in param dict is overridden.'.format(cat_alias))
                         params.pop(cat_alias, None)
                 params['categorical_column'] = sorted(categorical_indices)
-        if self.cat_converters is not None:
-            if "cat_converters" in params:
-                warnings.warn("cat_converters in param dict is overridden.")
-                params.pop("cat_converters", None)
-            params["cat_converters"] = self.cat_converters
+        if self.category_encoders is not None:
+            if "category_encoders" in params:
+                warnings.warn("category_encoders in param dict is overridden.")
+                params.pop("category_encoders", None)
+            params["category_encoders"] = self.category_encoders
         params_str = param_dict_to_str(params)
         self.params = params
         # process for reference dataset
@@ -1494,7 +1500,7 @@ class Dataset:
         if self.handle is None:
             if self.reference is not None:
                 reference_params = self.reference.get_params()
-                reference_params.pop("cat_converters", None)
+                reference_params.pop("category_encoders", None)
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     reference_params.pop(cat_alias, None)
                 self._extract_categorical_info_from_params(self.params)
@@ -1785,39 +1791,45 @@ class Dataset:
             raise LightGBMError("Cannot set categorical feature after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
 
-    def set_cat_converters(self, cat_converters):
+    def set_category_encoders(self, category_encoders):
         """Set categorical feature converters.
 
         Parameters
         ----------
-        cat_converters : string, optional (default='raw')
-            Ways to convert categorical features, currently supports:
-            1. ctr[:prior], where prior is a real number used to smooth the calculation of CTR values.
-            If the prior value is omitted, then the label mean will be used as prior.
-            2. count, the count of the categorical feature value in the dataset.
-            3. raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians
-            per leaf per iteration.
-            For example "ctr:0.5,ctr:0.0,count will convert each categorical feature into 3 numerical features,
-            with the 3 different ways separated by ','.
-            When cat_converters==None, it is equivalent to 'raw'.
+        category_encoders : string, optional (default='raw')
+            ways to encode categorical features into numerical values, separated by comma, currently supports:
+            1. target[:prior], where `prior` is a real number used to smooth the calculation of encoded values
+            target[:prior] is calculated as: (sum_label + prior * prior_weight) / (count + prior_weight)
+            if the prior value is missing, use the label mean of training data as default prior
+            2. count, the count of the categorical feature value in the dataset
+            3. raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians per leaf per iteration
+            for example "target:0.5,target:0.0:count will convert each categorical feature into 3 numerical features, with the 3 different ways separated by ','.
+            when category_encoders is empty, we use `raw` by default
+            the numbers and names of features will be changed when category_encoders is not `raw`
+            suppose the original name of a feature is `NAME`, the naming rules of its target and count encoding features are:
+            1. for the encoder `target` (without user specified prior), it will be named as `NAME_label_mean_prior_target_encoding_<label_mean>`
+            2. for the encoder `target:<prior>` (with user specified prior), it will be named as `NAME_target_encoding_<prior>`
+            3. for the encoder `count`, it will be named as `NAME_count_encoding`
+            Use get_feature_name() of python Booster or feature_name() of python Dataset after training to get the actual feature names used when category_encoders is set.
+            When category_encoders==None, it is equivalent to 'raw'.
 
         Returns
         -------
         self : Dataset
             Dataset with set categorical converters
         """
-        if cat_converters is None:
+        if category_encoders is None:
             return self
-        if self.cat_converters == cat_converters:
+        if self.category_encoders == category_encoders:
             return self
         if self.data is not None:
-            if self.cat_converters is None:
-                self.cat_converters = cat_converters
+            if self.category_encoders is None:
+                self.category_encoders = category_encoders
                 return self._free_handle()
             else:
-                warnings.warn('cat_converters in Dataset constructor is overridden.\n'
-                              'New cat_converters is {}'.format(cat_converters))
-                self.cat_converters = cat_converters
+                warnings.warn('category_encoders in Dataset constructor is overridden.\n'
+                              'New category_encoders is {}'.format(category_encoders))
+                self.category_encoders = category_encoders
                 return self._free_handle()
         else:
             raise LightGBMError("Cannot set categorical feature converters after freed raw data, "
@@ -1861,9 +1873,9 @@ class Dataset:
                 self.categorical_feature != reference.categorical_feature:
             warnings.warn("'categorical_feature' set in validation data is overridden by that of training data.")
         self.categorical_feature = reference.categorical_feature
-        if self.cat_converters is not None and self.cat_converters != reference.cat_converters:
-            warnings.warn("'cat_converters' set in validation data is overridden by that of training data.")
-        self.cat_converters = reference.cat_converters
+        if self.category_encoders is not None and self.category_encoders != reference.category_encoders:
+            warnings.warn("'category_encoders' set in validation data is overridden by that of training data.")
+        self.category_encoders = reference.category_encoders
         self.set_feature_name(reference.feature_name) \
             ._set_predictor(reference._predictor)
         # we're done if self and reference share a common upstrem reference

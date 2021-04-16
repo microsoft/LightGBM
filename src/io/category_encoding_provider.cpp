@@ -3,18 +3,18 @@
   * Licensed under the MIT License. See LICENSE file in the project root for license information.
   */
 
-#include <LightGBM/ctr_provider.hpp>
+#include <LightGBM/category_encoding_provider.hpp>
 
 #include <set>
 
 namespace LightGBM {
 
-CTRProvider::CTRProvider(Config* config) {
+CategoryEncodingProvider::CategoryEncodingProvider(Config* config) {
   accumulated_from_file_ = true;
   SetConfig(config);
 }
 
-CTRProvider::CTRProvider(const std::string model_string) {
+CategoryEncodingProvider::CategoryEncodingProvider(const std::string model_string) {
   accumulated_from_file_ = false;
   std::stringstream str_stream(model_string);
   int cat_fid = 0, cat_value = 0;
@@ -49,14 +49,14 @@ CTRProvider::CTRProvider(const std::string model_string) {
   }
   std::sort(categorical_features_.begin(), categorical_features_.end());
   str_stream.clear();
-  cat_converters_.clear();
+  category_encoders_.clear();
   std::string cat_converter_string;
   while (str_stream >> cat_converter_string) {
-    cat_converters_.emplace_back(CatConverter::CreateFromString(cat_converter_string, prior_weight_));
+    category_encoders_.emplace_back(CatConverter::CreateFromString(cat_converter_string, prior_weight_));
   }
 }
 
-CTRProvider::CTRProvider(Config* config,
+CategoryEncodingProvider::CategoryEncodingProvider(Config* config,
   const std::vector<std::function<std::vector<double>(int row_idx)>>& get_row_fun,
   const std::function<double(int row_idx)>& get_label_fun, const int32_t nmat,
   const int32_t* nrow, const int32_t ncol) {
@@ -64,10 +64,10 @@ CTRProvider::CTRProvider(Config* config,
   SetConfig(config);
   num_original_features_ = ncol;
   ParseMetaInfo(nullptr, config);
-  PrepareCTRStatVectors();
-  if (cat_converters_.size() == 0) { return; }
+  PrepareCategoryEncodingStatVectors();
+  if (category_encoders_.size() == 0) { return; }
   if (get_label_fun == nullptr) {
-    Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
+    Log::Fatal("Please specify the label before the dataset is constructed to use category encoding");
   }
   int32_t mat_offset = 0;
   num_data_ = 0;
@@ -78,7 +78,7 @@ CTRProvider::CTRProvider(Config* config,
   for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
     mt_generators.emplace_back(config_.seed + thread_id);
   }
-  const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
+  const std::vector<double> fold_probs(config_.num_target_encoding_folds, 1.0 / config_.num_target_encoding_folds);
   std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
   training_data_fold_id_.resize(num_data_, 0);
   for (int32_t i_mat = 0; i_mat < nmat; ++i_mat) {
@@ -102,7 +102,7 @@ CTRProvider::CTRProvider(Config* config,
 }
 
 
-CTRProvider::CTRProvider(Config* config,
+CategoryEncodingProvider::CategoryEncodingProvider(Config* config,
   const std::function<std::vector<std::pair<int, double>>(int row_idx)>& get_row_fun,
   const std::function<double(int row_idx)>& get_label_fun,
   const int64_t nrow, const int64_t ncol) {
@@ -112,16 +112,16 @@ CTRProvider::CTRProvider(Config* config,
   ParseMetaInfo(nullptr, config);
   num_data_ = nrow;
   training_data_fold_id_.resize(num_data_);
-  PrepareCTRStatVectors();
-  if (cat_converters_.size() == 0) { return; }
+  PrepareCategoryEncodingStatVectors();
+  if (category_encoders_.size() == 0) { return; }
   if (get_label_fun == nullptr) {
-    Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
+    Log::Fatal("Please specify the label before the dataset is constructed to use category encoding");
   }
   std::vector<std::mt19937> mt_generators;
   for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
     mt_generators.emplace_back(config_.seed + thread_id);
   }
-  const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
+  const std::vector<double> fold_probs(config_.num_target_encoding_folds, 1.0 / config_.num_target_encoding_folds);
   std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
   std::vector<std::vector<bool>> is_feature_processed(num_threads_);
   for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
@@ -142,7 +142,7 @@ CTRProvider::CTRProvider(Config* config,
   FinishProcess(1, config);
 }
 
-CTRProvider::CTRProvider(Config* config,
+CategoryEncodingProvider::CategoryEncodingProvider(Config* config,
   const std::vector<std::unique_ptr<CSC_RowIterator>>& csc_iters,
   const std::function<double(int row_idx)>& get_label_fun,
   const int64_t nrow, const int64_t ncol) {
@@ -152,16 +152,16 @@ CTRProvider::CTRProvider(Config* config,
   ParseMetaInfo(nullptr, config);
   num_data_ = nrow;
   training_data_fold_id_.resize(num_data_);
-  PrepareCTRStatVectors();
-  if (cat_converters_.size() == 0) { return; }
+  PrepareCategoryEncodingStatVectors();
+  if (category_encoders_.size() == 0) { return; }
   if (get_label_fun == nullptr) {
-    Log::Fatal("Please specify the label before the dataset is constructed to use CTR");
+    Log::Fatal("Please specify the label before the dataset is constructed to use category encoding");
   }
   std::vector<std::mt19937> mt_generators;
   for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
     mt_generators.emplace_back(config_.seed + thread_id);
   }
-  const std::vector<double> fold_probs(config_.num_ctr_folds, 1.0 / config_.num_ctr_folds);
+  const std::vector<double> fold_probs(config_.num_target_encoding_folds, 1.0 / config_.num_target_encoding_folds);
   std::discrete_distribution<int> fold_distribution(fold_probs.begin(), fold_probs.end());
   std::vector<std::vector<std::unique_ptr<CSC_RowIterator>>> thread_csc_iters(num_threads_);
   // copy csc row iterators for each thread
@@ -188,31 +188,31 @@ CTRProvider::CTRProvider(Config* config,
   FinishProcess(1, config);
 }
 
-void CTRProvider::SetConfig(const Config* config) {
+void CategoryEncodingProvider::SetConfig(const Config* config) {
   config_ = *config;
   num_threads_ = config_.num_threads > 0 ? config_.num_threads : OMP_NUM_THREADS();
   keep_raw_cat_method_ = false;
-  const std::string ctr_string = std::string("ctr");
-  cat_converters_.clear();
-  if (config_.cat_converters.size() > 0) {
-    for (auto token : Common::Split(config_.cat_converters.c_str(), ',')) {
-      if (Common::StartsWith(token, "ctr")) {
-        if (token.size() == ctr_string.size()) {
-          cat_converters_.emplace_back(new CTRProvider::CTRConverterLabelMean());
+  const std::string target_encoding_string = std::string("target");
+  category_encoders_.clear();
+  if (config_.category_encoders.size() > 0) {
+    for (auto token : Common::Split(config_.category_encoders.c_str(), ',')) {
+      if (Common::StartsWith(token, "target")) {
+        if (token.size() == target_encoding_string.size()) {
+          category_encoders_.emplace_back(new CategoryEncodingProvider::TargetEncoderLabelMean());
         } else {
           double prior = 0.0f;
-          if (token[ctr_string.size()] != ':' ||
-              !Common::AtofAndCheck(token.c_str() + ctr_string.size() + 1, &prior)) {
-            Log::Fatal("CTR prior of cat_converter specification %s is not a valid float value.", token.c_str());
+          if (token[target_encoding_string.size()] != ':' ||
+              !Common::AtofAndCheck(token.c_str() + target_encoding_string.size() + 1, &prior)) {
+            Log::Fatal("Target encoding prior of cat_converter specification %s is not a valid float value.", token.c_str());
           }
-          cat_converters_.emplace_back(new CTRProvider::CTRConverter(prior));
+          category_encoders_.emplace_back(new CategoryEncodingProvider::TargetEncoder(prior));
         }
       } else if (token == std::string("count")) {
-        cat_converters_.emplace_back(new CTRProvider::CountConverter());
+        category_encoders_.emplace_back(new CategoryEncodingProvider::CountEncoder());
       } else if (token == std::string("raw")) {
         keep_raw_cat_method_ = true;
       } else {
-        Log::Fatal("Unknown cat_converters specification %s.", token.c_str());
+        Log::Fatal("Unknown category_encoders specification %s.", token.c_str());
       }
     }
   }
@@ -221,9 +221,9 @@ void CTRProvider::SetConfig(const Config* config) {
   tmp_parser_ = nullptr;
 }
 
-std::string CTRProvider::DumpModelInfo() const {
+std::string CategoryEncodingProvider::DumpModelInfo() const {
   std::stringstream str_buf;
-  if (cat_converters_.size() > 0) {
+  if (category_encoders_.size() > 0) {
     str_buf << static_cast<int>(keep_raw_cat_method_) << " ";
     str_buf << num_original_features_ << " ";
     str_buf << num_total_features_ << " ";
@@ -237,17 +237,17 @@ std::string CTRProvider::DumpModelInfo() const {
       }
       str_buf << "@";
     }
-    for (const auto& cat_converter : cat_converters_) {
+    for (const auto& cat_converter : category_encoders_) {
       str_buf << cat_converter->DumpToString() << " ";
     }
   }
   return str_buf.str();
 }
 
-CTRProvider* CTRProvider::RecoverFromModelString(const std::string model_string) {
+CategoryEncodingProvider* CategoryEncodingProvider::RecoverFromModelString(const std::string model_string) {
   if (!model_string.empty()) {
-    std::unique_ptr<CTRProvider> ret(new CTRProvider(model_string));
-    if (ret->cat_converters_.size() > 0) {
+    std::unique_ptr<CategoryEncodingProvider> ret(new CategoryEncodingProvider(model_string));
+    if (ret->category_encoders_.size() > 0) {
       return ret.release();
     } else {
       return nullptr;
@@ -257,7 +257,7 @@ CTRProvider* CTRProvider::RecoverFromModelString(const std::string model_string)
   }
 }
 
-void CTRProvider::ExtendFeatureNames(std::vector<std::string>* feature_names_ptr) const {
+void CategoryEncodingProvider::ExtendFeatureNames(std::vector<std::string>* feature_names_ptr) const {
   auto& feature_names = *feature_names_ptr;
   if (feature_names.empty()) {
     for (int i = 0; i < num_original_features_; ++i) {
@@ -272,7 +272,7 @@ void CTRProvider::ExtendFeatureNames(std::vector<std::string>* feature_names_ptr
   for (int fid = 0; fid < num_original_features_; ++fid) {
     new_feature_names[fid] = old_feature_names[fid];
     if (is_categorical_feature_[fid]) {
-      for (const auto& cat_converter : cat_converters_) {
+      for (const auto& cat_converter : category_encoders_) {
         const int convert_fid = cat_converter->GetConvertFid(fid);
         std::string cat_converter_name = cat_converter->Name();
         std::replace(cat_converter_name.begin(), cat_converter_name.end(), ':', '_');
@@ -283,7 +283,7 @@ void CTRProvider::ExtendFeatureNames(std::vector<std::string>* feature_names_ptr
   if (feature_names_size == num_original_features_) {
     feature_names = new_feature_names;
   } else if (feature_names_size == num_original_features_ +
-    static_cast<int>(cat_converters_.size()) * static_cast<int>(categorical_features_.size())) {
+    static_cast<int>(category_encoders_.size()) * static_cast<int>(categorical_features_.size())) {
     for (size_t i = 0; i < new_feature_names.size(); ++i) {
       CHECK_EQ(new_feature_names[i], feature_names[i]);
     }
@@ -292,7 +292,7 @@ void CTRProvider::ExtendFeatureNames(std::vector<std::string>* feature_names_ptr
   }
 }
 
-int CTRProvider::ParseMetaInfo(const char* filename, Config* config) {
+int CategoryEncodingProvider::ParseMetaInfo(const char* filename, Config* config) {
   std::unordered_set<int> ignore_features;
   std::unordered_map<std::string, int> name2idx;
   std::string name_prefix("name:");
@@ -419,7 +419,7 @@ int CTRProvider::ParseMetaInfo(const char* filename, Config* config) {
   return label_idx;
 }
 
-void CTRProvider::PrepareCTRStatVectors() {
+void CategoryEncodingProvider::PrepareCategoryEncodingStatVectors() {
   is_categorical_feature_.clear();
   is_categorical_feature_.resize(num_original_features_, false);
   for (const int fid : categorical_features_) {
@@ -427,29 +427,29 @@ void CTRProvider::PrepareCTRStatVectors() {
       is_categorical_feature_[fid] = true;
     }
   }
-  fold_prior_.resize(config_.num_ctr_folds + 1, 0.0f);
-  if (cat_converters_.size() > 0) {
-    // prepare to accumulate ctr statistics
-    fold_label_sum_.resize(config_.num_ctr_folds + 1, 0.0f);
-    fold_num_data_.resize(config_.num_ctr_folds + 1, 0);
+  fold_prior_.resize(config_.num_target_encoding_folds + 1, 0.0f);
+  if (category_encoders_.size() > 0) {
+    // prepare to accumulate target encoding statistics
+    fold_label_sum_.resize(config_.num_target_encoding_folds + 1, 0.0f);
+    fold_num_data_.resize(config_.num_target_encoding_folds + 1, 0);
     if (!accumulated_from_file_) {
       thread_fold_label_sum_.resize(num_threads_);
       thread_fold_num_data_.resize(num_threads_);
       thread_count_info_.resize(num_threads_);
       thread_label_info_.resize(num_threads_);
       for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-        thread_fold_label_sum_[thread_id].resize(config_.num_ctr_folds + 1, 0.0f);
-        thread_fold_num_data_[thread_id].resize(config_.num_ctr_folds + 1, 0.0f);
+        thread_fold_label_sum_[thread_id].resize(config_.num_target_encoding_folds + 1, 0.0f);
+        thread_fold_num_data_[thread_id].resize(config_.num_target_encoding_folds + 1, 0.0f);
       }
     }
     for (const int fid : categorical_features_) {
       if (fid < num_original_features_) {
-        count_info_[fid].resize(config_.num_ctr_folds + 1);
-        label_info_[fid].resize(config_.num_ctr_folds + 1);
+        count_info_[fid].resize(config_.num_target_encoding_folds + 1);
+        label_info_[fid].resize(config_.num_target_encoding_folds + 1);
         if (!accumulated_from_file_) {
           for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
-            thread_count_info_[thread_id][fid].resize(config_.num_ctr_folds + 1);
-            thread_label_info_[thread_id][fid].resize(config_.num_ctr_folds + 1);
+            thread_count_info_[thread_id][fid].resize(config_.num_target_encoding_folds + 1);
+            thread_label_info_[thread_id][fid].resize(config_.num_target_encoding_folds + 1);
           }
         }
       }
@@ -457,28 +457,28 @@ void CTRProvider::PrepareCTRStatVectors() {
   }
 }
 
-void CTRProvider::SyncCTRStat(std::vector<std::unordered_map<int, label_t>>* fold_label_sum_ptr,
+void CategoryEncodingProvider::SyncEncodingStat(std::vector<std::unordered_map<int, label_t>>* fold_label_sum_ptr,
     std::vector<std::unordered_map<int, int>>* fold_total_count_ptr, const int num_machines) const {
   auto& fold_label_sum = *fold_label_sum_ptr;
   auto& fold_total_count = *fold_total_count_ptr;
   if (num_machines > 1) {
-    std::string ctr_stat_string;
-    for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
-      ctr_stat_string += DumpDictToString(fold_label_sum[fold_id], ' ') + "@";
-      ctr_stat_string += DumpDictToString(fold_total_count[fold_id], ' ') + "@";
+    std::string target_encoding_stat_string;
+    for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
+      target_encoding_stat_string += DumpDictToString(fold_label_sum[fold_id], ' ') + "@";
+      target_encoding_stat_string += DumpDictToString(fold_total_count[fold_id], ' ') + "@";
     }
-    const size_t max_ctr_values_string_size = Network::GlobalSyncUpByMax(ctr_stat_string.size()) + 1;
-    std::vector<char> input_buffer(max_ctr_values_string_size), output_buffer(max_ctr_values_string_size * num_machines);
-    std::memcpy(input_buffer.data(), ctr_stat_string.c_str(), ctr_stat_string.size() * sizeof(char));
-    input_buffer[ctr_stat_string.size()] = '\0';
+    const size_t max_target_encoding_values_string_size = Network::GlobalSyncUpByMax(target_encoding_stat_string.size()) + 1;
+    std::vector<char> input_buffer(max_target_encoding_values_string_size), output_buffer(max_target_encoding_values_string_size * num_machines);
+    std::memcpy(input_buffer.data(), target_encoding_stat_string.c_str(), target_encoding_stat_string.size() * sizeof(char));
+    input_buffer[target_encoding_stat_string.size()] = '\0';
 
-    Network::Allgather(input_buffer.data(), sizeof(char) * max_ctr_values_string_size, output_buffer.data());
+    Network::Allgather(input_buffer.data(), sizeof(char) * max_target_encoding_values_string_size, output_buffer.data());
 
     int feature_value = 0;
     int count_value = 0;
     label_t label_sum = 0;
 
-    for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+    for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
       fold_label_sum[fold_id].clear();
       fold_total_count[fold_id].clear();
     }
@@ -486,11 +486,11 @@ void CTRProvider::SyncCTRStat(std::vector<std::unordered_map<int, label_t>>* fol
     size_t cur_str_pos = 0;
     int check_num_machines = 0;
     while (cur_str_pos < output_buffer.size()) {
-      std::string all_ctr_stat_string(output_buffer.data() + cur_str_pos);
-      cur_str_pos += max_ctr_values_string_size;
+      std::string all_target_encoding_stat_string(output_buffer.data() + cur_str_pos);
+      cur_str_pos += max_target_encoding_values_string_size;
       ++check_num_machines;
-      std::stringstream sin(all_ctr_stat_string);
-      for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+      std::stringstream sin(all_target_encoding_stat_string);
+      for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
         auto& this_fold_label_sum = fold_label_sum[fold_id];
         auto& this_fold_total_count = fold_total_count[fold_id];
         char ending_char = ' ';
@@ -526,7 +526,7 @@ void CTRProvider::SyncCTRStat(std::vector<std::unordered_map<int, label_t>>* fol
   }
 }
 
-void CTRProvider::SyncCTRPrior(const double label_sum, const int local_num_data,
+void CategoryEncodingProvider::SyncEncodingPrior(const double label_sum, const int local_num_data,
   double* all_label_sum_ptr, int* all_num_data_ptr, int num_machines) const {
   if (num_machines > 1) {
     *all_label_sum_ptr = Network::GlobalSyncUpBySum(label_sum);
@@ -537,7 +537,7 @@ void CTRProvider::SyncCTRPrior(const double label_sum, const int local_num_data,
   }
 }
 
-void CTRProvider::ProcessOneLine(const std::vector<double>& one_line, double label,
+void CategoryEncodingProvider::ProcessOneLine(const std::vector<double>& one_line, double label,
   int /*line_idx*/, const int thread_id, const int fold_id) {
   auto& count_info = thread_count_info_[thread_id];
   auto& label_info = thread_label_info_[thread_id];
@@ -552,20 +552,20 @@ void CTRProvider::ProcessOneLine(const std::vector<double>& one_line, double lab
   ++thread_fold_num_data_[thread_id][fold_id];
 }
 
-void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx,
+void CategoryEncodingProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label, int line_idx,
   std::vector<bool>* is_feature_processed_ptr, const int thread_id, const int fold_id) {
   ProcessOneLineInner<false>(one_line, label, line_idx, is_feature_processed_ptr, &thread_count_info_[thread_id],
     &thread_label_info_[thread_id], &thread_fold_label_sum_[thread_id], &thread_fold_num_data_[thread_id], fold_id);
 }
 
-void CTRProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label,
+void CategoryEncodingProvider::ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label,
   int line_idx, std::vector<bool>* is_feature_processed_ptr, const int fold_id) {
   ProcessOneLineInner<true>(one_line, label, line_idx, is_feature_processed_ptr,
     &count_info_, &label_info_, &fold_label_sum_, &fold_num_data_, fold_id);
 }
 
 template <bool ACCUMULATE_FROM_FILE>
-void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line,
+void CategoryEncodingProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line,
   double label, int /*line_idx*/,
   std::vector<bool>* is_feature_processed_ptr,
   std::unordered_map<int, std::vector<std::unordered_map<int, int>>>* count_info_ptr,
@@ -604,7 +604,7 @@ void CTRProvider::ProcessOneLineInner(const std::vector<std::pair<int, double>>&
   label_sum[fold_id] += label;
 }
 
-Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_loader) {
+Parser* CategoryEncodingProvider::FinishProcess(const int num_machines, Config* config_from_loader) {
   num_total_features_ = num_original_features_;
 
   auto categorical_features = categorical_features_;
@@ -619,8 +619,8 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
   }
 
   if (categorical_features_.size() == 0) {
-    cat_converters_.clear();
-    Log::Warning("cat_converters is specified but no categorical feature is specified. Ignoring cat_converters.");
+    category_encoders_.clear();
+    Log::Warning("category_encoders is specified but no categorical feature is specified. Ignoring category_encoders.");
     if (tmp_parser_ != nullptr) {
       return tmp_parser_.release();
     } else {
@@ -648,14 +648,14 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
 
   size_t append_from = 0;
   if (!keep_raw_cat_method_) {
-    auto& cat_converter = cat_converters_[0];
+    auto& cat_converter = category_encoders_[0];
     for (int fid : categorical_features_) {
       cat_converter->RegisterConvertFid(fid, fid);
     }
     append_from = 1;
   }
-  for (size_t i = append_from; i < cat_converters_.size(); ++i) {
-    auto& cat_converter = cat_converters_[i];
+  for (size_t i = append_from; i < category_encoders_.size(); ++i) {
+    auto& cat_converter = category_encoders_[i];
     for (const int& fid : categorical_features_) {
       cat_converter->RegisterConvertFid(fid, num_total_features_);
       if (is_max_bin_by_feature_set) {
@@ -670,7 +670,7 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
     #pragma omp parallel for schedule(static) num_threads(num_threads_)
     for (int i = 0; i < static_cast<int>(categorical_features_.size()); ++i) {
       const int fid = categorical_features_[i];
-      for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+      for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
         auto& feature_fold_count_info = count_info_.at(fid)[fold_id];
         auto& feature_fold_label_info = label_info_.at(fid)[fold_id];
         for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
@@ -685,7 +685,7 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
     }
   }
 
-  for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+  for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
     if (!accumulated_from_file_) {
       for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
         fold_num_data_[fold_id] += thread_fold_num_data_[thread_id][fold_id];
@@ -693,7 +693,7 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
     }
     fold_num_data_.back() += fold_num_data_[fold_id];
   }
-  for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+  for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
     if (!accumulated_from_file_) {
       for (int thread_id = 0; thread_id < num_threads_; ++thread_id) {
         fold_label_sum_[fold_id] += thread_fold_label_sum_[thread_id][fold_id];
@@ -711,37 +711,37 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
   // gather from machines
   if (num_machines > 1) {
     for (size_t i = 0; i < categorical_features_.size(); ++i) {
-      SyncCTRStat(&label_info_.at(categorical_features_[i]),
+      SyncEncodingStat(&label_info_.at(categorical_features_[i]),
         &count_info_.at(categorical_features_[i]), num_machines);
     }
-    for (int fold_id = 0; fold_id < config_.num_ctr_folds + 1; ++fold_id) {
+    for (int fold_id = 0; fold_id < config_.num_target_encoding_folds + 1; ++fold_id) {
       const double local_label_sum = fold_label_sum_[fold_id];
       const int local_num_data = static_cast<int>(fold_num_data_[fold_id]);
       int global_num_data = 0;
       double global_label_sum = 0.0f;
-      SyncCTRPrior(local_label_sum, local_num_data,
+      SyncEncodingPrior(local_label_sum, local_num_data,
         &global_label_sum, &global_num_data, num_machines);
     }
   }
-  for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+  for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
     fold_label_sum_[fold_id] = fold_label_sum_.back() - fold_label_sum_[fold_id];
     fold_num_data_[fold_id] = fold_num_data_.back() - fold_num_data_[fold_id];
   }
-  for (int fold_id = 0; fold_id < config_.num_ctr_folds + 1; ++fold_id) {
+  for (int fold_id = 0; fold_id < config_.num_target_encoding_folds + 1; ++fold_id) {
     fold_prior_[fold_id] = fold_label_sum_[fold_id] * 1.0f / fold_num_data_[fold_id];
   }
-  // set prior for label mean ctr converter
-  for (size_t i = 0; i < cat_converters_.size(); ++i) {
-    cat_converters_[i]->SetPrior(fold_prior_.back(), config_.prior_weight);
+  // set prior for label mean target encoder
+  for (size_t i = 0; i < category_encoders_.size(); ++i) {
+    category_encoders_[i]->SetPrior(fold_prior_.back(), config_.prior_weight);
   }
 
   #pragma omp parallel for schedule(static) num_threads(num_threads_)
   for (int i = 0; i < static_cast<int>(categorical_features_.size()); ++i) {
     const int fid = categorical_features_[i];
-    auto& total_count_info = count_info_.at(fid).at(config_.num_ctr_folds);
-    auto& label_count_info = label_info_.at(fid).at(config_.num_ctr_folds);
+    auto& total_count_info = count_info_.at(fid).at(config_.num_target_encoding_folds);
+    auto& label_count_info = label_info_.at(fid).at(config_.num_target_encoding_folds);
     // gather from folds
-    for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+    for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
       const auto& fold_count_info = count_info_.at(fid).at(fold_id);
       const auto& fold_label_info = label_info_.at(fid).at(fold_id);
       for (const auto& pair : fold_count_info) {
@@ -751,7 +751,7 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
     }
     // replace "fold sum" with "total sum - fold sum", for the convenience of value calculation
     for (const auto& pair : total_count_info) {
-      for (int fold_id = 0; fold_id < config_.num_ctr_folds; ++fold_id) {
+      for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
         if (count_info_.at(fid).at(fold_id).count(pair.first) == 0) {
           count_info_[fid][fold_id][pair.first] = total_count_info.at(pair.first);
           label_info_[fid][fold_id][pair.first] = label_count_info.at(pair.first);
@@ -771,21 +771,21 @@ Parser* CTRProvider::FinishProcess(const int num_machines, Config* config_from_l
   }
 }
 
-void CTRProvider::IterateOverCatConverters(int fid, double fval, int line_idx,
+void CategoryEncodingProvider::IterateOverCatConverters(int fid, double fval, int line_idx,
     const std::function<void(int convert_fid, int fid, double convert_value)>& write_func,
     const std::function<void(int fid)>& post_process) const {
   const int fold_id = training_data_fold_id_[line_idx];
   IterateOverCatConvertersInner<true>(fid, fval, fold_id, write_func, post_process);
 }
 
-void CTRProvider::IterateOverCatConverters(int fid, double fval,
+void CategoryEncodingProvider::IterateOverCatConverters(int fid, double fval,
     const std::function<void(int convert_fid, int fid, double convert_value)>& write_func,
     const std::function<void(int fid)>& post_process) const {
   IterateOverCatConvertersInner<false>(fid, fval, -1, write_func, post_process);
 }
 
-void CTRProvider::ConvertCatToCTR(std::vector<double>* features, int line_idx) const {
-  if (cat_converters_.size() == 0) { return; }
+void CategoryEncodingProvider::ConvertCatToEncodingValues(std::vector<double>* features, int line_idx) const {
+  if (category_encoders_.size() == 0) { return; }
   auto& features_ref = *features;
   features_ref.resize(num_total_features_);
   for (const auto& pair : label_info_) {
@@ -799,8 +799,8 @@ void CTRProvider::ConvertCatToCTR(std::vector<double>* features, int line_idx) c
   }
 }
 
-void CTRProvider::ConvertCatToCTR(std::vector<double>* features) const {
-  if (cat_converters_.size() == 0) { return; }
+void CategoryEncodingProvider::ConvertCatToEncodingValues(std::vector<double>* features) const {
+  if (category_encoders_.size() == 0) { return; }
   auto& features_ref = *features;
   features_ref.resize(num_total_features_);
   features->resize(num_total_features_);
@@ -815,7 +815,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<double>* features) const {
   }
 }
 
-void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_ptr,
+void CategoryEncodingProvider::ConvertCatToEncodingValues(std::vector<std::pair<int, double>>* features_ptr,
   const int line_idx) const {
   auto& features_ref = *features_ptr;
   std::vector<bool> feature_processed(num_original_features_, false);
@@ -855,7 +855,7 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_
   }
 }
 
-void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_ptr) const {
+void CategoryEncodingProvider::ConvertCatToEncodingValues(std::vector<std::pair<int, double>>* features_ptr) const {
   auto& features_ref = *features_ptr;
   std::vector<bool> feature_processed(num_original_features_, false);
   for (const int fid : categorical_features_) {
@@ -894,18 +894,18 @@ void CTRProvider::ConvertCatToCTR(std::vector<std::pair<int, double>>* features_
   }
 }
 
-double CTRProvider::ConvertCatToCTR(double fval, const CTRProvider::CatConverter* cat_converter,
+double CategoryEncodingProvider::ConvertCatToEncodingValues(double fval, const CategoryEncodingProvider::CatConverter* cat_converter,
   int col_idx, int line_idx) const {
   const int fold_id = training_data_fold_id_[line_idx];
   return HandleOneCatConverter<true>(col_idx, fval, fold_id, cat_converter);
 }
 
-double CTRProvider::ConvertCatToCTR(double fval, const CTRProvider::CatConverter* cat_converter,
+double CategoryEncodingProvider::ConvertCatToEncodingValues(double fval, const CategoryEncodingProvider::CatConverter* cat_converter,
   int col_idx) const {
   return HandleOneCatConverter<false>(col_idx, fval, -1, cat_converter);
 }
 
-void CTRProvider::WrapColIters(
+void CategoryEncodingProvider::WrapColIters(
   std::vector<std::unique_ptr<CSC_RowIterator>>* col_iters,
   int64_t* ncol_ptr, bool is_valid, int64_t num_row) const {
   int old_num_col = static_cast<int>(col_iters->size());
@@ -917,9 +917,9 @@ void CTRProvider::WrapColIters(
   CHECK((*ncol_ptr) - 1 == old_num_col);
   for (int i = 0; i < (*ncol_ptr) - 1; ++i) {
     if (is_categorical_feature_[i]) {
-      for (const auto& cat_converter : cat_converters_) {
+      for (const auto& cat_converter : category_encoders_) {
         const int convert_fid = cat_converter->GetConvertFid(i);
-        col_iters->operator[](convert_fid).reset(new CTR_CSC_RowIterator(
+        col_iters->operator[](convert_fid).reset(new Category_Encoding_CSC_RowIterator(
           old_col_iters[i].get(), i, cat_converter.get(), this, is_valid, num_row));
       }
       if (keep_raw_cat_method_) {
@@ -932,9 +932,9 @@ void CTRProvider::WrapColIters(
   *ncol_ptr = static_cast<int64_t>(col_iters->size()) + 1;
 }
 
-void CTRProvider::InitFromParser(Config* config_from_loader, Parser* parser, const int num_machines,
+void CategoryEncodingProvider::InitFromParser(Config* config_from_loader, Parser* parser, const int num_machines,
   std::unordered_set<int>* categorical_features_from_loader) {
-  if (cat_converters_.size() == 0) { return; }
+  if (category_encoders_.size() == 0) { return; }
   num_original_features_ = parser->NumFeatures();
   if (num_machines > 1) {
     num_original_features_ = Network::GlobalSyncUpByMax(num_original_features_);
@@ -945,12 +945,12 @@ void CTRProvider::InitFromParser(Config* config_from_loader, Parser* parser, con
     categorical_features_.push_back(fid);
   }
   std::sort(categorical_features_.begin(), categorical_features_.end());
-  PrepareCTRStatVectors();
+  PrepareCategoryEncodingStatVectors();
   tmp_parser_.reset(parser);
   training_data_fold_id_.clear();
   tmp_oneline_features_.clear();
   tmp_mt_generator_ = std::mt19937(config_.seed);
-  tmp_fold_probs_.resize(config_.num_ctr_folds, 1.0f / config_.num_ctr_folds);
+  tmp_fold_probs_.resize(config_.num_target_encoding_folds, 1.0f / config_.num_target_encoding_folds);
   tmp_fold_distribution_ = std::discrete_distribution<int>(tmp_fold_probs_.begin(), tmp_fold_probs_.end());
   num_data_ = 0;
   tmp_is_feature_processed_.clear();
@@ -964,7 +964,7 @@ void CTRProvider::InitFromParser(Config* config_from_loader, Parser* parser, con
   }
 }
 
-void CTRProvider::AccumulateOneLineStat(const char* buffer, const size_t size, const data_size_t row_idx) {
+void CategoryEncodingProvider::AccumulateOneLineStat(const char* buffer, const size_t size, const data_size_t row_idx) {
   tmp_oneline_features_.clear();
   std::string oneline_feature_str(buffer, size);
   double label = 0.0f;
@@ -975,14 +975,14 @@ void CTRProvider::AccumulateOneLineStat(const char* buffer, const size_t size, c
   ProcessOneLine(tmp_oneline_features_, label, row_idx, &tmp_is_feature_processed_, fold_id);
 }
 
-void CTRProvider::ExpandNumFeatureWhileAccumulate(const int new_largest_fid) {
+void CategoryEncodingProvider::ExpandNumFeatureWhileAccumulate(const int new_largest_fid) {
   num_original_features_ = new_largest_fid + 1;
   is_categorical_feature_.resize(num_original_features_, false);
   for (const int fid : categorical_features_) {
     if (fid < num_original_features_) {
       is_categorical_feature_[fid] = true;
-      count_info_[fid].resize(config_.num_ctr_folds + 1);
-      label_info_[fid].resize(config_.num_ctr_folds + 1);
+      count_info_[fid].resize(config_.num_target_encoding_folds + 1);
+      label_info_[fid].resize(config_.num_target_encoding_folds + 1);
     }
   }
 }

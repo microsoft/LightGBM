@@ -1186,16 +1186,16 @@ GPU Parameters
 
    -  **Note**: can be used only in CUDA implementation
 
-CTR Parameters
---------------
+Category Encoder Parameters
+---------------------------
 
--  ``cat_converters`` :raw-html:`<a id="cat_converters" title="Permalink to this parameter" href="#cat_converters">&#x1F517;&#xFE0E;</a>`, default = ``std::string("raw")``, type = string
+-  ``category_encoders`` :raw-html:`<a id="category_encoders" title="Permalink to this parameter" href="#category_encoders">&#x1F517;&#xFE0E;</a>`, default = ``std::string("raw")``, type = string
 
-   -  ways to convert categorical features, currently supports:
+   -  ways to encode categorical features into numerical values, separated by comma, currently supports:
 
-   -  ctr[:prior], where prior is a real number used to smooth the calculation of CTR values
+   -  target[:prior], where `prior` is a real number used to smooth the calculation of encoded values
 
-   -  ctr is calculated as: (sum_label + prior * prior_weight) / (count + prior_weight)
+   -  target[:prior] is calculated as: (sum_label + prior * prior_weight) / (count + prior_weight)
 
    -  if the prior value is missing, use the label mean of training data as default prior
 
@@ -1203,29 +1203,31 @@ CTR Parameters
 
    -  raw, the dynamic encoding method which encodes categorical values with sum_gradients / sum_hessians per leaf per iteration
 
-   -  for example "ctr:0.5,ctr:0.0:count will convert each categorical feature into 3 numerical features, with the 3 different ways separated by ','.
+   -  for example "target:0.5,target:0.0:count will convert each categorical feature into 3 numerical features, with the 3 different ways separated by ','.
 
-   -  the numbers and names of features will be changed when cat_converters is not `raw`
+   -  when category_encoders is empty, we use `raw` by default
 
-   -  suppose the original name of a feature is `NAME`, the naming rules of its ctr and count features are:
+   -  the numbers and names of features will be changed when category_encoders is not `raw`
 
-   -  1. for the ctr (without user specified prior), it will be named as `NAME_label_mean_prior_ctr_<label_mean>`
+   -  suppose the original name of a feature is `NAME`, the naming rules of its target and count encoding features are:
 
-   -  2. for the ctr:<prior> (with user specified prior), it will be named as `NAME_ctr_<prior>`
+   -  1. for the encoder `target` (without user specified prior), it will be named as `NAME_label_mean_prior_target_encoding_<label_mean>`
 
-   -  3. for the count, it will be named as `NAME_count`
+   -  2. for the encoder `target:<prior>` (with user specified prior), it will be named as `NAME_target_encoding_<prior>`
 
-   -  Use get_feature_name() of python Booster of feature_name() of python Dataset after training to get the actual feature names used when cat_converters is set.
+   -  3. for the encoder `count`, it will be named as `NAME_count_encoding`
 
--  ``num_ctr_folds`` :raw-html:`<a id="num_ctr_folds" title="Permalink to this parameter" href="#num_ctr_folds">&#x1F517;&#xFE0E;</a>`, default = ``4``, type = int
+   -  Use get_feature_name() of python Booster or feature_name() of python Dataset after training to get the actual feature names used when category_encoders is set.
 
-   -  number of folds that training data is divided into, to calculate ctr values
+-  ``num_target_encoding_folds`` :raw-html:`<a id="num_target_encoding_folds" title="Permalink to this parameter" href="#num_target_encoding_folds">&#x1F517;&#xFE0E;</a>`, default = ``4``, type = int
+
+   -  number of folds that training data is divided into, to calculate target encoding values
 
 -  ``prior_weight`` :raw-html:`<a id="prior_weight" title="Permalink to this parameter" href="#prior_weight">&#x1F517;&#xFE0E;</a>`, default = ``1.0f``, type = double
 
-   -  weight of prior in CTR calculation
+   -  weight of prior in target encoding calculation
 
-   -  if ctr is used, prior_weight is used to calculate ctr values by
+   -  if target encoding is used, prior_weight is used to calculate target encoding values by
 
    -  (sum_label + prior * prior_weight) / (count + prior_weight)
 

@@ -65,8 +65,8 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
-  if (train_data_->ctr_provider() != nullptr) {
-    ctr_provider_.reset(CTRProvider::RecoverFromModelString(train_data_->ctr_provider()->DumpModelInfo()));
+  if (train_data_->category_encoding_provider() != nullptr) {
+    category_encoding_provider_.reset(CategoryEncodingProvider::RecoverFromModelString(train_data_->category_encoding_provider()->DumpModelInfo()));
   }
 
   if (config_->device_type == std::string("cuda")) {

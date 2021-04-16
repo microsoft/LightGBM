@@ -331,12 +331,12 @@ def test_consistent_state_for_dataset_fields():
     check_asserts(lgb_data)
 
 
-def test_ctr(tmp_path):
+def test_category_encoding(tmp_path):
 
-    def test_ctr_inner(tmp_path, X_train, X_test, y_train, y_test, params, model_prefix):
-        # checks that cat_converters works for Dataset constructor
-        cat_converters_str = "ctr,count,ctr:0.5,raw"
-        train_data_1 = lgb.Dataset(X_train, label=y_train, cat_converters=cat_converters_str)
+    def test_category_encoding_inner(tmp_path, X_train, X_test, y_train, y_test, params, model_prefix):
+        # checks that category_encoders works for Dataset constructor
+        category_encoders_str = "target,count,target:0.5,raw"
+        train_data_1 = lgb.Dataset(X_train, label=y_train, category_encoders=category_encoders_str)
         valid_data_1 = train_data_1.create_valid(X_test, label=y_test)
 
         categorical_feature = [fidx for fidx in range(X_train.shape[1] // 2)]
@@ -350,10 +350,10 @@ def test_ctr(tmp_path):
         np.testing.assert_equal(booster_1.num_feature(), expected_num_features)
         pred_1 = booster_1.predict(X_test)
         pred_contrib_1 = booster_1.predict(X_test, pred_contrib=True)
-        tmp_dataset = str(tmp_path / 'ctr_{}_temp_dataset.bin'.format(model_prefix))
+        tmp_dataset = str(tmp_path / 'category_encoding_{}_temp_dataset.bin'.format(model_prefix))
         train_data_1.save_binary(tmp_dataset)
 
-        # checks that Dataset with cat_converters can be saved to and load from file
+        # checks that Dataset with category_encoders can be saved to and load from file
         train_data_2 = lgb.Dataset(tmp_dataset)
         valid_data_2 = train_data_2.create_valid(X_test, label=y_test)
         booster_2 = lgb.train(params, train_data_2, valid_sets=[valid_data_2], valid_names=["valid_data"])
@@ -366,8 +366,8 @@ def test_ctr(tmp_path):
         np.testing.assert_allclose(pred_1, pred_2)
         np.testing.assert_allclose(pred_contrib_1, pred_contrib_2)
 
-        # checks that Booster with cat_converters can be saved to and load from file
-        model_file = str(tmp_path / "ctr_{}_model.txt".format(model_prefix))
+        # checks that Booster with category_encoders can be saved to and load from file
+        model_file = str(tmp_path / "category_encoding_{}_model.txt".format(model_prefix))
         booster_2.save_model(model_file)
         booster_3 = lgb.Booster(params=params, model_file=model_file)
         np.testing.assert_equal(booster_3.num_feature(), expected_num_features)
@@ -376,10 +376,10 @@ def test_ctr(tmp_path):
         np.testing.assert_allclose(pred_1, pred_3)
         np.testing.assert_allclose(pred_contrib_1, pred_contrib_3)
 
-        # checks that cat_converters works in params
+        # checks that category_encoders works in params
         train_data_4 = lgb.Dataset(X_train, label=y_train)
         valid_data_4 = train_data_4.create_valid(X_test, label=y_test)
-        params.update({"cat_converters": cat_converters_str})
+        params.update({"category_encoders": category_encoders_str})
         booster_4 = lgb.train(params, train_data_4, valid_sets=[valid_data_4], valid_names=["valid_data"])
         np.testing.assert_equal(train_data_4.num_feature(), expected_num_features)
         np.testing.assert_equal(valid_data_4.num_feature(), expected_num_features)
@@ -390,11 +390,11 @@ def test_ctr(tmp_path):
         np.testing.assert_allclose(pred_1, pred_4)
         np.testing.assert_allclose(pred_contrib_1, pred_contrib_4)
 
-        # test that CTR with csr format works
+        # test that target encoding with csr format works
         train_data_csr = lgb.Dataset(sparse.csr_matrix(X_train), label=y_train,
-                                     cat_converters=cat_converters_str)
+                                     category_encoders=category_encoders_str)
         valid_data_csr = lgb.Dataset(sparse.csr_matrix(X_test), label=y_test,
-                                     cat_converters=cat_converters_str, reference=train_data_csr)
+                                     category_encoders=category_encoders_str, reference=train_data_csr)
         booster_csr = lgb.train(params, train_data_csr, valid_sets=[valid_data_csr], valid_names=["valid_data"])
         np.testing.assert_equal(train_data_csr.num_feature(), expected_num_features)
         np.testing.assert_equal(valid_data_csr.num_feature(), expected_num_features)
@@ -409,11 +409,11 @@ def test_ctr(tmp_path):
         np.testing.assert_allclose(pred_csr, pred_1)
         np.testing.assert_allclose(pred_contrib_1, pred_contrib_csr)
 
-        # test that CTR with csc format works
+        # test that target encoding with csc format works
         train_data_csc = lgb.Dataset(sparse.csc_matrix(X_train), label=y_train,
-                                     cat_converters=cat_converters_str)
+                                     category_encoders=category_encoders_str)
         valid_data_csc = lgb.Dataset(sparse.csc_matrix(X_test), label=y_test,
-                                     cat_converters=cat_converters_str, reference=train_data_csc)
+                                     category_encoders=category_encoders_str, reference=train_data_csc)
         booster_csc = lgb.train(params, train_data_csc, valid_sets=[valid_data_csc], valid_names=["valid_data"])
         np.testing.assert_equal(train_data_csc.num_feature(), expected_num_features)
         np.testing.assert_equal(valid_data_csc.num_feature(), expected_num_features)
@@ -441,9 +441,9 @@ def test_ctr(tmp_path):
         "max_cat_to_onehot": 1
     }
 
-    test_ctr_inner(tmp_path, X_train, X_test, y_train, y_test, params, "binary")
+    test_category_encoding_inner(tmp_path, X_train, X_test, y_train, y_test, params, "binary")
 
-    # test CTR under multi-class case
+    # test target encoding under multi-class case
     X, y = load_iris(return_X_y=True)
     # convert float to int, so that we can treat them as categorical features
     X = np.array(np.array(X, dtype=np.int), dtype=np.float)
@@ -455,7 +455,7 @@ def test_ctr(tmp_path):
         'verbose': 1
     }
 
-    test_ctr_inner(tmp_path, X_train, X_test, y_train, y_test, params, "multiclass")
+    test_category_encoding_inner(tmp_path, X_train, X_test, y_train, y_test, params, "multiclass")
 
 
 def test_choose_param_value():

@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-#include <LightGBM/ctr_provider.hpp>
+#include <LightGBM/category_encoding_provider.hpp>
 
 namespace LightGBM {
 
@@ -579,8 +579,8 @@ class Dataset {
 
   inline void set_feature_names(const std::vector<std::string>& feature_names) {
     if (feature_names.size() != static_cast<size_t>(num_total_features_) && !(
-      ctr_provider_.get() != nullptr &&
-      static_cast<int>(feature_names.size()) == ctr_provider_->GetNumOriginalFeatures())) {
+      category_encoding_provider_.get() != nullptr &&
+      static_cast<int>(feature_names.size()) == category_encoding_provider_->GetNumOriginalFeatures())) {
       Log::Fatal("Size of feature_names error, should equal with total number of features");
     }
     feature_names_ = std::vector<std::string>(feature_names);
@@ -604,8 +604,8 @@ class Dataset {
     if (spaceInFeatureName) {
       Log::Warning("Find whitespaces in feature_names, replace with underlines");
     }
-    if (ctr_provider_.get() != nullptr && ctr_provider_->GetNumCatConverters() > 0) {
-      ctr_provider_->ExtendFeatureNames(&feature_names_);
+    if (category_encoding_provider_.get() != nullptr && category_encoding_provider_->GetNumCatConverters() > 0) {
+      category_encoding_provider_->ExtendFeatureNames(&feature_names_);
     }
   }
 
@@ -633,12 +633,12 @@ class Dataset {
 
   void AddFeaturesFrom(Dataset* other);
 
-  void SetCTRProvider(const CTRProvider* ctr_provider) {
-    ctr_provider_.reset(ctr_provider);
+  void SetCategoryEncodingProvider(const CategoryEncodingProvider* category_encoding_provider) {
+    category_encoding_provider_.reset(category_encoding_provider);
   }
 
-  inline const CTRProvider* ctr_provider() const {
-    return ctr_provider_.get();
+  inline const CategoryEncodingProvider* category_encoding_provider() const {
+    return category_encoding_provider_.get();
   }
 
   /*! \brief Get has_raw_ */
@@ -700,8 +700,8 @@ class Dataset {
   bool use_missing_;
   bool zero_as_missing_;
   std::vector<int> feature_need_push_zeros_;
-  /*! \brief CTR provider, converts categorical feature values into CTR values */
-  std::unique_ptr<const CTRProvider> ctr_provider_ = std::unique_ptr<CTRProvider>(nullptr);
+  /*! \brief category encoding provider, converts categorical feature values into category encoding values */
+  std::unique_ptr<const CategoryEncodingProvider> category_encoding_provider_ = std::unique_ptr<CategoryEncodingProvider>(nullptr);
   std::vector<std::vector<float>> raw_data_;
   bool has_raw_;
   /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */

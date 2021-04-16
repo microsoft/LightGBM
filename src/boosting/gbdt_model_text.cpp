@@ -41,11 +41,11 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_
   str_buf << "\"monotone_constraints\":["
           << CommonC::Join(monotone_constraints_, ",") << "]," << '\n';
 
-  if (ctr_provider_ != nullptr) {
-    str_buf << "\"ctr_provider\":"
-            << "\"" << ctr_provider_->DumpModelInfo() << "\"," << '\n';
+  if (category_encoding_provider_ != nullptr) {
+    str_buf << "\"category_encoding_provider\":"
+            << "\"" << category_encoding_provider_->DumpModelInfo() << "\"," << '\n';
   } else {
-    str_buf << "\"ctr_provider\":\"\",\n";
+    str_buf << "\"category_encoding_provider\":\"\",\n";
   }
 
   str_buf << "\"feature_infos\":" << "{";
@@ -346,11 +346,11 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
   }
 
   ss << "feature_infos=" << CommonC::Join(feature_infos_, " ") << '\n';
-  // dump ctr information
-  if (ctr_provider_ != nullptr) {
-    ss << "ctr_provider=" << ctr_provider_->DumpModelInfo() << "\n";
+  // dump target encoding information
+  if (category_encoding_provider_ != nullptr) {
+    ss << "category_encoding_provider=" << category_encoding_provider_->DumpModelInfo() << "\n";
   } else {
-    ss << "ctr_provider=" << "\n";
+    ss << "category_encoding_provider=" << "\n";
   }
 
   int num_used_model = static_cast<int>(models_.size());
@@ -491,11 +491,11 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
     return false;
   }
 
-  // recover ctr information
-  if (key_vals.count("ctr_provider")) {
-    ctr_provider_.reset(CTRProvider::RecoverFromModelString(key_vals["ctr_provider"]));
+  // recover target encoding information
+  if (key_vals.count("category_encoding_provider")) {
+    category_encoding_provider_.reset(CategoryEncodingProvider::RecoverFromModelString(key_vals["category_encoding_provider"]));
   } else {
-    Log::Fatal("Model file doesn't specify ctr_provider");
+    Log::Fatal("Model file doesn't specify category_encoding_provider");
     return false;
   }
 

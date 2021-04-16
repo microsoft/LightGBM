@@ -300,8 +300,8 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "gpu_device_id",
   "gpu_use_dp",
   "num_gpu",
-  "cat_converters",
-  "num_ctr_folds",
+  "category_encoders",
+  "num_target_encoding_folds",
   "prior_weight",
   });
   return params;
@@ -629,9 +629,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "num_gpu", &num_gpu);
   CHECK_GT(num_gpu, 0);
 
-  GetString(params, "cat_converters", &cat_converters);
+  GetString(params, "category_encoders", &category_encoders);
 
-  GetInt(params, "num_ctr_folds", &num_ctr_folds);
+  GetInt(params, "num_target_encoding_folds", &num_target_encoding_folds);
 
   GetDouble(params, "prior_weight", &prior_weight);
 }
@@ -742,8 +742,8 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[gpu_device_id: " << gpu_device_id << "]\n";
   str_buf << "[gpu_use_dp: " << gpu_use_dp << "]\n";
   str_buf << "[num_gpu: " << num_gpu << "]\n";
-  str_buf << "[cat_converters: " << cat_converters << "]\n";
-  str_buf << "[num_ctr_folds: " << num_ctr_folds << "]\n";
+  str_buf << "[category_encoders: " << category_encoders << "]\n";
+  str_buf << "[num_target_encoding_folds: " << num_target_encoding_folds << "]\n";
   str_buf << "[prior_weight: " << prior_weight << "]\n";
   return str_buf.str();
 }

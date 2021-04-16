@@ -153,14 +153,14 @@ class TextReader {
   }
 
   /*!
-  * \brief Read all text data from file in memory with accumulating ctr statistics
+  * \brief Read all text data from file in memory with accumulating category encoding statistics
   * \return number of lines of text data
   */
   INDEX_T ReadAllLines(
-      const std::function<void(const char*, size_t, INDEX_T)>& ctr_acc_func) {
+      const std::function<void(const char*, size_t, INDEX_T)>& category_encoding_acc_func) {
     return ReadAllAndProcess(
       [=](INDEX_T row_idx, const char* buffer, size_t size) {
-      ctr_acc_func(buffer, size, row_idx);
+      category_encoding_acc_func(buffer, size, row_idx);
       lines_.emplace_back(buffer, size);
     });
   }
@@ -183,22 +183,22 @@ class TextReader {
     return ret;
   }
 
-  template <bool USE_CTR>
+  template <bool USE_CATEGORY_ENCODING>
   INDEX_T SampleFromFile(Random* random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data,
     std::vector<INDEX_T>* sampled_indices,
-    std::function<void(const char*, size_t, INDEX_T)> ctr_acc_func) {
+    std::function<void(const char*, size_t, INDEX_T)> category_encoding_acc_func) {
     INDEX_T cur_sample_cnt = 0;
-    if (USE_CTR) {
+    if (USE_CATEGORY_ENCODING) {
       sampled_indices->clear();
     }
     return ReadAllAndProcess([=, &random, &cur_sample_cnt, &out_sampled_data]
     (INDEX_T line_idx, const char* buffer, size_t size) {
-      if (USE_CTR) {
-        ctr_acc_func(buffer, size, line_idx);
+      if (USE_CATEGORY_ENCODING) {
+        category_encoding_acc_func(buffer, size, line_idx);
       }
       if (cur_sample_cnt < sample_cnt) {
         out_sampled_data->emplace_back(buffer, size);
-        if (USE_CTR) {
+        if (USE_CATEGORY_ENCODING) {
           sampled_indices->push_back(line_idx);
         }
         ++cur_sample_cnt;
@@ -206,7 +206,7 @@ class TextReader {
         const size_t idx = static_cast<size_t>(random->NextInt(0, static_cast<int>(line_idx + 1)));
         if (idx < static_cast<size_t>(sample_cnt)) {
           out_sampled_data->operator[](idx) = std::string(buffer, size);
-          if (USE_CTR) {
+          if (USE_CATEGORY_ENCODING) {
             sampled_indices->operator[](idx) = line_idx;
           }
         }

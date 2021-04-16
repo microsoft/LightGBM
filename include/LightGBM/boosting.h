@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <LightGBM/ctr_provider.hpp>
+#include <LightGBM/category_encoding_provider.hpp>
 
 namespace LightGBM {
 
@@ -315,7 +315,7 @@ class LIGHTGBM_EXPORT Boosting {
   */
   static Boosting* CreateBoosting(const std::string& type, const char* filename);
 
-  virtual const CTRProvider* ctr_provider() const { return nullptr; }
+  virtual const CategoryEncodingProvider* category_encoding_provider() const { return nullptr; }
 
   virtual bool IsLinear() const { return false; }
 };

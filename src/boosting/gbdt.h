@@ -392,7 +392,7 @@ class GBDT : public GBDTBase {
   */
   const char* SubModelName() const override { return "tree"; }
 
-  const CTRProvider* ctr_provider() const override { return ctr_provider_.get(); }
+  const CategoryEncodingProvider* category_encoding_provider() const override { return category_encoding_provider_.get(); }
 
   bool IsLinear() const override { return linear_tree_; }
 
@@ -535,7 +535,7 @@ class GBDT : public GBDTBase {
   std::vector<Random> bagging_rands_;
   ParallelPartitionRunner<data_size_t, false> bagging_runner_;
   Json forced_splits_json_;
-  std::unique_ptr<const CTRProvider> ctr_provider_;
+  std::unique_ptr<const CategoryEncodingProvider> category_encoding_provider_;
   bool linear_tree_;
 };
 

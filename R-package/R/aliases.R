@@ -75,7 +75,7 @@
                 , "weight"
             )
             , "zero_as_missing" = "zero_as_missing"
-            , "cat_converters" = "cat_converters"
+            , "category_encoders" = "category_encoders"
         )
     )
 }

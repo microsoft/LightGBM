@@ -756,9 +756,9 @@ void Dataset::CreateValid(const Dataset* dataset) {
   label_idx_ = dataset->label_idx_;
   real_feature_idx_ = dataset->real_feature_idx_;
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
-  if (dataset->ctr_provider() != nullptr) {
-    ctr_provider_.reset(CTRProvider::RecoverFromModelString(
-      dataset->ctr_provider()->DumpModelInfo()));
+  if (dataset->category_encoding_provider() != nullptr) {
+    category_encoding_provider_.reset(CategoryEncodingProvider::RecoverFromModelString(
+      dataset->category_encoding_provider()->DumpModelInfo()));
   }
 }
 
@@ -1038,14 +1038,14 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       // write feature
       feature_groups_[i]->SaveBinaryToFile(writer.get());
     }
-    if (ctr_provider_ != nullptr) {
-      const std::string ctr_provider_str = ctr_provider_->DumpModelInfo();
-      const size_t ctr_provider_str_size_in_bytes = ctr_provider_str.size() * sizeof(char);
-      writer->Write(&ctr_provider_str_size_in_bytes, sizeof(ctr_provider_str_size_in_bytes));
-      writer->Write(ctr_provider_str.c_str(), ctr_provider_str_size_in_bytes);
+    if (category_encoding_provider_ != nullptr) {
+      const std::string category_encoding_provider_str = category_encoding_provider_->DumpModelInfo();
+      const size_t category_encoding_provider_str_size_in_bytes = category_encoding_provider_str.size() * sizeof(char);
+      writer->Write(&category_encoding_provider_str_size_in_bytes, sizeof(category_encoding_provider_str_size_in_bytes));
+      writer->Write(category_encoding_provider_str.c_str(), category_encoding_provider_str_size_in_bytes);
     } else {
-      const size_t ctr_provider_str_size_in_bytes = 0;
-      writer->Write(&ctr_provider_str_size_in_bytes, sizeof(ctr_provider_str_size_in_bytes));
+      const size_t category_encoding_provider_str_size_in_bytes = 0;
+      writer->Write(&category_encoding_provider_str_size_in_bytes, sizeof(category_encoding_provider_str_size_in_bytes));
     }
     // write raw data; use row-major order so we can read row-by-row
     if (has_raw_) {
