@@ -15,9 +15,6 @@ Missing Value Handle
 Categorical Feature Support
 ---------------------------
 
-Categorical Feature Support
----------------------------
-
 -  LightGBM offers good accuracy with integer-encoded categorical features. LightGBM offers the following approaches to deal with categorical features:
 
    -  Method 1: Applies `Fisher (1958) <https://www.tandfonline.com/doi/abs/10.1080/01621459.1958.10501479>`_to find the optimal split over categories as `described here <./Features.rst#optimal-split-for-categorical-features>`_.
