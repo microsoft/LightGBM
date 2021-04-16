@@ -1229,7 +1229,7 @@ class Dataset:
         return indices
 
     def init_from_sample(self, sample_data, sample_indices, sample_cnt, total_nrow):
-        """Get the used parameters in the Dataset.
+        """Create Dataset from sampled data structures.
 
         Parameters
         ----------
