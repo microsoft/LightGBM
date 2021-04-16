@@ -719,8 +719,8 @@ class LGBMModel(_LGBMModelBase):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
-            raise ValueError(f"Number of features of the model must " \
-                             f"match the input. Model n_features_ is {self._n_features} and " \
+            raise ValueError("Number of features of the model must "
+                             f"match the input. Model n_features_ is {self._n_features} and "
                              f"input n_features is {n_features} ")
         return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
@@ -919,9 +919,9 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
             new_line = "\n"
-            _log_warning(f"Cannot compute class probabilities or labels " \
-                         f"due to the usage of customized objective function.{new_line}" \
-                         f"Returning raw scores instead.")
+            _log_warning("Cannot compute class probabilities or labels "
+                         "due to the usage of customized objective function.\n"
+                         "Returning raw scores instead.")
             return result
         elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
             return result
