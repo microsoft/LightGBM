@@ -927,7 +927,6 @@ dimnames.lgb.Dataset <- function(x) {
 }
 
 #' @rdname dimnames.lgb.Dataset
-#' @return A list with the dimension names of the dataset
 #' @export
 `dimnames<-.lgb.Dataset` <- function(x, value) {
 
@@ -1043,7 +1042,6 @@ getinfo <- function(dataset, ...) {
 }
 
 #' @rdname getinfo
-#' @return info data
 #' @export
 getinfo.lgb.Dataset <- function(dataset, name, ...) {
 
@@ -1098,7 +1096,6 @@ setinfo <- function(dataset, ...) {
 }
 
 #' @rdname setinfo
-#' @return the dataset you passed in
 #' @export
 setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 

@@ -3,9 +3,7 @@
 import datetime
 import os
 import sys
-
 from distutils.file_util import copy_file
-
 
 if __name__ == "__main__":
     source = sys.argv[1]
@@ -27,18 +25,18 @@ if __name__ == "__main__":
     copy_file(os.path.join(source, "lib_lightgbm.dll"), os.path.join(windows_folder_path, "lib_lightgbm.dll"))
     copy_file(os.path.join(source, "lightgbm.exe"), os.path.join(windows_folder_path, "lightgbm.exe"))
     version = open(os.path.join(current_dir, os.path.pardir, 'VERSION.txt')).read().strip().replace('rc', '-rc')
-    nuget_str = r"""<?xml version="1.0"?>
+    nuget_str = rf"""<?xml version="1.0"?>
     <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>
         <id>LightGBM</id>
-        <version>%s</version>
+        <version>{version}</version>
         <authors>Guolin Ke</authors>
         <owners>Guolin Ke</owners>
         <licenseUrl>https://github.com/microsoft/LightGBM/blob/master/LICENSE</licenseUrl>
         <projectUrl>https://github.com/microsoft/LightGBM</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A fast, distributed, high performance gradient boosting framework</description>
-        <copyright>Copyright %d @ Microsoft</copyright>
+        <copyright>Copyright {datetime.datetime.now().year} @ Microsoft</copyright>
         <tags>machine-learning data-mining distributed native boosting gbdt</tags>
         <dependencies> </dependencies>
     </metadata>
@@ -47,7 +45,7 @@ if __name__ == "__main__":
         <file src="runtimes\**" target="runtimes"/>
         </files>
     </package>
-    """ % (version, datetime.datetime.now().year)
+    """
     prop_str = r"""
     <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <ItemGroup Condition="Exists('packages.config') OR

@@ -470,10 +470,10 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
     Log::Fatal("bin size %d cannot run on GPU", max_num_bin_);
   }
   if (max_num_bin_ == 65) {
-    Log::Warning("Setting max_bin to 63 is sugguested for best performance");
+    Log::Warning("Setting max_bin to 63 is suggested for best performance");
   }
   if (max_num_bin_ == 17) {
-    Log::Warning("Setting max_bin to 15 is sugguested for best performance");
+    Log::Warning("Setting max_bin to 15 is suggested for best performance");
   }
 
   // get num_dense_feature_groups_

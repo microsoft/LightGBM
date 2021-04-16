@@ -724,6 +724,11 @@ void Dataset::CreateValid(const Dataset* dataset) {
   feature_groups_.clear();
   num_features_ = dataset->num_features_;
   num_groups_ = num_features_;
+  max_bin_ = dataset->max_bin_;
+  min_data_in_bin_ = dataset->min_data_in_bin_;
+  bin_construct_sample_cnt_ = dataset->bin_construct_sample_cnt_;
+  use_missing_ = dataset->use_missing_;
+  zero_as_missing_ = dataset->zero_as_missing_;
   feature2group_.clear();
   feature2subfeature_.clear();
   feature_need_push_zeros_ = dataset->feature_need_push_zeros_;
@@ -1238,7 +1243,7 @@ void Dataset::ConstructHistogramsInner(
   }
 }
 
-// explicitly initilize template methods, for cross module call
+// explicitly initialize template methods, for cross module call
 template void Dataset::ConstructHistogramsInner<true, true>(
     const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
     data_size_t num_data, const score_t* gradients, const score_t* hessians,

@@ -348,7 +348,7 @@ Build MPI Version
 The default build version of LightGBM is based on socket. LightGBM also supports MPI.
 `MPI`_ is a high performance communication approach with `RDMA`_ support.
 
-If you need to run a parallel learning application with high performance communication, you can build the LightGBM with MPI support.
+If you need to run a distributed learning application with high performance communication, you can build the LightGBM with MPI support.
 
 Windows
 ^^^^^^^
@@ -498,7 +498,7 @@ Build GPU Version
 Linux
 ^^^^^
 
-On Linux a GPU version of LightGBM can be built using **OpenCL**, **Boost**, **CMake** and **gcc** or **Clang**.
+On Linux a GPU version of LightGBM (``device_type=gpu``) can be built using **OpenCL**, **Boost**, **CMake** and **gcc** or **Clang**.
 
 The following dependencies should be installed before compilation:
 
@@ -530,7 +530,7 @@ To build LightGBM GPU version, run the following commands:
 Windows
 ^^^^^^^
 
-On Windows a GPU version of LightGBM can be built using **OpenCL**, **Boost**, **CMake** and **VS Build Tools** or **MinGW**.
+On Windows a GPU version of LightGBM (``device_type=gpu``) can be built using **OpenCL**, **Boost**, **CMake** and **VS Build Tools** or **MinGW**.
 
 If you use **MinGW**, the build procedure is similar to the build on Linux. Refer to `GPU Windows Compilation <./GPU-Windows.rst>`__ to get more details.
 
@@ -581,9 +581,9 @@ Refer to `GPU Docker folder <https://github.com/microsoft/LightGBM/tree/master/d
 Build CUDA Version (Experimental)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The `original GPU build <#build-gpu-version>`__ of LightGBM is based on OpenCL.
+The `original GPU build <#build-gpu-version>`__ of LightGBM (``device_type=gpu``) is based on OpenCL.
 
-The CUDA-based build is a separate implementation and requires an NVIDIA graphics card with compute capability 6.0 and higher. It should be considered experimental, and we suggest using it only when it is impossible to use OpenCL version (for example, on IBM POWER microprocessors).
+The CUDA-based build (``device_type=cuda``) is a separate implementation and requires an NVIDIA graphics card with compute capability 6.0 and higher. It should be considered experimental, and we suggest using it only when it is impossible to use OpenCL version (for example, on IBM POWER microprocessors).
 
 **Note**: only Linux is supported, other operating systems are not supported yet.
 
@@ -811,7 +811,7 @@ Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
-.. _Boost Binaries: https://bintray.com/boostorg/release/boost-binaries/_latestVersion#files
+.. _Boost Binaries: https://sourceforge.net/projects/boost/files/boost-binaries/
 
 .. _SWIG: http://www.swig.org/download.html
 

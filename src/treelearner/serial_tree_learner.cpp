@@ -204,7 +204,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
 
-  Log::Debug("Trained a tree with leaves = %d and max_depth = %d", tree->num_leaves(), cur_depth);
+  Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
   return tree.release();
 }
 
@@ -677,7 +677,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
       best_split_per_leaf_);
   // update leave outputs if needed
   for (auto leaf : leaves_need_update) {
-    RecomputeBestSplitForLeaf(leaf, &best_split_per_leaf_[leaf]);
+    RecomputeBestSplitForLeaf(tree, leaf, &best_split_per_leaf_[leaf]);
   }
 }
 
@@ -768,7 +768,7 @@ double SerialTreeLearner::GetParentOutput(const Tree* tree, const LeafSplits* le
   return parent_output;
 }
 
-void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
+void SerialTreeLearner::RecomputeBestSplitForLeaf(Tree* tree, int leaf, SplitInfo* split) {
   FeatureHistogram* histogram_array_;
   if (!histogram_pool_.Get(leaf, &histogram_array_)) {
     Log::Warning(
@@ -795,6 +795,7 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
 
   OMP_INIT_EX();
 // find splits
+std::vector<int8_t> node_used_features = col_sampler_.GetByNode(tree, leaf);
 #pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
@@ -804,7 +805,7 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(int leaf, SplitInfo* split) {
     }
     const int tid = omp_get_thread_num();
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
-    ComputeBestSplitForFeature(histogram_array_, feature_index, real_fidx, true,
+    ComputeBestSplitForFeature(histogram_array_, feature_index, real_fidx, node_used_features[feature_index],
                                num_data, &leaf_splits, &bests[tid], parent_output);
 
     OMP_LOOP_EX_END();

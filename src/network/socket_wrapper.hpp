@@ -93,7 +93,7 @@ inline int inet_pton(int af, const char *src, void *dst) {
 namespace SocketConfig {
 const int kSocketBufferSize = 100 * 1000;
 const int kMaxReceiveSize = 100 * 1000;
-const bool kNoDelay = true;
+const int kNoDelay = 1;
 }
 
 class TcpSocket {

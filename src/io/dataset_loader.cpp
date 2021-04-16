@@ -11,6 +11,7 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
+#include <chrono>
 #include <fstream>
 
 namespace LightGBM {
@@ -181,10 +182,10 @@ void CheckSampleSize(size_t sample_cnt, size_t num_data) {
 
 Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_machines,
   CategoryEncodingProvider* category_encoding_provider) {
-  // don't support query id in data file when training in parallel
+  // don't support query id in data file when using distributed training
   if (num_machines > 1 && !config_.pre_partition) {
     if (group_idx_ > 0) {
-      Log::Fatal("Using a query id without pre-partitioning the data file is not supported for parallel training.\n"
+      Log::Fatal("Using a query id without pre-partitioning the data file is not supported for distributed training.\n"
                  "Please use an additional query file or pre-partition the data");
     }
   }
@@ -278,7 +279,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       }
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
-      Log::Debug("Making second pass...");
+      Log::Info("Making second pass...");
       // extract features
       ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
     }
@@ -1130,6 +1131,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
                                                     const std::vector<std::string>& sample_data,
                                                     const Parser* parser, Dataset* dataset,
                                                     const std::vector<data_size_t>& sampled_indices) {
+  auto t1 = std::chrono::high_resolution_clock::now();
   std::vector<std::vector<double>> sample_values;
   std::vector<std::vector<int>> sample_indices;
   std::vector<std::pair<int, double>> oneline_features;
@@ -1316,6 +1318,10 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   if (dataset->has_raw()) {
     dataset->ResizeRaw(static_cast<int>(sample_data.size()));
   }
+
+  auto t2 = std::chrono::high_resolution_clock::now();
+  Log::Info("Construct bin mappers from text data time %.2f seconds",
+            std::chrono::duration<double, std::milli>(t2 - t1) * 1e-3);
 }
 
 /*! \brief Extract local features from memory */

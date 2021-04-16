@@ -3,7 +3,7 @@ include LICENSE
 include *.rst *.txt
 recursive-include lightgbm VERSION.txt *.py *.so
 include compile/CMakeLists.txt
-include compile/CMakeIntegratedOpenCL.cmake
+include compile/cmake/IntegratedOpenCL.cmake
 recursive-include compile *.so
 recursive-include compile/Release *.dll
 include compile/external_libs/compute/CMakeLists.txt

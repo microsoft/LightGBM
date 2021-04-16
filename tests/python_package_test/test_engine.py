@@ -4,19 +4,20 @@ import itertools
 import math
 import os
 import pickle
-import psutil
+import platform
 import random
 
-import lightgbm as lgb
 import numpy as np
-from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_csc
-from sklearn.datasets import load_svmlight_file, make_multilabel_classification
-from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score, average_precision_score
-from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
+import psutil
 import pytest
+from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
+from sklearn.datasets import load_svmlight_file, make_multilabel_classification
+from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
+from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
+
+import lightgbm as lgb
 
 from .utils import load_boston, load_breast_cancer, load_digits, load_iris
-
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -1044,7 +1045,10 @@ def test_contribs_sparse():
     # convert data to dense and get back same contribs
     contribs_dense = gbm.predict(X_test.toarray(), pred_contrib=True)
     # validate the values are the same
-    np.testing.assert_allclose(contribs_csr.toarray(), contribs_dense)
+    if platform.machine() == 'aarch64':
+        np.testing.assert_allclose(contribs_csr.toarray(), contribs_dense, rtol=1, atol=1e-12)
+    else:
+        np.testing.assert_allclose(contribs_csr.toarray(), contribs_dense)
     assert (np.linalg.norm(gbm.predict(X_test, raw_score=True)
                            - np.sum(contribs_dense, axis=1)) < 1e-4)
     # validate using CSC matrix
@@ -1052,7 +1056,10 @@ def test_contribs_sparse():
     contribs_csc = gbm.predict(X_test_csc, pred_contrib=True)
     assert isspmatrix_csc(contribs_csc)
     # validate the values are the same
-    np.testing.assert_allclose(contribs_csc.toarray(), contribs_dense)
+    if platform.machine() == 'aarch64':
+        np.testing.assert_allclose(contribs_csc.toarray(), contribs_dense, rtol=1, atol=1e-12)
+    else:
+        np.testing.assert_allclose(contribs_csc.toarray(), contribs_dense)
 
 
 def test_contribs_sparse_multiclass():
@@ -1084,7 +1091,10 @@ def test_contribs_sparse_multiclass():
     contribs_csr_array = np.swapaxes(np.array([sparse_array.todense() for sparse_array in contribs_csr]), 0, 1)
     contribs_csr_arr_re = contribs_csr_array.reshape((contribs_csr_array.shape[0],
                                                       contribs_csr_array.shape[1] * contribs_csr_array.shape[2]))
-    np.testing.assert_allclose(contribs_csr_arr_re, contribs_dense)
+    if platform.machine() == 'aarch64':
+        np.testing.assert_allclose(contribs_csr_arr_re, contribs_dense, rtol=1, atol=1e-12)
+    else:
+        np.testing.assert_allclose(contribs_csr_arr_re, contribs_dense)
     contribs_dense_re = contribs_dense.reshape(contribs_csr_array.shape)
     assert np.linalg.norm(gbm.predict(X_test, raw_score=True) - np.sum(contribs_dense_re, axis=2)) < 1e-4
     # validate using CSC matrix
@@ -1097,7 +1107,10 @@ def test_contribs_sparse_multiclass():
     contribs_csc_array = np.swapaxes(np.array([sparse_array.todense() for sparse_array in contribs_csc]), 0, 1)
     contribs_csc_array = contribs_csc_array.reshape((contribs_csc_array.shape[0],
                                                      contribs_csc_array.shape[1] * contribs_csc_array.shape[2]))
-    np.testing.assert_allclose(contribs_csc_array, contribs_dense)
+    if platform.machine() == 'aarch64':
+        np.testing.assert_allclose(contribs_csc_array, contribs_dense, rtol=1, atol=1e-12)
+    else:
+        np.testing.assert_allclose(contribs_csc_array, contribs_dense)
 
 
 @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason='not enough RAM')
@@ -1239,7 +1252,8 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     return trainset
 
 
-def test_monotone_constraints():
+@pytest.mark.parametrize("test_with_interaction_constraints", [True, False])
+def test_monotone_constraints(test_with_interaction_constraints):
     def is_increasing(y):
         return (np.diff(y) >= 0.0).all()
 
@@ -1260,28 +1274,69 @@ def test_monotone_constraints():
             monotonically_increasing_y = learner.predict(monotonically_increasing_x)
             monotonically_decreasing_x = np.column_stack((fixed_x, variable_x, fixed_x))
             monotonically_decreasing_y = learner.predict(monotonically_decreasing_x)
-            non_monotone_x = np.column_stack((fixed_x,
-                                              fixed_x,
-                                              categorize(variable_x) if x3_to_category else variable_x))
+            non_monotone_x = np.column_stack(
+                (
+                    fixed_x,
+                    fixed_x,
+                    categorize(variable_x) if x3_to_category else variable_x,
+                )
+            )
             non_monotone_y = learner.predict(non_monotone_x)
-            if not (is_increasing(monotonically_increasing_y)
-                    and is_decreasing(monotonically_decreasing_y)
-                    and is_non_monotone(non_monotone_y)):
+            if not (
+                is_increasing(monotonically_increasing_y)
+                and is_decreasing(monotonically_decreasing_y)
+                and is_non_monotone(non_monotone_y)
+            ):
                 return False
         return True
 
+    def are_interactions_enforced(gbm, feature_sets):
+        def parse_tree_features(gbm):
+            # trees start at position 1.
+            tree_str = gbm.model_to_string().split("Tree")[1:]
+            feature_sets = []
+            for tree in tree_str:
+                # split_features are in 4th line.
+                features = tree.splitlines()[3].split("=")[1].split(" ")
+                features = set(f"Column_{f}" for f in features)
+                feature_sets.append(features)
+            return np.array(feature_sets)
+
+        def has_interaction(treef):
+            n = 0
+            for fs in feature_sets:
+                if len(treef.intersection(fs)) > 0:
+                    n += 1
+            return n > 1
+
+        tree_features = parse_tree_features(gbm)
+        has_interaction_flag = np.array(
+            [has_interaction(treef) for treef in tree_features]
+        )
+
+        return not has_interaction_flag.any()
+
     for test_with_categorical_variable in [True, False]:
-        trainset = generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
+        trainset = generate_trainset_for_monotone_constraints_tests(
+            test_with_categorical_variable
+        )
         for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
             params = {
-                'min_data': 20,
-                'num_leaves': 20,
-                'monotone_constraints': [1, -1, 0],
+                "min_data": 20,
+                "num_leaves": 20,
+                "monotone_constraints": [1, -1, 0],
                 "monotone_constraints_method": monotone_constraints_method,
                 "use_missing": False,
             }
+            if test_with_interaction_constraints:
+                params["interaction_constraints"] = [[0], [1], [2]]
             constrained_model = lgb.train(params, trainset)
-            assert is_correctly_constrained(constrained_model, test_with_categorical_variable)
+            assert is_correctly_constrained(
+                constrained_model, test_with_categorical_variable
+            )
+            if test_with_interaction_constraints:
+                feature_sets = [["Column_0"], ["Column_1"], "Column_2"]
+                assert are_interactions_enforced(constrained_model, feature_sets)
 
 
 def test_monotone_penalty():
@@ -2589,6 +2644,19 @@ def test_save_and_load_linear(tmp_path):
     est_3 = lgb.Booster(model_file=model_file)
     pred_3 = est_3.predict(X_train)
     np.testing.assert_allclose(pred_2, pred_3)
+
+
+def test_linear_single_leaf():
+    X_train, y_train = load_breast_cancer(return_X_y=True)
+    train_data = lgb.Dataset(X_train, label=y_train)
+    params = {
+        "objective": "binary",
+        "linear_tree": True,
+        "min_sum_hessian": 5000
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    y_pred = bst.predict(X_train)
+    assert log_loss(y_train, y_pred) < 0.661
 
 
 def test_predict_with_start_iteration():
