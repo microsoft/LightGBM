@@ -127,8 +127,6 @@ class NumpySequence(lgb.Sequence):
 @pytest.mark.parametrize('include_nan', [False, True])
 @pytest.mark.parametrize('num_seq', [1, 3])
 def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_seq):
-    rm_files(["seq.truth.bin", "seq.seq.bin"])
-
     params = {
         "bin_construct_sample_cnt": sample_count,
     }
