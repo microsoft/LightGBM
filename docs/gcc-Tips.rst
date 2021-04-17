@@ -32,4 +32,4 @@ The image below compares the runtime for training with different compiler option
 .. image:: ./_static/images/gcc-comparison-2.png
    :align: center
    :target: ./_static/images/gcc-comparison-2.png
-   :alt: picture with a chart grouped by compiler set of options using O2 mtune=core2 as the baseline. All the other 3 options are faster, with O3 mtune=native being the fastest.
+   :alt: picture with a chart grouped by compiler set of options using O2 M tune equals core2 as the baseline. All the other 3 options are faster, with O3 M tune equals native being the fastest.
