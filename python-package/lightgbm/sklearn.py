@@ -721,7 +721,7 @@ class LGBMModel(_LGBMModelBase):
         if self._n_features != n_features:
             raise ValueError("Number of features of the model must "
                              f"match the input. Model n_features_ is {self._n_features} and "
-                             f"input n_features is {n_features} ")
+                             f"input n_features is {n_features}")
         return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
