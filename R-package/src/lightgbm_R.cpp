@@ -217,13 +217,7 @@ LGBM_SE LGBM_DatasetSetField_R(LGBM_SE handle,
     for (int i = 0; i < len; ++i) {
       vec[i] = static_cast<int32_t>(R_INT_PTR(field_data)[i]);
     }
-    int result = 0;
-    result = LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_INT32);
-    if ((result) != 0) {
-      vec.clear();
-      Rf_error(LGBM_GetLastError());
-      return call_state;
-    }
+    CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_INT32));
   } else if (!strcmp("init_score", name)) {
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, R_REAL_PTR(field_data), len, C_API_DTYPE_FLOAT64));
   } else {
@@ -232,13 +226,7 @@ LGBM_SE LGBM_DatasetSetField_R(LGBM_SE handle,
     for (int i = 0; i < len; ++i) {
       vec[i] = static_cast<float>(R_REAL_PTR(field_data)[i]);
     }
-    int result = 0;
-    result = LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_FLOAT32);
-    if ((result) != 0) {
-      vec.clear();
-      Rf_error(LGBM_GetLastError());
-      return call_state;
-    }
+    CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_FLOAT32));
   }
   R_API_END();
 }
