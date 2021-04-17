@@ -27,9 +27,9 @@ You can find more details on the experimentation below:
 
 -  `Kaggle Paris Meetup #12 Slides <https://drive.google.com/file/d/0B6qJBmoIxFe0ZHNCOXdoRWMxUm8/view>`__
 
-Here is an explanatory picture:
+The image below compares the runtime for training with different compiler options to a baseline using LightGBM compiled with `-O2 --mtune=core2`. All three options are faster than that baseline. The best performance was achieved with `-O3 --mtune=native`.
 
 .. image:: ./_static/images/gcc-comparison-2.png
    :align: center
    :target: ./_static/images/gcc-comparison-2.png
-   :alt: picture with a chart grouped by compiler set of options using O2 mtune=core2 as the baseline. All the other 3 options are faster, with O3 mtune=native being the fastest.
+   :alt: picture with a chart grouped by compiler set of options using O2 M tune equals core2 as the baseline. All the other 3 options are faster, with O3 M tune equals native being the fastest.
