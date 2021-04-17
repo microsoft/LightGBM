@@ -97,14 +97,8 @@ else  # Linux
         curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
         apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
         apt-get update
-        if [[ $COMPILER == "clang" ]]; then
-            apt-get install --no-install-recommends -y \
-                cmake="3.19.5-0kitware1" \
-                cmake-data="3.19.5-0kitware1"
-        else
-            apt-get install --no-install-recommends -y \
-                cmake
-        fi
+        apt-get install --no-install-recommends -y \
+            cmake
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
         ARCH=$(uname -m)
