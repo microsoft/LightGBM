@@ -92,10 +92,14 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
 test_that("cpp errors should be raised as proper R errors", {
   data(agaricus.train, package = "lightgbm")
   train <- agaricus.train
-  dtrain <- lgb.Dataset(train$data, label = train$label[seq_len(10L)])
+  dtrain <- lgb.Dataset(
+    train$data
+    , label = train$label
+    , init_score = seq_len(10L)
+  )
   expect_error({
     dtrain$construct()
-  }, regexp = "Length of label is not same with #data")
+  }, regexp = "Initial score size doesn't match data size")
 })
 
 test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {
