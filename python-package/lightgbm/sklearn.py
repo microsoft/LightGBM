@@ -532,8 +532,9 @@ class LGBMModel(_LGBMModelBase):
         """
         for key, value in params.items():
             setattr(self, key, value)
-            if hasattr(self, '_' + key):
-                setattr(self, '_' + key, value)
+            under_score = "_"
+            if hasattr(self, f"{under_score} {key}"):
+                setattr(self, f"{under_score} {key}", value)
             self._other_params[key] = value
         return self
 
@@ -652,7 +653,7 @@ class LGBMModel(_LGBMModelBase):
                 elif isinstance(collection, dict):
                     return collection.get(i, None)
                 else:
-                    raise TypeError('{} should be dict or list'.format(name))
+                    raise TypeError(f"{name} should be dict or list")
 
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
@@ -719,9 +720,9 @@ class LGBMModel(_LGBMModelBase):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
-            raise ValueError(f"Number of features of the model must " \
-                             f"match the input. Model n_features_ is {self._n_features} and " \
-                             f"input n_features is {n_features} ")
+            raise ValueError(f"Number of features of the model must "
+                             f"match the input. Model n_features_ is {self._n_features} and "
+                             f"input n_features is {n_features}")
         return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
@@ -919,8 +920,8 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
             new_line = "\n"
-            _log_warning(f"Cannot compute class probabilities or labels " \
-                         f"due to the usage of customized objective function.{new_line}" \
+            _log_warning(f"Cannot compute class probabilities or labels "
+                         f"due to the usage of customized objective function.{new_line}"
                          f"Returning raw scores instead.")
             return result
         elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
@@ -992,7 +993,7 @@ class LGBMRanker(LGBMModel):
                    + _base_doc[_base_doc.find('eval_init_score :'):])  # type: ignore
     _base_doc = fit.__doc__
     _before_early_stop, _early_stop, _after_early_stop = _base_doc.partition('early_stopping_rounds :')
-    fit.__doc__ = (_before_early_stop
-                   + 'eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))\n'
-                   + ' ' * 12 + 'The evaluation positions of the specified metric.\n'
-                   + ' ' * 8 + _early_stop + _after_early_stop)
+    fit.__doc__ = (f"{_before_early_stop}"
+                   f" eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))\n"
+                   f"{' ':12} The evaluation positions of the specified metric.\n"
+                   f"{' ':8} {_early_stop} {_after_early_stop}")
