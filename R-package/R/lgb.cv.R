@@ -72,7 +72,7 @@ CVBooster <- R6::R6Class(
 lgb.cv <- function(params = list()
                    , data
                    , nrounds = 100L
-                   , nfold = 5L
+                   , nfold = 3L
                    , label = NULL
                    , weight = NULL
                    , obj = NULL
