@@ -48,7 +48,7 @@
 #' @export
 lgb.train <- function(params = list(),
                       data,
-                      nrounds = 10L,
+                      nrounds = 100L,
                       valids = list(),
                       obj = NULL,
                       eval = NULL,
