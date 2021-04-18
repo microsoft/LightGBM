@@ -75,6 +75,6 @@ lgb.importance <- function(model, percentage = TRUE) {
     )]
   }
 
-  return(tree_imp_dt)
+  return(withVisible(tree_imp_dt)$value)
 
 }
