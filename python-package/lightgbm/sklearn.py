@@ -919,16 +919,10 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         """Docstring is set after definition, using a template."""
         result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
-<<<<<<< HEAD
             new_line = "\n"
             _log_warning(f"Cannot compute class probabilities or labels "
                          f"due to the usage of customized objective function.{new_line}"
                          f"Returning raw scores instead.")
-=======
-            _log_warning("Cannot compute class probabilities or labels "
-                         "due to the usage of customized objective function.\n"
-                         "Returning raw scores instead.")
->>>>>>> 66ea376c13d018ef5eacb9d38e5863491b8cd109
             return result
         elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
             return result
