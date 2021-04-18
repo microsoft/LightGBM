@@ -75,6 +75,7 @@ lgb.importance <- function(model, percentage = TRUE) {
     )]
   }
 
-  return(withVisible(tree_imp_dt)$value)
+  # adding an empty [] to ensure the table is printed the first time print.data.table() is called
+  return(tree_imp_dt[])
 
 }
