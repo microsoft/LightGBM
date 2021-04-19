@@ -28,8 +28,8 @@ may allow you to pass other types of data like \code{matrix} and then separately
 
 \item{weight}{vector of response values. If not NULL, will set to dataset}
 
-\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
-The "Dataset Parameters" section of the documentation for a list of parameters and valid values.}}
+\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+the "Parameters" section of the documentation} for a list of parameters and valid values.}
 
 \item{nrounds}{number of training rounds}
 

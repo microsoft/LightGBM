@@ -24,8 +24,8 @@ lgb.train(
 )
 }
 \arguments{
-\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
-The "Dataset Parameters" section of the documentation for a list of parameters and valid values.}}
+\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+the "Parameters" section of the documentation} for a list of parameters and valid values.}
 
 \item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
 may allow you to pass other types of data like \code{matrix} and then separately supply
@@ -100,7 +100,7 @@ booster model into a predictor model which frees up memory and the
 original datasets}
 
 \item{...}{other parameters, see \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
-The "Parameters" section of the documentation} for more information. A few key parameters:
+the "Parameters" section of the documentation} for more information. A few key parameters:
 \itemize{
     \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
     \item{\code{num_leaves}: Maximum number of leaves in one tree.}

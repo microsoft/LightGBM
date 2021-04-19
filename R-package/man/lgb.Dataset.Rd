@@ -19,7 +19,7 @@ lgb.Dataset(
 \item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
 
 \item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
-The "Dataset Parameters" section of the documentation for a list of parameters and valid values.}}
+The "Dataset Parameters" section of the documentation} for a list of parameters and valid values.}
 
 \item{reference}{reference dataset. When LightGBM creates a Dataset, it does some preprocessing like binning
 continuous features into histograms. If you want to apply the same bin boundaries from an existing

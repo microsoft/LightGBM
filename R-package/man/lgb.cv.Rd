@@ -29,8 +29,8 @@ lgb.cv(
 )
 }
 \arguments{
-\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
-The "Dataset Parameters" section of the documentation for a list of parameters and valid values.}}
+\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+the "Parameters" section of the documentation} for a list of parameters and valid values.}
 
 \item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
 may allow you to pass other types of data like \code{matrix} and then separately supply

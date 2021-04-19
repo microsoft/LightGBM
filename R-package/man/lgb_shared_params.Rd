@@ -60,8 +60,8 @@ set to the iteration number of the best iteration.}
 \code{regression}, \code{regression_l1}, \code{huber},
 \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
 
-\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
-The "Dataset Parameters" section of the documentation for a list of parameters and valid values.}}
+\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+the "Parameters" section of the documentation} for a list of parameters and valid values.}
 
 \item{verbose}{verbosity for output, if <= 0, also will disable the print of evaluation during training}
 }

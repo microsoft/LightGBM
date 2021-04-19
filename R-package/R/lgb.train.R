@@ -13,7 +13,7 @@
 #'                   booster model into a predictor model which frees up memory and the
 #'                   original datasets
 #' @param ... other parameters, see \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
-#'            The "Parameters" section of the documentation} for more information. A few key parameters:
+#'            the "Parameters" section of the documentation} for more information. A few key parameters:
 #'            \itemize{
 #'                \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
 #'                \item{\code{num_leaves}: Maximum number of leaves in one tree.}
