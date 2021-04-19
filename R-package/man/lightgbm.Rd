@@ -9,7 +9,7 @@ lightgbm(
   label = NULL,
   weight = NULL,
   params = list(),
-  nrounds = 10L,
+  nrounds = 100L,
   verbose = 1L,
   eval_freq = 1L,
   early_stopping_rounds = NULL,

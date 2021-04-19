@@ -7,7 +7,7 @@
 lgb.cv(
   params = list(),
   data,
-  nrounds = 10L,
+  nrounds = 100L,
   nfold = 3L,
   label = NULL,
   weight = NULL,
