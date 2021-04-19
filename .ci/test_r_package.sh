@@ -94,13 +94,21 @@ fi
 
 # Manually install Depends and Imports libraries + 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
-packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
+packages="c('data.table', 'jsonlite', 'R6', 'testthat')"
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
     compile_from_source="never"
 fi
 Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
+
+if [[ $R_BUILD_TYPE == "cran" ]];
+    echo "Using Matrix development version from r-forge"
+    Rscript --vanilla -e "install.packages('Matrix', repos = 'r-forge.r-project.org')" || exit -1
+else
+    echo "Using Matrix stable release from CRAN"
+    Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages('Matrix', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
+fi
 
 cd ${BUILD_DIRECTORY}
 
