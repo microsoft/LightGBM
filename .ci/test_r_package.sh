@@ -102,7 +102,7 @@ if [[ $OS_NAME == "macos" ]]; then
 fi
 Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
 
-if [[ $R_BUILD_TYPE == "cran" ]];
+if [[ $R_BUILD_TYPE == "cran" ]]; then
     echo "Using Matrix development version from r-forge"
     Rscript --vanilla -e "install.packages('Matrix', repos = 'r-forge.r-project.org')" || exit -1
 else
