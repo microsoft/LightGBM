@@ -7,7 +7,7 @@
 lgb.cv(
   params = list(),
   data,
-  nrounds = 10L,
+  nrounds = 100L,
   nfold = 3L,
   label = NULL,
   weight = NULL,
@@ -121,8 +121,9 @@ into a predictor model which frees up memory and the original datasets}
     \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
                      overfit when #data is small. Tree still grow by leaf-wise.}
     \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-                       the number of real CPU cores, not the number of threads (most
-                       CPU using hyper-threading to generate 2 threads per CPU core).}
+                 the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
+                 not the number of threads (most CPU using hyper-threading to generate 2 threads
+                 per CPU core).}
 }}
 }
 \value{

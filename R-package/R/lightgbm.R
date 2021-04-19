@@ -93,8 +93,9 @@ NULL
 #'         \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
 #'                          overfit when #data is small. Tree still grow by leaf-wise.}
 #'          \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-#'                             the number of real CPU cores, not the number of threads (most
-#'                             CPU using hyper-threading to generate 2 threads per CPU core).}
+#'                             the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
+#'                             not the number of threads (most CPU using hyper-threading to generate 2 threads
+#'                             per CPU core).}
 #'     }
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained \code{lgb.Booster}
@@ -103,7 +104,7 @@ lightgbm <- function(data,
                      label = NULL,
                      weight = NULL,
                      params = list(),
-                     nrounds = 10L,
+                     nrounds = 100L,
                      verbose = 1L,
                      eval_freq = 1L,
                      early_stopping_rounds = NULL,
