@@ -300,8 +300,9 @@ At build time, `configure` will be run and used to create a file `Makevars`, usi
     ```shell
     docker run \
         -v $(pwd):/opt/LightGBM \
+        -w /opt/LightGBM \
         -t ubuntu:20.04 \
-        /bin/bash -c "cd /opt/LightGBM && ./R-package/recreate-configure.sh"
+        ./R-package/recreate-configure.sh
     ```
 
     The version of `autoconf` used by this project is stored in `R-package/AUTOCONF_UBUNTU_VERSION`. To update that version, update that file and run the commands above. To see available versions, see https://packages.ubuntu.com/search?keywords=autoconf.
@@ -369,10 +370,10 @@ You can replicate these checks locally using Docker.
 ```shell
 docker run \
     -v $(pwd):/opt/LightGBM \
+    -w /opt/LightGBM \
     -it rhub/rocker-gcc-san \
     /bin/bash
 
-cd /opt/LightGBM
 Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
 
 sh build-cran-package.sh
@@ -391,10 +392,10 @@ You can replicate these checks locally using Docker. Note that instrumented vers
 ```shell
 docker run \
     -v $(pwd):/opt/LightGBM \
+    -w /opt/LightGBM \
     -it \
         wch1/r-debug
 
-cd /opt/LightGBM
 RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
 
 sh build-cran-package.sh

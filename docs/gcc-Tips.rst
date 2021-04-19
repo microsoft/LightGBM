@@ -27,32 +27,9 @@ You can find more details on the experimentation below:
 
 -  `Kaggle Paris Meetup #12 Slides <https://drive.google.com/file/d/0B6qJBmoIxFe0ZHNCOXdoRWMxUm8/view>`__
 
-Some explanatory pictures:
-
-.. image:: ./_static/images/gcc-table.png
-   :align: center
-   :target: ./_static/images/gcc-table.png
-
-.. image:: ./_static/images/gcc-bars.png
-   :align: center
-   :target: ./_static/images/gcc-bars.png
-
-.. image:: ./_static/images/gcc-chart.png
-   :align: center
-   :target: ./_static/images/gcc-chart.png
-
-.. image:: ./_static/images/gcc-comparison-1.png
-   :align: center
-   :target: ./_static/images/gcc-comparison-1.png
+The image below compares the runtime for training with different compiler options to a baseline using LightGBM compiled with ``-O2 --mtune=core2``. All three options are faster than that baseline. The best performance was achieved with ``-O3 --mtune=native``.
 
 .. image:: ./_static/images/gcc-comparison-2.png
    :align: center
    :target: ./_static/images/gcc-comparison-2.png
-
-.. image:: ./_static/images/gcc-meetup-1.png
-   :align: center
-   :target: ./_static/images/gcc-meetup-1.png
-
-.. image:: ./_static/images/gcc-meetup-2.png
-   :align: center
-   :target: ./_static/images/gcc-meetup-2.png
+   :alt: Picture with a chart grouped by compiler set of options using O2 M tune equals core2 as the baseline. All the other 3 options are faster, with O3 M tune equals native being the fastest.
