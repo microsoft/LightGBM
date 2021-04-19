@@ -18,8 +18,10 @@ lgb.Dataset(
 \arguments{
 \item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
 
-\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
-The "Dataset Parameters" section of the documentation} for a list of parameters and valid values.}
+\item{params}{a list of parameters. See
+\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
+The "Dataset Parameters" section of the documentation} for a list of parameters
+and valid values.}
 
 \item{reference}{reference dataset. When LightGBM creates a Dataset, it does some preprocessing like binning
 continuous features into histograms. If you want to apply the same bin boundaries from an existing
@@ -34,8 +36,8 @@ names or an integer vector with the indices of the features (e.g.
 \item{free_raw_data}{LightGBM constructs its data format, called a "Dataset", from tabular data.
 By default, that Dataset object on the R side does not keep a copy of the raw data.
 This reduces LightGBM's memory consumption, but it means that the Dataset object
-cannot be changed after it has been constructed. If you'd prefer to be able to change the Dataset
-object after construction, set \code{free_raw_data = FALSE}.}
+cannot be changed after it has been constructed. If you'd prefer to be able to
+change the Dataset object after construction, set \code{free_raw_data = FALSE}.}
 
 \item{info}{a list of information of the \code{lgb.Dataset} object}
 
