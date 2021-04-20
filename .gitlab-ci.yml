@@ -3,7 +3,7 @@ stages:
   - test
 
 default:
-  image: buildpack-deps:bionic
+  image: matrim/cmake-examples:3.10.2
 
 build:
   stage: build
