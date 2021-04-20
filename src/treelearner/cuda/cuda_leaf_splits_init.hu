@@ -1,0 +1,24 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
+ */
+#ifndef LIGHTGBM_CUDA_LEAF_SPLITS_INIT_HU_
+#define LIGHTGBM_CUDA_LEAF_SPLITS_INIT_HU_
+
+#ifdef USE_CUDA
+
+#include <LightGBM/meta.h>
+
+namespace LightGBM {
+
+__global__ void CUDALeafSplitsInitKernel1(const score_t* cuda_gradients, const score_t* cuda_hessians,
+  const data_size_t num_data, double* grad_sum_out, double* hess_sum_out);
+
+__global__ void CUDALeafSplitsInitKernel2(const score_t* cuda_gradients, const score_t* cuda_hessians,
+  const data_size_t num_data, double* grad_sum_out, double* hess_sum_out);
+
+}  // namespace LightGBM
+
+#endif  // USE_CUDA
+#endif  // LIGHTGBM_CUDA_LEAF_SPLITS_INIT_HU_
