@@ -1,0 +1,22 @@
+stages:
+  - build
+  - test
+
+default:
+  image: cyberdojofoundation/ubuntu-build-essential:16.04
+
+build:
+  stage: build
+  script:
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make -j4
+    - make install
+    - cd ../
+
+test-sample:
+  stage: test
+  script:
+    - cd .ci/regression/sample
+    - bash ../verify_result.sh
