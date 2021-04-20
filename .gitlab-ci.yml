@@ -3,7 +3,7 @@ stages:
   - test
 
 default:
-  image: cyberdojofoundation/ubuntu-build-essential:16.04
+  image: buildpack-deps:bionic
 
 build:
   stage: build
