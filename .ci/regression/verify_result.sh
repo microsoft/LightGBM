@@ -1,5 +1,27 @@
+#!/bin/bash
+
 p=$(pwd)
 # ls "$path/ref_data"
+
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+        --no-rm)
+        NO_RM_DATA=YES
+        shift # past argument
+        ;;
+        *)    # unknown option
+        POSITIONAL+=("$1") # save it in an array for later
+        shift # past argument
+        ;;
+    esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+
+
 
 if (( $(ls *.sh | wc -l) < 1 )) ; then
     echo ERROR: No test scripts found in $p
@@ -51,7 +73,11 @@ for script in *.sh; do
             exit_code=2
         fi
     done
-    rm -r "$script_data_dir"
+    if [ $NO_RM_DATA ]; then
+        echo "$script_data_dir" not removed
+    else
+        rm -r "$script_data_dir"
+    fi
 done
 
 exit $exit_code
