@@ -1681,16 +1681,16 @@ test_that("early stopping works with lgb.cv()", {
 test_that("lgb.train() works correctly with data frames", {
   data(mtcars)
   y <- mtcars$mpg
-  X <- mtcars[,-1]
+  X <- mtcars[, -1L]
   # adding fake categorical features
   X[["cyl"]] <- paste0("cyl", X[["cyl"]])
   X[["gear"]] <- paste0("gear", X[["gear"]])
   X[["carb"]] <- paste0("carb", X[["carb"]])
 
   # fitting a model
-  model <- lightgbm(data=X, label=y,
-                    params=list(objective="regression", min_data=1),
-                    verbose=-1)
+  model <- lightgbm(data = X, label = y,
+                    params = list(objective = "regression", min_data = 1L),
+                    verbose = -1L)
   pred <- predict(model, X)
 
   # checking that the columns are re-ordered if needed
@@ -1708,9 +1708,9 @@ test_that("lgb.train() works correctly with data frames", {
   expect_equal(pred, pred_new)
 
   # now alter it in an incompatible way
-  X[["cyl"]] <- seq(1, nrow(X))
-  X[["gear"]] <- seq(1, nrow(X))
-  X[["carb"]] <- seq(1, nrow(X))
+  X[["cyl"]] <- seq(1.0, nrow(X))
+  X[["gear"]] <- seq(1.0, nrow(X))
+  X[["carb"]] <- seq(1.0, nrow(X))
 
   # check that the results were altered
   pred_new <- predict(model, X)
@@ -1719,56 +1719,56 @@ test_that("lgb.train() works correctly with data frames", {
   expect_true(diff > .Machine$double.eps)
 
   # check that the results match when using other functions
-  X_lgb <- lgb.Dataset(mtcars[,-1])
-  model_new <- lgb.train(params=list(objective="regression", min_data=1),
-                         data=X_lgb, verbose=-1)
-  pred <- predict(model_new, mtcars[,-1])
-  pred_new <- predict(model_new, as.matrix(mtcars[,-1]))
+  X_lgb <- lgb.Dataset(mtcars[, -1L])
+  model_new <- lgb.train(params = list(objective = "regression", min_data = 1L),
+                         data = X_lgb, verbose = -1L)
+  pred <- predict(model_new, mtcars[ ,-1L])
+  pred_new <- predict(model_new, as.matrix(mtcars[, -1L]))
   expect_equal(pred, pred_new)
 
-  pred_new <- model_new$predict(mtcars[,-1])
+  pred_new <- model_new$predict(mtcars[, -1L])
   expect_equal(pred, pred_new)
 
   # check that it throws an error when there's mising columns
-  expect_error(predict(model, mtcars[, 3:4]))
+  expect_error(predict(model, mtcars[, 3L:4L]))
 
   # check that it accepts data frames even when fitting to matrices
-  X <- mtcars[,-1]
-  model_new <- lightgbm(data=as.matrix(X), label=y,
-                        params=list(objective="regression", min_data=1),
-                        verbose=-1)
+  X <- mtcars[, -1L]
+  model_new <- lightgbm(data = as.matrix(X), label = y,
+                        params = list(objective = "regression", min_data = 1L),
+                        verbose = -1L)
   pred <- predict(model_new, as.matrix(X))
   pred_new <- predict(model_new, X)
   expect_equal(pred, pred_new)
 
   # verify that labels and weights can be passed as column names
-  X_lgb <- lgb.Dataset(mtcars[,-1])
-  model <- lgb.train(params=list(objective="regression", min_data=1),
-                     data=X_lgb, verbose=-1)
-  pred <- predict(model, mtcars[,-1])
+  X_lgb <- lgb.Dataset(mtcars[, -1L])
+  model <- lgb.train(params = list(objective = "regression", min_data = 1L),
+                     data = X_lgb, verbose = -1L)
+  pred <- predict(model, mtcars[, -1L])
 
-  X_lgb_new <- lgb.Dataset(mtcars, label=mpg)
-  model_new <- lgb.train(params=list(objective="regression", min_data=1),
-                         data=X_lgb, verbose=-1)
+  X_lgb_new <- lgb.Dataset(mtcars, label = mpg)
+  model_new <- lgb.train(params = list(objective = "regression", min_data = 1L),
+                         data = X_lgb, verbose = -1L)
   pred_new <- predict(model, mtcars)
   expect_equal(pred, pred_new)
-  pred_new <- predict(model, mtcars[,-1])
+  pred_new <- predict(model, mtcars[, -1L])
   expect_equal(pred, pred_new)
-  X_lgb_new <- lgb.Dataset(mtcars, label="mpg")
-  model_new <- lgb.train(params=list(objective="regression", min_data=1),
-                         data=X_lgb, verbose=-1)
-  pred_new <- predict(model, mtcars)
-  expect_equal(pred, pred_new)
-
-  X_lgb_new <- lgb.Dataset(mtcars, label=mpg, weight=rep(1, nrow(mtcars)))
-  model_new <- lgb.train(params=list(objective="regression", min_data=1),
-                         data=X_lgb, verbose=-1)
+  X_lgb_new <- lgb.Dataset(mtcars, label = "mpg")
+  model_new <- lgb.train(params = list(objective = "regression", min_data = 1L),
+                         data = X_lgb, verbose = -1L)
   pred_new <- predict(model, mtcars)
   expect_equal(pred, pred_new)
 
-  model_new <- lightgbm(params=list(objective="regression", min_data=1),
-                        data=mtcars, label=mpg, weight=rep(1, nrow(mtcars)),
-                        verbose=-1)
+  X_lgb_new <- lgb.Dataset(mtcars, label = mpg, weight = rep(1.0, nrow(mtcars)))
+  model_new <- lgb.train(params = list(objective = "regression", min_data = 1L),
+                         data = X_lgb, verbose = -1L)
+  pred_new <- predict(model, mtcars)
+  expect_equal(pred, pred_new)
+
+  model_new <- lightgbm(params = list(objective = "regression", min_data = 1L),
+                        data = mtcars, label = mpg, weight = rep(1.0, nrow(mtcars)),
+                        verbose = -1L)
   pred_new <- predict(model, mtcars)
   expect_equal(pred, pred_new)
 })

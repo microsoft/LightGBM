@@ -98,16 +98,16 @@ Dataset <- R6::R6Class(
           cols_char <- sapply(data, is.character)
           if (any(cols_char)) {
             names_cols_char <- names(data)[cols_char]
-            data[, (names_cols_char) := lapply(.SD, factor), .SDcols=names_cols_char]
+            data[, (names_cols_char) := lapply(.SD, factor), .SDcols = names_cols_char]
           }
           cols_factor <- sapply(data, is.factor)
           if (any(cols_factor)) {
             categorical_feature <- names(data)[cols_factor]
-            data[, (categorical_feature) := lapply(.SD, factor), .SDcols=categorical_feature]
-            private$factor_levels <- lapply(data[, categorical_feature, with=FALSE], levels)
+            data[, (categorical_feature) := lapply(.SD, factor), .SDcols = categorical_feature]
+            private$factor_levels <- lapply(data[, categorical_feature, with = FALSE], levels)
             data[
-                  , (categorical_feature) := lapply(.SD, function(x) ifelse(is.na(x), 0, as.numeric(x))-1)
-                  , .SDcols=categorical_feature
+                  , (categorical_feature) := lapply(.SD, function(x) {x <- as.numeric(x); x[is.na(x)] <- 0.0; return(x-1.0)})
+                  , .SDcols = categorical_feature
             ]
           }
 
@@ -504,19 +504,19 @@ Dataset <- R6::R6Class(
     process_data_frame_columns = function(data, colnames, categorical_feature, factor_levels) {
       data <- as.data.table(data)
       if (!is.null(colnames))
-        data <- data[, colnames, with=FALSE]
+        data <- data[, colnames, with = FALSE]
       if (!is.null(factor_levels)) {
         data[
               , (categorical_feature)
                   := mapply(
                       function(col, levs) factor(col, levs),
-                      .SD, factor_levels, SIMPLIFY=FALSE
+                      .SD, factor_levels, SIMPLIFY = FALSE
                     )
-              , .SDcols=categorical_feature
+              , .SDcols = categorical_feature
         ]
         data[
-              , (categorical_feature) := lapply(.SD, function(x) ifelse(is.na(x), 0, as.numeric(x)) - 1)
-              , .SDcols=categorical_feature
+              , (categorical_feature) := lapply(.SD, function(x) {x <- as.numeric(x); x[is.na(x)] <- 0.0; return(x-1.0)})
+              , .SDcols = categorical_feature
         ]
       } else {
         if (any(sapply(data, function(x) is.character(x) || is.factor(x))))
@@ -829,23 +829,23 @@ Dataset <- R6::R6Class(
                                        env_where_to_substitute) {
 
 
-      check_is_df_col = function(var, var_name, data) {
-        var_name <- head(as.character(var_name), 1)
+      check_is_df_col <- function(var, var_name, data) {
+        var_name <- head(as.character(var_name), 1L)
         if (inherits(data, "data.frame") && NROW(var_name) && var_name != "NULL") {
           if (var_name %in% names(data)) {
             var <- data[[var_name]]
-            data <- as.data.table(data)[, setdiff(names(data), var_name), with=FALSE]
+            data <- as.data.table(data)[, setdiff(names(data), var_name), with = FALSE]
           } else if (is.character(var) && NROW(var) == 1L && var %in% names(data)) {
             var <- data[[var]]
-            data <- as.data.table(data)[, setdiff(names(data), var), with=FALSE]
+            data <- as.data.table(data)[, setdiff(names(data), var), with = FALSE]
           }
         }
         return(list(var, data))
       }
 
-      label_name <- head(as.character(label_name), 1)
-      weight_name <- head(as.character(weight_name), 1)
-      init_score_name <- head(as.character(init_score_name), 1)
+      label_name <- head(as.character(label_name), 1L)
+      weight_name <- head(as.character(weight_name), 1L)
+      init_score_name <- head(as.character(init_score_name), 1L)
 
       temp <- check_is_df_col(label, label_name, data)
       label <- temp[[1L]]
