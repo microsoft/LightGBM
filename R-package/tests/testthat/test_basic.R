@@ -1730,7 +1730,7 @@ test_that("lgb.train() works correctly with data frames", {
   X_lgb <- lgb.Dataset(mtcars[, -1L])
   model_new <- lgb.train(params = list(objective = "regression", min_data = 1L),
                          data = X_lgb, verbose = -1L)
-  pred <- predict(model_new, mtcars[ ,-1L])
+  pred <- predict(model_new, mtcars[, -1L])
   pred_new <- predict(model_new, as.matrix(mtcars[, -1L]))
   expect_equal(pred, pred_new)
 

@@ -105,8 +105,14 @@ Dataset <- R6::R6Class(
             categorical_feature <- names(data)[cols_factor]
             data[, (categorical_feature) := lapply(.SD, factor), .SDcols = categorical_feature]
             private$factor_levels <- lapply(data[, categorical_feature, with = FALSE], levels)
+            encode_categ <- function(x) {
+              x <- as.numeric(x)
+              x[is.na(x)] <- 0.0
+              x <- x - 1.0
+              return(x)
+            }
             data[
-                  , (categorical_feature) := lapply(.SD, function(x) {x <- as.numeric(x); x[is.na(x)] <- 0.0; return(x-1.0)})
+                  , (categorical_feature) := lapply(.SD, encode_categ)
                   , .SDcols = categorical_feature
             ]
           }
@@ -514,8 +520,14 @@ Dataset <- R6::R6Class(
                     )
               , .SDcols = categorical_feature
         ]
+        encode_categ <- function(x) {
+          x <- as.numeric(x)
+          x[is.na(x)] <- 0.0
+          x <- x - 1.0
+          return(x)
+        }
         data[
-              , (categorical_feature) := lapply(.SD, function(x) {x <- as.numeric(x); x[is.na(x)] <- 0.0; return(x-1.0)})
+              , (categorical_feature) := lapply(.SD, function(x) encode_categ)
               , .SDcols = categorical_feature
         ]
       } else {
