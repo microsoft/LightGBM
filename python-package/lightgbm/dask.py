@@ -422,7 +422,7 @@ def _train(
 
     # Tell each worker to train on the parts that it has locally
     #
-    # This code creates ``_train_part()`` calls as not "pure" because:
+    # This code treats ``_train_part()`` calls as not "pure" because:
     #     1. there is randomness in the training process unless parameters ``seed``
     #        and ``deterministic`` are set
     #     2. even with those parameters set, the output of one ``_train_part()`` call
