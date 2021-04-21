@@ -195,7 +195,7 @@ Dataset <- R6::R6Class(
         cnames <- colnames(private$raw_data)
       }
 
-      # set feature names if they don't exist
+      # set feature names if they not exist
       if (is.null(private$colnames) && !is.null(cnames)) {
         private$colnames <- as.character(cnames)
       }
@@ -287,7 +287,7 @@ Dataset <- R6::R6Class(
           )
 
         } else if (methods::is(private$raw_data, "dgCMatrix")) {
-          if (length(private$raw_data@p) > .Machine$integer.max) {
+          if (length(private$raw_data@p) > 2147483647L) {
             stop("Cannot support large CSC matrix")
           }
           # Are we using a dgCMatrix (sparsed matrix column compressed)
