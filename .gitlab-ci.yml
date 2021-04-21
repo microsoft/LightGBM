@@ -3,7 +3,7 @@ stages:
   - test
 
 default:
-  image: matrim/cmake-examples:3.10.2
+  image: willianz/lightgbm-build-env:latest
 
 build:
   stage: build
