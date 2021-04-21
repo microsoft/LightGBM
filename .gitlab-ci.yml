@@ -5,6 +5,10 @@ stages:
 default:
   image: willianz/lightgbm-build-env:latest
 
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+
 build:
   stage: build
   script:
