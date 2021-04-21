@@ -32,3 +32,10 @@ in example `sample_1` and `sample_test2.sh
 
 ### test run
 Run `bash ../verify_result.sh` in <task_dir> as working directory
+
+
+## Tips
+1. run `verify_result.sh` in test directory locally to test locally
+  1. `cd my-tests-on-higgs`
+  1. `bash ../verify_result.sh`
+
