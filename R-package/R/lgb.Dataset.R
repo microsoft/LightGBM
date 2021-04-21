@@ -527,7 +527,7 @@ Dataset <- R6::R6Class(
           return(x)
         }
         data[
-              , (categorical_feature) := lapply(.SD, function(x) encode_categ)
+              , (categorical_feature) := lapply(.SD, encode_categ)
               , .SDcols = categorical_feature
         ]
       } else {
