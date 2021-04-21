@@ -26,7 +26,7 @@ _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
 
-class _DatasetNames():
+class _DatasetNames:
     """Placeholder names used by lightgbm.dask internals to say 'also evaluate the training data'.
 
     Avoid duplicating the training data when the validation set refers to elements of training data.
@@ -524,12 +524,18 @@ def _train(
                     parts_idx = j % n_parts
 
                     # add None-padding for individual eval_set member if it is smaller than the largest member.
-                    x_e = eval_x_parts[j] if j < n_this_eval_parts else None
-                    y_e = eval_y_parts[j] if j < n_this_eval_parts else None
+                    if j < n_this_eval_parts:
+                        x_e = eval_x_parts[j]
+                        y_e = eval_y_parts[j]
+                    else:
+                        x_e = None
+                        y_e = None
 
                     if j < n_parts:
+                        # first time a chunk of this eval set is added to this part.
                         eval_sets[parts_idx].append(([x_e], [y_e]))
                     else:
+                        # append additional chunks of this eval set to this part.
                         eval_sets[parts_idx][-1][0].append(x_e)
                         eval_sets[parts_idx][-1][1].append(y_e)
 
@@ -542,7 +548,11 @@ def _train(
 
                     # ensure that all evaluation parts map uniquely to one part.
                     for j in range(n_largest_eval_parts):
-                        w_e = eval_w_parts[j] if j < n_this_eval_parts else None
+                        if j < n_this_eval_parts:
+                            w_e = eval_w_parts[j]
+                        else:
+                            w_e = None
+
                         parts_idx = j % n_parts
                         if j < n_parts:
                             eval_sample_weights[parts_idx].append([w_e])
@@ -556,7 +566,11 @@ def _train(
                 else:
                     eval_init_score_parts = _split_to_parts(data=eval_init_score[i], is_matrix=False)
                     for j in range(n_largest_eval_parts):
-                        init_score_e = eval_init_score_parts[j] if j < n_this_eval_parts else None
+                        if j < n_this_eval_parts:
+                            init_score_e = eval_init_score_parts[j]
+                        else:
+                            init_score_e = None
+
                         parts_idx = j % n_parts
                         if j < n_parts:
                             eval_init_scores[parts_idx].append([init_score_e])
@@ -570,7 +584,11 @@ def _train(
                 else:
                     eval_g_parts = _split_to_parts(data=eval_group[i], is_matrix=False)
                     for j in range(n_largest_eval_parts):
-                        g_e = eval_g_parts[j] if j < n_this_eval_parts else None
+                        if j < n_this_eval_parts:
+                            g_e = eval_g_parts[j]
+                        else:
+                            g_e = None
+
                         parts_idx = j % n_parts
                         if j < n_parts:
                             eval_groups[parts_idx].append([g_e])
