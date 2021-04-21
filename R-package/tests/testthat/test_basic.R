@@ -50,24 +50,32 @@ CONSTANT_METRIC_VALUE <- 0.2
 
 # sample datasets to test early stopping
 set.seed(708L)
+data <- as.matrix(rnorm(100L), ncol = 1L, drop = FALSE)
+label <- rnorm(100L)
 DTRAIN_RANDOM_REGRESSION <- lgb.Dataset(
-  data = as.matrix(rnorm(100L), ncol = 1L, drop = FALSE)
-  , label = rnorm(100L)
+  data = data
+  , label = label
 )
 set.seed(708L)
+data <- as.matrix(rnorm(50L), ncol = 1L, drop = FALSE)
+label <- rnorm(50L)
 DVALID_RANDOM_REGRESSION <- lgb.Dataset(
-  data = as.matrix(rnorm(50L), ncol = 1L, drop = FALSE)
-  , label = rnorm(50L)
+  data = data
+  , label = label
 )
 set.seed(708L)
+data <- as.matrix(rnorm(120L), ncol = 1L, drop = FALSE)
+label <- sample(c(0L, 1L), size = 120L, replace = TRUE)
 DTRAIN_RANDOM_CLASSIFICATION <- lgb.Dataset(
-  data = as.matrix(rnorm(120L), ncol = 1L, drop = FALSE)
-  , label = sample(c(0L, 1L), size = 120L, replace = TRUE)
+  data = data
+  , label = label
 )
 set.seed(708L)
+data <- as.matrix(rnorm(37L), ncol = 1L, drop = FALSE)
+label <- sample(c(0L, 1L), size = 37L, replace = TRUE)
 DVALID_RANDOM_CLASSIFICATION <- lgb.Dataset(
-  data = as.matrix(rnorm(37L), ncol = 1L, drop = FALSE)
-  , label = sample(c(0L, 1L), size = 37L, replace = TRUE)
+  data = data
+  , label = label
 )
 
 test_that("train and predict binary classification", {
