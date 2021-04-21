@@ -20,13 +20,18 @@ lightgbm(
 )
 }
 \arguments{
-\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
-may allow you to pass other types of data like \code{matrix} and then separately supply
-\code{label} as a keyword argument.}
+\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}}
+and \link{lightgbm}, may allow you to pass other types of data like \code{matrix} and then
+separately supply \code{label} as a keyword argument. See the documentation of \link{lgb.Dataset}
+for more details.}
 
-\item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}}
+\item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}.
+If \code{data} is a `data.frame`, can also specify it as a column name, passed either as a character
+variable or as a name.}
 
-\item{weight}{vector of response values. If not NULL, will set to dataset}
+\item{weight}{vector of response values. If not NULL, will set to dataset.
+If \code{data} is a `data.frame`, can also specify it as a column name, passed either as a character
+variable or as a name.}
 
 \item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 the "Parameters" section of the documentation} for a list of parameters and valid values.}
@@ -57,10 +62,13 @@ set to the iteration number of the best iteration.}
                \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
    \item{\code{eval}: evaluation function, can be (a list of) character or custom eval function}
    \item{\code{record}: Boolean, TRUE will record iteration message to \code{booster$record_evals}}
-   \item{\code{colnames}: feature names, if not null, will use this to overwrite the names in dataset}
+   \item{\code{colnames}: feature names, if not null, will use this to overwrite the names in dataset.
+                       Not supported for `data.frame` inputs.}
    \item{\code{categorical_feature}: categorical features. This can either be a character vector of feature
                        names or an integer vector with the indices of the features (e.g. \code{c(1L, 10L)} to
-                       say "the first and tenth columns").}
+                       say "the first and tenth columns").
+                       Not supported for `data.frame` inputs as for them it will determine this automatically
+                       according to the column type (see the documentation of \link{lgb.Dataset} for details).}
    \item{\code{reset_data}: Boolean, setting it to TRUE (not the default value) will transform the booster model
                      into a predictor model which frees up memory and the original datasets}
     \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}

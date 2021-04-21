@@ -32,6 +32,10 @@ Dataset <- R6::R6Class(
                           free_raw_data = TRUE,
                           used_indices = NULL,
                           info = list(),
+                          label = NULL,
+                          weight = NULL,
+                          init_score = NULL,
+                          group = NULL,
                           ...) {
 
       # validate inputs early to avoid unnecessary computation
@@ -42,28 +46,86 @@ Dataset <- R6::R6Class(
           stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
       }
 
+      # Create known attributes list
+      if (!is.null(label)) info[["label"]] <- label
+      if (!is.null(weight)) info[["weight"]] <- weight
+      if (!is.null(init_score)) info[["init_score"]] <- init_score
+      if (!is.null(group)) info[["group"]] <- group
+
       # Check for additional parameters
       additional_params <- list(...)
-
-      # Create known attributes list
-      INFO_KEYS <- c("label", "weight", "init_score", "group")
 
       # Check if attribute key is in the known attribute list
       for (key in names(additional_params)) {
 
-        # Key existing
-        if (key %in% INFO_KEYS) {
+        # Store as param
+        params[[key]] <- additional_params[[key]]
 
-          # Store as info
-          info[[key]] <- additional_params[[key]]
+      }
+
+      # If it's a data.frame, will keep track of the categorical encodings
+      if (inherits(data, "data.frame")) {
+
+        if (!nrow(data) || !ncol(data))
+          stop("'data' is empty.")
+
+        if (is.null(reference)) {
+
+          # Factors are taken directly in data frames, so should not be supplied
+          if (!is.null(categorical_feature))
+            stop("Cannot pass 'categorical_feature' for data.frame. Categorical features should be factor columns.")
+
+          # Column names will also be taken directly
+          if (!is.null(colnames))
+            stop("Cannot pass 'colnames' for data.frame. Column names will be taken from it directly.")
+          colnames <- names(data)
+
+          # First check if the column types are all numeric or categorical
+          supported_coltypes <- c("numeric", "integer", "logical", "character", "factor", "POSIXct", "Date")
+          coltype_is_unsupported <- sapply(data, function(x) !inherits(x, supported_coltypes))
+          if (any(coltype_is_unsupported))
+            stop("'data' contains unsupported column types.")
+
+          # Ordered factors are not supported, so it will warn if there's any
+          has_ordered_factor <- sapply(data, is.ordered)
+          if (any(has_ordered_factor))
+            warning("Warning: ordered factors are not supported, will interpret them as unordered.")
+
+          # For faster conversions between types
+          data <- data.table::as.data.table(data)
+
+          # Now see if there are any categorical columns that will be encoded
+          cols_char <- sapply(data, is.character)
+          if (any(cols_char)) {
+            names_cols_char <- names(data)[cols_char]
+            data[, (names_cols_char) := lapply(.SD, factor), .SDcols=names_cols_char]
+          }
+          cols_factor <- sapply(data, is.factor)
+          if (any(cols_factor)) {
+            categorical_feature <- names(data)[cols_factor]
+            data[, (categorical_feature) := lapply(.SD, factor), .SDcols=categorical_feature]
+            private$factor_levels <- lapply(data[, categorical_feature, with=FALSE], levels)
+            data[
+                  , (categorical_feature) := lapply(.SD, function(x) ifelse(is.na(x), 0, as.numeric(x))-1)
+                  , .SDcols=categorical_feature
+            ]
+          }
+
+          # Finally, convert all columns to numeric and turn it into a matrix
+          data <- as.matrix(data[, lapply(.SD, as.numeric)])
 
         } else {
 
-          # Store as param
-          params[[key]] <- additional_params[[key]]
-
+          # When passing a reference, will take the columns and categorical encodings from it instead
+          data <- self$process_data_frame_columns(
+            data,
+            reference$get_colnames(),
+            reference$get_categorical_feature(),
+            reference$get_factor_levels()
+          )
         }
 
+        private$is_from_data_frame <- TRUE
       }
 
       # Check for matrix format
@@ -127,7 +189,7 @@ Dataset <- R6::R6Class(
         cnames <- colnames(private$raw_data)
       }
 
-      # set feature names if not exist
+      # set feature names if they don't exist
       if (is.null(private$colnames) && !is.null(cnames)) {
         private$colnames <- as.character(cnames)
       }
@@ -219,7 +281,7 @@ Dataset <- R6::R6Class(
           )
 
         } else if (methods::is(private$raw_data, "dgCMatrix")) {
-          if (length(private$raw_data@p) > 2147483647L) {
+          if (length(private$raw_data@p) > .Machine$integer.max) {
             stop("Cannot support large CSC matrix")
           }
           # Are we using a dgCMatrix (sparsed matrix column compressed)
@@ -424,6 +486,43 @@ Dataset <- R6::R6Class(
 
       return(invisible(self))
 
+    },
+
+    # Get levels used to encode factor variables in data frames
+    get_factor_levels = function() {
+      return(private$factor_levels)
+    },
+
+    get_categorical_feature = function() {
+      return(private$categorical_feature)
+    },
+
+    get_is_from_data_frame = function() {
+      return(private$is_from_data_frame)
+    },
+
+    process_data_frame_columns = function(data, colnames, categorical_feature, factor_levels) {
+      data <- as.data.table(data)
+      if (!is.null(colnames))
+        data <- data[, colnames, with=FALSE]
+      if (!is.null(factor_levels)) {
+        data[
+              , (categorical_feature)
+                  := mapply(
+                      function(col, levs) factor(col, levs),
+                      .SD, factor_levels, SIMPLIFY=FALSE
+                    )
+              , .SDcols=categorical_feature
+        ]
+        data[
+              , (categorical_feature) := lapply(.SD, function(x) ifelse(is.na(x), 0, as.numeric(x)) - 1)
+              , .SDcols=categorical_feature
+        ]
+      } else {
+        if (any(sapply(data, function(x) is.character(x) || is.factor(x))))
+          stop("'data' contains categorical columns, but 'reference' did not have encodings for them.")
+      }
+      return(as.matrix(data[, lapply(.SD, as.numeric)]))
     },
 
     # Get information
@@ -674,6 +773,8 @@ Dataset <- R6::R6Class(
     reference = NULL,
     colnames = NULL,
     categorical_feature = NULL,
+    factor_levels = NULL,
+    is_from_data_frame = FALSE,
     predictor = NULL,
     free_raw_data = TRUE,
     used_indices = NULL,
@@ -721,6 +822,48 @@ Dataset <- R6::R6Class(
       self$finalize()
       return(invisible(self))
 
+    },
+
+    substitute_from_df_cols = function(data, label, weight, init_score,
+                                       label_name, weight_name, init_score_name,
+                                       env_where_to_substitute) {
+
+
+      check_is_df_col = function(var, var_name, data) {
+        var_name <- head(as.character(var_name), 1)
+        if (inherits(data, "data.frame") && NROW(var_name) && var_name != "NULL") {
+          if (var_name %in% names(data)) {
+            var <- data[[var_name]]
+            data <- as.data.table(data)[, setdiff(names(data), var_name), with=FALSE]
+          } else if (is.character(var) && NROW(var) == 1L && var %in% names(data)) {
+            var <- data[[var]]
+            data <- as.data.table(data)[, setdiff(names(data), var), with=FALSE]
+          }
+        }
+        return(list(var, data))
+      }
+
+      label_name <- head(as.character(label_name), 1)
+      weight_name <- head(as.character(weight_name), 1)
+      init_score_name <- head(as.character(init_score_name), 1)
+
+      temp <- check_is_df_col(label, label_name, data)
+      label <- temp[[1L]]
+      data <- temp[[2L]]
+
+      temp <- check_is_df_col(weight, weight_name, data)
+      weight <- temp[[1L]]
+      data <- temp[[2L]]
+
+      temp <- check_is_df_col(init_score, init_score_name, data)
+      init_score <- temp[[1L]]
+      data <- temp[[2L]]
+
+      env_where_to_substitute$data <- data
+      env_where_to_substitute$label <- label
+      env_where_to_substitute$weight <- weight
+      env_where_to_substitute$init_score <- init_score
+      return(NULL)
     }
 
   )
@@ -729,14 +872,22 @@ Dataset <- R6::R6Class(
 #' @title Construct \code{lgb.Dataset} object
 #' @description Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
 #'              or local file (that was created previously by saving an \code{lgb.Dataset}).
-#' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
+#' @param data a \code{matrix} object, a \code{data.frame} object, a \code{dgCMatrix} object,
+#' or a character representing a filename.
+#'
+#' If passing a `data.frame`, will assume that columns are numeric if they are of types
+#' numeric, integer, logical, Date, or POSIXct; and will assume they are categorical if
+#' they are of types factor or character (ordered factors are taken as unordered).
+#' Other column types are not supported.
 #' @param params a list of parameters. See
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
 #'               The "Dataset Parameters" section of the documentation} for a list of parameters
 #'               and valid values.
 #' @param reference reference dataset. When LightGBM creates a Dataset, it does some preprocessing like binning
 #'                  continuous features into histograms. If you want to apply the same bin boundaries from an existing
-#'                  dataset to new \code{data}, pass that existing Dataset to this argument.
+#'                  dataset to new \code{data}, pass that existing Dataset to this argument. If the reference passed
+#'                  was constructed from a `data.frame`, will also take its column names, column order, column types,
+#'                  and levels of factor columns.
 #' @param colnames names of columns
 #' @param categorical_feature categorical features. This can either be a character vector of feature
 #'                            names or an integer vector with the indices of the features (e.g.
@@ -747,6 +898,20 @@ Dataset <- R6::R6Class(
 #'                      cannot be changed after it has been constructed. If you'd prefer to be able to
 #'                      change the Dataset object after construction, set \code{free_raw_data = FALSE}.
 #' @param info a list of information of the \code{lgb.Dataset} object
+#' @param label Label of the data (target variable). Should be a numeric vector.
+#' If `data` is a `data.frame`, can also specify it as a column name, passed either as a character
+#' variable or as a name.
+#' @param weight Weight for each instance/observation. Should be a numeric vector.
+#' If `data` is a `data.frame`, can also specify it as a column name, passed either as a character
+#' variable or as a name.
+#' @param init_score Init score for Dataset. Should be a numeric vector.
+#' If `data` is a `data.frame`, can also specify it as a column name, passed either as a character
+#' variable or as a name.
+#' @param group Group/query data, as integer vector. Only used in the learning-to-rank task.
+#' sum(group) = nrow(data).
+#' For example, if you have a 100-document dataset with `group = c(10, 20, 40, 10, 10, 10)`,
+#' that means that you have 6 groups, where the first 10 records are in the first group,
+#' records 11-30 are in the second group, records 31-70 are in the third group, etc.
 #' @param ... other information to pass to \code{info} or parameters pass to \code{params}
 #'
 #' @return constructed dataset
@@ -769,7 +934,19 @@ lgb.Dataset <- function(data,
                         categorical_feature = NULL,
                         free_raw_data = TRUE,
                         info = list(),
+                        label = NULL,
+                        weight = NULL,
+                        init_score = NULL,
+                        group = NULL,
                         ...) {
+  # Take variables from column names if appropriate
+  if (is.data.frame(data)) {
+    Dataset$private_methods$substitute_from_df_cols(
+      data, label, weight, init_score,
+      substitute(label), substitute(weight), substitute(init_score),
+      environment()
+    )
+  }
 
   # Create new dataset
   return(
@@ -783,6 +960,10 @@ lgb.Dataset <- function(data,
       , free_raw_data = free_raw_data
       , used_indices = NULL
       , info = info
+      , label = label
+      , weight = weight
+      , init_score = init_score
+      , group = group
       , ...
     ))
   )

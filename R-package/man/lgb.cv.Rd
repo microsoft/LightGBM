@@ -32,17 +32,22 @@ lgb.cv(
 \item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 the "Parameters" section of the documentation} for a list of parameters and valid values.}
 
-\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
-may allow you to pass other types of data like \code{matrix} and then separately supply
-\code{label} as a keyword argument.}
+\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}}
+and \link{lightgbm}, may allow you to pass other types of data like \code{matrix} and then
+separately supply \code{label} as a keyword argument. See the documentation of \link{lgb.Dataset}
+for more details.}
 
 \item{nrounds}{number of training rounds}
 
 \item{nfold}{the original dataset is randomly partitioned into \code{nfold} equal size subsamples.}
 
-\item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}}
+\item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}.
+If \code{data} is a `data.frame`, can also specify it as a column name, passed either as a character
+variable or as a name.}
 
-\item{weight}{vector of response values. If not NULL, will set to dataset}
+\item{weight}{vector of response values. If not NULL, will set to dataset.
+If \code{data} is a `data.frame`, can also specify it as a column name, passed either as a character
+variable or as a name.}
 
 \item{obj}{objective function, can be character or custom objective function. Examples include
 \code{regression}, \code{regression_l1}, \code{huber},
@@ -99,11 +104,14 @@ the \code{nfold} and \code{stratified} parameters are ignored.}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
-\item{colnames}{feature names, if not null, will use this to overwrite the names in dataset}
+\item{colnames}{feature names, if not null, will use this to overwrite the names in dataset.
+Not supported for `data.frame` inputs.}
 
 \item{categorical_feature}{categorical features. This can either be a character vector of feature
 names or an integer vector with the indices of the features (e.g.
-\code{c(1L, 10L)} to say "the first and tenth columns").}
+\code{c(1L, 10L)} to say "the first and tenth columns").
+Not supported for `data.frame` inputs as for them it will determine this automatically
+according to the column type (see the documentation of \link{lgb.Dataset} for details).}
 
 \item{early_stopping_rounds}{int. Activates early stopping. When this parameter is non-null,
 training will stop if the evaluation of any metric on any validation set

@@ -12,11 +12,21 @@ lgb.Dataset(
   categorical_feature = NULL,
   free_raw_data = TRUE,
   info = list(),
+  label = NULL,
+  weight = NULL,
+  init_score = NULL,
+  group = NULL,
   ...
 )
 }
 \arguments{
-\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
+\item{data}{a \code{matrix} object, a \code{data.frame} object, a \code{dgCMatrix} object,
+or a character representing a filename.
+
+If passing a `data.frame`, will assume that columns are numeric if they are of types
+numeric, integer, logical, Date, or POSIXct; and will assume they are categorical if
+they are of types factor or character (ordered factors are taken as unordered).
+Other column types are not supported.}
 
 \item{params}{a list of parameters. See
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
@@ -25,7 +35,9 @@ and valid values.}
 
 \item{reference}{reference dataset. When LightGBM creates a Dataset, it does some preprocessing like binning
 continuous features into histograms. If you want to apply the same bin boundaries from an existing
-dataset to new \code{data}, pass that existing Dataset to this argument.}
+dataset to new \code{data}, pass that existing Dataset to this argument. If the reference passed
+was constructed from a `data.frame`, will also take its column names, column order, column types,
+and levels of factor columns.}
 
 \item{colnames}{names of columns}
 
@@ -40,6 +52,24 @@ cannot be changed after it has been constructed. If you'd prefer to be able to
 change the Dataset object after construction, set \code{free_raw_data = FALSE}.}
 
 \item{info}{a list of information of the \code{lgb.Dataset} object}
+
+\item{label}{Label of the data (target variable). Should be a numeric vector.
+If `data` is a `data.frame`, can also specify it as a column name, passed either as a character
+variable or as a name.}
+
+\item{weight}{Weight for each instance/observation. Should be a numeric vector.
+If `data` is a `data.frame`, can also specify it as a column name, passed either as a character
+variable or as a name.}
+
+\item{init_score}{Init score for Dataset. Should be a numeric vector.
+If `data` is a `data.frame`, can also specify it as a column name, passed either as a character
+variable or as a name.}
+
+\item{group}{Group/query data, as integer vector. Only used in the learning-to-rank task.
+sum(group) = nrow(data).
+For example, if you have a 100-document dataset with `group = c(10, 20, 40, 10, 10, 10)`,
+that means that you have 6 groups, where the first 10 records are in the first group,
+records 11-30 are in the second group, records 31-70 are in the third group, etc.}
 
 \item{...}{other information to pass to \code{info} or parameters pass to \code{params}}
 }

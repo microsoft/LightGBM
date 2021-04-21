@@ -62,6 +62,14 @@ Booster <- R6::R6Class(
           private$num_dataset <- 1L
           private$init_predictor <- train_set$.__enclos_env__$private$predictor
 
+          # For processing predictions on data frames
+          if (train_set$get_is_from_data_frame()) {
+            private$is_from_data_frame <- TRUE
+            private$colnames <- train_set$get_colnames()
+            private$categorical_feature <- train_set$get_categorical_feature()
+            private$factor_levels <- train_set$get_factor_levels()
+          }
+
           # Check if predictor is existing
           if (!is.null(private$init_predictor)) {
 
@@ -524,6 +532,21 @@ Booster <- R6::R6Class(
         start_iteration <- 0L
       }
 
+      # Process data frame if required
+      if (is.data.frame(data)) {
+        if (private$is_from_data_frame) {
+          data <- Dataset$public_methods$process_data_frame_columns(
+                    data,
+                    private$colnames,
+                    private$categorical_feature,
+                    private$factor_levels
+                  )
+        } else {
+          data <- as.matrix(data)
+          mode(data) <- "double"
+        }
+      }
+
       # Predict on new data
       predictor <- Predictor$new(private$handle, ...)
       return(
@@ -575,6 +598,11 @@ Booster <- R6::R6Class(
     higher_better_inner_eval = NULL,
     set_objective_to_none = FALSE,
     train_set_version = 0L,
+    # For processing predictions on data frames
+    is_from_data_frame = FALSE,
+    colnames = NULL,
+    categorical_feature = NULL,
+    factor_levels = NULL,
     # Predict data
     inner_predict = function(idx) {
 

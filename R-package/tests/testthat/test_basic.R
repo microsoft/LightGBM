@@ -13,7 +13,6 @@ train <- agaricus.train
 test <- agaricus.test
 
 TOLERANCE <- 1e-6
-set.seed(708L)
 
 # [description] Every time this function is called, it adds 0.1
 #               to an accumulator then returns the current value.
@@ -50,18 +49,22 @@ CONSTANT_METRIC_VALUE <- 0.2
 }
 
 # sample datasets to test early stopping
+set.seed(708L)
 DTRAIN_RANDOM_REGRESSION <- lgb.Dataset(
   data = as.matrix(rnorm(100L), ncol = 1L, drop = FALSE)
   , label = rnorm(100L)
 )
+set.seed(708L)
 DVALID_RANDOM_REGRESSION <- lgb.Dataset(
   data = as.matrix(rnorm(50L), ncol = 1L, drop = FALSE)
   , label = rnorm(50L)
 )
+set.seed(708L)
 DTRAIN_RANDOM_CLASSIFICATION <- lgb.Dataset(
   data = as.matrix(rnorm(120L), ncol = 1L, drop = FALSE)
   , label = sample(c(0L, 1L), size = 120L, replace = TRUE)
 )
+set.seed(708L)
 DVALID_RANDOM_CLASSIFICATION <- lgb.Dataset(
   data = as.matrix(rnorm(37L), ncol = 1L, drop = FALSE)
   , label = sample(c(0L, 1L), size = 37L, replace = TRUE)
@@ -1040,8 +1043,8 @@ test_that("lgb.train() works when a mixture of functions and strings are passed 
 
   # the difference metrics shouldn't have been mixed up with each other
   results <- bst$record_evals[["valid1"]]
-  expect_true(abs(results[["rmse"]][["eval"]][[1L]] - 1.105012) < TOLERANCE)
-  expect_true(abs(results[["l2"]][["eval"]][[1L]] - 1.221051) < TOLERANCE)
+  expect_true(abs(results[["rmse"]][["eval"]][[1L]] - 0.9165341) < TOLERANCE)
+  expect_true(abs(results[["l2"]][["eval"]][[1L]] - 0.8400348) < TOLERANCE)
   expected_increasing_metric <- increasing_metric_starting_value + 0.1
   expect_true(
     abs(
@@ -1091,10 +1094,10 @@ test_that("lgb.train() works when a list of strings or a character vector is pas
     # the difference metrics shouldn't have been mixed up with each other
     results <- bst$record_evals[["valid1"]]
     if ("binary_error" %in% unlist(eval_variation)) {
-      expect_true(abs(results[["binary_error"]][["eval"]][[1L]] - 0.4864865) < TOLERANCE)
+      expect_true(abs(results[["binary_error"]][["eval"]][[1L]] - 0.5405405) < TOLERANCE)
     }
     if ("binary_logloss" %in% unlist(eval_variation)) {
-      expect_true(abs(results[["binary_logloss"]][["eval"]][[1L]] - 0.6932548) < TOLERANCE)
+      expect_true(abs(results[["binary_logloss"]][["eval"]][[1L]] - 0.699359) < TOLERANCE)
     }
   }
 })
@@ -1126,8 +1129,8 @@ test_that("lgb.train() works when you specify both 'metric' and 'eval' with stri
 
   # the difference metrics shouldn't have been mixed up with each other
   results <- bst$record_evals[["valid1"]]
-  expect_true(abs(results[["binary_error"]][["eval"]][[1L]] - 0.4864865) < TOLERANCE)
-  expect_true(abs(results[["binary_logloss"]][["eval"]][[1L]] - 0.6932548) < TOLERANCE)
+  expect_true(abs(results[["binary_error"]][["eval"]][[1L]] - 0.5405405) < TOLERANCE)
+  expect_true(abs(results[["binary_logloss"]][["eval"]][[1L]] - 0.699359) < TOLERANCE)
 })
 
 test_that("lgb.train() works when you give a function for eval", {
@@ -1537,8 +1540,8 @@ test_that("lgb.cv() works when you specify both 'metric' and 'eval' with strings
 
   # the difference metrics shouldn't have been mixed up with each other
   results <- bst$record_evals[["valid"]]
-  expect_true(abs(results[["binary_error"]][["eval"]][[1L]] - 0.5005654) < TOLERANCE)
-  expect_true(abs(results[["binary_logloss"]][["eval"]][[1L]] - 0.7011232) < TOLERANCE)
+  expect_true(abs(results[["binary_error"]][["eval"]][[1L]] - 0.5161012) < TOLERANCE)
+  expect_true(abs(results[["binary_logloss"]][["eval"]][[1L]] - 0.7007832) < TOLERANCE)
 
   # all boosters should have been created
   expect_length(bst$boosters, nfolds)
@@ -1673,6 +1676,101 @@ test_that("early stopping works with lgb.cv()", {
     length(bst$record_evals[["valid"]][["increasing_metric"]][["eval"]])
     , early_stopping_rounds + 1L
   )
+})
+
+test_that("lgb.train() works correctly with data frames", {
+  data(mtcars)
+  y <- mtcars$mpg
+  X <- mtcars[,-1]
+  # adding fake categorical features
+  X[["cyl"]] <- paste0("cyl", X[["cyl"]])
+  X[["gear"]] <- paste0("gear", X[["gear"]])
+  X[["carb"]] <- paste0("carb", X[["carb"]])
+
+  # fitting a model
+  model <- lightgbm(data=X, label=y,
+                    params=list(objective="regression", min_data=1),
+                    verbose=-1)
+  pred <- predict(model, X)
+
+  # checking that the columns are re-ordered if needed
+  X <- X[, rev(names(X))]
+  pred_new <- predict(model, X)
+  expect_equal(pred, pred_new)
+
+  # now try altering the categorical encodings
+  X[["cyl"]] <- factor(X[["cyl"]], rev(unique(X[["cyl"]])))
+  X[["gear"]] <- factor(X[["gear"]], rev(unique(X[["gear"]])))
+  X[["carb"]] <- factor(X[["carb"]], rev(unique(X[["carb"]])))
+
+  # check that predictions are still the same
+  pred_new <- predict(model, X)
+  expect_equal(pred, pred_new)
+
+  # now alter it in an incompatible way
+  X[["cyl"]] <- seq(1, nrow(X))
+  X[["gear"]] <- seq(1, nrow(X))
+  X[["carb"]] <- seq(1, nrow(X))
+
+  # check that the results were altered
+  pred_new <- predict(model, X)
+  diff <- pred - pred_new
+  diff <- diff %*% diff
+  expect_true(diff > .Machine$double.eps)
+
+  # check that the results match when using other functions
+  X_lgb <- lgb.Dataset(mtcars[,-1])
+  model_new <- lgb.train(params=list(objective="regression", min_data=1),
+                         data=X_lgb, verbose=-1)
+  pred <- predict(model_new, mtcars[,-1])
+  pred_new <- predict(model_new, as.matrix(mtcars[,-1]))
+  expect_equal(pred, pred_new)
+
+  pred_new <- model_new$predict(mtcars[,-1])
+  expect_equal(pred, pred_new)
+
+  # check that it throws an error when there's mising columns
+  expect_error(predict(model, mtcars[, 3:4]))
+
+  # check that it accepts data frames even when fitting to matrices
+  X <- mtcars[,-1]
+  model_new <- lightgbm(data=as.matrix(X), label=y,
+                        params=list(objective="regression", min_data=1),
+                        verbose=-1)
+  pred <- predict(model_new, as.matrix(X))
+  pred_new <- predict(model_new, X)
+  expect_equal(pred, pred_new)
+
+  # verify that labels and weights can be passed as column names
+  X_lgb <- lgb.Dataset(mtcars[,-1])
+  model <- lgb.train(params=list(objective="regression", min_data=1),
+                     data=X_lgb, verbose=-1)
+  pred <- predict(model, mtcars[,-1])
+
+  X_lgb_new <- lgb.Dataset(mtcars, label=mpg)
+  model_new <- lgb.train(params=list(objective="regression", min_data=1),
+                         data=X_lgb, verbose=-1)
+  pred_new <- predict(model, mtcars)
+  expect_equal(pred, pred_new)
+  pred_new <- predict(model, mtcars[,-1])
+  expect_equal(pred, pred_new)
+  X_lgb_new <- lgb.Dataset(mtcars, label="mpg")
+  model_new <- lgb.train(params=list(objective="regression", min_data=1),
+                         data=X_lgb, verbose=-1)
+  pred_new <- predict(model, mtcars)
+  expect_equal(pred, pred_new)
+
+  X_lgb_new <- lgb.Dataset(mtcars, label=mpg, weight=rep(1, nrow(mtcars)))
+  model_new <- lgb.train(params=list(objective="regression", min_data=1),
+                         data=X_lgb, verbose=-1)
+  pred_new <- predict(model, mtcars)
+  expect_equal(pred, pred_new)
+
+  model_new <- lightgbm(params=list(objective="regression", min_data=1),
+                        data=mtcars, label=mpg, weight=rep(1, nrow(mtcars)),
+                        verbose=-1)
+  pred_new <- predict(model, mtcars)
+  expect_equal(pred, pred_new)
 })
 
 context("linear learner")

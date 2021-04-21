@@ -23,8 +23,12 @@ CVBooster <- R6::R6Class(
 #' @description Cross validation logic used by LightGBM
 #' @inheritParams lgb_shared_params
 #' @param nfold the original dataset is randomly partitioned into \code{nfold} equal size subsamples.
-#' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
-#' @param weight vector of response values. If not NULL, will set to dataset
+#' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}.
+#' If \code{data} is a `data.frame`, can also specify it as a column name, passed either as a character
+#' variable or as a name.
+#' @param weight vector of response values. If not NULL, will set to dataset.
+#' If \code{data} is a `data.frame`, can also specify it as a column name, passed either as a character
+#' variable or as a name.
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation
 #' @param stratified a \code{boolean} indicating whether sampling of folds should be stratified
@@ -32,10 +36,13 @@ CVBooster <- R6::R6Class(
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
 #'              (each element must be a vector of test fold's indices). When folds are supplied,
 #'              the \code{nfold} and \code{stratified} parameters are ignored.
-#' @param colnames feature names, if not null, will use this to overwrite the names in dataset
+#' @param colnames feature names, if not null, will use this to overwrite the names in dataset.
+#' Not supported for `data.frame` inputs.
 #' @param categorical_feature categorical features. This can either be a character vector of feature
 #'                            names or an integer vector with the indices of the features (e.g.
 #'                            \code{c(1L, 10L)} to say "the first and tenth columns").
+#'                            Not supported for `data.frame` inputs as for them it will determine this automatically
+#'                            according to the column type (see the documentation of \link{lgb.Dataset} for details).
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets
@@ -99,6 +106,13 @@ lgb.cv <- function(params = list()
 
   # If 'data' is not an lgb.Dataset, try to construct one using 'label'
   if (!lgb.is.Dataset(x = data)) {
+    if (inherits(data, "data.frame")) {
+      Dataset$private_methods$substitute_from_df_cols(
+        data, label, weight, NULL,
+        substitute(label), substitute(weight), NULL,
+        environment()
+      )
+    }
     if (is.null(label)) {
       stop("'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'")
     }

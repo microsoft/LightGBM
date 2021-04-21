@@ -27,9 +27,10 @@ lgb.train(
 \item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 the "Parameters" section of the documentation} for a list of parameters and valid values.}
 
-\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
-may allow you to pass other types of data like \code{matrix} and then separately supply
-\code{label} as a keyword argument.}
+\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}}
+and \link{lightgbm}, may allow you to pass other types of data like \code{matrix} and then
+separately supply \code{label} as a keyword argument. See the documentation of \link{lgb.Dataset}
+for more details.}
 
 \item{nrounds}{number of training rounds}
 

@@ -2,9 +2,10 @@
 #' @title Shared parameter docs
 #' @description Parameter docs shared by \code{lgb.train}, \code{lgb.cv}, and \code{lightgbm}
 #' @param callbacks List of callback functions that are applied at each iteration.
-#' @param data a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
-#'             may allow you to pass other types of data like \code{matrix} and then separately supply
-#'             \code{label} as a keyword argument.
+#' @param data a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}}
+#'             and \link{lightgbm}, may allow you to pass other types of data like \code{matrix} and then
+#'             separately supply \code{label} as a keyword argument. See the documentation of \link{lgb.Dataset}
+#'             for more details.
 #' @param early_stopping_rounds int. Activates early stopping. When this parameter is non-null,
 #'                              training will stop if the evaluation of any metric on any validation set
 #'                              fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
@@ -73,8 +74,12 @@ NULL
 #' @title Train a LightGBM model
 #' @description Simple interface for training a LightGBM model.
 #' @inheritParams lgb_shared_params
-#' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
-#' @param weight vector of response values. If not NULL, will set to dataset
+#' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}.
+#' If \code{data} is a `data.frame`, can also specify it as a column name, passed either as a character
+#' variable or as a name.
+#' @param weight vector of response values. If not NULL, will set to dataset.
+#' If \code{data} is a `data.frame`, can also specify it as a column name, passed either as a character
+#' variable or as a name.
 #' @param save_name File name to use when writing the trained model to disk. Should end in ".model".
 #' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
 #'     \itemize{
@@ -84,10 +89,13 @@ NULL
 #'                    \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
 #'        \item{\code{eval}: evaluation function, can be (a list of) character or custom eval function}
 #'        \item{\code{record}: Boolean, TRUE will record iteration message to \code{booster$record_evals}}
-#'        \item{\code{colnames}: feature names, if not null, will use this to overwrite the names in dataset}
+#'        \item{\code{colnames}: feature names, if not null, will use this to overwrite the names in dataset.
+#'                            Not supported for `data.frame` inputs.}
 #'        \item{\code{categorical_feature}: categorical features. This can either be a character vector of feature
 #'                            names or an integer vector with the indices of the features (e.g. \code{c(1L, 10L)} to
-#'                            say "the first and tenth columns").}
+#'                            say "the first and tenth columns").
+#'                            Not supported for `data.frame` inputs as for them it will determine this automatically
+#'                            according to the column type (see the documentation of \link{lgb.Dataset} for details).}
 #'        \item{\code{reset_data}: Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                          into a predictor model which frees up memory and the original datasets}
 #'         \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
@@ -120,13 +128,20 @@ lightgbm <- function(data,
     stop("nrounds should be greater than zero")
   }
 
+  # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
+  if (!lgb.is.Dataset(x = data)) {
+    if (inherits(data, "data.frame")) {
+      Dataset$private_methods$substitute_from_df_cols(
+        data, label, weight, NULL,
+        substitute(label), substitute(weight), NULL,
+        environment()
+      )
+    }
+    data <- lgb.Dataset(data = data, label = label, weight = weight)
+  }
+
   # Set data to a temporary variable
   dtrain <- data
-
-  # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
-  if (!lgb.is.Dataset(x = dtrain)) {
-    dtrain <- lgb.Dataset(data = data, label = label, weight = weight)
-  }
 
   train_args <- list(
     "params" = params
