@@ -6,9 +6,10 @@
 \arguments{
 \item{callbacks}{List of callback functions that are applied at each iteration.}
 
-\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
-may allow you to pass other types of data like \code{matrix} and then separately supply
-\code{label} as a keyword argument.}
+\item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}}
+and \link{lightgbm}, may allow you to pass other types of data like \code{matrix} and then
+separately supply \code{label} as a keyword argument. See the documentation of \link{lgb.Dataset}
+for more details.}
 
 \item{early_stopping_rounds}{int. Activates early stopping. When this parameter is non-null,
 training will stop if the evaluation of any metric on any validation set
