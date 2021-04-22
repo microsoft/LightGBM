@@ -545,7 +545,9 @@ Dataset <- R6::R6Class(
 
     },
 
-    # Update parameters
+    # [description] Update Dataset parameters. If it has not been constructed yet,
+    #               this operation just happens on the R side (updating private$params).
+    #               If it has been constructed, parameters will be updated on the C++ side.
     update_params = function(params) {
       if (length(params) == 0L) {
         return(invisible(self))
@@ -553,26 +555,27 @@ Dataset <- R6::R6Class(
       if (lgb.is.null.handle(x = private$handle)) {
         private$params <- modifyList(private$params, params)
       } else {
-        call_state <- 0L
-        call_state <- .Call(
-          "LGBM_DatasetUpdateParamChecking_R"
-          , lgb.params2str(params = private$params)
-          , lgb.params2str(params = params)
-          , call_state
-          , PACKAGE = "lib_lightgbm"
-        )
-        call_state <- as.integer(call_state)
-        if (call_state != 0L) {
-
-          # raise error if raw data is freed
+        tryCatch({
+          call_state <- 0L
+          .Call(
+            "LGBM_DatasetUpdateParamChecking_R"
+            , lgb.params2str(params = private$params)
+            , lgb.params2str(params = params)
+            , call_state
+            , PACKAGE = "lib_lightgbm"
+          )
+        }, error = function(e) {
+          # If updating failed but raw data is not available, raise an error because
+          # achieving what the user asked for is not possible
           if (is.null(private$raw_data)) {
-            lgb.last_error()
+            stop(e)
           }
 
-          # Overwrite paramms
+          # If updating failed but raw data is available, modify the params
+          # on the R side and re-set ("deconstruct") the Dataset
           private$params <- modifyList(private$params, params)
           self$finalize()
-        }
+        })
       }
       return(invisible(self))
 
