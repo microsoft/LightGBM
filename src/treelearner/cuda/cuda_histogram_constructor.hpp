@@ -3,12 +3,15 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_NEW_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_
-#define LIGHTGBM_NEW_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_
+#ifndef LIGHTGBM_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_
+#define LIGHTGBM_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_
 
 #ifdef USE_CUDA
 
 #include <LightGBM/feature_group.h>
+#include <LightGBM/tree.h>
+
+#include "new_cuda_utils.hpp"
 
 #include <vector>
 
@@ -26,49 +29,29 @@ class CUDAHistogramConstructor {
 
   void FinishLoad();
 
-  void ConstructHistogramForLeaf(const int* smaller_leaf_index, const int* larger_leaf_index);
+  void ConstructHistogramForLeaf(const int* smaller_leaf_index, const int* larger_leaf_index,
+  const data_size_t* num_data_in_smaller_leaf, const int* smaller_leaf_data_offset, const data_size_t* data_indices_ptr,
+  const score_t* cuda_gradients, const score_t* cuda_hessians);
+
+  void LaunchConstructHistogramKernel(
+  const int* smaller_leaf_index, const data_size_t* num_data_in_leaf, const data_size_t* leaf_num_data_offset,
+  const data_size_t* data_indices_ptr, const score_t* cuda_gradients, const score_t* cuda_hessians);
 
   hist_t* cuda_hist() { return cuda_hist_; }
 
  private:
   // data on CPU, stored in row-wise style
   std::vector<uint8_t> cpu_data_;
-  std::vector<uint32_t> feature_group_bin_offsets;
+  std::vector<uint32_t> feature_group_bin_offsets_;
   uint8_t* cuda_data_;
+  uint32_t cuda_feature_group_bin_offsets_;
   const data_size_t num_data_;
   hist_t* cuda_hist_;
-};
-
-class CUDALeafSplitsInit {
- public:
-  CUDALeafSplitsInit(const score_t* cuda_gradients, const score_t* cuda_hessians, const data_size_t num_data);
-
-  void Init();
-
-  const double* smaller_leaf_sum_gradients() { return smaller_leaf_sum_gradients_; }
-
-  const double* smaller_leaf_sum_hessians() { return smaller_leaf_sum_hessians_; }
-
-  const double* larger_leaf_sum_gradients() { return larger_leaf_sum_gradients_; }
-
-  const double* larger_leaf_sum_gradients() { return larger_leaf_sum_hessians_; }
-
-  const int* smaller_leaf_index() { return smaller_leaf_index_; }
-  
-  const int* larger_leaf_index() { return larger_leaf_index_; }
-
- protected:
-  const score_t* cuda_gradients_;
-  const score_t* cuda_hessians_;
-  double* smaller_leaf_sum_gradients_;
-  double* smaller_leaf_sum_hessians_;
-  double* larger_leaf_sum_gradients_;
-  double* larger_leaf_sum_hessians_;
-  int* smaller_leaf_index_;
-  int* larger_leaf_index_;
-
-  int num_cuda_blocks_;
-  const int num_data_;
+  int num_total_bin_;
+  int* cuda_num_total_bin_;
+  int num_feature_groups_;
+  int* cuda_num_feature_groups_;
+  const int max_num_leaves_;
 };
 
 class CUDABestSplitFinder {
@@ -96,18 +79,7 @@ class CUDABestSplitFinder {
   int* cuda_best_split_threshold_;
 };
 
-class CUDADataSplitter {
- public:
-  CUDADataSplitter(const data_size_t* data_indices, const data_size_t num_data);
-
-  void Init();
-
-  void Split(const int* leaf_id, const int* best_split_feature, const int* best_split_threshold);
-
-  Tree* GetCPUTree();
-};
-
 }  // namespace LightGBM
 
 #endif  // USE_CUDA
-#endif  // LIGHTGBM_NEW_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_
+#endif  // LIGHTGBM_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_

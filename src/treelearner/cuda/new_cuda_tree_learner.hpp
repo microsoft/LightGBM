@@ -9,11 +9,13 @@
 #ifdef USE_CUDA
 
 #include "../serial_tree_learner.h"
+#include "cuda_leaf_splits_init.hpp"
 #include "cuda_histogram_constructor.hpp"
+#include "cuda_data_splitter.hpp"
 
 namespace LightGBM {
 
-class NewCUDATreeLearner: public SerialTreelearner {
+class NewCUDATreeLearner: public SerialTreeLearner {
  public:
   explicit NewCUDATreeLearner(const Config* config);
 
@@ -21,10 +23,9 @@ class NewCUDATreeLearner: public SerialTreelearner {
 
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
-  void BeforeTrain() override;
+  void ResetTrainingData(const Dataset* train_data,
+                         bool is_constant_hessian) override;
 
-  void ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) override;
-  
   Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) override;
   
   void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override;
@@ -32,7 +33,7 @@ class NewCUDATreeLearner: public SerialTreelearner {
  protected:
   void AllocateFeatureTasks();
 
-  void AllocateCUDAMemory();
+  void AllocateCUDAMemory(const bool is_constant_hessian);
 
   void CreateCUDAHistogramConstructors();
 
@@ -45,6 +46,8 @@ class NewCUDATreeLearner: public SerialTreelearner {
   void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract, const Tree* tree) override;
 
   void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) override;
+
+  void BeforeTrain() override;
 
   // number of GPUs
   int num_gpus_;
@@ -59,11 +62,13 @@ class NewCUDATreeLearner: public SerialTreelearner {
   std::vector<int> device_num_workgroups_;
 
   // full data indices on CUDA devices, as the data indices of data_partition_ in CPU version
-  std::vector<int*> device_data_indices_;
+  std::vector<data_size_t*> device_data_indices_;
   // gradient values on CUDA devices
   std::vector<score_t*> device_gradients_;
   // hessian values on CUDA devices
   std::vector<score_t*> device_hessians_;
+  // histogram storage on CUDA devices
+  std::vector<hist_t*> device_histograms_;
 
   // device leaf splits initializer
   std::vector<std::unique_ptr<CUDALeafSplitsInit>> device_leaf_splits_initializers_;

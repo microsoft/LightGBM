@@ -229,6 +229,15 @@ if(USE_CUDA)
       add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
       add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
     endforeach()
+
+    add_library(leaf_splits_init OBJECT src/treelearner/cuda/cuda_leaf_splits_init.cu)
+    set_target_properties(leaf_splits_init PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+    add_library(data_splitter OBJECT src/treelearner/cuda/cuda_data_splitter.cu)
+    set_target_properties(data_splitter PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+    add_library(histogram_constructor OBJECT src/treelearner/cuda/cuda_histogram_constructor.cu)
+    set_target_properties(histogram_constructor PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif(USE_CUDA)
 
 if(USE_HDFS)
@@ -340,6 +349,8 @@ file(GLOB SOURCES
     src/treelearner/*.cpp
 if(USE_CUDA)
     src/treelearner/*.cu
+    src/treelearner/cuda/*.cpp
+    src/treelearner/cuda/*.cu
 endif(USE_CUDA)
 )
 
