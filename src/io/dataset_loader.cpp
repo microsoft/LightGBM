@@ -617,38 +617,10 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   return dataset.release();
 }
 
-// To help verify whether sample data is changed when using different language bindings.
-static void DumpSampleData(const std::string& sample_filename, double** sample_values,
-                           int** sample_indices, int num_col, const int* num_per_col,
-                           size_t total_sample_size, data_size_t num_data) {
-  Log::Info("dump sample data to %s", sample_filename.c_str());
-  std::ofstream out(sample_filename);
-
-  out << "num_col: " << num_col << "\n";
-  out << "total_sample_size: " << total_sample_size << "\n";
-  out << "num_data: " << num_data << "\n";
-
-  out << "num_per_col:\n";
-  for (int i = 0; i < num_col; ++i) {
-    out << "  c:" << i << "=" << num_per_col[i] << "\n";
-  }
-
-  out << "sample data:\n";
-  for (int i = 0; i < num_col; ++i) {
-    out << "  c:" << i << "\n";
-    for (int j = 0; j < num_per_col[i]; ++j) {
-      out << "    r:" << sample_indices[i][j] << "=" << sample_values[i][j] << "\n";
-    }
-  }
-  out << "\n";
-}
 
 Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
                                                 int** sample_indices, int num_col, const int* num_per_col,
-                                                size_t total_sample_size, data_size_t num_data, const std::string& dump_filename) {
-  if (dump_filename != "") {
-    DumpSampleData(dump_filename, sample_values, sample_indices, num_col, num_per_col, total_sample_size, num_data);
-  }
+                                                size_t total_sample_size, data_size_t num_data) {
   CheckSampleSize(total_sample_size, static_cast<size_t>(num_data));
   int num_total_features = num_col;
   if (Network::num_machines() > 1) {
@@ -1004,22 +976,6 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
 
   dataset->feature_groups_.clear();
   dataset->num_total_features_ = std::max(static_cast<int>(sample_values.size()), parser->NumFeatures());
-
-  /*
-  int num_col = static_cast<int>(sample_values.size());
-  std::vector<double*> sample_values_ptr(num_col);
-  std::vector<int*> sample_indices_ptr(num_col);
-  std::vector<int> num_per_col(num_col);
-  for (size_t i = 0; i < sample_values.size(); ++i) {
-    sample_values_ptr[i] = sample_values[i].data();
-    sample_indices_ptr[i] = sample_indices[i].data();
-    num_per_col[i] = static_cast<int>(sample_indices[i].size());
-  }
-  DumpSampleData("lgbm_sample_from_text.txt", sample_values_ptr.data(),
-                 sample_indices_ptr.data(), num_col, num_per_col.data(),
-                 sample_data.size(), dataset->num_data());
-  */
-
   if (num_machines > 1) {
     dataset->num_total_features_ = Network::GlobalSyncUpByMax(dataset->num_total_features_);
   }

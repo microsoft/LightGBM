@@ -938,7 +938,7 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
   DatasetLoader loader(config, nullptr, 1, nullptr);
   *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
                                         num_sample_row,
-                                        static_cast<data_size_t>(num_total_row), "");
+                                        static_cast<data_size_t>(num_total_row));
   API_END();
 }
 
@@ -960,7 +960,6 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
                          int32_t nrow,
                          int32_t ncol,
                          int32_t start_row) {
-  Log::Debug("DatasetPushRows start_row: %d nrow: %d", start_row, nrow);
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
@@ -978,7 +977,6 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
   }
   OMP_THROW_EX();
   if (start_row + nrow == p_dataset->num_data()) {
-    Log::Debug("DatasetPushRows FinishLoad");
     p_dataset->FinishLoad();
   }
   API_END();
@@ -1016,7 +1014,6 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
   }
   API_END();
 }
-
 
 int LGBM_DatasetCreateFromMat(const void* data,
                               int data_type,
@@ -1125,7 +1122,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              ncol,
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, total_nrow, ""));
+                                             sample_cnt, total_nrow));
   } else {
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
@@ -1204,7 +1201,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow, ""));
+                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1275,7 +1272,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow, ""));
+                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1351,7 +1348,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(sample_values.size()),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow, ""));
+                                             sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(

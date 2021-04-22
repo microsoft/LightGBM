@@ -29,7 +29,7 @@ class DatasetLoader {
 
   LIGHTGBM_EXPORT Dataset* ConstructFromSampleData(double** sample_values,
     int** sample_indices, int num_col, const int* num_per_col,
-    size_t total_sample_size, data_size_t num_data, const std::string& dump_filename);
+    size_t total_sample_size, data_size_t num_data);
 
   /*! \brief Disable copy */
   DatasetLoader& operator=(const DatasetLoader&) = delete;

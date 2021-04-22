@@ -222,8 +222,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t total_nrow,
-                       const char* parameters,
-                       void* out);
+                                         const char* parameters,
+                                         void* out);
 
 /*!
  * \brief Create dataset from dense matrix.
