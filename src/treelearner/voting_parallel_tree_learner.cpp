@@ -259,6 +259,48 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) 
   }
   TREELEARNER_T::ConstructHistograms(is_feature_used, use_subtract);
 
+  const int smaller_leaf_index = this->smaller_leaf_splits_->leaf_index();
+  const data_size_t local_data_on_smaller_leaf = this->data_partition_->leaf_count(smaller_leaf_index);
+  if (local_data_on_smaller_leaf <= 0) {
+    // clear histogram buffer before synchronizing
+    // otherwise histogram contents from the previous iteration will be sent
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(static)
+    for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
+      OMP_LOOP_EX_BEGIN();
+      if (!is_feature_used[feature_index]) { continue; }
+      const BinMapper* feature_bin_mapper = this->train_data_->FeatureBinMapper(feature_index);
+      const int num_bin = feature_bin_mapper->num_bin();
+      const int offset = static_cast<int>(feature_bin_mapper->GetMostFreqBin() == 0);
+      hist_t* hist_ptr = this->smaller_leaf_histogram_array_[feature_index].RawData();
+      std::memset(reinterpret_cast<void*>(hist_ptr), 0, (num_bin - offset) * kHistEntrySize);
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
+  }
+
+  if (this->larger_leaf_splits_ != nullptr) {
+    const int larger_leaf_index = this->larger_leaf_splits_->leaf_index();
+    if (larger_leaf_index >= 0) {
+      const data_size_t local_data_on_larger_leaf = this->data_partition_->leaf_count(larger_leaf_index);
+      if (local_data_on_larger_leaf <= 0) {
+        OMP_INIT_EX();
+        #pragma omp parallel for schedule(static)
+        for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
+          OMP_LOOP_EX_BEGIN();
+          if (!is_feature_used[feature_index]) { continue; }
+          const BinMapper* feature_bin_mapper = this->train_data_->FeatureBinMapper(feature_index);
+          const int num_bin = feature_bin_mapper->num_bin();
+          const int offset = static_cast<int>(feature_bin_mapper->GetMostFreqBin() == 0);
+          hist_t* hist_ptr = this->larger_leaf_histogram_array_[feature_index].RawData();
+          std::memset(reinterpret_cast<void*>(hist_ptr), 0, (num_bin - offset) * kHistEntrySize);
+          OMP_LOOP_EX_END();
+        }
+        OMP_THROW_EX();
+      }
+    }
+  }
+
   std::vector<SplitInfo> smaller_bestsplit_per_features(this->num_features_);
   std::vector<SplitInfo> larger_bestsplit_per_features(this->num_features_);
   double smaller_leaf_parent_output = this->GetParentOutput(tree, this->smaller_leaf_splits_.get());
