@@ -28,7 +28,8 @@ may allow you to pass other types of data like \code{matrix} and then separately
 
 \item{weight}{vector of response values. If not NULL, will set to dataset}
 
-\item{params}{List of parameters}
+\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+the "Parameters" section of the documentation} for a list of parameters and valid values.}
 
 \item{nrounds}{number of training rounds}
 
@@ -36,10 +37,11 @@ may allow you to pass other types of data like \code{matrix} and then separately
 
 \item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
 
-\item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
-and one metric. If there's more than one, will check all of them
-except the training data. Returns the model with (best_iter + early_stopping_rounds).
-If early stopping occurs, the model will have 'best_iter' field.}
+\item{early_stopping_rounds}{int. Activates early stopping. When this parameter is non-null,
+training will stop if the evaluation of any metric on any validation set
+fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
+If training stops early, the returned model will have attribute \code{best_iter}
+set to the iteration number of the best iteration.}
 
 \item{save_name}{File name to use when writing the trained model to disk. Should end in ".model".}
 
