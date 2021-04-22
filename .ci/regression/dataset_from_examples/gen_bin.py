@@ -19,4 +19,4 @@ lgb_train = lgb.Dataset(X_train, y_train)
 lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
 
 lgb_train.save_binary(f"{data_path}/train.bin")
-lgb_eval.save_binary(f"{data_path}/valid.bin")
+# lgb_eval.save_binary(f"{data_path}/valid.bin")
