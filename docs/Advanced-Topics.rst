@@ -17,13 +17,13 @@ Categorical Feature Support
 
 -  LightGBM offers good accuracy with integer-encoded categorical features. LightGBM offers the following approaches to deal with categorical features:
 
-   -  Method 1: Applies `Fisher (1958) <https://www.tandfonline.com/doi/abs/10.1080/01621459.1958.10501479>`_to find the optimal split over categories as `described here <./Features.rst#optimal-split-for-categorical-features>`_.
+   -  Method 1: Applies `Fisher (1958) <https://www.tandfonline.com/doi/abs/10.1080/01621459.1958.10501479>`__ to find the optimal split over categories as `described here <./Features.rst#optimal-split-for-categorical-features>`__.
 
    -  Method 2: Encoding categorical features into numerical values. We provide two encoding options:
 
-      -  Target encoding: encode the categorical feature value by the mean of labels of data with the same feature value in the training set. It is easy to overfit the training data if the encoded value of a training data point uses the label of that training data point itself. So we would randomly divide the training data into folds, and when calculating the target encoding for data in one fold, we only consider data in other folds.
+      -  **Target encoding**: encode the categorical feature value by the mean of labels of data with the same feature value in the training set. It is easy to overfit the training data if the encoded value of a training data point uses the label of that training data point itself. So we would randomly divide the training data into folds, and when calculating the target encoding for data in one fold, we only consider data in other folds.
 
-      -  Count encoding: encode the categorical feature value by the total number of data with the same feature value in the training set.
+      -  **Count encoding**: encode the categorical feature value by the total number of data with the same feature value in the training set.
    
    These methods often perform better than one-hot encoding.
 
@@ -43,16 +43,16 @@ Categorical Feature Support
 
    Note that the aforementioned methods can be used simultaneously. Different methods are separated by commas.
    For example ``category_encoders=target:0.5,target:count,raw`` will enable using splits with method 1, and in addition, convert each categorical feature into 3 numerical features. The first one uses target encoding with prior ``0.5``. The second one uses target encoding with default prior, which is the mean of labels of the training data. The third one uses count encoding.
-   When ``category_encoders`` is empty, ``raw`` will be used by default. The numbers and names of features will be changed when category_encoders is not ``raw``
-   Suppose the original name of a feature is `NAME`, the naming rules of its target and count encoding features are:
+   When ``category_encoders`` is empty, ``raw`` will be used by default. The numbers and names of features will be changed when ``category_encoders`` is not ``raw``.
+   Suppose the original name of a feature is ``NAME``, the naming rules of its target and count encoding features are:
 
-   -  For the encoder `target` (without user specified prior), it will be named as `NAME_label_mean_prior_target_encoding_<label_mean>`, where <label_mean> is the mean of all labels in the training set.
+   -  For the encoder ``target`` (without user specified prior), it will be named as ``NAME_label_mean_prior_target_encoding_<label_mean>``, where ``<label_mean>`` is the mean of all labels in the training set.
 
-   -  For the encoder `target:<prior>` (with user specified prior), it will be named as `NAME_target_encoding_<prior>`
+   -  For the encoder ``target:<prior>`` (with user specified prior), it will be named as ``NAME_target_encoding_<prior>``.
 
-   -  For the encoder `count`, it will be named as `NAME_count_encoding`
+   -  For the encoder ``count``, it will be named as ``NAME_count_encoding``.
 
-   Use get_feature_name() of python Booster or feature_name() of python Dataset after training to get the actual feature names used when category_encoders is set.
+   Use ``get_feature_name()`` of Python Booster class or ``feature_name()`` of Python Dataset class after training to get the actual feature names used when ``category_encoders`` is set.
 
 -  Use ``categorical_feature`` to specify the categorical features.
    Refer to the parameter ``categorical_feature`` in `Parameters <./Parameters.rst#categorical_feature>`__.

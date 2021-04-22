@@ -1,9 +1,9 @@
 /*!
-  * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
   * Licensed under the MIT License. See LICENSE file in the project root for license information.
   */
-#ifndef LIGHTGBM_CATEGORY_ENCODING_PROVIDER_H_
-#define LIGHTGBM_CATEGORY_ENCODING_PROVIDER_H_
+#ifndef LIGHTGBM_CATEGORY_ENCODING_PROVIDER_HPP_
+#define LIGHTGBM_CATEGORY_ENCODING_PROVIDER_HPP_
 
 #include <LightGBM/config.h>
 #include <LightGBM/network.h>
@@ -658,4 +658,4 @@ class Category_Encoding_CSC_RowIterator: public CSC_RowIterator {
 };
 
 }  // namespace LightGBM
-#endif  // LightGBM_CATEGORY_ENCODING_PROVIDER_H_
+#endif  // LightGBM_CATEGORY_ENCODING_PROVIDER_HPP_

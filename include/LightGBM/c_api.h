@@ -398,7 +398,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle,
                                                 int* out);
 
 /*!
- * \brief Get number of original features.
+ * \brief Get number of original features (before converting categorical features).
  * \param handle Handle of dataset
  * \param[out] out The address to hold number of features
  * \return 0 when succeed, -1 when failure happens
