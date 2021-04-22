@@ -127,7 +127,7 @@ Dataset <- R6::R6Class(
         cnames <- colnames(private$raw_data)
       }
 
-      # set feature names if not exist
+      # set feature names if they do not exist
       if (is.null(private$colnames) && !is.null(cnames)) {
         private$colnames <- as.character(cnames)
       }
@@ -140,7 +140,7 @@ Dataset <- R6::R6Class(
 
             cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1L)
 
-            # Provided indices, but some indices are not existing?
+            # Provided indices, but some indices are missing?
             if (sum(is.na(cate_indices)) > 0L) {
               stop(
                 "lgb.self.get.handle: supplied an unknown feature in categorical_feature: "
