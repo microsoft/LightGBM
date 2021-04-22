@@ -54,12 +54,6 @@ Categorical Feature Support
 
    Use ``get_feature_name()`` of Python Booster class or ``feature_name()`` of Python Dataset class after training to get the actual feature names used when ``category_encoders`` is set.
 
--  Use ``categorical_feature`` to specify the categorical features.
-   Refer to the parameter ``categorical_feature`` in `Parameters <./Parameters.rst#categorical_feature>`__.
-
--  Categorical features must be encoded as non-negative integers (``int``) less than ``Int32.MaxValue`` (2147483647).
-   It is best to use a contiguous range of integers started from zero.
-
 -  Use ``num_target_encoding_folds`` to specify the number of folds to divide the training data when using target encoding.
 
 -  Use ``prior_weight`` to specify the weight of prior in target encoding calculation. Higher value will enforce more regularization on target encoding.

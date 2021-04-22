@@ -119,7 +119,7 @@ class CategoryEncodingProvider {
 
     std::string DumpToString() const override {
       std::stringstream str_stream;
-      str_stream << Name() << "," << DumpDictToString(cat_fid_to_convert_fid_, '#');
+      str_stream << Name() << "," << CommonC::UnorderedMapToString(cat_fid_to_convert_fid_, '#');
       return str_stream.str();
     }
 
@@ -149,7 +149,7 @@ class CategoryEncodingProvider {
 
     std::string DumpToString() const override {
       std::stringstream str_stream;
-      str_stream << Name() << "," << DumpDictToString(cat_fid_to_convert_fid_, '#');
+      str_stream << Name() << "," << CommonC::UnorderedMapToString(cat_fid_to_convert_fid_, '#');
       return str_stream.str();
     }
   };
@@ -188,7 +188,7 @@ class CategoryEncodingProvider {
 
     std::string DumpToString() const override {
       std::stringstream str_stream;
-      str_stream << Name() << "," << DumpDictToString(cat_fid_to_convert_fid_, '#');
+      str_stream << Name() << "," << CommonC::UnorderedMapToString(cat_fid_to_convert_fid_, '#');
       return str_stream.str();
     }
 
@@ -458,22 +458,6 @@ class CategoryEncodingProvider {
   // sync up statistics to calculate the encoding prior by gathering statistics from all machines in distributed scenario
   void SyncEncodingPrior(const double label_sum, const int local_num_data, double* all_label_sum_ptr,
     int* all_num_data_ptr, int num_machines) const;
-
-  // dump a dictionary to string
-  template <typename T>
-  static std::string DumpDictToString(const std::unordered_map<int, T>& dict, const char delimiter) {
-    std::stringstream str_buf;
-    if (dict.empty()) {
-      return str_buf.str();
-    }
-    auto iter = dict.begin();
-    str_buf << iter->first << ":" << iter->second;
-    ++iter;
-    for (; iter != dict.end(); ++iter) {
-      str_buf << delimiter << iter->first << ":" << iter->second;
-    }
-    return str_buf.str();
-  }
 
   int ParseMetaInfo(const char* filename, Config* config);
 

@@ -464,8 +464,8 @@ void CategoryEncodingProvider::SyncEncodingStat(std::vector<std::unordered_map<i
   if (num_machines > 1) {
     std::string target_encoding_stat_string;
     for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
-      target_encoding_stat_string += DumpDictToString(fold_label_sum[fold_id], ' ') + "@";
-      target_encoding_stat_string += DumpDictToString(fold_total_count[fold_id], ' ') + "@";
+      target_encoding_stat_string += CommonC::UnorderedMapToString(fold_label_sum[fold_id], ' ') + "@";
+      target_encoding_stat_string += CommonC::UnorderedMapToString(fold_total_count[fold_id], ' ') + "@";
     }
     const size_t max_target_encoding_values_string_size = Network::GlobalSyncUpByMax(target_encoding_stat_string.size()) + 1;
     std::vector<char> input_buffer(max_target_encoding_values_string_size), output_buffer(max_target_encoding_values_string_size * num_machines);
