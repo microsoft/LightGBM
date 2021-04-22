@@ -24,3 +24,10 @@ test-sample:
   script:
     - cd .ci/regression/sample
     - bash ../verify_result.sh
+
+test-bin-example:
+  stage: test
+  script:
+    - cd .ci/regression/dataset_from_examples
+    - bash ../verify_result.sh
+
