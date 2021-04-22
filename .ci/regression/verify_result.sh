@@ -56,7 +56,7 @@ colorize;
 
 exit_code=0
 for script in *.sh; do
-    echo "$_BLUE RUN$_RESET" "$script";
+    echo -e "$_BLUE RUN$_RESET" "$script";
     script_data_dir="data"
     # script_data_dir=${script%".sh"}
     mkdir -p "$script_data_dir"
@@ -67,9 +67,9 @@ for script in *.sh; do
         script_data="$script_data_dir/$d_path"
 
         if cmp -s "$ref_data" "$script_data"; then
-            echo "$_GREEN SUCCESS$_RESET" "$script_data" is the same as "$ref_data"
+            echo -e "$_GREEN SUCCESS$_RESET" "$script_data" is the same as "$ref_data"
         else
-            echo "$_RED  FAILED$_RESET"   "$script_data" is differ from "$ref_data"
+            echo -e "$_RED  FAILED$_RESET"   "$script_data" is differ from "$ref_data"
             exit_code=2
         fi
     done
