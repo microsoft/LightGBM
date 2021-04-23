@@ -478,7 +478,21 @@ if(BUILD_CPP_TEST)
     FetchContent_MakeAvailable(googletest)
     add_library(GTest::GTest ALIAS gtest)
   endif()
-  file(GLOB CPP_TEST_SOURCES tests/cpp_test/*.cpp)
+  file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
+  if(MSVC)
+    set(
+      CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+    )
+    foreach(CompilerFlag ${CompilerFlags})
+      string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+    endforeach()
+  endif(MSVC)
   add_executable(testlightgbm ${CPP_TEST_SOURCES} ${SOURCES})
   target_link_libraries(testlightgbm PRIVATE GTest::GTest)
 endif()
