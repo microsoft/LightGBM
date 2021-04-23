@@ -89,6 +89,17 @@ def _remove_list_padding(*args: Any) -> List[List[Any]]:
     return output
 
 
+def _pad_eval_names(lgbm_model: LGBMModel, required_names: Optional[List[str]] = None) -> LGBMModel:
+    not_evaluated = 'not evaluated'
+    for eval_name in required_names:
+        if eval_name not in lgbm_model.evals_result_:
+            lgbm_model.evals_result_[eval_name] = not_evaluated
+        if eval_name not in lgbm_model.best_score_:
+            lgbm_model.best_score_[eval_name] = not_evaluated
+
+    return lgbm_model
+
+
 def _train_part(
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
@@ -145,6 +156,7 @@ def _train_part(
         has_eval_init_score = any([x.get('eval_init_score') is not None for x in list_of_parts])
 
         local_eval_set = []
+        evals_result_names = []
         if has_eval_sample_weight:
             local_eval_sample_weight = []
         if has_eval_init_score:
@@ -174,6 +186,13 @@ def _train_part(
                 else:
                     x_e.extend(eval_set[0])
                     y_e.extend(eval_set[1])
+
+                    # require that eval_name exists in evaluated result data in case dropped due to padding.
+                    evals_result_name = f'valid_{i}'
+                    if eval_names:
+                        evals_result_name = eval_names[i]
+                    if evals_result_name not in evals_result_names:
+                        evals_result_names.append(evals_result_name)
 
                 eval_weight = part.get('eval_sample_weight')
                 if eval_weight:
@@ -249,6 +268,10 @@ def _train_part(
 
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
+
+    if n_evals:
+        # ensure that expected keys for evals_result_ and best_score_ exist regardless of padding.
+        model = _pad_eval_names(model, evals_result_names)
 
     return model if return_model else None
 

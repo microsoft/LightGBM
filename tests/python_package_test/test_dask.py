@@ -749,7 +749,6 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
         eval_init_score = None
 
         if eval_names_prefix:
-            # only provide first 2 eval_sets a name, so names for eval_sets after 2 are named "valid_<2+>".
             eval_names = [eval_names_prefix + f'_{i}' for i in range(len(eval_sizes))]
         else:
             eval_names = None
@@ -870,18 +869,21 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
             for eval_name in evals_result:
                 assert eval_name in dask_model.best_score_
                 if eval_names:
-                    assert eval_name in eval_names + ['valid_2']
+                    assert eval_name in eval_names
                 else:
                     if eval_name == 'training':
                         assert 1 in eval_sizes
                     else:
                         eval_name.startswith('valid')
 
-                # check that each of eval_metrics is calculated on all eval sets.
+                # check that each of eval_metrics exists for all eval sets.
                 for metric in eval_metric_names:
                     assert metric in evals_result[eval_name]
                     assert metric in best_scores[eval_name]
-                    assert len(evals_result[eval_name][metric]) == fit_trees
+
+                    # allow for case when worker receives a fully-padded eval_set component and is not evaluated.
+                    if evals_result[eval_name][metric] != 'not evaluated' and not metric.endswith('_0'):
+                        assert len(evals_result[eval_name][metric]) == fit_trees
 
 
 @pytest.mark.parametrize('task', ['binary-classification', 'regression', 'ranking'])
