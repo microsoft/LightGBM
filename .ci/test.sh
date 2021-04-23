@@ -13,6 +13,14 @@ if [[ "${TASK}" == "r-package" ]]; then
     exit 0
 fi
 
+if [[ "$TASK" == "cpp-tests" ]]; then
+    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
+    cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF ..
+    make testlightgbm -j4 || exit -1
+    ./../testlightgbm || exit -1
+    exit 0
+fi
+
 conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
 source activate $CONDA_ENV
 
@@ -71,9 +79,9 @@ fi
 if [[ $TASK == "if-else" ]]; then
     conda install -q -y -n $CONDA_ENV numpy
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
-    cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
+    cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
-    cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
+    cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
     exit 0
 fi
 
