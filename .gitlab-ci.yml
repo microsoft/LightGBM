@@ -20,6 +20,11 @@ build:
     - cd python-package
     - python setup.py install
     - cd -
+  artifacts:
+    paths:
+      - /opt/conda/lib/*/site-packages/lightgbm
+    untracked: false
+    expire_in: 1 days
 
 test-sample:
   stage: test
