@@ -149,6 +149,7 @@ struct Config {
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
+  // alias = linear_trees
   // desc = fit piecewise linear gradient boosting tree
   // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
   // descl2 = the linear model at each leaf includes all the numerical features in that leaf's branch
@@ -347,6 +348,7 @@ struct Config {
   // desc = random seed for ``feature_fraction``
   int feature_fraction_seed = 2;
 
+  // alias = extra_tree
   // desc = use extremely randomized trees
   // desc = if set to ``true``, when evaluating node splits LightGBM will check only one randomly-chosen threshold for each feature
   // desc = can be used to speed up training
