@@ -22,7 +22,7 @@ build:
     - cd -
   artifacts:
     paths:
-      - /opt/conda/lib/*/site-packages/lightgbm
+      - /opt/conda/lib/*/site-packages/lightgbm/
     untracked: false
     expire_in: 1 days
 
