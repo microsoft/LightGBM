@@ -17,7 +17,7 @@ build:
     - make -j4
     - make install
     - cd ../
-    - cd LightGBM/python-package
+    - cd python-package
     - python setup.py install
     - cd -
 
