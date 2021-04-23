@@ -8,7 +8,6 @@ default:
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
-
 build:
   stage: build
   script:
@@ -18,6 +17,9 @@ build:
     - make -j4
     - make install
     - cd ../
+    - cd LightGBM/python-package
+    - python setup.py install
+    - cd -
 
 test-sample:
   stage: test
