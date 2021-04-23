@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include <gtest/gtest.h>
 
 #include <limits>
@@ -68,7 +72,7 @@ TEST_F(AtofPreciseTest, NaN) {
     if (got > 0) {
       // See comment in test_cases.
       EXPECT_EQ(memcmp(&got, &test.expected, sizeof(test.expected)), 0)
-                << "parsed NaN is not the same for every bit: " << test.data ;
+                << "parsed NaN is not the same for every bit: " << test.data;
     }
   }
 }
@@ -95,6 +99,6 @@ TEST_F(AtofPreciseTest, Inf) {
     EXPECT_EQ(sign(test.expected), sign(got)) << "sign differs parsing: " << test.data;
     EXPECT_TRUE(std::isinf(got)) << "not parsed as infinite: " << test.data;
     EXPECT_EQ(memcmp(&got, &test.expected, sizeof(test.expected)), 0)
-              << "parsed infinite is not the same for every bit: " << test.data ;
+              << "parsed infinite is not the same for every bit: " << test.data;
   }
 }
