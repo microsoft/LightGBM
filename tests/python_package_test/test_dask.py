@@ -876,13 +876,12 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
                     else:
                         eval_name.startswith('valid')
 
-                # check that each of eval_metrics exists for all eval sets.
-                for metric in eval_metric_names:
-                    assert metric in evals_result[eval_name]
-                    assert metric in best_scores[eval_name]
-
-                    # allow for case when worker receives a fully-padded eval_set component and is not evaluated.
-                    if evals_result[eval_name][metric] != 'not evaluated' and not metric.endswith('_0'):
+                # check that each eval_name and metric exists for all eval sets.
+                # allow for case when worker receives a fully-padded eval_set component and is not evaluated.
+                if not (evals_result[eval_name] == 'not evaluated' and eval_name.endswith('_0')):
+                    for metric in eval_metric_names:
+                        assert metric in evals_result[eval_name]
+                        assert metric in best_scores[eval_name]
                         assert len(evals_result[eval_name][metric]) == fit_trees
 
 
