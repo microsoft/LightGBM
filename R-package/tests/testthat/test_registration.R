@@ -1,10 +1,7 @@
-ON_WINDOWS <- .Platform$OS.type == "windows"
-
 # this test is used to catch silent errors in routine registration,
 # like the one documented in
 # https://github.com/microsoft/LightGBM/issues/4045#issuecomment-812289182
 test_that("lightgbm routine registration worked", {
-    testthat::skip_if_not(ON_WINDOWS)
 
     dll_info <- getLoadedDLLs()[["lightgbm"]]
 
