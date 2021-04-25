@@ -10,8 +10,6 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 TEMP_R_DIR <- file.path(getwd(), "lightgbm_r")
 TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 
-args <- c()
-
 # [description]
 #     Parse the content of commandArgs() into a structured
 #     list. This returns a list with two sections.
