@@ -17,6 +17,7 @@ Dataset <- R6::R6Class(
         .Call(
           LGBM_DatasetFree_R
           , private$handle
+          , call_state
         )
         private$handle <- NULL
 
@@ -202,7 +203,7 @@ Dataset <- R6::R6Class(
         if (is.character(private$raw_data)) {
 
           call_state <- 0L
-          handle <- .Call(
+          .Call(
             LGBM_DatasetCreateFromFile_R
             , lgb.c_str(x = private$raw_data)
             , params_str
@@ -215,7 +216,7 @@ Dataset <- R6::R6Class(
 
           # Are we using a matrix?
           call_state <- 0L
-          handle <- .Call(
+          .Call(
             LGBM_DatasetCreateFromMat_R
             , private$raw_data
             , nrow(private$raw_data)
@@ -232,7 +233,7 @@ Dataset <- R6::R6Class(
           }
           # Are we using a dgCMatrix (sparsed matrix column compressed)
           call_state <- 0L
-          handle <- .Call(
+          .Call(
             LGBM_DatasetCreateFromCSC_R
             , private$raw_data@p
             , private$raw_data@i
@@ -265,7 +266,7 @@ Dataset <- R6::R6Class(
 
         # Construct subset
         call_state <- 0L
-        handle <- .Call(
+        .Call(
           LGBM_DatasetGetSubset_R
           , ref_handle
           , c(private$used_indices) # Adding c() fixes issue in R v3.5
@@ -342,21 +343,21 @@ Dataset <- R6::R6Class(
 
         # Get numeric data and numeric features
         call_state <- 0L
+        .Call(
+          LGBM_DatasetGetNumData_R
+          , private$handle
+          , num_row
+          , call_state
+        )
+        call_state <- 0L
+        .Call(
+          LGBM_DatasetGetNumFeature_R
+          , private$handle
+          , num_col
+          , call_state
+        )
         return(
-          c(
-            .Call(
-              LGBM_DatasetGetNumData_R
-              , private$handle
-              , num_row
-              , call_state
-            ),
-            .Call(
-              LGBM_DatasetGetNumFeature_R
-              , private$handle
-              , num_col
-              , call_state
-            )
-          )
+          c(num_row, num_col)
         )
 
       } else if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {
@@ -388,7 +389,7 @@ Dataset <- R6::R6Class(
         act_len <- 0L
         buf <- raw(buf_len)
         call_state <- 0L
-        buf <- .Call(
+        .Call(
           LGBM_DatasetGetFeatureNames_R
           , private$handle
           , buf_len
@@ -399,7 +400,8 @@ Dataset <- R6::R6Class(
         if (act_len > buf_len) {
           buf_len <- act_len
           buf <- raw(buf_len)
-          buf <- .Call(
+          call_state <- 0L
+          .Call(
             LGBM_DatasetGetFeatureNames_R
             , private$handle
             , buf_len
@@ -484,7 +486,7 @@ Dataset <- R6::R6Class(
         # Get field size of info
         info_len <- 0L
         call_state <- 0L
-        info_len <- .Call(
+        .Call(
           LGBM_DatasetGetFieldSize_R
           , private$handle
           , lgb.c_str(x = name)
@@ -504,7 +506,7 @@ Dataset <- R6::R6Class(
           }
 
           call_state <- 0L
-          ret <- .Call(
+          .Call(
             LGBM_DatasetGetField_R
             , private$handle
             , lgb.c_str(x = name)

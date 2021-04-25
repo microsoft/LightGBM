@@ -55,7 +55,7 @@ Booster <- R6::R6Class(
           params_str <- lgb.params2str(params = params)
           # Store booster handle
           call_state <- 0L
-          handle <- .Call(
+          .Call(
             LGBM_BoosterCreate_R
             , train_set_handle
             , params_str
@@ -95,7 +95,7 @@ Booster <- R6::R6Class(
 
           # Create booster from model
           call_state <- 0L
-          handle <- .Call(
+          .Call(
             LGBM_BoosterCreateFromModelfile_R
             , lgb.c_str(x = modelfile)
             , handle
@@ -111,7 +111,7 @@ Booster <- R6::R6Class(
 
           # Create booster from model
           call_state <- 0L
-          handle <- .Call(
+          .Call(
             LGBM_BoosterLoadModelFromString_R
             , lgb.c_str(x = model_str)
             , handle
@@ -142,7 +142,7 @@ Booster <- R6::R6Class(
         private$handle <- handle
         private$num_class <- 1L
         call_state <- 0L
-        private$num_class <- .Call(
+        .Call(
           LGBM_BoosterGetNumClasses_R
           , private$handle
           , private$num_class
@@ -273,7 +273,7 @@ Booster <- R6::R6Class(
         }
         # Boost iteration from known objective
         call_state <- 0L
-        ret <- .Call(
+        .Call(
           LGBM_BoosterUpdateOneIter_R
           , private$handle
           , call_state
@@ -300,7 +300,7 @@ Booster <- R6::R6Class(
 
         # Return custom boosting gradient/hessian
         call_state <- 0L
-        ret <- .Call(
+        .Call(
           LGBM_BoosterUpdateOneIterCustom_R
           , private$handle
           , gpair$grad
@@ -316,7 +316,7 @@ Booster <- R6::R6Class(
         private$is_predicted_cur_iter[[i]] <- FALSE
       }
 
-      return(ret)
+      return(invisible(self))
 
     },
 
@@ -345,14 +345,13 @@ Booster <- R6::R6Class(
 
       cur_iter <- 0L
       call_state <- 0L
-      return(
-        .Call(
-          LGBM_BoosterGetCurrentIteration_R
-          , private$handle
-          , cur_iter
-          , call_state
-        )
+      .Call(
+        LGBM_BoosterGetCurrentIteration_R
+        , private$handle
+        , cur_iter
+        , call_state
       )
+      return(cur_iter)
 
     },
 
@@ -361,14 +360,13 @@ Booster <- R6::R6Class(
 
       upper_bound <- 0.0
       call_state <- 0L
-      return(
-        .Call(
-          LGBM_BoosterGetUpperBoundValue_R
-          , private$handle
-          , upper_bound
-          , call_state
-        )
+      .Call(
+        LGBM_BoosterGetUpperBoundValue_R
+        , private$handle
+        , upper_bound
+        , call_state
       )
+      return(upper_bound)
 
     },
 
@@ -377,14 +375,13 @@ Booster <- R6::R6Class(
 
       lower_bound <- 0.0
       call_state <- 0L
-      return(
-        .Call(
-          LGBM_BoosterGetLowerBoundValue_R
-          , private$handle
-          , lower_bound
-          , call_state
-        )
+      .Call(
+        LGBM_BoosterGetLowerBoundValue_R
+        , private$handle
+        , lower_bound
+        , call_state
       )
+      return(lower_bound)
 
     },
 
@@ -508,7 +505,7 @@ Booster <- R6::R6Class(
 
       # Call buffer
       call_state <- 0L
-      buf <- .Call(
+      .Call(
           LGBM_BoosterSaveModelToString_R
           , private$handle
           , as.integer(num_iteration)
@@ -524,7 +521,7 @@ Booster <- R6::R6Class(
         buf_len <- act_len
         buf <- raw(buf_len)
         call_state <- 0L
-        buf <- .Call(
+        .Call(
           LGBM_BoosterSaveModelToString_R
           , private$handle
           , as.integer(num_iteration)
@@ -554,7 +551,7 @@ Booster <- R6::R6Class(
       act_len <- 0L
       buf <- raw(buf_len)
       call_state <- 0L
-      buf <- .Call(
+      .Call(
         LGBM_BoosterDumpModel_R
         , private$handle
         , as.integer(num_iteration)
@@ -569,7 +566,7 @@ Booster <- R6::R6Class(
         buf_len <- act_len
         buf <- raw(buf_len)
         call_state <- 0L
-        buf <- .Call(
+        .Call(
           LGBM_BoosterDumpModel_R
           , private$handle
           , as.integer(num_iteration)
@@ -679,7 +676,7 @@ Booster <- R6::R6Class(
         # Store predictions
         call_state <- 0L
         npred <- 0L
-        npred <- .Call(
+        .Call(
           LGBM_BoosterGetNumPredict_R
           , private$handle
           , as.integer(idx - 1L)
@@ -695,7 +692,7 @@ Booster <- R6::R6Class(
 
         # Use buffer
         call_state <- 0L
-        private$predict_buffer[[data_name]] <- .Call(
+        .Call(
           LGBM_BoosterGetPredict_R
           , private$handle
           , as.integer(idx - 1L)
@@ -719,7 +716,7 @@ Booster <- R6::R6Class(
         act_len <- 0L
         buf <- raw(buf_len)
         call_state <- 0L
-        buf <- .Call(
+        .Call(
           LGBM_BoosterGetEvalNames_R
           , private$handle
           , buf_len
@@ -731,7 +728,7 @@ Booster <- R6::R6Class(
           buf_len <- act_len
           buf <- raw(buf_len)
           call_state <- 0L
-          buf <- .Call(
+          .Call(
             LGBM_BoosterGetEvalNames_R
             , private$handle
             , buf_len
@@ -781,11 +778,13 @@ Booster <- R6::R6Class(
 
         # Create evaluation values
         tmp_vals <- numeric(length(private$eval_names))
-        tmp_vals <- .Call(
+        call_state <- 0L
+        .Call(
           LGBM_BoosterGetEval_R
           , private$handle
           , as.integer(data_idx - 1L)
           , tmp_vals
+          , call_state
         )
 
         # Loop through all evaluation names

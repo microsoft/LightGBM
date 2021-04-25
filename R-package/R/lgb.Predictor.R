@@ -40,7 +40,7 @@ Predictor <- R6::R6Class(
 
         # Create handle on it
         call_state <- 0L
-        handle <- .Call(
+        .Call(
           LGBM_BoosterCreateFromModelfile_R
           , lgb.c_str(x = modelfile)
           , handle
@@ -73,14 +73,13 @@ Predictor <- R6::R6Class(
 
       cur_iter <- 0L
       call_state <- 0L
-      return(
-        .Call(
-          LGBM_BoosterGetCurrentIteration_R
-          , private$handle
-          , cur_iter
-          , call_state
-        )
+      .Call(
+        LGBM_BoosterGetCurrentIteration_R
+        , private$handle
+        , cur_iter
+        , call_state
       )
+      return(cur_iter)
 
     },
 
@@ -143,7 +142,7 @@ Predictor <- R6::R6Class(
 
         # Check number of predictions to do
         call_state <- 0L
-        npred <- .Call(
+        .Call(
           LGBM_BoosterCalcNumPredict_R
           , private$handle
           , as.integer(num_row)
@@ -167,7 +166,7 @@ Predictor <- R6::R6Class(
             storage.mode(data) <- "double"
           }
           call_state <- 0L
-          preds <- .Call(
+          .Call(
             LGBM_BoosterPredictForMat_R
             , private$handle
             , data
@@ -189,7 +188,7 @@ Predictor <- R6::R6Class(
           }
           # Check if data is a dgCMatrix (sparse matrix, column compressed format)
           call_state <- 0L
-          preds <- .Call(
+          .Call(
             LGBM_BoosterPredictForCSC_R
             , private$handle
             , data@p

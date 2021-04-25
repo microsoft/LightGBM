@@ -76,7 +76,7 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
   handle <- lgb.null.handle()
   ref_handle <- NULL
   call_state <- 0L
-  handle <- .Call(
+  .Call(
     LGBM_DatasetCreateFromMat_R
     , rawData
     , nrow(rawData)
@@ -87,6 +87,7 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
     , call_state
   )
   expect_false(is.na(handle))
+  call_state <- 0L
   .Call(LGBM_DatasetFree_R, handle, call_state)
   handle <- NULL
 })
