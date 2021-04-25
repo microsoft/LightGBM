@@ -119,7 +119,7 @@ Core Parameters
 
       -  **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
 
--  ``linear_tree`` :raw-html:`<a id="linear_tree" title="Permalink to this parameter" href="#linear_tree">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+-  ``linear_tree`` :raw-html:`<a id="linear_tree" title="Permalink to this parameter" href="#linear_tree">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``linear_trees``
 
    -  fit piecewise linear gradient boosting tree
 
@@ -370,7 +370,7 @@ Learning Control Parameters
 
    -  random seed for ``feature_fraction``
 
--  ``extra_trees`` :raw-html:`<a id="extra_trees" title="Permalink to this parameter" href="#extra_trees">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+-  ``extra_trees`` :raw-html:`<a id="extra_trees" title="Permalink to this parameter" href="#extra_trees">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``extra_tree``
 
    -  use extremely randomized trees
 
