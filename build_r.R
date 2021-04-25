@@ -10,6 +10,8 @@ INSTALL_AFTER_BUILD <- !("--skip-install" %in% args)
 TEMP_R_DIR <- file.path(getwd(), "lightgbm_r")
 TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 
+args <- c()
+
 # [description]
 #     Parse the content of commandArgs() into a structured
 #     list. This returns a list with two sections.
@@ -368,6 +370,41 @@ description_contents <- gsub(
   , x = description_contents
 )
 writeLines(description_contents, DESCRIPTION_FILE)
+
+# CMake-based builds can't currently use R's builtin routine registration,
+# so have to update NAMESPACE manually, with a statement like this:
+#
+# useDynLib(lib_lightgbm, LGBM_GetLastError_R, LGBM_DatasetCreateFromFile_R, ...)
+#
+# See https://cran.r-project.org/doc/manuals/r-release/R-exts.html#useDynLib for
+# documentation of this approach, where the NAMESPACE file uses a statement like
+# useDynLib(foo, myRoutine, myOtherRoutine)
+NAMESPACE_FILE <- file.path(TEMP_R_DIR, "NAMESPACE")
+namespace_contents <- readLines(NAMESPACE_FILE)
+dynlib_line <- grep(
+  pattern = "^useDynLib"
+  , x = namespace_contents
+)
+
+c_api_contents <- readLines(file.path(TEMP_SOURCE_DIR, "src", "lightgbm_R.h"))
+c_api_contents <- c_api_contents[grepl("^LIGHTGBM_C_EXPORT", c_api_contents)]
+c_api_contents <- gsub(
+  pattern = "LIGHTGBM_C_EXPORT LGBM_SE "
+  , replacement = ""
+  , x = c_api_contents
+)
+c_api_symbols <- gsub(
+  pattern = "\\("
+  , replacement = ""
+  , x = c_api_contents
+)
+dynlib_statement <- paste0(
+  "useDynLib(lib_lightgbm, "
+  , paste0(c_api_symbols, collapse = ", ")
+  , ")"
+)
+namespace_contents[dynlib_line] <- dynlib_statement
+writeLines(namespace_contents, NAMESPACE_FILE)
 
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
