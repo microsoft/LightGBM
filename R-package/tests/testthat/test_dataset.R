@@ -75,17 +75,19 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
   rawData <- matrix(runif(1000L), ncol = 10L)
   handle <- lgb.null.handle()
   ref_handle <- NULL
-  handle <- lightgbm:::lgb.call(
-    "LGBM_DatasetCreateFromMat_R"
-    , ret = handle
+  call_state <- 0L
+  handle <- .Call(
+    LGBM_DatasetCreateFromMat_R
     , rawData
     , nrow(rawData)
     , ncol(rawData)
     , lightgbm:::lgb.params2str(params = list())
     , ref_handle
+    , handle
+    , call_state
   )
   expect_false(is.na(handle))
-  lgb.call("LGBM_DatasetFree_R", ret = NULL, handle)
+  .Call(LGBM_DatasetFree_R, handle, call_state)
   handle <- NULL
 })
 
