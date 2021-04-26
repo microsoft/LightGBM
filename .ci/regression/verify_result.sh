@@ -70,8 +70,11 @@ for script in *.sh; do
             echo -e "$_GREEN SUCCESS$_RESET" "$script_data" is the same as "$ref_data"
         else
             echo -e "$_RED  FAILED$_RESET"   "$script_data" is differ from "$ref_data"
+            echo -e sha1 `sha1sum "$script_data"`
+            echo -e sha1 `sha1sum "$ref_data"`
             exit_code=2
         fi
+        
     done
     if [ $NO_RM_DATA ]; then
         echo "$script_data_dir" not removed
