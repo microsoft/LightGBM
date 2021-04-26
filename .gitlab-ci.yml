@@ -21,18 +21,22 @@ build:
     - python setup.py install
     - cd -
   artifacts:
-    paths:
-      - /opt/conda/lib/python3.7/site-packages/lightgbm
     untracked: true
     expire_in: 1 days
 
+.before_tests:
+  before_script:
+    - pip install -e python-package
+
 test-sample:
+  extends: .before_tests
   stage: test
   script:
     - cd .ci/regression/sample
     - bash ../verify_result.sh
 
 test-bin-example:
+  extends: .before_tests  
   stage: test
   script:
     - cd .ci/regression/dataset_from_examples
