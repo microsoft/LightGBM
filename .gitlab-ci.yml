@@ -23,7 +23,7 @@ build:
   artifacts:
     paths:
       - /opt/conda/lib/python3.7/site-packages/lightgbm
-    untracked: false
+    untracked: true
     expire_in: 1 days
 
 test-sample:
