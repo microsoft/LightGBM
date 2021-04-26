@@ -110,14 +110,14 @@ Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
+Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 
 if ($env:R_BUILD_TYPE -eq "cran") {
   Write-Output "Using Matrix development version from r-forge"
-  Run-R-Code-Redirect-Stderr "install.packages('Matrix', repos = 'r-forge.r-project.org', lib = '$env:R_LIB_PATH')" ; Check-Output $?
+  Run-R-Code-Redirect-Stderr "install.packages('Matrix', repos = 'r-forge.r-project.org', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 } else {
   Write-Output "Using Matrix stable release from CRAN"
-  Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages('Matrix', repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
+  Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages('Matrix', repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 }
 
 # MiKTeX and pandoc can be skipped on non-MinGW builds, since we don't
