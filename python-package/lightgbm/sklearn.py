@@ -804,7 +804,7 @@ class LGBMModel(_LGBMModelBase):
         return self._Booster.feature_name()
 
 
-class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
+class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
 
     def fit(self, X, y,
@@ -830,7 +830,7 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
                    + _base_doc[_base_doc.find('eval_metric :'):])
 
 
-class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
+class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     """LightGBM classifier."""
 
     def fit(self, X, y,
