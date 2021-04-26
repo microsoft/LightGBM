@@ -714,8 +714,8 @@ struct Config {
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
   bool save_binary = false;
 
-  // desc = Use precise floating point number parsing for text parser (e.g. CSV, TSV, LibSVM input).
-  // desc = **Note**: setting this to ``true`` may lead to much slower text parsing.
+  // desc = use precise floating point number parsing for text parser (e.g. CSV, TSV, LibSVM input)
+  // desc = **Note**: setting this to ``true`` may lead to much slower text parsing
   bool precise_float_parser = false;
 
   #pragma endregion

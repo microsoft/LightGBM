@@ -822,9 +822,9 @@ Dataset Parameters
 
 -  ``precise_float_parser`` :raw-html:`<a id="precise_float_parser" title="Permalink to this parameter" href="#precise_float_parser">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
-   -  Use precise floating point number parsing for text parser (e.g. CSV, TSV, LibSVM input).
+   -  use precise floating point number parsing for text parser (e.g. CSV, TSV, LibSVM input)
 
-   -  **Note**: setting this to ``true`` may lead to much slower text parsing.
+   -  **Note**: setting this to ``true`` may lead to much slower text parsing
 
 Predict Parameters
 ~~~~~~~~~~~~~~~~~~
