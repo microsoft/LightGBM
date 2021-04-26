@@ -1582,9 +1582,6 @@ test_that("If first_metric_only is TRUE, lgb.cv() decides to stop early based on
     , data = DTRAIN_RANDOM_REGRESSION
     , nfold = nfolds
     , nrounds = nrounds
-    , valids = list(
-      "valid1" = DVALID_RANDOM_REGRESSION
-    )
     , eval = list(
       .increasing_metric
       , .constant_metric
@@ -1641,9 +1638,6 @@ test_that("early stopping works with lgb.cv()", {
     , data = DTRAIN_RANDOM_REGRESSION
     , nfold = nfolds
     , nrounds = nrounds
-    , valids = list(
-      "valid1" = DVALID_RANDOM_REGRESSION
-    )
     , eval = list(
       .constant_metric
       , .increasing_metric
@@ -1841,15 +1835,16 @@ test_that("lgb.train() works with linear learners, bagging, and a Dataset that h
 test_that("lgb.train() works with linear learners and data where a feature has only 1 non-NA value", {
   set.seed(708L)
   .new_dataset <- function() {
-    values <- rep(NA_real_, 100L)
-    values[18L] <- rnorm(1L)
+    values <- c(rnorm(100L), rep(NA_real_, 100L))
+    values[118L] <- rnorm(1L)
     X <- matrix(
       data = values
-      , ncol = 1L
+      , ncol = 2L
     )
     return(lgb.Dataset(
       data = X
-      , label = 2L * X + runif(nrow(X), 0L, 0.1)
+      , label = 2L * X[, 1L] + runif(nrow(X), 0L, 0.1)
+      , feature_pre_filter = FALSE
     ))
   }
 
@@ -1888,7 +1883,7 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
-    , categorical_features = 1L
+    , categorical_feature = 1L
   )
 
   dtrain <- .new_dataset()
