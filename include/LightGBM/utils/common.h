@@ -341,6 +341,7 @@ inline static const char* AtofPrecise(const char* p, double* out) {
 
   // Rare path: Not in RFC 7159 format. Possible "inf", "nan", etc. Fallback to standard library:
   char* end2;
+  errno = 0;  // This is Required before calling strtod.
   *out = std::strtod(p, &end2);  // strtod is locale aware.
   if (end2 == p) {
     Log::Fatal("no conversion to double for: %s", p);
