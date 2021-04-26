@@ -77,12 +77,6 @@ TEST_F(AtofPreciseTest, NaN) {
   }
 }
 
-// From https://stackoverflow.com/a/4609795/306935
-template <typename T>
-int sign(T val) {
-  return (T(0) < val) - (val < T(0));
-}
-
 TEST_F(AtofPreciseTest, Inf) {
   AtofTestCase test_cases[] = {
       { "inf", std::numeric_limits<double>::infinity() },
@@ -96,7 +90,7 @@ TEST_F(AtofPreciseTest, Inf) {
   for (auto const& test : test_cases) {
     double got = TestAtofPrecise(test.data, test.expected, false);
 
-    EXPECT_EQ(sign(test.expected), sign(got)) << "sign differs parsing: " << test.data;
+    EXPECT_EQ(LightGBM::Common::Sign(test.expected), LightGBM::Common::Sign(got)) << "sign differs parsing: " << test.data;
     EXPECT_TRUE(std::isinf(got)) << "not parsed as infinite: " << test.data;
     EXPECT_EQ(memcmp(&got, &test.expected, sizeof(test.expected)), 0)
               << "parsed infinite is not the same for every bit: " << test.data;
