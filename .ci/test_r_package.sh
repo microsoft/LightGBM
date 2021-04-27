@@ -140,13 +140,18 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     cd ${R_CMD_CHECK_DIR}
 fi
 
+# vignettes are only built for CRAN builds
+CHECK_ARGS="--as-cran --run-donttest"
+if [[ $R_BUILD_TYPE != "cran" ]]; then
+    CHECK_ARGS="${CHECK_FLAGS} --ignore-vignettes"
+fi
+
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
 check_succeeded="yes"
 (
     R CMD check ${PKG_TARBALL} \
-        --as-cran \
-        --run-donttest \
+        ${CHECK_ARGS} \
     || check_succeeded="no"
 ) &
 

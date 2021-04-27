@@ -168,7 +168,8 @@ if ($env:COMPILER -ne "MSVC") {
     # CRAN packages must pass without --no-multiarch (build on 64-bit and 32-bit)
     $check_args = "c('CMD', 'check', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
   } else {
-    $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
+    # vignettes are only built for CRAN builds
+    $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '--ignore-vignettes', $PKG_FILE_NAME')"
   }
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
 
