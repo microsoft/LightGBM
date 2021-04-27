@@ -127,7 +127,7 @@ Dataset <- R6::R6Class(
         cnames <- colnames(private$raw_data)
       }
 
-      # set feature names if not exist
+      # set feature names if they do not exist
       if (is.null(private$colnames) && !is.null(cnames)) {
         private$colnames <- as.character(cnames)
       }
@@ -140,7 +140,7 @@ Dataset <- R6::R6Class(
 
             cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1L)
 
-            # Provided indices, but some indices are not existing?
+            # Provided indices, but some indices are missing?
             if (sum(is.na(cate_indices)) > 0L) {
               stop(
                 "lgb.self.get.handle: supplied an unknown feature in categorical_feature: "
@@ -545,7 +545,9 @@ Dataset <- R6::R6Class(
 
     },
 
-    # Update parameters
+    # [description] Update Dataset parameters. If it has not been constructed yet,
+    #               this operation just happens on the R side (updating private$params).
+    #               If it has been constructed, parameters will be updated on the C++ side.
     update_params = function(params) {
       if (length(params) == 0L) {
         return(invisible(self))
@@ -553,26 +555,27 @@ Dataset <- R6::R6Class(
       if (lgb.is.null.handle(x = private$handle)) {
         private$params <- modifyList(private$params, params)
       } else {
-        call_state <- 0L
-        call_state <- .Call(
-          "LGBM_DatasetUpdateParamChecking_R"
-          , lgb.params2str(params = private$params)
-          , lgb.params2str(params = params)
-          , call_state
-          , PACKAGE = "lib_lightgbm"
-        )
-        call_state <- as.integer(call_state)
-        if (call_state != 0L) {
-
-          # raise error if raw data is freed
+        tryCatch({
+          call_state <- 0L
+          .Call(
+            "LGBM_DatasetUpdateParamChecking_R"
+            , lgb.params2str(params = private$params)
+            , lgb.params2str(params = params)
+            , call_state
+            , PACKAGE = "lib_lightgbm"
+          )
+        }, error = function(e) {
+          # If updating failed but raw data is not available, raise an error because
+          # achieving what the user asked for is not possible
           if (is.null(private$raw_data)) {
-            lgb.last_error()
+            stop(e)
           }
 
-          # Overwrite paramms
+          # If updating failed but raw data is available, modify the params
+          # on the R side and re-set ("deconstruct") the Dataset
           private$params <- modifyList(private$params, params)
           self$finalize()
-        }
+        })
       }
       return(invisible(self))
 
@@ -730,11 +733,22 @@ Dataset <- R6::R6Class(
 #' @description Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
 #'              or local file (that was created previously by saving an \code{lgb.Dataset}).
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
-#' @param params a list of parameters
-#' @param reference reference dataset
+#' @param params a list of parameters. See
+#'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
+#'               The "Dataset Parameters" section of the documentation} for a list of parameters
+#'               and valid values.
+#' @param reference reference dataset. When LightGBM creates a Dataset, it does some preprocessing like binning
+#'                  continuous features into histograms. If you want to apply the same bin boundaries from an existing
+#'                  dataset to new \code{data}, pass that existing Dataset to this argument.
 #' @param colnames names of columns
-#' @param categorical_feature categorical features
-#' @param free_raw_data TRUE for need to free raw data after construct
+#' @param categorical_feature categorical features. This can either be a character vector of feature
+#'                            names or an integer vector with the indices of the features (e.g.
+#'                            \code{c(1L, 10L)} to say "the first and tenth columns").
+#' @param free_raw_data LightGBM constructs its data format, called a "Dataset", from tabular data.
+#'                      By default, that Dataset object on the R side does not keep a copy of the raw data.
+#'                      This reduces LightGBM's memory consumption, but it means that the Dataset object
+#'                      cannot be changed after it has been constructed. If you'd prefer to be able to
+#'                      change the Dataset object after construction, set \code{free_raw_data = FALSE}.
 #' @param info a list of information of the \code{lgb.Dataset} object
 #' @param ... other information to pass to \code{info} or parameters pass to \code{params}
 #'
@@ -908,7 +922,6 @@ dimnames.lgb.Dataset <- function(x) {
 }
 
 #' @rdname dimnames.lgb.Dataset
-#' @return A list with the dimension names of the dataset
 #' @export
 `dimnames<-.lgb.Dataset` <- function(x, value) {
 
@@ -1024,7 +1037,6 @@ getinfo <- function(dataset, ...) {
 }
 
 #' @rdname getinfo
-#' @return info data
 #' @export
 getinfo.lgb.Dataset <- function(dataset, name, ...) {
 
@@ -1079,7 +1091,6 @@ setinfo <- function(dataset, ...) {
 }
 
 #' @rdname setinfo
-#' @return the dataset you passed in
 #' @export
 setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 

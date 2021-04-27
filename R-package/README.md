@@ -266,11 +266,7 @@ sh build-cran-package.sh
 
 This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
 
-Alternatively, GitHub Actions can generate this file for you. On a pull request, create a comment with this phrase:
-
-> /gha run build-r-artifacts
-
-Go to https://github.com/microsoft/LightGBM/actions, and find the most recent run of the "R artifact builds" workflow. If it ran successfully, you'll find a download link for the package (in `.zip` format) in that run's "Artifacts" section.
+Also, CRAN package is generated with every commit to any repo's branch and can be found in "Artifacts" section of the associated Azure Pipelines run.
 
 ### Standard Installation from CRAN Package
 
@@ -291,26 +287,31 @@ This section briefly explains the key files for building a CRAN package. To upda
 At build time, `configure` will be run and used to create a file `Makevars`, using `Makevars.in` as a template.
 
 1. Edit `configure.ac`.
-2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 18.04.
+2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 20.04.
 
-    If you have an Ubuntu 18.04 environment available, run the provided script from the root of the `LightGBM` repository.
+    If you have an Ubuntu 20.04 environment available, run the provided script from the root of the `LightGBM` repository.
 
     ```shell
     ./R-package/recreate-configure.sh
     ```
 
-    If you do not have easy access to an Ubuntu 18.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
+    If you do not have easy access to an Ubuntu 20.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
 
     ```shell
     docker run \
         -v $(pwd):/opt/LightGBM \
-        -t ubuntu:18.04 \
-        /bin/bash -c "cd /opt/LightGBM && ./R-package/recreate-configure.sh"
+        -w /opt/LightGBM \
+        -t ubuntu:20.04 \
+        ./R-package/recreate-configure.sh
     ```
 
     The version of `autoconf` used by this project is stored in `R-package/AUTOCONF_UBUNTU_VERSION`. To update that version, update that file and run the commands above. To see available versions, see https://packages.ubuntu.com/search?keywords=autoconf.
 
 3. Edit `src/Makevars.in`.
+
+Alternatively, GitHub Actions can re-generate this file for you. On a pull request (only on internal one, does not work for ones from forks), create a comment with this phrase:
+
+> /gha run r-configure
 
 **Configuring for Windows**
 
@@ -356,7 +357,7 @@ rhub::check(
 
 Alternatively, GitHub Actions can run code above for you. On a pull request, create a comment with this phrase:
 
-> /gha run r-solais
+> /gha run r-solaris
 
 **NOTE:** Please do this only once you see that other R tests on a pull request are passing. R Hub is a free resource with limited capacity, and we want to be respectful community members.
 
@@ -369,11 +370,11 @@ You can replicate these checks locally using Docker.
 ```shell
 docker run \
     -v $(pwd):/opt/LightGBM \
+    -w /opt/LightGBM \
     -it rhub/rocker-gcc-san \
     /bin/bash
 
-cd /opt/LightGBM
-Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
+Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
 sh build-cran-package.sh
 
@@ -391,11 +392,11 @@ You can replicate these checks locally using Docker. Note that instrumented vers
 ```shell
 docker run \
     -v $(pwd):/opt/LightGBM \
+    -w /opt/LightGBM \
     -it \
         wch1/r-debug
 
-cd /opt/LightGBM
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
 sh build-cran-package.sh
 

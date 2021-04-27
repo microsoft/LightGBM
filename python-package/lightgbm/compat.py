@@ -3,20 +3,20 @@
 
 """pandas"""
 try:
-    from pandas import concat
-    from pandas import Series as pd_Series
     from pandas import DataFrame as pd_DataFrame
+    from pandas import Series as pd_Series
+    from pandas import concat
     from pandas.api.types import is_sparse as is_dtype_sparse
     PANDAS_INSTALLED = True
 except ImportError:
     PANDAS_INSTALLED = False
 
-    class pd_Series:
+    class pd_Series:  # type: ignore
         """Dummy class for pandas.Series."""
 
         pass
 
-    class pd_DataFrame:
+    class pd_DataFrame:  # type: ignore
         """Dummy class for pandas.DataFrame."""
 
         pass
@@ -49,7 +49,7 @@ try:
 except ImportError:
     DATATABLE_INSTALLED = False
 
-    class dt_DataTable:
+    class dt_DataTable:  # type: ignore
         """Dummy class for datatable.DataTable."""
 
         pass
@@ -57,17 +57,16 @@ except ImportError:
 
 """sklearn"""
 try:
-    from sklearn.base import BaseEstimator
-    from sklearn.base import RegressorMixin, ClassifierMixin
+    from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
     from sklearn.preprocessing import LabelEncoder
     from sklearn.utils.class_weight import compute_sample_weight
     from sklearn.utils.multiclass import check_classification_targets
-    from sklearn.utils.validation import assert_all_finite, check_X_y, check_array
+    from sklearn.utils.validation import assert_all_finite, check_array, check_X_y
     try:
-        from sklearn.model_selection import StratifiedKFold, GroupKFold
         from sklearn.exceptions import NotFittedError
+        from sklearn.model_selection import GroupKFold, StratifiedKFold
     except ImportError:
-        from sklearn.cross_validation import StratifiedKFold, GroupKFold
+        from sklearn.cross_validation import GroupKFold, StratifiedKFold
         from sklearn.utils.validation import NotFittedError
     try:
         from sklearn.utils.validation import _check_sample_weight
@@ -115,27 +114,26 @@ try:
     from dask.array import Array as dask_Array
     from dask.dataframe import DataFrame as dask_DataFrame
     from dask.dataframe import Series as dask_Series
-    from dask.distributed import Client, default_client, get_worker, wait
+    from dask.distributed import Client, default_client, wait
     DASK_INSTALLED = True
 except ImportError:
     DASK_INSTALLED = False
     delayed = None
     Client = object
     default_client = None
-    get_worker = None
     wait = None
 
-    class dask_Array:
+    class dask_Array:  # type: ignore
         """Dummy class for dask.array.Array."""
 
         pass
 
-    class dask_DataFrame:
+    class dask_DataFrame:  # type: ignore
         """Dummy class for dask.dataframe.DataFrame."""
 
         pass
 
-    class dask_Series:
+    class dask_Series:  # type: ignore
         """Dummy class for dask.dataframe.Series."""
 
         pass

@@ -1,25 +1,24 @@
 # coding: utf-8
-"""Distributed training with LightGBM and Dask.distributed.
+"""Distributed training with LightGBM and dask.distributed.
 
 This module enables you to perform distributed training with LightGBM on
-Dask.Array and Dask.DataFrame collections.
+dask.Array and dask.DataFrame collections.
 
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
 import socket
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 from urllib.parse import urlparse
 
 import numpy as np
 import scipy.sparse as ss
 
-from .basic import _choose_param_value, _ConfigAliases, _LIB, _log_warning, _safe_call, LightGBMError
-from .compat import (PANDAS_INSTALLED, pd_DataFrame, pd_Series, concat,
-                     SKLEARN_INSTALLED, LGBMNotFittedError,
-                     DASK_INSTALLED, dask_DataFrame, dask_Array, dask_Series, delayed, Client, default_client, get_worker, wait)
-from .sklearn import LGBMClassifier, LGBMModel, LGBMRegressor, LGBMRanker
+from .basic import _LIB, LightGBMError, _choose_param_value, _ConfigAliases, _log_info, _log_warning, _safe_call
+from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
+                     dask_Array, dask_DataFrame, dask_Series, default_client, delayed, pd_DataFrame, pd_Series, wait)
+from .sklearn import LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _lgbmmodel_doc_fit, _lgbmmodel_doc_predict
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
@@ -46,84 +45,18 @@ def _get_dask_client(client: Optional[Client]) -> Client:
         return client
 
 
-def _find_open_port(worker_ip: str, local_listen_port: int, ports_to_skip: Iterable[int]) -> int:
-    """Find an open port.
-
-    This function tries to find a free port on the machine it's run on. It is intended to
-    be run once on each Dask worker, sequentially.
-
-    Parameters
-    ----------
-    worker_ip : str
-        IP address for the Dask worker.
-    local_listen_port : int
-        First port to try when searching for open ports.
-    ports_to_skip: Iterable[int]
-        An iterable of integers referring to ports that should be skipped. Since multiple Dask
-        workers can run on the same physical machine, this method may be called multiple times
-        on the same machine. ``ports_to_skip`` is used to ensure that LightGBM doesn't try to use
-        the same port for two worker processes running on the same machine.
+def _find_random_open_port() -> int:
+    """Find a random open port on localhost.
 
     Returns
     -------
     port : int
-        A free port on the machine referenced by ``worker_ip``.
+        A free port on localhost
     """
-    max_tries = 1000
-    out_port = None
-    found_port = False
-    for i in range(max_tries):
-        out_port = local_listen_port + i
-        if out_port in ports_to_skip:
-            continue
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind((worker_ip, out_port))
-            found_port = True
-            break
-        # if unavailable, you'll get OSError: Address already in use
-        except OSError:
-            continue
-    if not found_port:
-        msg = "LightGBM tried %s:%d-%d and could not create a connection. Try setting local_listen_port to a different value."
-        raise RuntimeError(msg % (worker_ip, local_listen_port, out_port))
-    return out_port
-
-
-def _find_ports_for_workers(client: Client, worker_addresses: Iterable[str], local_listen_port: int) -> Dict[str, int]:
-    """Find an open port on each worker.
-
-    LightGBM distributed training uses TCP sockets by default, and this method is used to
-    identify open ports on each worker so LightGBM can reliable create those sockets.
-
-    Parameters
-    ----------
-    client : dask.distributed.Client
-        Dask client.
-    worker_addresses : Iterable[str]
-        An iterable of addresses for workers in the cluster. These are strings of the form ``<protocol>://<host>:port``.
-    local_listen_port : int
-        First port to try when searching for open ports.
-
-    Returns
-    -------
-    result : Dict[str, int]
-        Dictionary where keys are worker addresses and values are an open port for LightGBM to use.
-    """
-    lightgbm_ports = set()
-    worker_ip_to_port = {}
-    for worker_address in worker_addresses:
-        port = client.submit(
-            func=_find_open_port,
-            workers=[worker_address],
-            worker_ip=urlparse(worker_address).hostname,
-            local_listen_port=local_listen_port,
-            ports_to_skip=lightgbm_ports
-        ).result()
-        lightgbm_ports.add(port)
-        worker_ip_to_port[worker_address] = port
-
-    return worker_ip_to_port
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        port = s.getsockname()[1]
+    return port
 
 
 def _concat(seq: List[_DaskPart]) -> _DaskPart:
@@ -141,22 +74,18 @@ def _train_part(
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
     list_of_parts: List[Dict[str, _DaskPart]],
-    worker_address_to_port: Dict[str, int],
+    machines: str,
+    local_listen_port: int,
+    num_machines: int,
     return_model: bool,
     time_out: int = 120,
     **kwargs: Any
 ) -> Optional[LGBMModel]:
-    local_worker_address = get_worker().address
-    machine_list = ','.join([
-        '%s:%d' % (urlparse(worker_address).hostname, port)
-        for worker_address, port
-        in worker_address_to_port.items()
-    ])
     network_params = {
-        'machines': machine_list,
-        'local_listen_port': worker_address_to_port[local_worker_address],
+        'machines': machines,
+        'local_listen_port': local_listen_port,
         'time_out': time_out,
-        'num_machines': len(worker_address_to_port)
+        'num_machines': num_machines
     }
     params.update(network_params)
 
@@ -176,12 +105,17 @@ def _train_part(
     else:
         group = None
 
+    if 'init_score' in list_of_parts[0]:
+        init_score = _concat([x['init_score'] for x in list_of_parts])
+    else:
+        init_score = None
+
     try:
         model = model_factory(**params)
         if is_ranker:
-            model.fit(data, label, sample_weight=weight, group=group, **kwargs)
+            model.fit(data, label, sample_weight=weight, init_score=init_score, group=group, **kwargs)
         else:
-            model.fit(data, label, sample_weight=weight, **kwargs)
+            model.fit(data, label, sample_weight=weight, init_score=init_score, **kwargs)
 
     finally:
         _safe_call(_LIB.LGBM_NetworkFree())
@@ -200,6 +134,80 @@ def _split_to_parts(data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
     return parts
 
 
+def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[str, int]:
+    """Create a worker_map from machines list.
+
+    Given ``machines`` and a list of Dask worker addresses, return a mapping where the keys are
+    ``worker_addresses`` and the values are ports from ``machines``.
+
+    Parameters
+    ----------
+    machines : str
+        A comma-delimited list of workers, of the form ``ip1:port,ip2:port``.
+    worker_addresses : list of str
+        A list of Dask worker addresses, of the form ``{protocol}{hostname}:{port}``, where ``port`` is the port Dask's scheduler uses to talk to that worker.
+
+    Returns
+    -------
+    result : Dict[str, int]
+        Dictionary where keys are work addresses in the form expected by Dask and values are a port for LightGBM to use.
+    """
+    machine_addresses = machines.split(",")
+
+    if len(set(machine_addresses)) != len(machine_addresses):
+        raise ValueError(f"Found duplicates in 'machines' ({machines}). Each entry in 'machines' must be a unique IP-port combination.")
+
+    machine_to_port = defaultdict(set)
+    for address in machine_addresses:
+        host, port = address.split(":")
+        machine_to_port[host].add(int(port))
+
+    out = {}
+    for address in worker_addresses:
+        worker_host = urlparse(address).hostname
+        out[address] = machine_to_port[worker_host].pop()
+
+    return out
+
+
+def _possibly_fix_worker_map_duplicates(worker_map: Dict[str, int], client: Client) -> Dict[str, int]:
+    """Fix any duplicate IP-port pairs in a ``worker_map``."""
+    worker_map = deepcopy(worker_map)
+    workers_that_need_new_ports = []
+    host_to_port = defaultdict(set)
+    for worker, port in worker_map.items():
+        host = urlparse(worker).hostname
+        if port in host_to_port[host]:
+            workers_that_need_new_ports.append(worker)
+        else:
+            host_to_port[host].add(port)
+
+    # if any duplicates were found, search for new ports one by one
+    for worker in workers_that_need_new_ports:
+        _log_info(f"Searching for a LightGBM training port for worker '{worker}'")
+        host = urlparse(worker).hostname
+        retries_remaining = 100
+        while retries_remaining > 0:
+            retries_remaining -= 1
+            new_port = client.submit(
+                _find_random_open_port,
+                workers=[worker],
+                allow_other_workers=False,
+                pure=False
+            ).result()
+            if new_port not in host_to_port[host]:
+                worker_map[worker] = new_port
+                host_to_port[host].add(new_port)
+                break
+
+        if retries_remaining == 0:
+            raise LightGBMError(
+                "Failed to find an open port. Try re-running training or explicitly setting 'machines' or 'local_listen_port'."
+            )
+
+    return worker_map
+
+
 def _train(
     client: Client,
     data: _DaskMatrixLike,
@@ -207,6 +215,7 @@ def _train(
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
     sample_weight: Optional[_DaskCollection] = None,
+    init_score: Optional[_DaskCollection] = None,
     group: Optional[_DaskCollection] = None,
     **kwargs: Any
 ) -> LGBMModel:
@@ -216,17 +225,19 @@ def _train(
     ----------
     client : dask.distributed.Client
         Dask client.
-    data : dask Array or dask DataFrame of shape = [n_samples, n_features]
+    data : Dask Array or Dask DataFrame of shape = [n_samples, n_features]
         Input feature matrix.
-    label : dask Array, dask DataFrame or dask Series of shape = [n_samples]
+    label : Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]
         The target values (class labels in classification, real numbers in regression).
     params : dict
         Parameters passed to constructor of the local underlying model.
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Class of the local underlying model.
-    sample_weight : dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+    sample_weight : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
-    group : dask Array, dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+    init_score : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+        Init score of training data.
+    group : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
         Group/query data.
         Only used in the learning-to-rank task.
         sum(group) = n_samples.
@@ -239,13 +250,46 @@ def _train(
     -------
     model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Returns fitted underlying model.
+
+    Note
+    ----
+
+    This method handles setting up the following network parameters based on information
+    about the Dask cluster referenced by ``client``.
+
+    * ``local_listen_port``: port that each LightGBM worker opens a listening socket on,
+            to accept connections from other workers. This can differ from LightGBM worker
+            to LightGBM worker, but does not have to.
+    * ``machines``: a comma-delimited list of all workers in the cluster, in the
+            form ``ip:port,ip:port``. If running multiple Dask workers on the same host, use different
+            ports for each worker. For example, for ``LocalCluster(n_workers=3)``, you might
+            pass ``"127.0.0.1:12400,127.0.0.1:12401,127.0.0.1:12402"``.
+    * ``num_machines``: number of LightGBM workers.
+    * ``timeout``: time in minutes to wait before closing unused sockets.
+
+    The default behavior of this function is to generate ``machines`` from the list of
+    Dask workers which hold some piece of the training data, and to search for an open
+    port on each worker to be used as ``local_listen_port``.
+
+    If ``machines`` is provided explicitly in ``params``, this function uses the hosts
+    and ports in that list directly, and does not do any searching. This means that if
+    any of the Dask workers are missing from the list or any of those ports are not free
+    when training starts, training will fail.
+
+    If ``local_listen_port`` is provided in ``params`` and ``machines`` is not, this function
+    constructs ``machines`` from the list of Dask workers which hold some piece of the
+    training data, assuming that each one will use the same ``local_listen_port``.
     """
     params = deepcopy(params)
 
-    params = _choose_param_value(
-        main_param_name="local_listen_port",
-        params=params,
-        default_value=12400
+    # capture whether local_listen_port or its aliases were provided
+    listen_port_in_params = any(
+        alias in params for alias in _ConfigAliases.get("local_listen_port")
+    )
+
+    # capture whether machines or its aliases were provided
+    machines_in_params = any(
+        alias in params for alias in _ConfigAliases.get("machines")
     )
 
     params = _choose_param_value(
@@ -265,33 +309,34 @@ def _train(
         _log_warning('Parameter tree_learner set to %s, which is not allowed. Using "data" as default' % params['tree_learner'])
         params['tree_learner'] = 'data'
 
-    if params['tree_learner'] not in {'data', 'data_parallel'}:
-        _log_warning(
-            'Support for tree_learner %s in lightgbm.dask is experimental and may break in a future release. \n'
-            'Use "data" for a stable, well-tested interface.' % params['tree_learner']
-        )
-
     # Some passed-in parameters can be removed:
-    #   * 'machines': constructed automatically from Dask worker list
     #   * 'num_machines': set automatically from Dask worker list
     #   * 'num_threads': overridden to match nthreads on each Dask process
-    for param_alias in _ConfigAliases.get('machines', 'num_machines', 'num_threads'):
-        params.pop(param_alias, None)
+    for param_alias in _ConfigAliases.get('num_machines', 'num_threads'):
+        if param_alias in params:
+            _log_warning(f"Parameter {param_alias} will be ignored.")
+            params.pop(param_alias)
 
     # Split arrays/dataframes into parts. Arrange parts into dicts to enforce co-locality
     data_parts = _split_to_parts(data=data, is_matrix=True)
     label_parts = _split_to_parts(data=label, is_matrix=False)
     parts = [{'data': x, 'label': y} for (x, y) in zip(data_parts, label_parts)]
+    n_parts = len(parts)
 
     if sample_weight is not None:
         weight_parts = _split_to_parts(data=sample_weight, is_matrix=False)
-        for i in range(len(parts)):
+        for i in range(n_parts):
             parts[i]['weight'] = weight_parts[i]
 
     if group is not None:
         group_parts = _split_to_parts(data=group, is_matrix=False)
-        for i in range(len(parts)):
+        for i in range(n_parts):
             parts[i]['group'] = group_parts[i]
+
+    if init_score is not None:
+        init_score_parts = _split_to_parts(data=init_score, is_matrix=False)
+        for i in range(n_parts):
+            parts[i]['init_score'] = init_score_parts[i]
 
     # Start computation in the background
     parts = list(map(delayed, parts))
@@ -299,11 +344,11 @@ def _train(
     wait(parts)
 
     for part in parts:
-        if part.status == 'error':
+        if part.status == 'error':  # type: ignore
             return part  # trigger error locally
 
     # Find locations of all parts and map them to particular Dask workers
-    key_to_part_dict = {part.key: part for part in parts}
+    key_to_part_dict = {part.key: part for part in parts}  # type: ignore
     who_has = client.who_has(parts)
     worker_map = defaultdict(list)
     for key, workers in who_has.items():
@@ -312,25 +357,91 @@ def _train(
     master_worker = next(iter(worker_map))
     worker_ncores = client.ncores()
 
-    # find an open port on each worker. note that multiple workers can run
-    # on the same machine, so this needs to ensure that each one gets its
-    # own port
-    worker_address_to_port = _find_ports_for_workers(
-        client=client,
-        worker_addresses=worker_map.keys(),
-        local_listen_port=params["local_listen_port"]
+    # resolve aliases for network parameters and pop the result off params.
+    # these values are added back in calls to `_train_part()`
+    params = _choose_param_value(
+        main_param_name="local_listen_port",
+        params=params,
+        default_value=12400
     )
+    local_listen_port = params.pop("local_listen_port")
+
+    params = _choose_param_value(
+        main_param_name="machines",
+        params=params,
+        default_value=None
+    )
+    machines = params.pop("machines")
+
+    # figure out network params
+    worker_addresses = worker_map.keys()
+    if machines is not None:
+        _log_info("Using passed-in 'machines' parameter")
+        worker_address_to_port = _machines_to_worker_map(
+            machines=machines,
+            worker_addresses=worker_addresses
+        )
+    else:
+        if listen_port_in_params:
+            _log_info("Using passed-in 'local_listen_port' for all workers")
+            unique_hosts = set(urlparse(a).hostname for a in worker_addresses)
+            if len(unique_hosts) < len(worker_addresses):
+                msg = (
+                    "'local_listen_port' was provided in Dask training parameters, but at least one "
+                    "machine in the cluster has multiple Dask worker processes running on it. Please omit "
+                    "'local_listen_port' or pass 'machines'."
+                )
+                raise LightGBMError(msg)
+
+            worker_address_to_port = {
+                address: local_listen_port
+                for address in worker_addresses
+            }
+        else:
+            _log_info("Finding random open ports for workers")
+            # this approach with client.run() is faster than searching for ports
+            # serially, but can produce duplicates sometimes. Try the fast approach one
+            # time, then pass it through a function that will use a slower but more reliable
+            # approach if duplicates are found.
+            worker_address_to_port = client.run(
+                _find_random_open_port,
+                workers=list(worker_addresses)
+            )
+            worker_address_to_port = _possibly_fix_worker_map_duplicates(
+                worker_map=worker_address_to_port,
+                client=client
+            )
+
+        machines = ','.join([
+            '%s:%d' % (urlparse(worker_address).hostname, port)
+            for worker_address, port
+            in worker_address_to_port.items()
+        ])
+
+    num_machines = len(worker_address_to_port)
 
     # Tell each worker to train on the parts that it has locally
+    #
+    # This code treats ``_train_part()`` calls as not "pure" because:
+    #     1. there is randomness in the training process unless parameters ``seed``
+    #        and ``deterministic`` are set
+    #     2. even with those parameters set, the output of one ``_train_part()`` call
+    #        relies on global state (it and all the other LightGBM training processes
+    #        coordinate with each other)
     futures_classifiers = [
         client.submit(
             _train_part,
             model_factory=model_factory,
             params={**params, 'num_threads': worker_ncores[worker]},
             list_of_parts=list_of_parts,
-            worker_address_to_port=worker_address_to_port,
+            machines=machines,
+            local_listen_port=worker_address_to_port[worker],
+            num_machines=num_machines,
             time_out=params.get('time_out', 120),
             return_model=(worker == master_worker),
+            workers=[worker],
+            allow_other_workers=False,
+            pure=False,
             **kwargs
         )
         for worker, list_of_parts in worker_map.items()
@@ -338,7 +449,24 @@ def _train(
 
     results = client.gather(futures_classifiers)
     results = [v for v in results if v]
-    return results[0]
+    model = results[0]
+
+    # if network parameters were changed during training, remove them from the
+    # returned moodel so that they're generated dynamically on every run based
+    # on the Dask cluster you're connected to and which workers have pieces of
+    # the training data
+    if not listen_port_in_params:
+        for param in _ConfigAliases.get('local_listen_port'):
+            model._other_params.pop(param, None)
+
+    if not machines_in_params:
+        for param in _ConfigAliases.get('machines'):
+            model._other_params.pop(param, None)
+
+    for param in _ConfigAliases.get('num_machines', 'timeout'):
+        model._other_params.pop(param, None)
+
+    return model
 
 
 def _predict_part(
@@ -372,7 +500,7 @@ def _predict_part(
 
     # dask.DataFrame.map_partitions() expects each call to return a pandas DataFrame or Series
     if isinstance(part, pd_DataFrame):
-        if pred_proba or pred_contrib:
+        if len(result.shape) == 2:
             result = pd_DataFrame(result, index=part.index)
         else:
             result = pd_Series(result, index=part.index, name='predictions')
@@ -396,7 +524,7 @@ def _predict(
     ----------
     model : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Fitted underlying model.
-    data : dask Array or dask DataFrame of shape = [n_samples, n_features]
+    data : Dask Array or Dask DataFrame of shape = [n_samples, n_features]
         Input feature matrix.
     raw_score : bool, optional (default=False)
         Whether to predict raw scores.
@@ -413,11 +541,11 @@ def _predict(
 
     Returns
     -------
-    predicted_result : dask Array of shape = [n_samples] or shape = [n_samples, n_classes]
+    predicted_result : Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]
         The predicted values.
-    X_leaves : dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
+    X_leaves : Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
         If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-    X_SHAP_values : dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
+    X_SHAP_values : Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
         If ``pred_contrib=True``, the feature contributions for each sample.
     """
     if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
@@ -433,10 +561,6 @@ def _predict(
             **kwargs
         ).values
     elif isinstance(data, dask_Array):
-        if pred_proba:
-            kwargs['chunks'] = (data.chunks[0], (model.n_classes_,))
-        else:
-            kwargs['drop_axis'] = 1
         return data.map_blocks(
             _predict_part,
             model=model,
@@ -445,10 +569,10 @@ def _predict(
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,
             dtype=dtype,
-            **kwargs
+            drop_axis=1
         )
     else:
-        raise TypeError('Data must be either dask Array or dask DataFrame. Got %s.' % str(type(data)))
+        raise TypeError('Data must be either Dask Array or Dask DataFrame. Got %s.' % str(type(data)))
 
 
 class _DaskLGBMModel:
@@ -465,7 +589,7 @@ class _DaskLGBMModel:
 
         return _get_dask_client(client=self.client)
 
-    def _lgb_getstate(self) -> Dict[Any, Any]:
+    def _lgb_dask_getstate(self) -> Dict[Any, Any]:
         """Remove un-picklable attributes before serialization."""
         client = self.__dict__.pop("client", None)
         self._other_params.pop("client", None)
@@ -474,12 +598,13 @@ class _DaskLGBMModel:
         self.client = client
         return out
 
-    def _fit(
+    def _lgb_dask_fit(
         self,
         model_factory: Type[LGBMModel],
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
+        init_score: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
@@ -496,25 +621,26 @@ class _DaskLGBMModel:
             params=params,
             model_factory=model_factory,
             sample_weight=sample_weight,
+            init_score=init_score,
             group=group,
             **kwargs
         )
 
         self.set_params(**model.get_params())
-        self._copy_extra_params(model, self)
+        self._lgb_dask_copy_extra_params(model, self)
 
         return self
 
-    def _to_local(self, model_factory: Type[LGBMModel]) -> LGBMModel:
+    def _lgb_dask_to_local(self, model_factory: Type[LGBMModel]) -> LGBMModel:
         params = self.get_params()
         params.pop("client", None)
         model = model_factory(**params)
-        self._copy_extra_params(self, model)
+        self._lgb_dask_copy_extra_params(self, model)
         model._other_params.pop("client", None)
         return model
 
     @staticmethod
-    def _copy_extra_params(source: Union["_DaskLGBMModel", LGBMModel], dest: Union["_DaskLGBMModel", LGBMModel]) -> None:
+    def _lgb_dask_copy_extra_params(source: Union["_DaskLGBMModel", LGBMModel], dest: Union["_DaskLGBMModel", LGBMModel]) -> None:
         params = source.get_params()
         attributes = source.__dict__
         extra_param_names = set(attributes.keys()).difference(params.keys())
@@ -578,33 +704,56 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     _base_doc = LGBMClassifier.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    __init__.__doc__ = (
+    _base_doc = (
         _before_kwargs
         + 'client : dask.distributed.Client or None, optional (default=None)\n'
         + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
 
+    # the note on custom objective functions in LGBMModel.__init__ is not
+    # currently relevant for the Dask estimators
+    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
+
     def __getstate__(self) -> Dict[Any, Any]:
-        return self._lgb_getstate()
+        return self._lgb_dask_getstate()
 
     def fit(
         self,
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
+        init_score: Optional[_DaskCollection] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
-        return self._fit(
+        return self._lgb_dask_fit(
             model_factory=LGBMClassifier,
             X=X,
             y=y,
             sample_weight=sample_weight,
+            init_score=init_score,
             **kwargs
         )
 
-    fit.__doc__ = LGBMClassifier.fit.__doc__
+    _base_doc = _lgbmmodel_doc_fit.format(
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
+        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+    )
+
+    # DaskLGBMClassifier does not support evaluation data, or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
+                 + _base_doc[_base_doc.find('verbose :'):])
+
+    # DaskLGBMClassifier support for callbacks and init_model is not tested
+    fit.__doc__ = (
+        _base_doc[:_base_doc.find('callbacks :')]
+        + '**kwargs\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMClassifier.fit()``.\n'
+    )
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
@@ -615,7 +764,14 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             **kwargs
         )
 
-    predict.__doc__ = LGBMClassifier.predict.__doc__
+    predict.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted value for each sample.",
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        output_name="predicted_result",
+        predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
+        X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+    )
 
     def predict_proba(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict_proba."""
@@ -626,7 +782,14 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             **kwargs
         )
 
-    predict_proba.__doc__ = LGBMClassifier.predict_proba.__doc__
+    predict_proba.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted probability for each class for each sample.",
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        output_name="predicted_probability",
+        predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
+        X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+    )
 
     def to_local(self) -> LGBMClassifier:
         """Create regular version of lightgbm.LGBMClassifier from the distributed version.
@@ -636,7 +799,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         model : lightgbm.LGBMClassifier
             Local underlying model.
         """
-        return self._to_local(LGBMClassifier)
+        return self._lgb_dask_to_local(LGBMClassifier)
 
 
 class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
@@ -695,33 +858,56 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
     _base_doc = LGBMRegressor.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    __init__.__doc__ = (
+    _base_doc = (
         _before_kwargs
         + 'client : dask.distributed.Client or None, optional (default=None)\n'
         + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
 
+    # the note on custom objective functions in LGBMModel.__init__ is not
+    # currently relevant for the Dask estimators
+    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
+
     def __getstate__(self) -> Dict[Any, Any]:
-        return self._lgb_getstate()
+        return self._lgb_dask_getstate()
 
     def fit(
         self,
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskCollection] = None,
+        init_score: Optional[_DaskCollection] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        return self._fit(
+        return self._lgb_dask_fit(
             model_factory=LGBMRegressor,
             X=X,
             y=y,
             sample_weight=sample_weight,
+            init_score=init_score,
             **kwargs
         )
 
-    fit.__doc__ = LGBMRegressor.fit.__doc__
+    _base_doc = _lgbmmodel_doc_fit.format(
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
+        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+    )
+
+    # DaskLGBMRegressor does not support evaluation data, or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
+                 + _base_doc[_base_doc.find('verbose :'):])
+
+    # DaskLGBMRegressor support for callbacks and init_model is not tested
+    fit.__doc__ = (
+        _base_doc[:_base_doc.find('callbacks :')]
+        + '**kwargs\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMRegressor.fit()``.\n'
+    )
 
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRegressor.predict."""
@@ -731,7 +917,14 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             **kwargs
         )
 
-    predict.__doc__ = LGBMRegressor.predict.__doc__
+    predict.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted value for each sample.",
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        output_name="predicted_result",
+        predicted_result_shape="Dask Array of shape = [n_samples]",
+        X_leaves_shape="Dask Array of shape = [n_samples, n_trees]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1]"
+    )
 
     def to_local(self) -> LGBMRegressor:
         """Create regular version of lightgbm.LGBMRegressor from the distributed version.
@@ -741,7 +934,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         model : lightgbm.LGBMRegressor
             Local underlying model.
         """
-        return self._to_local(LGBMRegressor)
+        return self._lgb_dask_to_local(LGBMRegressor)
 
 
 class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
@@ -800,15 +993,19 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
     _base_doc = LGBMRanker.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    __init__.__doc__ = (
+    _base_doc = (
         _before_kwargs
         + 'client : dask.distributed.Client or None, optional (default=None)\n'
         + ' ' * 12 + 'Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.\n'
         + ' ' * 8 + _kwargs + _after_kwargs
     )
 
+    # the note on custom objective functions in LGBMModel.__init__ is not
+    # currently relevant for the Dask estimators
+    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
+
     def __getstate__(self) -> Dict[Any, Any]:
-        return self._lgb_getstate()
+        return self._lgb_dask_getstate()
 
     def fit(
         self,
@@ -820,25 +1017,47 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
-        if init_score is not None:
-            raise RuntimeError('init_score is not currently supported in lightgbm.dask')
-
-        return self._fit(
+        return self._lgb_dask_fit(
             model_factory=LGBMRanker,
             X=X,
             y=y,
             sample_weight=sample_weight,
+            init_score=init_score,
             group=group,
             **kwargs
         )
 
-    fit.__doc__ = LGBMRanker.fit.__doc__
+    _base_doc = _lgbmmodel_doc_fit.format(
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
+        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+    )
+
+    # DaskLGBMRanker does not support evaluation data, or early stopping
+    _base_doc = (_base_doc[:_base_doc.find('eval_set :')]
+                 + _base_doc[_base_doc.find('verbose :'):])
+
+    # DaskLGBMRanker support for callbacks and init_model is not tested
+    fit.__doc__ = (
+        _base_doc[:_base_doc.find('callbacks :')]
+        + '**kwargs\n'
+        + ' ' * 12 + 'Other parameters passed through to ``LGBMRanker.fit()``.\n'
+    )
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
         return _predict(self.to_local(), X, **kwargs)
 
-    predict.__doc__ = LGBMRanker.predict.__doc__
+    predict.__doc__ = _lgbmmodel_doc_predict.format(
+        description="Return the predicted value for each sample.",
+        X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
+        output_name="predicted_result",
+        predicted_result_shape="Dask Array of shape = [n_samples]",
+        X_leaves_shape="Dask Array of shape = [n_samples, n_trees]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1]"
+    )
 
     def to_local(self) -> LGBMRanker:
         """Create regular version of lightgbm.LGBMRanker from the distributed version.
@@ -848,4 +1067,4 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         model : lightgbm.LGBMRanker
             Local underlying model.
         """
-        return self._to_local(LGBMRanker)
+        return self._lgb_dask_to_local(LGBMRanker)
