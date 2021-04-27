@@ -267,6 +267,7 @@ def train(params, train_set, num_boost_round=100,
             evaluation_result_list = earlyStopException.best_score
             break
     booster.best_score = collections.defaultdict(collections.OrderedDict)
+    booster.init_score = train_set.get_init_score()
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
