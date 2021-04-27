@@ -152,16 +152,18 @@ mv ${TARBALL_NAME} _tmp/
 cd _tmp
     tar -xvf ${TARBALL_NAME}
     rm -rf ${TARBALL_NAME}
-    tar \
-        -czvf ${TARBALL_NAME} \
-        --exclude=*.a \
-        --exclude=*.dll \
-        --exclude=*.o \
-        --exclude=*.so \
-        --exclude=*.tar.gz \
-        .
-    cp ${TARBALL_NAME} ../
 cd ..
+
+tar \
+    -czv \
+    -C ./_tmp \
+    --exclude=*.a \
+    --exclude=*.dll \
+    --exclude=*.o \
+    --exclude=*.so \
+    --exclude=*.tar.gz \
+    -f ${TARBALL_NAME} \
+    lightgbm
 
 rm -rf ./_tmp
 
