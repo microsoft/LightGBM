@@ -372,7 +372,7 @@ writeLines(description_contents, DESCRIPTION_FILE)
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
 #       on demand
-.run_shell_command("R", c("CMD", "build", TEMP_R_DIR, "--keep-empty-dirs"))
+.run_shell_command("R", c("CMD", "build", TEMP_R_DIR, "--keep-empty-dirs", "--no-build-vignettes"))
 
 # Install the package
 version <- gsub(

@@ -25,6 +25,7 @@ LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
 
 # move relevant files
 cp -R R-package/* ${TEMP_R_DIR}
+cp docs/logo/LightGBM_logo_black_text.svg ${TEMP_R_DIR}/vignettes/
 cp -R include ${TEMP_R_DIR}/src/
 cp -R src/* ${TEMP_R_DIR}/src/
 
@@ -145,6 +146,7 @@ R CMD build \
     lightgbm_r
 
 echo "removing object files created by vignettes"
+rm -rf ./_tmp
 mkdir _tmp
 TARBALL_NAME=lightgbm_${LGB_VERSION}.tar.gz
 mv ${TARBALL_NAME} _tmp/
