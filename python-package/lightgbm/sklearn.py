@@ -76,7 +76,7 @@ class _ObjectiveFunctionWrapper:
         elif argc == 3:
             grad, hess = self.func(labels, preds, dataset.get_group())
         else:
-            raise TypeError("Self-defined objective function should have 2 or 3 arguments, got %d" % argc)
+            raise TypeError(f"Self-defined objective function should have 2 or 3 arguments, got {argc}")
         """weighted for objective"""
         weight = dataset.get_weight()
         if weight is not None:
@@ -171,7 +171,7 @@ class _EvalFunctionWrapper:
         elif argc == 4:
             return self.func(labels, preds, dataset.get_weight(), dataset.get_group())
         else:
-            raise TypeError("Self-defined eval function should have 2, 3 or 4 arguments, got %d" % argc)
+            raise TypeError(f"Self-defined eval function should have 2, 3 or 4 arguments, got {argc}")
 
 
 # documentation templates for LGBMModel methods are shared between the classes in
@@ -532,8 +532,8 @@ class LGBMModel(_LGBMModelBase):
         """
         for key, value in params.items():
             setattr(self, key, value)
-            if hasattr(self, '_' + key):
-                setattr(self, '_' + key, value)
+            if hasattr(self, f"_{key}"):
+                setattr(self, f"_{key}", value)
             self._other_params[key] = value
         return self
 
@@ -652,7 +652,7 @@ class LGBMModel(_LGBMModelBase):
                 elif isinstance(collection, dict):
                     return collection.get(i, None)
                 else:
-                    raise TypeError('{} should be dict or list'.format(name))
+                    raise TypeError(f"{name} should be dict or list")
 
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
@@ -720,9 +720,8 @@ class LGBMModel(_LGBMModelBase):
         n_features = X.shape[1]
         if self._n_features != n_features:
             raise ValueError("Number of features of the model must "
-                             "match the input. Model n_features_ is %s and "
-                             "input n_features is %s "
-                             % (self._n_features, n_features))
+                             f"match the input. Model n_features_ is {self._n_features} and "
+                             f"input n_features is {n_features}")
         return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
@@ -805,7 +804,7 @@ class LGBMModel(_LGBMModelBase):
         return self._Booster.feature_name()
 
 
-class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
+class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
 
     def fit(self, X, y,
@@ -831,7 +830,7 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
                    + _base_doc[_base_doc.find('eval_metric :'):])
 
 
-class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
+class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     """LightGBM classifier."""
 
     def fit(self, X, y,
@@ -992,7 +991,7 @@ class LGBMRanker(LGBMModel):
                    + _base_doc[_base_doc.find('eval_init_score :'):])  # type: ignore
     _base_doc = fit.__doc__
     _before_early_stop, _early_stop, _after_early_stop = _base_doc.partition('early_stopping_rounds :')
-    fit.__doc__ = (_before_early_stop
-                   + 'eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))\n'
-                   + ' ' * 12 + 'The evaluation positions of the specified metric.\n'
-                   + ' ' * 8 + _early_stop + _after_early_stop)
+    fit.__doc__ = (f"{_before_early_stop}"
+                   "eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))\n"
+                   f"{' ':12}The evaluation positions of the specified metric.\n"
+                   f"{' ':8}{_early_stop}{_after_early_stop}")

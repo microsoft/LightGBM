@@ -44,7 +44,7 @@ jobs:
               libxml2-dev \
               libssl-dev
           log_file="$GITHUB_WORKSPACE/rhub_logs.txt"
-          Rscript -e "install.packages('rhub', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org')"
+          Rscript -e "install.packages('rhub', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           Rscript $GITHUB_WORKSPACE/.ci/run_rhub_solaris_checks.R $(pwd)/lightgbm_*.tar.gz $log_file || exit -1
       - name: Send final status
         if: ${{ always() }}
