@@ -81,11 +81,13 @@ else  # Linux
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
+    ARCH=$(uname -m)
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
         apt-get install --no-install-recommends -y \
             curl \
+            graphviz \
             libxau6 \
             libxext6 \
             libxrender1 \
@@ -101,16 +103,16 @@ else  # Linux
         apt-get update
         apt-get install --no-install-recommends -y \
             cmake
-    fi
-    ARCH=$(uname -m)
-    if [[ $ARCH != "x86_64" ]] || [[ $TASK == "cuda" ]]; then
-        apt update
-        apt install --no-install-recommends -y \
-            graphviz
     else
-        sudo apt-get update
-        sudo apt-get install --no-install-recommends -y \
-            graphviz
+        if [[ $ARCH != "x86_64" ]]; then
+            yum update -y
+            yum install \
+                graphviz
+        else
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y \
+                graphviz
+        fi
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
         if [[ $ARCH == "x86_64" ]]; then
