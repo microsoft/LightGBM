@@ -81,13 +81,11 @@ else  # Linux
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
-    ARCH=$(uname -m)
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
         apt-get install --no-install-recommends -y \
             curl \
-            graphviz \
             libxau6 \
             libxext6 \
             libxrender1 \
@@ -103,18 +101,18 @@ else  # Linux
         apt-get update
         apt-get install --no-install-recommends -y \
             cmake
+    fi
+    ARCH=$(uname -m)
+    if [[ $ARCH != "x86_64" ]] || [[ $TASK == "cuda" ]]; then
+        apt-get update
+        apt-get install --no-install-recommends -y \
+            graphviz
     else
-        if [[ $ARCH == "x86_64" ]]; then
-            sudo apt-get update
-            sudo apt-get install --no-install-recommends -y \
-                graphviz
-        else
-            apt-get update
-            apt-get install --no-install-recommends -y \
-                graphviz
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends -y \
+            graphviz
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
-        
         if [[ $ARCH == "x86_64" ]]; then
             curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         else
