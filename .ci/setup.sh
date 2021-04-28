@@ -25,13 +25,10 @@ else  # Linux
         echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
 
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends \
+        sudo apt-get install --no-install-recommends -y \
             software-properties-common
 
-        sudo add-apt-repository -y ppa:git-core/ppa
-        sudo apt-get update
-
-        sudo apt-get install -y --no-install-recommends \
+        sudo apt-get install --no-install-recommends -y \
             apt-utils \
             build-essential \
             ca-certificates \
@@ -64,12 +61,16 @@ else  # Linux
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
-        sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
+        sudo apt-get install --no-install-recommends -y \
+            libopenmpi-dev \
+            openmpi-bin
     fi
     if [[ $TASK == "gpu" ]]; then
         sudo add-apt-repository ppa:mhier/libboost-latest -y
         sudo apt-get update
-        sudo apt-get install --no-install-recommends -y libboost1.74-dev ocl-icd-opencl-dev
+        sudo apt-get install --no-install-recommends -y \
+            libboost1.74-dev \
+            ocl-icd-opencl-dev
         cd $BUILD_DIRECTORY  # to avoid permission errors
         curl -sL -o AMD-APP-SDKInstaller.tar.bz2 https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
         tar -xjf AMD-APP-SDKInstaller.tar.bz2
@@ -84,6 +85,7 @@ else  # Linux
         apt-get update
         apt-get install --no-install-recommends -y \
             curl \
+            graphviz \
             libxau6 \
             libxext6 \
             libxrender1 \
@@ -99,6 +101,10 @@ else  # Linux
         apt-get update
         apt-get install --no-install-recommends -y \
             cmake
+    else
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends -y \
+            graphviz
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
         ARCH=$(uname -m)
