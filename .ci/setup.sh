@@ -104,8 +104,8 @@ else  # Linux
     fi
     ARCH=$(uname -m)
     if [[ $ARCH != "x86_64" ]] || [[ $TASK == "cuda" ]]; then
-        apt-get update
-        apt-get install --no-install-recommends -y \
+        apt update
+        apt install --no-install-recommends -y \
             graphviz
     else
         sudo apt-get update
