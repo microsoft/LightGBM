@@ -106,7 +106,7 @@ else  # Linux
     else
         if [[ $ARCH != "x86_64" ]]; then
             yum update -y
-            yum install \
+            yum install -y \
                 graphviz
         else
             sudo apt-get update
