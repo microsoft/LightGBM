@@ -119,21 +119,21 @@ lgb.params2str <- function(params, ...) {
 
 }
 
-lgb.check_interaction_constraints <- function(params, column_names) {
+lgb.check_interaction_constraints <- function(interaction_constraints, column_names) {
 
   # Convert interaction constraints to feature numbers
   string_constraints <- list()
 
-  if (!is.null(params[["interaction_constraints"]])) {
+  if (!is.null(interaction_constraints)) {
 
-    if (!methods::is(params[["interaction_constraints"]], "list")) {
+    if (!methods::is(interaction_constraints, "list")) {
         stop("interaction_constraints must be a list")
     }
-    if (!all(sapply(params[["interaction_constraints"]], function(x) {is.character(x) || is.numeric(x)}))) {
+    if (!all(sapply(interaction_constraints, function(x) {is.character(x) || is.numeric(x)}))) {
         stop("every element in interaction_constraints must be a character vector or numeric vector")
     }
 
-    for (constraint in params[["interaction_constraints"]]) {
+    for (constraint in interaction_constraints) {
 
       # Check for character name
       if (is.character(constraint)) {
