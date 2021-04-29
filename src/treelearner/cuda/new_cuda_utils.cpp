@@ -4,6 +4,8 @@
  * license information.
  */
 
+#ifdef USE_CUDA
+
 #include "new_cuda_utils.hpp"
 
 namespace LightGBM {
@@ -18,3 +20,5 @@ void PrintLastCUDAError() {
 }
 
 }  // namespace LightGBM
+
+#endif  // USE_CUDA

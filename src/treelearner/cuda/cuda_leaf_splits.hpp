@@ -20,6 +20,10 @@ namespace LightGBM {
 
 class CUDALeafSplits {
  public:
+  CUDALeafSplits(const data_size_t num_data, const int leaf_index,
+    const score_t* cuda_gradients, const score_t* cuda_hessians,
+    const int* cuda_num_data);
+
   CUDALeafSplits();
 
   void Init();
@@ -30,14 +34,31 @@ class CUDALeafSplits {
 
   void InitValues();
 
+  const int* cuda_leaf_index() const { return cuda_leaf_index_; }
+
+  const data_size_t* cuda_num_data_in_leaf() const { return cuda_num_data_in_leaf_; }
+
+  const data_size_t* cuda_data_indices_in_leaf() const { return cuda_data_indices_in_leaf_; }
+
+  void Test() {
+    PrintLastCUDAError();
+    double test_sum_of_gradients = 0.0f, test_sum_of_hessians = 0.0f;
+    CopyFromCUDADeviceToHost<double>(&test_sum_of_gradients, cuda_sum_of_gradients_, 1);
+    CopyFromCUDADeviceToHost<double>(&test_sum_of_hessians, cuda_sum_of_hessians_, 1);
+    Log::Warning("CUDALeafSplits::Test test_sum_of_gradients = %f", test_sum_of_gradients);
+    Log::Warning("CUDALeafSplits::Test test_sum_of_hessians = %f", test_sum_of_hessians);
+  }
+
  private:
   void LaunchInitValuesKernal();
 
   // Host memory
   const int num_data_;
+  const int leaf_index_;
   int num_blocks_init_from_gradients_;
 
   // CUDA memory, held by this object
+  int* cuda_leaf_index_;
   double* cuda_sum_of_gradients_;
   double* cuda_sum_of_hessians_;
   data_size_t* cuda_num_data_in_leaf_;

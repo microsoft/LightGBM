@@ -13,60 +13,53 @@
 
 namespace LightGBM {
 
-NewCUDATreeLearner::NewCUDATreeLearner(const Config* config): SerialTreeLearner(config) {
-
-}
+NewCUDATreeLearner::NewCUDATreeLearner(const Config* config): SerialTreeLearner(config) {}
 
 NewCUDATreeLearner::~NewCUDATreeLearner() {}
 
 void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
+  // use the first gpu by now
   SerialTreeLearner::Init(train_data, is_constant_hessian);
-  Log::Warning("NewCUDATreeLearner::Init step 1");
-  int num_total_gpus = 0;
-  CUDASUCCESS_OR_FATAL(cudaGetDeviceCount(&num_total_gpus));
-  Log::Warning("NewCUDATreeLearner::Init step 2");
-  num_gpus_ = 1;//config_->num_gpu > num_total_gpus ? num_total_gpus : config_->num_gpu;
   num_threads_ = OMP_NUM_THREADS();
-  Log::Warning("NewCUDATreeLearner::Init step 3");
-  gradients_and_hessians_.resize(2 * num_data_);
-  AllocateFeatureTasks();
-  Log::Warning("NewCUDATreeLearner::Init step 4");
-  AllocateMemory(is_constant_hessian);
-  Log::Warning("NewCUDATreeLearner::Init step 5");
+  CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
+  cuda_centralized_info_.reset(new CUDACentralizedInfo(num_data_, this->config_->num_leaves, num_features_));
+  cuda_centralized_info_->Init();
+  //cuda_centralized_info_->Test();
 
-  CreateCUDAHistogramConstructors();
-  Log::Warning("NewCUDATreeLearner::Init step 6");
+  cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_, 0, cuda_centralized_info_->cuda_gradients(),
+    cuda_centralized_info_->cuda_hessians(), cuda_centralized_info_->cuda_num_data()));
+  cuda_smaller_leaf_splits_->Init();
+  cuda_larger_leaf_splits_.reset(new CUDALeafSplits(num_data_, -1, cuda_centralized_info_->cuda_gradients(),
+    cuda_centralized_info_->cuda_hessians(), cuda_centralized_info_->cuda_num_data()));
+  cuda_larger_leaf_splits_->Init();
+
+  cuda_data_partition_.reset(new CUDADataPartition(num_data_, this->config_->num_leaves,
+    cuda_centralized_info_->cuda_num_data(), cuda_centralized_info_->cuda_num_leaves()));
+  cuda_data_partition_->Init();
+
+  cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, this->config_->num_leaves, num_threads_,
+    cuda_centralized_info_->cuda_gradients(), cuda_centralized_info_->cuda_hessians()));
+  cuda_histogram_constructor_->Init(train_data_);
+  //cuda_histogram_constructor_->TestAfterInit();
 }
 
 void NewCUDATreeLearner::BeforeTrain() {
-  SerialTreeLearner::BeforeTrain();
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
+  cuda_centralized_info_->BeforeTrain(gradients_, hessians_);
+  cuda_smaller_leaf_splits_->InitValues();
+  //cuda_smaller_leaf_splits_->Test();
+  cuda_data_partition_->BeforeTrain(nullptr);
+  //cuda_data_partition_->Test();
+
+  //SerialTreeLearner::BeforeTrain();
+  /*#pragma omp parallel for schedule(static) num_threads(num_threads_)
   for (int device_id = 0; device_id < num_gpus_; ++device_id) {
     CUDASUCCESS_OR_FATAL(cudaSetDevice(device_id));
     device_leaf_splits_initializers_[device_id]->Init();
-  }
-}
-
-void NewCUDATreeLearner::AllocateFeatureTasks() {
-  device_feature_groups_.resize(num_gpus_);
-  device_num_total_bins_.resize(num_gpus_, 0);
-  const int num_feature_groups = train_data_->num_feature_groups();
-  const int num_feature_groups_per_device = (num_feature_groups + num_gpus_ - 1) / num_gpus_;
-  for (int device_id = 0; device_id < num_gpus_; ++device_id) {
-    device_feature_groups_[device_id].clear();
-    const int device_feature_group_start = device_id * num_feature_groups_per_device;
-    const int device_feature_group_end = std::min(device_feature_group_start + num_feature_groups_per_device, num_feature_groups);
-    int& num_total_bin = device_num_total_bins_[device_id];
-    num_total_bin = 0;
-    for (int group_id = device_feature_group_start; group_id < device_feature_group_end; ++group_id) {
-      device_feature_groups_[device_id].emplace_back(group_id);
-      num_total_bin += train_data_->FeatureGroupNumBin(group_id);
-    }
-  }
+  }*/
 }
 
 void NewCUDATreeLearner::AllocateMemory(const bool is_constant_hessian) {
-  device_data_indices_.resize(num_gpus_, nullptr);
+  /*device_data_indices_.resize(num_gpus_, nullptr);
   device_gradients_.resize(num_gpus_, nullptr);
   device_gradients_and_hessians_.resize(num_gpus_, nullptr);
   if (!is_constant_hessian) {
@@ -106,11 +99,11 @@ void NewCUDATreeLearner::AllocateMemory(const bool is_constant_hessian) {
     void* histograms_ptr = reinterpret_cast<void*>(device_histograms_[device_id]);
     CUDASUCCESS_OR_FATAL(cudaMalloc(&histograms_ptr, num_total_bin * 2 * sizeof(double)));
     device_histograms_[device_id] = reinterpret_cast<double*>(histograms_ptr);
-  }
+  }*/
 }
 
 void NewCUDATreeLearner::CreateCUDAHistogramConstructors() {
-  Log::Warning("NewCUDATreeLearner::CreateCUDAHistogramConstructors num_gpus_ = %d", num_gpus_);
+  /*Log::Warning("NewCUDATreeLearner::CreateCUDAHistogramConstructors num_gpus_ = %d", num_gpus_);
   device_histogram_constructors_.resize(num_gpus_);
   device_leaf_splits_initializers_.resize(num_gpus_);
   device_best_split_finders_.resize(num_gpus_);
@@ -143,11 +136,11 @@ void NewCUDATreeLearner::CreateCUDAHistogramConstructors() {
   }
   Log::Warning("NewCUDATreeLearner::CreateCUDAHistogramConstructors step 6", num_gpus_);
   PushDataIntoDeviceHistogramConstructors();
-  Log::Warning("NewCUDATreeLearner::CreateCUDAHistogramConstructors step 7", num_gpus_);
+  Log::Warning("NewCUDATreeLearner::CreateCUDAHistogramConstructors step 7", num_gpus_);*/
 }
 
 void NewCUDATreeLearner::PushDataIntoDeviceHistogramConstructors() {
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
+  /*#pragma omp parallel for schedule(static) num_threads(num_threads_)
   for (int device_id = 0; device_id < num_gpus_; ++device_id) {
     CUDASUCCESS_OR_FATAL(cudaSetDevice(device_id));
     CUDAHistogramConstructor* cuda_histogram_constructor = device_histogram_constructors_[device_id].get();
@@ -162,27 +155,27 @@ void NewCUDATreeLearner::PushDataIntoDeviceHistogramConstructors() {
     }
     // call finish load to tranfer data from CPU to GPU
     cuda_histogram_constructor->FinishLoad();
-  }
+  }*/
 }
 
 void NewCUDATreeLearner::FindBestSplits(const Tree* tree) {
-  std::vector<int8_t> is_feature_used(num_features_, 1);
+  /*std::vector<int8_t> is_feature_used(num_features_, 1);
   ConstructHistograms(is_feature_used, true);
-  FindBestSplitsFromHistograms(is_feature_used, true, tree);
+  FindBestSplitsFromHistograms(is_feature_used, true, tree);*/
 }
 
 void NewCUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& /*is_feature_used*/,
   bool /*use_subtract*/) {
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
+  /*#pragma omp parallel for schedule(static) num_threads(num_threads_)
   for (int device_id = 0; device_id < num_gpus_; ++device_id) {
     CUDASUCCESS_OR_FATAL(cudaSetDevice(device_id));
     
-  }
+  }*/
 }
 
 void NewCUDATreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& /*is_feature_used*/,
   bool /*use_subtract*/, const Tree* /*tree*/) {
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
+  /*#pragma omp parallel for schedule(static) num_threads(num_threads_)
   for (int device_id = 0; device_id < num_gpus_; ++device_id) {
     CUDASUCCESS_OR_FATAL(cudaSetDevice(device_id));
     device_best_split_finders_[device_id]->FindBestSplitsForLeaf(
@@ -190,24 +183,33 @@ void NewCUDATreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>&
     device_best_split_finders_[device_id]->FindBestSplitsForLeaf(
       device_leaf_splits_initializers_[device_id]->larger_leaf_index());
     device_best_split_finders_[device_id]->FindBestFromAllSplits();
-  }
+  }*/
 }
 
 void NewCUDATreeLearner::Split(Tree* /*tree*/, int /*best_leaf*/,
   int* /*left_leaf*/, int* /*right_leaf*/) {
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
+  /*#pragma omp parallel for schedule(static) num_threads(num_threads_)
   for (int device_id = 0; device_id < num_gpus_; ++device_id) {
     CUDASUCCESS_OR_FATAL(cudaSetDevice(device_id));
     device_splitters_[device_id]->Split(
       device_best_split_finders_[device_id]->best_leaf(),
       device_best_split_finders_[device_id]->best_split_feature_index(),
       device_best_split_finders_[device_id]->best_split_threshold());
-  }
+  }*/
 }
 
 Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   const score_t *hessians, bool /*is_first_tree*/) {
-  CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
+  gradients_ = gradients;
+  hessians_ = hessians;
+  BeforeTrain();
+  cuda_histogram_constructor_->ConstructHistogramForLeaf(
+    cuda_smaller_leaf_splits_->cuda_leaf_index(),
+    cuda_larger_leaf_splits_->cuda_leaf_index(),
+    cuda_smaller_leaf_splits_->cuda_data_indices_in_leaf(),
+    cuda_larger_leaf_splits_->cuda_data_indices_in_leaf(),
+    cuda_data_partition_->cuda_leaf_num_data_offsets());
+  /*CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
   CUDASUCCESS_OR_FATAL(cudaMemcpy(device_gradients_[0], gradients, num_data_ * sizeof(score_t), cudaMemcpyHostToDevice));
   CUDASUCCESS_OR_FATAL(cudaMemcpy(device_hessians_[0], hessians, num_data_ * sizeof(score_t), cudaMemcpyHostToDevice));
   #pragma omp parallel for schedule(static) num_threads(num_threads_)
@@ -225,7 +227,8 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
     device_leaf_splits_initializers_[0]->larger_leaf_index(),
     device_splitters_[0]->leaf_num_data(), device_splitters_[0]->leaf_num_data_offsets(),
     device_splitters_[0]->data_indices(), device_gradients_[0], device_hessians_[0], device_gradients_and_hessians_[0]);
-  Log::Warning("after construction of root histograms");
+  Log::Warning("after construction of root histograms");*/
+  return nullptr;
 }
 
 void NewCUDATreeLearner::ResetTrainingData(const Dataset* /*train_data*/,

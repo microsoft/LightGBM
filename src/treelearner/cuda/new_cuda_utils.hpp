@@ -31,6 +31,18 @@ void CopyFromHostToCUDADevice(T* dst_ptr, const T* src_ptr, size_t size) {
 }
 
 template <typename T>
+void InitCUDAMemoryFromHostMemory(T** dst_ptr, const T* src_ptr, size_t size) {
+  AllocateCUDAMemory<T>(size, dst_ptr);
+  CopyFromHostToCUDADevice<T>(*dst_ptr, src_ptr, size);
+}
+
+template <typename T>
+void InitCUDAValueFromConstant(T** dst_ptr, const T value) {
+  AllocateCUDAMemory<T>(1, dst_ptr);
+  CopyFromHostToCUDADevice<T>(*dst_ptr, &value, 1);
+}
+
+template <typename T>
 void CopyFromCUDADeviceToHost(T* dst_ptr, const T* src_ptr, size_t size) {
   void* void_dst_ptr = reinterpret_cast<void*>(dst_ptr);
   const void* void_src_ptr = reinterpret_cast<const void*>(src_ptr);

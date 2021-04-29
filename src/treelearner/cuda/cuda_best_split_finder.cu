@@ -4,10 +4,12 @@
  * license information.
  */
 
+#ifdef USE_CUDA
+
 #include "cuda_best_split_finder.hpp"
 
 namespace LightGBM {
-
+/*
 __device__ double ThresholdL1(double s, double l1) {
   const double reg_s = fmax(0.0, fabs(s) - l1);
   if (s >= 0.0f) {
@@ -67,8 +69,8 @@ __device__ double GetSplitGains(double sum_left_gradients,
 __device__ void FindBestSplitsForLeafKernelInner(const hist_t* feature_hist_ptr,
   const uint32_t feature_num_bin, const uint8_t feature_mfb_offset,
   const uint32_t feature_default_bin, const uint8_t feature_missing_type,
-  const double lambda_l1, const double parent_gain, const data_size_t min_data_in_leaf,
-  const double min_sum_hessian_in_leaf,
+  const double lambda_l1, const double lambda_l2, const double parent_gain, const data_size_t min_data_in_leaf,
+  const double min_sum_hessian_in_leaf, const double min_gain_to_split,
   const double sum_gradients, const double sum_hessians, const data_size_t num_data,
   const bool reverse, const bool skip_default_bin, const bool na_as_missing,
   // output parameters
@@ -86,15 +88,16 @@ __device__ void FindBestSplitsForLeafKernelInner(const hist_t* feature_hist_ptr,
   double best_gain = kMinScore;
   data_size_t best_left_count = 0;
   uint32_t best_threshold = feature_num_bin;
-  const double cnt_factor = num_data / sum_hessian;
+  const double cnt_factor = num_data / sum_hessians;
   const bool use_l1 = lambda_l1 > 0.0f;
+  const double min_gain_shift = parent_gain + min_gain_to_split;
 
   if (reverse) {
     double sum_right_gradient = 0.0f;
     double sum_right_hessian = kEpsilon;
     data_size_t right_count = 0;
 
-    int t = feature_num_bin - 1 - feature_mfb_offset - NA_AS_MISSING;
+    int t = feature_num_bin - 1 - feature_mfb_offset - na_as_missing;
     const int t_end = 1 - feature_mfb_offset;
 
     // from right to left, and we don't need data in bin0
@@ -129,7 +132,7 @@ __device__ void FindBestSplitsForLeafKernelInner(const hist_t* feature_hist_ptr,
         break;
       }
 
-      double sum_left_gradient = sum_gradient - sum_right_gradient;
+      double sum_left_gradient = sum_gradients - sum_right_gradient;
 
       // current split gain
       double current_gain = GetSplitGains(
@@ -233,7 +236,7 @@ __device__ void FindBestSplitsForLeafKernelInner(const hist_t* feature_hist_ptr,
 
 __global__ void FindBestSplitsForLeafKernel(const hist_t* leaf_hist_ptr,
   const uint32_t* feature_hist_offsets, const uint8_t* feature_mfb_offsets, const uint32_t* feature_default_bins, 
-  const uint8_t* feature_missing_types, const double* lambda_l1, const int* smaller_leaf_id,
+  const uint8_t* feature_missing_types, const double* lambda_l1, const double* lambda_l2, const int* smaller_leaf_id,
   const int* larger_leaf_id, const double* smaller_leaf_gain, const double* larger_leaf_gain, const double* sum_gradients_in_smaller_leaf,
   const double* sum_hessians_in_smaller_leaf, const data_size_t* num_data_in_smaller_leaf,
   const double* sum_gradients_in_larger_leaf, const double* sum_hessians_in_larger_leaf,
@@ -269,16 +272,16 @@ __global__ void FindBestSplitsForLeafKernel(const hist_t* leaf_hist_ptr,
     if (missing_type == 1) {
       FindBestSplitsForLeafKernelInner(leaf_hist_ptr + leaf_index,
         num_bin, feature_mfb_offsets[inner_feature_index], feature_default_bins[inner_feature_index],
-        feature_missing_types[inner_feature_index], *lambda_l1, *parent_gain,
-        *min_data_in_leaf, *min_sum_hessian_in_leaf, sum_gradients, sum_hessians,
+        feature_missing_types[inner_feature_index], *lambda_l1, *lambda_l2, *parent_gain,
+        *min_data_in_leaf, *min_sum_hessian_in_leaf, *min_gain_to_split, sum_gradients, sum_hessians,
         num_data_in_leaf, reverse, true, false, out_gain, out_default_left,
         out_left_sum_gradients, out_left_sum_hessians, out_left_num_data,
         out_right_sum_gradients, out_right_sum_hessians, out_right_num_data);
     } else {
       FindBestSplitsForLeafKernelInner(leaf_hist_ptr + leaf_index,
         num_bin, feature_mfb_offsets[inner_feature_index], feature_default_bins[inner_feature_index],
-        feature_missing_types[inner_feature_index], *lambda_l1, *parent_gain,
-        *min_data_in_leaf, *min_sum_hessian_in_leaf, sum_gradients, sum_hessians,
+        feature_missing_types[inner_feature_index], *lambda_l1, *lambda_l2, *parent_gain,
+        *min_data_in_leaf, *min_sum_hessian_in_leaf, *min_gain_to_split, sum_gradients, sum_hessians,
         num_data_in_leaf, reverse, false, true, out_gain, out_default_left,
         out_left_sum_gradients, out_left_sum_hessians, out_left_num_data,
         out_right_sum_gradients, out_right_sum_hessians, out_right_num_data);
@@ -287,8 +290,8 @@ __global__ void FindBestSplitsForLeafKernel(const hist_t* leaf_hist_ptr,
     if (reverse) {
       FindBestSplitsForLeafKernelInner(leaf_hist_ptr + leaf_index,
         num_bin, feature_mfb_offsets[inner_feature_index], feature_default_bins[inner_feature_index],
-        feature_missing_types[inner_feature_index], *lambda_l1, *parent_gain,
-        *min_data_in_leaf, *min_sum_hessian_in_leaf, sum_gradients, sum_hessians,
+        feature_missing_types[inner_feature_index], *lambda_l1, *lambda_l2, *parent_gain,
+        *min_data_in_leaf, *min_sum_hessian_in_leaf, *min_gain_to_split, sum_gradients, sum_hessians,
         num_data_in_leaf, reverse, true, false, out_gain, out_default_left,
         out_left_sum_gradients, out_left_sum_hessians, out_left_num_data,
         out_right_sum_gradients, out_right_sum_hessians, out_right_num_data);
@@ -322,5 +325,7 @@ void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(const int* smaller_l
     cuda_best_split_left_count_, cuda_best_split_right_sum_gradient_,
     cuda_best_split_right_sum_hessian_, cuda_best_split_right_count_);
 }
-
+*/
 }  // namespace LightGBM
+
+#endif  // USE_CUDA

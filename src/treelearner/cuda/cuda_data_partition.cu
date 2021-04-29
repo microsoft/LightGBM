@@ -4,9 +4,9 @@
  * license information.
  */
 
-#include "cuda_data_splitter.hpp"
+#ifdef USE_CUDA
 
-#define FILL_INDICES_BLOCK_SIZE (1024)
+#include "cuda_data_partition.hpp"
 
 namespace LightGBM {
 
@@ -19,9 +19,11 @@ __global__ void FillDataIndicesBeforeTrainKernel(const data_size_t* cuda_num_dat
   }
 }
 
-void CUDADataSplitter::LaunchFillDataIndicesBeforeTrain() {
-  const int num_blocks = (num_data_ + FILL_INDICES_BLOCK_SIZE - 1) / FILL_INDICES_BLOCK_SIZE;
-  FillDataIndicesBeforeTrainKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE>>>(cuda_num_data_, cuda_data_indices_); 
+void CUDADataPartition::LaunchFillDataIndicesBeforeTrain() {
+  const int num_blocks = (num_data_ + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
+  FillDataIndicesBeforeTrainKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(cuda_num_data_, cuda_data_indices_); 
 }
 
 }  // namespace LightGBM
+
+#endif  // USE_CUDA

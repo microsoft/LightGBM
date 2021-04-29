@@ -3,8 +3,11 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
+
 #ifndef LIGHTGBM_CUDA_BEST_SPLIT_FINDER_HPP_
 #define LIGHTGBM_CUDA_BEST_SPLIT_FINDER_HPP_
+
+#ifdef USE_CUDA
 
 #include "new_cuda_utils.hpp"
 
@@ -13,14 +16,12 @@
 
 #include <vector>
 
-#ifdef USE_CUDA
-
 namespace LightGBM {
 
 class CUDABestSplitFinder {
- public:
+/* public:
   CUDABestSplitFinder(const hist_t* cuda_hist, const Dataset* train_data,
-    const std::vector<uint32_t>& feature_hist_offsets, const int max_num_leaves);
+    const std::vector<uint32_t>& feature_hist_offsets, const int num_leaves);
 
   void Init();
 
@@ -36,10 +37,6 @@ class CUDABestSplitFinder {
 
  private:
   void LaunchFindBestSplitsForLeafKernel(const int* smaller_leaf_id, const int* larger_leaf_id, const double* parent_gain);
-
-  int* cuda_leaf_best_split_feature_index_;
-  int* cuda_leaf_best_split_threshold_;
-  double* cuda_leaf_best_split_gain_;
 
   int* cuda_best_leaf_;
   int* cuda_best_split_feature_index_;
@@ -63,7 +60,7 @@ class CUDABestSplitFinder {
   hist_t* prefix_sum_hist_left_;
   hist_t* prefix_sum_hist_right_;
   const int num_features_;
-  const int max_num_leaves_;
+  const int num_leaves_;
   const int num_total_bin_;
 
   int* cuda_num_total_bin_;
@@ -86,9 +83,8 @@ class CUDABestSplitFinder {
   double* cuda_lambda_l1_;
   data_size_t* cuda_min_data_in_leaf_;
   double* cuda_min_sum_hessian_in_leaf_;
-  double* cuda_min_gain_to_split_;
+  double* cuda_min_gain_to_split_;*/
 };
-
 
 }
 
