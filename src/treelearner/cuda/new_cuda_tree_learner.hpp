@@ -12,6 +12,7 @@
 #include "cuda_leaf_splits_init.hpp"
 #include "cuda_histogram_constructor.hpp"
 #include "cuda_data_splitter.hpp"
+#include "cuda_best_split_finder.hpp"
 
 namespace LightGBM {
 
@@ -33,7 +34,7 @@ class NewCUDATreeLearner: public SerialTreeLearner {
  protected:
   void AllocateFeatureTasks();
 
-  void AllocateCUDAMemory(const bool is_constant_hessian);
+  void AllocateMemory(const bool is_constant_hessian);
 
   void CreateCUDAHistogramConstructors();
 
@@ -53,6 +54,8 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   int num_gpus_;
   // number of threads on CPU
   int num_threads_;
+  // gradient and hessian values packed togather
+  std::vector<score_t> gradients_and_hessians_;
 
   // feature groups allocated to each device
   std::vector<std::vector<int>> device_feature_groups_;
@@ -67,6 +70,8 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   std::vector<score_t*> device_gradients_;
   // hessian values on CUDA devices
   std::vector<score_t*> device_hessians_;
+  // gradient and hessian values in CUDA devices
+  std::vector<score_t*> device_gradients_and_hessians_;
   // histogram storage on CUDA devices
   std::vector<hist_t*> device_histograms_;
 

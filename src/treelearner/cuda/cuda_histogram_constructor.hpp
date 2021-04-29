@@ -17,6 +17,12 @@
 
 namespace LightGBM {
 
+
+#define SHRAE_HIST_SIZE (6144 * 2)
+#define NUM_DATA_PER_THREAD (400)
+#define NUM_THRADS_PER_BLOCK (504)
+#define NUM_FEATURE_PER_THREAD_GROUP (28)
+
 class CUDAHistogramConstructor {
  public:
   CUDAHistogramConstructor(const std::vector<int>& feature_group_ids,
@@ -31,11 +37,12 @@ class CUDAHistogramConstructor {
 
   void ConstructHistogramForLeaf(const int* smaller_leaf_index, const int* larger_leaf_index,
   const data_size_t* num_data_in_smaller_leaf, const int* smaller_leaf_data_offset, const data_size_t* data_indices_ptr,
-  const score_t* cuda_gradients, const score_t* cuda_hessians);
+  const score_t* cuda_gradients, const score_t* cuda_hessians, const score_t* cuda_gradients_and_hessians);
 
   void LaunchConstructHistogramKernel(
   const int* smaller_leaf_index, const data_size_t* num_data_in_leaf, const data_size_t* leaf_num_data_offset,
-  const data_size_t* data_indices_ptr, const score_t* cuda_gradients, const score_t* cuda_hessians);
+  const data_size_t* data_indices_ptr, const score_t* cuda_gradients, const score_t* cuda_hessians,
+  const score_t* cuda_gradients_and_hessians);
 
   hist_t* cuda_hist() { return cuda_hist_; }
 
@@ -43,40 +50,20 @@ class CUDAHistogramConstructor {
   // data on CPU, stored in row-wise style
   std::vector<uint8_t> cpu_data_;
   std::vector<uint32_t> feature_group_bin_offsets_;
+  std::vector<uint32_t> feature_group_bin_offsets_by_col_groups_;
   uint8_t* cuda_data_;
-  uint32_t cuda_feature_group_bin_offsets_;
+  uint32_t* cuda_feature_group_bin_offsets_;
+  uint32_t* cuda_feature_group_bin_offsets_by_col_groups_;
   const data_size_t num_data_;
   hist_t* cuda_hist_;
   int num_total_bin_;
   int* cuda_num_total_bin_;
   int num_feature_groups_;
   int* cuda_num_feature_groups_;
+  int8_t* cuda_int_gradients_;
+  int8_t* cuda_int_hessians_;
+  int32_t* cuda_int_gradients_and_hessians_;
   const int max_num_leaves_;
-};
-
-class CUDABestSplitFinder {
- public:
-  CUDABestSplitFinder(const hist_t* cuda_hist, const Dataset* train_data,
-    const std::vector<int>& feature_group_ids, const int max_num_leaves);
-
-  void FindBestSplitsForLeaf(const int* leaf_id);
-
-  void FindBestFromAllSplits();
-
-  int* best_leaf() { return cuda_best_leaf_; }
-
-  int* best_split_feature_index() { return cuda_best_split_feature_index_; }
-
-  int* best_split_threshold() { return cuda_best_split_threshold_; }
-
- private:
-  int* cuda_leaf_best_split_feature_index_;
-  int* cuda_leaf_best_split_threshold_;
-  double* cuda_leaf_best_split_gain_;
-
-  int* cuda_best_leaf_;
-  int* cuda_best_split_feature_index_;
-  int* cuda_best_split_threshold_;
 };
 
 }  // namespace LightGBM

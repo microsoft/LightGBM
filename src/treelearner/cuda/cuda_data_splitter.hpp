@@ -36,6 +36,8 @@ class CUDADataSplitter {
   // kernel launch functions
   void LaunchFillDataIndicesBeforeTrain();
 
+  void LaunchSplitKernel(const int* leaf_id, const int* best_split_feature, const int* best_split_threshold);
+
   // CPU
   const data_size_t num_data_;
   std::vector<data_size_t> data_indices_;

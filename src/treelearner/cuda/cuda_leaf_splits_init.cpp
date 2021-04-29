@@ -34,12 +34,20 @@ void CUDALeafSplitsInit::Init() {
   cuda_num_data_ = reinterpret_cast<data_size_t*>(cuda_num_data_ptr);
   const void* num_data_ptr = reinterpret_cast<const void*>(&num_data_);
   CUDASUCCESS_OR_FATAL(cudaMemcpy(cuda_num_data_ptr, num_data_ptr, sizeof(int),  cudaMemcpyHostToDevice));
+
+  AllocateCUDAMemory<int>(1, &smaller_leaf_index_);
+  AllocateCUDAMemory<int>(1, &larger_leaf_index_);
+  AllocateCUDAMemory<int>(1, &cuda_num_data_);
+  CopyFromHostToCUDADevice(cuda_num_data_, &num_data_, 1);
 }
 
 void CUDALeafSplitsInit::Compute() {
-  LaunchLeafSplitsInit(num_blocks_, INIT_SUM_BLOCK_SIZE,
-    cuda_gradients_, cuda_hessians_, cuda_num_data_,
-    smaller_leaf_sum_gradients_, smaller_leaf_sum_hessians_);
+  auto start = std::chrono::steady_clock::now();
+  LaunchLeafSplitsInit();
+  SynchronizeCUDADevice();
+  auto end = std::chrono::steady_clock::now();
+  double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
+  Log::Warning("LaunchLeafSplitsInit time %f", duration);
   Log::Warning(cudaGetErrorName(cudaGetLastError()));
   CUDASUCCESS_OR_FATAL(cudaDeviceSynchronize());
 

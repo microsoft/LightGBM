@@ -9,10 +9,12 @@
 #ifdef USE_CUDA
 
 #include <LightGBM/utils/log.h>
-#include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/meta.h>
+#include "new_cuda_utils.hpp"
 
-#define INIT_SUM_BLOCK_SIZE (1024)
+#define INIT_SUM_BLOCK_SIZE (6144)
+#define NUM_THRADS_PER_BLOCK_SPLITS_INIT (1024)
+#define NUM_DATA_THREAD_ADD (6)
 
 namespace LightGBM {
 
@@ -36,9 +38,9 @@ class CUDALeafSplitsInit {
   
   const int* larger_leaf_index() { return larger_leaf_index_; }
 
-  void LaunchLeafSplitsInit(const int num_blocks, const int init_sum_block_size,
-    const score_t* cuda_gradients, const score_t* cuda_hessians, const data_size_t* num_data,
-    double* smaller_leaf_sum_gradients, double* smaller_leaf_sum_hessians);
+  const double 
+
+  void LaunchLeafSplitsInit();
 
  protected:
   const score_t* cuda_gradients_;

@@ -10,6 +10,7 @@
 #ifdef USE_CUDA
 
 #include <LightGBM/utils/log.h>
+#include <LightGBM/meta.h>
 #include <LightGBM/cuda/cuda_utils.h>
 
 namespace LightGBM {
@@ -37,11 +38,19 @@ void CopyFromCUDADeviceToHost(T* dst_ptr, const T* src_ptr, size_t size) {
   CUDASUCCESS_OR_FATAL(cudaMemcpy(void_dst_ptr, void_src_ptr, size_in_bytes, cudaMemcpyDeviceToHost));
 }
 
+template <typename T>
+void CopyFromCUDADeviceToCUDADevice(T* dst_ptr, const T* src_ptr, size_t size) {
+  void* void_dst_ptr = reinterpret_cast<void*>(dst_ptr);
+  const void* void_src_ptr = reinterpret_cast<const void*>(src_ptr);
+  size_t size_in_bytes = size * sizeof(T);
+  CUDASUCCESS_OR_FATAL(cudaMemcpy(void_dst_ptr, void_src_ptr, size_in_bytes, cudaMemcpyDeviceToDevice));
+}
+
 void SynchronizeCUDADevice();
 
 template <typename T>
 void SetCUDAMemory(T* dst_ptr, int value, size_t size) {
-  CUDASUCCESS_OR_FATAL(cudaMemset(reinterpret_cast<void*>(dst_ptr), value, size));
+  CUDASUCCESS_OR_FATAL(cudaMemset(reinterpret_cast<void*>(dst_ptr), value, size * sizeof(T)));
 }
 
 void PrintLastCUDAError();

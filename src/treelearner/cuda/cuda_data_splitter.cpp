@@ -34,13 +34,17 @@ void CUDADataSplitter::BeforeTrain(const data_size_t* data_indices) {
     SynchronizeCUDADevice();
     data_indices_.resize(num_data_);
     CopyFromCUDADeviceToHost<data_size_t>(data_indices_.data(), cuda_data_indices_, static_cast<size_t>(num_data_));
-    for (int i = 0; i < 100; ++i) {
+    /*for (int i = 0; i < 100; ++i) {
       Log::Warning("data_indices_[%d] = %d", i, data_indices_[i]);
       Log::Warning("data_indices_[end - %d] = %d", i, data_indices_[num_data_ - 1 - i]);
-    }
+    }*/
     SetCUDAMemory<data_size_t>(cuda_leaf_num_data_offsets_, 0, max_num_leaves_);
     SetCUDAMemory<data_size_t>(cuda_leaf_num_data_, 0, max_num_leaves_);
-    SetCUDAMemory<data_size_t>(cuda_leaf_num_data_, num_data_, 1);
+    //Log::Warning("num_data_ = %d", num_data_);
+    CopyFromHostToCUDADevice(cuda_leaf_num_data_, &num_data_, 1);
+    data_size_t root_leaf_num_data = 0;
+    CopyFromCUDADeviceToHost<data_size_t>(&root_leaf_num_data, cuda_leaf_num_data_, 1);
+    //Log::Warning("root_leaf_num_data = %d", root_leaf_num_data);
   } else {
     Log::Fatal("bagging is not supported by GPU");
   }
