@@ -152,6 +152,7 @@ if ($env:COMPILER -ne "MSVC") {
     }
     Run-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
+    choco install --yes --no-progress --no-color gzip
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
@@ -169,7 +170,7 @@ if ($env:COMPILER -ne "MSVC") {
     $check_args = "c('CMD', 'check', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
   } else {
     # vignettes are only built for CRAN builds
-    $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '--ignore-vignettes', $PKG_FILE_NAME')"
+    $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '--ignore-vignettes', '$PKG_FILE_NAME')"
   }
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
 
