@@ -1049,7 +1049,7 @@ int LGBM_SampleIndices(int32_t total_nrow,
   // Sample count, random seed etc. should be provided in parameters.
   API_BEGIN();
   if (out == nullptr) {
-    Log::Fatal("sample indicies output is nullptr");
+    Log::Fatal("sample indices output is nullptr");
   }
   auto param = Config::Str2Map(parameters);
   Config config;
