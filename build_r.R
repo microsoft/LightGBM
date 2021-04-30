@@ -367,6 +367,15 @@ description_contents <- gsub(
   , replacement = as.character(Sys.Date())
   , x = description_contents
 )
+
+# CMake-based builds don't get vignettes built. The
+# VignetteBuilder field needs to be removed to avoid
+# the R CMD CHECK note
+# "Package has a VignetteBuilder field but no prebuilt vignette index"
+description_contents <- description_contents[
+  !grepl("^VignetteBuilder", description_contents)
+]
+
 writeLines(description_contents, DESCRIPTION_FILE)
 
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected

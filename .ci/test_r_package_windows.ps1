@@ -36,6 +36,12 @@ function Remove-From-Path {
   $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
 }
 
+# gzip is needed to create a CRAN package on Windows.
+# Install it here before chocolatey is removed from PATH.
+if ($env:R_BUILD_TYPE -eq "cran") {
+    choco install --yes --no-progress --no-color gzip
+}
+
 # remove some details that exist in the GitHub Actions images which might
 # cause conflicts with R and other components installed by this script
 $env:RTOOLS40_HOME = ""
@@ -152,7 +158,6 @@ if ($env:COMPILER -ne "MSVC") {
     }
     Run-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
-    choco install --yes --no-progress --no-color gzip
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
