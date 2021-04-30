@@ -10,7 +10,7 @@ from copy import deepcopy
 from functools import wraps
 from logging import Logger
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, Iterable, List, Set, Union
+from typing import Any, Dict, Iterable, List, Set, Union, Tuple
 
 import numpy as np
 import scipy.sparse
@@ -637,7 +637,7 @@ class Sequence(object):
         return hasattr(obj, "__getitem__") and hasattr(obj, "__len__")
 
     @abc.abstractmethod
-    def __getitem__(self, idx):  # type: (Union[int, slice]) -> np.ndarray
+    def __getitem__(self, idx: Union[int, slice]) -> np.ndarray:
         """Return data for given row index.
 
         A basic implementation should look like this:
@@ -664,7 +664,7 @@ class Sequence(object):
         raise NotImplementedError("remove this line if subclassing")
 
     @abc.abstractmethod
-    def __len__(self):  # type: () -> int
+    def __len__(self) -> int:
         """Return row count of this sequence."""
         raise NotImplementedError
 
@@ -1486,8 +1486,7 @@ class Dataset:
         # set feature names
         return self.set_feature_name(feature_name)
 
-    def __yield_row_from(self, seqs, indices):
-        # type: (List[Sequence], Iterable[int]) -> ...
+    def __yield_row_from(self, seqs: List[Sequence], indices: Iterable[int]):
         offset = 0
         seq_id = 0
         seq = seqs[seq_id]
@@ -1501,8 +1500,7 @@ class Dataset:
             row = seq[int(id_in_seq)]
             yield row if row.flags['OWNDATA'] else row.copy()
 
-    def __sample(self, seqs, total_nrow):
-        # type: (List[Sequence], int, int) -> (np.ndarray, List[np.ndarray])
+    def __sample(self, seqs: List[Sequence], total_nrow: int) -> Tuple[np.ndarray, List[np.ndarray]]:
         """Sample data from seqs.
 
         Mimics behavior in c_api.cpp:LGBM_DatasetCreateFromMats()
@@ -1531,8 +1529,7 @@ class Dataset:
 
         return filtered, filtered_idx
 
-    def __init_from_seqs(self, seqs, params_str, ref_dataset):
-        # type: (List[Sequence], str, Dataset) -> None
+    def __init_from_seqs(self, seqs: List[Sequence], params_str: str, ref_dataset: 'Dataset'):
         """
         Initialize data from a Sequence object.
 
