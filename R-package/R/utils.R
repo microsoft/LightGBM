@@ -33,11 +33,10 @@ lgb.last_error <- function() {
   act_len <- 0L
   err_msg <- raw(buf_len)
   err_msg <- .Call(
-    "LGBM_GetLastError_R"
+    LGBM_GetLastError_R
     , buf_len
     , act_len
     , err_msg
-    , PACKAGE = "lib_lightgbm"
   )
 
   # Check error buffer
@@ -45,64 +44,16 @@ lgb.last_error <- function() {
     buf_len <- act_len
     err_msg <- raw(buf_len)
     err_msg <- .Call(
-      "LGBM_GetLastError_R"
+      LGBM_GetLastError_R
       , buf_len
       , act_len
       , err_msg
-      , PACKAGE = "lib_lightgbm"
     )
   }
 
   stop("api error: ", lgb.encode.char(arr = err_msg, len = act_len))
 
   return(invisible(NULL))
-
-}
-
-lgb.call <- function(fun_name, ret, ...) {
-  # Set call state to a zero value
-  call_state <- 0L
-
-  # Check for a ret call
-  if (!is.null(ret)) {
-    call_state <- .Call(
-      fun_name
-      , ...
-      , ret
-      , call_state
-      , PACKAGE = "lib_lightgbm"
-    )
-  } else {
-    call_state <- .Call(
-      fun_name
-      , ...
-      , call_state
-      , PACKAGE = "lib_lightgbm"
-    )
-  }
-
-  return(ret)
-
-}
-
-lgb.call.return.str <- function(fun_name, ...) {
-
-  # Create buffer
-  buf_len <- as.integer(1024L * 1024L)
-  act_len <- 0L
-  buf <- raw(buf_len)
-
-  # Call buffer
-  buf <- lgb.call(fun_name = fun_name, ret = buf, ..., buf_len, act_len)
-
-  # Check for buffer content
-  if (act_len > buf_len) {
-    buf_len <- act_len
-    buf <- raw(buf_len)
-    buf <- lgb.call(fun_name = fun_name, ret = buf, ..., buf_len, act_len)
-  }
-
-  return(lgb.encode.char(arr = buf, len = act_len))
 
 }
 
