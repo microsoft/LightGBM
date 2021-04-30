@@ -161,7 +161,9 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_
     Y = data[:, -1]
     # truth
     ds = lgb.Dataset(X, label=Y, params=params)
-    ds.save_binary(str(tmpdir / "seq.truth.bin"))
+
+    ds.save_binary(os.path.join(tmpdir, "seq.truth.bin"))
+
     # seq
     if num_seq == 1:
         seqs = NumpySequence(X)
@@ -174,8 +176,9 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_
             seq.batch_size = batch_size
             seqs.append(seq)
     ds = lgb.Dataset(seqs, label=Y, params=params)
-    ds.save_binary(str(tmpdir / "seq.seq.bin"))
-    assert filecmp.cmp(tmpdir / "seq.truth.bin", tmpdir / "seq.seq.bin")
+    ds.save_binary(os.path.join(tmpdir, "seq.seq.bin"))
+
+    assert filecmp.cmp(os.path.join(tmpdir, "seq.truth.bin"), os.path.join(tmpdir, "seq.seq.bin"))
 
 
 def test_chunked_dataset():
