@@ -28,32 +28,12 @@ lgb.encode.char <- function(arr, len) {
 # [description] Raise an error. Before raising that error, check for any error message
 #               stored in a buffer on the C++ side.
 lgb.last_error <- function() {
-  # Perform text error buffering
-  buf_len <- 200L
-  act_len <- 0L
-  err_msg <- raw(buf_len)
   err_msg <- .Call(
     "LGBM_GetLastError_R"
-    , buf_len
-    , act_len
-    , err_msg
     , PACKAGE = "lib_lightgbm"
   )
 
-  # Check error buffer
-  if (act_len > buf_len) {
-    buf_len <- act_len
-    err_msg <- raw(buf_len)
-    err_msg <- .Call(
-      "LGBM_GetLastError_R"
-      , buf_len
-      , act_len
-      , err_msg
-      , PACKAGE = "lib_lightgbm"
-    )
-  }
-
-  stop("api error: ", lgb.encode.char(arr = err_msg, len = act_len))
+  stop(paste0("api error: ", err_msg))
 
   return(invisible(NULL))
 

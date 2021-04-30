@@ -56,8 +56,12 @@ LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actua
   return dest;
 }
 
-LGBM_SE LGBM_GetLastError_R(LGBM_SE buf_len, LGBM_SE actual_len, LGBM_SE err_msg) {
-  return EncodeChar(err_msg, LGBM_GetLastError(), buf_len, actual_len, std::strlen(LGBM_GetLastError()) + 1);
+SEXP LGBM_GetLastError_R() {
+  SEXP out;
+  out = PROTECT(Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(out, 0, Rf_mkChar(LGBM_GetLastError()));
+  UNPROTECT(1);
+  return out;
 }
 
 LGBM_SE LGBM_DatasetCreateFromFile_R(LGBM_SE filename,
