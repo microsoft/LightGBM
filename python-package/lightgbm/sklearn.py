@@ -952,7 +952,14 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
 
 class LGBMRanker(LGBMModel):
-    """LightGBM ranker."""
+    """LightGBM ranker.
+
+    .. warning::
+
+        scikit-learn doesn't support ranking applications yet,
+        therefore this class is not really compatible with the sklearn ecosystem.
+        Please use this class mainly for training and applying ranking models in common sklearnish way.
+    """
 
     def fit(self, X, y,
             sample_weight=None, init_score=None, group=None,
