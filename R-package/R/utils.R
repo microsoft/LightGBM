@@ -29,60 +29,11 @@ lgb.encode.char <- function(arr, len) {
 #               as an R error.
 lgb.last_error <- function() {
   err_msg <- .Call(
-    "LGBM_GetLastError_R"
-    , PACKAGE = "lib_lightgbm"
+    LGBM_GetLastError_R
   )
   stop("api error: ", err_msg)
   return(invisible(NULL))
 }
-
-lgb.call <- function(fun_name, ret, ...) {
-  # Set call state to a zero value
-  call_state <- 0L
-
-  # Check for a ret call
-  if (!is.null(ret)) {
-    call_state <- .Call(
-      fun_name
-      , ...
-      , ret
-      , call_state
-      , PACKAGE = "lib_lightgbm"
-    )
-  } else {
-    call_state <- .Call(
-      fun_name
-      , ...
-      , call_state
-      , PACKAGE = "lib_lightgbm"
-    )
-  }
-
-  return(ret)
-
-}
-
-lgb.call.return.str <- function(fun_name, ...) {
-
-  # Create buffer
-  buf_len <- as.integer(1024L * 1024L)
-  act_len <- 0L
-  buf <- raw(buf_len)
-
-  # Call buffer
-  buf <- lgb.call(fun_name = fun_name, ret = buf, ..., buf_len, act_len)
-
-  # Check for buffer content
-  if (act_len > buf_len) {
-    buf_len <- act_len
-    buf <- raw(buf_len)
-    buf <- lgb.call(fun_name = fun_name, ret = buf, ..., buf_len, act_len)
-  }
-
-  return(lgb.encode.char(arr = buf, len = act_len))
-
-}
-
 lgb.params2str <- function(params, ...) {
 
   # Check for a list as input
