@@ -25,18 +25,15 @@ lgb.encode.char <- function(arr, len) {
   return(rawToChar(arr[seq_len(len)]))
 }
 
-# [description] Raise an error. Before raising that error, check for any error message
-#               stored in a buffer on the C++ side.
+# [description] Get the moost recent error stored on the C++ side and raise it
+#               as an R error.
 lgb.last_error <- function() {
   err_msg <- .Call(
     "LGBM_GetLastError_R"
     , PACKAGE = "lib_lightgbm"
   )
-
   stop(paste0("api error: ", err_msg))
-
   return(invisible(NULL))
-
 }
 
 lgb.call <- function(fun_name, ret, ...) {
