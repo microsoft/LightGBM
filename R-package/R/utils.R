@@ -32,7 +32,7 @@ lgb.last_error <- function() {
     "LGBM_GetLastError_R"
     , PACKAGE = "lib_lightgbm"
   )
-  stop(paste0("api error: ", err_msg))
+  stop("api error: ", err_msg)
   return(invisible(NULL))
 }
 
