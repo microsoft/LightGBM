@@ -25,7 +25,7 @@ lgb.encode.char <- function(arr, len) {
   return(rawToChar(arr[seq_len(len)]))
 }
 
-# [description] Get the moost recent error stored on the C++ side and raise it
+# [description] Get the most recent error stored on the C++ side and raise it
 #               as an R error.
 lgb.last_error <- function() {
   err_msg <- .Call(
