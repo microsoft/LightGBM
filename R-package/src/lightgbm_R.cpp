@@ -43,7 +43,7 @@ using LightGBM::Common::Join;
 using LightGBM::Common::Split;
 using LightGBM::Log;
 
-LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actual_len, size_t str_len) {
+LGBM_SE EncodeChar(LGBM_SE dest, const char* src, SEXP buf_len, LGBM_SE actual_len, size_t str_len) {
   if (str_len > INT32_MAX) {
     Log::Fatal("Don't support large string in R-package");
   }
@@ -56,7 +56,7 @@ LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actua
   return dest;
 }
 
-LGBM_SE LGBM_GetLastError_R(LGBM_SE buf_len, LGBM_SE actual_len, LGBM_SE err_msg) {
+LGBM_SE LGBM_GetLastError_R(SEXP buf_len, LGBM_SE actual_len, LGBM_SE err_msg) {
   return EncodeChar(err_msg, LGBM_GetLastError(), buf_len, actual_len, std::strlen(LGBM_GetLastError()) + 1);
 }
 
@@ -150,7 +150,7 @@ SEXP LGBM_DatasetSetFeatureNames_R(LGBM_SE handle,
 }
 
 SEXP LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
-  LGBM_SE buf_len,
+  SEXP buf_len,
   LGBM_SE actual_len,
   LGBM_SE feature_names) {
   R_API_BEGIN();
@@ -429,7 +429,7 @@ SEXP LGBM_BoosterGetLowerBoundValue_R(LGBM_SE handle,
 }
 
 SEXP LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
-  LGBM_SE buf_len,
+  SEXP buf_len,
   LGBM_SE actual_len,
   LGBM_SE eval_names) {
   R_API_BEGIN();
@@ -492,7 +492,6 @@ SEXP LGBM_BoosterGetPredict_R(LGBM_SE handle,
   R_API_END();
 }
 
-// https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Some-convenience-functions
 int GetPredictType(SEXP is_rawscore, SEXP is_leafidx, SEXP is_predcontrib) {
   int pred_type = C_API_PREDICT_NORMAL;
   if (Rf_asInteger(is_rawscore)) {

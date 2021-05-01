@@ -16,7 +16,7 @@
 * \return error information
 */
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_GetLastError_R(
-    LGBM_SE buf_len,
+    SEXP buf_len,
     LGBM_SE actual_len,
     LGBM_SE err_msg
 );
@@ -118,7 +118,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetFeatureNames_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFeatureNames_R(
   LGBM_SE handle,
-  LGBM_SE buf_len,
+  SEXP buf_len,
   LGBM_SE actual_len,
   LGBM_SE feature_names
 );
@@ -393,7 +393,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetLowerBoundValue_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetEvalNames_R(
   LGBM_SE handle,
-  LGBM_SE buf_len,
+  SEXP buf_len,
   LGBM_SE actual_len,
   LGBM_SE eval_names
 );
