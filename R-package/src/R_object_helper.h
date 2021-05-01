@@ -106,8 +106,6 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 
 #define R_REAL_PTR(x)  (reinterpret_cast<double*> DATAPTR(x))
 
-#define R_AS_INT(x)    (*(reinterpret_cast<int*> DATAPTR(x)))
-
 #define R_IS_NULL(x)   ((*reinterpret_cast<LGBM_SE>(x)).sxpinfo.type == 0)
 
 // 64bit pointer
