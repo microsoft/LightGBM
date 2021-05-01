@@ -391,6 +391,11 @@ c_api_contents <- gsub(
   , replacement = ""
   , x = c_api_contents
 )
+c_api_contents <- gsub(
+  pattern = "LIGHTGBM_C_EXPORT SEXP "
+  , replacement = ""
+  , x = c_api_contents
+)
 c_api_symbols <- gsub(
   pattern = "\\("
   , replacement = ""
