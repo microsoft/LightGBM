@@ -39,14 +39,17 @@ def train(params, train_set, num_boost_round=100,
 
             preds : list or numpy 1-D array
                 The predicted values.
+                Predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task.
             train_data : Dataset
                 The training dataset.
             grad : list or numpy 1-D array
-                The value of the first order derivative (gradient) for each sample point.
+                The value of the first order derivative (gradient) of the loss
+                with respect to the elements of preds for each sample point.
             hess : list or numpy 1-D array
-                The value of the second order derivative (Hessian) for each sample point.
+                The value of the second order derivative (Hessian) of the loss
+                with respect to the elements of preds for each sample point.
 
-        For binary task, the preds is margin.
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
@@ -58,6 +61,8 @@ def train(params, train_set, num_boost_round=100,
 
             preds : list or numpy 1-D array
                 The predicted values.
+                If ``fobj`` is specified, predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task in this case.
             train_data : Dataset
                 The training dataset.
             eval_name : string
@@ -67,7 +72,6 @@ def train(params, train_set, num_boost_round=100,
             is_higher_better : bool
                 Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-        For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
@@ -428,14 +432,17 @@ def cv(params, train_set, num_boost_round=100,
 
             preds : list or numpy 1-D array
                 The predicted values.
+                Predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task.
             train_data : Dataset
                 The training dataset.
             grad : list or numpy 1-D array
-                The value of the first order derivative (gradient) for each sample point.
+                The value of the first order derivative (gradient) of the loss
+                with respect to the elements of preds for each sample point.
             hess : list or numpy 1-D array
-                The value of the second order derivative (Hessian) for each sample point.
+                The value of the second order derivative (Hessian) of the loss
+                with respect to the elements of preds for each sample point.
 
-        For binary task, the preds is margin.
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
@@ -447,6 +454,8 @@ def cv(params, train_set, num_boost_round=100,
 
             preds : list or numpy 1-D array
                 The predicted values.
+                If ``fobj`` is specified, predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task in this case.
             train_data : Dataset
                 The training dataset.
             eval_name : string
@@ -456,7 +465,6 @@ def cv(params, train_set, num_boost_round=100,
             is_higher_better : bool
                 Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-        For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
