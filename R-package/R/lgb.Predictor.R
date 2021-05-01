@@ -14,11 +14,9 @@ Predictor <- R6::R6Class(
       if (private$need_free_handle && !lgb.is.null.handle(x = private$handle)) {
 
         # Freeing up handle
-        call_state <- 0L
         .Call(
           LGBM_BoosterFree_R
           , private$handle
-          , call_state
         )
         private$handle <- NULL
 
@@ -39,12 +37,10 @@ Predictor <- R6::R6Class(
       if (is.character(modelfile)) {
 
         # Create handle on it
-        call_state <- 0L
         .Call(
           LGBM_BoosterCreateFromModelfile_R
           , lgb.c_str(x = modelfile)
           , handle
-          , call_state
         )
         private$need_free_handle <- TRUE
 
@@ -72,12 +68,10 @@ Predictor <- R6::R6Class(
     current_iter = function() {
 
       cur_iter <- 0L
-      call_state <- 0L
       .Call(
         LGBM_BoosterGetCurrentIteration_R
         , private$handle
         , cur_iter
-        , call_state
       )
       return(cur_iter)
 
@@ -112,7 +106,6 @@ Predictor <- R6::R6Class(
         on.exit(unlink(tmp_filename), add = TRUE)
 
         # Predict from temporary file
-        call_state <- 0L
         .Call(
           LGBM_BoosterPredictForFile_R
           , private$handle
@@ -125,7 +118,6 @@ Predictor <- R6::R6Class(
           , as.integer(num_iteration)
           , private$params
           , lgb.c_str(x = tmp_filename)
-          , call_state
         )
 
         # Get predictions from file
@@ -141,7 +133,6 @@ Predictor <- R6::R6Class(
         npred <- 0L
 
         # Check number of predictions to do
-        call_state <- 0L
         .Call(
           LGBM_BoosterCalcNumPredict_R
           , private$handle
@@ -152,7 +143,6 @@ Predictor <- R6::R6Class(
           , as.integer(start_iteration)
           , as.integer(num_iteration)
           , npred
-          , call_state
         )
 
         # Pre-allocate empty vector
@@ -165,7 +155,6 @@ Predictor <- R6::R6Class(
           if (storage.mode(data) != "double") {
             storage.mode(data) <- "double"
           }
-          call_state <- 0L
           .Call(
             LGBM_BoosterPredictForMat_R
             , private$handle
@@ -179,7 +168,6 @@ Predictor <- R6::R6Class(
             , as.integer(num_iteration)
             , private$params
             , preds
-            , call_state
           )
 
         } else if (methods::is(data, "dgCMatrix")) {
@@ -187,7 +175,6 @@ Predictor <- R6::R6Class(
             stop("Cannot support large CSC matrix")
           }
           # Check if data is a dgCMatrix (sparse matrix, column compressed format)
-          call_state <- 0L
           .Call(
             LGBM_BoosterPredictForCSC_R
             , private$handle
@@ -204,7 +191,6 @@ Predictor <- R6::R6Class(
             , as.integer(num_iteration)
             , private$params
             , preds
-            , call_state
           )
 
         } else {

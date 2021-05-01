@@ -13,11 +13,9 @@ Dataset <- R6::R6Class(
       if (!lgb.is.null.handle(x = private$handle)) {
 
         # Freeing up handle
-        call_state <- 0L
         .Call(
           LGBM_DatasetFree_R
           , private$handle
-          , call_state
         )
         private$handle <- NULL
 
@@ -202,20 +200,17 @@ Dataset <- R6::R6Class(
         # Are we using a data file?
         if (is.character(private$raw_data)) {
 
-          call_state <- 0L
           .Call(
             LGBM_DatasetCreateFromFile_R
             , lgb.c_str(x = private$raw_data)
             , params_str
             , ref_handle
             , handle
-            , call_state
           )
 
         } else if (is.matrix(private$raw_data)) {
 
           # Are we using a matrix?
-          call_state <- 0L
           .Call(
             LGBM_DatasetCreateFromMat_R
             , private$raw_data
@@ -224,7 +219,6 @@ Dataset <- R6::R6Class(
             , params_str
             , ref_handle
             , handle
-            , call_state
           )
 
         } else if (methods::is(private$raw_data, "dgCMatrix")) {
@@ -232,7 +226,6 @@ Dataset <- R6::R6Class(
             stop("Cannot support large CSC matrix")
           }
           # Are we using a dgCMatrix (sparsed matrix column compressed)
-          call_state <- 0L
           .Call(
             LGBM_DatasetCreateFromCSC_R
             , private$raw_data@p
@@ -244,7 +237,6 @@ Dataset <- R6::R6Class(
             , params_str
             , ref_handle
             , handle
-            , call_state
           )
 
         } else {
@@ -265,7 +257,6 @@ Dataset <- R6::R6Class(
         }
 
         # Construct subset
-        call_state <- 0L
         .Call(
           LGBM_DatasetGetSubset_R
           , ref_handle
@@ -273,7 +264,6 @@ Dataset <- R6::R6Class(
           , length(private$used_indices)
           , params_str
           , handle
-          , call_state
         )
 
       }
@@ -342,19 +332,15 @@ Dataset <- R6::R6Class(
         num_col <- 0L
 
         # Get numeric data and numeric features
-        call_state <- 0L
         .Call(
           LGBM_DatasetGetNumData_R
           , private$handle
           , num_row
-          , call_state
         )
-        call_state <- 0L
         .Call(
           LGBM_DatasetGetNumFeature_R
           , private$handle
           , num_col
-          , call_state
         )
         return(
           c(num_row, num_col)
@@ -388,26 +374,22 @@ Dataset <- R6::R6Class(
         buf_len <- as.integer(1024L * 1024L)
         act_len <- 0L
         buf <- raw(buf_len)
-        call_state <- 0L
         .Call(
           LGBM_DatasetGetFeatureNames_R
           , private$handle
           , buf_len
           , act_len
           , buf
-          , call_state
         )
         if (act_len > buf_len) {
           buf_len <- act_len
           buf <- raw(buf_len)
-          call_state <- 0L
           .Call(
             LGBM_DatasetGetFeatureNames_R
             , private$handle
             , buf_len
             , act_len
             , buf
-            , call_state
           )
         }
         cnames <- lgb.encode.char(arr = buf, len = act_len)
@@ -451,12 +433,10 @@ Dataset <- R6::R6Class(
 
         # Merge names with tab separation
         merged_name <- paste0(as.list(private$colnames), collapse = "\t")
-        call_state <- 0L
         .Call(
           LGBM_DatasetSetFeatureNames_R
           , private$handle
           , lgb.c_str(x = merged_name)
-          , call_state
         )
 
       }
@@ -485,13 +465,11 @@ Dataset <- R6::R6Class(
 
         # Get field size of info
         info_len <- 0L
-        call_state <- 0L
         .Call(
           LGBM_DatasetGetFieldSize_R
           , private$handle
           , lgb.c_str(x = name)
           , info_len
-          , call_state
         )
 
         # Check if info is not empty
@@ -505,13 +483,11 @@ Dataset <- R6::R6Class(
             numeric(info_len) # Numeric
           }
 
-          call_state <- 0L
           .Call(
             LGBM_DatasetGetField_R
             , private$handle
             , lgb.c_str(x = name)
             , ret
-            , call_state
           )
 
           private$info[[name]] <- ret
@@ -548,14 +524,12 @@ Dataset <- R6::R6Class(
 
         if (length(info) > 0L) {
 
-          call_state <- 0L
           .Call(
             LGBM_DatasetSetField_R
             , private$handle
             , lgb.c_str(x = name)
             , info
             , length(info)
-            , call_state
           )
 
           private$version <- private$version + 1L
@@ -600,12 +574,10 @@ Dataset <- R6::R6Class(
         private$params <- modifyList(private$params, params)
       } else {
         tryCatch({
-          call_state <- 0L
           .Call(
             LGBM_DatasetUpdateParamChecking_R
             , lgb.params2str(params = private$params)
             , lgb.params2str(params = params)
-            , call_state
           )
         }, error = function(e) {
           # If updating failed but raw data is not available, raise an error because
@@ -703,12 +675,10 @@ Dataset <- R6::R6Class(
 
       # Store binary data
       self$construct()
-      call_state <- 0L
       .Call(
         LGBM_DatasetSaveBinary_R
         , private$handle
         , lgb.c_str(x = fname)
-        , call_state
       )
       return(invisible(self))
     }
