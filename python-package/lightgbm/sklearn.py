@@ -32,6 +32,8 @@ class _ObjectiveFunctionWrapper:
                     The target values.
                 y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The predicted values.
+                    Predicted values are returned before any transformation,
+                    e.g. they are raw margin instead of probability of positive class for binary task.
                 group : array-like
                     Group/query data.
                     Only used in the learning-to-rank task.
@@ -39,13 +41,14 @@ class _ObjectiveFunctionWrapper:
                     For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                     where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
                 grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                    The value of the first order derivative (gradient) for each sample point.
+                    The value of the first order derivative (gradient) of the loss
+                    with respect to the elements of y_pred for each sample point.
                 hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                    The value of the second order derivative (Hessian) for each sample point.
+                    The value of the second order derivative (Hessian) of the loss
+                    with respect to the elements of y_pred for each sample point.
 
         .. note::
 
-            For binary task, the y_pred is margin.
             For multi-class task, the y_pred is group by class_id first, then group by row_id.
             If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -65,9 +68,11 @@ class _ObjectiveFunctionWrapper:
         Returns
         -------
         grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-            The value of the first order derivative (gradient) for each sample point.
+            The value of the first order derivative (gradient) of the loss
+            with respect to the elements of preds for each sample point.
         hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-            The value of the second order derivative (Hessian) for each sample point.
+            The value of the second order derivative (Hessian) of the loss
+            with respect to the elements of preds for each sample point.
         """
         labels = dataset.get_label()
         argc = len(signature(self.func).parameters)
@@ -120,6 +125,8 @@ class _EvalFunctionWrapper:
                     The target values.
                 y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The predicted values.
+                    In case of custom ``objective``, predicted values are returned before any transformation,
+                    e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 weight : array-like of shape = [n_samples]
                     The weight of samples.
                 group : array-like
@@ -137,7 +144,6 @@ class _EvalFunctionWrapper:
 
         .. note::
 
-            For binary task, the y_pred is probability of positive class (or margin in case of custom ``objective``).
             For multi-class task, the y_pred is group by class_id first, then group by row_id.
             If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
         """
@@ -272,6 +278,8 @@ _lgbmmodel_doc_custom_eval_note = """
             The target values.
         y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
             The predicted values.
+            In case of custom ``objective``, predicted values are returned before any transformation,
+            e.g. they are raw margin instead of probability of positive class for binary task in this case.
         weight : array-like of shape = [n_samples]
             The weight of samples.
         group : array-like
@@ -287,7 +295,6 @@ _lgbmmodel_doc_custom_eval_note = """
         is_higher_better : bool
             Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-    For binary task, the y_pred is probability of positive class (or margin in case of custom ``objective``).
     For multi-class task, the y_pred is group by class_id first, then group by row_id.
     If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
 """
@@ -434,6 +441,8 @@ class LGBMModel(_LGBMModelBase):
                 The target values.
             y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The predicted values.
+                Predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task.
             group : array-like
                 Group/query data.
                 Only used in the learning-to-rank task.
@@ -441,11 +450,12 @@ class LGBMModel(_LGBMModelBase):
                 For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                 where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
             grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The value of the first order derivative (gradient) for each sample point.
+                The value of the first order derivative (gradient) of the loss
+                with respect to the elements of y_pred for each sample point.
             hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The value of the second order derivative (Hessian) for each sample point.
+                The value of the second order derivative (Hessian) of the loss
+                with respect to the elements of y_pred for each sample point.
 
-        For binary task, the y_pred is margin.
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
         and you should group grad and hess in this way as well.
