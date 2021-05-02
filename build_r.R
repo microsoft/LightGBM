@@ -397,7 +397,7 @@ c_api_contents <- gsub(
   , x = c_api_contents
 )
 c_api_symbols <- gsub(
-  pattern = "\\("
+  pattern = "\\(.*"
   , replacement = ""
   , x = c_api_contents
 )
