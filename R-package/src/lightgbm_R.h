@@ -6,6 +6,11 @@
 #define LIGHTGBM_R_H_
 
 #include <LightGBM/c_api.h>
+
+#define R_NO_REMAP
+#define R_USE_C99_IN_CXX
+#include <Rinternals.h>
+
 #include "R_object_helper.h"
 
 /*!

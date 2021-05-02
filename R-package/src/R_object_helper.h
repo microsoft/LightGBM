@@ -15,10 +15,6 @@
 
 #include <cstdint>
 
-#define R_NO_REMAP
-#define R_USE_C99_IN_CXX
-#include <Rinternals.h>
-
 #define NAMED_BITS 16
 struct lgbm_sxpinfo {
   unsigned int type : 5;
