@@ -56,8 +56,12 @@ LGBM_SE EncodeChar(LGBM_SE dest, const char* src, SEXP buf_len, LGBM_SE actual_l
   return dest;
 }
 
-LGBM_SE LGBM_GetLastError_R(SEXP buf_len, LGBM_SE actual_len, LGBM_SE err_msg) {
-  return EncodeChar(err_msg, LGBM_GetLastError(), buf_len, actual_len, std::strlen(LGBM_GetLastError()) + 1);
+SEXP LGBM_GetLastError_R() {
+  SEXP out;
+  out = PROTECT(Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(out, 0, Rf_mkChar(LGBM_GetLastError()));
+  UNPROTECT(1);
+  return out;
 }
 
 SEXP LGBM_DatasetCreateFromFile_R(LGBM_SE filename,
@@ -640,7 +644,7 @@ SEXP LGBM_BoosterDumpModel_R(LGBM_SE handle,
 
 // .Call() calls
 static const R_CallMethodDef CallEntries[] = {
-  {"LGBM_GetLastError_R"              , (DL_FUNC) &LGBM_GetLastError_R              , 3},
+  {"LGBM_GetLastError_R"              , (DL_FUNC) &LGBM_GetLastError_R              , 0},
   {"LGBM_DatasetCreateFromFile_R"     , (DL_FUNC) &LGBM_DatasetCreateFromFile_R     , 4},
   {"LGBM_DatasetCreateFromCSC_R"      , (DL_FUNC) &LGBM_DatasetCreateFromCSC_R      , 9},
   {"LGBM_DatasetCreateFromMat_R"      , (DL_FUNC) &LGBM_DatasetCreateFromMat_R      , 6},

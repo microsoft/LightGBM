@@ -15,11 +15,7 @@
 * \return err_msg error information
 * \return error information
 */
-LIGHTGBM_C_EXPORT LGBM_SE LGBM_GetLastError_R(
-    SEXP buf_len,
-    LGBM_SE actual_len,
-    LGBM_SE err_msg
-);
+LIGHTGBM_C_EXPORT SEXP LGBM_GetLastError_R();
 
 // --- start Dataset interface
 
