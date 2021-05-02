@@ -74,7 +74,7 @@ SEXP LGBM_DatasetCreateFromFile_R(LGBM_SE filename,
 
 SEXP LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
   LGBM_SE indices,
-  LGBM_SE data,
+  SEXP data,
   LGBM_SE num_indptr,
   LGBM_SE nelem,
   LGBM_SE num_row,
@@ -84,7 +84,7 @@ SEXP LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
   R_API_BEGIN();
   const int* p_indptr = R_INT_PTR(indptr);
   const int* p_indices = R_INT_PTR(indices);
-  const double* p_data = R_REAL_PTR(data);
+  const double* p_data = REAL(data);
 
   int64_t nindptr = static_cast<int64_t>(R_AS_INT(num_indptr));
   int64_t ndata = static_cast<int64_t>(R_AS_INT(nelem));
@@ -197,7 +197,7 @@ SEXP LGBM_DatasetFree_R(LGBM_SE handle) {
 
 SEXP LGBM_DatasetSetField_R(LGBM_SE handle,
   LGBM_SE field_name,
-  LGBM_SE field_data,
+  SEXP field_data,
   LGBM_SE num_element) {
   R_API_BEGIN();
   int len = static_cast<int>(R_AS_INT(num_element));
@@ -210,12 +210,12 @@ SEXP LGBM_DatasetSetField_R(LGBM_SE handle,
     }
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_INT32));
   } else if (!strcmp("init_score", name)) {
-    CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, R_REAL_PTR(field_data), len, C_API_DTYPE_FLOAT64));
+    CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, REAL(field_data), len, C_API_DTYPE_FLOAT64));
   } else {
     std::vector<float> vec(len);
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
     for (int i = 0; i < len; ++i) {
-      vec[i] = static_cast<float>(R_REAL_PTR(field_data)[i]);
+      vec[i] = static_cast<float>(REAL(field_data)[i]);
     }
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_FLOAT32));
   }
@@ -224,7 +224,7 @@ SEXP LGBM_DatasetSetField_R(LGBM_SE handle,
 
 SEXP LGBM_DatasetGetField_R(LGBM_SE handle,
   LGBM_SE field_name,
-  LGBM_SE field_data) {
+  SEXP field_data) {
   R_API_BEGIN();
   const char* name = R_CHAR_PTR(field_name);
   int out_len = 0;
@@ -243,13 +243,13 @@ SEXP LGBM_DatasetGetField_R(LGBM_SE handle,
     auto p_data = reinterpret_cast<const double*>(res);
 #pragma omp parallel for schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len; ++i) {
-      R_REAL_PTR(field_data)[i] = p_data[i];
+      REAL(field_data)[i] = p_data[i];
     }
   } else {
     auto p_data = reinterpret_cast<const float*>(res);
 #pragma omp parallel for schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len; ++i) {
-      R_REAL_PTR(field_data)[i] = p_data[i];
+      REAL(field_data)[i] = p_data[i];
     }
   }
   R_API_END();
@@ -381,8 +381,8 @@ SEXP LGBM_BoosterUpdateOneIter_R(LGBM_SE handle) {
 }
 
 SEXP LGBM_BoosterUpdateOneIterCustom_R(LGBM_SE handle,
-  LGBM_SE grad,
-  LGBM_SE hess,
+  SEXP grad,
+  SEXP hess,
   LGBM_SE len) {
   int is_finished = 0;
   R_API_BEGIN();
@@ -390,8 +390,8 @@ SEXP LGBM_BoosterUpdateOneIterCustom_R(LGBM_SE handle,
   std::vector<float> tgrad(int_len), thess(int_len);
 #pragma omp parallel for schedule(static, 512) if (int_len >= 1024)
   for (int j = 0; j < int_len; ++j) {
-    tgrad[j] = static_cast<float>(R_REAL_PTR(grad)[j]);
-    thess[j] = static_cast<float>(R_REAL_PTR(hess)[j]);
+    tgrad[j] = static_cast<float>(REAL(grad)[j]);
+    thess[j] = static_cast<float>(REAL(hess)[j]);
   }
   CHECK_CALL(LGBM_BoosterUpdateOneIterCustom(R_GET_PTR(handle), tgrad.data(), thess.data(), &is_finished));
   R_API_END();
@@ -413,17 +413,17 @@ SEXP LGBM_BoosterGetCurrentIteration_R(LGBM_SE handle,
 }
 
 SEXP LGBM_BoosterGetUpperBoundValue_R(LGBM_SE handle,
-  LGBM_SE out_result) {
+  SEXP out_result) {
   R_API_BEGIN();
-  double* ptr_ret = R_REAL_PTR(out_result);
+  double* ptr_ret = REAL(out_result);
   CHECK_CALL(LGBM_BoosterGetUpperBoundValue(R_GET_PTR(handle), ptr_ret));
   R_API_END();
 }
 
 SEXP LGBM_BoosterGetLowerBoundValue_R(LGBM_SE handle,
-  LGBM_SE out_result) {
+  SEXP out_result) {
   R_API_BEGIN();
-  double* ptr_ret = R_REAL_PTR(out_result);
+  double* ptr_ret = REAL(out_result);
   CHECK_CALL(LGBM_BoosterGetLowerBoundValue(R_GET_PTR(handle), ptr_ret));
   R_API_END();
 }
@@ -461,11 +461,11 @@ SEXP LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
 
 SEXP LGBM_BoosterGetEval_R(LGBM_SE handle,
   LGBM_SE data_idx,
-  LGBM_SE out_result) {
+  SEXP out_result) {
   R_API_BEGIN();
   int len;
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &len));
-  double* ptr_ret = R_REAL_PTR(out_result);
+  double* ptr_ret = REAL(out_result);
   int out_len;
   CHECK_CALL(LGBM_BoosterGetEval(R_GET_PTR(handle), R_AS_INT(data_idx), &out_len, ptr_ret));
   CHECK_EQ(out_len, len);
@@ -484,9 +484,9 @@ SEXP LGBM_BoosterGetNumPredict_R(LGBM_SE handle,
 
 SEXP LGBM_BoosterGetPredict_R(LGBM_SE handle,
   LGBM_SE data_idx,
-  LGBM_SE out_result) {
+  SEXP out_result) {
   R_API_BEGIN();
-  double* ptr_ret = R_REAL_PTR(out_result);
+  double* ptr_ret = REAL(out_result);
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterGetPredict(R_GET_PTR(handle), R_AS_INT(data_idx), &out_len, ptr_ret));
   R_API_END();
@@ -544,7 +544,7 @@ SEXP LGBM_BoosterCalcNumPredict_R(LGBM_SE handle,
 SEXP LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
   LGBM_SE indptr,
   LGBM_SE indices,
-  LGBM_SE data,
+  SEXP data,
   LGBM_SE num_indptr,
   LGBM_SE nelem,
   LGBM_SE num_row,
@@ -554,18 +554,18 @@ SEXP LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
   LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
-  LGBM_SE out_result) {
+  SEXP out_result) {
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
 
   const int* p_indptr = R_INT_PTR(indptr);
   const int* p_indices = R_INT_PTR(indices);
-  const double* p_data = R_REAL_PTR(data);
+  const double* p_data = REAL(data);
 
   int64_t nindptr = R_AS_INT(num_indptr);
   int64_t ndata = R_AS_INT(nelem);
   int64_t nrow = R_AS_INT(num_row);
-  double* ptr_ret = R_REAL_PTR(out_result);
+  double* ptr_ret = REAL(out_result);
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForCSC(R_GET_PTR(handle),
     p_indptr, C_API_DTYPE_INT32, p_indices,
@@ -575,7 +575,7 @@ SEXP LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
 }
 
 SEXP LGBM_BoosterPredictForMat_R(LGBM_SE handle,
-  LGBM_SE data,
+  SEXP data,
   LGBM_SE num_row,
   LGBM_SE num_col,
   LGBM_SE is_rawscore,
@@ -584,15 +584,15 @@ SEXP LGBM_BoosterPredictForMat_R(LGBM_SE handle,
   LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
-  LGBM_SE out_result) {
+  SEXP out_result) {
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
 
   int32_t nrow = R_AS_INT(num_row);
   int32_t ncol = R_AS_INT(num_col);
 
-  const double* p_mat = R_REAL_PTR(data);
-  double* ptr_ret = R_REAL_PTR(out_result);
+  const double* p_mat = REAL(data);
+  double* ptr_ret = REAL(out_result);
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForMat(R_GET_PTR(handle),
     p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,

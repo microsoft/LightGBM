@@ -54,7 +54,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromFile_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromCSC_R(
   LGBM_SE indptr,
   LGBM_SE indices,
-  LGBM_SE data,
+  SEXP data,
   LGBM_SE nindptr,
   LGBM_SE nelem,
   LGBM_SE num_row,
@@ -156,7 +156,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetFree_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetField_R(
   LGBM_SE handle,
   LGBM_SE field_name,
-  LGBM_SE field_data,
+  SEXP field_data,
   LGBM_SE num_element
 );
 
@@ -183,7 +183,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFieldSize_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetField_R(
   LGBM_SE handle,
   LGBM_SE field_name,
-  LGBM_SE field_data
+  SEXP field_data
 );
 
 /*!
@@ -340,8 +340,8 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterUpdateOneIter_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterUpdateOneIterCustom_R(
   LGBM_SE handle,
-  LGBM_SE grad,
-  LGBM_SE hess,
+  SEXP grad,
+  SEXP hess,
   LGBM_SE len
 );
 
@@ -372,7 +372,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetCurrentIteration_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetUpperBoundValue_R(
     LGBM_SE handle,
-    LGBM_SE out_result
+    SEXP out_result
 );
 
 /*!
@@ -383,7 +383,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetUpperBoundValue_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetLowerBoundValue_R(
     LGBM_SE handle,
-    LGBM_SE out_result
+    SEXP out_result
 );
 
 /*!
@@ -408,7 +408,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetEvalNames_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetEval_R(
   LGBM_SE handle,
   LGBM_SE data_idx,
-  LGBM_SE out_result
+  SEXP out_result
 );
 
 /*!
@@ -435,7 +435,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumPredict_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetPredict_R(
   LGBM_SE handle,
   LGBM_SE data_idx,
-  LGBM_SE out_result
+  SEXP out_result
 );
 
 /*!
@@ -505,7 +505,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSC_R(
   LGBM_SE handle,
   LGBM_SE indptr,
   LGBM_SE indices,
-  LGBM_SE data,
+  SEXP data,
   LGBM_SE nindptr,
   LGBM_SE nelem,
   LGBM_SE num_row,
@@ -515,7 +515,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSC_R(
   LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
-  LGBM_SE out_result
+  SEXP out_result
 );
 
 /*!
@@ -535,7 +535,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSC_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMat_R(
   LGBM_SE handle,
-  LGBM_SE data,
+  SEXP data,
   LGBM_SE nrow,
   LGBM_SE ncol,
   LGBM_SE is_rawscore,
@@ -544,7 +544,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMat_R(
   LGBM_SE start_iteration,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
-  LGBM_SE out_result
+  SEXP out_result
 );
 
 /*!
