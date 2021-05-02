@@ -17,7 +17,7 @@
 */
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_GetLastError_R(
     LGBM_SE buf_len,
-    LGBM_SE actual_len,
+    SEXP actual_len,
     LGBM_SE err_msg
 );
 
@@ -52,8 +52,8 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromFile_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromCSC_R(
-  LGBM_SE indptr,
-  LGBM_SE indices,
+  SEXP indptr,
+  SEXP indices,
   SEXP data,
   LGBM_SE nindptr,
   LGBM_SE nelem,
@@ -93,7 +93,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromMat_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetSubset_R(
   LGBM_SE handle,
-  LGBM_SE used_row_indices,
+  SEXP used_row_indices,
   LGBM_SE len_used_row_indices,
   LGBM_SE parameters,
   LGBM_SE out
@@ -119,7 +119,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetFeatureNames_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFeatureNames_R(
   LGBM_SE handle,
   LGBM_SE buf_len,
-  LGBM_SE actual_len,
+  SEXP actual_len,
   LGBM_SE feature_names
 );
 
@@ -170,7 +170,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetField_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFieldSize_R(
   LGBM_SE handle,
   LGBM_SE field_name,
-  LGBM_SE out
+  SEXP out
 );
 
 /*!
@@ -205,7 +205,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetUpdateParamChecking_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetNumData_R(
   LGBM_SE handle,
-  LGBM_SE out
+  SEXP out
 );
 
 /*!
@@ -216,7 +216,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetNumData_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetNumFeature_R(
   LGBM_SE handle,
-  LGBM_SE out
+  SEXP out
 );
 
 // --- start Booster interfaces
@@ -317,7 +317,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterResetParameter_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumClasses_R(
   LGBM_SE handle,
-  LGBM_SE out
+  SEXP out
 );
 
 /*!
@@ -361,7 +361,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterRollbackOneIter_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetCurrentIteration_R(
   LGBM_SE handle,
-  LGBM_SE out
+  SEXP out
 );
 
 /*!
@@ -394,7 +394,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetLowerBoundValue_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetEvalNames_R(
   LGBM_SE handle,
   LGBM_SE buf_len,
-  LGBM_SE actual_len,
+  SEXP actual_len,
   LGBM_SE eval_names
 );
 
@@ -421,7 +421,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetEval_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumPredict_R(
   LGBM_SE handle,
   LGBM_SE data_idx,
-  LGBM_SE out
+  SEXP out
 );
 
 /*!
@@ -480,7 +480,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCalcNumPredict_R(
   LGBM_SE is_predcontrib,
   LGBM_SE start_iteration,
   LGBM_SE num_iteration,
-  LGBM_SE out_len
+  SEXP out_len
 );
 
 /*!
@@ -503,8 +503,8 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCalcNumPredict_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSC_R(
   LGBM_SE handle,
-  LGBM_SE indptr,
-  LGBM_SE indices,
+  SEXP indptr,
+  SEXP indices,
   SEXP data,
   LGBM_SE nindptr,
   LGBM_SE nelem,
@@ -573,7 +573,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModelToString_R(
   LGBM_SE num_iteration,
   LGBM_SE feature_importance_type,
   LGBM_SE buffer_len,
-  LGBM_SE actual_len,
+  SEXP actual_len,
   LGBM_SE out_str
 );
 
@@ -589,7 +589,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterDumpModel_R(
   LGBM_SE num_iteration,
   LGBM_SE feature_importance_type,
   LGBM_SE buffer_len,
-  LGBM_SE actual_len,
+  SEXP actual_len,
   LGBM_SE out_str
 );
 

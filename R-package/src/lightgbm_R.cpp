@@ -43,11 +43,11 @@ using LightGBM::Common::Join;
 using LightGBM::Common::Split;
 using LightGBM::Log;
 
-LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actual_len, size_t str_len) {
+LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, SEXP actual_len, size_t str_len) {
   if (str_len > INT32_MAX) {
     Log::Fatal("Don't support large string in R-package");
   }
-  R_INT_PTR(actual_len)[0] = static_cast<int>(str_len);
+  INTEGER(actual_len)[0] = static_cast<int>(str_len);
   if (R_AS_INT(buf_len) < static_cast<int>(str_len)) {
     return dest;
   }
@@ -56,7 +56,7 @@ LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actua
   return dest;
 }
 
-LGBM_SE LGBM_GetLastError_R(LGBM_SE buf_len, LGBM_SE actual_len, LGBM_SE err_msg) {
+LGBM_SE LGBM_GetLastError_R(LGBM_SE buf_len, SEXP actual_len, LGBM_SE err_msg) {
   return EncodeChar(err_msg, LGBM_GetLastError(), buf_len, actual_len, std::strlen(LGBM_GetLastError()) + 1);
 }
 
@@ -72,8 +72,8 @@ SEXP LGBM_DatasetCreateFromFile_R(LGBM_SE filename,
   R_API_END();
 }
 
-SEXP LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
-  LGBM_SE indices,
+SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
+  SEXP indices,
   SEXP data,
   LGBM_SE num_indptr,
   LGBM_SE nelem,
@@ -82,8 +82,8 @@ SEXP LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
   LGBM_SE reference,
   LGBM_SE out) {
   R_API_BEGIN();
-  const int* p_indptr = R_INT_PTR(indptr);
-  const int* p_indices = R_INT_PTR(indices);
+  const int* p_indptr = INTEGER(indptr);
+  const int* p_indices = INTEGER(indices);
   const double* p_data = REAL(data);
 
   int64_t nindptr = static_cast<int64_t>(R_AS_INT(num_indptr));
@@ -115,7 +115,7 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
 }
 
 SEXP LGBM_DatasetGetSubset_R(LGBM_SE handle,
-  LGBM_SE used_row_indices,
+  SEXP used_row_indices,
   LGBM_SE len_used_row_indices,
   LGBM_SE parameters,
   LGBM_SE out) {
@@ -125,7 +125,7 @@ SEXP LGBM_DatasetGetSubset_R(LGBM_SE handle,
   // convert from one-based to  zero-based index
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (int i = 0; i < len; ++i) {
-    idxvec[i] = R_INT_PTR(used_row_indices)[i] - 1;
+    idxvec[i] = INTEGER(used_row_indices)[i] - 1;
   }
   DatasetHandle res = nullptr;
   CHECK_CALL(LGBM_DatasetGetSubset(R_GET_PTR(handle),
@@ -151,7 +151,7 @@ SEXP LGBM_DatasetSetFeatureNames_R(LGBM_SE handle,
 
 SEXP LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
   LGBM_SE buf_len,
-  LGBM_SE actual_len,
+  SEXP actual_len,
   LGBM_SE feature_names) {
   R_API_BEGIN();
   int len = 0;
@@ -206,7 +206,7 @@ SEXP LGBM_DatasetSetField_R(LGBM_SE handle,
     std::vector<int32_t> vec(len);
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
     for (int i = 0; i < len; ++i) {
-      vec[i] = static_cast<int32_t>(R_INT_PTR(field_data)[i]);
+      vec[i] = static_cast<int32_t>(INTEGER(field_data)[i]);
     }
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_INT32));
   } else if (!strcmp("init_score", name)) {
@@ -237,7 +237,7 @@ SEXP LGBM_DatasetGetField_R(LGBM_SE handle,
     // convert from boundaries to size
 #pragma omp parallel for schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len - 1; ++i) {
-      R_INT_PTR(field_data)[i] = p_data[i + 1] - p_data[i];
+      INTEGER(field_data)[i] = p_data[i + 1] - p_data[i];
     }
   } else if (!strcmp("init_score", name)) {
     auto p_data = reinterpret_cast<const double*>(res);
@@ -257,7 +257,7 @@ SEXP LGBM_DatasetGetField_R(LGBM_SE handle,
 
 SEXP LGBM_DatasetGetFieldSize_R(LGBM_SE handle,
   LGBM_SE field_name,
-  LGBM_SE out) {
+  SEXP out) {
   R_API_BEGIN();
   const char* name = R_CHAR_PTR(field_name);
   int out_len = 0;
@@ -267,7 +267,7 @@ SEXP LGBM_DatasetGetFieldSize_R(LGBM_SE handle,
   if (!strcmp("group", name) || !strcmp("query", name)) {
     out_len -= 1;
   }
-  R_INT_PTR(out)[0] = static_cast<int>(out_len);
+  INTEGER(out)[0] = static_cast<int>(out_len);
   R_API_END();
 }
 
@@ -278,20 +278,20 @@ SEXP LGBM_DatasetUpdateParamChecking_R(LGBM_SE old_params,
   R_API_END();
 }
 
-SEXP LGBM_DatasetGetNumData_R(LGBM_SE handle, LGBM_SE out) {
+SEXP LGBM_DatasetGetNumData_R(LGBM_SE handle, SEXP out) {
   int nrow;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetGetNumData(R_GET_PTR(handle), &nrow));
-  R_INT_PTR(out)[0] = static_cast<int>(nrow);
+  INTEGER(out)[0] = static_cast<int>(nrow);
   R_API_END();
 }
 
 SEXP LGBM_DatasetGetNumFeature_R(LGBM_SE handle,
-  LGBM_SE out) {
+  SEXP out) {
   int nfeature;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetGetNumFeature(R_GET_PTR(handle), &nfeature));
-  R_INT_PTR(out)[0] = static_cast<int>(nfeature);
+  INTEGER(out)[0] = static_cast<int>(nfeature);
   R_API_END();
 }
 
@@ -365,11 +365,11 @@ SEXP LGBM_BoosterResetParameter_R(LGBM_SE handle,
 }
 
 SEXP LGBM_BoosterGetNumClasses_R(LGBM_SE handle,
-  LGBM_SE out) {
+  SEXP out) {
   int num_class;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterGetNumClasses(R_GET_PTR(handle), &num_class));
-  R_INT_PTR(out)[0] = static_cast<int>(num_class);
+  INTEGER(out)[0] = static_cast<int>(num_class);
   R_API_END();
 }
 
@@ -404,11 +404,11 @@ SEXP LGBM_BoosterRollbackOneIter_R(LGBM_SE handle) {
 }
 
 SEXP LGBM_BoosterGetCurrentIteration_R(LGBM_SE handle,
-  LGBM_SE out) {
+  SEXP out) {
   int out_iteration;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterGetCurrentIteration(R_GET_PTR(handle), &out_iteration));
-  R_INT_PTR(out)[0] = static_cast<int>(out_iteration);
+  INTEGER(out)[0] = static_cast<int>(out_iteration);
   R_API_END();
 }
 
@@ -430,7 +430,7 @@ SEXP LGBM_BoosterGetLowerBoundValue_R(LGBM_SE handle,
 
 SEXP LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
   LGBM_SE buf_len,
-  LGBM_SE actual_len,
+  SEXP actual_len,
   LGBM_SE eval_names) {
   R_API_BEGIN();
   int len;
@@ -474,11 +474,11 @@ SEXP LGBM_BoosterGetEval_R(LGBM_SE handle,
 
 SEXP LGBM_BoosterGetNumPredict_R(LGBM_SE handle,
   LGBM_SE data_idx,
-  LGBM_SE out) {
+  SEXP out) {
   R_API_BEGIN();
   int64_t len;
   CHECK_CALL(LGBM_BoosterGetNumPredict(R_GET_PTR(handle), R_AS_INT(data_idx), &len));
-  R_INT_PTR(out)[0] = static_cast<int>(len);
+  INTEGER(out)[0] = static_cast<int>(len);
   R_API_END();
 }
 
@@ -531,19 +531,19 @@ SEXP LGBM_BoosterCalcNumPredict_R(LGBM_SE handle,
   LGBM_SE is_predcontrib,
   LGBM_SE start_iteration,
   LGBM_SE num_iteration,
-  LGBM_SE out_len) {
+  SEXP out_len) {
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
   int64_t len = 0;
   CHECK_CALL(LGBM_BoosterCalcNumPredict(R_GET_PTR(handle), R_AS_INT(num_row),
     pred_type, R_AS_INT(start_iteration), R_AS_INT(num_iteration), &len));
-  R_INT_PTR(out_len)[0] = static_cast<int>(len);
+  INTEGER(out_len)[0] = static_cast<int>(len);
   R_API_END();
 }
 
 SEXP LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
-  LGBM_SE indptr,
-  LGBM_SE indices,
+  SEXP indptr,
+  SEXP indices,
   SEXP data,
   LGBM_SE num_indptr,
   LGBM_SE nelem,
@@ -558,8 +558,8 @@ SEXP LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
 
-  const int* p_indptr = R_INT_PTR(indptr);
-  const int* p_indices = R_INT_PTR(indices);
+  const int* p_indptr = INTEGER(indptr);
+  const int* p_indices = INTEGER(indices);
   const double* p_data = REAL(data);
 
   int64_t nindptr = R_AS_INT(num_indptr);
@@ -614,7 +614,7 @@ SEXP LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   LGBM_SE num_iteration,
   LGBM_SE feature_importance_type,
   LGBM_SE buffer_len,
-  LGBM_SE actual_len,
+  SEXP actual_len,
   LGBM_SE out_str) {
   R_API_BEGIN();
   int64_t out_len = 0;
@@ -628,7 +628,7 @@ SEXP LGBM_BoosterDumpModel_R(LGBM_SE handle,
   LGBM_SE num_iteration,
   LGBM_SE feature_importance_type,
   LGBM_SE buffer_len,
-  LGBM_SE actual_len,
+  SEXP actual_len,
   LGBM_SE out_str) {
   R_API_BEGIN();
   int64_t out_len = 0;
