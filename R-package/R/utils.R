@@ -25,38 +25,15 @@ lgb.encode.char <- function(arr, len) {
   return(rawToChar(arr[seq_len(len)]))
 }
 
-# [description] Raise an error. Before raising that error, check for any error message
-#               stored in a buffer on the C++ side.
+# [description] Get the most recent error stored on the C++ side and raise it
+#               as an R error.
 lgb.last_error <- function() {
-  # Perform text error buffering
-  buf_len <- 200L
-  act_len <- 0L
-  err_msg <- raw(buf_len)
   err_msg <- .Call(
     LGBM_GetLastError_R
-    , buf_len
-    , act_len
-    , err_msg
   )
-
-  # Check error buffer
-  if (act_len > buf_len) {
-    buf_len <- act_len
-    err_msg <- raw(buf_len)
-    err_msg <- .Call(
-      LGBM_GetLastError_R
-      , buf_len
-      , act_len
-      , err_msg
-    )
-  }
-
-  stop("api error: ", lgb.encode.char(arr = err_msg, len = act_len))
-
+  stop("api error: ", err_msg)
   return(invisible(NULL))
-
 }
-
 lgb.params2str <- function(params, ...) {
 
   # Check for a list as input
