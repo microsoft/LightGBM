@@ -74,7 +74,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromCSC_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromMat_R(
-  LGBM_SE data,
+  SEXP data,
   LGBM_SE nrow,
   LGBM_SE ncol,
   LGBM_SE parameters,
