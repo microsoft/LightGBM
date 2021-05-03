@@ -15,10 +15,6 @@
 
 #include <cstdint>
 
-#define R_NO_REMAP
-#define R_USE_C99_IN_CXX
-#include <Rinternals.h>
-
 #define NAMED_BITS 16
 struct lgbm_sxpinfo {
   unsigned int type : 5;
@@ -101,8 +97,6 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 #define DATAPTR(x)     ((reinterpret_cast<SEXPREC_ALIGN*>(x)) + 1)
 
 #define R_CHAR_PTR(x)  (reinterpret_cast<char*>DATAPTR(x))
-
-#define R_AS_INT(x)    (*(reinterpret_cast<int*> DATAPTR(x)))
 
 #define R_IS_NULL(x)   ((*reinterpret_cast<LGBM_SE>(x)).sxpinfo.type == 0)
 
