@@ -622,8 +622,9 @@ SEXP LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   LGBM_SE out_str) {
   R_API_BEGIN();
   int64_t out_len = 0;
-  std::vector<char> inner_char_buf(Rf_asInteger(buffer_len));
-  CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), Rf_asInteger(buffer_len), &out_len, inner_char_buf.data()));
+  int64_t buf_len = static_cast<int64_t>(Rf_asInteger(buffer_len));
+  std::vector<char> inner_char_buf(buf_len);
+  CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), buf_len, &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
@@ -636,8 +637,9 @@ SEXP LGBM_BoosterDumpModel_R(LGBM_SE handle,
   LGBM_SE out_str) {
   R_API_BEGIN();
   int64_t out_len = 0;
-  std::vector<char> inner_char_buf(Rf_asInteger(buffer_len));
-  CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), Rf_asInteger(buffer_len), &out_len, inner_char_buf.data()));
+  int64_t buf_len = static_cast<int64_t>(Rf_asInteger(buffer_len));
+  std::vector<char> inner_char_buf(buf_len);
+  CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), buf_len, &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
