@@ -359,7 +359,7 @@ class FeatureHistogram {
           continue;
         }
 
-        // mark to is splittable
+        // mark to is as able to be split
         is_splittable_ = true;
         // better split point
         if (current_gain > best_gain) {
@@ -940,7 +940,7 @@ class FeatureHistogram {
           continue;
         }
 
-        // mark to is splittable
+        // mark to is able to be split
         is_splittable_ = true;
         // better split point
         if (current_gain > best_gain) {
@@ -1010,7 +1010,7 @@ class FeatureHistogram {
         }
 
         double sum_right_hessian = sum_hessian - sum_left_hessian;
-        // if sum hessian too small
+        // if sum Hessian too small
         if (sum_right_hessian < meta_->config->min_sum_hessian_in_leaf) {
           break;
         }
@@ -1033,7 +1033,7 @@ class FeatureHistogram {
           continue;
         }
 
-        // mark to is splittable
+        // mark to as able to be split
         is_splittable_ = true;
         // better split point
         if (current_gain > best_gain) {

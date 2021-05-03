@@ -475,11 +475,11 @@ R""()
             addr2 = addr + 4 - 8 * is_hessian_first;
             atomic_local_add_f(gh_hist + addr, s3_stat1);
             // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's gradients for example 0, 1, 2, 3
-            // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's hessians  for example 4, 5, 6, 7
+            // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's Hessians  for example 4, 5, 6, 7
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, s3_stat2);
             #endif
-            // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's hessians  for example 0, 1, 2, 3
+            // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's Hessians  for example 0, 1, 2, 3
             // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's gradients for example 4, 5, 6, 7
             s3_stat1 = stat1;
             s3_stat2 = stat2;
@@ -500,11 +500,11 @@ R""()
             addr2 = addr + 4 - 8 * is_hessian_first;
             atomic_local_add_f(gh_hist + addr, s2_stat1);
             // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's gradients for example 0, 1, 2, 3
-            // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's hessians  for example 4, 5, 6, 7
+            // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's Hessians  for example 4, 5, 6, 7
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, s2_stat2);
             #endif
-            // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's hessians  for example 0, 1, 2, 3
+            // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's Hessians  for example 0, 1, 2, 3
             // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's gradients for example 4, 5, 6, 7
             s2_stat1 = stat1;
             s2_stat2 = stat2;
@@ -532,11 +532,11 @@ R""()
             addr2 = addr + 4 - 8 * is_hessian_first;
             atomic_local_add_f(gh_hist + addr, s1_stat1);
             // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's gradients for example 0, 1, 2, 3
-            // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's hessians  for example 4, 5, 6, 7
+            // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's Hessians  for example 4, 5, 6, 7
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, s1_stat2);
             #endif
-            // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's hessians  for example 0, 1, 2, 3
+            // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's Hessians  for example 0, 1, 2, 3
             // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's gradients for example 4, 5, 6, 7
             s1_stat1 = stat1;
             s1_stat2 = stat2;
@@ -557,11 +557,11 @@ R""()
             addr2 = addr + 4 - 8 * is_hessian_first;
             atomic_local_add_f(gh_hist + addr, s0_stat1);
             // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's gradients for example 0, 1, 2, 3
-            // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's hessians  for example 4, 5, 6, 7
+            // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's Hessians  for example 4, 5, 6, 7
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, s0_stat2);
             #endif
-            // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's hessians  for example 0, 1, 2, 3
+            // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's Hessians  for example 0, 1, 2, 3
             // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's gradients for example 4, 5, 6, 7
             s0_stat1 = stat1;
             s0_stat2 = stat2;

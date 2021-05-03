@@ -378,7 +378,7 @@ R""()
     // there are 2^POWER_FEATURE_WORKGROUPS workgroups processing each feature4
     for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
         // prefetch the next iteration variables
-        // we don't need bondary check because we have made the buffer larger
+        // we don't need boundary check because we have made the buffer larger
         stat1_next = ordered_gradients[i + subglobal_size];
         #if CONST_HESSIAN == 0
         stat2_next = ordered_hessians[i + subglobal_size];
@@ -411,9 +411,9 @@ R""()
             addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
             addr2 = addr + 4 - 8 * is_hessian_first;
             // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's gradients for example 0, 1, 2, 3
-            // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's hessians  for example 4, 5, 6, 7
+            // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's Hessians  for example 4, 5, 6, 7
             atomic_local_add_f(gh_hist + addr, s3_stat1);
-            // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's hessians  for example 0, 1, 2, 3
+            // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's Hessians  for example 0, 1, 2, 3
             // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's gradients for example 4, 5, 6, 7
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, s3_stat2);
@@ -436,9 +436,9 @@ R""()
             addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
             addr2 = addr + 4 - 8 * is_hessian_first;
             // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's gradients for example 0, 1, 2, 3
-            // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's hessians  for example 4, 5, 6, 7
+            // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's Hessians  for example 4, 5, 6, 7
             atomic_local_add_f(gh_hist + addr, s2_stat1);
-            // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's hessians  for example 0, 1, 2, 3
+            // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's Hessians  for example 0, 1, 2, 3
             // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's gradients for example 4, 5, 6, 7
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, s2_stat2);
@@ -468,9 +468,9 @@ R""()
             addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
             addr2 = addr + 4 - 8 * is_hessian_first;
             // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's gradients for example 0, 1, 2, 3
-            // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's hessians  for example 4, 5, 6, 7
+            // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's Hessians  for example 4, 5, 6, 7
             atomic_local_add_f(gh_hist + addr, s1_stat1);
-            // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's hessians  for example 0, 1, 2, 3
+            // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's Hessians  for example 0, 1, 2, 3
             // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's gradients for example 4, 5, 6, 7
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, s1_stat2);
@@ -493,9 +493,9 @@ R""()
             addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
             addr2 = addr + 4 - 8 * is_hessian_first;
             // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's gradients for example 0, 1, 2, 3
-            // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's hessians  for example 4, 5, 6, 7
+            // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's Hessians  for example 4, 5, 6, 7
             atomic_local_add_f(gh_hist + addr, s0_stat1);
-            // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's hessians  for example 0, 1, 2, 3
+            // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's Hessians  for example 0, 1, 2, 3
             // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's gradients for example 4, 5, 6, 7
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, s0_stat2);

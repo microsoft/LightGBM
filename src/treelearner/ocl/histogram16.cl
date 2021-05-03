@@ -178,7 +178,7 @@ void within_kernel_reduction16x8(uchar8 feature_mask,
     // add all sub-histograms for 4 features
     __global const acc_type* restrict p = feature4_sub_hist + ltid;
     for (i = 0; i < skip_id; ++i) {
-            // 256 threads working on 8 features' 16 bins, gradient and hessian
+            // 256 threads working on 8 features' 16 bins, gradient and Hessian
             stat_val += *p;
             p += NUM_BINS * DWORD_FEATURES * 2;
     }
@@ -390,7 +390,7 @@ R""()
     // there are 2^POWER_FEATURE_WORKGROUPS workgroups processing each feature4
     for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
         // prefetch the next iteration variables
-        // we don't need bondary check because we have made the buffer larger
+        // we don't need boundary check because we have made the buffer larger
         stat1_next = ordered_gradients[i + subglobal_size];
         #if CONST_HESSIAN == 0
         stat2_next = ordered_hessians[i + subglobal_size];
@@ -421,9 +421,9 @@ R""()
             addr = bin * HG_BIN_MULT + bank * 2 * DWORD_FEATURES + is_hessian_first * DWORD_FEATURES + offset;
             addr2 = addr + DWORD_FEATURES - 2 * DWORD_FEATURES * is_hessian_first;
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 0, 1, 2, 3, 4, 5, 6 ,7's gradients for example 0, 1, 2, 3, 4, 5, 6, 7
-            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 0, 1, 2, 3, 4, 5, 6, 7's hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
+            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 0, 1, 2, 3, 4, 5, 6, 7's Hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
             atomic_local_add_f(gh_hist + addr, stat1);
-            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 0, 1, 2, 3, 4, 5, 6, 7's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
+            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 0, 1, 2, 3, 4, 5, 6, 7's Hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 0, 1, 2, 3, 4, 5, 6, 7's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
@@ -435,9 +435,9 @@ R""()
             addr = bin * HG_BIN_MULT + bank * 2 * DWORD_FEATURES + is_hessian_first * DWORD_FEATURES + offset;
             addr2 = addr + DWORD_FEATURES - 2 * DWORD_FEATURES * is_hessian_first;
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 1, 2, 3, 4, 5, 6 ,7, 0's gradients for example 0, 1, 2, 3, 4, 5, 6, 7
-            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 1, 2, 3, 4, 5, 6, 7, 0's hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
+            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 1, 2, 3, 4, 5, 6, 7, 0's Hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
             atomic_local_add_f(gh_hist + addr, stat1);
-            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 1, 2, 3, 4, 5, 6, 7, 0's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
+            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 1, 2, 3, 4, 5, 6, 7, 0's Hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 1, 2, 3, 4, 5, 6, 7, 0's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
@@ -450,9 +450,9 @@ R""()
             addr = bin * HG_BIN_MULT + bank * 2 * DWORD_FEATURES + is_hessian_first * DWORD_FEATURES + offset;
             addr2 = addr + DWORD_FEATURES - 2 * DWORD_FEATURES * is_hessian_first;
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 2, 3, 4, 5, 6, 7, 0, 1's gradients for example 0, 1, 2, 3, 4, 5, 6, 7
-            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 2, 3, 4, 5, 6, 7, 0, 1's hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
+            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 2, 3, 4, 5, 6, 7, 0, 1's Hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
             atomic_local_add_f(gh_hist + addr, stat1);
-            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 2, 3, 4, 5, 6, 7, 0, 1's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
+            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 2, 3, 4, 5, 6, 7, 0, 1's Hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 2, 3, 4, 5, 6, 7, 0, 1's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
@@ -464,9 +464,9 @@ R""()
             addr = bin * HG_BIN_MULT + bank * 2 * DWORD_FEATURES + is_hessian_first * DWORD_FEATURES + offset;
             addr2 = addr + DWORD_FEATURES - 2 * DWORD_FEATURES * is_hessian_first;
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 3, 4, 5, 6, 7, 0, 1, 2's gradients for example 0, 1, 2, 3, 4, 5, 6, 7
-            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 3, 4, 5, 6, 7, 0, 1, 2's hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
+            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 3, 4, 5, 6, 7, 0, 1, 2's Hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
             atomic_local_add_f(gh_hist + addr, stat1);
-            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 3, 4, 5, 6, 7, 0, 1, 2's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
+            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 3, 4, 5, 6, 7, 0, 1, 2's Hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 3, 4, 5, 6, 7, 0, 1, 2's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
@@ -500,9 +500,9 @@ R""()
             addr = bin * HG_BIN_MULT + bank * 2 * DWORD_FEATURES + is_hessian_first * DWORD_FEATURES + offset;
             addr2 = addr + DWORD_FEATURES - 2 * DWORD_FEATURES * is_hessian_first;
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 5, 6, 7, 0, 1, 2, 3, 4's gradients for example 0, 1, 2, 3, 4, 5, 6, 7
-            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 5, 6, 7, 0, 1, 2, 3, 4's hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
+            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 5, 6, 7, 0, 1, 2, 3, 4's Hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
             atomic_local_add_f(gh_hist + addr, stat1);
-            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 5, 6, 7, 0, 1, 2, 3, 4's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
+            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 5, 6, 7, 0, 1, 2, 3, 4's Hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 5, 6, 7, 0, 1, 2, 3, 4's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
@@ -515,9 +515,9 @@ R""()
             addr = bin * HG_BIN_MULT + bank * 2 * DWORD_FEATURES + is_hessian_first * DWORD_FEATURES + offset;
             addr2 = addr + DWORD_FEATURES - 2 * DWORD_FEATURES * is_hessian_first;
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 6, 7, 0, 1, 2, 3, 4, 5's gradients for example 0, 1, 2, 3, 4, 5, 6, 7
-            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 6, 7, 0, 1, 2, 3, 4, 5's hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
+            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 6, 7, 0, 1, 2, 3, 4, 5's Hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
             atomic_local_add_f(gh_hist + addr, stat1);
-            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 6, 7, 0, 1, 2, 3, 4, 5's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
+            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 6, 7, 0, 1, 2, 3, 4, 5's Hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 6, 7, 0, 1, 2, 3, 4, 5's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
@@ -529,9 +529,9 @@ R""()
             addr = bin * HG_BIN_MULT + bank * 2 * DWORD_FEATURES + is_hessian_first * DWORD_FEATURES + offset;
             addr2 = addr + DWORD_FEATURES - 2 * DWORD_FEATURES * is_hessian_first;
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 7, 0, 1, 2, 3, 4, 5, 6's gradients for example 0, 1, 2, 3, 4, 5, 6, 7
-            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 7, 0, 1, 2, 3, 4, 5, 6's hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
+            // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 7, 0, 1, 2, 3, 4, 5, 6's Hessians  for example 8, 9, 10, 11, 12, 13, 14, 15
             atomic_local_add_f(gh_hist + addr, stat1);
-            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 7, 0, 1, 2, 3, 4, 5, 6's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
+            // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 7, 0, 1, 2, 3, 4, 5, 6's Hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 7, 0, 1, 2, 3, 4, 5, 6's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
             #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
