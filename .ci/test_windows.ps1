@@ -6,7 +6,7 @@ function Check-Output {
   }
 }
 
-# unify environment variable for Azure devops and AppVeyor
+# unify environment variable for Azure DevOps and AppVeyor
 if (Test-Path env:APPVEYOR) {
   $env:APPVEYOR = "true"
 }
@@ -66,7 +66,7 @@ elseif ($env:TASK -eq "sdist") {
 }
 elseif ($env:TASK -eq "bdist") {
   # Import the Chocolatey profile module so that the RefreshEnv command
-  # invoked below properly updates the current PowerShell session enviroment.
+  # invoked below properly updates the current PowerShell session environment.
   $module = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
   Import-Module "$module" ; Check-Output $?
   RefreshEnv

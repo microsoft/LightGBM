@@ -328,7 +328,7 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
     #endif
 
     // thread 0, 1, 2, 3, 4, 5, 6, 7 compute histograms for gradients first
-    // thread 8, 9, 10, 11, 12, 13, 14, 15 compute histograms for hessians first
+    // thread 8, 9, 10, 11, 12, 13, 14, 15 compute histograms for Hessians first
     // etc.
     uchar is_hessian_first = (ltid >> LOG2_DWORD_FEATURES) & 1;
     // thread 0-15 write result to bank0, 16-31 to bank1, 32-47 to bank2, 48-63 to bank3, etc
@@ -340,11 +340,11 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
     __global const uchar4* feature_data = feature_data_base + group_feature * feature_size;
     // size of threads that process this feature4
     const uint subglobal_size = lsize * (1 << POWER_FEATURE_WORKGROUPS);
-    // equavalent thread ID in this subgroup for this feature4
+    // equivalent thread ID in this subgroup for this feature4
     const uint subglobal_tid  = gtid - group_feature * subglobal_size;
     // extract feature mask, when a byte is set to 0, that feature is disabled
     #if ENABLE_ALL_FEATURES == 1
-    // hopefully the compiler will propogate the constants and eliminate all branches
+    // hopefully the compiler will propagate the constants and eliminate all branches
     uchar8 feature_mask = (uchar8)(0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff);
     #else
     uchar8 feature_mask = feature_masks[group_feature];
@@ -652,7 +652,7 @@ R""()
     // etc,
 
 #if CONST_HESSIAN == 1
-    // Combine the two banks into one, and fill the hessians with counter value * hessian constant
+    // Combine the two banks into one, and fill the Hessians with counter value * hessian constant
     barrier(CLK_LOCAL_MEM_FENCE);
     gh_hist[ltid] = stat_val;
     if (ltid < LOCAL_SIZE_0 / 2) {
@@ -660,7 +660,7 @@ R""()
     }
     barrier(CLK_LOCAL_MEM_FENCE);
     if (is_hessian_first) {
-        // this is the hessians
+        // these are the Hessians
         // thread 8 - 15 read counters stored by thread 0 - 7
         // thread 24- 31 read counters stored by thread 8 - 15
         // thread 40- 47 read counters stored by thread 16- 23, etc
@@ -668,7 +668,7 @@ R""()
                    cnt_hist[((ltid - DWORD_FEATURES) >> (LOG2_DWORD_FEATURES + 1)) * DWORD_FEATURES + (ltid & DWORD_FEATURES_MASK)];
     }
     else {
-        // this is the gradients
+        // these are the gradients
         // thread 0 - 7  read gradients stored by thread 8 - 15
         // thread 16- 23 read gradients stored by thread 24- 31
         // thread 32- 39 read gradients stored by thread 40- 47, etc
@@ -678,7 +678,7 @@ R""()
 #endif
 
     // write to output
-    // write gradients and hessians histogram for all 4 features
+    // write gradients and Hessians histogram for all 4 features
     // output data in linear order for further reduction
     // output size = 4 (features) * 2 (counters) * 64 (bins) * sizeof(float)
     /* memory layout of output:
@@ -700,17 +700,17 @@ R""()
     #if POWER_FEATURE_WORKGROUPS != 0
     __global acc_type * restrict output = (__global acc_type * restrict)output_buf + group_id * DWORD_FEATURES * 2 * NUM_BINS;
     // if g_val and h_val are double, they are converted to float here
-    // write gradients and hessians for 8 features
+    // write gradients and Hessians for 8 features
     output[0 * DWORD_FEATURES * NUM_BINS + ltid] = stat_val;
     barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
     mem_fence(CLK_GLOBAL_MEM_FENCE);
-    // To avoid the cost of an extra reducting kernel, we have to deal with some 
+    // To avoid the cost of an extra reducing kernel, we have to deal with some 
     // gray area in OpenCL. We want the last work group that process this feature to
     // make the final reduction, and other threads will just quit.
     // This requires that the results written by other workgroups available to the
     // last workgroup (memory consistency)
     #if NVIDIA == 1
-    // this is equavalent to CUDA __threadfence();
+    // this is equivalent to CUDA __threadfence();
     // ensure the writes above goes to main memory and other workgroups can see it
     asm volatile("{\n\tmembar.gl;\n\t}\n\t" :::"memory");
     #else
@@ -734,7 +734,7 @@ R""()
     }
     // make sure everyone in this workgroup is here
     barrier(CLK_LOCAL_MEM_FENCE);
-    // everyone in this wrokgroup: if we are the last workgroup, then do reduction!
+    // everyone in this workgroup: if we are the last workgroup, then do reduction!
     if (*counter_val == (1 << POWER_FEATURE_WORKGROUPS) - 1) {
         if (ltid == 0) {
             // printf("workgroup %d start reduction!\n", group_id);

@@ -8,7 +8,7 @@
 #ifndef __OPENCL_VERSION__
 // If we are including this file in C++,
 // the entire source file following (except the last #endif) will become
-// a raw string literal. The extra ")" is just for mathcing parentheses
+// a raw string literal. The extra ")" is just for matching parentheses
 // to make the editor happy. The extra ")" and extra endif will be skipped.
 // DO NOT add anything between here and the next #ifdef, otherwise you need
 // to modify the skip count at the end of this file.
@@ -308,7 +308,7 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     #endif
 
     // thread 0, 1, 2, 3 compute histograms for gradients first
-    // thread 4, 5, 6, 7 compute histograms for hessians  first
+    // thread 4, 5, 6, 7 compute histograms for Hessians  first
     // etc.
     uchar is_hessian_first = (ltid >> 2) & 1;
     // thread 0-7 write result to bank0, 8-15 to bank1, 16-23 to bank2, 24-31 to bank3
@@ -320,11 +320,11 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     __global const uchar4* feature_data = feature_data_base + group_feature * feature_size;
     // size of threads that process this feature4
     const uint subglobal_size = lsize * (1 << POWER_FEATURE_WORKGROUPS);
-    // equavalent thread ID in this subgroup for this feature4
+    // equivalent thread ID in this subgroup for this feature4
     const uint subglobal_tid  = gtid - group_feature * subglobal_size;
     // extract feature mask, when a byte is set to 0, that feature is disabled
     #if ENABLE_ALL_FEATURES == 1
-    // hopefully the compiler will propogate the constants and eliminate all branches
+    // hopefully the compiler will propagate the constants and eliminate all branches
     uchar4 feature_mask = (uchar4)(0xff, 0xff, 0xff, 0xff);
     #else
     uchar4 feature_mask = feature_masks[group_feature];
@@ -652,7 +652,7 @@ R""()
     h_val = cnt_val * const_hessian;
     #endif
     // write to output
-    // write gradients and hessians histogram for all 4 features
+    // write gradients and Hessians histogram for all 4 features
     // output data in linear order for further reduction
     // output size = 4 (features) * 3 (counters) * 64 (bins) * sizeof(float)
     /* memory layout of output:
@@ -676,17 +676,17 @@ R""()
     // if g_val and h_val are double, they are converted to float here
     // write gradients for 4 features
     output[0 * 4 * NUM_BINS + ltid] = g_val;
-    // write hessians for 4 features
+    // write Hessians for 4 features
     output[1 * 4 * NUM_BINS + ltid] = h_val;
     barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
     mem_fence(CLK_GLOBAL_MEM_FENCE);
-    // To avoid the cost of an extra reducting kernel, we have to deal with some 
+    // To avoid the cost of an extra reducing kernel, we have to deal with some 
     // gray area in OpenCL. We want the last work group that process this feature to
     // make the final reduction, and other threads will just quit.
     // This requires that the results written by other workgroups available to the
     // last workgroup (memory consistency)
     #if NVIDIA == 1
-    // this is equavalent to CUDA __threadfence();
+    // this is equivalent to CUDA __threadfence();
     // ensure the writes above goes to main memory and other workgroups can see it
     asm volatile("{\n\tmembar.gl;\n\t}\n\t" :::"memory");
     #else
@@ -710,7 +710,7 @@ R""()
     }
     // make sure everyone in this workgroup is here
     barrier(CLK_LOCAL_MEM_FENCE);
-    // everyone in this wrokgroup: if we are the last workgroup, then do reduction!
+    // everyone in this workgroup: if we are the last workgroup, then do reduction!
     if (*counter_val == (1 << POWER_FEATURE_WORKGROUPS) - 1) {
         if (ltid == 0) {
             // printf("workgroup %d start reduction!\n", group_id);
