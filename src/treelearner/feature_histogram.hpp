@@ -1033,7 +1033,7 @@ class FeatureHistogram {
           continue;
         }
 
-        // mark to as able to be split
+        // mark as able to be split
         is_splittable_ = true;
         // better split point
         if (current_gain > best_gain) {
