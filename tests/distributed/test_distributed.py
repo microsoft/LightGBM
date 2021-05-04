@@ -16,17 +16,18 @@ def create_data(task, n_samples=1_000):
     elif task == 'regression':
         X, y = make_regression(n_samples, n_features=4, n_informative=2, random_state=42)
     dataset = np.hstack((y[:, None], X))
-    return dataset    
+    return dataset
 
 
 def run_and_log(cmd):
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    for c in iter(lambda: process.stdout.read(1), b''): 
+    for c in iter(lambda: process.stdout.read(1), b''):
         sys.stdout.buffer.write(c)
 
 
 class DistributedMockup:
     default_config = {
+        'task': 'train',
         'output_model': 'model.txt',
         'machine_list_file': 'mlist.txt',
         'tree_learner': 'data',
@@ -36,6 +37,7 @@ class DistributedMockup:
         'num_leaves': 15,
         'num_threads': 2,
     }
+
     def __init__(self, config={}, n_workers=2):
         self.config = copy.deepcopy(self.default_config)
         self.config.update(config)
@@ -47,7 +49,7 @@ class DistributedMockup:
         if i == 0:
             return run_and_log(cmd)
         subprocess.run(cmd)
-            
+
     def _set_ports(self):
         self.listen_ports = [lgb.dask._find_random_open_port() for _ in range(self.n_workers)]
         with open('mlist.txt', 'wt') as f:
@@ -68,8 +70,8 @@ class DistributedMockup:
             for i in range(self.n_workers):
                 self.write_train_config(i)
                 futures.append(executor.submit(self.worker_train, i))
-            results = [f.result() for f in futures]
-            
+            _ = [f.result() for f in futures]
+
     def predict(self):
         cmd = './lightgbm config=predict.conf'.split()
         run_and_log(cmd)
@@ -78,7 +80,6 @@ class DistributedMockup:
 
     def write_train_config(self, i):
         with open(f'train{i}.conf', 'wt') as f:
-            f.write('task = train\n')
             f.write(f'local_listen_port = {self.listen_ports[i]}\n')
             f.write(f'data = train{i}.txt\n')
             for param, value in self.config.items():
