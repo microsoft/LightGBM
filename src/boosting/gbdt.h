@@ -141,7 +141,7 @@ class GBDT : public GBDTBase {
   /*!
   * \brief Training logic
   * \param gradients nullptr for using default objective, otherwise use self-defined boosting
-  * \param Hessians nullptr for using default objective, otherwise use self-defined boosting
+  * \param hessians nullptr for using default objective, otherwise use self-defined boosting
   * \return True if cannot train any more
   */
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) override;
