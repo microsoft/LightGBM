@@ -138,11 +138,11 @@ class GPUTreeLearner: public SerialTreeLearner {
    *                     Set to nullptr to skip copy to GPU.
    * \param num_data Number of data examples to be included in histogram
    * \param gradients Array of gradients for all examples.
-   * \param Hessians Array of Hessians for all examples.
+   * \param hessians Array of Hessians for all examples.
    * \param ordered_gradients Ordered gradients will be generated and copied to GPU when gradients is not nullptr,
    *                     Set gradients to nullptr to skip copy to GPU.
-   * \param ordered_hessians Ordered Hessians will be generated and copied to GPU when Hessians is not nullptr,
-   *                     Set Hessians to nullptr to skip copy to GPU.
+   * \param ordered_hessians Ordered Hessians will be generated and copied to GPU when hessians is not nullptr,
+   *                     Set hessians to nullptr to skip copy to GPU.
    * \return true if GPU kernel is launched, false if GPU is not used
   */
   bool ConstructGPUHistogramsAsync(
