@@ -559,7 +559,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModel_R(
   LGBM_SE handle,
   SEXP num_iteration,
   SEXP feature_importance_type,
-  LGBM_SE filename
+  SEXP filename
 );
 
 /*!

@@ -452,7 +452,7 @@ Booster <- R6::R6Class(
         , private$handle
         , as.integer(num_iteration)
         , as.integer(feature_importance_type)
-        , lgb.c_str(x = filename)
+        , filename
       )
 
       return(invisible(self))

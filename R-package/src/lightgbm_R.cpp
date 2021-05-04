@@ -608,9 +608,9 @@ SEXP LGBM_BoosterPredictForMat_R(LGBM_SE handle,
 SEXP LGBM_BoosterSaveModel_R(LGBM_SE handle,
   SEXP num_iteration,
   SEXP feature_importance_type,
-  LGBM_SE filename) {
+  SEXP filename) {
   R_API_BEGIN();
-  CHECK_CALL(LGBM_BoosterSaveModel(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), R_CHAR_PTR(filename)));
+  CHECK_CALL(LGBM_BoosterSaveModel(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), CHAR(Rf_asChar(filename))));
   R_API_END();
 }
 
