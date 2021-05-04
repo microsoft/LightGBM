@@ -64,13 +64,13 @@ SEXP LGBM_GetLastError_R() {
   return out;
 }
 
-SEXP LGBM_DatasetCreateFromFile_R(LGBM_SE filename,
+SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
   LGBM_SE parameters,
   LGBM_SE reference,
   LGBM_SE out) {
   R_API_BEGIN();
   DatasetHandle handle = nullptr;
-  CHECK_CALL(LGBM_DatasetCreateFromFile(R_CHAR_PTR(filename), R_CHAR_PTR(parameters),
+  CHECK_CALL(LGBM_DatasetCreateFromFile(CHAR(Rf_asChar(filename)), R_CHAR_PTR(parameters),
     R_GET_PTR(reference), &handle));
   R_SET_PTR(out, handle);
   R_API_END();
@@ -140,9 +140,9 @@ SEXP LGBM_DatasetGetSubset_R(LGBM_SE handle,
 }
 
 SEXP LGBM_DatasetSetFeatureNames_R(LGBM_SE handle,
-  LGBM_SE feature_names) {
+  SEXP feature_names) {
   R_API_BEGIN();
-  auto vec_names = Split(R_CHAR_PTR(feature_names), '\t');
+  auto vec_names = Split(CHAR(Rf_asChar(feature_names)), '\t');
   std::vector<const char*> vec_sptr;
   int len = static_cast<int>(vec_names.size());
   for (int i = 0; i < len; ++i) {
@@ -183,10 +183,10 @@ SEXP LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
 }
 
 SEXP LGBM_DatasetSaveBinary_R(LGBM_SE handle,
-  LGBM_SE filename) {
+  SEXP filename) {
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetSaveBinary(R_GET_PTR(handle),
-    R_CHAR_PTR(filename)));
+    CHAR(Rf_asChar(filename))));
   R_API_END();
 }
 
@@ -200,12 +200,12 @@ SEXP LGBM_DatasetFree_R(LGBM_SE handle) {
 }
 
 SEXP LGBM_DatasetSetField_R(LGBM_SE handle,
-  LGBM_SE field_name,
+  SEXP field_name,
   SEXP field_data,
   SEXP num_element) {
   R_API_BEGIN();
   int len = static_cast<int>(Rf_asInteger(num_element));
-  const char* name = R_CHAR_PTR(field_name);
+  const char* name = CHAR(Rf_asChar(field_name));
   if (!strcmp("group", name) || !strcmp("query", name)) {
     std::vector<int32_t> vec(len);
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
@@ -227,10 +227,10 @@ SEXP LGBM_DatasetSetField_R(LGBM_SE handle,
 }
 
 SEXP LGBM_DatasetGetField_R(LGBM_SE handle,
-  LGBM_SE field_name,
+  SEXP field_name,
   SEXP field_data) {
   R_API_BEGIN();
-  const char* name = R_CHAR_PTR(field_name);
+  const char* name = CHAR(Rf_asChar(field_name));
   int out_len = 0;
   int out_type = 0;
   const void* res;
@@ -260,10 +260,10 @@ SEXP LGBM_DatasetGetField_R(LGBM_SE handle,
 }
 
 SEXP LGBM_DatasetGetFieldSize_R(LGBM_SE handle,
-  LGBM_SE field_name,
+  SEXP field_name,
   SEXP out) {
   R_API_BEGIN();
-  const char* name = R_CHAR_PTR(field_name);
+  const char* name = CHAR(Rf_asChar(field_name));
   int out_len = 0;
   int out_type = 0;
   const void* res;
@@ -320,22 +320,22 @@ SEXP LGBM_BoosterCreate_R(LGBM_SE train_data,
   R_API_END();
 }
 
-SEXP LGBM_BoosterCreateFromModelfile_R(LGBM_SE filename,
+SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename,
   LGBM_SE out) {
   R_API_BEGIN();
   int out_num_iterations = 0;
   BoosterHandle handle = nullptr;
-  CHECK_CALL(LGBM_BoosterCreateFromModelfile(R_CHAR_PTR(filename), &out_num_iterations, &handle));
+  CHECK_CALL(LGBM_BoosterCreateFromModelfile(CHAR(Rf_asChar(filename)), &out_num_iterations, &handle));
   R_SET_PTR(out, handle);
   R_API_END();
 }
 
-SEXP LGBM_BoosterLoadModelFromString_R(LGBM_SE model_str,
+SEXP LGBM_BoosterLoadModelFromString_R(SEXP model_str,
   LGBM_SE out) {
   R_API_BEGIN();
   int out_num_iterations = 0;
   BoosterHandle handle = nullptr;
-  CHECK_CALL(LGBM_BoosterLoadModelFromString(R_CHAR_PTR(model_str), &out_num_iterations, &handle));
+  CHECK_CALL(LGBM_BoosterLoadModelFromString(CHAR(Rf_asChar(model_str)), &out_num_iterations, &handle));
   R_SET_PTR(out, handle);
   R_API_END();
 }
@@ -511,7 +511,7 @@ int GetPredictType(SEXP is_rawscore, SEXP is_leafidx, SEXP is_predcontrib) {
 }
 
 SEXP LGBM_BoosterPredictForFile_R(LGBM_SE handle,
-  LGBM_SE data_filename,
+  SEXP data_filename,
   SEXP data_has_header,
   SEXP is_rawscore,
   SEXP is_leafidx,
@@ -519,12 +519,12 @@ SEXP LGBM_BoosterPredictForFile_R(LGBM_SE handle,
   SEXP start_iteration,
   SEXP num_iteration,
   LGBM_SE parameter,
-  LGBM_SE result_filename) {
+  SEXP result_filename) {
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
-  CHECK_CALL(LGBM_BoosterPredictForFile(R_GET_PTR(handle), R_CHAR_PTR(data_filename),
+  CHECK_CALL(LGBM_BoosterPredictForFile(R_GET_PTR(handle), CHAR(Rf_asChar(data_filename)),
     Rf_asInteger(data_has_header), pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), R_CHAR_PTR(parameter),
-    R_CHAR_PTR(result_filename)));
+    CHAR(Rf_asChar(result_filename))));
   R_API_END();
 }
 

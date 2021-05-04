@@ -33,7 +33,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_GetLastError_R();
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromFile_R(
-  LGBM_SE filename,
+  SEXP filename,
   LGBM_SE parameters,
   LGBM_SE reference,
   LGBM_SE out
@@ -108,7 +108,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetSubset_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetFeatureNames_R(
   LGBM_SE handle,
-  LGBM_SE feature_names
+  SEXP feature_names
 );
 
 /*!
@@ -132,7 +132,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFeatureNames_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSaveBinary_R(
   LGBM_SE handle,
-  LGBM_SE filename
+  SEXP filename
 );
 
 /*!
@@ -156,7 +156,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetFree_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetField_R(
   LGBM_SE handle,
-  LGBM_SE field_name,
+  SEXP field_name,
   SEXP field_data,
   SEXP num_element
 );
@@ -170,7 +170,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetField_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFieldSize_R(
   LGBM_SE handle,
-  LGBM_SE field_name,
+  SEXP field_name,
   SEXP out
 );
 
@@ -183,7 +183,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFieldSize_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetField_R(
   LGBM_SE handle,
-  LGBM_SE field_name,
+  SEXP field_name,
   SEXP field_data
 );
 
@@ -251,7 +251,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterFree_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCreateFromModelfile_R(
-  LGBM_SE filename,
+  SEXP filename,
   LGBM_SE out
 );
 
@@ -262,7 +262,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCreateFromModelfile_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterLoadModelFromString_R(
-  LGBM_SE model_str,
+  SEXP model_str,
   LGBM_SE out
 );
 
@@ -452,7 +452,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetPredict_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForFile_R(
   LGBM_SE handle,
-  LGBM_SE data_filename,
+  SEXP data_filename,
   SEXP data_has_header,
   SEXP is_rawscore,
   SEXP is_leafidx,
@@ -460,7 +460,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForFile_R(
   SEXP start_iteration,
   SEXP num_iteration,
   LGBM_SE parameter,
-  LGBM_SE result_filename
+  SEXP result_filename
 );
 
 /*!

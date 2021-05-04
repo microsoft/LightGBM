@@ -202,7 +202,7 @@ Dataset <- R6::R6Class(
 
           .Call(
             LGBM_DatasetCreateFromFile_R
-            , lgb.c_str(x = private$raw_data)
+            , private$raw_data
             , params_str
             , ref_handle
             , handle
@@ -436,7 +436,7 @@ Dataset <- R6::R6Class(
         .Call(
           LGBM_DatasetSetFeatureNames_R
           , private$handle
-          , lgb.c_str(x = merged_name)
+          , merged_name
         )
 
       }
@@ -468,7 +468,7 @@ Dataset <- R6::R6Class(
         .Call(
           LGBM_DatasetGetFieldSize_R
           , private$handle
-          , lgb.c_str(x = name)
+          , name
           , info_len
         )
 
@@ -486,7 +486,7 @@ Dataset <- R6::R6Class(
           .Call(
             LGBM_DatasetGetField_R
             , private$handle
-            , lgb.c_str(x = name)
+            , name
             , ret
           )
 
@@ -527,7 +527,7 @@ Dataset <- R6::R6Class(
           .Call(
             LGBM_DatasetSetField_R
             , private$handle
-            , lgb.c_str(x = name)
+            , name
             , info
             , length(info)
           )
@@ -678,7 +678,7 @@ Dataset <- R6::R6Class(
       .Call(
         LGBM_DatasetSaveBinary_R
         , private$handle
-        , lgb.c_str(x = fname)
+        , fname
       )
       return(invisible(self))
     }
