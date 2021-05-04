@@ -89,10 +89,10 @@ lgb.params2str <- function(params, ...) {
 
   # Check ret length
   if (length(ret) == 0L) {
-    return(lgb.c_str(x = ""))
+    return("")
   }
 
-  return(lgb.c_str(x = paste0(ret, collapse = " ")))
+  return(paste0(ret, collapse = " "))
 
 }
 
@@ -154,13 +154,6 @@ lgb.check_interaction_constraints <- function(interaction_constraints, column_na
 
 }
 
-lgb.c_str <- function(x) {
-
-  ret <- charToRaw(as.character(x))
-  ret <- c(ret, as.raw(0L))
-  return(ret)
-
-}
 
 lgb.check.r6.class <- function(object, name) {
 

@@ -65,12 +65,12 @@ SEXP LGBM_GetLastError_R() {
 }
 
 SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
-  LGBM_SE parameters,
+  SEXP parameters,
   LGBM_SE reference,
   LGBM_SE out) {
   R_API_BEGIN();
   DatasetHandle handle = nullptr;
-  CHECK_CALL(LGBM_DatasetCreateFromFile(CHAR(Rf_asChar(filename)), R_CHAR_PTR(parameters),
+  CHECK_CALL(LGBM_DatasetCreateFromFile(CHAR(Rf_asChar(filename)), CHAR(Rf_asChar(parameters)),
     R_GET_PTR(reference), &handle));
   R_SET_PTR(out, handle);
   R_API_END();
@@ -82,7 +82,7 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   SEXP num_indptr,
   SEXP nelem,
   SEXP num_row,
-  LGBM_SE parameters,
+  SEXP parameters,
   LGBM_SE reference,
   LGBM_SE out) {
   R_API_BEGIN();
@@ -96,7 +96,7 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   DatasetHandle handle = nullptr;
   CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
-    nrow, R_CHAR_PTR(parameters), R_GET_PTR(reference), &handle));
+    nrow, CHAR(Rf_asChar(parameters)), R_GET_PTR(reference), &handle));
   R_SET_PTR(out, handle);
   R_API_END();
 }
@@ -104,7 +104,7 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
 SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   SEXP num_row,
   SEXP num_col,
-  LGBM_SE parameters,
+  SEXP parameters,
   LGBM_SE reference,
   LGBM_SE out) {
   R_API_BEGIN();
@@ -113,7 +113,7 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   double* p_mat = REAL(data);
   DatasetHandle handle = nullptr;
   CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
-    R_CHAR_PTR(parameters), R_GET_PTR(reference), &handle));
+    CHAR(Rf_asChar(parameters)), R_GET_PTR(reference), &handle));
   R_SET_PTR(out, handle);
   R_API_END();
 }
@@ -121,7 +121,7 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
 SEXP LGBM_DatasetGetSubset_R(LGBM_SE handle,
   SEXP used_row_indices,
   SEXP len_used_row_indices,
-  LGBM_SE parameters,
+  SEXP parameters,
   LGBM_SE out) {
   R_API_BEGIN();
   int len = Rf_asInteger(len_used_row_indices);
@@ -133,7 +133,7 @@ SEXP LGBM_DatasetGetSubset_R(LGBM_SE handle,
   }
   DatasetHandle res = nullptr;
   CHECK_CALL(LGBM_DatasetGetSubset(R_GET_PTR(handle),
-    idxvec.data(), len, R_CHAR_PTR(parameters),
+    idxvec.data(), len, CHAR(Rf_asChar(parameters)),
     &res));
   R_SET_PTR(out, res);
   R_API_END();
@@ -275,10 +275,10 @@ SEXP LGBM_DatasetGetFieldSize_R(LGBM_SE handle,
   R_API_END();
 }
 
-SEXP LGBM_DatasetUpdateParamChecking_R(LGBM_SE old_params,
-  LGBM_SE new_params) {
+SEXP LGBM_DatasetUpdateParamChecking_R(SEXP old_params,
+  SEXP new_params) {
   R_API_BEGIN();
-  CHECK_CALL(LGBM_DatasetUpdateParamChecking(R_CHAR_PTR(old_params), R_CHAR_PTR(new_params)));
+  CHECK_CALL(LGBM_DatasetUpdateParamChecking(CHAR(Rf_asChar(old_params)), CHAR(Rf_asChar(new_params))));
   R_API_END();
 }
 
@@ -311,11 +311,11 @@ SEXP LGBM_BoosterFree_R(LGBM_SE handle) {
 }
 
 SEXP LGBM_BoosterCreate_R(LGBM_SE train_data,
-  LGBM_SE parameters,
+  SEXP parameters,
   LGBM_SE out) {
   R_API_BEGIN();
   BoosterHandle handle = nullptr;
-  CHECK_CALL(LGBM_BoosterCreate(R_GET_PTR(train_data), R_CHAR_PTR(parameters), &handle));
+  CHECK_CALL(LGBM_BoosterCreate(R_GET_PTR(train_data), CHAR(Rf_asChar(parameters)), &handle));
   R_SET_PTR(out, handle);
   R_API_END();
 }
@@ -362,9 +362,9 @@ SEXP LGBM_BoosterResetTrainingData_R(LGBM_SE handle,
 }
 
 SEXP LGBM_BoosterResetParameter_R(LGBM_SE handle,
-  LGBM_SE parameters) {
+  SEXP parameters) {
   R_API_BEGIN();
-  CHECK_CALL(LGBM_BoosterResetParameter(R_GET_PTR(handle), R_CHAR_PTR(parameters)));
+  CHECK_CALL(LGBM_BoosterResetParameter(R_GET_PTR(handle), CHAR(Rf_asChar(parameters))));
   R_API_END();
 }
 
@@ -518,12 +518,12 @@ SEXP LGBM_BoosterPredictForFile_R(LGBM_SE handle,
   SEXP is_predcontrib,
   SEXP start_iteration,
   SEXP num_iteration,
-  LGBM_SE parameter,
+  SEXP parameter,
   SEXP result_filename) {
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
   CHECK_CALL(LGBM_BoosterPredictForFile(R_GET_PTR(handle), CHAR(Rf_asChar(data_filename)),
-    Rf_asInteger(data_has_header), pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), R_CHAR_PTR(parameter),
+    Rf_asInteger(data_has_header), pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), CHAR(Rf_asChar(parameter)),
     CHAR(Rf_asChar(result_filename))));
   R_API_END();
 }
@@ -557,7 +557,7 @@ SEXP LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
   SEXP is_predcontrib,
   SEXP start_iteration,
   SEXP num_iteration,
-  LGBM_SE parameter,
+  SEXP parameter,
   SEXP out_result) {
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
@@ -574,7 +574,7 @@ SEXP LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
   CHECK_CALL(LGBM_BoosterPredictForCSC(R_GET_PTR(handle),
     p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
-    nrow, pred_type,  Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), R_CHAR_PTR(parameter), &out_len, ptr_ret));
+    nrow, pred_type,  Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), CHAR(Rf_asChar(parameter)), &out_len, ptr_ret));
   R_API_END();
 }
 
@@ -587,7 +587,7 @@ SEXP LGBM_BoosterPredictForMat_R(LGBM_SE handle,
   SEXP is_predcontrib,
   SEXP start_iteration,
   SEXP num_iteration,
-  LGBM_SE parameter,
+  SEXP parameter,
   SEXP out_result) {
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
@@ -600,7 +600,7 @@ SEXP LGBM_BoosterPredictForMat_R(LGBM_SE handle,
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForMat(R_GET_PTR(handle),
     p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
-    pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), R_CHAR_PTR(parameter), &out_len, ptr_ret));
+    pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), CHAR(Rf_asChar(parameter)), &out_len, ptr_ret));
 
   R_API_END();
 }
