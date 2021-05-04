@@ -117,7 +117,7 @@ class GPUTreeLearner: public SerialTreeLearner {
 
   /*!
    * \brief Compute GPU feature histogram for the current leaf.
-   *        Indices, gradients and hessians have been copied to the device.
+   *        Indices, gradients and Hessians have been copied to the device.
    * \param leaf_num_data Number of data on current leaf
    * \param use_all_features Set to true to not use feature masks, with a faster kernel
   */
@@ -138,10 +138,10 @@ class GPUTreeLearner: public SerialTreeLearner {
    *                     Set to nullptr to skip copy to GPU.
    * \param num_data Number of data examples to be included in histogram
    * \param gradients Array of gradients for all examples.
-   * \param hessians Array of hessians for all examples.
+   * \param hessians Array of Hessians for all examples.
    * \param ordered_gradients Ordered gradients will be generated and copied to GPU when gradients is not nullptr,
    *                     Set gradients to nullptr to skip copy to GPU.
-   * \param ordered_hessians Ordered hessians will be generated and copied to GPU when hessians is not nullptr,
+   * \param ordered_hessians Ordered Hessians will be generated and copied to GPU when hessians is not nullptr,
    *                     Set hessians to nullptr to skip copy to GPU.
    * \return true if GPU kernel is launched, false if GPU is not used
   */
@@ -258,7 +258,7 @@ class GPUTreeLearner: public SerialTreeLearner {
   boost::compute::future<void> indices_future_;
   /*! \brief Asynchronous waiting object for copying gradients */
   boost::compute::event gradients_future_;
-  /*! \brief Asynchronous waiting object for copying hessians */
+  /*! \brief Asynchronous waiting object for copying Hessians */
   boost::compute::event hessians_future_;
 };
 

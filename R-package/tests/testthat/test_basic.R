@@ -1247,6 +1247,38 @@ test_that("lgb.train() supports non-ASCII feature names", {
   }
 })
 
+test_that("lgb.train() works with integer, double, and numeric data", {
+  data(mtcars)
+  X <- as.matrix(mtcars[, -1L])
+  y <- mtcars[, 1L, drop = TRUE]
+  expected_mae <- 4.263667
+  for (data_mode in c("numeric", "double", "integer")) {
+    mode(X) <- data_mode
+    nrounds <- 10L
+    bst <- lightgbm(
+      data = X
+      , label = y
+      , params = list(
+        objective = "regression"
+        , min_data = 1L
+        , learning_rate = 0.01
+        , seed = 708L
+      )
+      , nrounds = nrounds
+    )
+
+    # should have trained for 10 iterations and found splits
+    modelDT <- lgb.model.dt.tree(bst)
+    expect_equal(modelDT[, max(tree_index)], nrounds - 1L)
+    expect_gt(nrow(modelDT), nrounds * 3L)
+
+    # should have achieved expected performance
+    preds <- predict(bst, X)
+    mae <- mean(abs(y - preds))
+    expect_true(abs(mae - expected_mae) < TOLERANCE)
+  }
+})
+
 test_that("when early stopping is not activated, best_iter and best_score come from valids and not training data", {
   set.seed(708L)
   trainDF <- data.frame(

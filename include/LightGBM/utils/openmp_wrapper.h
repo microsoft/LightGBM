@@ -68,7 +68,7 @@ class ThreadExceptionHelper {
 #else
 
 /*
- * To be compatible with openmp, define a nothrow macro which is used by gcc
+ * To be compatible with OpenMP, define a nothrow macro which is used by gcc
  * openmp, but not by clang.
  * See also https://github.com/dmlc/dmlc-core/blob/3106c1cbdcc9fc9ef3a2c1d2196a7a6f6616c13d/include/dmlc/omp.h#L14
  */
