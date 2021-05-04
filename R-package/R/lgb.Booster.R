@@ -90,7 +90,7 @@ Booster <- R6::R6Class(
           # Create booster from model
           .Call(
             LGBM_BoosterCreateFromModelfile_R
-            , lgb.c_str(x = modelfile)
+            , modelfile
             , handle
           )
 
@@ -104,7 +104,7 @@ Booster <- R6::R6Class(
           # Create booster from model
           .Call(
             LGBM_BoosterLoadModelFromString_R
-            , lgb.c_str(x = model_str)
+            , model_str
             , handle
           )
 
@@ -452,7 +452,7 @@ Booster <- R6::R6Class(
         , private$handle
         , as.integer(num_iteration)
         , as.integer(feature_importance_type)
-        , lgb.c_str(x = filename)
+        , filename
       )
 
       return(invisible(self))

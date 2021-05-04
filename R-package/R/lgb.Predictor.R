@@ -39,7 +39,7 @@ Predictor <- R6::R6Class(
         # Create handle on it
         .Call(
           LGBM_BoosterCreateFromModelfile_R
-          , lgb.c_str(x = modelfile)
+          , modelfile
           , handle
         )
         private$need_free_handle <- TRUE
@@ -117,7 +117,7 @@ Predictor <- R6::R6Class(
           , as.integer(start_iteration)
           , as.integer(num_iteration)
           , private$params
-          , lgb.c_str(x = tmp_filename)
+          , tmp_filename
         )
 
         # Get predictions from file
