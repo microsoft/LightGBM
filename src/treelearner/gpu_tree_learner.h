@@ -142,7 +142,7 @@ class GPUTreeLearner: public SerialTreeLearner {
    * \param ordered_gradients Ordered gradients will be generated and copied to GPU when gradients is not nullptr,
    *                     Set gradients to nullptr to skip copy to GPU.
    * \param ordered_hessians Ordered Hessians will be generated and copied to GPU when hessians is not nullptr,
-   *                     Set Hessians to nullptr to skip copy to GPU.
+   *                     Set hessians to nullptr to skip copy to GPU.
    * \return true if GPU kernel is launched, false if GPU is not used
   */
   bool ConstructGPUHistogramsAsync(
