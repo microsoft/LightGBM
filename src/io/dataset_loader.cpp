@@ -1212,7 +1212,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       dataset->metadata_.SetLabelAt(i, static_cast<label_t>(tmp_label));
       // free processed line:
       ref_text_data[i].clear();
-      // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
+      // shrink_to_fit will be very slow in Linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
       // push data
       std::vector<bool> is_feature_added(dataset->num_features_, false);

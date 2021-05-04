@@ -136,7 +136,7 @@ class _EvalFunctionWrapper:
                     For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                     where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
                 eval_name : string
-                    The name of evaluation function (without whitespaces).
+                    The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
@@ -162,7 +162,7 @@ class _EvalFunctionWrapper:
         Returns
         -------
         eval_name : string
-            The name of evaluation function (without whitespaces).
+            The name of evaluation function (without whitespace).
         eval_result : float
             The eval result.
         is_higher_better : bool
@@ -289,7 +289,7 @@ _lgbmmodel_doc_custom_eval_note = """
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         eval_name : string
-            The name of evaluation function (without whitespaces).
+            The name of evaluation function (without whitespace).
         eval_result : float
             The eval result.
         is_higher_better : bool
@@ -402,7 +402,7 @@ class LGBMModel(_LGBMModelBase):
         subsample : float, optional (default=1.)
             Subsample ratio of the training instance.
         subsample_freq : int, optional (default=0)
-            Frequence of subsample, <=0 means no enable.
+            Frequency of subsample, <=0 means no enable.
         colsample_bytree : float, optional (default=1.)
             Subsample ratio of columns when constructing each tree.
         reg_alpha : float, optional (default=0.)

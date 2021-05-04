@@ -400,7 +400,7 @@ def cv(params, train_set, num_boost_round=100,
        verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None, eval_train_metric=False,
        return_cvbooster=False):
-    """Perform the cross-validation with given paramaters.
+    """Perform the cross-validation with given parameters.
 
     Parameters
     ----------
@@ -459,7 +459,7 @@ def cv(params, train_set, num_boost_round=100,
             train_data : Dataset
                 The training dataset.
             eval_name : string
-                The name of evaluation function (without whitespaces).
+                The name of evaluation function (without whitespace).
             eval_result : float
                 The eval result.
             is_higher_better : bool
