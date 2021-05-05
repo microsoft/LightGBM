@@ -438,18 +438,16 @@ SEXP LGBM_BoosterGetLowerBoundValue_R(LGBM_SE handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
-  SEXP buf_len,
-  SEXP actual_len,
-  LGBM_SE eval_names) {
+SEXP LGBM_BoosterGetEvalNames_R(LGBM_SE handle) {
+  SEXP eval_names;
   R_API_BEGIN();
-  int len;
-  CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &len));
+  int num_eval_sets;
+  CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &num_eval_sets));
 
   const size_t reserved_string_size = 128;
-  std::vector<std::vector<char>> names(len);
-  std::vector<char*> ptr_names(len);
-  for (int i = 0; i < len; ++i) {
+  std::vector<std::vector<char>> names(num_eval_sets);
+  std::vector<char*> ptr_names(num_eval_sets);
+  for (int i = 0; i < num_eval_sets; ++i) {
     names[i].resize(reserved_string_size);
     ptr_names[i] = names[i].data();
   }
@@ -459,13 +457,21 @@ SEXP LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
   CHECK_CALL(
     LGBM_BoosterGetEvalNames(
       R_GET_PTR(handle),
-      len, &out_len,
-      reserved_string_size, &required_string_size,
-      ptr_names.data()));
-  CHECK_EQ(out_len, len);
+      num_eval_sets,
+      &out_len,
+      reserved_string_size,
+      &required_string_size,
+      ptr_names.data()
+    )
+  );
+  CHECK_EQ(out_len, num_eval_sets);
   CHECK_GE(reserved_string_size, required_string_size);
-  auto merge_names = Join<char*>(ptr_names, "\t");
-  EncodeChar(eval_names, merge_names.c_str(), buf_len, actual_len, merge_names.size() + 1);
+  eval_names = PROTECT(Rf_allocVector(STRSXP, num_eval_sets));
+  for (int i = 0; i < num_eval_sets; ++i) {
+    SET_STRING_ELT(eval_names, i, Rf_mkChar(ptr_names[i]));
+  }
+  UNPROTECT(1);
+  return eval_names;
   R_API_END();
 }
 
@@ -682,7 +688,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterGetCurrentIteration_R", (DL_FUNC) &LGBM_BoosterGetCurrentIteration_R, 2},
   {"LGBM_BoosterGetUpperBoundValue_R" , (DL_FUNC) &LGBM_BoosterGetUpperBoundValue_R , 2},
   {"LGBM_BoosterGetLowerBoundValue_R" , (DL_FUNC) &LGBM_BoosterGetLowerBoundValue_R , 2},
-  {"LGBM_BoosterGetEvalNames_R"       , (DL_FUNC) &LGBM_BoosterGetEvalNames_R       , 4},
+  {"LGBM_BoosterGetEvalNames_R"       , (DL_FUNC) &LGBM_BoosterGetEvalNames_R       , 1},
   {"LGBM_BoosterGetEval_R"            , (DL_FUNC) &LGBM_BoosterGetEval_R            , 3},
   {"LGBM_BoosterGetNumPredict_R"      , (DL_FUNC) &LGBM_BoosterGetNumPredict_R      , 3},
   {"LGBM_BoosterGetPredict_R"         , (DL_FUNC) &LGBM_BoosterGetPredict_R         , 3},

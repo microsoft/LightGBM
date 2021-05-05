@@ -385,14 +385,11 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetLowerBoundValue_R(
 
 /*!
 * \brief Get Name of eval
-* \param eval_names eval names
+* \param handle Handle of booster
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetEvalNames_R(
-  LGBM_SE handle,
-  SEXP buf_len,
-  SEXP actual_len,
-  LGBM_SE eval_names
+  LGBM_SE handle
 );
 
 /*!
