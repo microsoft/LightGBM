@@ -153,17 +153,15 @@ SEXP LGBM_DatasetSetFeatureNames_R(LGBM_SE handle,
   R_API_END();
 }
 
-SEXP LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
-  SEXP buf_len,
-  SEXP actual_len,
-  LGBM_SE feature_names) {
+SEXP LGBM_DatasetGetFeatureNames_R(LGBM_SE handle) {
+  SEXP feature_names;
   R_API_BEGIN();
-  int len = 0;
-  CHECK_CALL(LGBM_DatasetGetNumFeature(R_GET_PTR(handle), &len));
+  int num_features = 0;
+  CHECK_CALL(LGBM_DatasetGetNumFeature(R_GET_PTR(handle), &num_features));
   const size_t reserved_string_size = 256;
-  std::vector<std::vector<char>> names(len);
-  std::vector<char*> ptr_names(len);
-  for (int i = 0; i < len; ++i) {
+  std::vector<std::vector<char>> names(num_features);
+  std::vector<char*> ptr_names(num_features);
+  for (int i = 0; i < num_features; ++i) {
     names[i].resize(reserved_string_size);
     ptr_names[i] = names[i].data();
   }
@@ -172,13 +170,21 @@ SEXP LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
   CHECK_CALL(
     LGBM_DatasetGetFeatureNames(
       R_GET_PTR(handle),
-      len, &out_len,
-      reserved_string_size, &required_string_size,
-      ptr_names.data()));
-  CHECK_EQ(len, out_len);
+      num_features,
+      &out_len,
+      reserved_string_size,
+      &required_string_size,
+      ptr_names.data()
+    )
+  );
+  CHECK_EQ(num_features, out_len);
   CHECK_GE(reserved_string_size, required_string_size);
-  auto merge_str = Join<char*>(ptr_names, "\t");
-  EncodeChar(feature_names, merge_str.c_str(), buf_len, actual_len, merge_str.size() + 1);
+  feature_names = PROTECT(Rf_allocVector(STRSXP, num_features));
+  for (int i = 0; i < num_features; ++i) {
+    SET_STRING_ELT(feature_names, i, Rf_mkChar(ptr_names[i]));
+  }
+  UNPROTECT(1);
+  return feature_names;
   R_API_END();
 }
 
@@ -652,7 +658,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_DatasetCreateFromMat_R"      , (DL_FUNC) &LGBM_DatasetCreateFromMat_R      , 6},
   {"LGBM_DatasetGetSubset_R"          , (DL_FUNC) &LGBM_DatasetGetSubset_R          , 5},
   {"LGBM_DatasetSetFeatureNames_R"    , (DL_FUNC) &LGBM_DatasetSetFeatureNames_R    , 2},
-  {"LGBM_DatasetGetFeatureNames_R"    , (DL_FUNC) &LGBM_DatasetGetFeatureNames_R    , 4},
+  {"LGBM_DatasetGetFeatureNames_R"    , (DL_FUNC) &LGBM_DatasetGetFeatureNames_R    , 1},
   {"LGBM_DatasetSaveBinary_R"         , (DL_FUNC) &LGBM_DatasetSaveBinary_R         , 2},
   {"LGBM_DatasetFree_R"               , (DL_FUNC) &LGBM_DatasetFree_R               , 1},
   {"LGBM_DatasetSetField_R"           , (DL_FUNC) &LGBM_DatasetSetField_R           , 4},

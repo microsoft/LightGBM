@@ -114,14 +114,10 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetFeatureNames_R(
 /*!
 * \brief save feature names to Dataset
 * \param handle handle
-* \param feature_names feature names
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFeatureNames_R(
-  LGBM_SE handle,
-  SEXP buf_len,
-  SEXP actual_len,
-  LGBM_SE feature_names
+  LGBM_SE handle
 );
 
 /*!
