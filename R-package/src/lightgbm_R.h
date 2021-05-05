@@ -112,9 +112,9 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetFeatureNames_R(
 );
 
 /*!
-* \brief save feature names to Dataset
-* \param handle handle
-* \return 0 when succeed, -1 when failure happens
+* \brief get feature names from Dataset
+* \param handle Dataset handle
+* \return an R character vector with feature names from the Dataset or NULL if no feature names
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFeatureNames_R(
   LGBM_SE handle
@@ -557,9 +557,10 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModel_R(
 
 /*!
 * \brief create string containing model
-* \param handle handle
+* \param handle Booster handle
 * \param num_iteration, <= 0 means save all
-* \return 0 when succeed, -1 when failure happens
+* \param feature_importance_type type of feature importance, 0: split, 1: gain
+* \return length-1 R character vector with model string
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModelToString_R(
   LGBM_SE handle,
@@ -569,10 +570,10 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModelToString_R(
 
 /*!
 * \brief dump model to json
-* \param handle handle
+* \param handle Booster handle
 * \param num_iteration, <= 0 means save all
-* \param out_str json format string of model
-* \return 0 when succeed, -1 when failure happens
+* \param feature_importance_type type of feature importance, 0: split, 1: gain
+* \return length-1 R character vector with model JSON
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterDumpModel_R(
   LGBM_SE handle,
