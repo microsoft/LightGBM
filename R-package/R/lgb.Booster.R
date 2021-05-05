@@ -466,7 +466,6 @@ Booster <- R6::R6Class(
         num_iteration <- self$best_iter
       }
 
-      # Call buffer
       model_str <- .Call(
           LGBM_BoosterSaveModelToString_R
           , private$handle
