@@ -14,6 +14,8 @@
 
 #include <string>
 #include <vector>
+#include <map>
+#include <fstream>
 
 namespace LightGBM {
 
@@ -91,13 +93,14 @@ class DCGCalculator {
   */
   static void CalDCG(const std::vector<data_size_t>& ks,
     const label_t* label, const double* score,
-    data_size_t num_data, std::vector<double>* out);
+    data_size_t num_data, bool weighted, std::vector<double>* out);
 
   /*!
   * \brief Calculate the Max DCG score at position k
   * \param k The position want to eval at
   * \param label Pointer of label
   * \param num_data Number of data
+  * \param weighted Whether or not to use position bias ratios
   * \return The max DCG score
   */
   static double CalMaxDCGAtK(data_size_t k,
@@ -105,14 +108,14 @@ class DCGCalculator {
 
 
   /*!
-  * \brief Check the metadata for NDCG and lambdarank
+  * \brief Check the metadata for NDCG and LambdaRank
   * \param metadata Metadata
   * \param num_queries Number of queries
   */
   static void CheckMetadata(const Metadata& metadata, data_size_t num_queries);
 
   /*!
-  * \brief Check the label range for NDCG and lambdarank
+  * \brief Check the label range for NDCG and LambdaRank
   * \param label Pointer of label
   * \param num_data Number of data
   */
@@ -126,11 +129,12 @@ class DCGCalculator {
   * \param out Output result
   */
   static void CalMaxDCG(const std::vector<data_size_t>& ks,
-    const label_t* label, data_size_t num_data, std::vector<double>* out);
+    const label_t* label, data_size_t num_data, bool weighted, std::vector<double>* out);
 
   /*!
   * \brief Get discount score of position k
   * \param k The position
+  * \param weighted Whether or not to use position bias ratios
   * \return The discount of this position
   */
   inline static double GetDiscount(data_size_t k) { return discount_[k]; }
@@ -142,6 +146,8 @@ class DCGCalculator {
   static std::vector<double> discount_;
   /*! \brief max position for eval */
   static const data_size_t kMaxPosition;
+  /*! \brief position bias values */
+  static std::map<std::pair<data_size_t, data_size_t>, double> position_bias_lookup_;
 };
 
 

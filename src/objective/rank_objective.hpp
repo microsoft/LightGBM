@@ -173,10 +173,10 @@ class LambdarankNDCG : public RankingObjective {
           double bias;
           while(std::getline(pb_fin,line)) {
               std::sscanf(line.c_str(),"%d,%d,%lf", &i, &j, &bias);
+              position_bias_lookup_[std::make_pair(i, j)] = bias;
+              position_bias_lookup_[std::make_pair(j, i)] = 1.0 / bias;
           }
 
-          position_bias_lookup_[std::make_pair(i, j)] = bias;
-          position_bias_lookup_[std::make_pair(j, i)] = 1.0 / bias;
       } else {
           Log::Fatal("POS_BIAS_PATH environment variable not set");
 
