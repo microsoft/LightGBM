@@ -142,12 +142,12 @@ SEXP LGBM_DatasetSetFeatureNames_R(LGBM_SE handle,
 SEXP LGBM_DatasetGetFeatureNames_R(LGBM_SE handle) {
   SEXP feature_names;
   R_API_BEGIN();
-  int num_features = 0;
-  CHECK_CALL(LGBM_DatasetGetNumFeature(R_GET_PTR(handle), &num_features));
+  int len = 0;
+  CHECK_CALL(LGBM_DatasetGetNumFeature(R_GET_PTR(handle), &len));
   const size_t reserved_string_size = 256;
-  std::vector<std::vector<char>> names(num_features);
-  std::vector<char*> ptr_names(num_features);
-  for (int i = 0; i < num_features; ++i) {
+  std::vector<std::vector<char>> names(len);
+  std::vector<char*> ptr_names(len);
+  for (int i = 0; i < len; ++i) {
     names[i].resize(reserved_string_size);
     ptr_names[i] = names[i].data();
   }
@@ -156,17 +156,13 @@ SEXP LGBM_DatasetGetFeatureNames_R(LGBM_SE handle) {
   CHECK_CALL(
     LGBM_DatasetGetFeatureNames(
       R_GET_PTR(handle),
-      num_features,
-      &out_len,
-      reserved_string_size,
-      &required_string_size,
-      ptr_names.data()
-    )
-  );
-  CHECK_EQ(num_features, out_len);
+      len, &out_len,
+      reserved_string_size, &required_string_size,
+      ptr_names.data()));
+  CHECK_EQ(len, out_len);
   CHECK_GE(reserved_string_size, required_string_size);
-  feature_names = PROTECT(Rf_allocVector(STRSXP, num_features));
-  for (int i = 0; i < num_features; ++i) {
+  feature_names = PROTECT(Rf_allocVector(STRSXP, len));
+  for (int i = 0; i < len; ++i) {
     SET_STRING_ELT(feature_names, i, Rf_mkChar(ptr_names[i]));
   }
   UNPROTECT(1);
@@ -427,13 +423,13 @@ SEXP LGBM_BoosterGetLowerBoundValue_R(LGBM_SE handle,
 SEXP LGBM_BoosterGetEvalNames_R(LGBM_SE handle) {
   SEXP eval_names;
   R_API_BEGIN();
-  int num_eval_sets;
-  CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &num_eval_sets));
+  int len;
+  CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &len));
 
   const size_t reserved_string_size = 128;
-  std::vector<std::vector<char>> names(num_eval_sets);
-  std::vector<char*> ptr_names(num_eval_sets);
-  for (int i = 0; i < num_eval_sets; ++i) {
+  std::vector<std::vector<char>> names(len);
+  std::vector<char*> ptr_names(len);
+  for (int i = 0; i < len; ++i) {
     names[i].resize(reserved_string_size);
     ptr_names[i] = names[i].data();
   }
@@ -443,17 +439,13 @@ SEXP LGBM_BoosterGetEvalNames_R(LGBM_SE handle) {
   CHECK_CALL(
     LGBM_BoosterGetEvalNames(
       R_GET_PTR(handle),
-      num_eval_sets,
-      &out_len,
-      reserved_string_size,
-      &required_string_size,
-      ptr_names.data()
-    )
-  );
-  CHECK_EQ(out_len, num_eval_sets);
+      len, &out_len,
+      reserved_string_size, &required_string_size,
+      ptr_names.data()));
+  CHECK_EQ(out_len, len);
   CHECK_GE(reserved_string_size, required_string_size);
-  eval_names = PROTECT(Rf_allocVector(STRSXP, num_eval_sets));
-  for (int i = 0; i < num_eval_sets; ++i) {
+  eval_names = PROTECT(Rf_allocVector(STRSXP, len));
+  for (int i = 0; i < len; ++i) {
     SET_STRING_ELT(eval_names, i, Rf_mkChar(ptr_names[i]));
   }
   UNPROTECT(1);
@@ -620,22 +612,11 @@ SEXP LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   int64_t out_len = 0;
   int64_t buf_len = 1024 * 1024;
   std::vector<char> inner_char_buf(buf_len);
-  CHECK_CALL(LGBM_BoosterSaveModelToString(
-    R_GET_PTR(handle),
-    0,
-    Rf_asInteger(num_iteration),
-    Rf_asInteger(feature_importance_type),
-    buf_len,
-    &out_len,
-    inner_char_buf.data()
-  ));
-
+  CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), buf_len, &out_len, inner_char_buf.data()));
   model_str = PROTECT(Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(model_str, 0, Rf_mkChar(inner_char_buf.data()));
   UNPROTECT(1);
   return model_str;
-
-  // EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
 
@@ -647,22 +628,11 @@ SEXP LGBM_BoosterDumpModel_R(LGBM_SE handle,
   int64_t out_len = 0;
   int64_t buf_len = 1024 * 1024;
   std::vector<char> inner_char_buf(buf_len);
-  CHECK_CALL(LGBM_BoosterDumpModel(
-    R_GET_PTR(handle),
-    0,
-    Rf_asInteger(num_iteration),
-    Rf_asInteger(feature_importance_type),
-    buf_len,
-    &out_len,
-    inner_char_buf.data()
-  ));
-
+  CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), buf_len, &out_len, inner_char_buf.data()));
   model_str = PROTECT(Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(model_str, 0, Rf_mkChar(inner_char_buf.data()));
   UNPROTECT(1);
   return model_str;
-
-  // EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
 
