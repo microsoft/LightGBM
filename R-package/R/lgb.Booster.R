@@ -466,40 +466,15 @@ Booster <- R6::R6Class(
         num_iteration <- self$best_iter
       }
 
-      # Create buffer
-      buf_len <- as.integer(1024L * 1024L)
-      act_len <- 0L
-      buf <- raw(buf_len)
-
       # Call buffer
-      .Call(
+      model_str <- .Call(
           LGBM_BoosterSaveModelToString_R
           , private$handle
           , as.integer(num_iteration)
           , as.integer(feature_importance_type)
-          , buf_len
-          , act_len
-          , buf
       )
 
-      # Check for buffer content
-      if (act_len > buf_len) {
-        buf_len <- act_len
-        buf <- raw(buf_len)
-        .Call(
-          LGBM_BoosterSaveModelToString_R
-          , private$handle
-          , as.integer(num_iteration)
-          , as.integer(feature_importance_type)
-          , buf_len
-          , act_len
-          , buf
-        )
-      }
-
-      return(
-        lgb.encode.char(arr = buf, len = act_len)
-      )
+      return(model_str)
 
     },
 
@@ -511,36 +486,14 @@ Booster <- R6::R6Class(
         num_iteration <- self$best_iter
       }
 
-      buf_len <- as.integer(1024L * 1024L)
-      act_len <- 0L
-      buf <- raw(buf_len)
-      .Call(
+      model_str <- .Call(
         LGBM_BoosterDumpModel_R
         , private$handle
         , as.integer(num_iteration)
         , as.integer(feature_importance_type)
-        , buf_len
-        , act_len
-        , buf
       )
 
-      if (act_len > buf_len) {
-        buf_len <- act_len
-        buf <- raw(buf_len)
-        .Call(
-          LGBM_BoosterDumpModel_R
-          , private$handle
-          , as.integer(num_iteration)
-          , as.integer(feature_importance_type)
-          , buf_len
-          , act_len
-          , buf
-        )
-      }
-
-      return(
-        lgb.encode.char(arr = buf, len = act_len)
-      )
+      return(model_str)
 
     },
 

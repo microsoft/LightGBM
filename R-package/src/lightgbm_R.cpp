@@ -39,22 +39,8 @@
     return R_NilValue; \
   }
 
-using LightGBM::Common::Join;
 using LightGBM::Common::Split;
 using LightGBM::Log;
-
-LGBM_SE EncodeChar(LGBM_SE dest, const char* src, SEXP buf_len, SEXP actual_len, size_t str_len) {
-  if (str_len > INT32_MAX) {
-    Log::Fatal("Don't support large string in R-package");
-  }
-  INTEGER(actual_len)[0] = static_cast<int>(str_len);
-  if (Rf_asInteger(buf_len) < static_cast<int>(str_len)) {
-    return dest;
-  }
-  auto ptr = R_CHAR_PTR(dest);
-  std::memcpy(ptr, src, str_len);
-  return dest;
-}
 
 SEXP LGBM_GetLastError_R() {
   SEXP out;
@@ -628,31 +614,55 @@ SEXP LGBM_BoosterSaveModel_R(LGBM_SE handle,
 
 SEXP LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   SEXP num_iteration,
-  SEXP feature_importance_type,
-  SEXP buffer_len,
-  SEXP actual_len,
-  LGBM_SE out_str) {
+  SEXP feature_importance_type) {
+  SEXP model_str;
   R_API_BEGIN();
   int64_t out_len = 0;
-  int64_t buf_len = static_cast<int64_t>(Rf_asInteger(buffer_len));
+  int64_t buf_len = 1024 * 1024;
   std::vector<char> inner_char_buf(buf_len);
-  CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), buf_len, &out_len, inner_char_buf.data()));
-  EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
+  CHECK_CALL(LGBM_BoosterSaveModelToString(
+    R_GET_PTR(handle),
+    0,
+    Rf_asInteger(num_iteration),
+    Rf_asInteger(feature_importance_type),
+    buf_len,
+    &out_len,
+    inner_char_buf.data()
+  ));
+
+  model_str = PROTECT(Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(model_str, 0, Rf_mkChar(inner_char_buf.data()));
+  UNPROTECT(1);
+  return model_str;
+
+  // EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
 
 SEXP LGBM_BoosterDumpModel_R(LGBM_SE handle,
   SEXP num_iteration,
-  SEXP feature_importance_type,
-  SEXP buffer_len,
-  SEXP actual_len,
-  LGBM_SE out_str) {
+  SEXP feature_importance_type) {
+  SEXP model_str;
   R_API_BEGIN();
   int64_t out_len = 0;
-  int64_t buf_len = static_cast<int64_t>(Rf_asInteger(buffer_len));
+  int64_t buf_len = 1024 * 1024;
   std::vector<char> inner_char_buf(buf_len);
-  CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), buf_len, &out_len, inner_char_buf.data()));
-  EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
+  CHECK_CALL(LGBM_BoosterDumpModel(
+    R_GET_PTR(handle),
+    0,
+    Rf_asInteger(num_iteration),
+    Rf_asInteger(feature_importance_type),
+    buf_len,
+    &out_len,
+    inner_char_buf.data()
+  ));
+
+  model_str = PROTECT(Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(model_str, 0, Rf_mkChar(inner_char_buf.data()));
+  UNPROTECT(1);
+  return model_str;
+
+  // EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
 
@@ -697,8 +707,8 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterPredictForCSC_R"      , (DL_FUNC) &LGBM_BoosterPredictForCSC_R      , 14},
   {"LGBM_BoosterPredictForMat_R"      , (DL_FUNC) &LGBM_BoosterPredictForMat_R      , 11},
   {"LGBM_BoosterSaveModel_R"          , (DL_FUNC) &LGBM_BoosterSaveModel_R          , 4},
-  {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 6},
-  {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 6},
+  {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 3},
+  {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 3},
   {NULL, NULL, 0}
 };
 

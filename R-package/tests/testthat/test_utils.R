@@ -1,12 +1,3 @@
-context("lgb.encode.char")
-
-test_that("lgb.encode.char throws an informative error if it is passed a non-raw input", {
-    x <- "some-string"
-    expect_error({
-        lgb.encode.char(x)
-    }, regexp = "Can only encode from raw type")
-})
-
 context("lgb.check.r6.class")
 
 test_that("lgb.check.r6.class() should return FALSE for NULL input", {

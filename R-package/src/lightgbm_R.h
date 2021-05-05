@@ -559,16 +559,12 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModel_R(
 * \brief create string containing model
 * \param handle handle
 * \param num_iteration, <= 0 means save all
-* \param out_str string of model
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModelToString_R(
   LGBM_SE handle,
   SEXP num_iteration,
-  SEXP feature_importance_type,
-  SEXP buffer_len,
-  SEXP actual_len,
-  LGBM_SE out_str
+  SEXP feature_importance_type
 );
 
 /*!
@@ -581,10 +577,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModelToString_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterDumpModel_R(
   LGBM_SE handle,
   SEXP num_iteration,
-  SEXP feature_importance_type,
-  SEXP buffer_len,
-  SEXP actual_len,
-  LGBM_SE out_str
+  SEXP feature_importance_type
 );
 
 #endif  // LIGHTGBM_R_H_
