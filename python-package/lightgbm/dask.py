@@ -452,7 +452,7 @@ def _train(
     model = results[0]
 
     # if network parameters were changed during training, remove them from the
-    # returned moodel so that they're generated dynamically on every run based
+    # returned model so that they're generated dynamically on every run based
     # on the Dask cluster you're connected to and which workers have pieces of
     # the training data
     if not listen_port_in_params:

@@ -93,7 +93,7 @@ with open('model.pkl', 'rb') as fin:
 # can predict with any iteration when loaded in pickle way
 y_pred = pkl_bst.predict(X_test, num_iteration=7)
 # eval with loaded model
-print("The rmse of pickled model's prediction is:", mean_squared_error(y_test, y_pred) ** 0.5)
+print("The RMSE of pickled model's prediction is:", mean_squared_error(y_test, y_pred) ** 0.5)
 
 # continue training
 # init_model accepts:
@@ -146,7 +146,7 @@ def loglikelihood(preds, train_data):
 # f(preds: array, train_data: Dataset) -> name: string, eval_result: float, is_higher_better: bool
 # binary error
 # NOTE: when you do customized loss function, the default prediction value is margin
-# This may make built-in evalution metric calculate wrong results
+# This may make built-in evaluation metric calculate wrong results
 # For example, we are doing log likelihood loss, the prediction is score before logistic transformation
 # Keep this in mind when you use the customization
 def binary_error(preds, train_data):
@@ -170,7 +170,7 @@ print('Finished 40 - 50 rounds with self-defined objective function and eval met
 # f(preds: array, train_data: Dataset) -> name: string, eval_result: float, is_higher_better: bool
 # accuracy
 # NOTE: when you do customized loss function, the default prediction value is margin
-# This may make built-in evalution metric calculate wrong results
+# This may make built-in evaluation metric calculate wrong results
 # For example, we are doing log likelihood loss, the prediction is score before logistic transformation
 # Keep this in mind when you use the customization
 def accuracy(preds, train_data):
