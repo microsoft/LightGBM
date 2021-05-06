@@ -137,10 +137,10 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_
     half_nrow = nrow // 2
     ncol = 11
     data = np.arange(nrow * ncol).reshape((nrow, ncol)).astype('float64')
-    
+
     if create_valid:
         # select some head and tail rows
-        ref_data = data[[0,1,2,-1,-2],:]
+        ref_data = data[[0, 1, 2, -1, -2], :]
         ref_dataset = lgb.Dataset(ref_data[:, :-1], label=ref_data[:, -1], params=params)
 
     # total col

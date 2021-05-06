@@ -10,7 +10,7 @@ from copy import deepcopy
 from functools import wraps
 from logging import Logger
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, Iterable, List, Set, Union, Tuple
+from typing import Any, Dict, Iterable, List, Set, Tuple, Union
 
 import numpy as np
 import scipy.sparse
@@ -1545,11 +1545,11 @@ class Dataset:
         Sequence: Generic Data Access Object
             Supports random access and access by batch if properly defined by user
 
-        Data scheme uniformity are trusted, not checked 
+        Data scheme uniformity are trusted, not checked
         """
         total_nrow = sum(len(seq) for seq in seqs)
 
-        # check uniformity: 
+        # check uniformity:
         # ncol = len(seqs[0][0])
 
         # create validation dataset from ref_dataset
