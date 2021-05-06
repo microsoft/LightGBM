@@ -175,6 +175,10 @@ class LambdarankNDCG : public RankingObjective {
               std::sscanf(line.c_str(),"%d,%d,%lf", &i, &j, &bias);
               position_bias_lookup_[std::make_pair(i, j)] = bias;
               position_bias_lookup_[std::make_pair(j, i)] = 1.0 / bias;
+
+              if (bias < min_pos_bias_) {
+                  min_pos_bias_ = bias;
+              }
           }
       }
 
