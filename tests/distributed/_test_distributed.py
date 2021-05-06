@@ -3,10 +3,11 @@ import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
-import lightgbm as lgb
 import numpy as np
 from sklearn.datasets import make_blobs, make_regression
 from sklearn.metrics import accuracy_score
+
+import lightgbm as lgb
 
 
 def create_data(task, n_samples=1_000):
