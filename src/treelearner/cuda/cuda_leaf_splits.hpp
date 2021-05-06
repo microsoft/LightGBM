@@ -32,13 +32,19 @@ class CUDALeafSplits {
     const data_size_t* cuda_num_data_in_leaf, const data_size_t* cuda_data_indices_in_leaf,
     const double* cuda_gain, const double* cuda_leaf_value);
 
-  void InitValues();
+  void InitValues(const data_size_t* cuda_data_indices_in_leaf);
 
   const int* cuda_leaf_index() const { return cuda_leaf_index_; }
 
-  const data_size_t* cuda_num_data_in_leaf() const { return cuda_num_data_in_leaf_; }
-
   const data_size_t* cuda_data_indices_in_leaf() const { return cuda_data_indices_in_leaf_; }
+
+  const double* cuda_gain() const { return cuda_gain_; }
+
+  const double* cuda_sum_of_gradients() const { return cuda_sum_of_gradients_; }
+
+  const double* cuda_sum_of_hessians() const { return cuda_sum_of_hessians_; }
+
+  const data_size_t* cuda_num_data_in_leaf() const { return cuda_num_data_in_leaf_; }
 
   void Test() {
     PrintLastCUDAError();

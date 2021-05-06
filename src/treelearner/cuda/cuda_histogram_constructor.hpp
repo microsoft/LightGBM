@@ -31,13 +31,11 @@ class CUDAHistogramConstructor {
 
   void ConstructHistogramForLeaf(const int* cuda_smaller_leaf_index, const int* cuda_larger_leaf_index,
     const data_size_t* cuda_data_indices_in_smaller_leaf, const data_size_t* cuda_data_indices_in_larger_leaf,
-    const data_size_t* cuda_leaf_num_data_offsets);
-
-  void LaunchConstructHistogramKernel(const int* cuda_leaf_index,
-    const data_size_t* cuda_data_indices_in_leaf,
-    const data_size_t* cuda_leaf_num_data_offsets);
+    const data_size_t* cuda_leaf_num_data);
 
   const hist_t* cuda_hist() const { return cuda_hist_; }
+
+  const uint8_t* cuda_data() const { return cuda_data_; }
 
   void TestAfterInit() {
     std::vector<uint8_t> test_data(data_.size(), 0);
@@ -47,7 +45,21 @@ class CUDAHistogramConstructor {
     }
   }
 
+  void TestAfterConstructHistogram() {
+    PrintLastCUDAError();
+    std::vector<hist_t> test_hist(num_total_bin_ * 2, 0.0f);
+    CopyFromCUDADeviceToHost<hist_t>(test_hist.data(), cuda_hist_, static_cast<size_t>(num_total_bin_) * 2);
+    for (int i = 0; i < 100; ++i) {
+      Log::Warning("bin %d grad %f hess %f", i, test_hist[2 * i], test_hist[2 * i + 1]);
+    }
+  }
+
  private:
+
+  void LaunchConstructHistogramKernel(const int* cuda_leaf_index,
+    const data_size_t* cuda_data_indices_in_leaf,
+    const data_size_t* cuda_leaf_num_data);
+
   void InitCUDAData(const Dataset* train_data);
 
   void PushOneData(const uint32_t feature_bin_value, const int feature_group_id, const data_size_t data_index);

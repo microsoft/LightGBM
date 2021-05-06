@@ -576,7 +576,8 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   }
   *left_leaf = best_leaf;
   auto next_leaf_id = tree->NextLeafId();
-
+  Log::Warning("best_split_info.feature = %d, best_split_info.threshold = %d",
+    best_split_info.feature, best_split_info.threshold);
   // update before tree split
   constraints_->BeforeSplit(best_leaf, next_leaf_id,
                             best_split_info.monotone_type);
@@ -595,6 +596,8 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
       best_split_info.left_count = data_partition_->leaf_count(*left_leaf);
       best_split_info.right_count = data_partition_->leaf_count(next_leaf_id);
     }
+    Log::Warning("data_partition_->leaf_count(*left_leaf) = %d, data_partition_->leaf_count(next_leaf_id) = %d",
+      data_partition_->leaf_count(*left_leaf), data_partition_->leaf_count(next_leaf_id));
     // split tree, will return right leaf
     *right_leaf = tree->Split(
         best_leaf, inner_feature_index, best_split_info.feature,

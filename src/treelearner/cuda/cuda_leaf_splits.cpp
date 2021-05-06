@@ -51,8 +51,9 @@ void CUDALeafSplits::InitValues(const double* cuda_sum_of_gradients, const doubl
   SynchronizeCUDADevice();
 }
 
-void CUDALeafSplits::InitValues() {
+void CUDALeafSplits::InitValues(const data_size_t* cuda_data_indices_in_leaf) {
   LaunchInitValuesKernal();
+  cuda_data_indices_in_leaf_ = cuda_data_indices_in_leaf;
 }
 
 }  // namespace LightGBM

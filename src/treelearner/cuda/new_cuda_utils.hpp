@@ -13,6 +13,10 @@
 #include <LightGBM/meta.h>
 #include <LightGBM/cuda/cuda_utils.h>
 
+#include <chrono>
+
+#define PREFIX_SUM_ARRAY_SIZE_NEW_CUDA_UTILS (1024)
+
 namespace LightGBM {
 
 template <typename T>
@@ -66,6 +70,9 @@ void SetCUDAMemory(T* dst_ptr, int value, size_t size) {
 }
 
 void PrintLastCUDAError();
+
+//template <typename T>
+//__device__ void PrefixSum(T* elements, unsigned int n);
 
 }  // namespace LightGBM
 

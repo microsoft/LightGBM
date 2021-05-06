@@ -230,14 +230,20 @@ if(USE_CUDA)
       add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
     endforeach()
 
-    add_library(leaf_splits_init OBJECT src/treelearner/cuda/cuda_leaf_splits_init.cu)
-    set_target_properties(leaf_splits_init PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    add_library(new_cuda_utils OBJECT src/treelearner/cuda/new_cuda_utils.cu)
+    set_target_properties(new_cuda_utils PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
-    add_library(data_splitter OBJECT src/treelearner/cuda/cuda_data_splitter.cu)
-    set_target_properties(data_splitter PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    add_library(cuda_leaf_splits OBJECT src/treelearner/cuda/cuda_leaf_splits.cu)
+    set_target_properties(cuda_leaf_splits PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
-    add_library(histogram_constructor OBJECT src/treelearner/cuda/cuda_histogram_constructor.cu)
-    set_target_properties(histogram_constructor PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    add_library(cuda_data_partition OBJECT src/treelearner/cuda/cuda_data_partition.cu)
+    set_target_properties(cuda_data_partition PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+    add_library(cuda_histogram_constructor OBJECT src/treelearner/cuda/cuda_histogram_constructor.cu)
+    set_target_properties(cuda_histogram_constructor PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+    add_library(cuda_best_split_finder OBJECT src/treelearner/cuda/cuda_best_split_finder.cu)
+    set_target_properties(cuda_best_split_finder PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif(USE_CUDA)
 
 if(USE_HDFS)

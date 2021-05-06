@@ -24,7 +24,7 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
   cuda_centralized_info_.reset(new CUDACentralizedInfo(num_data_, this->config_->num_leaves, num_features_));
   cuda_centralized_info_->Init();
-  //cuda_centralized_info_->Test();
+  cuda_centralized_info_->Test();
 
   cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_, 0, cuda_centralized_info_->cuda_gradients(),
     cuda_centralized_info_->cuda_hessians(), cuda_centralized_info_->cuda_num_data()));
@@ -33,22 +33,32 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
     cuda_centralized_info_->cuda_hessians(), cuda_centralized_info_->cuda_num_data()));
   cuda_larger_leaf_splits_->Init();
 
-  cuda_data_partition_.reset(new CUDADataPartition(num_data_, this->config_->num_leaves,
-    cuda_centralized_info_->cuda_num_data(), cuda_centralized_info_->cuda_num_leaves()));
-  cuda_data_partition_->Init();
-
   cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, this->config_->num_leaves, num_threads_,
     cuda_centralized_info_->cuda_gradients(), cuda_centralized_info_->cuda_hessians()));
   cuda_histogram_constructor_->Init(train_data_);
   //cuda_histogram_constructor_->TestAfterInit();
+
+  cuda_data_partition_.reset(new CUDADataPartition(num_data_, num_features_, this->config_->num_leaves, num_threads_,
+    cuda_centralized_info_->cuda_num_data(), cuda_centralized_info_->cuda_num_leaves(),
+    cuda_histogram_constructor_->cuda_data(), cuda_centralized_info_->cuda_num_features(),
+    share_state_->feature_hist_offsets(), train_data_));
+  cuda_data_partition_->Init();
+
+  cuda_best_split_finder_.reset(new CUDABestSplitFinder(cuda_histogram_constructor_->cuda_hist(),
+    train_data_, this->share_state_->feature_hist_offsets(), this->config_->num_leaves,
+    this->config_->lambda_l1, this->config_->lambda_l2, this->config_->min_data_in_leaf,
+    this->config_->min_sum_hessian_in_leaf, this->config_->min_gain_to_split,
+    cuda_centralized_info_->cuda_num_features()));
+  cuda_best_split_finder_->Init();
+  cuda_best_split_finder_->TestAfterInit();
 }
 
 void NewCUDATreeLearner::BeforeTrain() {
   cuda_centralized_info_->BeforeTrain(gradients_, hessians_);
-  cuda_smaller_leaf_splits_->InitValues();
+  cuda_smaller_leaf_splits_->InitValues(cuda_data_partition_->cuda_data_indices());
   //cuda_smaller_leaf_splits_->Test();
   cuda_data_partition_->BeforeTrain(nullptr);
-  //cuda_data_partition_->Test();
+  cuda_data_partition_->Test();
 
   //SerialTreeLearner::BeforeTrain();
   /*#pragma omp parallel for schedule(static) num_threads(num_threads_)
@@ -203,12 +213,24 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   gradients_ = gradients;
   hessians_ = hessians;
   BeforeTrain();
+  cuda_data_partition_->Test();
   cuda_histogram_constructor_->ConstructHistogramForLeaf(
     cuda_smaller_leaf_splits_->cuda_leaf_index(),
     cuda_larger_leaf_splits_->cuda_leaf_index(),
     cuda_smaller_leaf_splits_->cuda_data_indices_in_leaf(),
     cuda_larger_leaf_splits_->cuda_data_indices_in_leaf(),
-    cuda_data_partition_->cuda_leaf_num_data_offsets());
+    cuda_data_partition_->cuda_leaf_num_data());
+  cuda_best_split_finder_->FindBestSplitsForLeaf(cuda_smaller_leaf_splits_.get(),
+    cuda_larger_leaf_splits_.get());
+  cuda_best_split_finder_->FindBestFromAllSplits(cuda_data_partition_->cuda_cur_num_leaves());
+  cuda_best_split_finder_->TestAfterFindBestSplits();
+  //cuda_data_partition_->TestPrefixSum();
+  cuda_data_partition_->Split(cuda_best_split_finder_->cuda_best_leaf(),
+    cuda_best_split_finder_->cuda_leaf_best_split_feature(),
+    cuda_best_split_finder_->cuda_leaf_best_split_threshold(),
+    cuda_best_split_finder_->cuda_leaf_best_split_default_left());
+  cuda_data_partition_->TestAfterSplit();
+  //cuda_histogram_constructor_->TestAfterConstructHistogram();
   /*CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
   CUDASUCCESS_OR_FATAL(cudaMemcpy(device_gradients_[0], gradients, num_data_ * sizeof(score_t), cudaMemcpyHostToDevice));
   CUDASUCCESS_OR_FATAL(cudaMemcpy(device_hessians_[0], hessians, num_data_ * sizeof(score_t), cudaMemcpyHostToDevice));
