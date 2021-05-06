@@ -545,7 +545,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSC_R(
 * \param is_predcontrib 1 to get feature contributions, 0 otherwise
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param parameter additional parameters
-* \param out prediction result
+* \param out_result prediction result
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMat_R(
