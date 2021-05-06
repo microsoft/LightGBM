@@ -35,8 +35,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_GetLastError_R();
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromFile_R(
   SEXP filename,
   SEXP parameters,
-  LGBM_SE reference,
-  LGBM_SE out
+  SEXP reference
 );
 
 /*!
@@ -60,8 +59,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromCSC_R(
   SEXP nelem,
   SEXP num_row,
   SEXP parameters,
-  LGBM_SE reference,
-  LGBM_SE out
+  SEXP reference
 );
 
 /*!
@@ -79,8 +77,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromMat_R(
   SEXP num_row,
   SEXP num_col,
   SEXP parameters,
-  LGBM_SE reference,
-  LGBM_SE out
+  SEXP reference
 );
 
 /*!
@@ -93,11 +90,10 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromMat_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetSubset_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP used_row_indices,
   SEXP len_used_row_indices,
-  SEXP parameters,
-  LGBM_SE out
+  SEXP parameters
 );
 
 /*!
@@ -107,7 +103,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetSubset_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetFeatureNames_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP feature_names
 );
 
@@ -118,7 +114,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetFeatureNames_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFeatureNames_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP buf_len,
   SEXP actual_len,
   LGBM_SE feature_names
@@ -131,7 +127,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFeatureNames_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSaveBinary_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP filename
 );
 
@@ -141,7 +137,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSaveBinary_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetFree_R(
-  LGBM_SE handle
+  SEXP handle
 );
 
 /*!
@@ -155,7 +151,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetFree_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetField_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP field_name,
   SEXP field_data,
   SEXP num_element
@@ -169,7 +165,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetSetField_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFieldSize_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP field_name,
   SEXP out
 );
@@ -182,7 +178,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFieldSize_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetField_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP field_name,
   SEXP field_data
 );
@@ -205,7 +201,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetUpdateParamChecking_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetNumData_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP out
 );
 
@@ -216,7 +212,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetNumData_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetNumFeature_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP out
 );
 
@@ -230,7 +226,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetNumFeature_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCreate_R(
-  LGBM_SE train_data,
+  SEXP train_data,
   SEXP parameters,
   LGBM_SE out
 );
@@ -285,7 +281,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterMerge_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterAddValidData_R(
   LGBM_SE handle,
-  LGBM_SE valid_data
+  SEXP valid_data
 );
 
 /*!
@@ -296,7 +292,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterAddValidData_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterResetTrainingData_R(
   LGBM_SE handle,
-  LGBM_SE train_data
+  SEXP train_data
 );
 
 /*!
