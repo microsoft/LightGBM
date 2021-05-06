@@ -126,7 +126,8 @@ class NumpySequence(lgb.Sequence):
 @pytest.mark.parametrize('include_0', [False, True])
 @pytest.mark.parametrize('include_nan', [False, True])
 @pytest.mark.parametrize('num_seq', [1, 3])
-def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_seq):
+@pytest.mark.parametrize('create_valid', [False, True])
+def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_seq, create_valid):
     params = {
         "bin_construct_sample_cnt": sample_count,
     }
@@ -135,6 +136,11 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_
     half_nrow = nrow // 2
     ncol = 11
     data = np.arange(nrow * ncol).reshape((nrow, ncol)).astype('float64')
+    
+    if create_valid:
+        # select some head and tail rows
+        ref_data = data[[0,1,2,-1,-2],:]
+        ref_dataset = lgb.Dataset(ref_data[:, :-1], label=ref_data[:, -1], params=params)
 
     # total col
     if include_0:
@@ -159,8 +165,12 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_
     # X, Y split
     X = data[:, :-1]
     Y = data[:, -1]
-    # truth
-    ds = lgb.Dataset(X, label=Y, params=params)
+
+    if create_valid:
+        ds = lgb.Dataset(X, label=Y, reference=ref_dataset)
+    else:
+        # truth
+        ds = lgb.Dataset(X, label=Y, params=params)
 
     ds.save_binary(os.path.join(tmpdir, "seq.truth.bin"))
 
@@ -175,10 +185,19 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_
             seq = NumpySequence(X[start:end])
             seq.batch_size = batch_size
             seqs.append(seq)
-    ds = lgb.Dataset(seqs, label=Y, params=params)
+
+    if create_valid:
+        ds = lgb.Dataset(seqs, label=Y, reference=ref_dataset)
+    else:
+        ds = lgb.Dataset(seqs, label=Y, params=params)
     ds.save_binary(os.path.join(tmpdir, "seq.seq.bin"))
 
-    assert filecmp.cmp(os.path.join(tmpdir, "seq.truth.bin"), os.path.join(tmpdir, "seq.seq.bin"))
+    if create_valid:
+        # TODO: verify validation dataset somehow
+        # Some metadata are not initialized while validation dataset are constructed
+        ...
+    else:
+        assert filecmp.cmp(os.path.join(tmpdir, "seq.truth.bin"), os.path.join(tmpdir, "seq.seq.bin"))
 
 
 def test_chunked_dataset():

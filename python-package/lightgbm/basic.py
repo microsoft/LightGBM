@@ -1224,6 +1224,15 @@ class Dataset:
         ))
         return indices
 
+    def init_from_ref_dataset(self, total_nrow: int, ref_dataset: 'Dataset'):
+        self.handle = ctypes.c_void_p()
+        _safe_call(_LIB.LGBM_DatasetCreateByReference(
+            ref_dataset,
+            ctypes.c_int64(total_nrow),
+            ctypes.byref(self.handle),
+        ))
+        return self
+
     def init_from_sample(self, sample_data, sample_indices, sample_cnt, total_nrow):
         """Create Dataset from sampled data structures.
 
@@ -1537,12 +1546,21 @@ class Dataset:
             Supports random access and access by batch if properly defined by user
         """
         total_nrow = sum(len(seq) for seq in seqs)
-        ncol = len(seqs[0][0])
-        sample_cnt = self.params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
-        sample_cnt = min(sample_cnt, total_nrow)
 
-        sample_data, col_indices = self.__sample(seqs, total_nrow)
-        self.init_from_sample(sample_data, col_indices, sample_cnt, total_nrow)
+        # check uniformity: 
+        # ncol = len(seqs[0][0])
+
+        # create validation dataset from ref_dataset
+        if ref_dataset:
+            if self.params.get("bin_construct_sample_cnt"):
+                _log_warning('Option `bin_construct_sample_cnt` will be ignored when creating validation dataset.')
+            self.init_from_ref_dataset(total_nrow, ref_dataset)
+        else:
+            sample_cnt = self.params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
+            sample_cnt = min(sample_cnt, total_nrow)
+
+            sample_data, col_indices = self.__sample(seqs, total_nrow)
+            self.init_from_sample(sample_data, col_indices, sample_cnt, total_nrow)
 
         for seq in seqs:
             nrow = len(seq)
