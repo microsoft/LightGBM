@@ -448,8 +448,9 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetPredict_R(
 * \param is_leafidx 1 to get record of which leaf in each tree
 *                   observations fell into, 0 otherwise
 * \param is_predcontrib 1 to get feature contributions, 0 otherwise
-* \param parameter additional parameters
+* \param start_iteration Start index of the iteration to predict
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter additional parameters
 * \param result_filename filename of file to write predictions to
 * \return R NULL value
 */
@@ -475,6 +476,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForFile_R(
 * \param is_leafidx 1 to get record of which leaf in each tree
 *                   observations fell into, 0 otherwise
 * \param is_predcontrib 1 to get feature contributions, 0 otherwise
+* \param start_iteration Start index of the iteration to predict
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param out_len length of prediction
 * \return R NULL value
@@ -507,6 +509,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCalcNumPredict_R(
 * \param is_leafidx 1 to get record of which leaf in each tree
 *                   observations fell into, 0 otherwise
 * \param is_predcontrib 1 to get feature contributions, 0 otherwise
+* \param start_iteration Start index of the iteration to predict
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param parameter additional parameters
 * \param out_result prediction result
@@ -543,6 +546,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSC_R(
 * \param is_leafidx 1 to get record of which leaf in each tree
 *                   observations fell into, 0 otherwise
 * \param is_predcontrib 1 to get feature contributions, 0 otherwise
+* \param start_iteration Start index of the iteration to predict
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param parameter additional parameters
 * \param out_result prediction result
