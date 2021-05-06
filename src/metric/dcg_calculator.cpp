@@ -9,6 +9,7 @@
 #include <cmath>
 #include <vector>
 #include <map>
+#include <math.h>
 #include <fstream>
 
 namespace LightGBM {
