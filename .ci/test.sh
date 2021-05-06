@@ -107,6 +107,14 @@ fi
 conda install -q -y -n $CONDA_ENV cloudpickle dask distributed joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
 pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
 
+if [[ $TASK == "cli-distributed" ]]; then
+    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
+    cp $BUILD_DIRECTORY/lightgbm $BUILD_DIRECTORY/tests/distributed/ || exit -1
+    cd $BUILD_DIRECTORY/python-package/ && python setup.py install --precompile || exit -1
+    cd $BUILD_DIRECTORY/tests/distributed && pytest _test_distributed.py || exit -1
+    exit 0
+fi
+
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
     for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do sudo ln -sf "$(brew --cellar libomp)"/*/lib/libomp.dylib $CONDA_PREFIX/lib/$LIBOMP_ALIAS || exit -1; done

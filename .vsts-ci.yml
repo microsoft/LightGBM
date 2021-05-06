@@ -119,6 +119,8 @@ jobs:
         TASK: gpu
         METHOD: wheel
         PYTHON_VERSION: 3.7
+      distributed:
+        TASK: cli-distributed
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
