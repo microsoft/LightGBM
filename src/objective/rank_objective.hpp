@@ -176,11 +176,8 @@ class LambdarankNDCG : public RankingObjective {
               position_bias_lookup_[std::make_pair(i, j)] = bias;
               position_bias_lookup_[std::make_pair(j, i)] = 1.0 / bias;
           }
-
-      } else {
-          Log::Fatal("POS_BIAS_PATH environment variable not set");
-
       }
+
   }
 
   inline void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt,
@@ -240,12 +237,15 @@ class LambdarankNDCG : public RankingObjective {
         const double low_label_gain = label_gain_[low_label];
         const double low_discount = DCGCalculator::GetDiscount(low_rank);
 
-        double position_bias_ratio = 1.0f;
+        // If there is no position bias map, just use ratio of 1.0
+        double position_bias_ratio = min_pos_bias_;
         if (!position_bias_lookup_.empty()) {
             auto it = position_bias_lookup_.find(std::make_pair(high, low));
             if (it != position_bias_lookup_.end()){
                 position_bias_ratio = it->second;
             }
+        } else {
+            position_bias_ratio = 1.0f;
         }
 
         const double delta_score = high_score - low_score;
@@ -264,12 +264,12 @@ class LambdarankNDCG : public RankingObjective {
         double p_lambda = GetSigmoid(delta_score);
         double p_hessian = p_lambda * (1.0f - p_lambda);
         // update
-        p_lambda *= -sigmoid_ * delta_pair_NDCG * position_bias_ratio;
-        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG * position_bias_ratio;
-        lambdas[low] -= static_cast<score_t>(p_lambda);
-        hessians[low] += static_cast<score_t>(p_hessian);
-        lambdas[high] += static_cast<score_t>(p_lambda);
-        hessians[high] += static_cast<score_t>(p_hessian);
+        p_lambda *= -sigmoid_ * delta_pair_NDCG;
+        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG;
+        lambdas[low] -= static_cast<score_t>(p_lambda) * static_cast<score_t>(1/position_bias_ratio);
+        hessians[low] += static_cast<score_t>(p_hessian) * static_cast<score_t>(1/position_bias_ratio);
+        lambdas[high] += static_cast<score_t>(p_lambda) * static_cast<score_t>(position_bias_ratio);
+        hessians[high] += static_cast<score_t>(p_hessian) * static_cast<score_t>(position_bias_ratio) ;
         // lambda is negative, so use minus to accumulate
         sum_lambdas -= 2 * p_lambda;
       }
@@ -326,6 +326,9 @@ class LambdarankNDCG : public RankingObjective {
   std::vector<double> sigmoid_table_;
   /*! \brief Gains for labels */
   std::vector<double> label_gain_;
+
+  // Minimum position bias ratio to be used as default
+  double min_pos_bias_ = 10000;
 
   std::map<std::pair<data_size_t, data_size_t>, double> position_bias_lookup_;
 
