@@ -1544,6 +1544,8 @@ class Dataset:
 
         Sequence: Generic Data Access Object
             Supports random access and access by batch if properly defined by user
+
+        Data scheme uniformity are trusted, not checked 
         """
         total_nrow = sum(len(seq) for seq in seqs)
 
