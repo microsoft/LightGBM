@@ -1225,6 +1225,18 @@ class Dataset:
         return indices
 
     def init_from_ref_dataset(self, total_nrow: int, ref_dataset: 'Dataset'):
+        """Create dataset from a reference dataset.
+
+        Args
+        ----------
+            total_nrow (int): number of rows expected to add to dataset
+            ref_dataset (Dataset): referance dataset to extract meta from
+
+        Returns
+        -------
+            self : Dataset
+                Constructed Dataset object.
+        """
         self.handle = ctypes.c_void_p()
         _safe_call(_LIB.LGBM_DatasetCreateByReference(
             ref_dataset,
