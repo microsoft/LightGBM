@@ -130,6 +130,7 @@ class NumpySequence(lgb.Sequence):
 def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_seq, create_valid):
     params = {
         "bin_construct_sample_cnt": sample_count,
+        # "data_random_seed": 0,
     }
 
     nrow = 31
