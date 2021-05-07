@@ -159,6 +159,18 @@ SEXP LGBM_DatasetGetFeatureNames_R(LGBM_SE handle) {
       len, &out_len,
       reserved_string_size, &required_string_size,
       ptr_names.data()));
+  // if any feature names were larger than allocated size,
+  // allow for a larger size and try again
+  if (required_string_size > reserved_string_size) {
+    CHECK_CALL(
+      LGBM_DatasetGetFeatureNames(
+        R_GET_PTR(handle),
+        len,
+        &out_len,
+        required_string_size,
+        &required_string_size,
+        ptr_names.data()));
+  }
   CHECK_EQ(len, out_len);
   CHECK_GE(reserved_string_size, required_string_size);
   feature_names = PROTECT(Rf_allocVector(STRSXP, len));
@@ -442,6 +454,18 @@ SEXP LGBM_BoosterGetEvalNames_R(LGBM_SE handle) {
       len, &out_len,
       reserved_string_size, &required_string_size,
       ptr_names.data()));
+  // if any eval names were larger than allocated size,
+  // allow for a larger size and try again
+  if (required_string_size > reserved_string_size) {
+    CHECK_CALL(
+      LGBM_BoosterGetEvalNames(
+        R_GET_PTR(handle),
+        len,
+        &out_len,
+        required_string_size,
+        &required_string_size,
+        ptr_names.data()));
+  }
   CHECK_EQ(out_len, len);
   CHECK_GE(reserved_string_size, required_string_size);
   eval_names = PROTECT(Rf_allocVector(STRSXP, len));
