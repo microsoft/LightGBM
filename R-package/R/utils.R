@@ -15,7 +15,12 @@ lgb.null.handle <- function() {
 }
 
 lgb.is.null.handle <- function(x) {
-  return(is.null(x) || is.na(x))
+  if (is.null(x)) {
+    return(TRUE)
+  }
+  return(
+    isTRUE(.Call(LGBM_HandleIsNull_R, x))
+  )
 }
 
 lgb.encode.char <- function(arr, len) {

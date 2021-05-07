@@ -64,6 +64,10 @@ SEXP LGBM_GetLastError_R() {
   return out;
 }
 
+SEXP LGBM_HandleIsNull_R(SEXP handle) {
+  return Rf_ScalarLogical(R_ExternalPtrAddr(handle) == NULL);
+}
+
 SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
   SEXP parameters,
   SEXP reference) {
@@ -73,9 +77,9 @@ SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
   CHECK_CALL(LGBM_DatasetCreateFromFile(CHAR(Rf_asChar(filename)), CHAR(Rf_asChar(parameters)),
     R_ExternalPtrAddr(reference), &handle));
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
-  R_API_END();
   UNPROTECT(1);
   return ret;
+  R_API_END();
 }
 
 SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
@@ -100,9 +104,9 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
     nrow, CHAR(Rf_asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
-  R_API_END();
   UNPROTECT(1);
   return ret;
+  R_API_END();
 }
 
 SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
@@ -112,16 +116,33 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   SEXP reference) {
   SEXP ret;
   R_API_BEGIN();
+  Log::Info("line 115");
   int32_t nrow = static_cast<int32_t>(Rf_asInteger(num_row));
+  Log::Info("line 117");
   int32_t ncol = static_cast<int32_t>(Rf_asInteger(num_col));
+  Log::Info("line 119");
   double* p_mat = REAL(data);
+  Log::Info("line 121");
   DatasetHandle handle = nullptr;
-  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
-    CHAR(Rf_asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
+  Log::Info("line 123");
+  if (R_ExternalPtrAddr(reference) == NULL) {
+    Log::Info("line 125");
+    CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
+    CHAR(Rf_asChar(parameters)), nullptr, &handle));
+    Log::Info("line 128");
+  } else {
+    Log::Info("line 130");
+    CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
+      CHAR(Rf_asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
+    Log::Info("line 133");
+  }
+  Log::Info("line 135");
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
-  R_API_END();
+  Log::Info("line 137");
   UNPROTECT(1);
+  Log::Info("line 139");
   return ret;
+  R_API_END();
 }
 
 SEXP LGBM_DatasetGetSubset_R(SEXP handle,
@@ -142,9 +163,9 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
     idxvec.data(), len, CHAR(Rf_asChar(parameters)),
     &res));
   ret = PROTECT(R_MakeExternalPtr(res, R_NilValue, R_NilValue));
-  R_API_END();
   UNPROTECT(1);
   return ret;
+  R_API_END();
 }
 
 SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
@@ -655,6 +676,7 @@ SEXP LGBM_BoosterDumpModel_R(LGBM_SE handle,
 // .Call() calls
 static const R_CallMethodDef CallEntries[] = {
   {"LGBM_GetLastError_R"              , (DL_FUNC) &LGBM_GetLastError_R              , 0},
+  {"LGBM_HandleIsNull_R"              , (DL_FUNC) &LGBM_HandleIsNull_R              , 1},
   {"LGBM_DatasetCreateFromFile_R"     , (DL_FUNC) &LGBM_DatasetCreateFromFile_R     , 3},
   {"LGBM_DatasetCreateFromCSC_R"      , (DL_FUNC) &LGBM_DatasetCreateFromCSC_R      , 8},
   {"LGBM_DatasetCreateFromMat_R"      , (DL_FUNC) &LGBM_DatasetCreateFromMat_R      , 5},

@@ -19,6 +19,15 @@
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_GetLastError_R();
 
+/*!
+* \brief check if an R external pointer (like a Booster, Dataset, or Predictor handle) is a null pointer
+* \param handle handle for a Booster, Dataset, or Predictor
+* \return R logical, TRUE if the handle is a nuller pointer
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_HandleIsNull_R(
+  SEXP handle
+);
+
 // --- start Dataset interface
 
 /*!
