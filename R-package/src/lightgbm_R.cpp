@@ -645,8 +645,8 @@ SEXP LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), buf_len, &out_len, inner_char_buf.data()));
   // if the model string was larger than the initial buffer, allocate a bigger buffer and try again
   if (out_len > buf_len) {
-    buf_len = out_len;
-    CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), buf_len, &out_len, inner_char_buf.data()));
+    inner_char_buf.resize(out_len);
+    CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), out_len, &out_len, inner_char_buf.data()));
   }
   model_str = PROTECT(Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(model_str, 0, Rf_mkChar(inner_char_buf.data()));
@@ -666,8 +666,8 @@ SEXP LGBM_BoosterDumpModel_R(LGBM_SE handle,
   CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), buf_len, &out_len, inner_char_buf.data()));
   // if the model string was larger than the initial buffer, allocate a bigger buffer and try again
   if (out_len > buf_len) {
-    buf_len = out_len;
-    CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), buf_len, &out_len, inner_char_buf.data()));
+    inner_char_buf.resize(out_len);
+    CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), out_len, &out_len, inner_char_buf.data()));
   }
   model_str = PROTECT(Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(model_str, 0, Rf_mkChar(inner_char_buf.data()));

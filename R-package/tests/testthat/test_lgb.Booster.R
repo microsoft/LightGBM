@@ -240,6 +240,68 @@ test_that("Loading a Booster from a string works", {
     expect_identical(pred, pred2)
 })
 
+test_that("Saving a large model to string should work", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , num_leaves = 100L
+        , learning_rate = 0.01
+        , nrounds = 500L
+        , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
+        , verbose = -1L
+    )
+
+    pred <- predict(bst, train$data)
+    model_string <- bst$save_model_to_string()
+
+    # make sure this test is still producing a model bigger than the default
+    # buffer size used in LGBM_BoosterSaveModelToString_R
+    expect_gt(nchar(model_string), 1024L * 1024L)
+
+    # finalize the booster and destroy it so you know we aren't cheating
+    bst$finalize()
+    expect_null(bst$.__enclos_env__$private$handle)
+    rm(bst)
+
+    # make sure a new model can be created from this string, and that it
+    # produces expected results
+    bst2 <- lgb.load(
+        model_str = model_string
+    )
+    pred2 <- predict(bst2, train$data)
+    expect_identical(pred, pred2)
+})
+
+test_that("Saving a large model to JSON should work", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , num_leaves = 100L
+        , learning_rate = 0.01
+        , nrounds = 200L
+        , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
+        , verbose = -1L
+    )
+
+    model_json <- bst$dump_model()
+
+    # make sure this test is still producing a model bigger than the default
+    # buffer size used in LGBM_BoosterSaveModelToString
+    expect_gt(nchar(model_json), 1024L * 1024L)
+
+    # check that it is valid JSON that looks like a LightGBM model
+    model_list <- jsonlite::fromJSON(model_json)
+    expect_equal(model_list[["objective"]], "binary sigmoid:1")
+})
+
 test_that("If a string and a file are both passed to lgb.load() the file is used model_str is totally ignored", {
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
