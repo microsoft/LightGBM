@@ -111,17 +111,42 @@ void CUDADataPartition::BeforeTrain(const data_size_t* data_indices) {
 void CUDADataPartition::Split(const int* leaf_id,
   const int* best_split_feature,
   const uint32_t* best_split_threshold,
-  const uint8_t* best_split_default_left) {
+  const uint8_t* best_split_default_left,
+  const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
+  const double* best_left_gain, const double* best_left_leaf_value,
+  const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
+  const double* best_right_gain, const double* best_right_leaf_value,
+  // for leaf splits information update
+  int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
+  double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
+  double* smaller_leaf_cuda_gain_pointer, double* smaller_leaf_cuda_leaf_value_pointer,
+  const data_size_t** smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+  int* larger_leaf_cuda_leaf_index_pointer, double* larger_leaf_cuda_sum_of_gradients_pointer,
+  double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
+  double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
+  const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer) {
   auto start = std::chrono::steady_clock::now();
   GenDataToLeftBitVector(leaf_id, best_split_feature, best_split_threshold, best_split_default_left);
   auto end = std::chrono::steady_clock::now();
   double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
-  Log::Warning("CUDADataPartition::GenDataToLeftBitVector time %f", duration);
+  //Log::Warning("CUDADataPartition::GenDataToLeftBitVector time %f", duration);
   start = std::chrono::steady_clock::now();
-  SplitInner(leaf_id);
+  SplitInner(leaf_id,
+    best_left_sum_gradients, best_left_sum_hessians, best_left_count,
+    best_left_gain, best_left_leaf_value,
+    best_right_sum_gradients, best_right_sum_hessians, best_right_count,
+    best_right_gain, best_right_leaf_value,
+    smaller_leaf_cuda_leaf_index_pointer, smaller_leaf_cuda_sum_of_gradients_pointer,
+    smaller_leaf_cuda_sum_of_hessians_pointer, smaller_leaf_cuda_num_data_in_leaf_pointer,
+    smaller_leaf_cuda_gain_pointer, smaller_leaf_cuda_leaf_value_pointer,
+    smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+    larger_leaf_cuda_leaf_index_pointer, larger_leaf_cuda_sum_of_gradients_pointer,
+    larger_leaf_cuda_sum_of_hessians_pointer, larger_leaf_cuda_num_data_in_leaf_pointer,
+    larger_leaf_cuda_gain_pointer, larger_leaf_cuda_leaf_value_pointer,
+    larger_leaf_cuda_data_indices_in_leaf_pointer_pointer);
   end = std::chrono::steady_clock::now();
   duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
-  Log::Warning("CUDADataPartition::SplitInner time %f", duration);
+  //Log::Warning("CUDADataPartition::SplitInner time %f", duration);
 }
 
 void CUDADataPartition::GenDataToLeftBitVector(const int* leaf_id,
@@ -131,8 +156,33 @@ void CUDADataPartition::GenDataToLeftBitVector(const int* leaf_id,
   LaunchGenDataToLeftBitVectorKernel(leaf_id, best_split_feature, best_split_threshold, best_split_default_left);
 }
 
-void CUDADataPartition::SplitInner(const int* leaf_index) {
-  LaunchSplitInnerKernel(leaf_index);
+void CUDADataPartition::SplitInner(const int* leaf_index,
+  const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
+  const double* best_left_gain, const double* best_left_leaf_value,
+  const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
+  const double* best_right_gain, const double* best_right_leaf_value,
+  // for leaf splits information update
+  int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
+  double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
+  double* smaller_leaf_cuda_gain_pointer, double* smaller_leaf_cuda_leaf_value_pointer,
+  const data_size_t** smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+  int* larger_leaf_cuda_leaf_index_pointer, double* larger_leaf_cuda_sum_of_gradients_pointer,
+  double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
+  double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
+  const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer) {
+  LaunchSplitInnerKernel(leaf_index,
+    best_left_sum_gradients, best_left_sum_hessians, best_left_count,
+    best_left_gain, best_left_leaf_value,
+    best_right_sum_gradients, best_right_sum_hessians, best_right_count,
+    best_right_gain, best_right_leaf_value,
+    smaller_leaf_cuda_leaf_index_pointer, smaller_leaf_cuda_sum_of_gradients_pointer,
+    smaller_leaf_cuda_sum_of_hessians_pointer, smaller_leaf_cuda_num_data_in_leaf_pointer,
+    smaller_leaf_cuda_gain_pointer, smaller_leaf_cuda_leaf_value_pointer,
+    smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+    larger_leaf_cuda_leaf_index_pointer, larger_leaf_cuda_sum_of_gradients_pointer,
+    larger_leaf_cuda_sum_of_hessians_pointer, larger_leaf_cuda_num_data_in_leaf_pointer,
+    larger_leaf_cuda_gain_pointer, larger_leaf_cuda_leaf_value_pointer,
+    larger_leaf_cuda_data_indices_in_leaf_pointer_pointer);
 }
 
 Tree* CUDADataPartition::GetCPUTree() {}

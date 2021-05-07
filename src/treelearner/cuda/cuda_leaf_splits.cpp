@@ -35,6 +35,9 @@ void CUDALeafSplits::Init() {
 
   InitCUDAMemoryFromHostMemory<data_size_t>(&cuda_num_data_in_leaf_, &num_data_, 1);
   InitCUDAValueFromConstant<double>(&cuda_gain_, 0.0f);
+  // since smooth is not used, so the output value for root node is useless
+  InitCUDAValueFromConstant<double>(&cuda_leaf_value_, 0.0f);
+  AllocateCUDAMemory<const data_size_t*>(1, &cuda_data_indices_in_leaf_);
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_leaf_index_, &leaf_index_, 1);
 }
@@ -45,7 +48,7 @@ void CUDALeafSplits::InitValues(const double* cuda_sum_of_gradients, const doubl
   CopyFromCUDADeviceToCUDADevice<double>(cuda_sum_of_gradients_, cuda_sum_of_gradients, 1);
   CopyFromCUDADeviceToCUDADevice<double>(cuda_sum_of_hessians_, cuda_sum_of_hessians, 1);
   CopyFromCUDADeviceToCUDADevice<data_size_t>(cuda_num_data_in_leaf_, cuda_num_data_in_leaf, 1);
-  cuda_data_indices_in_leaf_ = cuda_data_indices_in_leaf;
+  CopyFromHostToCUDADevice<const data_size_t*>(cuda_data_indices_in_leaf_, &cuda_data_indices_in_leaf, 1);
   CopyFromCUDADeviceToCUDADevice<double>(cuda_gain_, cuda_gain, 1);
   CopyFromCUDADeviceToCUDADevice<double>(cuda_leaf_value_, cuda_leaf_value, 1);
   SynchronizeCUDADevice();
@@ -53,7 +56,8 @@ void CUDALeafSplits::InitValues(const double* cuda_sum_of_gradients, const doubl
 
 void CUDALeafSplits::InitValues(const data_size_t* cuda_data_indices_in_leaf) {
   LaunchInitValuesKernal();
-  cuda_data_indices_in_leaf_ = cuda_data_indices_in_leaf;
+  CopyFromHostToCUDADevice<const data_size_t*>(cuda_data_indices_in_leaf_, &cuda_data_indices_in_leaf, 1);
+  SynchronizeCUDADevice();
 }
 
 }  // namespace LightGBM

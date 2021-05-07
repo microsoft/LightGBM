@@ -19,18 +19,21 @@
 #define NUM_DATA_PER_THREAD (400)
 #define NUM_THRADS_PER_BLOCK (504)
 #define NUM_FEATURE_PER_THREAD_GROUP (28)
+#define SUBTRACT_BLOCK_SIZE (1024)
+#define FIX_HISTOGRAM_SHARED_MEM_SIZE (1024)
+#define FIX_HISTOGRAM_BLOCK_SIZE (512)
 
 namespace LightGBM {
 
 class CUDAHistogramConstructor {
  public:
   CUDAHistogramConstructor(const Dataset* train_data, const int num_leaves, const int num_threads,
-    const score_t* cuda_gradients, const score_t* cuda_hessians);
+    const score_t* cuda_gradients, const score_t* cuda_hessians, const std::vector<uint32_t>& feature_hist_offsets);
 
   void Init(const Dataset* train_data);
 
   void ConstructHistogramForLeaf(const int* cuda_smaller_leaf_index, const int* cuda_larger_leaf_index,
-    const data_size_t* cuda_data_indices_in_smaller_leaf, const data_size_t* cuda_data_indices_in_larger_leaf,
+    const data_size_t** cuda_data_indices_in_smaller_leaf, const data_size_t** cuda_data_indices_in_larger_leaf,
     const data_size_t* cuda_leaf_num_data);
 
   const hist_t* cuda_hist() const { return cuda_hist_; }
@@ -55,10 +58,13 @@ class CUDAHistogramConstructor {
   }
 
  private:
-
   void LaunchConstructHistogramKernel(const int* cuda_leaf_index,
-    const data_size_t* cuda_data_indices_in_leaf,
+    const data_size_t** cuda_data_indices_in_leaf,
     const data_size_t* cuda_leaf_num_data);
+
+  void LaunchSubtractAndFixHistogramKernel(const int* cuda_smaller_leaf_index,
+    const int* cuda_larger_leaf_index, const double* smaller_leaf_sum_gradients, const double* smaller_leaf_sum_hessians,
+    const double* larger_leaf_sum_gradients, const double* larger_leaf_sum_hessians);
 
   void InitCUDAData(const Dataset* train_data);
 
@@ -74,13 +80,22 @@ class CUDAHistogramConstructor {
   int num_feature_groups_;
   std::vector<uint8_t> data_;
   std::vector<uint32_t> feature_group_bin_offsets_;
+  std::vector<uint8_t> feature_mfb_offsets_;
+  std::vector<uint32_t> feature_num_bins_;
+  std::vector<uint32_t> feature_hist_offsets_;
+  std::vector<uint32_t> feature_most_freq_bins_;
 
   // CUDA memory, held by this object
   uint32_t* cuda_feature_group_bin_offsets_;
+  uint8_t* cuda_feature_mfb_offsets_;
+  uint32_t* cuda_feature_num_bins_;
+  uint32_t* cuda_feature_hist_offsets_;
+  uint32_t* cuda_feature_most_freq_bins_;
   hist_t* cuda_hist_;
   int* cuda_num_total_bin_;
   int* cuda_num_feature_groups_;
   uint8_t* cuda_data_;
+  int* cuda_num_features_;
 
   // CUDA memory, held by other objects
   const score_t* cuda_gradients_;

@@ -30,7 +30,20 @@ class CUDADataPartition {
   void BeforeTrain(const data_size_t* data_indices);
 
   void Split(const int* leaf_id, const int* best_split_feature,
-    const uint32_t* best_split_threshold, const uint8_t* best_split_default_left);
+    const uint32_t* best_split_threshold, const uint8_t* best_split_default_left,
+    const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
+    const double* best_left_gain, const double* best_left_leaf_value,
+    const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
+    const double* best_right_gain, const double* best_right_leaf_value,
+    // for splits information update
+    int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
+    double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
+    double* smaller_leaf_cuda_gain_pointer, double* smaller_leaf_cuda_leaf_value_pointer,
+    const data_size_t** smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+    int* larger_leaf_cuda_leaf_index_pointer, double* larger_leaf_cuda_sum_of_gradients_pointer,
+    double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
+    double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
+    const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer);
 
   Tree* GetCPUTree();
 
@@ -120,12 +133,38 @@ class CUDADataPartition {
   void GenDataToLeftBitVector(const int* leaf_id, const int* best_split_feature,
     const uint32_t* best_split_threshold, const uint8_t* best_split_default_left);
 
-  void SplitInner(const int* leaf_index);
+  void SplitInner(const int* leaf_index,
+    const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
+    const double* best_left_gain, const double* best_left_leaf_value,
+    const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
+    const double* best_right_gain, const double* best_right_leaf_value,
+    // for leaf splits information update
+    int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
+    double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
+    double* smaller_leaf_cuda_gain_pointer, double* smaller_leaf_cuda_leaf_value_pointer,
+    const data_size_t** smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+    int* larger_leaf_cuda_leaf_index_pointer, double* larger_leaf_cuda_sum_of_gradients_pointer,
+    double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
+    double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
+    const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer);
 
   // kernel launch functions
   void LaunchFillDataIndicesBeforeTrain();
 
-  void LaunchSplitInnerKernel(const int* leaf_index);
+  void LaunchSplitInnerKernel(const int* leaf_index,
+    const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
+    const double* best_left_gain, const double* best_left_leaf_value,
+    const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
+    const double* best_right_gain, const double* best_right_leaf_value,
+    // for leaf splits information update
+    int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
+    double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
+    double* smaller_leaf_cuda_gain_pointer, double* smaller_leaf_cuda_leaf_value_pointer,
+    const data_size_t** smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+    int* larger_leaf_cuda_leaf_index_pointer, double* larger_leaf_cuda_sum_of_gradients_pointer,
+    double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
+    double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
+    const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer);
 
   void LaunchGenDataToLeftBitVectorKernel(const int* leaf_index, const int* best_split_feature,
     const uint32_t* best_split_threshold, const uint8_t* best_split_default_left);

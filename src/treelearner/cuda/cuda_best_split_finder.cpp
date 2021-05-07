@@ -49,10 +49,12 @@ void CUDABestSplitFinder::Init() {
   AllocateCUDAMemory<double>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_left_sum_gradient_);
   AllocateCUDAMemory<double>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_left_sum_hessian_);
   AllocateCUDAMemory<data_size_t>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_left_count_);
+  AllocateCUDAMemory<double>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_left_gain_);
   AllocateCUDAMemory<double>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_left_output_);
   AllocateCUDAMemory<double>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_right_sum_gradient_);
   AllocateCUDAMemory<double>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_right_sum_hessian_);
   AllocateCUDAMemory<data_size_t>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_right_count_);
+  AllocateCUDAMemory<double>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_right_gain_);
   AllocateCUDAMemory<double>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_right_output_);
 
   AllocateCUDAMemory<uint32_t>(feature_hist_offsets_.size(), &cuda_feature_hist_offsets_);
@@ -87,10 +89,12 @@ void CUDABestSplitFinder::Init() {
   AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_left_sum_gradient_);
   AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_left_sum_hessian_);
   AllocateCUDAMemory<data_size_t>(feature_best_split_info_buffer_size, &cuda_best_split_left_count_);
+  AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_left_gain_);
   AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_left_output_);
   AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_right_sum_gradient_);
   AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_right_sum_hessian_);
   AllocateCUDAMemory<data_size_t>(feature_best_split_info_buffer_size, &cuda_best_split_right_count_);
+  AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_right_gain_);
   AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_right_output_);
   AllocateCUDAMemory<uint8_t>(feature_best_split_info_buffer_size, &cuda_best_split_found_);
 
@@ -120,7 +124,7 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_le
   SynchronizeCUDADevice();
   auto end = std::chrono::steady_clock::now();
   double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
-  Log::Warning("FindBestSplitsForLeaf time %f", duration);
+  //Log::Warning("FindBestSplitsForLeaf time %f", duration);
 }
 
 void CUDABestSplitFinder::FindBestFromAllSplits(const int* cuda_cur_num_leaves) {
@@ -128,7 +132,7 @@ void CUDABestSplitFinder::FindBestFromAllSplits(const int* cuda_cur_num_leaves) 
   LaunchFindBestFromAllSplitsKernel(cuda_cur_num_leaves);
   auto end = std::chrono::steady_clock::now();
   double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
-  Log::Warning("FindBestFromAllSplits time %f", duration);
+  //Log::Warning("FindBestFromAllSplits time %f", duration);
 }
 
 }  // namespace LightGBM

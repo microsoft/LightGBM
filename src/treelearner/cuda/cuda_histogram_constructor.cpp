@@ -12,7 +12,8 @@ namespace LightGBM {
 
 CUDAHistogramConstructor::CUDAHistogramConstructor(const Dataset* train_data,
   const int num_leaves, const int num_threads,
-  const score_t* cuda_gradients, const score_t* cuda_hessians): num_data_(train_data->num_data()),
+  const score_t* cuda_gradients, const score_t* cuda_hessians,
+  const std::vector<uint32_t>& feature_hist_offsets): num_data_(train_data->num_data()),
   num_features_(train_data->num_features()), num_leaves_(num_leaves), num_threads_(num_threads),
   num_feature_groups_(train_data->num_feature_groups()),
   cuda_gradients_(cuda_gradients), cuda_hessians_(cuda_hessians) {
@@ -21,7 +22,22 @@ CUDAHistogramConstructor::CUDAHistogramConstructor(const Dataset* train_data,
     feature_group_bin_offsets_.emplace_back(offset);
     offset += train_data->FeatureGroupNumBin(group_id);
   }
+  for (int feature_index = 0; feature_index < train_data->num_features(); ++feature_index) {
+    const BinMapper* bin_mapper = train_data->FeatureBinMapper(feature_index);
+    const uint32_t most_freq_bin = bin_mapper->GetMostFreqBin();
+    if (most_freq_bin == 0) {
+      feature_mfb_offsets_.emplace_back(1);
+    } else {
+      feature_mfb_offsets_.emplace_back(0);
+    }
+    feature_num_bins_.emplace_back(static_cast<uint32_t>(bin_mapper->num_bin()));
+    feature_most_freq_bins_.emplace_back(most_freq_bin);
+  }
   feature_group_bin_offsets_.emplace_back(offset);
+  feature_hist_offsets_.clear();
+  for (size_t i = 0; i < feature_hist_offsets.size(); ++i) {
+    feature_hist_offsets_.emplace_back(feature_hist_offsets[i]);
+  }
   num_total_bin_ = offset;
 }
 
@@ -39,6 +55,20 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data) {
 
   InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_group_bin_offsets_,
     feature_group_bin_offsets_.data(), feature_group_bin_offsets_.size());
+
+  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_feature_mfb_offsets_,
+    feature_mfb_offsets_.data(), feature_mfb_offsets_.size());
+
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_num_bins_,
+    feature_num_bins_.data(), feature_num_bins_.size());
+
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_hist_offsets_,
+    feature_hist_offsets_.data(), feature_hist_offsets_.size());
+
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_most_freq_bins_,
+    feature_most_freq_bins_.data(), feature_most_freq_bins_.size());
+
+  InitCUDAValueFromConstant<int>(&cuda_num_features_, num_features_);
 
   InitCUDAData(train_data);
 }
@@ -68,14 +98,14 @@ void CUDAHistogramConstructor::PushOneData(const uint32_t feature_bin_value,
 }
 
 void CUDAHistogramConstructor::ConstructHistogramForLeaf(const int* cuda_smaller_leaf_index, const int* /*cuda_larger_leaf_index*/,
-  const data_size_t* cuda_data_indices_in_smaller_leaf, const data_size_t* /*cuda_data_indices_in_larger_leaf*/,
+  const data_size_t** cuda_data_indices_in_smaller_leaf, const data_size_t** /*cuda_data_indices_in_larger_leaf*/,
   const data_size_t* cuda_leaf_num_data) {
   auto start = std::chrono::steady_clock::now();
   LaunchConstructHistogramKernel(cuda_smaller_leaf_index, cuda_data_indices_in_smaller_leaf, cuda_leaf_num_data);
   SynchronizeCUDADevice();
   auto end = std::chrono::steady_clock::now();
   double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
-  Log::Warning("LaunchConstructHistogramKernel time %f", duration);
+  //Log::Warning("LaunchConstructHistogramKernel time %f", duration);
   /*PrintLastCUDAError();
   std::vector<hist_t> cpu_hist(6143 * 2, 0.0f);
   CopyFromCUDADeviceToHost<hist_t>(cpu_hist.data(), cuda_hist_, 6143 * 2);*/

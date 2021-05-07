@@ -34,7 +34,7 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   cuda_larger_leaf_splits_->Init();
 
   cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, this->config_->num_leaves, num_threads_,
-    cuda_centralized_info_->cuda_gradients(), cuda_centralized_info_->cuda_hessians()));
+    cuda_centralized_info_->cuda_gradients(), cuda_centralized_info_->cuda_hessians(), share_state_->feature_hist_offsets()));
   cuda_histogram_constructor_->Init(train_data_);
   //cuda_histogram_constructor_->TestAfterInit();
 
@@ -209,11 +209,59 @@ void NewCUDATreeLearner::Split(Tree* /*tree*/, int /*best_leaf*/,
 }
 
 Tree* NewCUDATreeLearner::Train(const score_t* gradients,
-  const score_t *hessians, bool /*is_first_tree*/) {
+  const score_t* hessians, bool /*is_first_tree*/) {
   gradients_ = gradients;
   hessians_ = hessians;
   BeforeTrain();
-  cuda_data_partition_->Test();
+  const auto start = std::chrono::steady_clock::now();
+  for (int i = 0; i < config_->num_leaves - 1; ++i) {
+    cuda_histogram_constructor_->ConstructHistogramForLeaf(
+      cuda_smaller_leaf_splits_->cuda_leaf_index(),
+      cuda_larger_leaf_splits_->cuda_leaf_index(),
+      cuda_smaller_leaf_splits_->cuda_data_indices_in_leaf(),
+      cuda_larger_leaf_splits_->cuda_data_indices_in_leaf(),
+      cuda_data_partition_->cuda_leaf_num_data());
+    
+    cuda_best_split_finder_->FindBestSplitsForLeaf(cuda_smaller_leaf_splits_.get(),
+      cuda_larger_leaf_splits_.get());
+
+    cuda_best_split_finder_->FindBestFromAllSplits(cuda_data_partition_->cuda_cur_num_leaves());
+
+    cuda_data_partition_->Split(cuda_best_split_finder_->cuda_best_leaf(),
+      cuda_best_split_finder_->cuda_leaf_best_split_feature(),
+      cuda_best_split_finder_->cuda_leaf_best_split_threshold(),
+      cuda_best_split_finder_->cuda_leaf_best_split_default_left(),
+
+      cuda_best_split_finder_->cuda_leaf_best_split_left_sum_gradient(),
+      cuda_best_split_finder_->cuda_leaf_best_split_left_sum_hessian(),
+      cuda_best_split_finder_->cuda_leaf_best_split_left_count(),
+      cuda_best_split_finder_->cuda_leaf_best_split_left_gain(),
+      cuda_best_split_finder_->cuda_leaf_best_split_left_output(),
+      cuda_best_split_finder_->cuda_leaf_best_split_right_sum_gradient(),
+      cuda_best_split_finder_->cuda_leaf_best_split_right_sum_hessian(),
+      cuda_best_split_finder_->cuda_leaf_best_split_right_count(),
+      cuda_best_split_finder_->cuda_leaf_best_split_right_gain(),
+      cuda_best_split_finder_->cuda_leaf_best_split_right_output(),
+
+      cuda_smaller_leaf_splits_->cuda_leaf_index_pointer(),
+      cuda_smaller_leaf_splits_->cuda_sum_of_gradients_pointer(),
+      cuda_smaller_leaf_splits_->cuda_sum_of_hessians_pointer(),
+      cuda_smaller_leaf_splits_->cuda_num_data_in_leaf_pointer(),
+      cuda_smaller_leaf_splits_->cuda_gain_pointer(),
+      cuda_smaller_leaf_splits_->cuda_leaf_value_pointer(),
+      cuda_smaller_leaf_splits_->cuda_data_indices_in_leaf_pointer_pointer(),
+      cuda_larger_leaf_splits_->cuda_leaf_index_pointer(),
+      cuda_larger_leaf_splits_->cuda_sum_of_gradients_pointer(),
+      cuda_larger_leaf_splits_->cuda_sum_of_hessians_pointer(),
+      cuda_larger_leaf_splits_->cuda_num_data_in_leaf_pointer(),
+      cuda_larger_leaf_splits_->cuda_gain_pointer(),
+      cuda_larger_leaf_splits_->cuda_leaf_value_pointer(),
+      cuda_larger_leaf_splits_->cuda_data_indices_in_leaf_pointer_pointer());
+  }
+  const auto end = std::chrono::steady_clock::now();
+  const double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
+  Log::Warning("Train time %f", duration);
+  /*cuda_data_partition_->Test();
   cuda_histogram_constructor_->ConstructHistogramForLeaf(
     cuda_smaller_leaf_splits_->cuda_leaf_index(),
     cuda_larger_leaf_splits_->cuda_leaf_index(),
@@ -223,13 +271,13 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   cuda_best_split_finder_->FindBestSplitsForLeaf(cuda_smaller_leaf_splits_.get(),
     cuda_larger_leaf_splits_.get());
   cuda_best_split_finder_->FindBestFromAllSplits(cuda_data_partition_->cuda_cur_num_leaves());
-  cuda_best_split_finder_->TestAfterFindBestSplits();
+  cuda_best_split_finder_->TestAfterFindBestSplits();*/
   //cuda_data_partition_->TestPrefixSum();
-  cuda_data_partition_->Split(cuda_best_split_finder_->cuda_best_leaf(),
+  /*cuda_data_partition_->Split(cuda_best_split_finder_->cuda_best_leaf(),
     cuda_best_split_finder_->cuda_leaf_best_split_feature(),
     cuda_best_split_finder_->cuda_leaf_best_split_threshold(),
     cuda_best_split_finder_->cuda_leaf_best_split_default_left());
-  cuda_data_partition_->TestAfterSplit();
+  cuda_data_partition_->TestAfterSplit();*/
   //cuda_histogram_constructor_->TestAfterConstructHistogram();
   /*CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
   CUDASUCCESS_OR_FATAL(cudaMemcpy(device_gradients_[0], gradients, num_data_ * sizeof(score_t), cudaMemcpyHostToDevice));
