@@ -1056,8 +1056,6 @@ int LGBM_SampleIndices(int32_t total_nrow,
   config.Set(param);
 
   auto sample_indices = CreateSampleIndices(config, total_nrow);
-
-  static_assert (sizeof(int) == 4, "int size is not 4");
   memcpy(out, sample_indices.data(), sizeof(int32_t) * sample_indices.size());
 
   API_END();
