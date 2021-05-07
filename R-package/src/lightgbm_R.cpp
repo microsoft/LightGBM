@@ -95,7 +95,7 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   int64_t nindptr = static_cast<int64_t>(Rf_asInteger(num_indptr));
   int64_t ndata = static_cast<int64_t>(Rf_asInteger(nelem));
   int64_t nrow = static_cast<int64_t>(Rf_asInteger(num_row));
-  DatasetHandle handle = nullptr;
+  DatasetHandle handle;
   CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
     nrow, CHAR(Rf_asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
@@ -109,7 +109,7 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   SEXP num_row,
   SEXP num_col,
   SEXP parameters,
-  LGBM_SE reference) {
+  SEXP reference) {
   SEXP ret;
   R_API_BEGIN();
   int32_t nrow = static_cast<int32_t>(Rf_asInteger(num_row));
@@ -124,7 +124,7 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   return ret;
 }
 
-SEXP LGBM_DatasetGetSubset_R(LGBM_SE handle,
+SEXP LGBM_DatasetGetSubset_R(SEXP handle,
   SEXP used_row_indices,
   SEXP len_used_row_indices,
   SEXP parameters) {
@@ -179,7 +179,7 @@ SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle,
   size_t required_string_size;
   CHECK_CALL(
     LGBM_DatasetGetFeatureNames(
-      R_GET_PTR(handle),
+      R_ExternalPtrAddr(handle),
       len, &out_len,
       reserved_string_size, &required_string_size,
       ptr_names.data()));
@@ -200,9 +200,9 @@ SEXP LGBM_DatasetSaveBinary_R(SEXP handle,
 
 SEXP LGBM_DatasetFree_R(SEXP handle) {
   R_API_BEGIN();
-  if (R_GET_PTR(handle) != nullptr) {
+  if (R_ExternalPtrAddr(handle) == NULL) {
     CHECK_CALL(LGBM_DatasetFree(R_ExternalPtrAddr(handle)));
-    R_SET_PTR(handle, nullptr);
+    R_ClearExternalPtr(handle);
   }
   R_API_END();
 }
@@ -220,9 +220,9 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
     for (int i = 0; i < len; ++i) {
       vec[i] = static_cast<int32_t>(INTEGER(field_data)[i]);
     }
-    CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_INT32));
+    CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, vec.data(), len, C_API_DTYPE_INT32));
   } else if (!strcmp("init_score", name)) {
-    CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, REAL(field_data), len, C_API_DTYPE_FLOAT64));
+    CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, REAL(field_data), len, C_API_DTYPE_FLOAT64));
   } else {
     std::vector<float> vec(len);
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
