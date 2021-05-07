@@ -14,14 +14,6 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_Series
 from .utils import load_breast_cancer
 
 
-def rm_files(files):
-    if not isinstance(files, list):
-        files = [files]
-    for file in files:
-        if os.path.exists(file):
-            os.remove(file)
-
-
 def test_basic(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
                                                         test_size=0.1, random_state=2)
