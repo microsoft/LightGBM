@@ -1,6 +1,5 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
-import abc
 import ctypes
 import json
 import os
@@ -616,8 +615,6 @@ class Sequence(object):
     reduce memory usage.
     """
 
-    __metaclass__ = abc.ABCMeta
-
     batch_size = 4096  # Defaults to read 4K rows in each batch.
 
     @staticmethod
@@ -636,7 +633,6 @@ class Sequence(object):
             return False
         return hasattr(obj, "__getitem__") and hasattr(obj, "__len__")
 
-    @abc.abstractmethod
     def __getitem__(self, idx: Union[int, slice]) -> np.ndarray:
         """Return data for given row index.
 
@@ -663,7 +659,6 @@ class Sequence(object):
         """
         raise NotImplementedError("remove this line if subclassing")
 
-    @abc.abstractmethod
     def __len__(self) -> int:
         """Return row count of this sequence."""
         raise NotImplementedError
