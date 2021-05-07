@@ -460,8 +460,6 @@ SEXP LGBM_BoosterGetEvalNames_R(LGBM_SE handle) {
   // if any eval names were larger than allocated size,
   // allow for a larger size and try again
   if (required_string_size > reserved_string_size) {
-    std::vector<std::vector<char>> names(len);
-    std::vector<char*> ptr_names(len);
     for (int i = 0; i < len; ++i) {
       names[i].resize(required_string_size);
       ptr_names[i] = names[i].data();
@@ -476,7 +474,6 @@ SEXP LGBM_BoosterGetEvalNames_R(LGBM_SE handle) {
         ptr_names.data()));
   }
   CHECK_EQ(out_len, len);
-  CHECK_GE(reserved_string_size, required_string_size);
   eval_names = PROTECT(Rf_allocVector(STRSXP, len));
   for (int i = 0; i < len; ++i) {
     SET_STRING_ELT(eval_names, i, Rf_mkChar(ptr_names[i]));
