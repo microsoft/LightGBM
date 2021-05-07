@@ -820,6 +820,12 @@ Dataset Parameters
 
    -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
 
+-  ``precise_float_parser`` :raw-html:`<a id="precise_float_parser" title="Permalink to this parameter" href="#precise_float_parser">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  use precise floating point number parsing for text parser (e.g. CSV, TSV, LibSVM input)
+
+   -  **Note**: setting this to ``true`` may lead to much slower text parsing
+
 Predict Parameters
 ~~~~~~~~~~~~~~~~~~
 
