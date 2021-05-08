@@ -1070,6 +1070,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol);
     std::vector<std::vector<int>> sample_idx(ncol);
+
     int offset = 0;
     int j = 0;
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -1078,6 +1079,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
         offset += nrow[j];
         ++j;
       }
+
       auto row = get_row_fun[j](static_cast<int>(idx - offset));
       for (size_t k = 0; k < row.size(); ++k) {
         if (std::fabs(row[k]) > kZeroThreshold || std::isnan(row[k])) {
