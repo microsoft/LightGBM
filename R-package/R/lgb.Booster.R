@@ -37,7 +37,7 @@ Booster <- R6::R6Class(
 
       # Create parameters and handle
       params <- append(params, list(...))
-      handle <- lgb.null.handle()
+      handle <- NULL
 
       # Attempts to create a handle for the dataset
       try({
@@ -52,11 +52,10 @@ Booster <- R6::R6Class(
           params <- modifyList(params, train_set$get_params())
           params_str <- lgb.params2str(params = params)
           # Store booster handle
-          .Call(
+          handle <- .Call(
             LGBM_BoosterCreate_R
             , train_set_handle
             , params_str
-            , handle
           )
 
           # Create private booster information
@@ -88,10 +87,9 @@ Booster <- R6::R6Class(
           }
 
           # Create booster from model
-          .Call(
+          handle <- .Call(
             LGBM_BoosterCreateFromModelfile_R
             , modelfile
-            , handle
           )
 
         } else if (!is.null(model_str)) {
@@ -102,10 +100,9 @@ Booster <- R6::R6Class(
           }
 
           # Create booster from model
-          .Call(
+          handle <- .Call(
             LGBM_BoosterLoadModelFromString_R
             , model_str
-            , handle
           )
 
         } else {

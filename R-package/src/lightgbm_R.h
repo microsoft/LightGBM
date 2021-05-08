@@ -20,9 +20,9 @@
 LIGHTGBM_C_EXPORT SEXP LGBM_GetLastError_R();
 
 /*!
-* \brief check if an R external pointer (like a Booster, Dataset, or Predictor handle) is a null pointer
+* \brief check if an R external pointer (like a Booster or Dataset handle) is a null pointer
 * \param handle handle for a Booster, Dataset, or Predictor
-* \return R logical, TRUE if the handle is a nuller pointer
+* \return R logical, TRUE if the handle is a null pointer
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_HandleIsNull_R(
   SEXP handle
@@ -36,7 +36,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_HandleIsNull_R(
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other Dataset, nullptr means not used
 * \param out created Dataset
-* \return R NULL value
+* \return Dataset handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromFile_R(
   SEXP filename,
@@ -55,7 +55,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromFile_R(
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other Dataset, nullptr means not used
 * \param out created Dataset
-* \return R NULL value
+* \return Dataset handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromCSC_R(
   SEXP indptr,
@@ -76,7 +76,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromCSC_R(
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other Dataset, nullptr means not used
 * \param out created Dataset
-* \return R NULL value
+* \return Dataset handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromMat_R(
   SEXP data,
@@ -93,7 +93,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromMat_R(
 * \param len_used_row_indices length of Indices used in subset
 * \param parameters additional parameters
 * \param out created Dataset
-* \return R NULL value
+* \return Dataset handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetSubset_R(
   SEXP handle,
@@ -229,13 +229,11 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetNumFeature_R(
 * \brief create a new boosting learner
 * \param train_data training Dataset
 * \param parameters format: 'key1=value1 key2=value2'
-* \param out handle of created Booster
-* \return R NULL value
+* \return Booster handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCreate_R(
   SEXP train_data,
-  SEXP parameters,
-  LGBM_SE out
+  SEXP parameters
 );
 
 /*!
@@ -244,29 +242,27 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCreate_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterFree_R(
-  LGBM_SE handle
+  SEXP handle
 );
 
 /*!
 * \brief load an existing Booster from model file
 * \param filename filename of model
 * \param out handle of created Booster
-* \return R NULL value
+* \return Booster handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCreateFromModelfile_R(
-  SEXP filename,
-  LGBM_SE out
+  SEXP filename
 );
 
 /*!
 * \brief load an existing Booster from a string
 * \param model_str string containing the model
 * \param out handle of created Booster
-* \return R NULL value
+* \return Booster handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterLoadModelFromString_R(
-  SEXP model_str,
-  LGBM_SE out
+  SEXP model_str
 );
 
 /*!
@@ -276,8 +272,8 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterLoadModelFromString_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterMerge_R(
-  LGBM_SE handle,
-  LGBM_SE other_handle
+  SEXP handle,
+  SEXP other_handle
 );
 
 /*!
@@ -287,7 +283,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterMerge_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterAddValidData_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP valid_data
 );
 
@@ -298,7 +294,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterAddValidData_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterResetTrainingData_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP train_data
 );
 
@@ -309,7 +305,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterResetTrainingData_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterResetParameter_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP parameters
 );
 
@@ -320,7 +316,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterResetParameter_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumClasses_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP out
 );
 
@@ -330,7 +326,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumClasses_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterUpdateOneIter_R(
-  LGBM_SE handle
+  SEXP handle
 );
 
 /*!
@@ -343,7 +339,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterUpdateOneIter_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterUpdateOneIterCustom_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP grad,
   SEXP hess,
   SEXP len
@@ -355,7 +351,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterUpdateOneIterCustom_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterRollbackOneIter_R(
-  LGBM_SE handle
+  SEXP handle
 );
 
 /*!
@@ -365,7 +361,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterRollbackOneIter_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetCurrentIteration_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP out
 );
 
@@ -376,7 +372,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetCurrentIteration_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetUpperBoundValue_R(
-    LGBM_SE handle,
+    SEXP handle,
     SEXP out_result
 );
 
@@ -387,7 +383,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetUpperBoundValue_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetLowerBoundValue_R(
-    LGBM_SE handle,
+    SEXP handle,
     SEXP out_result
 );
 
@@ -397,7 +393,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetLowerBoundValue_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetEvalNames_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP buf_len,
   SEXP actual_len,
   LGBM_SE eval_names
@@ -411,7 +407,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetEvalNames_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetEval_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP data_idx,
   SEXP out_result
 );
@@ -424,7 +420,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetEval_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumPredict_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP data_idx,
   SEXP out
 );
@@ -438,7 +434,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumPredict_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetPredict_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP data_idx,
   SEXP out_result
 );
@@ -460,7 +456,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetPredict_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForFile_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP data_filename,
   SEXP data_has_header,
   SEXP is_rawscore,
@@ -487,7 +483,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForFile_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCalcNumPredict_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP num_row,
   SEXP is_rawscore,
   SEXP is_leafidx,
@@ -521,7 +517,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCalcNumPredict_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSC_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP indptr,
   SEXP indices,
   SEXP data,
@@ -558,7 +554,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSC_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMat_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP data,
   SEXP num_row,
   SEXP num_col,
@@ -580,7 +576,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMat_R(
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModel_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP num_iteration,
   SEXP feature_importance_type,
   SEXP filename
@@ -594,7 +590,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModel_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModelToString_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP num_iteration,
   SEXP feature_importance_type,
   SEXP buffer_len,
@@ -610,7 +606,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModelToString_R(
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterDumpModel_R(
-  LGBM_SE handle,
+  SEXP handle,
   SEXP num_iteration,
   SEXP feature_importance_type,
   SEXP buffer_len,

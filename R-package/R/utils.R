@@ -6,14 +6,6 @@ lgb.is.Dataset <- function(x) {
   return(lgb.check.r6.class(object = x, name = "lgb.Dataset"))
 }
 
-lgb.null.handle <- function() {
-  if (.Machine$sizeof.pointer == 8L) {
-    return(NA_real_)
-  } else {
-    return(NA_integer_)
-  }
-}
-
 lgb.is.null.handle <- function(x) {
   if (is.null(x)) {
     return(TRUE)
