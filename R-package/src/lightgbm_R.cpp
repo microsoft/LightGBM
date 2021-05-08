@@ -64,6 +64,8 @@ SEXP LGBM_GetLastError_R() {
   return out;
 }
 
+// https://stackoverflow.com/a/26671781/3986677
+// http://adv-r.had.co.nz/C-interface.html
 SEXP LGBM_HandleIsNull_R(SEXP handle) {
   return Rf_ScalarLogical(R_ExternalPtrAddr(handle) == NULL);
 }
@@ -74,8 +76,13 @@ SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
   SEXP ret;
   R_API_BEGIN();
   DatasetHandle handle = nullptr;
-  CHECK_CALL(LGBM_DatasetCreateFromFile(CHAR(Rf_asChar(filename)), CHAR(Rf_asChar(parameters)),
-    R_ExternalPtrAddr(reference), &handle));
+  if (Rf_isNull(reference)) {
+    CHECK_CALL(LGBM_DatasetCreateFromFile(CHAR(Rf_asChar(filename)), CHAR(Rf_asChar(parameters)),
+      nullptr, &handle));
+  } else {
+    CHECK_CALL(LGBM_DatasetCreateFromFile(CHAR(Rf_asChar(filename)), CHAR(Rf_asChar(parameters)),
+      R_ExternalPtrAddr(reference), &handle));
+  }
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
   UNPROTECT(1);
   return ret;
@@ -99,10 +106,16 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   int64_t nindptr = static_cast<int64_t>(Rf_asInteger(num_indptr));
   int64_t ndata = static_cast<int64_t>(Rf_asInteger(nelem));
   int64_t nrow = static_cast<int64_t>(Rf_asInteger(num_row));
-  DatasetHandle handle;
-  CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
-    p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
-    nrow, CHAR(Rf_asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
+  DatasetHandle handle = nullptr;
+  if (Rf_isNull(reference)) {
+    CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
+      p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
+      nrow, CHAR(Rf_asChar(parameters)), nullptr, &handle));
+  } else {
+    CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
+      p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
+      nrow, CHAR(Rf_asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
+  }
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
   UNPROTECT(1);
   return ret;
@@ -125,7 +138,7 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   Log::Info("line 121");
   DatasetHandle handle = nullptr;
   Log::Info("line 123");
-  if (R_ExternalPtrAddr(reference) == NULL) {
+  if (Rf_isNull(reference)) {
     Log::Info("line 125");
     CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
     CHAR(Rf_asChar(parameters)), nullptr, &handle));

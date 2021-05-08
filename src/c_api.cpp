@@ -1063,7 +1063,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   int32_t total_nrow = 0;
   Log::Info("LGBM_DatasetCreateFromMats: line 1064");
   for (int j = 0; j < nmat; ++j) {
-    Log::Info("LGBM_DatasetCreateFromMats: line 1066 (j = %d)", j);
+    // Log::Info("LGBM_DatasetCreateFromMats: line 1066 (j = %d)", j);
     total_nrow += nrow[j];
   }
   Log::Info("LGBM_DatasetCreateFromMats: line 1069");
@@ -1094,17 +1094,17 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     int offset = 0;
     int j = 0;
     for (size_t i = 0; i < sample_indices.size(); ++i) {
-      Log::Info("LGBM_DatasetCreateFromMats: line 1097 (i = %d)", i);
+      // Log::Info("LGBM_DatasetCreateFromMats: line 1097 (i = %d)", i);
       auto idx = sample_indices[i];
       while ((idx - offset) >= nrow[j]) {
         offset += nrow[j];
         ++j;
       }
-      Log::Info("LGBM_DatasetCreateFromMats: line 1103 (i = %d)", i);
+      // Log::Info("LGBM_DatasetCreateFromMats: line 1103 (i = %d)", i);
       auto row = get_row_fun[j](static_cast<int>(idx - offset));
-      Log::Info("LGBM_DatasetCreateFromMats: line 1105 (i = %d)", i);
+      // Log::Info("LGBM_DatasetCreateFromMats: line 1105 (i = %d)", i);
       for (size_t k = 0; k < row.size(); ++k) {
-        Log::Info("LGBM_DatasetCreateFromMats: line 1107 (i = %d)", i);
+        // Log::Info("LGBM_DatasetCreateFromMats: line 1107 (i = %d)", i);
         if (std::fabs(row[k]) > kZeroThreshold || std::isnan(row[k])) {
           sample_values[k].emplace_back(row[k]);
           sample_idx[k].emplace_back(static_cast<int>(i));
