@@ -220,7 +220,7 @@ SEXP LGBM_DatasetSaveBinary_R(SEXP handle,
 
 SEXP LGBM_DatasetFree_R(SEXP handle) {
   R_API_BEGIN();
-  if (R_ExternalPtrAddr(handle) != NULL) {
+  if (R_ExternalPtrAddr(handle)) {
     CHECK_CALL(LGBM_DatasetFree(R_ExternalPtrAddr(handle)));
     R_ClearExternalPtr(handle);
   }
