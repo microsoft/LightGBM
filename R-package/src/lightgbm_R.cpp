@@ -64,8 +64,6 @@ SEXP LGBM_GetLastError_R() {
   return out;
 }
 
-// https://stackoverflow.com/a/26671781/3986677
-// http://adv-r.had.co.nz/C-interface.html
 SEXP LGBM_HandleIsNull_R(SEXP handle) {
   return Rf_ScalarLogical(R_ExternalPtrAddr(handle) == NULL);
 }
@@ -129,31 +127,19 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   SEXP reference) {
   SEXP ret;
   R_API_BEGIN();
-  Log::Info("line 115");
   int32_t nrow = static_cast<int32_t>(Rf_asInteger(num_row));
-  Log::Info("line 117");
   int32_t ncol = static_cast<int32_t>(Rf_asInteger(num_col));
-  Log::Info("line 119");
   double* p_mat = REAL(data);
-  Log::Info("line 121");
   DatasetHandle handle = nullptr;
-  Log::Info("line 123");
   if (Rf_isNull(reference)) {
-    Log::Info("line 125");
     CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
     CHAR(Rf_asChar(parameters)), nullptr, &handle));
-    Log::Info("line 128");
   } else {
-    Log::Info("line 130");
     CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
       CHAR(Rf_asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
-    Log::Info("line 133");
   }
-  Log::Info("line 135");
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
-  Log::Info("line 137");
   UNPROTECT(1);
-  Log::Info("line 139");
   return ret;
   R_API_END();
 }
