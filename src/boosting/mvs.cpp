@@ -11,6 +11,8 @@ namespace LightGBM {
 
 using ConstTreeIterator = std::vector<std::unique_ptr<Tree>>::const_iterator;
 
+MVS::MVS() : GBDT() {}
+
 static double CalculateThresholdSequential(std::vector<score_t>* gradients, data_size_t begin, data_size_t end,
                                     const double sample_size) {
   double current_sum_small = 0.0;
