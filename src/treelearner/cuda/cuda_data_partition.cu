@@ -347,9 +347,6 @@ __global__ void AggregateBlockOffsetKernel(const int* leaf_index, data_size_t* b
     cuda_leaf_num_data[cur_max_leaf_index] = block_to_right_offset_buffer[num_blocks] - to_left_total_cnt;
     const int cuda_num_total_bin_ref = *cuda_num_total_bin;
     ++(*cuda_cur_num_leaves);
-    //printf("best_left_gain = %f, best_right_gain = %f\n", *best_left_gain, *best_right_gain);
-    //printf("cuda_leaf_num_data[%d] = %d, cuda_leaf_num_data[%d] = %d\n",
-    //  leaf_index_ref, cuda_leaf_num_data[leaf_index_ref], cur_max_leaf_index, cuda_leaf_num_data[cur_max_leaf_index]);
     if (cuda_leaf_num_data[leaf_index_ref] < cuda_leaf_num_data[cur_max_leaf_index]) {
       *smaller_leaf_cuda_leaf_index_pointer = leaf_index_ref;
       *smaller_leaf_cuda_sum_of_gradients_pointer = best_left_sum_gradients[leaf_index_ref];
@@ -372,13 +369,6 @@ __global__ void AggregateBlockOffsetKernel(const int* leaf_index, data_size_t* b
       cuda_hist_pool[leaf_index_ref] = cuda_hist + 2 * cur_max_leaf_index * cuda_num_total_bin_ref;
       *smaller_leaf_cuda_hist_pointer_pointer = cuda_hist_pool[leaf_index_ref];
       *larger_leaf_cuda_hist_pointer_pointer = cuda_hist_pool[cur_max_leaf_index];
-      //if (leaf_index_ref == 2) {
-        /*printf("*************** leaf %d sum_gradients %f sum_hessians %f\n", leaf_index_ref, *smaller_leaf_cuda_sum_of_gradients_pointer,
-          *smaller_leaf_cuda_sum_of_hessians_pointer);
-        printf("*************** leaf %d sum_gradients %f sum_hessians %f\n", cur_max_leaf_index, *larger_leaf_cuda_sum_of_gradients_pointer,
-          *larger_leaf_cuda_sum_of_hessians_pointer);
-        printf("leaf 2 cuda ptr in CUDA kernel = %ld\n", cuda_hist_pool[leaf_index_ref]);*/
-      //}
     } else {
       *larger_leaf_cuda_leaf_index_pointer = leaf_index_ref;
       *larger_leaf_cuda_sum_of_gradients_pointer = best_left_sum_gradients[leaf_index_ref];
@@ -399,13 +389,6 @@ __global__ void AggregateBlockOffsetKernel(const int* leaf_index, data_size_t* b
       cuda_hist_pool[cur_max_leaf_index] = cuda_hist + 2 * cur_max_leaf_index * cuda_num_total_bin_ref;
       *smaller_leaf_cuda_hist_pointer_pointer = cuda_hist_pool[cur_max_leaf_index];
       *larger_leaf_cuda_hist_pointer_pointer = cuda_hist_pool[leaf_index_ref];
-      /*printf("*************** leaf %d sum_gradients %f sum_hessians %f\n", cur_max_leaf_index, *smaller_leaf_cuda_sum_of_gradients_pointer,
-          *smaller_leaf_cuda_sum_of_hessians_pointer);
-      printf("*************** leaf %d sum_gradients %f sum_hessians %f\n", leaf_index_ref, *larger_leaf_cuda_sum_of_gradients_pointer,
-        *larger_leaf_cuda_sum_of_hessians_pointer);
-      if (leaf_index_ref == 2) {
-        printf("error unexpected, 2 should be the smaller leaf\n");
-      }*/
     }
   }
 }
