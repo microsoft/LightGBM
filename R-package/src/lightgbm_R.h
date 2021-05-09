@@ -383,9 +383,9 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetLowerBoundValue_R(
 );
 
 /*!
-* \brief Get Name of eval
+* \brief Get names of eval metrics
 * \param handle Handle of booster
-* \return R character vector with names of eval sets
+* \return R character vector with names of eval metrics
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetEvalNames_R(
   LGBM_SE handle
@@ -588,7 +588,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModelToString_R(
 );
 
 /*!
-* \brief dump model to json
+* \brief dump model to JSON
 * \param handle Booster handle
 * \param num_iteration, <= 0 means save all
 * \param feature_importance_type type of feature importance, 0: split, 1: gain

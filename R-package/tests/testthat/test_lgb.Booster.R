@@ -294,7 +294,7 @@ test_that("Saving a large model to JSON should work", {
     model_json <- bst$dump_model()
 
     # make sure this test is still producing a model bigger than the default
-    # buffer size used in LGBM_BoosterSaveModelToString
+    # buffer size used in LGBM_BoosterDumpModel_R
     expect_gt(nchar(model_json), 1024L * 1024L)
 
     # check that it is valid JSON that looks like a LightGBM model
