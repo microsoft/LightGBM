@@ -59,6 +59,8 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
         ret.reset(new GOSS());
       } else if (type == std::string("rf")) {
         return new RF();
+      } else if (type == std::string("mvs")) {
+        return new MVS();
       } else {
         Log::Fatal("Unknown boosting type %s", type.c_str());
       }

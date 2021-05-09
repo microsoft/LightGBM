@@ -61,12 +61,12 @@ class MVS : public GBDT {
 
   void ResetMVS();
 
-  bool TrainOneIter(const score_t* gradients, const score_t* hessians) override {
+  bool TrainOneIter(const score_t *gradients, const score_t *hessians) override {
     if (gradients != nullptr) {
       // use customized objective function
       CHECK(hessians != nullptr && objective_function_ == nullptr);
       int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static, 1)
       for (int64_t i = 0; i < total_size; ++i) {
         gradients_[i] = gradients[i];
         hessians_[i] = hessians[i];
@@ -80,6 +80,7 @@ class MVS : public GBDT {
 
   data_size_t BaggingHelper(data_size_t start, data_size_t cnt, data_size_t *buffer) override;
 
+
   void Bagging(int iter) override;
   // TODO move this constant to some constants
   static constexpr double kMVSEps = 1e-20;
@@ -90,9 +91,15 @@ class MVS : public GBDT {
     return false;
   }
 
+  double GetThreshold(data_size_t begin, data_size_t end);
+
   double GetLambda();
 
+  static const data_size_t kMaxSequentialSize = 256000;
+
   double mvs_lambda_;
+  double threshold_{0.0};
+  std::vector<score_t> tmp_derivatives_;
   bool mvs_adaptive_;
 };
 }  // namespace LightGBM

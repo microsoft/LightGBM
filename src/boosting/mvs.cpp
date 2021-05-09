@@ -4,83 +4,113 @@
 
 #include "mvs.hpp"
 
+#include <algorithm>
+
 namespace LightGBM {
 
-static score_t CalculateThreshold(std::vector<score_t> grad_values_copy, double sample_size, data_size_t* big_grad_cnt) {
-  std::vector<score_t> *grad_values = &grad_values_copy;
-  double sum_low = 0.;
-  size_t n_high = 0;
-  int begin = 0;
-  int end = static_cast<int>(grad_values->size());
+using ConstTreeIterator = std::vector<std::unique_ptr<Tree>>::const_iterator;
+
+static double CalculateThresholdSequential(std::vector<score_t>* gradients, data_size_t begin, data_size_t end,
+                                    const double sample_size) {
+  double current_sum_small = 0.0;
+  data_size_t big_grad_size = 0;
 
   while (begin != end) {
-    // TODO do partition in parallel
-    // TODO partition to three parts
-    int middle_begin, middle_end;
-    ArrayArgs<score_t>::Partition(grad_values, begin, end, &middle_begin, &middle_end);
+    data_size_t middle_begin=0, middle_end=0;
+    ArrayArgs<score_t>::Partition(gradients, begin, end, &middle_begin, &middle_end);
+    ++middle_begin; // for half intervals
+    const data_size_t n_middle = middle_end - middle_begin;
+    const data_size_t large_size = middle_begin - begin;
 
-    const size_t n_middle = middle_end - middle_begin;
-    const size_t n_right = end - middle_end;
-    const score_t pivot = (*grad_values)[middle_begin];
+    const double sum_small = std::accumulate(gradients->begin() + middle_end, gradients->begin() + end, 0.0);
+    const double sum_middle = (*gradients)[middle_begin] * n_middle;
 
-    // TODO do sum in parallel
-    double cur_left_sum = std::accumulate(&grad_values->at(begin), &grad_values->at(middle_begin), 0.0);
-    double sum_middle = n_middle * pivot;
+    const double
+        current_sampling_rate = (current_sum_small + sum_small) / (*gradients)[middle_begin] + big_grad_size + n_middle + large_size;
 
-    double cur_sampling_rate = (sum_low + cur_left_sum) / pivot + n_right + n_middle + n_high;
-
-    if (cur_sampling_rate > sample_size) {
-      sum_low += sum_middle + cur_left_sum;
-      begin = middle_end;
-    } else {
-      n_high += n_right + n_middle;
+    if (current_sampling_rate > sample_size) {
+      current_sum_small += sum_small + sum_middle;
       end = middle_begin;
+    } else {
+      big_grad_size += n_middle + large_size;
+      begin = middle_end;
     }
   }
-  *big_grad_cnt = n_high;
-  return sum_low / (sample_size - n_high + MVS::kMVSEps);
+
+  return current_sum_small / (sample_size - big_grad_size + kEpsilon);
 }
 
-static double ComputeLeavesMeanSquaredValue(const Tree &tree) {
-  // TODO sum over leaves are leave values one dimensional
-  // TODO sum using openmp
+static double ComputeLeavesMeanSquaredValue(ConstTreeIterator begin, ConstTreeIterator end) {
   double sum_values = 0.0;
-  for (int i = 0; i < tree.num_leaves(); ++i) {
-    const auto output = tree.LeafOutput(i);
-    sum_values += output * output;
+  data_size_t num_leaves = (*begin)->num_leaves();
+#pragma omp parallel for schedule(static, 2048) reduction(+:sum_values)
+  for (data_size_t leaf_idx = 0; leaf_idx < num_leaves; ++leaf_idx) {
+    double leave_value = 0.0;
+    for (ConstTreeIterator it = begin; it != end; ++it) {
+      if (leaf_idx < (**it).num_leaves()) {
+        const double value = (*it)->LeafOutput(leaf_idx);
+        leave_value += value * value;
+      }
+    }
+    sum_values += std::sqrt(leave_value);
   }
-  return std::sqrt(sum_values / tree.num_leaves());
+  return sum_values / num_leaves;
 }
 
-void MVS::ResetMVS() {
-  CHECK(config_->bagging_fraction > 0.0f && config_->bagging_fraction < 1.0f && config_->bagging_freq > 0);
-  CHECK(config_->mvs_lambda > 0.0f && config_->mvs_lambda < 1.0f);
-  CHECK(!balanced_bagging_);
-  const auto sample_size = static_cast<size_t>(config_->bagging_fraction * num_data_);
-  CHECK_EQ(sample_size, bag_data_indices_.size());
-  Log::Info("Using MVS");
-
+static double ComputeMeanGradValues(score_t *gradients,
+                                    score_t *hessians,
+                                    data_size_t size,
+                                    data_size_t num_tree_per_iteration) {
+  double sum = 0.0;
+#pragma omp parallel for schedule(static, 1024) reduction(+:sum)
+  for (data_size_t i = 0; i < size; ++i) {
+    double local_hessians = 0.0, local_gradients = 0.0;
+    for (data_size_t j = 0; j < num_tree_per_iteration; ++j) {
+      size_t idx = static_cast<size_t>(size) * j + i;
+      local_hessians += hessians[idx] * hessians[idx];
+      local_gradients += gradients[idx] * gradients[idx];
+    }
+    sum += std::sqrt(local_gradients / local_hessians);
+  }
+  return sum / size;
 }
 
 double MVS::GetLambda() {
-  double lambda = ComputeLeavesMeanSquaredValue(*models_.back());
+  if (!mvs_adaptive_) {
+    return mvs_lambda_;
+  }
+  double lambda =
+      (this->iter_ > 0) ? ComputeLeavesMeanSquaredValue(models_.cend() - num_tree_per_iteration_, models_.cend())
+          / config_->learning_rate
+                        : ComputeMeanGradValues(gradients_.data(),
+                                                hessians_.data(),
+                                                num_data_,
+                                                num_tree_per_iteration_);
+
   return lambda;
 }
 
 void MVS::Bagging(int iter) {
+  if (iter % config_->bagging_freq != 0 && !need_re_bagging_) {
+    return;
+  }
+
   bag_data_cnt_ = num_data_;
-  if (mvs_adaptive_) {
-    mvs_lambda_ = GetLambda();
+  mvs_lambda_ = GetLambda();
+
+  if (num_data_ <= kMaxSequentialSize) {
+    threshold_ = GetThreshold(0, num_data_);
   }
 
   auto left_cnt = bagging_runner_.Run<true>(
       num_data_,
       [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t *left,
           data_size_t *) {
-        data_size_t cur_left_cout = BaggingHelper(cur_start, cur_cnt, left);
-        return cur_left_cout;
+        data_size_t left_count = BaggingHelper(cur_start, cur_cnt, left);
+        return left_count;
       },
       bag_data_indices_.data());
+
   bag_data_cnt_ = left_cnt;
   if (!is_use_subset_) {
     tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
@@ -91,6 +121,8 @@ void MVS::Bagging(int iter) {
     tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
                                   bag_data_cnt_);
   }
+  threshold_ = 0.0;
+  Log::Debug("MVS Sample size %d %d", left_cnt, static_cast<data_size_t>(config_->bagging_fraction * num_data_));
 }
 
 data_size_t MVS::BaggingHelper(data_size_t start, data_size_t cnt, data_size_t *buffer) {
@@ -98,31 +130,72 @@ data_size_t MVS::BaggingHelper(data_size_t start, data_size_t cnt, data_size_t *
     return 0;
   }
 
-  std::vector<score_t> tmp_derivatives(cnt, 0.0f);
-  for (data_size_t i = 0; i < cnt; ++i) {
-    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + start * i;
-      tmp_derivatives[i] += gradients_[idx] * gradients_[idx] + mvs_lambda_ * hessians_[idx] * hessians_[idx];
-    }
-    tmp_derivatives[i] = std::sqrt(tmp_derivatives[i]);
-  }
+  const double threshold = GetThreshold(start, cnt);
 
-  auto sample_rate = static_cast<data_size_t>(cnt * config_->bagging_fraction);
-  data_size_t big_grad_cnt = 0;
-  const auto threshold = CalculateThreshold(tmp_derivatives, static_cast<double>(sample_rate), &big_grad_cnt);
   data_size_t left_cnt = 0;
+  data_size_t right_pos = cnt;
   data_size_t big_weight_cnt = 0;
   for (data_size_t i = 0; i < cnt; ++i) {
-    auto position = start + i;
-    if (tmp_derivatives[i] > threshold) {
+    data_size_t position = start + i;
+
+    double derivative = 0.0;
+    for (data_size_t j = 0; j < num_tree_per_iteration_; ++j) {
+      size_t idx = static_cast<size_t>(j) * num_data_ + position;
+      derivative += gradients_[idx] * gradients_[idx] + mvs_lambda_ * hessians_[idx] * hessians_[idx];
+    }
+    derivative = std::sqrt(derivative);
+
+    if (derivative >= threshold) {
       buffer[left_cnt++] = position;
       ++big_weight_cnt;
     } else {
-      double proba_threshold = tmp_derivatives[i] / threshold;
-      data_size_t sampled = left_cnt - big_weight_cnt;
-      data_size_t  rest_needed = ;
+      const double proba_threshold = derivative / threshold;
+      const double proba = bagging_rands_[position / bagging_rand_block_].NextFloat();
+      if (proba < proba_threshold) {
+        buffer[left_cnt++] = position;
+        for (data_size_t tree_id = 0; tree_id < num_tree_per_iteration_; ++tree_id) {
+          size_t idx = static_cast<size_t>(num_data_) * tree_id + position;
+          gradients_[idx] /= proba_threshold;
+          hessians_[idx] /= proba_threshold;
+        }
+      } else {
+        buffer[--right_pos] = position;
+      }
     }
   }
+
+  return left_cnt;
+}
+
+double MVS::GetThreshold(data_size_t begin, data_size_t cnt) {
+  data_size_t n_blocks, block_size;
+  Threading::BlockInfoForceSize<data_size_t>(num_data_, bagging_rand_block_, &n_blocks, &block_size);
+  if (num_data_ < kMaxSequentialSize && block_size > 1 && threshold_ != 0.0) {
+    return threshold_;
+  }
+
+  for (data_size_t i = begin; i < begin + cnt; ++i) {
+    tmp_derivatives_[i] = 0.0f;
+    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+      size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + i;
+      tmp_derivatives_[i] += gradients_[idx] * gradients_[idx] + mvs_lambda_ * hessians_[idx] * hessians_[idx];
+    }
+    tmp_derivatives_[i] = std::sqrt(tmp_derivatives_[i]);
+  }
+
+  double threshold = CalculateThresholdSequential(&tmp_derivatives_, begin, begin + cnt,
+                                                  cnt * config_->bagging_fraction);
+  return threshold;
+}
+
+void MVS::ResetMVS() {
+  CHECK(config_->bagging_fraction > 0.0f && config_->bagging_fraction < 1.0f && config_->bagging_freq > 0);
+  CHECK(config_->mvs_lambda >= 0.0f);
+  CHECK(!balanced_bagging_);
+
+  bag_data_indices_.resize(num_data_);
+  tmp_derivatives_.resize(num_data_);
+  Log::Info("Using MVS");
 }
 
 }  // namspace LightGBM

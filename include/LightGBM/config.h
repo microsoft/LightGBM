@@ -320,7 +320,7 @@ struct Config {
   // check = >0.0
   // check = <=1.0
   // desc = used in MVS boosting if ``mvs_adaptive == true`` than this value is ignored
-  double mvs_lambda = 1e-2;
+  double mvs_lambda = 1e-4;
 
   // desc = use adaptive variant of mvs boosting
   bool mvs_adaptive = false;
