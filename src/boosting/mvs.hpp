@@ -24,7 +24,6 @@ namespace LightGBM {
 
 class MVS : public GBDT {
  public:
-
   MVS();
 
   ~MVS() {

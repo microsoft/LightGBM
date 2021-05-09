@@ -6,6 +6,8 @@
 #include "mvs.hpp"
 
 #include <memory>
+#include <numeric>
+
 
 namespace LightGBM {
 
