@@ -82,11 +82,10 @@ class MVS : public GBDT {
 
 
   void Bagging(int iter) override;
-  // TODO move this constant to some constants
+
   static constexpr double kMVSEps = 1e-20;
 
  protected:
-
   bool GetIsConstHessian(const ObjectiveFunction *) override {
     return false;
   }

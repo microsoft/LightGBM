@@ -1,10 +1,11 @@
-//
-// Created by archer on 11.04.2021.
-//
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 
 #include "mvs.hpp"
 
-#include <algorithm>
+#include <memory>
 
 namespace LightGBM {
 
@@ -16,9 +17,9 @@ static double CalculateThresholdSequential(std::vector<score_t>* gradients, data
   data_size_t big_grad_size = 0;
 
   while (begin != end) {
-    data_size_t middle_begin=0, middle_end=0;
+    data_size_t middle_begin = 0, middle_end = 0;
     ArrayArgs<score_t>::Partition(gradients, begin, end, &middle_begin, &middle_end);
-    ++middle_begin; // for half intervals
+    ++middle_begin;  // for half intervals
     const data_size_t n_middle = middle_end - middle_begin;
     const data_size_t large_size = middle_begin - begin;
 
@@ -198,4 +199,4 @@ void MVS::ResetMVS() {
   Log::Info("Using MVS");
 }
 
-}  // namspace LightGBM
+}  // namespace LightGBM

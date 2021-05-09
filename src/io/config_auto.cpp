@@ -193,11 +193,11 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "max_depth",
   "min_data_in_leaf",
   "min_sum_hessian_in_leaf",
-  "mvs_lambda",
-  "mvs_adaptive",
   "bagging_fraction",
   "pos_bagging_fraction",
   "neg_bagging_fraction",
+  "mvs_lambda",
+  "mvs_adaptive",
   "bagging_freq",
   "bagging_seed",
   "feature_fraction",
@@ -350,9 +350,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "bagging_fraction", &bagging_fraction);
   CHECK_GT(bagging_fraction, 0.0);
   CHECK_LE(bagging_fraction, 1.0);
-  GetDouble(params, "mvs_lambda", &mvs_lambda);
-  CHECK_GT(mvs_lambda, 0.0);
-  GetBool(params, "mvs_adaptive", &mvs_adaptive);
 
   GetDouble(params, "pos_bagging_fraction", &pos_bagging_fraction);
   CHECK_GT(pos_bagging_fraction, 0.0);
@@ -361,6 +358,12 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "neg_bagging_fraction", &neg_bagging_fraction);
   CHECK_GT(neg_bagging_fraction, 0.0);
   CHECK_LE(neg_bagging_fraction, 1.0);
+
+  GetDouble(params, "mvs_lambda", &mvs_lambda);
+  CHECK_GT(mvs_lambda, 0.0);
+  CHECK_LE(mvs_lambda, 1.0);
+
+  GetBool(params, "mvs_adaptive", &mvs_adaptive);
 
   GetInt(params, "bagging_freq", &bagging_freq);
 
@@ -654,10 +657,10 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[min_data_in_leaf: " << min_data_in_leaf << "]\n";
   str_buf << "[min_sum_hessian_in_leaf: " << min_sum_hessian_in_leaf << "]\n";
   str_buf << "[bagging_fraction: " << bagging_fraction << "]\n";
-  str_buf << "[mvs_lambda: " << mvs_lambda << "]\n";
-  str_buf << "[mvs_adaptive" << mvs_adaptive << "]\n";
   str_buf << "[pos_bagging_fraction: " << pos_bagging_fraction << "]\n";
   str_buf << "[neg_bagging_fraction: " << neg_bagging_fraction << "]\n";
+  str_buf << "[mvs_lambda: " << mvs_lambda << "]\n";
+  str_buf << "[mvs_adaptive: " << mvs_adaptive << "]\n";
   str_buf << "[bagging_freq: " << bagging_freq << "]\n";
   str_buf << "[bagging_seed: " << bagging_seed << "]\n";
   str_buf << "[feature_fraction: " << feature_fraction << "]\n";

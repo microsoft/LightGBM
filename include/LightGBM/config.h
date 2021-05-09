@@ -147,6 +147,7 @@ struct Config {
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
   // desc = ``goss``, Gradient-based One-Side Sampling
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
+  // desc = ``mvs``, Minimal variance sampling <https://arxiv.org/abs/1910.13204>__
   std::string boosting = "gbdt";
 
   // alias = linear_trees
@@ -321,9 +322,11 @@ struct Config {
   // check = >0.0
   // check = <=1.0
   // desc = used in MVS boosting if ``mvs_adaptive == true`` than this value is ignored
+  // desc = used only in ``mvs``
   double mvs_lambda = 1e-4;
 
   // desc = use adaptive variant of mvs boosting
+  // desc = used only in ``mvs``
   bool mvs_adaptive = false;
 
   // alias = subsample_freq

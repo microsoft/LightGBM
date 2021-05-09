@@ -60,7 +60,7 @@ void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
       *boosting = "rf";
     } else if (value == std::string("mvs")) {
       *boosting = "mvs";
-    }else {
+    } else {
       Log::Fatal("Unknown boosting type %s", value.c_str());
     }
   }

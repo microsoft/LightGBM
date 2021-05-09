@@ -119,6 +119,8 @@ Core Parameters
 
       -  **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
 
+   -  ``mvs``, Minimal variance sampling <https://arxiv.org/abs/1910.13204>__
+
 -  ``linear_tree`` :raw-html:`<a id="linear_tree" title="Permalink to this parameter" href="#linear_tree">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``linear_trees``
 
    -  fit piecewise linear gradient boosting tree
@@ -335,6 +337,18 @@ Learning Control Parameters
    -  **Note**: if both ``pos_bagging_fraction`` and ``neg_bagging_fraction`` are set to ``1.0``,  balanced bagging is disabled
 
    -  **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
+
+-  ``mvs_lambda`` :raw-html:`<a id="mvs_lambda" title="Permalink to this parameter" href="#mvs_lambda">&#x1F517;&#xFE0E;</a>`, default = ``1e-4``, type = double, constraints: ``0.0 < mvs_lambda <= 1.0``
+
+   -  used in MVS boosting if ``mvs_adaptive == true`` than this value is ignored
+
+   -  used only in ``mvs``
+
+-  ``mvs_adaptive`` :raw-html:`<a id="mvs_adaptive" title="Permalink to this parameter" href="#mvs_adaptive">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  use adaptive variant of mvs boosting
+
+   -  used only in ``mvs``
 
 -  ``bagging_freq`` :raw-html:`<a id="bagging_freq" title="Permalink to this parameter" href="#bagging_freq">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``subsample_freq``
 
