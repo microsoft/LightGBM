@@ -241,7 +241,7 @@ __device__ void FindBestSplitsForLeafKernelInner(const hist_t* feature_hist_ptr,
 
   if (*output_found) {
     *output_threshold = best_threshold;
-    *output_gain = best_gain;
+    *output_gain = best_gain - min_gain_shift;
     *output_default_left = reverse;
     *output_left_sum_gradients = best_sum_left_gradient;
     *output_left_sum_hessians = best_sum_left_hessian;
@@ -257,7 +257,7 @@ __device__ void FindBestSplitsForLeafKernelInner(const hist_t* feature_hist_ptr,
       best_sum_left_hessian, lambda_l1, use_l1, lambda_l2);
     *output_left_gain = GetLeafGainGivenOutput(best_sum_left_gradient,
       best_sum_left_hessian, lambda_l1, use_l1, lambda_l2, *output_left_output);
-    *output_left_output = CalculateSplittedLeafOutput(best_sum_right_gradient,
+    *output_right_output = CalculateSplittedLeafOutput(best_sum_right_gradient,
       best_sum_right_hessian, lambda_l1, use_l1, lambda_l2);
     *output_right_gain = GetLeafGainGivenOutput(best_sum_right_gradient,
       best_sum_right_hessian, lambda_l1, use_l1, lambda_l2, *output_right_output);
@@ -268,14 +268,14 @@ __global__ void FindBestSplitsForLeafKernel(const hist_t* cuda_hist, const int* 
   const uint32_t* feature_hist_offsets, const uint8_t* feature_mfb_offsets, const uint32_t* feature_default_bins, 
   const uint8_t* feature_missing_types, const double* lambda_l1, const double* lambda_l2, const int* smaller_leaf_id,
   const int* larger_leaf_id, const double* smaller_leaf_gain, const double* larger_leaf_gain, const double* sum_gradients_in_smaller_leaf,
-  const double* sum_hessians_in_smaller_leaf, const data_size_t* num_data_in_smaller_leaf,
+  const double* sum_hessians_in_smaller_leaf, const data_size_t* num_data_in_smaller_leaf, hist_t** smaller_leaf_hist,
   const double* sum_gradients_in_larger_leaf, const double* sum_hessians_in_larger_leaf,
-  const data_size_t* num_data_in_larger_leaf, const data_size_t* min_data_in_leaf,
+  const data_size_t* num_data_in_larger_leaf, hist_t** larger_leaf_hist, const data_size_t* min_data_in_leaf,
   const double* min_sum_hessian_in_leaf, const double*  min_gain_to_split,
   // output
   uint32_t* cuda_best_split_threshold, uint8_t* cuda_best_split_default_left,
   double* cuda_best_split_gain, double* cuda_best_split_left_sum_gradient,
-  double* cuda_best_split_left_sum_hessian, data_size_t* cuda_best_split_left_count,
+  double* cuda_best_split_left_sum_hessian, data_size_t* cuda_best_split_left_count, 
   double* cuda_best_split_left_gain, double* cuda_best_split_left_output,
   double* cuda_best_split_right_sum_gradient, double* cuda_best_split_right_sum_hessian,
   data_size_t* cuda_best_split_right_count, double* cuda_best_split_right_gain,
@@ -289,6 +289,9 @@ __global__ void FindBestSplitsForLeafKernel(const hist_t* cuda_hist, const int* 
   const uint8_t missing_type = feature_missing_types[inner_feature_index];
   const int leaf_index = smaller_or_larger ? *smaller_leaf_id : *larger_leaf_id;
   const double parent_gain = smaller_or_larger ? *smaller_leaf_gain : *larger_leaf_gain;
+  /*if (blockIdx.x == 0 && threadIdx.x == 0) {
+    printf("parent_gain = %f\n", parent_gain);
+  }*/
   const double sum_gradients = smaller_or_larger ? *sum_gradients_in_smaller_leaf : *sum_gradients_in_larger_leaf;
   const double sum_hessians = smaller_or_larger ? *sum_hessians_in_smaller_leaf : *sum_hessians_in_larger_leaf;
   const double num_data_in_leaf = smaller_or_larger ? *num_data_in_smaller_leaf : *num_data_in_larger_leaf;
@@ -311,7 +314,8 @@ __global__ void FindBestSplitsForLeafKernel(const hist_t* cuda_hist, const int* 
     return;
   }
   const int cuda_num_total_bin_ref = *cuda_num_total_bin;
-  const hist_t* hist_ptr = cuda_hist + (cuda_num_total_bin_ref * leaf_index + feature_hist_offsets[inner_feature_index]) * 2;
+  const hist_t* hist_ptr = smaller_or_larger ? *smaller_leaf_hist + feature_hist_offsets[inner_feature_index] * 2 :
+    *larger_leaf_hist + feature_hist_offsets[inner_feature_index] * 2;// cuda_hist + (cuda_num_total_bin_ref * leaf_index + feature_hist_offsets[inner_feature_index]) * 2;
   if (num_bin > 2 && missing_type != 0) {
     if (missing_type == 1) {
       FindBestSplitsForLeafKernelInner(hist_ptr,
@@ -348,9 +352,9 @@ __global__ void FindBestSplitsForLeafKernel(const hist_t* cuda_hist, const int* 
 
 void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(const int* smaller_leaf_id, const int* larger_leaf_id,
   const double* smaller_leaf_gain, const double* larger_leaf_gain, const double* sum_gradients_in_smaller_leaf,
-  const double* sum_hessians_in_smaller_leaf, const data_size_t* num_data_in_smaller_leaf,
+  const double* sum_hessians_in_smaller_leaf, const data_size_t* num_data_in_smaller_leaf, hist_t** smaller_leaf_hist,
   const double* sum_gradients_in_larger_leaf, const double* sum_hessians_in_larger_leaf,
-  const data_size_t* num_data_in_larger_leaf) {
+  const data_size_t* num_data_in_larger_leaf, hist_t** larger_leaf_hist) {
   // * 2 for smaller and larger leaves, * 2 for split direction
   const int num_blocks = num_features_ * 4;
   FindBestSplitsForLeafKernel<<<num_blocks, 1>>>(cuda_hist_,
@@ -358,8 +362,8 @@ void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(const int* smaller_l
     cuda_feature_mfb_offsets_, cuda_feature_default_bins_,
     cuda_feature_missing_type_, cuda_lambda_l1_, cuda_lambda_l2_,
     smaller_leaf_id, larger_leaf_id, smaller_leaf_gain, larger_leaf_gain,
-    sum_gradients_in_smaller_leaf, sum_hessians_in_smaller_leaf, num_data_in_smaller_leaf,
-    sum_gradients_in_larger_leaf, sum_hessians_in_larger_leaf, num_data_in_larger_leaf,
+    sum_gradients_in_smaller_leaf, sum_hessians_in_smaller_leaf, num_data_in_smaller_leaf, smaller_leaf_hist,
+    sum_gradients_in_larger_leaf, sum_hessians_in_larger_leaf, num_data_in_larger_leaf, larger_leaf_hist,
     cuda_min_data_in_leaf_, cuda_min_sum_hessian_in_leaf_, cuda_min_gain_to_split_,
 
     cuda_best_split_threshold_, cuda_best_split_default_left_, cuda_best_split_gain_,
@@ -451,12 +455,18 @@ __global__ void SyncBestSplitForLeafKernel(const int* smaller_leaf_index, const 
           smaller_leaf_best_split_left_sum_hessian = cuda_best_split_left_sum_hessian[smaller_reverse_index];
           smaller_leaf_best_split_left_count = cuda_best_split_left_count[smaller_reverse_index];
           smaller_leaf_best_split_left_gain = cuda_best_split_left_gain[smaller_reverse_index];
+          //printf("leaf index %d split left gain update to %f\n", smaller_leaf_index_ref, smaller_leaf_best_split_left_gain);
           smaller_leaf_best_split_left_output = cuda_best_split_left_output[smaller_reverse_index];
           smaller_leaf_best_split_right_sum_gradient = cuda_best_split_right_sum_gradient[smaller_reverse_index];
           smaller_leaf_best_split_right_sum_hessian = cuda_best_split_right_sum_hessian[smaller_reverse_index];
           smaller_leaf_best_split_right_count = cuda_best_split_right_count[smaller_reverse_index];
           smaller_leaf_best_split_right_gain = cuda_best_split_right_gain[smaller_reverse_index];
+          //printf("leaf index %d split right gain update to %f\n", smaller_leaf_index_ref, smaller_leaf_best_split_right_gain);
           smaller_leaf_best_split_right_output = cuda_best_split_right_output[smaller_reverse_index];
+          /*printf("smaller_leaf_index = %d, smaller_leaf_best_gain = %f, smaller_leaf_best_split_left_sum_gradient = %f, smaller_leaf_best_split_left_sum_hessian = %f\n",
+            smaller_leaf_index_ref, smaller_leaf_best_gain, smaller_leaf_best_split_left_sum_gradient, smaller_leaf_best_split_left_sum_hessian);
+          printf("smaller_leaf_index = %d, smaller_leaf_best_gain = %f, smaller_leaf_best_split_right_sum_gradient = %f, smaller_leaf_best_split_right_sum_hessian = %f\n",
+            smaller_leaf_index_ref, smaller_leaf_best_gain, smaller_leaf_best_split_right_sum_gradient, smaller_leaf_best_split_right_sum_hessian);*/
         }
       }
       const int smaller_non_reverse_index = 2 * feature_index + 1;
@@ -476,12 +486,18 @@ __global__ void SyncBestSplitForLeafKernel(const int* smaller_leaf_index, const 
           smaller_leaf_best_split_left_sum_hessian = cuda_best_split_left_sum_hessian[smaller_non_reverse_index];
           smaller_leaf_best_split_left_count = cuda_best_split_left_count[smaller_non_reverse_index];
           smaller_leaf_best_split_left_gain = cuda_best_split_left_gain[smaller_non_reverse_index];
+          //printf("leaf index %d split left gain update to %f\n", smaller_leaf_index_ref, smaller_leaf_best_split_left_gain);
           smaller_leaf_best_split_left_output = cuda_best_split_left_output[smaller_non_reverse_index];
           smaller_leaf_best_split_right_sum_gradient = cuda_best_split_right_sum_gradient[smaller_non_reverse_index];
           smaller_leaf_best_split_right_sum_hessian = cuda_best_split_right_sum_hessian[smaller_non_reverse_index];
           smaller_leaf_best_split_right_count = cuda_best_split_right_count[smaller_non_reverse_index];
           smaller_leaf_best_split_right_gain = cuda_best_split_right_gain[smaller_non_reverse_index];
+          //printf("leaf index %d split right gain update to %f\n", smaller_leaf_index_ref, smaller_leaf_best_split_right_gain);
           smaller_leaf_best_split_right_output = cuda_best_split_right_output[smaller_non_reverse_index];
+          /*printf("smaller_leaf_index = %d, smaller_leaf_best_gain = %f, smaller_leaf_best_split_left_sum_gradient = %f, smaller_leaf_best_split_left_sum_hessian = %f\n",
+            smaller_leaf_index_ref, smaller_leaf_best_gain, smaller_leaf_best_split_left_sum_gradient, smaller_leaf_best_split_left_sum_hessian);
+          printf("smaller_leaf_index = %d, smaller_leaf_best_gain = %f, smaller_leaf_best_split_right_sum_gradient = %f, smaller_leaf_best_split_right_sum_hessian = %f\n",
+            smaller_leaf_index_ref, smaller_leaf_best_gain, smaller_leaf_best_split_right_sum_gradient, smaller_leaf_best_split_right_sum_hessian);*/
         }
       }
 
@@ -500,12 +516,18 @@ __global__ void SyncBestSplitForLeafKernel(const int* smaller_leaf_index, const 
             larger_leaf_best_split_left_sum_hessian = cuda_best_split_left_sum_hessian[larger_reverse_index];
             larger_leaf_best_split_left_count = cuda_best_split_left_count[larger_reverse_index];
             larger_leaf_best_split_left_gain = cuda_best_split_left_gain[larger_reverse_index];
+            //printf("leaf index %d split left gain update to %f\n", larger_leaf_index_ref, larger_leaf_best_split_left_gain);
             larger_leaf_best_split_left_output = cuda_best_split_left_output[larger_reverse_index];
             larger_leaf_best_split_right_sum_gradient = cuda_best_split_right_sum_gradient[larger_reverse_index];
             larger_leaf_best_split_right_sum_hessian = cuda_best_split_right_sum_hessian[larger_reverse_index];
             larger_leaf_best_split_right_count = cuda_best_split_right_count[larger_reverse_index];
             larger_leaf_best_split_right_gain = cuda_best_split_right_gain[larger_reverse_index];
+            //printf("leaf index %d split right gain update to %f\n", larger_leaf_index_ref, larger_leaf_best_split_right_gain);
             larger_leaf_best_split_right_output = cuda_best_split_right_output[larger_reverse_index];
+            /*printf("larger_leaf_index = %d, larger_leaf_best_gain = %f, larger_leaf_best_split_left_sum_gradient = %f, larger_leaf_best_split_left_sum_hessian = %f\n",
+              larger_leaf_index_ref, larger_leaf_best_gain, larger_leaf_best_split_left_sum_gradient, larger_leaf_best_split_left_sum_hessian);
+            printf("larger_leaf_index = %d, larger_leaf_best_gain = %f, larger_leaf_best_split_right_sum_gradient = %f, larger_leaf_best_split_right_sum_hessian = %f\n",
+              larger_leaf_index_ref, larger_leaf_best_gain, larger_leaf_best_split_right_sum_gradient, larger_leaf_best_split_right_sum_hessian);*/
           }
         }
         const int larger_non_reverse_index = 2 * feature_index + 1 + larger_leaf_offset;
@@ -522,12 +544,18 @@ __global__ void SyncBestSplitForLeafKernel(const int* smaller_leaf_index, const 
             larger_leaf_best_split_left_sum_hessian = cuda_best_split_left_sum_hessian[larger_non_reverse_index];
             larger_leaf_best_split_left_count = cuda_best_split_left_count[larger_non_reverse_index];
             larger_leaf_best_split_left_gain = cuda_best_split_left_gain[larger_non_reverse_index];
+            //printf("leaf index %d split left gain update to %f\n", larger_leaf_index_ref, larger_leaf_best_split_left_gain);
             larger_leaf_best_split_left_output = cuda_best_split_left_output[larger_non_reverse_index];
             larger_leaf_best_split_right_sum_gradient = cuda_best_split_right_sum_gradient[larger_non_reverse_index];
             larger_leaf_best_split_right_sum_hessian = cuda_best_split_right_sum_hessian[larger_non_reverse_index];
             larger_leaf_best_split_right_count = cuda_best_split_right_count[larger_non_reverse_index];
             larger_leaf_best_split_right_gain = cuda_best_split_right_gain[larger_non_reverse_index];
+            //printf("leaf index %d split right gain update to %f\n", larger_leaf_index_ref, larger_leaf_best_split_right_gain);
             larger_leaf_best_split_right_output = cuda_best_split_right_output[larger_non_reverse_index];
+            /*printf("larger_leaf_index = %d, larger_leaf_best_gain = %f, larger_leaf_best_split_left_sum_gradient = %f, larger_leaf_best_split_left_sum_hessian = %f\n",
+              larger_leaf_index_ref, larger_leaf_best_gain, larger_leaf_best_split_left_sum_gradient, larger_leaf_best_split_left_sum_hessian);
+            printf("larger_leaf_index = %d, larger_leaf_best_gain = %f, larger_leaf_best_split_right_sum_gradient = %f, larger_leaf_best_split_right_sum_hessian = %f\n",
+              larger_leaf_index_ref, larger_leaf_best_gain, larger_leaf_best_split_right_sum_gradient, larger_leaf_best_split_right_sum_hessian);*/
           }
         }
       }

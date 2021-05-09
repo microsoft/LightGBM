@@ -11,6 +11,8 @@
 #include <LightGBM/feature_group.h>
 #include <LightGBM/tree.h>
 
+#include <fstream>
+
 #include "new_cuda_utils.hpp"
 
 #include <vector>
@@ -34,9 +36,15 @@ class CUDAHistogramConstructor {
 
   void ConstructHistogramForLeaf(const int* cuda_smaller_leaf_index, const int* cuda_larger_leaf_index,
     const data_size_t** cuda_data_indices_in_smaller_leaf, const data_size_t** cuda_data_indices_in_larger_leaf,
+    const double* cuda_smaller_leaf_sum_gradients, const double* cuda_smaller_leaf_sum_hessians, hist_t** cuda_smaller_leaf_hist,
+    const double* cuda_larger_leaf_sum_gradients, const double* cuda_larger_leaf_sum_hessians, hist_t** cuda_larger_leaf_hist,
     const data_size_t* cuda_leaf_num_data);
 
   const hist_t* cuda_hist() const { return cuda_hist_; }
+
+  hist_t* cuda_hist_pointer() const { return cuda_hist_; }
+
+  hist_t* cuda_hist_pointer() { return cuda_hist_; }
 
   const uint8_t* cuda_data() const { return cuda_data_; }
 
@@ -51,20 +59,31 @@ class CUDAHistogramConstructor {
   void TestAfterConstructHistogram() {
     PrintLastCUDAError();
     std::vector<hist_t> test_hist(num_total_bin_ * 2, 0.0f);
-    CopyFromCUDADeviceToHost<hist_t>(test_hist.data(), cuda_hist_, static_cast<size_t>(num_total_bin_) * 2);
+    /*CopyFromCUDADeviceToHost<hist_t>(test_hist.data(), cuda_hist_, static_cast<size_t>(num_total_bin_) * 2);
     for (int i = 0; i < 100; ++i) {
       Log::Warning("bin %d grad %f hess %f", i, test_hist[2 * i], test_hist[2 * i + 1]);
+    }*/
+    const hist_t* leaf_2_cuda_hist_ptr = cuda_hist_ + 3 * 2 * num_total_bin_;
+    Log::Warning("cuda_hist_ptr = %ld", leaf_2_cuda_hist_ptr);
+    CopyFromCUDADeviceToHost<hist_t>(test_hist.data(), leaf_2_cuda_hist_ptr, 2 * num_total_bin_);
+    std::ofstream fout("leaf_2_cuda_hist.txt");
+    for (int i = 0; i < num_total_bin_; ++i) {
+      Log::Warning("bin %d grad %f hess %f", i, test_hist[2 * i], test_hist[2 * i + 1]);
+      fout << "bin " << i << " grad " << test_hist[2 * i] << " hess " << test_hist[2 * i + 1] << "\n"; 
     }
+    fout.close();
   }
 
  private:
   void LaunchConstructHistogramKernel(const int* cuda_leaf_index,
     const data_size_t** cuda_data_indices_in_leaf,
-    const data_size_t* cuda_leaf_num_data);
+    const data_size_t* cuda_leaf_num_data,
+    hist_t** cuda_leaf_hist);
 
-  void LaunchSubtractAndFixHistogramKernel(const int* cuda_smaller_leaf_index,
+  void LaunchSubtractHistogramKernel(const int* cuda_smaller_leaf_index,
     const int* cuda_larger_leaf_index, const double* smaller_leaf_sum_gradients, const double* smaller_leaf_sum_hessians,
-    const double* larger_leaf_sum_gradients, const double* larger_leaf_sum_hessians);
+    const double* larger_leaf_sum_gradients, const double* larger_leaf_sum_hessians,
+    hist_t** cuda_smaller_leaf_hist, hist_t** cuda_larger_leaf_hist);
 
   void InitCUDAData(const Dataset* train_data);
 

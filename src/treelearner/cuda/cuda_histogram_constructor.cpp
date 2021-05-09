@@ -48,6 +48,7 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data) {
   AllocateCUDAMemory<uint8_t>(num_feature_groups_ * num_data_, &cuda_data_);
 
   AllocateCUDAMemory<hist_t>(num_total_bin_ * 2 * num_leaves_, &cuda_hist_);
+  SetCUDAMemory<hist_t>(cuda_hist_, 0, num_total_bin_ * 2 * num_leaves_);
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_num_total_bin_, &num_total_bin_, 1);
 
@@ -97,15 +98,24 @@ void CUDAHistogramConstructor::PushOneData(const uint32_t feature_bin_value,
   data_[index] = feature_bin_value_uint8;
 }
 
-void CUDAHistogramConstructor::ConstructHistogramForLeaf(const int* cuda_smaller_leaf_index, const int* /*cuda_larger_leaf_index*/,
-  const data_size_t** cuda_data_indices_in_smaller_leaf, const data_size_t** /*cuda_data_indices_in_larger_leaf*/,
+void CUDAHistogramConstructor::ConstructHistogramForLeaf(const int* cuda_smaller_leaf_index, const int* cuda_larger_leaf_index,
+  const data_size_t** cuda_data_indices_in_smaller_leaf, const data_size_t** cuda_data_indices_in_larger_leaf,
+  const double* cuda_smaller_leaf_sum_gradients, const double* cuda_smaller_leaf_sum_hessians, hist_t** cuda_smaller_leaf_hist,
+  const double* cuda_larger_leaf_sum_gradients, const double* cuda_larger_leaf_sum_hessians, hist_t** cuda_larger_leaf_hist,
   const data_size_t* cuda_leaf_num_data) {
   auto start = std::chrono::steady_clock::now();
-  LaunchConstructHistogramKernel(cuda_smaller_leaf_index, cuda_data_indices_in_smaller_leaf, cuda_leaf_num_data);
+  LaunchConstructHistogramKernel(cuda_smaller_leaf_index, cuda_data_indices_in_smaller_leaf, cuda_leaf_num_data, cuda_smaller_leaf_hist);
   SynchronizeCUDADevice();
   auto end = std::chrono::steady_clock::now();
   double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   //Log::Warning("LaunchConstructHistogramKernel time %f", duration);
+  start = std::chrono::steady_clock::now();
+  LaunchSubtractHistogramKernel(cuda_smaller_leaf_index,
+    cuda_larger_leaf_index, cuda_smaller_leaf_sum_gradients, cuda_smaller_leaf_sum_hessians,
+    cuda_larger_leaf_sum_gradients, cuda_larger_leaf_sum_hessians, cuda_smaller_leaf_hist, cuda_larger_leaf_hist);
+  end = std::chrono::steady_clock::now();
+  duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
+  //Log::Warning("LaunchSubtractHistogramKernel time %f", duration);
   /*PrintLastCUDAError();
   std::vector<hist_t> cpu_hist(6143 * 2, 0.0f);
   CopyFromCUDADeviceToHost<hist_t>(cpu_hist.data(), cuda_hist_, 6143 * 2);*/

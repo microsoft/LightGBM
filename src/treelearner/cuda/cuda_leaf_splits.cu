@@ -42,22 +42,34 @@ __global__ void CUDAInitValuesKernel1(const score_t* cuda_gradients, const score
 
 __global__ void CUDAInitValuesKernel2(double* cuda_sum_of_gradients, double* cuda_sum_of_hessians) {
   if (blockIdx.x == 0) {
+    double sum_of_gradients = 0.0f;
+    double sum_of_hessians = 0.0f;
     for (unsigned int i = 1; i < gridDim.x; ++i) {
-      cuda_sum_of_gradients[0] += cuda_sum_of_gradients[i];
-      cuda_sum_of_hessians[0] += cuda_sum_of_hessians[i];
+      sum_of_gradients += cuda_sum_of_gradients[i];
+      sum_of_hessians += cuda_sum_of_hessians[i];
     }
+    cuda_sum_of_gradients[0] += sum_of_gradients;
+    cuda_sum_of_hessians[0] += sum_of_hessians;
   }
 }
 
 void CUDALeafSplits::LaunchInitValuesKernal() {
+  auto start = std::chrono::steady_clock::now();
   CUDAInitValuesKernel1<<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
     cuda_gradients_, cuda_hessians_, cuda_num_data_, cuda_sum_of_gradients_,
     cuda_sum_of_hessians_);
   CopyFromCUDADeviceToCUDADevice<data_size_t>(cuda_num_data_in_leaf_, cuda_num_data_, 1);
   SynchronizeCUDADevice();
+  auto end = std::chrono::steady_clock::now();
+  auto duration = static_cast<std::chrono::duration<double>>(end - start);
+  Log::Warning("CUDAInitValuesKernel1 duration = %f", duration.count());
+  start = std::chrono::steady_clock::now();
   CUDAInitValuesKernel2<<<num_blocks_init_from_gradients_, 1>>>(
     cuda_sum_of_gradients_, cuda_sum_of_hessians_);
   SynchronizeCUDADevice();
+  end = std::chrono::steady_clock::now();
+  duration = static_cast<std::chrono::duration<double>>(end - start);
+  Log::Warning("CUDAInitValuesKernel2 duration = %f", duration.count());
 }
 
 }  // namespace LightGBM

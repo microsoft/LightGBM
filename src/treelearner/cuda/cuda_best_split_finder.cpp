@@ -116,9 +116,11 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_le
     smaller_leaf_splits->cuda_sum_of_gradients(),
     smaller_leaf_splits->cuda_sum_of_hessians(),
     smaller_leaf_splits->cuda_num_data_in_leaf(),
+    smaller_leaf_splits->cuda_hist_in_leaf_pointer_pointer(),
     larger_leaf_splits->cuda_sum_of_gradients(),
     larger_leaf_splits->cuda_sum_of_hessians(),
-    larger_leaf_splits->cuda_num_data_in_leaf());
+    larger_leaf_splits->cuda_num_data_in_leaf(),
+    larger_leaf_splits->cuda_hist_in_leaf_pointer_pointer());
   SynchronizeCUDADevice();
   LaunchSyncBestSplitForLeafKernel(smaller_leaf_splits->cuda_leaf_index(), larger_leaf_splits->cuda_leaf_index());
   SynchronizeCUDADevice();
@@ -130,6 +132,7 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_le
 void CUDABestSplitFinder::FindBestFromAllSplits(const int* cuda_cur_num_leaves) {
   auto start = std::chrono::steady_clock::now();
   LaunchFindBestFromAllSplitsKernel(cuda_cur_num_leaves);
+  SynchronizeCUDADevice();
   auto end = std::chrono::steady_clock::now();
   double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   //Log::Warning("FindBestFromAllSplits time %f", duration);

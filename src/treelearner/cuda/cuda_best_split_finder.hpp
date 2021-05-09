@@ -91,9 +91,9 @@ class CUDABestSplitFinder {
  private:
   void LaunchFindBestSplitsForLeafKernel(const int* smaller_leaf_id, const int* larger_leaf_id,
     const double* smaller_leaf_gain, const double* larger_leaf_gain, const double* sum_gradients_in_smaller_leaf,
-    const double* sum_hessians_in_smaller_leaf, const data_size_t* num_data_in_smaller_leaf,
+    const double* sum_hessians_in_smaller_leaf, const data_size_t* num_data_in_smaller_leaf, hist_t** smaller_leaf_hist,
     const double* sum_gradients_in_larger_leaf, const double* sum_hessians_in_larger_leaf,
-    const data_size_t* num_data_in_larger_leaf);
+    const data_size_t* num_data_in_larger_leaf, hist_t** larger_leaf_hist);
 
   void LaunchSyncBestSplitForLeafKernel(const int* smaller_leaf_index, const int* larger_leaf_index);
 

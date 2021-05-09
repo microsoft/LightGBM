@@ -10,6 +10,7 @@
 
 #include <LightGBM/meta.h>
 #include <LightGBM/tree.h>
+#include <LightGBM/bin.h>
 #include "new_cuda_utils.hpp"
 
 #define FILL_INDICES_BLOCK_SIZE_DATA_PARTITION (1024)
@@ -23,7 +24,8 @@ class CUDADataPartition {
  public:
   CUDADataPartition(const data_size_t num_data, const int num_features, const int num_leaves,
   const int num_threads, const data_size_t* cuda_num_data, const int* cuda_num_leaves, const uint8_t* cuda_data,
-  const int* cuda_num_features, const std::vector<uint32_t>& feature_hist_offsets, const Dataset* train_data);
+  const int* cuda_num_features, const std::vector<uint32_t>& feature_hist_offsets, const Dataset* train_data,
+  hist_t* cuda_hist);
 
   void Init();
 
@@ -40,10 +42,12 @@ class CUDADataPartition {
     double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
     double* smaller_leaf_cuda_gain_pointer, double* smaller_leaf_cuda_leaf_value_pointer,
     const data_size_t** smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+    hist_t** smaller_leaf_cuda_hist_pointer_pointer,
     int* larger_leaf_cuda_leaf_index_pointer, double* larger_leaf_cuda_sum_of_gradients_pointer,
     double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
     double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
-    const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer);
+    const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+    hist_t** larger_leaf_cuda_hist_pointer_pointer);
 
   Tree* GetCPUTree();
 
@@ -88,20 +92,31 @@ class CUDADataPartition {
     CopyFromCUDADeviceToHost<int>(test_leaf_num_data.data(), cuda_leaf_num_data_, static_cast<size_t>(num_leaves_));
     CopyFromCUDADeviceToHost<int>(test_leaf_data_start.data(), cuda_leaf_data_start_, static_cast<size_t>(num_leaves_));
     CopyFromCUDADeviceToHost<int>(test_leaf_data_end.data(), cuda_leaf_data_end_, static_cast<size_t>(num_leaves_));
-    for (int i = 0; i < num_leaves_; ++i) {
+    /*for (int i = 0; i < num_leaves_; ++i) {
       Log::Warning("test_leaf_num_data[%d] = %d", i, test_leaf_num_data[i]);
       Log::Warning("test_leaf_data_start[%d] = %d", i, test_leaf_data_start[i]);
       Log::Warning("test_leaf_data_end[%d] = %d", i, test_leaf_data_end[i]);
-    }
-    const data_size_t num_data_in_leaf_0 = test_leaf_num_data[0];
+    }*/
+    const data_size_t start_pos = test_leaf_data_start[2];
     const int check_window_size = 10;
     for (data_size_t i = 0; i < check_window_size; ++i) {
       Log::Warning("test_data_indices[%d] = %d", i, test_data_indices[i]);
     }
-    for (data_size_t i = num_data_in_leaf_0 - check_window_size; i < num_data_in_leaf_0; ++i) {
+    Log::Warning("==========================================================");
+    for (data_size_t i = start_pos - check_window_size; i < start_pos; ++i) {
       Log::Warning("test_data_indices[%d] = %d", i, test_data_indices[i]);
     }
-    for (data_size_t i = num_data_in_leaf_0; i < num_data_in_leaf_0 + check_window_size; ++i) {
+    Log::Warning("==========================================================");
+    for (data_size_t i = start_pos; i < start_pos + check_window_size; ++i) {
+      Log::Warning("test_data_indices[%d] = %d", i, test_data_indices[i]);
+    }
+    Log::Warning("==========================================================");
+    const data_size_t end_pos = test_leaf_data_end[2];
+    for (data_size_t i = end_pos - check_window_size; i < end_pos; ++i) {
+      Log::Warning("test_data_indices[%d] = %d", i, test_data_indices[i]);
+    }
+    Log::Warning("==========================================================");
+    for (data_size_t i = end_pos; i < end_pos + check_window_size; ++i) {
       Log::Warning("test_data_indices[%d] = %d", i, test_data_indices[i]);
     }
   }
@@ -130,10 +145,10 @@ class CUDADataPartition {
   const int* cuda_cur_num_leaves() const { return cuda_cur_num_leaves_; }
 
  private:
-  void GenDataToLeftBitVector(const int* leaf_id, const int* best_split_feature,
+  void GenDataToLeftBitVector(const int* leaf_id, const data_size_t num_data_in_leaf, const int* best_split_feature,
     const uint32_t* best_split_threshold, const uint8_t* best_split_default_left);
 
-  void SplitInner(const int* leaf_index,
+  void SplitInner(const int* leaf_index, const data_size_t num_data_in_leaf,
     const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
     const double* best_left_gain, const double* best_left_leaf_value,
     const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
@@ -143,15 +158,17 @@ class CUDADataPartition {
     double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
     double* smaller_leaf_cuda_gain_pointer, double* smaller_leaf_cuda_leaf_value_pointer,
     const data_size_t** smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+    hist_t** smaller_leaf_cuda_hist_pointer_pointer,
     int* larger_leaf_cuda_leaf_index_pointer, double* larger_leaf_cuda_sum_of_gradients_pointer,
     double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
     double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
-    const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer);
+    const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+    hist_t** larger_leaf_cuda_hist_pointer_pointer, const int cpu_leaf_index);
 
   // kernel launch functions
   void LaunchFillDataIndicesBeforeTrain();
 
-  void LaunchSplitInnerKernel(const int* leaf_index,
+  void LaunchSplitInnerKernel(const int* leaf_index, const data_size_t num_data_in_leaf,
     const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
     const double* best_left_gain, const double* best_left_leaf_value,
     const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
@@ -161,12 +178,14 @@ class CUDADataPartition {
     double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
     double* smaller_leaf_cuda_gain_pointer, double* smaller_leaf_cuda_leaf_value_pointer,
     const data_size_t** smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+    hist_t** smaller_leaf_cuda_hist_pointer_pointer,
     int* larger_leaf_cuda_leaf_index_pointer, double* larger_leaf_cuda_sum_of_gradients_pointer,
     double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
     double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
-    const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer);
+    const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
+    hist_t** larger_leaf_cuda_hist_pointer_pointer, const int cpu_leaf_index);
 
-  void LaunchGenDataToLeftBitVectorKernel(const int* leaf_index, const int* best_split_feature,
+  void LaunchGenDataToLeftBitVectorKernel(const int* leaf_index, const data_size_t num_data_in_leaf, const int* best_split_feature,
     const uint32_t* best_split_threshold, const uint8_t* best_split_default_left);
 
   void LaunchPrefixSumKernel(uint32_t* cuda_elements);
@@ -176,6 +195,7 @@ class CUDADataPartition {
   const int num_features_;
   const int num_leaves_;
   const int num_threads_;
+  const int num_total_bin_;
   int max_num_split_indices_blocks_;
   std::vector<uint32_t> feature_default_bins_;
   std::vector<uint32_t> feature_most_freq_bins_;
@@ -185,6 +205,8 @@ class CUDADataPartition {
   std::vector<uint8_t> feature_missing_is_na_;
   std::vector<uint8_t> feature_mfb_is_zero_;
   std::vector<uint8_t> feature_mfb_is_na_;
+  std::vector<data_size_t> num_data_in_leaf_;
+  int cur_num_leaves_;
 
   // CUDA memory, held by this object
   data_size_t* cuda_data_indices_;
@@ -205,12 +227,16 @@ class CUDADataPartition {
   uint8_t* cuda_feature_missing_is_na_;
   uint8_t* cuda_feature_mfb_is_zero_;
   uint8_t* cuda_feature_mfb_is_na_;
+  int* cuda_num_total_bin_;
+  // for histogram pool
+  hist_t** cuda_hist_pool_;
 
   // CUDA memory, held by other object
   const data_size_t* cuda_num_data_;
   const int* cuda_num_leaves_;
   const uint8_t* cuda_data_;
   const int* cuda_num_features_;
+  hist_t* cuda_hist_;
 };
 
 }  // namespace LightGBM

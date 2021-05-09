@@ -10,6 +10,7 @@
 
 #include <LightGBM/utils/log.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/bin.h>
 #include "new_cuda_utils.hpp"
 
 #define INIT_SUM_BLOCK_SIZE_LEAF_SPLITS (6144)
@@ -30,9 +31,9 @@ class CUDALeafSplits {
 
   void InitValues(const double* cuda_sum_of_gradients, const double* cuda_sum_of_hessians,
     const data_size_t* cuda_num_data_in_leaf, const data_size_t* cuda_data_indices_in_leaf,
-    const double* cuda_gain, const double* cuda_leaf_value);
+    hist_t* cuda_hist_in_leaf, const double* cuda_gain, const double* cuda_leaf_value);
 
-  void InitValues(const data_size_t* cuda_data_indices_in_leaf);
+  void InitValues(const data_size_t* cuda_data_indices_in_leaf, hist_t* cuda_hist_in_leaf);
 
   const int* cuda_leaf_index() const { return cuda_leaf_index_; }
 
@@ -59,6 +60,8 @@ class CUDALeafSplits {
   double* cuda_leaf_value_pointer() const { return cuda_leaf_value_; }
 
   const data_size_t** cuda_data_indices_in_leaf_pointer_pointer() { return cuda_data_indices_in_leaf_; }
+
+  hist_t** cuda_hist_in_leaf_pointer_pointer() const { return cuda_hist_in_leaf_; }
 
   void Test() {
     PrintLastCUDAError();
@@ -87,6 +90,7 @@ class CUDALeafSplits {
 
   // CUDA memory, held by other object
   const data_size_t** cuda_data_indices_in_leaf_;
+  hist_t** cuda_hist_in_leaf_;
   const score_t* cuda_gradients_;
   const score_t* cuda_hessians_;
   const int* cuda_num_data_;
