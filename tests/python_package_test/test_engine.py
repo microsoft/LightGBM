@@ -747,7 +747,7 @@ def test_cv():
     cv_res_obj = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=tss,
                         verbose_eval=False)
     np.testing.assert_allclose(cv_res_gen['l2-mean'], cv_res_obj['l2-mean'])
-    # lambdarank
+    # LambdaRank
     X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                        '../../examples/lambdarank/rank.train'))
     q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -1252,7 +1252,8 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     return trainset
 
 
-def test_monotone_constraints():
+@pytest.mark.parametrize("test_with_interaction_constraints", [True, False])
+def test_monotone_constraints(test_with_interaction_constraints):
     def is_increasing(y):
         return (np.diff(y) >= 0.0).all()
 
@@ -1273,28 +1274,69 @@ def test_monotone_constraints():
             monotonically_increasing_y = learner.predict(monotonically_increasing_x)
             monotonically_decreasing_x = np.column_stack((fixed_x, variable_x, fixed_x))
             monotonically_decreasing_y = learner.predict(monotonically_decreasing_x)
-            non_monotone_x = np.column_stack((fixed_x,
-                                              fixed_x,
-                                              categorize(variable_x) if x3_to_category else variable_x))
+            non_monotone_x = np.column_stack(
+                (
+                    fixed_x,
+                    fixed_x,
+                    categorize(variable_x) if x3_to_category else variable_x,
+                )
+            )
             non_monotone_y = learner.predict(non_monotone_x)
-            if not (is_increasing(monotonically_increasing_y)
-                    and is_decreasing(monotonically_decreasing_y)
-                    and is_non_monotone(non_monotone_y)):
+            if not (
+                is_increasing(monotonically_increasing_y)
+                and is_decreasing(monotonically_decreasing_y)
+                and is_non_monotone(non_monotone_y)
+            ):
                 return False
         return True
 
+    def are_interactions_enforced(gbm, feature_sets):
+        def parse_tree_features(gbm):
+            # trees start at position 1.
+            tree_str = gbm.model_to_string().split("Tree")[1:]
+            feature_sets = []
+            for tree in tree_str:
+                # split_features are in 4th line.
+                features = tree.splitlines()[3].split("=")[1].split(" ")
+                features = set(f"Column_{f}" for f in features)
+                feature_sets.append(features)
+            return np.array(feature_sets)
+
+        def has_interaction(treef):
+            n = 0
+            for fs in feature_sets:
+                if len(treef.intersection(fs)) > 0:
+                    n += 1
+            return n > 1
+
+        tree_features = parse_tree_features(gbm)
+        has_interaction_flag = np.array(
+            [has_interaction(treef) for treef in tree_features]
+        )
+
+        return not has_interaction_flag.any()
+
     for test_with_categorical_variable in [True, False]:
-        trainset = generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
+        trainset = generate_trainset_for_monotone_constraints_tests(
+            test_with_categorical_variable
+        )
         for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
             params = {
-                'min_data': 20,
-                'num_leaves': 20,
-                'monotone_constraints': [1, -1, 0],
+                "min_data": 20,
+                "num_leaves": 20,
+                "monotone_constraints": [1, -1, 0],
                 "monotone_constraints_method": monotone_constraints_method,
                 "use_missing": False,
             }
+            if test_with_interaction_constraints:
+                params["interaction_constraints"] = [[0], [1], [2]]
             constrained_model = lgb.train(params, trainset)
-            assert is_correctly_constrained(constrained_model, test_with_categorical_variable)
+            assert is_correctly_constrained(
+                constrained_model, test_with_categorical_variable
+            )
+            if test_with_interaction_constraints:
+                feature_sets = [["Column_0"], ["Column_1"], "Column_2"]
+                assert are_interactions_enforced(constrained_model, feature_sets)
 
 
 def test_monotone_penalty():

@@ -187,7 +187,7 @@ LightGBM supports the following applications:
 
 -  cross-entropy, the objective function is logloss and supports training on non-binary labels
 
--  lambdarank, the objective function is lambdarank with NDCG
+-  LambdaRank, the objective function is LambdaRank with NDCG
 
 LightGBM supports the following metrics:
 

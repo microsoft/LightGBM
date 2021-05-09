@@ -75,18 +75,31 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
   rawData <- matrix(runif(1000L), ncol = 10L)
   handle <- lgb.null.handle()
   ref_handle <- NULL
-  handle <- lightgbm:::lgb.call(
-    "LGBM_DatasetCreateFromMat_R"
-    , ret = handle
+  .Call(
+    LGBM_DatasetCreateFromMat_R
     , rawData
     , nrow(rawData)
     , ncol(rawData)
     , lightgbm:::lgb.params2str(params = list())
     , ref_handle
+    , handle
   )
   expect_false(is.na(handle))
-  lgb.call("LGBM_DatasetFree_R", ret = NULL, handle)
+  .Call(LGBM_DatasetFree_R, handle)
   handle <- NULL
+})
+
+test_that("cpp errors should be raised as proper R errors", {
+  data(agaricus.train, package = "lightgbm")
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(
+    train$data
+    , label = train$label
+    , init_score = seq_len(10L)
+  )
+  expect_error({
+    dtrain$construct()
+  }, regexp = "Initial score size doesn't match data size")
 })
 
 test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {

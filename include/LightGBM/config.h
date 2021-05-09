@@ -149,6 +149,7 @@ struct Config {
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
+  // alias = linear_trees
   // desc = fit piecewise linear gradient boosting tree
   // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
   // descl2 = the linear model at each leaf includes all the numerical features in that leaf's branch
@@ -355,6 +356,7 @@ struct Config {
   // desc = random seed for ``feature_fraction``
   int feature_fraction_seed = 2;
 
+  // alias = extra_tree
   // desc = use extremely randomized trees
   // desc = if set to ``true``, when evaluating node splits LightGBM will check only one randomly-chosen threshold for each feature
   // desc = can be used to speed up training
@@ -719,6 +721,10 @@ struct Config {
   // desc = **Note**: ``init_score`` is not saved in binary file
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
   bool save_binary = false;
+
+  // desc = use precise floating point number parsing for text parser (e.g. CSV, TSV, LibSVM input)
+  // desc = **Note**: setting this to ``true`` may lead to much slower text parsing
+  bool precise_float_parser = false;
 
   #pragma endregion
 
