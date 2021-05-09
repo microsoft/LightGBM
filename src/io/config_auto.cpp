@@ -361,7 +361,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetDouble(params, "mvs_lambda", &mvs_lambda);
   CHECK_GT(mvs_lambda, 0.0);
-  CHECK_LE(mvs_lambda, 1.0);
 
   GetBool(params, "mvs_adaptive", &mvs_adaptive);
 

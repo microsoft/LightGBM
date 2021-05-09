@@ -338,7 +338,7 @@ Learning Control Parameters
 
    -  **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
 
--  ``mvs_lambda`` :raw-html:`<a id="mvs_lambda" title="Permalink to this parameter" href="#mvs_lambda">&#x1F517;&#xFE0E;</a>`, default = ``1e-4``, type = double, constraints: ``0.0 < mvs_lambda <= 1.0``
+-  ``mvs_lambda`` :raw-html:`<a id="mvs_lambda" title="Permalink to this parameter" href="#mvs_lambda">&#x1F517;&#xFE0E;</a>`, default = ``1e-4``, type = double, constraints: ``mvs_lambda > 0.0``
 
    -  used in MVS boosting if ``mvs_adaptive == true`` than this value is ignored
 

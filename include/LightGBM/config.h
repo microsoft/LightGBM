@@ -319,12 +319,13 @@ struct Config {
   // desc = **Note**: if balanced bagging is enabled, ``bagging_fraction`` will be ignored
   double neg_bagging_fraction = 1.0;
 
+  // default = 1e-4
   // check = >0.0
-  // check = <=1.0
   // desc = used in MVS boosting if ``mvs_adaptive == true`` than this value is ignored
   // desc = used only in ``mvs``
   double mvs_lambda = 1e-4;
 
+  // default = false
   // desc = use adaptive variant of mvs boosting
   // desc = used only in ``mvs``
   bool mvs_adaptive = false;
