@@ -18,13 +18,6 @@ lgb.is.null.handle <- function(x) {
   return(is.null(x) || is.na(x))
 }
 
-lgb.encode.char <- function(arr, len) {
-  if (!is.raw(arr)) {
-    stop("lgb.encode.char: Can only encode from raw type")
-  }
-  return(rawToChar(arr[seq_len(len)]))
-}
-
 # [description] Get the most recent error stored on the C++ side and raise it
 #               as an R error.
 lgb.last_error <- function() {
