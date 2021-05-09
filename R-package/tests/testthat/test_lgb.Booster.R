@@ -256,6 +256,8 @@ test_that("Saving a large model to string should work", {
     )
 
     pred <- predict(bst, train$data)
+    pred_leaf_indx <- predict(bst, train$data, predleaf = TRUE)
+    pred_raw_score <- predict(bst, train$data, rawscore = TRUE)
     model_string <- bst$save_model_to_string()
 
     # make sure this test is still producing a model bigger than the default
@@ -273,7 +275,11 @@ test_that("Saving a large model to string should work", {
         model_str = model_string
     )
     pred2 <- predict(bst2, train$data)
+    pred2_leaf_indx <- predict(bst2, train$data, predleaf = TRUE)
+    pred2_raw_score <- predict(bst2, train$data, rawscore = TRUE)
     expect_identical(pred, pred2)
+    expect_identical(pred_leaf_indx, pred2_leaf_indx)
+    expect_identical(pred_raw_score, pred2_raw_score)
 })
 
 test_that("Saving a large model to JSON should work", {
