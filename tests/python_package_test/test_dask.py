@@ -268,8 +268,8 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
             params['top_rate'] = 0.5
         elif boosting_type == 'mvs':
             params.update({
-                'bagging_freq' : 1,
-                'mvs_adaptive' : True,
+                'bagging_freq': 1,
+                'mvs_adaptive': True,
                 'bagging_fraction': 0.9
             })
 
@@ -484,8 +484,8 @@ def test_regressor(output, boosting_type, tree_learner, cluster):
             })
         elif boosting_type == 'mvs':
             params.update({
-                'bagging_freq' : 1,
-                'mvs_adaptive' : True,
+                'bagging_freq': 1,
+                'mvs_adaptive': True,
                 'bagging_fraction': 0.9
             })
 
@@ -685,8 +685,8 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
             })
         elif boosting_type == 'mvs':
             params.update({
-                'bagging_freq' : 1,
-                'mvs_adaptive' : True,
+                'bagging_freq': 1,
+                'mvs_adaptive': True,
                 'bagging_fraction': 0.9
             })
 
