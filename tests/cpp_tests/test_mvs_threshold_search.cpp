@@ -51,7 +51,6 @@ std::vector<VAL_T> GenerateRandomVector(std::mt19937_64 &rng, size_t size) {
 }
 
 TEST(SearchThresholdMVS, Basic) {
-  using namespace LightGBM;
   std::vector<score_t> gradients({0.5f, 5.0f, 1.0f, 2.0f, 2.0f});
   double expected, resulting;
   ComputeSamplingRate(gradients, 0.5, &expected, &resulting);
@@ -59,7 +58,6 @@ TEST(SearchThresholdMVS, Basic) {
 }
 
 TEST(SearchThresholdMVS, SameGradientValue) {
-  using namespace LightGBM;
   std::vector<score_t> gradients;
 
   for (size_t i = 0; i < 10; ++i) {
