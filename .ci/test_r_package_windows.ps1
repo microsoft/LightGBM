@@ -37,9 +37,12 @@ function Remove-From-Path {
 }
 
 # gzip is needed to create a CRAN package on Windows.
-# Install it here before chocolatey is removed from PATH.
+# Install it here before chocolatey is removed from PATH, then
+# move it to a different location on PATH
+$env:GZIP_INSTALL_LOCATION="C:\ProgramData\gzip"
 if ($env:R_BUILD_TYPE -eq "cran") {
     choco install --yes --no-progress --no-color gzip
+    Copy-Item -Path "C:\ProgramData\chocolatey\lib\gzip" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
 }
 
 # remove some details that exist in the GitHub Actions images which might
@@ -80,7 +83,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
 
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
-$env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
+$env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + "$env:GZIP_INSTALL_LOCATION;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
