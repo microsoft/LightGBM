@@ -364,31 +364,10 @@ Dataset <- R6::R6Class(
 
       # Check for handle
       if (!lgb.is.null.handle(x = private$handle)) {
-
-        # Get feature names and write them
-        buf_len <- as.integer(1024L * 1024L)
-        act_len <- 0L
-        buf <- raw(buf_len)
-        .Call(
+        private$colnames <- .Call(
           LGBM_DatasetGetFeatureNames_R
           , private$handle
-          , buf_len
-          , act_len
-          , buf
         )
-        if (act_len > buf_len) {
-          buf_len <- act_len
-          buf <- raw(buf_len)
-          .Call(
-            LGBM_DatasetGetFeatureNames_R
-            , private$handle
-            , buf_len
-            , act_len
-            , buf
-          )
-        }
-        cnames <- lgb.encode.char(arr = buf, len = act_len)
-        private$colnames <- as.character(base::strsplit(cnames, "\t")[[1L]])
         return(private$colnames)
 
       } else if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {

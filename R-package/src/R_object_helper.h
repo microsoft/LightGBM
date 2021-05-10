@@ -96,6 +96,4 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 
 #define DATAPTR(x)     ((reinterpret_cast<SEXPREC_ALIGN*>(x)) + 1)
 
-#define R_CHAR_PTR(x)  (reinterpret_cast<char*>DATAPTR(x))
-
 #endif  // R_OBJECT_HELPER_H_

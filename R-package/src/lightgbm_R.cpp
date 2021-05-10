@@ -39,22 +39,8 @@
     return R_NilValue; \
   }
 
-using LightGBM::Common::Join;
 using LightGBM::Common::Split;
 using LightGBM::Log;
-
-LGBM_SE EncodeChar(LGBM_SE dest, const char* src, SEXP buf_len, SEXP actual_len, size_t str_len) {
-  if (str_len > INT32_MAX) {
-    Log::Fatal("Don't support large string in R-package");
-  }
-  INTEGER(actual_len)[0] = static_cast<int>(str_len);
-  if (Rf_asInteger(buf_len) < static_cast<int>(str_len)) {
-    return dest;
-  }
-  auto ptr = R_CHAR_PTR(dest);
-  std::memcpy(ptr, src, str_len);
-  return dest;
-}
 
 SEXP LGBM_GetLastError_R() {
   SEXP out;
@@ -181,10 +167,8 @@ SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle,
-  SEXP buf_len,
-  SEXP actual_len,
-  LGBM_SE feature_names) {
+SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle) {
+  SEXP feature_names;
   R_API_BEGIN();
   int len = 0;
   CHECK_CALL(LGBM_DatasetGetNumFeature(R_ExternalPtrAddr(handle), &len));
@@ -203,10 +187,29 @@ SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle,
       len, &out_len,
       reserved_string_size, &required_string_size,
       ptr_names.data()));
+  // if any feature names were larger than allocated size,
+  // allow for a larger size and try again
+  if (required_string_size > reserved_string_size) {
+    for (int i = 0; i < len; ++i) {
+      names[i].resize(required_string_size);
+      ptr_names[i] = names[i].data();
+    }
+    CHECK_CALL(
+      LGBM_DatasetGetFeatureNames(
+        R_GET_PTR(handle),
+        len,
+        &out_len,
+        required_string_size,
+        &required_string_size,
+        ptr_names.data()));
+  }
   CHECK_EQ(len, out_len);
-  CHECK_GE(reserved_string_size, required_string_size);
-  auto merge_str = Join<char*>(ptr_names, "\t");
-  EncodeChar(feature_names, merge_str.c_str(), buf_len, actual_len, merge_str.size() + 1);
+  feature_names = PROTECT(Rf_allocVector(STRSXP, len));
+  for (int i = 0; i < len; ++i) {
+    SET_STRING_ELT(feature_names, i, Rf_mkChar(ptr_names[i]));
+  }
+  UNPROTECT(1);
+  return feature_names;
   R_API_END();
 }
 
@@ -466,10 +469,8 @@ SEXP LGBM_BoosterGetLowerBoundValue_R(SEXP handle,
   R_API_END();
 }
 
-SEXP LGBM_BoosterGetEvalNames_R(SEXP handle,
-  SEXP buf_len,
-  SEXP actual_len,
-  LGBM_SE eval_names) {
+SEXP LGBM_BoosterGetEvalNames_R(SEXP handle) {
+  SEXP eval_names;
   R_API_BEGIN();
   int len;
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_ExternalPtrAddr(handle), &len));
@@ -490,10 +491,29 @@ SEXP LGBM_BoosterGetEvalNames_R(SEXP handle,
       len, &out_len,
       reserved_string_size, &required_string_size,
       ptr_names.data()));
+  // if any eval names were larger than allocated size,
+  // allow for a larger size and try again
+  if (required_string_size > reserved_string_size) {
+    for (int i = 0; i < len; ++i) {
+      names[i].resize(required_string_size);
+      ptr_names[i] = names[i].data();
+    }
+    CHECK_CALL(
+      LGBM_BoosterGetEvalNames(
+        R_GET_PTR(handle),
+        len,
+        &out_len,
+        required_string_size,
+        &required_string_size,
+        ptr_names.data()));
+  }
   CHECK_EQ(out_len, len);
-  CHECK_GE(reserved_string_size, required_string_size);
-  auto merge_names = Join<char*>(ptr_names, "\t");
-  EncodeChar(eval_names, merge_names.c_str(), buf_len, actual_len, merge_names.size() + 1);
+  eval_names = PROTECT(Rf_allocVector(STRSXP, len));
+  for (int i = 0; i < len; ++i) {
+    SET_STRING_ELT(eval_names, i, Rf_mkChar(ptr_names[i]));
+  }
+  UNPROTECT(1);
+  return eval_names;
   R_API_END();
 }
 
@@ -650,31 +670,47 @@ SEXP LGBM_BoosterSaveModel_R(SEXP handle,
 
 SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   SEXP num_iteration,
-  SEXP feature_importance_type,
-  SEXP buffer_len,
-  SEXP actual_len,
-  LGBM_SE out_str) {
+  SEXP feature_importance_type) {
+  SEXP model_str;
   R_API_BEGIN();
   int64_t out_len = 0;
-  int64_t buf_len = static_cast<int64_t>(Rf_asInteger(buffer_len));
+  int64_t buf_len = 1024 * 1024;
+  int64_t num_iter = Rf_asInteger(num_iteration);
+  int64_t importance_type = Rf_asInteger(feature_importance_type);
   std::vector<char> inner_char_buf(buf_len);
-  CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), buf_len, &out_len, inner_char_buf.data()));
-  EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
+  CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, buf_len, &out_len, inner_char_buf.data()));
+  // if the model string was larger than the initial buffer, allocate a bigger buffer and try again
+  if (out_len > buf_len) {
+    inner_char_buf.resize(out_len);
+    CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, inner_char_buf.data()));
+  }
+  model_str = PROTECT(Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(model_str, 0, Rf_mkChar(inner_char_buf.data()));
+  UNPROTECT(1);
+  return model_str;
   R_API_END();
 }
 
 SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   SEXP num_iteration,
-  SEXP feature_importance_type,
-  SEXP buffer_len,
-  SEXP actual_len,
-  LGBM_SE out_str) {
+  SEXP feature_importance_type) {
+  SEXP model_str;
   R_API_BEGIN();
   int64_t out_len = 0;
-  int64_t buf_len = static_cast<int64_t>(Rf_asInteger(buffer_len));
+  int64_t buf_len = 1024 * 1024;
+  int64_t num_iter = Rf_asInteger(num_iteration);
+  int64_t importance_type = Rf_asInteger(feature_importance_type);
   std::vector<char> inner_char_buf(buf_len);
-  CHECK_CALL(LGBM_BoosterDumpModel(R_ExternalPtrAddr(handle), 0, Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), buf_len, &out_len, inner_char_buf.data()));
-  EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
+  CHECK_CALL(LGBM_BoosterDumpModel(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, buf_len, &out_len, inner_char_buf.data()));
+  // if the model string was larger than the initial buffer, allocate a bigger buffer and try again
+  if (out_len > buf_len) {
+    inner_char_buf.resize(out_len);
+    CHECK_CALL(LGBM_BoosterDumpModel(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, inner_char_buf.data()));
+  }
+  model_str = PROTECT(Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(model_str, 0, Rf_mkChar(inner_char_buf.data()));
+  UNPROTECT(1);
+  return model_str;
   R_API_END();
 }
 
@@ -687,7 +723,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_DatasetCreateFromMat_R"      , (DL_FUNC) &LGBM_DatasetCreateFromMat_R      , 5},
   {"LGBM_DatasetGetSubset_R"          , (DL_FUNC) &LGBM_DatasetGetSubset_R          , 4},
   {"LGBM_DatasetSetFeatureNames_R"    , (DL_FUNC) &LGBM_DatasetSetFeatureNames_R    , 2},
-  {"LGBM_DatasetGetFeatureNames_R"    , (DL_FUNC) &LGBM_DatasetGetFeatureNames_R    , 4},
+  {"LGBM_DatasetGetFeatureNames_R"    , (DL_FUNC) &LGBM_DatasetGetFeatureNames_R    , 1},
   {"LGBM_DatasetSaveBinary_R"         , (DL_FUNC) &LGBM_DatasetSaveBinary_R         , 2},
   {"LGBM_DatasetFree_R"               , (DL_FUNC) &LGBM_DatasetFree_R               , 1},
   {"LGBM_DatasetSetField_R"           , (DL_FUNC) &LGBM_DatasetSetField_R           , 4},
@@ -711,7 +747,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterGetCurrentIteration_R", (DL_FUNC) &LGBM_BoosterGetCurrentIteration_R, 2},
   {"LGBM_BoosterGetUpperBoundValue_R" , (DL_FUNC) &LGBM_BoosterGetUpperBoundValue_R , 2},
   {"LGBM_BoosterGetLowerBoundValue_R" , (DL_FUNC) &LGBM_BoosterGetLowerBoundValue_R , 2},
-  {"LGBM_BoosterGetEvalNames_R"       , (DL_FUNC) &LGBM_BoosterGetEvalNames_R       , 4},
+  {"LGBM_BoosterGetEvalNames_R"       , (DL_FUNC) &LGBM_BoosterGetEvalNames_R       , 1},
   {"LGBM_BoosterGetEval_R"            , (DL_FUNC) &LGBM_BoosterGetEval_R            , 3},
   {"LGBM_BoosterGetNumPredict_R"      , (DL_FUNC) &LGBM_BoosterGetNumPredict_R      , 3},
   {"LGBM_BoosterGetPredict_R"         , (DL_FUNC) &LGBM_BoosterGetPredict_R         , 3},
@@ -720,8 +756,8 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterPredictForCSC_R"      , (DL_FUNC) &LGBM_BoosterPredictForCSC_R      , 14},
   {"LGBM_BoosterPredictForMat_R"      , (DL_FUNC) &LGBM_BoosterPredictForMat_R      , 11},
   {"LGBM_BoosterSaveModel_R"          , (DL_FUNC) &LGBM_BoosterSaveModel_R          , 4},
-  {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 6},
-  {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 6},
+  {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 3},
+  {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 3},
   {NULL, NULL, 0}
 };
 

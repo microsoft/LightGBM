@@ -276,3 +276,21 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
 
   expect_is(bst, "lgb.CVBooster")
 })
+
+test_that("lgb.Dataset: should be able to use and retrieve long feature names", {
+  # set one feature to a value longer than the default buffer size used
+  # in LGBM_DatasetGetFeatureNames_R
+  feature_names <- names(iris)
+  long_name <- paste0(rep("a", 1000L), collapse = "")
+  feature_names[1L] <- long_name
+  names(iris) <- feature_names
+  # check that feature name survived the trip from R to C++ and back
+  dtrain <- lgb.Dataset(
+    data = as.matrix(iris[, -5L])
+    , label = as.numeric(iris$Species) - 1L
+  )
+  dtrain$construct()
+  col_names <- dtrain$get_colnames()
+  expect_equal(col_names[1L], long_name)
+  expect_equal(nchar(col_names[1L]), 1000L)
+})

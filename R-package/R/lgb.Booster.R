@@ -463,40 +463,14 @@ Booster <- R6::R6Class(
         num_iteration <- self$best_iter
       }
 
-      # Create buffer
-      buf_len <- as.integer(1024L * 1024L)
-      act_len <- 0L
-      buf <- raw(buf_len)
-
-      # Call buffer
-      .Call(
+      model_str <- .Call(
           LGBM_BoosterSaveModelToString_R
           , private$handle
           , as.integer(num_iteration)
           , as.integer(feature_importance_type)
-          , buf_len
-          , act_len
-          , buf
       )
 
-      # Check for buffer content
-      if (act_len > buf_len) {
-        buf_len <- act_len
-        buf <- raw(buf_len)
-        .Call(
-          LGBM_BoosterSaveModelToString_R
-          , private$handle
-          , as.integer(num_iteration)
-          , as.integer(feature_importance_type)
-          , buf_len
-          , act_len
-          , buf
-        )
-      }
-
-      return(
-        lgb.encode.char(arr = buf, len = act_len)
-      )
+      return(model_str)
 
     },
 
@@ -508,36 +482,14 @@ Booster <- R6::R6Class(
         num_iteration <- self$best_iter
       }
 
-      buf_len <- as.integer(1024L * 1024L)
-      act_len <- 0L
-      buf <- raw(buf_len)
-      .Call(
+      model_str <- .Call(
         LGBM_BoosterDumpModel_R
         , private$handle
         , as.integer(num_iteration)
         , as.integer(feature_importance_type)
-        , buf_len
-        , act_len
-        , buf
       )
 
-      if (act_len > buf_len) {
-        buf_len <- act_len
-        buf <- raw(buf_len)
-        .Call(
-          LGBM_BoosterDumpModel_R
-          , private$handle
-          , as.integer(num_iteration)
-          , as.integer(feature_importance_type)
-          , buf_len
-          , act_len
-          , buf
-        )
-      }
-
-      return(
-        lgb.encode.char(arr = buf, len = act_len)
-      )
+      return(model_str)
 
     },
 
@@ -663,41 +615,20 @@ Booster <- R6::R6Class(
 
       # Check for evaluation names emptiness
       if (is.null(private$eval_names)) {
-
-        # Get evaluation names
-        buf_len <- as.integer(1024L * 1024L)
-        act_len <- 0L
-        buf <- raw(buf_len)
-        .Call(
+        eval_names <- .Call(
           LGBM_BoosterGetEvalNames_R
           , private$handle
-          , buf_len
-          , act_len
-          , buf
         )
-        if (act_len > buf_len) {
-          buf_len <- act_len
-          buf <- raw(buf_len)
-          .Call(
-            LGBM_BoosterGetEvalNames_R
-            , private$handle
-            , buf_len
-            , act_len
-            , buf
-          )
-        }
-        names <- lgb.encode.char(arr = buf, len = act_len)
 
         # Check names' length
-        if (nchar(names) > 0L) {
+        if (length(eval_names) > 0L) {
 
           # Parse and store privately names
-          names <- strsplit(names, "\t")[[1L]]
-          private$eval_names <- names
+          private$eval_names <- eval_names
 
           # some metrics don't map cleanly to metric names, for example "ndcg@1" is just the
           # ndcg metric evaluated at the first "query result" in learning-to-rank
-          metric_names <- gsub("@.*", "", names)
+          metric_names <- gsub("@.*", "", eval_names)
           private$higher_better_inner_eval <- .METRICS_HIGHER_BETTER()[metric_names]
 
         }
