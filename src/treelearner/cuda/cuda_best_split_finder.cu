@@ -602,6 +602,10 @@ __global__ void FindBestFromAllSplitsKernel(const int* cuda_cur_num_leaves,
       *out_best_leaf = leaf_index;
     }
   }
+  if (best_gain <= 0.0f) {
+    printf("error !!! too smaller best gain %f\n", best_gain);
+  }
+  //printf("find best cuda_leaf_best_split_gain[%d] = %f\n", *out_best_leaf, best_gain);
 }
 
 void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(const int* cuda_cur_num_leaves) {

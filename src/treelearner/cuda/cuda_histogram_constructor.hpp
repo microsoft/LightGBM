@@ -40,6 +40,8 @@ class CUDAHistogramConstructor {
     const double* cuda_larger_leaf_sum_gradients, const double* cuda_larger_leaf_sum_hessians, hist_t** cuda_larger_leaf_hist,
     const data_size_t* cuda_leaf_num_data);
 
+  void BeforeTrain();
+
   const hist_t* cuda_hist() const { return cuda_hist_; }
 
   hist_t* cuda_hist_pointer() const { return cuda_hist_; }
@@ -63,7 +65,7 @@ class CUDAHistogramConstructor {
     for (int i = 0; i < 100; ++i) {
       Log::Warning("bin %d grad %f hess %f", i, test_hist[2 * i], test_hist[2 * i + 1]);
     }*/
-    const hist_t* leaf_2_cuda_hist_ptr = cuda_hist_ + 3 * 2 * num_total_bin_;
+    const hist_t* leaf_2_cuda_hist_ptr = cuda_hist_;// + 3 * 2 * num_total_bin_;
     Log::Warning("cuda_hist_ptr = %ld", leaf_2_cuda_hist_ptr);
     CopyFromCUDADeviceToHost<hist_t>(test_hist.data(), leaf_2_cuda_hist_ptr, 2 * num_total_bin_);
     std::ofstream fout("leaf_2_cuda_hist.txt");

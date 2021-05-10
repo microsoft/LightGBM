@@ -32,6 +32,8 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   
   void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override;
 
+  void AddPredictionToScore(const Tree* tree, double* out_score) const override;
+
  protected:
   void AllocateFeatureTasks();
 
@@ -50,6 +52,8 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) override;
 
   void BeforeTrain() override;
+
+  Tree* BuildTree();
 
   // number of GPUs
   int num_gpus_;

@@ -31,6 +31,8 @@ class CUDABestSplitFinder {
 
   void Init();
 
+  void BeforeTrain();
+
   void FindBestSplitsForLeaf(const CUDALeafSplits* smaller_leaf_splits, const CUDALeafSplits* larger_leaf_splits);
 
   void FindBestFromAllSplits(const int* cuda_cur_num_leaves);

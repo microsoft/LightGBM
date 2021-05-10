@@ -41,6 +41,10 @@ CUDAHistogramConstructor::CUDAHistogramConstructor(const Dataset* train_data,
   num_total_bin_ = offset;
 }
 
+void CUDAHistogramConstructor::BeforeTrain() {
+  SetCUDAMemory<hist_t>(cuda_hist_, 0, num_total_bin_ * 2 * num_leaves_);
+}
+
 void CUDAHistogramConstructor::Init(const Dataset* train_data) {
   // allocate CPU memory
   data_.resize(num_data_ * num_feature_groups_, 0);

@@ -35,6 +35,8 @@ class CUDALeafSplits {
 
   void InitValues(const data_size_t* cuda_data_indices_in_leaf, hist_t* cuda_hist_in_leaf);
 
+  void InitValues();
+
   const int* cuda_leaf_index() const { return cuda_leaf_index_; }
 
   const data_size_t** cuda_data_indices_in_leaf() const { return cuda_data_indices_in_leaf_; }

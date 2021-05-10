@@ -106,6 +106,13 @@ void CUDABestSplitFinder::Init() {
   CopyFromHostToCUDADevice<double>(cuda_min_gain_to_split_, &min_gain_to_split_, 1);
 }
 
+void CUDABestSplitFinder::BeforeTrain() {
+  const size_t feature_best_split_info_buffer_size = static_cast<size_t>(num_features_) * 4;
+  SetCUDAMemory<double>(cuda_leaf_best_split_gain_, 0, static_cast<size_t>(num_leaves_));
+  SetCUDAMemory<uint8_t>(cuda_best_split_found_, 0, feature_best_split_info_buffer_size);
+  SetCUDAMemory<double>(cuda_best_split_gain_, 0, feature_best_split_info_buffer_size);
+}
+
 void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_leaf_splits,
   const CUDALeafSplits* larger_leaf_splits) {
   auto start = std::chrono::steady_clock::now();

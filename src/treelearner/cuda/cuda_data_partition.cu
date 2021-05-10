@@ -7,6 +7,7 @@
 #ifdef USE_CUDA
 
 #include "cuda_data_partition.hpp"
+#include <LightGBM/tree.h>
 
 namespace LightGBM {
 
@@ -351,7 +352,7 @@ __global__ void AggregateBlockOffsetKernel(const int* leaf_index, data_size_t* b
       *smaller_leaf_cuda_leaf_index_pointer = leaf_index_ref;
       *smaller_leaf_cuda_sum_of_gradients_pointer = best_left_sum_gradients[leaf_index_ref];
       *smaller_leaf_cuda_sum_of_hessians_pointer = best_left_sum_hessians[leaf_index_ref];
-      *smaller_leaf_cuda_num_data_in_leaf_pointer = best_left_count[leaf_index_ref];
+      *smaller_leaf_cuda_num_data_in_leaf_pointer = to_left_total_cnt;//best_left_count[leaf_index_ref];
       *smaller_leaf_cuda_gain_pointer = best_left_gain[leaf_index_ref];
       *smaller_leaf_cuda_leaf_value_pointer = best_left_leaf_value[leaf_index_ref];
       *smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer = cuda_data_indices + cuda_leaf_data_start[leaf_index_ref];
@@ -359,7 +360,7 @@ __global__ void AggregateBlockOffsetKernel(const int* leaf_index, data_size_t* b
       *larger_leaf_cuda_leaf_index_pointer = cur_max_leaf_index;
       *larger_leaf_cuda_sum_of_gradients_pointer = best_right_sum_gradients[leaf_index_ref];
       *larger_leaf_cuda_sum_of_hessians_pointer = best_right_sum_hessians[leaf_index_ref];
-      *larger_leaf_cuda_num_data_in_leaf_pointer = best_right_count[leaf_index_ref];
+      *larger_leaf_cuda_num_data_in_leaf_pointer = cuda_leaf_num_data[cur_max_leaf_index];//best_right_count[leaf_index_ref];
       *larger_leaf_cuda_gain_pointer = best_right_gain[leaf_index_ref];
       *larger_leaf_cuda_leaf_value_pointer = best_right_leaf_value[leaf_index_ref];
       *larger_leaf_cuda_data_indices_in_leaf_pointer_pointer = cuda_data_indices + cuda_leaf_data_start[cur_max_leaf_index];
@@ -373,7 +374,7 @@ __global__ void AggregateBlockOffsetKernel(const int* leaf_index, data_size_t* b
       *larger_leaf_cuda_leaf_index_pointer = leaf_index_ref;
       *larger_leaf_cuda_sum_of_gradients_pointer = best_left_sum_gradients[leaf_index_ref];
       *larger_leaf_cuda_sum_of_hessians_pointer = best_left_sum_hessians[leaf_index_ref];
-      *larger_leaf_cuda_num_data_in_leaf_pointer = best_left_count[leaf_index_ref];
+      *larger_leaf_cuda_num_data_in_leaf_pointer = to_left_total_cnt;//best_left_count[leaf_index_ref];
       *larger_leaf_cuda_gain_pointer = best_left_gain[leaf_index_ref];
       *larger_leaf_cuda_leaf_value_pointer = best_left_leaf_value[leaf_index_ref];
       *larger_leaf_cuda_data_indices_in_leaf_pointer_pointer = cuda_data_indices + cuda_leaf_data_start[leaf_index_ref];
@@ -381,7 +382,7 @@ __global__ void AggregateBlockOffsetKernel(const int* leaf_index, data_size_t* b
       *smaller_leaf_cuda_leaf_index_pointer = cur_max_leaf_index;
       *smaller_leaf_cuda_sum_of_gradients_pointer = best_right_sum_gradients[leaf_index_ref];
       *smaller_leaf_cuda_sum_of_hessians_pointer = best_right_sum_hessians[leaf_index_ref];
-      *smaller_leaf_cuda_num_data_in_leaf_pointer = best_right_count[leaf_index_ref];
+      *smaller_leaf_cuda_num_data_in_leaf_pointer = cuda_leaf_num_data[cur_max_leaf_index];//best_right_count[leaf_index_ref];
       *smaller_leaf_cuda_gain_pointer = best_right_gain[leaf_index_ref];
       *smaller_leaf_cuda_leaf_value_pointer = best_right_leaf_value[leaf_index_ref];
       *smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer = cuda_data_indices + cuda_leaf_data_start[cur_max_leaf_index];
@@ -645,6 +646,35 @@ __global__ void PrefixSumKernel(uint32_t* cuda_elements) {
 
 void CUDADataPartition::LaunchPrefixSumKernel(uint32_t* cuda_elements) {
   PrefixSumKernel<<<1, SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION / 2>>>(cuda_elements);
+  SynchronizeCUDADevice();
+}
+
+__global__ void AddPredictionToScoreKernel(const double* data_partition_leaf_output,
+  const data_size_t* num_data_in_leaf, const data_size_t* data_indices_in_leaf,
+  const data_size_t* leaf_data_start, const double learning_rate, double* output_score) {
+  const unsigned int threadIdx_x = threadIdx.x;
+  const unsigned int blockIdx_x = blockIdx.x;
+  const unsigned int blockDim_x = blockDim.x;
+  const data_size_t num_data = num_data_in_leaf[blockIdx_x];
+  const data_size_t* data_indices = data_indices_in_leaf + leaf_data_start[blockIdx_x];
+  const double leaf_prediction_value = data_partition_leaf_output[blockIdx_x] * learning_rate;
+  /*if (threadIdx_x == 0) {
+    printf("leaf index = %d, leaf_prediction_value = %f\n", blockIdx_x, leaf_prediction_value);
+  }*/
+  for (unsigned int offset = 0; offset < static_cast<unsigned int>(num_data); offset += blockDim_x) {
+    const data_size_t inner_data_index = static_cast<data_size_t>(offset + threadIdx_x);
+    if (inner_data_index < num_data) {
+      const data_size_t data_index = data_indices[inner_data_index];
+      output_score[data_index] = leaf_prediction_value;
+    }
+  }
+}
+
+void CUDADataPartition::LaunchAddPredictionToScoreKernel(const double learning_rate) {
+  AddPredictionToScoreKernel<<<cur_num_leaves_, 1024>>>(data_partition_leaf_output_,
+    cuda_leaf_num_data_, cuda_data_indices_, cuda_leaf_data_start_, learning_rate, train_data_score_tmp_);
+  SynchronizeCUDADevice();
+  CopyFromCUDADeviceToHost<double>(cpu_train_data_score_tmp_.data(), train_data_score_tmp_, static_cast<size_t>(num_data_));
   SynchronizeCUDADevice();
 }
 

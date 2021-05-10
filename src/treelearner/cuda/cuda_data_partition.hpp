@@ -31,7 +31,7 @@ class CUDADataPartition {
 
   void BeforeTrain(const data_size_t* data_indices);
 
-  void Split(const int* leaf_id, const int* best_split_feature,
+  void Split(const int* leaf_id, const double* best_split_gain, const int* best_split_feature,
     const uint32_t* best_split_threshold, const uint8_t* best_split_default_left,
     const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
     const double* best_left_gain, const double* best_left_leaf_value,
@@ -132,6 +132,8 @@ class CUDADataPartition {
     }
   }
 
+  void UpdateTrainScore(const double learning_rate, double* train_score);
+
   const data_size_t* cuda_leaf_data_start() const { return cuda_leaf_data_start_; }
 
   const data_size_t* cuda_leaf_data_end() const { return cuda_leaf_data_end_; }
@@ -143,6 +145,30 @@ class CUDADataPartition {
   const data_size_t* cuda_data_indices() const { return cuda_data_indices_; }
 
   const int* cuda_cur_num_leaves() const { return cuda_cur_num_leaves_; }
+
+  const int* tree_split_leaf_index() const { return tree_split_leaf_index_; }
+
+  const int* tree_inner_feature_index() const { return tree_inner_feature_index_; }
+
+  const uint32_t* tree_threshold() const { return tree_threshold_; }
+
+  const double* tree_left_output() const { return tree_left_output_; }
+
+  const double* tree_right_output() const { return tree_right_output_; }
+
+  const data_size_t* tree_left_count() const { return tree_left_count_; }
+
+  const data_size_t* tree_right_count() const { return tree_right_count_; }
+
+  const double* tree_left_sum_hessian() const { return tree_left_sum_hessian_; }
+
+  const double* tree_right_sum_hessian() const { return tree_right_sum_hessian_; }
+
+  const double* tree_gain() const { return tree_gain_; }
+
+  const uint8_t* tree_default_left() const { return tree_default_left_; }
+
+  const double* train_data_score_tmp() const { return train_data_score_tmp_; }
 
  private:
   void GenDataToLeftBitVector(const int* leaf_id, const data_size_t num_data_in_leaf, const int* best_split_feature,
@@ -190,6 +216,8 @@ class CUDADataPartition {
 
   void LaunchPrefixSumKernel(uint32_t* cuda_elements);
 
+  void LaunchAddPredictionToScoreKernel(const double learning_rate);
+
   // Host memory
   const data_size_t num_data_;
   const int num_features_;
@@ -207,6 +235,7 @@ class CUDADataPartition {
   std::vector<uint8_t> feature_mfb_is_na_;
   std::vector<data_size_t> num_data_in_leaf_;
   int cur_num_leaves_;
+  std::vector<double> cpu_train_data_score_tmp_;
 
   // CUDA memory, held by this object
   data_size_t* cuda_data_indices_;
@@ -230,6 +259,21 @@ class CUDADataPartition {
   int* cuda_num_total_bin_;
   // for histogram pool
   hist_t** cuda_hist_pool_;
+  // for tree structure
+  int* tree_split_leaf_index_;
+  int* tree_inner_feature_index_;
+  uint32_t* tree_threshold_;
+  double* tree_left_output_;
+  double* tree_right_output_;
+  data_size_t* tree_left_count_;
+  data_size_t* tree_right_count_;
+  double* tree_left_sum_hessian_;
+  double* tree_right_sum_hessian_;
+  double* tree_gain_;
+  uint8_t* tree_default_left_;
+  double* data_partition_leaf_output_;
+  // for train data update
+  double* train_data_score_tmp_;
 
   // CUDA memory, held by other object
   const data_size_t* cuda_num_data_;

@@ -48,6 +48,8 @@ __global__ void CUDAInitValuesKernel2(double* cuda_sum_of_gradients, double* cud
       sum_of_gradients += cuda_sum_of_gradients[i];
       sum_of_hessians += cuda_sum_of_hessians[i];
     }
+    //printf("sum_of_gradients = %f\n", sum_of_gradients);
+    //printf("sum_of_hessians = %f\n", sum_of_hessians);
     cuda_sum_of_gradients[0] += sum_of_gradients;
     cuda_sum_of_hessians[0] += sum_of_hessians;
   }
@@ -69,6 +71,7 @@ void CUDALeafSplits::LaunchInitValuesKernal() {
   SynchronizeCUDADevice();
   end = std::chrono::steady_clock::now();
   duration = static_cast<std::chrono::duration<double>>(end - start);
+  //Log::Warning("cuda_sum_of_gradients_ = %f, cuda_sum_of_hessians_ = %f", *cuda_sum_of_gradients_, *cuda_sum_of_hessians_);
   Log::Warning("CUDAInitValuesKernel2 duration = %f", duration.count());
 }
 
