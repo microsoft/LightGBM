@@ -133,13 +133,13 @@ class LeafSplits {
   /*! \brief Get current leaf index */
   int leaf_index() const { return leaf_index_; }
 
-  /*! \brief Get numer of data in current leaf */
+  /*! \brief Get number of data in current leaf */
   data_size_t num_data_in_leaf() const { return num_data_in_leaf_; }
 
   /*! \brief Get sum of gradients of current leaf */
   double sum_gradients() const { return sum_gradients_; }
 
-  /*! \brief Get sum of hessians of current leaf */
+  /*! \brief Get sum of Hessians of current leaf */
   double sum_hessians() const { return sum_hessians_; }
 
   /*! \brief Get indices of data of current leaf */
@@ -160,7 +160,7 @@ class LeafSplits {
   data_size_t num_data_;
   /*! \brief sum of gradients of current leaf */
   double sum_gradients_;
-  /*! \brief sum of hessians of current leaf */
+  /*! \brief sum of Hessians of current leaf */
   double sum_hessians_;
   /*! \brief indices of data of current leaf */
   const data_size_t* data_indices_;

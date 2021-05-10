@@ -1097,7 +1097,7 @@ class AdvancedLeafConstraints : public IntermediateLeafConstraints {
       uint32_t threshold = tree_->threshold_in_bin(parent_idx);
 
       // by going up, more information about the position of the
-      // original leaf  are gathered so the starting and ending
+      // original leaf are gathered so the starting and ending
       // thresholds can be updated, which will save some time later
       if ((feature_for_constraint == inner_feature) && is_split_numerical) {
         if (is_in_right_child) {
