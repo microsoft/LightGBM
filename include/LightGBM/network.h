@@ -63,13 +63,13 @@ class RecursiveHalvingMap {
   int neighbor;
   /*! \brief ranks[i] means the machines that will communicate with on i-th communication*/
   std::vector<int> ranks;
-  /*! \brief  send_block_start[i] means send block start index at i-th communication*/
+  /*! \brief send_block_start[i] means send block start index at i-th communication*/
   std::vector<int> send_block_start;
-  /*! \brief  send_block_start[i] means send block size at i-th communication*/
+  /*! \brief send_block_start[i] means send block size at i-th communication*/
   std::vector<int> send_block_len;
-  /*! \brief  send_block_start[i] means recv block start index at i-th communication*/
+  /*! \brief send_block_start[i] means recv block start index at i-th communication*/
   std::vector<int> recv_block_start;
-  /*! \brief  send_block_start[i] means recv block size  at i-th communication*/
+  /*! \brief send_block_start[i] means recv block size at i-th communication*/
   std::vector<int> recv_block_len;
 
   RecursiveHalvingMap();
