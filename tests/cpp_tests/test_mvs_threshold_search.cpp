@@ -7,12 +7,12 @@
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/array_args.h>
 
-using namespace LightGBM;
 
 template<class Value>
 double ComputeExpectationOfMVS(const std::vector<Value> &grads, double threshold) {
+  using namespace LightGBM;
   double expectation = 0.0;
-  for (const auto &value: grads) {
+  for (const auto &value : grads) {
     if (value >= threshold) {
       expectation += 1.;
     } else {
@@ -22,10 +22,11 @@ double ComputeExpectationOfMVS(const std::vector<Value> &grads, double threshold
   return expectation;
 }
 
-void ComputeSamplingRate(std::vector<score_t> gradients,
+void ComputeSamplingRate(std::vector<LightGBM::score_t> gradients,
                        const double sampling_fraction,
                        double *expected_sample_size,
                        double *resulting_sample_size) {
+  using namespace LightGBM;
   CHECK(expected_sample_size != nullptr);
   CHECK(resulting_sample_size != nullptr);
   *expected_sample_size = sampling_fraction * static_cast<double>(gradients.size());
@@ -34,13 +35,15 @@ void ComputeSamplingRate(std::vector<score_t> gradients,
 }
 
 TEST(SearchThresholdMVS, Basic) {
-  std::vector<LightGBM::score_t> gradients({0.5f, 5.0f, 1.0f, 2.0f, 2.0f});
+  using namespace LightGBM;
+  std::vector<score_t> gradients({0.5f, 5.0f, 1.0f, 2.0f, 2.0f});
   double expected, resulting;
   ComputeSamplingRate(gradients, 0.5, &expected, &resulting);
   EXPECT_DOUBLE_EQ(expected, resulting);
 }
 
 TEST(ArrayArgs, Partition) {
+  using namespace LightGBM;
   std::vector<score_t> gradients({0.5f, 5.0f, 1.0f, 2.0f, 2.0f});
   data_size_t middle_begin = -1, middle_end = gradients.size();
   ArrayArgs<score_t>::Partition(&gradients, 0, gradients.size(), &middle_begin, &middle_end);
@@ -50,6 +53,7 @@ TEST(ArrayArgs, Partition) {
 }
 
 TEST(SearchThresholdMVS, PartitionOneElement) {
+  using namespace LightGBM;
   std::vector<score_t> gradients({0.5f});
   data_size_t middle_begin = -1, middle_end = gradients.size();
   ArrayArgs<score_t>::Partition(&gradients, 0, gradients.size(), &middle_begin, &middle_end);
