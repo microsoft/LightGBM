@@ -11,8 +11,6 @@
 #define R_USE_C99_IN_CXX
 #include <Rinternals.h>
 
-#include "R_object_helper.h"
-
 /*!
 * \brief get string message of the last error
 * \return err_msg string with error information

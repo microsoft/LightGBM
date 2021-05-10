@@ -196,7 +196,7 @@ SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle) {
     }
     CHECK_CALL(
       LGBM_DatasetGetFeatureNames(
-        R_GET_PTR(handle),
+        R_ExternalPtrAddr(handle),
         len,
         &out_len,
         required_string_size,
@@ -500,7 +500,7 @@ SEXP LGBM_BoosterGetEvalNames_R(SEXP handle) {
     }
     CHECK_CALL(
       LGBM_BoosterGetEvalNames(
-        R_GET_PTR(handle),
+        R_ExternalPtrAddr(handle),
         len,
         &out_len,
         required_string_size,
