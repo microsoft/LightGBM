@@ -112,7 +112,7 @@ SEXP LGBM_DatasetGetSubset_R(LGBM_SE handle,
   R_API_BEGIN();
   int len = Rf_asInteger(len_used_row_indices);
   std::vector<int> idxvec(len);
-  // convert from one-based to  zero-based index
+  // convert from one-based to zero-based index
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (int i = 0; i < len; ++i) {
     idxvec[i] = INTEGER(used_row_indices)[i] - 1;
