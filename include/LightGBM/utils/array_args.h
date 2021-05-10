@@ -191,7 +191,7 @@ class ArrayArgs {
     data_size_t big_grad_size = 0;
 
     while (begin != end) {
-      data_size_t middle_begin = 0, middle_end = 0;
+      data_size_t middle_begin = begin - 1, middle_end = end;
       ArrayArgs<score_t>::Partition(gradients, begin, end, &middle_begin, &middle_end);
       ++middle_begin;  // for half intervals
       const data_size_t n_middle = middle_end - middle_begin;
