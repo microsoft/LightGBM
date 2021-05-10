@@ -7,19 +7,6 @@ mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
-# hack to get around this:
-# https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
-export _R_CHECK_SYSTEM_CLOCK_=0
-
-# ignore R CMD CHECK NOTE checking how long it has
-# been since the last submission
-export _R_CHECK_CRAN_INCOMING_REMOTE_=0
-
-# CRAN ignores the "installed size is too large" NOTE,
-# so our CI can too. Setting to a large value here just
-# to catch extreme problems
-export _R_CHECK_PKG_SIZES_THRESHOLD_=100
-
 # don't fail builds for long-running examples unless they're very long.
 # See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
 if [[ $R_BUILD_TYPE != "cran" ]]; then
@@ -113,7 +100,7 @@ if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
     compile_from_source="never"
 fi
-Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
+Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit -1
 
 cd ${BUILD_DIRECTORY}
 

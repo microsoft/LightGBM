@@ -15,7 +15,7 @@ saveRDS.lgb.Booster(
 )
 }
 \arguments{
-\item{object}{R object to serialize.}
+\item{object}{\code{lgb.Booster} object to serialize.}
 
 \item{file}{a connection or the name of the file where the R object is saved to or read from.}
 

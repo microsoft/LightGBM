@@ -422,7 +422,7 @@ def _train(
 
     # Tell each worker to train on the parts that it has locally
     #
-    # This code treates ``_train_part()`` calls as not "pure" because:
+    # This code treats ``_train_part()`` calls as not "pure" because:
     #     1. there is randomness in the training process unless parameters ``seed``
     #        and ``deterministic`` are set
     #     2. even with those parameters set, the output of one ``_train_part()`` call
@@ -452,7 +452,7 @@ def _train(
     model = results[0]
 
     # if network parameters were changed during training, remove them from the
-    # returned moodel so that they're generated dynamically on every run based
+    # returned model so that they're generated dynamically on every run based
     # on the Dask cluster you're connected to and which workers have pieces of
     # the training data
     if not listen_port_in_params:

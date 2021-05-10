@@ -66,7 +66,7 @@ Code Structure
 +---------------------+------------------------------------------------------------------------------------------------------------------------------------+
 
 Documents API
-~~~~~~~~~~~~~
+-------------
 
 Refer to `docs README <./README.rst>`__.
 
@@ -74,6 +74,12 @@ C API
 -----
 
 Refer to `C API <./C-API.rst>`__ or the comments in `c\_api.h <https://github.com/microsoft/LightGBM/blob/master/include/LightGBM/c_api.h>`__ file, from which the documentation is generated.
+
+Tests
+-----
+
+C++ unit tests are located in the ``./tests/cpp_tests`` folder and written with the help of Google Test framework.
+To run tests locally first refer to the `Installation Guide <./Installation-Guide.rst#build-c-unit-tests>`__ for how to build tests and then simply run compiled executable file.
 
 High Level Language Package
 ---------------------------

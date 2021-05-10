@@ -1,10 +1,26 @@
 # CRAN Submission History
 
-## v3.2.0 - Submission 1 - (TBD)
+## v3.2.1 - Submission 1 - (TBD)
 
 ### CRAN response
 
 ### Maintainer Notes
+
+## v3.2.0 - Submission 1 - (March 22, 2021)
+
+### CRAN response
+
+Package is failing checks in the `r-devel-linux-x86_64-debian-clang` environment (described [here](https://cran.r-project.org/web/checks/check_flavors.html#r-devel-linux-x86_64-debian-clang)). Specifically, one unit test on the use of non-ASCII feature names in `Booster$dump_model()` fails.
+
+> Apparently your package fails its checks in a strict Latin-1* locale,
+e.g. under Linux using LANG=en_US.iso88591 (see the debian-clang
+results).
+
+> Please correct before 2021-04-21 to safely retain your package on CRAN.
+
+### Maintainer Notes
+
+Submitted a version 3.2.1 to correct the errors noted.
 
 ## v3.1.1 - Submission 1 - (December 7, 2020)
 

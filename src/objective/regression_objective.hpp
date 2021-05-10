@@ -571,7 +571,7 @@ class RegressionQuantileloss : public RegressionL2loss {
 
 
 /*!
-* \brief Mape Regression Loss
+* \brief MAPE Regression Loss
 */
 class RegressionMAPELOSS : public RegressionL1loss {
  public:
