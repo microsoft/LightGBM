@@ -104,7 +104,7 @@ class ArrayArgs {
     int j = end - 1;
     int p = i;
     int q = j;
-    if (start >= end) {
+    if (start >= end - 1) {
       return;
     }
     std::vector<VAL_T>& ref = *arr;
