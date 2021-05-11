@@ -231,8 +231,8 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
                 continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
             elif env.iteration - best_iter[i] >= stopping_rounds:
                 if verbose:
-                    _log_info("Early stopping, best iteration is : \n'
-                        f'[{best_iter[i] + 1}]\t{ '\t'.join([_format_eval_result(x) for x in best_score_list[i]])}")
+                    _log_info("Early stopping, best iteration is: \n"
+                                    f"[{best_iter[i] + 1}]\t{'\t'.join([_format_eval_result(x) for x in best_score_list[i]])}")
                     if first_metric_only:
                         _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
                 raise EarlyStopException(best_iter[i], best_score_list[i])
