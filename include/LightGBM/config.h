@@ -330,6 +330,14 @@ struct Config {
   // desc = used only in ``mvs``
   bool mvs_adaptive = false;
 
+  // default = 256000
+  // check = >0
+  // desc = used in MVS boosting training dataset size is greater than ``mvs_max_sequential_size``, than threshold
+  // desc = for MVS is chosen for each thread independently.
+  // desc = used only in ``mvs``
+  // desc = **Note**: on small dataset setting this parameter less than size of dataset may produce results depending on number of threads
+  int mvs_max_sequential_size = 256000;
+
   // alias = subsample_freq
   // desc = frequency for bagging
   // desc = ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration. Every ``k``-th iteration, LightGBM will randomly select ``bagging_fraction * 100 %`` of the data to use for the next ``k`` iterations

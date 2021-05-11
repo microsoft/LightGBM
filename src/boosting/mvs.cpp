@@ -5,6 +5,8 @@
 
 #include "mvs.hpp"
 
+#include <memory>
+
 namespace LightGBM {
 
 using ConstTreeIterator = std::vector<std::unique_ptr<Tree>>::const_iterator;
@@ -69,7 +71,17 @@ void MVS::Bagging(int iter) {
   bag_data_cnt_ = num_data_;
   mvs_lambda_ = GetLambda();
 
-  if (num_data_ <= kMaxSequentialSize) {
+  #pragma omp parallel for schedule(static, 1024)
+  for (data_size_t i = 0; i < num_data_; ++i) {
+    tmp_derivatives_[i] = 0.0f;
+    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+      size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + i;
+      tmp_derivatives_[i] += gradients_[idx] * gradients_[idx] + mvs_lambda_ * hessians_[idx] * hessians_[idx];
+    }
+    tmp_derivatives_[i] = std::sqrt(tmp_derivatives_[i]);
+  }
+
+  if (num_data_ <= config_->mvs_max_sequential_size) {
     threshold_ = GetThreshold(0, num_data_);
   }
 
@@ -141,17 +153,8 @@ data_size_t MVS::BaggingHelper(data_size_t start, data_size_t cnt, data_size_t *
 double MVS::GetThreshold(data_size_t begin, data_size_t cnt) {
   data_size_t n_blocks, block_size;
   Threading::BlockInfoForceSize<data_size_t>(num_data_, bagging_rand_block_, &n_blocks, &block_size);
-  if (num_data_ < kMaxSequentialSize && block_size > 1 && threshold_ != 0.0) {
+  if (num_data_ <= config_->mvs_max_sequential_size && block_size > 1 && threshold_ != 0.0) {
     return threshold_;
-  }
-
-  for (data_size_t i = begin; i < begin + cnt; ++i) {
-    tmp_derivatives_[i] = 0.0f;
-    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + i;
-      tmp_derivatives_[i] += gradients_[idx] * gradients_[idx] + mvs_lambda_ * hessians_[idx] * hessians_[idx];
-    }
-    tmp_derivatives_[i] = std::sqrt(tmp_derivatives_[i]);
   }
 
   double threshold = ArrayArgs<score_t>::CalculateThresholdMVS(&tmp_derivatives_, begin, begin + cnt,

@@ -41,11 +41,11 @@ void ComputeSamplingRate(std::vector<score_t> gradients,
 }
 
 template<class VAL_T>
-std::vector<VAL_T> GenerateRandomVector(std::mt19937_64 &rng, size_t size) {
+std::vector<VAL_T> GenerateRandomVector(std::mt19937_64 *rng, size_t size) {
   std::uniform_real_distribution<VAL_T> distribution(1., 2.0f);
   std::vector<VAL_T> result;
   for (size_t i = 0; i < size; ++i) {
-    result.emplace_back(distribution(rng));
+    result.emplace_back(distribution(*rng));
   }
   return result;
 }
@@ -74,7 +74,7 @@ TEST(SearchThresholdMVS, LargeTest) {
   std::mt19937_64 rng(42);
   const size_t number_of_iterations = 100;
   for (size_t i = 0; i < number_of_iterations; ++i) {
-    std::vector<score_t> grad = GenerateRandomVector<score_t>(rng, 10000);
+    std::vector<score_t> grad = GenerateRandomVector<score_t>(&rng, 10000);
 
     double expected, resulting;
     ComputeSamplingRate(std::move(grad), 0.01 + (0.98 * i) / number_of_iterations, &expected, &resulting);
@@ -93,7 +93,7 @@ TEST(ArrayArgs, Partition) {
   EXPECT_GT(gradients[middle_begin + 1], gradients.back());
 }
 
-TEST(SearchThresholdMVS, PartitionOneElement) {
+TEST(ArrayArgs, PartitionOneElement) {
   std::vector<score_t> gradients({0.5f});
   data_size_t middle_begin = -1, middle_end = gradients.size();
   ArrayArgs<score_t>::Partition(&gradients, 0, gradients.size(), &middle_begin, &middle_end);

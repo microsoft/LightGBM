@@ -91,8 +91,6 @@ class MVS : public GBDT {
 
   double GetLambda();
 
-  static const data_size_t kMaxSequentialSize = 256000;
-
   double mvs_lambda_;
   double threshold_{0.0};
   std::vector<score_t> tmp_derivatives_;
