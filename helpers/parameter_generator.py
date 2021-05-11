@@ -171,7 +171,7 @@ def set_one_var_from_string(name, param_type, checks):
     ret = ""
     univar_mapper = {"int": "GetInt", "double": "GetDouble", "bool": "GetBool", "std::string": "GetString"}
     if "vector" not in param_type:
-        ret += f"  {univar_mapper[param_type]}(params, \"{name}\", &{name});\n"
+        ret += f'  {univar_mapper[param_type]}(params, "{name}", &{name});\n'
         if len(checks) > 0:
             check_mapper = {"<": "LT", ">": "GT", "<=": "LE", ">=": "GE"}
             for check in checks:
@@ -179,7 +179,7 @@ def set_one_var_from_string(name, param_type, checks):
                 ret += f"  CHECK_{check_mapper[sign]}({name}, {value});\n"
         ret += "\n"
     else:
-        ret += f"  if (GetString(params, \"{name}\", &tmp_str)) {{\n"
+        ret += f'  if (GetString(params, "{name}", &tmp_str)) {{\n'
         type2 = param_type.split("<")[1][:-1]
         if type2 == "std::string":
             ret += f"    {name} = Common::Split(tmp_str.c_str(), ',');\n"
@@ -219,8 +219,8 @@ def gen_parameter_description(sections, descriptions, params_rst):
                 options_str = ''
             aliases = param_desc.get('alias', [])
             if len(aliases) > 0:
-                aliases = '``, ``'.join([x.strip() for x in aliases[0].split(',')])
-                aliases_str = f', aliases: ``{aliases}``'
+                aliases_joined = '``, ``'.join([x.strip() for x in aliases[0].split(',')])
+                aliases_str = f', aliases: ``{aliases_joined}``'
             else:
                 aliases_str = ''
             checks = sorted(param_desc.get('check', []))
@@ -236,7 +236,7 @@ def gen_parameter_description(sections, descriptions, params_rst):
                 checks_str = ''
             main_desc = f'-  ``{name}`` :raw-html:`<a id="{name}" title="Permalink to this parameter" href="#{name}">&#x1F517;&#xFE0E;</a>`, default = ``{default}``, type = {param_type}{options_str}{aliases_str}{checks_str}'
             params_to_write.append(main_desc)
-            params_to_write.extend([' ' * 3 * int(desc[0][-1]) + '-  ' + desc[1] for desc in param_desc['desc']])
+            params_to_write.extend([f"{' ' * 3 * int(desc[0][-1])}-  {desc[1]}" for desc in param_desc['desc']])
 
     with open(params_rst) as original_params_file:
         all_lines = original_params_file.read()
@@ -283,7 +283,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
     str_to_write += "  static std::unordered_map<std::string, std::string> aliases({\n"
 
     for pair in alias:
-        str_to_write += f"  {{\"{pair[0]}\", \"{pair[1]}\"}},\n"
+        str_to_write += f'  {{"{pair[0]}", "{pair[1]}"}},\n'
     str_to_write += "  });\n"
     str_to_write += "  return aliases;\n"
     str_to_write += "}\n\n"
@@ -293,7 +293,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
     str_to_write += "  static std::unordered_set<std::string> params({\n"
 
     for name in names:
-        str_to_write += f"  \"{name}\",\n"
+        str_to_write += f'  "{name}",\n'
     str_to_write += "  });\n"
     str_to_write += "  return params;\n"
     str_to_write += "}\n\n"
@@ -325,9 +325,9 @@ def gen_parameter_code(config_hpp, config_out_cpp):
                 if "int8" in param_type:
                     str_to_write += f"  str_buf << \"[{name}: \" << Common::Join(Common::ArrayCast<int8_t, int>({name}), \",\") << \"]\\n\";\n"
                 else:
-                    str_to_write += f"  str_buf << \"[{name}: \" << Common::Join({name}, \",\") << \"]\\n\";\n"
+                    str_to_write += f'  str_buf << "[{name}: " << Common::Join({name}, ",") << "]\\n";\n'
             else:
-                str_to_write += f"  str_buf << \"[{name}: \" << {name} << \"]\\n\";\n"
+                str_to_write += f'  str_buf << "[{name}: " << {name} << "]\\n";\n'
     # tails
     str_to_write += "  return str_buf.str();\n"
     str_to_write += "}\n\n"
