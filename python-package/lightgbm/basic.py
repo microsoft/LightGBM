@@ -75,7 +75,7 @@ def _log_native(msg):
 
 def _log_callback(msg):
     """Redirect logs from native library into Python."""
-    _log_native("{0:s}".format(msg.decode('utf-8')))
+    _log_native(str(msg.decode('utf-8')))
 
 
 def _load_lib():
@@ -226,10 +226,10 @@ def param_dict_to_str(data):
         if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
             def to_string(x):
                 if isinstance(x, list):
-                    return f"[{ ','.join(map(str, x)) }]"
+                    return f"[{','.join(map(str, x))}]"
                 else:
                     return str(x)
-            pairs.append(f"{key}={ ','.join(map(to_string, val)) }")
+            pairs.append(f"{key}={','.join(map(to_string, val))}")
         elif isinstance(val, (str, NUMERIC_TYPES)) or is_numeric(val):
             pairs.append(f"{key}={val}")
         elif val is not None:
@@ -556,7 +556,8 @@ def _label_from_pandas(label):
 
 
 def _dump_pandas_categorical(pandas_categorical, file_name=None):
-    pandas_str = (f'\npandas_categorical:{json.dumps(pandas_categorical, default=json_default_with_numpy)}\n')
+    categorical_json = json.dumps(pandas_categorical, default=json_default_with_numpy)
+    pandas_str = f'\n{categorical_json}\n'
     if file_name is not None:
         with open(file_name, 'a') as f:
             f.write(pandas_str)
@@ -749,8 +750,8 @@ class _InnerPredictor:
     def __get_num_preds(self, start_iteration, num_iteration, nrow, predict_type):
         """Get size of prediction result."""
         if nrow > MAX_INT32:
-            raise LightGBMError(f'LightGBM cannot perform prediction for data'
-                                'with number of rows greater than MAX_INT32 ({MAX_INT32}).\n'
+            raise LightGBMError('LightGBM cannot perform prediction for data'
+                                f'with number of rows greater than MAX_INT32 ({MAX_INT32}).\n'
                                 'You can split your data into chunks'
                                 'and then concatenate predictions for them')
         n_preds = ctypes.c_int64(0)
@@ -1213,8 +1214,8 @@ class Dataset:
                       .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount])
         for key, _ in params.items():
             if key in args_names:
-                _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n \
-                             Please use {key} argument of the Dataset constructor to pass this parameter.')
+                _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
+                             f'Please use {key} argument of the Dataset constructor to pass this parameter.')
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
@@ -1601,7 +1602,7 @@ class Dataset:
             Dataset with set property.
         """
         if self.handle is None:
-            raise Exception("Cannot set %s before construct dataset" % field_name)
+            raise Exception(f"Cannot set {field_name} before construct dataset")
         if data is None:
             # set to None
             _safe_call(_LIB.LGBM_DatasetSetField(
@@ -1694,8 +1695,8 @@ class Dataset:
                 _log_warning('Using categorical_feature in Dataset.')
                 return self
             else:
-                _log_warning(f'categorical_feature in Dataset is overridden.\n \
-                             New categorical_feature is {sorted(list(categorical_feature)}')
+                _log_warning('categorical_feature in Dataset is overridden.\n'
+                             f'New categorical_feature is {sorted(list(categorical_feature))}')
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
         else:
@@ -2969,7 +2970,7 @@ class Booster:
             self.handle,
             ctypes.byref(out_num_class)))
         if verbose:
-            _log_info(f'Finished loading model, total used { int(out_num_iterations.value) } iterations')
+            _log_info(f'Finished loading model, total used {int(out_num_iterations.value)} iterations')
         self.__num_class = out_num_class.value
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
