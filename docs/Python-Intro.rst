@@ -1,7 +1,7 @@
 Python-package Introduction
 ===========================
 
-This document gives a basic walkthrough of LightGBM Python-package.
+This document gives a basic walk-through of LightGBM Python-package.
 
 **List of other helpful links**
 

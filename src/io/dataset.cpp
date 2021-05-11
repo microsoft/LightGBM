@@ -727,6 +727,11 @@ void Dataset::CreateValid(const Dataset* dataset) {
   feature_groups_.clear();
   num_features_ = dataset->num_features_;
   num_groups_ = num_features_;
+  max_bin_ = dataset->max_bin_;
+  min_data_in_bin_ = dataset->min_data_in_bin_;
+  bin_construct_sample_cnt_ = dataset->bin_construct_sample_cnt_;
+  use_missing_ = dataset->use_missing_;
+  zero_as_missing_ = dataset->zero_as_missing_;
   feature2group_.clear();
   feature2subfeature_.clear();
   has_raw_ = dataset->has_raw();
@@ -927,7 +932,7 @@ bool Dataset::GetIntField(const char* field_name, data_size_t* out_len,
 
 void Dataset::SaveBinaryFile(const char* bin_filename) {
   if (bin_filename != nullptr && std::string(bin_filename) == data_filename_) {
-    Log::Warning("Bianry file %s already exists", bin_filename);
+    Log::Warning("Binary file %s already exists", bin_filename);
     return;
   }
   // if not pass a filename, just append ".bin" of original file

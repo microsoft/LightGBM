@@ -5,10 +5,11 @@
 #' @param data a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
 #'             may allow you to pass other types of data like \code{matrix} and then separately supply
 #'             \code{label} as a keyword argument.
-#' @param early_stopping_rounds int. Activates early stopping. Requires at least one validation data
-#'                              and one metric. If there's more than one, will check all of them
-#'                              except the training data. Returns the model with (best_iter + early_stopping_rounds).
-#'                              If early stopping occurs, the model will have 'best_iter' field.
+#' @param early_stopping_rounds int. Activates early stopping. When this parameter is non-null,
+#'                              training will stop if the evaluation of any metric on any validation set
+#'                              fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
+#'                              If training stops early, the returned model will have attribute \code{best_iter}
+#'                              set to the iteration number of the best iteration.
 #' @param eval evaluation function(s). This can be a character vector, function, or list with a mixture of
 #'             strings and functions.
 #'
@@ -48,7 +49,8 @@
 #' @param obj objective function, can be character or custom objective function. Examples include
 #'            \code{regression}, \code{regression_l1}, \code{huber},
 #'            \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
-#' @param params List of parameters
+#' @param params a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+#'               the "Parameters" section of the documentation} for a list of parameters and valid values.
 #' @param verbose verbosity for output, if <= 0, also will disable the print of evaluation during training
 #' @section Early Stopping:
 #'
@@ -93,8 +95,9 @@ NULL
 #'         \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
 #'                          overfit when #data is small. Tree still grow by leaf-wise.}
 #'          \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-#'                             the number of real CPU cores, not the number of threads (most
-#'                             CPU using hyper-threading to generate 2 threads per CPU core).}
+#'                             the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
+#'                             not the number of threads (most CPU using hyper-threading to generate 2 threads
+#'                             per CPU core).}
 #'     }
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained \code{lgb.Booster}
@@ -103,7 +106,7 @@ lightgbm <- function(data,
                      label = NULL,
                      weight = NULL,
                      params = list(),
-                     nrounds = 10L,
+                     nrounds = 100L,
                      verbose = 1L,
                      eval_freq = 1L,
                      early_stopping_rounds = NULL,

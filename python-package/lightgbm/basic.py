@@ -2600,14 +2600,17 @@ class Booster:
 
                 preds : list or numpy 1-D array
                     The predicted values.
+                    Predicted values are returned before any transformation,
+                    e.g. they are raw margin instead of probability of positive class for binary task.
                 train_data : Dataset
                     The training dataset.
                 grad : list or numpy 1-D array
-                    The value of the first order derivative (gradient) for each sample point.
+                    The value of the first order derivative (gradient) of the loss
+                    with respect to the elements of preds for each sample point.
                 hess : list or numpy 1-D array
-                    The value of the second order derivative (Hessian) for each sample point.
+                    The value of the second order derivative (Hessian) of the loss
+                    with respect to the elements of preds for each sample point.
 
-            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -2656,7 +2659,8 @@ class Booster:
 
         .. note::
 
-            For binary task, the score is probability of positive class (or margin in case of custom objective).
+            Score is returned before any transformation,
+            e.g. it is raw margin instead of probability of positive class for binary task.
             For multi-class task, the score is group by class_id first, then group by row_id.
             If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -2664,9 +2668,11 @@ class Booster:
         Parameters
         ----------
         grad : list or numpy 1-D array
-            The first order derivative (gradient).
+            The value of the first order derivative (gradient) of the loss
+            with respect to the elements of score for each sample point.
         hess : list or numpy 1-D array
-            The second order derivative (Hessian).
+            The value of the second order derivative (Hessian) of the loss
+            with respect to the elements of score for each sample point.
 
         Returns
         -------
@@ -2788,16 +2794,17 @@ class Booster:
 
                 preds : list or numpy 1-D array
                     The predicted values.
+                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The evaluation dataset.
                 eval_name : string
-                    The name of evaluation function (without whitespaces).
+                    The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2835,16 +2842,17 @@ class Booster:
 
                 preds : list or numpy 1-D array
                     The predicted values.
+                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 train_data : Dataset
                     The training dataset.
                 eval_name : string
-                    The name of evaluation function (without whitespaces).
+                    The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -2867,16 +2875,17 @@ class Booster:
 
                 preds : list or numpy 1-D array
                     The predicted values.
+                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 valid_data : Dataset
                     The validation dataset.
                 eval_name : string
-                    The name of evaluation function (without whitespaces).
+                    The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
             For multi-class task, the preds is group by class_id first, then group by row_id.
             If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
 
@@ -3443,7 +3452,7 @@ class Booster:
                 ctypes.byref(out_num_eval)))
             self.__num_inner_eval = out_num_eval.value
             if self.__num_inner_eval > 0:
-                # Get name of evals
+                # Get name of eval metrics
                 tmp_out_len = ctypes.c_int(0)
                 reserved_string_buffer_size = 255
                 required_string_buffer_size = ctypes.c_size_t(0)

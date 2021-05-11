@@ -196,7 +196,8 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   auto bin_filename = CheckCanLoadFromBin(filename);
   bool is_load_from_binary = false;
   if (bin_filename.size() == 0) {
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_));
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_,
+                                                               config_.precise_float_parser));
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
@@ -267,7 +268,8 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   }
   auto bin_filename = CheckCanLoadFromBin(filename);
   if (bin_filename.size() == 0) {
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_));
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_,
+                                                               config_.precise_float_parser));
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
@@ -1212,7 +1214,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       dataset->metadata_.SetLabelAt(i, static_cast<label_t>(tmp_label));
       // free processed line:
       ref_text_data[i].clear();
-      // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
+      // shrink_to_fit will be very slow in Linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
       // push data
       std::vector<bool> is_feature_added(dataset->num_features_, false);
@@ -1386,7 +1388,7 @@ std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced
         int feature_num = forced_bins_arr[i]["feature"].int_value();
         CHECK_LT(feature_num, num_total_features);
         if (categorical_features.count(feature_num)) {
-          Log::Warning("Feature %d is categorical. Will ignore forced bins for this  feature.", feature_num);
+          Log::Warning("Feature %d is categorical. Will ignore forced bins for this feature.", feature_num);
         } else {
           std::vector<Json> bounds_arr = forced_bins_arr[i]["bin_upper_bound"].array_items();
           for (size_t j = 0; j < bounds_arr.size(); ++j) {
