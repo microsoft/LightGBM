@@ -108,6 +108,8 @@ conda install -q -y -n $CONDA_ENV cloudpickle dask distributed joblib matplotlib
 pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
 
 if [[ $TASK == "cli-distributed" ]]; then
+    pip install --user mypy
+    mypy --ignore-missing-imports tests/distributed/
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make -j4 || exit -1
     cp $BUILD_DIRECTORY/lightgbm $BUILD_DIRECTORY/tests/distributed/ || exit -1
     cd $BUILD_DIRECTORY/python-package/ && python setup.py install --precompile || exit -1
