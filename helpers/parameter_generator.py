@@ -299,7 +299,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
     str_to_write += "}\n\n"
     # from strings
     str_to_write += "void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {\n"
-    str_to_write += "  std::string tmp_str = \"\";\n"
+    str_to_write += '  std::string tmp_str = "";\n'
     for x in infos:
         for y in x:
             if "[doc-only]" in y:
