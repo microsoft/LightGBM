@@ -2617,7 +2617,7 @@ class Booster:
             is_the_same_train_set = train_set is self.train_set and self.train_set_version == train_set.version
         if train_set is not None and not is_the_same_train_set:
             if not isinstance(train_set, Dataset):
-                raise TypeError(f'Training data should be Dataset instance, met {type(train_set).__name__)}')
+                raise TypeError(f'Training data should be Dataset instance, met {type(train_set).__name__}')
             if train_set._predictor is not self.__init_predictor:
                 raise LightGBMError("Replace training data failed, "
                                     "you should use same predictor for these data")
