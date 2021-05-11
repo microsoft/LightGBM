@@ -1388,7 +1388,7 @@ std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced
         int feature_num = forced_bins_arr[i]["feature"].int_value();
         CHECK_LT(feature_num, num_total_features);
         if (categorical_features.count(feature_num)) {
-          Log::Warning("Feature %d is categorical. Will ignore forced bins for this  feature.", feature_num);
+          Log::Warning("Feature %d is categorical. Will ignore forced bins for this feature.", feature_num);
         } else {
           std::vector<Json> bounds_arr = forced_bins_arr[i]["bin_upper_bound"].array_items();
           for (size_t j = 0; j < bounds_arr.size(); ++j) {

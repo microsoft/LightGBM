@@ -3452,7 +3452,7 @@ class Booster:
                 ctypes.byref(out_num_eval)))
             self.__num_inner_eval = out_num_eval.value
             if self.__num_inner_eval > 0:
-                # Get name of evals
+                # Get name of eval metrics
                 tmp_out_len = ctypes.c_int(0)
                 reserved_string_buffer_size = 255
                 required_string_buffer_size = ctypes.c_size_t(0)

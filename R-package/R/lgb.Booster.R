@@ -802,8 +802,8 @@ predict.lgb.Booster <- function(object,
 
 #' @name lgb.load
 #' @title Load LightGBM model
-#' @description  Load LightGBM takes in either a file path or model string.
-#'               If both are provided, Load will default to loading from file
+#' @description Load LightGBM takes in either a file path or model string.
+#'              If both are provided, Load will default to loading from file
 #' @param filename path of model file
 #' @param model_str a str containing the model
 #'
