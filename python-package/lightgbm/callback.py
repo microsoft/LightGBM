@@ -39,12 +39,12 @@ CallbackEnv = collections.namedtuple(
 def _format_eval_result(value: list, show_stdv: bool = True) -> str:
     """Format metric string."""
     if len(value) == 4:
-        return f'{value[0]}\'s {value[1]}: {value[2]}'
+        return f"{value[0]}'s {value[1]}: {value[2]:g}"
     elif len(value) == 5:
         if show_stdv:
-            return f'{value[0]}\'s {value[1]}: {value[2]} + {value[4]}'
+            return f"{value[0]}'s {value[1]}: {value[2]:g} + {value[4]:g}"
         else:
-            return f'{value[0]}\'s {value[1]}: {value[2]}'
+            return f"{value[0]}'s {value[1]}: {value[2]:g}"
     else:
         raise ValueError("Wrong metric value")
 
@@ -67,7 +67,7 @@ def print_evaluation(period: int = 1, show_stdv: bool = True) -> Callable:
     def _callback(env: CallbackEnv) -> None:
         if period > 0 and env.evaluation_result_list and (env.iteration + 1) % period == 0:
             result = '\t'.join([_format_eval_result(x, show_stdv) for x in env.evaluation_result_list])
-            _log_info(f'[{env.iteration+1}]\t{result}')
+            _log_info(f'[{env.iteration + 1}]\t{result}')
     _callback.order = 10  # type: ignore
     return _callback
 
