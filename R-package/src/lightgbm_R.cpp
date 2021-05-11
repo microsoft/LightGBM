@@ -60,13 +60,12 @@ SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
   SEXP ret;
   R_API_BEGIN();
   DatasetHandle handle = nullptr;
-  if (Rf_isNull(reference)) {
-    CHECK_CALL(LGBM_DatasetCreateFromFile(CHAR(Rf_asChar(filename)), CHAR(Rf_asChar(parameters)),
-      nullptr, &handle));
-  } else {
-    CHECK_CALL(LGBM_DatasetCreateFromFile(CHAR(Rf_asChar(filename)), CHAR(Rf_asChar(parameters)),
-      R_ExternalPtrAddr(reference), &handle));
+  DatasetHandle ref = nullptr;
+  if (!Rf_isNull(reference)) {
+    ref = R_ExternalPtrAddr(reference);
   }
+  CHECK_CALL(LGBM_DatasetCreateFromFile(CHAR(Rf_asChar(filename)), CHAR(Rf_asChar(parameters)),
+    ref, &handle));
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
   UNPROTECT(1);
   return ret;
@@ -91,15 +90,13 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   int64_t ndata = static_cast<int64_t>(Rf_asInteger(nelem));
   int64_t nrow = static_cast<int64_t>(Rf_asInteger(num_row));
   DatasetHandle handle = nullptr;
-  if (Rf_isNull(reference)) {
-    CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
-      p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
-      nrow, CHAR(Rf_asChar(parameters)), nullptr, &handle));
-  } else {
-    CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
-      p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
-      nrow, CHAR(Rf_asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
+  DatasetHandle ref = nullptr;
+  if (!Rf_isNull(reference)) {
+    ref = R_ExternalPtrAddr(reference);
   }
+  CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
+    p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
+    nrow, CHAR(Rf_asChar(parameters)), ref, &handle));
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
   UNPROTECT(1);
   return ret;
@@ -117,13 +114,12 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   int32_t ncol = static_cast<int32_t>(Rf_asInteger(num_col));
   double* p_mat = REAL(data);
   DatasetHandle handle = nullptr;
-  if (Rf_isNull(reference)) {
-    CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
-      CHAR(Rf_asChar(parameters)), nullptr, &handle));
-  } else {
-    CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
-      CHAR(Rf_asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
+  DatasetHandle ref = nullptr;
+  if (!Rf_isNull(reference)) {
+    ref = R_ExternalPtrAddr(reference);
   }
+  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
+    CHAR(Rf_asChar(parameters)), ref, &handle));
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
   UNPROTECT(1);
   return ret;
