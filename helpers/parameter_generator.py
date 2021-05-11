@@ -323,7 +323,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
             name = y["name"][0]
             if "vector" in param_type:
                 if "int8" in param_type:
-                    str_to_write += f"  str_buf << \"[{name}: \" << Common::Join(Common::ArrayCast<int8_t, int>({name}), \",\") << \"]\\n\";\n"
+                    str_to_write += f'  str_buf << "[{name}: " << Common::Join(Common::ArrayCast<int8_t, int>({name}), ",") << "]\\n";\n'
                 else:
                     str_to_write += f'  str_buf << "[{name}: " << Common::Join({name}, ",") << "]\\n";\n'
             else:
