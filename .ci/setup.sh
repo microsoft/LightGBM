@@ -17,6 +17,7 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "swig" ]]; then
         brew install swig
     fi
+    brew install graphviz
     curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
@@ -25,13 +26,10 @@ else  # Linux
         echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
 
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends \
+        sudo apt-get install --no-install-recommends -y \
             software-properties-common
 
-        sudo add-apt-repository -y ppa:git-core/ppa
-        sudo apt-get update
-
-        sudo apt-get install -y --no-install-recommends \
+        sudo apt-get install --no-install-recommends -y \
             apt-utils \
             build-essential \
             ca-certificates \
@@ -64,12 +62,16 @@ else  # Linux
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
-        sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
+        sudo apt-get install --no-install-recommends -y \
+            libopenmpi-dev \
+            openmpi-bin
     fi
     if [[ $TASK == "gpu" ]]; then
         sudo add-apt-repository ppa:mhier/libboost-latest -y
         sudo apt-get update
-        sudo apt-get install --no-install-recommends -y libboost1.74-dev ocl-icd-opencl-dev
+        sudo apt-get install --no-install-recommends -y \
+            libboost1.74-dev \
+            ocl-icd-opencl-dev
         cd $BUILD_DIRECTORY  # to avoid permission errors
         curl -sL -o AMD-APP-SDKInstaller.tar.bz2 https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
         tar -xjf AMD-APP-SDKInstaller.tar.bz2
@@ -79,11 +81,13 @@ else  # Linux
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
+    ARCH=$(uname -m)
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
         apt-get install --no-install-recommends -y \
             curl \
+            graphviz \
             libxau6 \
             libxext6 \
             libxrender1 \
@@ -97,17 +101,20 @@ else  # Linux
         curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
         apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
         apt-get update
-        if [[ $COMPILER == "clang" ]]; then
-            apt-get install --no-install-recommends -y \
-                cmake="3.19.5-0kitware1" \
-                cmake-data="3.19.5-0kitware1"
+        apt-get install --no-install-recommends -y \
+            cmake
+    else
+        if [[ $ARCH != "x86_64" ]]; then
+            yum update -y
+            yum install -y \
+                graphviz
         else
-            apt-get install --no-install-recommends -y \
-                cmake
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y \
+                graphviz
         fi
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
-        ARCH=$(uname -m)
         if [[ $ARCH == "x86_64" ]]; then
             curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         else

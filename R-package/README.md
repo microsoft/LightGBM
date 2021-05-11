@@ -55,7 +55,7 @@ model <- lgb.cv(
 install.packages("lightgbm", repos = "https://cran.r-project.org")
 ```
 
-This is the easiest way to install `{lightgbm}`. It does not require `CMake` or `Visual Studio`, and  should work well on many different operating systems and compilers.
+This is the easiest way to install `{lightgbm}`. It does not require `CMake` or `Visual Studio`, and should work well on many different operating systems and compilers.
 
 Each CRAN package is also available on [LightGBM releases](https://github.com/microsoft/LightGBM/releases), with a name like `lightgbm-{VERSION}-r-cran.tar.gz`.
 
@@ -300,13 +300,18 @@ At build time, `configure` will be run and used to create a file `Makevars`, usi
     ```shell
     docker run \
         -v $(pwd):/opt/LightGBM \
+        -w /opt/LightGBM \
         -t ubuntu:20.04 \
-        /bin/bash -c "cd /opt/LightGBM && ./R-package/recreate-configure.sh"
+        ./R-package/recreate-configure.sh
     ```
 
     The version of `autoconf` used by this project is stored in `R-package/AUTOCONF_UBUNTU_VERSION`. To update that version, update that file and run the commands above. To see available versions, see https://packages.ubuntu.com/search?keywords=autoconf.
 
 3. Edit `src/Makevars.in`.
+
+Alternatively, GitHub Actions can re-generate this file for you. On a pull request (only on internal one, does not work for ones from forks), create a comment with this phrase:
+
+> /gha run r-configure
 
 **Configuring for Windows**
 
@@ -365,11 +370,11 @@ You can replicate these checks locally using Docker.
 ```shell
 docker run \
     -v $(pwd):/opt/LightGBM \
+    -w /opt/LightGBM \
     -it rhub/rocker-gcc-san \
     /bin/bash
 
-cd /opt/LightGBM
-Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
+Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
 sh build-cran-package.sh
 
@@ -387,11 +392,11 @@ You can replicate these checks locally using Docker. Note that instrumented vers
 ```shell
 docker run \
     -v $(pwd):/opt/LightGBM \
+    -w /opt/LightGBM \
     -it \
         wch1/r-debug
 
-cd /opt/LightGBM
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
 sh build-cran-package.sh
 

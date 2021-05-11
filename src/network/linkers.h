@@ -132,7 +132,7 @@ class Linkers {
   */
   bool CheckLinker(int rank);
   /*!
-  * \brief Print connented linkers
+  * \brief Print connected linkers
   */
   void PrintLinkers();
 

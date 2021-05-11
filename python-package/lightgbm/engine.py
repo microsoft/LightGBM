@@ -39,14 +39,17 @@ def train(params, train_set, num_boost_round=100,
 
             preds : list or numpy 1-D array
                 The predicted values.
+                Predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task.
             train_data : Dataset
                 The training dataset.
             grad : list or numpy 1-D array
-                The value of the first order derivative (gradient) for each sample point.
+                The value of the first order derivative (gradient) of the loss
+                with respect to the elements of preds for each sample point.
             hess : list or numpy 1-D array
-                The value of the second order derivative (Hessian) for each sample point.
+                The value of the second order derivative (Hessian) of the loss
+                with respect to the elements of preds for each sample point.
 
-        For binary task, the preds is margin.
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
@@ -58,6 +61,8 @@ def train(params, train_set, num_boost_round=100,
 
             preds : list or numpy 1-D array
                 The predicted values.
+                If ``fobj`` is specified, predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task in this case.
             train_data : Dataset
                 The training dataset.
             eval_name : string
@@ -67,7 +72,6 @@ def train(params, train_set, num_boost_round=100,
             is_higher_better : bool
                 Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-        For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
@@ -145,12 +149,12 @@ def train(params, train_set, num_boost_round=100,
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             num_boost_round = params.pop(alias)
-            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
     params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             early_stopping_rounds = params.pop(alias)
-            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
     params["early_stopping_round"] = early_stopping_rounds
     first_metric_only = params.get('first_metric_only', False)
 
@@ -194,7 +198,7 @@ def train(params, train_set, num_boost_round=100,
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
             else:
-                name_valid_sets.append('valid_' + str(i))
+                name_valid_sets.append(f'valid_{i}')
     # process callbacks
     if callbacks is None:
         callbacks = set()
@@ -379,7 +383,7 @@ def _agg_cv_result(raw_results, eval_train_metric=False):
     for one_result in raw_results:
         for one_line in one_result:
             if eval_train_metric:
-                key = "{} {}".format(one_line[0], one_line[1])
+                key = f"{one_line[0]} {one_line[1]}"
             else:
                 key = one_line[1]
             metric_type[key] = one_line[3]
@@ -396,7 +400,7 @@ def cv(params, train_set, num_boost_round=100,
        verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None, eval_train_metric=False,
        return_cvbooster=False):
-    """Perform the cross-validation with given paramaters.
+    """Perform the cross-validation with given parameters.
 
     Parameters
     ----------
@@ -428,14 +432,17 @@ def cv(params, train_set, num_boost_round=100,
 
             preds : list or numpy 1-D array
                 The predicted values.
+                Predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task.
             train_data : Dataset
                 The training dataset.
             grad : list or numpy 1-D array
-                The value of the first order derivative (gradient) for each sample point.
+                The value of the first order derivative (gradient) of the loss
+                with respect to the elements of preds for each sample point.
             hess : list or numpy 1-D array
-                The value of the second order derivative (Hessian) for each sample point.
+                The value of the second order derivative (Hessian) of the loss
+                with respect to the elements of preds for each sample point.
 
-        For binary task, the preds is margin.
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
@@ -447,16 +454,17 @@ def cv(params, train_set, num_boost_round=100,
 
             preds : list or numpy 1-D array
                 The predicted values.
+                If ``fobj`` is specified, predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task in this case.
             train_data : Dataset
                 The training dataset.
             eval_name : string
-                The name of evaluation function (without whitespaces).
+                The name of evaluation function (without whitespace).
             eval_result : float
                 The eval result.
             is_higher_better : bool
                 Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-        For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
@@ -524,12 +532,12 @@ def cv(params, train_set, num_boost_round=100,
         params['objective'] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
-            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
             num_boost_round = params.pop(alias)
     params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
-            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
             early_stopping_rounds = params.pop(alias)
     params["early_stopping_round"] = early_stopping_rounds
     first_metric_only = params.get('first_metric_only', False)
@@ -589,8 +597,8 @@ def cv(params, train_set, num_boost_round=100,
         cvfolds.update(fobj=fobj)
         res = _agg_cv_result(cvfolds.eval_valid(feval), eval_train_metric)
         for _, key, mean, _, std in res:
-            results[key + '-mean'].append(mean)
-            results[key + '-stdv'].append(std)
+            results[f'{key}-mean'].append(mean)
+            results[f'{key}-stdv'].append(std)
         try:
             for cb in callbacks_after_iter:
                 cb(callback.CallbackEnv(model=cvfolds,
