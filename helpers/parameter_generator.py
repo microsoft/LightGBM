@@ -179,7 +179,7 @@ def set_one_var_from_string(name, param_type, checks):
                 ret += f"  CHECK_{check_mapper[sign]}({name}, {value});\n"
         ret += "\n"
     else:
-        ret += f"  if (GetString(params, \"{name}\", &tmp_str)) {\n"
+        ret += f"  if (GetString(params, \"{name}\", &tmp_str)) {{\n"
         type2 = param_type.split("<")[1][:-1]
         if type2 == "std::string":
             ret += f"    {name} = Common::Split(tmp_str.c_str(), ',');\n"
@@ -205,7 +205,7 @@ def gen_parameter_description(sections, descriptions, params_rst):
     lvl_mapper = {1: '-', 2: '~'}
     for (section_name, section_lvl), section_params in zip(sections, descriptions):
         heading_sign = lvl_mapper[section_lvl]
-        params_to_write.append(f'{section_name}\n{ header_sign * len(section_name) }'
+        params_to_write.append(f'{section_name}\n{heading_sign * len(section_name)}')
         for param_desc in section_params:
             name = param_desc['name'][0]
             default_raw = param_desc['default'][0]
@@ -214,13 +214,13 @@ def gen_parameter_description(sections, descriptions, params_rst):
             options = param_desc.get('options', [])
             if len(options) > 0:
                 opts = '``, ``'.join([x.strip() for x in options[0].split(',')])
-                options_str = f', options: ``{opt}``'
+                options_str = f', options: ``{opts}``'
             else:
                 options_str = ''
             aliases = param_desc.get('alias', [])
             if len(aliases) > 0:
                 aliases = '``, ``'.join([x.strip() for x in aliases[0].split(',')])
-                aliases_str = ', aliases: ``{aliases}``'
+                aliases_str = f', aliases: ``{aliases}``'
             else:
                 aliases_str = ''
             checks = sorted(param_desc.get('check', []))
@@ -283,7 +283,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
     str_to_write += "  static std::unordered_map<std::string, std::string> aliases({\n"
 
     for pair in alias:
-        str_to_write += f"  {\"{pair[0]}\", \"{pair[1]}\"},\n"
+        str_to_write += f"  {{\"{pair[0]}\", \"{pair[1]}\"}},\n"
     str_to_write += "  });\n"
     str_to_write += "  return aliases;\n"
     str_to_write += "}\n\n"
@@ -325,7 +325,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
                 if "int8" in param_type:
                     str_to_write += f"  str_buf << \"[{name}: \" << Common::Join(Common::ArrayCast<int8_t, int>({name}), \",\") << \"]\\n\";\n"
                 else:
-                    str_to_write += f"  str_buf << \"[{name}: \" << Common::Join({name}, \",\") << \"]\\n\";\n" % (name, name)
+                    str_to_write += f"  str_buf << \"[{name}: \" << Common::Join({name}, \",\") << \"]\\n\";\n"
             else:
                 str_to_write += f"  str_buf << \"[{name}: \" << {name} << \"]\\n\";\n"
     # tails
