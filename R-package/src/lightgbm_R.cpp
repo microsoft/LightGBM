@@ -680,8 +680,6 @@ SEXP LGBM_BoosterDumpModel_R(LGBM_SE handle,
   R_API_END();
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-function-type"
 // .Call() calls
 static const R_CallMethodDef CallEntries[] = {
   {"LGBM_GetLastError_R"              , (DL_FUNC) &LGBM_GetLastError_R              , 0},
@@ -727,7 +725,6 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 3},
   {NULL, NULL, 0}
 };
-#pragma GCC diagnostic pop
 
 LIGHTGBM_C_EXPORT void R_init_lightgbm(DllInfo *dll);
 
