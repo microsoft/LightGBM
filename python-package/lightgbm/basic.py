@@ -3259,7 +3259,7 @@ class Booster:
             raise ValueError("Length of feature names doesn't equal with num_feature")
         if reserved_string_buffer_size < required_string_buffer_size.value:
             raise BufferError(
-                f"Allocated feature name buffer size ({reserved_string_buffer_size}) was inferior to the needed size ({required_string_buffer_size.value)}.")
+                f"Allocated feature name buffer size ({reserved_string_buffer_size}) was inferior to the needed size ({required_string_buffer_size.value}.")
         return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
     def feature_importance(self, importance_type='split', iteration=None):
