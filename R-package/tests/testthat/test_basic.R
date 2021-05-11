@@ -2,6 +2,11 @@ context("lightgbm()")
 
 ON_WINDOWS <- .Platform$OS.type == "windows"
 
+UTF8_LOCALE <- all(grepl(
+  pattern = "UTF-8$"
+  , x = Sys.getlocale(category = "LC_CTYPE")
+))
+
 data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")
 train <- agaricus.train
@@ -1229,7 +1234,7 @@ test_that("lgb.train() supports non-ASCII feature names", {
   # UTF-8 strings are not well-supported on Windows
   # * https://developer.r-project.org/Blog/public/2020/05/02/utf-8-support-on-windows/
   # * https://developer.r-project.org/Blog/public/2020/07/30/windows/utf-8-build-of-r-and-cran-packages/index.html
-  if (!ON_WINDOWS) {
+  if (UTF8_LOCALE && !ON_WINDOWS) {
     expect_identical(
       dumped_model[["feature_names"]]
       , feature_names
@@ -1239,6 +1244,38 @@ test_that("lgb.train() supports non-ASCII feature names", {
       dumped_model[["feature_names"]]
       , iconv(feature_names, to = "UTF-8")
     )
+  }
+})
+
+test_that("lgb.train() works with integer, double, and numeric data", {
+  data(mtcars)
+  X <- as.matrix(mtcars[, -1L])
+  y <- mtcars[, 1L, drop = TRUE]
+  expected_mae <- 4.263667
+  for (data_mode in c("numeric", "double", "integer")) {
+    mode(X) <- data_mode
+    nrounds <- 10L
+    bst <- lightgbm(
+      data = X
+      , label = y
+      , params = list(
+        objective = "regression"
+        , min_data = 1L
+        , learning_rate = 0.01
+        , seed = 708L
+      )
+      , nrounds = nrounds
+    )
+
+    # should have trained for 10 iterations and found splits
+    modelDT <- lgb.model.dt.tree(bst)
+    expect_equal(modelDT[, max(tree_index)], nrounds - 1L)
+    expect_gt(nrow(modelDT), nrounds * 3L)
+
+    # should have achieved expected performance
+    preds <- predict(bst, X)
+    mae <- mean(abs(y - preds))
+    expect_true(abs(mae - expected_mae) < TOLERANCE)
   }
 })
 
@@ -1577,9 +1614,6 @@ test_that("If first_metric_only is TRUE, lgb.cv() decides to stop early based on
     , data = DTRAIN_RANDOM_REGRESSION
     , nfold = nfolds
     , nrounds = nrounds
-    , valids = list(
-      "valid1" = DVALID_RANDOM_REGRESSION
-    )
     , eval = list(
       .increasing_metric
       , .constant_metric
@@ -1636,9 +1670,6 @@ test_that("early stopping works with lgb.cv()", {
     , data = DTRAIN_RANDOM_REGRESSION
     , nfold = nfolds
     , nrounds = nrounds
-    , valids = list(
-      "valid1" = DVALID_RANDOM_REGRESSION
-    )
     , eval = list(
       .constant_metric
       , .increasing_metric
@@ -1836,15 +1867,16 @@ test_that("lgb.train() works with linear learners, bagging, and a Dataset that h
 test_that("lgb.train() works with linear learners and data where a feature has only 1 non-NA value", {
   set.seed(708L)
   .new_dataset <- function() {
-    values <- rep(NA_real_, 100L)
-    values[18L] <- rnorm(1L)
+    values <- c(rnorm(100L), rep(NA_real_, 100L))
+    values[118L] <- rnorm(1L)
     X <- matrix(
       data = values
-      , ncol = 1L
+      , ncol = 2L
     )
     return(lgb.Dataset(
       data = X
-      , label = 2L * X + runif(nrow(X), 0L, 0.1)
+      , label = 2L * X[, 1L] + runif(nrow(X), 0L, 0.1)
+      , feature_pre_filter = FALSE
     ))
   }
 
@@ -1883,7 +1915,7 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
-    , categorical_features = 1L
+    , categorical_feature = 1L
   )
 
   dtrain <- .new_dataset()

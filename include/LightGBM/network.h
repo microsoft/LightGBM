@@ -63,13 +63,13 @@ class RecursiveHalvingMap {
   int neighbor;
   /*! \brief ranks[i] means the machines that will communicate with on i-th communication*/
   std::vector<int> ranks;
-  /*! \brief  send_block_start[i] means send block start index at i-th communication*/
+  /*! \brief send_block_start[i] means send block start index at i-th communication*/
   std::vector<int> send_block_start;
-  /*! \brief  send_block_start[i] means send block size at i-th communication*/
+  /*! \brief send_block_start[i] means send block size at i-th communication*/
   std::vector<int> send_block_len;
-  /*! \brief  send_block_start[i] means recv block start index at i-th communication*/
+  /*! \brief send_block_start[i] means recv block start index at i-th communication*/
   std::vector<int> recv_block_start;
-  /*! \brief  send_block_start[i] means recv block size  at i-th communication*/
+  /*! \brief send_block_start[i] means recv block size at i-th communication*/
   std::vector<int> recv_block_len;
 
   RecursiveHalvingMap();
@@ -128,7 +128,7 @@ class Network {
                                    const ReduceFunction& reducer);
 
   /*!
-  * \brief Performing all_gather by using bruck algorithm. 
+  * \brief Performing all_gather by using Bruck algorithm. 
            Communication times is O(log(n)), and communication cost is O(send_size * number_machine)
   *        It can be used when all nodes have same input size.
   * \param input Input data
@@ -138,7 +138,7 @@ class Network {
   static void Allgather(char* input, comm_size_t send_size, char* output);
 
   /*!
-  * \brief Performing all_gather by using bruck algorithm. 
+  * \brief Performing all_gather by using Bruck algorithm. 
            Communication times is O(log(n)), and communication cost is O(all_size)
   *        It can be used when nodes have different input size.
   * \param input Input data

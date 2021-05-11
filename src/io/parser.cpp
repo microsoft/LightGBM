@@ -6,9 +6,6 @@
 
 #include <string>
 #include <algorithm>
-#include <fstream>
-#include <functional>
-#include <iostream>
 #include <memory>
 
 namespace LightGBM {
@@ -232,7 +229,7 @@ DataType GetDataType(const char* filename, bool header,
   return type;
 }
 
-Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx) {
+Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser) {
   const int n_read_line = 32;
   auto lines = ReadKLineFromFile(filename, header, n_read_line);
   int num_col = 0;
@@ -242,15 +239,16 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
   }
   std::unique_ptr<Parser> ret;
   int output_label_index = -1;
+  AtofFunc atof = precise_float_parser ? Common::AtofPrecise : Common::Atof;
   if (type == DataType::LIBSVM) {
     output_label_index = GetLabelIdxForLibsvm(lines[0], num_features, label_idx);
-    ret.reset(new LibSVMParser(output_label_index, num_col));
+    ret.reset(new LibSVMParser(output_label_index, num_col, atof));
   } else if (type == DataType::TSV) {
     output_label_index = GetLabelIdxForTSV(lines[0], num_features, label_idx);
-    ret.reset(new TSVParser(output_label_index, num_col));
+    ret.reset(new TSVParser(output_label_index, num_col, atof));
   } else if (type == DataType::CSV) {
     output_label_index = GetLabelIdxForCSV(lines[0], num_features, label_idx);
-    ret.reset(new CSVParser(output_label_index, num_col));
+    ret.reset(new CSVParser(output_label_index, num_col, atof));
   }
 
   if (output_label_index < 0 && label_idx >= 0) {

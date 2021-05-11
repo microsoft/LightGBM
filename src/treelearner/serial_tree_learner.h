@@ -28,7 +28,7 @@
 #include "split_info.hpp"
 
 #ifdef USE_GPU
-// Use 4KBytes aligned allocator for ordered gradients and ordered hessians when GPU is enabled.
+// Use 4KBytes aligned allocator for ordered gradients and ordered Hessians when GPU is enabled.
 // This is necessary to pin the two arrays in memory and make transferring faster.
 #include <boost/align/aligned_allocator.hpp>
 #endif
@@ -128,7 +128,7 @@ class SerialTreeLearner: public TreeLearner {
 
   void GetShareStates(const Dataset* dataset, bool is_constant_hessian, bool is_first_time);
 
-  void RecomputeBestSplitForLeaf(int leaf, SplitInfo* split);
+  void RecomputeBestSplitForLeaf(Tree* tree, int leaf, SplitInfo* split);
 
   /*!
   * \brief Some initial works before training

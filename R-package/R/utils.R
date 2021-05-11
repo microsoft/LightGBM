@@ -18,99 +18,15 @@ lgb.is.null.handle <- function(x) {
   return(is.null(x) || is.na(x))
 }
 
-lgb.encode.char <- function(arr, len) {
-  if (!is.raw(arr)) {
-    stop("lgb.encode.char: Can only encode from raw type")
-  }
-  return(rawToChar(arr[seq_len(len)]))
-}
-
-# [description] Raise an error. Before raising that error, check for any error message
-#               stored in a buffer on the C++ side.
+# [description] Get the most recent error stored on the C++ side and raise it
+#               as an R error.
 lgb.last_error <- function() {
-  # Perform text error buffering
-  buf_len <- 200L
-  act_len <- 0L
-  err_msg <- raw(buf_len)
   err_msg <- .Call(
-    "LGBM_GetLastError_R"
-    , buf_len
-    , act_len
-    , err_msg
-    , PACKAGE = "lib_lightgbm"
+    LGBM_GetLastError_R
   )
-
-  # Check error buffer
-  if (act_len > buf_len) {
-    buf_len <- act_len
-    err_msg <- raw(buf_len)
-    err_msg <- .Call(
-      "LGBM_GetLastError_R"
-      , buf_len
-      , act_len
-      , err_msg
-      , PACKAGE = "lib_lightgbm"
-    )
-  }
-
-  stop("api error: ", lgb.encode.char(arr = err_msg, len = act_len))
-
+  stop("api error: ", err_msg)
   return(invisible(NULL))
-
 }
-
-lgb.call <- function(fun_name, ret, ...) {
-  # Set call state to a zero value
-  call_state <- 0L
-
-  # Check for a ret call
-  if (!is.null(ret)) {
-    call_state <- .Call(
-      fun_name
-      , ...
-      , ret
-      , call_state
-      , PACKAGE = "lib_lightgbm"
-    )
-  } else {
-    call_state <- .Call(
-      fun_name
-      , ...
-      , call_state
-      , PACKAGE = "lib_lightgbm"
-    )
-  }
-  call_state <- as.integer(call_state)
-  # Check for call state value post call
-  if (call_state != 0L) {
-    lgb.last_error()
-  }
-
-  return(ret)
-
-}
-
-lgb.call.return.str <- function(fun_name, ...) {
-
-  # Create buffer
-  buf_len <- as.integer(1024L * 1024L)
-  act_len <- 0L
-  buf <- raw(buf_len)
-
-  # Call buffer
-  buf <- lgb.call(fun_name = fun_name, ret = buf, ..., buf_len, act_len)
-
-  # Check for buffer content
-  if (act_len > buf_len) {
-    buf_len <- act_len
-    buf <- raw(buf_len)
-    buf <- lgb.call(fun_name = fun_name, ret = buf, ..., buf_len, act_len)
-  }
-
-  return(lgb.encode.char(arr = buf, len = act_len))
-
-}
-
 lgb.params2str <- function(params, ...) {
 
   # Check for a list as input
@@ -166,28 +82,28 @@ lgb.params2str <- function(params, ...) {
 
   # Check ret length
   if (length(ret) == 0L) {
-    return(lgb.c_str(x = ""))
+    return("")
   }
 
-  return(lgb.c_str(x = paste0(ret, collapse = " ")))
+  return(paste0(ret, collapse = " "))
 
 }
 
-lgb.check_interaction_constraints <- function(params, column_names) {
+lgb.check_interaction_constraints <- function(interaction_constraints, column_names) {
 
   # Convert interaction constraints to feature numbers
   string_constraints <- list()
 
-  if (!is.null(params[["interaction_constraints"]])) {
+  if (!is.null(interaction_constraints)) {
 
-    if (!methods::is(params[["interaction_constraints"]], "list")) {
+    if (!methods::is(interaction_constraints, "list")) {
         stop("interaction_constraints must be a list")
     }
-    if (!all(sapply(params[["interaction_constraints"]], function(x) {is.character(x) || is.numeric(x)}))) {
+    if (!all(sapply(interaction_constraints, function(x) {is.character(x) || is.numeric(x)}))) {
         stop("every element in interaction_constraints must be a character vector or numeric vector")
     }
 
-    for (constraint in params[["interaction_constraints"]]) {
+    for (constraint in interaction_constraints) {
 
       # Check for character name
       if (is.character(constraint)) {
@@ -231,13 +147,6 @@ lgb.check_interaction_constraints <- function(params, column_names) {
 
 }
 
-lgb.c_str <- function(x) {
-
-  ret <- charToRaw(as.character(x))
-  ret <- c(ret, as.raw(0L))
-  return(ret)
-
-}
 
 lgb.check.r6.class <- function(object, name) {
 
