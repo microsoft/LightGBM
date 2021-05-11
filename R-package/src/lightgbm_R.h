@@ -33,7 +33,6 @@ LIGHTGBM_C_EXPORT SEXP LGBM_HandleIsNull_R(
 * \param filename the name of the file
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other Dataset, nullptr means not used
-* \param out created Dataset
 * \return Dataset handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromFile_R(
@@ -52,7 +51,6 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromFile_R(
 * \param num_row number of rows
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other Dataset, nullptr means not used
-* \param out created Dataset
 * \return Dataset handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromCSC_R(
@@ -73,7 +71,6 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromCSC_R(
 * \param num_col number columns
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other Dataset, nullptr means not used
-* \param out created Dataset
 * \return Dataset handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromMat_R(
@@ -90,7 +87,6 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetCreateFromMat_R(
 * \param used_row_indices Indices used in subset
 * \param len_used_row_indices length of Indices used in subset
 * \param parameters additional parameters
-* \param out created Dataset
 * \return Dataset handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetSubset_R(
@@ -242,7 +238,6 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterFree_R(
 /*!
 * \brief load an existing Booster from model file
 * \param filename filename of model
-* \param out handle of created Booster
 * \return Booster handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCreateFromModelfile_R(
@@ -252,7 +247,6 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCreateFromModelfile_R(
 /*!
 * \brief load an existing Booster from a string
 * \param model_str string containing the model
-* \param out handle of created Booster
 * \return Booster handle
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterLoadModelFromString_R(

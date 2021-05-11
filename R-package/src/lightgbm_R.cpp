@@ -119,7 +119,7 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   DatasetHandle handle = nullptr;
   if (Rf_isNull(reference)) {
     CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
-    CHAR(Rf_asChar(parameters)), nullptr, &handle));
+      CHAR(Rf_asChar(parameters)), nullptr, &handle));
   } else {
     CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
       CHAR(Rf_asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
