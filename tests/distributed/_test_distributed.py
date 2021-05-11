@@ -12,8 +12,10 @@ import lightgbm as lgb
 
 
 def create_data(task: str, n_samples: int = 1_000) -> np.ndarray:
-    """Creates the appropiate data for the task.
-    The data is returned as a numpy array with the label as the first column."""
+    """Create the appropiate data for the task.
+
+    The data is returned as a numpy array with the label as the first column.
+    """
     if task == 'binary-classification':
         centers = [[-4, -4], [4, 4]]
         X, y = make_blobs(n_samples, centers=centers, random_state=42)
@@ -27,12 +29,17 @@ def run_and_log(cmd: List[str]) -> None:
     """Run `cmd` in another process and pipe its logs to this process' stdout."""
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     assert process.stdout is not None
-    stdout_stream = lambda: process.stdout.read(1)
+
+    def stdout_stream():
+        return process.stdout.read(1)
+
     for c in iter(stdout_stream, b''):
         sys.stdout.buffer.write(c)
 
 
 class DistributedMockup:
+    """Simulate distributed training."""
+
     default_config = {
         'task': 'train',
         'output_model': 'model.txt',
@@ -53,7 +60,9 @@ class DistributedMockup:
 
     def worker_train(self, i: int) -> None:
         """Start the training process on the `i`-th worker.
-        If this is the first worker, its logs are piped to stdout."""
+
+        If this is the first worker, its logs are piped to stdout.
+        """
         cmd = f'./lightgbm config=train{i}.conf'.split()
         if i == 0:
             return run_and_log(cmd)
@@ -75,6 +84,7 @@ class DistributedMockup:
 
     def fit(self, partitions: List[np.ndarray]) -> None:
         """Run the distributed training process on a single machine.
+
         For each worker i:
             1. The i-th partition is saved as train{i}.txt
             2. A random port is assigned for training.
@@ -94,18 +104,22 @@ class DistributedMockup:
 
     def predict(self) -> np.ndarray:
         """Compute the predictions using the model created in the fit step.
+
         model.txt is used to predict the training set train.txt using predict.conf.
         The predictions are saved as predictions.txt and are then loaded to return them as a numpy array.
-        The logs are piped to stdout."""
+        The logs are piped to stdout.
+        """
         cmd = './lightgbm config=predict.conf'.split()
         run_and_log(cmd)
         y_pred = np.loadtxt('predictions.txt')
         return y_pred
 
     def write_train_config(self, i: int) -> None:
-        """Creates a file train{i}.txt with the required configuration to train.
+        """Create a file train{i}.txt with the required configuration to train.
+
         Each worker gets a different port and piece of the data, the rest are the
-        model parameters contained in `self.config`."""
+        model parameters contained in `self.config`.
+        """
         with open(f'train{i}.conf', 'wt') as f:
             f.write(f'local_listen_port = {self.listen_ports[i]}\n')
             f.write(f'data = train{i}.txt\n')
@@ -114,6 +128,7 @@ class DistributedMockup:
 
 
 def test_classifier():
+    """Test the classification task."""
     num_machines = 2
     data = create_data(task='binary-classification')
     partitions = np.array_split(data, num_machines)
@@ -128,6 +143,7 @@ def test_classifier():
 
 
 def test_regressor():
+    """Test the regression task."""
     num_machines = 2
     data = create_data(task='regression')
     partitions = np.array_split(data, num_machines)
