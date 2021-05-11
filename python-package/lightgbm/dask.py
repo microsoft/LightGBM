@@ -67,7 +67,7 @@ def _concat(seq: List[_DaskPart]) -> _DaskPart:
     elif isinstance(seq[0], ss.spmatrix):
         return ss.vstack(seq, format='csr')
     else:
-        raise TypeError('Data must be one of: numpy arrays, pandas dataframes, sparse matrices (from scipy). Got %s.' % str(type(seq[0])))
+        raise TypeError(f'Data must be one of: numpy arrays, pandas dataframes, sparse matrices (from scipy). Got {str(type(seq[0]))}.')
 
 
 def _train_part(
@@ -413,7 +413,7 @@ def _train(
             )
 
         machines = ','.join([
-            '%s:%d' % (urlparse(worker_address).hostname, port)
+            f'{urlparse(worker_address).hostname}:{port}'
             for worker_address, port
             in worker_address_to_port.items()
         ])
@@ -572,7 +572,7 @@ def _predict(
             drop_axis=1
         )
     else:
-        raise TypeError('Data must be either Dask Array or Dask DataFrame. Got %s.' % str(type(data)))
+        raise TypeError(f'Data must be either Dask Array or Dask DataFrame. Got {str(type(data))}.')
 
 
 class _DaskLGBMModel:
