@@ -432,6 +432,7 @@ miktex*.zip
 **/lgb-model.txt
 tests/distributed/mlist.txt
 tests/distributed/train*
+tests/distributed/model*
 tests/distributed/predictions*.txt
 
 

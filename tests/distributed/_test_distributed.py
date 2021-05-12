@@ -42,7 +42,7 @@ class DistributedMockup:
 
     default_config = {
         'task': 'train',
-        'output_model': 'model.txt',
+        'pre_partition': True,
         'machine_list_file': 'mlist.txt',
         'tree_learner': 'data',
         'force_row_wise': True,
@@ -121,6 +121,7 @@ class DistributedMockup:
         model parameters contained in `self.config`.
         """
         with open(f'train{i}.conf', 'wt') as f:
+            f.write(f'output_model = model{i}.txt\n')
             f.write(f'local_listen_port = {self.listen_ports[i]}\n')
             f.write(f'data = train{i}.txt\n')
             for param, value in self.config.items():
