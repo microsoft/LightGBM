@@ -90,6 +90,7 @@ class DistributedMockup:
             2. A random port is assigned for training.
             3. A configuration file train{i}.conf is created.
             4. The lightgbm binary is called with config=train{i}.conf in another thread.
+            5. The trained model is saved as model{i}.txt. Each model file only differs in data and local_listen_port.
         The whole training set is saved as train.txt and the logs from the first worker are piped to stdout.
         """
         self._write_data(partitions)
@@ -105,7 +106,7 @@ class DistributedMockup:
     def predict(self) -> np.ndarray:
         """Compute the predictions using the model created in the fit step.
 
-        model.txt is used to predict the training set train.txt using predict.conf.
+        model0.txt is used to predict the training set train.txt using predict.conf.
         The predictions are saved as predictions.txt and are then loaded to return them as a numpy array.
         The logs are piped to stdout.
         """
