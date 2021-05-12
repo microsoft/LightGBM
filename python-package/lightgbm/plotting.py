@@ -206,8 +206,8 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
 
     hist, bins = booster.get_split_value_histogram(feature=feature, bins=bins, xgboost_style=False)
     if np.count_nonzero(hist) == 0:
-        raise ValueError("Cannot plot split value histogram, "
-                         f"because feature {feature} was not used in splitting")
+        raise ValueError('Cannot plot split value histogram, '
+                         f'because feature {feature} was not used in splitting')
     width = width_coef * (bins[1] - bins[0])
     centred = (bins[:-1] + bins[1:]) / 2
 
@@ -431,7 +431,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
                 label += f"<br/>count: {root['leaf_count']}"
             if "data_percentage" in show_info:
                 label += f"<br/>{_float2str(root['leaf_count'] / total_count * 100, 2)}% of data"
-            label = "<" + label + ">"
+            label = f"<{label}>"
             graph.node(name, label=label)
         if parent is not None:
             graph.edge(parent, name, decision)
