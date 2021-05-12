@@ -13,11 +13,11 @@ from .sklearn import LGBMModel
 def _check_not_tuple_of_2_elements(obj, obj_name='obj'):
     """Check object is not tuple or does not have 2 elements."""
     if not isinstance(obj, tuple) or len(obj) != 2:
-        raise TypeError('%s must be a tuple of 2 elements.' % obj_name)
+        raise TypeError(f"{obj_name} must be a tuple of 2 elements.")
 
 
 def _float2str(value, precision=None):
-    return ("{0:.{1}f}".format(value, precision)
+    return (f"{value:.{precision}f}"
             if precision is not None and not isinstance(value, str)
             else str(value))
 
@@ -206,8 +206,8 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
 
     hist, bins = booster.get_split_value_histogram(feature=feature, bins=bins, xgboost_style=False)
     if np.count_nonzero(hist) == 0:
-        raise ValueError('Cannot plot split value histogram, '
-                         'because feature {} was not used in splitting'.format(feature))
+        raise ValueError("Cannot plot split value histogram, "
+                         f"because feature {feature} was not used in splitting")
     width = width_coef * (bins[1] - bins[0])
     centred = (bins[:-1] + bins[1:]) / 2
 
@@ -393,21 +393,21 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
                 operator = "="
             else:
                 raise ValueError('Invalid decision type in tree model.')
-            name = 'split{0}'.format(root['split_index'])
+            name = f"split{root['split_index']}"
             if feature_names is not None:
-                label = '<B>{0}</B> {1} '.format(feature_names[root['split_feature']], operator)
+                label = f"<B>{feature_names[root['split_feature']]}</B> {operator}"
             else:
-                label = 'feature <B>{0}</B> {1} '.format(root['split_feature'], operator)
-            label += '<B>{0}</B>'.format(_float2str(root['threshold'], precision))
+                label = f"feature <B>{root['split_feature']}</B> {operator} "
+            label += f"<B>{_float2str(root['threshold'], precision)}</B>"
             for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
                 if info in show_info:
                     output = info.split('_')[-1]
                     if info in {'split_gain', 'internal_value', 'internal_weight'}:
-                        label += '<br/>{0} {1}'.format(_float2str(root[info], precision), output)
+                        label += f"<br/>{_float2str(root[info], precision)} {output}"
                     elif info == 'internal_count':
-                        label += '<br/>{0}: {1}'.format(output, root[info])
+                        label += f"<br/>{output}: {root[info]}"
                     elif info == "data_percentage":
-                        label += '<br/>{0}% of data'.format(_float2str(root['internal_count'] / total_count * 100, 2))
+                        label += f"<br/>{_float2str(root['internal_count'] / total_count * 100, 2)}% of data"
 
             fillcolor = "white"
             style = ""
@@ -422,15 +422,15 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
             add(root['left_child'], total_count, name, l_dec)
             add(root['right_child'], total_count, name, r_dec)
         else:  # leaf
-            name = 'leaf{0}'.format(root['leaf_index'])
-            label = 'leaf {0}: '.format(root['leaf_index'])
-            label += '<B>{0}</B>'.format(_float2str(root['leaf_value'], precision))
+            name = f"leaf{root['leaf_index']}"
+            label = f"leaf {root['leaf_index']}: "
+            label += f"<B>{_float2str(root['leaf_value'], precision)}</B>"
             if 'leaf_weight' in show_info:
-                label += '<br/>{0} weight'.format(_float2str(root['leaf_weight'], precision))
+                label += f"<br/>{_float2str(root['leaf_weight'], precision)} weight"
             if 'leaf_count' in show_info:
-                label += '<br/>count: {0}'.format(root['leaf_count'])
+                label += f"<br/>count: {root['leaf_count']}"
             if "data_percentage" in show_info:
-                label += '<br/>{0}% of data'.format(_float2str(root['leaf_count'] / total_count * 100, 2))
+                label += f"<br/>{_float2str(root['leaf_count'] / total_count * 100, 2)}% of data"
             label = "<" + label + ">"
             graph.node(name, label=label)
         if parent is not None:
