@@ -1768,7 +1768,7 @@ class Dataset:
             self.feature_name = feature_name
         if self.handle is not None and feature_name is not None and feature_name != 'auto':
             if len(feature_name) != self.num_feature():
-                raise ValueError(f"Length of feature_name({len(feature_name)}) and num_feature({self.num_feature}) don't match")
+                raise ValueError(f"Length of feature_name({len(feature_name)}) and num_feature({self.num_feature()}) don't match")
             c_feature_name = [c_str(name) for name in feature_name]
             _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
                 self.handle,
@@ -2418,7 +2418,7 @@ class Booster:
                 is_split = _is_split_node(tree)
                 node_type = 'S' if is_split else 'L'
                 # if a single node tree it won't have `leaf_index` so return 0
-                node_num = str(tree.get('split_index' if is_split else 'leaf_index', 0))
+                node_num = tree.get('split_index' if is_split else 'leaf_index', 0)
                 return f"{tree_num}{node_type}{node_num}"
 
             def _get_split_feature(tree, feature_names):
@@ -3260,7 +3260,7 @@ class Booster:
             raise ValueError("Length of feature names doesn't equal with num_feature")
         if reserved_string_buffer_size < required_string_buffer_size.value:
             raise BufferError(
-                f"Allocated feature name buffer size ({reserved_string_buffer_size}) was inferior to the needed size ({required_string_buffer_size.value}.")
+                f"Allocated feature name buffer size ({reserved_string_buffer_size}) was inferior to the needed size ({required_string_buffer_size.value}).")
         return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
     def feature_importance(self, importance_type='split', iteration=None):
