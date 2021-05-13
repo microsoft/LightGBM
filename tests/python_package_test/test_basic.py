@@ -91,14 +91,15 @@ def test_basic(tmp_path):
 
 
 class NumpySequence(lgb.Sequence):
-    def __init__(self, ndarray):
+    def __init__(self, ndarray, batch_size):
         self.ndarray = ndarray
+        self.batch_size = batch_size
 
     def __getitem__(self, idx):
         # The simple implementation is just a single "return self.ndarray[idx]"
         # The following is for demo and testing purpose.
         if isinstance(idx, int):
-            return self.__get_one_line__(idx)
+            return self._get_one_line(idx)
         elif isinstance(idx, slice):
             if not (idx.step is None or idx.step is 1):
                 raise NotImplementedError("No need to implement, caller will not set step by now")
@@ -106,34 +107,39 @@ class NumpySequence(lgb.Sequence):
         else:
             raise TypeError("Sequence Index must be an integer/list/slice, got {}".format(type(idx)))
 
-    def __get_one_line__(self, idx):
+    def _get_one_line(self, idx):
         return self.ndarray[idx]
 
     def __len__(self):
         return len(self.ndarray)
 
 
-@pytest.mark.parametrize('sample_count', [2, 5])
+def _create_sequence_from_ndarray(data, num_seq, batch_size):
+    if num_seq == 1:
+        return NumpySequence(data, batch_size)
+
+    nrow = data.shape[0]
+    seqs = []
+    seq_size = nrow // num_seq
+    for start in range(0, nrow, seq_size):
+        end = min(start + seq_size, nrow)
+        seq = NumpySequence(data[start:end], batch_size)
+        seqs.append(seq)
+    return seqs
+
+
+@pytest.mark.parametrize('sample_count', [11, 23, 100, None])
 @pytest.mark.parametrize('batch_size', [3, 20, None])
 @pytest.mark.parametrize('include_0', [False, True])
 @pytest.mark.parametrize('include_nan', [False, True])
 @pytest.mark.parametrize('num_seq', [1, 3])
-@pytest.mark.parametrize('create_valid', [False, True])
-def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_seq, create_valid):
-    params = {
-        "bin_construct_sample_cnt": sample_count,
-        # "data_random_seed": 0,
-    }
+def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_seq):
+    params = { 'bin_construct_sample_cnt': sample_count }
 
-    nrow = 31
+    nrow = 50
     half_nrow = nrow // 2
     ncol = 11
-    data = np.arange(nrow * ncol).reshape((nrow, ncol)).astype('float64')
-
-    if create_valid:
-        # select some head and tail rows
-        ref_data = data[[0, 1, 2, -1, -2], :]
-        ref_dataset = lgb.Dataset(ref_data[:, :-1], label=ref_data[:, -1], params=params)
+    data = np.arange(nrow * ncol, dtype=np.float64).reshape((nrow, ncol))
 
     # total col
     if include_0:
@@ -155,42 +161,44 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_
     if include_0:
         data[half_nrow:-2, 4] = 0
 
-    # X, Y split
     X = data[:, :-1]
     Y = data[:, -1]
 
-    if create_valid:
-        ds = lgb.Dataset(X, label=Y, reference=ref_dataset)
-    else:
-        # truth
-        ds = lgb.Dataset(X, label=Y, params=params)
+    npy_bin_fname = os.path.join(tmpdir, 'data_from_npy.bin')
+    seq_bin_fname = os.path.join(tmpdir, 'data_from_seq.bin')
 
-    ds.save_binary(os.path.join(tmpdir, "seq.truth.bin"))
+    # Create dataset from numpy array directly.
+    ds = lgb.Dataset(X, label=Y, params=params)
+    ds.save_binary(npy_bin_fname)
 
-    # seq
-    if num_seq == 1:
-        seqs = NumpySequence(X)
-    else:
-        seqs = []
-        seq_size = nrow // num_seq
-        for start in range(0, nrow, seq_size):
-            end = min(start + seq_size, nrow)
-            seq = NumpySequence(X[start:end])
-            seq.batch_size = batch_size
-            seqs.append(seq)
+    # Create dataset using Sequence.
+    seqs = _create_sequence_from_ndarray(X, num_seq, batch_size)
+    seq_ds = lgb.Dataset(seqs, label=Y, params=params)
+    seq_ds.save_binary(seq_bin_fname)
 
-    if create_valid:
-        ds = lgb.Dataset(seqs, label=Y, reference=ref_dataset)
-    else:
-        ds = lgb.Dataset(seqs, label=Y, params=params)
-    ds.save_binary(os.path.join(tmpdir, "seq.seq.bin"))
+    assert filecmp.cmp(npy_bin_fname, seq_bin_fname)
 
-    if create_valid:
-        # TODO: verify validation dataset somehow
-        # Some metadata are not initialized while validation dataset are constructed
-        ...
-    else:
-        assert filecmp.cmp(os.path.join(tmpdir, "seq.truth.bin"), os.path.join(tmpdir, "seq.seq.bin"))
+    # Test for validation set.
+    # Select some random rows as valid data.
+    rng = np.random.default_rng()  # Pass integer to set seed when needed.
+    valid_idx = (rng.random(10) * nrow).astype(np.int)
+    valid_data = data[valid_idx, :]
+    valid_X = valid_data[:, :-1]
+    valid_Y = valid_data[:, -1]
+
+    valid_npy_bin_fname = os.path.join(tmpdir, 'valid_data_from_npy.bin')
+    valid_seq_bin_fname = os.path.join(tmpdir, 'valid_data_from_seq.bin')
+
+    valid_ds = lgb.Dataset(valid_X, label=valid_Y, params=params, reference=ds)
+    valid_ds.save_binary(valid_npy_bin_fname)
+    valid_ds._dump_text(os.path.join(tmpdir, 'valid_numpy.txt'))
+
+    valid_seqs = _create_sequence_from_ndarray(valid_X, num_seq, batch_size)
+    valid_seq_ds = lgb.Dataset(valid_seqs, label=valid_Y, params=params, reference=valid_ds)
+    valid_seq_ds.save_binary(valid_seq_bin_fname)
+    valid_seq_ds._dump_text(os.path.join(tmpdir, 'valid_seq.txt'))
+
+    assert filecmp.cmp(valid_npy_bin_fname, valid_seq_bin_fname)
 
 
 def test_chunked_dataset():

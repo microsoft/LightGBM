@@ -1556,13 +1556,8 @@ class Dataset:
         """
         total_nrow = sum(len(seq) for seq in seqs)
 
-        # check uniformity:
-        # ncol = len(seqs[0][0])
-
         # create validation dataset from ref_dataset
         if ref_dataset:
-            if self.params.get("bin_construct_sample_cnt"):
-                _log_warning('Option `bin_construct_sample_cnt` will be ignored when creating validation dataset.')
             self.init_from_ref_dataset(total_nrow, ref_dataset)
         else:
             sample_cnt = self.params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
