@@ -67,7 +67,7 @@ def _concat(seq: List[_DaskPart]) -> _DaskPart:
     elif isinstance(seq[0], ss.spmatrix):
         return ss.vstack(seq, format='csr')
     else:
-        raise TypeError(f'Data must be one of: numpy arrays, pandas dataframes, sparse matrices (from scipy). Got {str(type(seq[0]))}.')
+        raise TypeError(f'Data must be one of: numpy arrays, pandas dataframes, sparse matrices (from scipy). Got {type(seq[0])}.')
 
 
 def _train_part(
@@ -572,7 +572,7 @@ def _predict(
             drop_axis=1
         )
     else:
-        raise TypeError(f'Data must be either Dask Array or Dask DataFrame. Got {str(type(data))}.')
+        raise TypeError(f'Data must be either Dask Array or Dask DataFrame. Got {type(data)}.')
 
 
 class _DaskLGBMModel:
@@ -750,7 +750,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     # DaskLGBMClassifier support for callbacks and init_model is not tested
     fit.__doc__ = f"""
         {_base_doc[:_base_doc.find('callbacks :')]}**kwargs
-        Other parameters passed through to ``LGBMClassifier.fit()``
+        {' ':4}Other parameters passed through to ``LGBMClassifier.fit()``
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
@@ -901,7 +901,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     # DaskLGBMRegressor support for callbacks and init_model is not tested
     fit.__doc__ = f"""
         {_base_doc[:_base_doc.find('callbacks :')]}**kwargs
-        Other parameters passed through to ``LGBMRegressor.fit()``
+        {' ':4}Other parameters passed through to ``LGBMRegressor.fit()``
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
@@ -1036,7 +1036,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     # DaskLGBMRanker support for callbacks and init_model is not tested
     fit.__doc__ = f"""
         {_base_doc[:_base_doc.find('callbacks :')]}**kwargs
-        Other parameters passed through to ``LGBMRegressor.fit()``
+        {' ':4}Other parameters passed through to ``LGBMRanker.fit()``
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
