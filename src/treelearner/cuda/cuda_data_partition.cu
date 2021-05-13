@@ -337,6 +337,7 @@ __global__ void AggregateBlockOffsetKernel(const int* leaf_index, data_size_t* b
   }
   if (blockIdx.x == 0 && threadIdx.x == 0) {
     const int cur_max_leaf_index = (*cuda_cur_num_leaves);
+    //printf("left_leaf_index = %d, right_leaf_index = %d\n", leaf_index_ref, cur_max_leaf_index);
     block_to_left_offset_buffer[0] = 0;
     const unsigned int to_left_total_cnt = block_to_left_offset_buffer[num_blocks];
     block_to_right_offset_buffer[0] = to_left_total_cnt;

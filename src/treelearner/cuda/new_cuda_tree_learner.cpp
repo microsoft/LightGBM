@@ -333,15 +333,19 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   hessians_ = hessians;
   const auto start = std::chrono::steady_clock::now();
   auto before_train_start = std::chrono::steady_clock::now();
+  global_timer.Start("NewCUDATreeLearner::BeforeTrain");
   BeforeTrain();
+  global_timer.Stop("NewCUDATreeLearner::BeforeTrain");
   auto before_train_end = std::chrono::steady_clock::now();
   double construct_histogram_time = 0.0f;
   double find_best_split_time = 0.0f;
+  double find_best_split_from_all_leaves_time = 0.0f;
   double split_data_indices_time = 0.0f;
   double split_tree_time = 0.0f;
   //std::unique_ptr<Tree> tree(new Tree(config_->num_leaves, false, false));
   for (int i = 0; i < config_->num_leaves - 1; ++i) {
     //Log::Warning("Before ConstructHistogramForLeaf");
+    global_timer.Start("NewCUDATreeLearner::ConstructHistogramForLeaf");
     auto start = std::chrono::steady_clock::now();
     cuda_histogram_constructor_->ConstructHistogramForLeaf(
       cuda_smaller_leaf_splits_->cuda_leaf_index(),
@@ -360,22 +364,30 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
     }*/
     auto end = std::chrono::steady_clock::now();
     auto duration = static_cast<std::chrono::duration<double>>(end - start);
+    global_timer.Stop("NewCUDATreeLearner::ConstructHistogramForLeaf");
     construct_histogram_time += duration.count();
     //Log::Warning("Before FindBestSplitsForLeaf");
+    global_timer.Start("NewCUDATreeLearner::FindBestSplitsForLeaf");
     start = std::chrono::steady_clock::now();
     cuda_best_split_finder_->FindBestSplitsForLeaf(cuda_smaller_leaf_splits_.get(),
       cuda_larger_leaf_splits_.get());
     //Log::Warning("Before FindBestFromAllSplits");
+    end = std::chrono::steady_clock::now();
+    duration = static_cast<std::chrono::duration<double>>(end - start);
+    global_timer.Stop("NewCUDATreeLearner::FindBestSplitsForLeaf");
+    find_best_split_time += duration.count();
+    start = std::chrono::steady_clock::now();
     cuda_best_split_finder_->FindBestFromAllSplits(cuda_data_partition_->cuda_cur_num_leaves());
     end = std::chrono::steady_clock::now();
     duration = static_cast<std::chrono::duration<double>>(end - start);
-    find_best_split_time += duration.count();
+    find_best_split_from_all_leaves_time += duration.count();
     //Log::Warning("Before Split");
     //start = std::chrono::steady_clock::now();
     //SplitTree(tree.get());
     //end = std::chrono::steady_clock::now();
     //duration = static_cast<std::chrono::duration<double>>(end - start);
     //split_tree_time += duration.count();
+    global_timer.Start("NewCUDATreeLearner::Split");
     start = std::chrono::steady_clock::now();
     cuda_data_partition_->Split(cuda_best_split_finder_->cuda_best_leaf(),
       cuda_best_split_finder_->cuda_leaf_best_split_gain(),
@@ -412,6 +424,7 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
       cuda_larger_leaf_splits_->cuda_hist_in_leaf_pointer_pointer());
     end = std::chrono::steady_clock::now();
     duration = static_cast<std::chrono::duration<double>>(end - start);
+    global_timer.Stop("NewCUDATreeLearner::Split");
     split_data_indices_time += duration.count();
   }
   const auto end = std::chrono::steady_clock::now();
@@ -425,10 +438,10 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   Log::Warning("before train time %f", static_cast<std::chrono::duration<double>>(before_train_end - before_train_start).count());
   Log::Warning("construct histogram time %f", construct_histogram_time);
   Log::Warning("find best split time %f", find_best_split_time);
+  Log::Warning("find best split time from all leaves %f", find_best_split_from_all_leaves_time);
   Log::Warning("split data indices time %f", split_data_indices_time);
   //Log::Warning("split tree time %f", split_tree_time);
   Log::Warning("build tree time %f", build_tre_duration);
-  global_timer.Print();
   /*cuda_data_partition_->Test();
   cuda_histogram_constructor_->ConstructHistogramForLeaf(
     cuda_smaller_leaf_splits_->cuda_leaf_index(),
