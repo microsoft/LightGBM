@@ -134,7 +134,7 @@ def _create_sequence_from_ndarray(data, num_seq, batch_size):
 @pytest.mark.parametrize('include_nan', [False, True])
 @pytest.mark.parametrize('num_seq', [1, 3])
 def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_seq):
-    params = { 'bin_construct_sample_cnt': sample_count }
+    params = {'bin_construct_sample_cnt': sample_count}
 
     nrow = 50
     half_nrow = nrow // 2
