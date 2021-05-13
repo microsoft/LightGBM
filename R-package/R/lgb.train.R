@@ -144,6 +144,11 @@ lgb.train <- function(params = list(),
   }
   end_iteration <- begin_iteration + params[["num_iterations"]] - 1L
 
+  # pop interaction_constraints off of params. It needs some preprocessing on the
+  # R side before being passed into the Dataset object
+  interaction_constraints <- params[["interaction_constraints"]]
+  params["interaction_constraints"] <- NULL
+
   # Construct datasets, if needed
   data$update_params(params = params)
   data$construct()
@@ -156,7 +161,7 @@ lgb.train <- function(params = list(),
     cnames <- data$get_colnames()
   }
   params[["interaction_constraints"]] <- lgb.check_interaction_constraints(
-    params = params
+    interaction_constraints = interaction_constraints
     , column_names = cnames
   )
 

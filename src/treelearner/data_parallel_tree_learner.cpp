@@ -155,6 +155,22 @@ template <typename TREELEARNER_T>
 void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
   TREELEARNER_T::ConstructHistograms(
       this->col_sampler_.is_feature_used_bytree(), true);
+  const int smaller_leaf_index = this->smaller_leaf_splits_->leaf_index();
+  const data_size_t local_data_on_smaller_leaf = this->data_partition_->leaf_count(smaller_leaf_index);
+  if (local_data_on_smaller_leaf <= 0) {
+    // clear histogram buffer before synchronizing
+    // otherwise histogram contents from the previous iteration will be sent
+    #pragma omp parallel for schedule(static)
+    for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
+      if (this->col_sampler_.is_feature_used_bytree()[feature_index] == false)
+        continue;
+      const BinMapper* feature_bin_mapper = this->train_data_->FeatureBinMapper(feature_index);
+      const int offset = static_cast<int>(feature_bin_mapper->GetMostFreqBin() == 0);
+      const int num_bin = feature_bin_mapper->num_bin();
+      hist_t* hist_ptr = this->smaller_leaf_histogram_array_[feature_index].RawData();
+      std::memset(reinterpret_cast<void*>(hist_ptr), 0, (num_bin - offset) * kHistEntrySize);
+    }
+  }
   // construct local histograms
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {

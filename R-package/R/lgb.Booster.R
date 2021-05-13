@@ -16,7 +16,10 @@ Booster <- R6::R6Class(
       if (!lgb.is.null.handle(x = private$handle)) {
 
         # Freeing up handle
-        lgb.call(fun_name = "LGBM_BoosterFree_R", ret = NULL, private$handle)
+        .Call(
+          LGBM_BoosterFree_R
+          , private$handle
+        )
         private$handle <- NULL
 
       }
@@ -34,7 +37,7 @@ Booster <- R6::R6Class(
 
       # Create parameters and handle
       params <- append(params, list(...))
-      handle <- lgb.null.handle()
+      handle <- NULL
 
       # Attempts to create a handle for the dataset
       try({
@@ -49,9 +52,8 @@ Booster <- R6::R6Class(
           params <- modifyList(params, train_set$get_params())
           params_str <- lgb.params2str(params = params)
           # Store booster handle
-          handle <- lgb.call(
-            fun_name = "LGBM_BoosterCreate_R"
-            , ret = handle
+          handle <- .Call(
+            LGBM_BoosterCreate_R
             , train_set_handle
             , params_str
           )
@@ -74,9 +76,8 @@ Booster <- R6::R6Class(
           if (!is.null(private$init_predictor)) {
 
             # Merge booster
-            lgb.call(
-              fun_name = "LGBM_BoosterMerge_R"
-              , ret = NULL
+            .Call(
+              LGBM_BoosterMerge_R
               , handle
               , private$init_predictor$.__enclos_env__$private$handle
             )
@@ -94,10 +95,9 @@ Booster <- R6::R6Class(
           }
 
           # Create booster from model
-          handle <- lgb.call(
-            fun_name = "LGBM_BoosterCreateFromModelfile_R"
-            , ret = handle
-            , lgb.c_str(x = modelfile)
+          handle <- .Call(
+            LGBM_BoosterCreateFromModelfile_R
+            , modelfile
           )
 
         } else if (!is.null(model_str)) {
@@ -108,10 +108,9 @@ Booster <- R6::R6Class(
           }
 
           # Create booster from model
-          handle <- lgb.call(
-            fun_name = "LGBM_BoosterLoadModelFromString_R"
-            , ret = handle
-            , lgb.c_str(x = model_str)
+          handle <- .Call(
+            LGBM_BoosterLoadModelFromString_R
+            , model_str
           )
 
         } else {
@@ -137,10 +136,10 @@ Booster <- R6::R6Class(
         class(handle) <- "lgb.Booster.handle"
         private$handle <- handle
         private$num_class <- 1L
-        private$num_class <- lgb.call(
-          fun_name = "LGBM_BoosterGetNumClasses_R"
-          , ret = private$num_class
+        .Call(
+          LGBM_BoosterGetNumClasses_R
           , private$handle
+          , private$num_class
         )
 
       }
@@ -182,9 +181,8 @@ Booster <- R6::R6Class(
       }
 
       # Add validation data to booster
-      lgb.call(
-        fun_name = "LGBM_BoosterAddValidData_R"
-        , ret = NULL
+      .Call(
+        LGBM_BoosterAddValidData_R
         , private$handle
         , data$.__enclos_env__$private$get_handle()
       )
@@ -209,9 +207,8 @@ Booster <- R6::R6Class(
       params <- modifyList(params, list(...))
       params_str <- lgb.params2str(params = params)
 
-      lgb.call(
-        fun_name = "LGBM_BoosterResetParameter_R"
-        , ret = NULL
+      .Call(
+        LGBM_BoosterResetParameter_R
         , private$handle
         , params_str
       )
@@ -244,9 +241,8 @@ Booster <- R6::R6Class(
         }
 
         # Reset training data on booster
-        lgb.call(
-          fun_name = "LGBM_BoosterResetTrainingData_R"
-          , ret = NULL
+        .Call(
+          LGBM_BoosterResetTrainingData_R
           , private$handle
           , train_set$.__enclos_env__$private$get_handle()
         )
@@ -263,9 +259,8 @@ Booster <- R6::R6Class(
           stop("lgb.Booster.update: cannot update due to null objective function")
         }
         # Boost iteration from known objective
-        ret <- lgb.call(
-          fun_name = "LGBM_BoosterUpdateOneIter_R"
-          , ret = NULL
+        .Call(
+          LGBM_BoosterUpdateOneIter_R
           , private$handle
         )
 
@@ -289,9 +284,8 @@ Booster <- R6::R6Class(
         }
 
         # Return custom boosting gradient/hessian
-        ret <- lgb.call(
-          fun_name = "LGBM_BoosterUpdateOneIterCustom_R"
-          , ret = NULL
+        .Call(
+          LGBM_BoosterUpdateOneIterCustom_R
           , private$handle
           , gpair$grad
           , gpair$hess
@@ -305,7 +299,7 @@ Booster <- R6::R6Class(
         private$is_predicted_cur_iter[[i]] <- FALSE
       }
 
-      return(ret)
+      return(invisible(self))
 
     },
 
@@ -313,9 +307,8 @@ Booster <- R6::R6Class(
     rollback_one_iter = function() {
 
       # Return one iteration behind
-      lgb.call(
-        fun_name = "LGBM_BoosterRollbackOneIter_R"
-        , ret = NULL
+      .Call(
+        LGBM_BoosterRollbackOneIter_R
         , private$handle
       )
 
@@ -332,13 +325,12 @@ Booster <- R6::R6Class(
     current_iter = function() {
 
       cur_iter <- 0L
-      return(
-        lgb.call(
-          fun_name = "LGBM_BoosterGetCurrentIteration_R"
-          , ret = cur_iter
-          , private$handle
-        )
+      .Call(
+        LGBM_BoosterGetCurrentIteration_R
+        , private$handle
+        , cur_iter
       )
+      return(cur_iter)
 
     },
 
@@ -346,13 +338,12 @@ Booster <- R6::R6Class(
     upper_bound = function() {
 
       upper_bound <- 0.0
-      return(
-        lgb.call(
-          fun_name = "LGBM_BoosterGetUpperBoundValue_R"
-          , ret = upper_bound
-          , private$handle
-        )
+      .Call(
+        LGBM_BoosterGetUpperBoundValue_R
+        , private$handle
+        , upper_bound
       )
+      return(upper_bound)
 
     },
 
@@ -360,13 +351,12 @@ Booster <- R6::R6Class(
     lower_bound = function() {
 
       lower_bound <- 0.0
-      return(
-        lgb.call(
-          fun_name = "LGBM_BoosterGetLowerBoundValue_R"
-          , ret = lower_bound
-          , private$handle
-        )
+      .Call(
+        LGBM_BoosterGetLowerBoundValue_R
+        , private$handle
+        , lower_bound
       )
+      return(lower_bound)
 
     },
 
@@ -462,13 +452,12 @@ Booster <- R6::R6Class(
       }
 
       # Save booster model
-      lgb.call(
-        fun_name = "LGBM_BoosterSaveModel_R"
-        , ret = NULL
+      .Call(
+        LGBM_BoosterSaveModel_R
         , private$handle
         , as.integer(num_iteration)
         , as.integer(feature_importance_type)
-        , lgb.c_str(x = filename)
+        , filename
       )
 
       return(invisible(self))
@@ -482,15 +471,14 @@ Booster <- R6::R6Class(
         num_iteration <- self$best_iter
       }
 
-      # Return model string
-      return(
-        lgb.call.return.str(
-          fun_name = "LGBM_BoosterSaveModelToString_R"
+      model_str <- .Call(
+          LGBM_BoosterSaveModelToString_R
           , private$handle
           , as.integer(num_iteration)
           , as.integer(feature_importance_type)
-        )
       )
+
+      return(model_str)
 
     },
 
@@ -502,14 +490,14 @@ Booster <- R6::R6Class(
         num_iteration <- self$best_iter
       }
 
-      return(
-        lgb.call.return.str(
-          fun_name = "LGBM_BoosterDumpModel_R"
-          , private$handle
-          , as.integer(num_iteration)
-          , as.integer(feature_importance_type)
-        )
+      model_str <- .Call(
+        LGBM_BoosterDumpModel_R
+        , private$handle
+        , as.integer(num_iteration)
+        , as.integer(feature_importance_type)
       )
+
+      return(model_str)
 
     },
 
@@ -624,11 +612,11 @@ Booster <- R6::R6Class(
 
         # Store predictions
         npred <- 0L
-        npred <- lgb.call(
-          fun_name = "LGBM_BoosterGetNumPredict_R"
-          , ret = npred
+        .Call(
+          LGBM_BoosterGetNumPredict_R
           , private$handle
           , as.integer(idx - 1L)
+          , npred
         )
         private$predict_buffer[[data_name]] <- numeric(npred)
 
@@ -638,11 +626,11 @@ Booster <- R6::R6Class(
       if (!private$is_predicted_cur_iter[[idx]]) {
 
         # Use buffer
-        private$predict_buffer[[data_name]] <- lgb.call(
-          fun_name = "LGBM_BoosterGetPredict_R"
-          , ret = private$predict_buffer[[data_name]]
+        .Call(
+          LGBM_BoosterGetPredict_R
           , private$handle
           , as.integer(idx - 1L)
+          , private$predict_buffer[[data_name]]
         )
         private$is_predicted_cur_iter[[idx]] <- TRUE
       }
@@ -655,23 +643,20 @@ Booster <- R6::R6Class(
 
       # Check for evaluation names emptiness
       if (is.null(private$eval_names)) {
-
-        # Get evaluation names
-        names <- lgb.call.return.str(
-          fun_name = "LGBM_BoosterGetEvalNames_R"
+        eval_names <- .Call(
+          LGBM_BoosterGetEvalNames_R
           , private$handle
         )
 
         # Check names' length
-        if (nchar(names) > 0L) {
+        if (length(eval_names) > 0L) {
 
           # Parse and store privately names
-          names <- strsplit(names, "\t")[[1L]]
-          private$eval_names <- names
+          private$eval_names <- eval_names
 
           # some metrics don't map cleanly to metric names, for example "ndcg@1" is just the
           # ndcg metric evaluated at the first "query result" in learning-to-rank
-          metric_names <- gsub("@.*", "", names)
+          metric_names <- gsub("@.*", "", eval_names)
           private$higher_better_inner_eval <- .METRICS_HIGHER_BETTER()[metric_names]
 
         }
@@ -701,11 +686,11 @@ Booster <- R6::R6Class(
 
         # Create evaluation values
         tmp_vals <- numeric(length(private$eval_names))
-        tmp_vals <- lgb.call(
-          fun_name = "LGBM_BoosterGetEval_R"
-          , ret = tmp_vals
+        .Call(
+          LGBM_BoosterGetEval_R
           , private$handle
           , as.integer(data_idx - 1L)
+          , tmp_vals
         )
 
         # Loop through all evaluation names
@@ -845,8 +830,8 @@ predict.lgb.Booster <- function(object,
 
 #' @name lgb.load
 #' @title Load LightGBM model
-#' @description  Load LightGBM takes in either a file path or model string.
-#'               If both are provided, Load will default to loading from file
+#' @description Load LightGBM takes in either a file path or model string.
+#'              If both are provided, Load will default to loading from file
 #' @param filename path of model file
 #' @param model_str a str containing the model
 #'

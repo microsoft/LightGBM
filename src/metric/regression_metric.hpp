@@ -239,7 +239,7 @@ class PoissonMetric: public RegressionMetric<PoissonMetric> {
 };
 
 
-/*! \brief Mape regression loss for regression task */
+/*! \brief MAPE regression loss for regression task */
 class MAPEMetric : public RegressionMetric<MAPEMetric> {
  public:
   explicit MAPEMetric(const Config& config) :RegressionMetric<MAPEMetric>(config) {
