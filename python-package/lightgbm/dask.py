@@ -748,9 +748,8 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
                  + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMClassifier support for callbacks and init_model is not tested
-    fit.__doc__ = f"""
-        {_base_doc[:_base_doc.find('callbacks :')]}**kwargs
-        {' ':4}Other parameters passed through to ``LGBMClassifier.fit()``
+    fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
+        Other parameters passed through to ``LGBMClassifier.fit()``.
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
@@ -899,9 +898,8 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
                  + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
-    fit.__doc__ = f"""
-        {_base_doc[:_base_doc.find('callbacks :')]}**kwargs
-        {' ':4}Other parameters passed through to ``LGBMRegressor.fit()``
+    fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
+        Other parameters passed through to ``LGBMRegressor.fit()``.
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
@@ -1034,9 +1032,8 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
                  + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMRanker support for callbacks and init_model is not tested
-    fit.__doc__ = f"""
-        {_base_doc[:_base_doc.find('callbacks :')]}**kwargs
-        {' ':4}Other parameters passed through to ``LGBMRanker.fit()``
+    fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
+        Other parameters passed through to ``LGBMRanker.fit()``.
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
