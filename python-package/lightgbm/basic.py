@@ -531,9 +531,10 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             feature_name = list(data.columns)
         bad_indices = _get_bad_pandas_dtypes(data.dtypes)
         if bad_indices:
+            bad_index_cols_str = ', '.join(data.columns[bad_indices])
             raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
                              "Did not expect the data types in the following fields: "
-                             + ', '.join(data.columns[bad_indices]))
+                             f"{bad_index_cols_str}")
         data = data.values
         if data.dtype != np.float32 and data.dtype != np.float64:
             data = data.astype(np.float32)
@@ -2413,12 +2414,12 @@ class Booster:
                                feature_names=None, parent_node=None):
 
             def _get_node_index(tree, tree_index):
-                tree_num = str(tree_index) + '-' if tree_index is not None else ''
+                tree_num = f'{tree_index}-' if tree_index is not None else ''
                 is_split = _is_split_node(tree)
                 node_type = 'S' if is_split else 'L'
                 # if a single node tree it won't have `leaf_index` so return 0
                 node_num = str(tree.get('split_index' if is_split else 'leaf_index', 0))
-                return tree_num + node_type + node_num
+                return f"{tree_num}{node_type}{node_num}"
 
             def _get_split_feature(tree, feature_names):
                 if _is_split_node(tree):
