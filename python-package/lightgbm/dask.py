@@ -895,10 +895,8 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     )
 
     # DaskLGBMRegressor does not support evaluation data, or early stopping
-    fit.__doc__ = f"""
-        {_base_doc[:_base_doc.find('callbacks :')]}**kwargs
-        Other parameters passed through to ``LGBMRegressor.fit()``
-        """
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
+                 + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
     fit.__doc__ = f"""
