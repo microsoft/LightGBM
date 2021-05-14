@@ -423,7 +423,7 @@ SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
   SEXP len) {
   int is_finished = 0;
   R_API_BEGIN();
-  int int_len = Rf_asInteger(len);
+  int int_len = static_cast<int>Rf_asInteger(len);
   std::vector<float> tgrad(int_len), thess(int_len);
 #pragma omp parallel for schedule(static, 512) if (int_len >= 1024)
   for (int j = 0; j < int_len; ++j) {
