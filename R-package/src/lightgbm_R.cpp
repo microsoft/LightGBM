@@ -445,7 +445,7 @@ SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle,
   int out_iteration;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterGetCurrentIteration(R_ExternalPtrAddr(handle), &out_iteration));
-  INTEGER(out)[0] = static_cast<int>(out_iteration);
+  INTEGER(out)[0] = out_iteration;
   R_API_END();
 }
 
