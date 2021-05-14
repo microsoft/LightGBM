@@ -313,7 +313,7 @@ SEXP LGBM_DatasetGetNumData_R(SEXP handle, SEXP out) {
   int nrow;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetGetNumData(R_ExternalPtrAddr(handle), &nrow));
-  INTEGER(out)[0] = static_cast<int>(nrow);
+  INTEGER(out)[0] = nrow;
   R_API_END();
 }
 
