@@ -642,8 +642,8 @@ SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
 
-  int32_t nrow = Rf_asInteger(num_row);
-  int32_t ncol = Rf_asInteger(num_col);
+  int32_t nrow = static_cast<int32_t>Rf_asInteger(num_row);
+  int32_t ncol = static_cast<int32_t>Rf_asInteger(num_col);
 
   const double* p_mat = REAL(data);
   double* ptr_ret = REAL(out_result);
