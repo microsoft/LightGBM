@@ -406,7 +406,7 @@ SEXP LGBM_BoosterGetNumClasses_R(SEXP handle,
   int num_class;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterGetNumClasses(R_ExternalPtrAddr(handle), &num_class));
-  INTEGER(out)[0] = static_cast<int>(num_class);
+  INTEGER(out)[0] = num_class;
   R_API_END();
 }
 
