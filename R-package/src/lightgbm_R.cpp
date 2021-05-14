@@ -573,8 +573,7 @@ SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
   CHECK_CALL(LGBM_BoosterPredictForFile(R_ExternalPtrAddr(handle), CHAR(Rf_asChar(data_filename)),
-    Rf_asInteger(data_has_header), pred_type, Rf_asInteger(start_iteration),
-    Rf_asInteger(num_iteration), CHAR(Rf_asChar(parameter)),
+    Rf_asInteger(data_has_header), pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), CHAR(Rf_asChar(parameter)),
     CHAR(Rf_asChar(result_filename))));
   R_API_END();
 }
