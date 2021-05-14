@@ -191,12 +191,10 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_
 
     valid_ds = lgb.Dataset(valid_X, label=valid_Y, params=params, reference=ds)
     valid_ds.save_binary(valid_npy_bin_fname)
-    valid_ds._dump_text(os.path.join(tmpdir, 'valid_numpy.txt'))
 
     valid_seqs = _create_sequence_from_ndarray(valid_X, num_seq, batch_size)
     valid_seq_ds = lgb.Dataset(valid_seqs, label=valid_Y, params=params, reference=valid_ds)
     valid_seq_ds.save_binary(valid_seq_bin_fname)
-    valid_seq_ds._dump_text(os.path.join(tmpdir, 'valid_seq.txt'))
 
     assert filecmp.cmp(valid_npy_bin_fname, valid_seq_bin_fname)
 
