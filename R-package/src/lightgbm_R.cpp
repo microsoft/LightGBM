@@ -132,7 +132,7 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
   SEXP parameters) {
   SEXP ret;
   R_API_BEGIN();
-  int32_t len = static_cast<int32_t>Rf_asInteger(len_used_row_indices);
+  int32_t len = static_cast<int32_t>(Rf_asInteger(len_used_row_indices));
   std::vector<int32_t> idxvec(len);
   // convert from one-based to zero-based index
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
@@ -423,7 +423,7 @@ SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
   SEXP len) {
   int is_finished = 0;
   R_API_BEGIN();
-  int int_len = static_cast<int>Rf_asInteger(len);
+  int int_len = static_cast<int>(Rf_asInteger(len));
   std::vector<float> tgrad(int_len), thess(int_len);
 #pragma omp parallel for schedule(static, 512) if (int_len >= 1024)
   for (int j = 0; j < int_len; ++j) {
