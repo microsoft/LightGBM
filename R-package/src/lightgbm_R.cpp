@@ -231,7 +231,7 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
   SEXP field_data,
   SEXP num_element) {
   R_API_BEGIN();
-  int len = static_cast<int>(Rf_asInteger(num_element));
+  int len = Rf_asInteger(num_element);
   const char* name = CHAR(Rf_asChar(field_name));
   if (!strcmp("group", name) || !strcmp("query", name)) {
     std::vector<int32_t> vec(len);
