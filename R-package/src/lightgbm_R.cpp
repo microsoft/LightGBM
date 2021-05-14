@@ -696,8 +696,8 @@ SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   R_API_BEGIN();
   int64_t out_len = 0;
   int64_t buf_len = 1024 * 1024;
-  int64_t num_iter = static_cast<int64_t>Rf_asInteger(num_iteration);
-  int64_t importance_type = static_cast<int64_t>Rf_asInteger(feature_importance_type);
+  int num_iter = Rf_asInteger(num_iteration);
+  int importance_type = Rf_asInteger(feature_importance_type);
   std::vector<char> inner_char_buf(buf_len);
   CHECK_CALL(LGBM_BoosterDumpModel(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, buf_len, &out_len, inner_char_buf.data()));
   // if the model string was larger than the initial buffer, allocate a bigger buffer and try again
