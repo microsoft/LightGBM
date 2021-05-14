@@ -542,7 +542,7 @@ SEXP LGBM_BoosterGetPredict_R(SEXP handle,
   R_API_BEGIN();
   double* ptr_ret = REAL(out_result);
   int64_t out_len;
-  CHECK_CALL(LGBM_BoosterGetPredict(R_ExternalPtrAddr(handle), static_cast<int>(Rf_asInteger(data_idx)), &out_len, ptr_ret));
+  CHECK_CALL(LGBM_BoosterGetPredict(R_ExternalPtrAddr(handle), Rf_asInteger(data_idx), &out_len, ptr_ret));
   R_API_END();
 }
 
