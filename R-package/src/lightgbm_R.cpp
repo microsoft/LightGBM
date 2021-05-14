@@ -614,7 +614,7 @@ SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
 
   const int* p_indptr = INTEGER(indptr);
-  const int* p_indices = INTEGER(indices);
+  const int32_t* p_indices = static_cast<int32_t>(INTEGER(indices));
   const double* p_data = REAL(data);
 
   int64_t nindptr = static_cast<int64_t>Rf_asInteger(num_indptr);
@@ -625,7 +625,8 @@ SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   CHECK_CALL(LGBM_BoosterPredictForCSC(R_ExternalPtrAddr(handle),
     p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
-    nrow, pred_type,  Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), CHAR(Rf_asChar(parameter)), &out_len, ptr_ret));
+    nrow, pred_type, static_cast<int64>(Rf_asInteger(start_iteration)), static_cast<int64>(Rf_asInteger(num_iteration)),
+    CHAR(Rf_asChar(parameter)), &out_len, ptr_ret));
   R_API_END();
 }
 
