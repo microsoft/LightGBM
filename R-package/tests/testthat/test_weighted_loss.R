@@ -2,12 +2,12 @@ context("Case weights are respected")
 
 test_that("Gamma regression reacts on 'weight'", {
   n <- 100L
-  X <- matrix(runif(2L * n) , ncol = 2L)
+  X <- matrix(runif(2L * n), ncol = 2L)
   y <- X[, 1L] + X[, 2L] + runif(n)
   X_pred <- X[1L:5L, ]
-  
+
   params <- list(objective = "gamma")
-  
+
   # Unweighted
   dtrain <- lgb.Dataset(X, label = y)
   bst <- lgb.train(
@@ -31,7 +31,7 @@ test_that("Gamma regression reacts on 'weight'", {
     , verbose = 0L
   )
   pred_weighted_1 <- predict(bst, X_pred)
-  
+
   # Constant weight 2
   dtrain <- lgb.Dataset(
     X
@@ -45,7 +45,7 @@ test_that("Gamma regression reacts on 'weight'", {
     , verbose = 0L
   )
   pred_weighted_2 <- predict(bst, X_pred)
-  
+
   # Non-constant weights
   dtrain <- lgb.Dataset(
     X
@@ -64,3 +64,4 @@ test_that("Gamma regression reacts on 'weight'", {
   expect_equal(pred_weighted_1, pred_weighted_2)
   expect_false(all(pred_unweighted == pred_weighted))
 })
+
