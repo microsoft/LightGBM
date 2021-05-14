@@ -64,4 +64,3 @@ test_that("Gamma regression reacts on 'weight'", {
   expect_equal(pred_weighted_1, pred_weighted_2)
   expect_false(all(pred_unweighted == pred_weighted))
 })
-
