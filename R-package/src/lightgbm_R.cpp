@@ -521,7 +521,7 @@ SEXP LGBM_BoosterGetEval_R(SEXP handle,
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_ExternalPtrAddr(handle), &len));
   double* ptr_ret = REAL(out_result);
   int out_len;
-  CHECK_CALL(LGBM_BoosterGetEval(R_ExternalPtrAddr(handle), static_cast<int>(Rf_asInteger(data_idx)), &out_len, ptr_ret));
+  CHECK_CALL(LGBM_BoosterGetEval(R_ExternalPtrAddr(handle), Rf_asInteger(data_idx), &out_len, ptr_ret));
   CHECK_EQ(out_len, len);
   R_API_END();
 }
