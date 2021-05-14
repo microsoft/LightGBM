@@ -109,7 +109,7 @@ if [[ $PYTHON_VERSION == "3.6" ]]; then
     DASK_DEPENDENCIES="dask distributed"
 else
     DASK_VERSION="dask=2021.4.0 distributed=2021.4.0"
-done
+fi
 
 conda install -q -y -n $CONDA_ENV cloudpickle ${DASK_DEPENDENCIES} joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
 pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
