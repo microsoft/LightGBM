@@ -56,20 +56,12 @@ __global__ void CUDAConstructHistogramKernel(const int* leaf_index,
   const int num_feature_groups_ref = *num_feature_groups;
   const int leaf_index_ref = *leaf_index;
   const int dim_y = gridDim.y * blockDim.y;
-  //const int cuda_num_total_bin_ref = *cuda_num_total_bin;
   hist_t* feature_histogram_ptr = *feature_histogram;
-  /*if (blockIdx.x == 0 && threadIdx.x == 0 && blockIdx.y == 0 && threadIdx.y == 0) {
-    printf("construct histogram for leaf %d\n", leaf_index_ref);
-  }*/
   const data_size_t num_data_in_smaller_leaf_ref = leaf_num_data[leaf_index_ref];
   const data_size_t num_data_per_thread = (num_data_in_smaller_leaf_ref + dim_y - 1) / dim_y;
   const data_size_t* data_indices_ref = *data_indices_ptr;
   __shared__ float shared_hist[SHRAE_HIST_SIZE]; // 256 * 24 * 2, can use 24 features
   uint32_t num_bins_in_col_group = feature_group_offsets[blockDim.x];
-  /*if (blockIdx.x == 0 && threadIdx.x == 0 && blockIdx.y == 0 && threadIdx.y == 0) {
-    printf("cuda_num_total_bin_ref = %d\n", cuda_num_total_bin_ref);
-    printf("num_bins_in_col_group %d\n", num_bins_in_col_group);
-  }*/
   const uint32_t num_items_per_thread = (2 * num_bins_in_col_group + NUM_THRADS_PER_BLOCK - 1) / NUM_THRADS_PER_BLOCK;
   const int thread_idx = threadIdx.x + threadIdx.y * blockDim.x;
   const uint32_t thread_start = thread_idx * num_items_per_thread;
@@ -84,17 +76,6 @@ __global__ void CUDAConstructHistogramKernel(const int* leaf_index,
   const data_size_t start = (threadIdx_y + blockIdx_y * blockDim.y) * num_data_per_thread;
   const data_size_t end = start + num_data_per_thread > num_data_in_smaller_leaf_ref ?
     num_data_in_smaller_leaf_ref : start + num_data_per_thread;
-  /*if (blockIdx.x == 0 && threadIdx.x == 0 && blockIdx.y == 0 && threadIdx.y == 0) {
-    if (leaf_index_ref == 2) {
-      for (data_size_t i = 0; i < 10; ++i) {
-        printf("leaf 2 data index %d = %d\n", i, data_indices_ref[i]);
-      }
-      printf("===========================================\n");
-      for (data_size_t i = 1030726 - 10; i < 1030726; ++i) {
-        printf("leaf 2 data index %d = %d\n", i, data_indices_ref[i]);
-      }
-    }
-  }*/
   for (data_size_t i = start; i < end; ++i) {
     const data_size_t data_index = data_indices_ref[i];
     const score_t grad = cuda_gradients[data_index];

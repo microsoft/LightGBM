@@ -171,10 +171,26 @@ class CUDADataPartition {
   const double* train_data_score_tmp() const { return train_data_score_tmp_; }
 
  private:
+  void CopyColWiseData();
+
+  void LaunchCopyColWiseDataKernel();
+
+  void PrepareCUDASplitInforBuffer(const int* leaf_id, const int* best_split_feature, const uint32_t* best_split_threshold,
+    const uint8_t* best_split_default_left);
+
+  void LaunchPrepareCUDASplitInforBufferKernel(const int* leaf_id, const int* best_split_feature, const uint32_t* best_split_threshold,
+    const uint8_t* best_split_default_left);
+
   void GenDataToLeftBitVector(const int* leaf_id, const data_size_t num_data_in_leaf, const int* best_split_feature,
     const uint32_t* best_split_threshold, const uint8_t* best_split_default_left);
 
+  void GenDataToLeftBitVector2(const data_size_t num_data_in_leaf,
+    const int split_feature_index, const uint32_t split_threshold,
+    const uint8_t split_default_left, const data_size_t leaf_data_start);
+
   void SplitInner(const int* leaf_index, const data_size_t num_data_in_leaf,
+    const int* best_split_feature, const uint32_t* best_split_threshold,
+    const uint8_t* best_split_default_left, const double* best_split_gain,
     const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
     const double* best_left_gain, const double* best_left_leaf_value,
     const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
@@ -189,12 +205,14 @@ class CUDADataPartition {
     double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
     double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
     const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-    hist_t** larger_leaf_cuda_hist_pointer_pointer, const int cpu_leaf_index);
+    hist_t** larger_leaf_cuda_hist_pointer_pointer);
 
   // kernel launch functions
   void LaunchFillDataIndicesBeforeTrain();
 
   void LaunchSplitInnerKernel(const int* leaf_index, const data_size_t num_data_in_leaf,
+    const int* best_split_feature, const uint32_t* best_split_threshold,
+    const uint8_t* best_split_default_left, const double* best_split_gain,
     const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
     const double* best_left_gain, const double* best_left_leaf_value,
     const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
@@ -209,10 +227,14 @@ class CUDADataPartition {
     double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
     double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
     const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-    hist_t** larger_leaf_cuda_hist_pointer_pointer, const int cpu_leaf_index);
+    hist_t** larger_leaf_cuda_hist_pointer_pointer);
 
   void LaunchGenDataToLeftBitVectorKernel(const int* leaf_index, const data_size_t num_data_in_leaf, const int* best_split_feature,
     const uint32_t* best_split_threshold, const uint8_t* best_split_default_left);
+
+  void LaunchGenDataToLeftBitVectorKernel2(const data_size_t num_data_in_leaf,
+    const int split_feature_index, const uint32_t split_threshold,
+    const uint8_t split_default_left, const data_size_t leaf_data_start);
 
   void LaunchPrefixSumKernel(uint32_t* cuda_elements);
 
@@ -236,6 +258,7 @@ class CUDADataPartition {
   std::vector<data_size_t> num_data_in_leaf_;
   int cur_num_leaves_;
   std::vector<double> cpu_train_data_score_tmp_;
+  std::vector<int> cpu_split_info_buffer_;
 
   // CUDA memory, held by this object
   data_size_t* cuda_data_indices_;
@@ -257,6 +280,7 @@ class CUDADataPartition {
   uint8_t* cuda_feature_mfb_is_zero_;
   uint8_t* cuda_feature_mfb_is_na_;
   int* cuda_num_total_bin_;
+  int* cuda_split_info_buffer_; // prepared to be copied to cpu
   // for histogram pool
   hist_t** cuda_hist_pool_;
   // for tree structure
@@ -274,6 +298,7 @@ class CUDADataPartition {
   double* data_partition_leaf_output_;
   // for train data update
   double* train_data_score_tmp_;
+  uint8_t* cuda_data_col_wise_;
 
   // CUDA memory, held by other object
   const data_size_t* cuda_num_data_;
