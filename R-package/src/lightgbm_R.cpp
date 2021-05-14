@@ -616,9 +616,9 @@ SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   const int* p_indices = INTEGER(indices);
   const double* p_data = REAL(data);
 
-  int64_t nindptr = Rf_asInteger(num_indptr);
-  int64_t ndata = Rf_asInteger(nelem);
-  int64_t nrow = Rf_asInteger(num_row);
+  int64_t nindptr = static_cast<int64_t>Rf_asInteger(num_indptr);
+  int64_t ndata = static_cast<int64_t>Rf_asInteger(nelem);
+  int64_t nrow = static_cast<int64_t>Rf_asInteger(num_row);
   double* ptr_ret = REAL(out_result);
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForCSC(R_ExternalPtrAddr(handle),
