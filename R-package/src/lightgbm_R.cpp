@@ -624,7 +624,7 @@ SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   CHECK_CALL(LGBM_BoosterPredictForCSC(R_ExternalPtrAddr(handle),
     p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
-    nrow, pred_type, static_cast<int64>(Rf_asInteger(start_iteration)), static_cast<int64>(Rf_asInteger(num_iteration)),
+    nrow, pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration),
     CHAR(Rf_asChar(parameter)), &out_len, ptr_ret));
   R_API_END();
 }
