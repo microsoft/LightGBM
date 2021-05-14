@@ -521,7 +521,7 @@ SEXP LGBM_BoosterGetEval_R(SEXP handle,
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_ExternalPtrAddr(handle), &len));
   double* ptr_ret = REAL(out_result);
   int out_len;
-  CHECK_CALL(LGBM_BoosterGetEval(R_ExternalPtrAddr(handle), static_cast<int>Rf_asInteger(data_idx), &out_len, ptr_ret));
+  CHECK_CALL(LGBM_BoosterGetEval(R_ExternalPtrAddr(handle), static_cast<int>(Rf_asInteger(data_idx)), &out_len, ptr_ret));
   CHECK_EQ(out_len, len);
   R_API_END();
 }
@@ -531,7 +531,7 @@ SEXP LGBM_BoosterGetNumPredict_R(SEXP handle,
   SEXP out) {
   R_API_BEGIN();
   int64_t len;
-  CHECK_CALL(LGBM_BoosterGetNumPredict(R_ExternalPtrAddr(handle), static_cast<int>Rf_asInteger(data_idx), &len));
+  CHECK_CALL(LGBM_BoosterGetNumPredict(R_ExternalPtrAddr(handle), static_cast<int>(Rf_asInteger(data_idx)), &len));
   INTEGER(out)[0] = static_cast<int>(len);
   R_API_END();
 }
@@ -542,7 +542,7 @@ SEXP LGBM_BoosterGetPredict_R(SEXP handle,
   R_API_BEGIN();
   double* ptr_ret = REAL(out_result);
   int64_t out_len;
-  CHECK_CALL(LGBM_BoosterGetPredict(R_ExternalPtrAddr(handle), Rf_asInteger(data_idx), &out_len, ptr_ret));
+  CHECK_CALL(LGBM_BoosterGetPredict(R_ExternalPtrAddr(handle), static_cast<int>(Rf_asInteger(data_idx)), &out_len, ptr_ret));
   R_API_END();
 }
 
