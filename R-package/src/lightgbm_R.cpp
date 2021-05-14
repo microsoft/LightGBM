@@ -132,7 +132,7 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
   SEXP parameters) {
   SEXP ret;
   R_API_BEGIN();
-  int len = Rf_asInteger(len_used_row_indices);
+  int len = static_cast<int>Rf_asInteger(len_used_row_indices);
   std::vector<int> idxvec(len);
   // convert from one-based to zero-based index
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
