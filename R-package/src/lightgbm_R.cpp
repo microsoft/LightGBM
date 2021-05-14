@@ -590,8 +590,8 @@ SEXP LGBM_BoosterCalcNumPredict_R(SEXP handle,
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
   int64_t len = 0;
-  CHECK_CALL(LGBM_BoosterCalcNumPredict(R_ExternalPtrAddr(handle), Rf_asInteger(num_row),
-    pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), &len));
+  CHECK_CALL(LGBM_BoosterCalcNumPredict(R_ExternalPtrAddr(handle), static_cast<int>(Rf_asInteger(num_row)),
+    pred_type, static_cast<int>(Rf_asInteger(start_iteration)), static_cast<int>(Rf_asInteger(num_iteration)), &len));
   INTEGER(out_len)[0] = static_cast<int>(len);
   R_API_END();
 }
