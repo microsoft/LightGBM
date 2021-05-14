@@ -54,7 +54,6 @@ double MVS::GetLambda() {
   }
   double lambda =
       (this->iter_ > 0) ? ComputeLeavesMeanSquaredValue(models_.cend() - num_tree_per_iteration_, models_.cend())
-          / config_->learning_rate
                         : ComputeMeanGradValues(gradients_.data(),
                                                 hessians_.data(),
                                                 num_data_,
