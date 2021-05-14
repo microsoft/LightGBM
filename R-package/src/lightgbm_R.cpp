@@ -322,7 +322,7 @@ SEXP LGBM_DatasetGetNumFeature_R(SEXP handle,
   int nfeature;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetGetNumFeature(R_ExternalPtrAddr(handle), &nfeature));
-  INTEGER(out)[0] = static_cast<int>(nfeature);
+  INTEGER(out)[0] = nfeature;
   R_API_END();
 }
 
