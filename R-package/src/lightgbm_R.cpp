@@ -616,9 +616,9 @@ SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   const int32_t* p_indices = reinterpret_cast<const int32_t*>(INTEGER(indices));
   const double* p_data = REAL(data);
 
-  int64_t nindptr = static_cast<int64_t>Rf_asInteger(num_indptr);
-  int64_t ndata = static_cast<int64_t>Rf_asInteger(nelem);
-  int64_t nrow = static_cast<int64_t>Rf_asInteger(num_row);
+  int64_t nindptr = static_cast<int64_t>(Rf_asInteger(num_indptr));
+  int64_t ndata = static_cast<int64_t>(Rf_asInteger(nelem));
+  int64_t nrow = static_cast<int64_t>(Rf_asInteger(num_row));
   double* ptr_ret = REAL(out_result);
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForCSC(R_ExternalPtrAddr(handle),
@@ -642,8 +642,8 @@ SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
 
-  int32_t nrow = static_cast<int32_t>Rf_asInteger(num_row);
-  int32_t ncol = static_cast<int32_t>Rf_asInteger(num_col);
+  int32_t nrow = static_cast<int32_t>(Rf_asInteger(num_row));
+  int32_t ncol = static_cast<int32_t>(Rf_asInteger(num_col));
 
   const double* p_mat = REAL(data);
   double* ptr_ret = REAL(out_result);
