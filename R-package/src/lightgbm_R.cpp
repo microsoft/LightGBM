@@ -298,7 +298,7 @@ SEXP LGBM_DatasetGetFieldSize_R(SEXP handle,
   if (!strcmp("group", name) || !strcmp("query", name)) {
     out_len -= 1;
   }
-  INTEGER(out)[0] = static_cast<int>(out_len);
+  INTEGER(out)[0] = out_len;
   R_API_END();
 }
 
