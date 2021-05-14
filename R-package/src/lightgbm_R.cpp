@@ -137,7 +137,7 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
   // convert from one-based to zero-based index
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (int32_t i = 0; i < len; ++i) {
-    idxvec[i] = INTEGER(used_row_indices)[i] - 1;
+    idxvec[i] = static_cast<int32_t>(INTEGER(used_row_indices)[i] - 1);
   }
   DatasetHandle res = nullptr;
   CHECK_CALL(LGBM_DatasetGetSubset(R_ExternalPtrAddr(handle),
