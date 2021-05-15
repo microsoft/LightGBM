@@ -961,7 +961,7 @@ def test_warns_and_continues_on_unrecognized_tree_learner(cluster):
         with pytest.warns(UserWarning, match='Parameter tree_learner set to some-nonsense-value'):
             dask_regressor = dask_regressor.fit(X, y)
 
-        assert dask_regressor.fitted_
+        assert not dask_regressor.fitted_
 
 
 @pytest.mark.parametrize('tree_learner', ['data_parallel', 'voting_parallel'])
