@@ -1875,7 +1875,7 @@ class Dataset:
         tmp_out_len = ctypes.c_int(0)
         reserved_string_buffer_size = 255
         required_string_buffer_size = ctypes.c_size_t(0)
-        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range(num_feature)]
+        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for _ in range(num_feature)]
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
         _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
             self.handle,
@@ -1886,11 +1886,18 @@ class Dataset:
             ptr_string_buffers))
         if num_feature != tmp_out_len.value:
             raise ValueError("Length of feature names doesn't equal with num_feature")
-        if reserved_string_buffer_size < required_string_buffer_size.value:
-            raise BufferError(
-                f"Allocated feature name buffer size ({reserved_string_buffer_size}) was"
-                f"inferior to the needed size ({required_string_buffer_size.value})."
-            )
+        actual_string_buffer_size = required_string_buffer_size.value
+        # if buffer length is not long enough, reallocate buffers
+        if reserved_string_buffer_size < actual_string_buffer_size:
+            string_buffers = [ctypes.create_string_buffer(actual_string_buffer_size) for _ in range(num_feature)]
+            ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+            _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
+                self.handle,
+                ctypes.c_int(num_feature),
+                ctypes.byref(tmp_out_len),
+                ctypes.c_size_t(actual_string_buffer_size),
+                ctypes.byref(required_string_buffer_size),
+                ptr_string_buffers))
         return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
     def get_label(self):
@@ -3247,7 +3254,7 @@ class Booster:
         tmp_out_len = ctypes.c_int(0)
         reserved_string_buffer_size = 255
         required_string_buffer_size = ctypes.c_size_t(0)
-        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for i in range(num_feature)]
+        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for _ in range(num_feature)]
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
         _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
             self.handle,
@@ -3258,9 +3265,18 @@ class Booster:
             ptr_string_buffers))
         if num_feature != tmp_out_len.value:
             raise ValueError("Length of feature names doesn't equal with num_feature")
-        if reserved_string_buffer_size < required_string_buffer_size.value:
-            raise BufferError(
-                f"Allocated feature name buffer size ({reserved_string_buffer_size}) was inferior to the needed size ({required_string_buffer_size.value}).")
+        actual_string_buffer_size = required_string_buffer_size.value
+        # if buffer length is not long enough, reallocate buffers
+        if reserved_string_buffer_size < actual_string_buffer_size:
+            string_buffers = [ctypes.create_string_buffer(actual_string_buffer_size) for _ in range(num_feature)]
+            ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+            _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
+                self.handle,
+                ctypes.c_int(num_feature),
+                ctypes.byref(tmp_out_len),
+                ctypes.c_size_t(actual_string_buffer_size),
+                ctypes.byref(required_string_buffer_size),
+                ptr_string_buffers))
         return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
     def feature_importance(self, importance_type='split', iteration=None):
@@ -3443,7 +3459,7 @@ class Booster:
                 reserved_string_buffer_size = 255
                 required_string_buffer_size = ctypes.c_size_t(0)
                 string_buffers = [
-                    ctypes.create_string_buffer(reserved_string_buffer_size) for i in range(self.__num_inner_eval)
+                    ctypes.create_string_buffer(reserved_string_buffer_size) for _ in range(self.__num_inner_eval)
                 ]
                 ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
                 _safe_call(_LIB.LGBM_BoosterGetEvalNames(
@@ -3455,13 +3471,26 @@ class Booster:
                     ptr_string_buffers))
                 if self.__num_inner_eval != tmp_out_len.value:
                     raise ValueError("Length of eval names doesn't equal with num_evals")
-                if reserved_string_buffer_size < required_string_buffer_size.value:
-                    raise BufferError(
-                        f"Allocated eval name buffer size ({reserved_string_buffer_size}) was inferior to the needed size ({required_string_vuffer_size.value}).")
-                self.__name_inner_eval = \
-                    [string_buffers[i].value.decode('utf-8') for i in range(self.__num_inner_eval)]
-                self.__higher_better_inner_eval = \
-                    [name.startswith(('auc', 'ndcg@', 'map@', 'average_precision')) for name in self.__name_inner_eval]
+                actual_string_buffer_size = required_string_buffer_size.value
+                # if buffer length is not long enough, reallocate buffers
+                if reserved_string_buffer_size < actual_string_buffer_size:
+                    string_buffers = [
+                        ctypes.create_string_buffer(actual_string_buffer_size) for _ in range(self.__num_inner_eval)
+                    ]
+                    ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
+                    _safe_call(_LIB.LGBM_BoosterGetEvalNames(
+                        self.handle,
+                        ctypes.c_int(self.__num_inner_eval),
+                        ctypes.byref(tmp_out_len),
+                        ctypes.c_size_t(actual_string_buffer_size),
+                        ctypes.byref(required_string_buffer_size),
+                        ptr_string_buffers))
+                self.__name_inner_eval = [
+                    string_buffers[i].value.decode('utf-8') for i in range(self.__num_inner_eval)
+                ]
+                self.__higher_better_inner_eval = [
+                    name.startswith(('auc', 'ndcg@', 'map@', 'average_precision')) for name in self.__name_inner_eval
+                ]
 
     def attr(self, key):
         """Get attribute string from the Booster.
