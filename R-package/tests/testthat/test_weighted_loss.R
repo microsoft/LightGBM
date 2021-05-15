@@ -2,6 +2,7 @@ context("Case weights are respected")
 
 test_that("Gamma regression reacts on 'weight'", {
   n <- 100L
+  set.seed(87)
   X <- matrix(runif(2L * n), ncol = 2L)
   y <- X[, 1L] + X[, 2L] + runif(n)
   X_pred <- X[1L:5L, ]
