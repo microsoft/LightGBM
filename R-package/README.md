@@ -55,7 +55,7 @@ model <- lgb.cv(
 install.packages("lightgbm", repos = "https://cran.r-project.org")
 ```
 
-This is the easiest way to install `{lightgbm}`. It does not require `CMake` or `Visual Studio`, and  should work well on many different operating systems and compilers.
+This is the easiest way to install `{lightgbm}`. It does not require `CMake` or `Visual Studio`, and should work well on many different operating systems and compilers.
 
 Each CRAN package is also available on [LightGBM releases](https://github.com/microsoft/LightGBM/releases), with a name like `lightgbm-{VERSION}-r-cran.tar.gz`.
 

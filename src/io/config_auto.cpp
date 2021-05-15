@@ -261,6 +261,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "categorical_feature",
   "forcedbins_filename",
   "save_binary",
+  "precise_float_parser",
   "start_iteration_predict",
   "num_iteration_predict",
   "predict_raw_score",
@@ -527,6 +528,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetBool(params, "save_binary", &save_binary);
 
+  GetBool(params, "precise_float_parser", &precise_float_parser);
+
   GetInt(params, "start_iteration_predict", &start_iteration_predict);
 
   GetInt(params, "num_iteration_predict", &num_iteration_predict);
@@ -709,6 +712,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[ignore_column: " << ignore_column << "]\n";
   str_buf << "[categorical_feature: " << categorical_feature << "]\n";
   str_buf << "[forcedbins_filename: " << forcedbins_filename << "]\n";
+  str_buf << "[precise_float_parser: " << precise_float_parser << "]\n";
   str_buf << "[objective_seed: " << objective_seed << "]\n";
   str_buf << "[num_class: " << num_class << "]\n";
   str_buf << "[is_unbalance: " << is_unbalance << "]\n";

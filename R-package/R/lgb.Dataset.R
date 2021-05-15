@@ -192,7 +192,6 @@ Dataset <- R6::R6Class(
       if (!is.null(private$reference)) {
         ref_handle <- private$reference$.__enclos_env__$private$get_handle()
       }
-      handle <- lgb.null.handle()
 
       # Not subsetting
       if (is.null(private$used_indices)) {
@@ -200,25 +199,23 @@ Dataset <- R6::R6Class(
         # Are we using a data file?
         if (is.character(private$raw_data)) {
 
-          .Call(
+          handle <- .Call(
             LGBM_DatasetCreateFromFile_R
             , private$raw_data
             , params_str
             , ref_handle
-            , handle
           )
 
         } else if (is.matrix(private$raw_data)) {
 
           # Are we using a matrix?
-          .Call(
+          handle <- .Call(
             LGBM_DatasetCreateFromMat_R
             , private$raw_data
             , nrow(private$raw_data)
             , ncol(private$raw_data)
             , params_str
             , ref_handle
-            , handle
           )
 
         } else if (methods::is(private$raw_data, "dgCMatrix")) {
@@ -226,7 +223,7 @@ Dataset <- R6::R6Class(
             stop("Cannot support large CSC matrix")
           }
           # Are we using a dgCMatrix (sparsed matrix column compressed)
-          .Call(
+          handle <- .Call(
             LGBM_DatasetCreateFromCSC_R
             , private$raw_data@p
             , private$raw_data@i
@@ -236,7 +233,6 @@ Dataset <- R6::R6Class(
             , nrow(private$raw_data)
             , params_str
             , ref_handle
-            , handle
           )
 
         } else {
@@ -257,13 +253,12 @@ Dataset <- R6::R6Class(
         }
 
         # Construct subset
-        .Call(
+        handle <- .Call(
           LGBM_DatasetGetSubset_R
           , ref_handle
           , c(private$used_indices) # Adding c() fixes issue in R v3.5
           , length(private$used_indices)
           , params_str
-          , handle
         )
 
       }
@@ -369,31 +364,10 @@ Dataset <- R6::R6Class(
 
       # Check for handle
       if (!lgb.is.null.handle(x = private$handle)) {
-
-        # Get feature names and write them
-        buf_len <- as.integer(1024L * 1024L)
-        act_len <- 0L
-        buf <- raw(buf_len)
-        .Call(
+        private$colnames <- .Call(
           LGBM_DatasetGetFeatureNames_R
           , private$handle
-          , buf_len
-          , act_len
-          , buf
         )
-        if (act_len > buf_len) {
-          buf_len <- act_len
-          buf <- raw(buf_len)
-          .Call(
-            LGBM_DatasetGetFeatureNames_R
-            , private$handle
-            , buf_len
-            , act_len
-            , buf
-          )
-        }
-        cnames <- lgb.encode.char(arr = buf, len = act_len)
-        private$colnames <- as.character(base::strsplit(cnames, "\t")[[1L]])
         return(private$colnames)
 
       } else if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {
