@@ -556,7 +556,7 @@ lgb.stratified.folds <- function(y, k = 10L) {
       ## of samples in a class is less than k, nothing is producd here.
       seqVector <- rep(seq_len(k), numInClass[i] %/% k)
 
-      ## Add enough random integers to get  length(seqVector) == numInClass[i]
+      ## Add enough random integers to get length(seqVector) == numInClass[i]
       if (numInClass[i] %% k > 0L) {
         seqVector <- c(seqVector, sample.int(k, numInClass[i] %% k))
       }

@@ -208,7 +208,7 @@ class GBDT : public GBDTBase {
   * \brief Get number of prediction for one data
   * \param start_iteration Start index of the iteration to predict
   * \param num_iteration number of used iterations
-  * \param is_pred_leaf True if predicting  leaf index
+  * \param is_pred_leaf True if predicting leaf index
   * \param is_pred_contrib True if predicting feature contribution
   * \return number of prediction
   */
