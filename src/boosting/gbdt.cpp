@@ -374,7 +374,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
       init_scores[cur_tree_id] = BoostFromAverage(cur_tree_id, true);
     }
-    Boosting();
+    //Boosting();
     gradients = gradients_.data();
     hessians = hessians_.data();
   }

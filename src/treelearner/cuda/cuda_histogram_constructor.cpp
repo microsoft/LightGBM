@@ -54,6 +54,9 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data) {
   AllocateCUDAMemory<hist_t>(num_total_bin_ * 2 * num_leaves_, &cuda_hist_);
   SetCUDAMemory<hist_t>(cuda_hist_, 0, num_total_bin_ * 2 * num_leaves_);
 
+  AllocateCUDAMemory<score_t>(num_data_, &cuda_ordered_gradients_);
+  AllocateCUDAMemory<score_t>(num_data_, &cuda_ordered_hessians_);
+
   InitCUDAMemoryFromHostMemory<int>(&cuda_num_total_bin_, &num_total_bin_, 1);
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_num_feature_groups_, &num_feature_groups_, 1);
@@ -113,12 +116,14 @@ void CUDAHistogramConstructor::ConstructHistogramForLeaf(const int* cuda_smaller
   auto end = std::chrono::steady_clock::now();
   double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   //Log::Warning("LaunchConstructHistogramKernel time %f", duration);
+  global_timer.Start("CUDAHistogramConstructor::ConstructHistogramForLeaf::LaunchSubtractHistogramKernel");
   start = std::chrono::steady_clock::now();
   LaunchSubtractHistogramKernel(cuda_smaller_leaf_index,
     cuda_larger_leaf_index, cuda_smaller_leaf_sum_gradients, cuda_smaller_leaf_sum_hessians,
     cuda_larger_leaf_sum_gradients, cuda_larger_leaf_sum_hessians, cuda_smaller_leaf_hist, cuda_larger_leaf_hist);
   end = std::chrono::steady_clock::now();
   duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
+  global_timer.Stop("CUDAHistogramConstructor::ConstructHistogramForLeaf::LaunchSubtractHistogramKernel");
   //Log::Warning("LaunchSubtractHistogramKernel time %f", duration);
   /*PrintLastCUDAError();
   std::vector<hist_t> cpu_hist(6143 * 2, 0.0f);

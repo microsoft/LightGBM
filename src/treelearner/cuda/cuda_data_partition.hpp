@@ -132,7 +132,7 @@ class CUDADataPartition {
     }
   }
 
-  void UpdateTrainScore(const double learning_rate, double* train_score);
+  void UpdateTrainScore(const double learning_rate, double* train_score, double* cuda_scores);
 
   const data_size_t* cuda_leaf_data_start() const { return cuda_leaf_data_start_; }
 
@@ -238,7 +238,7 @@ class CUDADataPartition {
 
   void LaunchPrefixSumKernel(uint32_t* cuda_elements);
 
-  void LaunchAddPredictionToScoreKernel(const double learning_rate);
+  void LaunchAddPredictionToScoreKernel(const double learning_rate, double* cuda_scores);
 
   // Host memory
   const data_size_t num_data_;

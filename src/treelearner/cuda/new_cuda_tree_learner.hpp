@@ -14,6 +14,8 @@
 #include "cuda_data_partition.hpp"
 #include "cuda_best_split_finder.hpp"
 #include "cuda_centralized_info.hpp"
+#include "cuda_score_updater.hpp"
+#include "cuda_binary_objective.hpp"
 
 namespace LightGBM {
 
@@ -72,6 +74,10 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   std::unique_ptr<CUDAHistogramConstructor> cuda_histogram_constructor_;
   // for best split information finding, given the histograms
   std::unique_ptr<CUDABestSplitFinder> cuda_best_split_finder_;
+
+  std::unique_ptr<CUDAScoreUpdater> cuda_score_updater_;
+
+  std::unique_ptr<CUDABinaryObjective> cuda_binary_objective_;
 
   /*
   // full data indices on CUDA devices, as the data indices of data_partition_ in CPU version

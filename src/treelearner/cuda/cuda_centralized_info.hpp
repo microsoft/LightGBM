@@ -21,7 +21,7 @@ class CUDACentralizedInfo {
  public:
   CUDACentralizedInfo(const data_size_t num_data, const int num_leaves, const int num_features);
 
-  void Init();
+  void Init(const label_t* labels);
 
   void BeforeTrain(const score_t* gradients, const score_t* hessians);
 
@@ -34,6 +34,12 @@ class CUDACentralizedInfo {
   const score_t* cuda_gradients() const { return cuda_gradients_; }
 
   const score_t* cuda_hessians() const { return cuda_hessians_; }
+
+  const label_t* cuda_labels() const { return cuda_labels_; }
+
+  score_t* cuda_gradients_ref() { return cuda_gradients_; }
+
+  score_t* cuda_hessians_ref() { return cuda_hessians_; }
 
   void Test() {
     data_size_t test_num_data = 0;
@@ -60,6 +66,7 @@ class CUDACentralizedInfo {
   int* cuda_num_features_;
   score_t* cuda_gradients_;
   score_t* cuda_hessians_;
+  label_t* cuda_labels_;
 };
 
 }  // namespace LightGBM

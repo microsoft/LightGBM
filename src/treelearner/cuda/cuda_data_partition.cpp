@@ -270,12 +270,12 @@ void CUDADataPartition::SplitInner(const int* leaf_index, const data_size_t num_
 
 Tree* CUDADataPartition::GetCPUTree() {}
 
-void CUDADataPartition::UpdateTrainScore(const double learning_rate, double* train_score) {
-  LaunchAddPredictionToScoreKernel(learning_rate);
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
+void CUDADataPartition::UpdateTrainScore(const double learning_rate, double* train_score, double* cuda_scores) {
+  LaunchAddPredictionToScoreKernel(learning_rate, cuda_scores);
+  /*#pragma omp parallel for schedule(static) num_threads(num_threads_)
   for (data_size_t i = 0; i < num_data_; ++i) {
     train_score[i] += cpu_train_data_score_tmp_[i];
-  }
+  }*/
 }
 
 void CUDADataPartition::PrepareCUDASplitInforBuffer(const int* leaf_id, const int* best_split_feature, const uint32_t* best_split_threshold,

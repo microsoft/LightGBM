@@ -77,6 +77,10 @@ class CUDAHistogramConstructor {
   }
 
  private:
+  void LaunchGetOrderedGradientsKernel(
+    const data_size_t num_data_in_leaf,
+    const data_size_t** cuda_data_indices_in_leaf);
+
   void LaunchConstructHistogramKernel(const int* cuda_leaf_index,
     const data_size_t** cuda_data_indices_in_leaf,
     const data_size_t* cuda_leaf_num_data,
@@ -117,6 +121,8 @@ class CUDAHistogramConstructor {
   int* cuda_num_feature_groups_;
   uint8_t* cuda_data_;
   int* cuda_num_features_;
+  score_t* cuda_ordered_gradients_;
+  score_t* cuda_ordered_hessians_;
 
   // CUDA memory, held by other objects
   const score_t* cuda_gradients_;

@@ -67,6 +67,7 @@ __global__ void CUDAConstructHistogramKernel(const int* leaf_index,
   const uint32_t thread_start = thread_idx * num_items_per_thread;
   const uint32_t thread_end = thread_start + num_items_per_thread > num_bins_in_col_group * 2 ?
     num_bins_in_col_group * 2 : thread_start + num_items_per_thread;
+  const uint32_t feature_group_offset = feature_group_offsets[threadIdx_x];
   for (uint32_t i = thread_start; i < thread_end; ++i) {
     shared_hist[i] = 0.0f;
   }
@@ -80,8 +81,7 @@ __global__ void CUDAConstructHistogramKernel(const int* leaf_index,
     const data_size_t data_index = data_indices_ref[i];
     const score_t grad = cuda_gradients[data_index];
     const score_t hess = cuda_hessians[data_index];
-    const uint32_t bin = static_cast<uint32_t>(data[data_index * num_feature_groups_ref + threadIdx_x]) +
-      feature_group_offsets[threadIdx_x];
+    const uint32_t bin = static_cast<uint32_t>(data[data_index * num_feature_groups_ref + threadIdx_x]) + feature_group_offset;
     const uint32_t pos = bin << 1;
     float* pos_ptr = shared_hist + pos;
     atomicAdd_system(pos_ptr, grad);
@@ -99,11 +99,13 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
   const data_size_t* cuda_leaf_num_data,
   hist_t** cuda_leaf_hist) {
   int smaller_leaf_index = 0;
+  global_timer.Start("CUDAHistogramConstructor::LaunchConstructHistogramKernel::CopyFromCUDADeviceToHost");
   CopyFromCUDADeviceToHost<int>(&smaller_leaf_index, cuda_smaller_leaf_index, 1);
   SynchronizeCUDADevice();
   data_size_t smaller_leaf_num_data = 0;
   CopyFromCUDADeviceToHost<data_size_t>(&smaller_leaf_num_data, cuda_leaf_num_data + smaller_leaf_index, 1);
   SynchronizeCUDADevice();
+  global_timer.Stop("CUDAHistogramConstructor::LaunchConstructHistogramKernel::CopyFromCUDADeviceToHost");
   const int block_dim_x = num_features_; // TODO(shiyu1994): only supports the case when the whole histogram can be loaded into shared memory
   const int block_dim_y = NUM_THRADS_PER_BLOCK / block_dim_x;
   const int min_grid_dim_y = 80;
@@ -221,6 +223,30 @@ void CUDAHistogramConstructor::LaunchSubtractHistogramKernel(const int* cuda_sma
     cuda_smaller_leaf_hist, cuda_larger_leaf_hist);
   SynchronizeCUDADevice();
   //Log::Warning("After FixHistogramKernel");
+}
+
+__global__ void GetOrderedGradientsKernel(const data_size_t num_data_in_leaf, const data_size_t** cuda_data_indices_in_leaf,
+  const score_t* cuda_gradients, const score_t* cuda_hessians,
+  score_t* cuda_ordered_gradients, score_t* cuda_ordered_hessians) {
+  const data_size_t* cuda_data_indices_in_leaf_ref = *cuda_data_indices_in_leaf;
+  const unsigned int local_data_index = threadIdx.x + blockIdx.x * blockDim.x;
+  if (local_data_index < static_cast<unsigned int>(num_data_in_leaf)) {
+    const data_size_t global_data_index = cuda_data_indices_in_leaf_ref[local_data_index];
+    cuda_ordered_gradients[local_data_index] = cuda_gradients[global_data_index];
+    cuda_ordered_hessians[local_data_index] = cuda_hessians[global_data_index];
+  }
+}
+
+void CUDAHistogramConstructor::LaunchGetOrderedGradientsKernel(
+  const data_size_t num_data_in_leaf,
+  const data_size_t** cuda_data_indices_in_leaf) {
+  if (num_data_in_leaf < num_data_) {
+    const int num_data_per_block = 1024;
+    const int num_blocks = (num_data_in_leaf + num_data_per_block - 1) / num_data_per_block;
+    GetOrderedGradientsKernel<<<num_blocks, num_data_per_block>>>(num_data_in_leaf, cuda_data_indices_in_leaf,
+      cuda_gradients_, cuda_hessians_, cuda_ordered_gradients_, cuda_ordered_hessians_);
+    SynchronizeCUDADevice();
+  }
 }
 
 }  // namespace LightGBM
