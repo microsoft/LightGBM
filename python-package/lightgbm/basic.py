@@ -786,8 +786,8 @@ class _InnerPredictor:
                 self.handle,
                 ptr_data,
                 ctypes.c_int(type_ptr_data),
-                ctypes.c_int(mat.shape[0]),
-                ctypes.c_int(mat.shape[1]),
+                ctypes.c_int32(mat.shape[0]),
+                ctypes.c_int32(mat.shape[1]),
                 ctypes.c_int(C_API_IS_ROW_MAJOR),
                 ctypes.c_int(predict_type),
                 ctypes.c_int(start_iteration),
@@ -880,7 +880,7 @@ class _InnerPredictor:
             _safe_call(_LIB.LGBM_BoosterPredictForCSR(
                 self.handle,
                 ptr_indptr,
-                ctypes.c_int32(type_ptr_indptr),
+                ctypes.c_int(type_ptr_indptr),
                 csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
                 ptr_data,
                 ctypes.c_int(type_ptr_data),
@@ -915,7 +915,7 @@ class _InnerPredictor:
             _safe_call(_LIB.LGBM_BoosterPredictSparseOutput(
                 self.handle,
                 ptr_indptr,
-                ctypes.c_int32(type_ptr_indptr),
+                ctypes.c_int(type_ptr_indptr),
                 csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
                 ptr_data,
                 ctypes.c_int(type_ptr_data),
@@ -973,7 +973,7 @@ class _InnerPredictor:
             _safe_call(_LIB.LGBM_BoosterPredictSparseOutput(
                 self.handle,
                 ptr_indptr,
-                ctypes.c_int32(type_ptr_indptr),
+                ctypes.c_int(type_ptr_indptr),
                 csc_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
                 ptr_data,
                 ctypes.c_int(type_ptr_data),
@@ -1012,7 +1012,7 @@ class _InnerPredictor:
         _safe_call(_LIB.LGBM_BoosterPredictForCSC(
             self.handle,
             ptr_indptr,
-            ctypes.c_int32(type_ptr_indptr),
+            ctypes.c_int(type_ptr_indptr),
             csc_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
             ptr_data,
             ctypes.c_int(type_ptr_data),
@@ -1306,8 +1306,8 @@ class Dataset:
         _safe_call(_LIB.LGBM_DatasetCreateFromMat(
             ptr_data,
             ctypes.c_int(type_ptr_data),
-            ctypes.c_int(mat.shape[0]),
-            ctypes.c_int(mat.shape[1]),
+            ctypes.c_int32(mat.shape[0]),
+            ctypes.c_int32(mat.shape[1]),
             ctypes.c_int(C_API_IS_ROW_MAJOR),
             c_str(params_str),
             ref_dataset,
@@ -1349,11 +1349,11 @@ class Dataset:
 
         self.handle = ctypes.c_void_p()
         _safe_call(_LIB.LGBM_DatasetCreateFromMats(
-            ctypes.c_int(len(mats)),
+            ctypes.c_int32(len(mats)),
             ctypes.cast(ptr_data, ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
             ctypes.c_int(type_ptr_data),
             nrow.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-            ctypes.c_int(ncol),
+            ctypes.c_int32(ncol),
             ctypes.c_int(C_API_IS_ROW_MAJOR),
             c_str(params_str),
             ref_dataset,
@@ -1445,7 +1445,7 @@ class Dataset:
                     _safe_call(_LIB.LGBM_DatasetGetSubset(
                         self.reference.construct().handle,
                         used_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-                        ctypes.c_int(used_indices.shape[0]),
+                        ctypes.c_int32(used_indices.shape[0]),
                         c_str(params_str),
                         ctypes.byref(self.handle)))
                     if not self.free_raw_data:
@@ -1651,8 +1651,8 @@ class Dataset:
         """
         if self.handle is None:
             raise Exception(f"Cannot get {field_name} before construct Dataset")
-        tmp_out_len = ctypes.c_int()
-        out_type = ctypes.c_int()
+        tmp_out_len = ctypes.c_int(0)
+        out_type = ctypes.c_int(0)
         ret = ctypes.POINTER(ctypes.c_void_p)()
         _safe_call(_LIB.LGBM_DatasetGetField(
             self.handle,
@@ -1985,7 +1985,7 @@ class Dataset:
             The number of rows in the Dataset.
         """
         if self.handle is not None:
-            ret = ctypes.c_int()
+            ret = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_DatasetGetNumData(self.handle,
                                                    ctypes.byref(ret)))
             return ret.value
@@ -2001,7 +2001,7 @@ class Dataset:
             The number of columns (features) in the Dataset.
         """
         if self.handle is not None:
-            ret = ctypes.c_int()
+            ret = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_DatasetGetNumFeature(self.handle,
                                                       ctypes.byref(ret)))
             return ret.value
@@ -3185,8 +3185,8 @@ class Booster:
         _safe_call(_LIB.LGBM_BoosterRefit(
             new_booster.handle,
             ptr_data,
-            ctypes.c_int(nrow),
-            ctypes.c_int(ncol)))
+            ctypes.c_int32(nrow),
+            ctypes.c_int32(ncol)))
         new_booster.network = self.network
         new_booster.__attr = self.__attr.copy()
         return new_booster
