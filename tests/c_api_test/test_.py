@@ -29,7 +29,8 @@ def find_lib_path():
     lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
     if not lib_path:
         dll_path = [os.path.realpath(p) for p in dll_path]
-        raise Exception('Cannot find lightgbm library file in following paths:\n' + '\n'.join(dll_path))
+        dll_path_joined = '\n'.join(dll_path)
+        raise Exception(f'Cannot find lightgbm library file in following paths:\n{dll_path_joined}')
     return lib_path
 
 
@@ -70,7 +71,7 @@ def load_from_file(filename, reference):
     LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data))
     num_feature = ctypes.c_int(0)
     LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature))
-    print('#data: %d #feature: %d' % (num_data.value, num_feature.value))
+    print(f'#data: {num_data.value} #feature: {num_feature.value}')
     return handle
 
 
@@ -116,7 +117,7 @@ def load_from_csr(filename, reference):
         label.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         ctypes.c_int(len(label)),
         ctypes.c_int(dtype_float32))
-    print('#data: %d #feature: %d' % (num_data.value, num_feature.value))
+    print(f'#data: {num_data.value} #feature: {num_feature.value}')
     return handle
 
 
@@ -158,7 +159,7 @@ def load_from_csc(filename, reference):
         label.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         ctypes.c_int(len(label)),
         ctypes.c_int(dtype_float32))
-    print('#data: %d #feature: %d' % (num_data.value, num_feature.value))
+    print(f'#data: {num_data.value} #feature: {num_feature.value}')
     return handle
 
 
@@ -197,7 +198,7 @@ def load_from_mat(filename, reference):
         label.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         ctypes.c_int(len(label)),
         ctypes.c_int(dtype_float32))
-    print('#data: %d #feature: %d' % (num_data.value, num_feature.value))
+    print(f'#data: {num_data.value} #feature: {num_feature.value}')
     return handle
 
 
@@ -245,7 +246,7 @@ def test_booster():
             ctypes.byref(out_len),
             result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
         if i % 10 == 0:
-            print('%d iteration test AUC %f' % (i, result[0]))
+            print(f'{i} iteration test AUC {result[0]:.6f}')
     LIB.LGBM_BoosterSaveModel(
         booster,
         ctypes.c_int(0),
