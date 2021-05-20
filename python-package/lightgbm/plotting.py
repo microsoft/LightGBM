@@ -379,7 +379,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
     if GRAPHVIZ_INSTALLED:
         from graphviz import Digraph
     else:
-        raise ImportError('You must install graphviz to plot tree.')
+        raise ImportError('You must install graphviz and restart your session to plot tree.')
 
     def add(root, total_count, parent=None, decision=None):
         """Recursively add node or edge."""
