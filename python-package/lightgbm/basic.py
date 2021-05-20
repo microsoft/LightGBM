@@ -2085,7 +2085,8 @@ class Dataset:
             elif isinstance(self.data, pd_DataFrame):
                 if not PANDAS_INSTALLED:
                     raise LightGBMError("Cannot add features to DataFrame type of raw data "
-                                        "without pandas installed")
+                                        "without pandas installed. "
+                                        "Install pandas and restart your session.")
                 if isinstance(other.data, np.ndarray):
                     self.data = concat((self.data, pd_DataFrame(other.data)),
                                        axis=1, ignore_index=True)
@@ -2402,7 +2403,8 @@ class Booster:
             Returns a pandas DataFrame of the parsed model.
         """
         if not PANDAS_INSTALLED:
-            raise LightGBMError('This method cannot be run without pandas installed')
+            raise LightGBMError('This method cannot be run without pandas installed. '
+                                'You must install pandas and restart your session to use this method.')
 
         if self.num_trees() == 0:
             raise LightGBMError('There are no trees in this Booster and thus nothing to parse')

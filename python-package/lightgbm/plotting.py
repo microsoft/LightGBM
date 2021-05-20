@@ -80,7 +80,7 @@ def plot_importance(booster, ax=None, height=0.2,
     if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
     else:
-        raise ImportError('You must install matplotlib to plot importance.')
+        raise ImportError('You must install matplotlib and restart your session to plot importance.')
 
     if isinstance(booster, LGBMModel):
         booster = booster.booster_
@@ -197,7 +197,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
         import matplotlib.pyplot as plt
         from matplotlib.ticker import MaxNLocator
     else:
-        raise ImportError('You must install matplotlib to plot split value histogram.')
+        raise ImportError('You must install matplotlib and restart your session to plot split value histogram.')
 
     if isinstance(booster, LGBMModel):
         booster = booster.booster_
@@ -294,7 +294,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
     else:
-        raise ImportError('You must install matplotlib to plot metric.')
+        raise ImportError('You must install matplotlib and restart your session to plot metric.')
 
     if isinstance(booster, LGBMModel):
         eval_results = deepcopy(booster.evals_result_)
@@ -602,7 +602,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
         import matplotlib.image as image
         import matplotlib.pyplot as plt
     else:
-        raise ImportError('You must install matplotlib to plot tree.')
+        raise ImportError('You must install matplotlib and restart your session to plot tree.')
 
     if ax is None:
         if figsize is not None:
