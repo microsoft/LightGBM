@@ -52,11 +52,10 @@ class DistributedMockup:
         'num_threads': 2,
     }
 
-    def __init__(self, config: Dict = {}, n_workers: int = 2):
+    def __init__(self, config: Dict = {}):
         self.config = copy.deepcopy(self.default_config)
         self.config.update(config)
-        self.config['num_machines'] = n_workers
-        self.n_workers = n_workers
+        self.n_workers = self.config['num_machines']
 
     def worker_train(self, i: int) -> None:
         """Start the training process on the `i`-th worker.
@@ -116,7 +115,7 @@ class DistributedMockup:
         return y_pred
 
     def write_train_config(self, i: int) -> None:
-        """Create a file train{i}.txt with the required configuration to train.
+        """Create a file train{i}.conf with the required configuration to train.
 
         Each worker gets a different port and piece of the data, the rest are the
         model parameters contained in `self.config`.
@@ -136,6 +135,7 @@ def test_classifier():
     partitions = np.array_split(data, num_machines)
     params = {
         'objective': 'binary',
+        'num_machines': num_machines,
     }
     clf = DistributedMockup(params)
     clf.fit(partitions)
@@ -151,8 +151,9 @@ def test_regressor():
     partitions = np.array_split(data, num_machines)
     params = {
         'objective': 'regression',
+        'num_machines': num_machines,
     }
     reg = DistributedMockup(params)
     reg.fit(partitions)
     y_pred = reg.predict()
-    np.testing.assert_allclose(y_pred, reg.label_, rtol=0.5, atol=50.)
+    np.testing.assert_allclose(y_pred, reg.label_, rtol=0.2, atol=50.)

@@ -85,15 +85,6 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-if [[ $TASK == "cli-distributed" ]]; then
-    conda install -q -y -n $CONDA_ENV numpy pytest scikit-learn
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make -j4 || exit -1
-    cp $BUILD_DIRECTORY/lightgbm $BUILD_DIRECTORY/tests/distributed/ || exit -1
-    cd $BUILD_DIRECTORY/python-package/ && python setup.py install --precompile || exit -1
-    cd $BUILD_DIRECTORY/tests/distributed && pytest _test_distributed.py || exit -1
-    exit 0
-fi
-
 if [[ $TASK == "swig" ]]; then
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
     if [[ $OS_NAME == "macos" ]]; then
