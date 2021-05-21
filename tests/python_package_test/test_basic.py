@@ -154,7 +154,7 @@ def test_add_features_throws_if_datasets_unconstructed():
 def test_add_features_equal_data_on_alternating_used_unused(tmp_path):
     X = np.random.random((100, 5))
     X[:, [1, 3]] = 0
-    names = ['col_%d' % i for i in range(5)]
+    names = [f'col_{i}' for i in range(5)]
     for j in range(1, 5):
         d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
         d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
@@ -174,7 +174,7 @@ def test_add_features_equal_data_on_alternating_used_unused(tmp_path):
 def test_add_features_same_booster_behaviour(tmp_path):
     X = np.random.random((100, 5))
     X[:, [1, 3]] = 0
-    names = ['col_%d' % i for i in range(5)]
+    names = [f'col_{i}' for i in range(5)]
     for j in range(1, 5):
         d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
         d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
@@ -205,7 +205,7 @@ def test_add_features_from_different_sources():
     n_col = 5
     X = np.random.random((n_row, n_col))
     xxs = [X, sparse.csr_matrix(X), pd.DataFrame(X)]
-    names = ['col_%d' % i for i in range(n_col)]
+    names = [f'col_{i}' for i in range(n_col)]
     for x_1 in xxs:
         # test that method works even with free_raw_data=True
         d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=True).construct()
@@ -229,7 +229,7 @@ def test_add_features_from_different_sources():
             d1.add_features_from(d2)
             assert isinstance(d1.get_data(), original_type)
             assert d1.get_data().shape == (n_row, n_col * idx)
-            res_feature_names += ['D{}_{}'.format(idx, name) for name in names]
+            res_feature_names += [f'D{idx}_{name}' for name in names]
             assert d1.feature_name == res_feature_names
 
 
@@ -237,7 +237,7 @@ def test_cegb_affects_behavior(tmp_path):
     X = np.random.random((100, 5))
     X[:, [1, 3]] = 0
     y = np.random.random(100)
-    names = ['col_%d' % i for i in range(5)]
+    names = [f'col_{i}' for i in range(5)]
     ds = lgb.Dataset(X, feature_name=names).construct()
     ds.set_label(y)
     base = lgb.Booster(train_set=ds)
@@ -266,7 +266,7 @@ def test_cegb_scaling_equalities(tmp_path):
     X = np.random.random((100, 5))
     X[:, [1, 3]] = 0
     y = np.random.random(100)
-    names = ['col_%d' % i for i in range(5)]
+    names = [f'col_{i}' for i in range(5)]
     ds = lgb.Dataset(X, feature_name=names).construct()
     ds.set_label(y)
     # Compare pairs of penalties, to ensure scaling works as intended
@@ -319,7 +319,7 @@ def test_consistent_state_for_dataset_fields():
     sequence = np.ones(y.shape[0])
     sequence[0] = np.nan
     sequence[1] = np.inf
-    feature_names = ['f{0}'.format(i) for i in range(X.shape[1])]
+    feature_names = [f'f{i}'for i in range(X.shape[1])]
     lgb_data = lgb.Dataset(X, sequence,
                            weight=sequence, init_score=sequence,
                            feature_name=feature_names).construct()
