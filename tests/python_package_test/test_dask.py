@@ -7,7 +7,6 @@ import random
 import socket
 from itertools import groupby
 from os import getenv
-from platform import machine
 from sys import platform
 
 import pytest
@@ -58,8 +57,7 @@ task_to_local_factory = {
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
-    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
-    pytest.mark.skipif(machine() != 'x86_64', reason='Fails to run with non-x86_64 architecture')
+    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface')
 ]
 
 
