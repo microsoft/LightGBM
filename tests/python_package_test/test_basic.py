@@ -16,7 +16,9 @@ from .utils import load_breast_cancer
 def test_basic(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
                                                         test_size=0.1, random_state=2)
-    train_data = lgb.Dataset(X_train, label=y_train)
+    feature_names = [f"Column_{i}" for i in range(X_train.shape[1])]
+    feature_names[1] = "a" * 1000  # set one name to a value longer than default buffer size
+    train_data = lgb.Dataset(X_train, label=y_train, feature_name=feature_names)
     valid_data = train_data.create_valid(X_test, label=y_test)
 
     params = {
@@ -37,6 +39,8 @@ def test_basic(tmp_path):
         if i % 10 == 0:
             print(bst.eval_train(), bst.eval_valid())
 
+    assert train_data.get_feature_name() == feature_names
+
     assert bst.current_iteration() == 20
     assert bst.num_trees() == 20
     assert bst.num_model_per_iteration() == 1
@@ -55,6 +59,7 @@ def test_basic(tmp_path):
 
     # check saved model persistence
     bst = lgb.Booster(params, model_file=model_file)
+    assert bst.feature_name() == feature_names
     pred_from_model_file = bst.predict(X_test)
     # we need to check the consistency of model file here, so test for exact equal
     np.testing.assert_array_equal(pred_from_matr, pred_from_model_file)
