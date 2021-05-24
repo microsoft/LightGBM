@@ -595,7 +595,7 @@ def _load_pandas_categorical(file_name=None, model_str=None):
         return None
 
 
-class Sequence(object):
+class Sequence:
     """
     Generic data access interface.
 
@@ -618,7 +618,7 @@ class Sequence(object):
     batch_size = 4096  # Defaults to read 4K rows in each batch.
 
     @staticmethod
-    def is_class(obj):
+    def is_class(obj) -> bool:
         """Check if objection is instance of class Sequence.
 
         Args:
@@ -1192,13 +1192,16 @@ class Dataset:
         except AttributeError:
             pass
 
-    def create_sample_indices(self, total_nrow):
-        """Create sample indices for the given parameter of the Dataset.
+    def create_sample_indices(self, total_nrow: int) -> np.ndarray:
+        """Get an array of randomly chosen indices from this ``Dataset``.
+        
+        Indices are sampled without replacement.
 
         Parameters
         ----------
         total_nrow: int
             Total number of rows to sample from.
+            If this value is greater than the value of parameter ``bin_construct_sample_cnt``, only ``bin_construct_sample_cnt`` indices will be used.
             If Dataset has multiple input data, this should be the sum of rows of every file.
 
         Returns
@@ -1207,7 +1210,7 @@ class Dataset:
             Indices for sampled data.
         """
         param_str = param_dict_to_str(self.params)
-        sample_cnt = self.params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
+        sample_cnt = self.params.get("bin_construct_sample_cnt", DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT)
         sample_cnt = min(sample_cnt, total_nrow)
         indices = np.zeros(sample_cnt, dtype=np.int32)
         ptr_data, _, _ = c_int_array(indices)
@@ -1219,18 +1222,18 @@ class Dataset:
         ))
         return indices
 
-    def init_from_ref_dataset(self, total_nrow: int, ref_dataset: 'Dataset'):
+    def init_from_ref_dataset(self, total_nrow: int, ref_dataset: 'Dataset') -> 'Dataset':
         """Create dataset from a reference dataset.
 
-        Args
-        ----------
+        Parameters
+        ---------------
             total_nrow (int): number of rows expected to add to dataset
             ref_dataset (Dataset): referance dataset to extract meta from
 
         Returns
         -------
-            self : Dataset
-                Constructed Dataset object.
+        self : Dataset
+            Constructed Dataset object.
         """
         self.handle = ctypes.c_void_p()
         _safe_call(_LIB.LGBM_DatasetCreateByReference(
@@ -1240,7 +1243,13 @@ class Dataset:
         ))
         return self
 
-    def init_from_sample(self, sample_data, sample_indices, sample_cnt, total_nrow):
+    def init_from_sample(
+        self,
+        sample_data: List[np.array[float64]],
+        sample_indices: List[np.array[int]],
+        sample_cnt: int,
+        total_nrow: int
+    ) -> "Dataset":
         """Create Dataset from sampled data structures.
 
         Parameters
@@ -1259,9 +1268,9 @@ class Dataset:
         self : Dataset
             Constructed Dataset object.
         """
-        assert len(sample_data) == len(sample_indices), "#sample data column != #column indices"
-
         ncol = len(sample_indices)
+        assert len(sample_data) == ncol, "#sample data column != #column indices"
+
 
         for i in range(ncol):
             if sample_data[i].dtype != np.double:
@@ -1296,11 +1305,13 @@ class Dataset:
         ))
         return self
 
-    def push_rows(self, data):
+    def push_rows(self, data: np.ndarray) -> 'Dataset':
         """Add rows to Dataset.
 
-        Args:
-            data: numpy 1-D array
+        Parameters
+        ----------
+        data : numpy 1-D array
+            New data to add to the Dataset.
 
         Returns
         -------
@@ -1560,7 +1571,7 @@ class Dataset:
         if ref_dataset:
             self.init_from_ref_dataset(total_nrow, ref_dataset)
         else:
-            sample_cnt = self.params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
+            sample_cnt = self.params.get("bin_construct_sample_cnt", DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT)
             sample_cnt = min(sample_cnt, total_nrow)
 
             sample_data, col_indices = self.__sample(seqs, total_nrow)

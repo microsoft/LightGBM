@@ -1043,8 +1043,8 @@ static inline std::vector<int32_t> CreateSampleIndices(const Config& config, int
 
 
 int LGBM_SampleIndices(int32_t total_nrow,
-                const char* parameters,
-                void* out) {
+                       const char* parameters,
+                       void* out) {
   // This API is to keep python binding's behavior the same with C++ implementation.
   // Sample count, random seed etc. should be provided in parameters.
   API_BEGIN();
