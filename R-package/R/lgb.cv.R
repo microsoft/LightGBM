@@ -363,7 +363,7 @@ lgb.cv <- function(params = list()
         if (!is.null(data$.__enclos_env__$private$info$init_score)) {
           init_score_train = data$.__enclos_env__$private$info$init_score[train_indexDT$indices]
         }
-        dtrain <- gpb.Dataset(data = as.matrix(data$.__enclos_env__$private$raw_data[train_indexDT$indices,]),
+        dtrain <- lgb.Dataset(data = as.matrix(data$.__enclos_env__$private$raw_data[train_indexDT$indices,]),
                               label = data$.__enclos_env__$private$info$label[train_indexDT$indices],
                               weight = weight_train,
                               init_score = init_score_train,
@@ -380,7 +380,7 @@ lgb.cv <- function(params = list()
         if (!is.null(data$.__enclos_env__$private$info$init_score)) {
           init_score_test = data$.__enclos_env__$private$info$init_score[test_indexDT$indices]
         }
-        dtest <- gpb.Dataset(data = as.matrix(data$.__enclos_env__$private$raw_data[test_indexDT$indices,]), 
+        dtest <- lgb.Dataset(data = as.matrix(data$.__enclos_env__$private$raw_data[test_indexDT$indices,]), 
                              label = data$.__enclos_env__$private$info$label[test_indexDT$indices],
                              weight = weight_test,
                              init_score = init_score_test,
