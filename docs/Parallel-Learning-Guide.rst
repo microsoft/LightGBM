@@ -455,7 +455,7 @@ Example
 
 .. _MMLSpark: https://aka.ms/spark
 
-.. _this MMLSpark example: https://github.com/Azure/mmlspark/blob/master/notebooks/samples/LightGBM%20-%20Quantile%20Regression%20for%20Drug%20Discovery.ipynb
+.. _this MMLSpark example: https://github.com/Azure/mmlspark/blob/master/notebooks/samples/LightGBM%20-%20Overview.ipynb
 
 .. _the Dask Array documentation: https://docs.dask.org/en/latest/array.html
 

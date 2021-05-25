@@ -73,11 +73,9 @@ test_that("lgb.Dataset: nrow is correct for a very sparse matrix", {
 
 test_that("lgb.Dataset: Dataset should be able to construct from matrix and return non-null handle", {
   rawData <- matrix(runif(1000L), ncol = 10L)
-  handle <- lgb.null.handle()
   ref_handle <- NULL
-  handle <- lightgbm:::lgb.call(
-    "LGBM_DatasetCreateFromMat_R"
-    , ret = handle
+  handle <- .Call(
+    LGBM_DatasetCreateFromMat_R
     , rawData
     , NULL
     , nrow(rawData)
@@ -86,8 +84,21 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
     , ref_handle
   )
   expect_false(is.na(handle))
-  lgb.call("LGBM_DatasetFree_R", ret = NULL, handle)
+  .Call(LGBM_DatasetFree_R, handle)
   handle <- NULL
+})
+
+test_that("cpp errors should be raised as proper R errors", {
+  data(agaricus.train, package = "lightgbm")
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(
+    train$data
+    , label = train$label
+    , init_score = seq_len(10L)
+  )
+  expect_error({
+    dtrain$construct()
+  }, regexp = "Initial score size doesn't match data size")
 })
 
 test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {
@@ -265,4 +276,22 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
   )
 
   expect_is(bst, "lgb.CVBooster")
+})
+
+test_that("lgb.Dataset: should be able to use and retrieve long feature names", {
+  # set one feature to a value longer than the default buffer size used
+  # in LGBM_DatasetGetFeatureNames_R
+  feature_names <- names(iris)
+  long_name <- paste0(rep("a", 1000L), collapse = "")
+  feature_names[1L] <- long_name
+  names(iris) <- feature_names
+  # check that feature name survived the trip from R to C++ and back
+  dtrain <- lgb.Dataset(
+    data = as.matrix(iris[, -5L])
+    , label = as.numeric(iris$Species) - 1L
+  )
+  dtrain$construct()
+  col_names <- dtrain$get_colnames()
+  expect_equal(col_names[1L], long_name)
+  expect_equal(nchar(col_names[1L]), 1000L)
 })

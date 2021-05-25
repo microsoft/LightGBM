@@ -16,6 +16,7 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"application", "objective"},
   {"boosting_type", "boosting"},
   {"boost", "boosting"},
+  {"linear_trees", "linear_tree"},
   {"train", "data"},
   {"train_data", "data"},
   {"train_data_file", "data"},
@@ -72,6 +73,7 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"colsample_bytree", "feature_fraction"},
   {"sub_feature_bynode", "feature_fraction_bynode"},
   {"colsample_bynode", "feature_fraction_bynode"},
+  {"extra_tree", "extra_trees"},
   {"early_stopping_rounds", "early_stopping_round"},
   {"early_stopping", "early_stopping_round"},
   {"n_iter_no_change", "early_stopping_round"},
@@ -259,6 +261,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "categorical_feature",
   "forcedbins_filename",
   "save_binary",
+  "precise_float_parser",
   "start_iteration_predict",
   "num_iteration_predict",
   "predict_raw_score",
@@ -528,6 +531,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetBool(params, "save_binary", &save_binary);
 
+  GetBool(params, "precise_float_parser", &precise_float_parser);
+
   GetInt(params, "start_iteration_predict", &start_iteration_predict);
 
   GetInt(params, "num_iteration_predict", &num_iteration_predict);
@@ -716,6 +721,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[ignore_column: " << ignore_column << "]\n";
   str_buf << "[categorical_feature: " << categorical_feature << "]\n";
   str_buf << "[forcedbins_filename: " << forcedbins_filename << "]\n";
+  str_buf << "[precise_float_parser: " << precise_float_parser << "]\n";
   str_buf << "[objective_seed: " << objective_seed << "]\n";
   str_buf << "[num_class: " << num_class << "]\n";
   str_buf << "[is_unbalance: " << is_unbalance << "]\n";

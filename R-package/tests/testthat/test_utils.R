@@ -1,12 +1,3 @@
-context("lgb.encode.char")
-
-test_that("lgb.encode.char throws an informative error if it is passed a non-raw input", {
-    x <- "some-string"
-    expect_error({
-        lgb.encode.char(x)
-    }, regexp = "Can only encode from raw type")
-})
-
 context("lgb.check.r6.class")
 
 test_that("lgb.check.r6.class() should return FALSE for NULL input", {
@@ -35,8 +26,8 @@ test_that("lgb.params2str() works as expected for empty lists", {
     out_str <- lgb.params2str(
         params = list()
     )
-    expect_identical(class(out_str), "raw")
-    expect_equal(out_str, lgb.c_str(""))
+    expect_identical(class(out_str), "character")
+    expect_equal(out_str, "")
 })
 
 test_that("lgb.params2str() works as expected for a key in params with multiple different-length elements", {
@@ -50,10 +41,9 @@ test_that("lgb.params2str() works as expected for a key in params with multiple 
     out_str <- lgb.params2str(
         params = params
     )
-    expect_identical(class(out_str), "raw")
-    out_as_char <- rawToChar(out_str)
+    expect_identical(class(out_str), "character")
     expect_identical(
-        out_as_char
+        out_str
         , "objective=magic metric=a,ab,abc,abcdefg nrounds=10 learning_rate=0.0000001"
     )
 })

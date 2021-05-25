@@ -210,6 +210,7 @@ if(USE_CUDA)
     function(add_histogram hsize hname hadd hconst hdir)
       add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
       set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES OFF)
       if(hadd)
         list(APPEND histograms histo${hsize}${hname})
         set(histograms ${histograms} PARENT_SCOPE)
@@ -282,6 +283,9 @@ if(UNIX OR MINGW OR CYGWIN)
     endif()
     if(NOT USE_OPENMP)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-unused-private-field")
+    endif()
+    if(__BUILD_FOR_R AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-function-type")
     endif()
 endif()
 
@@ -431,11 +435,13 @@ endif()
 
 if(USE_CUDA)
   set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
   TARGET_LINK_LIBRARIES(
     lightgbm
     ${histograms}
   )
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
   TARGET_LINK_LIBRARIES(
     _lightgbm
     ${histograms}
@@ -478,7 +484,21 @@ if(BUILD_CPP_TEST)
     FetchContent_MakeAvailable(googletest)
     add_library(GTest::GTest ALIAS gtest)
   endif()
-  file(GLOB CPP_TEST_SOURCES tests/cpp_test/*.cpp)
+  file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
+  if(MSVC)
+    set(
+      CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+    )
+    foreach(CompilerFlag ${CompilerFlags})
+      string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+    endforeach()
+  endif(MSVC)
   add_executable(testlightgbm ${CPP_TEST_SOURCES} ${SOURCES})
   target_link_libraries(testlightgbm PRIVATE GTest::GTest)
 endif()

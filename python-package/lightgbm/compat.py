@@ -94,9 +94,22 @@ try:
     _LGBMComputeSampleWeight = compute_sample_weight
 except ImportError:
     SKLEARN_INSTALLED = False
-    _LGBMModelBase = object
-    _LGBMClassifierBase = object
-    _LGBMRegressorBase = object
+
+    class _LGBMModelBase:  # type: ignore
+        """Dummy class for sklearn.base.BaseEstimator."""
+
+        pass
+
+    class _LGBMClassifierBase:  # type: ignore
+        """Dummy class for sklearn.base.ClassifierMixin."""
+
+        pass
+
+    class _LGBMRegressorBase:  # type: ignore
+        """Dummy class for sklearn.base.RegressorMixin."""
+
+        pass
+
     _LGBMLabelEncoder = None
     LGBMNotFittedError = ValueError
     _LGBMStratifiedKFold = None
@@ -118,10 +131,15 @@ try:
     DASK_INSTALLED = True
 except ImportError:
     DASK_INSTALLED = False
+
     delayed = None
-    Client = object
     default_client = None
     wait = None
+
+    class Client:  # type: ignore
+        """Dummy class for dask.distributed.Client."""
+
+        pass
 
     class dask_Array:  # type: ignore
         """Dummy class for dask.array.Array."""

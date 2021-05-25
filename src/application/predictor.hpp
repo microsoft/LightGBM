@@ -160,13 +160,14 @@ class Predictor {
   * \param data_filename Filename of data
   * \param result_filename Filename of output result
   */
-  void Predict(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check) {
+  void Predict(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check, bool precise_float_parser) {
     auto writer = VirtualFileWriter::Make(result_filename);
     if (!writer->Init()) {
-      Log::Fatal("Prediction results file %s cannot be found", result_filename);
+      Log::Fatal("Prediction results file %s cannot be created", result_filename);
     }
     auto label_idx = header ? -1 : boosting_->LabelIdx();
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, header, boosting_->MaxFeatureIdx() + 1, label_idx));
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, header, boosting_->MaxFeatureIdx() + 1, label_idx,
+                                                               precise_float_parser));
 
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);

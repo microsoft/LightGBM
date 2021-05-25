@@ -747,7 +747,7 @@ def test_cv():
     cv_res_obj = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=tss,
                         verbose_eval=False)
     np.testing.assert_allclose(cv_res_gen['l2-mean'], cv_res_obj['l2-mean'])
-    # lambdarank
+    # LambdaRank
     X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                        '../../examples/lambdarank/rank.train'))
     q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),

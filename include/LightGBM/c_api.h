@@ -592,24 +592,24 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterNumberOfTotalModel(BoosterHandle handle,
                                                      int* out_models);
 
 /*!
- * \brief Get number of evaluation datasets.
+ * \brief Get number of evaluation metrics.
  * \param handle Handle of booster
- * \param[out] out_len Total number of evaluation datasets
+ * \param[out] out_len Total number of evaluation metrics
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalCounts(BoosterHandle handle,
                                                 int* out_len);
 
 /*!
- * \brief Get names of evaluation datasets.
+ * \brief Get names of evaluation metrics.
  * \param handle Handle of booster
  * \param len Number of ``char*`` pointers stored at ``out_strs``.
  *            If smaller than the max size, only this many strings are copied
- * \param[out] out_len Total number of evaluation datasets
+ * \param[out] out_len Total number of evaluation metrics
  * \param buffer_len Size of pre-allocated strings.
  *                   Content is copied up to ``buffer_len - 1`` and null-terminated
  * \param[out] out_buffer_len String sizes required to do the full string copies
- * \param[out] out_strs Names of evaluation datasets, should pre-allocate memory
+ * \param[out] out_strs Names of evaluation metrics, should pre-allocate memory
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalNames(BoosterHandle handle,
@@ -650,7 +650,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumFeature(BoosterHandle handle,
 /*!
  * \brief Get evaluation for training data and validation data.
  * \note
- *   1. You should call ``LGBM_BoosterGetEvalNames`` first to get the names of evaluation datasets.
+ *   1. You should call ``LGBM_BoosterGetEvalNames`` first to get the names of evaluation metrics.
  *   2. You should pre-allocate memory for ``out_results``, you can get its length by ``LGBM_BoosterGetEvalCounts``.
  * \param handle Handle of booster
  * \param data_idx Index of data, 0: training data, 1: 1st validation data, 2: 2nd validation data and so on
