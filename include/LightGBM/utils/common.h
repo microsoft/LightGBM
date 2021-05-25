@@ -1202,7 +1202,7 @@ struct __TToStringHelper<T, true, true> {
 };
 
 /*!
-* Converts an array to a string with with values separated by the space character.
+* Converts an array to a string with values separated by the space character.
 * This method replaces Common's ``ArrayToString`` and ``ArrayToStringFast`` functionality
 * and is locale-independent.
 * 
@@ -1229,7 +1229,7 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
 }
 
 /*!
-* Converts an unordered_map to a string with with key-value pairs separated by the specified delimiter.
+* Converts an unordered_map to a string with key-value pairs separated by the specified delimiter.
 * Each key-value pair is represented by <key>:<value> with a colon in between.
 * This method is locale-independent.
 *
@@ -1239,7 +1239,7 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
 template<bool key_high_precision_output = false, bool value_high_precision_output = false,
   typename KEY_T, typename VALUE_T>
 inline static std::string UnorderedMapToString(const std::unordered_map<KEY_T, VALUE_T>& map,
-  const char delimiter) {
+  const char pair_sep, const char delimiter) {
   if (map.empty()) {
     return std::string("");
   }
@@ -1254,7 +1254,7 @@ inline static std::string UnorderedMapToString(const std::unordered_map<KEY_T, V
   auto iter = map.begin();
   key_helper(iter->first, key_buffer.data(), key_buf_len);
   str_buf << key_buffer.data();
-  str_buf << ':';
+  str_buf << pair_sep;
   value_helper(iter->second, value_buffer.data(), value_buf_len);
   str_buf << value_buffer.data();
 
@@ -1263,7 +1263,7 @@ inline static std::string UnorderedMapToString(const std::unordered_map<KEY_T, V
     str_buf << delimiter;
     key_helper(iter->first, key_buffer.data(), key_buf_len);
     str_buf << key_buffer.data();
-    str_buf << ':';
+    str_buf << pair_sep;
     value_helper(iter->second, value_buffer.data(), value_buf_len);
     str_buf << value_buffer.data();
   }

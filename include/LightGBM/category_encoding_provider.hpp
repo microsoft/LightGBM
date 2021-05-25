@@ -7,6 +7,7 @@
 
 #include <LightGBM/config.h>
 #include <LightGBM/network.h>
+#include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/text_reader.h>
 #include <LightGBM/utils/threading.h>
 #include <LightGBM/parser_base.h>
@@ -40,7 +41,9 @@ class CategoryEncodingProvider {
 
     virtual std::string DumpToString() const = 0;
 
-    virtual std::string Name() const = 0;
+    virtual json11::Json DumpToJSONObject() const = 0;
+
+    virtual std::string FeatureName() const = 0;
 
     virtual void SetPrior(const double /*prior*/, const double /*prior_weight*/) {}
 
@@ -56,47 +59,67 @@ class CategoryEncodingProvider {
       return cat_fid_to_convert_fid_.at(cat_fid);
     }
 
-    static CatConverter* CreateFromString(const std::string& model_string, const double prior_weight) {
-      std::vector<std::string> split_model_string = Common::Split(model_string.c_str(), ",");
-      if (split_model_string.size() != 2) {
-        Log::Fatal("Invalid CatConverter model string %s", model_string.c_str());
-      }
-      const std::string& cat_converter_name = split_model_string[0];
-      CatConverter* cat_converter = nullptr;
-      if (Common::StartsWith(cat_converter_name, std::string("label_mean_prior_target_encoding"))) {
-        double prior = 0.0f;
-        Common::Atof(Common::Split(cat_converter_name.c_str(), ':')[1].c_str(), &prior);
-        cat_converter = new TargetEncoderLabelMean();
-        cat_converter->SetPrior(prior, prior_weight);
-      } else if (Common::StartsWith(cat_converter_name, std::string("target_encoding"))) {
-        double prior = 0.0f;
-        Common::Atof(Common::Split(cat_converter_name.c_str(), ':')[1].c_str(), &prior);
-        cat_converter = new TargetEncoder(prior);
-        cat_converter->SetPrior(prior, prior_weight);
-      } else if (cat_converter_name == std::string("count")) {
-        cat_converter = new CountEncoder();
+    static CatConverter* CreateFromCharPointer(const char* char_pointer, size_t* used_len, double prior_weight) {
+      const char* char_pointer_start = char_pointer;
+      size_t line_len = Common::GetLine(char_pointer);
+      std::string line(char_pointer, line_len);
+      char_pointer += line_len;
+      char_pointer = Common::SkipNewLine(char_pointer);
+      CatConverter* ret = nullptr;
+      if (Common::StartsWith(line, "type=")) {
+        std::string type = Common::Split(line.c_str(), "=")[1];
+
+        if (type == std::string("target_encoder") || type == std::string("target_encoder_label_mean")) {
+          line_len = Common::GetLine(char_pointer);
+          line = std::string(char_pointer, line_len);
+          char_pointer += line_len;
+          char_pointer = Common::SkipNewLine(char_pointer);
+          if (!Common::StartsWith(line.c_str(), "prior=")) {
+            Log::Fatal("CatConverter model format error");
+          }
+          double prior = 0.0f;
+          Common::Atof(Common::Split(line.c_str(), "=")[1].c_str(), &prior);
+          if (type == std::string("target_encoder")) {
+            ret = new TargetEncoder(prior);
+          } else {
+            ret = new TargetEncoderLabelMean();
+          }
+          ret->SetPrior(prior, prior_weight);
+        } else if (type == std::string("count_encoder")) {
+          ret = new CountEncoder();
+        } else {
+          Log::Fatal("Unknown CatConverter type %s", type.c_str());
+        }
+
+        line_len = Common::GetLine(char_pointer);
+        line = std::string(char_pointer, line_len);
+        char_pointer += line_len;
+        char_pointer = Common::SkipNewLine(char_pointer);
+        if (!Common::StartsWith(line.c_str(), "categorical_feature_index_to_encoded_feature_index=")) {
+          Log::Fatal("CatConverter model format error");
+        }
+        std::vector<std::string> feature_index_pair = Common::Split(Common::Split(line.c_str(), "=")[1].c_str(), " ");
+        ret->cat_fid_to_convert_fid_.clear();
+        for (auto& pair_string : feature_index_pair) {
+          std::vector<std::string> cat_fid_and_convert_fid_string = Common::Split(pair_string.c_str(), ":");
+          int cat_fid = 0;
+          Common::Atoi(cat_fid_and_convert_fid_string[0].c_str(), &cat_fid);
+          int convert_fid = 0;
+          Common::Atoi(cat_fid_and_convert_fid_string[1].c_str(), &convert_fid);
+          ret->cat_fid_to_convert_fid_[cat_fid] = convert_fid;
+        }
+        *used_len = static_cast<size_t>(char_pointer - char_pointer_start);
       } else {
-        Log::Fatal("Invalid CatConverter model string %s", model_string.c_str());
+        Log::Fatal("CatConverter model format error");
       }
-      cat_converter->cat_fid_to_convert_fid_.clear();
-
-      const std::string& feature_map = split_model_string[1];
-      std::stringstream feature_map_stream(feature_map);
-      int key = 0, val = 0;
-      while (feature_map_stream >> key) {
-        CHECK_EQ(feature_map_stream.get(), ':');
-        feature_map_stream >> val;
-        cat_converter->cat_fid_to_convert_fid_[key] = val;
-        feature_map_stream.get();
-      }
-
-      return cat_converter;
+      return ret;
     }
   };
 
   class TargetEncoder: public CatConverter {
    public:
     explicit TargetEncoder(const double prior): prior_(prior) {}
+
     inline double CalcValue(const double sum_label, const double sum_count,
       const double /*all_fold_sum_count*/) const override {
       return (sum_label + prior_ * prior_weight_) / (sum_count + prior_weight_);
@@ -111,15 +134,39 @@ class CategoryEncodingProvider {
       prior_weight_ = prior_weight;
     }
 
-    std::string Name() const override {
+    std::string FeatureName() const override {
       std::stringstream str_stream;
-      str_stream << "target_encoding:" << prior_;
+      Common::C_stringstream(str_stream);
+      str_stream << "target_encoding_" << prior_;
       return str_stream.str();
+    }
+
+    json11::Json DumpToJSONObject() const override {
+      json11::Json::array cat_fid_to_convert_fid_array;
+      for (const auto& pair : cat_fid_to_convert_fid_) {
+        cat_fid_to_convert_fid_array.emplace_back(
+          json11::Json::object{
+            {"cat_fid", json11::Json(pair.first)},
+            {"convert_fid", json11::Json(pair.second)
+          }
+        });
+      }
+
+      json11::Json ret ( json11::Json::object {
+        {"name", json11::Json("target_encoder")},
+        {"prior", json11::Json(prior_)},
+        {"categorical_feature_index_to_encoded_feature_index", json11::Json(cat_fid_to_convert_fid_array)}
+      });
+      return ret;
     }
 
     std::string DumpToString() const override {
       std::stringstream str_stream;
-      str_stream << Name() << "," << CommonC::UnorderedMapToString(cat_fid_to_convert_fid_, '#');
+      Common::C_stringstream(str_stream);
+      str_stream << "type=target_encoder\n";
+      str_stream << "prior=" << prior_ << "\n";
+      str_stream << "categorical_feature_index_to_encoded_feature_index=" <<
+        CommonC::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
       return str_stream.str();
     }
 
@@ -132,7 +179,6 @@ class CategoryEncodingProvider {
    public:
     CountEncoder() {}
 
-   private:
     inline double CalcValue(const double /*sum_label*/, const double /*sum_count*/,
       const double all_fold_sum_count) const override {
       return all_fold_sum_count;
@@ -143,13 +189,34 @@ class CategoryEncodingProvider {
       return all_fold_sum_count;
     }
 
-    std::string Name() const override {
-      return std::string("count");
+    std::string FeatureName() const override {
+      return std::string("count_encoding");
+    }
+
+    json11::Json DumpToJSONObject() const override {
+      json11::Json::array cat_fid_to_convert_fid_array;
+      for (const auto& pair : cat_fid_to_convert_fid_) {
+        cat_fid_to_convert_fid_array.emplace_back(
+          json11::Json::object{
+            {"cat_fid", json11::Json(pair.first)},
+            {"convert_fid", json11::Json(pair.second)
+          }
+        });
+      }
+
+      json11::Json ret ( json11::Json::object {
+        {"name", json11::Json("count_encoder")},
+        {"categorical_feature_index_to_encoded_feature_index", json11::Json(cat_fid_to_convert_fid_array)}
+      });
+      return ret;
     }
 
     std::string DumpToString() const override {
       std::stringstream str_stream;
-      str_stream << Name() << "," << CommonC::UnorderedMapToString(cat_fid_to_convert_fid_, '#');
+      Common::C_stringstream(str_stream);
+      str_stream << "type=count_encoder\n";
+      str_stream << "categorical_feature_index_to_encoded_feature_index=" <<
+        CommonC::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
       return str_stream.str();
     }
   };
@@ -180,15 +247,39 @@ class CategoryEncodingProvider {
       return (sum_label + prior * prior_weight_) / (sum_count + prior_weight_);
     }
 
-    std::string Name() const override {
+    std::string FeatureName() const override {
       std::stringstream str_stream;
-      str_stream << "label_mean_prior_target_encoding:" << prior_;
+      Common::C_stringstream(str_stream);
+      str_stream << "label_mean_prior_target_encoding_" << prior_;
       return str_stream.str();
+    }
+
+    json11::Json DumpToJSONObject() const override {
+      json11::Json::array cat_fid_to_convert_fid_array;
+      for (const auto& pair : cat_fid_to_convert_fid_) {
+        cat_fid_to_convert_fid_array.emplace_back(
+          json11::Json::object{
+            {"cat_fid", json11::Json(pair.first)},
+            {"convert_fid", json11::Json(pair.second)
+          }
+        });
+      }
+
+      json11::Json ret ( json11::Json::object {
+        {"name", json11::Json("target_encoder")},
+        {"prior", json11::Json(prior_)},
+        {"categorical_feature_index_to_encoded_feature_index", json11::Json(cat_fid_to_convert_fid_array)}
+      });
+      return ret;
     }
 
     std::string DumpToString() const override {
       std::stringstream str_stream;
-      str_stream << Name() << "," << CommonC::UnorderedMapToString(cat_fid_to_convert_fid_, '#');
+      Common::C_stringstream(str_stream);
+      str_stream << "type=target_encoder_label_mean\n";
+      str_stream << "prior=" << prior_ << "\n";
+      str_stream << "categorical_feature_index_to_encoded_feature_index=" <<
+        CommonC::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
       return str_stream.str();
     }
 
@@ -224,7 +315,7 @@ class CategoryEncodingProvider {
   // for pandas/numpy array data input
   static CategoryEncodingProvider* CreateCategoryEncodingProvider(Config* config,
     const std::vector<std::function<std::vector<double>(int row_idx)>>& get_row_fun,
-    const std::function<double(int row_idx)>& get_label_fun,
+    const std::function<label_t(int row_idx)>& get_label_fun,
     int32_t nmat, int32_t* nrow, int32_t ncol) {
     std::unique_ptr<CategoryEncodingProvider> category_encoding_provider(new CategoryEncodingProvider(config, get_row_fun, get_label_fun, nmat, nrow, ncol));
     if (category_encoding_provider->GetNumCatConverters() == 0) {
@@ -237,7 +328,7 @@ class CategoryEncodingProvider {
   // for csr sparse matrix data input
   static CategoryEncodingProvider* CreateCategoryEncodingProvider(Config* config,
     const std::function<std::vector<std::pair<int, double>>(int row_idx)>& get_row_fun,
-    const std::function<double(int row_idx)>& get_label_fun,
+    const std::function<label_t(int row_idx)>& get_label_fun,
     int64_t nrow, int64_t ncol) {
     std::unique_ptr<CategoryEncodingProvider> category_encoding_provider(new CategoryEncodingProvider(config, get_row_fun, get_label_fun, nrow, ncol));
     if (category_encoding_provider->GetNumCatConverters() == 0) {
@@ -250,7 +341,7 @@ class CategoryEncodingProvider {
   // for csc sparse matrix data input
   static CategoryEncodingProvider* CreateCategoryEncodingProvider(Config* config,
     const std::vector<std::unique_ptr<CSC_RowIterator>>& csc_func,
-    const std::function<double(int row_idx)>& get_label_fun,
+    const std::function<label_t(int row_idx)>& get_label_fun,
     int64_t nrow, int64_t ncol) {
     std::unique_ptr<CategoryEncodingProvider> category_encoding_provider(new CategoryEncodingProvider(config, csc_func, get_label_fun, nrow, ncol));
     if (category_encoding_provider->GetNumCatConverters() == 0) {
@@ -271,9 +362,15 @@ class CategoryEncodingProvider {
   void ProcessOneLine(const std::vector<std::pair<int, double>>& one_line, double label,
     int line_idx, std::vector<bool>* is_feature_processed, const int fold_id);
 
-  std::string DumpModelInfo() const;
+  std::string DumpToJSON() const;
+
+  std::string DumpToString() const;
+
+  static CategoryEncodingProvider* RecoverFromCharPointer(const char* model_char_pointer, size_t* used_len);
 
   static CategoryEncodingProvider* RecoverFromModelString(const std::string model_string);
+
+  static CategoryEncodingProvider* RecoverFromJSONString(const std::string json_model_string);
 
   bool IsCategorical(const int fid) const {
     if (fid < num_original_features_) {
@@ -427,32 +524,34 @@ class CategoryEncodingProvider {
 
   explicit CategoryEncodingProvider(const std::string model_string);
 
+  CategoryEncodingProvider(const char* str, size_t* used_len);
+
   explicit CategoryEncodingProvider(Config* config);
 
   CategoryEncodingProvider(Config* config,
     const std::vector<std::function<std::vector<double>(int row_idx)>>& get_row_fun,
-    const std::function<double(int row_idx)>& get_label_fun, const int32_t nmat,
+    const std::function<label_t(int row_idx)>& get_label_fun, const int32_t nmat,
     const int32_t* nrow, const int32_t ncol);
 
   CategoryEncodingProvider(Config* config,
     const std::function<std::vector<std::pair<int, double>>(int row_idx)>& get_row_fun,
-    const std::function<double(int row_idx)>& get_label_fun,
+    const std::function<label_t(int row_idx)>& get_label_fun,
     const int64_t nrow, const int64_t ncol);
 
   CategoryEncodingProvider(Config* config,
     const std::vector<std::unique_ptr<CSC_RowIterator>>& csc_iters,
-    const std::function<double(int row_idx)>& get_label_fun,
+    const std::function<label_t(int row_idx)>& get_label_fun,
     const int64_t nrow, const int64_t ncol);
 
   template <bool ACCUMULATE_FROM_FILE>
   void ProcessOneLineInner(const std::vector<std::pair<int, double>>& one_line,
     double label, int line_idx, std::vector<bool>* is_feature_processed_ptr,
     std::unordered_map<int, std::vector<std::unordered_map<int, int>>>* count_info_ptr,
-    std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>* label_info_ptr,
-    std::vector<label_t>* label_sum_ptr, std::vector<int>* num_data_ptr, const int fold_id);
+    std::unordered_map<int, std::vector<std::unordered_map<int, double>>>* label_info_ptr,
+    std::vector<double>* label_sum_ptr, std::vector<int>* num_data_ptr, const int fold_id);
 
   // sync up encoding values by gathering statistics from all machines in distributed scenario
-  void SyncEncodingStat(std::vector<std::unordered_map<int, label_t>>* fold_label_sum_ptr,
+  void SyncEncodingStat(std::vector<std::unordered_map<int, double>>* fold_label_sum_ptr,
     std::vector<std::unordered_map<int, int>>* fold_total_count_ptr, const int num_machines) const;
 
   // sync up statistics to calculate the encoding prior by gathering statistics from all machines in distributed scenario
@@ -464,14 +563,14 @@ class CategoryEncodingProvider {
   void ExpandNumFeatureWhileAccumulate(const int new_largest_fid);
 
   inline void AddCountAndLabel(std::unordered_map<int, int>* count_map,
-    std::unordered_map<int, label_t>* label_map,
+    std::unordered_map<int, double>* label_map,
     const int cat_value, const int count_value, const label_t label_value) {
     if (count_map->count(cat_value) == 0) {
       count_map->operator[](cat_value) = count_value;
-      label_map->operator[](cat_value) = label_value;
+      label_map->operator[](cat_value) = static_cast<double>(label_value);
     } else {
       count_map->operator[](cat_value) += count_value;
-      label_map->operator[](cat_value) += label_value;
+      label_map->operator[](cat_value) += static_cast<double>(label_value);
     }
   }
 
@@ -503,15 +602,15 @@ class CategoryEncodingProvider {
   // the accumulated count information for category encoding
   std::unordered_map<int, std::vector<std::unordered_map<int, int>>> count_info_;
   // the accumulated label sum information for category encoding
-  std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>> label_info_;
+  std::unordered_map<int, std::vector<std::unordered_map<int, double>>> label_info_;
   // the accumulated count information for category encoding per thread
   std::vector<std::unordered_map<int, std::vector<std::unordered_map<int, int>>>> thread_count_info_;
   // the accumulated label sum information for category encoding per thread
-  std::vector<std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>> thread_label_info_;
+  std::vector<std::unordered_map<int, std::vector<std::unordered_map<int, double>>>> thread_label_info_;
   // the accumulated label sum per fold
-  std::vector<label_t> fold_label_sum_;
+  std::vector<double> fold_label_sum_;
   // the accumulated label sum per thread per fold
-  std::vector<std::vector<label_t>> thread_fold_label_sum_;
+  std::vector<std::vector<double>> thread_fold_label_sum_;
   // the accumulated number of data per fold per thread
   std::vector<std::vector<data_size_t>> thread_fold_num_data_;
   // number of data per fold

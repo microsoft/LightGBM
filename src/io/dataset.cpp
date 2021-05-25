@@ -763,7 +763,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
   if (dataset->category_encoding_provider() != nullptr) {
     category_encoding_provider_.reset(CategoryEncodingProvider::RecoverFromModelString(
-      dataset->category_encoding_provider()->DumpModelInfo()));
+      dataset->category_encoding_provider()->DumpToString()));
   }
 }
 
@@ -1044,7 +1044,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       feature_groups_[i]->SaveBinaryToFile(writer.get());
     }
     if (category_encoding_provider_ != nullptr) {
-      const std::string category_encoding_provider_str = category_encoding_provider_->DumpModelInfo();
+      const std::string category_encoding_provider_str = category_encoding_provider_->DumpToString();
       const size_t category_encoding_provider_str_size_in_bytes = category_encoding_provider_str.size() * sizeof(char);
       writer->Write(&category_encoding_provider_str_size_in_bytes, sizeof(category_encoding_provider_str_size_in_bytes));
       writer->Write(category_encoding_provider_str.c_str(), category_encoding_provider_str_size_in_bytes);

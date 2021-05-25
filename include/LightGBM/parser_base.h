@@ -1,9 +1,9 @@
 /*!
- * Copyright (c) 2016 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_PARSER_H_
-#define LIGHTGBM_PARSER_H_
+#ifndef LIGHTGBM_PARSER_BASE_H_
+#define LIGHTGBM_PARSER_BASE_H_
 
 #include <string>
 #include <utility>
@@ -32,6 +32,7 @@ class Parser {
   /*!
   * \brief Create an object of parser, will auto choose the format depend on file
   * \param filename One Filename of data
+  * \param header Whether the data file has header
   * \param num_features Pass num_features of this data file if you know, <=0 means don't know
   * \param label_idx index of label column
   * \return Object of parser
@@ -71,26 +72,10 @@ class CSC_RowIterator {
   std::function<std::pair<int, double>(int idx)> iter_fun_;
 };
 
-#ifndef C_API_DTYPE_FLOAT32
-#define C_API_DTYPE_FLOAT32 (0)  /*!< \brief float32 (single precision float). */
-#endif
-
-#ifndef C_API_DTYPE_FLOAT64
-#define C_API_DTYPE_FLOAT64 (1)  /*!< \brief float64 (double precision float). */
-#endif
-
-#ifndef C_API_DTYPE_INT32
-#define C_API_DTYPE_INT32   (2)  /*!< \brief int32. */
-#endif
-
-#ifndef C_API_DTYPE_INT64
-#define C_API_DTYPE_INT64   (3)  /*!< \brief int64. */
-#endif
-
 std::function<std::pair<int, double>(int idx)>
 IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices,
   const void* data, int data_type, int64_t ncol_ptr, int64_t , int col_idx);
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_PARSER_H_
+#endif  // LightGBM_PARSER_BASE_H_

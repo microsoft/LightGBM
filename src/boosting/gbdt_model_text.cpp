@@ -43,9 +43,9 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_
 
   if (category_encoding_provider_ != nullptr) {
     str_buf << "\"category_encoding_provider\":"
-            << "\"" << category_encoding_provider_->DumpModelInfo() << "\"," << '\n';
+            << category_encoding_provider_->DumpToJSON() << "," << '\n';
   } else {
-    str_buf << "\"category_encoding_provider\":\"\",\n";
+    str_buf << "\"category_encoding_provider\":null,\n";
   }
 
   str_buf << "\"feature_infos\":" << "{";
@@ -347,11 +347,13 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
 
   ss << "feature_infos=" << CommonC::Join(feature_infos_, " ") << '\n';
   // dump target encoding information
+  ss << "\n";
   if (category_encoding_provider_ != nullptr) {
-    ss << "category_encoding_provider=" << category_encoding_provider_->DumpModelInfo() << "\n";
+    ss << "has_category_encoding_provider=1\n" << category_encoding_provider_->DumpToString();
   } else {
-    ss << "category_encoding_provider=" << "\n";
+    ss << "has_category_encoding_provider=0\n";
   }
+  ss << "\n";
 
   int num_used_model = static_cast<int>(models_.size());
   int total_iteration = num_used_model / num_tree_per_iteration_;
@@ -434,10 +436,22 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   auto end = p + len;
   std::unordered_map<std::string, std::string> key_vals;
   while (p < end) {
+    size_t used_len = 0;
     auto line_len = Common::GetLine(p);
     if (line_len > 0) {
       std::string cur_line(p, line_len);
-      if (!Common::StartsWith(cur_line, "Tree=")) {
+      if (Common::StartsWith(cur_line, "has_category_encoding_provider")) {
+        int has_category_encoding_provider = 0;
+        Common::Atoi(Common::Split(cur_line.c_str(), "=")[1].c_str(), &has_category_encoding_provider);
+        if (has_category_encoding_provider == 0) {
+          category_encoding_provider_.reset(nullptr);
+          used_len = line_len;
+        } else {
+          p += line_len;
+          p = Common::SkipNewLine(p);
+          category_encoding_provider_.reset(CategoryEncodingProvider::RecoverFromCharPointer(p, &used_len));
+        }
+      } else if (!Common::StartsWith(cur_line, "Tree=")) {
         auto strs = Common::Split(cur_line.c_str(), '=');
         if (strs.size() == 1) {
           key_vals[strs[0]] = "";
@@ -453,11 +467,12 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
             Log::Fatal("Wrong line at model file: %s", cur_line.substr(0, std::min<size_t>(128, cur_line.size())).c_str());
           }
         }
+        used_len = line_len;
       } else {
         break;
       }
     }
-    p += line_len;
+    p += used_len;
     p = Common::SkipNewLine(p);
   }
 
@@ -488,14 +503,6 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
     Common::Atoi(key_vals["max_feature_idx"].c_str(), &max_feature_idx_);
   } else {
     Log::Fatal("Model file doesn't specify max_feature_idx");
-    return false;
-  }
-
-  // recover target encoding information
-  if (key_vals.count("category_encoding_provider")) {
-    category_encoding_provider_.reset(CategoryEncodingProvider::RecoverFromModelString(key_vals["category_encoding_provider"]));
-  } else {
-    Log::Fatal("Model file doesn't specify category_encoding_provider");
     return false;
   }
 

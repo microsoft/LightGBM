@@ -4,6 +4,7 @@
  */
 #include "parser.hpp"
 
+#include <LightGBM/c_api.h>
 #include <LightGBM/parser_base.h>
 
 #include <string>
@@ -12,7 +13,6 @@
 #include <functional>
 #include <iostream>
 #include <memory>
-
 namespace LightGBM {
 
 const char* Parser::binary_file_token =

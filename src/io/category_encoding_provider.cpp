@@ -14,51 +14,9 @@ CategoryEncodingProvider::CategoryEncodingProvider(Config* config) {
   SetConfig(config);
 }
 
-CategoryEncodingProvider::CategoryEncodingProvider(const std::string model_string) {
-  accumulated_from_file_ = false;
-  std::stringstream str_stream(model_string);
-  int cat_fid = 0, cat_value = 0;
-  double label_sum = 0.0f, total_count = 0.0f;
-  int keep_raw_cat_method;
-  str_stream >> keep_raw_cat_method;
-  keep_raw_cat_method_ = static_cast<bool>(keep_raw_cat_method);
-  str_stream >> num_original_features_;
-  str_stream >> num_total_features_;
-  str_stream >> prior_weight_;
-  is_categorical_feature_.clear();
-  is_categorical_feature_.resize(num_original_features_, false);
-  categorical_features_.clear();
-  while (str_stream >> cat_fid) {
-    CHECK_EQ(str_stream.get(), ' ');
-    is_categorical_feature_[cat_fid] = true;
-    categorical_features_.push_back(cat_fid);
-    label_info_[cat_fid].clear();
-    count_info_[cat_fid].clear();
-    label_info_[cat_fid].resize(1);
-    count_info_[cat_fid].resize(1);
-    while (str_stream >> cat_value) {
-      CHECK_EQ(str_stream.get(), ':');
-      str_stream >> label_sum;
-      CHECK_EQ(str_stream.get(), ':');
-      str_stream >> total_count;
-      label_info_[cat_fid][0][cat_value] = label_sum;
-      count_info_[cat_fid][0][cat_value] = total_count;
-    }
-    str_stream.clear();
-    CHECK_EQ(str_stream.get(), '@');
-  }
-  std::sort(categorical_features_.begin(), categorical_features_.end());
-  str_stream.clear();
-  category_encoders_.clear();
-  std::string cat_converter_string;
-  while (str_stream >> cat_converter_string) {
-    category_encoders_.emplace_back(CatConverter::CreateFromString(cat_converter_string, prior_weight_));
-  }
-}
-
 CategoryEncodingProvider::CategoryEncodingProvider(Config* config,
   const std::vector<std::function<std::vector<double>(int row_idx)>>& get_row_fun,
-  const std::function<double(int row_idx)>& get_label_fun, const int32_t nmat,
+  const std::function<label_t(int row_idx)>& get_label_fun, const int32_t nmat,
   const int32_t* nrow, const int32_t ncol) {
   accumulated_from_file_ = false;
   SetConfig(config);
@@ -90,7 +48,7 @@ CategoryEncodingProvider::CategoryEncodingProvider(Config* config,
       for (int32_t j = start; j < end; ++j) {
         const std::vector<double>& oneline_features = mat_get_row_fun(j);
         const int32_t row_idx = j + mat_offset;
-        const double label = get_label_fun(row_idx);
+        const double label = static_cast<double>(get_label_fun(row_idx));
         const int fold_id = fold_distribution(mt_generators[thread_id]);
         training_data_fold_id_[row_idx] = fold_id;
         ProcessOneLine(oneline_features, label, row_idx, thread_id, fold_id);
@@ -104,7 +62,7 @@ CategoryEncodingProvider::CategoryEncodingProvider(Config* config,
 
 CategoryEncodingProvider::CategoryEncodingProvider(Config* config,
   const std::function<std::vector<std::pair<int, double>>(int row_idx)>& get_row_fun,
-  const std::function<double(int row_idx)>& get_label_fun,
+  const std::function<label_t(int row_idx)>& get_label_fun,
   const int64_t nrow, const int64_t ncol) {
   accumulated_from_file_ = false;
   SetConfig(config);
@@ -133,7 +91,7 @@ CategoryEncodingProvider::CategoryEncodingProvider(Config* config,
     for (int64_t j = start; j < end; ++j) {
       const std::vector<std::pair<int, double>>& oneline_features = get_row_fun(j);
       const int32_t row_idx = j;
-      const double label = get_label_fun(row_idx);
+      const double label = static_cast<double>(get_label_fun(row_idx));
       const int fold_id = fold_distribution(mt_generators[thread_id]);
       training_data_fold_id_[row_idx] = fold_id;
       ProcessOneLine(oneline_features, label, row_idx, &is_feature_processed[thread_id], thread_id, fold_id);
@@ -144,7 +102,7 @@ CategoryEncodingProvider::CategoryEncodingProvider(Config* config,
 
 CategoryEncodingProvider::CategoryEncodingProvider(Config* config,
   const std::vector<std::unique_ptr<CSC_RowIterator>>& csc_iters,
-  const std::function<double(int row_idx)>& get_label_fun,
+  const std::function<label_t(int row_idx)>& get_label_fun,
   const int64_t nrow, const int64_t ncol) {
   accumulated_from_file_ = false;
   SetConfig(config);
@@ -181,7 +139,7 @@ CategoryEncodingProvider::CategoryEncodingProvider(Config* config,
       }
       const int fold_id = fold_distribution(mt_generators[thread_id]);
       training_data_fold_id_[row_idx] = fold_id;
-      const double label = get_label_fun(row_idx);
+      const double label = static_cast<double>(get_label_fun(row_idx));
       ProcessOneLine(oneline_features, label, row_idx, thread_id, fold_id);
     }
   });
@@ -221,32 +179,257 @@ void CategoryEncodingProvider::SetConfig(const Config* config) {
   tmp_parser_ = nullptr;
 }
 
-std::string CategoryEncodingProvider::DumpModelInfo() const {
-  std::stringstream str_buf;
+std::string CategoryEncodingProvider::DumpToJSON() const {
   if (category_encoders_.size() > 0) {
-    str_buf << static_cast<int>(keep_raw_cat_method_) << " ";
-    str_buf << num_original_features_ << " ";
-    str_buf << num_total_features_ << " ";
-    str_buf << prior_weight_ << " ";
+    json11::Json::object json_map;
+    json_map["keep_raw_cat_method"] = json11::Json(static_cast<int>(keep_raw_cat_method_));
+    json_map["num_original_features"] = json11::Json(num_original_features_);
+    json_map["num_total_features"] = json11::Json(num_total_features_);
+    json_map["prior_weight"] = json11::Json(prior_weight_);
+    json_map["num_categorical_features"] = json11::Json(static_cast<int>(categorical_features_.size()));
+
+    json11::Json::array category_infos;
     for (const int cat_fid : categorical_features_) {
-      str_buf << cat_fid;
-      // only the information of the full training dataset is kept
-      // information per fold is discarded
-      for (const auto& pair : label_info_.at(cat_fid).back()) {
-        str_buf << " " << pair.first << ":" << pair.second << ":" << count_info_.at(cat_fid).back().at(pair.first);
+      json11::Json::array label_and_count_info;
+      const auto& feature_label_info = label_info_.at(cat_fid).back();
+      const auto& feature_count_info = count_info_.at(cat_fid).back();
+      for (const auto& pair : feature_label_info) {
+        const int feature_value = pair.first;
+        const double label_sum = pair.second;
+        const int count = feature_count_info.at(feature_value);
+        label_and_count_info.emplace_back(json11::Json::object {
+          {"categorical_feature_value", json11::Json(feature_value)},
+          {"label_sum", json11::Json(label_sum)},
+          {"count", json11::Json(count)}
+        });
       }
-      str_buf << "@";
+      category_infos.emplace_back(
+        json11::Json::object {
+          {"categorical_feature_index", json11::Json(cat_fid)},
+          {"label_and_count_info", json11::Json(label_and_count_info)}
+        }
+      );
     }
-    for (const auto& cat_converter : category_encoders_) {
-      str_buf << cat_converter->DumpToString() << " ";
+    json_map["category_infos"] = json11::Json(category_infos);
+    json_map["num_categorical_encoders"] = json11::Json(static_cast<int>(category_encoders_.size()));
+
+    json11::Json::array category_encoders;
+    for (const auto& category_encoder : category_encoders_) {
+      category_encoders.push_back(category_encoder->DumpToJSONObject());
+    }
+    json_map["category_encoders"] = json11::Json(category_encoders);
+    auto ret = json11::Json(json_map).dump();
+    Log::Warning(ret.c_str());
+    return ret;
+  } else {
+    return json11::Json().dump();
+  }
+}
+
+std::string CategoryEncodingProvider::DumpToString() const {
+  std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
+  if (category_encoders_.size() > 0) {
+    str_buf << "keep_raw_cat_method=" << static_cast<int>(keep_raw_cat_method_) << "\n";
+    str_buf << "num_original_features=" << num_original_features_ << "\n";
+    str_buf << "num_total_features=" << num_total_features_ << "\n";
+    str_buf << "prior_weight=" << prior_weight_ << "\n";
+    str_buf << "num_categorical_features=" << categorical_features_.size() << "\n";
+    for (const int cat_fid : categorical_features_) {
+      str_buf << "categorical_feature_index=" << cat_fid << "\n";
+      const auto& feature_label_info = label_info_.at(cat_fid).back();
+      const auto& feature_count_info = count_info_.at(cat_fid).back();
+      str_buf << "num_categorical_feature_values=" << feature_label_info.size() << "\n";
+      str_buf << "categorical_feature_info=";
+      for (auto iter = feature_label_info.begin(); iter != feature_label_info.end(); ++iter) {
+        if (iter != feature_label_info.begin()) {
+          str_buf << " ";
+        }
+        const int categorical_feature_value = iter->first;
+        str_buf << categorical_feature_value << ":" << iter->second << ":" << feature_count_info.at(categorical_feature_value);
+      }
+      str_buf << "\n";
+    }
+    str_buf << "num_category_encoders=" << category_encoders_.size() << "\n";
+    for (size_t i = 0; i < category_encoders_.size(); ++i) {
+      str_buf << "category_encoder=" << i << "\n";
+      str_buf << category_encoders_[i]->DumpToString();
     }
   }
   return str_buf.str();
 }
 
+CategoryEncodingProvider::CategoryEncodingProvider(const std::string model_string):
+  CategoryEncodingProvider(model_string.c_str(), nullptr) {}
+
+CategoryEncodingProvider::CategoryEncodingProvider(const char* str, size_t* used_len) {
+  accumulated_from_file_ = false;
+  const char* str_ptr = str;
+  size_t line_len = 0;
+  std::string line = std::string("");
+
+  line_len = Common::GetLine(str_ptr);
+  line = std::string(str_ptr, line_len);
+  if (!Common::StartsWith(line, "keep_raw_cat_method=")) {
+    Log::Fatal("CategoryEncodingProvider model format error.");
+  } else {
+    int8_t keep_raw_cat_method = 0;
+    Common::Atoi(Common::Split(line.c_str(), "=")[1].c_str(), &keep_raw_cat_method);
+    keep_raw_cat_method_ = static_cast<bool>(keep_raw_cat_method);
+  }
+  str_ptr += line_len;
+  str_ptr = Common::SkipNewLine(str_ptr);
+
+  line_len = Common::GetLine(str_ptr);
+  line = std::string(str_ptr, line_len);
+  if (!Common::StartsWith(line, "num_original_features=")) {
+    Log::Fatal("CategoryEncodingProvider model format error.");
+  } else {
+    Common::Atoi(Common::Split(line.c_str(), "=")[1].c_str(), &num_original_features_);
+  }
+  str_ptr += line_len;
+  str_ptr = Common::SkipNewLine(str_ptr);
+
+  line_len = Common::GetLine(str_ptr);
+  line = std::string(str_ptr, line_len);
+  if (!Common::StartsWith(line, "num_total_features=")) {
+    Log::Fatal("CategoryEncodingProvider model format error.");
+  } else {
+    Common::Atoi(Common::Split(line.c_str(), "=")[1].c_str(), &num_total_features_);
+  }
+  str_ptr += line_len;
+  str_ptr = Common::SkipNewLine(str_ptr);
+
+  line_len = Common::GetLine(str_ptr);
+  line = std::string(str_ptr, line_len);
+  if (!Common::StartsWith(line, "prior_weight=")) {
+    Log::Fatal("CategoryEncodingProvider model format error.");
+  } else {
+    Common::Atof(Common::Split(line.c_str(), "=")[1].c_str(), &prior_weight_);
+  }
+  str_ptr += line_len;
+  str_ptr = Common::SkipNewLine(str_ptr);
+
+  line_len = Common::GetLine(str_ptr);
+  line = std::string(str_ptr, line_len);
+  if (!Common::StartsWith(line, "num_categorical_features=")) {
+    Log::Fatal("CategoryEncodingProvider model format error.");
+  }
+  int num_categorical_features = 0;
+  Common::Atoi(Common::Split(line.c_str(), "=")[1].c_str(), &num_categorical_features);
+  str_ptr += line_len;
+  str_ptr = Common::SkipNewLine(str_ptr);
+
+  categorical_features_.clear();
+  is_categorical_feature_.clear();
+  is_categorical_feature_.resize(num_original_features_, false);
+  label_info_.clear();
+  count_info_.clear();
+  for (int i = 0; i < num_categorical_features; ++i) {
+    line_len = Common::GetLine(str_ptr);
+    line = std::string(str_ptr, line_len);
+    if (!Common::StartsWith(line, "categorical_feature_index=")) {
+      Log::Fatal("CategoryEncodingProvider model format error.");
+    }
+    int categorical_feature_index = 0;
+    Common::Atoi(Common::Split(line.c_str(), "=")[1].c_str(), &categorical_feature_index);
+    categorical_features_.emplace_back(categorical_feature_index);
+    is_categorical_feature_[categorical_feature_index] = true;
+    label_info_[categorical_feature_index].resize(1);
+    count_info_[categorical_feature_index].resize(1);
+    std::unordered_map<int, double>& label_info_ref = label_info_[categorical_feature_index][0];
+    std::unordered_map<int, int>& count_info_ref = count_info_[categorical_feature_index][0];
+    str_ptr += line_len;
+    str_ptr = Common::SkipNewLine(str_ptr);
+
+    line_len = Common::GetLine(str_ptr);
+    line = std::string(str_ptr, line_len);
+    if (!Common::StartsWith(line, "num_categorical_feature_values=")) {
+      Log::Fatal("CategoryEncodingProvider model format error.");
+    }
+    size_t num_categorical_feature_values = 0;
+    Common::Atoi(Common::Split(line.c_str(), "=")[1].c_str(), &num_categorical_feature_values);
+    str_ptr += line_len;
+    str_ptr = Common::SkipNewLine(str_ptr);
+
+    line_len = Common::GetLine(str_ptr);
+    line = std::string(str_ptr, line_len);
+    if (!Common::StartsWith(line, "categorical_feature_info=")) {
+      Log::Fatal("CategoryEncodingProvider model format error.");
+    }
+    std::vector<std::string> categorical_feature_info = Common::Split(Common::Split(line.c_str(), "=")[1].c_str(), " ");
+    if (categorical_feature_info.size() == num_categorical_feature_values) {
+      for (const auto& triplet : categorical_feature_info) {
+        std::vector<std::string> value_label_count = Common::Split(triplet.c_str(), ":");
+        int value = 0;
+        Common::Atoi(value_label_count[0].c_str(), &value);
+        double label_sum = 0.0f;
+        Common::Atof(value_label_count[1].c_str(), &label_sum);
+        int count_sum = 0;
+        Common::Atoi(value_label_count[2].c_str(), &count_sum);
+
+        label_info_ref[value] = label_sum;
+        count_info_ref[value] = count_sum;
+      }
+    } else {
+      Log::Fatal("CategoryEncodingProvider model format error.");
+    }
+    str_ptr += line_len;
+    str_ptr = Common::SkipNewLine(str_ptr);
+  }
+
+  std::sort(categorical_features_.begin(), categorical_features_.end());
+
+  line_len = Common::GetLine(str_ptr);
+  line = std::string(str_ptr, line_len);
+  if (!Common::StartsWith(line, "num_category_encoders=")) {
+    Log::Fatal("CategoryEncodingProvider model format error.");
+  }
+  int num_category_encoders = 0;
+  Common::Atoi(Common::Split(line.c_str(), "=")[1].c_str(), &num_category_encoders);
+  str_ptr += line_len;
+  str_ptr = Common::SkipNewLine(str_ptr);
+
+  category_encoders_.clear();
+  for (int i = 0; i < num_category_encoders; ++i) {
+    line_len = Common::GetLine(str_ptr);
+    line = std::string(str_ptr, line_len);
+    if (!Common::StartsWith(line, "category_encoder=")) {
+      Log::Fatal("CategoryEncodingProvider model format error.");
+    }
+    int category_encoder_index = 0;
+    Common::Atoi(Common::Split(line.c_str(), "=")[1].c_str(), &category_encoder_index);
+    if (category_encoder_index != i) {
+      Log::Fatal("CategoryEncodingProvider model format error.");
+    }
+    str_ptr += line_len;
+    str_ptr = Common::SkipNewLine(str_ptr);
+
+    size_t category_encoder_used_len = 0;
+    category_encoders_.emplace_back(CatConverter::CreateFromCharPointer(str_ptr, &category_encoder_used_len, prior_weight_));
+    str_ptr += category_encoder_used_len;
+    if (used_len != nullptr) {
+      *used_len = static_cast<size_t>(str_ptr - str);
+    }
+  }
+}
+
 CategoryEncodingProvider* CategoryEncodingProvider::RecoverFromModelString(const std::string model_string) {
   if (!model_string.empty()) {
     std::unique_ptr<CategoryEncodingProvider> ret(new CategoryEncodingProvider(model_string));
+    if (ret->category_encoders_.size() > 0) {
+      return ret.release();
+    } else {
+      return nullptr;
+    }
+  } else {
+    return nullptr;
+  }
+}
+
+CategoryEncodingProvider* CategoryEncodingProvider::RecoverFromCharPointer(const char* model_char_pointer, size_t* used_len) {
+  if (model_char_pointer != nullptr) {
+    std::unique_ptr<CategoryEncodingProvider> ret(new CategoryEncodingProvider(model_char_pointer, used_len));
     if (ret->category_encoders_.size() > 0) {
       return ret.release();
     } else {
@@ -274,8 +457,7 @@ void CategoryEncodingProvider::ExtendFeatureNames(std::vector<std::string>* feat
     if (is_categorical_feature_[fid]) {
       for (const auto& cat_converter : category_encoders_) {
         const int convert_fid = cat_converter->GetConvertFid(fid);
-        std::string cat_converter_name = cat_converter->Name();
-        std::replace(cat_converter_name.begin(), cat_converter_name.end(), ':', '_');
+        std::string cat_converter_name = cat_converter->FeatureName();
         new_feature_names[convert_fid] = old_feature_names[fid] + std::string("_") + cat_converter_name;
       }
     }
@@ -457,15 +639,15 @@ void CategoryEncodingProvider::PrepareCategoryEncodingStatVectors() {
   }
 }
 
-void CategoryEncodingProvider::SyncEncodingStat(std::vector<std::unordered_map<int, label_t>>* fold_label_sum_ptr,
+void CategoryEncodingProvider::SyncEncodingStat(std::vector<std::unordered_map<int, double>>* fold_label_sum_ptr,
     std::vector<std::unordered_map<int, int>>* fold_total_count_ptr, const int num_machines) const {
   auto& fold_label_sum = *fold_label_sum_ptr;
   auto& fold_total_count = *fold_total_count_ptr;
   if (num_machines > 1) {
     std::string target_encoding_stat_string;
     for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
-      target_encoding_stat_string += CommonC::UnorderedMapToString(fold_label_sum[fold_id], ' ') + "@";
-      target_encoding_stat_string += CommonC::UnorderedMapToString(fold_total_count[fold_id], ' ') + "@";
+      target_encoding_stat_string += CommonC::UnorderedMapToString(fold_label_sum[fold_id], ':', ' ') + "@";
+      target_encoding_stat_string += CommonC::UnorderedMapToString(fold_total_count[fold_id], ':', ' ') + "@";
     }
     const size_t max_target_encoding_values_string_size = Network::GlobalSyncUpByMax(target_encoding_stat_string.size()) + 1;
     std::vector<char> input_buffer(max_target_encoding_values_string_size), output_buffer(max_target_encoding_values_string_size * num_machines);
@@ -476,7 +658,7 @@ void CategoryEncodingProvider::SyncEncodingStat(std::vector<std::unordered_map<i
 
     int feature_value = 0;
     int count_value = 0;
-    label_t label_sum = 0;
+    double label_sum = 0;
 
     for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
       fold_label_sum[fold_id].clear();
@@ -569,8 +751,8 @@ void CategoryEncodingProvider::ProcessOneLineInner(const std::vector<std::pair<i
   double label, int /*line_idx*/,
   std::vector<bool>* is_feature_processed_ptr,
   std::unordered_map<int, std::vector<std::unordered_map<int, int>>>* count_info_ptr,
-  std::unordered_map<int, std::vector<std::unordered_map<int, label_t>>>* label_info_ptr,
-  std::vector<label_t>* label_sum_ptr,
+  std::unordered_map<int, std::vector<std::unordered_map<int, double>>>* label_info_ptr,
+  std::vector<double>* label_sum_ptr,
   std::vector<int>* num_data_ptr,
   const int fold_id) {
   auto& is_feature_processed = *is_feature_processed_ptr;
@@ -942,7 +1124,9 @@ void CategoryEncodingProvider::InitFromParser(Config* config_from_loader, Parser
   categorical_features_.clear();
   auto& categorical_features_from_loader_ref = *categorical_features_from_loader;
   for (const int fid : categorical_features_from_loader_ref) {
-    categorical_features_.push_back(fid);
+    if (fid < num_original_features_) {
+      categorical_features_.push_back(fid);
+    }
   }
   std::sort(categorical_features_.begin(), categorical_features_.end());
   PrepareCategoryEncodingStatVectors();

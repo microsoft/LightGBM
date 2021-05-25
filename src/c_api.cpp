@@ -12,7 +12,6 @@
 #include <LightGBM/meta.h>
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
-#include <LightGBM/parser_base.h>
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
@@ -857,6 +856,7 @@ using LightGBM::Log;
 using LightGBM::Network;
 using LightGBM::Random;
 using LightGBM::ReduceScatterFunction;
+using LightGBM::label_t;
 
 // some help functions used to convert data
 
@@ -874,7 +874,7 @@ std::function<std::vector<std::pair<int, double>>(T idx)>
 RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices,
                    const void* data, int data_type, int64_t nindptr, int64_t nelem);
 
-std::function<float(int row_idx)>
+std::function<label_t(int row_idx)>
 LabelFunctionFromArray(const void* label);
 
 // start of c_api functions
@@ -1073,10 +1073,10 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   if (is_valid) {
     const CategoryEncodingProvider* category_encoding_provider_ptr = (reinterpret_cast<const Dataset*>(reference))->category_encoding_provider();
     if (category_encoding_provider_ptr != nullptr) {
-      category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpModelInfo())));
+      category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpToString())));
     }
   } else {
-    std::function<float(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
+    std::function<label_t(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
     category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(
       &config, get_row_fun, get_label_fun, nmat, nrow, ncol));
   }
@@ -1114,7 +1114,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                              VectorSize<double>(sample_values).data(),
                                              sample_cnt, total_nrow, category_encoding_provider.get()));
     if (category_encoding_provider != nullptr) {
-      ret->SetCategoryEncodingProvider(CategoryEncodingProvider::RecoverFromModelString(category_encoding_provider->DumpModelInfo()));
+      ret->SetCategoryEncodingProvider(CategoryEncodingProvider::RecoverFromModelString(category_encoding_provider->DumpToString()));
     }
   } else {
     ret.reset(new Dataset(total_nrow));
@@ -1175,10 +1175,10 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   if (is_valid) {
     const CategoryEncodingProvider* category_encoding_provider_ptr = (reinterpret_cast<const Dataset*>(reference))->category_encoding_provider();
     if (category_encoding_provider_ptr != nullptr) {
-      category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpModelInfo())));
+      category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpToString())));
     }
   } else {
-    std::function<float(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
+    std::function<label_t(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
     category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(
       &config, get_row_fun, get_label_fun, nindptr - 1, num_col));
   }
@@ -1213,7 +1213,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                                              VectorSize<double>(sample_values).data(),
                                              sample_cnt, nrow, category_encoding_provider.get()));
     if (category_encoding_provider != nullptr) {
-      ret->SetCategoryEncodingProvider(CategoryEncodingProvider::RecoverFromModelString(category_encoding_provider->DumpModelInfo()));
+      ret->SetCategoryEncodingProvider(CategoryEncodingProvider::RecoverFromModelString(category_encoding_provider->DumpToString()));
     }
   } else {
     ret.reset(new Dataset(nrow));
@@ -1339,9 +1339,16 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int32_t nrow = static_cast<int32_t>(num_row);
 
   std::vector<std::unique_ptr<CSC_RowIterator>> csc_iterators(ncol_ptr - 1);
-  #pragma omp parallel for schedule(static)
-  for (int i = 0; i < static_cast<int>(csc_iterators.size()); ++i) {
-    csc_iterators[i].reset(new CSC_RowIterator(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i));
+
+  { // extra brackets to use OMP_INIT_EX() here without conflict with subsequent uses
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < static_cast<int>(csc_iterators.size()); ++i) {
+      OMP_LOOP_EX_BEGIN();
+      csc_iterators[i].reset(new CSC_RowIterator(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i));
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
   }
 
   std::unique_ptr<const CategoryEncodingProvider> category_encoding_provider;
@@ -1349,10 +1356,10 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   if (is_valid) {
     const CategoryEncodingProvider* category_encoding_provider_ptr = (reinterpret_cast<const Dataset*>(reference))->category_encoding_provider();
     if (category_encoding_provider_ptr != nullptr) {
-      category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpModelInfo())));
+      category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpToString())));
     }
   } else {
-    std::function<float(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
+    std::function<label_t(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
     category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(
       &config, csc_iterators, get_label_fun, num_row, ncol_ptr - 1));
   }
@@ -1392,7 +1399,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                              VectorSize<double>(sample_values).data(),
                                              sample_cnt, nrow, category_encoding_provider.get()));
     if (category_encoding_provider != nullptr) {
-      ret->SetCategoryEncodingProvider(CategoryEncodingProvider::RecoverFromModelString(category_encoding_provider->DumpModelInfo()));
+      ret->SetCategoryEncodingProvider(CategoryEncodingProvider::RecoverFromModelString(category_encoding_provider->DumpToString()));
     }
   } else {
     ret.reset(new Dataset(nrow));
@@ -2521,7 +2528,7 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
 }
 
 // label is array of pointer to individual labels
-std::function<float(int row_idx)>
+std::function<label_t(int row_idx)>
 LabelFunctionFromArray(const void* label) {
   if (label != nullptr) {
     const float* label_ptr = reinterpret_cast<const float*>(label);

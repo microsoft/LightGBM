@@ -284,7 +284,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
     }
     if (category_encoding_provider != nullptr) {
-      dataset->SetCategoryEncodingProvider(CategoryEncodingProvider::RecoverFromModelString(category_encoding_provider->DumpModelInfo()));
+      dataset->SetCategoryEncodingProvider(CategoryEncodingProvider::RecoverFromModelString(category_encoding_provider->DumpToString()));
     }
   } else {
     // load data from binary file
