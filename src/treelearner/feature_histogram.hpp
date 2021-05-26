@@ -572,7 +572,7 @@ class FeatureHistogram {
     const double cnt_factor = num_data / sum_hessian;
     // from right to left, and we don't need data in bin0
     for (; t >= t_end; --t) {
-      if (static_cast<uint32_t>(t + offset) < threshold) {
+      if (static_cast<uint32_t>(t + offset) <= threshold) {
         break;
       }
 
