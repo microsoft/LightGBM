@@ -1210,7 +1210,8 @@ class Dataset:
             Indices for sampled data.
         """
         param_str = param_dict_to_str(self.params)
-        sample_cnt = self.params.get("bin_construct_sample_cnt", DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT)
+        # Note self.params may contain 'bin_construct_sample_cnt' but is None.
+        sample_cnt = self.params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
         sample_cnt = min(sample_cnt, total_nrow)
         indices = np.zeros(sample_cnt, dtype=np.int32)
         ptr_data, _, _ = c_int_array(indices)
@@ -1538,7 +1539,7 @@ class Dataset:
         indices = self.create_sample_indices(total_nrow)
 
         # Select sampled rows, transpose to column order.
-        sampled = np.array(row for row in self.__yield_row_from(seqs, indices))
+        sampled = np.array([row for row in self.__yield_row_from(seqs, indices)])
         sampled = sampled.T
 
         filtered = []
@@ -1569,7 +1570,7 @@ class Dataset:
         if ref_dataset:
             self.init_from_ref_dataset(total_nrow, ref_dataset)
         else:
-            sample_cnt = self.params.get("bin_construct_sample_cnt", DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT)
+            sample_cnt = self.params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
             sample_cnt = min(sample_cnt, total_nrow)
 
             sample_data, col_indices = self.__sample(seqs, total_nrow)
