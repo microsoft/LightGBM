@@ -86,7 +86,7 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   const int* p_indptr = INTEGER(indptr);
   const int* p_indices = INTEGER(indices);
   const double* p_data = REAL(data);
-  const double* p_label = R_IS_NULL(label) ? nullptr : R_REAL_PTR(label);
+  const double* p_label = Rf_isNull(label) ? nullptr : REAL(label);
 
   int64_t nindptr = static_cast<int64_t>(Rf_asInteger(num_indptr));
   int64_t ndata = static_cast<int64_t>(Rf_asInteger(nelem));
@@ -126,7 +126,7 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   int32_t nrow = static_cast<int32_t>(Rf_asInteger(num_row));
   int32_t ncol = static_cast<int32_t>(Rf_asInteger(num_col));
   double* p_mat = REAL(data);
-  double* p_label = R_IS_NULL(label) ? nullptr : R_REAL_PTR(label);
+  double* p_label = Rf_isNull(label) ? nullptr : REAL(label);
   const float* float_p_label = nullptr;
   std::vector<float> float_label_vec;
   if (p_label != nullptr) {
