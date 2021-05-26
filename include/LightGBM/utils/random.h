@@ -82,6 +82,9 @@ class Random {
           ret.push_back(i);
         }
       }
+    } else if (K == 1) {
+      int v = NextInt(0, N);
+      ret.push_back(v);
     } else {
       std::set<int> sample_set;
       for (int r = N - K; r < N; ++r) {
