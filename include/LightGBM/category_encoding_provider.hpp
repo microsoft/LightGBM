@@ -152,7 +152,7 @@ class CategoryEncodingProvider {
         });
       }
 
-      json11::Json ret ( json11::Json::object {
+      json11::Json ret(json11::Json::object {
         {"name", json11::Json("target_encoder")},
         {"prior", json11::Json(prior_)},
         {"categorical_feature_index_to_encoded_feature_index", json11::Json(cat_fid_to_convert_fid_array)}
@@ -204,7 +204,7 @@ class CategoryEncodingProvider {
         });
       }
 
-      json11::Json ret ( json11::Json::object {
+      json11::Json ret(json11::Json::object {
         {"name", json11::Json("count_encoder")},
         {"categorical_feature_index_to_encoded_feature_index", json11::Json(cat_fid_to_convert_fid_array)}
       });
@@ -265,7 +265,7 @@ class CategoryEncodingProvider {
         });
       }
 
-      json11::Json ret ( json11::Json::object {
+      json11::Json ret(json11::Json::object {
         {"name", json11::Json("target_encoder")},
         {"prior", json11::Json(prior_)},
         {"categorical_feature_index_to_encoded_feature_index", json11::Json(cat_fid_to_convert_fid_array)}

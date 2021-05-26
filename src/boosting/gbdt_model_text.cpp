@@ -16,7 +16,7 @@
 
 namespace LightGBM {
 
-const char* kModelVersion = "v3";
+const char* kModelVersion = "v4";
 
 std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_importance_type) const {
   std::stringstream str_buf;
@@ -435,13 +435,13 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   auto p = c_str;
   auto end = p + len;
   std::unordered_map<std::string, std::string> key_vals;
+  int has_category_encoding_provider = 0;
   while (p < end) {
     size_t used_len = 0;
     auto line_len = Common::GetLine(p);
     if (line_len > 0) {
       std::string cur_line(p, line_len);
       if (Common::StartsWith(cur_line, "has_category_encoding_provider")) {
-        int has_category_encoding_provider = 0;
         Common::Atoi(Common::Split(cur_line.c_str(), "=")[1].c_str(), &has_category_encoding_provider);
         if (has_category_encoding_provider == 0) {
           category_encoding_provider_.reset(nullptr);
@@ -474,6 +474,11 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
     }
     p += used_len;
     p = Common::SkipNewLine(p);
+  }
+
+  // for backward compatibility, since old version model files has no `has_category_encoding_provider=` entry.
+  if (has_category_encoding_provider == 0) {
+    category_encoding_provider_.reset(nullptr);
   }
 
   // get number of classes

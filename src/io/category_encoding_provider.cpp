@@ -207,8 +207,7 @@ std::string CategoryEncodingProvider::DumpToJSON() const {
         json11::Json::object {
           {"categorical_feature_index", json11::Json(cat_fid)},
           {"label_and_count_info", json11::Json(label_and_count_info)}
-        }
-      );
+        });
     }
     json_map["category_infos"] = json11::Json(category_infos);
     json_map["num_categorical_encoders"] = json11::Json(static_cast<int>(category_encoders_.size()));
