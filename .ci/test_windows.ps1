@@ -49,7 +49,7 @@ if ($env:TASK -eq "swig") {
   Exit 0
 }
 
-conda install -q -y -n $env:CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy h5py ; Check-Output $?
+conda install -q -y -n $env:CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy ; Check-Output $?
 
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
@@ -105,6 +105,7 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
   @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
   (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"  # prevent interactive window mode
+  conda install -q -y -n $env:CONDA_ENV h5py ; Check-Output $?
   foreach ($file in @(Get-ChildItem *.py)) {
     @("import sys, warnings", "warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: sys.stdout.write(warnings.formatwarning(message, category, filename, lineno, line))") + (Get-Content $file) | Set-Content $file
     python $file ; Check-Output $?
