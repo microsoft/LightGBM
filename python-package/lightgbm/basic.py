@@ -17,7 +17,7 @@ import scipy.sparse
 from .compat import PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
 
-# TODO: how to keep the default values the same with C++ config.h
+
 ZERO_THRESHOLD = 1e-35
 DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT = 200000
 
