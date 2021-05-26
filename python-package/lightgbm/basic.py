@@ -1194,7 +1194,7 @@ class Dataset:
 
     def create_sample_indices(self, total_nrow: int) -> np.ndarray:
         """Get an array of randomly chosen indices from this ``Dataset``.
-        
+
         Indices are sampled without replacement.
 
         Parameters
@@ -1226,7 +1226,7 @@ class Dataset:
         """Create dataset from a reference dataset.
 
         Parameters
-        ---------------
+        ----------
             total_nrow (int): number of rows expected to add to dataset
             ref_dataset (Dataset): referance dataset to extract meta from
 
@@ -1245,22 +1245,22 @@ class Dataset:
 
     def init_from_sample(
         self,
-        sample_data: List[np.array[float64]],
-        sample_indices: List[np.array[int]],
+        sample_data: List[np.ndarray],
+        sample_indices: List[np.ndarray],
         sample_cnt: int,
-        total_nrow: int
+        total_nrow: int,
     ) -> "Dataset":
         """Create Dataset from sampled data structures.
 
         Parameters
         ----------
-        sample_data: List[np.array[float64]]
+        sample_data:
             Sample data for each column
-        sample_indices: List[np.array[int]]
+        sample_indices:
             Sample data row index for each column.
-        sample_cnt: int
+        sample_cnt:
             Number of samples.
-        total_nrow: int
+        total_nrow:
             Total number of rows for all input file.
 
         Returns
@@ -1271,10 +1271,9 @@ class Dataset:
         ncol = len(sample_indices)
         assert len(sample_data) == ncol, "#sample data column != #column indices"
 
-
         for i in range(ncol):
             if sample_data[i].dtype != np.double:
-                raise ValueError("sample data type {} is not double".format(sample_data.dtype))
+                raise ValueError("sample_data[{}] type {} is not double".format(i, sample_data[i].dtype))
             if sample_indices[i].dtype != np.int32:
                 raise ValueError("sample_indices[{}] type {} is not int32".format(i, sample_indices[i].dtype))
 
@@ -1527,7 +1526,7 @@ class Dataset:
             row = seq[int(id_in_seq)]
             yield row if row.flags['OWNDATA'] else row.copy()
 
-    def __sample(self, seqs: List[Sequence], total_nrow: int) -> Tuple[np.ndarray, List[np.ndarray]]:
+    def __sample(self, seqs: List[Sequence], total_nrow: int) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """Sample data from seqs.
 
         Mimics behavior in c_api.cpp:LGBM_DatasetCreateFromMats()
@@ -1539,8 +1538,7 @@ class Dataset:
         indices = self.create_sample_indices(total_nrow)
 
         # Select sampled rows, transpose to column order.
-        sampled = [row for row in self.__yield_row_from(seqs, indices)]
-        sampled = np.array(sampled)
+        sampled = np.array(row for row in self.__yield_row_from(seqs, indices))
         sampled = sampled.T
 
         filtered = []
