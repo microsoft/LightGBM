@@ -34,7 +34,7 @@ class CUDAHistogramConstructor {
 
   void Init(const Dataset* train_data);
 
-  void ConstructHistogramForLeaf(const int* cuda_smaller_leaf_index, const int* cuda_larger_leaf_index,
+  void ConstructHistogramForLeaf(const int* cuda_smaller_leaf_index, const data_size_t* cuda_num_data_in_smaller_leaf, const int* cuda_larger_leaf_index,
     const data_size_t** cuda_data_indices_in_smaller_leaf, const data_size_t** cuda_data_indices_in_larger_leaf,
     const double* cuda_smaller_leaf_sum_gradients, const double* cuda_smaller_leaf_sum_hessians, hist_t** cuda_smaller_leaf_hist,
     const double* cuda_larger_leaf_sum_gradients, const double* cuda_larger_leaf_sum_hessians, hist_t** cuda_larger_leaf_hist,
@@ -82,6 +82,7 @@ class CUDAHistogramConstructor {
     const data_size_t** cuda_data_indices_in_leaf);
 
   void LaunchConstructHistogramKernel(const int* cuda_leaf_index,
+    const data_size_t* cuda_smaller_leaf_num_data,
     const data_size_t** cuda_data_indices_in_leaf,
     const data_size_t* cuda_leaf_num_data,
     hist_t** cuda_leaf_hist);

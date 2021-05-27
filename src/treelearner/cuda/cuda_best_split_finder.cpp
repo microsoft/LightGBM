@@ -129,8 +129,10 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_le
     larger_leaf_splits->cuda_num_data_in_leaf(),
     larger_leaf_splits->cuda_hist_in_leaf_pointer_pointer());
   SynchronizeCUDADevice();
+  global_timer.Start("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
   LaunchSyncBestSplitForLeafKernel(smaller_leaf_splits->cuda_leaf_index(), larger_leaf_splits->cuda_leaf_index());
   SynchronizeCUDADevice();
+  global_timer.Stop("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
   auto end = std::chrono::steady_clock::now();
   double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   //Log::Warning("FindBestSplitsForLeaf time %f", duration);

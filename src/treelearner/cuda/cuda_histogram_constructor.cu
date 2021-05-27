@@ -55,7 +55,8 @@ __global__ void CUDAConstructHistogramKernel(const int* leaf_index,
   const unsigned int threadIdx_x = threadIdx.x;
   const int num_feature_groups_ref = *num_feature_groups;
   const int leaf_index_ref = *leaf_index;
-  const int dim_y = gridDim.y * blockDim.y;
+  const unsigned int blockDim_y = blockDim.y;
+  const int dim_y = gridDim.y * blockDim_y;
   hist_t* feature_histogram_ptr = *feature_histogram;
   const data_size_t num_data_in_smaller_leaf_ref = leaf_num_data[leaf_index_ref];
   const data_size_t num_data_per_thread = (num_data_in_smaller_leaf_ref + dim_y - 1) / dim_y;
@@ -71,21 +72,27 @@ __global__ void CUDAConstructHistogramKernel(const int* leaf_index,
   for (uint32_t i = thread_start; i < thread_end; ++i) {
     shared_hist[i] = 0.0f;
   }
+  float* shared_hist_ptr = shared_hist + (feature_group_offset << 1);
   __syncthreads();
   const unsigned int threadIdx_y = threadIdx.y;
   const unsigned int blockIdx_y = blockIdx.y;
-  const data_size_t start = (threadIdx_y + blockIdx_y * blockDim.y) * num_data_per_thread;
-  const data_size_t end = start + num_data_per_thread > num_data_in_smaller_leaf_ref ?
-    num_data_in_smaller_leaf_ref : start + num_data_per_thread;
-  for (data_size_t i = start; i < end; ++i) {
-    const data_size_t data_index = data_indices_ref[i];
+  const data_size_t block_start = (blockIdx_y * blockDim_y) * num_data_per_thread;
+  const data_size_t* data_indices_ref_this_block = data_indices_ref + block_start;
+  data_size_t block_num_data = max(0, min(num_data_in_smaller_leaf_ref - block_start, num_data_per_thread * static_cast<data_size_t>(blockDim_y)));
+  const data_size_t num_iteration_total = (block_num_data + blockDim_y - 1) / blockDim_y;
+  const data_size_t remainder = block_num_data % blockDim_y;
+  const data_size_t num_iteration_this = remainder == 0 ? num_iteration_total : num_iteration_total - static_cast<data_size_t>(threadIdx_y >= remainder);
+  data_size_t inner_data_index = static_cast<data_size_t>(threadIdx_y);
+  for (data_size_t i = 0; i < num_iteration_this; ++i) {
+    const data_size_t data_index = data_indices_ref_this_block[inner_data_index];
     const score_t grad = cuda_gradients[data_index];
     const score_t hess = cuda_hessians[data_index];
-    const uint32_t bin = static_cast<uint32_t>(data[data_index * num_feature_groups_ref + threadIdx_x]) + feature_group_offset;
+    const uint32_t bin = static_cast<uint32_t>(data[data_index * num_feature_groups_ref + threadIdx_x]);
     const uint32_t pos = bin << 1;
-    float* pos_ptr = shared_hist + pos;
+    float* pos_ptr = shared_hist_ptr + pos;
     atomicAdd_system(pos_ptr, grad);
     atomicAdd_system(pos_ptr + 1, hess);
+    inner_data_index += blockDim_y;
   }
   __syncthreads();
   for (uint32_t i = thread_start; i < thread_end; ++i) {
@@ -95,20 +102,18 @@ __global__ void CUDAConstructHistogramKernel(const int* leaf_index,
 
 void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
   const int* cuda_smaller_leaf_index,
+  const data_size_t* cuda_smaller_leaf_num_data,
   const data_size_t** cuda_data_indices_in_smaller_leaf,
   const data_size_t* cuda_leaf_num_data,
   hist_t** cuda_leaf_hist) {
-  int smaller_leaf_index = 0;
   global_timer.Start("CUDAHistogramConstructor::LaunchConstructHistogramKernel::CopyFromCUDADeviceToHost");
-  CopyFromCUDADeviceToHost<int>(&smaller_leaf_index, cuda_smaller_leaf_index, 1);
-  SynchronizeCUDADevice();
   data_size_t smaller_leaf_num_data = 0;
-  CopyFromCUDADeviceToHost<data_size_t>(&smaller_leaf_num_data, cuda_leaf_num_data + smaller_leaf_index, 1);
+  CopyFromCUDADeviceToHost<data_size_t>(&smaller_leaf_num_data, cuda_smaller_leaf_num_data, 1);
   SynchronizeCUDADevice();
   global_timer.Stop("CUDAHistogramConstructor::LaunchConstructHistogramKernel::CopyFromCUDADeviceToHost");
   const int block_dim_x = num_features_; // TODO(shiyu1994): only supports the case when the whole histogram can be loaded into shared memory
   const int block_dim_y = NUM_THRADS_PER_BLOCK / block_dim_x;
-  const int min_grid_dim_y = 80;
+  const int min_grid_dim_y = 160;
   const int grid_dim_y = std::max(min_grid_dim_y, ((smaller_leaf_num_data + NUM_DATA_PER_THREAD - 1) / NUM_DATA_PER_THREAD + block_dim_y - 1) / block_dim_y);
   const int grid_dim_x = (static_cast<int>(num_feature_groups_ + NUM_FEATURE_PER_THREAD_GROUP - 1) / NUM_FEATURE_PER_THREAD_GROUP);
   //Log::Warning("smaller_leaf_num_data = %d", smaller_leaf_num_data);

@@ -260,6 +260,9 @@ class CUDADataPartition {
   std::vector<double> cpu_train_data_score_tmp_;
   std::vector<int> cpu_split_info_buffer_;
 
+  // CUDA streams
+  std::vector<cudaStream_t> cuda_streams_;
+
   // CUDA memory, held by this object
   data_size_t* cuda_data_indices_;
   data_size_t* cuda_leaf_data_start_;

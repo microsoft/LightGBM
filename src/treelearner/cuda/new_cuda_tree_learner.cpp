@@ -364,6 +364,7 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
     auto start = std::chrono::steady_clock::now();
     cuda_histogram_constructor_->ConstructHistogramForLeaf(
       cuda_smaller_leaf_splits_->cuda_leaf_index(),
+      cuda_smaller_leaf_splits_->cuda_num_data_in_leaf(),
       cuda_larger_leaf_splits_->cuda_leaf_index(),
       cuda_smaller_leaf_splits_->cuda_data_indices_in_leaf(),
       cuda_larger_leaf_splits_->cuda_data_indices_in_leaf(),

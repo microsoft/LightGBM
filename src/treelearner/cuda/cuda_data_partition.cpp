@@ -122,6 +122,10 @@ void CUDADataPartition::Init() {
 
   cpu_train_data_score_tmp_.resize(num_data_, 0.0f);
   cpu_split_info_buffer_.resize(5, 0);
+
+  cuda_streams_.resize(2);
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[0]));
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[1]));
 }
 
 void CUDADataPartition::CopyColWiseData() {
