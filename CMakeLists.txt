@@ -7,7 +7,6 @@ OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
 OPTION(USE_CUDA "Enable CUDA-accelerated training (EXPERIMENTAL)" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
 OPTION(USE_SANITIZER "Use santizer flags" OFF)
-SET(SANITIZER_PATH "" CACHE STRING "Path to sanitizer libs")
 SET(ENABLED_SANITIZERS "address" "leak" "undefined" CACHE STRING
   "Semicolon separated list of sanitizer names. E.g 'address;leak'. Supported sanitizers are
 address, leak, undefined and thread.")
