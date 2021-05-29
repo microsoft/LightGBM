@@ -24,16 +24,16 @@ endmacro()
 
 macro(enable_sanitizers SANITIZERS)
   # Check sanitizers compatibility.
-  foreach ( _san ${SANITIZERS} )
+  foreach(_san ${SANITIZERS})
     string(TOLOWER ${_san} _san)
-    if (_san MATCHES "thread")
-      if (${_use_other_sanitizers})
+    if(_san MATCHES "thread")
+      if(${_use_other_sanitizers})
         message(FATAL_ERROR
           "thread sanitizer is not compatible with ${_san} sanitizer.")
       endif()
       set(_use_thread_sanitizer 1)
-    else ()
-      if (${_use_thread_sanitizer})
+    else()
+      if(${_use_thread_sanitizer})
         message(FATAL_ERROR
           "${_san} sanitizer is not compatible with thread sanitizer.")
       endif()
