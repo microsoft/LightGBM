@@ -18,15 +18,10 @@ if ($env:TASK -eq "r-package") {
 
 if ($env:TASK -eq "cpp-tests") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
-  if ($env:METHOD -eq "with_santizers") {
-    $extra_cmake_opts = "-DUSE_SANITIZER=ON -DENABLED_SANITIZERS=\"address;leak;undefined\""
-  }
-  else {
-    $extra_cmake_opts = ""
-  }
-  cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF $extra_cmake_opts -A x64 ..
+  cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON -A x64 ..
   cmake --build . --target testlightgbm --config Debug ; Check-Output $?
-  Start-Process -FilePath "./../Debug/testlightgbm.exe" -NoNewWindow -Wait ; Check-Output $?
+  cd ../Debug
+  .\testlightgbm.exe ; Check-Output $?
   Exit 0
 }
 

@@ -43,7 +43,7 @@ macro(enable_sanitizers SANITIZERS)
 
   message(STATUS "Sanitizers: ${SANITIZERS}")
 
-  foreach( _san ${SANITIZERS} )
+  foreach(_san ${SANITIZERS})
     string(TOLOWER ${_san} _san)
     enable_sanitizer(${_san})
   endforeach()

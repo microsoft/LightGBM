@@ -35,9 +35,12 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
 #-- Sanitizer
 if (USE_SANITIZER)
+  if(MSVC)
+    message(FATAL_ERROR "Sanitizers are not supported with MSVC.")
+  endif()
   include(cmake/Sanitizer.cmake)
   enable_sanitizers("${ENABLED_SANITIZERS}")
-endif (USE_SANITIZER)
+endif(USE_SANITIZER)
 
 if(__INTEGRATE_OPENCL)
   set(__INTEGRATE_OPENCL ON CACHE BOOL "" FORCE)

@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - sanitizers
+    - master
   tags:
     include:
     - v*
@@ -33,26 +33,24 @@ jobs:
   container: ubuntu1404
   strategy:
     matrix:
-#      regular:
-#        TASK: regular
-#      sdist:
-#        TASK: sdist
-#        PYTHON_VERSION: 3.7
-#      bdist:
-#        TASK: bdist
-#      inference:
-#        TASK: if-else
-#      mpi_source:
-#        TASK: mpi
-#        METHOD: source
-#        PYTHON_VERSION: 3.8
-#      gpu_source:
-#        TASK: gpu
-#        METHOD: source
-#      swig:
-#        TASK: swig
-      cpp_tests:
-        TASK: cpp-tests
+      regular:
+        TASK: regular
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 3.7
+      bdist:
+        TASK: bdist
+      inference:
+        TASK: if-else
+      mpi_source:
+        TASK: mpi
+        METHOD: source
+        PYTHON_VERSION: 3.8
+      gpu_source:
+        TASK: gpu
+        METHOD: source
+      swig:
+        TASK: swig
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -87,41 +85,41 @@ jobs:
   container: ubuntu-latest
   strategy:
     matrix:
-#      regular:
-#        TASK: regular
-#        PYTHON_VERSION: 3.6
-#      sdist:
-#        TASK: sdist
-#      bdist:
-#        TASK: bdist
-#        PYTHON_VERSION: 3.8
-#      inference:
-#        TASK: if-else
-#      mpi_source:
-#        TASK: mpi
-#        METHOD: source
-#      mpi_pip:
-#        TASK: mpi
-#        METHOD: pip
-#        PYTHON_VERSION: 3.8
-#      mpi_wheel:
-#        TASK: mpi
-#        METHOD: wheel
-#        PYTHON_VERSION: 3.7
-#      gpu_source:
-#        TASK: gpu
-#        METHOD: source
-#      gpu_pip:
-#        TASK: gpu
-#        METHOD: pip
-#        PYTHON_VERSION: 3.6
-#      gpu_wheel:
-#        TASK: gpu
-#        METHOD: wheel
-#        PYTHON_VERSION: 3.7
+      regular:
+        TASK: regular
+        PYTHON_VERSION: 3.6
+      sdist:
+        TASK: sdist
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: 3.8
+      inference:
+        TASK: if-else
+      mpi_source:
+        TASK: mpi
+        METHOD: source
+      mpi_pip:
+        TASK: mpi
+        METHOD: pip
+        PYTHON_VERSION: 3.8
+      mpi_wheel:
+        TASK: mpi
+        METHOD: wheel
+        PYTHON_VERSION: 3.7
+      gpu_source:
+        TASK: gpu
+        METHOD: source
+      gpu_pip:
+        TASK: gpu
+        METHOD: pip
+        PYTHON_VERSION: 3.6
+      gpu_wheel:
+        TASK: gpu
+        METHOD: wheel
+        PYTHON_VERSION: 3.7
       cpp_tests:
         TASK: cpp-tests
-        METHOD: with_santizers
+        METHOD: with-sanitizers
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -144,68 +142,68 @@ jobs:
     displayName: Setup
   - bash: $(Build.SourcesDirectory)/.ci/test.sh
     displayName: Test
-############################################
-#- job: QEMU_multiarch
-############################################
-#  variables:
-#    COMPILER: gcc
-#    OS_NAME: 'linux'
-#    PRODUCES_ARTIFACTS: 'true'
-#  pool:
-#    vmImage: ubuntu-latest
-#  timeoutInMinutes: 150
-#  strategy:
-#    matrix:
-#      bdist:
-#        TASK: bdist
-#        ARCH: aarch64
-#  steps:
-#  - script: |
-#      sudo apt-get update
-#      sudo apt-get install --no-install-recommends -y \
-#        binfmt-support \
-#        qemu \
-#        qemu-user \
-#        qemu-user-static
-#    displayName: 'Install QEMU'
-#  - script: |
-#      docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-#    displayName: 'Enable Docker multi-architecture support'
-#  - script: |
-#      export ROOT_DOCKER_FOLDER=/LightGBM
-#      cat > docker.env <<EOF
-#      AZURE=$AZURE
-#      OS_NAME=$OS_NAME
-#      COMPILER=$COMPILER
-#      TASK=$TASK
-#      METHOD=$METHOD
-#      CONDA_ENV=$CONDA_ENV
-#      PYTHON_VERSION=$PYTHON_VERSION
-#      BUILD_DIRECTORY=$ROOT_DOCKER_FOLDER
-#      LGB_VER=$(head -n 1 VERSION.txt)
-#      PRODUCES_ARTIFACTS=$PRODUCES_ARTIFACTS
-#      BUILD_ARTIFACTSTAGINGDIRECTORY=$BUILD_ARTIFACTSTAGINGDIRECTORY
-#      EOF
-#      cat > docker-script.sh <<EOF
-#      export CONDA=\$HOME/miniconda
-#      export PATH=\$CONDA/bin:\$PATH
-#      $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
-#      $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
-#      EOF
-#      docker run \
-#        --rm \
-#        --env-file docker.env \
-#        -v "$(Build.SourcesDirectory)":"$ROOT_DOCKER_FOLDER" \
-#        -v "$(Build.ArtifactStagingDirectory)":"$(Build.ArtifactStagingDirectory)" \
-#        "quay.io/pypa/manylinux2014_$ARCH" \
-#        /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
-#    displayName: 'Setup and run tests'
-#  - task: PublishBuildArtifacts@1
-#    condition: and(succeeded(), in(variables['TASK'], 'bdist'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
-#    inputs:
-#      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-#      artifactName: PackageAssets
-#      artifactType: container
+###########################################
+- job: QEMU_multiarch
+###########################################
+  variables:
+    COMPILER: gcc
+    OS_NAME: 'linux'
+    PRODUCES_ARTIFACTS: 'true'
+  pool:
+    vmImage: ubuntu-latest
+  timeoutInMinutes: 150
+  strategy:
+    matrix:
+      bdist:
+        TASK: bdist
+        ARCH: aarch64
+  steps:
+  - script: |
+      sudo apt-get update
+      sudo apt-get install --no-install-recommends -y \
+        binfmt-support \
+        qemu \
+        qemu-user \
+        qemu-user-static
+    displayName: 'Install QEMU'
+  - script: |
+      docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    displayName: 'Enable Docker multi-architecture support'
+  - script: |
+      export ROOT_DOCKER_FOLDER=/LightGBM
+      cat > docker.env <<EOF
+      AZURE=$AZURE
+      OS_NAME=$OS_NAME
+      COMPILER=$COMPILER
+      TASK=$TASK
+      METHOD=$METHOD
+      CONDA_ENV=$CONDA_ENV
+      PYTHON_VERSION=$PYTHON_VERSION
+      BUILD_DIRECTORY=$ROOT_DOCKER_FOLDER
+      LGB_VER=$(head -n 1 VERSION.txt)
+      PRODUCES_ARTIFACTS=$PRODUCES_ARTIFACTS
+      BUILD_ARTIFACTSTAGINGDIRECTORY=$BUILD_ARTIFACTSTAGINGDIRECTORY
+      EOF
+      cat > docker-script.sh <<EOF
+      export CONDA=\$HOME/miniconda
+      export PATH=\$CONDA/bin:\$PATH
+      $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
+      $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
+      EOF
+      docker run \
+        --rm \
+        --env-file docker.env \
+        -v "$(Build.SourcesDirectory)":"$ROOT_DOCKER_FOLDER" \
+        -v "$(Build.ArtifactStagingDirectory)":"$(Build.ArtifactStagingDirectory)" \
+        "quay.io/pypa/manylinux2014_$ARCH" \
+        /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
+    displayName: 'Setup and run tests'
+  - task: PublishBuildArtifacts@1
+    condition: and(succeeded(), in(variables['TASK'], 'bdist'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: PackageAssets
+      artifactType: container
 ###########################################
 - job: macOS
 ###########################################
@@ -217,19 +215,20 @@ jobs:
     vmImage: 'macOS-10.14'
   strategy:
     matrix:
-#      regular:
-#        TASK: regular
-#        PYTHON_VERSION: 3.7
-#      sdist:
-#        TASK: sdist
-#        PYTHON_VERSION: 3.8
-#      bdist:
-#        TASK: bdist
-#      swig:
-#        TASK: swig
+      regular:
+        TASK: regular
+        PYTHON_VERSION: 3.7
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 3.8
+      bdist:
+        TASK: bdist
+      swig:
+        TASK: swig
       cpp_tests:
         TASK: cpp-tests
-        METHOD: with_santizers
+        METHOD: with-sanitizers
+        SANITIZERS: "address;undefined"
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -256,19 +255,18 @@ jobs:
     vmImage: 'vs2017-win2016'
   strategy:
     matrix:
-#      regular:
-#        TASK: regular
-#        PYTHON_VERSION: 3.6
-#      sdist:
-#        TASK: sdist
-#        PYTHON_VERSION: 3.8
-#      bdist:
-#        TASK: bdist
-#      swig:
-#        TASK: swig
+      regular:
+        TASK: regular
+        PYTHON_VERSION: 3.6
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 3.8
+      bdist:
+        TASK: bdist
+      swig:
+        TASK: swig
       cpp_tests:
         TASK: cpp-tests
-        METHOD: with_santizers
   steps:
   - powershell: |
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
@@ -307,81 +305,81 @@ jobs:
       artifactName: R-package
       artifactType: container
 
-############################################
-#- job: Package
-############################################
-#  dependsOn:
-#  - Linux
-#  - Linux_latest
-#  - QEMU_multiarch
-#  - macOS
-#  - Windows
-#  - R_artifact
-#  condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
-#  pool:
-#    vmImage: 'ubuntu-latest'
-#  steps:
-#  # Create archives with complete source code included (with git submodules)
-#  - task: ArchiveFiles@2
-#    displayName: Create zip archive
-#    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-#    inputs:
-#      rootFolderOrFile: $(Build.SourcesDirectory)
-#      includeRootFolder: false
-#      archiveType: zip
-#      archiveFile: '$(Build.ArtifactStagingDirectory)/archives/LightGBM-complete_source_code_zip.zip'
-#      replaceExistingArchive: true
-#  - task: ArchiveFiles@2
-#    displayName: Create tar.gz archive
-#    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-#    inputs:
-#      rootFolderOrFile: $(Build.SourcesDirectory)
-#      includeRootFolder: false
-#      archiveType: tar
-#      tarCompression: gz
-#      archiveFile: '$(Build.ArtifactStagingDirectory)/archives/LightGBM-complete_source_code_tar_gz.tar.gz'
-#      replaceExistingArchive: true
-#  # Download all agent packages from all previous phases
-#  - task: DownloadBuildArtifacts@0
-#    displayName: Download package assets
-#    inputs:
-#      artifactName: PackageAssets
-#      downloadPath: $(Build.SourcesDirectory)/binaries
-#  - task: DownloadBuildArtifacts@0
-#    displayName: Download R-package
-#    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-#    inputs:
-#      artifactName: R-package
-#      downloadPath: $(Build.SourcesDirectory)/R
-#  - script: |
-#      python "$(Build.SourcesDirectory)/.nuget/create_nuget.py" "$(Build.SourcesDirectory)/binaries/PackageAssets"
-#    displayName: 'Create NuGet configuration files'
-#  - task: NuGetCommand@2
-#    inputs:
-#      command: pack
-#      packagesToPack: '$(Build.SourcesDirectory)/.nuget/*.nuspec'
-#      packDestination: '$(Build.ArtifactStagingDirectory)/nuget'
-#  - task: PublishBuildArtifacts@1
-#    inputs:
-#      pathtoPublish: '$(Build.ArtifactStagingDirectory)/nuget'
-#      artifactName: NuGet
-#      artifactType: container
-#  - task: GitHubRelease@0
-#    displayName: 'Create GitHub Release'
-#    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-#    inputs:
-#      gitHubConnection: guolinke
-#      repositoryName: '$(Build.Repository.Name)'
-#      action: 'create'
-#      target: '$(Build.SourceVersion)'
-#      tagSource: 'auto'
-#      title: '$(Build.SourceBranchName)'
-#      assets: |
-#        $(Build.SourcesDirectory)/binaries/PackageAssets/*
-#        $(Build.SourcesDirectory)/R/R-package/*
-#        $(Build.ArtifactStagingDirectory)/nuget/*.nupkg
-#        $(Build.ArtifactStagingDirectory)/archives/*
-#      assetUploadMode: 'delete'
-#      isDraft: true
-#      isPreRelease: false
-#      addChangeLog: false
+###########################################
+- job: Package
+###########################################
+  dependsOn:
+  - Linux
+  - Linux_latest
+  - QEMU_multiarch
+  - macOS
+  - Windows
+  - R_artifact
+  condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  # Create archives with complete source code included (with git submodules)
+  - task: ArchiveFiles@2
+    displayName: Create zip archive
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    inputs:
+      rootFolderOrFile: $(Build.SourcesDirectory)
+      includeRootFolder: false
+      archiveType: zip
+      archiveFile: '$(Build.ArtifactStagingDirectory)/archives/LightGBM-complete_source_code_zip.zip'
+      replaceExistingArchive: true
+  - task: ArchiveFiles@2
+    displayName: Create tar.gz archive
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    inputs:
+      rootFolderOrFile: $(Build.SourcesDirectory)
+      includeRootFolder: false
+      archiveType: tar
+      tarCompression: gz
+      archiveFile: '$(Build.ArtifactStagingDirectory)/archives/LightGBM-complete_source_code_tar_gz.tar.gz'
+      replaceExistingArchive: true
+  # Download all agent packages from all previous phases
+  - task: DownloadBuildArtifacts@0
+    displayName: Download package assets
+    inputs:
+      artifactName: PackageAssets
+      downloadPath: $(Build.SourcesDirectory)/binaries
+  - task: DownloadBuildArtifacts@0
+    displayName: Download R-package
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    inputs:
+      artifactName: R-package
+      downloadPath: $(Build.SourcesDirectory)/R
+  - script: |
+      python "$(Build.SourcesDirectory)/.nuget/create_nuget.py" "$(Build.SourcesDirectory)/binaries/PackageAssets"
+    displayName: 'Create NuGet configuration files'
+  - task: NuGetCommand@2
+    inputs:
+      command: pack
+      packagesToPack: '$(Build.SourcesDirectory)/.nuget/*.nuspec'
+      packDestination: '$(Build.ArtifactStagingDirectory)/nuget'
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)/nuget'
+      artifactName: NuGet
+      artifactType: container
+  - task: GitHubRelease@0
+    displayName: 'Create GitHub Release'
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    inputs:
+      gitHubConnection: guolinke
+      repositoryName: '$(Build.Repository.Name)'
+      action: 'create'
+      target: '$(Build.SourceVersion)'
+      tagSource: 'auto'
+      title: '$(Build.SourceBranchName)'
+      assets: |
+        $(Build.SourcesDirectory)/binaries/PackageAssets/*
+        $(Build.SourcesDirectory)/R/R-package/*
+        $(Build.ArtifactStagingDirectory)/nuget/*.nupkg
+        $(Build.ArtifactStagingDirectory)/archives/*
+      assetUploadMode: 'delete'
+      isDraft: true
+      isPreRelease: false
+      addChangeLog: false
