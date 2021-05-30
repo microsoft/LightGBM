@@ -419,7 +419,7 @@ std::string Tree::ToJSON() const {
   if (num_leaves_ == 1) {
     if (is_linear_) {
       str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << ", " << "\n";
-      str_buf << LinearModelToJSON(0);
+      str_buf << LinearModelToJSON(0) << "}" << "\n";
     } else {
       str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << "}" << '\n';
     }
