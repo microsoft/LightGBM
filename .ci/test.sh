@@ -104,8 +104,11 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV cloudpickle dask-core distributed joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
-pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
+conda install -q -y -n $CONDA_ENV cloudpickle joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
+pip install \
+    dask \
+    distributed \
+    graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
