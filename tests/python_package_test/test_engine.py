@@ -2793,3 +2793,21 @@ def test_reset_params_works_with_metric_num_class_and_boosting():
     expected_params = dict(dataset_params, **booster_params)
     assert bst.params == expected_params
     assert new_bst.params == expected_params
+
+
+def test_dump_model():
+    X, y = load_breast_cancer(return_X_y=True)
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "binary",
+        "verbose": -1
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model = bst.dump_model(5, 0)
+    assert "leaf_coeff" not in str(dumped_model)
+    params['linear_tree'] = True
+    train_data = lgb.Dataset(X, label=y)
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model = bst.dump_model(5, 0)
+    assert "leaf_coeff" in str(dumped_model)
+

@@ -411,18 +411,3 @@ def test_list_to_1d_numpy(y, dtype):
     result = lgb.basic.list_to_1d_numpy(y, dtype=dtype)
     assert result.size == 10
     assert result.dtype == dtype
-
-
-def test_dump_model():
-    X, y = load_breast_cancer(return_X_y=True)
-    train_data = lgb.Dataset(X, label=y)
-    params = {
-        "objective": "binary",
-        "verbose": -1
-    }
-    bst = lgb.train(params, train_data, num_boost_round=5)
-    bst.dump_model(5, 0)
-    params['linear_tree'] = True
-    train_data = lgb.Dataset(X, label=y)
-    bst = lgb.train(params, train_data, num_boost_round=5)
-    bst.dump_model(5, 0)
