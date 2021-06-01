@@ -2803,8 +2803,12 @@ def test_dump_model():
         "verbose": -1
     }
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model = bst.dump_model(5, 0)
-    assert "leaf_coeff" not in str(dumped_model)
+    dumped_model_str = str(bst.dump_model(5, 0))
+    assert "leaf_features" not in dumped_model_str
+    assert "leaf_coeff" not in dumped_model_str
+    assert "leaf_const" not in dumped_model_str
+    assert "leaf_value" in dumped_model_str
+    assert "leaf_count" in dumped_model_str
     params['linear_tree'] = True
     train_data = lgb.Dataset(X, label=y)
     bst = lgb.train(params, train_data, num_boost_round=5)
