@@ -399,7 +399,7 @@ def _train(
         sum(group) = n_samples.
         For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-    eval_set : List of (X, y) tuples of Dask data collections, or None, optional (default=None)
+    eval_set : list of (X, y) tuples of Dask data collections or None, optional (default=None)
         List of (X, y) tuple pairs to use as validation sets.
     eval_names: List of strings or None, optional (default=None))
         Names of eval_set.
