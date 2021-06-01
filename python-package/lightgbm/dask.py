@@ -9,6 +9,7 @@ It is based on dask-lightgbm, which was based on dask-xgboost.
 import socket
 from collections import defaultdict
 from copy import deepcopy
+from enum import Enum, auto
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
 from urllib.parse import urlparse
 
@@ -26,16 +27,16 @@ _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
 
-class _DatasetNames:
+class _DatasetNames(Enum):
     """Placeholder names used by lightgbm.dask internals to say 'also evaluate the training data'.
 
     Avoid duplicating the training data when the validation set refers to elements of training data.
     """
 
-    TRAINSET = '__train__'
-    SAMPLE_WEIGHT = '__sample_weight__'
-    INIT_SCORE = '__init_score__'
-    GROUP = '__group__'
+    TRAINSET = auto()
+    SAMPLE_WEIGHT = auto()
+    INIT_SCORE = auto()
+    GROUP = auto()
 
 
 def _get_dask_client(client: Optional[Client]) -> Client:
@@ -180,7 +181,7 @@ def _train_part(
                     continue
 
                 eval_set = part['eval_set'][i]
-                if eval_set == _DatasetNames.TRAINSET:
+                if eval_set == _DatasetNames.TRAINSET.name:
                     x_e.append(part['data'])
                     y_e.append(part['label'])
                 else:
@@ -196,21 +197,21 @@ def _train_part(
 
                 eval_weight = part.get('eval_sample_weight')
                 if eval_weight:
-                    if eval_weight[i] == _DatasetNames.SAMPLE_WEIGHT:
+                    if eval_weight[i] == _DatasetNames.SAMPLE_WEIGHT.name:
                         w_e.append(part['weight'])
                     else:
                         w_e.extend(eval_weight[i])
 
                 eval_init_score = part.get('eval_init_score')
                 if eval_init_score:
-                    if eval_init_score[i] == _DatasetNames.INIT_SCORE:
+                    if eval_init_score[i] == _DatasetNames.INIT_SCORE.name:
                         init_score_e.append(part['init_score'])
                     else:
                         init_score_e.extend(eval_init_score[i])
 
                 eval_group = part.get('eval_group')
                 if eval_group:
-                    if eval_group[i] == _DatasetNames.GROUP:
+                    if eval_group[i] == _DatasetNames.GROUP.name:
                         g_e.append(part['group'])
                     else:
                         g_e.extend(eval_group[i])
@@ -539,7 +540,7 @@ def _train(
             # when individual eval set is equivalent to training data, skip recomputing parts.
             if X_eval is data and y_eval is label:
                 for parts_idx in range(n_parts):
-                    eval_sets[parts_idx].append(_DatasetNames.TRAINSET)
+                    eval_sets[parts_idx].append(_DatasetNames.TRAINSET.name)
             else:
                 eval_x_parts = _split_to_parts(data=X_eval, is_matrix=True)
                 eval_y_parts = _split_to_parts(data=y_eval, is_matrix=False)
@@ -565,7 +566,7 @@ def _train(
             if eval_sample_weight:
                 if eval_sample_weight[i] is sample_weight:
                     for parts_idx in range(n_parts):
-                        eval_sample_weights[parts_idx].append(_DatasetNames.SAMPLE_WEIGHT)
+                        eval_sample_weights[parts_idx].append(_DatasetNames.SAMPLE_WEIGHT.name)
                 else:
                     eval_w_parts = _split_to_parts(data=eval_sample_weight[i], is_matrix=False)
 
@@ -585,7 +586,7 @@ def _train(
             if eval_init_score:
                 if eval_init_score[i] is init_score:
                     for parts_idx in range(n_parts):
-                        eval_init_scores[parts_idx].append(_DatasetNames.INIT_SCORE)
+                        eval_init_scores[parts_idx].append(_DatasetNames.INIT_SCORE.name)
                 else:
                     eval_init_score_parts = _split_to_parts(data=eval_init_score[i], is_matrix=False)
                     for j in range(n_largest_eval_parts):
@@ -603,7 +604,7 @@ def _train(
             if eval_group:
                 if eval_group[i] is group:
                     for parts_idx in range(n_parts):
-                        eval_groups[parts_idx].append(_DatasetNames.GROUP)
+                        eval_groups[parts_idx].append(_DatasetNames.GROUP.name)
                 else:
                     eval_g_parts = _split_to_parts(data=eval_group[i], is_matrix=False)
                     for j in range(n_largest_eval_parts):
@@ -1101,13 +1102,13 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     # DaskLGBMClassifier does not support group, eval_group, early_stopping_rounds.
     _base_doc = (_base_doc[:_base_doc.find('group :')]
-                 + _base_doc[_base_doc.find('group :'):])
+                 + _base_doc[_base_doc.find('eval_set :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('eval_group :')]
-                 + _base_doc[_base_doc.find('eval_group :'):])
+                 + _base_doc[_base_doc.find('eval_metric :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
-                 + _base_doc[_base_doc.find('early_stopping_rounds :'):])
+                 + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMClassifier support for callbacks and init_model is not tested
     fit.__doc__ = (
@@ -1278,16 +1279,16 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
     # DaskLGBMRegressor does not support group, eval_class_weight, eval_group, early_stopping_rounds.
     _base_doc = (_base_doc[:_base_doc.find('group :')]
-                 + _base_doc[_base_doc.find('group :'):])
+                 + _base_doc[_base_doc.find('eval_set :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
-                 + _base_doc[_base_doc.find('eval_class_weight :'):])
+                 + _base_doc[_base_doc.find('eval_init_score :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('eval_group :')]
-                 + _base_doc[_base_doc.find('eval_group :'):])
+                 + _base_doc[_base_doc.find('eval_metric :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
-                 + _base_doc[_base_doc.find('early_stopping_rounds :'):])
+                 + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
     fit.__doc__ = (
@@ -1445,10 +1446,10 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
     # DaskLGBMRanker does not support eval_class_weight or early stopping
     _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
-                 + _base_doc[_base_doc.find('eval_class_weight :'):])
+                 + _base_doc[_base_doc.find('eval_init_score :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
-                 + _base_doc[_base_doc.find('early_stopping_rounds :'):])
+                 + _base_doc[_base_doc.find('verbose :'):])
 
     # DaskLGBMRanker support for callbacks and init_model is not tested
     fit.__doc__ = (
