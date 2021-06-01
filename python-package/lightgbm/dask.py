@@ -138,7 +138,7 @@ def _train_part(
         init_score = None
 
     # construct local eval_set data.
-    n_evals = max([len(x.get('eval_set', [])) for x in list_of_parts])
+    n_evals = max(len(x.get('eval_set', [])) for x in list_of_parts)
     eval_names = kwargs.pop('eval_names', None)
     eval_class_weight = kwargs.get('eval_class_weight')
     local_eval_set = None
