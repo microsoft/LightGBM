@@ -433,7 +433,7 @@ miktex*.zip
 tests/distributed/mlist.txt
 tests/distributed/train*
 tests/distributed/model*
-tests/distributed/predictions*.txt
+tests/distributed/predict*
 
 
 # Files from interactive R sessions
