@@ -171,7 +171,6 @@ def _train_part(
             init_score_e = []
             g_e = []
             for part in list_of_parts:
-
                 if not part.get('eval_set'):
                     continue
 
