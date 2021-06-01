@@ -148,7 +148,6 @@ def _train_part(
     local_eval_group = None
 
     if n_evals:
-
         has_eval_sample_weight = any([x.get('eval_sample_weight') is not None for x in list_of_parts])
         has_eval_init_score = any([x.get('eval_init_score') is not None for x in list_of_parts])
 
