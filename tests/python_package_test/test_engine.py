@@ -2810,4 +2810,3 @@ def test_dump_model():
     bst = lgb.train(params, train_data, num_boost_round=5)
     dumped_model = bst.dump_model(5, 0)
     assert "leaf_coeff" in str(dumped_model)
-
