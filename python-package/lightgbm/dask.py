@@ -403,8 +403,8 @@ def _train(
         List of (X, y) tuple pairs to use as validation sets.
     eval_names: list of strings or None, optional (default=None))
         Names of eval_set.
-    eval_sample_weight: List of Dask data collections or None, optional (default=None)
-        List of Dask Array or Dask Series, weights for each validation set in eval_set.
+    eval_sample_weight: list of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)
+        Weights for each validation set in eval_set.
     eval_class_weight: List of dict or str, or None, optional (default=None)
         List of class weights, one dict or str for each validation set in eval_set.
     eval_init_score: List of Dask data collections or None, optional (default=None)
