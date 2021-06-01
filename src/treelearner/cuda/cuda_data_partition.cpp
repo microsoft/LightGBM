@@ -182,7 +182,9 @@ void CUDADataPartition::Split(const int* leaf_id,
   global_timer.Start("GenDataToLeftBitVector");
   global_timer.Start("SplitInner Copy CUDA To Host");
   PrepareCUDASplitInforBuffer(leaf_id, best_split_feature, best_split_threshold, best_split_default_left);
+  global_timer.Start("PrepareCUDASplitInforBuffer");
   CopyFromCUDADeviceToHost<int>(cpu_split_info_buffer_.data(), cuda_split_info_buffer_, 5);
+  global_timer.Stop("PrepareCUDASplitInforBuffer");
   cpu_num_data_in_leaf = static_cast<data_size_t>(cpu_split_info_buffer_[0]);
   cpu_split_feature_index = static_cast<int>(cpu_split_info_buffer_[1]);
   cpu_split_threshold = static_cast<uint32_t>(cpu_split_info_buffer_[2]);
