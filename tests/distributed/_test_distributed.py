@@ -10,7 +10,6 @@ import numpy as np
 from sklearn.datasets import make_blobs, make_regression
 from sklearn.metrics import accuracy_score
 
-
 TESTS_DIR = Path(__file__).absolute().parent
 BINARY_DIR = TESTS_DIR.parents[1]
 
