@@ -515,7 +515,6 @@ def _train(
     # evals_set will to be re-constructed into smaller lists of (X, y) tuples, where
     # X and y are each delayed sub-lists of original eval dask Collections.
     if eval_set:
-
         # find maximum number of parts in an individual eval set so that we can
         # pad eval sets when they come in different sizes.
         n_largest_eval_parts = max([x[0].npartitions for x in eval_set])
