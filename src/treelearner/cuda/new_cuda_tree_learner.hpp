@@ -79,6 +79,15 @@ class NewCUDATreeLearner: public SerialTreeLearner {
 
   std::unique_ptr<CUDABinaryObjective> cuda_binary_objective_;
 
+  std::vector<int> leaf_best_split_feature_;
+  std::vector<uint32_t> leaf_best_split_threshold_;
+  std::vector<uint8_t> leaf_best_split_default_left_;
+  std::vector<data_size_t> leaf_num_data_;
+  std::vector<data_size_t> leaf_data_start_;
+  int smaller_leaf_index_;
+  int larger_leaf_index_;
+  int best_leaf_index_;
+
   /*
   // full data indices on CUDA devices, as the data indices of data_partition_ in CPU version
   std::vector<data_size_t*> device_data_indices_;

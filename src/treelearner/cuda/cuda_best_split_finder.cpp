@@ -23,6 +23,7 @@ CUDABestSplitFinder::CUDABestSplitFinder(const hist_t* cuda_hist, const Dataset*
   feature_missing_type_.resize(num_features_);
   feature_mfb_offsets_.resize(num_features_);
   feature_default_bins_.resize(num_features_);
+  feature_num_bins_.resize(num_features_);
   max_num_bin_in_feature_ = 0;
   for (int inner_feature_index = 0; inner_feature_index < num_features_; ++inner_feature_index) {
     const BinMapper* bin_mapper = train_data->FeatureBinMapper(inner_feature_index);
@@ -30,9 +31,10 @@ CUDABestSplitFinder::CUDABestSplitFinder(const hist_t* cuda_hist, const Dataset*
     feature_missing_type_[inner_feature_index] = missing_type;
     feature_mfb_offsets_[inner_feature_index] = static_cast<int8_t>(bin_mapper->GetMostFreqBin() == 0);
     feature_default_bins_[inner_feature_index] = bin_mapper->GetDefaultBin();
-    const int num_bin = bin_mapper->num_bin() - feature_mfb_offsets_[inner_feature_index];
-    if (num_bin > max_num_bin_in_feature_) {
-      max_num_bin_in_feature_ = num_bin;
+    feature_num_bins_[inner_feature_index] = static_cast<uint32_t>(bin_mapper->num_bin());
+    const int num_bin_hist = bin_mapper->num_bin() - feature_mfb_offsets_[inner_feature_index];
+    if (num_bin_hist > max_num_bin_in_feature_) {
+      max_num_bin_in_feature_ = num_bin_hist;
     }
   }
   if (max_num_bin_in_feature_ > MAX_NUM_BIN_IN_FEATURE) {
@@ -72,62 +74,94 @@ void CUDABestSplitFinder::Init() {
   AllocateCUDAMemory<uint8_t>(num_features_, &cuda_feature_missing_type_);
   CopyFromHostToCUDADevice<uint8_t>(cuda_feature_missing_type_, feature_missing_type_.data(), static_cast<size_t>(num_features_));
 
-  AllocateCUDAMemory<double>(1, &cuda_lambda_l1_);
-  CopyFromHostToCUDADevice<double>(cuda_lambda_l1_, &lambda_l1_, 1);
-
-  InitCUDAMemoryFromHostMemory<double>(&cuda_lambda_l2_, &lambda_l2_, 1);
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_num_bins_, feature_num_bins_.data(), static_cast<size_t>(num_features_));
 
   AllocateCUDAMemory<hist_t>(num_total_bin_ * 2, &prefix_sum_hist_left_);
   AllocateCUDAMemory<hist_t>(num_total_bin_ * 2, &prefix_sum_hist_right_);
 
-  // * 2 for smaller and larger leaves, * 2 for default left or not
-  const size_t feature_best_split_info_buffer_size = static_cast<size_t>(num_features_) * 4;
-  AllocateCUDAMemory<int>(feature_best_split_info_buffer_size, &cuda_best_split_feature_);
-  AllocateCUDAMemory<uint8_t>(feature_best_split_info_buffer_size, &cuda_best_split_default_left_);
-  AllocateCUDAMemory<uint32_t>(feature_best_split_info_buffer_size, &cuda_best_split_threshold_);
-  AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_gain_);
-  AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_left_sum_gradient_);
-  AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_left_sum_hessian_);
-  AllocateCUDAMemory<data_size_t>(feature_best_split_info_buffer_size, &cuda_best_split_left_count_);
-  AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_left_gain_);
-  AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_left_output_);
-  AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_right_sum_gradient_);
-  AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_right_sum_hessian_);
-  AllocateCUDAMemory<data_size_t>(feature_best_split_info_buffer_size, &cuda_best_split_right_count_);
-  AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_right_gain_);
-  AllocateCUDAMemory<double>(feature_best_split_info_buffer_size, &cuda_best_split_right_output_);
-  AllocateCUDAMemory<uint8_t>(feature_best_split_info_buffer_size, &cuda_best_split_found_);
+  num_tasks_ = 0;
+  for (int inner_feature_index = 0; inner_feature_index < num_features_; ++inner_feature_index) {
+    const uint32_t num_bin = feature_num_bins_[inner_feature_index];
+    const uint8_t missing_type = feature_missing_type_[inner_feature_index];
+    if (num_bin > 2 && missing_type != 0) {
+      if (missing_type == 1) {
+        cpu_task_reverse_.emplace_back(0);
+        cpu_task_reverse_.emplace_back(1);
+        cpu_task_skip_default_bin_.emplace_back(1);
+        cpu_task_skip_default_bin_.emplace_back(1);
+        cpu_task_na_as_missing_.emplace_back(0);
+        cpu_task_na_as_missing_.emplace_back(0);
+        cpu_task_feature_index_.emplace_back(inner_feature_index);
+        cpu_task_feature_index_.emplace_back(inner_feature_index);
+        cpu_task_out_default_left_.emplace_back(0);
+        cpu_task_out_default_left_.emplace_back(1);
+        num_tasks_ += 2;
+      } else {
+        cpu_task_reverse_.emplace_back(0);
+        cpu_task_reverse_.emplace_back(1);
+        cpu_task_skip_default_bin_.emplace_back(0);
+        cpu_task_skip_default_bin_.emplace_back(0);
+        cpu_task_na_as_missing_.emplace_back(1);
+        cpu_task_na_as_missing_.emplace_back(1);
+        cpu_task_feature_index_.emplace_back(inner_feature_index);
+        cpu_task_feature_index_.emplace_back(inner_feature_index);
+        cpu_task_out_default_left_.emplace_back(0);
+        cpu_task_out_default_left_.emplace_back(1);
+        num_tasks_ += 2;
+      }
+    } else {
+      cpu_task_reverse_.emplace_back(1);
+      cpu_task_skip_default_bin_.emplace_back(0);
+      cpu_task_na_as_missing_.emplace_back(0);
+      cpu_task_feature_index_.emplace_back(inner_feature_index);
+      if (missing_type != 2) {
+        cpu_task_out_default_left_.emplace_back(1);
+      } else {
+        cpu_task_out_default_left_.emplace_back(0);
+      }
+      ++num_tasks_;
+    }
+  }
+  InitCUDAMemoryFromHostMemory<int>(&cuda_task_feature_index_, cpu_task_feature_index_.data(), cpu_task_feature_index_.size());
+  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_reverse_, cpu_task_reverse_.data(), cpu_task_reverse_.size());
+  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_skip_default_bin_, cpu_task_skip_default_bin_.data(), cpu_task_skip_default_bin_.size());
+  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_na_as_missing_, cpu_task_na_as_missing_.data(), cpu_task_na_as_missing_.size());
+  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_out_default_left_, cpu_task_out_default_left_.data(), cpu_task_out_default_left_.size());
 
-  AllocateCUDAMemory<data_size_t>(1, &cuda_min_data_in_leaf_);
-  CopyFromHostToCUDADevice<data_size_t>(cuda_min_data_in_leaf_, &min_data_in_leaf_, 1);
-  AllocateCUDAMemory<double>(1, &cuda_min_sum_hessian_in_leaf_);
-  CopyFromHostToCUDADevice<double>(cuda_min_sum_hessian_in_leaf_, &min_sum_hessian_in_leaf_, 1);
-  AllocateCUDAMemory<double>(1, &cuda_min_gain_to_split_);
-  CopyFromHostToCUDADevice<double>(cuda_min_gain_to_split_, &min_gain_to_split_, 1);
+  const size_t output_buffer_size = 2 * static_cast<size_t>(num_tasks_);
+  AllocateCUDAMemory<int>(output_buffer_size, &cuda_best_split_feature_);
+  AllocateCUDAMemory<uint8_t>(output_buffer_size, &cuda_best_split_default_left_);
+  AllocateCUDAMemory<uint32_t>(output_buffer_size, &cuda_best_split_threshold_);
+  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_gain_);
+  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_left_sum_gradient_);
+  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_left_sum_hessian_);
+  AllocateCUDAMemory<data_size_t>(output_buffer_size, &cuda_best_split_left_count_);
+  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_left_gain_);
+  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_left_output_);
+  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_right_sum_gradient_);
+  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_right_sum_hessian_);
+  AllocateCUDAMemory<data_size_t>(output_buffer_size, &cuda_best_split_right_count_);
+  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_right_gain_);
+  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_right_output_);
+  AllocateCUDAMemory<uint8_t>(output_buffer_size, &cuda_best_split_found_);
+
+  AllocateCUDAMemory<int>(9, &cuda_best_split_info_buffer_);
+  cuda_streams_.resize(2);
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[0]));
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[1]));
 }
 
 void CUDABestSplitFinder::BeforeTrain() {
   const size_t feature_best_split_info_buffer_size = static_cast<size_t>(num_features_) * 4;
   SetCUDAMemory<double>(cuda_leaf_best_split_gain_, 0, static_cast<size_t>(num_leaves_));
-  SetCUDAMemory<uint8_t>(cuda_best_split_found_, 0, feature_best_split_info_buffer_size);
-  SetCUDAMemory<double>(cuda_best_split_gain_, 0, feature_best_split_info_buffer_size);
+  SetCUDAMemory<uint8_t>(cuda_best_split_found_, 0, static_cast<size_t>(num_tasks_));
+  SetCUDAMemory<double>(cuda_best_split_gain_, 0,  static_cast<size_t>(num_tasks_));
 }
 
 void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_leaf_splits,
-  const CUDALeafSplits* larger_leaf_splits) {
+  const CUDALeafSplits* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index) {
   auto start = std::chrono::steady_clock::now();
-  LaunchFindBestSplitsForLeafKernel(smaller_leaf_splits->cuda_leaf_index(),
-    larger_leaf_splits->cuda_leaf_index(),
-    smaller_leaf_splits->cuda_gain(),
-    larger_leaf_splits->cuda_gain(),
-    smaller_leaf_splits->cuda_sum_of_gradients(),
-    smaller_leaf_splits->cuda_sum_of_hessians(),
-    smaller_leaf_splits->cuda_num_data_in_leaf(),
-    smaller_leaf_splits->cuda_hist_in_leaf_pointer_pointer(),
-    larger_leaf_splits->cuda_sum_of_gradients(),
-    larger_leaf_splits->cuda_sum_of_hessians(),
-    larger_leaf_splits->cuda_num_data_in_leaf(),
-    larger_leaf_splits->cuda_hist_in_leaf_pointer_pointer());
+  LaunchFindBestSplitsForLeafKernel(smaller_leaf_splits, larger_leaf_splits, smaller_leaf_index, larger_leaf_index);
   SynchronizeCUDADevice();
   global_timer.Start("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
   LaunchSyncBestSplitForLeafKernel(smaller_leaf_splits->cuda_leaf_index(), larger_leaf_splits->cuda_leaf_index());
@@ -138,13 +172,15 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_le
   //Log::Warning("FindBestSplitsForLeaf time %f", duration);
 }
 
-void CUDABestSplitFinder::FindBestFromAllSplits(const int* cuda_cur_num_leaves) {
+void CUDABestSplitFinder::FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int* smaller_leaf_index,
+    const int* larger_leaf_index, std::vector<int>* leaf_best_split_feature,
+    std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index) {
   auto start = std::chrono::steady_clock::now();
-  LaunchFindBestFromAllSplitsKernel(cuda_cur_num_leaves);
+  LaunchFindBestFromAllSplitsKernel(cuda_cur_num_leaves, smaller_leaf_index, larger_leaf_index,
+    leaf_best_split_feature, leaf_best_split_threshold, leaf_best_split_default_left, best_leaf_index);
   SynchronizeCUDADevice();
   auto end = std::chrono::steady_clock::now();
   double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
-  //Log::Warning("FindBestFromAllSplits time %f", duration);
 }
 
 }  // namespace LightGBM

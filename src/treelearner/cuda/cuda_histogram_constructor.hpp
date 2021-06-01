@@ -38,7 +38,7 @@ class CUDAHistogramConstructor {
     const data_size_t** cuda_data_indices_in_smaller_leaf, const data_size_t** cuda_data_indices_in_larger_leaf,
     const double* cuda_smaller_leaf_sum_gradients, const double* cuda_smaller_leaf_sum_hessians, hist_t** cuda_smaller_leaf_hist,
     const double* cuda_larger_leaf_sum_gradients, const double* cuda_larger_leaf_sum_hessians, hist_t** cuda_larger_leaf_hist,
-    const data_size_t* cuda_leaf_num_data);
+    const data_size_t* cuda_leaf_num_data, const data_size_t num_data_in_smaller_leaf);
 
   void BeforeTrain();
 
@@ -85,7 +85,7 @@ class CUDAHistogramConstructor {
     const data_size_t* cuda_smaller_leaf_num_data,
     const data_size_t** cuda_data_indices_in_leaf,
     const data_size_t* cuda_leaf_num_data,
-    hist_t** cuda_leaf_hist);
+    hist_t** cuda_leaf_hist, const data_size_t num_data_in_smaller_leaf);
 
   void LaunchSubtractHistogramKernel(const int* cuda_smaller_leaf_index,
     const int* cuda_larger_leaf_index, const double* smaller_leaf_sum_gradients, const double* smaller_leaf_sum_hessians,

@@ -47,7 +47,14 @@ class CUDADataPartition {
     double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
     double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
     const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-    hist_t** larger_leaf_cuda_hist_pointer_pointer);
+    hist_t** larger_leaf_cuda_hist_pointer_pointer,
+    std::vector<data_size_t>* cpu_leaf_num_data,
+    std::vector<data_size_t>* cpu_leaf_data_start,
+    const std::vector<int>& cpu_leaf_best_split_feature,
+    const std::vector<uint32_t>& cpu_leaf_best_split_threshold,
+    const std::vector<uint8_t>& cpu_leaf_best_split_default_left,
+    int* smaller_leaf_index, int* larger_leaf_index,
+    const int cpu_leaf_index);
 
   Tree* GetCPUTree();
 
@@ -175,12 +182,6 @@ class CUDADataPartition {
 
   void LaunchCopyColWiseDataKernel();
 
-  void PrepareCUDASplitInforBuffer(const int* leaf_id, const int* best_split_feature, const uint32_t* best_split_threshold,
-    const uint8_t* best_split_default_left);
-
-  void LaunchPrepareCUDASplitInforBufferKernel(const int* leaf_id, const int* best_split_feature, const uint32_t* best_split_threshold,
-    const uint8_t* best_split_default_left);
-
   void GenDataToLeftBitVector(const int* leaf_id, const data_size_t num_data_in_leaf, const int* best_split_feature,
     const uint32_t* best_split_threshold, const uint8_t* best_split_default_left);
 
@@ -205,7 +206,9 @@ class CUDADataPartition {
     double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
     double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
     const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-    hist_t** larger_leaf_cuda_hist_pointer_pointer);
+    hist_t** larger_leaf_cuda_hist_pointer_pointer,
+    std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
+    int* smaller_leaf_index, int* larger_leaf_index);
 
   // kernel launch functions
   void LaunchFillDataIndicesBeforeTrain();
@@ -227,7 +230,9 @@ class CUDADataPartition {
     double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
     double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
     const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-    hist_t** larger_leaf_cuda_hist_pointer_pointer);
+    hist_t** larger_leaf_cuda_hist_pointer_pointer,
+    std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
+    int* smaller_leaf_index, int* larger_leaf_index);
 
   void LaunchGenDataToLeftBitVectorKernel(const int* leaf_index, const data_size_t num_data_in_leaf, const int* best_split_feature,
     const uint32_t* best_split_threshold, const uint8_t* best_split_default_left);

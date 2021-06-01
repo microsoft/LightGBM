@@ -105,16 +105,11 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
   const data_size_t* cuda_smaller_leaf_num_data,
   const data_size_t** cuda_data_indices_in_smaller_leaf,
   const data_size_t* cuda_leaf_num_data,
-  hist_t** cuda_leaf_hist) {
-  global_timer.Start("CUDAHistogramConstructor::LaunchConstructHistogramKernel::CopyFromCUDADeviceToHost");
-  data_size_t smaller_leaf_num_data = 0;
-  CopyFromCUDADeviceToHost<data_size_t>(&smaller_leaf_num_data, cuda_smaller_leaf_num_data, 1);
-  SynchronizeCUDADevice();
-  global_timer.Stop("CUDAHistogramConstructor::LaunchConstructHistogramKernel::CopyFromCUDADeviceToHost");
+  hist_t** cuda_leaf_hist, const data_size_t num_data_in_smaller_leaf) {
   const int block_dim_x = num_features_; // TODO(shiyu1994): only supports the case when the whole histogram can be loaded into shared memory
   const int block_dim_y = NUM_THRADS_PER_BLOCK / block_dim_x;
   const int min_grid_dim_y = 160;
-  const int grid_dim_y = std::max(min_grid_dim_y, ((smaller_leaf_num_data + NUM_DATA_PER_THREAD - 1) / NUM_DATA_PER_THREAD + block_dim_y - 1) / block_dim_y);
+  const int grid_dim_y = std::max(min_grid_dim_y, ((num_data_in_smaller_leaf + NUM_DATA_PER_THREAD - 1) / NUM_DATA_PER_THREAD + block_dim_y - 1) / block_dim_y);
   const int grid_dim_x = (static_cast<int>(num_feature_groups_ + NUM_FEATURE_PER_THREAD_GROUP - 1) / NUM_FEATURE_PER_THREAD_GROUP);
   //Log::Warning("smaller_leaf_num_data = %d", smaller_leaf_num_data);
   //Log::Warning("block_dim_x = %d, block_dim_y = %d", block_dim_x, block_dim_y);
@@ -188,9 +183,6 @@ __global__ void FixHistogramKernel(const int* cuda_smaller_leaf_index,
         num_bin_to_shift >>= 1;
         num_bin_aligned <<= 1;
       }
-      /*if (threadIdx.x == 0) {
-        printf("num_bin_aligned = %d\n", num_bin_aligned);
-      }*/
       __syncthreads();
       PrefixSum(hist_gradients, num_bin_aligned);
       PrefixSum(hist_hessians, num_bin_aligned);
@@ -198,10 +190,6 @@ __global__ void FixHistogramKernel(const int* cuda_smaller_leaf_index,
       if (threadIdx_x == most_freq_bin) {
         feature_hist[most_freq_bin << 1] = leaf_sum_gradients - hist_gradients[num_bin_aligned];
         feature_hist[(most_freq_bin << 1) + 1] = leaf_sum_hessians - hist_hessians[num_bin_aligned];
-      }
-      if (threadIdx.x == 0) {
-        //printf("fix most freq bin: feature_hist_offset %d + most_freq_bin %d = %d, num_bin_aligned = %d, leaf_sum_gradients = %f, leaf_sum_hessians = %f, hist_gradients[num_bin_aligned] = %f, hist_hessians[num_bin_aligned] = %f, feature_hist[most_freq_bin << 1] = %f, feature_hist[(most_freq_bin << 1) + 1] = %f\n",
-        //  feature_hist_offset, most_freq_bin, feature_hist_offset + most_freq_bin, num_bin_aligned, leaf_sum_gradients, leaf_sum_hessians, hist_gradients[num_bin_aligned], hist_hessians[num_bin_aligned], feature_hist[most_freq_bin << 1], feature_hist[(most_freq_bin << 1) + 1]);
       }
     }
   }
@@ -213,12 +201,10 @@ void CUDAHistogramConstructor::LaunchSubtractHistogramKernel(const int* cuda_sma
   hist_t** cuda_smaller_leaf_hist, hist_t** cuda_larger_leaf_hist) {
   const int num_subtract_threads = 2 * num_total_bin_;
   const int num_subtract_blocks = (num_subtract_threads + SUBTRACT_BLOCK_SIZE - 1) / SUBTRACT_BLOCK_SIZE;
-  //Log::Warning("Before SubtractHistogramKernel");
   SubtractHistogramKernel<<<num_subtract_blocks, SUBTRACT_BLOCK_SIZE>>>(
     cuda_smaller_leaf_index, cuda_larger_leaf_index, cuda_feature_mfb_offsets_,
     cuda_feature_num_bins_, cuda_num_total_bin_, cuda_smaller_leaf_hist, cuda_larger_leaf_hist);
   SynchronizeCUDADevice();
-  //Log::Warning("After SubtractHistogramKernel");
   FixHistogramKernel<<<2 * num_features_, FIX_HISTOGRAM_BLOCK_SIZE>>>(
     cuda_smaller_leaf_index, cuda_larger_leaf_index,
     cuda_feature_num_bins_, cuda_num_features_,
@@ -227,7 +213,6 @@ void CUDAHistogramConstructor::LaunchSubtractHistogramKernel(const int* cuda_sma
     larger_leaf_sum_gradients, larger_leaf_sum_hessians,
     cuda_smaller_leaf_hist, cuda_larger_leaf_hist);
   SynchronizeCUDADevice();
-  //Log::Warning("After FixHistogramKernel");
 }
 
 __global__ void GetOrderedGradientsKernel(const data_size_t num_data_in_leaf, const data_size_t** cuda_data_indices_in_leaf,
