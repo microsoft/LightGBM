@@ -409,8 +409,8 @@ def _train(
         Class weights, one dict or str for each validation set in eval_set.
     eval_init_score: list of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)
         Initial model score for each validation set in eval_set.
-    eval_group: List of Dask data collections or None, optional (default=None)
-        List of Dask Array or Dask Series, group/query for each validation set in eval_set.
+    eval_group: list of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)
+        Group/query for each validation set in eval_set.
     eval_metric: String, callable, list or None, optional (default=None)
         If string, built-in evaluation metric; if callable, a custom evaluation metric.
         Can also be a list of built-in metric strs and/or custom evaluation metrics.
