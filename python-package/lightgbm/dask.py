@@ -83,10 +83,7 @@ def _concat(seq: List[_DaskPart]) -> _DaskPart:
 
 
 def _remove_list_padding(*args: Any) -> List[List[Any]]:
-    output = []
-    for arg in args:
-        output.append(list(filter(lambda z: z is not None, arg)))
-    return output
+    return [[z for z in arg if z is not None] for arg in args]
 
 
 def _pad_eval_names(lgbm_model: LGBMModel, required_names: Optional[List[str]] = None) -> LGBMModel:
