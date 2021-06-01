@@ -517,7 +517,7 @@ def _train(
     if eval_set:
         # find maximum number of parts in an individual eval set so that we can
         # pad eval sets when they come in different sizes.
-        n_largest_eval_parts = max([x[0].npartitions for x in eval_set])
+        n_largest_eval_parts = max(x[0].npartitions for x in eval_set)
 
         eval_sets = defaultdict(list)
         if eval_sample_weight:
