@@ -1395,7 +1395,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         sample_weight: Optional[_DaskCollection] = None,
         init_score: Optional[_DaskCollection] = None,
         group: Optional[_DaskCollection] = None,
-        eval_set: Optional[List[Tuple[_DaskCollection, _DaskCollection]]] = None,
+        eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskCollection]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
