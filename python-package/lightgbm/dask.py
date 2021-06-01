@@ -1088,9 +1088,9 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        eval_sample_weight_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
-        eval_init_score_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
-        eval_group_shape='List of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)'
+        eval_sample_weight_shape='list of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
+        eval_init_score_shape='list of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)',
+        eval_group_shape='list of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)'
     )
 
     # DaskLGBMClassifier does not support group, eval_group, early_stopping_rounds.
