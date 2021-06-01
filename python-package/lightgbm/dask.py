@@ -401,7 +401,7 @@ def _train(
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
     eval_set : list of (X, y) tuples of Dask data collections or None, optional (default=None)
         List of (X, y) tuple pairs to use as validation sets.
-    eval_names: List of strings or None, optional (default=None))
+    eval_names: list of strings or None, optional (default=None))
         Names of eval_set.
     eval_sample_weight: List of Dask data collections or None, optional (default=None)
         List of Dask Array or Dask Series, weights for each validation set in eval_set.
