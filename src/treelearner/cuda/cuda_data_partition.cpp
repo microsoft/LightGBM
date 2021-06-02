@@ -129,6 +129,10 @@ void CUDADataPartition::Init() {
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[2]));
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[3]));
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[4]));
+
+  const size_t max_num_blocks_in_debug = static_cast<size_t>((num_data_ + 1023) / 1024);
+  AllocateCUDAMemory<double>(max_num_blocks_in_debug, &cuda_gradients_sum_buffer_);
+  AllocateCUDAMemory<double>(max_num_blocks_in_debug, &cuda_hessians_sum_buffer_);
 }
 
 void CUDADataPartition::CopyColWiseData() {
@@ -287,6 +291,17 @@ void CUDADataPartition::UpdateTrainScore(const double learning_rate, double* tra
   for (data_size_t i = 0; i < num_data_; ++i) {
     train_score[i] += cpu_train_data_score_tmp_[i];
   }*/
+}
+
+void CUDADataPartition::CUDACheck(
+    const int smaller_leaf_index,
+    const int larger_leaf_index,
+    const std::vector<data_size_t>& num_data_in_leaf,
+    const CUDALeafSplits* smaller_leaf_splits,
+    const CUDALeafSplits* larger_leaf_splits,
+    const score_t* gradients,
+    const score_t* hessians) {
+  LaunchCUDACheckKernel(smaller_leaf_index, larger_leaf_index, num_data_in_leaf, smaller_leaf_splits, larger_leaf_splits, gradients, hessians);
 }
 
 }  // namespace LightGBM

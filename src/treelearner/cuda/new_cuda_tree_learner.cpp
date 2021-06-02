@@ -277,6 +277,9 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
       &smaller_leaf_index_,
       &larger_leaf_index_,
       best_leaf_index_);
+    /*cuda_data_partition_->CUDACheck(smaller_leaf_index_, larger_leaf_index_,
+      leaf_num_data_, cuda_smaller_leaf_splits_.get(), cuda_larger_leaf_splits_.get(),
+      cuda_centralized_info_->cuda_gradients(), cuda_centralized_info_->cuda_hessians());*/
     end = std::chrono::steady_clock::now();
     duration = static_cast<std::chrono::duration<double>>(end - start);
     global_timer.Stop("NewCUDATreeLearner::Split");

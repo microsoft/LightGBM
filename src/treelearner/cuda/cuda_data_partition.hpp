@@ -12,6 +12,7 @@
 #include <LightGBM/tree.h>
 #include <LightGBM/bin.h>
 #include "new_cuda_utils.hpp"
+#include "cuda_leaf_splits.hpp"
 
 #define FILL_INDICES_BLOCK_SIZE_DATA_PARTITION (1024)
 #define SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION (512)
@@ -55,6 +56,15 @@ class CUDADataPartition {
     const std::vector<uint8_t>& cpu_leaf_best_split_default_left,
     int* smaller_leaf_index, int* larger_leaf_index,
     const int cpu_leaf_index);
+
+  void CUDACheck(
+    const int smaller_leaf_index,
+    const int larger_leaf_index,
+    const std::vector<data_size_t>& num_data_in_leaf,
+    const CUDALeafSplits* smaller_leaf_splits,
+    const CUDALeafSplits* larger_leaf_splits,
+    const score_t* gradients,
+    const score_t* hessians);
 
   Tree* GetCPUTree();
 
@@ -245,6 +255,15 @@ class CUDADataPartition {
 
   void LaunchAddPredictionToScoreKernel(const double learning_rate, double* cuda_scores);
 
+  void LaunchCUDACheckKernel(
+    const int smaller_leaf_index,
+    const int larger_leaf_index,
+    const std::vector<data_size_t>& num_data_in_leaf,
+    const CUDALeafSplits* smaller_leaf_splits,
+    const CUDALeafSplits* larger_leaf_splits,
+    const score_t* gradients,
+    const score_t* hessians);
+
   // Host memory
   const data_size_t num_data_;
   const int num_features_;
@@ -307,6 +326,9 @@ class CUDADataPartition {
   // for train data update
   double* train_data_score_tmp_;
   uint8_t* cuda_data_col_wise_;
+  // for debug
+  double* cuda_gradients_sum_buffer_;
+  double* cuda_hessians_sum_buffer_;
 
   // CUDA memory, held by other object
   const data_size_t* cuda_num_data_;
