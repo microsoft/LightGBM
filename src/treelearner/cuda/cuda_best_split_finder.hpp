@@ -21,7 +21,7 @@
 #define NUM_THREADS_FIND_BEST_LEAF (256)
 #define LOG_NUM_BANKS_DATA_PARTITION_BEST_SPLIT_FINDER (4)
 #define NUM_BANKS_DATA_PARTITION_BEST_SPLIT_FINDER (16)
-#define NUM_FEATURES_PER_SYNC_BLOCK (32)
+#define NUM_TASKS_PER_SYNC_BLOCK (256)
 
 namespace LightGBM {
 
@@ -101,7 +101,9 @@ class CUDABestSplitFinder {
   void LaunchFindBestSplitsForLeafKernel(const CUDALeafSplits* smaller_leaf_splits,
     const CUDALeafSplits* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index);
 
-  void LaunchSyncBestSplitForLeafKernel(const int* smaller_leaf_index, const int* larger_leaf_index);
+  void LaunchSyncBestSplitForLeafKernel(
+    const int cpu_smaller_leaf_index,
+    const int cpu_larger_leaf_index);
 
   void LaunchFindBestFromAllSplitsKernel(const int* cuda_cur_num_leaves, const int* cuda_smaller_leaf_index,
     const int* cuda_larger_leaf_index, std::vector<int>* leaf_best_split_feature,
@@ -150,7 +152,6 @@ class CUDABestSplitFinder {
   double* cuda_leaf_best_split_right_gain_;
   double* cuda_leaf_best_split_right_output_;
   // for best split information when finding best split
-  int* cuda_best_split_feature_;
   uint8_t* cuda_best_split_default_left_;
   uint32_t* cuda_best_split_threshold_;
   double* cuda_best_split_gain_;

@@ -39,10 +39,6 @@ __global__ void CalcInitScoreKernel_2(double* out_cuda_init_score, const data_si
   const double pavg = suml / sumw;
   const double init_score = log(pavg / (1.0f - pavg)) / sigmoid;
   *out_cuda_init_score = init_score;
-  printf("cuda init score suml = %f\n", suml);
-  printf("cuda init score sumw = %f\n", sumw);
-  printf("cuda init score pavg = %f\n", pavg);
-  printf("cuda init score = %f\n", init_score);
 }
 
 void CUDABinaryObjective::LaunchCalcInitScoreKernel() {

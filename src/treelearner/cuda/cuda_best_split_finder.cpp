@@ -129,7 +129,6 @@ void CUDABestSplitFinder::Init() {
   InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_out_default_left_, cpu_task_out_default_left_.data(), cpu_task_out_default_left_.size());
 
   const size_t output_buffer_size = 2 * static_cast<size_t>(num_tasks_);
-  AllocateCUDAMemory<int>(output_buffer_size, &cuda_best_split_feature_);
   AllocateCUDAMemory<uint8_t>(output_buffer_size, &cuda_best_split_default_left_);
   AllocateCUDAMemory<uint32_t>(output_buffer_size, &cuda_best_split_threshold_);
   AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_gain_);
@@ -164,7 +163,7 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_le
   LaunchFindBestSplitsForLeafKernel(smaller_leaf_splits, larger_leaf_splits, smaller_leaf_index, larger_leaf_index);
   SynchronizeCUDADevice();
   global_timer.Start("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
-  LaunchSyncBestSplitForLeafKernel(smaller_leaf_splits->cuda_leaf_index(), larger_leaf_splits->cuda_leaf_index());
+  LaunchSyncBestSplitForLeafKernel(smaller_leaf_index, larger_leaf_index);
   SynchronizeCUDADevice();
   global_timer.Stop("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
   auto end = std::chrono::steady_clock::now();
