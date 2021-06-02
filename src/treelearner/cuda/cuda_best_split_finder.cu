@@ -37,8 +37,6 @@ __device__ void PrefixSumHist(hist_t* elements, unsigned int n) {
     if (threadIdx_x < d) {
       const unsigned int dst_pos = CONFLICT_FREE_INDEX_BEST_SPLIT_FINDER(offset * (2 * threadIdx_x + 2) - 1);
       const unsigned int src_pos = CONFLICT_FREE_INDEX_BEST_SPLIT_FINDER(offset * (2 * threadIdx_x + 1) - 1);
-      //const unsigned int conflict_free_dst_pos = (dst_pos);
-      //const unsigned int conflict_free_src_pos = (src_pos);
       const hist_t src_val = elements[src_pos];
       elements[src_pos] = elements[dst_pos];
       elements[dst_pos] += src_val;
@@ -75,8 +73,6 @@ __device__ void PrefixSumHistCnt(data_size_t* elements, unsigned int n) {
     if (threadIdx_x < d) {
       const unsigned int dst_pos = CONFLICT_FREE_INDEX_BEST_SPLIT_FINDER(offset * (2 * threadIdx_x + 2) - 1);
       const unsigned int src_pos = CONFLICT_FREE_INDEX_BEST_SPLIT_FINDER(offset * (2 * threadIdx_x + 1) - 1);
-      //const unsigned int conflict_free_dst_pos = (dst_pos);
-      //const unsigned int conflict_free_src_pos = (src_pos);
       const data_size_t src_val = elements[src_pos];
       elements[src_pos] = elements[dst_pos];
       elements[dst_pos] += src_val;
@@ -101,7 +97,6 @@ __device__ void ReduceBestGain(double* gain, hist_t* sum_gradients,
         gain[tid] = gain[tid_s];
         sum_gradients[conflict_free_tid_plus_1] = sum_gradients[conflict_free_tid_s_plus_1];
         sum_hessians[conflict_free_tid_plus_1] = sum_hessians[conflict_free_tid_s_plus_1];
-        //num_data[conflict_free_tid_plus_1] = num_data[conflict_free_tid_s_plus_1];
         found[tid] = found[tid_s];
         threshold_value[tid] = threshold_value[tid_s];
       }
@@ -180,13 +175,30 @@ __device__ double GetSplitGains(double sum_left_gradients,
                      l1, use_l1, l2);
 }
 
-__device__ void FindBestSplitsForLeafKernelInner(const hist_t* feature_hist_ptr,
-  const uint32_t feature_num_bin, const uint8_t feature_mfb_offset,
-  const uint32_t feature_default_bin, const uint8_t feature_missing_type,
-  const double lambda_l1, const double lambda_l2, const double parent_gain, const data_size_t min_data_in_leaf,
-  const double min_sum_hessian_in_leaf, const double min_gain_to_split,
-  const double sum_gradients, const double sum_hessians, const data_size_t num_data,
-  const bool reverse, const bool skip_default_bin, const bool na_as_missing, const uint8_t assume_out_default_left,
+__device__ void FindBestSplitsForLeafKernelInner(
+  // input feature information
+  const hist_t* feature_hist_ptr,
+  const uint32_t feature_num_bin,
+  const uint8_t feature_mfb_offset,
+  const uint32_t feature_default_bin,
+  const uint8_t feature_missing_type,
+  const int inner_feature_index,
+  // input config parameter values
+  const double lambda_l1,
+  const double lambda_l2,
+  const data_size_t min_data_in_leaf,
+  const double min_sum_hessian_in_leaf,
+  const double min_gain_to_split,
+  // input parent node information
+  const double parent_gain,
+  const double sum_gradients,
+  const double sum_hessians,
+  const data_size_t num_data,
+  // input task information
+  const bool reverse,
+  const bool skip_default_bin,
+  const bool na_as_missing,
+  const uint8_t assume_out_default_left,
   // output parameters
   uint32_t* output_threshold,
   double* output_gain,
@@ -201,7 +213,7 @@ __device__ void FindBestSplitsForLeafKernelInner(const hist_t* feature_hist_ptr,
   data_size_t* output_right_num_data,
   double* output_right_gain,
   double* output_right_output,
-  uint8_t* output_found, const int inner_feature_index) {
+  uint8_t* output_found) {
 
   const double cnt_factor = num_data / sum_hessians;
   const bool use_l1 = lambda_l1 > 0.0f;
@@ -258,7 +270,7 @@ __device__ void FindBestSplitsForLeafKernelInner(const hist_t* feature_hist_ptr,
   __syncthreads();
   const unsigned int conflict_free_threadIdx_x_plus_1 = CONFLICT_FREE_INDEX_BEST_SPLIT_FINDER(threadIdx_x + 1);
   if (reverse) {
-    if (threadIdx_x >= na_as_missing && threadIdx_x <= feature_num_bin - 2 && !skip_split) {
+    if (threadIdx_x >= static_cast<unsigned int>(na_as_missing) && threadIdx_x <= feature_num_bin - 2 && !skip_split) {
       const double sum_right_gradient = local_grad_hist[conflict_free_threadIdx_x_plus_1];
       const double sum_right_hessian = local_hess_hist[conflict_free_threadIdx_x_plus_1];
       const data_size_t right_count = static_cast<data_size_t>(__double2int_rn(sum_right_hessian * cnt_factor));
@@ -324,51 +336,55 @@ __device__ void FindBestSplitsForLeafKernelInner(const hist_t* feature_hist_ptr,
     *output_default_left = assume_out_default_left;
     if (reverse) {
       const double sum_right_gradient = local_grad_hist[1];
-      const double sum_right_hessian = local_hess_hist[1];
+      const double sum_right_hessian = local_hess_hist[1] - kEpsilon;
       const data_size_t right_count = static_cast<data_size_t>(__double2int_rn(sum_right_hessian * cnt_factor));
       const double sum_left_gradient = sum_gradients - sum_right_gradient;
-      const double sum_left_hessian = sum_hessians - sum_right_hessian;
+      const double sum_left_hessian = sum_hessians - sum_right_hessian - kEpsilon;
       const data_size_t left_count = num_data - right_count;
+      const double left_output = CalculateSplittedLeafOutput(sum_left_gradient,
+        sum_left_hessian, lambda_l1, use_l1, lambda_l2);
+      const double right_output = CalculateSplittedLeafOutput(sum_right_gradient,
+        sum_right_hessian, lambda_l1, use_l1, lambda_l2);
       *output_left_sum_gradients = sum_left_gradient;
       *output_left_sum_hessians = sum_left_hessian;
       *output_left_num_data = left_count;
       *output_right_sum_gradients = sum_right_gradient;
       *output_right_sum_hessians = sum_right_hessian;
       *output_right_num_data = right_count;
-      *output_left_output = CalculateSplittedLeafOutput(sum_left_gradient,
-        sum_left_hessian, lambda_l1, use_l1, lambda_l2);
+      *output_left_output = left_output;
       *output_left_gain = GetLeafGainGivenOutput(sum_left_gradient,
-        sum_left_hessian, lambda_l1, use_l1, lambda_l2, *output_left_output);
-      *output_right_output = CalculateSplittedLeafOutput(sum_right_gradient,
-        sum_right_hessian, lambda_l1, use_l1, lambda_l2);
+        sum_left_hessian, lambda_l1, use_l1, lambda_l2, left_output);
+      *output_right_output = right_output;
       *output_right_gain = GetLeafGainGivenOutput(sum_right_gradient,
-        sum_right_hessian, lambda_l1, use_l1, lambda_l2, *output_right_output);
+        sum_right_hessian, lambda_l1, use_l1, lambda_l2, right_output);
     } else {
       const double sum_left_gradient = local_grad_hist[1];
-      const double sum_left_hessian = local_hess_hist[1];
+      const double sum_left_hessian = local_hess_hist[1] - kEpsilon;
       const data_size_t left_count = static_cast<data_size_t>(__double2int_rn(sum_left_hessian * cnt_factor));
       const double sum_right_gradient = sum_gradients - sum_left_gradient;
-      const double sum_right_hessian = sum_hessians - sum_left_hessian;
+      const double sum_right_hessian = sum_hessians - sum_left_hessian - kEpsilon;
       const data_size_t right_count = num_data - left_count;
+      const double left_output = CalculateSplittedLeafOutput(sum_left_gradient,
+        sum_left_hessian, lambda_l1, use_l1, lambda_l2);
+      const double right_output = CalculateSplittedLeafOutput(sum_right_gradient,
+        sum_right_hessian, lambda_l1, use_l1, lambda_l2);
       *output_left_sum_gradients = sum_left_gradient;
       *output_left_sum_hessians = sum_left_hessian;
       *output_left_num_data = left_count;
       *output_right_sum_gradients = sum_right_gradient;
       *output_right_sum_hessians = sum_right_hessian;
       *output_right_num_data = right_count;
-      *output_left_output = CalculateSplittedLeafOutput(sum_left_gradient,
-        sum_left_hessian, lambda_l1, use_l1, lambda_l2);
+      *output_left_output = left_output;
       *output_left_gain = GetLeafGainGivenOutput(sum_left_gradient,
-        sum_left_hessian, lambda_l1, use_l1, lambda_l2, *output_left_output);
-      *output_right_output = CalculateSplittedLeafOutput(sum_right_gradient,
-        sum_right_hessian, lambda_l1, use_l1, lambda_l2);
+        sum_left_hessian, lambda_l1, use_l1, lambda_l2, left_output);
+      *output_right_output = right_output;
       *output_right_gain = GetLeafGainGivenOutput(sum_right_gradient,
-        sum_right_hessian, lambda_l1, use_l1, lambda_l2, *output_right_output);
+        sum_right_hessian, lambda_l1, use_l1, lambda_l2, right_output);
     }
   }
 }
 
-__global__ void FindBestSplitsForOneLeafKernel(
+__global__ void FindBestSplitsForLeafKernel(
   // input feature information
   const uint32_t* feature_hist_offsets,
   const uint8_t* feature_mfb_offsets,
@@ -444,13 +460,45 @@ __global__ void FindBestSplitsForOneLeafKernel(
   uint8_t* out_found = cuda_best_split_found + output_offset;
   double* out_gain = cuda_best_split_gain + output_offset;
   const hist_t* hist_ptr = (is_larger ? *larger_leaf_hist : *smaller_leaf_hist) + feature_hist_offsets[inner_feature_index] * 2;
-  FindBestSplitsForLeafKernelInner(hist_ptr,
-    feature_num_bins[inner_feature_index], feature_mfb_offsets[inner_feature_index], feature_default_bins[inner_feature_index],
-    feature_missing_types[inner_feature_index], lambda_l1, lambda_l2, parent_gain,
-    min_data_in_leaf, min_sum_hessian_in_leaf, min_gain_to_split, sum_gradients, sum_hessians,
-    num_data, reverse, skip_default_bin, na_as_missing, assume_out_default_left, out_threshold, out_gain, out_default_left,
-    out_left_sum_gradients, out_left_sum_hessians, out_left_num_data, out_left_gain, out_left_output,
-    out_right_sum_gradients, out_right_sum_hessians, out_right_num_data, out_right_gain, out_right_output, out_found, inner_feature_index);
+  FindBestSplitsForLeafKernelInner(
+    // input feature information
+    hist_ptr,
+    feature_num_bins[inner_feature_index],
+    feature_mfb_offsets[inner_feature_index],
+    feature_default_bins[inner_feature_index],
+    feature_missing_types[inner_feature_index],
+    inner_feature_index,
+    // input config parameter values
+    lambda_l1,
+    lambda_l2,
+    min_data_in_leaf,
+    min_sum_hessian_in_leaf,
+    min_gain_to_split,
+    // input parent node information
+    parent_gain,
+    sum_gradients,
+    sum_hessians,
+    num_data,
+    // input task information
+    reverse,
+    skip_default_bin,
+    na_as_missing,
+    assume_out_default_left,
+    // output parameters
+    out_threshold,
+    out_gain,
+    out_default_left,
+    out_left_sum_gradients,
+    out_left_sum_hessians,
+    out_left_num_data,
+    out_left_gain,
+    out_left_output,
+    out_right_sum_gradients,
+    out_right_sum_hessians,
+    out_right_num_data,
+    out_right_gain,
+    out_right_output,
+    out_found);
 }
 
 void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(
@@ -459,7 +507,7 @@ void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(
   const int smaller_leaf_index,
   const int larger_leaf_index) {
   const int num_blocks = larger_leaf_index >= 0 ? num_tasks_ * 2 : num_tasks_;
-  FindBestSplitsForOneLeafKernel<<<num_blocks, MAX_NUM_BIN_IN_FEATURE>>>(
+  FindBestSplitsForLeafKernel<<<num_blocks, MAX_NUM_BIN_IN_FEATURE>>>(
     // input feature information
     cuda_feature_hist_offsets_,
     cuda_feature_mfb_offsets_,
@@ -728,37 +776,34 @@ __global__ void FindBestFromAllSplitsKernel(const int* cuda_cur_num_leaves,
   ReduceBestGainForLeaves(thread_best_gain, thread_best_leaf, cur_num_valid_threads);
   if (threadIdx_x == 0) {
     *out_best_leaf = thread_best_leaf[0];
-    cuda_best_split_info_buffer[8] = thread_best_leaf[0];
+    cuda_best_split_info_buffer[6] = thread_best_leaf[0];
   }
 }
 
-__global__ void PrepareLeafBestSplitInfo(const int* cuda_smaller_leaf_index, const int* cuda_larger_leaf_index,
+__global__ void PrepareLeafBestSplitInfo(const int smaller_leaf_index, const int larger_leaf_index,
   int* cuda_best_split_info_buffer, const int* cuda_leaf_best_split_feature,
   const uint32_t* cuda_leaf_best_split_threshold, const uint8_t* cuda_leaf_best_split_default_left) {
-  const int smaller_leaf_index_ref = *cuda_smaller_leaf_index;
-  const int larger_leaf_index_ref = *cuda_larger_leaf_index;
   const unsigned int threadIdx_x = threadIdx.x;
   if (threadIdx_x == 0) {
-    cuda_best_split_info_buffer[0] = smaller_leaf_index_ref;
+    cuda_best_split_info_buffer[0] = cuda_leaf_best_split_feature[smaller_leaf_index];
   } else if (threadIdx_x == 1) {
-    cuda_best_split_info_buffer[1] = cuda_leaf_best_split_feature[smaller_leaf_index_ref];
+    cuda_best_split_info_buffer[1] = cuda_leaf_best_split_threshold[smaller_leaf_index];
   } else if (threadIdx_x == 2) {
-    cuda_best_split_info_buffer[2] = cuda_leaf_best_split_threshold[smaller_leaf_index_ref];
-  } else if (threadIdx_x == 3) {
-    cuda_best_split_info_buffer[3] = cuda_leaf_best_split_default_left[smaller_leaf_index_ref];
-  } else if (threadIdx_x == 4) {
-    cuda_best_split_info_buffer[4] = larger_leaf_index_ref;
-  } else if (threadIdx_x == 5) {
-    cuda_best_split_info_buffer[5] = cuda_leaf_best_split_feature[larger_leaf_index_ref];
-  } else if (threadIdx_x == 6) {
-    cuda_best_split_info_buffer[6] = cuda_leaf_best_split_threshold[larger_leaf_index_ref];
-  } else if (threadIdx_x == 7) {
-    cuda_best_split_info_buffer[7] = cuda_leaf_best_split_default_left[larger_leaf_index_ref];
-  } 
+    cuda_best_split_info_buffer[2] = cuda_leaf_best_split_default_left[smaller_leaf_index];
+  }
+  if (larger_leaf_index >= 0) { 
+    if (threadIdx_x == 3) {
+      cuda_best_split_info_buffer[3] = cuda_leaf_best_split_feature[larger_leaf_index];
+    } else if (threadIdx_x == 4) {
+      cuda_best_split_info_buffer[4] = cuda_leaf_best_split_threshold[larger_leaf_index];
+    } else if (threadIdx_x == 5) {
+      cuda_best_split_info_buffer[5] = cuda_leaf_best_split_default_left[larger_leaf_index];
+    }
+  }
 }
 
 void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(const int* cuda_cur_num_leaves,
-  const int* cuda_smaller_leaf_index, const int* cuda_larger_leaf_index, std::vector<int>* leaf_best_split_feature,
+  const int smaller_leaf_index, const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
   std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index) {
   FindBestFromAllSplitsKernel<<<1, NUM_THREADS_FIND_BEST_LEAF, 0, cuda_streams_[1]>>>(cuda_cur_num_leaves, cuda_leaf_best_split_gain_, cuda_best_leaf_,
     cuda_leaf_best_split_feature_, cuda_leaf_best_split_threshold_, cuda_feature_default_bins_,
@@ -769,23 +814,21 @@ void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(const int* cuda_cur_
     cuda_leaf_best_split_left_count_,
     cuda_leaf_best_split_right_count_,
     cuda_best_split_info_buffer_);
-  PrepareLeafBestSplitInfo<<<1, 8, 0, cuda_streams_[0]>>>(cuda_smaller_leaf_index, cuda_larger_leaf_index,
+  PrepareLeafBestSplitInfo<<<1, 6, 0, cuda_streams_[0]>>>(smaller_leaf_index, larger_leaf_index,
     cuda_best_split_info_buffer_, cuda_leaf_best_split_feature_,
     cuda_leaf_best_split_threshold_, cuda_leaf_best_split_default_left_);
-  std::vector<int> cpu_leaf_best_split_info_buffer(9);
+  std::vector<int> cpu_leaf_best_split_info_buffer(7);
   SynchronizeCUDADevice();
-  CopyFromCUDADeviceToHost<int>(cpu_leaf_best_split_info_buffer.data(), cuda_best_split_info_buffer_, 9);
-  const int smaller_leaf_index = cpu_leaf_best_split_info_buffer[0];
-  const int larger_leaf_index = cpu_leaf_best_split_info_buffer[4];
-  (*leaf_best_split_feature)[smaller_leaf_index] = cpu_leaf_best_split_info_buffer[1];
-  (*leaf_best_split_threshold)[smaller_leaf_index] = static_cast<uint32_t>(cpu_leaf_best_split_info_buffer[2]);
-  (*leaf_best_split_default_left)[smaller_leaf_index] = static_cast<uint8_t>(cpu_leaf_best_split_info_buffer[3]);
+  CopyFromCUDADeviceToHost<int>(cpu_leaf_best_split_info_buffer.data(), cuda_best_split_info_buffer_, 7);
+  (*leaf_best_split_feature)[smaller_leaf_index] = cpu_leaf_best_split_info_buffer[0];
+  (*leaf_best_split_threshold)[smaller_leaf_index] = static_cast<uint32_t>(cpu_leaf_best_split_info_buffer[1]);
+  (*leaf_best_split_default_left)[smaller_leaf_index] = static_cast<uint8_t>(cpu_leaf_best_split_info_buffer[2]);
   if (larger_leaf_index >= 0) {
-    (*leaf_best_split_feature)[larger_leaf_index] = cpu_leaf_best_split_info_buffer[5];
-    (*leaf_best_split_threshold)[larger_leaf_index] = static_cast<uint32_t>(cpu_leaf_best_split_info_buffer[6]);
-    (*leaf_best_split_default_left)[larger_leaf_index] = static_cast<uint8_t>(cpu_leaf_best_split_info_buffer[7]);
+    (*leaf_best_split_feature)[larger_leaf_index] = cpu_leaf_best_split_info_buffer[3];
+    (*leaf_best_split_threshold)[larger_leaf_index] = static_cast<uint32_t>(cpu_leaf_best_split_info_buffer[4]);
+    (*leaf_best_split_default_left)[larger_leaf_index] = static_cast<uint8_t>(cpu_leaf_best_split_info_buffer[5]);
   }
-  *best_leaf_index = cpu_leaf_best_split_info_buffer[8];
+  *best_leaf_index = cpu_leaf_best_split_info_buffer[6];
 }
 
 }  // namespace LightGBM

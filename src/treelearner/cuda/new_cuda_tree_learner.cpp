@@ -228,7 +228,7 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
     start = std::chrono::steady_clock::now();
     global_timer.Start("NewCUDATreeLearner::FindBestFromAllSplits");
     cuda_best_split_finder_->FindBestFromAllSplits(cuda_data_partition_->cuda_cur_num_leaves(),
-      cuda_smaller_leaf_splits_->cuda_leaf_index(), cuda_larger_leaf_splits_->cuda_leaf_index(),
+      smaller_leaf_index_, larger_leaf_index_,
       &leaf_best_split_feature_, &leaf_best_split_threshold_, &leaf_best_split_default_left_, &best_leaf_index_);
     global_timer.Stop("NewCUDATreeLearner::FindBestFromAllSplits");
     end = std::chrono::steady_clock::now();

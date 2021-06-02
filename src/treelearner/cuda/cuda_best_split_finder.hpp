@@ -40,8 +40,8 @@ class CUDABestSplitFinder {
   void FindBestSplitsForLeaf(const CUDALeafSplits* smaller_leaf_splits, const CUDALeafSplits* larger_leaf_splits,
     const int smaller_leaf_index, const int larger_leaf_index);
 
-  void FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int* smaller_leaf_index,
-    const int* larger_leaf_index, std::vector<int>* leaf_best_split_feature,
+  void FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
+    const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
     std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index);
 
   const int* cuda_best_leaf() const { return cuda_best_leaf_; }
@@ -105,8 +105,8 @@ class CUDABestSplitFinder {
     const int cpu_smaller_leaf_index,
     const int cpu_larger_leaf_index);
 
-  void LaunchFindBestFromAllSplitsKernel(const int* cuda_cur_num_leaves, const int* cuda_smaller_leaf_index,
-    const int* cuda_larger_leaf_index, std::vector<int>* leaf_best_split_feature,
+  void LaunchFindBestFromAllSplitsKernel(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
+    const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
     std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index);
 
   // Host memory

@@ -144,7 +144,7 @@ void CUDABestSplitFinder::Init() {
   AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_right_output_);
   AllocateCUDAMemory<uint8_t>(output_buffer_size, &cuda_best_split_found_);
 
-  AllocateCUDAMemory<int>(9, &cuda_best_split_info_buffer_);
+  AllocateCUDAMemory<int>(7, &cuda_best_split_info_buffer_);
   cuda_streams_.resize(2);
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[0]));
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[1]));
@@ -171,8 +171,8 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_le
   //Log::Warning("FindBestSplitsForLeaf time %f", duration);
 }
 
-void CUDABestSplitFinder::FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int* smaller_leaf_index,
-    const int* larger_leaf_index, std::vector<int>* leaf_best_split_feature,
+void CUDABestSplitFinder::FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
+    const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
     std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index) {
   auto start = std::chrono::steady_clock::now();
   LaunchFindBestFromAllSplitsKernel(cuda_cur_num_leaves, smaller_leaf_index, larger_leaf_index,
