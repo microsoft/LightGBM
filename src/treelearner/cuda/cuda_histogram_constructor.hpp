@@ -30,7 +30,8 @@ namespace LightGBM {
 class CUDAHistogramConstructor {
  public:
   CUDAHistogramConstructor(const Dataset* train_data, const int num_leaves, const int num_threads,
-    const score_t* cuda_gradients, const score_t* cuda_hessians, const std::vector<uint32_t>& feature_hist_offsets);
+    const score_t* cuda_gradients, const score_t* cuda_hessians, const std::vector<uint32_t>& feature_hist_offsets,
+    const int min_data_in_leaf);
 
   void Init(const Dataset* train_data);
 
@@ -110,6 +111,7 @@ class CUDAHistogramConstructor {
   std::vector<uint32_t> feature_num_bins_;
   std::vector<uint32_t> feature_hist_offsets_;
   std::vector<uint32_t> feature_most_freq_bins_;
+  const int min_data_in_leaf_;
 
   // CUDA memory, held by this object
   uint32_t* cuda_feature_group_bin_offsets_;

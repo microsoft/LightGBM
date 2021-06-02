@@ -13,10 +13,12 @@ namespace LightGBM {
 CUDAHistogramConstructor::CUDAHistogramConstructor(const Dataset* train_data,
   const int num_leaves, const int num_threads,
   const score_t* cuda_gradients, const score_t* cuda_hessians,
-  const std::vector<uint32_t>& feature_hist_offsets): num_data_(train_data->num_data()),
+  const std::vector<uint32_t>& feature_hist_offsets,
+  const int min_data_in_leaf): num_data_(train_data->num_data()),
   num_features_(train_data->num_features()), num_leaves_(num_leaves), num_threads_(num_threads),
   num_feature_groups_(train_data->num_feature_groups()),
-  cuda_gradients_(cuda_gradients), cuda_hessians_(cuda_hessians) {
+  cuda_gradients_(cuda_gradients), cuda_hessians_(cuda_hessians),
+  min_data_in_leaf_(min_data_in_leaf) {
   int offset = 0;
   for (int group_id = 0; group_id < train_data->num_feature_groups(); ++group_id) {
     feature_group_bin_offsets_.emplace_back(offset);

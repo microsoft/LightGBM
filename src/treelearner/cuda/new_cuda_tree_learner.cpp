@@ -35,7 +35,8 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   cuda_larger_leaf_splits_->Init();
 
   cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, this->config_->num_leaves, num_threads_,
-    cuda_centralized_info_->cuda_gradients(), cuda_centralized_info_->cuda_hessians(), share_state_->feature_hist_offsets()));
+    cuda_centralized_info_->cuda_gradients(), cuda_centralized_info_->cuda_hessians(), share_state_->feature_hist_offsets(),
+    config_->min_data_in_leaf));
   cuda_histogram_constructor_->Init(train_data_);
   //cuda_histogram_constructor_->TestAfterInit();
 

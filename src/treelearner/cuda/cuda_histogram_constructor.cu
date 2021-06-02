@@ -114,6 +114,9 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
   //Log::Warning("smaller_leaf_num_data = %d", smaller_leaf_num_data);
   //Log::Warning("block_dim_x = %d, block_dim_y = %d", block_dim_x, block_dim_y);
   //Log::Warning("gid_dim_x = %d, grid_dim_y = %d", grid_dim_x, grid_dim_y);
+  if (num_data_in_smaller_leaf <= min_data_in_leaf_) {
+    return;
+  }
   dim3 grid_dim(grid_dim_x, grid_dim_y);
   dim3 block_dim(block_dim_x, block_dim_y);
   CUDAConstructHistogramKernel<<<grid_dim, block_dim>>>(cuda_smaller_leaf_index, cuda_gradients_, cuda_hessians_,
