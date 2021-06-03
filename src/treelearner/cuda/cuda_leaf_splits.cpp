@@ -42,6 +42,10 @@ void CUDALeafSplits::Init() {
   AllocateCUDAMemory<hist_t*>(1, &cuda_hist_in_leaf_);
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_leaf_index_, &leaf_index_, 1);
+
+  cuda_streams_.resize(2);
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[0]));
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[1]));
 }
 
 void CUDALeafSplits::InitValues(const double* cuda_sum_of_gradients, const double* cuda_sum_of_hessians,
@@ -67,14 +71,16 @@ void CUDALeafSplits::InitValues() {
   SynchronizeCUDADevice();
 }
 
-void CUDALeafSplits::InitValues(const data_size_t* cuda_data_indices_in_leaf, hist_t* cuda_hist_in_leaf) {
+void CUDALeafSplits::InitValues(const data_size_t* cuda_data_indices_in_leaf, hist_t* cuda_hist_in_leaf,
+    double* root_sum_hessians) {
   SetCUDAMemory<double>(cuda_sum_of_gradients_, 0, num_blocks_init_from_gradients_);
   SetCUDAMemory<double>(cuda_sum_of_hessians_, 0, num_blocks_init_from_gradients_);
   LaunchInitValuesKernal();
   SetCUDAMemory<int>(cuda_leaf_index_, 0, 1);
-  CopyFromHostToCUDADevice<const data_size_t*>(cuda_data_indices_in_leaf_, &cuda_data_indices_in_leaf, 1);
-  CopyFromHostToCUDADevice<hist_t*>(cuda_hist_in_leaf_, &cuda_hist_in_leaf, 1);
-  CopyFromHostToCUDADevice<data_size_t>(cuda_num_data_in_leaf_, &num_data_, 1);
+  CopyFromHostToCUDADeviceAsync<const data_size_t*>(cuda_data_indices_in_leaf_, &cuda_data_indices_in_leaf, 1, cuda_streams_[0]);
+  CopyFromHostToCUDADeviceAsync<hist_t*>(cuda_hist_in_leaf_, &cuda_hist_in_leaf, 1, cuda_streams_[0]);
+  CopyFromHostToCUDADeviceAsync<data_size_t>(cuda_num_data_in_leaf_, &num_data_, 1, cuda_streams_[0]);
+  CopyFromCUDADeviceToHostAsync<double>(root_sum_hessians, cuda_sum_of_hessians_, 1, cuda_streams_[1]);
   SetCUDAMemory<double>(cuda_gain_, 0, 1);
   SetCUDAMemory<double>(cuda_leaf_value_, 0, 1);
   SynchronizeCUDADevice();

@@ -14,11 +14,11 @@ CUDAHistogramConstructor::CUDAHistogramConstructor(const Dataset* train_data,
   const int num_leaves, const int num_threads,
   const score_t* cuda_gradients, const score_t* cuda_hessians,
   const std::vector<uint32_t>& feature_hist_offsets,
-  const int min_data_in_leaf): num_data_(train_data->num_data()),
+  const int min_data_in_leaf, const double min_sum_hessian_in_leaf): num_data_(train_data->num_data()),
   num_features_(train_data->num_features()), num_leaves_(num_leaves), num_threads_(num_threads),
   num_feature_groups_(train_data->num_feature_groups()),
   cuda_gradients_(cuda_gradients), cuda_hessians_(cuda_hessians),
-  min_data_in_leaf_(min_data_in_leaf) {
+  min_data_in_leaf_(min_data_in_leaf), min_sum_hessian_in_leaf_(min_sum_hessian_in_leaf) {
   int offset = 0;
   for (int group_id = 0; group_id < train_data->num_feature_groups(); ++group_id) {
     feature_group_bin_offsets_.emplace_back(offset);
@@ -111,8 +111,13 @@ void CUDAHistogramConstructor::ConstructHistogramForLeaf(const int* cuda_smaller
   const int* cuda_larger_leaf_index, const data_size_t** cuda_data_indices_in_smaller_leaf, const data_size_t** cuda_data_indices_in_larger_leaf,
   const double* cuda_smaller_leaf_sum_gradients, const double* cuda_smaller_leaf_sum_hessians, hist_t** cuda_smaller_leaf_hist,
   const double* cuda_larger_leaf_sum_gradients, const double* cuda_larger_leaf_sum_hessians, hist_t** cuda_larger_leaf_hist,
-  const data_size_t* cuda_leaf_num_data, const data_size_t num_data_in_smaller_leaf) {
+  const data_size_t* cuda_leaf_num_data, const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
+  const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf) {
   auto start = std::chrono::steady_clock::now();
+  if ((num_data_in_smaller_leaf <= min_data_in_leaf_ || sum_hessians_in_smaller_leaf <= min_sum_hessian_in_leaf_) &&
+    (num_data_in_larger_leaf <= min_data_in_leaf_ || sum_hessians_in_larger_leaf <= min_sum_hessian_in_leaf_)) {
+    return;
+  }
   LaunchConstructHistogramKernel(cuda_smaller_leaf_index, cuda_num_data_in_smaller_leaf,
     cuda_data_indices_in_smaller_leaf, cuda_leaf_num_data, cuda_smaller_leaf_hist, num_data_in_smaller_leaf);
   SynchronizeCUDADevice();

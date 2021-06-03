@@ -38,7 +38,9 @@ class CUDABestSplitFinder {
   void BeforeTrain();
 
   void FindBestSplitsForLeaf(const CUDALeafSplits* smaller_leaf_splits, const CUDALeafSplits* larger_leaf_splits,
-    const int smaller_leaf_index, const int larger_leaf_index);
+    const int smaller_leaf_index, const int larger_leaf_index,
+    const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
+    const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf);
 
   void FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
     const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
@@ -74,6 +76,8 @@ class CUDABestSplitFinder {
 
   const double* cuda_leaf_best_split_right_output() const { return cuda_leaf_best_split_right_output_; }
 
+  uint8_t* cuda_leaf_best_split_found() const { return cuda_leaf_best_split_found_; }
+
   void TestAfterInit() {
     PrintLastCUDAError();
   }
@@ -99,11 +103,14 @@ class CUDABestSplitFinder {
 
  private:
   void LaunchFindBestSplitsForLeafKernel(const CUDALeafSplits* smaller_leaf_splits,
-    const CUDALeafSplits* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index);
+    const CUDALeafSplits* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index,
+    const bool is_smaller_leaf_valid, const bool is_larger_leaf_valid);
 
   void LaunchSyncBestSplitForLeafKernel(
     const int cpu_smaller_leaf_index,
-    const int cpu_larger_leaf_index);
+    const int cpu_larger_leaf_index,
+    const bool is_smaller_leaf_valid,
+    const bool is_larger_leaf_valid);
 
   void LaunchFindBestFromAllSplitsKernel(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
     const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
@@ -151,6 +158,7 @@ class CUDABestSplitFinder {
   data_size_t* cuda_leaf_best_split_right_count_;
   double* cuda_leaf_best_split_right_gain_;
   double* cuda_leaf_best_split_right_output_;
+  uint8_t* cuda_leaf_best_split_found_;
   // for best split information when finding best split
   uint8_t* cuda_best_split_default_left_;
   uint32_t* cuda_best_split_threshold_;

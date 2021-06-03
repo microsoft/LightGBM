@@ -105,7 +105,8 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
   const data_size_t* cuda_smaller_leaf_num_data,
   const data_size_t** cuda_data_indices_in_smaller_leaf,
   const data_size_t* cuda_leaf_num_data,
-  hist_t** cuda_leaf_hist, const data_size_t num_data_in_smaller_leaf) {
+  hist_t** cuda_leaf_hist,
+  const data_size_t num_data_in_smaller_leaf) {
   const int block_dim_x = num_features_; // TODO(shiyu1994): only supports the case when the whole histogram can be loaded into shared memory
   const int block_dim_y = NUM_THRADS_PER_BLOCK / block_dim_x;
   const int min_grid_dim_y = 160;
@@ -114,9 +115,6 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
   //Log::Warning("smaller_leaf_num_data = %d", smaller_leaf_num_data);
   //Log::Warning("block_dim_x = %d, block_dim_y = %d", block_dim_x, block_dim_y);
   //Log::Warning("gid_dim_x = %d, grid_dim_y = %d", grid_dim_x, grid_dim_y);
-  if (num_data_in_smaller_leaf <= min_data_in_leaf_) {
-    return;
-  }
   dim3 grid_dim(grid_dim_x, grid_dim_y);
   dim3 block_dim(block_dim_x, block_dim_y);
   CUDAConstructHistogramKernel<<<grid_dim, block_dim>>>(cuda_smaller_leaf_index, cuda_gradients_, cuda_hessians_,

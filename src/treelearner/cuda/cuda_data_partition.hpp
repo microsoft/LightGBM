@@ -38,6 +38,7 @@ class CUDADataPartition {
     const double* best_left_gain, const double* best_left_leaf_value,
     const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
     const double* best_right_gain, const double* best_right_leaf_value,
+    uint8_t* best_split_found,
     // for splits information update
     int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
     double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
@@ -51,6 +52,7 @@ class CUDADataPartition {
     hist_t** larger_leaf_cuda_hist_pointer_pointer,
     std::vector<data_size_t>* cpu_leaf_num_data,
     std::vector<data_size_t>* cpu_leaf_data_start,
+    std::vector<double>* cpu_leaf_sum_hessians,
     const std::vector<int>& cpu_leaf_best_split_feature,
     const std::vector<uint32_t>& cpu_leaf_best_split_threshold,
     const std::vector<uint8_t>& cpu_leaf_best_split_default_left,
@@ -205,7 +207,7 @@ class CUDADataPartition {
     const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
     const double* best_left_gain, const double* best_left_leaf_value,
     const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
-    const double* best_right_gain, const double* best_right_leaf_value,
+    const double* best_right_gain, const double* best_right_leaf_value, uint8_t* best_split_found,
     // for leaf splits information update
     int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
     double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
@@ -218,6 +220,7 @@ class CUDADataPartition {
     const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
     hist_t** larger_leaf_cuda_hist_pointer_pointer,
     std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
+    std::vector<double>* cpu_leaf_sum_hessians,
     int* smaller_leaf_index, int* larger_leaf_index);
 
   // kernel launch functions
@@ -229,7 +232,7 @@ class CUDADataPartition {
     const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
     const double* best_left_gain, const double* best_left_leaf_value,
     const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
-    const double* best_right_gain, const double* best_right_leaf_value,
+    const double* best_right_gain, const double* best_right_leaf_value, uint8_t* best_split_found,
     // for leaf splits information update
     int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
     double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
@@ -242,6 +245,7 @@ class CUDADataPartition {
     const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
     hist_t** larger_leaf_cuda_hist_pointer_pointer,
     std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
+    std::vector<double>* cpu_leaf_sum_hessians,
     int* smaller_leaf_index, int* larger_leaf_index);
 
   void LaunchGenDataToLeftBitVectorKernel(const int* leaf_index, const data_size_t num_data_in_leaf, const int* best_split_feature,

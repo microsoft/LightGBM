@@ -58,6 +58,7 @@ void CUDABestSplitFinder::Init() {
   AllocateCUDAMemory<data_size_t>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_right_count_);
   AllocateCUDAMemory<double>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_right_gain_);
   AllocateCUDAMemory<double>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_right_output_);
+  AllocateCUDAMemory<uint8_t>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_found_);
 
   AllocateCUDAMemory<uint32_t>(feature_hist_offsets_.size(), &cuda_feature_hist_offsets_);
   CopyFromHostToCUDADevice<uint32_t>(cuda_feature_hist_offsets_, feature_hist_offsets_.data(), feature_hist_offsets_.size());
@@ -151,19 +152,24 @@ void CUDABestSplitFinder::Init() {
 }
 
 void CUDABestSplitFinder::BeforeTrain() {
-  const size_t feature_best_split_info_buffer_size = static_cast<size_t>(num_features_) * 4;
   SetCUDAMemory<double>(cuda_leaf_best_split_gain_, 0, static_cast<size_t>(num_leaves_));
   SetCUDAMemory<uint8_t>(cuda_best_split_found_, 0, static_cast<size_t>(num_tasks_));
   SetCUDAMemory<double>(cuda_best_split_gain_, 0,  static_cast<size_t>(num_tasks_));
+  SetCUDAMemory<uint8_t>(cuda_leaf_best_split_found_, 0, static_cast<size_t>(num_leaves_));
 }
 
 void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_leaf_splits,
-  const CUDALeafSplits* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index) {
+  const CUDALeafSplits* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index,
+  const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
+  const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf) {
   auto start = std::chrono::steady_clock::now();
-  LaunchFindBestSplitsForLeafKernel(smaller_leaf_splits, larger_leaf_splits, smaller_leaf_index, larger_leaf_index);
+  const bool is_smaller_leaf_valid = (num_data_in_smaller_leaf > min_data_in_leaf_ && sum_hessians_in_smaller_leaf > min_sum_hessian_in_leaf_);
+  const bool is_larger_leaf_valid = (num_data_in_larger_leaf > min_data_in_leaf_ && sum_hessians_in_larger_leaf > min_sum_hessian_in_leaf_);
+  LaunchFindBestSplitsForLeafKernel(smaller_leaf_splits, larger_leaf_splits,
+    smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
   SynchronizeCUDADevice();
   global_timer.Start("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
-  LaunchSyncBestSplitForLeafKernel(smaller_leaf_index, larger_leaf_index);
+  LaunchSyncBestSplitForLeafKernel(smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
   SynchronizeCUDADevice();
   global_timer.Stop("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
   auto end = std::chrono::steady_clock::now();

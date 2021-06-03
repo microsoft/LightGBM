@@ -994,7 +994,7 @@ __global__ void SplitTreeStructureKernel(const int* leaf_index, data_size_t* blo
   const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
   const double* best_left_gain, const double* best_left_leaf_value,
   const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
-  const double* best_right_gain, const double* best_right_leaf_value,
+  const double* best_right_gain, const double* best_right_leaf_value, uint8_t* best_split_found,
   // for leaf splits information update
   int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
   double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
@@ -1019,6 +1019,7 @@ __global__ void SplitTreeStructureKernel(const int* leaf_index, data_size_t* blo
     const int cur_max_leaf_index = (*cuda_cur_num_leaves) - 1;
     const unsigned int to_left_total_cnt = cuda_leaf_num_data[leaf_index_ref];
     const int cuda_num_total_bin_ref = *cuda_num_total_bin;
+    double* cuda_split_info_buffer_for_hessians = reinterpret_cast<double*>(cuda_split_info_buffer + 8);
 
     tree_split_leaf_index[cur_max_leaf_index - 1] = leaf_index_ref;
     tree_inner_feature_index[cur_max_leaf_index - 1] = best_split_feature[leaf_index_ref];
@@ -1040,6 +1041,11 @@ __global__ void SplitTreeStructureKernel(const int* leaf_index, data_size_t* blo
     cuda_split_info_buffer[3] = cur_max_leaf_index;
     cuda_split_info_buffer[4] = cuda_leaf_num_data[cur_max_leaf_index];
     cuda_split_info_buffer[5] = cuda_leaf_data_start[cur_max_leaf_index];
+    cuda_split_info_buffer_for_hessians[0] = best_left_sum_hessians[leaf_index_ref];
+    cuda_split_info_buffer_for_hessians[1] = best_right_sum_hessians[leaf_index_ref];
+
+    best_split_found[leaf_index_ref] = 0;
+    best_split_found[cur_max_leaf_index] = 0;
 
     /*if (cuda_leaf_num_data[leaf_index_ref] <= 0) {
       printf("error !!! leaf %d has count %d\n", leaf_index_ref, cuda_leaf_num_data[leaf_index_ref]);
@@ -1195,7 +1201,7 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
   const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
   const double* best_left_gain, const double* best_left_leaf_value,
   const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
-  const double* best_right_gain, const double* best_right_leaf_value,
+  const double* best_right_gain, const double* best_right_leaf_value, uint8_t* best_split_found,
   // for leaf splits information update
   int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
   double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
@@ -1208,6 +1214,7 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
   const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
   hist_t** larger_leaf_cuda_hist_pointer_pointer,
   std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
+  std::vector<double>* cpu_leaf_sum_hessians,
   int* smaller_leaf_index, int* larger_leaf_index) {
   const int min_num_blocks = num_data_in_leaf <= 100 ? 1 : 80;
   const int num_blocks = std::max(min_num_blocks, (num_data_in_leaf + SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION);
@@ -1287,7 +1294,7 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
     best_left_sum_gradients, best_left_sum_hessians, best_left_count,
     best_left_gain, best_left_leaf_value,
     best_right_sum_gradients, best_right_sum_hessians, best_right_count,
-    best_right_gain, best_right_leaf_value,
+    best_right_gain, best_right_leaf_value, best_split_found,
 
     smaller_leaf_cuda_leaf_index_pointer, smaller_leaf_cuda_sum_of_gradients_pointer,
     smaller_leaf_cuda_sum_of_hessians_pointer, smaller_leaf_cuda_num_data_in_leaf_pointer,
@@ -1308,8 +1315,9 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
     tree_left_sum_hessian_, tree_right_sum_hessian_, tree_gain_, tree_default_left_,
     data_partition_leaf_output_, cuda_split_info_buffer_);
   global_timer.Stop("CUDADataPartition::SplitTreeStructureKernel");
-  std::vector<int> cpu_split_info_buffer(8);
-  CopyFromCUDADeviceToHostAsync<int>(cpu_split_info_buffer.data(), cuda_split_info_buffer_, 8, cuda_streams_[0]);
+  std::vector<int> cpu_split_info_buffer(12);
+  const double* cpu_sum_hessians_info = reinterpret_cast<const double*>(cpu_split_info_buffer.data() + 8);
+  CopyFromCUDADeviceToHostAsync<int>(cpu_split_info_buffer.data(), cuda_split_info_buffer_, 12, cuda_streams_[0]);
   SynchronizeCUDADevice();
   const int left_leaf_index = cpu_split_info_buffer[0];
   const data_size_t left_leaf_num_data = cpu_split_info_buffer[1];
@@ -1321,6 +1329,8 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
   (*cpu_leaf_data_start)[left_leaf_index] = left_leaf_data_start;
   (*cpu_leaf_num_data)[right_leaf_index] = right_leaf_num_data;
   (*cpu_leaf_data_start)[right_leaf_index] = right_leaf_data_start;
+  (*cpu_leaf_sum_hessians)[left_leaf_index] = cpu_sum_hessians_info[0];
+  (*cpu_leaf_sum_hessians)[right_leaf_index] = cpu_sum_hessians_info[1];
   *smaller_leaf_index = cpu_split_info_buffer[6];
   *larger_leaf_index = cpu_split_info_buffer[7];
 }

@@ -33,7 +33,8 @@ class CUDALeafSplits {
     const data_size_t* cuda_num_data_in_leaf, const data_size_t* cuda_data_indices_in_leaf,
     hist_t* cuda_hist_in_leaf, const double* cuda_gain, const double* cuda_leaf_value);
 
-  void InitValues(const data_size_t* cuda_data_indices_in_leaf, hist_t* cuda_hist_in_leaf);
+  void InitValues(const data_size_t* cuda_data_indices_in_leaf, hist_t* cuda_hist_in_leaf,
+    double* root_sum_hessians);
 
   void InitValues();
 
@@ -81,6 +82,7 @@ class CUDALeafSplits {
   const int num_data_;
   const int leaf_index_;
   int num_blocks_init_from_gradients_;
+  std::vector<cudaStream_t> cuda_streams_;
 
   // CUDA memory, held by this object
   int* cuda_leaf_index_;
