@@ -747,7 +747,7 @@ def test_cv():
     cv_res_obj = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=tss,
                         verbose_eval=False)
     np.testing.assert_allclose(cv_res_gen['l2-mean'], cv_res_obj['l2-mean'])
-    # lambdarank
+    # LambdaRank
     X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                        '../../examples/lambdarank/rank.train'))
     q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -2793,3 +2793,28 @@ def test_reset_params_works_with_metric_num_class_and_boosting():
     expected_params = dict(dataset_params, **booster_params)
     assert bst.params == expected_params
     assert new_bst.params == expected_params
+
+
+def test_dump_model():
+    X, y = load_breast_cancer(return_X_y=True)
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "binary",
+        "verbose": -1
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model_str = str(bst.dump_model(5, 0))
+    assert "leaf_features" not in dumped_model_str
+    assert "leaf_coeff" not in dumped_model_str
+    assert "leaf_const" not in dumped_model_str
+    assert "leaf_value" in dumped_model_str
+    assert "leaf_count" in dumped_model_str
+    params['linear_tree'] = True
+    train_data = lgb.Dataset(X, label=y)
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model_str = str(bst.dump_model(5, 0))
+    assert "leaf_features" in dumped_model_str
+    assert "leaf_coeff" in dumped_model_str
+    assert "leaf_const" in dumped_model_str
+    assert "leaf_value" in dumped_model_str
+    assert "leaf_count" in dumped_model_str

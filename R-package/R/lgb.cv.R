@@ -166,6 +166,11 @@ lgb.cv <- function(params = list()
   }
   end_iteration <- begin_iteration + params[["num_iterations"]] - 1L
 
+  # pop interaction_constraints off of params. It needs some preprocessing on the
+  # R side before being passed into the Dataset object
+  interaction_constraints <- params[["interaction_constraints"]]
+  params["interaction_constraints"] <- NULL
+
   # Construct datasets, if needed
   data$update_params(params = params)
   data$construct()
@@ -177,7 +182,10 @@ lgb.cv <- function(params = list()
   } else if (!is.null(data$get_colnames())) {
     cnames <- data$get_colnames()
   }
-  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params = params, column_names = cnames)
+  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(
+    interaction_constraints = interaction_constraints
+    , column_names = cnames
+  )
 
   # Check for weights
   if (!is.null(weight)) {
@@ -547,7 +555,7 @@ lgb.stratified.folds <- function(y, k = 10L) {
       ## of samples in a class is less than k, nothing is producd here.
       seqVector <- rep(seq_len(k), numInClass[i] %/% k)
 
-      ## Add enough random integers to get  length(seqVector) == numInClass[i]
+      ## Add enough random integers to get length(seqVector) == numInClass[i]
       if (numInClass[i] %% k > 0L) {
         seqVector <- c(seqVector, sample.int(k, numInClass[i] %% k))
       }

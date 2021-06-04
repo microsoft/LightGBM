@@ -243,6 +243,9 @@ class Tree {
   /*! \brief Serialize this object to json*/
   std::string ToJSON() const;
 
+  /*! \brief Serialize linear model of tree node to json*/
+  std::string LinearModelToJSON(int index) const;
+
   /*! \brief Serialize this object to if-else statement*/
   std::string ToIfElse(int index, bool predict_leaf_index) const;
 

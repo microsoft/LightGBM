@@ -131,7 +131,7 @@ class GBDT : public GBDTBase {
 
   /*!
   * \brief Perform a full training procedure
-  * \param snapshot_freq frequence of snapshot
+  * \param snapshot_freq frequency of snapshot
   * \param model_output_path path of model file
   */
   void Train(int snapshot_freq, const std::string& model_output_path) override;
@@ -208,7 +208,7 @@ class GBDT : public GBDTBase {
   * \brief Get number of prediction for one data
   * \param start_iteration Start index of the iteration to predict
   * \param num_iteration number of used iterations
-  * \param is_pred_leaf True if predicting  leaf index
+  * \param is_pred_leaf True if predicting leaf index
   * \param is_pred_contrib True if predicting feature contribution
   * \return number of prediction
   */
@@ -444,7 +444,7 @@ class GBDT : public GBDTBase {
 
   /*!
   * \brief Print metric result of current iteration
-  * \param iter Current interation
+  * \param iter Current iteration
   * \return best_msg if met early_stopping
   */
   std::string OutputMetric(int iter);

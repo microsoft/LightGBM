@@ -27,12 +27,12 @@ namespace LightGBM {
 class DatasetLoader;
 /*!
 * \brief This class is used to store some meta(non-feature) data for training data,
-*        e.g. labels, weights, initial scores, query level informations.
+*        e.g. labels, weights, initial scores, query level information.
 *
 *        Some details:
 *        1. Label, used for training.
 *        2. Weights, weighs of records, optional
-*        3. Query Boundaries, necessary for lambdarank.
+*        3. Query Boundaries, necessary for LambdaRank.
 *           The documents of i-th query is in [ query_boundaries[i], query_boundaries[i+1] )
 *        4. Query Weights, auto calculate by weights and query_boundaries(if both of them are existed)
 *           the weight for i-th query is sum(query_boundaries[i] , .., query_boundaries[i+1]) / (query_boundaries[i + 1] -  query_boundaries[i+1])
@@ -45,7 +45,7 @@ class Metadata {
   */
   Metadata();
   /*!
-  * \brief Initialization will load query level informations, since it is need for sampling data
+  * \brief Initialization will load query level information, since it is need for sampling data
   * \param data_filename Filename of data
   */
   void Init(const char* data_filename);
@@ -252,6 +252,8 @@ class Metadata {
 /*! \brief Interface for Parser */
 class Parser {
  public:
+  typedef const char* (*AtofFunc)(const char* p, double* out);
+
   /*! \brief virtual destructor */
   virtual ~Parser() {}
 
@@ -271,9 +273,10 @@ class Parser {
   * \param filename One Filename of data
   * \param num_features Pass num_features of this data file if you know, <=0 means don't know
   * \param label_idx index of label column
+  * \param precise_float_parser using precise floating point number parsing if true
   * \return Object of parser
   */
-  static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx);
+  static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser);
 };
 
 /*! \brief The main class of data set,
@@ -611,7 +614,7 @@ class Dataset {
     // replace ' ' in feature_names with '_'
     bool spaceInFeatureName = false;
     for (auto& feature_name : feature_names_) {
-      // check json
+      // check JSON
       if (!Common::CheckAllowedJSON(feature_name)) {
         Log::Fatal("Do not support special JSON characters in feature name.");
       }
@@ -625,7 +628,7 @@ class Dataset {
       feature_name_set.insert(feature_name);
     }
     if (spaceInFeatureName) {
-      Log::Warning("Find whitespaces in feature_names, replace with underlines");
+      Log::Warning("Found whitespace in feature_names, replace with underlines");
     }
   }
 
