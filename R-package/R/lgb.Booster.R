@@ -501,7 +501,8 @@ Booster <- R6::R6Class(
                        predleaf = FALSE,
                        predcontrib = FALSE,
                        header = FALSE,
-                       reshape = FALSE, ...) {
+                       reshape = FALSE,
+                       ...) {
 
       # Check if number of iteration is non existent
       if (is.null(num_iteration)) {
@@ -513,7 +514,11 @@ Booster <- R6::R6Class(
       }
 
       # Predict on new data
-      predictor <- Predictor$new(private$handle, ...)
+      params <- list(...)
+      predictor <- Predictor$new(
+        modelfile = private$handle
+        , params = params
+      )
       return(
         predictor$predict(
           data = data
@@ -531,7 +536,7 @@ Booster <- R6::R6Class(
 
     # Transform into predictor
     to_predictor = function() {
-      return(Predictor$new(private$handle))
+      return(Predictor$new(modelfile = private$handle))
     },
 
     # Used for save
