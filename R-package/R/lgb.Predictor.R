@@ -27,8 +27,7 @@ Predictor <- R6::R6Class(
     },
 
     # Initialize will create a starter model
-    initialize = function(modelfile, ...) {
-      params <- list(...)
+    initialize = function(modelfile, params = list()) {
       private$params <- lgb.params2str(params = params)
       handle <- NULL
 
