@@ -32,7 +32,6 @@ class _DatasetNames(Enum):
 
     Avoid duplicating the training data when the validation set refers to elements of training data.
     """
-
     TRAINSET = auto()
     SAMPLE_WEIGHT = auto()
     INIT_SCORE = auto()
@@ -412,12 +411,14 @@ def _train(
         Initial model score for each validation set in eval_set.
     eval_group: list of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)
         Group/query for each validation set in eval_set.
-    eval_metric: String, callable, list or None, optional (default=None)
-        If string, built-in evaluation metric; if callable, a custom evaluation metric.
-        Can also be a list of built-in metric strs and/or custom evaluation metrics.
-    eval_at: str or Iterable of int, optional (default=None)
-        Depth thresholds at which to apply ranking metrics on eval_set data. Only applicable to ndcg and map metrics.
-        If str, must be comma-separated set of ints.
+    eval_metric : string, callable, list or None, optional (default=None)
+        If string, it should be a built-in evaluation metric to use.
+        If callable, it should be a custom evaluation metric, see note below for more details.
+        If list, it can be a list of built-in metrics, a list of custom evaluation metrics, or a mix of both.
+        In either case, the ``metric`` from the Dask model parameters (or inferred from the objective) will be evaluated and used as well.
+        Default: 'l2' for DaskLGBMRegressor, 'logloss' for DaskLGBMClassifier, 'ndcg' for DaskLGBMRanker.
+    eval_at: iterable of int, optional (default=None)
+        The evaluation positions of the specified ranking metric.
     **kwargs
         Other parameters passed to ``fit`` method of the local underlying model.
 

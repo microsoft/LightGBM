@@ -771,10 +771,11 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
                 eval_metrics = ['binary_error', 'auc']
                 eval_class_weight = []
                 eval_init_score = []
+            # objective's default `metric` will be evaluated in evals_result_ in addition to all eval_metrics.
             elif task == 'multiclass-classification':
-                eval_metrics = ['multi_error', 'multi_logloss']
+                eval_metrics = ['multi_error']
             elif task == 'regression':
-                eval_metrics = ['rmse']
+                eval_metrics = ['l1']
 
             eval_metric_names = eval_metrics
 
