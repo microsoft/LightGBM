@@ -125,6 +125,17 @@ class MultiValBinWrapper {
     is_subrow_copied_ = is_subrow_copied;
   }
 
+  const uint8_t* GetRowWiseData(uint8_t* bit_type, size_t* total_size, bool* is_sparse) const {
+    if (multi_val_bin_ == nullptr) {
+      *bit_type = 0;
+      *total_size = 0;
+      *is_sparse = false;
+      return nullptr;
+    } else {
+      return multi_val_bin_->GetRowWiseData(bit_type, total_size, is_sparse);
+    }
+  }
+
  private:
   bool is_use_subcol_ = false;
   bool is_use_subrow_ = false;
@@ -164,7 +175,12 @@ struct TrainingShareStates {
 
   const std::vector<uint32_t>& feature_hist_offsets() { return feature_hist_offsets_; }
 
+  const std::vector<uint32_t>& column_hist_offsets() { return column_hist_offsets_; }
+
   bool IsSparseRowwise() {
+    if (multi_val_bin_wrapper_ == nullptr) {
+      Log::Warning("in share states get row wise data, and multi_val_bin_wrapper_ == nullptr");
+    }
     return (multi_val_bin_wrapper_ != nullptr && multi_val_bin_wrapper_->IsSparse());
   }
 
@@ -211,8 +227,22 @@ struct TrainingShareStates {
     }
   }
 
+  const uint8_t* GetRowWiseData(uint8_t* bit_type, size_t* total_size, bool* is_sparse) {
+    if (multi_val_bin_wrapper_ != nullptr) {
+      Log::Warning("in share states get row wise data, and multi_val_bin_wrapper_ != nullptr");
+      return multi_val_bin_wrapper_->GetRowWiseData(bit_type, total_size, is_sparse);
+    } else {
+      Log::Warning("in share states get row wise data, and multi_val_bin_wrapper_ == nullptr");
+      *bit_type = 0;
+      *total_size = 0;
+      *is_sparse = false;
+      return nullptr;
+    }
+  }
+
  private:
   std::vector<uint32_t> feature_hist_offsets_;
+  std::vector<uint32_t> column_hist_offsets_;
   int num_hist_total_bin_ = 0;
   std::unique_ptr<MultiValBinWrapper> multi_val_bin_wrapper_;
   std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;

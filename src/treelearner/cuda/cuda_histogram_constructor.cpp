@@ -8,7 +8,7 @@
 
 #include "cuda_histogram_constructor.hpp"
 
-namespace LightGBM { 
+namespace LightGBM {
 
 CUDAHistogramConstructor::CUDAHistogramConstructor(const Dataset* train_data,
   const int num_leaves, const int num_threads,
@@ -47,11 +47,11 @@ void CUDAHistogramConstructor::BeforeTrain() {
   SetCUDAMemory<hist_t>(cuda_hist_, 0, num_total_bin_ * 2 * num_leaves_);
 }
 
-void CUDAHistogramConstructor::Init(const Dataset* train_data) {
+void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStates* share_state) {
   // allocate CPU memory
-  data_.resize(num_data_ * num_feature_groups_, 0);
+  //data_.resize(num_data_ * num_feature_groups_, 0);
   // allocate GPU memory
-  AllocateCUDAMemory<uint8_t>(num_feature_groups_ * num_data_, &cuda_data_);
+  //AllocateCUDAMemory<uint8_t>(num_feature_groups_ * num_data_, &cuda_data_);
 
   AllocateCUDAMemory<hist_t>(num_total_bin_ * 2 * num_leaves_, &cuda_hist_);
   SetCUDAMemory<hist_t>(cuda_hist_, 0, num_total_bin_ * 2 * num_leaves_);
@@ -80,11 +80,13 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data) {
 
   InitCUDAValueFromConstant<int>(&cuda_num_features_, num_features_);
 
-  InitCUDAData(train_data);
+  InitCUDAData(train_data, share_state);
+
+  DivideCUDAFeatureGroups(train_data, share_state);
 }
 
-void CUDAHistogramConstructor::InitCUDAData(const Dataset* train_data) {
-  std::vector<std::unique_ptr<BinIterator>> bin_iterators(num_feature_groups_);
+void CUDAHistogramConstructor::InitCUDAData(const Dataset* train_data, TrainingShareStates* share_state) {
+  /*std::vector<std::unique_ptr<BinIterator>> bin_iterators(num_feature_groups_);
   #pragma omp parallel for schedule(static) num_threads(num_threads_)
   for (int group_id = 0; group_id < num_feature_groups_; ++group_id) {
     bin_iterators[group_id].reset(train_data->FeatureGroupIterator(group_id));
@@ -93,8 +95,14 @@ void CUDAHistogramConstructor::InitCUDAData(const Dataset* train_data) {
       const uint32_t bin = static_cast<uint8_t>(bin_iterators[group_id]->RawGet(data_index));
       PushOneData(bin, group_id, data_index);
     }
-  }
-  CopyFromHostToCUDADevice<uint8_t>(cuda_data_, data_.data(), data_.size());
+  }*/
+  uint8_t bit_type = 0;
+  size_t total_size = 0;
+  //CopyFromHostToCUDADevice<uint8_t>(cuda_data_, data_.data(), data_.size());
+  Log::Warning("share_state_->IsSparse() = %d", static_cast<int>(share_state->IsSparseRowwise()));
+  const uint8_t* cpu_data_ptr = share_state->GetRowWiseData(&bit_type, &total_size, &is_sparse_);
+  CHECK_EQ(bit_type, 8);
+  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_data_uint8_t_, cpu_data_ptr, total_size);
   SynchronizeCUDADevice();
 }
 
@@ -136,6 +144,146 @@ void CUDAHistogramConstructor::ConstructHistogramForLeaf(const int* cuda_smaller
   /*PrintLastCUDAError();
   std::vector<hist_t> cpu_hist(6143 * 2, 0.0f);
   CopyFromCUDADeviceToHost<hist_t>(cpu_hist.data(), cuda_hist_, 6143 * 2);*/
+}
+
+void CUDAHistogramConstructor::CalcConstructHistogramKernelDim(
+  int* grid_dim_x, int* grid_dim_y, int* block_dim_x, int* block_dim_y,
+  const data_size_t num_data_in_smaller_leaf) {
+  *block_dim_x = max_num_column_per_partition_;
+  *block_dim_y = NUM_THRADS_PER_BLOCK / max_num_column_per_partition_;
+  *grid_dim_x = num_feature_partitions_;
+  const int min_grid_dim_y = 160;
+  *grid_dim_y = std::max(min_grid_dim_y,
+    ((num_data_in_smaller_leaf + NUM_DATA_PER_THREAD - 1) / NUM_DATA_PER_THREAD + (*block_dim_y) - 1) / (*block_dim_y));
+}
+
+void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingShareStates* share_state) {
+  const uint32_t max_num_bin_per_partition = SHRAE_HIST_SIZE / 2;
+  const std::vector<uint32_t>& feature_hist_offsets = share_state->feature_hist_offsets();
+  const std::vector<uint32_t>& column_hist_offsets = share_state->column_hist_offsets();
+  std::vector<int> feature_group_num_feature_offsets;
+  int offsets = 0;
+  int prev_group_index = -1;
+  for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
+    const int feature_group_index = train_data->Feature2Group(feature_index);
+    if (prev_group_index == -1 || feature_group_index != prev_group_index) {
+      feature_group_num_feature_offsets.emplace_back(offsets);
+    }
+    ++offsets;
+  }
+  CHECK_EQ(offsets, num_features_);
+  feature_group_num_feature_offsets.emplace_back(offsets);
+
+  uint32_t start_hist_offset = 0;
+  uint32_t column_start_hist_offset = 0;
+  feature_partition_hist_offsets_.clear();
+  feature_partition_feature_index_offsets_.clear();
+  feature_partition_column_index_offsets_.clear();
+  column_hist_offsets_.clear();
+  column_hist_offsets_full_.clear();
+  feature_partition_hist_offsets_.emplace_back(0);
+  feature_partition_feature_index_offsets_.emplace_back(0);
+  feature_partition_column_index_offsets_.emplace_back(0);
+  column_hist_offsets_full_.emplace_back(0);
+  const int num_feature_groups = train_data->num_feature_groups();
+  int column_index = 0;
+  num_feature_partitions_ = 0;
+  for (int feature_group_index = 0; feature_group_index < num_feature_groups; ++feature_group_index) {
+    const int group_feature_index_start = feature_group_num_feature_offsets[feature_group_index];
+    const int group_feature_index_end = feature_group_num_feature_offsets[feature_group_index + 1];
+    const int num_features_in_group = group_feature_index_end - group_feature_index_start;
+    if (!train_data->IsMultiGroup(feature_group_index)) {
+      const uint32_t group_feature_hist_start = feature_hist_offsets[group_feature_index_start];
+      const uint32_t group_feature_hist_end = feature_hist_offsets[group_feature_index_end];
+      const uint32_t num_bin_in_dense_group = group_feature_hist_end - group_feature_hist_start;
+      if (num_bin_in_dense_group > max_num_bin_per_partition) {
+        Log::Fatal("Too many bins in a dense feature group.");
+      }
+      const uint32_t cur_hist_num_bin = group_feature_hist_end - start_hist_offset;
+      if (cur_hist_num_bin > max_num_bin_per_partition) {
+        feature_partition_hist_offsets_.emplace_back(group_feature_hist_start);
+        feature_partition_feature_index_offsets_.emplace_back(group_feature_index_start);
+        feature_partition_column_index_offsets_.emplace_back(column_index);
+        start_hist_offset = group_feature_hist_start;
+        column_start_hist_offset = column_hist_offsets[column_index];
+        column_hist_offsets_full_.emplace_back(column_start_hist_offset);
+        ++num_feature_partitions_;
+      }
+      column_hist_offsets_.emplace_back(column_hist_offsets[column_index] - column_start_hist_offset);
+      if (feature_group_index == num_feature_groups - 1) {
+        CHECK_EQ(group_feature_index_end, num_features_);
+        feature_partition_hist_offsets_.emplace_back(group_feature_hist_end);
+        feature_partition_feature_index_offsets_.emplace_back(group_feature_index_end);
+        feature_partition_column_index_offsets_.emplace_back(column_index + 1);
+        column_hist_offsets_full_.emplace_back(column_hist_offsets.back());
+        ++num_feature_partitions_;
+      }
+      ++column_index;
+    } else {
+      for (int sub_feature_index = 0; sub_feature_index < num_features_in_group; ++sub_feature_index) {
+        const int feature_index = group_feature_index_start + sub_feature_index;
+        const uint32_t feature_hist_start = feature_hist_offsets[feature_index];
+        const uint32_t feature_hist_end = feature_hist_offsets[feature_index + 1];
+        const uint32_t cur_hist_num_bin = feature_hist_end - start_hist_offset;
+        if (cur_hist_num_bin > max_num_bin_per_partition) {
+          feature_partition_hist_offsets_.emplace_back(feature_hist_start);
+          feature_partition_feature_index_offsets_.emplace_back(feature_index);
+          feature_partition_column_index_offsets_.emplace_back(column_index);
+          start_hist_offset = feature_hist_start;
+          column_start_hist_offset = column_hist_offsets[column_index];
+          column_hist_offsets_full_.emplace_back(column_start_hist_offset);
+          ++num_feature_partitions_;
+        }
+        column_hist_offsets_.emplace_back(column_hist_offsets[column_index] - column_start_hist_offset);
+        if (feature_group_index == num_feature_groups - 1 && sub_feature_index == num_features_in_group - 1) {
+          CHECK_EQ(feature_index, num_features_ - 1);
+          feature_partition_hist_offsets_.emplace_back(feature_hist_end);
+          feature_partition_feature_index_offsets_.emplace_back(feature_index + 1);
+          feature_partition_column_index_offsets_.emplace_back(column_index + 1);
+          column_hist_offsets_full_.emplace_back(column_hist_offsets.back());
+          ++num_feature_partitions_;
+        }
+        ++column_index;
+      }
+    }
+  }
+  max_num_column_per_partition_ = 0;
+  for (size_t i = 0; i < feature_partition_column_index_offsets_.size() - 1; ++i) {
+    const int num_column = feature_partition_column_index_offsets_[i + 1] - feature_partition_column_index_offsets_[i];
+    if (num_column > max_num_column_per_partition_) {
+      max_num_column_per_partition_ = num_column;
+    }
+  }
+
+  for (size_t i = 0; i < column_hist_offsets_.size(); ++i) {
+    Log::Warning("column_hist_offsets[%d] = %d, feature_group_bin_offsets_[%d] = %d",
+      i, column_hist_offsets_[i], i, feature_group_bin_offsets_[i]);
+  }
+
+  CHECK_EQ(feature_partition_column_index_offsets_.size(), feature_partition_hist_offsets_.size());
+  CHECK_EQ(feature_partition_column_index_offsets_.size(), feature_partition_feature_index_offsets_.size());
+  for (size_t i = 0; i < feature_partition_column_index_offsets_.size(); ++i) {
+    Log::Warning("%d column %d hist %d feature %d", i,
+      feature_partition_column_index_offsets_[i],
+      feature_partition_feature_index_offsets_[i],
+      feature_partition_hist_offsets_[i]);
+  }
+
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_partition_hist_offsets_,
+    feature_partition_hist_offsets_.data(),
+    feature_partition_hist_offsets_.size());
+
+  InitCUDAMemoryFromHostMemory<int>(&cuda_feature_partition_column_index_offsets_,
+    feature_partition_column_index_offsets_.data(),
+    feature_partition_column_index_offsets_.size());
+
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_column_hist_offsets_,
+    column_hist_offsets_.data(),
+    column_hist_offsets_.size());
+
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_column_hist_offsets_full_,
+    column_hist_offsets_full_.data(),
+    column_hist_offsets_full_.size());
 }
 
 }  // namespace LightGBM

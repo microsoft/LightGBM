@@ -459,6 +459,8 @@ class MultiValBin {
   static constexpr double multi_val_bin_sparse_threshold = 0.25f;
 
   virtual MultiValBin* Clone() = 0;
+
+  virtual const uint8_t* GetRowWiseData(uint8_t* bit_type, size_t* total_size, bool* is_sparse) const = 0;
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {
