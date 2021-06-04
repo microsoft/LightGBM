@@ -101,6 +101,7 @@ void CUDAHistogramConstructor::InitCUDAData(const Dataset* train_data, TrainingS
   //CopyFromHostToCUDADevice<uint8_t>(cuda_data_, data_.data(), data_.size());
   Log::Warning("share_state_->IsSparse() = %d", static_cast<int>(share_state->IsSparseRowwise()));
   const uint8_t* cpu_data_ptr = share_state->GetRowWiseData(&bit_type, &total_size, &is_sparse_);
+  Log::Warning("bit_type = %d", bit_type);
   CHECK_EQ(bit_type, 8);
   InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_data_uint8_t_, cpu_data_ptr, total_size);
   SynchronizeCUDADevice();
@@ -175,70 +176,53 @@ void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data
   feature_group_num_feature_offsets.emplace_back(offsets);
 
   uint32_t start_hist_offset = 0;
-  uint32_t column_start_hist_offset = 0;
-  feature_partition_hist_offsets_.clear();
-  feature_partition_feature_index_offsets_.clear();
   feature_partition_column_index_offsets_.clear();
   column_hist_offsets_.clear();
   column_hist_offsets_full_.clear();
-  feature_partition_hist_offsets_.emplace_back(0);
-  feature_partition_feature_index_offsets_.emplace_back(0);
   feature_partition_column_index_offsets_.emplace_back(0);
   column_hist_offsets_full_.emplace_back(0);
   const int num_feature_groups = train_data->num_feature_groups();
   int column_index = 0;
   num_feature_partitions_ = 0;
   for (int feature_group_index = 0; feature_group_index < num_feature_groups; ++feature_group_index) {
-    const int group_feature_index_start = feature_group_num_feature_offsets[feature_group_index];
-    const int group_feature_index_end = feature_group_num_feature_offsets[feature_group_index + 1];
-    const int num_features_in_group = group_feature_index_end - group_feature_index_start;
     if (!train_data->IsMultiGroup(feature_group_index)) {
-      const uint32_t group_feature_hist_start = feature_hist_offsets[group_feature_index_start];
-      const uint32_t group_feature_hist_end = feature_hist_offsets[group_feature_index_end];
-      const uint32_t num_bin_in_dense_group = group_feature_hist_end - group_feature_hist_start;
+      const uint32_t column_feature_hist_start = column_hist_offsets[column_index];
+      const uint32_t column_feature_hist_end = column_hist_offsets[column_index + 1];
+      const uint32_t num_bin_in_dense_group = column_feature_hist_end - column_feature_hist_start;
       if (num_bin_in_dense_group > max_num_bin_per_partition) {
         Log::Fatal("Too many bins in a dense feature group.");
       }
-      const uint32_t cur_hist_num_bin = group_feature_hist_end - start_hist_offset;
+      const uint32_t cur_hist_num_bin = column_feature_hist_end - start_hist_offset;
       if (cur_hist_num_bin > max_num_bin_per_partition) {
-        feature_partition_hist_offsets_.emplace_back(group_feature_hist_start);
-        feature_partition_feature_index_offsets_.emplace_back(group_feature_index_start);
         feature_partition_column_index_offsets_.emplace_back(column_index);
-        start_hist_offset = group_feature_hist_start;
-        column_start_hist_offset = column_hist_offsets[column_index];
-        column_hist_offsets_full_.emplace_back(column_start_hist_offset);
+        start_hist_offset = column_feature_hist_start;
+        column_hist_offsets_full_.emplace_back(start_hist_offset);
         ++num_feature_partitions_;
       }
-      column_hist_offsets_.emplace_back(column_hist_offsets[column_index] - column_start_hist_offset);
+      column_hist_offsets_.emplace_back(column_hist_offsets[column_index] - start_hist_offset);
       if (feature_group_index == num_feature_groups - 1) {
-        CHECK_EQ(group_feature_index_end, num_features_);
-        feature_partition_hist_offsets_.emplace_back(group_feature_hist_end);
-        feature_partition_feature_index_offsets_.emplace_back(group_feature_index_end);
         feature_partition_column_index_offsets_.emplace_back(column_index + 1);
         column_hist_offsets_full_.emplace_back(column_hist_offsets.back());
         ++num_feature_partitions_;
       }
       ++column_index;
     } else {
+      const int group_feature_index_start = feature_group_num_feature_offsets[feature_group_index];
+      const int num_features_in_group = feature_group_num_feature_offsets[feature_group_index + 1] - group_feature_index_start;
       for (int sub_feature_index = 0; sub_feature_index < num_features_in_group; ++sub_feature_index) {
         const int feature_index = group_feature_index_start + sub_feature_index;
-        const uint32_t feature_hist_start = feature_hist_offsets[feature_index];
-        const uint32_t feature_hist_end = feature_hist_offsets[feature_index + 1];
-        const uint32_t cur_hist_num_bin = feature_hist_end - start_hist_offset;
+        const uint32_t column_feature_hist_start = column_hist_offsets[column_index];
+        const uint32_t column_feature_hist_end = column_hist_offsets[column_index + 1];
+        const uint32_t cur_hist_num_bin = column_feature_hist_end - start_hist_offset;
         if (cur_hist_num_bin > max_num_bin_per_partition) {
-          feature_partition_hist_offsets_.emplace_back(feature_hist_start);
-          feature_partition_feature_index_offsets_.emplace_back(feature_index);
           feature_partition_column_index_offsets_.emplace_back(column_index);
-          start_hist_offset = feature_hist_start;
-          column_start_hist_offset = column_hist_offsets[column_index];
-          column_hist_offsets_full_.emplace_back(column_start_hist_offset);
+          start_hist_offset = column_feature_hist_start;
+          column_hist_offsets_full_.emplace_back(start_hist_offset);
           ++num_feature_partitions_;
         }
-        column_hist_offsets_.emplace_back(column_hist_offsets[column_index] - column_start_hist_offset);
+        column_hist_offsets_.emplace_back(column_hist_offsets[column_index] - start_hist_offset);
         if (feature_group_index == num_feature_groups - 1 && sub_feature_index == num_features_in_group - 1) {
           CHECK_EQ(feature_index, num_features_ - 1);
-          feature_partition_hist_offsets_.emplace_back(feature_hist_end);
-          feature_partition_feature_index_offsets_.emplace_back(feature_index + 1);
           feature_partition_column_index_offsets_.emplace_back(column_index + 1);
           column_hist_offsets_full_.emplace_back(column_hist_offsets.back());
           ++num_feature_partitions_;
@@ -259,19 +243,6 @@ void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data
     Log::Warning("column_hist_offsets[%d] = %d, feature_group_bin_offsets_[%d] = %d",
       i, column_hist_offsets_[i], i, feature_group_bin_offsets_[i]);
   }
-
-  CHECK_EQ(feature_partition_column_index_offsets_.size(), feature_partition_hist_offsets_.size());
-  CHECK_EQ(feature_partition_column_index_offsets_.size(), feature_partition_feature_index_offsets_.size());
-  for (size_t i = 0; i < feature_partition_column_index_offsets_.size(); ++i) {
-    Log::Warning("%d column %d hist %d feature %d", i,
-      feature_partition_column_index_offsets_[i],
-      feature_partition_feature_index_offsets_[i],
-      feature_partition_hist_offsets_[i]);
-  }
-
-  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_partition_hist_offsets_,
-    feature_partition_hist_offsets_.data(),
-    feature_partition_hist_offsets_.size());
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_feature_partition_column_index_offsets_,
     feature_partition_column_index_offsets_.data(),

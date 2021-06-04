@@ -68,12 +68,12 @@ __global__ void CUDAConstructHistogramKernel(
   const data_size_t* data_indices_ref = *data_indices_ptr;
   __shared__ float shared_hist[SHRAE_HIST_SIZE];
   const unsigned int num_threads_per_block = blockDim.x * blockDim.y;
-  const uint32_t partition_hist_start = column_hist_offsets_full[blockIdx.x];
-  const uint32_t partition_hist_end = column_hist_offsets_full[blockIdx.x + 1];
-  const uint32_t num_bins_in_partition = partition_hist_end - partition_hist_start;
   const int partition_column_start = feature_partition_column_index_offsets[blockIdx.x];
   const int partition_column_end = feature_partition_column_index_offsets[blockIdx.x + 1];
   const int num_columns_in_partition = partition_column_end - partition_column_start;
+  const uint32_t partition_hist_start = column_hist_offsets_full[partition_column_start + blockIdx.x];
+  const uint32_t partition_hist_end = column_hist_offsets_full[partition_column_start + blockIdx.x + 1];
+  const uint32_t num_bins_in_partition = partition_hist_end - partition_hist_start;
   const uint32_t num_items_per_thread = (2 * num_bins_in_partition + num_threads_per_block - 1) / num_threads_per_block;
   const unsigned int thread_idx = threadIdx.x + threadIdx.y * blockDim.x;
   const uint32_t thread_start = thread_idx * num_items_per_thread;
@@ -93,19 +93,20 @@ __global__ void CUDAConstructHistogramKernel(
   const data_size_t num_iteration_this = remainder == 0 ? num_iteration_total : num_iteration_total - static_cast<data_size_t>(threadIdx_y >= remainder);
   data_size_t inner_data_index = static_cast<data_size_t>(threadIdx_y);
   float* shared_hist_ptr = shared_hist + (column_hist_offsets[threadIdx.x] << 1);
-  //if (threadIdx.x < static_cast<unsigned int>(num_columns_in_partition)) {
+  const int column_index = static_cast<int>(threadIdx.x) + partition_column_start;
+  if (threadIdx.x < static_cast<unsigned int>(num_columns_in_partition)) {
     for (data_size_t i = 0; i < num_iteration_this; ++i) {
       const data_size_t data_index = data_indices_ref_this_block[inner_data_index];
       const score_t grad = cuda_gradients[data_index];
       const score_t hess = cuda_hessians[data_index];
-      const uint32_t bin = static_cast<uint32_t>(data[data_index * num_feature_groups_ref + threadIdx.x/* + partition_column_start*/]);
+      const uint32_t bin = static_cast<uint32_t>(data[data_index * num_feature_groups_ref + column_index]);
       const uint32_t pos = bin << 1;
       float* pos_ptr = shared_hist_ptr + pos;
       atomicAdd_system(pos_ptr, grad);
       atomicAdd_system(pos_ptr + 1, hess);
       inner_data_index += blockDim.y;
     }
-  //}
+  }
   __syncthreads();
   hist_t* feature_histogram_ptr = (*feature_histogram) + (partition_hist_start << 1);
   for (uint32_t i = thread_start; i < thread_end; ++i) {

@@ -26,36 +26,37 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   cuda_centralized_info_.reset(new CUDACentralizedInfo(num_data_, this->config_->num_leaves, num_features_));
   cuda_centralized_info_->Init(labels);
   //cuda_centralized_info_->Test();
-
+  PrintLastCUDAError();
   cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_, 0, cuda_centralized_info_->cuda_gradients(),
     cuda_centralized_info_->cuda_hessians(), cuda_centralized_info_->cuda_num_data()));
   cuda_smaller_leaf_splits_->Init();
   cuda_larger_leaf_splits_.reset(new CUDALeafSplits(num_data_, -1, cuda_centralized_info_->cuda_gradients(),
     cuda_centralized_info_->cuda_hessians(), cuda_centralized_info_->cuda_num_data()));
   cuda_larger_leaf_splits_->Init();
-
+  PrintLastCUDAError();
   cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, this->config_->num_leaves, num_threads_,
     cuda_centralized_info_->cuda_gradients(), cuda_centralized_info_->cuda_hessians(), share_state_->feature_hist_offsets(),
     config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf));
   cuda_histogram_constructor_->Init(train_data_, share_state_.get());
   //cuda_histogram_constructor_->TestAfterInit();
-
+  PrintLastCUDAError();
   cuda_data_partition_.reset(new CUDADataPartition(num_data_, num_features_, this->config_->num_leaves, num_threads_,
     cuda_centralized_info_->cuda_num_data(), cuda_centralized_info_->cuda_num_leaves(),
     cuda_histogram_constructor_->cuda_data(), cuda_centralized_info_->cuda_num_features(),
     share_state_->feature_hist_offsets(), train_data_, cuda_histogram_constructor_->cuda_hist_pointer()));
-  cuda_data_partition_->Init();
-
+  cuda_data_partition_->Init(train_data_.get());
+  PrintLastCUDAError();
   cuda_best_split_finder_.reset(new CUDABestSplitFinder(cuda_histogram_constructor_->cuda_hist(),
     train_data_, this->share_state_->feature_hist_offsets(), this->config_->num_leaves,
     this->config_->lambda_l1, this->config_->lambda_l2, this->config_->min_data_in_leaf,
     this->config_->min_sum_hessian_in_leaf, this->config_->min_gain_to_split,
     cuda_centralized_info_->cuda_num_features()));
+  PrintLastCUDAError();
   cuda_best_split_finder_->Init();
-
+  PrintLastCUDAError();
   cuda_score_updater_.reset(new CUDAScoreUpdater(num_data_));
   cuda_score_updater_->Init();
-
+  PrintLastCUDAError();
   cuda_binary_objective_.reset(new CUDABinaryObjective(num_data_,
     cuda_centralized_info_->cuda_labels(), config_->sigmoid));
   cuda_binary_objective_->Init();

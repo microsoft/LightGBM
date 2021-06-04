@@ -210,6 +210,8 @@ class MultiValDenseBin : public MultiValBin {
 
   MultiValDenseBin<VAL_T>* Clone() override;
 
+  const uint8_t* GetRowWiseData(uint8_t* bit_type, size_t* total_size, bool* is_sparse) const override;
+
  private:
   data_size_t num_data_;
   int num_bin_;
@@ -226,6 +228,38 @@ class MultiValDenseBin : public MultiValBin {
 template<typename VAL_T>
 MultiValDenseBin<VAL_T>* MultiValDenseBin<VAL_T>::Clone() {
   return new MultiValDenseBin<VAL_T>(*this);
+}
+
+template <>
+const uint8_t* MultiValDenseBin<uint8_t>::GetRowWiseData(uint8_t* bit_type, size_t* total_size, bool* is_sparse) const {
+  const uint8_t* to_return = data_.data();
+  *bit_type = 8;
+  *total_size = static_cast<size_t>(num_data_) * static_cast<size_t>(num_feature_);
+  CHECK_EQ(*total_size, data_.size());
+  *is_sparse = false;
+  return to_return;
+}
+
+template <>
+const uint8_t* MultiValDenseBin<uint16_t>::GetRowWiseData(uint8_t* bit_type, size_t* total_size, bool* is_sparse) const {
+  const uint16_t* data_ptr = data_.data();
+  const uint8_t* to_return = reinterpret_cast<const uint8_t*>(data_ptr);
+  *bit_type = 16;
+  *total_size = static_cast<size_t>(num_data_) * static_cast<size_t>(num_feature_);
+  CHECK_EQ(*total_size, data_.size());
+  *is_sparse = false;
+  return to_return;
+}
+
+template <>
+const uint8_t* MultiValDenseBin<uint32_t>::GetRowWiseData(uint8_t* bit_type, size_t* total_size, bool* is_sparse) const {
+  const uint32_t* data_ptr = data_.data();
+  const uint8_t* to_return = reinterpret_cast<const uint8_t*>(data_ptr);
+  *bit_type = 32;
+  *total_size = static_cast<size_t>(num_data_) * static_cast<size_t>(num_feature_);
+  CHECK_EQ(*total_size, data_.size());
+  *is_sparse = false;
+  return to_return;
 }
 
 }  // namespace LightGBM

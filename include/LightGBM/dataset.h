@@ -565,6 +565,13 @@ class Dataset {
     return feature_groups_[group]->FeatureGroupData();
   }
 
+  const uint8_t* GetColWiseData(
+    const int feature_group_index,
+    const int sub_feature_index,
+    uint8_t* bit_type,
+    bool* is_sparse,
+    BinIterator** bin_iterator) const;
+
   inline double RealThreshold(int i, uint32_t threshold) const {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];

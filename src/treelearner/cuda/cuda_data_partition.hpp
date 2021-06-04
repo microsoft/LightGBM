@@ -24,11 +24,11 @@ namespace LightGBM {
 class CUDADataPartition {
  public:
   CUDADataPartition(const data_size_t num_data, const int num_features, const int num_leaves,
-  const int num_threads, const data_size_t* cuda_num_data, const int* cuda_num_leaves, const uint8_t* cuda_data,
+  const int num_threads, const data_size_t* cuda_num_data, const int* cuda_num_leaves,
   const int* cuda_num_features, const std::vector<uint32_t>& feature_hist_offsets, const Dataset* train_data,
   hist_t* cuda_hist);
 
-  void Init();
+  void Init(const Dataset* train_data);
 
   void BeforeTrain(const data_size_t* data_indices);
 
@@ -190,7 +190,7 @@ class CUDADataPartition {
   const double* train_data_score_tmp() const { return train_data_score_tmp_; }
 
  private:
-  void CopyColWiseData();
+  void CopyColWiseData(const Dataset* train_data);
 
   void LaunchCopyColWiseDataKernel();
 
@@ -287,6 +287,7 @@ class CUDADataPartition {
   int cur_num_leaves_;
   std::vector<double> cpu_train_data_score_tmp_;
   std::vector<int> cpu_split_info_buffer_;
+  std::vector<int> column_bit_type_;
 
   // CUDA streams
   std::vector<cudaStream_t> cuda_streams_;
@@ -337,7 +338,7 @@ class CUDADataPartition {
   // CUDA memory, held by other object
   const data_size_t* cuda_num_data_;
   const int* cuda_num_leaves_;
-  const uint8_t* cuda_data_;
+  std::vector<void*> cuda_data_by_column_;
   const int* cuda_num_features_;
   hist_t* cuda_hist_;
 };

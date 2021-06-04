@@ -120,8 +120,6 @@ class CUDAHistogramConstructor {
   std::vector<uint32_t> feature_most_freq_bins_;
   const int min_data_in_leaf_;
   const double min_sum_hessian_in_leaf_;
-  std::vector<uint32_t> feature_partition_hist_offsets_;
-  std::vector<int> feature_partition_feature_index_offsets_;
   std::vector<int> feature_partition_column_index_offsets_;
   std::vector<uint32_t> column_hist_offsets_;
   std::vector<uint32_t> column_hist_offsets_full_;
@@ -144,7 +142,6 @@ class CUDAHistogramConstructor {
   int* cuda_num_features_;
   score_t* cuda_ordered_gradients_;
   score_t* cuda_ordered_hessians_;
-  uint32_t* cuda_feature_partition_hist_offsets_;
   int* cuda_feature_partition_column_index_offsets_;
   uint32_t* cuda_column_hist_offsets_;
   uint32_t* cuda_column_hist_offsets_full_;

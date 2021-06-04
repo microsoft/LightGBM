@@ -382,6 +382,10 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
     }
     num_hist_total_bin_ = static_cast<int>(feature_hist_offsets_.back());
   }
+  column_hist_offsets_ = *offsets;
+  for (size_t i = 0; i < column_hist_offsets_.size(); ++i) {
+    Log::Warning("column_hist_offsets_[%d] = %d", i, column_hist_offsets_[i]);
+  }
 }
 
 void TrainingShareStates::SetMultiValBin(MultiValBin* bin, data_size_t num_data,

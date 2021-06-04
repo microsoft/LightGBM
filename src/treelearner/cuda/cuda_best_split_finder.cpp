@@ -60,10 +60,32 @@ void CUDABestSplitFinder::Init() {
   AllocateCUDAMemory<double>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_right_output_);
   AllocateCUDAMemory<uint8_t>(static_cast<size_t>(num_leaves_), &cuda_leaf_best_split_found_);
 
-  AllocateCUDAMemory<uint32_t>(feature_hist_offsets_.size(), &cuda_feature_hist_offsets_);
+
+  for (size_t i = 0; i < feature_hist_offsets_.size(); ++i) {
+    Log::Warning("feature_hist_offsets_[%d] = %d", i, feature_hist_offsets_[i]);
+  }
+
+  Log::Warning("before allocate feature hist offsets");
+  Log::Warning("before allocate feature_hist_offsets_.size() = %d", feature_hist_offsets_.size());
+  std::vector<uint32_t> non_sense(1000);
+  uint32_t* cuda_non_sense = nullptr;
+  Log::Warning("step 0");
+  AllocateCUDAMemory<uint32_t>(non_sense.size(), &cuda_non_sense);
+  Log::Warning("step 1");
+  CopyFromHostToCUDADevice<uint32_t>(cuda_non_sense, non_sense.data(), non_sense.size());
+  Log::Warning("step 2");
+  AllocateCUDAMemory<uint32_t>(feature_hist_offsets_.size() * 2, &cuda_feature_hist_offsets_);
+  Log::Warning("step 3");
+  PrintLastCUDAError();
+  Log::Warning("before copy feature hist offsets");
+  Log::Warning("after allocate feature_hist_offsets_.size() = %d", feature_hist_offsets_.size());
   CopyFromHostToCUDADevice<uint32_t>(cuda_feature_hist_offsets_, feature_hist_offsets_.data(), feature_hist_offsets_.size());
+  PrintLastCUDAError();
+  //InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_hist_offsets_, feature_hist_offsets_.data(), feature_hist_offsets_.size());
+  Log::Warning("after copy feature hist offsets");
 
   AllocateCUDAMemory<uint8_t>(feature_mfb_offsets_.size(), &cuda_feature_mfb_offsets_);
+  PrintLastCUDAError();
   CopyFromHostToCUDADevice<uint8_t>(cuda_feature_mfb_offsets_, feature_mfb_offsets_.data(), feature_mfb_offsets_.size());
 
   AllocateCUDAMemory<uint32_t>(feature_default_bins_.size(), &cuda_feature_default_bins_);
