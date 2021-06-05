@@ -15,16 +15,6 @@ lgb.is.null.handle <- function(x) {
   )
 }
 
-# [description] Get the most recent error stored on the C++ side and raise it
-#               as an R error.
-lgb.last_error <- function() {
-  err_msg <- .Call(
-    LGBM_GetLastError_R
-  )
-  stop("api error: ", err_msg)
-  return(invisible(NULL))
-}
-
 lgb.params2str <- function(params) {
 
   # Check for a list as input

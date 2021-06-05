@@ -324,7 +324,7 @@ cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = 
   }
 
   # Create callback
-  callback <- function(env, finalize = FALSE) {
+  callback <- function(env) {
 
     # Check for empty evaluation
     if (is.null(eval_len)) {
