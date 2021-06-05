@@ -42,14 +42,6 @@
 using LightGBM::Common::Split;
 using LightGBM::Log;
 
-SEXP LGBM_GetLastError_R() {
-  SEXP out;
-  out = PROTECT(Rf_allocVector(STRSXP, 1));
-  SET_STRING_ELT(out, 0, Rf_mkChar(LGBM_GetLastError()));
-  UNPROTECT(1);
-  return out;
-}
-
 SEXP LGBM_HandleIsNull_R(SEXP handle) {
   return Rf_ScalarLogical(R_ExternalPtrAddr(handle) == NULL);
 }
@@ -712,7 +704,6 @@ SEXP LGBM_BoosterDumpModel_R(SEXP handle,
 
 // .Call() calls
 static const R_CallMethodDef CallEntries[] = {
-  {"LGBM_GetLastError_R"              , (DL_FUNC) &LGBM_GetLastError_R              , 0},
   {"LGBM_HandleIsNull_R"              , (DL_FUNC) &LGBM_HandleIsNull_R              , 1},
   {"LGBM_DatasetCreateFromFile_R"     , (DL_FUNC) &LGBM_DatasetCreateFromFile_R     , 3},
   {"LGBM_DatasetCreateFromCSC_R"      , (DL_FUNC) &LGBM_DatasetCreateFromCSC_R      , 8},
