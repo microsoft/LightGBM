@@ -7,7 +7,7 @@ lgb.is.Dataset <- function(x) {
 }
 
 lgb.is.Predictor <- function(x) {
-  return(all(c("R6", "lgb.Dataset") %in% class(x)))
+  return(all(c("R6", "lgb.Predictor") %in% class(x)))
 }
 
 lgb.is.null.handle <- function(x) {
