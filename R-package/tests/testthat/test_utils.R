@@ -48,30 +48,6 @@ test_that("lgb.params2str() works as expected for a key in params with multiple 
     )
 })
 
-context("lgb.last_error")
-
-test_that("lgb.last_error() throws an error if there are no errors", {
-    expect_error({
-        lgb.last_error()
-    }, regexp = "Everything is fine")
-})
-
-test_that("lgb.last_error() correctly returns errors from the C++ side", {
-    testthat::skip(paste0(
-        "Skipping this test because it causes valgrind to think "
-        , "there is a memory leak, and needs to be rethought"
-    ))
-    data(agaricus.train, package = "lightgbm")
-    train <- agaricus.train
-    dvalid1 <- lgb.Dataset(
-        data = train$data
-        , label = as.matrix(rnorm(5L))
-    )
-    expect_error({
-        dvalid1$construct()
-    }, regexp = "[LightGBM] [Fatal] Length of label is not same with #data", fixed = TRUE)
-})
-
 context("lgb.check.eval")
 
 test_that("lgb.check.eval works as expected with no metric", {
