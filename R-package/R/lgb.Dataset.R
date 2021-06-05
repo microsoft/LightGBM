@@ -38,10 +38,10 @@ Dataset <- R6::R6Class(
                           ...) {
 
       # validate inputs early to avoid unnecessary computation
-      if (!(is.null(reference) || lgb.check.r6.class(object = reference, name = "lgb.Dataset"))) {
+      if (!(is.null(reference) || lgb.is.Dataset(reference))) {
           stop("lgb.Dataset: If provided, reference must be a ", sQuote("lgb.Dataset"))
       }
-      if (!(is.null(predictor) || lgb.check.r6.class(object = predictor, name = "lgb.Predictor"))) {
+      if (!(is.null(predictor) || lgb.is.Predictor(predictor))) {
           stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
       }
 
@@ -629,7 +629,7 @@ Dataset <- R6::R6Class(
       if (!is.null(reference)) {
 
         # Reference is unknown
-        if (!lgb.check.r6.class(object = reference, name = "lgb.Dataset")) {
+        if (!lgb.is.Dataset(reference)) {
           stop("set_reference: Can only use lgb.Dataset as a reference")
         }
 
@@ -699,7 +699,7 @@ Dataset <- R6::R6Class(
       if (!is.null(predictor)) {
 
         # Predictor is unknown
-        if (!lgb.check.r6.class(object = predictor, name = "lgb.Predictor")) {
+        if (!lgb.is.Predictor(predictor)) {
           stop("set_predictor: Can only use lgb.Predictor as predictor")
         }
 

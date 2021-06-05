@@ -1,9 +1,13 @@
 lgb.is.Booster <- function(x) {
-  return(lgb.check.r6.class(object = x, name = "lgb.Booster"))
+  return(all(c("R6", "lgb.Booster") %in% class(x)))
 }
 
 lgb.is.Dataset <- function(x) {
-  return(lgb.check.r6.class(object = x, name = "lgb.Dataset"))
+  return(all(c("R6", "lgb.Dataset") %in% class(x)))
+}
+
+lgb.is.Predictor <- function(x) {
+  return(all(c("R6", "lgb.Predictor") %in% class(x)))
 }
 
 lgb.is.null.handle <- function(x) {
@@ -114,14 +118,6 @@ lgb.check_interaction_constraints <- function(interaction_constraints, column_na
   }
 
   return(string_constraints)
-
-}
-
-
-lgb.check.r6.class <- function(object, name) {
-
-  # Check for non-existence of R6 class or named class
-  return(all(c("R6", name) %in% class(object)))
 
 }
 
