@@ -1,9 +1,13 @@
 lgb.is.Booster <- function(x) {
-  return(lgb.check.r6.class(object = x, name = "lgb.Booster"))
+  return(all(c("R6", "lgb.Booster") %in% class(x)))
 }
 
 lgb.is.Dataset <- function(x) {
-  return(lgb.check.r6.class(object = x, name = "lgb.Dataset"))
+  return(all(c("R6", "lgb.Dataset") %in% class(x)))
+}
+
+lgb.is.Predictor <- function(x) {
+  return(all(c("R6", "lgb.Predictor") %in% class(x)))
 }
 
 lgb.is.null.handle <- function(x) {
@@ -15,16 +19,7 @@ lgb.is.null.handle <- function(x) {
   )
 }
 
-# [description] Get the most recent error stored on the C++ side and raise it
-#               as an R error.
-lgb.last_error <- function() {
-  err_msg <- .Call(
-    LGBM_GetLastError_R
-  )
-  stop("api error: ", err_msg)
-  return(invisible(NULL))
-}
-lgb.params2str <- function(params, ...) {
+lgb.params2str <- function(params) {
 
   # Check for a list as input
   if (!identical(class(params), "list")) {
@@ -33,24 +28,6 @@ lgb.params2str <- function(params, ...) {
 
   # Split parameter names
   names(params) <- gsub("\\.", "_", names(params))
-
-  # Merge parameters from the params and the dots-expansion
-  dot_params <- list(...)
-  names(dot_params) <- gsub("\\.", "_", names(dot_params))
-
-  # Check for identical parameters
-  if (length(intersect(names(params), names(dot_params))) > 0L) {
-    stop(
-      "Same parameters in "
-      , sQuote("params")
-      , " and in the call are not allowed. Please check your "
-      , sQuote("params")
-      , " list"
-    )
-  }
-
-  # Merge parameters
-  params <- c(params, dot_params)
 
   # Setup temporary variable
   ret <- list()
@@ -141,14 +118,6 @@ lgb.check_interaction_constraints <- function(interaction_constraints, column_na
   }
 
   return(string_constraints)
-
-}
-
-
-lgb.check.r6.class <- function(object, name) {
-
-  # Check for non-existence of R6 class or named class
-  return(all(c("R6", name) %in% class(object)))
 
 }
 
