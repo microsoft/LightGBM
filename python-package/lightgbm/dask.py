@@ -88,8 +88,9 @@ def _remove_list_padding(*args: Any) -> List[List[Any]]:
 
 
 def _pad_eval_names(lgbm_model: LGBMModel, required_names: Optional[List[str]] = None) -> LGBMModel:
-    """Append missing (key, value) pairs to a LightGBM model's evals_result_ and best_score_ data OrderedDict attrs
-    based on a set of required eval_set names. Allows users to rely on expected eval_set names being present
+    """Append missing (key, value) pairs to a LightGBM model's evals_result_ and best_score_ OrderedDict attrs based on a set of required eval_set names.
+
+    Allows users to rely on expected eval_set names being present
     when fitting DaskLGBM estimators with ``eval_set``.
     """
     not_evaluated = 'not evaluated'
