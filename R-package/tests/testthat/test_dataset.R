@@ -82,7 +82,8 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
     , lightgbm:::lgb.params2str(params = list())
     , ref_handle
   )
-  expect_false(is.na(handle))
+  expect_is(handle, "externalptr")
+  expect_false(is.null(handle))
   .Call(LGBM_DatasetFree_R, handle)
   handle <- NULL
 })
