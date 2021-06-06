@@ -32,6 +32,7 @@ class _DatasetNames(Enum):
 
     Avoid duplicating the training data when the validation set refers to elements of training data.
     """
+
     TRAINSET = auto()
     SAMPLE_WEIGHT = auto()
     INIT_SCORE = auto()
@@ -87,6 +88,10 @@ def _remove_list_padding(*args: Any) -> List[List[Any]]:
 
 
 def _pad_eval_names(lgbm_model: LGBMModel, required_names: Optional[List[str]] = None) -> LGBMModel:
+    """Append missing (key, value) pairs to a LightGBM model's evals_result_ and best_score_ data OrderedDict attrs
+    based on a set of required eval_set names. Allows users to rely on expected eval_set names being present
+    when fitting DaskLGBM estimators with ``eval_set``.
+    """
     not_evaluated = 'not evaluated'
     for eval_name in required_names:
         if eval_name not in lgbm_model.evals_result_:
@@ -174,6 +179,13 @@ def _train_part(
                 if not part.get('eval_set'):
                     continue
 
+                # require that eval_name exists in evaluated result data in case dropped due to padding.
+                # in distributed training the 'training' eval_set is not detected, will have name 'valid_<index>'.
+                if eval_names:
+                    evals_result_name = eval_names[i]
+                else:
+                    evals_result_name = f'valid_{i}'
+
                 eval_set = part['eval_set'][i]
                 if eval_set == _DatasetNames.TRAINSET.name:
                     x_e.append(part['data'])
@@ -182,12 +194,8 @@ def _train_part(
                     x_e.extend(eval_set[0])
                     y_e.extend(eval_set[1])
 
-                    # require that eval_name exists in evaluated result data in case dropped due to padding.
-                    evals_result_name = f'valid_{i}'
-                    if eval_names:
-                        evals_result_name = eval_names[i]
-                    if evals_result_name not in evals_result_names:
-                        evals_result_names.append(evals_result_name)
+                if evals_result_name not in evals_result_names:
+                    evals_result_names.append(evals_result_name)
 
                 eval_weight = part.get('eval_sample_weight')
                 if eval_weight:
@@ -266,7 +274,7 @@ def _train_part(
 
     if n_evals:
         # ensure that expected keys for evals_result_ and best_score_ exist regardless of padding.
-        model = _pad_eval_names(model, evals_result_names)
+        model = _pad_eval_names(model, required_names=evals_result_names)
 
     return model if return_model else None
 
@@ -401,6 +409,9 @@ def _train(
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
     eval_set : list of (X, y) tuples of Dask data collections or None, optional (default=None)
         List of (X, y) tuple pairs to use as validation sets.
+        Note, that not all workers may receive chunks of every eval set within ``eval_set``. When the returned
+        lightgbm estimator is not trained using any chunks of a particular eval set, its corresponding component
+        of evals_result_ and best_score_ will be 'not_evaluated'.
     eval_names: list of strings or None, optional (default=None))
         Names of eval_set.
     eval_sample_weight: list of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)
@@ -416,7 +427,7 @@ def _train(
         If callable, it should be a custom evaluation metric, see note below for more details.
         If list, it can be a list of built-in metrics, a list of custom evaluation metrics, or a mix of both.
         In either case, the ``metric`` from the Dask model parameters (or inferred from the objective) will be evaluated and used as well.
-        Default: 'l2' for DaskLGBMRegressor, 'logloss' for DaskLGBMClassifier, 'ndcg' for DaskLGBMRanker.
+        Default: 'l2' for DaskLGBMRegressor, 'binary(multi)_logloss' for DaskLGBMClassifier, 'ndcg' for DaskLGBMRanker.
     eval_at: iterable of int, optional (default=None)
         The evaluation positions of the specified ranking metric.
     **kwargs
