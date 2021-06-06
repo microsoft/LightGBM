@@ -765,17 +765,18 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
             eval_group = []
         else:
             # test eval_class_weight, eval_init_score on binary-classification task.
+            # Note: objective's default`metric` will be evaluated in evals_result_ in addition to all eval_metrics.
             if task == 'binary-classification':
                 eval_metrics = ['binary_error', 'auc']
+                eval_metric_names = ['binary_logloss', 'binary_error', 'auc']
                 eval_class_weight = []
                 eval_init_score = []
-            # objective's default `metric` will be evaluated in evals_result_ in addition to all eval_metrics.
             elif task == 'multiclass-classification':
                 eval_metrics = ['multi_error']
+                eval_metric_names = ['multi_logloss', 'multi_error']
             elif task == 'regression':
                 eval_metrics = ['l1']
-
-            eval_metric_names = eval_metrics
+                eval_metric_names = ['l2', 'l1']
 
         # create eval_sets by creating new datasets or copying training data.
         for eval_size in eval_sizes:
@@ -869,15 +870,10 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
                 assert eval_name in dask_model.best_score_
                 if eval_names:
                     assert eval_name in eval_names
-                else:
-                    if eval_name == 'training':
-                        assert 1 in eval_sizes
-                    else:
-                        eval_name.startswith('valid')
 
-                # check that each eval_name and metric exists for all eval sets.
-                # allow for case when worker receives a fully-padded eval_set component and is not evaluated.
-                if not (evals_result[eval_name] == 'not evaluated' and eval_name.endswith('_0')):
+                # check that each eval_name and metric exists for all eval sets, allowing for the
+                # case when a worker receives a fully-padded eval_set component which is not evaluated.
+                if evals_result[eval_name] != 'not evaluated':
                     for metric in eval_metric_names:
                         assert metric in evals_result[eval_name]
                         assert metric in best_scores[eval_name]
@@ -908,17 +904,15 @@ def test_eval_set_with_custom_eval_metric(task, cluster):
 
         if task == 'ranking':
             eval_at = '5,6'
-            eval_metrics = ['ndcg']
+            eval_metrics = ['ndcg', _constant_metric]
             eval_metric_names = [f'ndcg@{k}' for k in eval_at.split(',')] + ['constant_metric']
         else:
             if task == 'binary-classification':
-                eval_metrics = ['binary_error', 'auc']
+                eval_metrics = ['binary_error', 'auc', _constant_metric]
+                eval_metric_names = ['binary_logloss', 'binary_error', 'auc', 'constant_metric']
             else:
-                eval_metrics = ['rmse']
-            eval_metric_names = copy.copy(eval_metrics)
-            eval_metric_names.append('constant_metric')
-
-        eval_metrics.append(_constant_metric)
+                eval_metrics = ['l1', _constant_metric]
+                eval_metric_names = ['l2', 'l1', 'constant_metric']
 
         fit_trees = 50
         params = {
