@@ -471,6 +471,9 @@ struct Config {
   // desc = used for constraints of monotonic features
   // desc = ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
   // desc = you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
+  // desc = in the CLI or C++, use a string like ``"-1,0,1"``
+  // desc = in the Python package, can use either a string or a list like ``[-1, 0, 1]``
+  // desc = in the R package, can use either a string or a vector like ``c(-1, 0, 1)``
   std::vector<int8_t> monotone_constraints;
 
   // type = enum
