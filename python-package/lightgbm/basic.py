@@ -644,7 +644,7 @@ class Sequence:
             elif isinstance(idx, slice):
                 return np.stack(self.__get_one_line__(i) for i in range(idx.start, idx.stop))
             else:
-                raise TypeError("Sequence index must be integer or slice, got {}".format(type(idx)))
+                raise TypeError(f"Sequence index must be integer or slice, got {type(idx)}")
 
         Parameters
         ----------
@@ -656,11 +656,11 @@ class Sequence:
         result : numpy 1-D array, numpy 2-D array
             1-D array if idx is int, 2-D array if idx is slice
         """
-        raise NotImplementedError("remove this line if subclassing")
+        raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __getitem__()")
 
     def __len__(self) -> int:
         """Return row count of this sequence."""
-        raise NotImplementedError
+        raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __len__()")
 
 
 class _InnerPredictor:
@@ -1227,8 +1227,10 @@ class Dataset:
 
         Parameters
         ----------
-            total_nrow (int): number of rows expected to add to dataset
-            ref_dataset (Dataset): referance dataset to extract meta from
+        total_nrow : int
+            number of rows expected to add to dataset
+        ref_dataset : Dataset
+            reference dataset to extract meta from
 
         Returns
         -------
@@ -1254,13 +1256,13 @@ class Dataset:
 
         Parameters
         ----------
-        sample_data:
+        sample_data : list of numpy arrays
             Sample data for each column
-        sample_indices:
+        sample_indices : list of numpy arrays
             Sample data row index for each column.
-        sample_cnt:
+        sample_cnt : int
             Number of samples.
-        total_nrow:
+        total_nrow : int
             Total number of rows for all input file.
 
         Returns
@@ -1273,9 +1275,9 @@ class Dataset:
 
         for i in range(ncol):
             if sample_data[i].dtype != np.double:
-                raise ValueError("sample_data[{}] type {} is not double".format(i, sample_data[i].dtype))
+                raise ValueError(f"sample_data[{i}] type {sample_data[i].dtype} is not double")
             if sample_indices[i].dtype != np.int32:
-                raise ValueError("sample_indices[{}] type {} is not int32".format(i, sample_indices[i].dtype))
+                raise ValueError(f"sample_indices[{i}] type {sample_indices[i].dtype} is not int32")
 
         # c type: double**
         # each double* element points to start of each column of sample data.

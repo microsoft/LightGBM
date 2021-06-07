@@ -85,8 +85,8 @@ def generate_hdf(input_fname, output_basename, batch_size):
 
     # We can store multiple datasets inside a single HDF5 file.
     # Separating X and Y for choosing best chunk size for data loading.
-    save2hdf({'Y': df1.iloc[:, :1], 'X': df1.iloc[:, 1:]}, '{}1.h5'.format(output_basename), batch_size)
-    save2hdf({'Y': df2.iloc[:, :1], 'X': df2.iloc[:, 1:]}, '{}2.h5'.format(output_basename), batch_size)
+    save2hdf({'Y': df1.iloc[:, :1], 'X': df1.iloc[:, 1:]}, f'{output_basename}1.h5', batch_size)
+    save2hdf({'Y': df2.iloc[:, :1], 'X': df2.iloc[:, 1:]}, f'{output_basename}2.h5', batch_size)
 
 
 def main():
