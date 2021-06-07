@@ -1198,14 +1198,14 @@ class Dataset:
 
         Parameters
         ----------
-        total_nrow: int
+        total_nrow : int
             Total number of rows to sample from.
             If this value is greater than the value of parameter ``bin_construct_sample_cnt``, only ``bin_construct_sample_cnt`` indices will be used.
             If Dataset has multiple input data, this should be the sum of rows of every file.
 
         Returns
         -------
-        indices: numpy array
+        indices : numpy array
             Indices for sampled data.
         """
         param_str = param_dict_to_str(self.params)
@@ -1482,11 +1482,11 @@ class Dataset:
             if all(isinstance(x, np.ndarray) for x in data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)
             elif all(Sequence.is_class(x) for x in data):
-                self.__init_from_seqs(data, params_str, ref_dataset)
+                self.__init_from_seqs(data, ref_dataset)
             else:
                 raise TypeError('Data list can only be of ndarray or Sequence')
         elif Sequence.is_class(data):
-            self.__init_from_seqs([data], params_str, ref_dataset)
+            self.__init_from_seqs([data], ref_dataset)
         elif isinstance(data, dt_DataTable):
             self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
@@ -1556,9 +1556,9 @@ class Dataset:
 
         return filtered, filtered_idx
 
-    def __init_from_seqs(self, seqs: List[Sequence], params_str: str, ref_dataset: 'Dataset'):
+    def __init_from_seqs(self, seqs: List[Sequence], ref_dataset: 'Dataset'):
         """
-        Initialize data from a Sequence object.
+        Initialize data from list of Sequence objects.
 
         Sequence: Generic Data Access Object
             Supports random access and access by batch if properly defined by user
