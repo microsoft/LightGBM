@@ -54,7 +54,7 @@ def log_loss(preds, labels):
 
 def experiment(objective, label_type, data):
     """Measure performance of an objective.
-    
+
     Parameters
     ----------
     objective : string 'binary' or 'xentropy'
@@ -63,7 +63,7 @@ def experiment(objective, label_type, data):
         Type of the label.
     data : dict
         Data for training.
-        
+
     Returns
     -------
     result : dict
