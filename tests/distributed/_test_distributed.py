@@ -4,14 +4,25 @@ import socket
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from platform import system
 from typing import Dict, Generator, List
 
 import numpy as np
+import pytest
 from sklearn.datasets import make_blobs, make_regression
 from sklearn.metrics import accuracy_score
 
 TESTS_DIR = Path(__file__).absolute().parent
-BINARY_DIR = TESTS_DIR.parents[1]
+
+
+@pytest.fixture(scope='module')
+def executable(pytestconfig) -> str:
+    """Returns the path to the lightgbm executable."""
+    exec_dir = Path(pytestconfig.getoption('execdir'))
+    exec_file = 'lightgbm'
+    if system() in {'Windows', 'Microsoft'}:
+        exec_file += '.exe'
+    return str(exec_dir / exec_file)
 
 
 def _find_random_open_port() -> int:
@@ -67,10 +78,13 @@ class DistributedMockup:
         'output_result': TESTS_DIR / 'predictions.txt',
     }
 
+    def __init__(self, executable: str):
+        self.executable = executable
+
     def worker_train(self, i: int) -> subprocess.CompletedProcess:
         """Start the training process on the `i`-th worker."""
         config_path = TESTS_DIR / f'train{i}.conf'
-        cmd = [BINARY_DIR / 'lightgbm', f'config={config_path}']
+        cmd = [self.executable, f'config={config_path}']
         return subprocess.run(cmd)
 
     def _set_ports(self) -> None:
@@ -136,7 +150,7 @@ class DistributedMockup:
         with open(TESTS_DIR / 'predict.conf', 'wt') as file:
             _write_dict(self.predict_config, file)
         config_path = TESTS_DIR / 'predict.conf'
-        cmd = [BINARY_DIR / 'lightgbm', f'config={config_path}']
+        cmd = [self.executable, f'config={config_path}']
         result = subprocess.run(cmd)
         if result.returncode != 0:
             raise RuntimeError
@@ -158,7 +172,7 @@ class DistributedMockup:
             _write_dict(self.train_config, file)
 
 
-def test_classifier():
+def test_classifier(executable):
     """Test the classification task."""
     num_machines = 2
     data = create_data(task='binary-classification')
@@ -167,14 +181,14 @@ def test_classifier():
         'objective': 'binary',
         'num_machines': num_machines,
     }
-    clf = DistributedMockup()
+    clf = DistributedMockup(executable)
     clf.fit(partitions, train_params)
     y_probas = clf.predict()
     y_pred = y_probas > 0.5
     assert accuracy_score(clf.label_, y_pred) == 1.
 
 
-def test_regressor():
+def test_regressor(executable):
     """Test the regression task."""
     num_machines = 2
     data = create_data(task='regression')
@@ -183,7 +197,7 @@ def test_regressor():
         'objective': 'regression',
         'num_machines': num_machines,
     }
-    reg = DistributedMockup()
+    reg = DistributedMockup(executable)
     reg.fit(partitions, train_params)
     y_pred = reg.predict()
     np.testing.assert_allclose(y_pred, reg.label_, rtol=0.2, atol=50.)
