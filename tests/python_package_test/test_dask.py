@@ -159,7 +159,7 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
             **kwargs
         )
     else:
-        raise ValueError("Unknown objective '%s'" % objective)
+        raise ValueError(f"Unknown objective '{objective}'")
     rnd = np.random.RandomState(42)
     weights = rnd.random(X.shape[0]) * 0.01
 
@@ -168,7 +168,7 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
         dy = da.from_array(y, chunk_size)
         dw = da.from_array(weights, chunk_size)
     elif output.startswith('dataframe'):
-        X_df = pd.DataFrame(X, columns=['feature_%d' % i for i in range(X.shape[1])])
+        X_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(X.shape[1])])
         if output == 'dataframe-with-categorical':
             num_cat_cols = 2
             for i in range(num_cat_cols):
@@ -199,7 +199,7 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
         dy = da.from_array(y, chunks=chunk_size)
         dw = da.from_array(weights, chunk_size)
     else:
-        raise ValueError("Unknown output type '%s'" % output)
+        raise ValueError("Unknown output type '{output}'")
 
     return X, y, weights, None, dX, dy, dw, None
 
@@ -1158,7 +1158,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
 
         # test that "machines" is actually respected by creating a socket that uses
         # one of the ports mentioned in "machines"
-        error_msg = "Binding port %s failed" % open_ports[0]
+        error_msg = f"Binding port {open_ports[0]} failed"
         with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.bind(('127.0.0.1', open_ports[0]))
