@@ -187,8 +187,6 @@ class CUDADataPartition {
 
   const uint8_t* tree_default_left() const { return tree_default_left_; }
 
-  const double* train_data_score_tmp() const { return train_data_score_tmp_; }
-
  private:
   void CopyColWiseData(const Dataset* train_data);
 
@@ -279,7 +277,6 @@ class CUDADataPartition {
   std::vector<uint8_t> feature_mfb_is_na_;
   std::vector<data_size_t> num_data_in_leaf_;
   int cur_num_leaves_;
-  std::vector<double> cpu_train_data_score_tmp_;
   std::vector<int> cpu_split_info_buffer_;
   std::vector<uint8_t> column_bit_type_;
   std::vector<int> feature_index_to_column_index_;
@@ -323,8 +320,6 @@ class CUDADataPartition {
   double* tree_gain_;
   uint8_t* tree_default_left_;
   double* data_partition_leaf_output_;
-  // for train data update
-  double* train_data_score_tmp_;
   // for debug
   double* cuda_gradients_sum_buffer_;
   double* cuda_hessians_sum_buffer_;

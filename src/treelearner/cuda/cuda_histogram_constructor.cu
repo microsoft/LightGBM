@@ -71,8 +71,8 @@ __global__ void CUDAConstructHistogramKernel(
   const int partition_column_start = feature_partition_column_index_offsets[blockIdx.x];
   const int partition_column_end = feature_partition_column_index_offsets[blockIdx.x + 1];
   const int num_columns_in_partition = partition_column_end - partition_column_start;
-  const uint32_t partition_hist_start = column_hist_offsets_full[partition_column_start + blockIdx.x];
-  const uint32_t partition_hist_end = column_hist_offsets_full[partition_column_start + blockIdx.x + 1];
+  const uint32_t partition_hist_start = column_hist_offsets_full[blockIdx.x];
+  const uint32_t partition_hist_end = column_hist_offsets_full[blockIdx.x + 1];
   const uint32_t num_bins_in_partition = partition_hist_end - partition_hist_start;
   const uint32_t num_items_per_thread = (2 * num_bins_in_partition + num_threads_per_block - 1) / num_threads_per_block;
   const unsigned int thread_idx = threadIdx.x + threadIdx.y * blockDim.x;
@@ -92,8 +92,8 @@ __global__ void CUDAConstructHistogramKernel(
   const data_size_t remainder = block_num_data % blockDim.y;
   const data_size_t num_iteration_this = remainder == 0 ? num_iteration_total : num_iteration_total - static_cast<data_size_t>(threadIdx_y >= remainder);
   data_size_t inner_data_index = static_cast<data_size_t>(threadIdx_y);
-  float* shared_hist_ptr = shared_hist + (column_hist_offsets[threadIdx.x] << 1);
   const int column_index = static_cast<int>(threadIdx.x) + partition_column_start;
+  float* shared_hist_ptr = shared_hist + (column_hist_offsets[column_index] << 1);
   if (threadIdx.x < static_cast<unsigned int>(num_columns_in_partition)) {
     for (data_size_t i = 0; i < num_iteration_this; ++i) {
       const data_size_t data_index = data_indices_ref_this_block[inner_data_index];
@@ -126,6 +126,9 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
   int block_dim_x = 0;
   int block_dim_y = 0;
   CalcConstructHistogramKernelDim(&grid_dim_x, &grid_dim_y, &block_dim_x, &block_dim_y, num_data_in_smaller_leaf);
+  /*Log::Warning("grid_dim_x = %d, grid_dim_y = %d", grid_dim_x, grid_dim_y);
+  Log::Warning("block_dim_x = %d, block_dim_y = %d", block_dim_x, block_dim_y);
+  Log::Warning("num_data_in_smaller_leaf = %d", num_data_in_smaller_leaf);*/
   dim3 grid_dim(grid_dim_x, grid_dim_y);
   dim3 block_dim(block_dim_x, block_dim_y);
   CUDAConstructHistogramKernel<<<grid_dim, block_dim>>>(cuda_smaller_leaf_index, cuda_gradients_, cuda_hessians_,

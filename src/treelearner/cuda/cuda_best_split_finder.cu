@@ -573,8 +573,8 @@ void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(
 }
 
 __device__ void ReduceBestSplit(uint8_t* found, double* gain, uint32_t* shared_read_index,
-  uint32_t num_features_aligned, uint32_t thread_offset) {
-  const uint32_t threadIdx_x = threadIdx.x - thread_offset;
+  uint32_t num_features_aligned) {
+  const uint32_t threadIdx_x = threadIdx.x;
   for (unsigned int s = 1; s < num_features_aligned; s <<= 1) {
     if (threadIdx_x % (2 * s) == 0 && (threadIdx_x + s) < num_features_aligned) {
       const uint32_t pos_to_compare = threadIdx_x + s;
@@ -619,7 +619,8 @@ __global__ void SyncBestSplitForLeafKernel(const int smaller_leaf_index, const i
   const int num_tasks,
   const int num_tasks_aligned,
   const int num_blocks_per_leaf,
-  const bool larger_only) {
+  const bool larger_only,
+  const int num_leaves) {
 
   const uint32_t threadIdx_x = threadIdx.x;
   const uint32_t blockIdx_x = blockIdx.x;
@@ -633,39 +634,102 @@ __global__ void SyncBestSplitForLeafKernel(const int smaller_leaf_index, const i
   const int task_index = static_cast<int>(leaf_block_index * num_blocks_per_leaf + threadIdx_x);
   const uint32_t read_index = is_smaller ? static_cast<uint32_t>(task_index) : static_cast<uint32_t>(task_index + num_tasks);
   if (task_index < num_tasks) {
-    best_found[task_index] = cuda_best_split_found[read_index];
-    best_gain[task_index] = cuda_best_split_gain[read_index];
-    shared_read_index[task_index] = read_index;
+    best_found[threadIdx_x] = cuda_best_split_found[read_index];
+    best_gain[threadIdx_x] = cuda_best_split_gain[read_index];
+    shared_read_index[threadIdx_x] = read_index;
   } else {
-    best_found[task_index] = 0;
+    best_found[threadIdx_x] = 0;
   }
 
   __syncthreads();
-  ReduceBestSplit(best_found, best_gain, shared_read_index, NUM_TASKS_PER_SYNC_BLOCK, 0);
-
+  ReduceBestSplit(best_found, best_gain, shared_read_index, NUM_TASKS_PER_SYNC_BLOCK);
   if (threadIdx.x == 0) {
     const int leaf_index_ref = is_smaller ? smaller_leaf_index : larger_leaf_index;
+    const unsigned buffer_write_pos = static_cast<unsigned int>(leaf_index_ref) + leaf_block_index * num_leaves;
     const uint32_t best_read_index = shared_read_index[0];
     if (best_found[0]) {
-      cuda_leaf_best_split_gain[leaf_index_ref] = best_gain[0];
-      cuda_leaf_best_split_feature[leaf_index_ref] = is_smaller ? cuda_task_feature_index[best_read_index] :
+      cuda_leaf_best_split_gain[buffer_write_pos] = best_gain[0];
+      cuda_leaf_best_split_feature[buffer_write_pos] = is_smaller ? cuda_task_feature_index[best_read_index] :
         cuda_task_feature_index[static_cast<int>(best_read_index) - num_tasks];
-      cuda_leaf_best_split_default_left[leaf_index_ref] = cuda_best_split_default_left[best_read_index];
-      cuda_leaf_best_split_threshold[leaf_index_ref] = cuda_best_split_threshold[best_read_index];
-      cuda_leaf_best_split_left_sum_gradient[leaf_index_ref] = cuda_best_split_left_sum_gradient[best_read_index];
-      cuda_leaf_best_split_left_sum_hessian[leaf_index_ref] = cuda_best_split_left_sum_hessian[best_read_index];
-      cuda_leaf_best_split_left_count[leaf_index_ref] = cuda_best_split_left_count[best_read_index];
-      cuda_leaf_best_split_left_gain[leaf_index_ref] = cuda_best_split_left_gain[best_read_index]; 
-      cuda_leaf_best_split_left_output[leaf_index_ref] = cuda_best_split_left_output[best_read_index];
-      cuda_leaf_best_split_right_sum_gradient[leaf_index_ref] = cuda_best_split_right_sum_gradient[best_read_index];
-      cuda_leaf_best_split_right_sum_hessian[leaf_index_ref] = cuda_best_split_right_sum_hessian[best_read_index];
-      cuda_leaf_best_split_right_count[leaf_index_ref] = cuda_best_split_right_count[best_read_index];
-      cuda_leaf_best_split_right_gain[leaf_index_ref] = cuda_best_split_right_gain[best_read_index]; 
-      cuda_leaf_best_split_right_output[leaf_index_ref] = cuda_best_split_right_output[best_read_index];
-      cuda_leaf_best_split_found[leaf_index_ref] = 1;
+      cuda_leaf_best_split_default_left[buffer_write_pos] = cuda_best_split_default_left[best_read_index];
+      cuda_leaf_best_split_threshold[buffer_write_pos] = cuda_best_split_threshold[best_read_index];
+      cuda_leaf_best_split_left_sum_gradient[buffer_write_pos] = cuda_best_split_left_sum_gradient[best_read_index];
+      cuda_leaf_best_split_left_sum_hessian[buffer_write_pos] = cuda_best_split_left_sum_hessian[best_read_index];
+      cuda_leaf_best_split_left_count[buffer_write_pos] = cuda_best_split_left_count[best_read_index];
+      cuda_leaf_best_split_left_gain[buffer_write_pos] = cuda_best_split_left_gain[best_read_index]; 
+      cuda_leaf_best_split_left_output[buffer_write_pos] = cuda_best_split_left_output[best_read_index];
+      cuda_leaf_best_split_right_sum_gradient[buffer_write_pos] = cuda_best_split_right_sum_gradient[best_read_index];
+      cuda_leaf_best_split_right_sum_hessian[buffer_write_pos] = cuda_best_split_right_sum_hessian[best_read_index];
+      cuda_leaf_best_split_right_count[buffer_write_pos] = cuda_best_split_right_count[best_read_index];
+      cuda_leaf_best_split_right_gain[buffer_write_pos] = cuda_best_split_right_gain[best_read_index]; 
+      cuda_leaf_best_split_right_output[buffer_write_pos] = cuda_best_split_right_output[best_read_index];
+      cuda_leaf_best_split_found[buffer_write_pos] = 1;
     } else {
-      cuda_leaf_best_split_gain[leaf_index_ref] = K_MIN_SCORE;
-      cuda_leaf_best_split_found[leaf_index_ref] = 0;
+      cuda_leaf_best_split_gain[buffer_write_pos] = K_MIN_SCORE;
+      cuda_leaf_best_split_found[buffer_write_pos] = 0;
+    }
+  }
+}
+
+__global__ void SyncBestSplitForLeafKernelAllBlocks(
+  const int smaller_leaf_index,
+  const int larger_leaf_index,
+  const unsigned int num_blocks_per_leaf,
+  const int num_leaves,
+  int* cuda_leaf_best_split_feature, uint8_t* cuda_leaf_best_split_default_left,
+  uint32_t* cuda_leaf_best_split_threshold, double* cuda_leaf_best_split_gain,
+  double* cuda_leaf_best_split_left_sum_gradient, double* cuda_leaf_best_split_left_sum_hessian,
+  data_size_t* cuda_leaf_best_split_left_count, double* cuda_leaf_best_split_left_gain,
+  double* cuda_leaf_best_split_left_output,
+  double* cuda_leaf_best_split_right_sum_gradient, double* cuda_leaf_best_split_right_sum_hessian,
+  data_size_t* cuda_leaf_best_split_right_count, double* cuda_leaf_best_split_right_gain,
+  double* cuda_leaf_best_split_right_output,
+  uint8_t* cuda_leaf_best_split_found,
+  const bool larger_only) {
+  if (!larger_only) {
+    for (unsigned int block_index = 1; block_index < num_blocks_per_leaf; ++block_index) {
+      const unsigned int leaf_read_pos = static_cast<unsigned int>(smaller_leaf_index) + block_index * static_cast<unsigned int>(num_leaves);
+      if ((cuda_leaf_best_split_found[leaf_read_pos] == 1 && cuda_leaf_best_split_found[smaller_leaf_index] == 1 &&
+        cuda_leaf_best_split_gain[leaf_read_pos] > cuda_leaf_best_split_gain[smaller_leaf_index])) {
+          cuda_leaf_best_split_found[smaller_leaf_index] = cuda_leaf_best_split_found[leaf_read_pos];
+          cuda_leaf_best_split_feature[smaller_leaf_index] = cuda_leaf_best_split_feature[leaf_read_pos];
+          cuda_leaf_best_split_default_left[smaller_leaf_index] = cuda_leaf_best_split_default_left[leaf_read_pos];
+          cuda_leaf_best_split_threshold[smaller_leaf_index] = cuda_leaf_best_split_threshold[leaf_read_pos];
+          cuda_leaf_best_split_gain[smaller_leaf_index] = cuda_leaf_best_split_gain[leaf_read_pos];
+          cuda_leaf_best_split_left_sum_gradient[smaller_leaf_index] = cuda_leaf_best_split_left_sum_gradient[leaf_read_pos];
+          cuda_leaf_best_split_left_sum_hessian[smaller_leaf_index] = cuda_leaf_best_split_left_sum_hessian[leaf_read_pos];
+          cuda_leaf_best_split_left_count[smaller_leaf_index] = cuda_leaf_best_split_left_count[leaf_read_pos];
+          cuda_leaf_best_split_left_gain[smaller_leaf_index] = cuda_leaf_best_split_left_gain[leaf_read_pos];
+          cuda_leaf_best_split_left_output[smaller_leaf_index] = cuda_leaf_best_split_left_output[leaf_read_pos];
+          cuda_leaf_best_split_right_sum_gradient[smaller_leaf_index] = cuda_leaf_best_split_right_sum_gradient[leaf_read_pos];
+          cuda_leaf_best_split_right_sum_hessian[smaller_leaf_index] = cuda_leaf_best_split_right_sum_hessian[leaf_read_pos];
+          cuda_leaf_best_split_right_count[smaller_leaf_index] = cuda_leaf_best_split_right_count[leaf_read_pos];
+          cuda_leaf_best_split_right_gain[smaller_leaf_index] = cuda_leaf_best_split_right_gain[leaf_read_pos];
+          cuda_leaf_best_split_right_output[smaller_leaf_index] = cuda_leaf_best_split_right_output[leaf_read_pos];
+      }
+    }
+  }
+  if (larger_leaf_index >= 0) {
+    for (unsigned int block_index = 1; block_index < num_blocks_per_leaf; ++block_index) {
+      const unsigned int leaf_read_pos = static_cast<unsigned int>(larger_leaf_index) + block_index * static_cast<unsigned int>(num_leaves);
+      if ((cuda_leaf_best_split_found[leaf_read_pos] == 1 && cuda_leaf_best_split_found[larger_leaf_index] == 1 &&
+        cuda_leaf_best_split_gain[leaf_read_pos] > cuda_leaf_best_split_gain[larger_leaf_index])) {
+          cuda_leaf_best_split_found[larger_leaf_index] = cuda_leaf_best_split_found[leaf_read_pos];
+          cuda_leaf_best_split_feature[larger_leaf_index] = cuda_leaf_best_split_feature[leaf_read_pos];
+          cuda_leaf_best_split_default_left[larger_leaf_index] = cuda_leaf_best_split_default_left[leaf_read_pos];
+          cuda_leaf_best_split_threshold[larger_leaf_index] = cuda_leaf_best_split_threshold[leaf_read_pos];
+          cuda_leaf_best_split_gain[larger_leaf_index] = cuda_leaf_best_split_gain[leaf_read_pos];
+          cuda_leaf_best_split_left_sum_gradient[larger_leaf_index] = cuda_leaf_best_split_left_sum_gradient[leaf_read_pos];
+          cuda_leaf_best_split_left_sum_hessian[larger_leaf_index] = cuda_leaf_best_split_left_sum_hessian[leaf_read_pos];
+          cuda_leaf_best_split_left_count[larger_leaf_index] = cuda_leaf_best_split_left_count[leaf_read_pos];
+          cuda_leaf_best_split_left_gain[larger_leaf_index] = cuda_leaf_best_split_left_gain[leaf_read_pos];
+          cuda_leaf_best_split_left_output[larger_leaf_index] = cuda_leaf_best_split_left_output[leaf_read_pos];
+          cuda_leaf_best_split_right_sum_gradient[larger_leaf_index] = cuda_leaf_best_split_right_sum_gradient[leaf_read_pos];
+          cuda_leaf_best_split_right_sum_hessian[larger_leaf_index] = cuda_leaf_best_split_right_sum_hessian[leaf_read_pos];
+          cuda_leaf_best_split_right_count[larger_leaf_index] = cuda_leaf_best_split_right_count[leaf_read_pos];
+          cuda_leaf_best_split_right_gain[larger_leaf_index] = cuda_leaf_best_split_right_gain[leaf_read_pos];
+          cuda_leaf_best_split_right_output[larger_leaf_index] = cuda_leaf_best_split_right_output[leaf_read_pos];
+      }
     }
   }
 }
@@ -685,7 +749,6 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
     num_tasks >>= 1;
   }
   const int num_blocks_per_leaf = (num_tasks_ + NUM_TASKS_PER_SYNC_BLOCK - 1) / NUM_TASKS_PER_SYNC_BLOCK;
-  //Log::Warning("num_blocks_per_leaf = %d", num_blocks_per_leaf);
   if (cpu_larger_leaf_index >= 0 && is_smaller_leaf_valid && is_larger_leaf_valid) {
     SyncBestSplitForLeafKernel<<<2 * num_blocks_per_leaf, NUM_TASKS_PER_SYNC_BLOCK>>>(
       cpu_smaller_leaf_index,
@@ -725,6 +788,28 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
       num_tasks_,
       num_tasks_aligned,
       num_blocks_per_leaf,
+      false,
+      num_leaves_);
+    SyncBestSplitForLeafKernelAllBlocks<<<1, 1>>>(
+      cpu_smaller_leaf_index,
+      cpu_larger_leaf_index,
+      num_blocks_per_leaf,
+      num_leaves_,
+      cuda_leaf_best_split_feature_,
+      cuda_leaf_best_split_default_left_,
+      cuda_leaf_best_split_threshold_,
+      cuda_leaf_best_split_gain_,
+      cuda_leaf_best_split_left_sum_gradient_,
+      cuda_leaf_best_split_left_sum_hessian_,
+      cuda_leaf_best_split_left_count_,
+      cuda_leaf_best_split_left_gain_,
+      cuda_leaf_best_split_left_output_,
+      cuda_leaf_best_split_right_sum_gradient_,
+      cuda_leaf_best_split_right_sum_hessian_,
+      cuda_leaf_best_split_right_count_,
+      cuda_leaf_best_split_right_gain_,
+      cuda_leaf_best_split_right_output_,
+      cuda_leaf_best_split_found_,
       false);
   } else {
     const bool larger_only = (!is_smaller_leaf_valid && is_larger_leaf_valid);
@@ -766,6 +851,28 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
       num_tasks_,
       num_tasks_aligned,
       num_blocks_per_leaf,
+      larger_only,
+      num_leaves_);
+    SyncBestSplitForLeafKernelAllBlocks<<<1, 1>>>(
+      cpu_smaller_leaf_index,
+      cpu_larger_leaf_index,
+      num_blocks_per_leaf,
+      num_leaves_,
+      cuda_leaf_best_split_feature_,
+      cuda_leaf_best_split_default_left_,
+      cuda_leaf_best_split_threshold_,
+      cuda_leaf_best_split_gain_,
+      cuda_leaf_best_split_left_sum_gradient_,
+      cuda_leaf_best_split_left_sum_hessian_,
+      cuda_leaf_best_split_left_count_,
+      cuda_leaf_best_split_left_gain_,
+      cuda_leaf_best_split_left_output_,
+      cuda_leaf_best_split_right_sum_gradient_,
+      cuda_leaf_best_split_right_sum_hessian_,
+      cuda_leaf_best_split_right_count_,
+      cuda_leaf_best_split_right_gain_,
+      cuda_leaf_best_split_right_output_,
+      cuda_leaf_best_split_found_,
       larger_only);
   }
 }

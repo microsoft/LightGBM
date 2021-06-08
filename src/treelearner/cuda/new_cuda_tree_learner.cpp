@@ -103,13 +103,7 @@ void NewCUDATreeLearner::BeforeTrain() {
   larger_leaf_index_ = -1;
 }
 
-void NewCUDATreeLearner::AllocateMemory(const bool is_constant_hessian) {}
-
-void NewCUDATreeLearner::CreateCUDAHistogramConstructors() {}
-
-void NewCUDATreeLearner::PushDataIntoDeviceHistogramConstructors() {}
-
-void NewCUDATreeLearner::FindBestSplits(const Tree* tree) {}
+void NewCUDATreeLearner::FindBestSplits(const Tree* /*tree*/) {}
 
 void NewCUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& /*is_feature_used*/,
   bool /*use_subtract*/) {}
@@ -186,7 +180,6 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   double find_best_split_time = 0.0f;
   double find_best_split_from_all_leaves_time = 0.0f;
   double split_data_indices_time = 0.0f;
-  double split_tree_time = 0.0f;
   //std::unique_ptr<Tree> tree(new Tree(config_->num_leaves, false, false));
   int num_leaves = 1;
   for (int i = 0; i < config_->num_leaves - 1; ++i) {
@@ -316,7 +309,6 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   Log::Warning("find best split time %f", find_best_split_time);
   Log::Warning("find best split time from all leaves %f", find_best_split_from_all_leaves_time);
   Log::Warning("split data indices time %f", split_data_indices_time);
-  //Log::Warning("split tree time %f", split_tree_time);
   Log::Warning("build tree time %f", build_tre_duration);
   return tree.release();
 }

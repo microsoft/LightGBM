@@ -112,11 +112,8 @@ void CUDADataPartition::Init(const Dataset* train_data) {
 
   AllocateCUDAMemory<double>(static_cast<size_t>(num_leaves_), &data_partition_leaf_output_);
 
-  AllocateCUDAMemory<double>(static_cast<size_t>(num_data_), &train_data_score_tmp_);
-
   CopyColWiseData(train_data);
 
-  cpu_train_data_score_tmp_.resize(num_data_, 0.0f);
   cpu_split_info_buffer_.resize(6, 0);
 
   cuda_streams_.resize(5);

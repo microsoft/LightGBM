@@ -37,14 +37,6 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   void AddPredictionToScore(const Tree* tree, double* out_score) const override;
 
  protected:
-  void AllocateFeatureTasks();
-
-  void AllocateMemory(const bool is_constant_hessian);
-
-  void CreateCUDAHistogramConstructors();
-
-  void PushDataIntoDeviceHistogramConstructors();
-
   void FindBestSplits(const Tree* tree) override;
 
   void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
@@ -88,27 +80,6 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   int smaller_leaf_index_;
   int larger_leaf_index_;
   int best_leaf_index_;
-
-  /*
-  // full data indices on CUDA devices, as the data indices of data_partition_ in CPU version
-  std::vector<data_size_t*> device_data_indices_;
-  // gradient values on CUDA devices
-  std::vector<score_t*> device_gradients_;
-  // hessian values on CUDA devices
-  std::vector<score_t*> device_hessians_;
-  // gradient and hessian values in CUDA devices
-  std::vector<score_t*> device_gradients_and_hessians_;
-  // histogram storage on CUDA devices
-  std::vector<hist_t*> device_histograms_;
-
-  // device leaf splits initializer
-  std::vector<std::unique_ptr<CUDALeafSplitsInit>> device_leaf_splits_initializers_;
-  // device histogram constructors
-  std::vector<std::unique_ptr<CUDAHistogramConstructor>> device_histogram_constructors_;
-  // device best split finder
-  std::vector<std::unique_ptr<CUDABestSplitFinder>> device_best_split_finders_;
-  // device splitter
-  std::vector<std::unique_ptr<CUDADataSplitter>> device_splitters_;*/
 };
 
 }  // namespace LightGBM

@@ -62,15 +62,15 @@ void CUDALeafSplits::LaunchInitValuesKernal() {
     cuda_sum_of_hessians_);
   CopyFromCUDADeviceToCUDADevice<data_size_t>(cuda_num_data_in_leaf_, cuda_num_data_, 1);
   SynchronizeCUDADevice();
-  auto end = std::chrono::steady_clock::now();
-  auto duration = static_cast<std::chrono::duration<double>>(end - start);
+  //auto end = std::chrono::steady_clock::now();
+  //auto duration = static_cast<std::chrono::duration<double>>(end - start);
   //Log::Warning("CUDAInitValuesKernel1 duration = %f", duration.count());
-  start = std::chrono::steady_clock::now();
+  //start = std::chrono::steady_clock::now();
   CUDAInitValuesKernel2<<<num_blocks_init_from_gradients_, 1>>>(
     cuda_sum_of_gradients_, cuda_sum_of_hessians_);
   SynchronizeCUDADevice();
-  end = std::chrono::steady_clock::now();
-  duration = static_cast<std::chrono::duration<double>>(end - start);
+  //end = std::chrono::steady_clock::now();
+  //duration = static_cast<std::chrono::duration<double>>(end - start);
   //Log::Warning("cuda_sum_of_gradients_ = %f, cuda_sum_of_hessians_ = %f", *cuda_sum_of_gradients_, *cuda_sum_of_hessians_);
   //Log::Warning("CUDAInitValuesKernel2 duration = %f", duration.count());
 }

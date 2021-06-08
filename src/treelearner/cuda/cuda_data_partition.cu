@@ -1374,7 +1374,7 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
   }
   const int num_blocks_final = (num_data_in_leaf + split_indices_block_size_data_partition_aligned - 1) / split_indices_block_size_data_partition_aligned;
   global_timer.Start("CUDADataPartition::AggregateBlockOffsetKernel");
-  auto start = std::chrono::steady_clock::now();
+  //auto start = std::chrono::steady_clock::now();
   AggregateBlockOffsetKernel<<<1, split_indices_block_size_data_partition_aligned / 2>>>(leaf_index, cuda_block_data_to_left_offset_,
     cuda_block_data_to_right_offset_, cuda_leaf_data_start_, cuda_leaf_data_end_,
     cuda_leaf_num_data_, cuda_data_indices_,
@@ -1404,8 +1404,8 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
     tree_left_sum_hessian_, tree_right_sum_hessian_, tree_gain_, tree_default_left_,
     data_partition_leaf_output_);
   SynchronizeCUDADevice();
-  auto end = std::chrono::steady_clock::now();
-  auto duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
+  //auto end = std::chrono::steady_clock::now();
+  //auto duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   global_timer.Stop("CUDADataPartition::AggregateBlockOffsetKernel");
   global_timer.Start("CUDADataPartition::SplitInnerKernel");
 
@@ -1413,18 +1413,18 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
     leaf_index, cuda_cur_num_leaves_, cuda_leaf_data_start_, cuda_leaf_num_data_, cuda_data_indices_, cuda_data_to_left_,
     cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_,
     cuda_out_data_indices_in_leaf_, split_indices_block_size_data_partition_aligned);
-  end = std::chrono::steady_clock::now();
-  duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
+  //end = std::chrono::steady_clock::now();
+  //duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   global_timer.Stop("CUDADataPartition::SplitInnerKernel");
   global_timer.Start("CUDADataPartition::CopyDataIndicesKernel");
-  start = std::chrono::steady_clock::now();
+  //start = std::chrono::steady_clock::now();
   CopyDataIndicesKernel<<<num_blocks_final, split_indices_block_size_data_partition_aligned, 0, cuda_streams_[1]>>>(
     leaf_index, cuda_cur_num_leaves_, cuda_leaf_data_start_, cuda_leaf_num_data_, cuda_out_data_indices_in_leaf_, cuda_data_indices_);
-  end = std::chrono::steady_clock::now();
-  duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
+  //end = std::chrono::steady_clock::now();
+  //duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   global_timer.Stop("CUDADataPartition::CopyDataIndicesKernel");
 
-  start = std::chrono::steady_clock::now();
+  //start = std::chrono::steady_clock::now();
   global_timer.Start("CUDADataPartition::SplitTreeStructureKernel");
   SplitTreeStructureKernel<<<1, 1, 0, cuda_streams_[0]>>>(leaf_index, cuda_block_data_to_left_offset_,
     cuda_block_data_to_right_offset_, cuda_leaf_data_start_, cuda_leaf_data_end_,
@@ -1495,7 +1495,7 @@ void CUDADataPartition::LaunchPrefixSumKernel(uint32_t* cuda_elements) {
 
 __global__ void AddPredictionToScoreKernel(const double* data_partition_leaf_output,
   const data_size_t* num_data_in_leaf, const data_size_t* data_indices_in_leaf,
-  const data_size_t* leaf_data_start, const double learning_rate, double* output_score, double* cuda_scores) {
+  const data_size_t* leaf_data_start, const double learning_rate, double* cuda_scores) {
   const unsigned int threadIdx_x = threadIdx.x;
   const unsigned int blockIdx_x = blockIdx.x;
   const unsigned int blockDim_x = blockDim.x;
@@ -1514,7 +1514,7 @@ __global__ void AddPredictionToScoreKernel(const double* data_partition_leaf_out
 void CUDADataPartition::LaunchAddPredictionToScoreKernel(const double learning_rate, double* cuda_scores) {
   global_timer.Start("CUDADataPartition::AddPredictionToScoreKernel");
   AddPredictionToScoreKernel<<<cur_num_leaves_, 1024>>>(data_partition_leaf_output_,
-    cuda_leaf_num_data_, cuda_data_indices_, cuda_leaf_data_start_, learning_rate, train_data_score_tmp_, cuda_scores);
+    cuda_leaf_num_data_, cuda_data_indices_, cuda_leaf_data_start_, learning_rate, cuda_scores);
   SynchronizeCUDADevice();
   global_timer.Stop("CUDADataPartition::AddPredictionToScoreKernel");
 }

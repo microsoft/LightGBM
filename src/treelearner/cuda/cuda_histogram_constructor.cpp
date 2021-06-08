@@ -48,11 +48,6 @@ void CUDAHistogramConstructor::BeforeTrain() {
 }
 
 void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStates* share_state) {
-  // allocate CPU memory
-  //data_.resize(num_data_ * num_feature_groups_, 0);
-  // allocate GPU memory
-  //AllocateCUDAMemory<uint8_t>(num_feature_groups_ * num_data_, &cuda_data_);
-
   AllocateCUDAMemory<hist_t>(num_total_bin_ * 2 * num_leaves_, &cuda_hist_);
   SetCUDAMemory<hist_t>(cuda_hist_, 0, num_total_bin_ * 2 * num_leaves_);
 
@@ -109,7 +104,7 @@ void CUDAHistogramConstructor::ConstructHistogramForLeaf(const int* cuda_smaller
   const double* cuda_larger_leaf_sum_gradients, const double* cuda_larger_leaf_sum_hessians, hist_t** cuda_larger_leaf_hist,
   const data_size_t* cuda_leaf_num_data, const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
   const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf) {
-  auto start = std::chrono::steady_clock::now();
+  //auto start = std::chrono::steady_clock::now();
   if ((num_data_in_smaller_leaf <= min_data_in_leaf_ || sum_hessians_in_smaller_leaf <= min_sum_hessian_in_leaf_) &&
     (num_data_in_larger_leaf <= min_data_in_leaf_ || sum_hessians_in_larger_leaf <= min_sum_hessian_in_leaf_)) {
     return;
@@ -117,16 +112,16 @@ void CUDAHistogramConstructor::ConstructHistogramForLeaf(const int* cuda_smaller
   LaunchConstructHistogramKernel(cuda_smaller_leaf_index, cuda_num_data_in_smaller_leaf,
     cuda_data_indices_in_smaller_leaf, cuda_leaf_num_data, cuda_smaller_leaf_hist, num_data_in_smaller_leaf);
   SynchronizeCUDADevice();
-  auto end = std::chrono::steady_clock::now();
-  double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
+  //auto end = std::chrono::steady_clock::now();
+  //double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   //Log::Warning("LaunchConstructHistogramKernel time %f", duration);
   global_timer.Start("CUDAHistogramConstructor::ConstructHistogramForLeaf::LaunchSubtractHistogramKernel");
-  start = std::chrono::steady_clock::now();
+  //start = std::chrono::steady_clock::now();
   LaunchSubtractHistogramKernel(cuda_smaller_leaf_index,
     cuda_larger_leaf_index, cuda_smaller_leaf_sum_gradients, cuda_smaller_leaf_sum_hessians,
     cuda_larger_leaf_sum_gradients, cuda_larger_leaf_sum_hessians, cuda_smaller_leaf_hist, cuda_larger_leaf_hist);
-  end = std::chrono::steady_clock::now();
-  duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
+  //end = std::chrono::steady_clock::now();
+  //duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   global_timer.Stop("CUDAHistogramConstructor::ConstructHistogramForLeaf::LaunchSubtractHistogramKernel");
   //Log::Warning("LaunchSubtractHistogramKernel time %f", duration);
   /*PrintLastCUDAError();
@@ -223,6 +218,18 @@ void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data
     if (num_column > max_num_column_per_partition_) {
       max_num_column_per_partition_ = num_column;
     }
+  }
+
+  for (size_t i = 0; i < feature_partition_column_index_offsets_.size(); ++i) {
+    Log::Warning("feature_partition_column_index_offsets_[%d] = %d", i, feature_partition_column_index_offsets_[i]);
+  }
+
+  for (size_t i = 0; i < column_hist_offsets_.size(); ++i) {
+    Log::Warning("column_hist_offsets_[%d] = %d", i, column_hist_offsets_[i]);
+  }
+
+  for (size_t i = 0; i < column_hist_offsets_full_.size(); ++i) {
+    Log::Warning("column_hist_offsets_full_[%d] = %d", i, column_hist_offsets_full_[i]);
   }
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_feature_partition_column_index_offsets_,
