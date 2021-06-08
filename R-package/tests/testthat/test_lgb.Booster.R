@@ -643,7 +643,6 @@ test_that("Saving a model with different feature importance types works", {
 })
 
 test_that("Saving a model with unknown importance type fails", {
-    testthat::skip("Skipping this test because it causes issues for valgrind")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
