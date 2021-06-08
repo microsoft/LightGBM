@@ -1,6 +1,3 @@
-library(lightgbm)
-library(Matrix)
-
 context("testing lgb.Dataset functionality")
 
 data(agaricus.test, package = "lightgbm")
