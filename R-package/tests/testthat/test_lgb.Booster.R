@@ -1,3 +1,27 @@
+context("Boooster")
+
+test_that("Booster$finalize() should not fail", {
+    X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
+    y <- iris[["Sepal.Length"]]
+    dtrain <- lgb.Dataset(X, label = y)
+    bst <- lgb.train(
+        data = dtrain
+        , objective = "regression"
+        , verbose = -1L
+        , nrounds = 3L
+    )
+    expect_true(lgb.is.Booster(bst))
+
+    expect_false(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+
+    bst$finalize()
+    expect_true(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+
+    # calling finalize() a second time shouldn't cause any issues
+    bst$finalize()
+    expect_true(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+})
+
 context("lgb.get.eval.result")
 
 test_that("lgb.get.eval.result() should throw an informative error if booster is not an lgb.Booster", {

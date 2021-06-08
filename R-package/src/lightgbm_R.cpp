@@ -211,7 +211,7 @@ SEXP LGBM_DatasetSaveBinary_R(SEXP handle,
 
 SEXP LGBM_DatasetFree_R(SEXP handle) {
   R_API_BEGIN();
-  if (R_ExternalPtrAddr(handle)) {
+  if (!Rf_isNull(handle) && R_ExternalPtrAddr(handle)) {
     CHECK_CALL(LGBM_DatasetFree(R_ExternalPtrAddr(handle)));
     R_ClearExternalPtr(handle);
   }
@@ -322,7 +322,7 @@ SEXP LGBM_DatasetGetNumFeature_R(SEXP handle,
 
 SEXP LGBM_BoosterFree_R(SEXP handle) {
   R_API_BEGIN();
-  if (R_ExternalPtrAddr(handle)) {
+  if (!Rf_isNull(handle) && R_ExternalPtrAddr(handle)) {
     CHECK_CALL(LGBM_BoosterFree(R_ExternalPtrAddr(handle)));
     R_ClearExternalPtr(handle);
   }
