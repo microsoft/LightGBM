@@ -104,14 +104,7 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-# temporary fix for https://github.com/microsoft/LightGBM/issues/4285
-if [[ $PYTHON_VERSION == "3.6" ]]; then
-    DASK_DEPENDENCIES="dask distributed"
-else
-    DASK_DEPENDENCIES="dask=2021.4.0 distributed=2021.4.0"
-fi
-
-conda install -q -y -n $CONDA_ENV cloudpickle ${DASK_DEPENDENCIES} joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
+conda install -q -y -n $CONDA_ENV cloudpickle dask distributed joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
 pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
