@@ -28,6 +28,26 @@ By using config files, one line can only contain one parameter. You can use ``#`
 
 If one parameter appears in both command line and config file, LightGBM will use the parameter from the command line.
 
+For the Python and R packages, any parameters that accept a list of values can be specified in those languages' default array types.
+For example, ``monotone_constraints`` might be specified as follows.
+
+**Python**
+
+.. code-block:: python
+
+   params = {
+      "monotone_constraints": [-1, 0, 1]
+   }
+
+
+**R**
+
+.. code-block:: r
+
+   params <- list(
+      monotone_constraints = c(-1, 0, 1)
+   )
+
 .. start params list
 
 Core Parameters
@@ -513,12 +533,6 @@ Learning Control Parameters
    -  ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
 
    -  you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
-
-   -  in the CLI or C++, use a string like ``"-1,0,1"``
-
-   -  in the Python package, can use either a string or a list like ``[-1, 0, 1]``
-
-   -  in the R package, can use either a string or a vector like ``c(-1, 0, 1)``
 
 -  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = enum, options: ``basic``, ``intermediate``, ``advanced``, aliases: ``monotone_constraining_method``, ``mc_method``
 
