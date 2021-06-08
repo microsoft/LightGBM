@@ -481,13 +481,14 @@ class FeatureGroup {
   const uint8_t* GetColWiseData(const int sub_feature_index,
     uint8_t* bit_type,
     bool* is_sparse,
-    BinIterator** bin_iterator) const {
+    std::vector<BinIterator*>* bin_iterator,
+    const int num_threads) const {
     if (sub_feature_index >= 0) {
       CHECK(is_multi_val_);
-      return multi_bin_data_[sub_feature_index]->GetColWiseData(bit_type, is_sparse, bin_iterator);
+      return multi_bin_data_[sub_feature_index]->GetColWiseData(bit_type, is_sparse, bin_iterator, num_threads);
     } else {
       CHECK(!is_multi_val_);
-      return bin_data_->GetColWiseData(bit_type, is_sparse, bin_iterator);
+      return bin_data_->GetColWiseData(bit_type, is_sparse, bin_iterator, num_threads);
     }
   }
 

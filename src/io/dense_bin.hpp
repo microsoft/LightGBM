@@ -461,7 +461,7 @@ class DenseBin : public Bin {
 
   DenseBin<VAL_T, IS_4BIT>* Clone() override;
 
-  const uint8_t* GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const override;
+  const uint8_t* GetColWiseData(uint8_t* bit_type, bool* is_sparse, std::vector<BinIterator*>* bin_iterator, const int num_threads) const override;
 
  private:
   data_size_t num_data_;
@@ -479,43 +479,6 @@ class DenseBin : public Bin {
 template <typename VAL_T, bool IS_4BIT>
 DenseBin<VAL_T, IS_4BIT>* DenseBin<VAL_T, IS_4BIT>::Clone() {
   return new DenseBin<VAL_T, IS_4BIT>(*this);
-}
-
-template <typename VAL_T, bool IS_4BIT>
-const uint8_t* DenseBin<VAL_T, IS_4BIT>::GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const {
-  *is_sparse = false;
-}
-
-template <>
-const uint8_t* DenseBin<uint8_t, false>::GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const {
-  *is_sparse = false;
-  *bit_type = 8;
-  *bin_iterator = nullptr;
-  return data_.data();
-}
-
-template <>
-const uint8_t* DenseBin<uint16_t, false>::GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const {
-  *is_sparse = false;
-  *bit_type = 16;
-  *bin_iterator = nullptr;
-  return reinterpret_cast<const uint8_t*>(data_.data());
-}
-
-template <>
-const uint8_t* DenseBin<uint32_t, false>::GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const {
-  *is_sparse = false;
-  *bit_type = 32;
-  *bin_iterator = nullptr;
-  return reinterpret_cast<const uint8_t*>(data_.data());
-}
-
-template <>
-const uint8_t* DenseBin<uint8_t, true>::GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const {
-  *is_sparse = false;
-  *bit_type = 4;
-  *bin_iterator = nullptr;
-  return data_.data();
 }
 
 template <typename VAL_T, bool IS_4BIT>

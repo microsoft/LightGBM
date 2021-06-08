@@ -178,9 +178,6 @@ struct TrainingShareStates {
   const std::vector<uint32_t>& column_hist_offsets() { return column_hist_offsets_; }
 
   bool IsSparseRowwise() {
-    if (multi_val_bin_wrapper_ == nullptr) {
-      Log::Warning("in share states get row wise data, and multi_val_bin_wrapper_ == nullptr");
-    }
     return (multi_val_bin_wrapper_ != nullptr && multi_val_bin_wrapper_->IsSparse());
   }
 
@@ -229,10 +226,8 @@ struct TrainingShareStates {
 
   const uint8_t* GetRowWiseData(uint8_t* bit_type, size_t* total_size, bool* is_sparse) {
     if (multi_val_bin_wrapper_ != nullptr) {
-      Log::Warning("in share states get row wise data, and multi_val_bin_wrapper_ != nullptr");
       return multi_val_bin_wrapper_->GetRowWiseData(bit_type, total_size, is_sparse);
     } else {
-      Log::Warning("in share states get row wise data, and multi_val_bin_wrapper_ == nullptr");
       *bit_type = 0;
       *total_size = 0;
       *is_sparse = false;

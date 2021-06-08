@@ -620,7 +620,7 @@ class SparseBin : public Bin {
     }
   }
 
- const uint8_t* GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const override;
+ const uint8_t* GetColWiseData(uint8_t* bit_type, bool* is_sparse, std::vector<BinIterator*>* bin_iterator, const int num_threads) const override;
 
  private:
   data_size_t num_data_;
@@ -636,30 +636,6 @@ class SparseBin : public Bin {
 template <typename VAL_T>
 SparseBin<VAL_T>* SparseBin<VAL_T>::Clone() {
   return new SparseBin(*this);
-}
-
-template <>
-const uint8_t* SparseBin<uint8_t>::GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const {
-  *is_sparse = true;
-  *bit_type = 8;
-  *bin_iterator = new SparseBinIterator<uint8_t>(this, 0);
-  return nullptr;
-}
-
-template <>
-const uint8_t* SparseBin<uint16_t>::GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const {
-  *is_sparse = true;
-  *bit_type = 8;
-  *bin_iterator = new SparseBinIterator<uint16_t>(this, 0);
-  return nullptr;
-}
-
-template <>
-const uint8_t* SparseBin<uint32_t>::GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const {
-  *is_sparse = true;
-  *bit_type = 8;
-  *bin_iterator = new SparseBinIterator<uint32_t>(this, 0);
-  return nullptr;
 }
 
 template <typename VAL_T>

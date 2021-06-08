@@ -114,8 +114,6 @@ void CUDADataPartition::Init(const Dataset* train_data) {
 
   AllocateCUDAMemory<double>(static_cast<size_t>(num_data_), &train_data_score_tmp_);
 
-  AllocateCUDAMemory<uint8_t>(static_cast<size_t>(num_data_) * static_cast<size_t>(num_features_), &cuda_data_col_wise_);
-
   CopyColWiseData(train_data);
 
   cpu_train_data_score_tmp_.resize(num_data_, 0.0f);
@@ -135,13 +133,32 @@ void CUDADataPartition::Init(const Dataset* train_data) {
 
 void CUDADataPartition::CopyColWiseData(const Dataset* train_data) {
   const int num_feature_group = train_data->num_feature_groups();
+  int column_index = 0;
+  std::vector<std::vector<int>> features_in_group(num_feature_group);
+  for (int feature_index = 0; feature_index < train_data->num_features(); ++feature_index) {
+    const int feature_group_index = train_data->Feature2Group(feature_index);
+    features_in_group[feature_group_index].emplace_back(feature_index);
+  }
+
+  feature_index_to_column_index_.resize(num_features_, -1);
   for (int feature_group_index = 0; feature_group_index < num_feature_group; ++feature_group_index) {
+    if (!train_data->IsMultiGroup(feature_group_index)) {
+      for (const int feature_index : features_in_group[feature_group_index]) {
+        feature_index_to_column_index_[feature_index] = column_index;
+      }
+      ++column_index;
+    } else {
+      for (const int feature_index : features_in_group[feature_group_index]) {
+        feature_index_to_column_index_[feature_index] = column_index;
+        ++column_index;
+      }
+    }
+
     if (!train_data->IsMultiGroup(feature_group_index)) {
       uint8_t bit_type = 0;
       bool is_sparse = false;
-      BinIterator* bin_iterator = nullptr;
-      const uint8_t* column_data = train_data->GetColWiseData(feature_group_index, -1, &bit_type, &is_sparse, &bin_iterator);
-      void* cuda_column_data = nullptr;
+      std::vector<BinIterator*> bin_iterator;
+      const uint8_t* column_data = train_data->GetColWiseData(feature_group_index, -1, &bit_type, &is_sparse, &bin_iterator, num_threads_);
       if (column_data != nullptr) {
         CHECK(!is_sparse);
         if (bit_type == 4) {
@@ -150,33 +167,153 @@ void CUDADataPartition::CopyColWiseData(const Dataset* train_data) {
           for (data_size_t i = 0; i < num_data_; ++i) {
             true_column_data[i] = static_cast<uint8_t>((column_data[i >> 1] >> ((i & 1) << 2)) & 0xf);
           }
-          uint8_t* cuda_true_column_data = reinterpret_cast<uint8_t*>(cuda_column_data);
+          bit_type = 8;
+          uint8_t* cuda_true_column_data = nullptr;
           InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_true_column_data, true_column_data.data(), static_cast<size_t>(num_data_));
+          cuda_data_by_column_.emplace_back(cuda_true_column_data);
         } else if (bit_type == 8) {
-          uint8_t* cuda_true_column_data = reinterpret_cast<uint8_t*>(cuda_column_data);
+          uint8_t* cuda_true_column_data = nullptr;
           InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_true_column_data, column_data, static_cast<size_t>(num_data_));
+          cuda_data_by_column_.emplace_back(cuda_true_column_data);
         } else if (bit_type == 16) {
-          uint16_t* cuda_true_column_data = reinterpret_cast<uint16_t*>(cuda_column_data);
+          uint16_t* cuda_true_column_data = nullptr;
           const uint16_t* true_column_data = reinterpret_cast<const uint16_t*>(column_data);
           InitCUDAMemoryFromHostMemory<uint16_t>(&cuda_true_column_data, true_column_data, static_cast<size_t>(num_data_));
+          cuda_data_by_column_.emplace_back(cuda_true_column_data);
         } else if (bit_type == 32) {
-          uint32_t* cuda_true_column_data = reinterpret_cast<uint32_t*>(cuda_column_data);
+          uint32_t* cuda_true_column_data = nullptr;
           const uint32_t* true_column_data = reinterpret_cast<const uint32_t*>(column_data);
           InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_true_column_data, true_column_data, static_cast<size_t>(num_data_));
+          cuda_data_by_column_.emplace_back(cuda_true_column_data);
         } else {
           Log::Fatal("Unknow bit type = %d", bit_type);
         }
       } else {
         CHECK(is_sparse);
-        CHECK(bin_iterator != nullptr);
-        bin_iterator->Reset(0);
+        CHECK_EQ(bin_iterator.size(), static_cast<size_t>(num_threads_));
         if (bit_type == 8) {
           std::vector<uint8_t> true_column_data(num_data_, 0);
-          uint8_t* cuda_true_column_data = reinterpret_cast<uint8_t*>(cuda_column_data);
+          uint8_t* cuda_true_column_data = nullptr;
+          Threading::For<data_size_t>(0, num_data_, 512,
+            [&bin_iterator, &true_column_data] (const int thread_index, data_size_t start, data_size_t end) {
+              bin_iterator[thread_index]->Reset(start);
+              BinIterator* thread_bin_iterator = bin_iterator[thread_index];
+              for (data_size_t data_index = start; data_index < end; ++data_index) {
+                true_column_data[data_index] = static_cast<uint8_t>(thread_bin_iterator->RawGet(data_index));
+              }
+            });
+          InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_true_column_data, true_column_data.data(), true_column_data.size());
+          cuda_data_by_column_.emplace_back(cuda_true_column_data);
+        } else if (bit_type == 16) {
+          std::vector<uint16_t> true_column_data(num_data_, 0);
+          uint16_t* cuda_true_column_data = nullptr;
+          Threading::For<data_size_t>(0, num_data_, 512,
+            [&bin_iterator, &true_column_data] (const int thread_index, data_size_t start, data_size_t end) {
+              bin_iterator[thread_index]->Reset(start);
+              BinIterator* thread_bin_iterator = bin_iterator[thread_index];
+              for (data_size_t data_index = start; data_index < end; ++data_index) {
+                true_column_data[data_index] = static_cast<uint16_t>(thread_bin_iterator->RawGet(data_index));
+              }
+            });
+          InitCUDAMemoryFromHostMemory<uint16_t>(&cuda_true_column_data, true_column_data.data(), true_column_data.size());
+          cuda_data_by_column_.emplace_back(cuda_true_column_data);
+        } else if (bit_type == 32) {
+          std::vector<uint32_t> true_column_data(num_data_, 0);
+          uint32_t* cuda_true_column_data = nullptr;
+          Threading::For<data_size_t>(0, num_data_, 512,
+            [&bin_iterator, &true_column_data] (const int thread_index, data_size_t start, data_size_t end) {
+              bin_iterator[thread_index]->Reset(start);
+              BinIterator* thread_bin_iterator = bin_iterator[thread_index];
+              for (data_size_t data_index = start; data_index < end; ++data_index) {
+                true_column_data[data_index] = thread_bin_iterator->RawGet(data_index);
+              }
+            });
+          InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_true_column_data, true_column_data.data(), true_column_data.size());
+          cuda_data_by_column_.emplace_back(cuda_true_column_data);
         }
       }
       column_bit_type_.emplace_back(bit_type);
-      cuda_data_by_column_.emplace_back(cuda_column_data);
+    } else {
+      for (int sub_feature_index = 0; sub_feature_index < static_cast<int>(features_in_group[feature_group_index].size()); ++sub_feature_index) {
+        uint8_t bit_type = 0;
+        bool is_sparse = false;
+        std::vector<BinIterator*> bin_iterator;
+        const uint8_t* column_data = train_data->GetColWiseData(feature_group_index, sub_feature_index, &bit_type, &is_sparse, &bin_iterator, num_threads_);
+        if (column_data != nullptr) {
+          CHECK(!is_sparse);
+          if (bit_type == 4) {
+            std::vector<uint8_t> true_column_data(num_data_, 0);
+            #pragma omp parallel for schedule(static) num_threads(num_threads_)
+            for (data_size_t i = 0; i < num_data_; ++i) {
+              true_column_data[i] = static_cast<uint8_t>((column_data[i >> 1] >> ((i & 1) << 2)) & 0xf);
+            }
+            bit_type = 8;
+            uint8_t* cuda_true_column_data = nullptr;
+            InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_true_column_data, true_column_data.data(), static_cast<size_t>(num_data_));
+            cuda_data_by_column_.emplace_back(reinterpret_cast<void*>(cuda_true_column_data));
+          } else if (bit_type == 8) {
+            uint8_t* cuda_true_column_data = nullptr;
+            InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_true_column_data, column_data, static_cast<size_t>(num_data_));
+            cuda_data_by_column_.emplace_back(reinterpret_cast<void*>(cuda_true_column_data));
+          } else if (bit_type == 16) {
+            uint16_t* cuda_true_column_data = nullptr;
+            const uint16_t* true_column_data = reinterpret_cast<const uint16_t*>(column_data);
+            InitCUDAMemoryFromHostMemory<uint16_t>(&cuda_true_column_data, true_column_data, static_cast<size_t>(num_data_));
+            cuda_data_by_column_.emplace_back(reinterpret_cast<void*>(cuda_true_column_data));
+          } else if (bit_type == 32) {
+            uint32_t* cuda_true_column_data = nullptr;
+            const uint32_t* true_column_data = reinterpret_cast<const uint32_t*>(column_data);
+            InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_true_column_data, true_column_data, static_cast<size_t>(num_data_));
+            cuda_data_by_column_.emplace_back(reinterpret_cast<void*>(cuda_true_column_data));
+          } else {
+            Log::Fatal("Unknow bit type = %d", bit_type);
+          }
+        } else {
+          CHECK(is_sparse);
+          CHECK_EQ(bin_iterator.size(), static_cast<size_t>(num_threads_));
+          if (bit_type == 8) {
+            std::vector<uint8_t> true_column_data(num_data_, 0);
+            uint8_t* cuda_true_column_data = nullptr;
+            Threading::For<data_size_t>(0, num_data_, 512,
+              [&bin_iterator, &true_column_data] (const int thread_index, data_size_t start, data_size_t end) {
+                bin_iterator[thread_index]->Reset(start);
+                BinIterator* thread_bin_iterator = bin_iterator[thread_index];
+                for (data_size_t data_index = start; data_index < end; ++data_index) {
+                  true_column_data[data_index] = static_cast<uint8_t>(thread_bin_iterator->RawGet(data_index));
+                }
+              });
+            InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_true_column_data, true_column_data.data(), true_column_data.size());
+            cuda_data_by_column_.emplace_back(reinterpret_cast<void*>(cuda_true_column_data));
+          } else if (bit_type == 16) {
+            std::vector<uint16_t> true_column_data(num_data_, 0);
+            uint16_t* cuda_true_column_data = nullptr;
+            Threading::For<data_size_t>(0, num_data_, 512,
+              [&bin_iterator, &true_column_data] (const int thread_index, data_size_t start, data_size_t end) {
+                bin_iterator[thread_index]->Reset(start);
+                BinIterator* thread_bin_iterator = bin_iterator[thread_index];
+                for (data_size_t data_index = start; data_index < end; ++data_index) {
+                  true_column_data[data_index] = static_cast<uint16_t>(thread_bin_iterator->RawGet(data_index));
+                }
+              });
+            InitCUDAMemoryFromHostMemory<uint16_t>(&cuda_true_column_data, true_column_data.data(), true_column_data.size());
+            cuda_data_by_column_.emplace_back(reinterpret_cast<void*>(cuda_true_column_data));
+          } else if (bit_type == 32) {
+            std::vector<uint32_t> true_column_data(num_data_, 0);
+            uint32_t* cuda_true_column_data = nullptr;
+            Threading::For<data_size_t>(0, num_data_, 512,
+              [&bin_iterator, &true_column_data] (const int thread_index, data_size_t start, data_size_t end) {
+                bin_iterator[thread_index]->Reset(start);
+                BinIterator* thread_bin_iterator = bin_iterator[thread_index];
+                for (data_size_t data_index = start; data_index < end; ++data_index) {
+                  true_column_data[data_index] = thread_bin_iterator->RawGet(data_index);
+                }
+              });
+            InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_true_column_data, true_column_data.data(), true_column_data.size());
+            cuda_data_by_column_.emplace_back(reinterpret_cast<void*>(cuda_true_column_data));
+          }
+        }
+        column_bit_type_.emplace_back(bit_type);
+      }
     }
   }
   //LaunchCopyColWiseDataKernel();
@@ -241,16 +378,15 @@ void CUDADataPartition::Split(const int* leaf_id,
   const uint8_t split_default_left = cpu_leaf_best_split_default_left[cpu_leaf_index];
   const data_size_t leaf_data_start = cpu_leaf_data_start->at(cpu_leaf_index);
   global_timer.Stop("SplitInner Copy CUDA To Host");
-  auto start = std::chrono::steady_clock::now();
-  //GenDataToLeftBitVector(leaf_id, cpu_num_data_in_leaf, best_split_feature, best_split_threshold, best_split_default_left);
-  GenDataToLeftBitVector2(num_data_in_leaf, split_feature_index, split_threshold, split_default_left, leaf_data_start);
-  auto end = std::chrono::steady_clock::now();
-  double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
+  //auto start = std::chrono::steady_clock::now();
+  GenDataToLeftBitVector(num_data_in_leaf, split_feature_index, split_threshold, split_default_left, leaf_data_start);
+  //auto end = std::chrono::steady_clock::now();
+  //double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   global_timer.Stop("GenDataToLeftBitVector");
   //Log::Warning("CUDADataPartition::GenDataToLeftBitVector time %f", duration);
   global_timer.Start("SplitInner");
 
-  start = std::chrono::steady_clock::now();
+  //start = std::chrono::steady_clock::now();
   SplitInner(leaf_id, num_data_in_leaf,
     best_split_feature, best_split_threshold, best_split_default_left, best_split_gain,
     best_left_sum_gradients, best_left_sum_hessians, best_left_count,
@@ -268,24 +404,16 @@ void CUDADataPartition::Split(const int* leaf_id,
     larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
     larger_leaf_cuda_hist_pointer_pointer, cpu_leaf_num_data, cpu_leaf_data_start, cpu_leaf_sum_hessians,
     smaller_leaf_index, larger_leaf_index);
-  end = std::chrono::steady_clock::now();
-  duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
+  //end = std::chrono::steady_clock::now();
+  //duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   global_timer.Stop("SplitInner");
   //Log::Warning("CUDADataPartition::SplitInner time %f", duration);
 }
 
-void CUDADataPartition::GenDataToLeftBitVector(const int* leaf_id,
-  const data_size_t num_data_in_leaf,
-  const int* best_split_feature,
-  const uint32_t* best_split_threshold,
-  const uint8_t* best_split_default_left) {
-  LaunchGenDataToLeftBitVectorKernel(leaf_id, num_data_in_leaf, best_split_feature, best_split_threshold, best_split_default_left);
-}
-
-void CUDADataPartition::GenDataToLeftBitVector2(const data_size_t num_data_in_leaf,
+void CUDADataPartition::GenDataToLeftBitVector(const data_size_t num_data_in_leaf,
     const int split_feature_index, const uint32_t split_threshold,
     const uint8_t split_default_left, const data_size_t leaf_data_start) {
-  LaunchGenDataToLeftBitVectorKernel2(num_data_in_leaf, split_feature_index, split_threshold, split_default_left, leaf_data_start);
+  LaunchGenDataToLeftBitVectorKernel(num_data_in_leaf, split_feature_index, split_threshold, split_default_left, leaf_data_start);
 }
 
 void CUDADataPartition::SplitInner(const int* leaf_index, const data_size_t num_data_in_leaf,
@@ -331,12 +459,8 @@ void CUDADataPartition::SplitInner(const int* leaf_index, const data_size_t num_
 
 Tree* CUDADataPartition::GetCPUTree() {}
 
-void CUDADataPartition::UpdateTrainScore(const double learning_rate, double* train_score, double* cuda_scores) {
+void CUDADataPartition::UpdateTrainScore(const double learning_rate, double* cuda_scores) {
   LaunchAddPredictionToScoreKernel(learning_rate, cuda_scores);
-  /*#pragma omp parallel for schedule(static) num_threads(num_threads_)
-  for (data_size_t i = 0; i < num_data_; ++i) {
-    train_score[i] += cpu_train_data_score_tmp_[i];
-  }*/
 }
 
 void CUDADataPartition::CUDACheck(

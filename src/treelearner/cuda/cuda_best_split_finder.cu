@@ -641,7 +641,7 @@ __global__ void SyncBestSplitForLeafKernel(const int smaller_leaf_index, const i
   }
 
   __syncthreads();
-  ReduceBestSplit(best_found, best_gain, shared_read_index, num_tasks_aligned, 0);
+  ReduceBestSplit(best_found, best_gain, shared_read_index, NUM_TASKS_PER_SYNC_BLOCK, 0);
 
   if (threadIdx.x == 0) {
     const int leaf_index_ref = is_smaller ? smaller_leaf_index : larger_leaf_index;
@@ -670,6 +670,7 @@ __global__ void SyncBestSplitForLeafKernel(const int smaller_leaf_index, const i
   }
 }
 
+// TODO(shiyu1994): syncrhonize best from different blocks
 void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
   const int cpu_smaller_leaf_index,
   const int cpu_larger_leaf_index,
@@ -684,6 +685,7 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
     num_tasks >>= 1;
   }
   const int num_blocks_per_leaf = (num_tasks_ + NUM_TASKS_PER_SYNC_BLOCK - 1) / NUM_TASKS_PER_SYNC_BLOCK;
+  //Log::Warning("num_blocks_per_leaf = %d", num_blocks_per_leaf);
   if (cpu_larger_leaf_index >= 0 && is_smaller_leaf_valid && is_larger_leaf_valid) {
     SyncBestSplitForLeafKernel<<<2 * num_blocks_per_leaf, NUM_TASKS_PER_SYNC_BLOCK>>>(
       cpu_smaller_leaf_index,

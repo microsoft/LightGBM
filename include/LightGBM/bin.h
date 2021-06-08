@@ -387,7 +387,7 @@ class Bin {
   */
   virtual Bin* Clone() = 0;
 
-  virtual const uint8_t* GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const = 0;
+  virtual const uint8_t* GetColWiseData(uint8_t* bit_type, bool* is_sparse, std::vector<BinIterator*>* bin_iterator, const int num_threads) const = 0;
 };
 
 

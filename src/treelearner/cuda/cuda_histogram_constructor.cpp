@@ -86,22 +86,9 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStat
 }
 
 void CUDAHistogramConstructor::InitCUDAData(const Dataset* train_data, TrainingShareStates* share_state) {
-  /*std::vector<std::unique_ptr<BinIterator>> bin_iterators(num_feature_groups_);
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
-  for (int group_id = 0; group_id < num_feature_groups_; ++group_id) {
-    bin_iterators[group_id].reset(train_data->FeatureGroupIterator(group_id));
-    bin_iterators[group_id]->Reset(0);
-    for (data_size_t data_index = 0; data_index < num_data_; ++data_index) {
-      const uint32_t bin = static_cast<uint8_t>(bin_iterators[group_id]->RawGet(data_index));
-      PushOneData(bin, group_id, data_index);
-    }
-  }*/
   uint8_t bit_type = 0;
   size_t total_size = 0;
-  //CopyFromHostToCUDADevice<uint8_t>(cuda_data_, data_.data(), data_.size());
-  Log::Warning("share_state_->IsSparse() = %d", static_cast<int>(share_state->IsSparseRowwise()));
   const uint8_t* cpu_data_ptr = share_state->GetRowWiseData(&bit_type, &total_size, &is_sparse_);
-  Log::Warning("bit_type = %d", bit_type);
   CHECK_EQ(bit_type, 8);
   InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_data_uint8_t_, cpu_data_ptr, total_size);
   SynchronizeCUDADevice();
@@ -160,7 +147,6 @@ void CUDAHistogramConstructor::CalcConstructHistogramKernelDim(
 
 void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingShareStates* share_state) {
   const uint32_t max_num_bin_per_partition = SHRAE_HIST_SIZE / 2;
-  const std::vector<uint32_t>& feature_hist_offsets = share_state->feature_hist_offsets();
   const std::vector<uint32_t>& column_hist_offsets = share_state->column_hist_offsets();
   std::vector<int> feature_group_num_feature_offsets;
   int offsets = 0;
@@ -237,11 +223,6 @@ void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data
     if (num_column > max_num_column_per_partition_) {
       max_num_column_per_partition_ = num_column;
     }
-  }
-
-  for (size_t i = 0; i < column_hist_offsets_.size(); ++i) {
-    Log::Warning("column_hist_offsets[%d] = %d, feature_group_bin_offsets_[%d] = %d",
-      i, column_hist_offsets_[i], i, feature_group_bin_offsets_[i]);
   }
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_feature_partition_column_index_offsets_,

@@ -95,9 +95,6 @@ void SetCUDAMemory(T* dst_ptr, int value, size_t size) {
 
 void PrintLastCUDAError();
 
-//template <typename T>
-//__device__ void PrefixSum(T* elements, unsigned int n);
-
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

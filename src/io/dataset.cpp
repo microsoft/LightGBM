@@ -1476,8 +1476,9 @@ const uint8_t* Dataset::GetColWiseData(
   const int sub_feature_index,
   uint8_t* bit_type,
   bool* is_sparse,
-  BinIterator** bin_iterator) const {
-  return feature_groups_[feature_group_index]->GetColWiseData(sub_feature_index, bit_type, is_sparse, bin_iterator);
+  std::vector<BinIterator*>* bin_iterator,
+  const int num_threads) const {
+  return feature_groups_[feature_group_index]->GetColWiseData(sub_feature_index, bit_type, is_sparse, bin_iterator, num_threads);
 }
 
 }  // namespace LightGBM

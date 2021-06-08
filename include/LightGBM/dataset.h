@@ -570,7 +570,8 @@ class Dataset {
     const int sub_feature_index,
     uint8_t* bit_type,
     bool* is_sparse,
-    BinIterator** bin_iterator) const;
+    std::vector<BinIterator*>* bin_iterator,
+    const int num_threads) const;
 
   inline double RealThreshold(int i, uint32_t threshold) const {
     const int group = feature2group_[i];

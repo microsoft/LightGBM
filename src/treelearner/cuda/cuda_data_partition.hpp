@@ -151,7 +151,7 @@ class CUDADataPartition {
     }
   }
 
-  void UpdateTrainScore(const double learning_rate, double* train_score, double* cuda_scores);
+  void UpdateTrainScore(const double learning_rate, double* cuda_scores);
 
   const data_size_t* cuda_leaf_data_start() const { return cuda_leaf_data_start_; }
 
@@ -194,10 +194,7 @@ class CUDADataPartition {
 
   void LaunchCopyColWiseDataKernel();
 
-  void GenDataToLeftBitVector(const int* leaf_id, const data_size_t num_data_in_leaf, const int* best_split_feature,
-    const uint32_t* best_split_threshold, const uint8_t* best_split_default_left);
-
-  void GenDataToLeftBitVector2(const data_size_t num_data_in_leaf,
+  void GenDataToLeftBitVector(const data_size_t num_data_in_leaf,
     const int split_feature_index, const uint32_t split_threshold,
     const uint8_t split_default_left, const data_size_t leaf_data_start);
 
@@ -248,10 +245,7 @@ class CUDADataPartition {
     std::vector<double>* cpu_leaf_sum_hessians,
     int* smaller_leaf_index, int* larger_leaf_index);
 
-  void LaunchGenDataToLeftBitVectorKernel(const int* leaf_index, const data_size_t num_data_in_leaf, const int* best_split_feature,
-    const uint32_t* best_split_threshold, const uint8_t* best_split_default_left);
-
-  void LaunchGenDataToLeftBitVectorKernel2(const data_size_t num_data_in_leaf,
+  void LaunchGenDataToLeftBitVectorKernel(const data_size_t num_data_in_leaf,
     const int split_feature_index, const uint32_t split_threshold,
     const uint8_t split_default_left, const data_size_t leaf_data_start);
 
@@ -287,7 +281,8 @@ class CUDADataPartition {
   int cur_num_leaves_;
   std::vector<double> cpu_train_data_score_tmp_;
   std::vector<int> cpu_split_info_buffer_;
-  std::vector<int> column_bit_type_;
+  std::vector<uint8_t> column_bit_type_;
+  std::vector<int> feature_index_to_column_index_;
 
   // CUDA streams
   std::vector<cudaStream_t> cuda_streams_;
@@ -330,15 +325,15 @@ class CUDADataPartition {
   double* data_partition_leaf_output_;
   // for train data update
   double* train_data_score_tmp_;
-  uint8_t* cuda_data_col_wise_;
   // for debug
   double* cuda_gradients_sum_buffer_;
   double* cuda_hessians_sum_buffer_;
+  // for train data split
+  std::vector<void*> cuda_data_by_column_;
 
   // CUDA memory, held by other object
   const data_size_t* cuda_num_data_;
   const int* cuda_num_leaves_;
-  std::vector<void*> cuda_data_by_column_;
   const int* cuda_num_features_;
   hist_t* cuda_hist_;
 };
