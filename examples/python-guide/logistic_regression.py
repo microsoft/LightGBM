@@ -1,7 +1,9 @@
 # coding: utf-8
 """Comparison of `binary` and `xentropy` objectives.
+
 BLUF: The `xentropy` objective does logistic regression and generalizes
 to the case where labels are probabilistic (i.e. numbers between 0 and 1).
+
 Details: Both `binary` and `xentropy` minimize the log loss and use
 `boost_from_average = TRUE` by default. Possibly the only difference
 between them with default settings is that `binary` may achieve a slight
@@ -52,6 +54,7 @@ def log_loss(preds, labels):
 
 def experiment(objective, label_type, data):
     """Measure performance of an objective.
+    
     Parameters
     ----------
     objective : string 'binary' or 'xentropy'
@@ -60,6 +63,7 @@ def experiment(objective, label_type, data):
         Type of the label.
     data : dict
         Data for training.
+        
     Returns
     -------
     result : dict
