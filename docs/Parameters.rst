@@ -28,7 +28,7 @@ By using config files, one line can only contain one parameter. You can use ``#`
 
 If one parameter appears in both command line and config file, LightGBM will use the parameter from the command line.
 
-For the Python and R packages, any parameters that accept a list of values can be specified in those languages' default array types.
+For the Python and R packages, any parameters that accept a list of values (usually they have ``multi-xxx`` type, e.g. ``multi-int`` or ``multi-double``) can be specified in those languages' default array types.
 For example, ``monotone_constraints`` can be specified as follows.
 
 **Python**
