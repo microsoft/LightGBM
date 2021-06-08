@@ -2042,3 +2042,147 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   expect_equal(pred1, pred2)
 
 })
+
+context("monotone constraints")
+
+.generate_trainset_for_monotone_constraints_tests <- function(x3_to_categorical) {
+  n_samples <- 3000L
+  x1_positively_correlated_with_y <- rnorm(n = n_samples)
+  x2_negatively_correlated_with_y <- rnorm(n = n_samples)
+  x3_negatively_correlated_with_y <- rnorm(n = n_samples)
+  if (x3_to_categorical) {
+    x3_negatively_correlated_with_y <- as.integer(abs(runif(n_samples) / 0.25))
+    categorical_features <- 3L
+  } else {
+    x3_negatively_correlated_with_y <- runif(n_samples)
+    categorical_features <- NULL
+  }
+  X <- data.matrix(
+    data.frame(
+      list(
+        x1_positively_correlated_with_y
+        , x2_negatively_correlated_with_y
+        , x3_negatively_correlated_with_y
+      )
+    )
+  )
+  zs <- rnorm(n = n_samples, mean = 0.0, sd = 0.01)
+  scales <- 10.0 * rnorm(6L + 0.5)
+  y <- (
+    scales[1L] * x1_positively_correlated_with_y
+    + sin(scales[2L] * pi * x1_positively_correlated_with_y)
+    - scales[3L] * x2_negatively_correlated_with_y
+    - cos(scales[4L] * pi * x2_negatively_correlated_with_y)
+    - scales[5L] * x3_negatively_correlated_with_y
+    - cos(scales[6L] * pi * x3_negatively_correlated_with_y)
+    + zs
+  )
+  return(lgb.Dataset(
+    data = X
+    , label = y
+    , categorical_feature = categorical_features
+    , free_raw_data = FALSE
+  ))
+}
+
+.is_increasing <- function(y) {
+  return(all(diff(y) >= 0.0))
+}
+
+.is_decreasing <- function(y) {
+  return(all(diff(y) <= 0.0))
+}
+
+.is_non_monotone <- function(y) {
+  return(any(diff(y) < 0.0) & any(diff(y) > 0.0))
+}
+
+.is_correctly_constrained <- function(learner, x3_to_categorical) {
+  iterations <- 10L
+  n <- 1000L
+  variable_x <- seq_len(n) / n
+  fixed_xs_values <- seq_len(n) / n
+  for (i in seq_len(iterations)) {
+    fixed_x <- fixed_xs_values[i] * rep(1.0, n)
+    monotonically_increasing_x <- matrix(
+      data = c(variable_x, fixed_x, fixed_x)
+      , ncol = 3L
+    )
+    monotonically_increasing_y <- predict(
+      learner
+      , monotonically_increasing_x
+    )
+
+    monotonically_decreasing_x <- matrix(
+      data = c(fixed_x, variable_x, fixed_x)
+      , ncol = 3L
+    )
+    monotonically_decreasing_y <- predict(
+      learner
+      , monotonically_decreasing_x
+    )
+
+    if (x3_to_categorical) {
+      non_monotone_data <- c(
+        fixed_x
+        , fixed_x
+        , as.integer(abs(variable_x / 0.25))
+      )
+    } else {
+      non_monotone_data <- c(fixed_x, fixed_x, variable_x)
+    }
+    non_monotone_x <- matrix(
+      data = non_monotone_data
+      , ncol = 3L
+    )
+    non_monotone_y <- predict(
+      learner
+      , non_monotone_x
+    )
+    if (!(.is_increasing(monotonically_increasing_y) &&
+          .is_decreasing(monotonically_decreasing_y) &&
+          .is_non_monotone(non_monotone_y)
+    )) {
+      return(FALSE)
+    }
+  }
+  return(TRUE)
+}
+
+for (x3_to_categorical in c(TRUE, FALSE)) {
+  for (monotone_constraints_method in c("basic", "intermediate", "advanced")) {
+    test_msg <- paste0(
+      "lgb.train() supports monotone constraints ("
+      , "categoricals="
+      , x3_to_categorical
+      , ", method="
+      , monotone_constraints_method
+      , ")"
+    )
+    test_that(test_msg, {
+      set.seed(708L)
+      dtrain <- .generate_trainset_for_monotone_constraints_tests(
+        x3_to_categorical = x3_to_categorical
+      )
+      params <- list(
+        min_data = 20L
+        , num_leaves = 20L
+        , monotone_constraints = c(1L, -1L, 0L)
+        , monotone_constraints_method = monotone_constraints_method
+        , use_missing = FALSE
+      )
+      constrained_model <- lgb.train(
+        params = params
+        , data = dtrain
+        , obj = "regression_l2"
+        , nrounds = 10L
+      )
+      expect_true({
+        .is_correctly_constrained(
+          learner = constrained_model
+          , x3_to_categorical = x3_to_categorical
+        )
+      })
+    })
+  }
+}
