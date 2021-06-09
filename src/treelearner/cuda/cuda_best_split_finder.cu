@@ -231,10 +231,6 @@ __device__ void FindBestSplitsForLeafKernelInner(
   __shared__ uint8_t threshold_found[MAX_NUM_BIN_IN_FEATURE];
   __shared__ uint32_t threshold_value[MAX_NUM_BIN_IN_FEATURE];
 
-  if (inner_feature_index >= 1000) {
-    printf("finding best split for feature %d\n", inner_feature_index);
-  }
-
   const unsigned int threadIdx_x = threadIdx.x;
   const bool skip_sum = (skip_default_bin && (threadIdx_x + feature_mfb_offset) == static_cast<int>(feature_default_bin));
   const uint32_t feature_num_bin_minus_offset = feature_num_bin - feature_mfb_offset;
@@ -634,8 +630,8 @@ __global__ void SyncBestSplitForLeafKernel(const int smaller_leaf_index, const i
   __shared__ uint32_t shared_read_index[NUM_TASKS_PER_SYNC_BLOCK];
 
   const bool is_smaller = (blockIdx_x < static_cast<unsigned int>(num_blocks_per_leaf) && !larger_only);
-  const uint32_t leaf_block_index = (is_smaller || larger_only) ? blockIdx_x : (blockIdx_x - static_cast<unsigned>(num_blocks_per_leaf));
-  const int task_index = static_cast<int>(leaf_block_index * num_blocks_per_leaf + threadIdx_x);
+  const uint32_t leaf_block_index = (is_smaller || larger_only) ? blockIdx_x : (blockIdx_x - static_cast<unsigned int>(num_blocks_per_leaf));
+  const int task_index = static_cast<int>(leaf_block_index * blockDim.x + threadIdx_x);
   const uint32_t read_index = is_smaller ? static_cast<uint32_t>(task_index) : static_cast<uint32_t>(task_index + num_tasks);
   if (task_index < num_tasks) {
     best_found[threadIdx_x] = cuda_best_split_found[read_index];
@@ -695,7 +691,7 @@ __global__ void SyncBestSplitForLeafKernelAllBlocks(
       const unsigned int leaf_read_pos = static_cast<unsigned int>(smaller_leaf_index) + block_index * static_cast<unsigned int>(num_leaves);
       if ((cuda_leaf_best_split_found[leaf_read_pos] == 1 && cuda_leaf_best_split_found[smaller_leaf_index] == 1 &&
         cuda_leaf_best_split_gain[leaf_read_pos] > cuda_leaf_best_split_gain[smaller_leaf_index]) ||
-          (cuda_leaf_best_split_found[leaf_read_pos] == 0 && cuda_leaf_best_split_found[leaf_read_pos] == 1)) {
+          (cuda_leaf_best_split_found[smaller_leaf_index] == 0 && cuda_leaf_best_split_found[leaf_read_pos] == 1)) {
           cuda_leaf_best_split_found[smaller_leaf_index] = cuda_leaf_best_split_found[leaf_read_pos];
           cuda_leaf_best_split_feature[smaller_leaf_index] = cuda_leaf_best_split_feature[leaf_read_pos];
           cuda_leaf_best_split_default_left[smaller_leaf_index] = cuda_leaf_best_split_default_left[leaf_read_pos];
@@ -719,7 +715,7 @@ __global__ void SyncBestSplitForLeafKernelAllBlocks(
       const unsigned int leaf_read_pos = static_cast<unsigned int>(larger_leaf_index) + block_index * static_cast<unsigned int>(num_leaves);
       if ((cuda_leaf_best_split_found[leaf_read_pos] == 1 && cuda_leaf_best_split_found[larger_leaf_index] == 1 &&
         cuda_leaf_best_split_gain[leaf_read_pos] > cuda_leaf_best_split_gain[larger_leaf_index]) ||
-          (cuda_leaf_best_split_found[leaf_read_pos] == 0 && cuda_leaf_best_split_found[leaf_read_pos] == 1)) {
+          (cuda_leaf_best_split_found[larger_leaf_index] == 0 && cuda_leaf_best_split_found[leaf_read_pos] == 1)) {
           cuda_leaf_best_split_found[larger_leaf_index] = cuda_leaf_best_split_found[leaf_read_pos];
           cuda_leaf_best_split_feature[larger_leaf_index] = cuda_leaf_best_split_feature[leaf_read_pos];
           cuda_leaf_best_split_default_left[larger_leaf_index] = cuda_leaf_best_split_default_left[leaf_read_pos];
@@ -796,6 +792,7 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
       false,
       num_leaves_);
     if (num_blocks_per_leaf > 1) {
+      SynchronizeCUDADevice();
       SyncBestSplitForLeafKernelAllBlocks<<<1, 1>>>(
         cpu_smaller_leaf_index,
         cpu_larger_leaf_index,
@@ -861,6 +858,7 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
       larger_only,
       num_leaves_);
     if (num_blocks_per_leaf > 1) {
+      SynchronizeCUDADevice();
       SyncBestSplitForLeafKernelAllBlocks<<<1, 1>>>(
         cpu_smaller_leaf_index,
         cpu_larger_leaf_index,
