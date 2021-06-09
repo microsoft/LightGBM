@@ -17,8 +17,8 @@ CUDAHistogramConstructor::CUDAHistogramConstructor(const Dataset* train_data,
   const int min_data_in_leaf, const double min_sum_hessian_in_leaf): num_data_(train_data->num_data()),
   num_features_(train_data->num_features()), num_leaves_(num_leaves), num_threads_(num_threads),
   num_feature_groups_(train_data->num_feature_groups()),
-  cuda_gradients_(cuda_gradients), cuda_hessians_(cuda_hessians),
-  min_data_in_leaf_(min_data_in_leaf), min_sum_hessian_in_leaf_(min_sum_hessian_in_leaf) {
+  min_data_in_leaf_(min_data_in_leaf), min_sum_hessian_in_leaf_(min_sum_hessian_in_leaf),
+  cuda_gradients_(cuda_gradients), cuda_hessians_(cuda_hessians) {
   int offset = 0;
   for (int group_id = 0; group_id < train_data->num_feature_groups(); ++group_id) {
     feature_group_bin_offsets_.emplace_back(offset);
@@ -77,17 +77,178 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStat
 
   DivideCUDAFeatureGroups(train_data, share_state);
 
-  InitCUDAData(train_data, share_state);
+  InitCUDAData(share_state);
 }
 
-void CUDAHistogramConstructor::InitCUDAData(const Dataset* train_data, TrainingShareStates* share_state) {
-  uint8_t bit_type = 0;
+void CUDAHistogramConstructor::InitCUDAData(TrainingShareStates* share_state) {
+  bit_type_ = 0;
   size_t total_size = 0;
-  const uint8_t* cpu_data_ptr = share_state->GetRowWiseData(&bit_type, &total_size, &is_sparse_);
-  CHECK_EQ(bit_type, 8);
-  std::vector<uint8_t> partitioned_data;
-  GetDenseDataPartitioned<uint8_t>(cpu_data_ptr, &partitioned_data);
-  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_data_uint8_t_, partitioned_data.data(), total_size);
+  const uint8_t* data_ptr = nullptr;
+  data_ptr_bit_type_ = 0;
+  const uint8_t* cpu_data_ptr = share_state->GetRowWiseData(&bit_type_, &total_size, &is_sparse_, &data_ptr, &data_ptr_bit_type_);
+  CHECK_EQ(bit_type_, 8);
+  if (bit_type_ == 8) {
+    if (!is_sparse_) {
+      std::vector<uint8_t> partitioned_data;
+      GetDenseDataPartitioned<uint8_t>(cpu_data_ptr, &partitioned_data);
+      InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_data_uint8_t_, partitioned_data.data(), total_size);
+    } else {
+      std::vector<std::vector<uint8_t>> partitioned_data;
+      if (data_ptr_bit_type_ == 16) {
+        std::vector<std::vector<uint16_t>> partitioned_data_ptr;
+        std::vector<uint16_t> partition_ptr;
+        const uint16_t* data_ptr_uint16_t = reinterpret_cast<const uint16_t*>(data_ptr);
+        GetSparseDataPartitioned<uint8_t, uint16_t>(cpu_data_ptr, data_ptr_uint16_t, &partitioned_data, &partitioned_data_ptr, &partition_ptr);
+        InitCUDAMemoryFromHostMemory<uint16_t>(&cuda_partition_ptr_uint16_t_, partition_ptr.data(), partition_ptr.size());
+        AllocateCUDAMemory<uint8_t>(partition_ptr.back(), &cuda_data_uint8_t_);
+        AllocateCUDAMemory<uint16_t>((num_data_ + 1) * partitioned_data_ptr.size(), &cuda_row_ptr_uint16_t_);
+        for (size_t i = 0; i < partitioned_data.size(); ++i) {
+          const std::vector<uint16_t>& data_ptr_for_this_partition = partitioned_data_ptr[i];
+          const std::vector<uint8_t>& data_for_this_partition = partitioned_data[i];
+          CopyFromHostToCUDADevice<uint8_t>(cuda_data_uint8_t_ + partition_ptr[i], data_for_this_partition.data(), data_for_this_partition.size());
+          CopyFromHostToCUDADevice<uint16_t>(cuda_row_ptr_uint16_t_ + i * (num_data_ + 1), data_ptr_for_this_partition.data(), data_ptr_for_this_partition.size());
+        }
+      } else if (data_ptr_bit_type_ == 32) {
+        const uint32_t* data_ptr_uint32_t = reinterpret_cast<const uint32_t*>(data_ptr);
+        std::vector<std::vector<uint32_t>> partitioned_data_ptr;
+        std::vector<uint32_t> partition_ptr;
+        GetSparseDataPartitioned<uint8_t, uint32_t>(cpu_data_ptr, data_ptr_uint32_t, &partitioned_data, &partitioned_data_ptr, &partition_ptr);
+        InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_partition_ptr_uint32_t_, partition_ptr.data(), partition_ptr.size());
+        AllocateCUDAMemory<uint8_t>(partition_ptr.back(), &cuda_data_uint8_t_);
+        AllocateCUDAMemory<uint32_t>((num_data_ + 1) * partitioned_data_ptr.size(), &cuda_row_ptr_uint32_t_); 
+        for (size_t i = 0; i < partitioned_data.size(); ++i) {
+          const std::vector<uint32_t>& data_ptr_for_this_partition = partitioned_data_ptr[i];
+          const std::vector<uint8_t>& data_for_this_partition = partitioned_data[i];
+          CopyFromHostToCUDADevice<uint8_t>(cuda_data_uint8_t_ + partition_ptr[i], data_for_this_partition.data(), data_for_this_partition.size());
+          CopyFromHostToCUDADevice<uint32_t>(cuda_row_ptr_uint32_t_ + i * (num_data_ + 1), data_ptr_for_this_partition.data(), data_ptr_for_this_partition.size());
+        }
+      } else if (data_ptr_bit_type_ == 64) {
+        const uint64_t* data_ptr_uint64_t = reinterpret_cast<const uint64_t*>(data_ptr);
+        std::vector<std::vector<uint64_t>> partitioned_data_ptr;
+        std::vector<uint64_t> partition_ptr;
+        GetSparseDataPartitioned<uint8_t, uint64_t>(cpu_data_ptr, data_ptr_uint64_t, &partitioned_data, &partitioned_data_ptr, &partition_ptr);
+        InitCUDAMemoryFromHostMemory<uint64_t>(&cuda_partition_ptr_uint64_t_, partition_ptr.data(), partition_ptr.size());
+        AllocateCUDAMemory<uint8_t>(partition_ptr.back(), &cuda_data_uint8_t_);
+        AllocateCUDAMemory<uint64_t>((num_data_ + 1) * partitioned_data_ptr.size(), &cuda_row_ptr_uint64_t_); 
+        for (size_t i = 0; i < partitioned_data.size(); ++i) {
+          const std::vector<uint64_t>& data_ptr_for_this_partition = partitioned_data_ptr[i];
+          const std::vector<uint8_t>& data_for_this_partition = partitioned_data[i];
+          CopyFromHostToCUDADevice<uint8_t>(cuda_data_uint8_t_ + partition_ptr[i], data_for_this_partition.data(), data_for_this_partition.size());
+          CopyFromHostToCUDADevice<uint64_t>(cuda_row_ptr_uint64_t_ + i * (num_data_ + 1), data_ptr_for_this_partition.data(), data_ptr_for_this_partition.size());
+        }
+      } else {
+        Log::Fatal("Unknow data ptr bit type %d", data_ptr_bit_type_);
+      }
+    }
+  } else if (bit_type_ == 16) {
+    if (!is_sparse_) {
+      std::vector<uint16_t> partitioned_data;
+      GetDenseDataPartitioned<uint16_t>(reinterpret_cast<const uint16_t*>(cpu_data_ptr), &partitioned_data);
+      InitCUDAMemoryFromHostMemory<uint16_t>(&cuda_data_uint16_t_, partitioned_data.data(), total_size);
+    } else {
+      std::vector<std::vector<uint16_t>> partitioned_data;
+      if (data_ptr_bit_type_ == 16) {
+        std::vector<std::vector<uint16_t>> partitioned_data_ptr;
+        std::vector<uint16_t> partition_ptr;
+        const uint16_t* data_ptr_uint16_t = reinterpret_cast<const uint16_t*>(data_ptr);
+        GetSparseDataPartitioned<uint16_t, uint16_t>(reinterpret_cast<const uint16_t*>(cpu_data_ptr), data_ptr_uint16_t, &partitioned_data, &partitioned_data_ptr, &partition_ptr);
+        InitCUDAMemoryFromHostMemory<uint16_t>(&cuda_partition_ptr_uint16_t_, partition_ptr.data(), partition_ptr.size());
+        AllocateCUDAMemory<uint16_t>(partition_ptr.back(), &cuda_data_uint16_t_);
+        AllocateCUDAMemory<uint16_t>((num_data_ + 1) * partitioned_data_ptr.size(), &cuda_row_ptr_uint16_t_); 
+        for (size_t i = 0; i < partitioned_data.size(); ++i) {
+          const std::vector<uint16_t>& data_ptr_for_this_partition = partitioned_data_ptr[i];
+          const std::vector<uint16_t>& data_for_this_partition = partitioned_data[i];
+          CopyFromHostToCUDADevice<uint16_t>(cuda_data_uint16_t_ + partition_ptr[i], data_for_this_partition.data(), data_for_this_partition.size());
+          CopyFromHostToCUDADevice<uint16_t>(cuda_row_ptr_uint16_t_ + i * (num_data_ + 1), data_ptr_for_this_partition.data(), data_ptr_for_this_partition.size());
+        }
+      } else if (data_ptr_bit_type_ == 32) {
+        std::vector<std::vector<uint32_t>> partitioned_data_ptr;
+        std::vector<uint32_t> partition_ptr;
+        const uint32_t* data_ptr_uint32_t = reinterpret_cast<const uint32_t*>(data_ptr);
+        GetSparseDataPartitioned<uint16_t, uint32_t>(reinterpret_cast<const uint16_t*>(cpu_data_ptr), data_ptr_uint32_t, &partitioned_data, &partitioned_data_ptr, &partition_ptr);
+        InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_partition_ptr_uint32_t_, partition_ptr.data(), partition_ptr.size());
+        AllocateCUDAMemory<uint16_t>(partition_ptr.back(), &cuda_data_uint16_t_);
+        AllocateCUDAMemory<uint32_t>((num_data_ + 1) * partitioned_data_ptr.size(), &cuda_row_ptr_uint32_t_); 
+        for (size_t i = 0; i < partitioned_data.size(); ++i) {
+          const std::vector<uint32_t>& data_ptr_for_this_partition = partitioned_data_ptr[i];
+          const std::vector<uint16_t>& data_for_this_partition = partitioned_data[i];
+          CopyFromHostToCUDADevice<uint16_t>(cuda_data_uint16_t_ + partition_ptr[i], data_for_this_partition.data(), data_for_this_partition.size());
+          CopyFromHostToCUDADevice<uint32_t>(cuda_row_ptr_uint32_t_ + i * (num_data_ + 1), data_ptr_for_this_partition.data(), data_ptr_for_this_partition.size());
+        }
+      } else if (data_ptr_bit_type_ == 64) {
+        std::vector<std::vector<uint64_t>> partitioned_data_ptr;
+        std::vector<uint64_t> partition_ptr;
+        const uint64_t* data_ptr_uint64_t = reinterpret_cast<const uint64_t*>(data_ptr);
+        GetSparseDataPartitioned<uint16_t, uint64_t>(reinterpret_cast<const uint16_t*>(cpu_data_ptr), data_ptr_uint64_t, &partitioned_data, &partitioned_data_ptr, &partition_ptr);
+        InitCUDAMemoryFromHostMemory<uint64_t>(&cuda_partition_ptr_uint64_t_, partition_ptr.data(), partition_ptr.size());
+        AllocateCUDAMemory<uint16_t>(partition_ptr.back(), &cuda_data_uint16_t_);
+        AllocateCUDAMemory<uint64_t>((num_data_ + 1) * partitioned_data_ptr.size(), &cuda_row_ptr_uint64_t_); 
+        for (size_t i = 0; i < partitioned_data.size(); ++i) {
+          const std::vector<uint64_t>& data_ptr_for_this_partition = partitioned_data_ptr[i];
+          const std::vector<uint16_t>& data_for_this_partition = partitioned_data[i];
+          CopyFromHostToCUDADevice<uint16_t>(cuda_data_uint16_t_ + partition_ptr[i], data_for_this_partition.data(), data_for_this_partition.size());
+          CopyFromHostToCUDADevice<uint64_t>(cuda_row_ptr_uint64_t_ + i * (num_data_ + 1), data_ptr_for_this_partition.data(), data_ptr_for_this_partition.size());
+        }
+      } else {
+        Log::Fatal("Unknow data ptr bit type %d", data_ptr_bit_type_);
+      }
+    }
+  } else if (bit_type_ == 32) {
+    if (!is_sparse_) {
+      std::vector<uint32_t> partitioned_data;
+      GetDenseDataPartitioned<uint32_t>(reinterpret_cast<const uint32_t*>(cpu_data_ptr), &partitioned_data);
+      InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_data_uint32_t_, partitioned_data.data(), total_size);
+    } else {
+      std::vector<std::vector<uint32_t>> partitioned_data;
+      if (data_ptr_bit_type_ == 16) {
+        const uint16_t* data_ptr_uint16_t = reinterpret_cast<const uint16_t*>(data_ptr);
+        std::vector<std::vector<uint16_t>> partitioned_data_ptr;
+        std::vector<uint16_t> partition_ptr;
+        GetSparseDataPartitioned<uint32_t, uint16_t>(reinterpret_cast<const uint32_t*>(cpu_data_ptr), data_ptr_uint16_t, &partitioned_data, &partitioned_data_ptr, &partition_ptr);
+        InitCUDAMemoryFromHostMemory<uint16_t>(&cuda_partition_ptr_uint16_t_, partition_ptr.data(), partition_ptr.size());
+        AllocateCUDAMemory<uint32_t>(partition_ptr.back(), &cuda_data_uint32_t_);
+        AllocateCUDAMemory<uint16_t>((num_data_ + 1) * partitioned_data_ptr.size(), &cuda_row_ptr_uint16_t_); 
+        for (size_t i = 0; i < partitioned_data.size(); ++i) {
+          const std::vector<uint16_t>& data_ptr_for_this_partition = partitioned_data_ptr[i];
+          const std::vector<uint32_t>& data_for_this_partition = partitioned_data[i];
+          CopyFromHostToCUDADevice<uint32_t>(cuda_data_uint32_t_ + partition_ptr[i], data_for_this_partition.data(), data_for_this_partition.size());
+          CopyFromHostToCUDADevice<uint16_t>(cuda_row_ptr_uint16_t_ + i * (num_data_ + 1), data_ptr_for_this_partition.data(), data_ptr_for_this_partition.size());
+        }
+      } else if (data_ptr_bit_type_ == 32) {
+        const uint32_t* data_ptr_uint32_t = reinterpret_cast<const uint32_t*>(data_ptr);
+        std::vector<std::vector<uint32_t>> partitioned_data_ptr;
+        std::vector<uint32_t> partition_ptr;
+        GetSparseDataPartitioned<uint32_t, uint32_t>(reinterpret_cast<const uint32_t*>(cpu_data_ptr), data_ptr_uint32_t, &partitioned_data, &partitioned_data_ptr, &partition_ptr);
+        InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_partition_ptr_uint32_t_, partition_ptr.data(), partition_ptr.size());
+        AllocateCUDAMemory<uint32_t>(partition_ptr.back(), &cuda_data_uint32_t_);
+        AllocateCUDAMemory<uint32_t>((num_data_ + 1) * partitioned_data_ptr.size(), &cuda_row_ptr_uint32_t_); 
+        for (size_t i = 0; i < partitioned_data.size(); ++i) {
+          const std::vector<uint32_t>& data_ptr_for_this_partition = partitioned_data_ptr[i];
+          const std::vector<uint32_t>& data_for_this_partition = partitioned_data[i];
+          CopyFromHostToCUDADevice<uint32_t>(cuda_data_uint32_t_ + partition_ptr[i], data_for_this_partition.data(), data_for_this_partition.size());
+          CopyFromHostToCUDADevice<uint32_t>(cuda_row_ptr_uint32_t_ + i * (num_data_ + 1), data_ptr_for_this_partition.data(), data_ptr_for_this_partition.size());
+        }
+      } else if (data_ptr_bit_type_ == 64) {
+        const uint64_t* data_ptr_uint64_t = reinterpret_cast<const uint64_t*>(data_ptr);
+        std::vector<std::vector<uint64_t>> partitioned_data_ptr;
+        std::vector<uint64_t> partition_ptr;
+        GetSparseDataPartitioned<uint32_t, uint64_t>(reinterpret_cast<const uint32_t*>(cpu_data_ptr), data_ptr_uint64_t, &partitioned_data, &partitioned_data_ptr, &partition_ptr);
+        InitCUDAMemoryFromHostMemory<uint64_t>(&cuda_partition_ptr_uint64_t_, partition_ptr.data(), partition_ptr.size());
+        AllocateCUDAMemory<uint32_t>(partition_ptr.back(), &cuda_data_uint32_t_);
+        AllocateCUDAMemory<uint64_t>((num_data_ + 1) * partitioned_data_ptr.size(), &cuda_row_ptr_uint64_t_); 
+        for (size_t i = 0; i < partitioned_data.size(); ++i) {
+          const std::vector<uint64_t>& data_ptr_for_this_partition = partitioned_data_ptr[i];
+          const std::vector<uint32_t>& data_for_this_partition = partitioned_data[i];
+          CopyFromHostToCUDADevice<uint32_t>(cuda_data_uint32_t_ + partition_ptr[i], data_for_this_partition.data(), data_for_this_partition.size());
+          CopyFromHostToCUDADevice<uint64_t>(cuda_row_ptr_uint64_t_ + i * (num_data_ + 1), data_ptr_for_this_partition.data(), data_ptr_for_this_partition.size());
+        }
+      } else {
+        Log::Fatal("Unknow data ptr bit type %d", data_ptr_bit_type_);
+      }
+    }
+  } else {
+    Log::Fatal("Unknow bit type = %d", bit_type_);
+  }
   SynchronizeCUDADevice();
 }
 
@@ -101,7 +262,7 @@ void CUDAHistogramConstructor::PushOneData(const uint32_t feature_bin_value,
 }
 
 void CUDAHistogramConstructor::ConstructHistogramForLeaf(const int* cuda_smaller_leaf_index, const data_size_t* cuda_num_data_in_smaller_leaf,
-  const int* cuda_larger_leaf_index, const data_size_t** cuda_data_indices_in_smaller_leaf, const data_size_t** cuda_data_indices_in_larger_leaf,
+  const int* cuda_larger_leaf_index, const data_size_t** cuda_data_indices_in_smaller_leaf, const data_size_t** /*cuda_data_indices_in_larger_leaf*/,
   const double* cuda_smaller_leaf_sum_gradients, const double* cuda_smaller_leaf_sum_hessians, hist_t** cuda_smaller_leaf_hist,
   const double* cuda_larger_leaf_sum_gradients, const double* cuda_larger_leaf_sum_hessians, hist_t** cuda_larger_leaf_hist,
   const data_size_t* cuda_leaf_num_data, const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
@@ -222,7 +383,7 @@ void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data
     }
   }
 
-  for (size_t i = 0; i < feature_partition_column_index_offsets_.size(); ++i) {
+  /*for (size_t i = 0; i < feature_partition_column_index_offsets_.size(); ++i) {
     Log::Warning("feature_partition_column_index_offsets_[%d] = %d", i, feature_partition_column_index_offsets_[i]);
   }
 
@@ -232,7 +393,7 @@ void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data
 
   for (size_t i = 0; i < column_hist_offsets_full_.size(); ++i) {
     Log::Warning("column_hist_offsets_full_[%d] = %d", i, column_hist_offsets_full_[i]);
-  }
+  }*/
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_feature_partition_column_index_offsets_,
     feature_partition_column_index_offsets_.data(),
@@ -249,12 +410,11 @@ void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data
 
 template <typename BIN_TYPE>
 void CUDAHistogramConstructor::GetDenseDataPartitioned(const BIN_TYPE* row_wise_data, std::vector<BIN_TYPE>* partitioned_data) {
-  Log::Warning("feature_partition_column_index_offsets_.size() = %d", feature_partition_column_index_offsets_.size());
   const int num_total_columns = feature_partition_column_index_offsets_.back();
   partitioned_data->resize(static_cast<size_t>(num_total_columns) * static_cast<size_t>(num_data_), 0);
   BIN_TYPE* out_data = partitioned_data->data();
   Threading::For<data_size_t>(0, num_data_, 512,
-    [this, num_total_columns, row_wise_data, out_data] (int thread_index, data_size_t start, data_size_t end) {
+    [this, num_total_columns, row_wise_data, out_data] (int /*thread_index*/, data_size_t start, data_size_t end) {
       for (size_t i = 0; i < feature_partition_column_index_offsets_.size() - 1; ++i) {
         const int num_prev_columns = static_cast<int>(feature_partition_column_index_offsets_[i]);
         const data_size_t offset = num_data_ * num_prev_columns;
@@ -272,6 +432,52 @@ void CUDAHistogramConstructor::GetDenseDataPartitioned(const BIN_TYPE* row_wise_
         }
       }
     });
+}
+
+template <typename BIN_TYPE, typename DATA_PTR_TYPE>
+void CUDAHistogramConstructor::GetSparseDataPartitioned(
+  const BIN_TYPE* row_wise_data,
+  const DATA_PTR_TYPE* row_ptr,
+  std::vector<std::vector<BIN_TYPE>>* partitioned_data,
+  std::vector<std::vector<DATA_PTR_TYPE>>* partitioned_row_ptr,
+  std::vector<DATA_PTR_TYPE>* partition_ptr) {
+  const int num_partitions = static_cast<int>(feature_partition_column_index_offsets_.size()) - 1;
+  partitioned_data->resize(num_partitions);
+  partitioned_row_ptr->resize(num_partitions);
+  Threading::For<int>(0, num_partitions, 1,
+    [partitioned_data, partitioned_row_ptr, row_ptr, row_wise_data, this] (int /*thread_index*/, int start, int end) {
+      for (int partition_index = start; partition_index < end; ++partition_index) {
+        std::vector<BIN_TYPE>& data_for_this_partition = partitioned_data->at(partition_index);
+        std::vector<DATA_PTR_TYPE>& row_ptr_for_this_partition = partitioned_row_ptr->at(partition_index);
+        const int partition_hist_start = column_hist_offsets_full_[partition_index];
+        const int partition_hist_end = column_hist_offsets_full_[partition_index + 1];
+        DATA_PTR_TYPE offset = 0;
+        row_ptr_for_this_partition.emplace_back(offset);
+        for (data_size_t data_index = 0; data_index < num_data_; ++data_index) {
+          const DATA_PTR_TYPE row_start = row_ptr[data_index];
+          const DATA_PTR_TYPE row_end = row_ptr[data_index + 1];
+          const BIN_TYPE* row_data_start = row_wise_data + row_start;
+          const BIN_TYPE* row_data_end = row_wise_data + row_end;
+          const size_t partition_start_in_row = std::lower_bound(row_data_start, row_data_end, partition_hist_start) - row_data_start;
+          const size_t partition_end_in_row = std::lower_bound(row_data_start, row_data_end, partition_hist_end) - row_data_start;
+          for (size_t pos = partition_start_in_row; pos < partition_end_in_row; ++pos) {
+            const BIN_TYPE bin = row_data_start[pos];
+            CHECK_GE(bin, static_cast<BIN_TYPE>(partition_hist_start));
+            data_for_this_partition.emplace_back(bin - partition_hist_start);
+          }
+          CHECK_GE(partition_end_in_row, partition_start_in_row);
+          offset += static_cast<DATA_PTR_TYPE>(partition_end_in_row - partition_start_in_row);
+          row_ptr_for_this_partition.emplace_back(offset);
+        }
+      }
+    });
+  partition_ptr->clear();
+  DATA_PTR_TYPE offset = 0;
+  partition_ptr->emplace_back(offset);
+  for (size_t i = 0; i < partitioned_row_ptr->size(); ++i) {
+    offset += partitioned_row_ptr->at(i).back();
+    partition_ptr->emplace_back(offset);
+  }
 }
 
 }  // namespace LightGBM

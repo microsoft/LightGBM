@@ -98,7 +98,7 @@ class CUDAHistogramConstructor {
     const double* larger_leaf_sum_gradients, const double* larger_leaf_sum_hessians,
     hist_t** cuda_smaller_leaf_hist, hist_t** cuda_larger_leaf_hist);
 
-  void InitCUDAData(const Dataset* train_data, TrainingShareStates* share_state);
+  void InitCUDAData(TrainingShareStates* share_state);
 
   void PushOneData(const uint32_t feature_bin_value, const int feature_group_id, const data_size_t data_index);
 
@@ -106,6 +106,13 @@ class CUDAHistogramConstructor {
 
   template <typename BIN_TYPE>
   void GetDenseDataPartitioned(const BIN_TYPE* row_wise_data, std::vector<BIN_TYPE>* partitioned_data);
+
+  template <typename BIN_TYPE, typename DATA_PTR_TYPE>
+  void GetSparseDataPartitioned(const BIN_TYPE* row_wise_data,
+    const DATA_PTR_TYPE* row_ptr,
+    std::vector<std::vector<BIN_TYPE>>* partitioned_data,
+    std::vector<std::vector<DATA_PTR_TYPE>>* partitioned_row_ptr,
+    std::vector<DATA_PTR_TYPE>* partition_ptr);
 
   // Host memory
   // data on CPU, stored in row-wise style
@@ -129,6 +136,8 @@ class CUDAHistogramConstructor {
   bool is_sparse_;
   int num_feature_partitions_;
   int max_num_column_per_partition_;
+  uint8_t data_ptr_bit_type_;
+  uint8_t bit_type_;
 
   // CUDA memory, held by this object
   uint32_t* cuda_feature_group_bin_offsets_;
@@ -142,6 +151,12 @@ class CUDAHistogramConstructor {
   uint8_t* cuda_data_uint8_t_;
   uint16_t* cuda_data_uint16_t_;
   uint32_t* cuda_data_uint32_t_;
+  uint16_t* cuda_row_ptr_uint16_t_;
+  uint32_t* cuda_row_ptr_uint32_t_;
+  uint64_t* cuda_row_ptr_uint64_t_;
+  uint16_t* cuda_partition_ptr_uint16_t_;
+  uint32_t* cuda_partition_ptr_uint32_t_;
+  uint64_t* cuda_partition_ptr_uint64_t_;
   int* cuda_num_features_;
   score_t* cuda_ordered_gradients_;
   score_t* cuda_ordered_hessians_;

@@ -125,14 +125,19 @@ class MultiValBinWrapper {
     is_subrow_copied_ = is_subrow_copied;
   }
 
-  const uint8_t* GetRowWiseData(uint8_t* bit_type, size_t* total_size, bool* is_sparse) const {
+  const uint8_t* GetRowWiseData(
+    uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const uint8_t** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const {
     if (multi_val_bin_ == nullptr) {
       *bit_type = 0;
       *total_size = 0;
       *is_sparse = false;
       return nullptr;
     } else {
-      return multi_val_bin_->GetRowWiseData(bit_type, total_size, is_sparse);
+      return multi_val_bin_->GetRowWiseData(bit_type, total_size, is_sparse, out_data_ptr, data_ptr_bit_type);
     }
   }
 
@@ -224,9 +229,13 @@ struct TrainingShareStates {
     }
   }
 
-  const uint8_t* GetRowWiseData(uint8_t* bit_type, size_t* total_size, bool* is_sparse) {
+  const uint8_t* GetRowWiseData(uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const uint8_t** out_data_ptr,
+    uint8_t* data_ptr_bit_type) {
     if (multi_val_bin_wrapper_ != nullptr) {
-      return multi_val_bin_wrapper_->GetRowWiseData(bit_type, total_size, is_sparse);
+      return multi_val_bin_wrapper_->GetRowWiseData(bit_type, total_size, is_sparse, out_data_ptr, data_ptr_bit_type);
     } else {
       *bit_type = 0;
       *total_size = 0;
