@@ -95,7 +95,7 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
         X_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(X.shape[1])])
         if output == 'dataframe-with-categorical':
             for i in range(5):
-                col_name = f"cat_col{str(i)}"
+                col_name = f"cat_col{i}"
                 cat_values = rnd.choice(['a', 'b'], X.shape[0])
                 cat_series = pd.Series(
                     cat_values,
@@ -1105,7 +1105,7 @@ def test_network_params_not_required_but_respected_if_given(task, listen_port, c
             n_estimators=5,
             num_leaves=5,
             machines=",".join([
-                f"127.0.0.1:{str(port)}"
+                f"127.0.0.1:{port}"
                 for port in open_ports
             ]),
         )
@@ -1151,7 +1151,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
             n_estimators=5,
             num_leaves=5,
             machines=",".join([
-                f"127.0.0.1:{str(port)}"
+                f"127.0.0.1:{port}"
                 for port in open_ports
             ]),
         )
@@ -1171,7 +1171,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
         one_open_port = lgb.dask._find_random_open_port()
         dask_model.set_params(
             machines=",".join([
-                f"127.0.0.1:{str(one_open_port)}"
+                f"127.0.0.1:{one_open_port}"
                 for _ in range(n_workers)
             ])
         )
