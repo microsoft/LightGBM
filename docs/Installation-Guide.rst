@@ -13,6 +13,21 @@ Users who want to perform benchmarking can make LightGBM output time costs for d
 
 It is possible to build LightGBM in debug mode. In this mode all compiler optimizations are disabled and LightGBM performs more checks internally. To enable debug mode you can add ``-DUSE_DEBUG=ON`` to CMake flags or choose ``Debug_*`` configuration (e.g. ``Debug_DLL``, ``Debug_mpi``) in Visual Studio depending on how you are building LightGBM.
 
+.. _sanitizers:
+
+In addition to the debug mode, LightGBM can be built with compiler sanitizers.
+To enable them add ``-DUSE_SANITIZER=ON -DENABLED_SANITIZERS="san_1;san_2;...;san_n"`` to CMake flags.
+``san_1`` ... ``san_n`` can refer to the following supported sanitizers:
+
+- ``address`` - AddressSanitizer (ASan);
+- ``leak`` - LeakSanitizer (LSan);
+- ``undefined`` - UndefinedBehaviorSanitizer (UBSan);
+- ``thread`` - ThreadSanitizer (TSan).
+
+Please note, that ThreadSanitizer cannot be used together with other sanitizers.
+For more info and additional sanitizers' parameters please refer to the `following docs`_.
+It is very useful to build `C++ unit tests <#build-c-unit-tests>`__ with sanitizers.
+
 You can also download the artifacts of the latest successful build on master branch (nightly builds) here: |download artifacts|.
 
 .. contents:: **Contents**
@@ -912,3 +927,5 @@ gcc
 .. _SWIG: http://www.swig.org/download.html
 
 .. _this detailed guide: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
+
+.. _following docs: https://github.com/google/sanitizers/wiki
