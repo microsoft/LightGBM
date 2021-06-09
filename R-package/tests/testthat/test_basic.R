@@ -413,7 +413,7 @@ test_that("lgb.cv() respects showsd argument", {
     , showsd = FALSE
   )
   evals_no_showsd <- bst_no_showsd$record_evals[["valid"]][["l2"]]
-  expect_identical(
+  expect_equal(
     evals_showsd[["eval"]]
     , evals_no_showsd[["eval"]]
   )
