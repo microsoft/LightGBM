@@ -172,7 +172,7 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
         if output == 'dataframe-with-categorical':
             num_cat_cols = 2
             for i in range(num_cat_cols):
-                col_name = f"cat_col{str(i)}"
+                col_name = f"cat_col{i}"
                 cat_values = rnd.choice(['a', 'b'], X.shape[0])
                 cat_series = pd.Series(
                     cat_values,
