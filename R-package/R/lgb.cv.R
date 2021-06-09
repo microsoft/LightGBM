@@ -509,7 +509,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 # It was borrowed from caret::createFolds and simplified
 # by always returning an unnamed list of fold indices.
 #' @importFrom stats quantile
-lgb.stratified.folds <- function(y, k = 10L) {
+lgb.stratified.folds <- function(y, k) {
 
   ## Group the numeric data based on their magnitudes
   ## and sample within those groups.
