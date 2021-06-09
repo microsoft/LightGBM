@@ -75,9 +75,9 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStat
 
   InitCUDAValueFromConstant<int>(&cuda_num_features_, num_features_);
 
-  InitCUDAData(train_data, share_state);
-
   DivideCUDAFeatureGroups(train_data, share_state);
+
+  InitCUDAData(train_data, share_state);
 }
 
 void CUDAHistogramConstructor::InitCUDAData(const Dataset* train_data, TrainingShareStates* share_state) {
@@ -85,7 +85,9 @@ void CUDAHistogramConstructor::InitCUDAData(const Dataset* train_data, TrainingS
   size_t total_size = 0;
   const uint8_t* cpu_data_ptr = share_state->GetRowWiseData(&bit_type, &total_size, &is_sparse_);
   CHECK_EQ(bit_type, 8);
-  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_data_uint8_t_, cpu_data_ptr, total_size);
+  std::vector<uint8_t> partitioned_data;
+  GetDenseDataPartitioned<uint8_t>(cpu_data_ptr, &partitioned_data);
+  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_data_uint8_t_, partitioned_data.data(), total_size);
   SynchronizeCUDADevice();
 }
 
@@ -243,6 +245,33 @@ void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data
   InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_column_hist_offsets_full_,
     column_hist_offsets_full_.data(),
     column_hist_offsets_full_.size());
+}
+
+template <typename BIN_TYPE>
+void CUDAHistogramConstructor::GetDenseDataPartitioned(const BIN_TYPE* row_wise_data, std::vector<BIN_TYPE>* partitioned_data) {
+  Log::Warning("feature_partition_column_index_offsets_.size() = %d", feature_partition_column_index_offsets_.size());
+  const int num_total_columns = feature_partition_column_index_offsets_.back();
+  partitioned_data->resize(static_cast<size_t>(num_total_columns) * static_cast<size_t>(num_data_), 0);
+  BIN_TYPE* out_data = partitioned_data->data();
+  Threading::For<data_size_t>(0, num_data_, 512,
+    [this, num_total_columns, row_wise_data, out_data] (int thread_index, data_size_t start, data_size_t end) {
+      for (size_t i = 0; i < feature_partition_column_index_offsets_.size() - 1; ++i) {
+        const int num_prev_columns = static_cast<int>(feature_partition_column_index_offsets_[i]);
+        const data_size_t offset = num_data_ * num_prev_columns;
+        const int partition_column_start = feature_partition_column_index_offsets_[i];
+        const int partition_column_end = feature_partition_column_index_offsets_[i + 1];
+        const int num_columns_in_cur_partition = partition_column_end - partition_column_start;
+        for (data_size_t data_index = start; data_index < end; ++data_index) {
+          const data_size_t data_offset = offset + data_index * num_columns_in_cur_partition;
+          const data_size_t read_data_offset = data_index * num_total_columns;
+          for (int column_index = 0; column_index < num_columns_in_cur_partition; ++column_index) {
+            const int true_column_index = read_data_offset + column_index + partition_column_start;
+            const BIN_TYPE bin = row_wise_data[true_column_index];
+            out_data[data_offset + column_index] = bin;
+          }
+        }
+      }
+    });
 }
 
 }  // namespace LightGBM

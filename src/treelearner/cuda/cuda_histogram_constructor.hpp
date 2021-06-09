@@ -104,6 +104,9 @@ class CUDAHistogramConstructor {
 
   void DivideCUDAFeatureGroups(const Dataset* train_data, TrainingShareStates* share_state);
 
+  template <typename BIN_TYPE>
+  void GetDenseDataPartitioned(const BIN_TYPE* row_wise_data, std::vector<BIN_TYPE>* partitioned_data);
+
   // Host memory
   // data on CPU, stored in row-wise style
   const data_size_t num_data_;

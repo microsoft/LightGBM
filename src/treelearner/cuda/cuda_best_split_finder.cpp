@@ -189,6 +189,10 @@ void CUDABestSplitFinder::FindBestFromAllSplits(const int* cuda_cur_num_leaves, 
   LaunchFindBestFromAllSplitsKernel(cuda_cur_num_leaves, smaller_leaf_index, larger_leaf_index,
     leaf_best_split_feature, leaf_best_split_threshold, leaf_best_split_default_left, best_leaf_index);
   SynchronizeCUDADevice();
+  Log::Warning("smaller_leaf %d best split feature %d", smaller_leaf_index, leaf_best_split_feature->at(smaller_leaf_index));
+  if (larger_leaf_index >= 0) {
+    Log::Warning("larger_leaf %d best split feature %d", larger_leaf_index, leaf_best_split_feature->at(larger_leaf_index));
+  }
   //auto end = std::chrono::steady_clock::now();
   //double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
 }

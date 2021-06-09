@@ -58,7 +58,8 @@ __global__ void CUDAConstructHistogramKernel(
   const uint8_t* data,
   const uint32_t* column_hist_offsets,
   const uint32_t* column_hist_offsets_full,
-  const int* feature_partition_column_index_offsets) {
+  const int* feature_partition_column_index_offsets,
+  const data_size_t num_data) {
 
   const int num_feature_groups_ref = *num_feature_groups;
   const int leaf_index_ref = *leaf_index;
@@ -70,6 +71,7 @@ __global__ void CUDAConstructHistogramKernel(
   const unsigned int num_threads_per_block = blockDim.x * blockDim.y;
   const int partition_column_start = feature_partition_column_index_offsets[blockIdx.x];
   const int partition_column_end = feature_partition_column_index_offsets[blockIdx.x + 1];
+  const uint8_t* data_ptr = data + partition_column_start * num_data;
   const int num_columns_in_partition = partition_column_end - partition_column_start;
   const uint32_t partition_hist_start = column_hist_offsets_full[blockIdx.x];
   const uint32_t partition_hist_end = column_hist_offsets_full[blockIdx.x + 1];
@@ -93,13 +95,13 @@ __global__ void CUDAConstructHistogramKernel(
   const data_size_t num_iteration_this = remainder == 0 ? num_iteration_total : num_iteration_total - static_cast<data_size_t>(threadIdx_y >= remainder);
   data_size_t inner_data_index = static_cast<data_size_t>(threadIdx_y);
   const int column_index = static_cast<int>(threadIdx.x) + partition_column_start;
-  float* shared_hist_ptr = shared_hist + (column_hist_offsets[column_index] << 1);
   if (threadIdx.x < static_cast<unsigned int>(num_columns_in_partition)) {
+    float* shared_hist_ptr = shared_hist + (column_hist_offsets[column_index] << 1);
     for (data_size_t i = 0; i < num_iteration_this; ++i) {
       const data_size_t data_index = data_indices_ref_this_block[inner_data_index];
       const score_t grad = cuda_gradients[data_index];
       const score_t hess = cuda_hessians[data_index];
-      const uint32_t bin = static_cast<uint32_t>(data[data_index * num_feature_groups_ref + column_index]);
+      const uint32_t bin = static_cast<uint32_t>(data_ptr[data_index * num_columns_in_partition + threadIdx.x]);
       const uint32_t pos = bin << 1;
       float* pos_ptr = shared_hist_ptr + pos;
       atomicAdd_system(pos_ptr, grad);
@@ -135,7 +137,8 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
     cuda_data_indices_in_smaller_leaf, cuda_leaf_hist, cuda_num_feature_groups_, cuda_leaf_num_data, cuda_data_uint8_t_,
     cuda_column_hist_offsets_,
     cuda_column_hist_offsets_full_,
-    cuda_feature_partition_column_index_offsets_);
+    cuda_feature_partition_column_index_offsets_,
+    num_data_);
 }
 
 __global__ void SubtractHistogramKernel(const int* /*cuda_smaller_leaf_index*/,
