@@ -389,6 +389,39 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
   expect_true(cv_bst_linear$best_score < cv_bst$best_score)
 })
 
+test_that("lgb.cv() respects showsd argument", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(objective = "regression", metric = "l2")
+  nrounds <- 5L
+  set.seed(708L)
+  bst_showsd <- lgb.cv(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , nfold = 3L
+    , min_data = 1L
+    , showsd = TRUE
+  )
+  evals_showsd <- bst_showsd$record_evals[["valid"]][["l2"]]
+  set.seed(708L)
+  bst_no_showsd <- lgb.cv(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , nfold = 3L
+    , min_data = 1L
+    , showsd = FALSE
+  )
+  evals_no_showsd <- bst_no_showsd$record_evals[["valid"]][["l2"]]
+  expect_identical(
+    evals_showsd[["eval"]]
+    , evals_no_showsd[["eval"]]
+  )
+  expect_is(evals_showsd[["eval_err"]], "list")
+  expect_equal(length(evals_showsd[["eval_err"]]), nrounds)
+  expect_identical(evals_no_showsd[["eval_err"]], list())
+})
+
 context("lgb.train()")
 
 test_that("lgb.train() works as expected with multiple eval metrics", {
