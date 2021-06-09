@@ -167,7 +167,6 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_le
   const CUDALeafSplits* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index,
   const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
   const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf) {
-  //auto start = std::chrono::steady_clock::now();
   const bool is_smaller_leaf_valid = (num_data_in_smaller_leaf > min_data_in_leaf_ && sum_hessians_in_smaller_leaf > min_sum_hessian_in_leaf_);
   const bool is_larger_leaf_valid = (num_data_in_larger_leaf > min_data_in_leaf_ && sum_hessians_in_larger_leaf > min_sum_hessian_in_leaf_);
   LaunchFindBestSplitsForLeafKernel(smaller_leaf_splits, larger_leaf_splits,
@@ -177,20 +176,14 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_le
   LaunchSyncBestSplitForLeafKernel(smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
   SynchronizeCUDADevice();
   global_timer.Stop("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
-  //auto end = std::chrono::steady_clock::now();
-  //double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
-  //Log::Warning("FindBestSplitsForLeaf time %f", duration);
 }
 
 void CUDABestSplitFinder::FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
     const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
     std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index) {
-  //auto start = std::chrono::steady_clock::now();
   LaunchFindBestFromAllSplitsKernel(cuda_cur_num_leaves, smaller_leaf_index, larger_leaf_index,
     leaf_best_split_feature, leaf_best_split_threshold, leaf_best_split_default_left, best_leaf_index);
   SynchronizeCUDADevice();
-  //auto end = std::chrono::steady_clock::now();
-  //double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
 }
 
 }  // namespace LightGBM

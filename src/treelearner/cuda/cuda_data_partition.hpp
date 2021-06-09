@@ -190,8 +190,6 @@ class CUDADataPartition {
  private:
   void CopyColWiseData(const Dataset* train_data);
 
-  void LaunchCopyColWiseDataKernel();
-
   void GenDataToLeftBitVector(const data_size_t num_data_in_leaf,
     const int split_feature_index, const uint32_t split_threshold,
     const uint8_t split_default_left, const data_size_t leaf_data_start);

@@ -25,7 +25,6 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   const label_t* labels = train_data->metadata().label();
   cuda_centralized_info_.reset(new CUDACentralizedInfo(num_data_, this->config_->num_leaves, num_features_));
   cuda_centralized_info_->Init(labels);
-  //cuda_centralized_info_->Test();
   cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_, 0, cuda_centralized_info_->cuda_gradients(),
     cuda_centralized_info_->cuda_hessians(), cuda_centralized_info_->cuda_num_data()));
   cuda_smaller_leaf_splits_->Init();
@@ -36,7 +35,6 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
     cuda_centralized_info_->cuda_gradients(), cuda_centralized_info_->cuda_hessians(), share_state_->feature_hist_offsets(),
     config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf));
   cuda_histogram_constructor_->Init(train_data_, share_state_.get());
-  //cuda_histogram_constructor_->TestAfterInit();
   cuda_data_partition_.reset(new CUDADataPartition(num_data_, num_features_, this->config_->num_leaves, num_threads_,
     cuda_centralized_info_->cuda_num_data(), cuda_centralized_info_->cuda_num_leaves(),
     cuda_centralized_info_->cuda_num_features(),
@@ -56,7 +54,6 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   cuda_binary_objective_->CalcInitScore();
 
   cuda_score_updater_->SetInitScore(cuda_binary_objective_->cuda_init_score());
-  //cuda_best_split_finder_->TestAfterInit();
 
   leaf_best_split_feature_.resize(config_->num_leaves, -1);
   leaf_best_split_threshold_.resize(config_->num_leaves, 0);
@@ -71,32 +68,25 @@ void NewCUDATreeLearner::BeforeTrain() {
   cuda_data_partition_->BeforeTrain(nullptr);
   auto end = std::chrono::steady_clock::now();
   auto duration = static_cast<std::chrono::duration<double>>(end - start);
-  //Log::Warning("cuda_data_partition_->BeforeTrain duration = %f", duration.count());
   global_timer.Start("CUDACentralizedInfo::BeforeTrain");
   start = std::chrono::steady_clock::now();
-  //cuda_centralized_info_->BeforeTrain(gradients_, hessians_);
   cuda_binary_objective_->GetGradients(cuda_score_updater_->cuda_scores(),
     cuda_centralized_info_->cuda_gradients_ref(), cuda_centralized_info_->cuda_hessians_ref());
   end = std::chrono::steady_clock::now();
   duration = static_cast<std::chrono::duration<double>>(end - start);
   global_timer.Stop("CUDACentralizedInfo::BeforeTrain");
-  //Log::Warning("cuda_centralized_info_->BeforeTrain duration = %f", duration.count());
   cuda_smaller_leaf_splits_->InitValues(cuda_data_partition_->cuda_data_indices(),
     cuda_histogram_constructor_->cuda_hist_pointer(),
     &leaf_sum_hessians_[0]);
   cuda_larger_leaf_splits_->InitValues();
-  //cuda_smaller_leaf_splits_->Test();
   start = std::chrono::steady_clock::now();
   cuda_histogram_constructor_->BeforeTrain();
   end = std::chrono::steady_clock::now();
   duration = static_cast<std::chrono::duration<double>>(end - start);
-  //Log::Warning("cuda_histogram_constructor_->BeforeTrain() duration = %f", duration.count());
   start = std::chrono::steady_clock::now();
   cuda_best_split_finder_->BeforeTrain();
   end = std::chrono::steady_clock::now();
   duration = static_cast<std::chrono::duration<double>>(end - start);
-  //Log::Warning("cuda_best_split_finder_->BeforeTrain() duration = %f", duration.count());
-  //cuda_data_partition_->Test();
   leaf_num_data_[0] = num_data_;
   leaf_data_start_[0] = 0;
   smaller_leaf_index_ = 0;
@@ -115,11 +105,7 @@ void NewCUDATreeLearner::Split(Tree* /*tree*/, int /*best_leaf*/,
   int* /*left_leaf*/, int* /*right_leaf*/) {}
 
 void NewCUDATreeLearner::AddPredictionToScore(const Tree* /*tree*/, double* /*out_score*/) const {
-  //const auto start = std::chrono::steady_clock::now();
   cuda_data_partition_->UpdateTrainScore(config_->learning_rate, cuda_score_updater_->cuda_score_ref());
-  //const auto end = std::chrono::steady_clock::now();
-  //const auto duration = static_cast<std::chrono::duration<double>>(end - start).count();
-  //Log::Warning("AddPredictionToScore time %f", duration);
 }
 
 Tree* NewCUDATreeLearner::BuildTree(const int num_leaves) {
@@ -180,10 +166,8 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   double find_best_split_time = 0.0f;
   double find_best_split_from_all_leaves_time = 0.0f;
   double split_data_indices_time = 0.0f;
-  //std::unique_ptr<Tree> tree(new Tree(config_->num_leaves, false, false));
   int num_leaves = 1;
   for (int i = 0; i < config_->num_leaves - 1; ++i) {
-    //Log::Warning("Before ConstructHistogramForLeaf");
     global_timer.Start("NewCUDATreeLearner::ConstructHistogramForLeaf");
     auto start = std::chrono::steady_clock::now();
     const data_size_t num_data_in_smaller_leaf = leaf_num_data_[smaller_leaf_index_];
@@ -207,21 +191,16 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
       num_data_in_larger_leaf,
       sum_hessians_in_smaller_leaf,
       sum_hessians_in_larger_leaf);
-    /*if (i == 0) {
-      cuda_histogram_constructor_->TestAfterConstructHistogram();
-    }*/
     auto end = std::chrono::steady_clock::now();
     auto duration = static_cast<std::chrono::duration<double>>(end - start);
     global_timer.Stop("NewCUDATreeLearner::ConstructHistogramForLeaf");
     construct_histogram_time += duration.count();
-    //Log::Warning("Before FindBestSplitsForLeaf");
     global_timer.Start("NewCUDATreeLearner::FindBestSplitsForLeaf");
     start = std::chrono::steady_clock::now();
     cuda_best_split_finder_->FindBestSplitsForLeaf(cuda_smaller_leaf_splits_.get(),
       cuda_larger_leaf_splits_.get(), smaller_leaf_index_, larger_leaf_index_,
       num_data_in_smaller_leaf, num_data_in_larger_leaf,
       sum_hessians_in_smaller_leaf, sum_hessians_in_larger_leaf);
-    //Log::Warning("Before FindBestFromAllSplits");
     end = std::chrono::steady_clock::now();
     duration = static_cast<std::chrono::duration<double>>(end - start);
     global_timer.Stop("NewCUDATreeLearner::FindBestSplitsForLeaf");
@@ -287,9 +266,6 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
       &smaller_leaf_index_,
       &larger_leaf_index_,
       best_leaf_index_);
-    /*cuda_data_partition_->CUDACheck(smaller_leaf_index_, larger_leaf_index_,
-      leaf_num_data_, cuda_smaller_leaf_splits_.get(), cuda_larger_leaf_splits_.get(),
-      cuda_centralized_info_->cuda_gradients(), cuda_centralized_info_->cuda_hessians());*/
     end = std::chrono::steady_clock::now();
     duration = static_cast<std::chrono::duration<double>>(end - start);
     global_timer.Stop("NewCUDATreeLearner::Split");
@@ -299,7 +275,6 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   const auto end = std::chrono::steady_clock::now();
   const double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   const auto build_tree_start = std::chrono::steady_clock::now();
-  //Log::Warning("Before BuildTree");
   std::unique_ptr<Tree> tree(BuildTree(num_leaves));
   const auto build_tree_end = std::chrono::steady_clock::now();
   const auto build_tre_duration = (static_cast<std::chrono::duration<double>>(build_tree_end - build_tree_start)).count();

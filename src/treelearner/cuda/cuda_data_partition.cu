@@ -1195,23 +1195,11 @@ __global__ void SplitTreeStructureKernel(const int* leaf_index, data_size_t* blo
     best_split_found[leaf_index_ref] = 0;
     best_split_found[cur_max_leaf_index] = 0;
 
-    /*if (cuda_leaf_num_data[leaf_index_ref] <= 0) {
-      printf("error !!! leaf %d has count %d\n", leaf_index_ref, cuda_leaf_num_data[leaf_index_ref]);
-    }
-
-    if (cuda_leaf_num_data[cur_max_leaf_index] <= 0) {
-      printf("error !!! leaf %d has count %d\n", cur_max_leaf_index, cuda_leaf_num_data[cur_max_leaf_index]);
-    }
-
-    printf("splitting %d into %d with num data %d and %d with num data %d\n",
-        leaf_index_ref, leaf_index_ref, cuda_leaf_num_data[leaf_index_ref],
-        cur_max_leaf_index, cuda_leaf_num_data[cur_max_leaf_index]);*/
-
     if (cuda_leaf_num_data[leaf_index_ref] < cuda_leaf_num_data[cur_max_leaf_index]) {
       *smaller_leaf_cuda_leaf_index_pointer = leaf_index_ref;
       *smaller_leaf_cuda_sum_of_gradients_pointer = best_left_sum_gradients[leaf_index_ref];
       *smaller_leaf_cuda_sum_of_hessians_pointer = best_left_sum_hessians[leaf_index_ref];
-      *smaller_leaf_cuda_num_data_in_leaf_pointer = to_left_total_cnt;//best_left_count[leaf_index_ref];
+      *smaller_leaf_cuda_num_data_in_leaf_pointer = to_left_total_cnt;
       *smaller_leaf_cuda_gain_pointer = best_left_gain[leaf_index_ref];
       *smaller_leaf_cuda_leaf_value_pointer = best_left_leaf_value[leaf_index_ref];
       *smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer = cuda_data_indices + cuda_leaf_data_start[leaf_index_ref];
@@ -1219,7 +1207,7 @@ __global__ void SplitTreeStructureKernel(const int* leaf_index, data_size_t* blo
       *larger_leaf_cuda_leaf_index_pointer = cur_max_leaf_index;
       *larger_leaf_cuda_sum_of_gradients_pointer = best_right_sum_gradients[leaf_index_ref];
       *larger_leaf_cuda_sum_of_hessians_pointer = best_right_sum_hessians[leaf_index_ref];
-      *larger_leaf_cuda_num_data_in_leaf_pointer = cuda_leaf_num_data[cur_max_leaf_index];//best_right_count[leaf_index_ref];
+      *larger_leaf_cuda_num_data_in_leaf_pointer = cuda_leaf_num_data[cur_max_leaf_index];
       *larger_leaf_cuda_gain_pointer = best_right_gain[leaf_index_ref];
       *larger_leaf_cuda_leaf_value_pointer = best_right_leaf_value[leaf_index_ref];
       *larger_leaf_cuda_data_indices_in_leaf_pointer_pointer = cuda_data_indices + cuda_leaf_data_start[cur_max_leaf_index];
@@ -1235,7 +1223,7 @@ __global__ void SplitTreeStructureKernel(const int* leaf_index, data_size_t* blo
       *larger_leaf_cuda_leaf_index_pointer = leaf_index_ref;
       *larger_leaf_cuda_sum_of_gradients_pointer = best_left_sum_gradients[leaf_index_ref];
       *larger_leaf_cuda_sum_of_hessians_pointer = best_left_sum_hessians[leaf_index_ref];
-      *larger_leaf_cuda_num_data_in_leaf_pointer = to_left_total_cnt;//best_left_count[leaf_index_ref];
+      *larger_leaf_cuda_num_data_in_leaf_pointer = to_left_total_cnt;
       *larger_leaf_cuda_gain_pointer = best_left_gain[leaf_index_ref];
       *larger_leaf_cuda_leaf_value_pointer = best_left_leaf_value[leaf_index_ref];
       *larger_leaf_cuda_data_indices_in_leaf_pointer_pointer = cuda_data_indices + cuda_leaf_data_start[leaf_index_ref];
@@ -1243,7 +1231,7 @@ __global__ void SplitTreeStructureKernel(const int* leaf_index, data_size_t* blo
       *smaller_leaf_cuda_leaf_index_pointer = cur_max_leaf_index;
       *smaller_leaf_cuda_sum_of_gradients_pointer = best_right_sum_gradients[leaf_index_ref];
       *smaller_leaf_cuda_sum_of_hessians_pointer = best_right_sum_hessians[leaf_index_ref];
-      *smaller_leaf_cuda_num_data_in_leaf_pointer = cuda_leaf_num_data[cur_max_leaf_index];//best_right_count[leaf_index_ref];
+      *smaller_leaf_cuda_num_data_in_leaf_pointer = cuda_leaf_num_data[cur_max_leaf_index];
       *smaller_leaf_cuda_gain_pointer = best_right_gain[leaf_index_ref];
       *smaller_leaf_cuda_leaf_value_pointer = best_right_leaf_value[leaf_index_ref];
       *smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer = cuda_data_indices + cuda_leaf_data_start[cur_max_leaf_index];
@@ -1374,7 +1362,6 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
   }
   const int num_blocks_final = (num_data_in_leaf + split_indices_block_size_data_partition_aligned - 1) / split_indices_block_size_data_partition_aligned;
   global_timer.Start("CUDADataPartition::AggregateBlockOffsetKernel");
-  //auto start = std::chrono::steady_clock::now();
   AggregateBlockOffsetKernel<<<1, split_indices_block_size_data_partition_aligned / 2>>>(leaf_index, cuda_block_data_to_left_offset_,
     cuda_block_data_to_right_offset_, cuda_leaf_data_start_, cuda_leaf_data_end_,
     cuda_leaf_num_data_, cuda_data_indices_,
@@ -1404,8 +1391,6 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
     tree_left_sum_hessian_, tree_right_sum_hessian_, tree_gain_, tree_default_left_,
     data_partition_leaf_output_);
   SynchronizeCUDADevice();
-  //auto end = std::chrono::steady_clock::now();
-  //auto duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   global_timer.Stop("CUDADataPartition::AggregateBlockOffsetKernel");
   global_timer.Start("CUDADataPartition::SplitInnerKernel");
 
@@ -1413,18 +1398,12 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
     leaf_index, cuda_cur_num_leaves_, cuda_leaf_data_start_, cuda_leaf_num_data_, cuda_data_indices_, cuda_data_to_left_,
     cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_,
     cuda_out_data_indices_in_leaf_, split_indices_block_size_data_partition_aligned);
-  //end = std::chrono::steady_clock::now();
-  //duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   global_timer.Stop("CUDADataPartition::SplitInnerKernel");
   global_timer.Start("CUDADataPartition::CopyDataIndicesKernel");
-  //start = std::chrono::steady_clock::now();
   CopyDataIndicesKernel<<<num_blocks_final, split_indices_block_size_data_partition_aligned, 0, cuda_streams_[1]>>>(
     leaf_index, cuda_cur_num_leaves_, cuda_leaf_data_start_, cuda_leaf_num_data_, cuda_out_data_indices_in_leaf_, cuda_data_indices_);
-  //end = std::chrono::steady_clock::now();
-  //duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   global_timer.Stop("CUDADataPartition::CopyDataIndicesKernel");
 
-  //start = std::chrono::steady_clock::now();
   global_timer.Start("CUDADataPartition::SplitTreeStructureKernel");
   SplitTreeStructureKernel<<<1, 1, 0, cuda_streams_[0]>>>(leaf_index, cuda_block_data_to_left_offset_,
     cuda_block_data_to_right_offset_, cuda_leaf_data_start_, cuda_leaf_data_end_,
@@ -1530,12 +1509,6 @@ __global__ void CopyColWiseDataKernel(const uint8_t* row_wise_data,
       col_wise_data[write_pos] = row_wise_data[read_offset + feature_index];
     }
   }
-}
-
-void CUDADataPartition::LaunchCopyColWiseDataKernel() {
-  /*const int block_size = 1024;
-  const int num_blocks = (num_data_ + block_size - 1) / block_size;
-  CopyColWiseDataKernel<<<num_blocks, block_size>>>(cuda_data_, num_data_, num_features_, cuda_data_col_wise_);*/
 }
 
 __global__ void CUDACheckKernel(const data_size_t** data_indices_in_leaf_ptr,

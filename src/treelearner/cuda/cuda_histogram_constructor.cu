@@ -198,9 +198,6 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
   int block_dim_x = 0;
   int block_dim_y = 0;
   CalcConstructHistogramKernelDim(&grid_dim_x, &grid_dim_y, &block_dim_x, &block_dim_y, num_data_in_smaller_leaf);
-  /*Log::Warning("grid_dim_x = %d, grid_dim_y = %d", grid_dim_x, grid_dim_y);
-  Log::Warning("block_dim_x = %d, block_dim_y = %d", block_dim_x, block_dim_y);
-  Log::Warning("num_data_in_smaller_leaf = %d", num_data_in_smaller_leaf);*/
   dim3 grid_dim(grid_dim_x, grid_dim_y);
   dim3 block_dim(block_dim_x, block_dim_y);
   if (is_sparse_) {
@@ -315,11 +312,10 @@ __global__ void SubtractHistogramKernel(const int* /*cuda_smaller_leaf_index*/,
   hist_t** cuda_smaller_leaf_hist, hist_t** cuda_larger_leaf_hist) {
   const int cuda_num_total_bin_ref = *cuda_num_total_bin;
   const unsigned int global_thread_index = threadIdx.x + blockIdx.x * blockDim.x;
-  //const int cuda_smaller_leaf_index_ref = *cuda_smaller_leaf_index;
   const int cuda_larger_leaf_index_ref = *cuda_larger_leaf_index;
   if (cuda_larger_leaf_index_ref >= 0) { 
-    const hist_t* smaller_leaf_hist = *cuda_smaller_leaf_hist; //cuda_hist + (cuda_smaller_leaf_index_ref * cuda_num_total_bin_ref * 2);
-    hist_t* larger_leaf_hist = *cuda_larger_leaf_hist; //cuda_hist + (cuda_larger_leaf_index_ref * cuda_num_total_bin_ref * 2);
+    const hist_t* smaller_leaf_hist = *cuda_smaller_leaf_hist;
+    hist_t* larger_leaf_hist = *cuda_larger_leaf_hist;
     if (global_thread_index < 2 * cuda_num_total_bin_ref) {
       larger_leaf_hist[global_thread_index] -= smaller_leaf_hist[global_thread_index];
     }
@@ -342,7 +338,6 @@ __global__ void FixHistogramKernel(const int* cuda_smaller_leaf_index,
   __shared__ double hist_gradients[FIX_HISTOGRAM_SHARED_MEM_SIZE + 1];
   __shared__ double hist_hessians[FIX_HISTOGRAM_SHARED_MEM_SIZE + 1];
   if (leaf_index_ref >= 0) {
-    //const int cuda_num_total_bin_ref = *cuda_num_total_bin;
     const uint32_t feature_hist_offset = cuda_feature_hist_offsets[feature_index];
     const uint32_t most_freq_bin = cuda_feature_most_freq_bins[feature_index];
     if (most_freq_bin > 0) {
@@ -350,7 +345,6 @@ __global__ void FixHistogramKernel(const int* cuda_smaller_leaf_index,
       const double leaf_sum_hessians = larger_or_smaller ? *larger_leaf_sum_hessians : *smaller_leaf_sum_hessians;
       hist_t* feature_hist = larger_or_smaller ? (*cuda_larger_leaf_hist) + feature_hist_offset * 2 :
         (*cuda_smaller_leaf_hist) + feature_hist_offset * 2;
-      //cuda_hist + cuda_num_total_bin_ref * 2 * leaf_index_ref + feature_hist_offset * 2;
       const unsigned int threadIdx_x = threadIdx.x;
       const uint32_t num_bin = cuda_feature_num_bins[feature_index];
       if (threadIdx_x < num_bin) {
