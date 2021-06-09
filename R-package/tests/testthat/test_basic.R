@@ -1746,7 +1746,6 @@ test_that("lgb.train() fit on linearly-relatead data improves when using linear 
 
 
 test_that("lgb.train() w/ linear learner fails already-constructed dataset with linear=false", {
-  testthat::skip("Skipping this test because it causes issues for valgrind")
   set.seed(708L)
   params <- list(
     objective = "regression"
