@@ -13,6 +13,8 @@ Users who want to perform benchmarking can make LightGBM output time costs for d
 
 It is possible to build LightGBM in debug mode. In this mode all compiler optimizations are disabled and LightGBM performs more checks internally. To enable debug mode you can add ``-DUSE_DEBUG=ON`` to CMake flags or choose ``Debug_*`` configuration (e.g. ``Debug_DLL``, ``Debug_mpi``) in Visual Studio depending on how you are building LightGBM.
 
+.. _nightly-builds:
+
 You can also download the artifacts of the latest successful build on master branch (nightly builds) here: |download artifacts|.
 
 .. contents:: **Contents**
