@@ -4,7 +4,6 @@ import socket
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from platform import system
 from typing import Dict, Generator, List
 
 import numpy as np
@@ -18,11 +17,7 @@ TESTS_DIR = Path(__file__).absolute().parent
 @pytest.fixture(scope='module')
 def executable(pytestconfig) -> str:
     """Returns the path to the lightgbm executable."""
-    exec_dir = Path(pytestconfig.getoption('execdir'))
-    exec_file = 'lightgbm'
-    if system() in {'Windows', 'Microsoft'}:
-        exec_file += '.exe'
-    return str(exec_dir / exec_file)
+    return pytestconfig.getoption('execfile')
 
 
 def _find_random_open_port() -> int:
