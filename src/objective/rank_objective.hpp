@@ -180,6 +180,8 @@ class LambdarankNDCG : public RankingObjective {
                   min_pos_bias_ = bias;
               }
           }
+      } else {
+        Log::Warning("POS_BIAS_PATH environment variable not found, using biases of 1.0");
       }
 
   }

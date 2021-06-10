@@ -18,7 +18,7 @@ namespace LightGBM {
 std::vector<double> DCGCalculator::label_gain_;
 std::vector<double> DCGCalculator::discount_;
 const data_size_t DCGCalculator::kMaxPosition = 10000;
-std::map<std::pair<data_size_t, data_size_t>, double> DCGCalculator::position_bias_lookup_;    
+std::map<std::pair<data_size_t, data_size_t>, double> DCGCalculator::position_bias_lookup_;
 
 void DCGCalculator::DefaultEvalAt(std::vector<int>* eval_at) {
   auto& ref_eval_at = *eval_at;
@@ -71,9 +71,9 @@ void DCGCalculator::Init(const std::vector<double>& input_label_gain) {
         position_bias_lookup_[std::make_pair(i, j)] = bias;
         position_bias_lookup_[std::make_pair(j, i)] = 1.0 / bias;
       }
-      
+
   } else {
-      Log::Fatal("POS_BIAS_PATH environment variable not set");
+      Log::Warning("POS_BIAS_PATH environment variable not set, using biases of 1.0");
   }
 }
 
@@ -141,7 +141,7 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
     }
     std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
                      [label](data_size_t a, data_size_t b) {return label[a] * a > label[b] * b; });
-      
+
     double cur_result = 0.0f;
     data_size_t cur_left = 0;
     // calculate multi dcg by one pass
@@ -150,10 +150,10 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
       if (cur_k > num_data) { cur_k = num_data; }
       for (data_size_t j = cur_left; j < cur_k; ++j) {
         data_size_t idx = sorted_idx[j];
-          
+
         double position_bias_ratio = 1.0f;
         if (!position_bias_lookup_.empty()) {
-            
+
             auto it = position_bias_lookup_.find(std::make_pair(idx+1, j+1));
             if (it != position_bias_lookup_.end()){
                 position_bias_ratio = it->second;
@@ -167,7 +167,7 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
       }
       (*out)[i] = cur_result;
       cur_left = cur_k;
-      
+
     }
   }
 }
@@ -212,7 +212,7 @@ void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const label_t* la
     for (data_size_t j = cur_left; j < cur_k; ++j) {
       data_size_t idx = sorted_idx[j];
       if (weighted) {
-          
+
         double position_bias_ratio = 1.0f;
         if (!position_bias_lookup_.empty()) {
             auto it = position_bias_lookup_.find(std::make_pair(idx+1, j+1));
@@ -229,7 +229,7 @@ void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const label_t* la
       else {
         cur_result += label_gain_[static_cast<int>(label[idx])] * discount_[j];
       }
-      
+
     }
     (*out)[i] = cur_result;
     cur_left = cur_k;
