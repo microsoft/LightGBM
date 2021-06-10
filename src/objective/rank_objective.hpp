@@ -272,8 +272,8 @@ class LambdarankNDCG : public RankingObjective {
         // update
         p_lambda *= -sigmoid_ * delta_pair_NDCG;
         p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG;
-        lambdas[low] -= static_cast<score_t>(p_lambda) * static_cast<score_t>(1/position_bias_ratio);
-        hessians[low] += static_cast<score_t>(p_hessian) * static_cast<score_t>(1/position_bias_ratio);
+        lambdas[low] -= static_cast<score_t>(p_lambda) * static_cast<score_t>(position_bias_ratio);
+        hessians[low] += static_cast<score_t>(p_hessian) * static_cast<score_t>(position_bias_ratio);
         lambdas[high] += static_cast<score_t>(p_lambda) * static_cast<score_t>(position_bias_ratio);
         hessians[high] += static_cast<score_t>(p_hessian) * static_cast<score_t>(position_bias_ratio) ;
         // lambda is negative, so use minus to accumulate
