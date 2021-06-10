@@ -245,9 +245,9 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
           cuda_column_hist_offsets_full_,
           num_data_);
       } else if (data_ptr_bit_type_ == 64) {
-        CUDAConstructHistogramSparseKernel<uint32_t, uint64_t><<<grid_dim, block_dim>>>(cuda_smaller_leaf_index, cuda_gradients_, cuda_hessians_,
+        CUDAConstructHistogramSparseKernel<uint16_t, uint64_t><<<grid_dim, block_dim>>>(cuda_smaller_leaf_index, cuda_gradients_, cuda_hessians_,
           cuda_data_indices_in_smaller_leaf, cuda_leaf_hist, cuda_num_feature_groups_, cuda_leaf_num_data,
-          cuda_data_uint32_t_,
+          cuda_data_uint16_t_,
           cuda_row_ptr_uint64_t_,
           cuda_partition_ptr_uint64_t_,
           cuda_column_hist_offsets_full_,

@@ -48,12 +48,7 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   cuda_best_split_finder_->Init();
   cuda_score_updater_.reset(new CUDAScoreUpdater(num_data_));
   cuda_score_updater_->Init();
-  cuda_binary_objective_.reset(new CUDABinaryObjective(num_data_,
-    cuda_centralized_info_->cuda_labels(), config_->sigmoid));
-  cuda_binary_objective_->Init();
-  cuda_binary_objective_->CalcInitScore();
-
-  cuda_score_updater_->SetInitScore(cuda_binary_objective_->cuda_init_score());
+  InitObjective();
 
   leaf_best_split_feature_.resize(config_->num_leaves, -1);
   leaf_best_split_threshold_.resize(config_->num_leaves, 0);
@@ -70,7 +65,7 @@ void NewCUDATreeLearner::BeforeTrain() {
   auto duration = static_cast<std::chrono::duration<double>>(end - start);
   global_timer.Start("CUDACentralizedInfo::BeforeTrain");
   start = std::chrono::steady_clock::now();
-  cuda_binary_objective_->GetGradients(cuda_score_updater_->cuda_scores(),
+  cuda_objective_->GetGradients(cuda_score_updater_->cuda_scores(),
     cuda_centralized_info_->cuda_gradients_ref(), cuda_centralized_info_->cuda_hessians_ref());
   end = std::chrono::steady_clock::now();
   duration = static_cast<std::chrono::duration<double>>(end - start);
@@ -293,6 +288,22 @@ void NewCUDATreeLearner::ResetTrainingData(const Dataset* /*train_data*/,
 
 void NewCUDATreeLearner::SetBaggingData(const Dataset* /*subset*/,
   const data_size_t* /*used_indices*/, data_size_t /*num_data*/) {}
+
+void NewCUDATreeLearner::InitObjective() {
+  if (config_->objective == std::string("binary")) {
+    cuda_objective_.reset(new CUDABinaryObjective(num_data_,
+      cuda_centralized_info_->cuda_labels(), config_->sigmoid));
+  } else if (config_->objective == std::string("regression")) {
+    cuda_objective_.reset(new CUDARegressionObjective(num_data_, cuda_centralized_info_->cuda_labels()));
+  } else {
+    Log::Fatal("Unsupported objective %s for CUDA.", config_->objective.c_str());
+  }
+
+  cuda_objective_->Init();
+  cuda_objective_->CalcInitScore();
+
+  cuda_score_updater_->SetInitScore(cuda_objective_->cuda_init_score());
+}
 
 }  // namespace LightGBM
 

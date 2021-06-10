@@ -18,7 +18,13 @@ class CUDAObjective {
  public:
   CUDAObjective(const data_size_t num_data);
 
+  virtual void Init() = 0;
+
+  virtual void CalcInitScore() = 0;
+
   virtual void GetGradients(const double* cuda_scores, score_t* cuda_out_gradients, score_t* cuda_out_hessians) = 0;
+
+  virtual const double* cuda_init_score() const = 0;
 
  protected:
   const data_size_t num_data_;

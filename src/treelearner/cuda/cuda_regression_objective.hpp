@@ -4,8 +4,8 @@
  * license information.
  */
 
-#ifndef LIGHTGBM_NEW_CUDA_BINARY_OBJECTIVE_HPP_
-#define LIGHTGBM_NEW_CUDA_BINARY_OBJECTIVE_HPP_
+#ifndef LIGHTGBM_NEW_CUDA_REGRESSION_OBJECTIVE_HPP_
+#define LIGHTGBM_NEW_CUDA_REGRESSION_OBJECTIVE_HPP_
 
 #ifdef USE_CUDA
 
@@ -17,9 +17,9 @@
 
 namespace LightGBM {
 
-class CUDABinaryObjective : public CUDAObjective {
+class CUDARegressionObjective : public CUDAObjective {
  public:
-  CUDABinaryObjective(const data_size_t num_data, const label_t* cuda_label, const double sigmoid);
+  CUDARegressionObjective(const data_size_t num_data, const label_t* cuda_label);
 
   void Init() override;
 
@@ -38,10 +38,9 @@ class CUDABinaryObjective : public CUDAObjective {
 
   const label_t* cuda_labels_;
   double* cuda_init_score_;
-  const double sigmoid_;
 };
 
 }  // namespace LightGBM
 
 #endif  // USE_CUDA
-#endif  // LIGHTGBM_NEW_CUDA_BINARY_OBJECTIVE_HPP_
+#endif  // LIGHTGBM_NEW_CUDA_REGRESSION_OBJECTIVE_HPP_
