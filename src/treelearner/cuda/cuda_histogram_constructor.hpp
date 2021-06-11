@@ -138,6 +138,7 @@ class CUDAHistogramConstructor {
   int max_num_column_per_partition_;
   uint8_t data_ptr_bit_type_;
   uint8_t bit_type_;
+  const Dataset* train_data_;
 
   // CUDA memory, held by this object
   uint32_t* cuda_feature_group_bin_offsets_;

@@ -9,6 +9,7 @@
 
 #ifdef USE_CUDA
 
+#include <LightGBM/dataset.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/meta.h>
 #include "new_cuda_utils.hpp"
@@ -21,7 +22,7 @@ class CUDACentralizedInfo {
  public:
   CUDACentralizedInfo(const data_size_t num_data, const int num_leaves, const int num_features);
 
-  void Init(const label_t* labels);
+  void Init(const label_t* labels, const Dataset* train_data);
 
   void BeforeTrain(const score_t* gradients, const score_t* hessians);
 
@@ -40,6 +41,8 @@ class CUDACentralizedInfo {
   score_t* cuda_gradients_ref() { return cuda_gradients_; }
 
   score_t* cuda_hessians_ref() { return cuda_hessians_; }
+
+  const data_size_t* cuda_query_boundaries() { return cuda_query_boundaries_; }
 
   void Test() {
     data_size_t test_num_data = 0;
@@ -67,6 +70,7 @@ class CUDACentralizedInfo {
   score_t* cuda_gradients_;
   score_t* cuda_hessians_;
   label_t* cuda_labels_;
+  data_size_t* cuda_query_boundaries_;
 };
 
 }  // namespace LightGBM

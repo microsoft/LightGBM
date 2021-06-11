@@ -11,19 +11,19 @@
 namespace LightGBM {
 
 __global__ void CalcInitScoreKernel_1_Regression(const label_t* cuda_labels, const data_size_t num_data, double* out_cuda_init_score) {
-  __shared__ label_t shared_label[CALC_INIT_SCORE_BLOCK_SIZE];
+  __shared__ label_t shared_label[CALC_INIT_SCORE_BLOCK_SIZE_REGRESSION];
   const unsigned int tid = threadIdx.x;
-  const unsigned int i = (blockIdx.x * blockDim.x + tid) * NUM_DATA_THREAD_ADD_CALC_INIT_SCORE;
+  const unsigned int i = (blockIdx.x * blockDim.x + tid) * NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_REGRESSION;
   shared_label[tid] = 0.0f;
   __syncthreads();
-  for (unsigned int j = 0; j < NUM_DATA_THREAD_ADD_CALC_INIT_SCORE; ++j) {
+  for (unsigned int j = 0; j < NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_REGRESSION; ++j) {
     if (i + j < num_data) {
       shared_label[tid] += cuda_labels[i + j];
     }
   }
   __syncthreads();
   for (unsigned int s = 1; s < blockDim.x; s *= 2) {
-    if (tid % (2 * s) == 0 && (tid + s) < CALC_INIT_SCORE_BLOCK_SIZE) {
+    if (tid % (2 * s) == 0 && (tid + s) < CALC_INIT_SCORE_BLOCK_SIZE_REGRESSION) {
       shared_label[tid] += shared_label[tid + s];
     }
     __syncthreads();
@@ -41,9 +41,9 @@ __global__ void CalcInitScoreKernel_2_Regression(double* out_cuda_init_score, co
 }
 
 void CUDARegressionObjective::LaunchCalcInitScoreKernel() {
-  const data_size_t num_data_per_block = CALC_INIT_SCORE_BLOCK_SIZE * NUM_DATA_THREAD_ADD_CALC_INIT_SCORE;
+  const data_size_t num_data_per_block = CALC_INIT_SCORE_BLOCK_SIZE_REGRESSION * NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_REGRESSION;
   const int num_blocks = (num_data_ + num_data_per_block - 1) / num_data_per_block;
-  CalcInitScoreKernel_1_Regression<<<num_blocks, CALC_INIT_SCORE_BLOCK_SIZE>>>(cuda_labels_, num_data_, cuda_init_score_);
+  CalcInitScoreKernel_1_Regression<<<num_blocks, CALC_INIT_SCORE_BLOCK_SIZE_REGRESSION>>>(cuda_labels_, num_data_, cuda_init_score_);
   SynchronizeCUDADevice();
   CalcInitScoreKernel_2_Regression<<<1, 1>>>(cuda_init_score_, num_data_);
   SynchronizeCUDADevice();
@@ -59,8 +59,8 @@ __global__ void GetGradientsKernel_Regression(const double* cuda_scores, const l
 }
 
 void CUDARegressionObjective::LaunchGetGradientsKernel(const double* cuda_scores, score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
-  const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE - 1) / GET_GRADIENTS_BLOCK_SIZE;
-  GetGradientsKernel_Regression<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE>>>(cuda_scores, cuda_labels_, num_data_,
+  const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
+  GetGradientsKernel_Regression<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(cuda_scores, cuda_labels_, num_data_,
     cuda_out_gradients, cuda_out_hessians);
 }
 

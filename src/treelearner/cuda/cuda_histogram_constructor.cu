@@ -62,7 +62,6 @@ __global__ void CUDAConstructHistogramDenseKernel(
   const int* feature_partition_column_index_offsets,
   const data_size_t num_data) {
 
-  const int num_feature_groups_ref = *num_feature_groups;
   const int leaf_index_ref = *leaf_index;
   const int dim_y = static_cast<int>(gridDim.y * blockDim.y);
   const data_size_t num_data_in_smaller_leaf_ref = leaf_num_data[leaf_index_ref];
@@ -132,7 +131,6 @@ __global__ void CUDAConstructHistogramSparseKernel(
   const uint32_t* column_hist_offsets_full,
   const data_size_t num_data) {
 
-  const int num_feature_groups_ref = *num_feature_groups;
   const int leaf_index_ref = *leaf_index;
   const int dim_y = static_cast<int>(gridDim.y * blockDim.y);
   const data_size_t num_data_in_smaller_leaf_ref = leaf_num_data[leaf_index_ref];
@@ -176,8 +174,8 @@ __global__ void CUDAConstructHistogramSparseKernel(
       float* pos_ptr = shared_hist + pos;
       atomicAdd_system(pos_ptr, grad);
       atomicAdd_system(pos_ptr + 1, hess);
-      inner_data_index += blockDim.y;
     }
+    inner_data_index += blockDim.y;
   }
   __syncthreads();
   hist_t* feature_histogram_ptr = (*feature_histogram) + (partition_hist_start << 1);

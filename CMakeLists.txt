@@ -248,6 +248,12 @@ if(USE_CUDA)
     add_library(cuda_binary_objective OBJECT src/treelearner/cuda/cuda_binary_objective.cu)
     set_target_properties(cuda_binary_objective PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
+    add_library(cuda_regression_objective OBJECT src/treelearner/cuda/cuda_regression_objective.cu)
+    set_target_properties(cuda_regression_objective PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+    add_library(cuda_ranking_objective OBJECT src/treelearner/cuda/cuda_ranking_objective.cu)
+    set_target_properties(cuda_ranking_objective PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
     add_library(cuda_score_updater OBJECT src/treelearner/cuda/cuda_score_updater.cu)
     set_target_properties(cuda_score_updater PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif(USE_CUDA)

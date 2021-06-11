@@ -686,6 +686,18 @@ class Dataset {
     return raw_data_[numeric_feature_map_[feat_ind]].data();
   }
 
+  inline uint32_t feature_max_bin(const int inner_feature_index) const {
+    const int feature_group_index = Feature2Group(inner_feature_index);
+    const int sub_feature_index = feature2subfeature_[inner_feature_index];
+    return feature_groups_[feature_group_index]->feature_max_bin(sub_feature_index);
+  }
+
+  inline uint32_t feature_min_bin(const int inner_feature_index) const {
+    const int feature_group_index = Feature2Group(inner_feature_index);
+    const int sub_feature_index = feature2subfeature_[inner_feature_index];
+    return feature_groups_[feature_group_index]->feature_min_bin(sub_feature_index);
+  }
+
  private:
   std::string data_filename_;
   /*! \brief Store used features */

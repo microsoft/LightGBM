@@ -41,8 +41,8 @@ CUDADataPartition::CUDADataPartition(const data_size_t num_data, const int num_f
     const BinMapper* bin_mapper = train_data->FeatureBinMapper(feature_index);
     feature_default_bins_[feature_index] = bin_mapper->GetDefaultBin();
     feature_most_freq_bins_[feature_index] = bin_mapper->GetMostFreqBin();
-    feature_min_bins_[feature_index] = feature_hist_offsets[feature_index] - prev_group_bins;
-    feature_max_bins_[feature_index] = feature_hist_offsets[feature_index + 1] - prev_group_bins - 1;
+    feature_min_bins_[feature_index] = train_data->feature_min_bin(feature_index);
+    feature_max_bins_[feature_index] = train_data->feature_max_bin(feature_index);
     const MissingType missing_type = bin_mapper->missing_type();
     if (missing_type == MissingType::None) {
       feature_missing_is_zero_[feature_index] = 0;
@@ -71,6 +71,12 @@ CUDADataPartition::CUDADataPartition(const data_size_t num_data, const int num_f
   }
   num_data_in_leaf_.resize(num_leaves_, 0);
   num_data_in_leaf_[0] = num_data_;
+
+  /*for (size_t i = 0; i < feature_max_bins_.size(); ++i) {
+    Log::Warning("feature_min_bins_[%d] = %d, feature_max_bins_[%d] = %d", i, feature_min_bins_[i], i, feature_max_bins_[i]);
+  }*/
+
+  train_data_ = train_data;
 }
 
 void CUDADataPartition::Init(const Dataset* train_data) {
@@ -373,6 +379,9 @@ void CUDADataPartition::Split(const int* leaf_id,
   const uint32_t split_threshold = cpu_leaf_best_split_threshold[cpu_leaf_index];
   const uint8_t split_default_left = cpu_leaf_best_split_default_left[cpu_leaf_index];
   const data_size_t leaf_data_start = cpu_leaf_data_start->at(cpu_leaf_index);
+  //Log::Warning("real split feature index = %d", train_data_->RealFeatureIndex(split_feature_index));
+  //Log::Warning("split threshold = %d", split_threshold);
+  //Log::Warning("split default left = %d", split_default_left);
   global_timer.Stop("SplitInner Copy CUDA To Host");
   GenDataToLeftBitVector(num_data_in_leaf, split_feature_index, split_threshold, split_default_left, leaf_data_start);
   global_timer.Stop("GenDataToLeftBitVector");

@@ -278,6 +278,7 @@ class CUDADataPartition {
   std::vector<int> cpu_split_info_buffer_;
   std::vector<uint8_t> column_bit_type_;
   std::vector<int> feature_index_to_column_index_;
+  const Dataset* train_data_;
 
   // CUDA streams
   std::vector<cudaStream_t> cuda_streams_;

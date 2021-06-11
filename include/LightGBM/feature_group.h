@@ -492,6 +492,23 @@ class FeatureGroup {
     }
   }
 
+  uint32_t feature_max_bin(const int sub_feature_index) {
+    if (!is_multi_val_) {
+      return bin_offsets_[sub_feature_index + 1] - 1;
+    } else {
+      int addi = bin_mappers_[sub_feature_index]->GetMostFreqBin() == 0 ? 0 : 1;
+      return bin_mappers_[sub_feature_index]->num_bin() - 1 + addi;
+    }
+  }
+
+  uint32_t feature_min_bin(const int sub_feature_index) {
+    if (!is_multi_val_) {
+      return bin_offsets_[sub_feature_index];
+    } else {
+      return 1;
+    }
+  }
+
  private:
   void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
     if (is_multi_val) {

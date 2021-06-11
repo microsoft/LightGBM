@@ -24,7 +24,7 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
   const label_t* labels = train_data->metadata().label();
   cuda_centralized_info_.reset(new CUDACentralizedInfo(num_data_, this->config_->num_leaves, num_features_));
-  cuda_centralized_info_->Init(labels);
+  cuda_centralized_info_->Init(labels, train_data_);
   cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_, 0, cuda_centralized_info_->cuda_gradients(),
     cuda_centralized_info_->cuda_hessians(), cuda_centralized_info_->cuda_num_data()));
   cuda_smaller_leaf_splits_->Init();
@@ -59,29 +59,17 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
 }
 
 void NewCUDATreeLearner::BeforeTrain() {
-  auto start = std::chrono::steady_clock::now();
   cuda_data_partition_->BeforeTrain(nullptr);
-  auto end = std::chrono::steady_clock::now();
-  auto duration = static_cast<std::chrono::duration<double>>(end - start);
   global_timer.Start("CUDACentralizedInfo::BeforeTrain");
-  start = std::chrono::steady_clock::now();
   cuda_objective_->GetGradients(cuda_score_updater_->cuda_scores(),
     cuda_centralized_info_->cuda_gradients_ref(), cuda_centralized_info_->cuda_hessians_ref());
-  end = std::chrono::steady_clock::now();
-  duration = static_cast<std::chrono::duration<double>>(end - start);
   global_timer.Stop("CUDACentralizedInfo::BeforeTrain");
   cuda_smaller_leaf_splits_->InitValues(cuda_data_partition_->cuda_data_indices(),
     cuda_histogram_constructor_->cuda_hist_pointer(),
     &leaf_sum_hessians_[0]);
   cuda_larger_leaf_splits_->InitValues();
-  start = std::chrono::steady_clock::now();
   cuda_histogram_constructor_->BeforeTrain();
-  end = std::chrono::steady_clock::now();
-  duration = static_cast<std::chrono::duration<double>>(end - start);
-  start = std::chrono::steady_clock::now();
   cuda_best_split_finder_->BeforeTrain();
-  end = std::chrono::steady_clock::now();
-  duration = static_cast<std::chrono::duration<double>>(end - start);
   leaf_num_data_[0] = num_data_;
   leaf_data_start_[0] = 0;
   smaller_leaf_index_ = 0;
@@ -295,6 +283,16 @@ void NewCUDATreeLearner::InitObjective() {
       cuda_centralized_info_->cuda_labels(), config_->sigmoid));
   } else if (config_->objective == std::string("regression")) {
     cuda_objective_.reset(new CUDARegressionObjective(num_data_, cuda_centralized_info_->cuda_labels()));
+  } else if (config_->objective == std::string("ranking")) {
+    cuda_objective_.reset(new CUDARankingObjective(num_data_,
+      cuda_centralized_info_->cuda_labels(),
+      cuda_centralized_info_->cuda_query_boundaries(),
+      train_data_->metadata().num_queries(),
+      config_->lambdarank_norm,
+      config_->sigmoid,
+      config_->lambdarank_truncation_level,
+      train_data_->metadata().label(),
+      config_->num_threads));
   } else {
     Log::Fatal("Unsupported objective %s for CUDA.", config_->objective.c_str());
   }

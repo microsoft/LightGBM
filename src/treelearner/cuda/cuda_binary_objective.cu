@@ -11,19 +11,19 @@
 namespace LightGBM {
 
 __global__ void CalcInitScoreKernel_1_Binary(const label_t* cuda_labels, const data_size_t num_data, double* out_cuda_init_score) {
-  __shared__ label_t shared_label[CALC_INIT_SCORE_BLOCK_SIZE];
+  __shared__ label_t shared_label[CALC_INIT_SCORE_BLOCK_SIZE_BINARY];
   const unsigned int tid = threadIdx.x;
-  const unsigned int i = (blockIdx.x * blockDim.x + tid) * NUM_DATA_THREAD_ADD_CALC_INIT_SCORE;
+  const unsigned int i = (blockIdx.x * blockDim.x + tid) * NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_BINARY;
   shared_label[tid] = 0.0f;
   __syncthreads();
-  for (unsigned int j = 0; j < NUM_DATA_THREAD_ADD_CALC_INIT_SCORE; ++j) {
+  for (unsigned int j = 0; j < NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_BINARY; ++j) {
     if (i + j < num_data) {
       shared_label[tid] += cuda_labels[i + j];
     }
   }
   __syncthreads();
   for (unsigned int s = 1; s < blockDim.x; s *= 2) {
-    if (tid % (2 * s) == 0 && (tid + s) < CALC_INIT_SCORE_BLOCK_SIZE) {
+    if (tid % (2 * s) == 0 && (tid + s) < CALC_INIT_SCORE_BLOCK_SIZE_BINARY) {
       shared_label[tid] += shared_label[tid + s];
     }
     __syncthreads();
@@ -42,9 +42,9 @@ __global__ void CalcInitScoreKernel_2_Binary(double* out_cuda_init_score, const 
 }
 
 void CUDABinaryObjective::LaunchCalcInitScoreKernel() {
-  const data_size_t num_data_per_block = CALC_INIT_SCORE_BLOCK_SIZE * NUM_DATA_THREAD_ADD_CALC_INIT_SCORE;
+  const data_size_t num_data_per_block = CALC_INIT_SCORE_BLOCK_SIZE_BINARY * NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_BINARY;
   const int num_blocks = (num_data_ + num_data_per_block - 1) / num_data_per_block;
-  CalcInitScoreKernel_1_Binary<<<num_blocks, CALC_INIT_SCORE_BLOCK_SIZE>>>(cuda_labels_, num_data_, cuda_init_score_);
+  CalcInitScoreKernel_1_Binary<<<num_blocks, CALC_INIT_SCORE_BLOCK_SIZE_BINARY>>>(cuda_labels_, num_data_, cuda_init_score_);
   SynchronizeCUDADevice();
   CalcInitScoreKernel_2_Binary<<<1, 1>>>(cuda_init_score_, num_data_, sigmoid_);
   SynchronizeCUDADevice();
@@ -65,8 +65,8 @@ __global__ void GetGradientsKernel_Binary(const double* cuda_scores, const label
 }
 
 void CUDABinaryObjective::LaunchGetGradientsKernel(const double* cuda_scores, score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
-  const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE - 1) / GET_GRADIENTS_BLOCK_SIZE;
-  GetGradientsKernel_Binary<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE>>>(cuda_scores, cuda_labels_, sigmoid_, num_data_,
+  const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_BINARY - 1) / GET_GRADIENTS_BLOCK_SIZE_BINARY;
+  GetGradientsKernel_Binary<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(cuda_scores, cuda_labels_, sigmoid_, num_data_,
     cuda_out_gradients, cuda_out_hessians);
 }
 

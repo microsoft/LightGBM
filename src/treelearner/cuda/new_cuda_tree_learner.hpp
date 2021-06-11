@@ -17,6 +17,7 @@
 #include "cuda_score_updater.hpp"
 #include "cuda_binary_objective.hpp"
 #include "cuda_regression_objective.hpp"
+#include "cuda_ranking_objective.hpp"
 
 namespace LightGBM {
 

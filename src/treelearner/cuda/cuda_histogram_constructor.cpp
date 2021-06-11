@@ -19,6 +19,7 @@ CUDAHistogramConstructor::CUDAHistogramConstructor(const Dataset* train_data,
   num_feature_groups_(train_data->num_feature_groups()),
   min_data_in_leaf_(min_data_in_leaf), min_sum_hessian_in_leaf_(min_sum_hessian_in_leaf),
   cuda_gradients_(cuda_gradients), cuda_hessians_(cuda_hessians) {
+  train_data_ = train_data;
   int offset = 0;
   for (int group_id = 0; group_id < train_data->num_feature_groups(); ++group_id) {
     feature_group_bin_offsets_.emplace_back(offset);
@@ -86,7 +87,7 @@ void CUDAHistogramConstructor::InitCUDAData(TrainingShareStates* share_state) {
   const uint8_t* data_ptr = nullptr;
   data_ptr_bit_type_ = 0;
   const uint8_t* cpu_data_ptr = share_state->GetRowWiseData(&bit_type_, &total_size, &is_sparse_, &data_ptr, &data_ptr_bit_type_);
-  CHECK_EQ(bit_type_, 8);
+  Log::Warning("bit_type_ = %d, is_sparse_ = %d, data_ptr_bit_type_ = %d", bit_type_, static_cast<int>(is_sparse_), data_ptr_bit_type_);
   if (bit_type_ == 8) {
     if (!is_sparse_) {
       std::vector<uint8_t> partitioned_data;
@@ -168,7 +169,7 @@ void CUDAHistogramConstructor::InitCUDAData(TrainingShareStates* share_state) {
         GetSparseDataPartitioned<uint16_t, uint32_t>(reinterpret_cast<const uint16_t*>(cpu_data_ptr), data_ptr_uint32_t, &partitioned_data, &partitioned_data_ptr, &partition_ptr);
         InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_partition_ptr_uint32_t_, partition_ptr.data(), partition_ptr.size());
         AllocateCUDAMemory<uint16_t>(partition_ptr.back(), &cuda_data_uint16_t_);
-        AllocateCUDAMemory<uint32_t>((num_data_ + 1) * partitioned_data_ptr.size(), &cuda_row_ptr_uint32_t_); 
+        AllocateCUDAMemory<uint32_t>((num_data_ + 1) * partitioned_data_ptr.size(), &cuda_row_ptr_uint32_t_);
         for (size_t i = 0; i < partitioned_data.size(); ++i) {
           const std::vector<uint32_t>& data_ptr_for_this_partition = partitioned_data_ptr[i];
           const std::vector<uint16_t>& data_for_this_partition = partitioned_data[i];
@@ -274,6 +275,20 @@ void CUDAHistogramConstructor::ConstructHistogramForLeaf(const int* cuda_smaller
   LaunchConstructHistogramKernel(cuda_smaller_leaf_index, cuda_num_data_in_smaller_leaf,
     cuda_data_indices_in_smaller_leaf, cuda_leaf_num_data, cuda_smaller_leaf_hist, num_data_in_smaller_leaf);
   SynchronizeCUDADevice();
+  /*std::vector<hist_t> root_hist(20000);
+  CopyFromCUDADeviceToHost<hist_t>(root_hist.data(), cuda_hist_, 20000);
+  for (int real_feature_index = 0; real_feature_index < train_data_->num_total_features(); ++real_feature_index) {
+    const int inner_feature_index = train_data_->InnerFeatureIndex(real_feature_index);
+    if (inner_feature_index >= 0) {
+      const uint32_t feature_hist_start = feature_hist_offsets_[inner_feature_index];
+      const uint32_t feature_hist_end = feature_hist_offsets_[inner_feature_index + 1];
+      Log::Warning("real_feature_index = %d, inner_feature_index = %d", real_feature_index, inner_feature_index);
+      for (uint32_t hist_position = feature_hist_start; hist_position < feature_hist_end; ++hist_position) {
+        Log::Warning("hist_position = %d, bin_in_feature = %d, grad = %f, hess = %f",
+          hist_position, hist_position - feature_hist_start, root_hist[hist_position * 2], root_hist[hist_position * 2 + 1]);
+      }
+    }
+  }*/
   global_timer.Start("CUDAHistogramConstructor::ConstructHistogramForLeaf::LaunchSubtractHistogramKernel");
   LaunchSubtractHistogramKernel(cuda_smaller_leaf_index,
     cuda_larger_leaf_index, cuda_smaller_leaf_sum_gradients, cuda_smaller_leaf_sum_hessians,
@@ -290,6 +305,7 @@ void CUDAHistogramConstructor::CalcConstructHistogramKernelDim(
   const int min_grid_dim_y = 160;
   *grid_dim_y = std::max(min_grid_dim_y,
     ((num_data_in_smaller_leaf + NUM_DATA_PER_THREAD - 1) / NUM_DATA_PER_THREAD + (*block_dim_y) - 1) / (*block_dim_y));
+  //Log::Warning("block_dim_x = %d, block_dim_y = %d, grid_dim_x = %d, grid_dim_y = %d", *block_dim_x, *block_dim_y, *grid_dim_x, *grid_dim_y);
 }
 
 void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingShareStates* share_state) {
@@ -372,6 +388,17 @@ void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data
     }
   }
 
+  Log::Warning("max_num_column_per_partition_ = %d", max_num_column_per_partition_);
+  for (size_t i = 0; i < feature_partition_column_index_offsets_.size(); ++i) {
+    Log::Warning("feature_partition_column_index_offsets_[%d] = %d", i, feature_partition_column_index_offsets_[i]);
+  }
+  for (size_t i = 0; i < column_hist_offsets_full_.size(); ++i) {
+    Log::Warning("column_hist_offsets_full_[%d] = %d", i, column_hist_offsets_full_[i]);
+  }
+  for (size_t i = 0; i < column_hist_offsets_.size(); ++i) {
+    Log::Warning("column_hist_offsets_[%d] = %d", i, column_hist_offsets_[i]);
+  }
+
   InitCUDAMemoryFromHostMemory<int>(&cuda_feature_partition_column_index_offsets_,
     feature_partition_column_index_offsets_.data(),
     feature_partition_column_index_offsets_.size());
@@ -429,6 +456,8 @@ void CUDAHistogramConstructor::GetSparseDataPartitioned(
         const int partition_hist_start = column_hist_offsets_full_[partition_index];
         const int partition_hist_end = column_hist_offsets_full_[partition_index + 1];
         DATA_PTR_TYPE offset = 0;
+        row_ptr_for_this_partition.clear();
+        data_for_this_partition.clear();
         row_ptr_for_this_partition.emplace_back(offset);
         for (data_size_t data_index = 0; data_index < num_data_; ++data_index) {
           const DATA_PTR_TYPE row_start = row_ptr[data_index];

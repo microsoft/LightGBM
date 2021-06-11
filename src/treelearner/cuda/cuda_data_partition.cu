@@ -1444,6 +1444,8 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
   const int right_leaf_index = cpu_split_info_buffer[3];
   const data_size_t right_leaf_num_data = cpu_split_info_buffer[4];
   const data_size_t right_leaf_data_start = cpu_split_info_buffer[5];
+  //Log::Warning("################################# left_leaf_num_data = %d, right_leaf_num_data = %d #################################",
+  //  left_leaf_num_data, right_leaf_num_data);
   (*cpu_leaf_num_data)[left_leaf_index] = left_leaf_num_data;
   (*cpu_leaf_data_start)[left_leaf_index] = left_leaf_data_start;
   (*cpu_leaf_num_data)[right_leaf_index] = right_leaf_num_data;
