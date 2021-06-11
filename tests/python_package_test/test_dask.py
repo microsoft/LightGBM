@@ -199,7 +199,7 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
         dy = da.from_array(y, chunks=chunk_size)
         dw = da.from_array(weights, chunk_size)
     else:
-        raise ValueError("Unknown output type '{output}'")
+        raise ValueError(f"Unknown output type '{output}'")
 
     return X, y, weights, None, dX, dy, dw, None
 

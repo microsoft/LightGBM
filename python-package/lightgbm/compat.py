@@ -125,6 +125,7 @@ except ImportError:
 try:
     from dask import delayed
     from dask.array import Array as dask_Array
+    from dask.bag import from_sequence as dask_bag_from_sequence
     from dask.dataframe import DataFrame as dask_DataFrame
     from dask.dataframe import Series as dask_Series
     from dask.distributed import Client, default_client, wait
@@ -144,6 +145,10 @@ except ImportError:
     class dask_Array:  # type: ignore
         """Dummy class for dask.array.Array."""
 
+        pass
+
+    def dask_bag_from_sequence(*args, **kwargs):  # type: ignore
+        """Placeholder for ``dask.bag.from_sequence()``"""
         pass
 
     class dask_DataFrame:  # type: ignore

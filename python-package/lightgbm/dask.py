@@ -9,6 +9,7 @@ It is based on dask-lightgbm, which was based on dask-xgboost.
 import socket
 from collections import defaultdict
 from copy import deepcopy
+from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 from urllib.parse import urlparse
 
@@ -16,7 +17,7 @@ import numpy as np
 import scipy.sparse as ss
 
 from .basic import _LIB, LightGBMError, _choose_param_value, _ConfigAliases, _log_info, _log_warning, _safe_call
-from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
+from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat, dask_bag_from_sequence,
                      dask_Array, dask_DataFrame, dask_Series, default_client, delayed, pd_DataFrame, pd_Series, wait)
 from .sklearn import LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _lgbmmodel_doc_fit, _lgbmmodel_doc_predict
 
@@ -58,6 +59,12 @@ def _find_random_open_port() -> int:
         port = s.getsockname()[1]
     return port
 
+
+def _is_dask_sparse_array(arr: dask_Array) -> bool:
+    return isinstance(
+        arr._meta,
+        (ss.csc.csc_matrix, ss.csr.csr_matrix)
+    )
 
 def _concat(seq: List[_DaskPart]) -> _DaskPart:
     if isinstance(seq[0], np.ndarray):
@@ -561,6 +568,44 @@ def _predict(
             **kwargs
         ).values
     elif isinstance(data, dask_Array):
+        # for multi-class classification with sparse matrices, pred_contrib predictions
+        # are returned as a list of sparse matrices (one per class)
+        if (
+            getattr(model, "n_classes_", -1) > 2
+            and _is_dask_sparse_array(data)
+            and pred_contrib
+        ):
+            bag = dask_bag_from_sequence(data.partitions)
+            def _combine_preds(preds_so_far, new_chunk):
+                #raise RuntimeError(preds_so_far)
+                for i in range(len(preds_so_far)):
+                    preds_so_far[i] = _concat([preds_so_far[i], new_chunk[i]])
+                return preds_so_far
+
+            predict_fn = partial(
+                _predict_part,
+                model=model,
+                raw_score=False,
+                pred_proba=False,
+                pred_leaf=False,
+                pred_contrib=True,
+            )
+
+            def _predict_part_binop(_ignore, chunk, pred_fn):
+                return predict_fn(chunk.compute())
+
+            predict_part_binop = partial(
+                _predict_part_binop,
+                pred_fn=predict_fn
+            )
+
+            return bag.fold(
+                binop=predict_part_binop,
+                combine=_combine_preds,
+                initial=None
+            )
+
+
         return data.map_blocks(
             _predict_part,
             model=model,
