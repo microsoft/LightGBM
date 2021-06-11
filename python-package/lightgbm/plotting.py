@@ -408,7 +408,7 @@ def _to_graphviz(
     feature_names: Optional[List[str]], 
     precision: Optional[int] = 3,
     orientation: Optional[str] = 'horizontal', 
-    constraints: Optional[List[int]]
+    constraints: Optional[List[int]],
     **kwargs: Any
     ) -> Any:
     """Convert specified tree to graphviz instance.
