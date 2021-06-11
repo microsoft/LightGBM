@@ -2,7 +2,7 @@
 """Plotting library."""
 from copy import deepcopy
 from io import BytesIO
-from typing import Any, List, Dict, Tuple, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -11,7 +11,7 @@ from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
 from .sklearn import LGBMModel
 
 
-def _check_not_tuple_of_2_elements(obj: Any, obj_name: str = 'obj') -> Optional[str]:
+def _check_not_tuple_of_2_elements(obj: Any, obj_name: str = 'obj') -> None:
     """Check object is not tuple or does not have 2 elements."""
     if not isinstance(obj, tuple) or len(obj) != 2:
         raise TypeError(f"{obj_name} must be a tuple of 2 elements.")
@@ -403,12 +403,12 @@ def plot_metric(
 
 
 def _to_graphviz(
-    tree_info, 
+    tree_info: List[Dict[str, Any]], 
     show_info: Optional[List[str]], 
-    feature_names, 
+    feature_names: Optional[List[str]], 
     precision: Optional[int] = 3,
     orientation: Optional[str] = 'horizontal', 
-    constraints = None, 
+    constraints: Optional[List[int]]
     **kwargs: Any
     ) -> Any:
     """Convert specified tree to graphviz instance.
