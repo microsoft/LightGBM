@@ -1,4 +1,4 @@
-context("Boooster")
+context("Booster")
 
 test_that("Booster$finalize() should not fail", {
     X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
