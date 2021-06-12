@@ -28,6 +28,8 @@ Please note, that ThreadSanitizer cannot be used together with other sanitizers.
 For more info and additional sanitizers' parameters please refer to the `following docs`_.
 It is very useful to build `C++ unit tests <#build-c-unit-tests>`__ with sanitizers.
 
+.. _nightly-builds:
+
 You can also download the artifacts of the latest successful build on master branch (nightly builds) here: |download artifacts|.
 
 .. contents:: **Contents**
