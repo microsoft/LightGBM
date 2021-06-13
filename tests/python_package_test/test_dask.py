@@ -198,6 +198,7 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
         dX = da.from_array(X, chunks=(chunk_size, X.shape[1])).map_blocks(csr_matrix)
         dy = da.from_array(y, chunks=chunk_size)
         dw = da.from_array(weights, chunk_size)
+        X = csr_matrix(X)
     else:
         raise ValueError(f"Unknown output type '{output}'")
 
@@ -321,8 +322,10 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
             assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
 
-@pytest.mark.parametrize('output', data_output)
-@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
+# @pytest.mark.parametrize('output', data_output)
+# @pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
+@pytest.mark.parametrize('output', ['scipy_csr_matrix'])
+@pytest.mark.parametrize('task', ['multiclass-classification'])
 def test_classifier_pred_contrib(output, task, cluster):
     with Client(cluster) as client:
         X, y, w, _, dX, dy, dw, _ = _create_data(
@@ -332,7 +335,8 @@ def test_classifier_pred_contrib(output, task, cluster):
 
         params = {
             "n_estimators": 10,
-            "num_leaves": 10
+            "num_leaves": 50,
+            "deterministic": True
         }
 
         dask_classifier = lgb.DaskLGBMClassifier(
@@ -348,6 +352,33 @@ def test_classifier_pred_contrib(output, task, cluster):
         local_classifier.fit(X, y, sample_weight=w)
         local_preds_with_contrib = local_classifier.predict(X, pred_contrib=True)
 
+        # shape depends on whether it is binary or multiclass classification
+        num_features = dask_classifier.n_features_
+        num_classes = dask_classifier.n_classes_
+        if num_classes == 2:
+            expected_num_cols = num_features + 1
+        else:
+            expected_num_cols = (num_features + 1) * num_classes
+
+        # in the special case of multi-class classification using scipy sparse matrices,
+        # the output of `.predict(..., pred_contrib=True)` is a list of sparse matrices (one per class)
+        #
+        # since that case is so different than all other cases, check the relevant things here
+        # and then return early
+        if output == 'scipy_csr_matrix' and task == 'multiclass-classification':
+            assert isinstance(preds_with_contrib, list)
+            assert len(preds_with_contrib) == num_classes
+            assert len(preds_with_contrib) == len(local_preds_with_contrib)
+            for i in range(num_classes):
+                assert preds_with_contrib[i].shape[1] == num_classes
+                assert preds_with_contrib[i].shape == local_preds_with_contrib[i].shape
+                assert len(np.unique(preds_with_contrib[i][:, -1]))
+                # raw scores will probably be different, but at least check that all predicted classes are the same
+                pred_classes = np.argmax(np.array(preds_with_contrib[i].todense()), axis=1)
+                local_pred_classes = np.argmax(np.array(local_preds_with_contrib[i].todense()), axis=1)
+                assert np.all(pred_classes == local_pred_classes)
+            return
+
         if output == 'scipy_csr_matrix':
             preds_with_contrib = np.array(preds_with_contrib.todense())
 
@@ -362,14 +393,6 @@ def test_classifier_pred_contrib(output, task, cluster):
             node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
             assert node_uses_cat_col.sum() > 0
             assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
-
-        # shape depends on whether it is binary or multiclass classification
-        num_features = dask_classifier.n_features_
-        num_classes = dask_classifier.n_classes_
-        if num_classes == 2:
-            expected_num_cols = num_features + 1
-        else:
-            expected_num_cols = (num_features + 1) * num_classes
 
         # * shape depends on whether it is binary or multiclass classification
         # * matrix for binary classification is of the form [feature_contrib, base_value],
