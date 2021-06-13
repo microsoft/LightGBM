@@ -215,6 +215,24 @@ test_that("Dataset$update_params() works correctly for recognized Dataset parame
   }
 })
 
+test_that("Dataset$finalize() should not fail on an already-finalized Dataset", {
+  dtest <- lgb.Dataset(
+    data = test_data
+    , label = test_label
+  )
+  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+
+  dtest$construct()
+  expect_false(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+
+  dtest$finalize()
+  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+
+  # calling finalize() a second time shouldn't cause any issues
+  dtest$finalize()
+  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+})
+
 test_that("lgb.Dataset: should be able to run lgb.train() immediately after using lgb.Dataset() on a file", {
   dtest <- lgb.Dataset(
     data = test_data

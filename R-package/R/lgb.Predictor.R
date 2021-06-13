@@ -11,9 +11,8 @@ Predictor <- R6::R6Class(
     finalize = function() {
 
       # Check the need for freeing handle
-      if (private$need_free_handle && !lgb.is.null.handle(x = private$handle)) {
+      if (private$need_free_handle) {
 
-        # Freeing up handle
         .Call(
           LGBM_BoosterFree_R
           , private$handle
