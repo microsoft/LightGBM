@@ -24,23 +24,23 @@ def _float2str(value: float, precision: Optional[int] = None) -> str:
 
 
 def plot_importance(
-    booster: Union[Booster, LGBMModel], 
-    ax = None, 
+    booster: Union[Booster, LGBMModel],
+    ax=None,
     height: Optional[float] = 0.2,
-    xlim: Optional[Tuple[int, int]] = None, 
-    ylim: Optional[Tuple[int, int]] = None, 
-    title: Optional[str] = 'Feature importance', 
-    xlabel: Optional[str] = 'Feature importance', 
+    xlim: Optional[Tuple[int, int]] = None,
+    ylim: Optional[Tuple[int, int]] = None,
+    title: Optional[str] = 'Feature importance',
+    xlabel: Optional[str] = 'Feature importance',
     ylabel: Optional[str] = 'Features',
-    importance_type: Optional[str] = 'split', 
+    importance_type: Optional[str] = 'split',
     max_num_features: Optional[int] = None,
-    ignore_zero: Optional[bool] = True, 
-    figsize: Optional[Tuple[int, int]] = None, 
-    dpi: Optional[int] = None, 
+    ignore_zero: Optional[bool] = True,
+    figsize: Optional[Tuple[int, int]] = None,
+    dpi: Optional[int] = None,
     grid: Optional[bool] = True,
-    precision: Optional[int] = 3, 
+    precision: Optional[int] = 3,
     **kwargs: Any
-    ) -> Any:
+) -> Any:
     """Plot model's feature importances.
 
     Parameters
@@ -152,21 +152,21 @@ def plot_importance(
 
 
 def plot_split_value_histogram(
-    booster: Union[Booster, LGBMModel], 
-    feature: Union[int, str], 
-    bins: Union[int, str, None] = None, 
-    ax = None, 
+    booster: Union[Booster, LGBMModel],
+    feature: Union[int, str],
+    bins: Union[int, str, None] = None,
+    ax=None,
     width_coef: Optional[float] = 0.8,
-    xlim: Optional[Tuple[int, int]] = None, 
+    xlim: Optional[Tuple[int, int]] = None,
     ylim: Optional[Tuple[int, int]] = None,
     title: Optional[str] = 'Split value histogram for feature with @index/name@ @feature@',
-    xlabel: Optional[str] = 'Feature split value', 
+    xlabel: Optional[str] = 'Feature split value',
     ylabel: Optional[str] = 'Count',
-    figsize: Optional[Tuple[int, int]] = None, 
-    dpi: Optional[int] = None, 
-    grid: Optional[bool] = True, 
+    figsize: Optional[Tuple[int, int]] = None,
+    dpi: Optional[int] = None,
+    grid: Optional[bool] = True,
     **kwargs: Any
-    ) -> Any:
+) -> Any:
     """Plot split value histogram for the specified feature of the model.
 
     Parameters
@@ -269,19 +269,19 @@ def plot_split_value_histogram(
 
 
 def plot_metric(
-    booster: Union[Dict, LGBMModel], 
-    metric: Optional[str] = None, 
+    booster: Union[Dict, LGBMModel],
+    metric: Optional[str] = None,
     dataset_names: Optional[List[str]] = None,
-    ax = None, 
-    xlim: Optional[Tuple[int, int]] = None, 
+    ax=None,
+    xlim: Optional[Tuple[int, int]] = None,
     ylim: Optional[Tuple[int, int]] = None,
     title: Optional[str] = 'Metric during training',
-    xlabel: Optional[str] = 'Iterations', 
+    xlabel: Optional[str] = 'Iterations',
     ylabel: Optional[str] = 'auto',
-    figsize: Optional[Tuple[int, int]] = None, 
-    dpi: Optional[int] = None, 
+    figsize: Optional[Tuple[int, int]] = None,
+    dpi: Optional[int] = None,
     grid: Optional[bool] = True
-    ) -> Any:
+) -> Any:
     """Plot one metric during training.
 
     Parameters
@@ -403,14 +403,14 @@ def plot_metric(
 
 
 def _to_graphviz(
-    tree_info: List[Dict[str, Any]], 
-    show_info: Optional[List[str]], 
-    feature_names: Optional[List[str]], 
-    precision: Optional[int] = 3,
-    orientation: Optional[str] = 'horizontal', 
-    constraints: Optional[List[int]],
+    tree_info: List[Dict[str, Any]],
+    show_info: Union[List[str], None],
+    feature_names: Union[List[str], None],
+    precision: int = 3,
+    orientation: str = 'horizontal',
+    constraints: Optional[List[int]] = None,
     **kwargs: Any
-    ) -> Any:
+) -> Any:
     """Convert specified tree to graphviz instance.
 
     See:
@@ -506,13 +506,13 @@ def _to_graphviz(
 
 
 def create_tree_digraph(
-    booster: Union[Booster, LGBMModel], 
-    tree_index: Optional[int] = 0, 
-    show_info: Optional[List[str]] = None, 
+    booster: Union[Booster, LGBMModel],
+    tree_index: Optional[int] = 0,
+    show_info: Optional[List[str]] = None,
     precision: Optional[int] = 3,
-    orientation: Optional[str] = 'horizontal', 
+    orientation: Optional[str] = 'horizontal',
     **kwargs: Any
-    ) -> Any:
+) -> Any:
     """Create a digraph representation of specified tree.
 
     Each node in the graph represents a node in the tree.
@@ -589,16 +589,16 @@ def create_tree_digraph(
 
 
 def plot_tree(
-    booster: Union[Booster, LGBMModel], 
-    ax = None, 
-    tree_index: Optional[int] = 0, 
-    figsize: Optional[tuple] = None, 
+    booster: Union[Booster, LGBMModel],
+    ax=None,
+    tree_index: Optional[int] = 0,
+    figsize: Optional[tuple] = None,
     dpi: Optional[int] = None,
-    show_info: Optional[List[str]] = None, 
-    precision: Optional[int] = 3, 
-    orientation: Optional[str] = 'horizontal', 
+    show_info: Optional[List[str]] = None,
+    precision: Optional[int] = 3,
+    orientation: Optional[str] = 'horizontal',
     **kwargs: Any
-    ) -> Any:
+) -> Any:
     """Plot specified tree.
 
     Each node in the graph represents a node in the tree.
