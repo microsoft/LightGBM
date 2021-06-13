@@ -11,21 +11,12 @@ Booster <- R6::R6Class(
 
     # Finalize will free up the handles
     finalize = function() {
-
-      # Check the need for freeing handle
-      if (!lgb.is.null.handle(x = private$handle)) {
-
-        # Freeing up handle
-        .Call(
-          LGBM_BoosterFree_R
-          , private$handle
-        )
-        private$handle <- NULL
-
-      }
-
+      .Call(
+        LGBM_BoosterFree_R
+        , private$handle
+      )
+      private$handle <- NULL
       return(invisible(NULL))
-
     },
 
     # Initialize will create a starter booster
