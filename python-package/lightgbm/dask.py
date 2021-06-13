@@ -60,12 +60,6 @@ def _find_random_open_port() -> int:
     return port
 
 
-def _is_dask_sparse_array(arr: dask_Array) -> bool:
-    return isinstance(
-        arr._meta,
-        (ss.csc.csc_matrix, ss.csr.csr_matrix)
-    )
-
 def _concat(seq: List[_DaskPart]) -> _DaskPart:
     if isinstance(seq[0], np.ndarray):
         return np.concatenate(seq, axis=0)
@@ -515,6 +509,40 @@ def _predict_part(
     return result
 
 
+def _combine_preds(
+    preds_so_far: List[ss.spmatrix],
+    new_chunk: List[ss.spmatrix]
+) -> List[ss.spmatrix]:
+    """Add a new set of pred_contib predictions to an existing list
+
+    For multi-class classification models, calling ``.predict(X, pred_contrib=True)``
+    returns a list of sparse matrices (one per class) when ``X`` is a sparse matrix.
+
+    This function is used to combine the results of multiple such predict calls
+    executed in parallel on different partitions of data in a Dask Array.
+
+    Parameters
+    ----------
+    preds_so_far : list of sparse matrices
+        Current list of predictions.
+    new_chunk : list of sparse matrices
+        Predictions from an additional chunk of the data, to be appended to ``preds_so_far``.
+    """
+    for i in range(len(preds_so_far)):
+        preds_so_far[i] = _concat([preds_so_far[i], new_chunk[i]])
+    return preds_so_far
+
+def _predict_part_binop(_ignore: None, chunk: dask_Array, predict_function: Callable) -> List[ss.spmatrix]:
+    """Get predictions for one Dask Array
+
+    This function exists for use in ``dask.bag.Bag.fold()``.
+    The ``_ignore`` argument is used to handle that fact that ``dask.bag.Bag.fold()``
+    starts the folding process from an initial value and expects to be able to pass that
+    value as the first positional argument to the ``"binop"`` function provided.
+    """
+    return predict_function(chunk.compute())
+
+
 def _predict(
     model: LGBMModel,
     data: _DaskMatrixLike,
@@ -572,31 +600,24 @@ def _predict(
         # are returned as a list of sparse matrices (one per class)
         if (
             getattr(model, "n_classes_", -1) > 2
-            and _is_dask_sparse_array(data)
+            and isinstance(data._meta, ss.spmatrix)
             and pred_contrib
         ):
             bag = dask_bag_from_sequence(data.partitions)
-            def _combine_preds(preds_so_far, new_chunk):
-                #raise RuntimeError(preds_so_far)
-                for i in range(len(preds_so_far)):
-                    preds_so_far[i] = _concat([preds_so_far[i], new_chunk[i]])
-                return preds_so_far
 
-            predict_fn = partial(
+            predict_function = partial(
                 _predict_part,
                 model=model,
                 raw_score=False,
                 pred_proba=False,
                 pred_leaf=False,
                 pred_contrib=True,
+                **kwargs
             )
-
-            def _predict_part_binop(_ignore, chunk, pred_fn):
-                return predict_fn(chunk.compute())
 
             predict_part_binop = partial(
                 _predict_part_binop,
-                pred_fn=predict_fn
+                predict_function=predict_function
             )
 
             return bag.fold(
@@ -810,7 +831,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         description="Return the predicted value for each sample.",
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         output_name="predicted_result",
-        predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
+        predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes], or (if multiclass and ``pred_contrib=True`` and using sparse inputs) a Dask Bag which evaluates to a list of n_classes sparse matrices",
         X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
         X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
     )
