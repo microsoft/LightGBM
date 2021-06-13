@@ -322,10 +322,8 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
             assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
 
-# @pytest.mark.parametrize('output', data_output)
-# @pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
-@pytest.mark.parametrize('output', ['scipy_csr_matrix'])
-@pytest.mark.parametrize('task', ['multiclass-classification'])
+@pytest.mark.parametrize('output', data_output)
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
 def test_classifier_pred_contrib(output, task, cluster):
     with Client(cluster) as client:
         X, y, w, _, dX, dy, dw, _ = _create_data(
