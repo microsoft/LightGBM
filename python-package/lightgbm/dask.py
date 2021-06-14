@@ -380,7 +380,7 @@ def _train(
     eval_init_score: Optional[List[_DaskCollection]] = None,
     eval_group: Optional[List[_DaskCollection]] = None,
     eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
-    eval_at: Optional[Union[Iterable[int], str]] = None,
+    eval_at: Optional[Iterable[int]] = None,
     **kwargs: Any
 ) -> LGBMModel:
     """Inner train routine.
@@ -936,7 +936,7 @@ class _DaskLGBMModel:
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
-        eval_at: Optional[Union[Iterable[int], str]] = None,
+        eval_at: Optional[Iterable[int]] = None,
         early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
@@ -1406,7 +1406,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
-        eval_at: Optional[Union[Iterable[int], str]] = (1, 2, 3, 4, 5),
+        eval_at: Optional[Iterable[int]] = (1, 2, 3, 4, 5),
         early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
