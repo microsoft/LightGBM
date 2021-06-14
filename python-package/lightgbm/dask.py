@@ -412,7 +412,7 @@ def _train(
         Note, that not all workers may receive chunks of every eval set within ``eval_set``. When the returned
         lightgbm estimator is not trained using any chunks of a particular eval set, its corresponding component
         of evals_result_ and best_score_ will be 'not_evaluated'.
-    eval_names : list of strings or None, optional (default=None))
+    eval_names : list of strings or None, optional (default=None)
         Names of eval_set.
     eval_sample_weight : list of Dask Arrays, Dask Series or None, optional (default=None)
         Weights for each validation set in eval_set.
