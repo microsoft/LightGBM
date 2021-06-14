@@ -159,7 +159,7 @@ def plot_split_value_histogram(
     width_coef: float = 0.8,
     xlim: Optional[Tuple[int, int]] = None,
     ylim: Optional[Tuple[int, int]] = None,
-    title: str]= 'Split value histogram for feature with @index/name@ @feature@',
+    title: str = 'Split value histogram for feature with @index/name@ @feature@',
     xlabel: str = 'Feature split value',
     ylabel: str = 'Count',
     figsize: Optional[Tuple[int, int]] = None,
