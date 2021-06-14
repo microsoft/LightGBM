@@ -412,15 +412,15 @@ def _train(
         Note, that not all workers may receive chunks of every eval set within ``eval_set``. When the returned
         lightgbm estimator is not trained using any chunks of a particular eval set, its corresponding component
         of evals_result_ and best_score_ will be 'not_evaluated'.
-    eval_names: list of strings or None, optional (default=None))
+    eval_names : list of strings or None, optional (default=None))
         Names of eval_set.
-    eval_sample_weight: list of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)
+    eval_sample_weight : list of Dask Arrays, Dask Series or None, optional (default=None)
         Weights for each validation set in eval_set.
-    eval_class_weight: list of dict or str, or None, optional (default=None)
+    eval_class_weight : list of dict or str, or None, optional (default=None)
         Class weights, one dict or str for each validation set in eval_set.
-    eval_init_score: list of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)
+    eval_init_score : list of Dask Arrays, Dask Series or None, optional (default=None)
         Initial model score for each validation set in eval_set.
-    eval_group: list of Dask Arrays, Dask DataFrames, Dask Series or None, optional (default=None)
+    eval_group : list of Dask Arrays, Dask Series or None, optional (default=None)
         Group/query for each validation set in eval_set.
     eval_metric : string, callable, list or None, optional (default=None)
         If string, it should be a built-in evaluation metric to use.
@@ -428,7 +428,7 @@ def _train(
         If list, it can be a list of built-in metrics, a list of custom evaluation metrics, or a mix of both.
         In either case, the ``metric`` from the Dask model parameters (or inferred from the objective) will be evaluated and used as well.
         Default: 'l2' for DaskLGBMRegressor, 'binary(multi)_logloss' for DaskLGBMClassifier, 'ndcg' for DaskLGBMRanker.
-    eval_at: iterable of int, optional (default=None)
+    eval_at : iterable of int, optional (default=None)
         The evaluation positions of the specified ranking metric.
     **kwargs
         Other parameters passed to ``fit`` method of the local underlying model.
