@@ -16,8 +16,8 @@ It is possible to build LightGBM in debug mode. In this mode all compiler optimi
 .. _sanitizers:
 
 In addition to the debug mode, LightGBM can be built with compiler sanitizers.
-To enable them add ``-DUSE_SANITIZER=ON -DENABLED_SANITIZERS="san_1;san_2;...;san_n"`` to CMake flags.
-``san_1`` ... ``san_n`` can refer to the following supported sanitizers:
+To enable them add ``-DUSE_SANITIZER=ON -DENABLED_SANITIZERS="address;leak;undefined"`` to CMake flags.
+These values refer to the following supported sanitizers:
 
 - ``address`` - AddressSanitizer (ASan);
 - ``leak`` - LeakSanitizer (LSan);
