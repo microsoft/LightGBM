@@ -26,19 +26,19 @@ def _float2str(value: float, precision: Optional[int] = None) -> str:
 def plot_importance(
     booster: Union[Booster, LGBMModel],
     ax=None,
-    height: Optional[float] = 0.2,
+    height: float = 0.2,
     xlim: Optional[Tuple[int, int]] = None,
     ylim: Optional[Tuple[int, int]] = None,
-    title: Optional[str] = 'Feature importance',
-    xlabel: Optional[str] = 'Feature importance',
-    ylabel: Optional[str] = 'Features',
-    importance_type: Optional[str] = 'split',
+    title: str = 'Feature importance',
+    xlabel: str = 'Feature importance',
+    ylabel: str = 'Features',
+    importance_type: str = 'split',
     max_num_features: Optional[int] = None,
-    ignore_zero: Optional[bool] = True,
+    ignore_zero: bool = True,
     figsize: Optional[Tuple[int, int]] = None,
     dpi: Optional[int] = None,
-    grid: Optional[bool] = True,
-    precision: Optional[int] = 3,
+    grid: bool = True,
+    precision: int = 3,
     **kwargs: Any
 ) -> Any:
     """Plot model's feature importances.
@@ -156,15 +156,15 @@ def plot_split_value_histogram(
     feature: Union[int, str],
     bins: Union[int, str, None] = None,
     ax=None,
-    width_coef: Optional[float] = 0.8,
+    width_coef: float = 0.8,
     xlim: Optional[Tuple[int, int]] = None,
     ylim: Optional[Tuple[int, int]] = None,
-    title: Optional[str] = 'Split value histogram for feature with @index/name@ @feature@',
-    xlabel: Optional[str] = 'Feature split value',
-    ylabel: Optional[str] = 'Count',
+    title: str]= 'Split value histogram for feature with @index/name@ @feature@',
+    xlabel: str = 'Feature split value',
+    ylabel: str = 'Count',
     figsize: Optional[Tuple[int, int]] = None,
     dpi: Optional[int] = None,
-    grid: Optional[bool] = True,
+    grid: bool = True,
     **kwargs: Any
 ) -> Any:
     """Plot split value histogram for the specified feature of the model.
@@ -275,12 +275,12 @@ def plot_metric(
     ax=None,
     xlim: Optional[Tuple[int, int]] = None,
     ylim: Optional[Tuple[int, int]] = None,
-    title: Optional[str] = 'Metric during training',
-    xlabel: Optional[str] = 'Iterations',
-    ylabel: Optional[str] = 'auto',
+    title: str = 'Metric during training',
+    xlabel: str = 'Iterations',
+    ylabel: str = 'auto',
     figsize: Optional[Tuple[int, int]] = None,
     dpi: Optional[int] = None,
-    grid: Optional[bool] = True
+    grid: bool = True
 ) -> Any:
     """Plot one metric during training.
 
@@ -507,10 +507,10 @@ def _to_graphviz(
 
 def create_tree_digraph(
     booster: Union[Booster, LGBMModel],
-    tree_index: Optional[int] = 0,
+    tree_index: int = 0,
     show_info: Optional[List[str]] = None,
-    precision: Optional[int] = 3,
-    orientation: Optional[str] = 'horizontal',
+    precision: int = 3,
+    orientation: str = 'horizontal',
     **kwargs: Any
 ) -> Any:
     """Create a digraph representation of specified tree.
@@ -591,12 +591,12 @@ def create_tree_digraph(
 def plot_tree(
     booster: Union[Booster, LGBMModel],
     ax=None,
-    tree_index: Optional[int] = 0,
+    tree_index: int = 0,
     figsize: Optional[tuple] = None,
     dpi: Optional[int] = None,
     show_info: Optional[List[str]] = None,
-    precision: Optional[int] = 3,
-    orientation: Optional[str] = 'horizontal',
+    precision: int = 3,
+    orientation: str = 'horizontal',
     **kwargs: Any
 ) -> Any:
     """Plot specified tree.
