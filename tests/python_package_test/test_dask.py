@@ -367,6 +367,7 @@ def test_classifier_pred_contrib(output, task, cluster):
             assert len(preds_with_contrib) == num_classes
             assert len(preds_with_contrib) == len(local_preds_with_contrib)
             for i in range(num_classes):
+                assert isinstance(preds_with_contrib[i], csr_matrix)
                 assert preds_with_contrib[i].shape[1] == num_classes
                 assert preds_with_contrib[i].shape == local_preds_with_contrib[i].shape
                 assert len(np.unique(preds_with_contrib[i][:, -1]))
