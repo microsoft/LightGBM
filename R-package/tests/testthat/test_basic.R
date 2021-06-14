@@ -2047,27 +2047,25 @@ context("monotone constraints")
 
 .generate_trainset_for_monotone_constraints_tests <- function(x3_to_categorical) {
   n_samples <- 3000L
-  x1_positively_correlated_with_y <- rnorm(n = n_samples)
-  x2_negatively_correlated_with_y <- rnorm(n = n_samples)
-  x3_negatively_correlated_with_y <- rnorm(n = n_samples)
+  x1_positively_correlated_with_y <- runif(n = n_samples, min = 0.0, max = 1.0)
+  x2_negatively_correlated_with_y <- runif(n = n_samples, min = 0.0, max = 1.0)
+  x3_negatively_correlated_with_y <- runif(n = n_samples, min = 0.0, max = 1.0)
   if (x3_to_categorical) {
-    x3_negatively_correlated_with_y <- as.integer(abs(runif(n_samples) / 0.25))
-    categorical_features <- 3L
+    x3_negatively_correlated_with_y <- as.integer(x3_negatively_correlated_with_y / 0.01)
+    categorical_features <- "feature_3"
   } else {
-    x3_negatively_correlated_with_y <- runif(n_samples)
     categorical_features <- NULL
   }
-  X <- data.matrix(
-    data.frame(
-      list(
+  X <- matrix(
+    data = c(
         x1_positively_correlated_with_y
         , x2_negatively_correlated_with_y
         , x3_negatively_correlated_with_y
-      )
     )
+    , ncol = 3L
   )
   zs <- rnorm(n = n_samples, mean = 0.0, sd = 0.01)
-  scales <- 10.0 * rnorm(6L + 0.5)
+  scales <- 10.0 * (rnorm(6L) + 0.5)
   y <- (
     scales[1L] * x1_positively_correlated_with_y
     + sin(scales[2L] * pi * x1_positively_correlated_with_y)
@@ -2082,6 +2080,7 @@ context("monotone constraints")
     , label = y
     , categorical_feature = categorical_features
     , free_raw_data = FALSE
+    , colnames = c("feature_1", "feature_2", "feature_3")
   ))
 }
 
@@ -2126,7 +2125,7 @@ context("monotone constraints")
       non_monotone_data <- c(
         fixed_x
         , fixed_x
-        , as.integer(abs(variable_x / 0.25))
+        , as.integer(variable_x / 0.01)
       )
     } else {
       non_monotone_data <- c(fixed_x, fixed_x, variable_x)
@@ -2150,6 +2149,10 @@ context("monotone constraints")
 }
 
 for (x3_to_categorical in c(TRUE, FALSE)) {
+  set.seed(708L)
+  dtrain <- .generate_trainset_for_monotone_constraints_tests(
+    x3_to_categorical = x3_to_categorical
+  )
   for (monotone_constraints_method in c("basic", "intermediate", "advanced")) {
     test_msg <- paste0(
       "lgb.train() supports monotone constraints ("
@@ -2160,10 +2163,6 @@ for (x3_to_categorical in c(TRUE, FALSE)) {
       , ")"
     )
     test_that(test_msg, {
-      set.seed(708L)
-      dtrain <- .generate_trainset_for_monotone_constraints_tests(
-        x3_to_categorical = x3_to_categorical
-      )
       params <- list(
         min_data = 20L
         , num_leaves = 20L
