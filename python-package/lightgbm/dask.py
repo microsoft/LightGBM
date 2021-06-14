@@ -187,7 +187,7 @@ def _train_part(
                     evals_result_name = f'valid_{i}'
 
                 eval_set = part['eval_set'][i]
-                if eval_set == _DatasetNames.TRAINSET.name:
+                if eval_set is _DatasetNames.TRAINSET:
                     x_e.append(part['data'])
                     y_e.append(part['label'])
                 else:
@@ -199,21 +199,21 @@ def _train_part(
 
                 eval_weight = part.get('eval_sample_weight')
                 if eval_weight:
-                    if eval_weight[i] == _DatasetNames.SAMPLE_WEIGHT.name:
+                    if eval_weight[i] is _DatasetNames.SAMPLE_WEIGHT:
                         w_e.append(part['weight'])
                     else:
                         w_e.extend(eval_weight[i])
 
                 eval_init_score = part.get('eval_init_score')
                 if eval_init_score:
-                    if eval_init_score[i] == _DatasetNames.INIT_SCORE.name:
+                    if eval_init_score[i] is _DatasetNames.INIT_SCORE:
                         init_score_e.append(part['init_score'])
                     else:
                         init_score_e.extend(eval_init_score[i])
 
                 eval_group = part.get('eval_group')
                 if eval_group:
-                    if eval_group[i] == _DatasetNames.GROUP.name:
+                    if eval_group[i] is _DatasetNames.GROUP:
                         g_e.append(part['group'])
                     else:
                         g_e.extend(eval_group[i])
@@ -546,7 +546,7 @@ def _train(
             # when individual eval set is equivalent to training data, skip recomputing parts.
             if X_eval is data and y_eval is label:
                 for parts_idx in range(n_parts):
-                    eval_sets[parts_idx].append(_DatasetNames.TRAINSET.name)
+                    eval_sets[parts_idx].append(_DatasetNames.TRAINSET)
             else:
                 eval_x_parts = _split_to_parts(data=X_eval, is_matrix=True)
                 eval_y_parts = _split_to_parts(data=y_eval, is_matrix=False)
@@ -572,7 +572,7 @@ def _train(
             if eval_sample_weight:
                 if eval_sample_weight[i] is sample_weight:
                     for parts_idx in range(n_parts):
-                        eval_sample_weights[parts_idx].append(_DatasetNames.SAMPLE_WEIGHT.name)
+                        eval_sample_weights[parts_idx].append(_DatasetNames.SAMPLE_WEIGHT)
                 else:
                     eval_w_parts = _split_to_parts(data=eval_sample_weight[i], is_matrix=False)
 
@@ -592,7 +592,7 @@ def _train(
             if eval_init_score:
                 if eval_init_score[i] is init_score:
                     for parts_idx in range(n_parts):
-                        eval_init_scores[parts_idx].append(_DatasetNames.INIT_SCORE.name)
+                        eval_init_scores[parts_idx].append(_DatasetNames.INIT_SCORE)
                 else:
                     eval_init_score_parts = _split_to_parts(data=eval_init_score[i], is_matrix=False)
                     for j in range(n_largest_eval_parts):
@@ -610,7 +610,7 @@ def _train(
             if eval_group:
                 if eval_group[i] is group:
                     for parts_idx in range(n_parts):
-                        eval_groups[parts_idx].append(_DatasetNames.GROUP.name)
+                        eval_groups[parts_idx].append(_DatasetNames.GROUP)
                 else:
                     eval_g_parts = _split_to_parts(data=eval_group[i], is_matrix=False)
                     for j in range(n_largest_eval_parts):
