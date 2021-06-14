@@ -1447,7 +1447,9 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
                  + _base_doc[_base_doc.find('eval_init_score :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
-                 + _base_doc[_base_doc.find('verbose :'):])
+                 + "eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))\n"
+                 + f"{' ':8}The evaluation positions of the specified metric.\n"
+                 + f"{' ':4}{_base_doc[_base_doc.find('verbose :'):]}")
 
     # DaskLGBMRanker support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
