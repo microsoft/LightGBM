@@ -333,8 +333,7 @@ def test_classifier_pred_contrib(output, task, cluster):
 
         params = {
             "n_estimators": 10,
-            "num_leaves": 50,
-            "deterministic": True
+            "num_leaves": 10
         }
 
         dask_classifier = lgb.DaskLGBMClassifier(

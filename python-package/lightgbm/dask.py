@@ -513,7 +513,7 @@ def _combine_preds(
     preds_so_far: List[ss.spmatrix],
     new_chunk: List[ss.spmatrix]
 ) -> List[ss.spmatrix]:
-    """Add a new set of pred_contib predictions to an existing list
+    """Add a new set of pred_contrib predictions to an existing list
 
     For multi-class classification models, calling ``.predict(X, pred_contrib=True)``
     returns a list of sparse matrices (one per class) when ``X`` is a sparse matrix.
