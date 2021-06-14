@@ -2065,7 +2065,7 @@ context("monotone constraints")
     , ncol = 3L
   )
   zs <- rnorm(n = n_samples, mean = 0.0, sd = 0.01)
-  scales <- 10.0 * (rnorm(6L) + 0.5)
+  scales <- 10.0 * (runif(n = 6L, min = 0.0, max = 1.0) + 0.5)
   y <- (
     scales[1L] * x1_positively_correlated_with_y
     + sin(scales[2L] * pi * x1_positively_correlated_with_y)
