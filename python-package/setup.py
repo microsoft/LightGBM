@@ -216,7 +216,7 @@ def compile_cpp(
 
 class CustomInstallLib(install_lib):
 
-    def install(self) -> None:
+    def install(self) -> List[str]:
         outfiles = install_lib.install(self)
         src = find_lib()[0]
         dst = os.path.join(self.install_dir, 'lightgbm')
