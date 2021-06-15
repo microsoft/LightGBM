@@ -7,7 +7,7 @@ import re
 import sys
 
 
-def check_dependicies(objdump_string):
+def check_dependicies(objdump_string: str) -> None:
     """Check the dynamic symbol versions.
 
     Parameters
