@@ -1320,6 +1320,8 @@ def test_monotone_constraints(test_with_categorical_variable):
         test_with_categorical_variable
     )
     for test_with_interaction_constraints in [True, False]:
+        error_msg = ("Model not correctly constrained "
+                     f"(test_with_interaction_constraints={test_with_interaction_constraints})")
         for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
             params = {
                 "min_data": 20,
@@ -1333,7 +1335,7 @@ def test_monotone_constraints(test_with_categorical_variable):
             constrained_model = lgb.train(params, trainset)
             assert is_correctly_constrained(
                 constrained_model, test_with_categorical_variable
-            )
+            ), error_msg
             if test_with_interaction_constraints:
                 feature_sets = [["Column_0"], ["Column_1"], "Column_2"]
                 assert are_interactions_enforced(constrained_model, feature_sets)
