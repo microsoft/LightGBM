@@ -2,7 +2,7 @@
 #               Wrapped in a function to take advantage of lazy evaluation
 #               (so it doesn't matter what order R sources files during installation).
 # [return] A character vector of names.
-.INFO_KEYS() <- function() {
+.INFO_KEYS <- function() {
   return(c("label", "weight", "init_score", "group"))
 }
 
