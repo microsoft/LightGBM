@@ -532,6 +532,7 @@ def _combine_preds(
         preds_so_far[i] = _concat([preds_so_far[i], new_chunk[i]])
     return preds_so_far
 
+
 def _predict_part_binop(_ignore: None, chunk: dask_Array, predict_function: Callable) -> List[ss.spmatrix]:
     """Get predictions for one Dask Array
 
@@ -625,7 +626,6 @@ def _predict(
                 combine=_combine_preds,
                 initial=None
             )
-
 
         return data.map_blocks(
             _predict_part,
