@@ -38,7 +38,7 @@ def _write_dict(d: Dict, file: io.TextIOWrapper) -> None:
 
 
 def create_data(task: str, n_samples: int = 1_000) -> np.ndarray:
-    """Create the appropiate data for the task.
+    """Create the appropriate data for the task.
 
     The data is returned as a numpy array with the label as the first column.
     """
@@ -142,9 +142,9 @@ class DistributedMockup:
         """
         self.predict_config = copy.deepcopy(self.default_predict_config)
         self.predict_config.update(predict_config)
-        with open(TESTS_DIR / 'predict.conf', 'wt') as file:
-            _write_dict(self.predict_config, file)
         config_path = TESTS_DIR / 'predict.conf'
+        with open(config_path, 'wt') as file:
+            _write_dict(self.predict_config, file)
         cmd = [self.executable, f'config={config_path}']
         result = subprocess.run(cmd)
         if result.returncode != 0:
