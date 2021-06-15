@@ -38,7 +38,7 @@ def plot_importance(
     figsize: Optional[Tuple[int, int]] = None,
     dpi: Optional[int] = None,
     grid: bool = True,
-    precision: int = 3,
+    precision: Optional[int] = 3,
     **kwargs: Any
 ) -> Any:
     """Plot model's feature importances.
@@ -404,9 +404,9 @@ def plot_metric(
 
 def _to_graphviz(
     tree_info: List[Dict[str, Any]],
-    show_info: Union[List[str], None],
+    show_info: List[str],
     feature_names: Union[List[str], None],
-    precision: int = 3,
+    precision: Optional[int] = 3,
     orientation: str = 'horizontal',
     constraints: Optional[List[int]] = None,
     **kwargs: Any
@@ -509,7 +509,7 @@ def create_tree_digraph(
     booster: Union[Booster, LGBMModel],
     tree_index: int = 0,
     show_info: Optional[List[str]] = None,
-    precision: int = 3,
+    precision: Optional[int] = 3,
     orientation: str = 'horizontal',
     **kwargs: Any
 ) -> Any:
@@ -592,10 +592,10 @@ def plot_tree(
     booster: Union[Booster, LGBMModel],
     ax=None,
     tree_index: int = 0,
-    figsize: Optional[tuple] = None,
+    figsize: Optional[Tuple[int, int]] = None,
     dpi: Optional[int] = None,
     show_info: Optional[List[str]] = None,
-    precision: int = 3,
+    precision: Optional[int] = 3,
     orientation: str = 'horizontal',
     **kwargs: Any
 ) -> Any:
