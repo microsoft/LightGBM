@@ -2129,11 +2129,17 @@ context("monotone constraints")
   return(any(diff(y) < 0.0) & any(diff(y) > 0.0))
 }
 
+# R equivalent of numpy.linspace()
+.linspace <- function(start_val, stop_val, num) {
+  weights <- (seq_len(num) - 1L) / (num - 1L)
+  return(start_val + weights * (stop_val - start_val))
+}
+
 .is_correctly_constrained <- function(learner, x3_to_categorical) {
   iterations <- 10L
   n <- 1000L
-  variable_x <- seq_len(n) / n
-  fixed_xs_values <- seq_len(n) / n
+  variable_x <- .linspace(0L, 1L, n)
+  fixed_xs_values <- .linspace(0L, 1L, n)
   for (i in seq_len(iterations)) {
     fixed_x <- fixed_xs_values[i] * rep(1.0, n)
     monotonically_increasing_x <- matrix(
@@ -2207,7 +2213,7 @@ for (x3_to_categorical in c(TRUE, FALSE)) {
         params = params
         , data = dtrain
         , obj = "regression_l2"
-        , nrounds = 10L
+        , nrounds = 100L
       )
       expect_true({
         .is_correctly_constrained(
