@@ -513,7 +513,7 @@ def _combine_preds(
     preds_so_far: List[ss.spmatrix],
     new_chunk: List[ss.spmatrix]
 ) -> List[ss.spmatrix]:
-    """Add a new set of pred_contrib predictions to an existing list
+    """Add a new set of pred_contrib predictions to an existing list.
 
     For multi-class classification models, calling ``.predict(X, pred_contrib=True)``
     returns a list of sparse matrices (one per class) when ``X`` is a sparse matrix.
@@ -534,7 +534,7 @@ def _combine_preds(
 
 
 def _predict_part_binop(_ignore: None, chunk: dask_Array, predict_function: Callable) -> List[ss.spmatrix]:
-    """Get predictions for one Dask Array
+    """Get predictions for one Dask Array.
 
     This function exists for use in ``dask.bag.Bag.fold()``.
     The ``_ignore`` argument is used to handle that fact that ``dask.bag.Bag.fold()``

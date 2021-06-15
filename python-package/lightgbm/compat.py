@@ -148,7 +148,7 @@ except ImportError:
         pass
 
     def dask_bag_from_sequence(*args, **kwargs):  # type: ignore
-        """Placeholder for ``dask.bag.from_sequence()``"""
+        """Dummy function for ``dask.bag.from_sequence()``."""
         pass
 
     class dask_DataFrame:  # type: ignore
