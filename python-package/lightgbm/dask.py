@@ -22,6 +22,7 @@ from .sklearn import LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _lgbm
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
+_DaskVectorLike = Union[dask_Array, dask_Series]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
@@ -214,9 +215,9 @@ def _train(
     label: _DaskCollection,
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
-    sample_weight: Optional[_DaskCollection] = None,
-    init_score: Optional[_DaskCollection] = None,
-    group: Optional[_DaskCollection] = None,
+    sample_weight: Optional[_DaskVectorLike] = None,
+    init_score: Optional[_DaskVectorLike] = None,
+    group: Optional[_DaskVectorLike] = None,
     **kwargs: Any
 ) -> LGBMModel:
     """Inner train routine.
@@ -233,11 +234,11 @@ def _train(
         Parameters passed to constructor of the local underlying model.
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Class of the local underlying model.
-    sample_weight : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+    sample_weight : Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
-    init_score : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+    init_score : Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)
         Init score of training data.
-    group : Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)
+    group : Dask Array or Dask Series or None, optional (default=None)
         Group/query data.
         Only used in the learning-to-rank task.
         sum(group) = n_samples.
@@ -603,9 +604,9 @@ class _DaskLGBMModel:
         model_factory: Type[LGBMModel],
         X: _DaskMatrixLike,
         y: _DaskCollection,
-        sample_weight: Optional[_DaskCollection] = None,
-        init_score: Optional[_DaskCollection] = None,
-        group: Optional[_DaskCollection] = None,
+        sample_weight: Optional[_DaskVectorLike] = None,
+        init_score: Optional[_DaskVectorLike] = None,
+        group: Optional[_DaskVectorLike] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
@@ -721,8 +722,8 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         self,
         X: _DaskMatrixLike,
         y: _DaskCollection,
-        sample_weight: Optional[_DaskCollection] = None,
-        init_score: Optional[_DaskCollection] = None,
+        sample_weight: Optional[_DaskVectorLike] = None,
+        init_score: Optional[_DaskVectorLike] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
@@ -738,9 +739,9 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
-        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+        sample_weight_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="Dask Array or Dask Series or None, optional (default=None)"
     )
 
     # DaskLGBMClassifier does not support evaluation data, or early stopping
@@ -871,8 +872,8 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         self,
         X: _DaskMatrixLike,
         y: _DaskCollection,
-        sample_weight: Optional[_DaskCollection] = None,
-        init_score: Optional[_DaskCollection] = None,
+        sample_weight: Optional[_DaskVectorLike] = None,
+        init_score: Optional[_DaskVectorLike] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
@@ -888,9 +889,9 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
-        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+        sample_weight_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="Dask Array or Dask Series or None, optional (default=None)"
     )
 
     # DaskLGBMRegressor does not support evaluation data, or early stopping
@@ -1003,9 +1004,9 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         self,
         X: _DaskMatrixLike,
         y: _DaskCollection,
-        sample_weight: Optional[_DaskCollection] = None,
-        init_score: Optional[_DaskCollection] = None,
-        group: Optional[_DaskCollection] = None,
+        sample_weight: Optional[_DaskVectorLike] = None,
+        init_score: Optional[_DaskVectorLike] = None,
+        group: Optional[_DaskVectorLike] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
@@ -1022,9 +1023,9 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
-        sample_weight_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        init_score_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)",
-        group_shape="Dask Array, Dask DataFrame, Dask Series of shape = [n_samples] or None, optional (default=None)"
+        sample_weight_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
+        group_shape="Dask Array or Dask Series or None, optional (default=None)"
     )
 
     # DaskLGBMRanker does not support evaluation data, or early stopping
