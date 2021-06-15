@@ -26,7 +26,9 @@ CVBooster <- R6::R6Class(
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weight vector of response values. If not NULL, will set to dataset
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
-#' @param showsd \code{boolean}, whether to show standard deviation of cross validation
+#' @param showsd \code{boolean}, whether to show standard deviation of cross validation.
+#'               This parameter defaults to \code{TRUE}. Setting it to \code{FALSE} can lead to a
+#'               slight speedup by avoiding unnecessary computation.
 #' @param stratified a \code{boolean} indicating whether sampling of folds should be stratified
 #'                   by the values of outcome labels.
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
@@ -379,7 +381,10 @@ lgb.cv <- function(params = list()
     })
 
     # Prepare collection of evaluation results
-    merged_msg <- lgb.merge.cv.result(msg = msg)
+    merged_msg <- lgb.merge.cv.result(
+      msg = msg
+      , showsd = showsd
+    )
 
     # Write evaluation result in environment
     env$eval_list <- merged_msg$eval_list
@@ -509,7 +514,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 # It was borrowed from caret::createFolds and simplified
 # by always returning an unnamed list of fold indices.
 #' @importFrom stats quantile
-lgb.stratified.folds <- function(y, k = 10L) {
+lgb.stratified.folds <- function(y, k) {
 
   ## Group the numeric data based on their magnitudes
   ## and sample within those groups.
@@ -576,7 +581,7 @@ lgb.stratified.folds <- function(y, k = 10L) {
   return(out)
 }
 
-lgb.merge.cv.result <- function(msg, showsd = TRUE) {
+lgb.merge.cv.result <- function(msg, showsd) {
 
   # Get CV message length
   if (length(msg) == 0L) {
