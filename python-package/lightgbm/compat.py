@@ -150,15 +150,15 @@ except ImportError:
         pass
 
     def dask_array_concatenate(*args, **kwargs):  # type: ignore
-        """Dummy function for ``dask.array.concatenate()``."""
+        """Mock ``dask.array.concatenate()``."""
         pass
 
     def dask_array_from_delayed(*args, **kwargs):  # type: ignore
-        """Dummy function for ``dask.array.from_delayed()``."""
+        """Mock function for ``dask.array.from_delayed()``."""
         pass
 
     def dask_bag_from_delayed(*args, **kwargs):  # type: ignore
-        """Dummy function for ``dask.bag.from_delayed()``."""
+        """Mock function for ``dask.bag.from_delayed()``."""
         pass
 
     class dask_DataFrame:  # type: ignore
