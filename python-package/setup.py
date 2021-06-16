@@ -8,6 +8,7 @@ import sys
 from distutils.dir_util import copy_tree, create_tree, remove_tree
 from distutils.file_util import copy_file
 from platform import system
+from typing import List, Optional
 
 from setuptools import find_packages, setup
 from setuptools.command.install import install
@@ -34,7 +35,7 @@ LIGHTGBM_OPTIONS = [
 ]
 
 
-def find_lib():
+def find_lib() -> List[str]:
     libpath_py = os.path.join(CURRENT_DIR, 'lightgbm', 'libpath.py')
     libpath = {'__file__': libpath_py}
     exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
@@ -44,9 +45,9 @@ def find_lib():
     return LIB_PATH
 
 
-def copy_files(integrated_opencl=False, use_gpu=False):
+def copy_files(integrated_opencl: bool = False, use_gpu: bool = False) -> None:
 
-    def copy_files_helper(folder_name):
+    def copy_files_helper(folder_name: str) -> None:
         src = os.path.join(CURRENT_DIR, os.path.pardir, folder_name)
         if os.path.exists(src):
             dst = os.path.join(CURRENT_DIR, 'compile', folder_name)
@@ -90,7 +91,7 @@ def copy_files(integrated_opencl=False, use_gpu=False):
                       verbose=0)
 
 
-def clear_path(path):
+def clear_path(path: str) -> None:
     if os.path.isdir(path):
         contents = os.listdir(path)
         for file_name in contents:
@@ -101,7 +102,7 @@ def clear_path(path):
                 remove_tree(file_path)
 
 
-def silent_call(cmd, raise_error=False, error_msg=''):
+def silent_call(cmd: List[str], raise_error: bool = False, error_msg: str = '') -> int:
     try:
         with open(LOG_PATH, "ab") as log:
             subprocess.check_call(cmd, stderr=log, stdout=log)
@@ -112,11 +113,22 @@ def silent_call(cmd, raise_error=False, error_msg=''):
         return 1
 
 
-def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
-                use_hdfs=False, boost_root=None, boost_dir=None,
-                boost_include_dir=None, boost_librarydir=None,
-                opencl_include_dir=None, opencl_library=None,
-                nomp=False, bit32=False, integrated_opencl=False):
+def compile_cpp(
+    use_mingw: bool = False,
+    use_gpu: bool = False,
+    use_cuda: bool = False,
+    use_mpi: bool = False,
+    use_hdfs: bool = False,
+    boost_root: Optional[str] = None,
+    boost_dir: Optional[str] = None,
+    boost_include_dir: Optional[str] = None,
+    boost_librarydir: Optional[str] = None,
+    opencl_include_dir: Optional[str] = None,
+    opencl_library: Optional[str] = None,
+    nomp: bool = False,
+    bit32: bool = False,
+    integrated_opencl: bool = False
+) -> None:
 
     if os.path.exists(os.path.join(CURRENT_DIR, "build_cpp")):
         remove_tree(os.path.join(CURRENT_DIR, "build_cpp"))
@@ -204,7 +216,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_cuda=False, use_mpi=False,
 
 class CustomInstallLib(install_lib):
 
-    def install(self):
+    def install(self) -> List[str]:
         outfiles = install_lib.install(self)
         src = find_lib()[0]
         dst = os.path.join(self.install_dir, 'lightgbm')
@@ -217,7 +229,7 @@ class CustomInstall(install):
 
     user_options = install.user_options + LIGHTGBM_OPTIONS
 
-    def initialize_options(self):
+    def initialize_options(self) -> None:
         install.initialize_options(self)
         self.mingw = 0
         self.integrated_opencl = 0
@@ -235,7 +247,7 @@ class CustomInstall(install):
         self.nomp = 0
         self.bit32 = 0
 
-    def run(self):
+    def run(self) -> None:
         if (8 * struct.calcsize("P")) != 64:
             if self.bit32:
                 logger.warning("You're installing 32-bit version. "
@@ -260,7 +272,7 @@ class CustomBdistWheel(bdist_wheel):
 
     user_options = bdist_wheel.user_options + LIGHTGBM_OPTIONS
 
-    def initialize_options(self):
+    def initialize_options(self) -> None:
         bdist_wheel.initialize_options(self)
         self.mingw = 0
         self.integrated_opencl = 0
@@ -278,7 +290,7 @@ class CustomBdistWheel(bdist_wheel):
         self.nomp = 0
         self.bit32 = 0
 
-    def finalize_options(self):
+    def finalize_options(self) -> None:
         bdist_wheel.finalize_options(self)
 
         install = self.reinitialize_command('install')
@@ -302,7 +314,7 @@ class CustomBdistWheel(bdist_wheel):
 
 class CustomSdist(sdist):
 
-    def run(self):
+    def run(self) -> None:
         copy_files(integrated_opencl=True, use_gpu=True)
         open(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt'), 'w').close()
         if os.path.exists(os.path.join(CURRENT_DIR, 'lightgbm', 'Release')):

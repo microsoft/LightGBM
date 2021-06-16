@@ -1,3 +1,11 @@
+# [description] List of valid keys for "info" arguments in lgb.Dataset.
+#               Wrapped in a function to take advantage of lazy evaluation
+#               (so it doesn't matter what order R sources files during installation).
+# [return] A character vector of names.
+.INFO_KEYS <- function() {
+  return(c("label", "weight", "init_score", "group"))
+}
+
 #' @importFrom methods is
 #' @importFrom R6 R6Class
 Dataset <- R6::R6Class(
@@ -39,14 +47,11 @@ Dataset <- R6::R6Class(
       # Check for additional parameters
       additional_params <- list(...)
 
-      # Create known attributes list
-      INFO_KEYS <- c("label", "weight", "init_score", "group")
-
       # Check if attribute key is in the known attribute list
       for (key in names(additional_params)) {
 
         # Key existing
-        if (key %in% INFO_KEYS) {
+        if (key %in% .INFO_KEYS()) {
 
           # Store as info
           info[[key]] <- additional_params[[key]]
@@ -413,12 +418,9 @@ Dataset <- R6::R6Class(
     # Get information
     getinfo = function(name) {
 
-      # Create known attributes list
-      INFONAMES <- c("label", "weight", "init_score", "group")
-
       # Check if attribute key is in the known attribute list
-      if (!is.character(name) || length(name) != 1L || !name %in% INFONAMES) {
-        stop("getinfo: name must one of the following: ", paste0(sQuote(INFONAMES), collapse = ", "))
+      if (!is.character(name) || length(name) != 1L || !name %in% .INFO_KEYS()) {
+        stop("getinfo: name must one of the following: ", paste0(sQuote(.INFO_KEYS()), collapse = ", "))
       }
 
       # Check for info name and handle
@@ -467,12 +469,9 @@ Dataset <- R6::R6Class(
     # Set information
     setinfo = function(name, info) {
 
-      # Create known attributes list
-      INFONAMES <- c("label", "weight", "init_score", "group")
-
       # Check if attribute key is in the known attribute list
-      if (!is.character(name) || length(name) != 1L || !name %in% INFONAMES) {
-        stop("setinfo: name must one of the following: ", paste0(sQuote(INFONAMES), collapse = ", "))
+      if (!is.character(name) || length(name) != 1L || !name %in% .INFO_KEYS()) {
+        stop("setinfo: name must one of the following: ", paste0(sQuote(.INFO_KEYS()), collapse = ", "))
       }
 
       # Check for type of information
