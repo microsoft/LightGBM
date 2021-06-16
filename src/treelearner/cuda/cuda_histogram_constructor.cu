@@ -104,8 +104,8 @@ __global__ void CUDAConstructHistogramDenseKernel(
       const uint32_t bin = static_cast<uint32_t>(data_ptr[data_index * num_columns_in_partition + threadIdx.x]);
       const uint32_t pos = bin << 1;
       float* pos_ptr = shared_hist_ptr + pos;
-      atomicAdd_system(pos_ptr, grad);
-      atomicAdd_system(pos_ptr + 1, hess);
+      atomicAdd_block(pos_ptr, grad);
+      atomicAdd_block(pos_ptr + 1, hess);
       inner_data_index += blockDim.y;
     }
   }
@@ -172,8 +172,8 @@ __global__ void CUDAConstructHistogramSparseKernel(
       const uint32_t bin = static_cast<uint32_t>(data_ptr[row_start + threadIdx.x]);
       const uint32_t pos = bin << 1;
       float* pos_ptr = shared_hist + pos;
-      atomicAdd_system(pos_ptr, grad);
-      atomicAdd_system(pos_ptr + 1, hess);
+      atomicAdd_block(pos_ptr, grad);
+      atomicAdd_block(pos_ptr + 1, hess);
     }
     inner_data_index += blockDim.y;
   }

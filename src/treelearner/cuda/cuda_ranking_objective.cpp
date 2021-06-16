@@ -70,7 +70,7 @@ num_threads_(num_threads) {
     max_items_in_query_aligned_ <<= 1;
   }
   if (max_items_in_query_aligned_ > MAX_NUM_ITEM_IN_QUERY) {
-    Log::Warning("Too many items in a query.");
+    Log::Warning("Too many items (%d) in a query.", max_items_in_query_aligned_);
   }
 }
 

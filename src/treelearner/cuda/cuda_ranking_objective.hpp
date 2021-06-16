@@ -9,9 +9,8 @@
 
 #ifdef USE_CUDA
 
-#define GET_GRADIENTS_BLOCK_SIZE_RANKING_RANKING (128)
-#define MAX_NUM_ITEM_IN_QUERY (1024)
-#define NUM_QUERY_PER_BLOCK (100)
+#define MAX_NUM_ITEM_IN_QUERY (2048)
+#define NUM_QUERY_PER_BLOCK (10)
 #define MAX_RANK_LABEL (32)
 
 #include "cuda_objective.hpp"
