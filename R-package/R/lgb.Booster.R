@@ -1003,7 +1003,6 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
     result <- booster$record_evals[[data_name]][[eval_name]][[.EVAL_ERR_KEY()]]
   }
 
-  # Check if iteration is non existent
   if (is.null(iters)) {
     return(as.numeric(result))
   }
