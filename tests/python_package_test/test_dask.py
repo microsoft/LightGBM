@@ -13,8 +13,8 @@ import pytest
 
 import lightgbm as lgb
 
-if not platform.startswith('linux'):
-    pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
+# if not platform.startswith('linux'):
+#     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
     pytest.skip('Dask is not installed', allow_module_level=True)
 
@@ -343,7 +343,7 @@ def test_classifier_pred_contrib(output, task, cluster):
             **params
         )
         dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
-        preds_with_contrib = dask_classifier.predict(dX, pred_contrib=True).compute()
+        preds_with_contrib = dask_classifier.predict(dX, pred_contrib=True)
 
         local_classifier = lgb.LGBMClassifier(**params)
         local_classifier.fit(X, y, sample_weight=w)
@@ -364,19 +364,23 @@ def test_classifier_pred_contrib(output, task, cluster):
         # and then return early
         if output == 'scipy_csr_matrix' and task == 'multiclass-classification':
             assert isinstance(preds_with_contrib, list)
+            assert all(isinstance(arr, da.Array) for arr in preds_with_contrib)
+            assert all(isinstance(arr._meta, csr_matrix) for arr in preds_with_contrib)
             assert len(preds_with_contrib) == num_classes
             assert len(preds_with_contrib) == len(local_preds_with_contrib)
             for i in range(num_classes):
-                assert isinstance(preds_with_contrib[i], csr_matrix)
-                assert preds_with_contrib[i].shape[1] == num_classes
-                assert preds_with_contrib[i].shape == local_preds_with_contrib[i].shape
-                assert len(np.unique(preds_with_contrib[i][:, -1]))
+                computed_preds = preds_with_contrib[i].compute()
+                assert isinstance(computed_preds, csr_matrix)
+                assert computed_preds.shape[1] == num_classes
+                assert computed_preds.shape == local_preds_with_contrib[i].shape
+                assert len(np.unique(computed_preds[:, -1])) == 1
                 # raw scores will probably be different, but at least check that all predicted classes are the same
-                pred_classes = np.argmax(np.array(preds_with_contrib[i].todense()), axis=1)
+                pred_classes = np.argmax(np.array(computed_preds.todense()), axis=1)
                 local_pred_classes = np.argmax(np.array(local_preds_with_contrib[i].todense()), axis=1)
                 assert np.all(pred_classes == local_pred_classes)
             return
 
+        preds_with_contrib = preds_with_contrib.compute()
         if output == 'scipy_csr_matrix':
             preds_with_contrib = np.array(preds_with_contrib.todense())
 

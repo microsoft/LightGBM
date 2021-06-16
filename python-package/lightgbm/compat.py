@@ -125,7 +125,9 @@ except ImportError:
 try:
     from dask import delayed
     from dask.array import Array as dask_Array
-    from dask.bag import from_sequence as dask_bag_from_sequence
+    from dask.array import concatenate as dask_array_concatenate
+    from dask.array import from_delayed as dask_array_from_delayed
+    from dask.bag import from_delayed as dask_bag_from_delayed
     from dask.dataframe import DataFrame as dask_DataFrame
     from dask.dataframe import Series as dask_Series
     from dask.distributed import Client, default_client, wait
@@ -147,8 +149,16 @@ except ImportError:
 
         pass
 
-    def dask_bag_from_sequence(*args, **kwargs):  # type: ignore
-        """Dummy function for ``dask.bag.from_sequence()``."""
+    def dask_array_concatenate(*args, **kwargs):  # type: ignore
+        """Dummy function for ``dask.array.concatenate()``."""
+        pass
+
+    def dask_array_from_delayed(*args, **kwargs):  # type: ignore
+        """Dummy function for ``dask.array.from_delayed()``."""
+        pass
+
+    def dask_bag_from_delayed(*args, **kwargs):  # type: ignore
+        """Dummy function for ``dask.bag.from_delayed()``."""
         pass
 
     class dask_DataFrame:  # type: ignore
