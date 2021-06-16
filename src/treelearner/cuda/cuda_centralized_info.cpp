@@ -23,10 +23,12 @@ void CUDACentralizedInfo::Init(const score_t* labels, const Dataset* train_data)
 
   InitCUDAMemoryFromHostMemory<label_t>(&cuda_labels_, labels, num_data_);
 
-  InitCUDAMemoryFromHostMemory<data_size_t>(
-    &cuda_query_boundaries_,
-    train_data->metadata().query_boundaries(),
-    static_cast<size_t>(train_data->metadata().num_queries()));
+  if (train_data->metadata().query_boundaries() != nullptr) {
+    InitCUDAMemoryFromHostMemory<data_size_t>(
+      &cuda_query_boundaries_,
+      train_data->metadata().query_boundaries(),
+      static_cast<size_t>(train_data->metadata().num_queries() + 1));
+  }
 }
 
 void CUDACentralizedInfo::BeforeTrain(const score_t* gradients, const score_t* hessians) {

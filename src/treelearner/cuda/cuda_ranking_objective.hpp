@@ -24,7 +24,8 @@ class CUDARankingObjective : public CUDAObjective {
   CUDARankingObjective(
     const data_size_t num_data,
     const label_t* cuda_label,
-    const int* cpu_query_boundaries,
+    const data_size_t* cuda_query_boundaries,
+    const data_size_t* cpu_query_boundaries,
     const int num_queries,
     const bool norm,
     const double sigmoid,
@@ -42,11 +43,15 @@ class CUDARankingObjective : public CUDAObjective {
 
   void GetGradients(const double* cuda_scores, score_t* cuda_out_gradients, score_t* cuda_out_hessians) override;
 
+  void TestGlobalArgSort() const override;
+
  private:
 
   void LaunchGetGradientsKernel(const double* cuda_scores, score_t* cuda_out_gradients, score_t* cuda_out_hessians);
 
   void LaunchCalcInverseMaxDCGKernel();
+
+  void LaunchGlobalArgSort() const;
 
   // CUDA memory, held by this object
   double* cuda_init_score_;
@@ -64,6 +69,7 @@ class CUDARankingObjective : public CUDAObjective {
   const int truncation_level_;
   label_t max_label_;
   const int num_threads_;
+  int max_items_in_query_aligned_;
 };
 
 }  // namespace LightGBM

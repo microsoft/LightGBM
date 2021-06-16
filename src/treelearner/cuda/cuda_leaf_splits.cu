@@ -54,7 +54,6 @@ __global__ void CUDAInitValuesKernel2(double* cuda_sum_of_gradients, double* cud
 }
 
 void CUDALeafSplits::LaunchInitValuesKernal() {
-  auto start = std::chrono::steady_clock::now();
   CUDAInitValuesKernel1<<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
     cuda_gradients_, cuda_hessians_, cuda_num_data_, cuda_sum_of_gradients_,
     cuda_sum_of_hessians_);

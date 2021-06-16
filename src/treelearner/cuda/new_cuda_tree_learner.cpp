@@ -283,10 +283,11 @@ void NewCUDATreeLearner::InitObjective() {
       cuda_centralized_info_->cuda_labels(), config_->sigmoid));
   } else if (config_->objective == std::string("regression")) {
     cuda_objective_.reset(new CUDARegressionObjective(num_data_, cuda_centralized_info_->cuda_labels()));
-  } else if (config_->objective == std::string("ranking")) {
+  } else if (config_->objective == std::string("lambdarank")) {
     cuda_objective_.reset(new CUDARankingObjective(num_data_,
       cuda_centralized_info_->cuda_labels(),
       cuda_centralized_info_->cuda_query_boundaries(),
+      train_data_->metadata().query_boundaries(),
       train_data_->metadata().num_queries(),
       config_->lambdarank_norm,
       config_->sigmoid,

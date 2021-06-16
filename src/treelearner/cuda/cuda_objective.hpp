@@ -26,6 +26,8 @@ class CUDAObjective {
 
   virtual const double* cuda_init_score() const = 0;
 
+  virtual void TestGlobalArgSort() const {}
+
  protected:
   const data_size_t num_data_;
 };

@@ -302,7 +302,7 @@ void CUDAHistogramConstructor::CalcConstructHistogramKernelDim(
   *block_dim_x = max_num_column_per_partition_;
   *block_dim_y = NUM_THRADS_PER_BLOCK / max_num_column_per_partition_;
   *grid_dim_x = num_feature_partitions_;
-  const int min_grid_dim_y = 160;
+  const int min_grid_dim_y = 10;
   *grid_dim_y = std::max(min_grid_dim_y,
     ((num_data_in_smaller_leaf + NUM_DATA_PER_THREAD - 1) / NUM_DATA_PER_THREAD + (*block_dim_y) - 1) / (*block_dim_y));
   //Log::Warning("block_dim_x = %d, block_dim_y = %d, grid_dim_x = %d, grid_dim_y = %d", *block_dim_x, *block_dim_y, *grid_dim_x, *grid_dim_y);
@@ -388,7 +388,7 @@ void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data
     }
   }
 
-  Log::Warning("max_num_column_per_partition_ = %d", max_num_column_per_partition_);
+  /*Log::Warning("max_num_column_per_partition_ = %d", max_num_column_per_partition_);
   for (size_t i = 0; i < feature_partition_column_index_offsets_.size(); ++i) {
     Log::Warning("feature_partition_column_index_offsets_[%d] = %d", i, feature_partition_column_index_offsets_[i]);
   }
@@ -397,7 +397,7 @@ void CUDAHistogramConstructor::DivideCUDAFeatureGroups(const Dataset* train_data
   }
   for (size_t i = 0; i < column_hist_offsets_.size(); ++i) {
     Log::Warning("column_hist_offsets_[%d] = %d", i, column_hist_offsets_[i]);
-  }
+  }*/
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_feature_partition_column_index_offsets_,
     feature_partition_column_index_offsets_.data(),
@@ -448,8 +448,9 @@ void CUDAHistogramConstructor::GetSparseDataPartitioned(
   const int num_partitions = static_cast<int>(feature_partition_column_index_offsets_.size()) - 1;
   partitioned_data->resize(num_partitions);
   partitioned_row_ptr->resize(num_partitions);
+  std::vector<int> thread_max_elements_per_row(num_threads_, 0);
   Threading::For<int>(0, num_partitions, 1,
-    [partitioned_data, partitioned_row_ptr, row_ptr, row_wise_data, this] (int /*thread_index*/, int start, int end) {
+    [partitioned_data, partitioned_row_ptr, row_ptr, row_wise_data, &thread_max_elements_per_row, this] (int thread_index, int start, int end) {
       for (int partition_index = start; partition_index < end; ++partition_index) {
         std::vector<BIN_TYPE>& data_for_this_partition = partitioned_data->at(partition_index);
         std::vector<DATA_PTR_TYPE>& row_ptr_for_this_partition = partitioned_row_ptr->at(partition_index);
@@ -472,8 +473,12 @@ void CUDAHistogramConstructor::GetSparseDataPartitioned(
             data_for_this_partition.emplace_back(bin - partition_hist_start);
           }
           CHECK_GE(partition_end_in_row, partition_start_in_row);
-          offset += static_cast<DATA_PTR_TYPE>(partition_end_in_row - partition_start_in_row);
+          const data_size_t num_elements_in_row = partition_end_in_row - partition_start_in_row;
+          offset += static_cast<DATA_PTR_TYPE>(num_elements_in_row);
           row_ptr_for_this_partition.emplace_back(offset);
+          if (num_elements_in_row > thread_max_elements_per_row[thread_index]) {
+            thread_max_elements_per_row[thread_index] = num_elements_in_row;
+          }
         }
       }
     });
@@ -483,6 +488,12 @@ void CUDAHistogramConstructor::GetSparseDataPartitioned(
   for (size_t i = 0; i < partitioned_row_ptr->size(); ++i) {
     offset += partitioned_row_ptr->at(i).back();
     partition_ptr->emplace_back(offset);
+  }
+  max_num_column_per_partition_ = 0;
+  for (int thread_index = 0; thread_index < num_threads_; ++thread_index) {
+    if (thread_max_elements_per_row[thread_index] > max_num_column_per_partition_) {
+      max_num_column_per_partition_ = thread_max_elements_per_row[thread_index];
+    }
   }
 }
 
