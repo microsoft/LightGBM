@@ -30,7 +30,6 @@ Predictor <- R6::R6Class(
       private$params <- lgb.params2str(params = params)
       handle <- NULL
 
-      # Check if handle is a character
       if (is.character(modelfile)) {
 
         # Create handle on it
