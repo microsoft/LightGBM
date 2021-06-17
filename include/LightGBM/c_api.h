@@ -215,7 +215,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                                 DatasetHandle* out);
 
 /*!
- * \brief Create sample indices for total nrow.
+ * \brief Create sample indices for total number of rows.
  * \param total_nrow Number of all data rows
  * \param parameters Additional parameters, specify sample count and random seed in parameter
  * \param[out] out Created indices, type is int32_t, caller should insure out contains enough space to hold indices

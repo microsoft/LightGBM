@@ -8,12 +8,14 @@ import lightgbm as lgb
 class HDFSequence(lgb.Sequence):
     def __init__(self, hdf_dataset, batch_size):
         """
+        Construct a sequence object from HDF5 with required interface.
+
         Parameters
         ----------
-        hdf_dataset: h5py.Dataset
-            dataset in HDF5 file
-        batch_size: int
-            when reading data to construct lightgbm Dataset, each read reads batch_size rows
+        hdf_dataset : h5py.Dataset
+            Dataset in HDF5 file.
+        batch_size : int
+            Size of a batch. When reading data to construct lightgbm Dataset, each read reads batch_size rows.
         """
         # We can also open HDF5 file once and get access to
         self.data = hdf_dataset
@@ -61,7 +63,7 @@ def save2hdf(input_data, fname, batch_size):
             nrow, ncol = data.shape
             if ncol == 1:
                 # Y has a single column and we read it in single shot. So store it as an 1-d array.
-                chunk = (nrow, )
+                chunk = (nrow,)
                 data = data.values.flatten()
             else:
                 # We use random access for data sampling when creating LightGBM Dataset from Sequence.
