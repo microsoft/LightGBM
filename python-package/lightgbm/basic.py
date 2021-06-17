@@ -21,6 +21,11 @@ ZERO_THRESHOLD = 1e-35
 DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT = 200000
 
 
+def _get_sample_count(params: Dict[str, str], total_nrow: int):
+    sample_count = params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
+    return min(sample_count, total_nrow)
+
+
 class _DummyLogger:
     def info(self, msg):
         print(msg)
@@ -1210,8 +1215,7 @@ class Dataset:
         """
         param_str = param_dict_to_str(self.params)
         # Note self.params may contain 'bin_construct_sample_cnt' but is None.
-        sample_cnt = self.params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
-        sample_cnt = min(sample_cnt, total_nrow)
+        sample_cnt = _get_sample_count(self.params, total_nrow)
         indices = np.zeros(sample_cnt, dtype=np.int32)
         ptr_data, _, _ = c_int_array(indices)
 
@@ -1571,8 +1575,7 @@ class Dataset:
         if ref_dataset:
             self.init_from_ref_dataset(total_nrow, ref_dataset)
         else:
-            sample_cnt = self.params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
-            sample_cnt = min(sample_cnt, total_nrow)
+            sample_cnt = _get_sample_count(self.params, total_nrow)
 
             sample_data, col_indices = self.__sample(seqs, total_nrow)
             self.init_from_sample(sample_data, col_indices, sample_cnt, total_nrow)
