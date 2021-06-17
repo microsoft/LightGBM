@@ -1,7 +1,6 @@
 # coding: utf-8
 """Tests for lightgbm.dask module"""
 
-import copy
 import inspect
 import pickle
 import random
@@ -215,7 +214,7 @@ def _accuracy_score(dy_true, dy_pred):
     return da.average(dy_true == dy_pred).compute()
 
 
-def _constant_metric(preds, train_data):
+def _constant_metric(dy_true, dy_pred):
     metric_name = 'constant_metric'
     value = 0.708
     is_higher_better = False
@@ -730,12 +729,10 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
 @pytest.mark.parametrize('eval_sizes', [[0.5, 1, 1.5], [0]])
 @pytest.mark.parametrize('eval_names_prefix', ['specified', None])
 def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix, cluster):
-
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
     with Client(cluster) as client:
-
         # Use larger trainset to prevent premature stopping due to zero loss, causing num_trees() < n_estimators.
         # Use small chunk_size to avoid single-worker allocation of eval data partitions.
         n_samples = 1000
@@ -747,7 +744,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
         eval_init_score = None
 
         if eval_names_prefix:
-            eval_names = [eval_names_prefix + f'_{i}' for i in range(len(eval_sizes))]
+            eval_names = [f'{eval_names_prefix}_{i}' for i in range(len(eval_sizes))]
         else:
             eval_names = None
 
@@ -765,7 +762,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
             eval_group = []
         else:
             # test eval_class_weight, eval_init_score on binary-classification task.
-            # Note: objective's default`metric` will be evaluated in evals_result_ in addition to all eval_metrics.
+            # Note: objective's default `metric` will be evaluated in evals_result_ in addition to all eval_metrics.
             if task == 'binary-classification':
                 eval_metrics = ['binary_error', 'auc']
                 eval_metric_names = ['binary_logloss', 'binary_error', 'auc']
@@ -883,7 +880,6 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
 @pytest.mark.parametrize('task', ['binary-classification', 'regression', 'ranking'])
 def test_eval_set_with_custom_eval_metric(task, cluster):
     with Client(cluster) as client:
-
         n_samples = 1000
         n_eval_samples = int(n_samples * 0.5)
         chunk_size = 10
@@ -895,7 +891,7 @@ def test_eval_set_with_custom_eval_metric(task, cluster):
             output=output,
             chunk_size=chunk_size
         )
-        _, y_e, _, _, dX_e, dy_e, _, dg_e = _create_data(
+        _, _, _, _, dX_e, dy_e, _, dg_e = _create_data(
             objective=task,
             n_samples=n_eval_samples,
             output=output,
@@ -903,16 +899,15 @@ def test_eval_set_with_custom_eval_metric(task, cluster):
         )
 
         if task == 'ranking':
-            eval_at = '5,6'
+            eval_at = (5, 6)
             eval_metrics = ['ndcg', _constant_metric]
-            eval_metric_names = [f'ndcg@{k}' for k in eval_at.split(',')] + ['constant_metric']
+            eval_metric_names = [f'ndcg@{k}' for k in eval_at] + ['constant_metric']
+        elif task == 'binary-classification':
+            eval_metrics = ['binary_error', 'auc', _constant_metric]
+            eval_metric_names = ['binary_logloss', 'binary_error', 'auc', 'constant_metric']
         else:
-            if task == 'binary-classification':
-                eval_metrics = ['binary_error', 'auc', _constant_metric]
-                eval_metric_names = ['binary_logloss', 'binary_error', 'auc', 'constant_metric']
-            else:
-                eval_metrics = ['l1', _constant_metric]
-                eval_metric_names = ['l2', 'l1', 'constant_metric']
+            eval_metrics = ['l1', _constant_metric]
+            eval_metric_names = ['l2', 'l1', 'constant_metric']
 
         fit_trees = 50
         params = {
@@ -951,7 +946,7 @@ def test_eval_set_with_custom_eval_metric(task, cluster):
             assert metric in evals_result[eval_name]
             assert len(evals_result[eval_name][metric]) == fit_trees
 
-        assert np.allclose(evals_result[eval_name]['constant_metric'], 0.708)
+        np.testing.assert_allclose(evals_result[eval_name]['constant_metric'], 0.708)
 
 
 @pytest.mark.parametrize('task', tasks)
