@@ -111,6 +111,5 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
     python $file ; Check-Output $?
   }  # run all examples
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide/notebooks
-  conda install -q -y -n $env:CONDA_ENV ipywidgets notebook
   jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb ; Check-Output $?  # run all notebooks
 }
