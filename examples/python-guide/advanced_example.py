@@ -43,7 +43,7 @@ params = {
 }
 
 # generate feature names
-feature_name = ['feature_' + str(col) for col in range(num_feature)]
+feature_name = [f'feature_{col}' for col in range(num_feature)]
 
 print('Starting training...')
 # feature_name and categorical_feature
