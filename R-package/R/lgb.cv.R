@@ -189,7 +189,6 @@ lgb.cv <- function(params = list()
     , column_names = cnames
   )
 
-  # Check for weights
   if (!is.null(weight)) {
     data$setinfo(name = "weight", info = weight)
   }
@@ -210,7 +209,6 @@ lgb.cv <- function(params = list()
     data$set_categorical_feature(categorical_feature = categorical_feature)
   }
 
-  # Check for folds
   if (!is.null(folds)) {
 
     # Check for list of folds or for single value
@@ -218,12 +216,10 @@ lgb.cv <- function(params = list()
       stop(sQuote("folds"), " must be a list with 2 or more elements that are vectors of indices for each CV-fold")
     }
 
-    # Set number of folds
     nfold <- length(folds)
 
   } else {
 
-    # Check fold value
     if (nfold <= 1L) {
       stop(sQuote("nfold"), " must be > 1")
     }
@@ -583,15 +579,12 @@ lgb.stratified.folds <- function(y, k) {
 
 lgb.merge.cv.result <- function(msg, showsd) {
 
-  # Get CV message length
   if (length(msg) == 0L) {
     stop("lgb.cv: size of cv result error")
   }
 
-  # Get evaluation message length
   eval_len <- length(msg[[1L]])
 
-  # Is evaluation message empty?
   if (eval_len == 0L) {
     stop("lgb.cv: should provide at least one metric for CV")
   }
@@ -606,7 +599,6 @@ lgb.merge.cv.result <- function(msg, showsd) {
   # get structure (name, higher_better, data_name)
   ret_eval <- msg[[1L]]
 
-  # Go through evaluation length items
   for (j in seq_len(eval_len)) {
     ret_eval[[j]]$value <- mean(eval_result[[j]])
   }
@@ -624,12 +616,10 @@ lgb.merge.cv.result <- function(msg, showsd) {
       )
     }
 
-    # Convert to list
     ret_eval_err <- as.list(ret_eval_err)
 
   }
 
-  # Return errors
   return(
     list(
       eval_list = ret_eval
