@@ -311,6 +311,8 @@ class _ConfigAliases:
                                     "sparse"},
                "label_column": {"label_column",
                                 "label"},
+               "linear_tree": {"linear_tree",
+                               "linear_trees"},
                "local_listen_port": {"local_listen_port",
                                      "local_port",
                                      "port"},
@@ -1144,6 +1146,7 @@ class Dataset:
                                                 "max_bin_by_feature",
                                                 "min_data_in_bin",
                                                 "pre_partition",
+                                                "precise_float_parser",
                                                 "two_round",
                                                 "use_missing",
                                                 "weight_column",
@@ -3180,7 +3183,11 @@ class Booster:
         _safe_call(_LIB.LGBM_BoosterGetLinear(
             self.handle,
             ctypes.byref(out_is_linear)))
-        new_params = deepcopy(self.params)
+        new_params = _choose_param_value(
+            main_param_name="linear_tree",
+            params=self.params,
+            default_value=None
+        )
         new_params["linear_tree"] = out_is_linear.value
         train_set = Dataset(data, label, silent=True, params=new_params)
         new_params['refit_decay_rate'] = decay_rate
