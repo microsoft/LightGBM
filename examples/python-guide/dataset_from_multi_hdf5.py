@@ -36,11 +36,10 @@ def create_dataset_from_multiple_hdf(input_flist, batch_size):
         data.append(HDFSequence(f['X'], batch_size))
         ylist.append(f['Y'][:])
 
-    # params = {
-    #     'bin_construct_sample_cnt': 200000,
-    #     'max_bin': 255,
-    # }
-    params = None
+    params = {
+        'bin_construct_sample_cnt': 200000,
+        'max_bin': 255,
+    }
     y = np.concatenate(ylist)
     dataset = lgb.Dataset(data, label=y, params=params)
     # With binary dataset created, we can use either Python API or cmdline version to train.
@@ -87,17 +86,20 @@ def generate_hdf(input_fname, output_basename, batch_size):
 
     # We can store multiple datasets inside a single HDF5 file.
     # Separating X and Y for choosing best chunk size for data loading.
-    save2hdf({'Y': df1.iloc[:, :1], 'X': df1.iloc[:, 1:]}, f'{output_basename}1.h5', batch_size)
-    save2hdf({'Y': df2.iloc[:, :1], 'X': df2.iloc[:, 1:]}, f'{output_basename}2.h5', batch_size)
+    fname1 = f'{output_basename}1.h5'
+    fname2 = f'{output_basename}2.h5'
+    save2hdf({'Y': df1.iloc[:, :1], 'X': df1.iloc[:, 1:]}, fname1, batch_size)
+    save2hdf({'Y': df2.iloc[:, :1], 'X': df2.iloc[:, 1:]}, fname2, batch_size)
+
+    return [fname1, fname2]
 
 
 def main():
     batch_size = 64
-    generate_hdf('../regression/regression.train', 'regression', 64)
-    create_dataset_from_multiple_hdf(
-        ['regression1.h5', 'regression2.h5'],
-        batch_size=batch_size,
-    )
+    output_basename = 'regression'
+    hdf_files = generate_hdf('../regression/regression.train', output_basename, 64)
+
+    create_dataset_from_multiple_hdf(hdf_files, batch_size=batch_size)
 
 
 if __name__ == '__main__':
