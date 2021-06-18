@@ -1,5 +1,6 @@
 # coding: utf-8
 import filecmp
+import numbers
 import os
 
 import numpy as np
@@ -98,7 +99,7 @@ class NumpySequence(lgb.Sequence):
     def __getitem__(self, idx):
         # The simple implementation is just a single "return self.ndarray[idx]"
         # The following is for demo and testing purpose.
-        if isinstance(idx, int):
+        if isinstance(idx, numbers.Integral):
             return self._get_one_line(idx)
         elif isinstance(idx, slice):
             if not (idx.step is None or idx.step is 1):
