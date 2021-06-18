@@ -30,7 +30,7 @@
 #define R_API_END() } \
   catch(std::exception& ex) { LGBM_SetLastError(ex.what()); } \
   catch(std::string& ex) { LGBM_SetLastError(ex.c_str()); } \
-  catch(...) { LGBM_SetLastError("unknown exception"); } 
+  catch(...) { LGBM_SetLastError("unknown exception"); }
 
 #define CHECK_CALL(x) \
   if ((x) != 0) { \
@@ -264,11 +264,9 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
       vec[i] = static_cast<int32_t>(INTEGER(field_data)[i]);
     }
     CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, vec.data(), len, C_API_DTYPE_INT32));
-  }
-  else if (!strcmp("init_score", name)) {
+  } else if (!strcmp("init_score", name)) {
     CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, REAL(field_data), len, C_API_DTYPE_FLOAT64));
-  }
-  else {
+  } else {
     std::vector<float> vec(len);
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
     for (int i = 0; i < len; ++i) {
@@ -297,15 +295,13 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
     for (int i = 0; i < out_len - 1; ++i) {
       INTEGER(field_data)[i] = p_data[i + 1] - p_data[i];
     }
-  }
-  else if (!strcmp("init_score", name)) {
+  } else if (!strcmp("init_score", name)) {
     auto p_data = reinterpret_cast<const double*>(res);
 #pragma omp parallel for schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len; ++i) {
       REAL(field_data)[i] = p_data[i];
     }
-  }
-  else {
+  } else {
     auto p_data = reinterpret_cast<const float*>(res);
 #pragma omp parallel for schedule(static, 512) if (out_len >= 1024)
     for (int i = 0; i < out_len; ++i) {
