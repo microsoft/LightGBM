@@ -1,6 +1,3 @@
-library(lightgbm)
-library(Matrix)
-
 context("testing lgb.Dataset functionality")
 
 data(agaricus.test, package = "lightgbm")
@@ -82,7 +79,8 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
     , lightgbm:::lgb.params2str(params = list())
     , ref_handle
   )
-  expect_false(is.na(handle))
+  expect_is(handle, "externalptr")
+  expect_false(is.null(handle))
   .Call(LGBM_DatasetFree_R, handle)
   handle <- NULL
 })
@@ -215,6 +213,24 @@ test_that("Dataset$update_params() works correctly for recognized Dataset parame
   for (param_name in names(new_params)) {
     expect_identical(new_params[[param_name]], updated_params[[param_name]])
   }
+})
+
+test_that("Dataset$finalize() should not fail on an already-finalized Dataset", {
+  dtest <- lgb.Dataset(
+    data = test_data
+    , label = test_label
+  )
+  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+
+  dtest$construct()
+  expect_false(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+
+  dtest$finalize()
+  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+
+  # calling finalize() a second time shouldn't cause any issues
+  dtest$finalize()
+  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
 })
 
 test_that("lgb.Dataset: should be able to run lgb.train() immediately after using lgb.Dataset() on a file", {
