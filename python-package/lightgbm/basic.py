@@ -9,7 +9,7 @@ from copy import deepcopy
 from functools import wraps
 from logging import Logger
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, Iterable, List, Set, Tuple, Union
+from typing import Any, Dict, Iterable, List, Set, Tuple, Union, Optional
 
 import numpy as np
 import scipy.sparse
@@ -22,6 +22,7 @@ DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT = 200000
 
 
 def _get_sample_count(params: Dict[str, Any], total_nrow: int):
+    # Note self.params may contain 'bin_construct_sample_cnt' but is None.
     sample_count = params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
     return min(sample_count, total_nrow)
 
@@ -623,7 +624,7 @@ class Sequence:
 
     @staticmethod
     def is_class(obj) -> bool:
-        """Check if objection is instance of class Sequence.
+        """Check if object is instance of class Sequence.
 
         Args:
         -------
@@ -1214,7 +1215,6 @@ class Dataset:
             Indices for sampled data.
         """
         param_str = param_dict_to_str(self.get_params())
-        # Note self.params may contain 'bin_construct_sample_cnt' but is None.
         sample_cnt = _get_sample_count(self.get_params(), total_nrow)
         indices = np.empty(sample_cnt, dtype=np.int32)
         ptr_data, _, _ = c_int_array(indices)
@@ -1541,7 +1541,7 @@ class Dataset:
         -------
             sampled_rows, sampled_row_indices
         """
-        indices = self.create_sample_indices(total_nrow)
+        indices = self._create_sample_indices(total_nrow)
 
         # Select sampled rows, transpose to column order.
         sampled = np.array([row for row in self.__yield_row_from(seqs, indices)])
@@ -1573,19 +1573,19 @@ class Dataset:
 
         # create validation dataset from ref_dataset
         if ref_dataset is not None:
-            self.init_from_ref_dataset(total_nrow, ref_dataset)
+            self._init_from_ref_dataset(total_nrow, ref_dataset)
         else:
             sample_cnt = _get_sample_count(self.get_params(), total_nrow)
 
             sample_data, col_indices = self.__sample(seqs, total_nrow)
-            self.init_from_sample(sample_data, col_indices, sample_cnt, total_nrow)
+            self._init_from_sample(sample_data, col_indices, sample_cnt, total_nrow)
 
         for seq in seqs:
             nrow = len(seq)
             batch_size = seq.batch_size or Sequence.batch_size
             for start in range(0, nrow, batch_size):
                 end = min(start + batch_size, nrow)
-                self.push_rows(seq[start:end])
+                self._push_rows(seq[start:end])
         return self
 
     def __init_from_np2d(self, mat, params_str, ref_dataset):
