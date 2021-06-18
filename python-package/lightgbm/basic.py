@@ -635,6 +635,7 @@ class Sequence:
         result: bool
             ``True`` if object satisfies ``Sequence`` interface requirements, ``False`` otherwise.
         """
+        # Sparse matrix also have __getitem__ and __len__, so we have to exclude them here.
         if isinstance(obj, list) or hasattr(obj, "getformat"):
             return False
         return hasattr(obj, "__getitem__") and hasattr(obj, "__len__")
@@ -1583,7 +1584,7 @@ class Dataset:
 
         for seq in seqs:
             nrow = len(seq)
-            batch_size = seq.batch_size or Sequence.batch_size
+            batch_size = getattr(seq, 'batch_size', None) or Sequence.batch_size
             for start in range(0, nrow, batch_size):
                 end = min(start + batch_size, nrow)
                 self._push_rows(seq[start:end])
