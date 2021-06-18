@@ -21,7 +21,7 @@ ZERO_THRESHOLD = 1e-35
 DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT = 200000
 
 
-def _get_sample_count(params: Dict[str, str], total_nrow: int):
+def _get_sample_count(params: Dict[str, Any], total_nrow: int):
     sample_count = params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
     return min(sample_count, total_nrow)
 
@@ -659,7 +659,7 @@ class Sequence:
         Returns
         -------
         result : numpy 1-D array, numpy 2-D array
-            1-D array if idx is int, 2-D array if idx is slice
+            1-D array if idx is int, 2-D array if idx is slice.
         """
         raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __getitem__()")
 
@@ -1196,7 +1196,7 @@ class Dataset:
         except AttributeError:
             pass
 
-    def create_sample_indices(self, total_nrow: int) -> np.ndarray:
+    def _create_sample_indices(self, total_nrow: int) -> np.ndarray:
         """Get an array of randomly chosen indices from this ``Dataset``.
 
         Indices are sampled without replacement.
@@ -1213,28 +1213,28 @@ class Dataset:
         indices : numpy array
             Indices for sampled data.
         """
-        param_str = param_dict_to_str(self.params)
+        param_str = param_dict_to_str(self.get_params())
         # Note self.params may contain 'bin_construct_sample_cnt' but is None.
-        sample_cnt = _get_sample_count(self.params, total_nrow)
-        indices = np.zeros(sample_cnt, dtype=np.int32)
+        sample_cnt = _get_sample_count(self.get_params(), total_nrow)
+        indices = np.empty(sample_cnt, dtype=np.int32)
         ptr_data, _, _ = c_int_array(indices)
 
         _safe_call(_LIB.LGBM_SampleIndices(
-            ctypes.c_int(total_nrow),
+            ctypes.c_int32(total_nrow),
             c_str(param_str),
             ptr_data,
         ))
         return indices
 
-    def init_from_ref_dataset(self, total_nrow: int, ref_dataset: 'Dataset') -> 'Dataset':
+    def _init_from_ref_dataset(self, total_nrow: int, ref_dataset: 'Dataset') -> 'Dataset':
         """Create dataset from a reference dataset.
 
         Parameters
         ----------
         total_nrow : int
-            number of rows expected to add to dataset
+            Number of rows expected to add to dataset.
         ref_dataset : Dataset
-            reference dataset to extract meta from
+            Reference dataset to extract meta from.
 
         Returns
         -------
@@ -1249,7 +1249,7 @@ class Dataset:
         ))
         return self
 
-    def init_from_sample(
+    def _init_from_sample(
         self,
         sample_data: List[np.ndarray],
         sample_indices: List[np.ndarray],
@@ -1261,13 +1261,13 @@ class Dataset:
         Parameters
         ----------
         sample_data : list of numpy arrays
-            Sample data for each column
+            Sample data for each column.
         sample_indices : list of numpy arrays
             Sample data row index for each column.
         sample_cnt : int
             Number of samples.
         total_nrow : int
-            Total number of rows for all input file.
+            Total number of rows for all input files.
 
         Returns
         -------
@@ -1297,7 +1297,7 @@ class Dataset:
         num_per_col_ptr, _, _ = c_int_array(num_per_col)
 
         self.handle = ctypes.c_void_p()
-        params_str = param_dict_to_str(self.params)
+        params_str = param_dict_to_str(self.get_params())
         _safe_call(_LIB.LGBM_DatasetCreateFromSampledColumn(
             ctypes.cast(sample_col_ptr, ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
             ctypes.cast(indices_col_ptr, ctypes.POINTER(ctypes.POINTER(ctypes.c_int32))),
@@ -1310,7 +1310,7 @@ class Dataset:
         ))
         return self
 
-    def push_rows(self, data: np.ndarray) -> 'Dataset':
+    def _push_rows(self, data: np.ndarray) -> 'Dataset':
         """Add rows to Dataset.
 
         Parameters
@@ -1529,7 +1529,7 @@ class Dataset:
                 seq_id += 1
                 seq = seqs[seq_id]
             id_in_seq = row_id - offset
-            row = seq[int(id_in_seq)]
+            row = seq[id_in_seq]
             yield row if row.flags['OWNDATA'] else row.copy()
 
     def __sample(self, seqs: List[Sequence], total_nrow: int) -> Tuple[List[np.ndarray], List[np.ndarray]]:
@@ -1560,7 +1560,7 @@ class Dataset:
 
         return filtered, filtered_idx
 
-    def __init_from_seqs(self, seqs: List[Sequence], ref_dataset: 'Dataset'):
+    def __init_from_seqs(self, seqs: List[Sequence], ref_dataset: Optional['Dataset'] = None):
         """
         Initialize data from list of Sequence objects.
 
@@ -1572,10 +1572,10 @@ class Dataset:
         total_nrow = sum(len(seq) for seq in seqs)
 
         # create validation dataset from ref_dataset
-        if ref_dataset:
+        if ref_dataset is not None:
             self.init_from_ref_dataset(total_nrow, ref_dataset)
         else:
-            sample_cnt = _get_sample_count(self.params, total_nrow)
+            sample_cnt = _get_sample_count(self.get_params(), total_nrow)
 
             sample_data, col_indices = self.__sample(seqs, total_nrow)
             self.init_from_sample(sample_data, col_indices, sample_cnt, total_nrow)
@@ -1586,6 +1586,7 @@ class Dataset:
             for start in range(0, nrow, batch_size):
                 end = min(start + batch_size, nrow)
                 self.push_rows(seq[start:end])
+        return self
 
     def __init_from_np2d(self, mat, params_str, ref_dataset):
         """Initialize data from a 2-D numpy matrix."""
