@@ -411,7 +411,7 @@ namespace LightGBM {
         cnt_in_bin.resize(num_bin_, 0);
         int i_bin = 0;
         for (int i = 0; i < num_distinct_values; ++i) {
-          if (distinct_values[i] > bin_upper_bound_[i_bin]) {
+          while (distinct_values[i] > bin_upper_bound_[i_bin] && i_bin < num_bin_ - 1) {
             ++i_bin;
           }
           cnt_in_bin[i_bin] += counts[i];

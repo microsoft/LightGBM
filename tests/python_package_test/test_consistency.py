@@ -32,7 +32,7 @@ class FileLoader:
             return mat[:, 1:], mat[:, 0], filename
 
     def load_field(self, suffix):
-        return np.loadtxt(os.path.join(self.directory, self.prefix + suffix))
+        return np.loadtxt(os.path.join(self.directory, f'{self.prefix}{suffix}'))
 
     def load_cpp_result(self, result_file='LightGBM_predict_result.txt'):
         return np.loadtxt(os.path.join(self.directory, result_file))
@@ -61,7 +61,7 @@ class FileLoader:
                 assert a == b, f
 
     def path(self, suffix):
-        return os.path.join(self.directory, self.prefix + suffix)
+        return os.path.join(self.directory, f'{self.prefix}{suffix}')
 
 
 def test_binary():

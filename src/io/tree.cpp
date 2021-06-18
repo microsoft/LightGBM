@@ -417,11 +417,39 @@ std::string Tree::ToJSON() const {
   str_buf << "\"num_cat\":" << num_cat_ << "," << '\n';
   str_buf << "\"shrinkage\":" << shrinkage_ << "," << '\n';
   if (num_leaves_ == 1) {
-    str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << "}" << '\n';
+    if (is_linear_) {
+      str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << ", " << "\n";
+      str_buf << LinearModelToJSON(0) << "}" << "\n";
+    } else {
+      str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << "}" << '\n';
+    }
   } else {
     str_buf << "\"tree_structure\":" << NodeToJSON(0) << '\n';
   }
+  return str_buf.str();
+}
 
+std::string Tree::LinearModelToJSON(int index) const {
+  std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+  str_buf << "\"leaf_const\":" << leaf_const_[index] << "," << "\n";
+  int num_features = static_cast<int>(leaf_features_[index].size());
+  if (num_features > 0) {
+    str_buf << "\"leaf_features\":[";
+    for (int i = 0; i < num_features - 1; ++i) {
+      str_buf << leaf_features_[index][i] << ", ";
+    }
+    str_buf << leaf_features_[index][num_features - 1] << "]" << ", " << "\n";
+    str_buf << "\"leaf_coeff\":[";
+    for (int i = 0; i < num_features - 1; ++i) {
+      str_buf << leaf_coeff_[index][i] << ", ";
+    }
+    str_buf << leaf_coeff_[index][num_features - 1] << "]" << "\n";
+  } else {
+    str_buf << "\"leaf_features\":[],\n";
+    str_buf << "\"leaf_coeff\":[]\n";
+  }
   return str_buf.str();
 }
 
@@ -479,10 +507,14 @@ std::string Tree::NodeToJSON(int index) const {
     str_buf << "\"leaf_index\":" << index << "," << '\n';
     str_buf << "\"leaf_value\":" << leaf_value_[index] << "," << '\n';
     str_buf << "\"leaf_weight\":" << leaf_weight_[index] << "," << '\n';
-    str_buf << "\"leaf_count\":" << leaf_count_[index] << '\n';
+    if (is_linear_) {
+      str_buf << "\"leaf_count\":" << leaf_count_[index] << "," << '\n';
+      str_buf << LinearModelToJSON(index);
+    } else {
+      str_buf << "\"leaf_count\":" << leaf_count_[index] << '\n';
+    }
     str_buf << "}";
   }
-
   return str_buf.str();
 }
 

@@ -1252,8 +1252,8 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     return trainset
 
 
-@pytest.mark.parametrize("test_with_interaction_constraints", [True, False])
-def test_monotone_constraints(test_with_interaction_constraints):
+@pytest.mark.parametrize("test_with_categorical_variable", [True, False])
+def test_monotone_constraints(test_with_categorical_variable):
     def is_increasing(y):
         return (np.diff(y) >= 0.0).all()
 
@@ -1316,10 +1316,12 @@ def test_monotone_constraints(test_with_interaction_constraints):
 
         return not has_interaction_flag.any()
 
-    for test_with_categorical_variable in [True, False]:
-        trainset = generate_trainset_for_monotone_constraints_tests(
-            test_with_categorical_variable
-        )
+    trainset = generate_trainset_for_monotone_constraints_tests(
+        test_with_categorical_variable
+    )
+    for test_with_interaction_constraints in [True, False]:
+        error_msg = ("Model not correctly constrained "
+                     f"(test_with_interaction_constraints={test_with_interaction_constraints})")
         for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
             params = {
                 "min_data": 20,
@@ -1333,7 +1335,7 @@ def test_monotone_constraints(test_with_interaction_constraints):
             constrained_model = lgb.train(params, trainset)
             assert is_correctly_constrained(
                 constrained_model, test_with_categorical_variable
-            )
+            ), error_msg
             if test_with_interaction_constraints:
                 feature_sets = [["Column_0"], ["Column_1"], "Column_2"]
                 assert are_interactions_enforced(constrained_model, feature_sets)
@@ -1399,8 +1401,9 @@ def test_monotone_penalty_max():
     }
 
     unconstrained_model = lgb.train(params_unconstrained_model, trainset_unconstrained_model, 10)
-    unconstrained_model_predictions = unconstrained_model.\
-        predict(x3_negatively_correlated_with_y.reshape(-1, 1))
+    unconstrained_model_predictions = unconstrained_model.predict(
+        x3_negatively_correlated_with_y.reshape(-1, 1)
+    )
 
     for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
         params_constrained_model["monotone_constraints_method"] = monotone_constraints_method
@@ -2793,3 +2796,28 @@ def test_reset_params_works_with_metric_num_class_and_boosting():
     expected_params = dict(dataset_params, **booster_params)
     assert bst.params == expected_params
     assert new_bst.params == expected_params
+
+
+def test_dump_model():
+    X, y = load_breast_cancer(return_X_y=True)
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "binary",
+        "verbose": -1
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model_str = str(bst.dump_model(5, 0))
+    assert "leaf_features" not in dumped_model_str
+    assert "leaf_coeff" not in dumped_model_str
+    assert "leaf_const" not in dumped_model_str
+    assert "leaf_value" in dumped_model_str
+    assert "leaf_count" in dumped_model_str
+    params['linear_tree'] = True
+    train_data = lgb.Dataset(X, label=y)
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model_str = str(bst.dump_model(5, 0))
+    assert "leaf_features" in dumped_model_str
+    assert "leaf_coeff" in dumped_model_str
+    assert "leaf_const" in dumped_model_str
+    assert "leaf_value" in dumped_model_str
+    assert "leaf_count" in dumped_model_str
