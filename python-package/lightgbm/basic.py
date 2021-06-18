@@ -604,7 +604,7 @@ class Sequence:
     """
     Generic data access interface.
 
-    Object should support the following operations:
+    Object should support the following operations::
 
         # Get total row number.
         >>> len(seq)
@@ -615,24 +615,25 @@ class Sequence:
         # Optionally specify batch_size to control range data read size.
         >>> seq.batch_size
 
-    With random access, data sampling does not need to go through all data.
-    With range data access, there's no need to read all data into memory thus
-    reduce memory usage.
+    - With random access, **data sampling does not need to go through all data**.
+    - With range data access, there's **no need to read all data into memory thus reduce memory usage**.
     """
 
     batch_size = 4096  # Defaults to read 4K rows in each batch.
 
     @staticmethod
     def is_class(obj) -> bool:
-        """Check if object is instance of class Sequence.
+        """Check whether object satisfies ``Sequence`` interface requirements.
 
-        Args:
-        -------
-            obj ([any]): object to be checked
+        Parameters
+        ----------
+        obj: Any
+            object to be checked.
 
         Returns
         -------
-            [bool]: is Sequence class
+        result: bool
+            ``True`` if object satisfies ``Sequence`` interface requirements, ``False`` otherwise.
         """
         if isinstance(obj, list) or hasattr(obj, "getformat"):
             return False
