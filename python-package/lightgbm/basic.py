@@ -1324,7 +1324,7 @@ class Dataset:
             Dataset object.
         """
         nrow, ncol = data.shape
-        data = np.array(data.reshape(data.size), dtype=data.dtype, copy=False)
+        data = data.reshape(data.size)
         data_ptr, data_type, _ = c_float_array(data)
 
         _safe_call(_LIB.LGBM_DatasetPushRows(
