@@ -100,16 +100,13 @@ class NumpySequence(lgb.Sequence):
         # The simple implementation is just a single "return self.ndarray[idx]"
         # The following is for demo and testing purpose.
         if isinstance(idx, numbers.Integral):
-            return self._get_one_line(idx)
+            return self.ndarray[idx]
         elif isinstance(idx, slice):
             if not (idx.step is None or idx.step == 1):
                 raise NotImplementedError("No need to implement, caller will not set step by now")
             return self.ndarray[idx.start:idx.stop]
         else:
             raise TypeError(f"Sequence Index must be an integer/list/slice, got {type(idx)}")
-
-    def _get_one_line(self, idx):
-        return self.ndarray[idx]
 
     def __len__(self):
         return len(self.ndarray)
