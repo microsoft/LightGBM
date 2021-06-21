@@ -1,5 +1,6 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
+import abc
 import ctypes
 import json
 import os
@@ -600,7 +601,7 @@ def _load_pandas_categorical(file_name=None, model_str=None):
         return None
 
 
-class Sequence:
+class Sequence(abc.ABC):
     """
     Generic data access interface.
 
@@ -626,25 +627,7 @@ class Sequence:
 
     batch_size = 4096  # Defaults to read 4K rows in each batch.
 
-    @staticmethod
-    def is_class(obj) -> bool:
-        """Check whether object satisfies ``Sequence`` interface requirements.
-
-        Parameters
-        ----------
-        obj: Any
-            object to be checked.
-
-        Returns
-        -------
-        result: bool
-            ``True`` if object satisfies ``Sequence`` interface requirements, ``False`` otherwise.
-        """
-        # Sparse matrix also have __getitem__ and __len__, so we have to exclude them here.
-        if isinstance(obj, list) or hasattr(obj, "getformat"):
-            return False
-        return hasattr(obj, "__getitem__") and hasattr(obj, "__len__")
-
+    @abc.abstractmethod
     def __getitem__(self, idx: Union[int, slice]) -> np.ndarray:
         """Return data for given row index.
 
@@ -671,6 +654,7 @@ class Sequence:
         """
         raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __getitem__()")
 
+    @abc.abstractmethod
     def __len__(self) -> int:
         """Return row count of this sequence."""
         raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __len__()")
@@ -1492,11 +1476,11 @@ class Dataset:
         elif isinstance(data, list) and len(data) > 0:
             if all(isinstance(x, np.ndarray) for x in data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)
-            elif all(Sequence.is_class(x) for x in data):
+            elif all(isinstance(x, Sequence) for x in data):
                 self.__init_from_seqs(data, ref_dataset)
             else:
                 raise TypeError('Data list can only be of ndarray or Sequence')
-        elif Sequence.is_class(data):
+        elif isinstance(data, Sequence):
             self.__init_from_seqs([data], ref_dataset)
         elif isinstance(data, dt_DataTable):
             self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
