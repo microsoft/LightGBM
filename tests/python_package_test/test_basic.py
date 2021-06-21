@@ -102,9 +102,9 @@ class NumpySequence(lgb.Sequence):
         if isinstance(idx, numbers.Integral):
             return self._get_one_line(idx)
         elif isinstance(idx, slice):
-            if not (idx.step is None or idx.step is 1):
+            if not (idx.step is None or idx.step == 1):
                 raise NotImplementedError("No need to implement, caller will not set step by now")
-            return self.ndarray[idx.start: idx.stop]
+            return self.ndarray[idx.start:idx.stop]
         else:
             raise TypeError(f"Sequence Index must be an integer/list/slice, got {type(idx)}")
 
@@ -151,14 +151,14 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_
     # half col
     if include_nan:
         # nan col
-        data[0:half_nrow, 2] = np.nan
+        data[:half_nrow, 2] = np.nan
     if include_0:
         # 0 col
-        data[0:half_nrow, 3] = 0
+        data[:half_nrow, 3] = 0
 
     # nan + 0 col
     if include_nan:
-        data[0:half_nrow, 4] = np.nan
+        data[:half_nrow, 4] = np.nan
     if include_0:
         data[half_nrow:-2, 4] = 0
 

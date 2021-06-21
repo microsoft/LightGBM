@@ -617,6 +617,11 @@ class Sequence:
 
     - With random access, **data sampling does not need to go through all data**.
     - With range data access, there's **no need to read all data into memory thus reduce memory usage**.
+
+    Attributes
+    ----------
+    batch_size : int
+        Default size of a batch.
     """
 
     batch_size = 4096  # Defaults to read 4K rows in each batch.
