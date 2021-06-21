@@ -82,7 +82,7 @@ bst = lgb.Booster(model_file='model.txt')
 y_pred = bst.predict(X_test)
 # eval with loaded model
 rmse_loaded_model = mean_squared_error(y_test, y_pred) ** 0.5
-print(f"The rmse of loaded model's prediction is: {rmse_loaded_model}")
+print(f"The RMSE of loaded model's prediction is: {rmse_loaded_model}")
 
 print('Dumping and loading model with pickle...')
 # dump model with pickle
