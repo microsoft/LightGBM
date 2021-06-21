@@ -1140,7 +1140,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse or list of numpy arrays
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -1778,7 +1778,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse or list of numpy arrays
+        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
