@@ -28,7 +28,7 @@ import sklearn.utils.estimator_checks as sklearn_checks
 from dask.array.utils import assert_eq
 from dask.distributed import Client, LocalCluster, default_client, wait
 from pkg_resources import parse_version
-from scipy.sparse import csr_matrix
+from scipy.sparse import csc_matrix, csr_matrix
 from scipy.stats import spearmanr
 from sklearn import __version__ as sk_version
 from sklearn.datasets import make_blobs, make_regression
@@ -199,6 +199,11 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
         dy = da.from_array(y, chunks=chunk_size)
         dw = da.from_array(weights, chunk_size)
         X = csr_matrix(X)
+    elif output == 'scipy_csc_matrix':
+        dX = da.from_array(X, chunks=(chunk_size, X.shape[1])).map_blocks(csc_matrix)
+        dy = da.from_array(y, chunks=chunk_size)
+        dw = da.from_array(weights, chunk_size)
+        X = csc_matrix(X)
     else:
         raise ValueError(f"Unknown output type '{output}'")
 
@@ -322,7 +327,7 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
             assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
 
-@pytest.mark.parametrize('output', data_output)
+@pytest.mark.parametrize('output', data_output + ['scipy_csc_matrix'])
 @pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
 def test_classifier_pred_contrib(output, task, cluster):
     with Client(cluster) as client:
@@ -362,15 +367,21 @@ def test_classifier_pred_contrib(output, task, cluster):
         #
         # since that case is so different than all other cases, check the relevant things here
         # and then return early
-        if output == 'scipy_csr_matrix' and task == 'multiclass-classification':
+        if output.startswith('scipy') and task == 'multiclass-classification':
+            if output == 'scipy_csr_matrix':
+                expected_type = csr_matrix
+            elif output == 'scipy_csc_matrix':
+                expected_type = csc_matrix
+            else:
+                raise ValueError(f"Unrecognized output type: {output}")
             assert isinstance(preds_with_contrib, list)
             assert all(isinstance(arr, da.Array) for arr in preds_with_contrib)
-            assert all(isinstance(arr._meta, csr_matrix) for arr in preds_with_contrib)
+            assert all(isinstance(arr._meta, expected_type) for arr in preds_with_contrib)
             assert len(preds_with_contrib) == num_classes
             assert len(preds_with_contrib) == len(local_preds_with_contrib)
             for i in range(num_classes):
                 computed_preds = preds_with_contrib[i].compute()
-                assert isinstance(computed_preds, csr_matrix)
+                assert isinstance(computed_preds, expected_type)
                 assert computed_preds.shape[1] == num_classes
                 assert computed_preds.shape == local_preds_with_contrib[i].shape
                 assert len(np.unique(computed_preds[:, -1])) == 1
@@ -381,7 +392,7 @@ def test_classifier_pred_contrib(output, task, cluster):
             return
 
         preds_with_contrib = preds_with_contrib.compute()
-        if output == 'scipy_csr_matrix':
+        if output.startswith('scipy'):
             preds_with_contrib = np.array(preds_with_contrib.todense())
 
         # be sure LightGBM actually used at least one categorical column,

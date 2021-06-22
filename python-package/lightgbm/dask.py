@@ -601,8 +601,7 @@ def _predict(
             out = [list() for _ in range(num_classes)]
 
             # need to tell Dask the expected type and shape of individual preds
-            pred_meta_shape = (0, num_cols)
-            pred_meta = ss.csr_matrix(pred_meta_shape)
+            pred_meta = data._meta
 
             for j, partition in enumerate(preds.to_delayed()):
                 for i in range(num_classes):
@@ -613,10 +612,24 @@ def _predict(
                     )
                     out[i].append(part)
 
+            # by default, dask.array.concatenate() concatenates sparse arrays into a COO matrix
+            #
+            # the code below is used instead to ensure that the sparse type is preserved during concatentation
+            if isinstance(pred_meta, ss.csr_matrix):
+                concat_fn = partial(ss.vstack, format='csr')
+            elif isinstance(pred_meta, ss.csc_matrix):
+                concat_fn = partial(ss.vstack, format='csc')
+            else:
+                concat_fn = ss.vstack
+
             # At this point, `out` is a list of lists of delayeds (each of which points to a matrix).
             # Concatenate them to return a list of Dask Arrays.
             for i in range(num_classes):
-                out[i] = dask_array_concatenate(out[i]).map_blocks(ss.csr_matrix)
+                out[i] = dask_array_from_delayed(
+                    value=delayed(concat_fn)(out[i]),
+                    shape=(data.shape[0], num_cols),
+                    meta=pred_meta
+                )
 
             return out
 
