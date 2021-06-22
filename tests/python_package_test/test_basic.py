@@ -126,12 +126,11 @@ def _create_sequence_from_ndarray(data, num_seq, batch_size):
     return seqs
 
 
-@pytest.mark.parametrize('sample_count', [11, 23, 100, None])
-@pytest.mark.parametrize('batch_size', [3, 20, None])
-@pytest.mark.parametrize('include_0', [False, True])
-@pytest.mark.parametrize('include_nan', [False, True])
+@pytest.mark.parametrize('sample_count', [11, 100, None])
+@pytest.mark.parametrize('batch_size', [3, None])
+@pytest.mark.parametrize('include_0_and_nan', [False, True])
 @pytest.mark.parametrize('num_seq', [1, 3])
-def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_seq):
+def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
     params = {'bin_construct_sample_cnt': sample_count}
 
     nrow = 50
@@ -139,25 +138,17 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0, include_nan, num_
     ncol = 11
     data = np.arange(nrow * ncol, dtype=np.float64).reshape((nrow, ncol))
 
-    # total col
-    if include_0:
+    if include_0_and_nan:
+        # whole col
         data[:, 0] = 0
-    if include_nan:
         data[:, 1] = np.nan
 
-    # half col
-    if include_nan:
-        # nan col
-        data[:half_nrow, 2] = np.nan
-    if include_0:
-        # 0 col
+        # half col
         data[:half_nrow, 3] = 0
+        data[:half_nrow, 2] = np.nan
 
-    # nan + 0 col
-    if include_nan:
-        data[:half_nrow, 4] = np.nan
-    if include_0:
         data[half_nrow:-2, 4] = 0
+        data[:half_nrow, 4] = np.nan
 
     X = data[:, :-1]
     Y = data[:, -1]
