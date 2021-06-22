@@ -548,7 +548,7 @@ def _predict(
         The predicted values.
     X_leaves : Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
         If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-    X_SHAP_values : Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list of Dask Arrays if ``data`` is sparse and ``pred_contrib=True``
+    X_SHAP_values : "Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or (if multiclass and using sparse inputs) a list of ``n_classes`` Dask Arrays which each have shape [n_samples, n_features + 1]"
         If ``pred_contrib=True``, the feature contributions for each sample.
     """
     if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
