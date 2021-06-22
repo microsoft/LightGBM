@@ -894,6 +894,51 @@ int LGBM_RegisterLogCallback(void (*callback)(const char*)) {
   API_END();
 }
 
+static inline int SampleCount(int32_t total_nrow, const Config& config) {
+  return static_cast<int>(total_nrow < config.bin_construct_sample_cnt ? total_nrow : config.bin_construct_sample_cnt);
+}
+
+static inline std::vector<int32_t> CreateSampleIndices(int32_t total_nrow, const Config& config) {
+  Random rand(config.data_random_seed);
+  int sample_cnt = SampleCount(total_nrow, config);
+  return rand.Sample(total_nrow, sample_cnt);
+}
+
+int LGBM_SampleCount(int32_t total_nrow,
+                     const char* parameters,
+                     int* out) {
+  API_BEGIN();
+  if (out == nullptr) {
+    Log::Fatal("LGBM_SampleCount output is nullptr");
+  }
+  auto param = Config::Str2Map(parameters);
+  Config config;
+  config.Set(param);
+
+  *out = SampleCount(total_nrow, config);
+  API_END();
+}
+
+int LGBM_SampleIndices(int32_t total_nrow,
+                       const char* parameters,
+                       void* out,
+                       int64_t* out_len) {
+  // This API is to keep python binding's behavior the same with C++ implementation.
+  // Sample count, random seed etc. should be provided in parameters.
+  API_BEGIN();
+  if (out == nullptr) {
+    Log::Fatal("LGBM_SampleIndices output is nullptr");
+  }
+  auto param = Config::Str2Map(parameters);
+  Config config;
+  config.Set(param);
+
+  auto sample_indices = CreateSampleIndices(total_nrow, config);
+  memcpy(out, sample_indices.data(), sizeof(int32_t) * sample_indices.size());
+  *out_len = sample_indices.size();
+  API_END();
+}
+
 int LGBM_DatasetCreateFromFile(const char* filename,
                                const char* parameters,
                                const DatasetHandle reference,
@@ -1033,34 +1078,6 @@ int LGBM_DatasetCreateFromMat(const void* data,
                                     reference,
                                     out);
 }
-
-
-static inline std::vector<int32_t> CreateSampleIndices(const Config& config, int32_t total_nrow) {
-  Random rand(config.data_random_seed);
-  int sample_cnt = static_cast<int>(total_nrow < config.bin_construct_sample_cnt ? total_nrow : config.bin_construct_sample_cnt);
-  return rand.Sample(total_nrow, sample_cnt);
-}
-
-
-int LGBM_SampleIndices(int32_t total_nrow,
-                       const char* parameters,
-                       void* out) {
-  // This API is to keep python binding's behavior the same with C++ implementation.
-  // Sample count, random seed etc. should be provided in parameters.
-  API_BEGIN();
-  if (out == nullptr) {
-    Log::Fatal("sample indices output is nullptr");
-  }
-  auto param = Config::Str2Map(parameters);
-  Config config;
-  config.Set(param);
-
-  auto sample_indices = CreateSampleIndices(config, total_nrow);
-  memcpy(out, sample_indices.data(), sizeof(int32_t) * sample_indices.size());
-
-  API_END();
-}
-
 
 int LGBM_DatasetCreateFromMats(int32_t nmat,
                                const void** data,

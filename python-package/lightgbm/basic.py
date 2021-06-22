@@ -22,10 +22,14 @@ ZERO_THRESHOLD = 1e-35
 DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT = 200000
 
 
-def _get_sample_count(params: Dict[str, Any], total_nrow: int):
-    # Note self.params may contain 'bin_construct_sample_cnt' but is None.
-    sample_count = params.get("bin_construct_sample_cnt") or DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT
-    return min(sample_count, total_nrow)
+def _get_sample_count(total_nrow: int, params: str):
+    sample_cnt = ctypes.c_int(0)
+    _safe_call(_LIB.LGBM_SampleCount(
+        ctypes.c_int32(total_nrow),
+        c_str(params),
+        ctypes.byref(sample_cnt),
+    ))
+    return sample_cnt.value
 
 
 class _DummyLogger:
@@ -1206,16 +1210,18 @@ class Dataset:
             Indices for sampled data.
         """
         param_str = param_dict_to_str(self.get_params())
-        sample_cnt = _get_sample_count(self.get_params(), total_nrow)
+        sample_cnt = _get_sample_count(total_nrow, param_str)
         indices = np.empty(sample_cnt, dtype=np.int32)
         ptr_data, _, _ = c_int_array(indices)
+        actual_sample_cnt = ctypes.c_int64(0)
 
         _safe_call(_LIB.LGBM_SampleIndices(
             ctypes.c_int32(total_nrow),
             c_str(param_str),
             ptr_data,
+            ctypes.byref(actual_sample_cnt),
         ))
-        return indices
+        return indices[:actual_sample_cnt.value]
 
     def _init_from_ref_dataset(self, total_nrow: int, ref_dataset: 'Dataset') -> 'Dataset':
         """Create dataset from a reference dataset.
@@ -1566,7 +1572,8 @@ class Dataset:
         if ref_dataset is not None:
             self._init_from_ref_dataset(total_nrow, ref_dataset)
         else:
-            sample_cnt = _get_sample_count(self.get_params(), total_nrow)
+            param_str = param_dict_to_str(self.get_params())
+            sample_cnt = _get_sample_count(total_nrow, param_str)
 
             sample_data, col_indices = self.__sample(seqs, total_nrow)
             self._init_from_sample(sample_data, col_indices, sample_cnt, total_nrow)

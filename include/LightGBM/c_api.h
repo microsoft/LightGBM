@@ -53,6 +53,30 @@ LIGHTGBM_C_EXPORT const char* LGBM_GetLastError();
  */
 LIGHTGBM_C_EXPORT int LGBM_RegisterLogCallback(void (*callback)(const char*));
 
+/*!
+ * \brief Get number of samples based on parameter and total number of rows of data.
+ * \param total_nrow Number of all data rows
+ * \param parameters Additional parameters, specify sample count
+ * \param[out] out Number of samples. You should pre-allocate memory to hold sample indices when calling ``LGBM_SampleIndices``.
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_SampleCount(int32_t total_nrow,
+                                       const char* parameters,
+                                       int* out);
+
+/*!
+ * \brief Create sample indices for total number of rows.
+ * \param total_nrow Number of all data rows
+ * \param parameters Additional parameters, specify sample count and random seed in parameter
+ * \param[out] out Created indices, type is int32_t, caller should insure out contains enough space to hold indices
+ * \param[out_len] out Number of indices. This maybe less than the one returned by ``LGBM_SampleCount``.
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t total_nrow,
+                                         const char* parameters,
+                                         void* out,
+                                         int64_t* out_len);
+
 // --- start Dataset interface
 
 /*!
@@ -213,17 +237,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                                 const char* parameters,
                                                 const DatasetHandle reference,
                                                 DatasetHandle* out);
-
-/*!
- * \brief Create sample indices for total number of rows.
- * \param total_nrow Number of all data rows
- * \param parameters Additional parameters, specify sample count and random seed in parameter
- * \param[out] out Created indices, type is int32_t, caller should insure out contains enough space to hold indices
- * \return 0 when succeed, -1 when failure happens
- */
-LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t total_nrow,
-                                         const char* parameters,
-                                         void* out);
 
 /*!
  * \brief Create dataset from dense matrix.
