@@ -410,17 +410,15 @@ def test_list_to_1d_numpy(y, dtype):
 
 @pytest.mark.parametrize('init_score_type', ['array', 'dataframe', 'list'])
 def test_init_score_for_multiclass_classification(init_score_type):
+    init_score = [[0, 1, 2] for _ in range(10)]
     if init_score_type == 'array':
-        init_score = np.random.rand(10, 3)
+        init_score = np.array(init_score)
     elif init_score_type == 'dataframe':
         if not PANDAS_INSTALLED:
             pytest.skip('Pandas is not installed.')
-        init_score = pd_DataFrame(np.random.rand(10, 3))
-    else:
-        init_score = [[1, 1, 1] for _ in range(10)]
+        init_score = pd_DataFrame(init_score)
     data = np.random.rand(10, 2)
-    label = np.random.randint(low=0, high=3, size=10)
-    ds = lgb.basic.Dataset(data, label, init_score=init_score)
+    ds = lgb.basic.Dataset(data, init_score=init_score)
     ds.construct()
-    init_score_array = lgb.basic.data_to_2d_numpy(init_score, dtype=np.float64)
-    np.testing.assert_equal(ds.init_score, init_score_array.ravel())
+    expected_init_score = np.hstack([np.repeat(i, 10) for i in range(3)])
+    np.testing.assert_equal(ds.init_score, expected_init_score)

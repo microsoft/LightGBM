@@ -202,10 +202,10 @@ def data_to_2d_numpy(data, dtype=np.float32, name='list'):
         return np.array(data, dtype=dtype)
     if isinstance(data, pd_DataFrame):
         if _get_bad_pandas_dtypes(data.dtypes):
-            raise ValueError('Series.dtypes must be int, float or bool')
+            raise ValueError('DataFrame.dtypes must be int, float or bool')
         return cast_numpy_array_to_dtype(data.values, dtype)
-    raise TypeError("Wrong type({0}) for {1}.\n"
-                    "It should be list, numpy 2-D array or pandas DataFrame".format(type(data).__name__, name))
+    raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
+                    "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
 
 def cfloat32_array_to_numpy(cptr, length):
@@ -1873,7 +1873,8 @@ class Dataset:
 
         Parameters
         ----------
-        init_score : list, numpy 1-D array, pandas Series or None
+        init_score : list, numpy 1-D array, pandas Series or None.
+            For multiclass classification can also be list of lists, numpy 2-D array or pandas DataFrame.
             Init score for Booster.
 
         Returns
@@ -1887,12 +1888,11 @@ class Dataset:
                 init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
             elif is_2d_collection(init_score):
                 init_score = data_to_2d_numpy(init_score, np.float64, name='init_score')
-                init_score = init_score.ravel()
-                self.init_score = init_score
+                init_score = init_score.ravel(order='F')
             else:
                 raise TypeError(
                     'init_score must be list, numpy 1-D array or pandas Series.\n'
-                    'In multiclass classification init_score must be list, numpy 2-D array or pandas DataFrame.'
+                    'In multiclass classification init_score can also be a list of lists, numpy 2-D array or pandas DataFrame.'
                 )
             self.set_field('init_score', init_score)
             self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
