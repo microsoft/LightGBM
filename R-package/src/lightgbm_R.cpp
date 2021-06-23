@@ -51,7 +51,6 @@ void _DatasetFinalizer(SEXP handle) {
 SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
   SEXP parameters,
   SEXP reference) {
-  int n_protected = 0;
   SEXP ret;
   DatasetHandle handle = nullptr;
   DatasetHandle ref = nullptr;
@@ -59,16 +58,13 @@ SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
     ref = R_ExternalPtrAddr(reference);
   }
   const char* filename_ptr = CHAR(PROTECT(Rf_asChar(filename)));
-  n_protected++;
   const char* parameters_ptr = CHAR(PROTECT(Rf_asChar(parameters)));
-  n_protected++;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetCreateFromFile(filename_ptr, parameters_ptr, ref, &handle));
   R_API_END();
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
-  n_protected++;
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
-  UNPROTECT(n_protected);
+  UNPROTECT(3);
   return ret;
 }
 
@@ -80,7 +76,6 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   SEXP num_row,
   SEXP parameters,
   SEXP reference) {
-  int n_protected = 0;
   SEXP ret;
   const int* p_indptr = INTEGER(indptr);
   const int* p_indices = INTEGER(indices);
@@ -89,7 +84,6 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   int64_t ndata = static_cast<int64_t>(Rf_asInteger(nelem));
   int64_t nrow = static_cast<int64_t>(Rf_asInteger(num_row));
   const char* parameters_ptr = CHAR(PROTECT(Rf_asChar(parameters)));
-  n_protected++;
   DatasetHandle handle = nullptr;
   DatasetHandle ref = nullptr;
   if (!Rf_isNull(reference)) {
@@ -101,9 +95,8 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
     nrow, parameters_ptr, ref, &handle));
   R_API_END();
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
-  n_protected++;
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
-  UNPROTECT(n_protected);
+  UNPROTECT(2);
   return ret;
 }
 
@@ -112,13 +105,11 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   SEXP num_col,
   SEXP parameters,
   SEXP reference) {
-  int n_protected = 0;
   SEXP ret;
   int32_t nrow = static_cast<int32_t>(Rf_asInteger(num_row));
   int32_t ncol = static_cast<int32_t>(Rf_asInteger(num_col));
   double* p_mat = REAL(data);
   const char* parameters_ptr = CHAR(PROTECT(Rf_asChar(parameters)));
-  n_protected++;
   DatasetHandle handle = nullptr;
   DatasetHandle ref = nullptr;
   if (!Rf_isNull(reference)) {
@@ -129,9 +120,8 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
     parameters_ptr, ref, &handle));
   R_API_END();
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
-  n_protected++;
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
-  UNPROTECT(n_protected);
+  UNPROTECT(2);
   return ret;
 }
 
@@ -139,7 +129,6 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
   SEXP used_row_indices,
   SEXP len_used_row_indices,
   SEXP parameters) {
-  int n_protected = 0;
   SEXP ret;
   int32_t len = static_cast<int32_t>(Rf_asInteger(len_used_row_indices));
   std::vector<int32_t> idxvec(len);
@@ -149,7 +138,6 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
     idxvec[i] = static_cast<int32_t>(INTEGER(used_row_indices)[i] - 1);
   }
   const char* parameters_ptr = CHAR(PROTECT(Rf_asChar(parameters)));
-  n_protected++;
   DatasetHandle res = nullptr;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetGetSubset(R_ExternalPtrAddr(handle),
@@ -157,9 +145,8 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
     &res));
   R_API_END();
   ret = PROTECT(R_MakeExternalPtr(res, R_NilValue, R_NilValue));
-  n_protected++;
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
-  UNPROTECT(n_protected);
+  UNPROTECT(2);
   return ret;
 }
 
@@ -379,52 +366,43 @@ SEXP LGBM_BoosterFree_R(SEXP handle) {
 
 SEXP LGBM_BoosterCreate_R(SEXP train_data,
   SEXP parameters) {
-  int n_protected = 0;
   SEXP ret;
   const char* parameters_ptr = CHAR(PROTECT(Rf_asChar(parameters)));
-  n_protected++;
   BoosterHandle handle = nullptr;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterCreate(R_ExternalPtrAddr(train_data), parameters_ptr, &handle));
   R_API_END();
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
-  n_protected++;
   R_RegisterCFinalizerEx(ret, _BoosterFinalizer, TRUE);
-  UNPROTECT(n_protected);
+  UNPROTECT(2);
   return ret;
 }
 
 SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename) {
-  int n_protected = 0;
   SEXP ret;
   int out_num_iterations = 0;
   const char* filename_ptr = CHAR(PROTECT(Rf_asChar(filename)));
-  n_protected++;
   BoosterHandle handle = nullptr;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterCreateFromModelfile(filename_ptr, &out_num_iterations, &handle));
   R_API_END();
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
-  n_protected++;
   R_RegisterCFinalizerEx(ret, _BoosterFinalizer, TRUE);
-  UNPROTECT(n_protected);
+  UNPROTECT(2);
   return ret;
 }
 
 SEXP LGBM_BoosterLoadModelFromString_R(SEXP model_str) {
-  int n_protected = 0;
   SEXP ret;
   int out_num_iterations = 0;
   const char* model_str_ptr = CHAR(PROTECT(Rf_asChar(model_str)));
-  n_protected++;
   BoosterHandle handle = nullptr;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterLoadModelFromString(model_str_ptr, &out_num_iterations, &handle));
   R_API_END();
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
-  n_protected++;
   R_RegisterCFinalizerEx(ret, _BoosterFinalizer, TRUE);
-  UNPROTECT(n_protected);
+  UNPROTECT(2);
   return ret;
 }
 
