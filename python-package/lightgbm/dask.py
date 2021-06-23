@@ -570,7 +570,8 @@ def _predict(
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,
             dtype=dtype,
-            drop_axis=1
+            drop_axis=1,
+            **kwargs
         )
     else:
         raise TypeError(f'Data must be either Dask Array or Dask DataFrame. Got {type(data)}.')
