@@ -24,6 +24,7 @@
 #define SUBTRACT_BLOCK_SIZE (1024)
 #define FIX_HISTOGRAM_SHARED_MEM_SIZE (1024)
 #define FIX_HISTOGRAM_BLOCK_SIZE (512)
+#define USED_HISTOGRAM_BUFFER_NUM (8)
 
 namespace LightGBM {
 
@@ -93,6 +94,13 @@ class CUDAHistogramConstructor {
     hist_t** cuda_leaf_hist,
     const data_size_t num_data_in_smaller_leaf);
 
+  void LaunchConstructHistogramKernel2(const int* cuda_leaf_index,
+    const data_size_t* cuda_smaller_leaf_num_data,
+    const data_size_t** cuda_data_indices_in_leaf,
+    const data_size_t* cuda_leaf_num_data,
+    hist_t** cuda_leaf_hist,
+    const data_size_t num_data_in_smaller_leaf);
+
   void LaunchSubtractHistogramKernel(const int* cuda_smaller_leaf_index,
     const int* cuda_larger_leaf_index, const double* smaller_leaf_sum_gradients, const double* smaller_leaf_sum_hessians,
     const double* larger_leaf_sum_gradients, const double* larger_leaf_sum_hessians,
@@ -139,6 +147,11 @@ class CUDAHistogramConstructor {
   uint8_t data_ptr_bit_type_;
   uint8_t bit_type_;
   const Dataset* train_data_;
+  std::vector<cudaStream_t> cuda_streams_;
+  std::vector<int> need_fix_histogram_features_;
+  std::vector<uint32_t> need_fix_histogram_features_num_bin_aligend_;
+
+  const int min_grid_dim_y_ = 10;
 
   // CUDA memory, held by this object
   uint32_t* cuda_feature_group_bin_offsets_;
@@ -147,6 +160,7 @@ class CUDAHistogramConstructor {
   uint32_t* cuda_feature_hist_offsets_;
   uint32_t* cuda_feature_most_freq_bins_;
   hist_t* cuda_hist_;
+  hist_t* block_cuda_hist_buffer_;
   int* cuda_num_total_bin_;
   int* cuda_num_feature_groups_;
   uint8_t* cuda_data_uint8_t_;
@@ -164,6 +178,8 @@ class CUDAHistogramConstructor {
   int* cuda_feature_partition_column_index_offsets_;
   uint32_t* cuda_column_hist_offsets_;
   uint32_t* cuda_column_hist_offsets_full_;
+  int* cuda_need_fix_histogram_features_;
+  uint32_t* cuda_need_fix_histogram_features_num_bin_aligned_;
 
   // CUDA memory, held by other objects
   const score_t* cuda_gradients_;

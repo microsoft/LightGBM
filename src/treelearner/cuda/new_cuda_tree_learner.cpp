@@ -248,13 +248,15 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
       leaf_best_split_default_left_,
       &smaller_leaf_index_,
       &larger_leaf_index_,
-      best_leaf_index_);
+      best_leaf_index_,
+      num_leaves);
     end = std::chrono::steady_clock::now();
     duration = static_cast<std::chrono::duration<double>>(end - start);
     global_timer.Stop("NewCUDATreeLearner::Split");
     split_data_indices_time += duration.count();
     ++num_leaves;
   }
+  SynchronizeCUDADevice();
   const auto end = std::chrono::steady_clock::now();
   const double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   const auto build_tree_start = std::chrono::steady_clock::now();

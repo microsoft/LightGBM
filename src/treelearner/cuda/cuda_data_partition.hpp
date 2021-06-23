@@ -18,6 +18,7 @@
 #define SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION (512)
 #define NUM_BANKS_DATA_PARTITION (32)
 #define LOG_NUM_BANKS_DATA_PARTITION (5)
+#define AGGREGATE_BLOCK_SIZE (1024)
 
 namespace LightGBM {
 
@@ -57,7 +58,7 @@ class CUDADataPartition {
     const std::vector<uint32_t>& cpu_leaf_best_split_threshold,
     const std::vector<uint8_t>& cpu_leaf_best_split_default_left,
     int* smaller_leaf_index, int* larger_leaf_index,
-    const int cpu_leaf_index);
+    const int cpu_leaf_index, const int cur_max_leaf_index);
 
   void CUDACheck(
     const int smaller_leaf_index,
@@ -192,7 +193,8 @@ class CUDADataPartition {
 
   void GenDataToLeftBitVector(const data_size_t num_data_in_leaf,
     const int split_feature_index, const uint32_t split_threshold,
-    const uint8_t split_default_left, const data_size_t leaf_data_start);
+    const uint8_t split_default_left, const data_size_t leaf_data_start,
+    const int left_leaf_index, const int right_leaf_index);
 
   void SplitInner(const int* leaf_index, const data_size_t num_data_in_leaf,
     const int* best_split_feature, const uint32_t* best_split_threshold,
@@ -214,7 +216,7 @@ class CUDADataPartition {
     hist_t** larger_leaf_cuda_hist_pointer_pointer,
     std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
     std::vector<double>* cpu_leaf_sum_hessians,
-    int* smaller_leaf_index, int* larger_leaf_index);
+    int* smaller_leaf_index, int* larger_leaf_index, const int cpu_leaf_index);
 
   // kernel launch functions
   void LaunchFillDataIndicesBeforeTrain();
@@ -239,11 +241,23 @@ class CUDADataPartition {
     hist_t** larger_leaf_cuda_hist_pointer_pointer,
     std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
     std::vector<double>* cpu_leaf_sum_hessians,
-    int* smaller_leaf_index, int* larger_leaf_index);
+    int* smaller_leaf_index, int* larger_leaf_index, const int cpu_leaf_index);
 
   void LaunchGenDataToLeftBitVectorKernel(const data_size_t num_data_in_leaf,
     const int split_feature_index, const uint32_t split_threshold,
-    const uint8_t split_default_left, const data_size_t leaf_data_start);
+    const uint8_t split_default_left, const data_size_t leaf_data_start,
+    const int left_leaf_index, const int right_leaf_index);
+
+  template <typename BIN_TYPE>
+  void LaunchUpdateDataIndexToLeafIndexKernel(const data_size_t cuda_leaf_data_start,
+    const data_size_t num_data_in_leaf, const data_size_t* cuda_data_indices,
+    const uint32_t th, const BIN_TYPE* column_data,
+    // values from feature
+    const uint32_t t_zero_bin, const uint32_t max_bin_ref, const uint32_t min_bin_ref,
+    int* cuda_data_index_to_leaf_index, const int left_leaf_index, const int right_leaf_index,
+    const int default_leaf_index, const int missing_default_leaf_index,
+    const bool missing_is_zero, const bool missing_is_na, const bool mfb_is_zero, const bool mfb_is_na, const bool max_to_left,
+    const int num_blocks, const int block_size);
 
   void LaunchPrefixSumKernel(uint32_t* cuda_elements);
 
@@ -291,6 +305,7 @@ class CUDADataPartition {
   int* cuda_cur_num_leaves_;
   // for split
   uint8_t* cuda_data_to_left_;
+  int* cuda_data_index_to_leaf_index_;
   data_size_t* cuda_block_data_to_left_offset_;
   data_size_t* cuda_block_data_to_right_offset_;
   data_size_t* cuda_out_data_indices_in_leaf_;

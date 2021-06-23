@@ -168,10 +168,10 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_le
   const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
   const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf) {
   const bool is_smaller_leaf_valid = (num_data_in_smaller_leaf > min_data_in_leaf_ && sum_hessians_in_smaller_leaf > min_sum_hessian_in_leaf_);
-  const bool is_larger_leaf_valid = (num_data_in_larger_leaf > min_data_in_leaf_ && sum_hessians_in_larger_leaf > min_sum_hessian_in_leaf_);
+  const bool is_larger_leaf_valid = (num_data_in_larger_leaf > min_data_in_leaf_ && sum_hessians_in_larger_leaf > min_sum_hessian_in_leaf_ && larger_leaf_index >= 0);
   LaunchFindBestSplitsForLeafKernel(smaller_leaf_splits, larger_leaf_splits,
     smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
-  SynchronizeCUDADevice();
+  //SynchronizeCUDADevice();
   global_timer.Start("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
   LaunchSyncBestSplitForLeafKernel(smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
   SynchronizeCUDADevice();

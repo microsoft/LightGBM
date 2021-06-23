@@ -25,6 +25,8 @@ CUDAHistogramConstructor::CUDAHistogramConstructor(const Dataset* train_data,
     feature_group_bin_offsets_.emplace_back(offset);
     offset += train_data->FeatureGroupNumBin(group_id);
   }
+  need_fix_histogram_features_.clear();
+  need_fix_histogram_features_num_bin_aligend_.clear();
   for (int feature_index = 0; feature_index < train_data->num_features(); ++feature_index) {
     const BinMapper* bin_mapper = train_data->FeatureBinMapper(feature_index);
     const uint32_t most_freq_bin = bin_mapper->GetMostFreqBin();
@@ -32,6 +34,14 @@ CUDAHistogramConstructor::CUDAHistogramConstructor(const Dataset* train_data,
       feature_mfb_offsets_.emplace_back(1);
     } else {
       feature_mfb_offsets_.emplace_back(0);
+      need_fix_histogram_features_.emplace_back(feature_index);
+      uint32_t num_bin_ref = static_cast<uint32_t>(bin_mapper->num_bin()) - 1;
+      uint32_t num_bin_aligned = 1;
+      while (num_bin_ref > 0) {
+        num_bin_aligned <<= 1;
+        num_bin_ref >>= 1;
+      }
+      need_fix_histogram_features_num_bin_aligend_.emplace_back(num_bin_aligned);
     }
     feature_num_bins_.emplace_back(static_cast<uint32_t>(bin_mapper->num_bin()));
     feature_most_freq_bins_.emplace_back(most_freq_bin);
@@ -79,6 +89,22 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStat
   DivideCUDAFeatureGroups(train_data, share_state);
 
   InitCUDAData(share_state);
+
+  cuda_streams_.resize(5);
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[0]));
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[1]));
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[2]));
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[3]));
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[4]));
+
+  InitCUDAMemoryFromHostMemory<int>(&cuda_need_fix_histogram_features_, need_fix_histogram_features_.data(), need_fix_histogram_features_.size());
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_need_fix_histogram_features_num_bin_aligned_, need_fix_histogram_features_num_bin_aligend_.data(),
+    need_fix_histogram_features_num_bin_aligend_.size());
+
+  const int max_block_dim_y = NUM_THRADS_PER_BLOCK / max_num_column_per_partition_;
+  const int max_grid_dim_y = std::max(min_grid_dim_y_,
+    ((num_data_ + NUM_DATA_PER_THREAD - 1) / NUM_DATA_PER_THREAD + max_block_dim_y - 1) / max_block_dim_y);
+  AllocateCUDAMemory<hist_t>(num_total_bin_ * 2 * max_grid_dim_y, &block_cuda_hist_buffer_);
 }
 
 void CUDAHistogramConstructor::InitCUDAData(TrainingShareStates* share_state) {
@@ -275,20 +301,6 @@ void CUDAHistogramConstructor::ConstructHistogramForLeaf(const int* cuda_smaller
   LaunchConstructHistogramKernel(cuda_smaller_leaf_index, cuda_num_data_in_smaller_leaf,
     cuda_data_indices_in_smaller_leaf, cuda_leaf_num_data, cuda_smaller_leaf_hist, num_data_in_smaller_leaf);
   SynchronizeCUDADevice();
-  /*std::vector<hist_t> root_hist(20000);
-  CopyFromCUDADeviceToHost<hist_t>(root_hist.data(), cuda_hist_, 20000);
-  for (int real_feature_index = 0; real_feature_index < train_data_->num_total_features(); ++real_feature_index) {
-    const int inner_feature_index = train_data_->InnerFeatureIndex(real_feature_index);
-    if (inner_feature_index >= 0) {
-      const uint32_t feature_hist_start = feature_hist_offsets_[inner_feature_index];
-      const uint32_t feature_hist_end = feature_hist_offsets_[inner_feature_index + 1];
-      Log::Warning("real_feature_index = %d, inner_feature_index = %d", real_feature_index, inner_feature_index);
-      for (uint32_t hist_position = feature_hist_start; hist_position < feature_hist_end; ++hist_position) {
-        Log::Warning("hist_position = %d, bin_in_feature = %d, grad = %f, hess = %f",
-          hist_position, hist_position - feature_hist_start, root_hist[hist_position * 2], root_hist[hist_position * 2 + 1]);
-      }
-    }
-  }*/
   global_timer.Start("CUDAHistogramConstructor::ConstructHistogramForLeaf::LaunchSubtractHistogramKernel");
   LaunchSubtractHistogramKernel(cuda_smaller_leaf_index,
     cuda_larger_leaf_index, cuda_smaller_leaf_sum_gradients, cuda_smaller_leaf_sum_hessians,
@@ -302,8 +314,7 @@ void CUDAHistogramConstructor::CalcConstructHistogramKernelDim(
   *block_dim_x = max_num_column_per_partition_;
   *block_dim_y = NUM_THRADS_PER_BLOCK / max_num_column_per_partition_;
   *grid_dim_x = num_feature_partitions_;
-  const int min_grid_dim_y = 10;
-  *grid_dim_y = std::max(min_grid_dim_y,
+  *grid_dim_y = std::max(min_grid_dim_y_,
     ((num_data_in_smaller_leaf + NUM_DATA_PER_THREAD - 1) / NUM_DATA_PER_THREAD + (*block_dim_y) - 1) / (*block_dim_y));
   //Log::Warning("block_dim_x = %d, block_dim_y = %d, grid_dim_x = %d, grid_dim_y = %d", *block_dim_x, *block_dim_y, *grid_dim_x, *grid_dim_y);
 }

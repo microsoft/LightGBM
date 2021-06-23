@@ -88,8 +88,11 @@ void CUDADataPartition::Init(const Dataset* train_data) {
   InitCUDAValueFromConstant<int>(&cuda_num_total_bin_, num_total_bin_);
   InitCUDAValueFromConstant<int>(&cuda_cur_num_leaves_, 1);
   AllocateCUDAMemory<uint8_t>(static_cast<size_t>(num_data_), &cuda_data_to_left_);
-  AllocateCUDAMemory<data_size_t>(static_cast<size_t>(max_num_split_indices_blocks_), &cuda_block_data_to_left_offset_);
-  AllocateCUDAMemory<data_size_t>(static_cast<size_t>(max_num_split_indices_blocks_), &cuda_block_data_to_right_offset_);
+  AllocateCUDAMemory<int>(static_cast<size_t>(num_data_), &cuda_data_index_to_leaf_index_);
+  AllocateCUDAMemory<data_size_t>(static_cast<size_t>(max_num_split_indices_blocks_) + 1, &cuda_block_data_to_left_offset_);
+  AllocateCUDAMemory<data_size_t>(static_cast<size_t>(max_num_split_indices_blocks_) + 1, &cuda_block_data_to_right_offset_);
+  SetCUDAMemory<data_size_t>(cuda_block_data_to_left_offset_, 0, static_cast<size_t>(max_num_split_indices_blocks_) + 1);
+  SetCUDAMemory<data_size_t>(cuda_block_data_to_right_offset_, 0, static_cast<size_t>(max_num_split_indices_blocks_) + 1);
   AllocateCUDAMemory<data_size_t>(static_cast<size_t>(num_data_), &cuda_out_data_indices_in_leaf_);
   AllocateCUDAMemory<hist_t*>(static_cast<size_t>(num_leaves_), &cuda_hist_pool_);
   CopyFromHostToCUDADevice<hist_t*>(cuda_hist_pool_, &cuda_hist_, 1);
@@ -371,7 +374,7 @@ void CUDADataPartition::Split(const int* leaf_id,
   const std::vector<uint32_t>& cpu_leaf_best_split_threshold,
   const std::vector<uint8_t>& cpu_leaf_best_split_default_left,
   int* smaller_leaf_index, int* larger_leaf_index,
-  const int cpu_leaf_index) {
+  const int cpu_leaf_index, const int cur_max_leaf_index) {
   global_timer.Start("GenDataToLeftBitVector");
   global_timer.Start("SplitInner Copy CUDA To Host");
   const data_size_t num_data_in_leaf = cpu_leaf_num_data->at(cpu_leaf_index);
@@ -383,7 +386,7 @@ void CUDADataPartition::Split(const int* leaf_id,
   //Log::Warning("split threshold = %d", split_threshold);
   //Log::Warning("split default left = %d", split_default_left);
   global_timer.Stop("SplitInner Copy CUDA To Host");
-  GenDataToLeftBitVector(num_data_in_leaf, split_feature_index, split_threshold, split_default_left, leaf_data_start);
+  GenDataToLeftBitVector(num_data_in_leaf, split_feature_index, split_threshold, split_default_left, leaf_data_start, cpu_leaf_index, cur_max_leaf_index);
   global_timer.Stop("GenDataToLeftBitVector");
   global_timer.Start("SplitInner");
 
@@ -403,14 +406,15 @@ void CUDADataPartition::Split(const int* leaf_id,
     larger_leaf_cuda_gain_pointer, larger_leaf_cuda_leaf_value_pointer,
     larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
     larger_leaf_cuda_hist_pointer_pointer, cpu_leaf_num_data, cpu_leaf_data_start, cpu_leaf_sum_hessians,
-    smaller_leaf_index, larger_leaf_index);
+    smaller_leaf_index, larger_leaf_index, cpu_leaf_index);
   global_timer.Stop("SplitInner");
 }
 
 void CUDADataPartition::GenDataToLeftBitVector(const data_size_t num_data_in_leaf,
     const int split_feature_index, const uint32_t split_threshold,
-    const uint8_t split_default_left, const data_size_t leaf_data_start) {
-  LaunchGenDataToLeftBitVectorKernel(num_data_in_leaf, split_feature_index, split_threshold, split_default_left, leaf_data_start);
+    const uint8_t split_default_left, const data_size_t leaf_data_start,
+    const int left_leaf_index, const int right_leaf_index) {
+  LaunchGenDataToLeftBitVectorKernel(num_data_in_leaf, split_feature_index, split_threshold, split_default_left, leaf_data_start, left_leaf_index, right_leaf_index);
 }
 
 void CUDADataPartition::SplitInner(const int* leaf_index, const data_size_t num_data_in_leaf,
@@ -433,7 +437,7 @@ void CUDADataPartition::SplitInner(const int* leaf_index, const data_size_t num_
   hist_t** larger_leaf_cuda_hist_pointer_pointer,
   std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
   std::vector<double>* cpu_leaf_sum_hessians,
-  int* smaller_leaf_index, int* larger_leaf_index) {
+  int* smaller_leaf_index, int* larger_leaf_index, const int cpu_leaf_index) {
   LaunchSplitInnerKernel(leaf_index, num_data_in_leaf,
     best_split_feature, best_split_threshold, best_split_default_left, best_split_gain,
     best_left_sum_gradients, best_left_sum_hessians, best_left_count,
@@ -450,7 +454,7 @@ void CUDADataPartition::SplitInner(const int* leaf_index, const data_size_t num_
     larger_leaf_cuda_gain_pointer, larger_leaf_cuda_leaf_value_pointer,
     larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
     larger_leaf_cuda_hist_pointer_pointer, cpu_leaf_num_data, cpu_leaf_data_start, cpu_leaf_sum_hessians,
-    smaller_leaf_index, larger_leaf_index);
+    smaller_leaf_index, larger_leaf_index, cpu_leaf_index);
   ++cur_num_leaves_;
 }
 
