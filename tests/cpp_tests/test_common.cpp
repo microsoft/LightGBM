@@ -103,11 +103,6 @@ TEST_F(AtofPreciseTest, CornerCases) {
   }
 }
 
-TEST_F(AtofPreciseTest, UnderOverFlow) {
-  double got = 0;
-  ASSERT_THROW(LightGBM::Common::AtofPrecise("1e+400", &got),  std::runtime_error);
-}
-
 TEST_F(AtofPreciseTest, ErrorInput) {
   double got = 0;
   ASSERT_THROW(LightGBM::Common::AtofPrecise("x1", &got),  std::runtime_error);

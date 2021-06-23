@@ -188,7 +188,6 @@ lgb.train <- function(params = list(),
   # Parse validation datasets
   if (length(valids) > 0L) {
 
-    # Loop through all validation datasets using name
     for (key in names(valids)) {
 
       # Use names to get validation datasets

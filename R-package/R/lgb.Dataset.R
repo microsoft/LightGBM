@@ -969,7 +969,6 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
     stop("slice.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  # Return sliced set
   return(invisible(dataset$slice(idxset = idxset, ...)))
 
 }
@@ -1076,7 +1075,6 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
     stop("setinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  # Set information
   return(invisible(dataset$setinfo(name = name, info = info)))
 }
 
@@ -1108,7 +1106,6 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
     stop("lgb.Dataset.set.categorical: input dataset should be an lgb.Dataset object")
   }
 
-  # Set categoricals
   return(invisible(dataset$set_categorical_feature(categorical_feature = categorical_feature)))
 
 }
@@ -1135,12 +1132,10 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 #' @export
 lgb.Dataset.set.reference <- function(dataset, reference) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.set.reference: input dataset should be an lgb.Dataset object")
   }
 
-  # Set reference
   return(invisible(dataset$set_reference(reference = reference)))
 }
 
@@ -1163,16 +1158,13 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' @export
 lgb.Dataset.save <- function(dataset, fname) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.set: input dataset should be an lgb.Dataset object")
   }
 
-  # File-type is not matching
   if (!is.character(fname)) {
     stop("lgb.Dataset.set: fname should be a character or a file connection")
   }
 
-  # Store binary
   return(invisible(dataset$save_binary(fname = fname)))
 }

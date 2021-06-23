@@ -612,7 +612,7 @@ class _InnerPredictor:
         booster_handle : object or None, optional (default=None)
             Handle of Booster.
         pred_parameter: dict or None, optional (default=None)
-            Other parameters for the prediciton.
+            Other parameters for the prediction.
         """
         self.handle = ctypes.c_void_p()
         self.__is_manage_handle = True

@@ -78,7 +78,6 @@ lgb.interprete <- function(model,
     }
   )
 
-  # Sequence over idxset
   for (i in seq_along(idxset)) {
     tree_interpretation_dt_list[[i]] <- single.row.interprete(
       tree_dt = tree_dt
@@ -113,10 +112,8 @@ single.tree.interprete <- function(tree_dt,
   # Get to root from leaf
   leaf_to_root <- function(parent_id, current_value) {
 
-    # Store value
     value_seq <<- c(current_value, value_seq)
 
-    # Check for null parent id
     if (!is.na(parent_id)) {
 
       # Not null means existing node
@@ -151,7 +148,6 @@ multiple.tree.interprete <- function(tree_dt,
                                      tree_index,
                                      leaf_index) {
 
-  # Apply each trees
   interp_dt <- data.table::rbindlist(
     l = mapply(
       FUN = single.tree.interprete
