@@ -1120,7 +1120,9 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     # DaskLGBMClassifier support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
         Other parameters passed through to ``LGBMClassifier.fit()``.
-        """ + "\n\n" + _lgbmmodel_doc_custom_eval_note
+
+    {_lgbmmodel_doc_custom_eval_note}
+        """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMClassifier.predict."""
