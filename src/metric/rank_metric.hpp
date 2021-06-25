@@ -212,7 +212,6 @@ class WNDCGMetric:public Metric {
                                query_boundaries_[i + 1] - query_boundaries_[i],
                                true, &inverse_max_dcgs_[i]);
       for (size_t j = 0; j < inverse_max_dcgs_[i].size(); ++j) {
-        
         if (inverse_max_dcgs_[i][j] > 0.0f) {
           inverse_max_dcgs_[i][j] = 1.0f / inverse_max_dcgs_[i][j];
         } else {
@@ -250,7 +249,6 @@ class WNDCGMetric:public Metric {
             result_buffer_[tid][j] += 1.0f;
           }
         } else {
-            
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
                                 score + query_boundaries_[i],
