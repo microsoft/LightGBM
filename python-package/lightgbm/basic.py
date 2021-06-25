@@ -182,7 +182,7 @@ def is_numpy_2d_array(data):
 
 def is_2d_list(data):
     """Check whether data is a 2-D list."""
-    return isinstance(data, list) and is_1d_list(data[0])
+    return isinstance(data, list) and len(data) > 0 and is_1d_list(data[0])
 
 
 def is_2d_collection(data):
@@ -1114,6 +1114,7 @@ class Dataset:
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
+            For multiclass classification can also be list of lists, numpy 2-D array or pandas DataFrame.
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
@@ -1531,6 +1532,7 @@ class Dataset:
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
+            For multiclass classification can also be list of lists, numpy 2-D array or pandas DataFrame.
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
