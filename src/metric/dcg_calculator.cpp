@@ -19,6 +19,7 @@ std::vector<double> DCGCalculator::label_gain_;
 std::vector<double> DCGCalculator::discount_;
 const data_size_t DCGCalculator::kMaxPosition = 10000;
 std::map<std::pair<data_size_t, data_size_t>, double> DCGCalculator::position_bias_lookup_;
+int position_bias_lookup_max_ = -1;
 
 void DCGCalculator::DefaultEvalAt(std::vector<int>* eval_at) {
   auto& ref_eval_at = *eval_at;
@@ -53,7 +54,7 @@ void DCGCalculator::Init(const std::vector<double>& input_label_gain) {
     discount_[i] = 1.0 / std::log2(2.0 + i);
   }
   // Load Position biases if any
-  if (const char* position_bias_path = std::getenv("POS_BIAS_PATH")) {
+  if (const char* position_bias_path = "position_bias_ratios.csv") {
       std::fstream pb_fin;
       pb_fin.open(position_bias_path, std::ios::in);
 
@@ -70,6 +71,10 @@ void DCGCalculator::Init(const std::vector<double>& input_label_gain) {
         std::sscanf(line.c_str(),"%d,%d,%lf", &i, &j, &bias);
         position_bias_lookup_[std::make_pair(i, j)] = bias;
         position_bias_lookup_[std::make_pair(j, i)] = 1.0 / bias;
+        //find the max index in the position bias lookup table
+        if (((i > position_bias_lookup_max_) || (j > position_bias_lookup_max_)) && (bias > 0.00001)){
+            position_bias_lookup_max_ = std::max(i,j);
+        }
       }
 
   } else {
@@ -134,40 +139,45 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
     }
   }
   else {
-    // get sorted indices by label, putting later labels ahead of earlier ones with same value
-    std::vector<data_size_t> sorted_idx(num_data);
+    //vectors to help us calculate idcg
+    std::vector<double> knowns(num_data);
+    std::vector<double> unknowns(num_data);
     for (data_size_t i = 0; i < num_data; ++i) {
-      sorted_idx[i] = i;
+      knowns[i] = 0;
+      unknowns[i] = 0;
     }
-    std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
-                     [label](data_size_t a, data_size_t b) {return label[a] * a > label[b] * b; });
 
-    double cur_result = 0.0f;
     data_size_t cur_left = 0;
     // calculate multi dcg by one pass
     for (size_t i = 0; i < ks.size(); ++i) {
       data_size_t cur_k = ks[i];
       if (cur_k > num_data) { cur_k = num_data; }
-      for (data_size_t j = cur_left; j < cur_k; ++j) {
-        data_size_t idx = sorted_idx[j];
+      
+      for (data_size_t j = cur_left; j < num_data; ++j) {
 
-        double position_bias_ratio = 1.0f;
+        //default to 1.0
+        double position_bias_ratio = 1.0;
         if (!position_bias_lookup_.empty()) {
-
-            auto it = position_bias_lookup_.find(std::make_pair(idx+1, j+1));
+            //try to find position bias
+            auto it = position_bias_lookup_.find(std::make_pair(1, std::min(j+1, position_bias_lookup_max_)));
             if (it != position_bias_lookup_.end()){
+                //if found, get that value
                 position_bias_ratio = it->second;
             }
-            if (isinf(position_bias_ratio) || isnan(position_bias_ratio)) {
-                Log::Warning("\nPositions (%d %d) resulted in a nan or inf pos bias ratio\n",idx+1,j+1);
-                position_bias_ratio = 1.0f;
-            }
         }
-        cur_result += label_gain_[static_cast<int>(label[idx])] * discount_[j] * position_bias_ratio;
+        knowns[j] = label_gain_[static_cast<int>(label[j])] / position_bias_ratio;
+        unknowns[j] = position_bias_ratio * discount_[j];
+      }
+      std::stable_sort(knowns.begin(), knowns.end(), std::greater <double>());
+      std::stable_sort(unknowns.begin(), unknowns.end(), std::greater <double>());
+        
+      double cur_result = 0.0f;
+      for (int j = 0; j < cur_k; ++j) {
+          cur_result += knowns[j] * unknowns[j];
+          //Log::Info("\nknowns[%d]=%f\nunknowns[%d]=%f",j,knowns[j],j,unknowns[j]);
       }
       (*out)[i] = cur_result;
       cur_left = cur_k;
-
     }
   }
 }
@@ -212,18 +222,19 @@ void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const label_t* la
     for (data_size_t j = cur_left; j < cur_k; ++j) {
       data_size_t idx = sorted_idx[j];
       if (weighted) {
-
-        double position_bias_ratio = 1.0f;
+        
+        //default to 1.0
+        double position_bias_ratio = 1.0;
+        
         if (!position_bias_lookup_.empty()) {
-            auto it = position_bias_lookup_.find(std::make_pair(idx+1, j+1));
+            //try to find position bias
+            auto it = position_bias_lookup_.find(std::make_pair(std::min(idx+1, position_bias_lookup_max_), std::min(j+1, position_bias_lookup_max_)));
+            //if found, get that bias
             if (it != position_bias_lookup_.end()){
                 position_bias_ratio = it->second;
             }
-            if (isinf(position_bias_ratio) || isnan(position_bias_ratio)) {
-                Log::Warning("\nPositions (%d %d) resulted in a nan or inf pos bias ratio\n",idx+1,j+1);
-                position_bias_ratio = 1.0f;
-            }
         }
+   
         cur_result += label_gain_[static_cast<int>(label[idx])] * discount_[j] * position_bias_ratio;
       }
       else {
