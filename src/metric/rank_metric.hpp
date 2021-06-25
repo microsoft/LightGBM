@@ -212,7 +212,7 @@ class WNDCGMetric:public Metric {
                                query_boundaries_[i + 1] - query_boundaries_[i],
                                true, &inverse_max_dcgs_[i]);
       for (size_t j = 0; j < inverse_max_dcgs_[i].size(); ++j) {
-        //Log::Info("iwdcg=%f",inverse_max_dcgs_[i][j]);
+        
         if (inverse_max_dcgs_[i][j] > 0.0f) {
           inverse_max_dcgs_[i][j] = 1.0f / inverse_max_dcgs_[i][j];
         } else {
@@ -250,10 +250,6 @@ class WNDCGMetric:public Metric {
             result_buffer_[tid][j] += 1.0f;
           }
         } else {
-          //const label_t* label = label_ + query_boundaries_[i];
-          //if (i==0){
-              //Log::Info("[ %f %f %f %f %f %f %f %f %f %f ]", label[0], label[1],label[2],label[3],label[4],label[5],label[6],label[7],label[8],label[9]);
-          //}
             
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
@@ -261,7 +257,6 @@ class WNDCGMetric:public Metric {
                                 query_boundaries_[i + 1] - query_boundaries_[i], true, &tmp_dcg);
           // calculate NDCG
           for (size_t j = 0; j < eval_at_.size(); ++j) {
-            //Log::Info("wdcg=%f/iwdcg=%f",tmp_dcg[j],1/inverse_max_dcgs_[i][j]);
             result_buffer_[tid][j] += tmp_dcg[j] * inverse_max_dcgs_[i][j];
           }
         }
