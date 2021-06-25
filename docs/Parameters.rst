@@ -28,6 +28,26 @@ By using config files, one line can only contain one parameter. You can use ``#`
 
 If one parameter appears in both command line and config file, LightGBM will use the parameter from the command line.
 
+For the Python and R packages, any parameters that accept a list of values (usually they have ``multi-xxx`` type, e.g. ``multi-int`` or ``multi-double``) can be specified in those languages' default array types.
+For example, ``monotone_constraints`` can be specified as follows.
+
+**Python**
+
+.. code-block:: python
+
+   params = {
+      "monotone_constraints": [-1, 0, 1]
+   }
+
+
+**R**
+
+.. code-block:: r
+
+   params <- list(
+      monotone_constraints = c(-1, 0, 1)
+   )
+
 .. start params list
 
 Core Parameters
@@ -119,7 +139,7 @@ Core Parameters
 
       -  **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
 
--  ``linear_tree`` :raw-html:`<a id="linear_tree" title="Permalink to this parameter" href="#linear_tree">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+-  ``linear_tree`` :raw-html:`<a id="linear_tree" title="Permalink to this parameter" href="#linear_tree">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``linear_trees``
 
    -  fit piecewise linear gradient boosting tree
 
@@ -370,7 +390,7 @@ Learning Control Parameters
 
    -  random seed for ``feature_fraction``
 
--  ``extra_trees`` :raw-html:`<a id="extra_trees" title="Permalink to this parameter" href="#extra_trees">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+-  ``extra_trees`` :raw-html:`<a id="extra_trees" title="Permalink to this parameter" href="#extra_trees">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``extra_tree``
 
    -  use extremely randomized trees
 
@@ -819,6 +839,12 @@ Dataset Parameters
    -  **Note**: ``init_score`` is not saved in binary file
 
    -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
+
+-  ``precise_float_parser`` :raw-html:`<a id="precise_float_parser" title="Permalink to this parameter" href="#precise_float_parser">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  use precise floating point number parsing for text parser (e.g. CSV, TSV, LibSVM input)
+
+   -  **Note**: setting this to ``true`` may lead to much slower text parsing
 
 Predict Parameters
 ~~~~~~~~~~~~~~~~~~

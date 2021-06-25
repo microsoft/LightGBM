@@ -747,7 +747,7 @@ def test_cv():
     cv_res_obj = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=tss,
                         verbose_eval=False)
     np.testing.assert_allclose(cv_res_gen['l2-mean'], cv_res_obj['l2-mean'])
-    # lambdarank
+    # LambdaRank
     X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                        '../../examples/lambdarank/rank.train'))
     q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -1252,7 +1252,8 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     return trainset
 
 
-def test_monotone_constraints():
+@pytest.mark.parametrize("test_with_categorical_variable", [True, False])
+def test_monotone_constraints(test_with_categorical_variable):
     def is_increasing(y):
         return (np.diff(y) >= 0.0).all()
 
@@ -1273,28 +1274,71 @@ def test_monotone_constraints():
             monotonically_increasing_y = learner.predict(monotonically_increasing_x)
             monotonically_decreasing_x = np.column_stack((fixed_x, variable_x, fixed_x))
             monotonically_decreasing_y = learner.predict(monotonically_decreasing_x)
-            non_monotone_x = np.column_stack((fixed_x,
-                                              fixed_x,
-                                              categorize(variable_x) if x3_to_category else variable_x))
+            non_monotone_x = np.column_stack(
+                (
+                    fixed_x,
+                    fixed_x,
+                    categorize(variable_x) if x3_to_category else variable_x,
+                )
+            )
             non_monotone_y = learner.predict(non_monotone_x)
-            if not (is_increasing(monotonically_increasing_y)
-                    and is_decreasing(monotonically_decreasing_y)
-                    and is_non_monotone(non_monotone_y)):
+            if not (
+                is_increasing(monotonically_increasing_y)
+                and is_decreasing(monotonically_decreasing_y)
+                and is_non_monotone(non_monotone_y)
+            ):
                 return False
         return True
 
-    for test_with_categorical_variable in [True, False]:
-        trainset = generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
+    def are_interactions_enforced(gbm, feature_sets):
+        def parse_tree_features(gbm):
+            # trees start at position 1.
+            tree_str = gbm.model_to_string().split("Tree")[1:]
+            feature_sets = []
+            for tree in tree_str:
+                # split_features are in 4th line.
+                features = tree.splitlines()[3].split("=")[1].split(" ")
+                features = set(f"Column_{f}" for f in features)
+                feature_sets.append(features)
+            return np.array(feature_sets)
+
+        def has_interaction(treef):
+            n = 0
+            for fs in feature_sets:
+                if len(treef.intersection(fs)) > 0:
+                    n += 1
+            return n > 1
+
+        tree_features = parse_tree_features(gbm)
+        has_interaction_flag = np.array(
+            [has_interaction(treef) for treef in tree_features]
+        )
+
+        return not has_interaction_flag.any()
+
+    trainset = generate_trainset_for_monotone_constraints_tests(
+        test_with_categorical_variable
+    )
+    for test_with_interaction_constraints in [True, False]:
+        error_msg = ("Model not correctly constrained "
+                     f"(test_with_interaction_constraints={test_with_interaction_constraints})")
         for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
             params = {
-                'min_data': 20,
-                'num_leaves': 20,
-                'monotone_constraints': [1, -1, 0],
+                "min_data": 20,
+                "num_leaves": 20,
+                "monotone_constraints": [1, -1, 0],
                 "monotone_constraints_method": monotone_constraints_method,
                 "use_missing": False,
             }
+            if test_with_interaction_constraints:
+                params["interaction_constraints"] = [[0], [1], [2]]
             constrained_model = lgb.train(params, trainset)
-            assert is_correctly_constrained(constrained_model, test_with_categorical_variable)
+            assert is_correctly_constrained(
+                constrained_model, test_with_categorical_variable
+            ), error_msg
+            if test_with_interaction_constraints:
+                feature_sets = [["Column_0"], ["Column_1"], "Column_2"]
+                assert are_interactions_enforced(constrained_model, feature_sets)
 
 
 def test_monotone_penalty():
@@ -1357,8 +1401,9 @@ def test_monotone_penalty_max():
     }
 
     unconstrained_model = lgb.train(params_unconstrained_model, trainset_unconstrained_model, 10)
-    unconstrained_model_predictions = unconstrained_model.\
-        predict(x3_negatively_correlated_with_y.reshape(-1, 1))
+    unconstrained_model_predictions = unconstrained_model.predict(
+        x3_negatively_correlated_with_y.reshape(-1, 1)
+    )
 
     for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
         params_constrained_model["monotone_constraints_method"] = monotone_constraints_method
@@ -2751,3 +2796,28 @@ def test_reset_params_works_with_metric_num_class_and_boosting():
     expected_params = dict(dataset_params, **booster_params)
     assert bst.params == expected_params
     assert new_bst.params == expected_params
+
+
+def test_dump_model():
+    X, y = load_breast_cancer(return_X_y=True)
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "binary",
+        "verbose": -1
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model_str = str(bst.dump_model(5, 0))
+    assert "leaf_features" not in dumped_model_str
+    assert "leaf_coeff" not in dumped_model_str
+    assert "leaf_const" not in dumped_model_str
+    assert "leaf_value" in dumped_model_str
+    assert "leaf_count" in dumped_model_str
+    params['linear_tree'] = True
+    train_data = lgb.Dataset(X, label=y)
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model_str = str(bst.dump_model(5, 0))
+    assert "leaf_features" in dumped_model_str
+    assert "leaf_coeff" in dumped_model_str
+    assert "leaf_const" in dumped_model_str
+    assert "leaf_value" in dumped_model_str
+    assert "leaf_count" in dumped_model_str

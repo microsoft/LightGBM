@@ -47,4 +47,5 @@ print('Starting predicting...')
 # predict
 y_pred = gbm.predict(X_test, num_iteration=gbm.best_iteration)
 # eval
-print('The rmse of prediction is:', mean_squared_error(y_test, y_pred) ** 0.5)
+rmse_test = mean_squared_error(y_test, y_pred) ** 0.5
+print(f'The RMSE of prediction is: {rmse_test}')

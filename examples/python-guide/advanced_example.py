@@ -43,7 +43,7 @@ params = {
 }
 
 # generate feature names
-feature_name = ['feature_' + str(col) for col in range(num_feature)]
+feature_name = [f'feature_{col}' for col in range(num_feature)]
 
 print('Starting training...')
 # feature_name and categorical_feature
@@ -56,7 +56,7 @@ gbm = lgb.train(params,
 
 print('Finished first 10 rounds...')
 # check feature name
-print('7th feature name is:', lgb_train.feature_name[6])
+print(f'7th feature name is: {lgb_train.feature_name[6]}')
 
 print('Saving model...')
 # save model to file
@@ -70,10 +70,10 @@ with open('model.json', 'w+') as f:
     json.dump(model_json, f, indent=4)
 
 # feature names
-print('Feature names:', gbm.feature_name())
+print(f'Feature names: {gbm.feature_name()}')
 
 # feature importances
-print('Feature importances:', list(gbm.feature_importance()))
+print(f'Feature importances: {list(gbm.feature_importance())}')
 
 print('Loading model to predict...')
 # load model to predict
@@ -81,7 +81,8 @@ bst = lgb.Booster(model_file='model.txt')
 # can only predict with the best iteration (or the saving iteration)
 y_pred = bst.predict(X_test)
 # eval with loaded model
-print("The rmse of loaded model's prediction is:", mean_squared_error(y_test, y_pred) ** 0.5)
+rmse_loaded_model = mean_squared_error(y_test, y_pred) ** 0.5
+print(f"The RMSE of loaded model's prediction is: {rmse_loaded_model}")
 
 print('Dumping and loading model with pickle...')
 # dump model with pickle
@@ -93,7 +94,8 @@ with open('model.pkl', 'rb') as fin:
 # can predict with any iteration when loaded in pickle way
 y_pred = pkl_bst.predict(X_test, num_iteration=7)
 # eval with loaded model
-print("The rmse of pickled model's prediction is:", mean_squared_error(y_test, y_pred) ** 0.5)
+rmse_pickled_model = mean_squared_error(y_test, y_pred) ** 0.5
+print(f"The RMSE of pickled model's prediction is: {rmse_pickled_model}")
 
 # continue training
 # init_model accepts:
@@ -146,7 +148,7 @@ def loglikelihood(preds, train_data):
 # f(preds: array, train_data: Dataset) -> name: string, eval_result: float, is_higher_better: bool
 # binary error
 # NOTE: when you do customized loss function, the default prediction value is margin
-# This may make built-in evalution metric calculate wrong results
+# This may make built-in evaluation metric calculate wrong results
 # For example, we are doing log likelihood loss, the prediction is score before logistic transformation
 # Keep this in mind when you use the customization
 def binary_error(preds, train_data):
@@ -170,7 +172,7 @@ print('Finished 40 - 50 rounds with self-defined objective function and eval met
 # f(preds: array, train_data: Dataset) -> name: string, eval_result: float, is_higher_better: bool
 # accuracy
 # NOTE: when you do customized loss function, the default prediction value is margin
-# This may make built-in evalution metric calculate wrong results
+# This may make built-in evaluation metric calculate wrong results
 # For example, we are doing log likelihood loss, the prediction is score before logistic transformation
 # Keep this in mind when you use the customization
 def accuracy(preds, train_data):
@@ -187,8 +189,7 @@ gbm = lgb.train(params,
                 feval=[binary_error, accuracy],
                 valid_sets=lgb_eval)
 
-print('Finished 50 - 60 rounds with self-defined objective function '
-      'and multiple self-defined eval metrics...')
+print('Finished 50 - 60 rounds with self-defined objective function and multiple self-defined eval metrics...')
 
 print('Starting a new training job...')
 

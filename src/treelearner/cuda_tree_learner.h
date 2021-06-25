@@ -99,7 +99,7 @@ class CUDATreeLearner: public SerialTreeLearner {
 
     /*! 
      * \brief Compute GPU feature histogram for the current leaf.
-     *        Indices, gradients and hessians have been copied to the device.
+     *        Indices, gradients and Hessians have been copied to the device.
      * \param leaf_num_data Number of data on current leaf
      * \param use_all_features Set to true to not use feature masks, with a faster kernel
      */
@@ -224,7 +224,7 @@ class CUDATreeLearner: public SerialTreeLearner {
     std::vector<cudaEvent_t> indices_future_;
     /*! Asynchronous waiting object for copying gradients */
     std::vector<cudaEvent_t> gradients_future_;
-    /*! Asynchronous waiting object for copying hessians */
+    /*! Asynchronous waiting object for copying Hessians */
     std::vector<cudaEvent_t> hessians_future_;
     /*! Asynchronous waiting object for copying dense features */
     std::vector<cudaEvent_t> features_future_;

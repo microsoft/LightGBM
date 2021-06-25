@@ -51,6 +51,8 @@ jobs:
         METHOD: source
       swig:
         TASK: swig
+      cpp_tests:
+        TASK: cpp-tests
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -148,7 +150,7 @@ jobs:
     PRODUCES_ARTIFACTS: 'true'
   pool:
     vmImage: ubuntu-latest
-  timeoutInMinutes: 120
+  timeoutInMinutes: 180
   strategy:
     matrix:
       bdist:
@@ -222,6 +224,8 @@ jobs:
         TASK: bdist
       swig:
         TASK: swig
+      cpp_tests:
+        TASK: cpp-tests
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -258,6 +262,8 @@ jobs:
         TASK: bdist
       swig:
         TASK: swig
+      cpp_tests:
+        TASK: cpp-tests
   steps:
   - powershell: |
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
