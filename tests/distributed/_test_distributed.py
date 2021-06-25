@@ -1,17 +1,17 @@
 import copy
 import io
+import os
 import socket
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
-from typing import Dict, Generator, List
+from typing import Any, Dict, Generator, List
 
 import numpy as np
 import pytest
 from sklearn.datasets import make_blobs, make_regression
 from sklearn.metrics import accuracy_score
 
-TESTS_DIR = Path(__file__).absolute().parent
+TESTS_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 @pytest.fixture(scope='module')
@@ -57,7 +57,7 @@ class DistributedMockup:
     default_train_config = {
         'task': 'train',
         'pre_partition': True,
-        'machine_list_file': TESTS_DIR / 'mlist.txt',
+        'machine_list_file': os.path.join(TESTS_DIR, 'mlist.txt'),
         'tree_learner': 'data',
         'force_row_wise': True,
         'verbose': 0,
@@ -68,9 +68,9 @@ class DistributedMockup:
 
     default_predict_config = {
         'task': 'predict',
-        'data': TESTS_DIR / 'train.txt',
-        'input_model': TESTS_DIR / 'model0.txt',
-        'output_result': TESTS_DIR / 'predictions.txt',
+        'data': os.path.join(TESTS_DIR, 'train.txt'),
+        'input_model': os.path.join(TESTS_DIR, 'model0.txt'),
+        'output_result': os.path.join(TESTS_DIR, 'predictions.txt'),
     }
 
     def __init__(self, executable: str):
@@ -78,7 +78,7 @@ class DistributedMockup:
 
     def worker_train(self, i: int) -> subprocess.CompletedProcess:
         """Start the training process on the `i`-th worker."""
-        config_path = TESTS_DIR / f'train{i}.conf'
+        config_path = os.path.join(TESTS_DIR, f'train{i}.conf')
         cmd = [self.executable, f'config={config_path}']
         return subprocess.run(cmd)
 
@@ -95,16 +95,16 @@ class DistributedMockup:
         if i == max_tries:
             raise RuntimeError('Unable to find non-colliding ports.')
         self.listen_ports = list(ports)
-        with open(TESTS_DIR / 'mlist.txt', 'wt') as f:
+        with open(os.path.join(TESTS_DIR, 'mlist.txt'), 'wt') as f:
             for port in self.listen_ports:
                 f.write(f'127.0.0.1 {port}\n')
 
     def _write_data(self, partitions: List[np.ndarray]) -> None:
         """Write all training data as train.txt and each training partition as train{i}.txt."""
         all_data = np.vstack(partitions)
-        np.savetxt(TESTS_DIR / 'train.txt', all_data, delimiter=',')
+        np.savetxt(os.path.join(TESTS_DIR, 'train.txt'), all_data, delimiter=',')
         for i, partition in enumerate(partitions):
-            np.savetxt(TESTS_DIR / f'train{i}.txt', partition, delimiter=',')
+            np.savetxt(os.path.join(TESTS_DIR, f'train{i}.txt'), partition, delimiter=',')
 
     def fit(self, partitions: List[np.ndarray], train_config: Dict = {}) -> None:
         """Run the distributed training process on a single machine.
@@ -134,7 +134,7 @@ class DistributedMockup:
             if result.returncode != 0:
                 raise RuntimeError
 
-    def predict(self, predict_config: Dict = {}) -> np.ndarray:
+    def predict(self, predict_config: Dict[str, Any] = {}) -> np.ndarray:
         """Compute the predictions using the model created in the fit step.
 
         predict_config is used to predict the training set train.txt
@@ -142,14 +142,14 @@ class DistributedMockup:
         """
         self.predict_config = copy.deepcopy(self.default_predict_config)
         self.predict_config.update(predict_config)
-        config_path = TESTS_DIR / 'predict.conf'
+        config_path = os.path.join(TESTS_DIR, 'predict.conf')
         with open(config_path, 'wt') as file:
             _write_dict(self.predict_config, file)
         cmd = [self.executable, f'config={config_path}']
         result = subprocess.run(cmd)
         if result.returncode != 0:
             raise RuntimeError
-        y_pred = np.loadtxt(TESTS_DIR / 'predictions.txt')
+        y_pred = np.loadtxt(os.path.join(TESTS_DIR, 'predictions.txt'))
         return y_pred
 
     def write_train_config(self, i: int) -> None:
@@ -158,9 +158,9 @@ class DistributedMockup:
         Each worker gets a different port and piece of the data, the rest are the
         model parameters contained in `self.config`.
         """
-        with open(TESTS_DIR / f'train{i}.conf', 'wt') as file:
-            output_model = TESTS_DIR / f'model{i}.txt'
-            data = TESTS_DIR / f'train{i}.txt'
+        with open(os.path.join(TESTS_DIR, f'train{i}.conf'), 'wt') as file:
+            output_model = os.path.join(TESTS_DIR, f'model{i}.txt')
+            data = os.path.join(TESTS_DIR, f'train{i}.txt')
             file.write(f'output_model = {output_model}\n')
             file.write(f'local_listen_port = {self.listen_ports[i]}\n')
             file.write(f'data = {data}\n')
