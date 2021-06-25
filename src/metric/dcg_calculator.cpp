@@ -54,7 +54,7 @@ void DCGCalculator::Init(const std::vector<double>& input_label_gain) {
     discount_[i] = 1.0 / std::log2(2.0 + i);
   }
   // Load Position biases if any
-  if (const char* position_bias_path = "position_bias_ratios.csv") {
+  if (const char* position_bias_path = std::getenv("POS_BIAS_PATH")) {
       std::fstream pb_fin;
       pb_fin.open(position_bias_path, std::ios::in);
 
