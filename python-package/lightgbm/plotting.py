@@ -29,16 +29,16 @@ def plot_importance(
     height: float = 0.2,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
-    title: str = 'Feature importance',
-    xlabel: str = 'Feature importance',
-    ylabel: str = 'Features',
+    title: Optional[str] = 'Feature importance',
+    xlabel: Optional[str] = 'Feature importance',
+    ylabel: Optional[str] = 'Features',
     importance_type: str = 'split',
     max_num_features: Optional[int] = None,
     ignore_zero: bool = True,
     figsize: Optional[Tuple[float, float]] = None,
     dpi: Optional[int] = None,
     grid: bool = True,
-    precision: int = 3,
+    precision: Optional[int] = 3,
     **kwargs: Any
 ) -> Any:
     """Plot model's feature importances.
@@ -159,9 +159,9 @@ def plot_split_value_histogram(
     width_coef: float = 0.8,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
-    title: str = 'Split value histogram for feature with @index/name@ @feature@',
-    xlabel: str = 'Feature split value',
-    ylabel: str = 'Count',
+    title: Optional[str] = 'Split value histogram for feature with @index/name@ @feature@',
+    xlabel: Optional[str] = 'Feature split value',
+    ylabel: Optional[str] = 'Count',
     figsize: Optional[Tuple[float, float]] = None,
     dpi: Optional[int] = None,
     grid: bool = True,
@@ -275,9 +275,9 @@ def plot_metric(
     ax=None,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
-    title: str = 'Metric during training',
-    xlabel: str = 'Iterations',
-    ylabel: str = 'auto',
+    title: Optional[str] = 'Metric during training',
+    xlabel: Optional[str] = 'Iterations',
+    ylabel: Optional[str] = 'auto',
     figsize: Optional[Tuple[float, float]] = None,
     dpi: Optional[int] = None,
     grid: bool = True
@@ -406,7 +406,7 @@ def _to_graphviz(
     tree_info: List[Dict[str, Any]],
     show_info: List[str],
     feature_names: Union[List[str], None],
-    precision: int = 3,
+    precision: Optional[int] = 3,
     orientation: str = 'horizontal',
     constraints: Optional[List[int]] = None,
     **kwargs: Any
@@ -509,7 +509,7 @@ def create_tree_digraph(
     booster: Union[Booster, LGBMModel],
     tree_index: int = 0,
     show_info: Optional[List[str]] = None,
-    precision: int = 3,
+    precision: Optional[int] = 3,
     orientation: str = 'horizontal',
     **kwargs: Any
 ) -> Any:
@@ -595,7 +595,7 @@ def plot_tree(
     figsize: Optional[Tuple[float, float]] = None,
     dpi: Optional[int] = None,
     show_info: Optional[List[str]] = None,
-    precision: int = 3,
+    precision: Optional[int] = 3,
     orientation: str = 'horizontal',
     **kwargs: Any
 ) -> Any:
