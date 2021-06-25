@@ -176,8 +176,9 @@ class LambdarankNDCG : public RankingObjective {
               position_bias_lookup_[std::make_pair(i, j)] = bias;
               position_bias_lookup_[std::make_pair(j, i)] = 1.0 / bias;
 
-              if (bias < min_pos_bias_) {
-                  min_pos_bias_ = bias;
+              //find the max index in the position bias lookup table
+              if (((i > position_bias_lookup_max_) || (j > position_bias_lookup_max_)) && (bias > 0.00001)){
+                    position_bias_lookup_max_ = std::max(i,j);
               }
           }
       } else {
@@ -244,14 +245,12 @@ class LambdarankNDCG : public RankingObjective {
         const double low_discount = DCGCalculator::GetDiscount(low_rank);
 
         // If there is no position bias map, just use ratio of 1.0
-        double position_bias_ratio = min_pos_bias_;
+        double position_bias_ratio = 1.0;
         if (!position_bias_lookup_.empty()) {
-            auto it = position_bias_lookup_.find(std::make_pair(high, low));
+            auto it = position_bias_lookup_.find(std::make_pair(std::min(high+1, position_bias_lookup_max_), std::min(low+1, position_bias_lookup_max_)));
             if (it != position_bias_lookup_.end()){
                 position_bias_ratio = it->second;
             }
-        } else {
-            position_bias_ratio = 1.0f;
         }
 
         const double delta_score = high_score - low_score;
@@ -333,8 +332,8 @@ class LambdarankNDCG : public RankingObjective {
   /*! \brief Gains for labels */
   std::vector<double> label_gain_;
 
-  // Minimum position bias ratio to be used as default
-  double min_pos_bias_ = 10000;
+  // max index available in provided position bias table
+  int position_bias_lookup_max_ = -1;
 
   std::map<std::pair<data_size_t, data_size_t>, double> position_bias_lookup_;
 
