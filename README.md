@@ -84,6 +84,8 @@ ONNXMLTools (ONNX converter): https://github.com/onnx/onnxmltools
 
 SHAP (model output explainer): https://github.com/slundberg/shap
 
+Shapash (model visualization and interpretation): https://github.com/MAIF/shapash
+
 dtreeviz (decision tree visualization and model interpretation): https://github.com/parrt/dtreeviz
 
 MMLSpark (LightGBM on Spark): https://github.com/Azure/mmlspark
