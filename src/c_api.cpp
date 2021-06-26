@@ -287,8 +287,12 @@ class Booster {
           "You need to set `feature_pre_filter=false` to dynamically change "
           "the `min_data_in_leaf`.");
     }
-    if (new_param.count("linear_tree") && (new_config.linear_tree != old_config.linear_tree)) {
+    if (new_param.count("linear_tree") && new_config.linear_tree != old_config.linear_tree) {
       Log::Fatal("Cannot change linear_tree after constructed Dataset handle.");
+    }
+    if (new_param.count("precise_float_parser") &&
+        new_config.precise_float_parser != old_config.precise_float_parser) {
+      Log::Fatal("Cannot change precise_float_parser after constructed Dataset handle.");
     }
   }
 

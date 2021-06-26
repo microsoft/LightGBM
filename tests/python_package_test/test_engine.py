@@ -2345,6 +2345,7 @@ def test_dataset_update_params():
                       "ignore_column": 0,
                       "min_data_in_leaf": 10,
                       "linear_tree": False,
+                      "precise_float_parser": True,
                       "verbose": -1}
     unchangeable_params = {"max_bin": 150,
                            "max_bin_by_feature": [30, 5],
@@ -2366,7 +2367,8 @@ def test_dataset_update_params():
                            "ignore_column": 1,
                            "forcedbins_filename": "/some/path/forcedbins.json",
                            "min_data_in_leaf": 2,
-                           "linear_tree": True}
+                           "linear_tree": True,
+                           "precise_float_parser": False}
     X = np.random.random((100, 2))
     y = np.random.random(100)
 
