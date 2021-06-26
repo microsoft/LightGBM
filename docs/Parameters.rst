@@ -909,7 +909,11 @@ Predict Parameters
 
    -  used only in ``prediction`` task
 
+   -  used only in ``classification`` and ``ranking`` applications
+
    -  if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
+
+   -  **Note**: cannot be used with ``rf`` boosting type or custom objective function
 
 -  ``pred_early_stop_freq`` :raw-html:`<a id="pred_early_stop_freq" title="Permalink to this parameter" href="#pred_early_stop_freq">&#x1F517;&#xFE0E;</a>`, default = ``10``, type = int
 
