@@ -268,7 +268,7 @@ def test_booster():
         for line in inp.readlines():
             data.append([float(x) for x in line.split('\t')[1:]])
     mat = np.array(data, dtype=np.float64)
-    preb = np.zeros(mat.shape[0], dtype=np.float64)
+    preb = np.empty(mat.shape[0], dtype=np.float64)
     num_preb = ctypes.c_int64(0)
     data = np.array(mat.reshape(mat.size), dtype=np.float64, copy=False)
     LIB.LGBM_BoosterPredictForMat(
