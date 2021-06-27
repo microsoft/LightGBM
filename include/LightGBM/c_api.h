@@ -54,22 +54,24 @@ LIGHTGBM_C_EXPORT const char* LGBM_GetLastError();
 LIGHTGBM_C_EXPORT int LGBM_RegisterLogCallback(void (*callback)(const char*));
 
 /*!
- * \brief Get number of samples based on parameter and total number of rows of data.
+ * \brief Get number of samples based on parameters and total number of rows of data.
  * \param total_nrow Number of all data rows
- * \param parameters Additional parameters, specify sample count
- * \param[out] out Number of samples. You should pre-allocate memory to hold sample indices when calling ``LGBM_SampleIndices``.
+ * \param parameters Additional parameters, namely, ``bin_construct_sample_cnt`` is used to calculate returned value
+ * \param[out] out Number of samples. This value is used to pre-allocate memory to hold sample indices when calling ``LGBM_SampleIndices``
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_SampleCount(int32_t total_nrow,
+LIGHTGBM_C_EXPORT int LGBM_GetSampleCount(int32_t total_nrow,
                                        const char* parameters,
                                        int* out);
 
 /*!
  * \brief Create sample indices for total number of rows.
+ * \note
+ * You should pre-allocate memory for ``out``, you can get its length by ``LGBM_SampleCount``.
  * \param total_nrow Number of all data rows
- * \param parameters Additional parameters, specify sample count and random seed in parameter
- * \param[out] out Created indices, type is int32_t, caller should insure out contains enough space to hold indices
- * \param[out_len] out Number of indices. This maybe less than the one returned by ``LGBM_SampleCount``.
+ * \param parameters Additional parameters, namely, ``bin_construct_sample_cnt`` and ``data_random_seed`` are used to produce the output
+ * \param[out] out Created indices, type is int32_t
+ * \param[out] out_len Number of indices. This maybe less than the one returned by ``LGBM_SampleCount``
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t total_nrow,
