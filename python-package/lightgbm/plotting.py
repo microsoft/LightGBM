@@ -403,7 +403,7 @@ def plot_metric(
 
 
 def _to_graphviz(
-    tree_info: List[Dict[str, Any]],
+    tree_info: Dict[str, Any],
     show_info: List[str],
     feature_names: Union[List[str], None],
     precision: Optional[int] = 3,
