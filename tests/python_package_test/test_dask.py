@@ -280,7 +280,7 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
             pred_early_stop_margin=1.0,
             pred_early_stop_freq=2,
             raw_score=True
-        )
+        ).compute()
         p1_proba = dask_classifier.predict_proba(dX).compute()
         p1_pred_leaf = dask_classifier.predict(dX, pred_leaf=True)
         p1_local = dask_classifier.to_local().predict(X)
