@@ -905,11 +905,11 @@ static inline std::vector<int32_t> CreateSampleIndices(int32_t total_nrow, const
 }
 
 int LGBM_GetSampleCount(int32_t num_total_row,
-                     const char* parameters,
-                     int* out) {
+                        const char* parameters,
+                        int* out) {
   API_BEGIN();
   if (out == nullptr) {
-    Log::Fatal("LGBM_SampleCount output is nullptr");
+    Log::Fatal("LGBM_GetSampleCount output is nullptr");
   }
   auto param = Config::Str2Map(parameters);
   Config config;

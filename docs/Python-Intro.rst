@@ -39,7 +39,7 @@ The LightGBM Python module can load data from:
 
 -  LightGBM binary file
 
--  LightGBM ``Sequence`` objects
+-  LightGBM ``Sequence`` object(s)
 
 The data is stored in a ``Dataset`` object.
 
@@ -96,12 +96,12 @@ We can implement ``Sequence`` interface to read binary files. The following exam
 Features of using ``Sequence`` interface:
 
 - Data sampling uses random access, thus does not go through the whole dataset
-- Reading data in batch thus saves memory when constructing ``Dataset`` object
+- Reading data in batch, thus saves memory when constructing ``Dataset`` object
 - Supports creating ``Dataset`` from multiple data files
 
-Please refer to ``Sequence`` `API doc <https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.CVBooster.html#lightgbm.Sequence>`__.
-`dataset_from_multi_hdf5.py <https://github.com/microsoft/LightGBM/blob/master/examples/python-guide/dataset_from_multi_hdf5.py>`__
-is a detailed example.
+Please refer to ``Sequence`` `API doc <./Python-API.rst#data-structure-api>`__.
+
+`dataset_from_multi_hdf5.py <https://github.com/microsoft/LightGBM/blob/master/examples/python-guide/dataset_from_multi_hdf5.py>`__ is a detailed example.
 
 **Saving Dataset into a LightGBM binary file will make loading faster:**
 

@@ -61,17 +61,17 @@ LIGHTGBM_C_EXPORT int LGBM_RegisterLogCallback(void (*callback)(const char*));
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_GetSampleCount(int32_t num_total_row,
-                                       const char* parameters,
-                                       int* out);
+                                          const char* parameters,
+                                          int* out);
 
 /*!
  * \brief Create sample indices for total number of rows.
  * \note
- * You should pre-allocate memory for ``out``, you can get its length by ``LGBM_SampleCount``.
+ * You should pre-allocate memory for ``out``, you can get its length by ``LGBM_GetSampleCount``.
  * \param num_total_row Number of total rows
  * \param parameters Additional parameters, namely, ``bin_construct_sample_cnt`` and ``data_random_seed`` are used to produce the output
  * \param[out] out Created indices, type is int32_t
- * \param[out] out_len Number of indices. This maybe less than the one returned by ``LGBM_SampleCount``
+ * \param[out] out_len Number of indices. This maybe less than the one returned by ``LGBM_GetSampleCount``
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t num_total_row,
