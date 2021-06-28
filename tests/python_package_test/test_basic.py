@@ -177,15 +177,21 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
 
     valid_npy_bin_fname = os.path.join(tmpdir, 'valid_data_from_npy.bin')
     valid_seq_bin_fname = os.path.join(tmpdir, 'valid_data_from_seq.bin')
+    valid_seq2_bin_fname = os.path.join(tmpdir, 'valid_data_from_seq2.bin')
 
     valid_ds = lgb.Dataset(valid_X, label=valid_Y, params=params, reference=ds)
     valid_ds.save_binary(valid_npy_bin_fname)
 
+    # From Dataset constructor, with dataset from numpy array.
     valid_seqs = _create_sequence_from_ndarray(valid_X, num_seq, batch_size)
-    valid_seq_ds = lgb.Dataset(valid_seqs, label=valid_Y, params=params, reference=valid_ds)
+    valid_seq_ds = lgb.Dataset(valid_seqs, label=valid_Y, params=params, reference=ds)
     valid_seq_ds.save_binary(valid_seq_bin_fname)
-
     assert filecmp.cmp(valid_npy_bin_fname, valid_seq_bin_fname)
+
+    # From Dataset.create_valid, with dataset from sequence.
+    valid_seq_ds2 = seq_ds.create_valid(valid_seqs, label=valid_Y, params=params)
+    valid_seq_ds2.save_binary(valid_seq2_bin_fname)
+    assert filecmp.cmp(valid_npy_bin_fname, valid_seq2_bin_fname)
 
 
 def test_chunked_dataset():
