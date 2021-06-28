@@ -904,7 +904,7 @@ static inline std::vector<int32_t> CreateSampleIndices(int32_t total_nrow, const
   return rand.Sample(total_nrow, sample_cnt);
 }
 
-int LGBM_SampleCount(int32_t total_nrow,
+int LGBM_GetSampleCount(int32_t num_total_row,
                      const char* parameters,
                      int* out) {
   API_BEGIN();
@@ -915,14 +915,14 @@ int LGBM_SampleCount(int32_t total_nrow,
   Config config;
   config.Set(param);
 
-  *out = SampleCount(total_nrow, config);
+  *out = SampleCount(num_total_row, config);
   API_END();
 }
 
-int LGBM_SampleIndices(int32_t total_nrow,
+int LGBM_SampleIndices(int32_t num_total_row,
                        const char* parameters,
                        void* out,
-                       int64_t* out_len) {
+                       int32_t* out_len) {
   // This API is to keep python binding's behavior the same with C++ implementation.
   // Sample count, random seed etc. should be provided in parameters.
   API_BEGIN();
@@ -933,9 +933,9 @@ int LGBM_SampleIndices(int32_t total_nrow,
   Config config;
   config.Set(param);
 
-  auto sample_indices = CreateSampleIndices(total_nrow, config);
+  auto sample_indices = CreateSampleIndices(num_total_row, config);
   memcpy(out, sample_indices.data(), sizeof(int32_t) * sample_indices.size());
-  *out_len = sample_indices.size();
+  *out_len = static_cast<int32_t>(sample_indices.size());
   API_END();
 }
 

@@ -55,12 +55,12 @@ LIGHTGBM_C_EXPORT int LGBM_RegisterLogCallback(void (*callback)(const char*));
 
 /*!
  * \brief Get number of samples based on parameters and total number of rows of data.
- * \param total_nrow Number of all data rows
+ * \param num_total_row Number of total rows
  * \param parameters Additional parameters, namely, ``bin_construct_sample_cnt`` is used to calculate returned value
  * \param[out] out Number of samples. This value is used to pre-allocate memory to hold sample indices when calling ``LGBM_SampleIndices``
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_GetSampleCount(int32_t total_nrow,
+LIGHTGBM_C_EXPORT int LGBM_GetSampleCount(int32_t num_total_row,
                                        const char* parameters,
                                        int* out);
 
@@ -68,16 +68,16 @@ LIGHTGBM_C_EXPORT int LGBM_GetSampleCount(int32_t total_nrow,
  * \brief Create sample indices for total number of rows.
  * \note
  * You should pre-allocate memory for ``out``, you can get its length by ``LGBM_SampleCount``.
- * \param total_nrow Number of all data rows
+ * \param num_total_row Number of total rows
  * \param parameters Additional parameters, namely, ``bin_construct_sample_cnt`` and ``data_random_seed`` are used to produce the output
  * \param[out] out Created indices, type is int32_t
  * \param[out] out_len Number of indices. This maybe less than the one returned by ``LGBM_SampleCount``
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t total_nrow,
+LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t num_total_row,
                                          const char* parameters,
                                          void* out,
-                                         int64_t* out_len);
+                                         int32_t* out_len);
 
 // --- start Dataset interface
 

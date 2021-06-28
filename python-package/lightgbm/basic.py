@@ -24,7 +24,7 @@ DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT = 200000
 
 def _get_sample_count(total_nrow: int, params: str):
     sample_cnt = ctypes.c_int(0)
-    _safe_call(_LIB.LGBM_SampleCount(
+    _safe_call(_LIB.LGBM_GetSampleCount(
         ctypes.c_int32(total_nrow),
         c_str(params),
         ctypes.byref(sample_cnt),
@@ -613,9 +613,9 @@ class Sequence(abc.ABC):
 
         # Get total row number.
         >>> len(seq)
-        # Random access by row index. Use for data sampling.
+        # Random access by row index. Used for data sampling.
         >>> seq[10]
-        # Range data access. Use to read data in batch when constructing Dataset.
+        # Range data access. Used to read data in batch when constructing Dataset.
         >>> seq[0:100]
         # Optionally specify batch_size to control range data read size.
         >>> seq.batch_size
