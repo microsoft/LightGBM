@@ -1213,7 +1213,7 @@ class Dataset:
         sample_cnt = _get_sample_count(total_nrow, param_str)
         indices = np.empty(sample_cnt, dtype=np.int32)
         ptr_data, _, _ = c_int_array(indices)
-        actual_sample_cnt = ctypes.c_int64(0)
+        actual_sample_cnt = ctypes.c_int32(0)
 
         _safe_call(_LIB.LGBM_SampleIndices(
             ctypes.c_int32(total_nrow),
