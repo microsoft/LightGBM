@@ -1441,9 +1441,8 @@ def test_max_bin_by_feature():
 def test_small_max_bin():
     np.random.seed(0)
     y = np.random.choice([0, 1], 100)
-    x = np.zeros((100, 1))
+    x = np.ones((100, 1))
     x[:30, 0] = -1
-    x[30:60, 0] = 1
     x[60:, 0] = 2
     params = {'objective': 'binary',
               'seed': 0,
@@ -2259,7 +2258,7 @@ def test_node_level_subcol():
 
 
 def test_forced_bins():
-    x = np.zeros((100, 2))
+    x = np.empty((100, 2))
     x[:, 0] = np.arange(0, 1, 0.01)
     x[:, 1] = -np.arange(0, 1, 0.01)
     y = np.arange(0, 1, 0.01)
@@ -2275,7 +2274,6 @@ def test_forced_bins():
     est = lgb.train(params, lgb_x, num_boost_round=20)
     new_x = np.zeros((3, x.shape[1]))
     new_x[:, 0] = [0.31, 0.37, 0.41]
-    new_x[:, 1] = [0, 0, 0]
     predicted = est.predict(new_x)
     assert len(np.unique(predicted)) == 3
     new_x[:, 0] = [0, 0, 0]
@@ -2300,7 +2298,7 @@ def test_forced_bins():
 
 def test_binning_same_sign():
     # test that binning works properly for features with only positive or only negative values
-    x = np.zeros((99, 2))
+    x = np.empty((99, 2))
     x[:, 0] = np.arange(0.01, 1, 0.01)
     x[:, 1] = -np.arange(0.01, 1, 0.01)
     y = np.arange(0.01, 1, 0.01)
@@ -2345,6 +2343,7 @@ def test_dataset_update_params():
                       "ignore_column": 0,
                       "min_data_in_leaf": 10,
                       "linear_tree": False,
+                      "precise_float_parser": True,
                       "verbose": -1}
     unchangeable_params = {"max_bin": 150,
                            "max_bin_by_feature": [30, 5],
@@ -2366,7 +2365,8 @@ def test_dataset_update_params():
                            "ignore_column": 1,
                            "forcedbins_filename": "/some/path/forcedbins.json",
                            "min_data_in_leaf": 2,
-                           "linear_tree": True}
+                           "linear_tree": True,
+                           "precise_float_parser": False}
     X = np.random.random((100, 2))
     y = np.random.random(100)
 

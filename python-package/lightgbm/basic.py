@@ -311,6 +311,8 @@ class _ConfigAliases:
                                     "sparse"},
                "label_column": {"label_column",
                                 "label"},
+               "linear_tree": {"linear_tree",
+                               "linear_trees"},
                "local_listen_port": {"local_listen_port",
                                      "local_port",
                                      "port"},
@@ -778,7 +780,7 @@ class _InnerPredictor:
             ptr_data, type_ptr_data, _ = c_float_array(data)
             n_preds = self.__get_num_preds(start_iteration, num_iteration, mat.shape[0], predict_type)
             if preds is None:
-                preds = np.zeros(n_preds, dtype=np.float64)
+                preds = np.empty(n_preds, dtype=np.float64)
             elif len(preds.shape) != 1 or len(preds) != n_preds:
                 raise ValueError("Wrong length of pre-allocated predict array")
             out_num_preds = ctypes.c_int64(0)
@@ -805,7 +807,7 @@ class _InnerPredictor:
             # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
             n_preds = [self.__get_num_preds(start_iteration, num_iteration, i, predict_type) for i in np.diff([0] + list(sections) + [nrow])]
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
-            preds = np.zeros(sum(n_preds), dtype=np.float64)
+            preds = np.empty(sum(n_preds), dtype=np.float64)
             for chunk, (start_idx_pred, end_idx_pred) in zip(np.array_split(mat, sections),
                                                              zip(n_preds_sections, n_preds_sections[1:])):
                 # avoid memory consumption by arrays concatenation operations
@@ -866,7 +868,7 @@ class _InnerPredictor:
             nrow = len(csr.indptr) - 1
             n_preds = self.__get_num_preds(start_iteration, num_iteration, nrow, predict_type)
             if preds is None:
-                preds = np.zeros(n_preds, dtype=np.float64)
+                preds = np.empty(n_preds, dtype=np.float64)
             elif len(preds.shape) != 1 or len(preds) != n_preds:
                 raise ValueError("Wrong length of pre-allocated predict array")
             out_num_preds = ctypes.c_int64(0)
@@ -911,7 +913,7 @@ class _InnerPredictor:
                 out_ptr_data = ctypes.POINTER(ctypes.c_float)()
             else:
                 out_ptr_data = ctypes.POINTER(ctypes.c_double)()
-            out_shape = np.zeros(2, dtype=np.int64)
+            out_shape = np.empty(2, dtype=np.int64)
             _safe_call(_LIB.LGBM_BoosterPredictSparseOutput(
                 self.handle,
                 ptr_indptr,
@@ -944,7 +946,7 @@ class _InnerPredictor:
             # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
             n_preds = [self.__get_num_preds(start_iteration, num_iteration, i, predict_type) for i in np.diff(sections)]
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
-            preds = np.zeros(sum(n_preds), dtype=np.float64)
+            preds = np.empty(sum(n_preds), dtype=np.float64)
             for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip(zip(sections, sections[1:]),
                                                                             zip(n_preds_sections, n_preds_sections[1:])):
                 # avoid memory consumption by arrays concatenation operations
@@ -969,7 +971,7 @@ class _InnerPredictor:
                 out_ptr_data = ctypes.POINTER(ctypes.c_float)()
             else:
                 out_ptr_data = ctypes.POINTER(ctypes.c_double)()
-            out_shape = np.zeros(2, dtype=np.int64)
+            out_shape = np.empty(2, dtype=np.int64)
             _safe_call(_LIB.LGBM_BoosterPredictSparseOutput(
                 self.handle,
                 ptr_indptr,
@@ -1000,7 +1002,7 @@ class _InnerPredictor:
         if predict_type == C_API_PREDICT_CONTRIB:
             return inner_predict_sparse(csc, start_iteration, num_iteration, predict_type)
         n_preds = self.__get_num_preds(start_iteration, num_iteration, nrow, predict_type)
-        preds = np.zeros(n_preds, dtype=np.float64)
+        preds = np.empty(n_preds, dtype=np.float64)
         out_num_preds = ctypes.c_int64(0)
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
@@ -1144,6 +1146,7 @@ class Dataset:
                                                 "max_bin_by_feature",
                                                 "min_data_in_bin",
                                                 "pre_partition",
+                                                "precise_float_parser",
                                                 "two_round",
                                                 "use_missing",
                                                 "weight_column",
@@ -1173,7 +1176,7 @@ class Dataset:
             if used_indices is not None:
                 assert not self.need_slice
                 if isinstance(data, str):
-                    sub_init_score = np.zeros(num_data * predictor.num_class, dtype=np.float32)
+                    sub_init_score = np.empty(num_data * predictor.num_class, dtype=np.float32)
                     assert num_data == len(used_indices)
                     for i in range(len(used_indices)):
                         for j in range(predictor.num_class):
@@ -1181,7 +1184,7 @@ class Dataset:
                     init_score = sub_init_score
             if predictor.num_class > 1:
                 # need to regroup init_score
-                new_init_score = np.zeros(init_score.size, dtype=np.float32)
+                new_init_score = np.empty(init_score.size, dtype=np.float32)
                 for i in range(num_data):
                     for j in range(predictor.num_class):
                         new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
@@ -1317,7 +1320,7 @@ class Dataset:
     def __init_from_list_np2d(self, mats, params_str, ref_dataset):
         """Initialize data from a list of 2-D numpy matrices."""
         ncol = mats[0].shape[1]
-        nrow = np.zeros((len(mats),), np.int32)
+        nrow = np.empty((len(mats),), np.int32)
         if mats[0].dtype == np.float64:
             ptr_data = (ctypes.POINTER(ctypes.c_double) * len(mats))()
         else:
@@ -3180,7 +3183,11 @@ class Booster:
         _safe_call(_LIB.LGBM_BoosterGetLinear(
             self.handle,
             ctypes.byref(out_is_linear)))
-        new_params = deepcopy(self.params)
+        new_params = _choose_param_value(
+            main_param_name="linear_tree",
+            params=self.params,
+            default_value=None
+        )
         new_params["linear_tree"] = out_is_linear.value
         train_set = Dataset(data, label, silent=True, params=new_params)
         new_params['refit_decay_rate'] = decay_rate
@@ -3303,7 +3310,7 @@ class Booster:
         if iteration is None:
             iteration = self.best_iteration
         importance_type_int = FEATURE_IMPORTANCE_TYPE_MAPPER[importance_type]
-        result = np.zeros(self.num_feature(), dtype=np.float64)
+        result = np.empty(self.num_feature(), dtype=np.float64)
         _safe_call(_LIB.LGBM_BoosterFeatureImportance(
             self.handle,
             ctypes.c_int(iteration),
@@ -3390,7 +3397,7 @@ class Booster:
         self.__get_eval_info()
         ret = []
         if self.__num_inner_eval > 0:
-            result = np.zeros(self.__num_inner_eval, dtype=np.float64)
+            result = np.empty(self.__num_inner_eval, dtype=np.float64)
             tmp_out_len = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_BoosterGetEval(
                 self.handle,
@@ -3430,7 +3437,7 @@ class Booster:
                 n_preds = self.train_set.num_data() * self.__num_class
             else:
                 n_preds = self.valid_sets[data_idx - 1].num_data() * self.__num_class
-            self.__inner_predict_buffer[data_idx] = np.zeros(n_preds, dtype=np.float64)
+            self.__inner_predict_buffer[data_idx] = np.empty(n_preds, dtype=np.float64)
         # avoid to predict many time in one iteration
         if not self.__is_predicted_cur_iter[data_idx]:
             tmp_out_len = ctypes.c_int64(0)

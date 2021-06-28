@@ -15,7 +15,15 @@ fi
 
 if [[ "$TASK" == "cpp-tests" ]]; then
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
-    cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF ..
+    if [[ $METHOD == "with-sanitizers" ]]; then
+        extra_cmake_opts="-DUSE_SANITIZER=ON"
+        if [[ -n $SANITIZERS ]]; then
+            extra_cmake_opts="$extra_cmake_opts -DENABLED_SANITIZERS=$SANITIZERS"
+        fi
+    else
+        extra_cmake_opts=""
+    fi
+    cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts ..
     make testlightgbm -j4 || exit -1
     ./../testlightgbm || exit -1
     exit 0
