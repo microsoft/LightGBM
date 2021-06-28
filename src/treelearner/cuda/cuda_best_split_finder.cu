@@ -623,56 +623,6 @@ void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(
       cuda_best_split_right_output_,
       cuda_best_split_found_);
   }
-  /*const int num_blocks = (larger_leaf_index >= 0 && !larger_only) ? num_tasks_ * 2 : num_tasks_;
-  FindBestSplitsForLeafKernel<<<num_blocks, MAX_NUM_BIN_IN_FEATURE>>>(
-    // input feature information
-    cuda_feature_hist_offsets_,
-    cuda_feature_mfb_offsets_,
-    cuda_feature_default_bins_,
-    cuda_feature_missing_type_,
-    cuda_feature_num_bins_,
-    // input task information
-    larger_only,
-    num_tasks_,
-    cuda_task_feature_index_,
-    cuda_task_reverse_,
-    cuda_task_skip_default_bin_,
-    cuda_task_na_as_missing_,
-    cuda_task_out_default_left_,
-    // input leaf information
-    smaller_leaf_index,
-    smaller_leaf_splits->cuda_gain(),
-    smaller_leaf_splits->cuda_sum_of_gradients(),
-    smaller_leaf_splits->cuda_sum_of_hessians(),
-    smaller_leaf_splits->cuda_num_data_in_leaf(),
-    smaller_leaf_splits->cuda_hist_in_leaf_pointer_pointer(),
-    larger_leaf_index,
-    larger_leaf_splits->cuda_gain(),
-    larger_leaf_splits->cuda_sum_of_gradients(),
-    larger_leaf_splits->cuda_sum_of_hessians(),
-    larger_leaf_splits->cuda_num_data_in_leaf(),
-    larger_leaf_splits->cuda_hist_in_leaf_pointer_pointer(),
-    // configuration parameter values
-    min_data_in_leaf_,
-    min_sum_hessian_in_leaf_,
-    min_gain_to_split_,
-    lambda_l1_,
-    lambda_l2_,
-    // output parameters
-    cuda_best_split_threshold_,
-    cuda_best_split_default_left_,
-    cuda_best_split_gain_,
-    cuda_best_split_left_sum_gradient_,
-    cuda_best_split_left_sum_hessian_,
-    cuda_best_split_left_count_,
-    cuda_best_split_left_gain_,
-    cuda_best_split_left_output_,
-    cuda_best_split_right_sum_gradient_,
-    cuda_best_split_right_sum_hessian_,
-    cuda_best_split_right_count_,
-    cuda_best_split_right_gain_,
-    cuda_best_split_right_output_,
-    cuda_best_split_found_);*/
 }
 
 __device__ void ReduceBestSplit(uint8_t* found, double* gain, uint32_t* shared_read_index,
@@ -1077,7 +1027,7 @@ __global__ void FindBestFromAllSplitsKernel(const int* cuda_cur_num_leaves,
   if (threadIdx_x < static_cast<unsigned int>(cur_num_valid_threads)) {
     const int start = num_leaves_per_thread * threadIdx_x;
     const int end = min(start + num_leaves_per_thread, cuda_cur_num_leaves_ref);
-    for (int leaf_index = start; leaf_index < end; ++leaf_index) {
+    for (int leaf_index = threadIdx_x; leaf_index < cuda_cur_num_leaves_ref; leaf_index += cur_num_valid_threads) {
       const double leaf_best_gain = cuda_leaf_best_split_gain[leaf_index];
       if (cuda_leaf_best_split_found[leaf_index] && leaf_best_gain > thread_best_gain[threadIdx_x]) {
         thread_best_gain[threadIdx_x] = leaf_best_gain;

@@ -151,7 +151,7 @@ class CUDAHistogramConstructor {
   std::vector<int> need_fix_histogram_features_;
   std::vector<uint32_t> need_fix_histogram_features_num_bin_aligend_;
 
-  const int min_grid_dim_y_ = 10;
+  const int min_grid_dim_y_ = 160;
 
   // CUDA memory, held by this object
   uint32_t* cuda_feature_group_bin_offsets_;

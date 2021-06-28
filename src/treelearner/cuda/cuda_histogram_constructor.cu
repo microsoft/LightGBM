@@ -237,10 +237,8 @@ __global__ void CUDAConstructHistogramDenseKernel2(
   const uint32_t partition_hist_end = column_hist_offsets_full[blockIdx.x + 1];
   const uint32_t num_items_in_partition = (partition_hist_end - partition_hist_start) << 1;
   const unsigned int thread_idx = threadIdx.x + threadIdx.y * blockDim.x;
-  hist_t* feature_histogram_ptr = histogram_buffer + total_num_bin * (blockIdx.y % USED_HISTOGRAM_BUFFER_NUM) * 2 + (partition_hist_start << 1);
   for (unsigned int i = thread_idx; i < num_items_in_partition; i += num_threads_per_block) {
     shared_hist[i] = 0.0f;
-    //feature_histogram_ptr[i] = 0.0f;
   }
   __syncthreads();
   const unsigned int threadIdx_y = threadIdx.y;
@@ -268,6 +266,7 @@ __global__ void CUDAConstructHistogramDenseKernel2(
     }
   }
   __syncthreads();
+  hist_t* feature_histogram_ptr = histogram_buffer + total_num_bin * (blockIdx.y % USED_HISTOGRAM_BUFFER_NUM) * 2 + (partition_hist_start << 1);
   for (unsigned int i = thread_idx; i < num_items_in_partition; i += num_threads_per_block) {
     atomicAdd_system(feature_histogram_ptr + i, shared_hist[i]);
   }
@@ -332,7 +331,7 @@ __global__ void CUDAConstructHistogramSparseKernel2(
     inner_data_index += blockDim.y;
   }
   __syncthreads();
-  hist_t* feature_histogram_ptr = histogram_buffer + total_num_bin * blockIdx.y * 2 + (partition_hist_start << 1);
+  hist_t* feature_histogram_ptr = histogram_buffer + total_num_bin * (blockIdx.y % USED_HISTOGRAM_BUFFER_NUM) * 2 + (partition_hist_start << 1);
   for (unsigned int i = thread_idx; i < num_items_in_partition; i += num_threads_per_block) {
     atomicAdd_system(feature_histogram_ptr + i, shared_hist[i]);
   }
@@ -606,7 +605,6 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel2(
         num_data_, block_cuda_hist_buffer_, num_total_bin_);
     }
   }
-  SynchronizeCUDADevice();
   global_timer.Stop("CUDAConstructHistogramKernel2");
   const int merge_block_dim = 1024;
   const int num_bin_per_block = merge_block_dim / USED_HISTOGRAM_BUFFER_NUM;
@@ -614,7 +612,6 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel2(
   global_timer.Start("MergeHistogramBufferKernel");
   MergeHistogramBufferKernel<<<num_blocks, merge_block_dim, 0, cuda_streams_[0]>>>(
     block_cuda_hist_buffer_, num_total_bin_, num_bin_per_block, cuda_leaf_hist);
-  SynchronizeCUDADevice();
   global_timer.Stop("MergeHistogramBufferKernel");
 }
 
