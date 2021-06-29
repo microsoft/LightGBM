@@ -19,7 +19,6 @@ from .compat import PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, pd_
 from .libpath import find_lib_path
 
 ZERO_THRESHOLD = 1e-35
-DEFAULT_BIN_CONSTRUCT_SAMPLE_CNT = 200000
 
 
 def _get_sample_count(total_nrow: int, params: str):
