@@ -609,7 +609,7 @@ class Sequence(abc.ABC):
     """
     Generic data access interface.
 
-    Object should support the following operations::
+    Object should support the following operations:
 
         # Get total row number.
         >>> len(seq)
