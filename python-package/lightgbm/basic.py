@@ -610,6 +610,8 @@ class Sequence(abc.ABC):
 
     Object should support the following operations:
 
+    .. code-block::
+
         # Get total row number.
         >>> len(seq)
         # Random access by row index. Used for data sampling.
