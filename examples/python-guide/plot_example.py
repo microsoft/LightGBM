@@ -37,7 +37,7 @@ gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=100,
                 valid_sets=[lgb_train, lgb_test],
-                feature_name=[f'f {i+1}' for i in range(X_train.shape[-1])],
+                feature_name=[f'f{i+1}' for i in range(X_train.shape[-1])],
                 categorical_feature=[21],
                 evals_result=evals_result,
                 verbose_eval=10)
