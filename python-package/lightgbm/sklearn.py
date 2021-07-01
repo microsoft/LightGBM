@@ -2,6 +2,7 @@
 """Scikit-learn wrapper interface for LightGBM."""
 import copy
 from inspect import signature
+from typing import Callable, Dict, Optional, Union
 
 import numpy as np
 
@@ -348,13 +349,30 @@ _lgbmmodel_doc_predict = (
 class LGBMModel(_LGBMModelBase):
     """Implementation of the scikit-learn API for LightGBM."""
 
-    def __init__(self, boosting_type='gbdt', num_leaves=31, max_depth=-1,
-                 learning_rate=0.1, n_estimators=100,
-                 subsample_for_bin=200000, objective=None, class_weight=None,
-                 min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
-                 subsample=1., subsample_freq=0, colsample_bytree=1.,
-                 reg_alpha=0., reg_lambda=0., random_state=None,
-                 n_jobs=-1, silent=True, importance_type='split', **kwargs):
+    def __init__(
+        self,
+        boosting_type: str = 'gbdt',
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[str, Callable]] = None,
+        class_weight: Optional[Union[Dict, str]] = None,
+        min_split_gain: float = 0.,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.,
+        reg_alpha: float = 0.,
+        reg_lambda: float = 0.,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
+        n_jobs: int = -1,
+        silent: bool = True,
+        importance_type: str = 'split',
+        **kwargs
+    ):
         r"""Construct a gradient boosting model.
 
         Parameters
