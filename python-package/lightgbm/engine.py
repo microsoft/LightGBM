@@ -265,6 +265,7 @@ def train(params, train_set, num_boost_round=100,
         except callback.EarlyStopException as earlyStopException:
             booster.best_iteration = earlyStopException.best_iteration + 1
             evaluation_result_list = earlyStopException.best_score
+            booster.best_dart_model = earlyStopException.best_model
             break
     booster.best_score = collections.defaultdict(collections.OrderedDict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
@@ -601,6 +602,7 @@ def cv(params, train_set, num_boost_round=100,
                                         evaluation_result_list=res))
         except callback.EarlyStopException as earlyStopException:
             cvfolds.best_iteration = earlyStopException.best_iteration + 1
+            cvfolds.best_dart_model = earlyStopException.best_model
             for k in results:
                 results[k] = results[k][:cvfolds.best_iteration]
             break

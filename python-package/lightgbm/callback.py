@@ -1,5 +1,6 @@
 # coding: utf-8
 """Callbacks library."""
+import copy
 import collections
 from operator import gt, lt
 
@@ -9,18 +10,22 @@ from .basic import _ConfigAliases, _log_info, _log_warning
 class EarlyStopException(Exception):
     """Exception of early stopping."""
 
-    def __init__(self, best_iteration, best_score):
+    def __init__(self, best_iteration, best_model, best_score):
         """Create early stopping exception.
 
         Parameters
         ----------
         best_iteration : int
             The best iteration stopped.
+        best_model: lightgbm.Booster
+            The best model at the best iteration
+            only enabled in dart mode
         best_score : float
             The score of the best iteration.
         """
         super().__init__()
         self.best_iteration = best_iteration
+        self.best_model = best_model
         self.best_score = best_score
 
 
@@ -168,19 +173,17 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
     callback : function
         The callback that activates early stopping.
     """
-    best_score = []
-    best_iter = []
-    best_score_list = []
-    cmp_op = []
-    enabled = [True]
-    first_metric = ['']
+    is_dart = False
+    best_score = []      # best metric score
+    best_iter = []       # best iter idx
+    best_model = []      # best model
+    best_score_list = [] # best score result list
+    cmp_op = []          # comparison operators
+    first_metric = ['']  # first metric name
 
     def _init(env):
-        enabled[0] = not any(env.params.get(boost_alias, "") == 'dart' for boost_alias
-                             in _ConfigAliases.get("boosting"))
-        if not enabled[0]:
-            _log_warning('Early stopping is not available in dart mode')
-            return
+        is_dart = any(env.params.get(boost_alias, "") == 'dart' for boost_alias
+                      in _ConfigAliases.get("boosting"))
         if not env.evaluation_result_list:
             raise ValueError('For early stopping, '
                              'at least one dataset and eval metric is required for evaluation')
@@ -192,6 +195,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
         first_metric[0] = env.evaluation_result_list[0][1].split(" ")[-1]
         for eval_ret in env.evaluation_result_list:
             best_iter.append(0)
+            best_model.append(None)
             best_score_list.append(None)
             if eval_ret[3]:
                 best_score.append(float('-inf'))
@@ -207,17 +211,16 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                     best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                 if first_metric_only:
                     _log_info("Evaluated only: {}".format(eval_name_splitted[-1]))
-            raise EarlyStopException(best_iter[i], best_score_list[i])
+            raise EarlyStopException(best_iter[i], best_model[i], best_score_list[i])
 
     def _callback(env):
         if not cmp_op:
             _init(env)
-        if not enabled[0]:
-            return
         for i in range(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2]
             if best_score_list[i] is None or cmp_op[i](score, best_score[i]):
                 best_score[i] = score
+                best_model[i] = copy.deepcopy(env.model) if is_dart else None
                 best_iter[i] = env.iteration
                 best_score_list[i] = env.evaluation_result_list
             # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
@@ -234,7 +237,7 @@ def early_stopping(stopping_rounds, first_metric_only=False, verbose=True):
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                     if first_metric_only:
                         _log_info("Evaluated only: {}".format(eval_name_splitted[-1]))
-                raise EarlyStopException(best_iter[i], best_score_list[i])
+                raise EarlyStopException(best_iter[i], best_model[i], best_score_list[i])
             _final_iteration_check(env, eval_name_splitted, i)
     _callback.order = 30
     return _callback
