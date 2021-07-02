@@ -898,6 +898,51 @@ int LGBM_RegisterLogCallback(void (*callback)(const char*)) {
   API_END();
 }
 
+static inline int SampleCount(int32_t total_nrow, const Config& config) {
+  return static_cast<int>(total_nrow < config.bin_construct_sample_cnt ? total_nrow : config.bin_construct_sample_cnt);
+}
+
+static inline std::vector<int32_t> CreateSampleIndices(int32_t total_nrow, const Config& config) {
+  Random rand(config.data_random_seed);
+  int sample_cnt = SampleCount(total_nrow, config);
+  return rand.Sample(total_nrow, sample_cnt);
+}
+
+int LGBM_GetSampleCount(int32_t num_total_row,
+                        const char* parameters,
+                        int* out) {
+  API_BEGIN();
+  if (out == nullptr) {
+    Log::Fatal("LGBM_GetSampleCount output is nullptr");
+  }
+  auto param = Config::Str2Map(parameters);
+  Config config;
+  config.Set(param);
+
+  *out = SampleCount(num_total_row, config);
+  API_END();
+}
+
+int LGBM_SampleIndices(int32_t num_total_row,
+                       const char* parameters,
+                       void* out,
+                       int32_t* out_len) {
+  // This API is to keep python binding's behavior the same with C++ implementation.
+  // Sample count, random seed etc. should be provided in parameters.
+  API_BEGIN();
+  if (out == nullptr) {
+    Log::Fatal("LGBM_SampleIndices output is nullptr");
+  }
+  auto param = Config::Str2Map(parameters);
+  Config config;
+  config.Set(param);
+
+  auto sample_indices = CreateSampleIndices(num_total_row, config);
+  memcpy(out, sample_indices.data(), sizeof(int32_t) * sample_indices.size());
+  *out_len = static_cast<int32_t>(sample_indices.size());
+  API_END();
+}
+
 int LGBM_DatasetCreateFromFile(const char* filename,
                                const char* parameters,
                                const DatasetHandle reference,
@@ -1037,7 +1082,6 @@ int LGBM_DatasetCreateFromMat(const void* data,
                                     reference,
                                     out);
 }
-
 
 int LGBM_DatasetCreateFromMats(int32_t nmat,
                                const void** data,
