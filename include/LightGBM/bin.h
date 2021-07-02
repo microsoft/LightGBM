@@ -198,6 +198,8 @@ class BinMapper {
     }
   }
 
+  inline const std::vector<double>& bin_upper_bound() const { return bin_upper_bound_; }
+
  private:
   /*! \brief Number of bins */
   int num_bin_;
