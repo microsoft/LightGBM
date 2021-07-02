@@ -1,6 +1,7 @@
 # coding: utf-8
 import json
 import pickle
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -10,10 +11,11 @@ import lightgbm as lgb
 
 print('Loading data...')
 # load or create your dataset
-df_train = pd.read_csv('../binary_classification/binary.train', header=None, sep='\t')
-df_test = pd.read_csv('../binary_classification/binary.test', header=None, sep='\t')
-W_train = pd.read_csv('../binary_classification/binary.train.weight', header=None)[0]
-W_test = pd.read_csv('../binary_classification/binary.test.weight', header=None)[0]
+binary_example_dir = Path(__file__).absolute().parents[1] / 'binary_classification'
+df_train = pd.read_csv(str(binary_example_dir / 'binary.train'), header=None, sep='\t')
+df_test = pd.read_csv(str(binary_example_dir / 'binary.test'), header=None, sep='\t')
+W_train = pd.read_csv(str(binary_example_dir / 'binary.train.weight'), header=None)[0]
+W_test = pd.read_csv(str(binary_example_dir / 'binary.test.weight'), header=None)[0]
 
 y_train = df_train[0]
 y_test = df_test[0]
