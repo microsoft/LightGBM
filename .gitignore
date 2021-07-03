@@ -384,6 +384,7 @@ lightgbm.model
 *.model
 *.pkl
 *.bin
+*.h5
 
 # macOS
 **/.DS_Store
