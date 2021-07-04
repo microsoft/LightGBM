@@ -411,7 +411,7 @@ def test_classifier_pred_contrib(output, task, cluster):
                 # raw scores will probably be different, but at least check that all predicted classes are the same
                 pred_classes = np.argmax(np.array(computed_preds.todense()), axis=1)
                 local_pred_classes = np.argmax(np.array(local_preds_with_contrib[i].todense()), axis=1)
-                assert np.all(pred_classes == local_pred_classes)
+                np.testing.assert_array_equal(pred_classes, local_pred_classes)
             return
 
         preds_with_contrib = preds_with_contrib.compute()
