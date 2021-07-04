@@ -872,7 +872,7 @@ def _predict(
         The predicted values.
     X_leaves : Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
         If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-    X_SHAP_values : "Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or (if multiclass and using sparse inputs) a list of ``n_classes`` Dask Arrays which each have shape [n_samples, n_features + 1]"
+    X_SHAP_values : Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or (if multi-class and using sparse inputs) a list of ``n_classes`` Dask Arrays of shape = [n_samples, n_features + 1]
         If ``pred_contrib=True``, the feature contributions for each sample.
     """
     if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
@@ -922,7 +922,7 @@ def _predict(
             num_cols = model.n_features_ + 1
 
             nrows_per_chunk = data.chunks[0]
-            out = [list() for _ in range(num_classes)]
+            out = [[] for _ in range(num_classes)]
 
             # need to tell Dask the expected type and shape of individual preds
             pred_meta = data._meta
@@ -1210,7 +1210,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         output_name="predicted_result",
         predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
-        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or (if multiclass and using sparse inputs) a list of ``n_classes`` Dask Arrays which each have shape [n_samples, n_features + 1]"
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or (if multi-class and using sparse inputs) a list of ``n_classes`` Dask Arrays of shape = [n_samples, n_features + 1]"
     )
 
     def predict_proba(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
