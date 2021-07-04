@@ -5,6 +5,7 @@ This script checks that LightGBM library is linked to the appropriate symbol ver
 """
 import re
 import sys
+from pathlib import Path
 
 
 def check_dependicies(objdump_string: str) -> None:
@@ -39,5 +40,4 @@ def check_dependicies(objdump_string: str) -> None:
 
 
 if __name__ == "__main__":
-    with open(sys.argv[1], 'r') as f:
-        check_dependicies(f.read())
+    check_dependicies(Path(sys.argv[1]).read_text(encoding='utf-8'))
