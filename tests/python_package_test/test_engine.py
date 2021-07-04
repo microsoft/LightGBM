@@ -819,11 +819,11 @@ def test_feature_name():
     X_train, y_train = load_boston(return_X_y=True)
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
-    feature_names = ['f_' + str(i) for i in range(X_train.shape[-1])]
+    feature_names = [f'f_{i}' for i in range(X_train.shape[-1])]
     gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names)
     assert feature_names == gbm.feature_name()
     # test feature_names with whitespaces
-    feature_names_with_space = ['f ' + str(i) for i in range(X_train.shape[-1])]
+    feature_names_with_space = [f'f {i}' for i in range(X_train.shape[-1])]
     gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names_with_space)
     assert feature_names == gbm.feature_name()
 
@@ -2021,12 +2021,12 @@ def test_model_size():
     multiplier = 100
     total_trees = multiplier + 2
     try:
-        new_model_str = (model_str[:model_str.find('tree_sizes')]
-                         + '\n\n'
-                         + model_str[model_str.find('Tree=0'):model_str.find('end of trees')]
-                         + (one_tree * multiplier).format(*range(2, total_trees))
-                         + model_str[model_str.find('end of trees'):]
-                         + ' ' * (2**31 - one_tree_size * total_trees))
+        before_tree_sizes = model_str[:model_str.find('tree_sizes')]
+        trees = model_str[model_str.find('Tree=0'):model_str.find('end of trees')]
+        more_trees = (one_tree * multiplier).format(*range(2, total_trees))
+        after_trees = model_str[model_str.find('end of trees'):]
+        num_end_spaces = 2**31 - one_tree_size * total_trees
+        new_model_str = f"{before_tree_sizes}\n\n{trees}{more_trees}{after_trees}{'':{num_end_spaces}}"
         assert len(new_model_str) > 2**31
         bst.model_from_string(new_model_str, verbose=False)
         assert bst.num_trees() == total_trees
@@ -2398,10 +2398,13 @@ def test_dataset_update_params():
     for key, value in unchangeable_params.items():
         new_params = default_params.copy()
         new_params[key] = value
+        if key != "forcedbins_filename":
+            param_name = key
+        else:
+            param_name = "forced bins"
         err_msg = ("Reducing `min_data_in_leaf` with `feature_pre_filter=true` may cause *"
                    if key == "min_data_in_leaf"
-                   else "Cannot change {} *".format(key if key != "forcedbins_filename"
-                                                    else "forced bins"))
+                   else f"Cannot change {param_name} *")
         with np.testing.assert_raises_regex(lgb.basic.LightGBMError, err_msg):
             lgb.train(new_params, lgb_data, num_boost_round=3)
 
@@ -2460,7 +2463,7 @@ def test_trees_to_dataframe():
     pytest.importorskip("pandas")
 
     def _imptcs_to_numpy(X, impcts_dict):
-        cols = ['Column_' + str(i) for i in range(X.shape[1])]
+        cols = [f'Column_{i}' for i in range(X.shape[1])]
         return [impcts_dict.get(col, 0.) for col in cols]
 
     X, y = load_breast_cancer(return_X_y=True)
