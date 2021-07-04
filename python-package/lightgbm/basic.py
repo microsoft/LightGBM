@@ -254,6 +254,7 @@ def param_dict_to_str(data):
 
 class _TempFile:
     """Proxy class to workaround errors on Windows."""
+
     def __enter__(self):
         with NamedTemporaryFile(prefix="lightgbm_tmp_", delete=True) as f:
             self.name = f.name
