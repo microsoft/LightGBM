@@ -890,12 +890,12 @@ def _predict(
     elif isinstance(data, dask_Array):
         # for multi-class classification with sparse matrices, pred_contrib predictions
         # are returned as a list of sparse matrices (one per class)
-        num_classes = getattr(model, "n_classes_", -1)
+        num_classes = model._n_classes or -1
 
         if (
             num_classes > 2
-            and isinstance(data._meta, ss.spmatrix)
             and pred_contrib
+            and isinstance(data._meta, ss.spmatrix)
         ):
 
             predict_function = partial(
@@ -937,7 +937,6 @@ def _predict(
                     out[i].append(part)
 
             # by default, dask.array.concatenate() concatenates sparse arrays into a COO matrix
-            #
             # the code below is used instead to ensure that the sparse type is preserved during concatentation
             if isinstance(pred_meta, ss.csr_matrix):
                 concat_fn = partial(ss.vstack, format='csr')
