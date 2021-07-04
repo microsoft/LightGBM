@@ -409,14 +409,14 @@ def test_classifier_pred_contrib(output, task, cluster):
                 assert computed_preds.shape == local_preds_with_contrib[i].shape
                 assert len(np.unique(computed_preds[:, -1])) == 1
                 # raw scores will probably be different, but at least check that all predicted classes are the same
-                pred_classes = np.argmax(np.array(computed_preds.todense()), axis=1)
-                local_pred_classes = np.argmax(np.array(local_preds_with_contrib[i].todense()), axis=1)
+                pred_classes = np.argmax(computed_preds.todense(), axis=1)
+                local_pred_classes = np.argmax(local_preds_with_contrib[i].todense(), axis=1)
                 np.testing.assert_array_equal(pred_classes, local_pred_classes)
             return
 
         preds_with_contrib = preds_with_contrib.compute()
         if output.startswith('scipy'):
-            preds_with_contrib = np.array(preds_with_contrib.todense())
+            preds_with_contrib = preds_with_contrib.todense()
 
         # be sure LightGBM actually used at least one categorical column,
         # and that it was correctly treated as a categorical feature
@@ -621,7 +621,7 @@ def test_regressor_pred_contrib(output, cluster):
         local_preds_with_contrib = local_regressor.predict(X, pred_contrib=True)
 
         if output == "scipy_csr_matrix":
-            preds_with_contrib = np.array(preds_with_contrib.todense())
+            preds_with_contrib = preds_with_contrib.todense()
 
         # contrib outputs for distributed training are different than from local training, so we can just test
         # that the output has the right shape and base values are in the right position
