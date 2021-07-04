@@ -647,7 +647,7 @@ class Sequence(abc.ABC):
             elif isinstance(idx, slice):
                 return np.stack(self.__get_one_line__(i) for i in range(idx.start, idx.stop))
             else:
-                raise TypeError(f"Sequence index must be integer or slice, got {type(idx)}")
+                raise TypeError(f"Sequence index must be integer or slice, got {type(idx).__name__}")
 
         Parameters
         ----------
