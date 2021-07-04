@@ -3,12 +3,14 @@
 import abc
 import ctypes
 import json
-import os
 import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from functools import wraps
 from logging import Logger
+from os import SEEK_END
+from os.path import getsize
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 
@@ -243,7 +245,7 @@ def param_dict_to_str(data):
                 else:
                     return str(x)
             pairs.append(f"{key}={','.join(map(to_string, val))}")
-        elif isinstance(val, (str, NUMERIC_TYPES)) or is_numeric(val):
+        elif isinstance(val, (str, Path, NUMERIC_TYPES)) or is_numeric(val):
             pairs.append(f"{key}={val}")
         elif val is not None:
             raise TypeError(f'Unknown type of parameter:{key}, got:{type(val).__name__}')
@@ -251,23 +253,16 @@ def param_dict_to_str(data):
 
 
 class _TempFile:
+    """Proxy class to workaround errors on Windows."""
     def __enter__(self):
         with NamedTemporaryFile(prefix="lightgbm_tmp_", delete=True) as f:
             self.name = f.name
+            self.path = Path(self.name)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if os.path.isfile(self.name):
-            os.remove(self.name)
-
-    def readlines(self):
-        with open(self.name, "r+") as f:
-            ret = f.readlines()
-        return ret
-
-    def writelines(self, lines):
-        with open(self.name, "w+") as f:
-            f.writelines(lines)
+        if self.path.is_file():
+            self.path.unlink()
 
 
 class LightGBMError(Exception):
@@ -584,12 +579,12 @@ def _load_pandas_categorical(file_name=None, model_str=None):
     pandas_key = 'pandas_categorical:'
     offset = -len(pandas_key)
     if file_name is not None:
-        max_offset = -os.path.getsize(file_name)
+        max_offset = -getsize(file_name)
         with open(file_name, 'rb') as f:
             while True:
                 if offset < max_offset:
                     offset = max_offset
-                f.seek(offset, os.SEEK_END)
+                f.seek(offset, SEEK_END)
                 lines = f.readlines()
                 if len(lines) >= 2:
                     break
@@ -683,7 +678,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        model_file : string or None, optional (default=None)
+        model_file : string, pathlib.Path or None, optional (default=None)
             Path to the model file.
         booster_handle : object or None, optional (default=None)
             Handle of Booster.
@@ -696,7 +691,7 @@ class _InnerPredictor:
             """Prediction task"""
             out_num_iterations = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
-                c_str(model_file),
+                c_str(str(model_file)),
                 ctypes.byref(out_num_iterations),
                 ctypes.byref(self.handle)))
             out_num_class = ctypes.c_int(0)
@@ -741,9 +736,9 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
-            When data type is string, it represents the path of txt file.
+            When data type is string or pathlib.Path, it represents the path of txt file.
         start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
         num_iteration : int, optional (default=-1)
@@ -778,21 +773,19 @@ class _InnerPredictor:
             predict_type = C_API_PREDICT_CONTRIB
         int_data_has_header = 1 if data_has_header else 0
 
-        if isinstance(data, str):
+        if isinstance(data, (str, Path)):
             with _TempFile() as f:
                 _safe_call(_LIB.LGBM_BoosterPredictForFile(
                     self.handle,
-                    c_str(data),
+                    c_str(str(data)),
                     ctypes.c_int(int_data_has_header),
                     ctypes.c_int(predict_type),
                     ctypes.c_int(start_iteration),
                     ctypes.c_int(num_iteration),
                     c_str(self.pred_parameter),
                     c_str(f.name)))
-                lines = f.readlines()
-                nrow = len(lines)
-                preds = [float(token) for line in lines for token in line.split('\t')]
-                preds = np.array(preds, dtype=np.float64, copy=False)
+                preds = np.loadtxt(f.name, dtype=np.float64)
+                nrow = preds.shape[0]
         elif isinstance(data, scipy.sparse.csr_matrix):
             preds, nrow = self.__pred_for_csr(data, start_iteration, num_iteration, predict_type)
         elif isinstance(data, scipy.sparse.csc_matrix):
@@ -827,9 +820,9 @@ class _InnerPredictor:
     def __get_num_preds(self, start_iteration, num_iteration, nrow, predict_type):
         """Get size of prediction result."""
         if nrow > MAX_INT32:
-            raise LightGBMError('LightGBM cannot perform prediction for data'
+            raise LightGBMError('LightGBM cannot perform prediction for data '
                                 f'with number of rows greater than MAX_INT32 ({MAX_INT32}).\n'
-                                'You can split your data into chunks'
+                                'You can split your data into chunks '
                                 'and then concatenate predictions for them')
         n_preds = ctypes.c_int64(0)
         _safe_call(_LIB.LGBM_BoosterCalcNumPredict(
@@ -1131,9 +1124,9 @@ class Dataset:
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
+        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
             Data source of Dataset.
-            If string, it represents the path to txt file.
+            If string or pathlib.Path, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         reference : Dataset or None, optional (default=None)
@@ -1382,7 +1375,7 @@ class Dataset:
 
     def _set_init_score_by_predictor(self, predictor, data, used_indices=None):
         data_has_header = False
-        if isinstance(data, str):
+        if isinstance(data, (str, Path)):
             # check data has header or not
             data_has_header = any(self.params.get(alias, False) for alias in _ConfigAliases.get("header"))
         num_data = self.num_data()
@@ -1393,7 +1386,7 @@ class Dataset:
                                            is_reshape=False)
             if used_indices is not None:
                 assert not self.need_slice
-                if isinstance(data, str):
+                if isinstance(data, (str, Path)):
                     sub_init_score = np.empty(num_data * predictor.num_class, dtype=np.float32)
                     assert num_data == len(used_indices)
                     for i in range(len(used_indices)):
@@ -1470,10 +1463,10 @@ class Dataset:
         elif reference is not None:
             raise TypeError('Reference dataset should be None or dataset instance')
         # start construct data
-        if isinstance(data, str):
+        if isinstance(data, (str, Path)):
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_DatasetCreateFromFile(
-                c_str(data),
+                c_str(str(data)),
                 c_str(params_str),
                 ref_dataset,
                 ctypes.byref(self.handle)))
@@ -1773,9 +1766,9 @@ class Dataset:
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
+        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
             Data source of Dataset.
-            If string, it represents the path to txt file.
+            If string or pathlib.Path, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
@@ -1840,7 +1833,7 @@ class Dataset:
 
         Parameters
         ----------
-        filename : string
+        filename : string or pathlib.Path
             Name of the output file.
 
         Returns
@@ -1850,7 +1843,7 @@ class Dataset:
         """
         _safe_call(_LIB.LGBM_DatasetSaveBinary(
             self.construct().handle,
-            c_str(filename)))
+            c_str(str(filename))))
         return self
 
     def _update_params(self, params):
@@ -2240,7 +2233,7 @@ class Dataset:
 
         Returns
         -------
-        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, list of numpy arrays or None
+        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, list of numpy arrays or None
             Raw data used in the Dataset construction.
         """
         if self.handle is None:
@@ -2440,7 +2433,7 @@ class Dataset:
 
         Parameters
         ----------
-        filename : string
+        filename : string or pathlib.Path
             Name of the output file.
 
         Returns
@@ -2450,7 +2443,7 @@ class Dataset:
         """
         _safe_call(_LIB.LGBM_DatasetDumpText(
             self.construct().handle,
-            c_str(filename)))
+            c_str(str(filename))))
         return self
 
 
@@ -2466,7 +2459,7 @@ class Booster:
             Parameters for Booster.
         train_set : Dataset or None, optional (default=None)
             Training dataset.
-        model_file : string or None, optional (default=None)
+        model_file : string, pathlib.Path or None, optional (default=None)
             Path to the model file.
         model_str : string or None, optional (default=None)
             Model will be loaded from this string.
@@ -2559,7 +2552,7 @@ class Booster:
             out_num_iterations = ctypes.c_int(0)
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
-                c_str(model_file),
+                c_str(str(model_file)),
                 ctypes.byref(out_num_iterations),
                 ctypes.byref(self.handle)))
             out_num_class = ctypes.c_int(0)
@@ -3198,7 +3191,7 @@ class Booster:
 
         Parameters
         ----------
-        filename : string
+        filename : string or pathlib.Path
             Filename to save Booster.
         num_iteration : int or None, optional (default=None)
             Index of the iteration that should be saved.
@@ -3224,7 +3217,7 @@ class Booster:
             ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
             ctypes.c_int(importance_type_int),
-            c_str(filename)))
+            c_str(str(filename))))
         _dump_pandas_categorical(self.pandas_categorical, filename)
         return self
 
@@ -3398,9 +3391,9 @@ class Booster:
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
-            If string, it represents the path to txt file.
+            If string or pathlib.Path, it represents the path to txt file.
         start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
             If <= 0, starts from the first iteration.
@@ -3453,9 +3446,9 @@ class Booster:
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for refit.
-            If string, it represents the path to txt file.
+            If string or pathlib.Path, it represents the path to txt file.
         label : list, numpy 1-D array or pandas Series / one-column DataFrame
             Label for refit.
         decay_rate : float, optional (default=0.9)

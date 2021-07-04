@@ -49,8 +49,8 @@ def test_basic(tmp_path):
     assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
     assert bst.upper_bound() == pytest.approx(3.3182142872462883)
 
-    tname = str(tmp_path / "svm_light.dat")
-    model_file = str(tmp_path / "model.txt")
+    tname = tmp_path / "svm_light.dat"
+    model_file = tmp_path / "model.txt"
 
     bst.save_model(model_file)
     pred_from_matr = bst.predict(X_test)
@@ -153,8 +153,8 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
     X = data[:, :-1]
     Y = data[:, -1]
 
-    npy_bin_fname = str(tmpdir / 'data_from_npy.bin')
-    seq_bin_fname = str(tmpdir / 'data_from_seq.bin')
+    npy_bin_fname = tmpdir / 'data_from_npy.bin'
+    seq_bin_fname = tmpdir / 'data_from_seq.bin'
 
     # Create dataset from numpy array directly.
     ds = lgb.Dataset(X, label=Y, params=params)
@@ -175,9 +175,9 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
     valid_X = valid_data[:, :-1]
     valid_Y = valid_data[:, -1]
 
-    valid_npy_bin_fname = str(tmpdir / 'valid_data_from_npy.bin')
-    valid_seq_bin_fname = str(tmpdir / 'valid_data_from_seq.bin')
-    valid_seq2_bin_fname = str(tmpdir / 'valid_data_from_seq2.bin')
+    valid_npy_bin_fname = tmpdir / 'valid_data_from_npy.bin'
+    valid_seq_bin_fname = tmpdir / 'valid_data_from_seq.bin'
+    valid_seq2_bin_fname = tmpdir / 'valid_data_from_seq2.bin'
 
     valid_ds = lgb.Dataset(valid_X, label=valid_Y, params=params, reference=ds)
     valid_ds.save_binary(valid_npy_bin_fname)
@@ -268,10 +268,10 @@ def test_add_features_equal_data_on_alternating_used_unused(tmp_path):
         d1 = lgb.Dataset(X[:, :j], feature_name=names[:j]).construct()
         d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
         d1.add_features_from(d2)
-        d1name = str(tmp_path / "d1.txt")
+        d1name = tmp_path / "d1.txt"
         d1._dump_text(d1name)
         d = lgb.Dataset(X, feature_name=names).construct()
-        dname = str(tmp_path / "d.txt")
+        dname = tmp_path / "d.txt"
         d._dump_text(dname)
         with open(d1name, 'rt') as d1f:
             d1txt = d1f.read()
@@ -297,8 +297,8 @@ def test_add_features_same_booster_behaviour(tmp_path):
         for k in range(10):
             b.update()
             b1.update()
-        dname = str(tmp_path / "d.txt")
-        d1name = str(tmp_path / "d1.txt")
+        dname = tmp_path / "d.txt"
+        d1name = tmp_path / "d1.txt"
         b1.save_model(d1name)
         b.save_model(dname)
         with open(dname, 'rt') as df:
@@ -352,7 +352,7 @@ def test_cegb_affects_behavior(tmp_path):
     base = lgb.Booster(train_set=ds)
     for k in range(10):
         base.update()
-    basename = str(tmp_path / "basename.txt")
+    basename = tmp_path / "basename.txt"
     base.save_model(basename)
     with open(basename, 'rt') as f:
         basetxt = f.read()
@@ -364,7 +364,7 @@ def test_cegb_affects_behavior(tmp_path):
         booster = lgb.Booster(train_set=ds, params=case)
         for k in range(10):
             booster.update()
-        casename = str(tmp_path / "casename.txt")
+        casename = tmp_path / "casename.txt"
         booster.save_model(casename)
         with open(casename, 'rt') as f:
             casetxt = f.read()
@@ -391,13 +391,13 @@ def test_cegb_scaling_equalities(tmp_path):
         for k in range(10):
             booster1.update()
             booster2.update()
-        p1name = str(tmp_path / "p1.txt")
+        p1name = tmp_path / "p1.txt"
         # Reset booster1's parameters to p2, so the parameter section of the file matches.
         booster1.reset_parameter(p2)
         booster1.save_model(p1name)
         with open(p1name, 'rt') as f:
             p1txt = f.read()
-        p2name = str(tmp_path / "p2.txt")
+        p2name = tmp_path / "p2.txt"
         booster2.save_model(p2name)
         with open(p2name, 'rt') as f:
             p2txt = f.read()
