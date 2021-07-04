@@ -2040,7 +2040,7 @@ class Dataset:
         self.set_categorical_feature(reference.categorical_feature) \
             .set_feature_name(reference.feature_name) \
             ._set_predictor(reference._predictor)
-        # we're done if self and reference share a common upstrem reference
+        # we're done if self and reference share a common upstream reference
         if self.get_ref_chain().intersection(reference.get_ref_chain()):
             return self
         if self.data is not None:
