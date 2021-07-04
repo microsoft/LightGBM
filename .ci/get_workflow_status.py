@@ -33,15 +33,15 @@ def get_runs(trigger_phrase):
     pr_runs = []
     if environ.get("GITHUB_EVENT_NAME", "") == "pull_request":
         pr_number = int(environ.get("GITHUB_REF").split('/')[-2])
-        github_api_url = environ.get("GITHUB_API_URL")
-        req = request.Request(url=f"{github_api_url}/repos/microsoft/LightGBM/issues/{pr_number}/comments",
+        req = request.Request(url="{}/repos/microsoft/LightGBM/issues/{}/comments".format(environ.get("GITHUB_API_URL"),
+                                                                                          pr_number),
                               headers={"Accept": "application/vnd.github.v3+json"})
         url = request.urlopen(req)
         data = json.loads(url.read().decode('utf-8'))
         url.close()
         pr_runs = [i for i in data
                    if i['author_association'].lower() in {'owner', 'member', 'collaborator'}
-                   and i['body'].startswith(f'/gha run {trigger_phrase}')]
+                   and i['body'].startswith('/gha run {}'.format(trigger_phrase))]
     return pr_runs[::-1]
 
 
