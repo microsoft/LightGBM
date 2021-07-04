@@ -31,7 +31,7 @@
     StringArrayHandle StringArrayHandle_create(size_t num_strings, size_t string_size) {
         try {
             return new StringArray(num_strings, string_size);
-        } catch (std::bad_alloc &e) {
+        } catch (std::bad_alloc &/*e*/) {
             return nullptr;
         }
     }

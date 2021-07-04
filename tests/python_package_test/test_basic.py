@@ -1,5 +1,7 @@
 # coding: utf-8
-import os
+import filecmp
+import numbers
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -89,6 +91,109 @@ def test_basic(tmp_path):
                                    bst.predict, tname)
 
 
+class NumpySequence(lgb.Sequence):
+    def __init__(self, ndarray, batch_size):
+        self.ndarray = ndarray
+        self.batch_size = batch_size
+
+    def __getitem__(self, idx):
+        # The simple implementation is just a single "return self.ndarray[idx]"
+        # The following is for demo and testing purpose.
+        if isinstance(idx, numbers.Integral):
+            return self.ndarray[idx]
+        elif isinstance(idx, slice):
+            if not (idx.step is None or idx.step == 1):
+                raise NotImplementedError("No need to implement, caller will not set step by now")
+            return self.ndarray[idx.start:idx.stop]
+        else:
+            raise TypeError(f"Sequence Index must be an integer/list/slice, got {type(idx)}")
+
+    def __len__(self):
+        return len(self.ndarray)
+
+
+def _create_sequence_from_ndarray(data, num_seq, batch_size):
+    if num_seq == 1:
+        return NumpySequence(data, batch_size)
+
+    nrow = data.shape[0]
+    seqs = []
+    seq_size = nrow // num_seq
+    for start in range(0, nrow, seq_size):
+        end = min(start + seq_size, nrow)
+        seq = NumpySequence(data[start:end], batch_size)
+        seqs.append(seq)
+    return seqs
+
+
+@pytest.mark.parametrize('sample_count', [11, 100, None])
+@pytest.mark.parametrize('batch_size', [3, None])
+@pytest.mark.parametrize('include_0_and_nan', [False, True])
+@pytest.mark.parametrize('num_seq', [1, 3])
+def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
+    params = {'bin_construct_sample_cnt': sample_count}
+
+    nrow = 50
+    half_nrow = nrow // 2
+    ncol = 11
+    data = np.arange(nrow * ncol, dtype=np.float64).reshape((nrow, ncol))
+
+    if include_0_and_nan:
+        # whole col
+        data[:, 0] = 0
+        data[:, 1] = np.nan
+
+        # half col
+        data[:half_nrow, 3] = 0
+        data[:half_nrow, 2] = np.nan
+
+        data[half_nrow:-2, 4] = 0
+        data[:half_nrow, 4] = np.nan
+
+    X = data[:, :-1]
+    Y = data[:, -1]
+
+    npy_bin_fname = str(tmpdir / 'data_from_npy.bin')
+    seq_bin_fname = str(tmpdir / 'data_from_seq.bin')
+
+    # Create dataset from numpy array directly.
+    ds = lgb.Dataset(X, label=Y, params=params)
+    ds.save_binary(npy_bin_fname)
+
+    # Create dataset using Sequence.
+    seqs = _create_sequence_from_ndarray(X, num_seq, batch_size)
+    seq_ds = lgb.Dataset(seqs, label=Y, params=params)
+    seq_ds.save_binary(seq_bin_fname)
+
+    assert filecmp.cmp(npy_bin_fname, seq_bin_fname)
+
+    # Test for validation set.
+    # Select some random rows as valid data.
+    rng = np.random.default_rng()  # Pass integer to set seed when needed.
+    valid_idx = (rng.random(10) * nrow).astype(np.int)
+    valid_data = data[valid_idx, :]
+    valid_X = valid_data[:, :-1]
+    valid_Y = valid_data[:, -1]
+
+    valid_npy_bin_fname = str(tmpdir / 'valid_data_from_npy.bin')
+    valid_seq_bin_fname = str(tmpdir / 'valid_data_from_seq.bin')
+    valid_seq2_bin_fname = str(tmpdir / 'valid_data_from_seq2.bin')
+
+    valid_ds = lgb.Dataset(valid_X, label=valid_Y, params=params, reference=ds)
+    valid_ds.save_binary(valid_npy_bin_fname)
+
+    # From Dataset constructor, with dataset from numpy array.
+    valid_seqs = _create_sequence_from_ndarray(valid_X, num_seq, batch_size)
+    valid_seq_ds = lgb.Dataset(valid_seqs, label=valid_Y, params=params, reference=ds)
+    valid_seq_ds.save_binary(valid_seq_bin_fname)
+    assert filecmp.cmp(valid_npy_bin_fname, valid_seq_bin_fname)
+
+    # From Dataset.create_valid, with dataset from sequence.
+    valid_seq_ds2 = seq_ds.create_valid(valid_seqs, label=valid_Y, params=params)
+    valid_seq_ds2.save_binary(valid_seq2_bin_fname)
+    assert filecmp.cmp(valid_npy_bin_fname, valid_seq2_bin_fname)
+
+
 def test_chunked_dataset():
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1,
                                                         random_state=2)
@@ -117,10 +222,9 @@ def test_chunked_dataset_linear():
 
 
 def test_subset_group():
-    X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                       '../../examples/lambdarank/rank.train'))
-    q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                      '../../examples/lambdarank/rank.train.query'))
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
     lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
     assert len(lgb_train.get_group()) == 201
     subset = lgb_train.subset(list(range(10))).construct()
