@@ -130,6 +130,21 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
 
     ./build-cran-package.sh || exit -1
 
+    if [[ "${TASK}" == "r-rchk" ]]; then
+        echo "Checking R package with rchk"
+        mkdir -p packages
+        cp ${PKG_TARBALL} packages
+        RCHK_LOG_FILE="rchk-logs.txt"
+        docker run \
+            -v $(pwd)/packages:/rchk/packages \
+            kalibera/rchk:latest \
+            "/rchk/packages/${PKG_TARBALL}" \
+        2>&1 > ${RCHK_LOG_FILE} \
+        || (cat ${RCHK_LOG_FILE} && exit -1)
+        cat ${RCHK_LOG_FILE}
+        exit $(grep --count -E '\[PB\]|ERROR' < ${RCHK_LOG_FILE})
+    fi
+
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths
