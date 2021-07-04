@@ -1434,7 +1434,7 @@ class Dataset:
         args_names = (getattr(self.__class__, '_lazy_init')
                       .__code__
                       .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount])
-        for key, _ in params.items():
+        for key in params.keys():
             if key in args_names:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
                              f'Please use {key} argument of the Dataset constructor to pass this parameter.')
