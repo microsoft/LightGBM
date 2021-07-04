@@ -1945,7 +1945,7 @@ class Dataset:
 
         Returns
         -------
-        info : numpy array
+        info : numpy array or None
             A numpy array with information from the Dataset.
         """
         if self.handle is None:
