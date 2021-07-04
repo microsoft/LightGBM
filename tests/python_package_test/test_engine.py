@@ -2025,7 +2025,7 @@ def test_model_size():
         trees = model_str[model_str.find('Tree=0'):model_str.find('end of trees')]
         more_trees = (one_tree * multiplier).format(*range(2, total_trees))
         after_trees = model_str[model_str.find('end of trees'):]
-        num_end_spaces = (2**31 - one_tree_size * total_trees)
+        num_end_spaces = 2**31 - one_tree_size * total_trees
         new_model_str = f"{before_tree_sizes}\n\n{trees}{more_trees}{after_trees}{'':{num_end_spaces}}"
         assert len(new_model_str) > 2**31
         bst.model_from_string(new_model_str, verbose=False)
