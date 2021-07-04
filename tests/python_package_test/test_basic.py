@@ -1,7 +1,7 @@
 # coding: utf-8
 import filecmp
 import numbers
-import os
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -153,8 +153,8 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
     X = data[:, :-1]
     Y = data[:, -1]
 
-    npy_bin_fname = os.path.join(tmpdir, 'data_from_npy.bin')
-    seq_bin_fname = os.path.join(tmpdir, 'data_from_seq.bin')
+    npy_bin_fname = str(tmpdir / 'data_from_npy.bin')
+    seq_bin_fname = str(tmpdir / 'data_from_seq.bin')
 
     # Create dataset from numpy array directly.
     ds = lgb.Dataset(X, label=Y, params=params)
@@ -175,9 +175,9 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
     valid_X = valid_data[:, :-1]
     valid_Y = valid_data[:, -1]
 
-    valid_npy_bin_fname = os.path.join(tmpdir, 'valid_data_from_npy.bin')
-    valid_seq_bin_fname = os.path.join(tmpdir, 'valid_data_from_seq.bin')
-    valid_seq2_bin_fname = os.path.join(tmpdir, 'valid_data_from_seq2.bin')
+    valid_npy_bin_fname = str(tmpdir / 'valid_data_from_npy.bin')
+    valid_seq_bin_fname = str(tmpdir / 'valid_data_from_seq.bin')
+    valid_seq2_bin_fname = str(tmpdir / 'valid_data_from_seq2.bin')
 
     valid_ds = lgb.Dataset(valid_X, label=valid_Y, params=params, reference=ds)
     valid_ds.save_binary(valid_npy_bin_fname)
@@ -222,10 +222,9 @@ def test_chunked_dataset_linear():
 
 
 def test_subset_group():
-    X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                       '../../examples/lambdarank/rank.train'))
-    q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                      '../../examples/lambdarank/rank.train.query'))
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
     lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
     assert len(lgb_train.get_group()) == 201
     subset = lgb_train.subset(list(range(10))).construct()

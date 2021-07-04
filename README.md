@@ -70,6 +70,8 @@ JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
 
 Treelite (model compiler for efficient deployment): https://github.com/dmlc/treelite
 
+lleaves (LLVM-based model compiler for efficient inference): https://github.com/siboehm/lleaves
+
 Hummingbird (model compiler into tensor computations): https://github.com/microsoft/hummingbird
 
 cuML Forest Inference Library (GPU-accelerated inference): https://github.com/rapidsai/cuml

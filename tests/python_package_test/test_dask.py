@@ -1090,7 +1090,7 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
             assert "client" not in local_model.get_params()
             assert getattr(local_model, "client", None) is None
 
-            tmp_file = str(tmp_path / "model-1.pkl")
+            tmp_file = tmp_path / "model-1.pkl"
             _pickle(
                 obj=dask_model,
                 filepath=tmp_file,
@@ -1101,7 +1101,7 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                 serializer=serializer
             )
 
-            local_tmp_file = str(tmp_path / "local-model-1.pkl")
+            local_tmp_file = tmp_path / "local-model-1.pkl"
             _pickle(
                 obj=local_model,
                 filepath=local_tmp_file,
@@ -1146,7 +1146,7 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                 local_model.client
                 local_model.client_
 
-            tmp_file2 = str(tmp_path / "model-2.pkl")
+            tmp_file2 = tmp_path / "model-2.pkl"
             _pickle(
                 obj=dask_model,
                 filepath=tmp_file2,
@@ -1157,7 +1157,7 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                 serializer=serializer
             )
 
-            local_tmp_file2 = str(tmp_path / "local-model-2.pkl")
+            local_tmp_file2 = tmp_path / "local-model-2.pkl"
             _pickle(
                 obj=local_model,
                 filepath=local_tmp_file2,
