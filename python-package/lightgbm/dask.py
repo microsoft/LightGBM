@@ -902,7 +902,7 @@ def _predict(
                 _predict_part,
                 model=model,
                 raw_score=False,
-                pred_proba=False,
+                pred_proba=pred_proba,
                 pred_leaf=False,
                 pred_contrib=True,
                 **kwargs
