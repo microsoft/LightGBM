@@ -439,7 +439,7 @@ def test_classifier_pred_contrib(output, task, cluster):
         assert preds_with_contrib.shape == local_preds_with_contrib.shape
 
         if num_classes == 2:
-            assert len(np.unique(preds_with_contrib[:, num_features]) == 1)
+            assert len(np.unique(preds_with_contrib[:, num_features])) == 1
         else:
             for i in range(num_classes):
                 base_value_col = num_features * (i + 1) + i
