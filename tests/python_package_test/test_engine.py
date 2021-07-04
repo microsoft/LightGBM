@@ -2,10 +2,10 @@
 import copy
 import itertools
 import math
-import os
 import pickle
 import platform
 import random
+from pathlib import Path
 
 import numpy as np
 import psutil
@@ -568,8 +568,9 @@ def test_auc_mu():
     lgb.train(params, lgb_X, num_boost_round=100, valid_sets=[lgb_X], evals_result=results)
     assert results['training']['auc_mu'][-1] == pytest.approx(1)
     # test loading class weights
-    Xy = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                 '../../examples/multiclass_classification/multiclass.train'))
+    Xy = np.loadtxt(
+        str(Path(__file__).absolute().parents[2] / 'examples' / 'multiclass_classification' / 'multiclass.train')
+    )
     y = Xy[:, 0]
     X = Xy[:, 1:]
     lgb_X = lgb.Dataset(X, label=y)
@@ -646,7 +647,6 @@ def test_continue_train():
     assert ret < 2.0
     assert evals_result['valid_0']['l1'][-1] == pytest.approx(ret)
     np.testing.assert_allclose(evals_result['valid_0']['l1'], evals_result['valid_0']['custom_mae'])
-    os.remove(model_name)
 
 
 def test_continue_train_reused_dataset():
@@ -748,10 +748,9 @@ def test_cv():
                         verbose_eval=False)
     np.testing.assert_allclose(cv_res_gen['l2-mean'], cv_res_obj['l2-mean'])
     # LambdaRank
-    X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                       '../../examples/lambdarank/rank.train'))
-    q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                      '../../examples/lambdarank/rank.train.query'))
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
     params_lambdarank = {'objective': 'lambdarank', 'verbose': -1, 'eval_at': 3}
     lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
     # ... with l2 metric
@@ -2262,8 +2261,9 @@ def test_forced_bins():
     x[:, 0] = np.arange(0, 1, 0.01)
     x[:, 1] = -np.arange(0, 1, 0.01)
     y = np.arange(0, 1, 0.01)
-    forcedbins_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       '../../examples/regression/forced_bins.json')
+    forcedbins_filename = str(
+        Path(__file__).absolute().parents[2] / 'examples' / 'regression' / 'forced_bins.json'
+    )
     params = {'objective': 'regression_l1',
               'max_bin': 5,
               'forcedbins_filename': forcedbins_filename,
@@ -2285,8 +2285,9 @@ def test_forced_bins():
     est = lgb.train(params, lgb_x, num_boost_round=20)
     predicted = est.predict(new_x)
     assert len(np.unique(predicted)) == 3
-    params['forcedbins_filename'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                 '../../examples/regression/forced_bins2.json')
+    params['forcedbins_filename'] = str(
+        Path(__file__).absolute().parents[2] / 'examples' / 'regression' / 'forced_bins2.json'
+    )
     params['max_bin'] = 11
     lgb_x = lgb.Dataset(x[:, :1], label=y)
     est = lgb.train(params, lgb_x, num_boost_round=50)
