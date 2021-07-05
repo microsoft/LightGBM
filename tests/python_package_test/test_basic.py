@@ -106,7 +106,7 @@ class NumpySequence(lgb.Sequence):
                 raise NotImplementedError("No need to implement, caller will not set step by now")
             return self.ndarray[idx.start:idx.stop]
         else:
-            raise TypeError(f"Sequence Index must be an integer/list/slice, got {type(idx)}")
+            raise TypeError(f"Sequence Index must be an integer/list/slice, got {type(idx).__name__}")
 
     def __len__(self):
         return len(self.ndarray)
