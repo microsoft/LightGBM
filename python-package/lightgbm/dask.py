@@ -84,7 +84,7 @@ def _concat(seq: List[_DaskPart]) -> _DaskPart:
     elif isinstance(seq[0], ss.spmatrix):
         return ss.vstack(seq, format='csr')
     else:
-        raise TypeError(f'Data must be one of: numpy arrays, pandas dataframes, sparse matrices (from scipy). Got {type(seq[0])}.')
+        raise TypeError(f'Data must be one of: numpy arrays, pandas dataframes, sparse matrices (from scipy). Got {type(seq[0]).__name__}.')
 
 
 def _remove_list_padding(*args: Any) -> List[List[Any]]:
@@ -968,7 +968,7 @@ def _predict(
             **kwargs
         )
     else:
-        raise TypeError(f'Data must be either Dask Array or Dask DataFrame. Got {type(data)}.')
+        raise TypeError(f'Data must be either Dask Array or Dask DataFrame. Got {type(data).__name__}.')
 
 
 class _DaskLGBMModel:

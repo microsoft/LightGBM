@@ -80,16 +80,9 @@ def save_to_binary(handle, filename):
 
 
 def load_from_csr(filename, reference):
-    data = []
-    label = []
-    with open(filename, 'r') as inp:
-        for line in inp.readlines():
-            values = line.split('\t')
-            data.append([float(x) for x in values[1:]])
-            label.append(float(values[0]))
-    mat = np.array(data, dtype=np.float64)
-    label = np.array(label, dtype=np.float32)
-    csr = sparse.csr_matrix(mat)
+    data = np.loadtxt(str(filename), dtype=np.float64)
+    csr = sparse.csr_matrix(data[:, 1:])
+    label = data[:, 0].astype(np.float32)
     handle = ctypes.c_void_p()
     ref = None
     if reference is not None:
@@ -122,16 +115,9 @@ def load_from_csr(filename, reference):
 
 
 def load_from_csc(filename, reference):
-    data = []
-    label = []
-    with open(filename, 'r') as inp:
-        for line in inp.readlines():
-            values = line.split('\t')
-            data.append([float(x) for x in values[1:]])
-            label.append(float(values[0]))
-    mat = np.array(data, dtype=np.float64)
-    label = np.array(label, dtype=np.float32)
-    csc = sparse.csc_matrix(mat)
+    data = np.loadtxt(str(filename), dtype=np.float64)
+    csc = sparse.csc_matrix(data[:, 1:])
+    label = data[:, 0].astype(np.float32)
     handle = ctypes.c_void_p()
     ref = None
     if reference is not None:
@@ -164,16 +150,10 @@ def load_from_csc(filename, reference):
 
 
 def load_from_mat(filename, reference):
-    data = []
-    label = []
-    with open(filename, 'r') as inp:
-        for line in inp.readlines():
-            values = line.split('\t')
-            data.append([float(x) for x in values[1:]])
-            label.append(float(values[0]))
-    mat = np.array(data, dtype=np.float64)
+    mat = np.loadtxt(str(filename), dtype=np.float64)
+    label = mat[:, 0].astype(np.float32)
+    mat = mat[:, 1:]
     data = np.array(mat.reshape(mat.size), dtype=np.float64, copy=False)
-    label = np.array(label, dtype=np.float32)
     handle = ctypes.c_void_p()
     ref = None
     if reference is not None:
@@ -258,11 +238,8 @@ def test_booster():
         c_str('model.txt'),
         ctypes.byref(num_total_model),
         ctypes.byref(booster2))
-    data = []
-    with open(binary_example_dir / 'binary.test', 'r') as inp:
-        for line in inp.readlines():
-            data.append([float(x) for x in line.split('\t')[1:]])
-    mat = np.array(data, dtype=np.float64)
+    data = np.loadtxt(str(binary_example_dir / 'binary.test'), dtype=np.float64)
+    mat = data[:, 1:]
     preb = np.empty(mat.shape[0], dtype=np.float64)
     num_preb = ctypes.c_int64(0)
     data = np.array(mat.reshape(mat.size), dtype=np.float64, copy=False)

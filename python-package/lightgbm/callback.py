@@ -129,7 +129,7 @@ def reset_parameter(**kwargs: Union[list, Callable]) -> Callable:
         for key, value in kwargs.items():
             if isinstance(value, list):
                 if len(value) != env.end_iteration - env.begin_iteration:
-                    raise ValueError(f"Length of list {repr(key)} has to equal to 'num_boost_round'.")
+                    raise ValueError(f"Length of list {key!r} has to equal to 'num_boost_round'.")
                 new_param = value[env.iteration - env.begin_iteration]
             else:
                 new_param = value(env.iteration - env.begin_iteration)
