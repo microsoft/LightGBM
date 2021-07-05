@@ -339,7 +339,7 @@ def gen_parameter_code(config_hpp, config_out_cpp):
 
 
 if __name__ == "__main__":
-    current_dir = Path(__file__).parent.absolute()
+    current_dir = Path(__file__).absolute().parent
     config_hpp = current_dir.parent / 'include' / 'LightGBM' / 'config.h'
     config_out_cpp = current_dir.parent / 'src' / 'io' / 'config_auto.cpp'
     params_rst = current_dir.parent / 'docs' / 'Parameters.rst'

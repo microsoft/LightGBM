@@ -13,7 +13,7 @@ def find_lib_path():
         # we don't need lib_lightgbm while building docs
         return []
 
-    curr_path = Path(__file__).parent.absolute()
+    curr_path = Path(__file__).absolute().parent
     dll_path = [curr_path,
                 curr_path.parents[1],
                 curr_path.parents[1] / 'python-package' / 'lightgbm' / 'compile',
