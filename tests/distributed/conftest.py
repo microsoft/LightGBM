@@ -1,8 +1,7 @@
-import os
+from pathlib import Path
 
-TESTS_DIR = os.path.dirname(__file__)
-default_exec_file = os.path.abspath(os.path.join(TESTS_DIR, '..', '..', 'lightgbm'))
+default_exec_file = Path(__file__).absolute().parents[2] / 'lightgbm'
 
 
 def pytest_addoption(parser):
-    parser.addoption('--execfile', action='store', default=default_exec_file)
+    parser.addoption('--execfile', action='store', default=str(default_exec_file))
