@@ -626,6 +626,8 @@ class Sequence(abc.ABC):
     - With random access, **data sampling does not need to go through all data**.
     - With range data access, there's **no need to read all data into memory thus reduce memory usage**.
 
+    .. versionadded:: 3.3.0
+
     Attributes
     ----------
     batch_size : int
