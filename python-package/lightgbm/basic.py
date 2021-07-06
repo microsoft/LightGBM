@@ -626,6 +626,8 @@ class Sequence(abc.ABC):
     - With random access, **data sampling does not need to go through all data**.
     - With range data access, there's **no need to read all data into memory thus reduce memory usage**.
 
+    .. versionadded:: 3.3.0
+
     Attributes
     ----------
     batch_size : int
@@ -647,7 +649,7 @@ class Sequence(abc.ABC):
             elif isinstance(idx, slice):
                 return np.stack(self.__get_one_line__(i) for i in range(idx.start, idx.stop))
             else:
-                raise TypeError(f"Sequence index must be integer or slice, got {type(idx)}")
+                raise TypeError(f"Sequence index must be integer or slice, got {type(idx).__name__}")
 
         Parameters
         ----------
@@ -1434,7 +1436,7 @@ class Dataset:
         args_names = (getattr(self.__class__, '_lazy_init')
                       .__code__
                       .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount])
-        for key, _ in params.items():
+        for key in params.keys():
             if key in args_names:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
                              f'Please use {key} argument of the Dataset constructor to pass this parameter.')
@@ -1945,7 +1947,7 @@ class Dataset:
 
         Returns
         -------
-        info : numpy array
+        info : numpy array or None
             A numpy array with information from the Dataset.
         """
         if self.handle is None:
@@ -2040,7 +2042,7 @@ class Dataset:
         self.set_categorical_feature(reference.categorical_feature) \
             .set_feature_name(reference.feature_name) \
             ._set_predictor(reference._predictor)
-        # we're done if self and reference share a common upstrem reference
+        # we're done if self and reference share a common upstream reference
         if self.get_ref_chain().intersection(reference.get_ref_chain()):
             return self
         if self.data is not None:

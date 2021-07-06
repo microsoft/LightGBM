@@ -106,7 +106,7 @@ class NumpySequence(lgb.Sequence):
                 raise NotImplementedError("No need to implement, caller will not set step by now")
             return self.ndarray[idx.start:idx.stop]
         else:
-            raise TypeError(f"Sequence Index must be an integer/list/slice, got {type(idx)}")
+            raise TypeError(f"Sequence Index must be an integer/list/slice, got {type(idx).__name__}")
 
     def __len__(self):
         return len(self.ndarray)
@@ -170,7 +170,7 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
     # Test for validation set.
     # Select some random rows as valid data.
     rng = np.random.default_rng()  # Pass integer to set seed when needed.
-    valid_idx = (rng.random(10) * nrow).astype(np.int)
+    valid_idx = (rng.random(10) * nrow).astype(np.int32)
     valid_data = data[valid_idx, :]
     valid_X = valid_data[:, :-1]
     valid_Y = valid_data[:, -1]

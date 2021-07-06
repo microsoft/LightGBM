@@ -33,7 +33,7 @@ decreasing_generator = itertools.count(0, -1)
 
 
 def custom_asymmetric_obj(y_true, y_pred):
-    residual = (y_true - y_pred).astype("float")
+    residual = (y_true - y_pred).astype(np.float64)
     grad = np.where(residual < 0, -2 * 10.0 * residual, -2 * residual)
     hess = np.where(residual < 0, 2 * 10.0, 2.0)
     return grad, hess
