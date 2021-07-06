@@ -1,3 +1,11 @@
+# [description] List of valid keys for "info" arguments in lgb.Dataset.
+#               Wrapped in a function to take advantage of lazy evaluation
+#               (so it doesn't matter what order R sources files during installation).
+# [return] A character vector of names.
+.INFO_KEYS <- function() {
+  return(c("label", "weight", "init_score", "group"))
+}
+
 #' @importFrom methods is
 #' @importFrom R6 R6Class
 Dataset <- R6::R6Class(
@@ -8,21 +16,12 @@ Dataset <- R6::R6Class(
 
     # Finalize will free up the handles
     finalize = function() {
-
-      # Check the need for freeing handle
-      if (!lgb.is.null.handle(x = private$handle)) {
-
-        # Freeing up handle
-        .Call(
-          LGBM_DatasetFree_R
-          , private$handle
-        )
-        private$handle <- NULL
-
-      }
-
+      .Call(
+        LGBM_DatasetFree_R
+        , private$handle
+      )
+      private$handle <- NULL
       return(invisible(NULL))
-
     },
 
     # Initialize will create a starter dataset
@@ -38,24 +37,21 @@ Dataset <- R6::R6Class(
                           ...) {
 
       # validate inputs early to avoid unnecessary computation
-      if (!(is.null(reference) || lgb.check.r6.class(object = reference, name = "lgb.Dataset"))) {
+      if (!(is.null(reference) || lgb.is.Dataset(reference))) {
           stop("lgb.Dataset: If provided, reference must be a ", sQuote("lgb.Dataset"))
       }
-      if (!(is.null(predictor) || lgb.check.r6.class(object = predictor, name = "lgb.Predictor"))) {
+      if (!(is.null(predictor) || lgb.is.Predictor(predictor))) {
           stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
       }
 
       # Check for additional parameters
       additional_params <- list(...)
 
-      # Create known attributes list
-      INFO_KEYS <- c("label", "weight", "init_score", "group")
-
       # Check if attribute key is in the known attribute list
       for (key in names(additional_params)) {
 
         # Key existing
-        if (key %in% INFO_KEYS) {
+        if (key %in% .INFO_KEYS()) {
 
           # Store as info
           info[[key]] <- additional_params[[key]]
@@ -422,12 +418,9 @@ Dataset <- R6::R6Class(
     # Get information
     getinfo = function(name) {
 
-      # Create known attributes list
-      INFONAMES <- c("label", "weight", "init_score", "group")
-
       # Check if attribute key is in the known attribute list
-      if (!is.character(name) || length(name) != 1L || !name %in% INFONAMES) {
-        stop("getinfo: name must one of the following: ", paste0(sQuote(INFONAMES), collapse = ", "))
+      if (!is.character(name) || length(name) != 1L || !name %in% .INFO_KEYS()) {
+        stop("getinfo: name must one of the following: ", paste0(sQuote(.INFO_KEYS()), collapse = ", "))
       }
 
       # Check for info name and handle
@@ -476,12 +469,9 @@ Dataset <- R6::R6Class(
     # Set information
     setinfo = function(name, info) {
 
-      # Create known attributes list
-      INFONAMES <- c("label", "weight", "init_score", "group")
-
       # Check if attribute key is in the known attribute list
-      if (!is.character(name) || length(name) != 1L || !name %in% INFONAMES) {
-        stop("setinfo: name must one of the following: ", paste0(sQuote(INFONAMES), collapse = ", "))
+      if (!is.character(name) || length(name) != 1L || !name %in% .INFO_KEYS()) {
+        stop("setinfo: name must one of the following: ", paste0(sQuote(.INFO_KEYS()), collapse = ", "))
       }
 
       # Check for type of information
@@ -629,7 +619,7 @@ Dataset <- R6::R6Class(
       if (!is.null(reference)) {
 
         # Reference is unknown
-        if (!lgb.check.r6.class(object = reference, name = "lgb.Dataset")) {
+        if (!lgb.is.Dataset(reference)) {
           stop("set_reference: Can only use lgb.Dataset as a reference")
         }
 
@@ -699,7 +689,7 @@ Dataset <- R6::R6Class(
       if (!is.null(predictor)) {
 
         # Predictor is unknown
-        if (!lgb.check.r6.class(object = predictor, name = "lgb.Predictor")) {
+        if (!lgb.is.Predictor(predictor)) {
           stop("set_predictor: Can only use lgb.Predictor as predictor")
         }
 
@@ -979,7 +969,6 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
     stop("slice.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  # Return sliced set
   return(invisible(dataset$slice(idxset = idxset, ...)))
 
 }
@@ -1086,7 +1075,6 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
     stop("setinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  # Set information
   return(invisible(dataset$setinfo(name = name, info = info)))
 }
 
@@ -1118,7 +1106,6 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
     stop("lgb.Dataset.set.categorical: input dataset should be an lgb.Dataset object")
   }
 
-  # Set categoricals
   return(invisible(dataset$set_categorical_feature(categorical_feature = categorical_feature)))
 
 }
@@ -1145,12 +1132,10 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 #' @export
 lgb.Dataset.set.reference <- function(dataset, reference) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.set.reference: input dataset should be an lgb.Dataset object")
   }
 
-  # Set reference
   return(invisible(dataset$set_reference(reference = reference)))
 }
 
@@ -1173,16 +1158,13 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' @export
 lgb.Dataset.save <- function(dataset, fname) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.set: input dataset should be an lgb.Dataset object")
   }
 
-  # File-type is not matching
   if (!is.character(fname)) {
     stop("lgb.Dataset.set: fname should be a character or a file connection")
   }
 
-  # Store binary
   return(invisible(dataset$save_binary(fname = fname)))
 }

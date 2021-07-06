@@ -7,7 +7,6 @@ import random
 import socket
 from itertools import groupby
 from os import getenv
-from platform import machine
 from sys import platform
 
 import pytest
@@ -58,8 +57,7 @@ task_to_local_factory = {
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
-    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
-    pytest.mark.skipif(machine() != 'x86_64', reason='Fails to run with non-x86_64 architecture')
+    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface')
 ]
 
 
@@ -97,7 +95,7 @@ def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs)
         X_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(X.shape[1])])
         if output == 'dataframe-with-categorical':
             for i in range(5):
-                col_name = "cat_col" + str(i)
+                col_name = f"cat_col{i}"
                 cat_values = rnd.choice(['a', 'b'], X.shape[0])
                 cat_series = pd.Series(
                     cat_values,
@@ -161,7 +159,7 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
             **kwargs
         )
     else:
-        raise ValueError("Unknown objective '%s'" % objective)
+        raise ValueError(f"Unknown objective '{objective}'")
     rnd = np.random.RandomState(42)
     weights = rnd.random(X.shape[0]) * 0.01
 
@@ -170,11 +168,11 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
         dy = da.from_array(y, chunk_size)
         dw = da.from_array(weights, chunk_size)
     elif output.startswith('dataframe'):
-        X_df = pd.DataFrame(X, columns=['feature_%d' % i for i in range(X.shape[1])])
+        X_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(X.shape[1])])
         if output == 'dataframe-with-categorical':
             num_cat_cols = 2
             for i in range(num_cat_cols):
-                col_name = "cat_col" + str(i)
+                col_name = f"cat_col{i}"
                 cat_values = rnd.choice(['a', 'b'], X.shape[0])
                 cat_series = pd.Series(
                     cat_values,
@@ -201,7 +199,7 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
         dy = da.from_array(y, chunks=chunk_size)
         dw = da.from_array(weights, chunk_size)
     else:
-        raise ValueError("Unknown output type '%s'" % output)
+        raise ValueError(f"Unknown output type '{output}'")
 
     return X, y, weights, None, dX, dy, dw, None
 
@@ -214,6 +212,13 @@ def _r2_score(dy_true, dy_pred):
 
 def _accuracy_score(dy_true, dy_pred):
     return da.average(dy_true == dy_pred).compute()
+
+
+def _constant_metric(dy_true, dy_pred):
+    metric_name = 'constant_metric'
+    value = 0.708
+    is_higher_better = False
+    return metric_name, value, is_higher_better
 
 
 def _pickle(obj, filepath, serializer):
@@ -280,6 +285,15 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
         )
         dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
         p1 = dask_classifier.predict(dX)
+        p1_raw = dask_classifier.predict(dX, raw_score=True).compute()
+        p1_first_iter_raw = dask_classifier.predict(dX, start_iteration=0, num_iteration=1, raw_score=True).compute()
+        p1_early_stop_raw = dask_classifier.predict(
+            dX,
+            pred_early_stop=True,
+            pred_early_stop_margin=1.0,
+            pred_early_stop_freq=2,
+            raw_score=True
+        ).compute()
         p1_proba = dask_classifier.predict_proba(dX).compute()
         p1_pred_leaf = dask_classifier.predict(dX, pred_leaf=True)
         p1_local = dask_classifier.to_local().predict(X)
@@ -304,6 +318,13 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
             assert_eq(p1_proba, p2_proba, atol=0.03)
             assert_eq(p1_local, p2)
             assert_eq(p1_local, y)
+
+        # extra predict() parameters should be passed through correctly
+        with pytest.raises(AssertionError):
+            assert_eq(p1_raw, p1_first_iter_raw)
+
+        with pytest.raises(AssertionError):
+            assert_eq(p1_raw, p1_early_stop_raw)
 
         # pref_leaf values should have the right shape
         # and values that look like valid tree nodes
@@ -501,6 +522,8 @@ def test_regressor(output, boosting_type, tree_learner, cluster):
 
         s1 = _r2_score(dy, p1)
         p1 = p1.compute()
+        p1_raw = dask_regressor.predict(dX, raw_score=True).compute()
+        p1_first_iter_raw = dask_regressor.predict(dX, start_iteration=0, num_iteration=1, raw_score=True).compute()
         p1_local = dask_regressor.to_local().predict(X)
         s1_local = dask_regressor.to_local().score(X, y)
 
@@ -529,6 +552,10 @@ def test_regressor(output, boosting_type, tree_learner, cluster):
 
         assert_eq(p1, y, rtol=0.5, atol=50.)
         assert_eq(p2, y, rtol=0.5, atol=50.)
+
+        # extra predict() parameters should be passed through correctly
+        with pytest.raises(AssertionError):
+            assert_eq(p1_raw, p1_first_iter_raw)
 
         # be sure LightGBM actually used at least one categorical column,
         # and that it was correctly treated as a categorical feature
@@ -700,6 +727,8 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
         rnkvec_dask = dask_ranker.predict(dX)
         rnkvec_dask = rnkvec_dask.compute()
         p1_pred_leaf = dask_ranker.predict(dX, pred_leaf=True)
+        p1_raw = dask_ranker.predict(dX, raw_score=True).compute()
+        p1_first_iter_raw = dask_ranker.predict(dX, start_iteration=0, num_iteration=1, raw_score=True).compute()
         rnkvec_dask_local = dask_ranker.to_local().predict(X)
 
         local_ranker = lgb.LGBMRanker(**params)
@@ -712,6 +741,10 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
         assert dcor > 0.6
         assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.8
         assert_eq(rnkvec_dask, rnkvec_dask_local)
+
+        # extra predict() parameters should be passed through correctly
+        with pytest.raises(AssertionError):
+            assert_eq(p1_raw, p1_first_iter_raw)
 
         # pref_leaf values should have the right shape
         # and values that look like valid tree nodes
@@ -735,6 +768,231 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
             node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
             assert node_uses_cat_col.sum() > 0
             assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
+
+
+@pytest.mark.parametrize('task', tasks)
+@pytest.mark.parametrize('output', data_output)
+@pytest.mark.parametrize('eval_sizes', [[0.5, 1, 1.5], [0]])
+@pytest.mark.parametrize('eval_names_prefix', ['specified', None])
+def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix, cluster):
+    if task == 'ranking' and output == 'scipy_csr_matrix':
+        pytest.skip('LGBMRanker is not currently tested on sparse matrices')
+
+    with Client(cluster) as client:
+        # Use larger trainset to prevent premature stopping due to zero loss, causing num_trees() < n_estimators.
+        # Use small chunk_size to avoid single-worker allocation of eval data partitions.
+        n_samples = 1000
+        chunk_size = 10
+        n_eval_sets = len(eval_sizes)
+        eval_set = []
+        eval_sample_weight = []
+        eval_class_weight = None
+        eval_init_score = None
+
+        if eval_names_prefix:
+            eval_names = [f'{eval_names_prefix}_{i}' for i in range(len(eval_sizes))]
+        else:
+            eval_names = None
+
+        X, y, w, g, dX, dy, dw, dg = _create_data(
+            objective=task,
+            n_samples=n_samples,
+            output=output,
+            chunk_size=chunk_size
+        )
+
+        if task == 'ranking':
+            eval_metrics = ['ndcg']
+            eval_at = (5, 6)
+            eval_metric_names = [f'ndcg@{k}' for k in eval_at]
+            eval_group = []
+        else:
+            # test eval_class_weight, eval_init_score on binary-classification task.
+            # Note: objective's default `metric` will be evaluated in evals_result_ in addition to all eval_metrics.
+            if task == 'binary-classification':
+                eval_metrics = ['binary_error', 'auc']
+                eval_metric_names = ['binary_logloss', 'binary_error', 'auc']
+                eval_class_weight = []
+                eval_init_score = []
+            elif task == 'multiclass-classification':
+                eval_metrics = ['multi_error']
+                eval_metric_names = ['multi_logloss', 'multi_error']
+            elif task == 'regression':
+                eval_metrics = ['l1']
+                eval_metric_names = ['l2', 'l1']
+
+        # create eval_sets by creating new datasets or copying training data.
+        for eval_size in eval_sizes:
+            if eval_size == 1:
+                y_e = y
+                dX_e = dX
+                dy_e = dy
+                dw_e = dw
+                dg_e = dg
+            else:
+                n_eval_samples = max(chunk_size, int(n_samples * eval_size))
+                _, y_e, _, _, dX_e, dy_e, dw_e, dg_e = _create_data(
+                    objective=task,
+                    n_samples=n_eval_samples,
+                    output=output,
+                    chunk_size=chunk_size
+                )
+
+            eval_set.append((dX_e, dy_e))
+            eval_sample_weight.append(dw_e)
+            if task == 'ranking':
+                eval_group.append(dg_e)
+
+            if task == 'binary-classification':
+                n_neg = np.sum(y_e == 0)
+                n_pos = np.sum(y_e == 1)
+                eval_class_weight.append({0: n_neg / n_pos, 1: n_pos / n_neg})
+                init_score_value = np.log(np.mean(y_e) / (1 - np.mean(y_e)))
+                if 'dataframe' in output:
+                    d_init_score = dy_e.map_partitions(lambda x: pd.Series([init_score_value] * x.size))
+                else:
+                    d_init_score = dy_e.map_blocks(lambda x: np.repeat(init_score_value, x.size))
+
+                eval_init_score.append(d_init_score)
+
+        fit_trees = 50
+        params = {
+            "random_state": 42,
+            "n_estimators": fit_trees,
+            "num_leaves": 2
+        }
+
+        model_factory = task_to_dask_factory[task]
+        dask_model = model_factory(
+            client=client,
+            **params
+        )
+
+        fit_params = {
+            'X': dX,
+            'y': dy,
+            'eval_set': eval_set,
+            'eval_names': eval_names,
+            'eval_sample_weight': eval_sample_weight,
+            'eval_init_score': eval_init_score,
+            'eval_metric': eval_metrics,
+            'verbose': True
+        }
+        if task == 'ranking':
+            fit_params.update(
+                {'group': dg,
+                 'eval_group': eval_group,
+                 'eval_at': eval_at}
+            )
+        elif task == 'binary-classification':
+            fit_params.update({'eval_class_weight': eval_class_weight})
+
+        if eval_sizes == [0]:
+            with pytest.warns(UserWarning, match='Worker (.*) was not allocated eval_set data. Therefore evals_result_ and best_score_ data may be unreliable.'):
+                dask_model.fit(**fit_params)
+        else:
+            dask_model = dask_model.fit(**fit_params)
+
+            # total number of trees scales up for ova classifier.
+            if task == 'multiclass-classification':
+                model_trees = fit_trees * dask_model.n_classes_
+            else:
+                model_trees = fit_trees
+
+            # check that early stopping was not applied.
+            assert dask_model.booster_.num_trees() == model_trees
+            assert dask_model.best_iteration_ is None
+
+            # checks that evals_result_ and best_score_ contain expected data and eval_set names.
+            evals_result = dask_model.evals_result_
+            best_scores = dask_model.best_score_
+            assert len(evals_result) == n_eval_sets
+            assert len(best_scores) == n_eval_sets
+
+            for eval_name in evals_result:
+                assert eval_name in dask_model.best_score_
+                if eval_names:
+                    assert eval_name in eval_names
+
+                # check that each eval_name and metric exists for all eval sets, allowing for the
+                # case when a worker receives a fully-padded eval_set component which is not evaluated.
+                if evals_result[eval_name] != 'not evaluated':
+                    for metric in eval_metric_names:
+                        assert metric in evals_result[eval_name]
+                        assert metric in best_scores[eval_name]
+                        assert len(evals_result[eval_name][metric]) == fit_trees
+
+
+@pytest.mark.parametrize('task', ['binary-classification', 'regression', 'ranking'])
+def test_eval_set_with_custom_eval_metric(task, cluster):
+    with Client(cluster) as client:
+        n_samples = 1000
+        n_eval_samples = int(n_samples * 0.5)
+        chunk_size = 10
+        output = 'array'
+
+        X, y, w, g, dX, dy, dw, dg = _create_data(
+            objective=task,
+            n_samples=n_samples,
+            output=output,
+            chunk_size=chunk_size
+        )
+        _, _, _, _, dX_e, dy_e, _, dg_e = _create_data(
+            objective=task,
+            n_samples=n_eval_samples,
+            output=output,
+            chunk_size=chunk_size
+        )
+
+        if task == 'ranking':
+            eval_at = (5, 6)
+            eval_metrics = ['ndcg', _constant_metric]
+            eval_metric_names = [f'ndcg@{k}' for k in eval_at] + ['constant_metric']
+        elif task == 'binary-classification':
+            eval_metrics = ['binary_error', 'auc', _constant_metric]
+            eval_metric_names = ['binary_logloss', 'binary_error', 'auc', 'constant_metric']
+        else:
+            eval_metrics = ['l1', _constant_metric]
+            eval_metric_names = ['l2', 'l1', 'constant_metric']
+
+        fit_trees = 50
+        params = {
+            "random_state": 42,
+            "n_estimators": fit_trees,
+            "num_leaves": 2
+        }
+        model_factory = task_to_dask_factory[task]
+        dask_model = model_factory(
+            client=client,
+            **params
+        )
+
+        eval_set = [(dX_e, dy_e)]
+        fit_params = {
+            'X': dX,
+            'y': dy,
+            'eval_set': eval_set,
+            'eval_metric': eval_metrics
+        }
+        if task == 'ranking':
+            fit_params.update(
+                {'group': dg,
+                 'eval_group': [dg_e],
+                 'eval_at': eval_at}
+            )
+
+        dask_model = dask_model.fit(**fit_params)
+
+        eval_name = 'valid_0'
+        evals_result = dask_model.evals_result_
+        assert len(evals_result) == 1
+        assert eval_name in evals_result
+
+        for metric in eval_metric_names:
+            assert metric in evals_result[eval_name]
+            assert len(evals_result[eval_name][metric]) == fit_trees
+
+        np.testing.assert_allclose(evals_result[eval_name]['constant_metric'], 0.708)
 
 
 @pytest.mark.parametrize('task', tasks)
@@ -850,7 +1108,7 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
             assert "client" not in local_model.get_params()
             assert getattr(local_model, "client", None) is None
 
-            tmp_file = str(tmp_path / "model-1.pkl")
+            tmp_file = tmp_path / "model-1.pkl"
             _pickle(
                 obj=dask_model,
                 filepath=tmp_file,
@@ -861,7 +1119,7 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                 serializer=serializer
             )
 
-            local_tmp_file = str(tmp_path / "local-model-1.pkl")
+            local_tmp_file = tmp_path / "local-model-1.pkl"
             _pickle(
                 obj=local_model,
                 filepath=local_tmp_file,
@@ -906,7 +1164,7 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                 local_model.client
                 local_model.client_
 
-            tmp_file2 = str(tmp_path / "model-2.pkl")
+            tmp_file2 = tmp_path / "model-2.pkl"
             _pickle(
                 obj=dask_model,
                 filepath=tmp_file2,
@@ -917,7 +1175,7 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                 serializer=serializer
             )
 
-            local_tmp_file2 = str(tmp_path / "local-model-2.pkl")
+            local_tmp_file2 = tmp_path / "local-model-2.pkl"
             _pickle(
                 obj=local_model,
                 filepath=local_tmp_file2,
@@ -1125,7 +1383,7 @@ def test_network_params_not_required_but_respected_if_given(task, listen_port, c
             n_estimators=5,
             num_leaves=5,
             machines=",".join([
-                "127.0.0.1:" + str(port)
+                f"127.0.0.1:{port}"
                 for port in open_ports
             ]),
         )
@@ -1171,14 +1429,14 @@ def test_machines_should_be_used_if_provided(task, cluster):
             n_estimators=5,
             num_leaves=5,
             machines=",".join([
-                "127.0.0.1:" + str(port)
+                f"127.0.0.1:{port}"
                 for port in open_ports
             ]),
         )
 
         # test that "machines" is actually respected by creating a socket that uses
         # one of the ports mentioned in "machines"
-        error_msg = "Binding port %s failed" % open_ports[0]
+        error_msg = f"Binding port {open_ports[0]} failed"
         with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.bind(('127.0.0.1', open_ports[0]))
@@ -1191,7 +1449,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
         one_open_port = lgb.dask._find_random_open_port()
         dask_model.set_params(
             machines=",".join([
-                "127.0.0.1:" + str(one_open_port)
+                f"127.0.0.1:{one_open_port}"
                 for _ in range(n_workers)
             ])
         )

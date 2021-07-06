@@ -150,19 +150,6 @@ struct Config {
   // desc = ``mvs``, Minimal variance sampling <https://arxiv.org/abs/1910.13204>__
   std::string boosting = "gbdt";
 
-  // alias = linear_trees
-  // desc = fit piecewise linear gradient boosting tree
-  // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
-  // descl2 = the linear model at each leaf includes all the numerical features in that leaf's branch
-  // descl2 = categorical features are used for splits as normal but are not used in the linear models
-  // descl2 = missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
-  // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
-  // descl2 = **Note**: only works with CPU and ``serial`` tree learner
-  // descl2 = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
-  // descl2 = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
-  // descl2 = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
-  bool linear_tree = false;
-
   // alias = train, train_data, train_data_file, data_filename
   // desc = path of training data, LightGBM will train from this data
   // desc = **Note**: can be used only in CLI version
@@ -605,6 +592,19 @@ struct Config {
   #pragma region IO Parameters
 
   #pragma region Dataset Parameters
+
+  // alias = linear_trees
+  // desc = fit piecewise linear gradient boosting tree
+  // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
+  // descl2 = the linear model at each leaf includes all the numerical features in that leaf's branch
+  // descl2 = categorical features are used for splits as normal but are not used in the linear models
+  // descl2 = missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
+  // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
+  // descl2 = **Note**: only works with CPU and ``serial`` tree learner
+  // descl2 = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
+  // descl2 = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
+  // descl2 = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
+  bool linear_tree = false;
 
   // check = >1
   // desc = max number of bins that feature values will be bucketed in

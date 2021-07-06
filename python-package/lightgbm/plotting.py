@@ -2,6 +2,7 @@
 """Plotting library."""
 from copy import deepcopy
 from io import BytesIO
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -10,24 +11,36 @@ from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
 from .sklearn import LGBMModel
 
 
-def _check_not_tuple_of_2_elements(obj, obj_name='obj'):
+def _check_not_tuple_of_2_elements(obj: Any, obj_name: str = 'obj') -> None:
     """Check object is not tuple or does not have 2 elements."""
     if not isinstance(obj, tuple) or len(obj) != 2:
         raise TypeError(f"{obj_name} must be a tuple of 2 elements.")
 
 
-def _float2str(value, precision=None):
+def _float2str(value: float, precision: Optional[int] = None) -> str:
     return (f"{value:.{precision}f}"
             if precision is not None and not isinstance(value, str)
             else str(value))
 
 
-def plot_importance(booster, ax=None, height=0.2,
-                    xlim=None, ylim=None, title='Feature importance',
-                    xlabel='Feature importance', ylabel='Features',
-                    importance_type='split', max_num_features=None,
-                    ignore_zero=True, figsize=None, dpi=None, grid=True,
-                    precision=3, **kwargs):
+def plot_importance(
+    booster: Union[Booster, LGBMModel],
+    ax=None,
+    height: float = 0.2,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None,
+    title: Optional[str] = 'Feature importance',
+    xlabel: Optional[str] = 'Feature importance',
+    ylabel: Optional[str] = 'Features',
+    importance_type: str = 'split',
+    max_num_features: Optional[int] = None,
+    ignore_zero: bool = True,
+    figsize: Optional[Tuple[float, float]] = None,
+    dpi: Optional[int] = None,
+    grid: bool = True,
+    precision: Optional[int] = 3,
+    **kwargs: Any
+) -> Any:
     """Plot model's feature importances.
 
     Parameters
@@ -80,7 +93,7 @@ def plot_importance(booster, ax=None, height=0.2,
     if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
     else:
-        raise ImportError('You must install matplotlib to plot importance.')
+        raise ImportError('You must install matplotlib and restart your session to plot importance.')
 
     if isinstance(booster, LGBMModel):
         booster = booster.booster_
@@ -138,11 +151,22 @@ def plot_importance(booster, ax=None, height=0.2,
     return ax
 
 
-def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=0.8,
-                               xlim=None, ylim=None,
-                               title='Split value histogram for feature with @index/name@ @feature@',
-                               xlabel='Feature split value', ylabel='Count',
-                               figsize=None, dpi=None, grid=True, **kwargs):
+def plot_split_value_histogram(
+    booster: Union[Booster, LGBMModel],
+    feature: Union[int, str],
+    bins: Union[int, str, None] = None,
+    ax=None,
+    width_coef: float = 0.8,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None,
+    title: Optional[str] = 'Split value histogram for feature with @index/name@ @feature@',
+    xlabel: Optional[str] = 'Feature split value',
+    ylabel: Optional[str] = 'Count',
+    figsize: Optional[Tuple[float, float]] = None,
+    dpi: Optional[int] = None,
+    grid: bool = True,
+    **kwargs: Any
+) -> Any:
     """Plot split value histogram for the specified feature of the model.
 
     Parameters
@@ -197,7 +221,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
         import matplotlib.pyplot as plt
         from matplotlib.ticker import MaxNLocator
     else:
-        raise ImportError('You must install matplotlib to plot split value histogram.')
+        raise ImportError('You must install matplotlib and restart your session to plot split value histogram.')
 
     if isinstance(booster, LGBMModel):
         booster = booster.booster_
@@ -244,11 +268,20 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
     return ax
 
 
-def plot_metric(booster, metric=None, dataset_names=None,
-                ax=None, xlim=None, ylim=None,
-                title='Metric during training',
-                xlabel='Iterations', ylabel='auto',
-                figsize=None, dpi=None, grid=True):
+def plot_metric(
+    booster: Union[Dict, LGBMModel],
+    metric: Optional[str] = None,
+    dataset_names: Optional[List[str]] = None,
+    ax=None,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None,
+    title: Optional[str] = 'Metric during training',
+    xlabel: Optional[str] = 'Iterations',
+    ylabel: Optional[str] = 'auto',
+    figsize: Optional[Tuple[float, float]] = None,
+    dpi: Optional[int] = None,
+    grid: bool = True
+) -> Any:
     """Plot one metric during training.
 
     Parameters
@@ -294,7 +327,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
     else:
-        raise ImportError('You must install matplotlib to plot metric.')
+        raise ImportError('You must install matplotlib and restart your session to plot metric.')
 
     if isinstance(booster, LGBMModel):
         eval_results = deepcopy(booster.evals_result_)
@@ -369,8 +402,15 @@ def plot_metric(booster, metric=None, dataset_names=None,
     return ax
 
 
-def _to_graphviz(tree_info, show_info, feature_names, precision=3,
-                 orientation='horizontal', constraints=None, **kwargs):
+def _to_graphviz(
+    tree_info: Dict[str, Any],
+    show_info: List[str],
+    feature_names: Union[List[str], None],
+    precision: Optional[int] = 3,
+    orientation: str = 'horizontal',
+    constraints: Optional[List[int]] = None,
+    **kwargs: Any
+) -> Any:
     """Convert specified tree to graphviz instance.
 
     See:
@@ -379,7 +419,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
     if GRAPHVIZ_INSTALLED:
         from graphviz import Digraph
     else:
-        raise ImportError('You must install graphviz to plot tree.')
+        raise ImportError('You must install graphviz and restart your session to plot tree.')
 
     def add(root, total_count, parent=None, decision=None):
         """Recursively add node or edge."""
@@ -465,8 +505,14 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
     return graph
 
 
-def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
-                        orientation='horizontal', **kwargs):
+def create_tree_digraph(
+    booster: Union[Booster, LGBMModel],
+    tree_index: int = 0,
+    show_info: Optional[List[str]] = None,
+    precision: Optional[int] = 3,
+    orientation: str = 'horizontal',
+    **kwargs: Any
+) -> Any:
     """Create a digraph representation of specified tree.
 
     Each node in the graph represents a node in the tree.
@@ -542,8 +588,17 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
     return graph
 
 
-def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
-              show_info=None, precision=3, orientation='horizontal', **kwargs):
+def plot_tree(
+    booster: Union[Booster, LGBMModel],
+    ax=None,
+    tree_index: int = 0,
+    figsize: Optional[Tuple[float, float]] = None,
+    dpi: Optional[int] = None,
+    show_info: Optional[List[str]] = None,
+    precision: Optional[int] = 3,
+    orientation: str = 'horizontal',
+    **kwargs: Any
+) -> Any:
     """Plot specified tree.
 
     Each node in the graph represents a node in the tree.
@@ -602,7 +657,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
         import matplotlib.image as image
         import matplotlib.pyplot as plt
     else:
-        raise ImportError('You must install matplotlib to plot tree.')
+        raise ImportError('You must install matplotlib and restart your session to plot tree.')
 
     if ax is None:
         if figsize is not None:

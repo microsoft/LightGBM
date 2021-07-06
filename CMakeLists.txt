@@ -7,7 +7,6 @@ OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
 OPTION(USE_CUDA "Enable CUDA-accelerated training (EXPERIMENTAL)" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
 OPTION(USE_SANITIZER "Use santizer flags" OFF)
-SET(SANITIZER_PATH "" CACHE STRING "Path to sanitizer libs")
 SET(ENABLED_SANITIZERS "address" "leak" "undefined" CACHE STRING
   "Semicolon separated list of sanitizer names. E.g 'address;leak'. Supported sanitizers are
 address, leak, undefined and thread.")
@@ -36,9 +35,12 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
 #-- Sanitizer
 if (USE_SANITIZER)
+  if(MSVC)
+    message(FATAL_ERROR "Sanitizers are not supported with MSVC.")
+  endif(MSVC)
   include(cmake/Sanitizer.cmake)
   enable_sanitizers("${ENABLED_SANITIZERS}")
-endif (USE_SANITIZER)
+endif(USE_SANITIZER)
 
 if(__INTEGRATE_OPENCL)
   set(__INTEGRATE_OPENCL ON CACHE BOOL "" FORCE)
@@ -210,6 +212,7 @@ if(USE_CUDA)
     function(add_histogram hsize hname hadd hconst hdir)
       add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
       set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES OFF)
       if(hadd)
         list(APPEND histograms histo${hsize}${hname})
         set(histograms ${histograms} PARENT_SCOPE)
@@ -434,11 +437,13 @@ endif()
 
 if(USE_CUDA)
   set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
   TARGET_LINK_LIBRARIES(
     lightgbm
     ${histograms}
   )
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
   TARGET_LINK_LIBRARIES(
     _lightgbm
     ${histograms}

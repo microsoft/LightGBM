@@ -1,20 +1,21 @@
 # coding: utf-8
-import os
+from pathlib import Path
 
 import numpy as np
 from sklearn.datasets import load_svmlight_file
 
 import lightgbm as lgb
 
+EXAMPLES_DIR = Path(__file__).absolute().parents[2] / 'examples'
+
 
 class FileLoader:
 
     def __init__(self, directory, prefix, config_file='train.conf'):
-        directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), directory)
         self.directory = directory
         self.prefix = prefix
         self.params = {'gpu_use_dp': True}
-        with open(os.path.join(directory, config_file), 'r') as f:
+        with open(self.directory / config_file, 'r') as f:
             for line in f.readlines():
                 line = line.strip()
                 if line and not line.startswith('#'):
@@ -32,10 +33,10 @@ class FileLoader:
             return mat[:, 1:], mat[:, 0], filename
 
     def load_field(self, suffix):
-        return np.loadtxt(os.path.join(self.directory, self.prefix + suffix))
+        return np.loadtxt(str(self.directory / f'{self.prefix}{suffix}'))
 
     def load_cpp_result(self, result_file='LightGBM_predict_result.txt'):
-        return np.loadtxt(os.path.join(self.directory, result_file))
+        return np.loadtxt(str(self.directory / result_file))
 
     def train_predict_check(self, lgb_train, X_test, X_test_fn, sk_pred):
         params = dict(self.params)
@@ -61,11 +62,11 @@ class FileLoader:
                 assert a == b, f
 
     def path(self, suffix):
-        return os.path.join(self.directory, self.prefix + suffix)
+        return str(self.directory / f'{self.prefix}{suffix}')
 
 
 def test_binary():
-    fd = FileLoader('../../examples/binary_classification', 'binary')
+    fd = FileLoader(EXAMPLES_DIR / 'binary_classification', 'binary')
     X_train, y_train, _ = fd.load_dataset('.train')
     X_test, _, X_test_fn = fd.load_dataset('.test')
     weight_train = fd.load_field('.train.weight')
@@ -78,7 +79,7 @@ def test_binary():
 
 
 def test_binary_linear():
-    fd = FileLoader('../../examples/binary_classification', 'binary', 'train_linear.conf')
+    fd = FileLoader(EXAMPLES_DIR / 'binary_classification', 'binary', 'train_linear.conf')
     X_train, y_train, _ = fd.load_dataset('.train')
     X_test, _, X_test_fn = fd.load_dataset('.test')
     weight_train = fd.load_field('.train.weight')
@@ -91,7 +92,7 @@ def test_binary_linear():
 
 
 def test_multiclass():
-    fd = FileLoader('../../examples/multiclass_classification', 'multiclass')
+    fd = FileLoader(EXAMPLES_DIR / 'multiclass_classification', 'multiclass')
     X_train, y_train, _ = fd.load_dataset('.train')
     X_test, _, X_test_fn = fd.load_dataset('.test')
     lgb_train = lgb.Dataset(X_train, y_train)
@@ -103,7 +104,7 @@ def test_multiclass():
 
 
 def test_regression():
-    fd = FileLoader('../../examples/regression', 'regression')
+    fd = FileLoader(EXAMPLES_DIR / 'regression', 'regression')
     X_train, y_train, _ = fd.load_dataset('.train')
     X_test, _, X_test_fn = fd.load_dataset('.test')
     init_score_train = fd.load_field('.train.init')
@@ -116,7 +117,7 @@ def test_regression():
 
 
 def test_lambdarank():
-    fd = FileLoader('../../examples/lambdarank', 'rank')
+    fd = FileLoader(EXAMPLES_DIR / 'lambdarank', 'rank')
     X_train, y_train, _ = fd.load_dataset('.train', is_sparse=True)
     X_test, _, X_test_fn = fd.load_dataset('.test', is_sparse=True)
     group_train = fd.load_field('.train.query')
@@ -131,7 +132,7 @@ def test_lambdarank():
 
 
 def test_xendcg():
-    fd = FileLoader('../../examples/xendcg', 'rank')
+    fd = FileLoader(EXAMPLES_DIR / 'xendcg', 'rank')
     X_train, y_train, _ = fd.load_dataset('.train', is_sparse=True)
     X_test, _, X_test_fn = fd.load_dataset('.test', is_sparse=True)
     group_train = fd.load_field('.train.query')

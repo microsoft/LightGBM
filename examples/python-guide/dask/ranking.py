@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import dask.array as da
 import numpy as np
@@ -10,10 +10,9 @@ import lightgbm as lgb
 if __name__ == "__main__":
     print("loading data")
 
-    X, y = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                           '../../lambdarank/rank.train'))
-    group = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                    '../../lambdarank/rank.train.query'))
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'lambdarank'
+    X, y = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    group = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
 
     print("initializing a Dask cluster")
 

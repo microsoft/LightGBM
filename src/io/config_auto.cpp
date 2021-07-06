@@ -16,7 +16,6 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"application", "objective"},
   {"boosting_type", "boosting"},
   {"boost", "boosting"},
-  {"linear_trees", "linear_tree"},
   {"train", "data"},
   {"train_data", "data"},
   {"train_data_file", "data"},
@@ -106,6 +105,7 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"model_output", "output_model"},
   {"model_out", "output_model"},
   {"save_period", "snapshot_freq"},
+  {"linear_trees", "linear_tree"},
   {"subsample_for_bin", "bin_construct_sample_cnt"},
   {"data_seed", "data_random_seed"},
   {"is_sparse", "is_enable_sparse"},
@@ -176,7 +176,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "task",
   "objective",
   "boosting",
-  "linear_tree",
   "data",
   "valid",
   "num_iterations",
@@ -244,6 +243,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "output_model",
   "saved_feature_importance_type",
   "snapshot_freq",
+  "linear_tree",
   "max_bin",
   "max_bin_by_feature",
   "min_data_in_bin",
@@ -312,8 +312,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
 
 void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {
   std::string tmp_str = "";
-  GetBool(params, "linear_tree", &linear_tree);
-
   GetString(params, "data", &data);
 
   if (GetString(params, "valid", &tmp_str)) {
@@ -494,6 +492,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetInt(params, "snapshot_freq", &snapshot_freq);
 
+  GetBool(params, "linear_tree", &linear_tree);
+
   GetInt(params, "max_bin", &max_bin);
   CHECK_GT(max_bin, 1);
 
@@ -645,7 +645,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
 std::string Config::SaveMembersToString() const {
   std::stringstream str_buf;
-  str_buf << "[linear_tree: " << linear_tree << "]\n";
   str_buf << "[data: " << data << "]\n";
   str_buf << "[valid: " << Common::Join(valid, ",") << "]\n";
   str_buf << "[num_iterations: " << num_iterations << "]\n";
@@ -707,6 +706,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[interaction_constraints: " << interaction_constraints << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[saved_feature_importance_type: " << saved_feature_importance_type << "]\n";
+  str_buf << "[linear_tree: " << linear_tree << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
