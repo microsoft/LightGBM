@@ -57,7 +57,7 @@ SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
   if (!Rf_isNull(reference)) {
     ref = R_ExternalPtrAddr(reference);
   }
-  const char* filename_ptr = CHAR(PROTECT(Rf_asChar(filename)));
+  const char* filename_ptr = CHAR(Rf_asChar(filename));
   const char* parameters_ptr = CHAR(PROTECT(Rf_asChar(parameters)));
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetCreateFromFile(filename_ptr, parameters_ptr, ref, &handle));
