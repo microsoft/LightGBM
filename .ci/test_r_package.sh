@@ -147,8 +147,8 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
         # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
         exit $(
             cat ${RCHK_LOG_FILE} \
-            grep -v "in function strptime_internal" \
-            grep --count -E '\[PB\]|ERROR'
+            | grep -v "in function strptime_internal" \
+            | grep --count -E '\[PB\]|ERROR'
         )
     fi
 
