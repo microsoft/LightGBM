@@ -325,8 +325,7 @@ namespace LightGBM {
   void BinMapper::FindBin(double* values, int num_sample_values, size_t total_sample_cnt,
                           int max_bin, int min_data_in_bin, int min_split_data, bool pre_filter, BinType bin_type,
                           bool use_missing, bool zero_as_missing,
-                          const std::vector<double>& forced_upper_bounds,
-                          const std::string& feature_name) {
+                          const std::vector<double>& forced_upper_bounds) {
     int na_cnt = 0;
     int tmp_num_sample_values = 0;
     for (int i = 0; i < num_sample_values; ++i) {
@@ -441,7 +440,6 @@ namespace LightGBM {
         }
       }
       int rest_cnt = static_cast<int>(total_sample_cnt - na_cnt);
-      const int configured_max_bin = max_bin;
       if (rest_cnt > 0) {
         const int SPARSE_RATIO = 100;
         if (distinct_values_int.back() / SPARSE_RATIO > static_cast<int>(distinct_values_int.size())) {
@@ -489,11 +487,6 @@ namespace LightGBM {
         }
         // fix count of NaN bin
         cnt_in_bin[0] = static_cast<int>(total_sample_cnt - used_cnt);
-      }
-      if (num_bin_ > configured_max_bin) {
-        Log::Warning("Categorical feature %s with %d bins found, which is larger than the configured maximum bin number %d for this feature.",
-          feature_name.c_str(), num_bin_, configured_max_bin);
-        Log::Warning("For categorical features, max_bin and max_bin_by_feature may be ignored with a large number of categories.");
       }
     }
 
