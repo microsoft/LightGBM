@@ -142,7 +142,14 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
         2>&1 > ${RCHK_LOG_FILE} \
         || (cat ${RCHK_LOG_FILE} && exit -1)
         cat ${RCHK_LOG_FILE}
-        exit $(grep --count -E '\[PB\]|ERROR' < ${RCHK_LOG_FILE})
+
+        # the exception below is from R itself and not LightGBM:
+        # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
+        exit $(
+            cat ${RCHK_LOG_FILE} \
+            grep -v "in function strptime_internal" \
+            grep --count -E '\[PB\]|ERROR'
+        )
     fi
 
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
