@@ -134,6 +134,8 @@ try:
 except ImportError:
     DASK_INSTALLED = False
 
+    dask_array_from_delayed = None
+    dask_bag_from_delayed = None
     delayed = None
     default_client = None
     wait = None
@@ -146,14 +148,6 @@ except ImportError:
     class dask_Array:  # type: ignore
         """Dummy class for dask.array.Array."""
 
-        pass
-
-    def dask_array_from_delayed(*args, **kwargs):  # type: ignore
-        """Mock function for dask.array.from_delayed()."""
-        pass
-
-    def dask_bag_from_delayed(*args, **kwargs):  # type: ignore
-        """Mock function for dask.bag.from_delayed()."""
         pass
 
     class dask_DataFrame:  # type: ignore
