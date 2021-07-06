@@ -51,6 +51,8 @@ class MVS : public GBDT {
 
   void ResetConfig(const Config *config) override {
     GBDT::ResetConfig(config);
+    need_re_bagging_ = mvs_adaptive_ != config->mvs_adaptive
+        || (mvs_lambda_ != config->mvs_lambda && !mvs_adaptive_ && !config->mvs_adaptive);
     mvs_lambda_ = config_->mvs_lambda;
     mvs_adaptive_ = config_->mvs_adaptive;
     ResetMVS();
@@ -63,7 +65,7 @@ class MVS : public GBDT {
       // use customized objective function
       CHECK(hessians != nullptr && objective_function_ == nullptr);
       int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
-      #pragma omp parallel for schedule(static, 1)
+      #pragma omp parallel for schedule(static, 1024)
       for (int64_t i = 0; i < total_size; ++i) {
         gradients_[i] = gradients[i];
         hessians_[i] = hessians[i];

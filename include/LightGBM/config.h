@@ -308,7 +308,7 @@ struct Config {
 
   // default = 1e-4
   // check = >0.0
-  // desc = used in MVS boosting if ``mvs_adaptive == true`` than this value is ignored
+  // desc = used in MVS boosting. If ``mvs_adaptive == true`` then this value is ignored.
   // desc = used only in ``mvs``
   double mvs_lambda = 1e-4;
 
@@ -319,7 +319,7 @@ struct Config {
 
   // default = 256000
   // check = >0
-  // desc = used in MVS boosting training dataset size is greater than ``mvs_max_sequential_size``, than threshold
+  // desc = used in MVS boosting training. If dataset size is greater than ``mvs_max_sequential_size``, then threshold
   // desc = for MVS is chosen for each thread independently.
   // desc = used only in ``mvs``
   // desc = **Note**: on small dataset setting this parameter less than size of dataset may produce results depending on number of threads

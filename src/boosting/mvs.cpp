@@ -13,10 +13,11 @@ using ConstTreeIterator = std::vector<std::unique_ptr<Tree>>::const_iterator;
 
 MVS::MVS() : GBDT() {}
 
-static double ComputeLeavesMeanSquaredValue(ConstTreeIterator begin, ConstTreeIterator end) {
+static double ComputeLeavesMeanSquaredValue(ConstTreeIterator begin,
+                                            ConstTreeIterator end,
+                                            const data_size_t num_leaves) {
   double sum_values = 0.0;
-  data_size_t num_leaves = (*begin)->num_leaves();
-#pragma omp parallel for schedule(static, 2048) reduction(+:sum_values)
+#pragma omp parallel for schedule(static, 2048) reduction(+ : sum_values)
   for (data_size_t leaf_idx = 0; leaf_idx < num_leaves; ++leaf_idx) {
     double leave_value = 0.0;
     for (ConstTreeIterator it = begin; it != end; ++it) {
@@ -30,12 +31,11 @@ static double ComputeLeavesMeanSquaredValue(ConstTreeIterator begin, ConstTreeIt
   return sum_values / num_leaves;
 }
 
-static double ComputeMeanGradValues(score_t *gradients,
-                                    score_t *hessians,
+static double ComputeMeanGradValues(score_t *gradients, score_t *hessians,
                                     data_size_t size,
                                     data_size_t num_tree_per_iteration) {
   double sum = 0.0;
-#pragma omp parallel for schedule(static, 1024) reduction(+:sum)
+#pragma omp parallel for schedule(static, 1024) reduction(+ : sum)
   for (data_size_t i = 0; i < size; ++i) {
     double local_hessians = 0.0, local_gradients = 0.0;
     for (data_size_t j = 0; j < num_tree_per_iteration; ++j) {
@@ -52,25 +52,23 @@ double MVS::GetLambda() {
   if (!mvs_adaptive_) {
     return mvs_lambda_;
   }
-  double lambda =
-      (this->iter_ > 0) ? ComputeLeavesMeanSquaredValue(models_.cend() - num_tree_per_iteration_, models_.cend())
-                        : ComputeMeanGradValues(gradients_.data(),
-                                                hessians_.data(),
-                                                num_data_,
-                                                num_tree_per_iteration_);
-
-  return lambda;
+  if (this->iter_ > 0) {
+    return ComputeLeavesMeanSquaredValue(models_.cend() - num_tree_per_iteration_,
+                                         models_.cend(), config_->num_leaves);
+  }
+  return ComputeMeanGradValues(gradients_.data(), hessians_.data(), num_data_,
+                               num_tree_per_iteration_);
 }
 
 void MVS::Bagging(int iter) {
   if (iter % config_->bagging_freq != 0 && !need_re_bagging_) {
     return;
   }
-
+  need_re_bagging_ = false;
   bag_data_cnt_ = num_data_;
   mvs_lambda_ = GetLambda();
 
-  #pragma omp parallel for schedule(static, 1024)
+  //#pragma omp parallel for schedule(static, 1024)
   for (data_size_t i = 0; i < num_data_; ++i) {
     tmp_derivatives_[i] = 0.0f;
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
@@ -150,9 +148,7 @@ data_size_t MVS::BaggingHelper(data_size_t start, data_size_t cnt, data_size_t *
 }
 
 double MVS::GetThreshold(data_size_t begin, data_size_t cnt) {
-  data_size_t n_blocks, block_size;
-  Threading::BlockInfoForceSize<data_size_t>(num_data_, bagging_rand_block_, &n_blocks, &block_size);
-  if (num_data_ <= config_->mvs_max_sequential_size && block_size > 1 && threshold_ != 0.0) {
+  if (num_data_ <= config_->mvs_max_sequential_size && threshold_ != 0.0) {
     return threshold_;
   }
 
@@ -165,7 +161,6 @@ void MVS::ResetMVS() {
   CHECK(config_->bagging_fraction > 0.0f && config_->bagging_fraction < 1.0f && config_->bagging_freq > 0);
   CHECK(config_->mvs_lambda >= 0.0f);
   CHECK(!balanced_bagging_);
-
   bag_data_indices_.resize(num_data_);
   tmp_derivatives_.resize(num_data_);
   Log::Info("Using MVS");
