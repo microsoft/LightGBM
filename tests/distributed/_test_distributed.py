@@ -148,7 +148,7 @@ class DistributedMockup:
         cmd = [self.executable, f'config={config_path}']
         result = subprocess.run(cmd)
         if result.returncode != 0:
-            raise RuntimeError
+            raise RuntimeError('Error in prediction')
         y_pred = np.loadtxt(str(TESTS_DIR / 'predictions.txt'))
         return y_pred
 
