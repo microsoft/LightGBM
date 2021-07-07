@@ -2261,7 +2261,7 @@ def test_forced_bins():
     x[:, 0] = np.arange(0, 1, 0.01)
     x[:, 1] = -np.arange(0, 1, 0.01)
     y = np.arange(0, 1, 0.01)
-    forcedbins_filename = str(
+    forcedbins_filename = (
         Path(__file__).absolute().parents[2] / 'examples' / 'regression' / 'forced_bins.json'
     )
     params = {'objective': 'regression_l1',
@@ -2285,7 +2285,7 @@ def test_forced_bins():
     est = lgb.train(params, lgb_x, num_boost_round=20)
     predicted = est.predict(new_x)
     assert len(np.unique(predicted)) == 3
-    params['forcedbins_filename'] = str(
+    params['forcedbins_filename'] = (
         Path(__file__).absolute().parents[2] / 'examples' / 'regression' / 'forced_bins2.json'
     )
     params['max_bin'] = 11
