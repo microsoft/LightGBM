@@ -1087,7 +1087,7 @@ def test_contribs_sparse_multiclass():
     # convert data to dense and get back same contribs
     contribs_dense = gbm.predict(X_test.toarray(), pred_contrib=True)
     # validate the values are the same
-    contribs_csr_array = np.swapaxes(np.array([sparse_array.todense() for sparse_array in contribs_csr]), 0, 1)
+    contribs_csr_array = np.swapaxes(np.array([sparse_array.toarray() for sparse_array in contribs_csr]), 0, 1)
     contribs_csr_arr_re = contribs_csr_array.reshape((contribs_csr_array.shape[0],
                                                       contribs_csr_array.shape[1] * contribs_csr_array.shape[2]))
     if platform.machine() == 'aarch64':
@@ -1103,7 +1103,7 @@ def test_contribs_sparse_multiclass():
     for perclass_contribs_csc in contribs_csc:
         assert isspmatrix_csc(perclass_contribs_csc)
     # validate the values are the same
-    contribs_csc_array = np.swapaxes(np.array([sparse_array.todense() for sparse_array in contribs_csc]), 0, 1)
+    contribs_csc_array = np.swapaxes(np.array([sparse_array.toarray() for sparse_array in contribs_csc]), 0, 1)
     contribs_csc_array = contribs_csc_array.reshape((contribs_csc_array.shape[0],
                                                      contribs_csc_array.shape[1] * contribs_csc_array.shape[2]))
     if platform.machine() == 'aarch64':
@@ -2261,7 +2261,7 @@ def test_forced_bins():
     x[:, 0] = np.arange(0, 1, 0.01)
     x[:, 1] = -np.arange(0, 1, 0.01)
     y = np.arange(0, 1, 0.01)
-    forcedbins_filename = str(
+    forcedbins_filename = (
         Path(__file__).absolute().parents[2] / 'examples' / 'regression' / 'forced_bins.json'
     )
     params = {'objective': 'regression_l1',
@@ -2285,7 +2285,7 @@ def test_forced_bins():
     est = lgb.train(params, lgb_x, num_boost_round=20)
     predicted = est.predict(new_x)
     assert len(np.unique(predicted)) == 3
-    params['forcedbins_filename'] = str(
+    params['forcedbins_filename'] = (
         Path(__file__).absolute().parents[2] / 'examples' / 'regression' / 'forced_bins2.json'
     )
     params['max_bin'] = 11

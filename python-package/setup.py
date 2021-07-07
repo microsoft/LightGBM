@@ -4,6 +4,7 @@ import logging
 import struct
 import subprocess
 import sys
+from os import chdir
 from pathlib import Path
 from platform import system
 from shutil import copyfile, copytree, rmtree
@@ -79,17 +80,13 @@ def copy_files(integrated_opencl: bool = False, use_gpu: bool = False) -> None:
                      CURRENT_DIR / "compile" / "cmake" / "IntegratedOpenCL.cmake")
 
 
-def clear_path(path: str) -> None:
-    import os
-    path = str(path)
-    if os.path.isdir(path):
-        contents = os.listdir(path)
-        for file_name in contents:
-            file_path = os.path.join(path, file_name)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
+def clear_path(path: Path) -> None:
+    if path.is_dir():
+        for file_name in path.iterdir():
+            if file_name.is_dir():
+                rmtree(file_name)
             else:
-                rmtree(file_path)
+                file_name.unlink()
 
 
 def silent_call(cmd: List[str], raise_error: bool = False, error_msg: str = '') -> int:
@@ -122,6 +119,8 @@ def compile_cpp(
     build_dir = CURRENT_DIR / "build_cpp"
     rmtree(build_dir, ignore_errors=True)
     build_dir.mkdir(parents=True)
+    original_dir = Path.cwd()
+    chdir(build_dir)
 
     logger.info("Starting to compile the library.")
 
@@ -199,6 +198,7 @@ def compile_cpp(
         silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake and all required dependencies first')
         silent_call(["make", "_lightgbm", f"-I{build_dir}", "-j4"], raise_error=True,
                     error_msg='An error has occurred while building lightgbm library file')
+    chdir(original_dir)
 
 
 class CustomInstallLib(install_lib):

@@ -256,7 +256,7 @@ _lgbmmodel_doc_fit = (
     callbacks : list of callback functions or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
-    init_model : string, Booster, LGBMModel or None, optional (default=None)
+    init_model : string, pathlib.Path, Booster, LGBMModel or None, optional (default=None)
         Filename of LightGBM model, Booster instance or LGBMModel instance used for continue training.
 
     Returns
