@@ -28,7 +28,7 @@ import sklearn.utils.estimator_checks as sklearn_checks
 from dask.array.utils import assert_eq
 from dask.distributed import Client, LocalCluster, default_client, wait
 from pkg_resources import parse_version
-from scipy.sparse import csr_matrix
+from scipy.sparse import csc_matrix, csr_matrix
 from scipy.stats import spearmanr
 from sklearn import __version__ as sk_version
 from sklearn.datasets import make_blobs, make_regression
@@ -198,6 +198,12 @@ def _create_data(objective, n_samples=1_000, output='array', chunk_size=500, **k
         dX = da.from_array(X, chunks=(chunk_size, X.shape[1])).map_blocks(csr_matrix)
         dy = da.from_array(y, chunks=chunk_size)
         dw = da.from_array(weights, chunk_size)
+        X = csr_matrix(X)
+    elif output == 'scipy_csc_matrix':
+        dX = da.from_array(X, chunks=(chunk_size, X.shape[1])).map_blocks(csc_matrix)
+        dy = da.from_array(y, chunks=chunk_size)
+        dw = da.from_array(weights, chunk_size)
+        X = csc_matrix(X)
     else:
         raise ValueError(f"Unknown output type '{output}'")
 
@@ -344,7 +350,7 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
             assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
 
-@pytest.mark.parametrize('output', data_output)
+@pytest.mark.parametrize('output', data_output + ['scipy_csc_matrix'])
 @pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
 def test_classifier_pred_contrib(output, task, cluster):
     with Client(cluster) as client:
@@ -365,14 +371,52 @@ def test_classifier_pred_contrib(output, task, cluster):
             **params
         )
         dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
-        preds_with_contrib = dask_classifier.predict(dX, pred_contrib=True).compute()
+        preds_with_contrib = dask_classifier.predict(dX, pred_contrib=True)
 
         local_classifier = lgb.LGBMClassifier(**params)
         local_classifier.fit(X, y, sample_weight=w)
         local_preds_with_contrib = local_classifier.predict(X, pred_contrib=True)
 
-        if output == 'scipy_csr_matrix':
-            preds_with_contrib = np.array(preds_with_contrib.todense())
+        # shape depends on whether it is binary or multiclass classification
+        num_features = dask_classifier.n_features_
+        num_classes = dask_classifier.n_classes_
+        if num_classes == 2:
+            expected_num_cols = num_features + 1
+        else:
+            expected_num_cols = (num_features + 1) * num_classes
+
+        # in the special case of multi-class classification using scipy sparse matrices,
+        # the output of `.predict(..., pred_contrib=True)` is a list of sparse matrices (one per class)
+        #
+        # since that case is so different than all other cases, check the relevant things here
+        # and then return early
+        if output.startswith('scipy') and task == 'multiclass-classification':
+            if output == 'scipy_csr_matrix':
+                expected_type = csr_matrix
+            elif output == 'scipy_csc_matrix':
+                expected_type = csc_matrix
+            else:
+                raise ValueError(f"Unrecognized output type: {output}")
+            assert isinstance(preds_with_contrib, list)
+            assert all(isinstance(arr, da.Array) for arr in preds_with_contrib)
+            assert all(isinstance(arr._meta, expected_type) for arr in preds_with_contrib)
+            assert len(preds_with_contrib) == num_classes
+            assert len(preds_with_contrib) == len(local_preds_with_contrib)
+            for i in range(num_classes):
+                computed_preds = preds_with_contrib[i].compute()
+                assert isinstance(computed_preds, expected_type)
+                assert computed_preds.shape[1] == num_classes
+                assert computed_preds.shape == local_preds_with_contrib[i].shape
+                assert len(np.unique(computed_preds[:, -1])) == 1
+                # raw scores will probably be different, but at least check that all predicted classes are the same
+                pred_classes = np.argmax(computed_preds.toarray(), axis=1)
+                local_pred_classes = np.argmax(local_preds_with_contrib[i].toarray(), axis=1)
+                np.testing.assert_array_equal(pred_classes, local_pred_classes)
+            return
+
+        preds_with_contrib = preds_with_contrib.compute()
+        if output.startswith('scipy'):
+            preds_with_contrib = preds_with_contrib.toarray()
 
         # be sure LightGBM actually used at least one categorical column,
         # and that it was correctly treated as a categorical feature
@@ -386,14 +430,6 @@ def test_classifier_pred_contrib(output, task, cluster):
             assert node_uses_cat_col.sum() > 0
             assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
-        # shape depends on whether it is binary or multiclass classification
-        num_features = dask_classifier.n_features_
-        num_classes = dask_classifier.n_classes_
-        if num_classes == 2:
-            expected_num_cols = num_features + 1
-        else:
-            expected_num_cols = (num_features + 1) * num_classes
-
         # * shape depends on whether it is binary or multiclass classification
         # * matrix for binary classification is of the form [feature_contrib, base_value],
         #   for multi-class it's [feat_contrib_class1, base_value_class1, feat_contrib_class2, base_value_class2, etc.]
@@ -403,7 +439,7 @@ def test_classifier_pred_contrib(output, task, cluster):
         assert preds_with_contrib.shape == local_preds_with_contrib.shape
 
         if num_classes == 2:
-            assert len(np.unique(preds_with_contrib[:, num_features]) == 1)
+            assert len(np.unique(preds_with_contrib[:, num_features])) == 1
         else:
             for i in range(num_classes):
                 base_value_col = num_features * (i + 1) + i
@@ -585,7 +621,7 @@ def test_regressor_pred_contrib(output, cluster):
         local_preds_with_contrib = local_regressor.predict(X, pred_contrib=True)
 
         if output == "scipy_csr_matrix":
-            preds_with_contrib = np.array(preds_with_contrib.todense())
+            preds_with_contrib = preds_with_contrib.toarray()
 
         # contrib outputs for distributed training are different than from local training, so we can just test
         # that the output has the right shape and base values are in the right position
