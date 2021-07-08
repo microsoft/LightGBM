@@ -838,6 +838,7 @@ def _predict_part(
 def _predict(
     model: LGBMModel,
     data: _DaskMatrixLike,
+    client: Client,
     raw_score: bool = False,
     pred_proba: bool = False,
     pred_leaf: bool = False,
@@ -956,16 +957,29 @@ def _predict(
 
             return out
 
-        return data.map_blocks(
+        data_row = client.compute(data[[0]]).result()
+        predict_fn = partial(
             _predict_part,
             model=model,
             raw_score=raw_score,
             pred_proba=pred_proba,
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,
+            **kwargs,
+        )
+        pred_row = predict_fn(data_row)
+        chunks = (data.chunks[0],)
+        map_blocks_kwargs = {}
+        if len(pred_row.shape) > 1:
+            chunks += (pred_row.shape[1],)
+        else:
+            map_blocks_kwargs['drop_axis'] = 1
+        return data.map_blocks(
+            predict_fn,
+            chunks=chunks,
+            meta=pred_row,
             dtype=dtype,
-            drop_axis=1,
-            **kwargs
+            **map_blocks_kwargs,
         )
     else:
         raise TypeError(f'Data must be either Dask Array or Dask DataFrame. Got {type(data).__name__}.')
@@ -1201,6 +1215,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             model=self.to_local(),
             data=X,
             dtype=self.classes_.dtype,
+            client=_get_dask_client(self.client),
             **kwargs
         )
 
@@ -1219,6 +1234,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             model=self.to_local(),
             data=X,
             pred_proba=True,
+            client=_get_dask_client(self.client),
             **kwargs
         )
 
@@ -1378,6 +1394,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         return _predict(
             model=self.to_local(),
             data=X,
+            client=_get_dask_client(self.client),
             **kwargs
         )
 
@@ -1537,7 +1554,12 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
-        return _predict(self.to_local(), X, **kwargs)
+        return _predict(
+            model=self.to_local(),
+            data=X,
+            client=_get_dask_client(self.client),
+            **kwargs
+        )
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
