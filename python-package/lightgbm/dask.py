@@ -1556,8 +1556,8 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
         return _predict(
-            self.to_local(),
-            X,
+            model=self.to_local(),
+            data=X,
             client=_get_dask_client(self.client),
             **kwargs
         )
