@@ -21,7 +21,6 @@ lgb.is.null.handle <- function(x) {
 
 lgb.params2str <- function(params) {
 
-  # Check for a list as input
   if (!identical(class(params), "list")) {
     stop("params must be a list")
   }
@@ -29,7 +28,6 @@ lgb.params2str <- function(params) {
   # Split parameter names
   names(params) <- gsub("\\.", "_", names(params))
 
-  # Setup temporary variable
   ret <- list()
 
   # Perform key value join
@@ -54,7 +52,6 @@ lgb.params2str <- function(params) {
 
   }
 
-  # Check ret length
   if (length(ret) == 0L) {
     return("")
   }

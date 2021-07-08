@@ -50,10 +50,8 @@
 #' @export
 lgb.model.dt.tree <- function(model, num_iteration = NULL) {
 
-  # Dump json model first
   json_model <- lgb.dump(booster = model, num_iteration = num_iteration)
 
-  # Parse json model second
   parsed_json_model <- jsonlite::fromJSON(
     txt = json_model
     , simplifyVector = TRUE
@@ -62,10 +60,10 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
     , flatten = FALSE
   )
 
-  # Parse tree model third
+  # Parse tree model
   tree_list <- lapply(parsed_json_model$tree_info, single.tree.parse)
 
-  # Combine into single data.table fourth
+  # Combine into single data.table
   tree_dt <- data.table::rbindlist(l = tree_list, use.names = TRUE)
 
   # Substitute feature index with the actual feature name

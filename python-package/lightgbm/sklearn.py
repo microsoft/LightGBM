@@ -2,6 +2,7 @@
 """Scikit-learn wrapper interface for LightGBM."""
 import copy
 from inspect import signature
+from typing import Callable, Dict, Optional, Union
 
 import numpy as np
 
@@ -207,13 +208,13 @@ _lgbmmodel_doc_fit = (
         A list of (X, y) tuple pairs to use as validation sets.
     eval_names : list of strings or None, optional (default=None)
         Names of eval_set.
-    eval_sample_weight : list of arrays or None, optional (default=None)
+    eval_sample_weight : {eval_sample_weight_shape}
         Weights of eval data.
     eval_class_weight : list or None, optional (default=None)
         Class weights of eval data.
-    eval_init_score : list of arrays or None, optional (default=None)
+    eval_init_score : {eval_init_score_shape}
         Init score of eval data.
-    eval_group : list of arrays or None, optional (default=None)
+    eval_group : {eval_group_shape}
         Group data of eval data.
     eval_metric : string, callable, list or None, optional (default=None)
         If string, it should be a built-in evaluation metric to use.
@@ -255,7 +256,7 @@ _lgbmmodel_doc_fit = (
     callbacks : list of callback functions or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
-    init_model : string, Booster, LGBMModel or None, optional (default=None)
+    init_model : string, pathlib.Path, Booster, LGBMModel or None, optional (default=None)
         Filename of LightGBM model, Booster instance or LGBMModel instance used for continue training.
 
     Returns
@@ -348,13 +349,30 @@ _lgbmmodel_doc_predict = (
 class LGBMModel(_LGBMModelBase):
     """Implementation of the scikit-learn API for LightGBM."""
 
-    def __init__(self, boosting_type='gbdt', num_leaves=31, max_depth=-1,
-                 learning_rate=0.1, n_estimators=100,
-                 subsample_for_bin=200000, objective=None, class_weight=None,
-                 min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
-                 subsample=1., subsample_freq=0, colsample_bytree=1.,
-                 reg_alpha=0., reg_lambda=0., random_state=None,
-                 n_jobs=-1, silent=True, importance_type='split', **kwargs):
+    def __init__(
+        self,
+        boosting_type: str = 'gbdt',
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[str, Callable]] = None,
+        class_weight: Optional[Union[Dict, str]] = None,
+        min_split_gain: float = 0.,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.,
+        reg_alpha: float = 0.,
+        reg_lambda: float = 0.,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
+        n_jobs: int = -1,
+        silent: bool = True,
+        importance_type: str = 'split',
+        **kwargs
+    ):
         r"""Construct a gradient boosting model.
 
         Parameters
@@ -718,7 +736,10 @@ class LGBMModel(_LGBMModelBase):
         y_shape="array-like of shape = [n_samples]",
         sample_weight_shape="array-like of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="array-like of shape = [n_samples] or None, optional (default=None)",
-        group_shape="array-like or None, optional (default=None)"
+        group_shape="array-like or None, optional (default=None)",
+        eval_sample_weight_shape="list of arrays or None, optional (default=None)",
+        eval_init_score_shape="list of arrays or None, optional (default=None)",
+        eval_group_shape="list of arrays or None, optional (default=None)"
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
 
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,

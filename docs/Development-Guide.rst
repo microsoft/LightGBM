@@ -80,6 +80,7 @@ Tests
 
 C++ unit tests are located in the ``./tests/cpp_tests`` folder and written with the help of Google Test framework.
 To run tests locally first refer to the `Installation Guide <./Installation-Guide.rst#build-c-unit-tests>`__ for how to build tests and then simply run compiled executable file.
+It is highly recommended to build tests with `sanitizers <./Installation-Guide.rst#sanitizers>`__.
 
 High Level Language Package
 ---------------------------
