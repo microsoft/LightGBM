@@ -1113,8 +1113,7 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            For multiclass classification can also be list of lists, numpy 2-D array or pandas DataFrame.
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
@@ -1531,8 +1530,7 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            For multiclass classification can also be list of lists, numpy 2-D array or pandas DataFrame.
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
@@ -1868,8 +1866,7 @@ class Dataset:
 
         Parameters
         ----------
-        init_score : list, numpy 1-D array, pandas Series or None.
-            For multiclass classification can also be list of lists, numpy 2-D array or pandas DataFrame.
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task) or None, optional (default=None)
             Init score for Booster.
 
         Returns

@@ -717,7 +717,7 @@ class LGBMModel(_LGBMModelBase):
         X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
         y_shape="array-like of shape = [n_samples]",
         sample_weight_shape="array-like of shape = [n_samples] or None, optional (default=None)",
-        init_score_shape="array-like of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
         group_shape="array-like or None, optional (default=None)"
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
 
