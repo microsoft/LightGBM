@@ -979,7 +979,6 @@ def _predict(
             chunks=chunks,
             meta=pred_row,
             dtype=dtype,
-            drop_axis=1,
             **map_blocks_kwargs,
         )
     else:
