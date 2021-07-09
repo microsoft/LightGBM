@@ -767,7 +767,9 @@ struct Config {
 
   // [no-save]
   // desc = used only in ``prediction`` task
+  // desc = used only in ``classification`` and ``ranking`` applications
   // desc = if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
+  // desc = **Note**: cannot be used with ``rf`` boosting type or custom objective function
   bool pred_early_stop = false;
 
   // [no-save]
