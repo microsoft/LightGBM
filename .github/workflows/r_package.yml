@@ -123,6 +123,14 @@ jobs:
             compiler: clang
             r_version: 4.0
             build_type: cran
+          ################
+          # Other checks #
+          ################
+          - os: ubuntu-latest
+            task: r-rchk
+            compiler: gcc
+            r_version: 4.0
+            build_type: cran
     steps:
       - name: Prevent conversion of line endings on Windows
         if: startsWith(matrix.os, 'windows')
