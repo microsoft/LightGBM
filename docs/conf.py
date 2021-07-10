@@ -32,7 +32,7 @@ from docutils.parsers.rst import Directive
 from docutils.transforms import Transform
 from sphinx.errors import VersionRequirementError
 
-CURR_PATH = Path(__file__).parent.absolute()
+CURR_PATH = Path(__file__).absolute().parent
 LIB_PATH = CURR_PATH.parent / 'python-package'
 sys.path.insert(0, str(LIB_PATH))
 
