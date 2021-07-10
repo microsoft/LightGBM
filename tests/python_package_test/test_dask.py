@@ -747,6 +747,13 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
         p1_pred_leaf = dask_ranker.predict(dX, pred_leaf=True)
         p1_raw = dask_ranker.predict(dX, raw_score=True).compute()
         p1_first_iter_raw = dask_ranker.predict(dX, start_iteration=0, num_iteration=1, raw_score=True).compute()
+        p1_early_stop_raw = dask_ranker.predict(
+            dX,
+            pred_early_stop=True,
+            pred_early_stop_margin=1.0,
+            pred_early_stop_freq=2,
+            raw_score=True
+        ).compute()
         rnkvec_dask_local = dask_ranker.to_local().predict(X)
 
         local_ranker = lgb.LGBMRanker(**params)
@@ -763,6 +770,9 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
         # extra predict() parameters should be passed through correctly
         with pytest.raises(AssertionError):
             assert_eq(p1_raw, p1_first_iter_raw)
+
+        with pytest.raises(AssertionError):
+            assert_eq(p1_raw, p1_early_stop_raw)
 
         # pref_leaf values should have the right shape
         # and values that look like valid tree nodes

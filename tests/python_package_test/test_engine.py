@@ -455,9 +455,7 @@ def test_multiclass_prediction_early_stopping():
     assert ret < 0.8
     assert ret > 0.6  # loss will be higher than when evaluating the full model
 
-    pred_parameter = {"pred_early_stop": True,
-                      "pred_early_stop_freq": 5,
-                      "pred_early_stop_margin": 5.5}
+    pred_parameter["pred_early_stop_margin"] = 5.5
     ret = multi_logloss(y_test, gbm.predict(X_test, **pred_parameter))
     assert ret < 0.2
 
@@ -586,6 +584,29 @@ def test_auc_mu():
     results_no_weight = {}
     lgb.train(params, lgb_X, num_boost_round=5, valid_sets=[lgb_X], evals_result=results_no_weight)
     assert results_weight['training']['auc_mu'][-1] != results_no_weight['training']['auc_mu'][-1]
+
+
+def test_ranking_prediction_early_stopping():
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
+    X_test, _ = load_svmlight_file(str(rank_example_dir / 'rank.test'))
+    params = {
+        'objective': 'rank_xendcg',
+        'verbose': -1
+    }
+    lgb_train = lgb.Dataset(X_train, y_train, group=q_train, params=params)
+    gbm = lgb.train(params, lgb_train, num_boost_round=50)
+
+    pred_parameter = {"pred_early_stop": True,
+                      "pred_early_stop_freq": 5,
+                      "pred_early_stop_margin": 1.5}
+    ret_early = gbm.predict(X_test, **pred_parameter)
+
+    pred_parameter["pred_early_stop_margin"] = 5.5
+    ret_early_more_strict = gbm.predict(X_test, **pred_parameter)
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(ret_early, ret_early_more_strict)
 
 
 def test_early_stopping():
