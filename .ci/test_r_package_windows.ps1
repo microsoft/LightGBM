@@ -39,12 +39,24 @@ function Remove-From-Path {
 # remove some details that exist in the GitHub Actions images which might
 # cause conflicts with R and other components installed by this script
 $env:RTOOLS40_HOME = ""
+Remove-From-Path ".*Amazon.*"
+Remove-From-Path ".*Anaconda.*"
+Remove-From-Path ".*android.*"
+Remove-From-Path ".*Android.*"
 Remove-From-Path ".*chocolatey.*"
 Remove-From-Path ".*Chocolatey.*"
-Remove-From-Path ".*Git.*mingw64.*"
+Remove-From-Path ".*\\Git\\.*"
+Remove-From-Path "(?!.*pandoc.*).*hostedtoolcache.*"
+Remove-From-Path ".*Microsoft SDKs.*"
+Remove-From-Path ".*mingw.*"
 Remove-From-Path ".*msys64.*"
+Remove-From-Path ".*PostgreSQL.*"
+Remove-From-Path ".*\\R\\.*"
+Remove-From-Path ".*R Client.*"
 Remove-From-Path ".*rtools40.*"
+Remove-From-Path ".*shells.*"
 Remove-From-Path ".*Strawberry.*"
+Remove-From-Path ".*tools.*"
 
 Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
 
