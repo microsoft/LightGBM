@@ -132,7 +132,7 @@ lgb.train <- function(params = list(),
 
   # Check for boosting from a trained model
   if (is.character(init_model)) {
-    predictor <- Predictor$new(init_model)
+    predictor <- Predictor$new(modelfile = init_model)
   } else if (lgb.is.Booster(x = init_model)) {
     predictor <- init_model$to_predictor()
   }
@@ -143,6 +143,11 @@ lgb.train <- function(params = list(),
     begin_iteration <- predictor$current_iter() + 1L
   }
   end_iteration <- begin_iteration + params[["num_iterations"]] - 1L
+
+  # pop interaction_constraints off of params. It needs some preprocessing on the
+  # R side before being passed into the Dataset object
+  interaction_constraints <- params[["interaction_constraints"]]
+  params["interaction_constraints"] <- NULL
 
   # Construct datasets, if needed
   data$update_params(params = params)
@@ -156,7 +161,7 @@ lgb.train <- function(params = list(),
     cnames <- data$get_colnames()
   }
   params[["interaction_constraints"]] <- lgb.check_interaction_constraints(
-    params = params
+    interaction_constraints = interaction_constraints
     , column_names = cnames
   )
 
@@ -183,7 +188,6 @@ lgb.train <- function(params = list(),
   # Parse validation datasets
   if (length(valids) > 0L) {
 
-    # Loop through all validation datasets using name
     for (key in names(valids)) {
 
       # Use names to get validation datasets

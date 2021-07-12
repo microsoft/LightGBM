@@ -6,7 +6,7 @@ function Check-Output {
   }
 }
 
-# unify environment variable for Azure devops and AppVeyor
+# unify environment variable for Azure DevOps and AppVeyor
 if (Test-Path env:APPVEYOR) {
   $env:APPVEYOR = "true"
 }
@@ -18,9 +18,10 @@ if ($env:TASK -eq "r-package") {
 
 if ($env:TASK -eq "cpp-tests") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
-  cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -A x64 ..
+  cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON -A x64 ..
   cmake --build . --target testlightgbm --config Debug ; Check-Output $?
-  Start-Process -FilePath "./../Debug/testlightgbm.exe" -NoNewWindow -Wait ; Check-Output $?
+  cd ../Debug
+  .\testlightgbm.exe ; Check-Output $?
   Exit 0
 }
 
@@ -66,7 +67,7 @@ elseif ($env:TASK -eq "sdist") {
 }
 elseif ($env:TASK -eq "bdist") {
   # Import the Chocolatey profile module so that the RefreshEnv command
-  # invoked below properly updates the current PowerShell session enviroment.
+  # invoked below properly updates the current PowerShell session environment.
   $module = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
   Import-Module "$module" ; Check-Output $?
   RefreshEnv
@@ -105,11 +106,12 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
   @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
   (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"  # prevent interactive window mode
+  conda install -q -y -n $env:CONDA_ENV h5py ipywidgets notebook
   foreach ($file in @(Get-ChildItem *.py)) {
     @("import sys, warnings", "warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: sys.stdout.write(warnings.formatwarning(message, category, filename, lineno, line))") + (Get-Content $file) | Set-Content $file
     python $file ; Check-Output $?
   }  # run all examples
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide/notebooks
-  conda install -q -y -n $env:CONDA_ENV ipywidgets notebook
+  (Get-Content "interactive_plot_example.ipynb").replace('INTERACTIVE = False', 'assert False, \"Interactive mode disabled\"') | Set-Content "interactive_plot_example.ipynb"
   jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb ; Check-Output $?  # run all notebooks
 }

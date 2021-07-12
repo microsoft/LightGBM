@@ -1,3 +1,27 @@
+context("Booster")
+
+test_that("Booster$finalize() should not fail", {
+    X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
+    y <- iris[["Sepal.Length"]]
+    dtrain <- lgb.Dataset(X, label = y)
+    bst <- lgb.train(
+        data = dtrain
+        , objective = "regression"
+        , verbose = -1L
+        , nrounds = 3L
+    )
+    expect_true(lgb.is.Booster(bst))
+
+    expect_false(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+
+    bst$finalize()
+    expect_true(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+
+    # calling finalize() a second time shouldn't cause any issues
+    bst$finalize()
+    expect_true(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+})
+
 context("lgb.get.eval.result")
 
 test_that("lgb.get.eval.result() should throw an informative error if booster is not an lgb.Booster", {
@@ -238,6 +262,74 @@ test_that("Loading a Booster from a string works", {
     )
     pred2 <- predict(bst2, test$data)
     expect_identical(pred, pred2)
+})
+
+test_that("Saving a large model to string should work", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , num_leaves = 100L
+        , learning_rate = 0.01
+        , nrounds = 500L
+        , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
+        , verbose = -1L
+    )
+
+    pred <- predict(bst, train$data)
+    pred_leaf_indx <- predict(bst, train$data, predleaf = TRUE)
+    pred_raw_score <- predict(bst, train$data, rawscore = TRUE)
+    model_string <- bst$save_model_to_string()
+
+    # make sure this test is still producing a model bigger than the default
+    # buffer size used in LGBM_BoosterSaveModelToString_R
+    expect_gt(nchar(model_string), 1024L * 1024L)
+
+    # finalize the booster and destroy it so you know we aren't cheating
+    bst$finalize()
+    expect_null(bst$.__enclos_env__$private$handle)
+    rm(bst)
+
+    # make sure a new model can be created from this string, and that it
+    # produces expected results
+    bst2 <- lgb.load(
+        model_str = model_string
+    )
+    pred2 <- predict(bst2, train$data)
+    pred2_leaf_indx <- predict(bst2, train$data, predleaf = TRUE)
+    pred2_raw_score <- predict(bst2, train$data, rawscore = TRUE)
+    expect_identical(pred, pred2)
+    expect_identical(pred_leaf_indx, pred2_leaf_indx)
+    expect_identical(pred_raw_score, pred2_raw_score)
+})
+
+test_that("Saving a large model to JSON should work", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , num_leaves = 100L
+        , learning_rate = 0.01
+        , nrounds = 200L
+        , objective = "binary"
+        , save_name = tempfile(fileext = ".model")
+        , verbose = -1L
+    )
+
+    model_json <- bst$dump_model()
+
+    # make sure this test is still producing a model bigger than the default
+    # buffer size used in LGBM_BoosterDumpModel_R
+    expect_gt(nchar(model_json), 1024L * 1024L)
+
+    # check that it is valid JSON that looks like a LightGBM model
+    model_list <- jsonlite::fromJSON(model_json)
+    expect_equal(model_list[["objective"]], "binary sigmoid:1")
 })
 
 test_that("If a string and a file are both passed to lgb.load() the file is used model_str is totally ignored", {

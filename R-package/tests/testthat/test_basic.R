@@ -389,6 +389,39 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
   expect_true(cv_bst_linear$best_score < cv_bst$best_score)
 })
 
+test_that("lgb.cv() respects showsd argument", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(objective = "regression", metric = "l2")
+  nrounds <- 5L
+  set.seed(708L)
+  bst_showsd <- lgb.cv(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , nfold = 3L
+    , min_data = 1L
+    , showsd = TRUE
+  )
+  evals_showsd <- bst_showsd$record_evals[["valid"]][["l2"]]
+  set.seed(708L)
+  bst_no_showsd <- lgb.cv(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , nfold = 3L
+    , min_data = 1L
+    , showsd = FALSE
+  )
+  evals_no_showsd <- bst_no_showsd$record_evals[["valid"]][["l2"]]
+  expect_equal(
+    evals_showsd[["eval"]]
+    , evals_no_showsd[["eval"]]
+  )
+  expect_is(evals_showsd[["eval_err"]], "list")
+  expect_equal(length(evals_showsd[["eval_err"]]), nrounds)
+  expect_identical(evals_no_showsd[["eval_err"]], list())
+})
+
 context("lgb.train()")
 
 test_that("lgb.train() works as expected with multiple eval metrics", {
@@ -1247,6 +1280,38 @@ test_that("lgb.train() supports non-ASCII feature names", {
   }
 })
 
+test_that("lgb.train() works with integer, double, and numeric data", {
+  data(mtcars)
+  X <- as.matrix(mtcars[, -1L])
+  y <- mtcars[, 1L, drop = TRUE]
+  expected_mae <- 4.263667
+  for (data_mode in c("numeric", "double", "integer")) {
+    mode(X) <- data_mode
+    nrounds <- 10L
+    bst <- lightgbm(
+      data = X
+      , label = y
+      , params = list(
+        objective = "regression"
+        , min_data = 1L
+        , learning_rate = 0.01
+        , seed = 708L
+      )
+      , nrounds = nrounds
+    )
+
+    # should have trained for 10 iterations and found splits
+    modelDT <- lgb.model.dt.tree(bst)
+    expect_equal(modelDT[, max(tree_index)], nrounds - 1L)
+    expect_gt(nrow(modelDT), nrounds * 3L)
+
+    # should have achieved expected performance
+    preds <- predict(bst, X)
+    mae <- mean(abs(y - preds))
+    expect_true(abs(mae - expected_mae) < TOLERANCE)
+  }
+})
+
 test_that("when early stopping is not activated, best_iter and best_score come from valids and not training data", {
   set.seed(708L)
   trainDF <- data.frame(
@@ -2010,3 +2075,152 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   expect_equal(pred1, pred2)
 
 })
+
+context("monotone constraints")
+
+.generate_trainset_for_monotone_constraints_tests <- function(x3_to_categorical) {
+  n_samples <- 3000L
+  x1_positively_correlated_with_y <- runif(n = n_samples, min = 0.0, max = 1.0)
+  x2_negatively_correlated_with_y <- runif(n = n_samples, min = 0.0, max = 1.0)
+  x3_negatively_correlated_with_y <- runif(n = n_samples, min = 0.0, max = 1.0)
+  if (x3_to_categorical) {
+    x3_negatively_correlated_with_y <- as.integer(x3_negatively_correlated_with_y / 0.01)
+    categorical_features <- "feature_3"
+  } else {
+    categorical_features <- NULL
+  }
+  X <- matrix(
+    data = c(
+        x1_positively_correlated_with_y
+        , x2_negatively_correlated_with_y
+        , x3_negatively_correlated_with_y
+    )
+    , ncol = 3L
+  )
+  zs <- rnorm(n = n_samples, mean = 0.0, sd = 0.01)
+  scales <- 10.0 * (runif(n = 6L, min = 0.0, max = 1.0) + 0.5)
+  y <- (
+    scales[1L] * x1_positively_correlated_with_y
+    + sin(scales[2L] * pi * x1_positively_correlated_with_y)
+    - scales[3L] * x2_negatively_correlated_with_y
+    - cos(scales[4L] * pi * x2_negatively_correlated_with_y)
+    - scales[5L] * x3_negatively_correlated_with_y
+    - cos(scales[6L] * pi * x3_negatively_correlated_with_y)
+    + zs
+  )
+  return(lgb.Dataset(
+    data = X
+    , label = y
+    , categorical_feature = categorical_features
+    , free_raw_data = FALSE
+    , colnames = c("feature_1", "feature_2", "feature_3")
+  ))
+}
+
+.is_increasing <- function(y) {
+  return(all(diff(y) >= 0.0))
+}
+
+.is_decreasing <- function(y) {
+  return(all(diff(y) <= 0.0))
+}
+
+.is_non_monotone <- function(y) {
+  return(any(diff(y) < 0.0) & any(diff(y) > 0.0))
+}
+
+# R equivalent of numpy.linspace()
+.linspace <- function(start_val, stop_val, num) {
+  weights <- (seq_len(num) - 1L) / (num - 1L)
+  return(start_val + weights * (stop_val - start_val))
+}
+
+.is_correctly_constrained <- function(learner, x3_to_categorical) {
+  iterations <- 10L
+  n <- 1000L
+  variable_x <- .linspace(0L, 1L, n)
+  fixed_xs_values <- .linspace(0L, 1L, n)
+  for (i in seq_len(iterations)) {
+    fixed_x <- fixed_xs_values[i] * rep(1.0, n)
+    monotonically_increasing_x <- matrix(
+      data = c(variable_x, fixed_x, fixed_x)
+      , ncol = 3L
+    )
+    monotonically_increasing_y <- predict(
+      learner
+      , monotonically_increasing_x
+    )
+
+    monotonically_decreasing_x <- matrix(
+      data = c(fixed_x, variable_x, fixed_x)
+      , ncol = 3L
+    )
+    monotonically_decreasing_y <- predict(
+      learner
+      , monotonically_decreasing_x
+    )
+
+    if (x3_to_categorical) {
+      non_monotone_data <- c(
+        fixed_x
+        , fixed_x
+        , as.integer(variable_x / 0.01)
+      )
+    } else {
+      non_monotone_data <- c(fixed_x, fixed_x, variable_x)
+    }
+    non_monotone_x <- matrix(
+      data = non_monotone_data
+      , ncol = 3L
+    )
+    non_monotone_y <- predict(
+      learner
+      , non_monotone_x
+    )
+    if (!(.is_increasing(monotonically_increasing_y) &&
+          .is_decreasing(monotonically_decreasing_y) &&
+          .is_non_monotone(non_monotone_y)
+    )) {
+      return(FALSE)
+    }
+  }
+  return(TRUE)
+}
+
+for (x3_to_categorical in c(TRUE, FALSE)) {
+  set.seed(708L)
+  dtrain <- .generate_trainset_for_monotone_constraints_tests(
+    x3_to_categorical = x3_to_categorical
+  )
+  for (monotone_constraints_method in c("basic", "intermediate", "advanced")) {
+    test_msg <- paste0(
+      "lgb.train() supports monotone constraints ("
+      , "categoricals="
+      , x3_to_categorical
+      , ", method="
+      , monotone_constraints_method
+      , ")"
+    )
+    test_that(test_msg, {
+      params <- list(
+        min_data = 20L
+        , num_leaves = 20L
+        , monotone_constraints = c(1L, -1L, 0L)
+        , monotone_constraints_method = monotone_constraints_method
+        , use_missing = FALSE
+      )
+      constrained_model <- lgb.train(
+        params = params
+        , data = dtrain
+        , obj = "regression_l2"
+        , nrounds = 100L
+      )
+      expect_true({
+        .is_correctly_constrained(
+          learner = constrained_model
+          , x3_to_categorical = x3_to_categorical
+        )
+      })
+    })
+  }
+}

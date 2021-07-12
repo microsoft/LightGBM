@@ -2,6 +2,7 @@
 """Scikit-learn wrapper interface for LightGBM."""
 import copy
 from inspect import signature
+from typing import Callable, Dict, Optional, Union
 
 import numpy as np
 
@@ -32,6 +33,8 @@ class _ObjectiveFunctionWrapper:
                     The target values.
                 y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The predicted values.
+                    Predicted values are returned before any transformation,
+                    e.g. they are raw margin instead of probability of positive class for binary task.
                 group : array-like
                     Group/query data.
                     Only used in the learning-to-rank task.
@@ -39,13 +42,14 @@ class _ObjectiveFunctionWrapper:
                     For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                     where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
                 grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                    The value of the first order derivative (gradient) for each sample point.
+                    The value of the first order derivative (gradient) of the loss
+                    with respect to the elements of y_pred for each sample point.
                 hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                    The value of the second order derivative (Hessian) for each sample point.
+                    The value of the second order derivative (Hessian) of the loss
+                    with respect to the elements of y_pred for each sample point.
 
         .. note::
 
-            For binary task, the y_pred is margin.
             For multi-class task, the y_pred is group by class_id first, then group by row_id.
             If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
             and you should group grad and hess in this way as well.
@@ -65,9 +69,11 @@ class _ObjectiveFunctionWrapper:
         Returns
         -------
         grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-            The value of the first order derivative (gradient) for each sample point.
+            The value of the first order derivative (gradient) of the loss
+            with respect to the elements of preds for each sample point.
         hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-            The value of the second order derivative (Hessian) for each sample point.
+            The value of the second order derivative (Hessian) of the loss
+            with respect to the elements of preds for each sample point.
         """
         labels = dataset.get_label()
         argc = len(signature(self.func).parameters)
@@ -120,6 +126,8 @@ class _EvalFunctionWrapper:
                     The target values.
                 y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The predicted values.
+                    In case of custom ``objective``, predicted values are returned before any transformation,
+                    e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 weight : array-like of shape = [n_samples]
                     The weight of samples.
                 group : array-like
@@ -129,7 +137,7 @@ class _EvalFunctionWrapper:
                     For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                     where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
                 eval_name : string
-                    The name of evaluation function (without whitespaces).
+                    The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
                 is_higher_better : bool
@@ -137,7 +145,6 @@ class _EvalFunctionWrapper:
 
         .. note::
 
-            For binary task, the y_pred is probability of positive class (or margin in case of custom ``objective``).
             For multi-class task, the y_pred is group by class_id first, then group by row_id.
             If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
         """
@@ -156,7 +163,7 @@ class _EvalFunctionWrapper:
         Returns
         -------
         eval_name : string
-            The name of evaluation function (without whitespaces).
+            The name of evaluation function (without whitespace).
         eval_result : float
             The eval result.
         is_higher_better : bool
@@ -201,13 +208,13 @@ _lgbmmodel_doc_fit = (
         A list of (X, y) tuple pairs to use as validation sets.
     eval_names : list of strings or None, optional (default=None)
         Names of eval_set.
-    eval_sample_weight : list of arrays or None, optional (default=None)
+    eval_sample_weight : {eval_sample_weight_shape}
         Weights of eval data.
     eval_class_weight : list or None, optional (default=None)
         Class weights of eval data.
-    eval_init_score : list of arrays or None, optional (default=None)
+    eval_init_score : {eval_init_score_shape}
         Init score of eval data.
-    eval_group : list of arrays or None, optional (default=None)
+    eval_group : {eval_group_shape}
         Group data of eval data.
     eval_metric : string, callable, list or None, optional (default=None)
         If string, it should be a built-in evaluation metric to use.
@@ -249,7 +256,7 @@ _lgbmmodel_doc_fit = (
     callbacks : list of callback functions or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
-    init_model : string, Booster, LGBMModel or None, optional (default=None)
+    init_model : string, pathlib.Path, Booster, LGBMModel or None, optional (default=None)
         Filename of LightGBM model, Booster instance or LGBMModel instance used for continue training.
 
     Returns
@@ -272,6 +279,8 @@ _lgbmmodel_doc_custom_eval_note = """
             The target values.
         y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
             The predicted values.
+            In case of custom ``objective``, predicted values are returned before any transformation,
+            e.g. they are raw margin instead of probability of positive class for binary task in this case.
         weight : array-like of shape = [n_samples]
             The weight of samples.
         group : array-like
@@ -281,13 +290,12 @@ _lgbmmodel_doc_custom_eval_note = """
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         eval_name : string
-            The name of evaluation function (without whitespaces).
+            The name of evaluation function (without whitespace).
         eval_result : float
             The eval result.
         is_higher_better : bool
             Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-    For binary task, the y_pred is probability of positive class (or margin in case of custom ``objective``).
     For multi-class task, the y_pred is group by class_id first, then group by row_id.
     If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
 """
@@ -341,13 +349,30 @@ _lgbmmodel_doc_predict = (
 class LGBMModel(_LGBMModelBase):
     """Implementation of the scikit-learn API for LightGBM."""
 
-    def __init__(self, boosting_type='gbdt', num_leaves=31, max_depth=-1,
-                 learning_rate=0.1, n_estimators=100,
-                 subsample_for_bin=200000, objective=None, class_weight=None,
-                 min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
-                 subsample=1., subsample_freq=0, colsample_bytree=1.,
-                 reg_alpha=0., reg_lambda=0., random_state=None,
-                 n_jobs=-1, silent=True, importance_type='split', **kwargs):
+    def __init__(
+        self,
+        boosting_type: str = 'gbdt',
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[str, Callable]] = None,
+        class_weight: Optional[Union[Dict, str]] = None,
+        min_split_gain: float = 0.,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.,
+        reg_alpha: float = 0.,
+        reg_lambda: float = 0.,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
+        n_jobs: int = -1,
+        silent: bool = True,
+        importance_type: str = 'split',
+        **kwargs
+    ):
         r"""Construct a gradient boosting model.
 
         Parameters
@@ -395,7 +420,7 @@ class LGBMModel(_LGBMModelBase):
         subsample : float, optional (default=1.)
             Subsample ratio of the training instance.
         subsample_freq : int, optional (default=0)
-            Frequence of subsample, <=0 means no enable.
+            Frequency of subsample, <=0 means no enable.
         colsample_bytree : float, optional (default=1.)
             Subsample ratio of columns when constructing each tree.
         reg_alpha : float, optional (default=0.)
@@ -434,6 +459,8 @@ class LGBMModel(_LGBMModelBase):
                 The target values.
             y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The predicted values.
+                Predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task.
             group : array-like
                 Group/query data.
                 Only used in the learning-to-rank task.
@@ -441,17 +468,19 @@ class LGBMModel(_LGBMModelBase):
                 For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                 where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
             grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The value of the first order derivative (gradient) for each sample point.
+                The value of the first order derivative (gradient) of the loss
+                with respect to the elements of y_pred for each sample point.
             hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
-                The value of the second order derivative (Hessian) for each sample point.
+                The value of the second order derivative (Hessian) of the loss
+                with respect to the elements of y_pred for each sample point.
 
-        For binary task, the y_pred is margin.
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
         and you should group grad and hess in this way as well.
         """
         if not SKLEARN_INSTALLED:
-            raise LightGBMError('scikit-learn is required for lightgbm.sklearn')
+            raise LightGBMError('scikit-learn is required for lightgbm.sklearn. '
+                                'You must install scikit-learn and restart your session to use this module.')
 
         self.boosting_type = boosting_type
         self.objective = objective
@@ -707,7 +736,10 @@ class LGBMModel(_LGBMModelBase):
         y_shape="array-like of shape = [n_samples]",
         sample_weight_shape="array-like of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="array-like of shape = [n_samples] or None, optional (default=None)",
-        group_shape="array-like or None, optional (default=None)"
+        group_shape="array-like or None, optional (default=None)",
+        eval_sample_weight_shape="list of arrays or None, optional (default=None)",
+        eval_init_score_shape="list of arrays or None, optional (default=None)",
+        eval_group_shape="list of arrays or None, optional (default=None)"
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
 
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
@@ -952,7 +984,14 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
 
 class LGBMRanker(LGBMModel):
-    """LightGBM ranker."""
+    """LightGBM ranker.
+
+    .. warning::
+
+        scikit-learn doesn't support ranking applications yet,
+        therefore this class is not really compatible with the sklearn ecosystem.
+        Please use this class mainly for training and applying ranking models in common sklearnish way.
+    """
 
     def fit(self, X, y,
             sample_weight=None, init_score=None, group=None,
@@ -991,7 +1030,6 @@ class LGBMRanker(LGBMModel):
                    + _base_doc[_base_doc.find('eval_init_score :'):])  # type: ignore
     _base_doc = fit.__doc__
     _before_early_stop, _early_stop, _after_early_stop = _base_doc.partition('early_stopping_rounds :')
-    fit.__doc__ = (f"{_before_early_stop}"
-                   "eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))\n"
-                   f"{' ':12}The evaluation positions of the specified metric.\n"
-                   f"{' ':8}{_early_stop}{_after_early_stop}")
+    fit.__doc__ = f"""{_before_early_stop}eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))
+        The evaluation positions of the specified metric.
+    {_early_stop}{_after_early_stop}"""

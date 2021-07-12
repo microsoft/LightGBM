@@ -105,14 +105,14 @@ class DCGCalculator {
 
 
   /*!
-  * \brief Check the metadata for NDCG and lambdarank
+  * \brief Check the metadata for NDCG and LambdaRank
   * \param metadata Metadata
   * \param num_queries Number of queries
   */
   static void CheckMetadata(const Metadata& metadata, data_size_t num_queries);
 
   /*!
-  * \brief Check the label range for NDCG and lambdarank
+  * \brief Check the label range for NDCG and LambdaRank
   * \param label Pointer of label
   * \param num_data Number of data
   */

@@ -39,12 +39,24 @@ function Remove-From-Path {
 # remove some details that exist in the GitHub Actions images which might
 # cause conflicts with R and other components installed by this script
 $env:RTOOLS40_HOME = ""
+Remove-From-Path ".*Amazon.*"
+Remove-From-Path ".*Anaconda.*"
+Remove-From-Path ".*android.*"
+Remove-From-Path ".*Android.*"
 Remove-From-Path ".*chocolatey.*"
 Remove-From-Path ".*Chocolatey.*"
-Remove-From-Path ".*Git.*mingw64.*"
+Remove-From-Path ".*\\Git\\.*"
+Remove-From-Path "(?!.*pandoc.*).*hostedtoolcache.*"
+Remove-From-Path ".*Microsoft SDKs.*"
+Remove-From-Path ".*mingw.*"
 Remove-From-Path ".*msys64.*"
+Remove-From-Path ".*PostgreSQL.*"
+Remove-From-Path ".*\\R\\.*"
+Remove-From-Path ".*R Client.*"
 Remove-From-Path ".*rtools40.*"
+Remove-From-Path ".*shells.*"
 Remove-From-Path ".*Strawberry.*"
+Remove-From-Path ".*tools.*"
 
 Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
 
@@ -65,8 +77,8 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $RTOOLS_INSTALL_PATH = "C:\rtools40"
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw64\bin"
-  $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.0.5"
+  $env:RTOOLS_EXE_FILE = "rtools40v2-x86_64.exe"
+  $env:R_WINDOWS_VERSION = "4.1.0"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
