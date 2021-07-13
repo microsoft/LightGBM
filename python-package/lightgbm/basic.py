@@ -1637,8 +1637,8 @@ class Dataset:
         ----------
         field_name : string
             The field name of the information.
-        data : list, numpy 1-D array, pandas Series or None
-            The array of data to be set.
+        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task) or None
+            The data to be set.
 
         Returns
         -------
@@ -1656,12 +1656,19 @@ class Dataset:
                 ctypes.c_int(0),
                 ctypes.c_int(FIELD_TYPE_MAPPER[field_name])))
             return self
-        dtype = np.float32
         if field_name == 'group':
-            dtype = np.int32
+            data = list_to_1d_numpy(data, np.int32, name='group')
         elif field_name == 'init_score':
-            dtype = np.float64
-        data = list_to_1d_numpy(data, dtype, name=field_name)
+            if is_1d_collection(data):
+                data = list_to_1d_numpy(data, np.float64, name='init_score')
+            elif is_2d_collection(data):
+                data = data_to_2d_numpy(data, np.float64, name='init_score')
+                data = data.ravel(order='F')
+            else:
+                raise TypeError(
+                    'init_score must be list, numpy 1-D array or pandas Series.\n'
+                    'In multiclass classification init_score can also be a list of lists, numpy 2-D array or pandas DataFrame.'
+                )
         if data.dtype == np.float32 or data.dtype == np.float64:
             ptr_data, type_data, _ = c_float_array(data)
         elif data.dtype == np.int32:
@@ -1708,13 +1715,26 @@ class Dataset:
         if tmp_out_len.value == 0:
             return None
         if out_type.value == C_API_DTYPE_INT32:
-            return cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
+            arr = cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT32:
-            return cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
+            arr = cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT64:
-            return cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
+            arr = cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
         else:
             raise TypeError("Unknown type")
+        if field_name == 'init_score':
+            ptr_num_data = ctypes.c_int(0)
+            _safe_call(
+                _LIB.LGBM_DatasetGetNumData(
+                    self.handle,
+                    ctypes.byref(ptr_num_data),
+                )
+            )
+            num_data = ptr_num_data.value
+            num_classes = arr.size // num_data
+            if num_classes > 1:
+                arr = arr.reshape((num_data, num_classes), order='F')
+        return arr
 
     def set_categorical_feature(self, categorical_feature):
         """Set categorical features.
@@ -1866,7 +1886,7 @@ class Dataset:
 
         Parameters
         ----------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task) or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task) or None
             Init score for Booster.
 
         Returns
@@ -1876,16 +1896,6 @@ class Dataset:
         """
         self.init_score = init_score
         if self.handle is not None and init_score is not None:
-            if is_1d_collection(init_score):
-                init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
-            elif is_2d_collection(init_score):
-                init_score = data_to_2d_numpy(init_score, np.float64, name='init_score')
-                init_score = init_score.ravel(order='F')
-            else:
-                raise TypeError(
-                    'init_score must be list, numpy 1-D array or pandas Series.\n'
-                    'In multiclass classification init_score can also be a list of lists, numpy 2-D array or pandas DataFrame.'
-                )
             self.set_field('init_score', init_score)
             self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
         return self

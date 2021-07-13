@@ -425,5 +425,5 @@ def test_init_score_for_multiclass_classification(init_score_type):
     data = np.random.rand(10, 2)
     ds = lgb.basic.Dataset(data, init_score=init_score)
     ds.construct()
-    expected_init_score = np.hstack([np.repeat(i, 10) for i in range(3)])
-    np.testing.assert_equal(ds.init_score, expected_init_score)
+    np.testing.assert_equal(ds.init_score, init_score)
+    np.testing.assert_equal(ds.get_field('init_score'), init_score)
