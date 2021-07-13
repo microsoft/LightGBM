@@ -28,6 +28,26 @@ By using config files, one line can only contain one parameter. You can use ``#`
 
 If one parameter appears in both command line and config file, LightGBM will use the parameter from the command line.
 
+For the Python and R packages, any parameters that accept a list of values (usually they have ``multi-xxx`` type, e.g. ``multi-int`` or ``multi-double``) can be specified in those languages' default array types.
+For example, ``monotone_constraints`` can be specified as follows.
+
+**Python**
+
+.. code-block:: python
+
+   params = {
+      "monotone_constraints": [-1, 0, 1]
+   }
+
+
+**R**
+
+.. code-block:: r
+
+   params <- list(
+      monotone_constraints = c(-1, 0, 1)
+   )
+
 .. start params list
 
 Core Parameters
@@ -118,28 +138,6 @@ Core Parameters
    -  ``goss``, Gradient-based One-Side Sampling
 
       -  **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
-
--  ``linear_tree`` :raw-html:`<a id="linear_tree" title="Permalink to this parameter" href="#linear_tree">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
-
-   -  fit piecewise linear gradient boosting tree
-
-      -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
-
-      -  the linear model at each leaf includes all the numerical features in that leaf's branch
-
-      -  categorical features are used for splits as normal but are not used in the linear models
-
-      -  missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
-
-      -  it is recommended to rescale data before training so that features have similar mean and standard deviation
-
-      -  **Note**: only works with CPU and ``serial`` tree learner
-
-      -  **Note**: ``regression_l1`` objective is not supported with linear tree boosting
-
-      -  **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
-
-      -  **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
 
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
@@ -370,7 +368,7 @@ Learning Control Parameters
 
    -  random seed for ``feature_fraction``
 
--  ``extra_trees`` :raw-html:`<a id="extra_trees" title="Permalink to this parameter" href="#extra_trees">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+-  ``extra_trees`` :raw-html:`<a id="extra_trees" title="Permalink to this parameter" href="#extra_trees">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``extra_tree``
 
    -  use extremely randomized trees
 
@@ -652,6 +650,28 @@ IO Parameters
 Dataset Parameters
 ~~~~~~~~~~~~~~~~~~
 
+-  ``linear_tree`` :raw-html:`<a id="linear_tree" title="Permalink to this parameter" href="#linear_tree">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``linear_trees``
+
+   -  fit piecewise linear gradient boosting tree
+
+      -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
+
+      -  the linear model at each leaf includes all the numerical features in that leaf's branch
+
+      -  categorical features are used for splits as normal but are not used in the linear models
+
+      -  missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
+
+      -  it is recommended to rescale data before training so that features have similar mean and standard deviation
+
+      -  **Note**: only works with CPU and ``serial`` tree learner
+
+      -  **Note**: ``regression_l1`` objective is not supported with linear tree boosting
+
+      -  **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
+
+      -  **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
+
 -  ``max_bin`` :raw-html:`<a id="max_bin" title="Permalink to this parameter" href="#max_bin">&#x1F517;&#xFE0E;</a>`, default = ``255``, type = int, constraints: ``max_bin > 1``
 
    -  max number of bins that feature values will be bucketed in
@@ -820,6 +840,12 @@ Dataset Parameters
 
    -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
 
+-  ``precise_float_parser`` :raw-html:`<a id="precise_float_parser" title="Permalink to this parameter" href="#precise_float_parser">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  use precise floating point number parsing for text parser (e.g. CSV, TSV, LibSVM input)
+
+   -  **Note**: setting this to ``true`` may lead to much slower text parsing
+
 Predict Parameters
 ~~~~~~~~~~~~~~~~~~
 
@@ -883,7 +909,11 @@ Predict Parameters
 
    -  used only in ``prediction`` task
 
+   -  used only in ``classification`` and ``ranking`` applications
+
    -  if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
+
+   -  **Note**: cannot be used with ``rf`` boosting type or custom objective function
 
 -  ``pred_early_stop_freq`` :raw-html:`<a id="pred_early_stop_freq" title="Permalink to this parameter" href="#pred_early_stop_freq">&#x1F517;&#xFE0E;</a>`, default = ``10``, type = int
 

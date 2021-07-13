@@ -1,3 +1,11 @@
+# [description] List of valid keys for "info" arguments in lgb.Dataset.
+#               Wrapped in a function to take advantage of lazy evaluation
+#               (so it doesn't matter what order R sources files during installation).
+# [return] A character vector of names.
+.INFO_KEYS <- function() {
+  return(c("label", "weight", "init_score", "group"))
+}
+
 #' @importFrom methods is
 #' @importFrom R6 R6Class
 Dataset <- R6::R6Class(
@@ -8,18 +16,12 @@ Dataset <- R6::R6Class(
 
     # Finalize will free up the handles
     finalize = function() {
-
-      # Check the need for freeing handle
-      if (!lgb.is.null.handle(x = private$handle)) {
-
-        # Freeing up handle
-        lgb.call(fun_name = "LGBM_DatasetFree_R", ret = NULL, private$handle)
-        private$handle <- NULL
-
-      }
-
+      .Call(
+        LGBM_DatasetFree_R
+        , private$handle
+      )
+      private$handle <- NULL
       return(invisible(NULL))
-
     },
 
     # Initialize will create a starter dataset
@@ -35,24 +37,21 @@ Dataset <- R6::R6Class(
                           ...) {
 
       # validate inputs early to avoid unnecessary computation
-      if (!(is.null(reference) || lgb.check.r6.class(object = reference, name = "lgb.Dataset"))) {
+      if (!(is.null(reference) || lgb.is.Dataset(reference))) {
           stop("lgb.Dataset: If provided, reference must be a ", sQuote("lgb.Dataset"))
       }
-      if (!(is.null(predictor) || lgb.check.r6.class(object = predictor, name = "lgb.Predictor"))) {
+      if (!(is.null(predictor) || lgb.is.Predictor(predictor))) {
           stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
       }
 
       # Check for additional parameters
       additional_params <- list(...)
 
-      # Create known attributes list
-      INFO_KEYS <- c("label", "weight", "init_score", "group")
-
       # Check if attribute key is in the known attribute list
       for (key in names(additional_params)) {
 
         # Key existing
-        if (key %in% INFO_KEYS) {
+        if (key %in% .INFO_KEYS()) {
 
           # Store as info
           info[[key]] <- additional_params[[key]]
@@ -189,7 +188,6 @@ Dataset <- R6::R6Class(
       if (!is.null(private$reference)) {
         ref_handle <- private$reference$.__enclos_env__$private$get_handle()
       }
-      handle <- lgb.null.handle()
 
       # Not subsetting
       if (is.null(private$used_indices)) {
@@ -197,10 +195,9 @@ Dataset <- R6::R6Class(
         # Are we using a data file?
         if (is.character(private$raw_data)) {
 
-          handle <- lgb.call(
-            fun_name = "LGBM_DatasetCreateFromFile_R"
-            , ret = handle
-            , lgb.c_str(x = private$raw_data)
+          handle <- .Call(
+            LGBM_DatasetCreateFromFile_R
+            , private$raw_data
             , params_str
             , ref_handle
           )
@@ -208,9 +205,8 @@ Dataset <- R6::R6Class(
         } else if (is.matrix(private$raw_data)) {
 
           # Are we using a matrix?
-          handle <- lgb.call(
-            fun_name = "LGBM_DatasetCreateFromMat_R"
-            , ret = handle
+          handle <- .Call(
+            LGBM_DatasetCreateFromMat_R
             , private$raw_data
             , nrow(private$raw_data)
             , ncol(private$raw_data)
@@ -223,9 +219,8 @@ Dataset <- R6::R6Class(
             stop("Cannot support large CSC matrix")
           }
           # Are we using a dgCMatrix (sparsed matrix column compressed)
-          handle <- lgb.call(
-            fun_name = "LGBM_DatasetCreateFromCSC_R"
-            , ret = handle
+          handle <- .Call(
+            LGBM_DatasetCreateFromCSC_R
             , private$raw_data@p
             , private$raw_data@i
             , private$raw_data@x
@@ -254,9 +249,8 @@ Dataset <- R6::R6Class(
         }
 
         # Construct subset
-        handle <- lgb.call(
-          fun_name = "LGBM_DatasetGetSubset_R"
-          , ret = handle
+        handle <- .Call(
+          LGBM_DatasetGetSubset_R
           , ref_handle
           , c(private$used_indices) # Adding c() fixes issue in R v3.5
           , length(private$used_indices)
@@ -329,19 +323,18 @@ Dataset <- R6::R6Class(
         num_col <- 0L
 
         # Get numeric data and numeric features
+        .Call(
+          LGBM_DatasetGetNumData_R
+          , private$handle
+          , num_row
+        )
+        .Call(
+          LGBM_DatasetGetNumFeature_R
+          , private$handle
+          , num_col
+        )
         return(
-          c(
-            lgb.call(
-              fun_name = "LGBM_DatasetGetNumData_R"
-              , ret = num_row
-              , private$handle
-            ),
-            lgb.call(
-              fun_name = "LGBM_DatasetGetNumFeature_R"
-              , ret = num_col
-              , private$handle
-            )
-          )
+          c(num_row, num_col)
         )
 
       } else if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {
@@ -367,13 +360,10 @@ Dataset <- R6::R6Class(
 
       # Check for handle
       if (!lgb.is.null.handle(x = private$handle)) {
-
-        # Get feature names and write them
-        cnames <- lgb.call.return.str(
-            fun_name = "LGBM_DatasetGetFeatureNames_R"
-            , private$handle
+        private$colnames <- .Call(
+          LGBM_DatasetGetFeatureNames_R
+          , private$handle
         )
-        private$colnames <- as.character(base::strsplit(cnames, "\t")[[1L]])
         return(private$colnames)
 
       } else if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {
@@ -413,11 +403,10 @@ Dataset <- R6::R6Class(
 
         # Merge names with tab separation
         merged_name <- paste0(as.list(private$colnames), collapse = "\t")
-        lgb.call(
-          fun_name = "LGBM_DatasetSetFeatureNames_R"
-          , ret = NULL
+        .Call(
+          LGBM_DatasetSetFeatureNames_R
           , private$handle
-          , lgb.c_str(x = merged_name)
+          , merged_name
         )
 
       }
@@ -429,12 +418,9 @@ Dataset <- R6::R6Class(
     # Get information
     getinfo = function(name) {
 
-      # Create known attributes list
-      INFONAMES <- c("label", "weight", "init_score", "group")
-
       # Check if attribute key is in the known attribute list
-      if (!is.character(name) || length(name) != 1L || !name %in% INFONAMES) {
-        stop("getinfo: name must one of the following: ", paste0(sQuote(INFONAMES), collapse = ", "))
+      if (!is.character(name) || length(name) != 1L || !name %in% .INFO_KEYS()) {
+        stop("getinfo: name must one of the following: ", paste0(sQuote(.INFO_KEYS()), collapse = ", "))
       }
 
       # Check for info name and handle
@@ -446,11 +432,11 @@ Dataset <- R6::R6Class(
 
         # Get field size of info
         info_len <- 0L
-        info_len <- lgb.call(
-          fun_name = "LGBM_DatasetGetFieldSize_R"
-          , ret = info_len
+        .Call(
+          LGBM_DatasetGetFieldSize_R
           , private$handle
-          , lgb.c_str(x = name)
+          , name
+          , info_len
         )
 
         # Check if info is not empty
@@ -464,11 +450,11 @@ Dataset <- R6::R6Class(
             numeric(info_len) # Numeric
           }
 
-          ret <- lgb.call(
-            fun_name = "LGBM_DatasetGetField_R"
-            , ret = ret
+          .Call(
+            LGBM_DatasetGetField_R
             , private$handle
-            , lgb.c_str(x = name)
+            , name
+            , ret
           )
 
           private$info[[name]] <- ret
@@ -483,12 +469,9 @@ Dataset <- R6::R6Class(
     # Set information
     setinfo = function(name, info) {
 
-      # Create known attributes list
-      INFONAMES <- c("label", "weight", "init_score", "group")
-
       # Check if attribute key is in the known attribute list
-      if (!is.character(name) || length(name) != 1L || !name %in% INFONAMES) {
-        stop("setinfo: name must one of the following: ", paste0(sQuote(INFONAMES), collapse = ", "))
+      if (!is.character(name) || length(name) != 1L || !name %in% .INFO_KEYS()) {
+        stop("setinfo: name must one of the following: ", paste0(sQuote(.INFO_KEYS()), collapse = ", "))
       }
 
       # Check for type of information
@@ -505,11 +488,10 @@ Dataset <- R6::R6Class(
 
         if (length(info) > 0L) {
 
-          lgb.call(
-            fun_name = "LGBM_DatasetSetField_R"
-            , ret = NULL
+          .Call(
+            LGBM_DatasetSetField_R
             , private$handle
-            , lgb.c_str(x = name)
+            , name
             , info
             , length(info)
           )
@@ -556,13 +538,10 @@ Dataset <- R6::R6Class(
         private$params <- modifyList(private$params, params)
       } else {
         tryCatch({
-          call_state <- 0L
           .Call(
-            "LGBM_DatasetUpdateParamChecking_R"
+            LGBM_DatasetUpdateParamChecking_R
             , lgb.params2str(params = private$params)
             , lgb.params2str(params = params)
-            , call_state
-            , PACKAGE = "lib_lightgbm"
           )
         }, error = function(e) {
           # If updating failed but raw data is not available, raise an error because
@@ -640,7 +619,7 @@ Dataset <- R6::R6Class(
       if (!is.null(reference)) {
 
         # Reference is unknown
-        if (!lgb.check.r6.class(object = reference, name = "lgb.Dataset")) {
+        if (!lgb.is.Dataset(reference)) {
           stop("set_reference: Can only use lgb.Dataset as a reference")
         }
 
@@ -660,11 +639,10 @@ Dataset <- R6::R6Class(
 
       # Store binary data
       self$construct()
-      lgb.call(
-        fun_name = "LGBM_DatasetSaveBinary_R"
-        , ret = NULL
+      .Call(
+        LGBM_DatasetSaveBinary_R
         , private$handle
-        , lgb.c_str(x = fname)
+        , fname
       )
       return(invisible(self))
     }
@@ -711,7 +689,7 @@ Dataset <- R6::R6Class(
       if (!is.null(predictor)) {
 
         # Predictor is unknown
-        if (!lgb.check.r6.class(object = predictor, name = "lgb.Predictor")) {
+        if (!lgb.is.Predictor(predictor)) {
           stop("set_predictor: Can only use lgb.Predictor as predictor")
         }
 
@@ -991,7 +969,6 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
     stop("slice.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  # Return sliced set
   return(invisible(dataset$slice(idxset = idxset, ...)))
 
 }
@@ -1098,7 +1075,6 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
     stop("setinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  # Set information
   return(invisible(dataset$setinfo(name = name, info = info)))
 }
 
@@ -1130,7 +1106,6 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
     stop("lgb.Dataset.set.categorical: input dataset should be an lgb.Dataset object")
   }
 
-  # Set categoricals
   return(invisible(dataset$set_categorical_feature(categorical_feature = categorical_feature)))
 
 }
@@ -1157,12 +1132,10 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 #' @export
 lgb.Dataset.set.reference <- function(dataset, reference) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.set.reference: input dataset should be an lgb.Dataset object")
   }
 
-  # Set reference
   return(invisible(dataset$set_reference(reference = reference)))
 }
 
@@ -1185,16 +1158,13 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' @export
 lgb.Dataset.save <- function(dataset, fname) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.set: input dataset should be an lgb.Dataset object")
   }
 
-  # File-type is not matching
   if (!is.character(fname)) {
     stop("lgb.Dataset.set: fname should be a character or a file connection")
   }
 
-  # Store binary
   return(invisible(dataset$save_binary(fname = fname)))
 }

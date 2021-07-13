@@ -149,18 +149,6 @@ struct Config {
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
-  // desc = fit piecewise linear gradient boosting tree
-  // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
-  // descl2 = the linear model at each leaf includes all the numerical features in that leaf's branch
-  // descl2 = categorical features are used for splits as normal but are not used in the linear models
-  // descl2 = missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
-  // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
-  // descl2 = **Note**: only works with CPU and ``serial`` tree learner
-  // descl2 = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
-  // descl2 = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
-  // descl2 = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
-  bool linear_tree = false;
-
   // alias = train, train_data, train_data_file, data_filename
   // desc = path of training data, LightGBM will train from this data
   // desc = **Note**: can be used only in CLI version
@@ -347,6 +335,7 @@ struct Config {
   // desc = random seed for ``feature_fraction``
   int feature_fraction_seed = 2;
 
+  // alias = extra_tree
   // desc = use extremely randomized trees
   // desc = if set to ``true``, when evaluating node splits LightGBM will check only one randomly-chosen threshold for each feature
   // desc = can be used to speed up training
@@ -584,6 +573,19 @@ struct Config {
 
   #pragma region Dataset Parameters
 
+  // alias = linear_trees
+  // desc = fit piecewise linear gradient boosting tree
+  // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
+  // descl2 = the linear model at each leaf includes all the numerical features in that leaf's branch
+  // descl2 = categorical features are used for splits as normal but are not used in the linear models
+  // descl2 = missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
+  // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
+  // descl2 = **Note**: only works with CPU and ``serial`` tree learner
+  // descl2 = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
+  // descl2 = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
+  // descl2 = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
+  bool linear_tree = false;
+
   // check = >1
   // desc = max number of bins that feature values will be bucketed in
   // desc = small number of bins may reduce training accuracy but may increase general power (deal with over-fitting)
@@ -712,6 +714,10 @@ struct Config {
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent function
   bool save_binary = false;
 
+  // desc = use precise floating point number parsing for text parser (e.g. CSV, TSV, LibSVM input)
+  // desc = **Note**: setting this to ``true`` may lead to much slower text parsing
+  bool precise_float_parser = false;
+
   #pragma endregion
 
   #pragma region Predict Parameters
@@ -761,7 +767,9 @@ struct Config {
 
   // [no-save]
   // desc = used only in ``prediction`` task
+  // desc = used only in ``classification`` and ``ranking`` applications
   // desc = if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
+  // desc = **Note**: cannot be used with ``rf`` boosting type or custom objective function
   bool pred_early_stop = false;
 
   // [no-save]

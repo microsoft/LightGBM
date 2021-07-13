@@ -571,7 +571,7 @@ class RegressionQuantileloss : public RegressionL2loss {
 
 
 /*!
-* \brief Mape Regression Loss
+* \brief MAPE Regression Loss
 */
 class RegressionMAPELOSS : public RegressionL1loss {
  public:
@@ -689,14 +689,14 @@ class RegressionGammaLoss : public RegressionPoissonLoss {
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>(1.0 - label_[i] / std::exp(score[i]));
-        hessians[i] = static_cast<score_t>(label_[i] / std::exp(score[i]));
+        gradients[i] = static_cast<score_t>(1.0 - label_[i] * std::exp(-score[i]));
+        hessians[i] = static_cast<score_t>(label_[i] * std::exp(-score[i]));
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>(1.0 - label_[i] / std::exp(score[i]) * weights_[i]);
-        hessians[i] = static_cast<score_t>(label_[i] / std::exp(score[i]) * weights_[i]);
+        gradients[i] = static_cast<score_t>((1.0 - label_[i] * std::exp(-score[i])) * weights_[i]);
+        hessians[i] = static_cast<score_t>(label_[i] * std::exp(-score[i]) * weights_[i]);
       }
     }
   }

@@ -111,7 +111,7 @@ cb.reset.parameters <- function(new_params) {
 }
 
 # Format the evaluation metric string
-format.eval.string <- function(eval_res, eval_err = NULL) {
+format.eval.string <- function(eval_res, eval_err) {
 
   # Check for empty evaluation string
   if (is.null(eval_res) || length(eval_res) == 0L) {
@@ -158,7 +158,7 @@ merge.eval.string <- function(env) {
 
 }
 
-cb.print.evaluation <- function(period = 1L) {
+cb.print.evaluation <- function(period) {
 
   # Create callback
   callback <- function(env) {
@@ -271,7 +271,7 @@ cb.record.evaluation <- function() {
 
 }
 
-cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = TRUE) {
+cb.early.stop <- function(stopping_rounds, first_metric_only, verbose) {
 
   factor_to_bigger_better <- NULL
   best_iter <- NULL
@@ -324,7 +324,7 @@ cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = 
   }
 
   # Create callback
-  callback <- function(env, finalize = FALSE) {
+  callback <- function(env) {
 
     # Check for empty evaluation
     if (is.null(eval_len)) {

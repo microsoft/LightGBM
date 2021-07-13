@@ -61,7 +61,6 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
                                     left_margin = 10L,
                                     cex = NULL) {
 
-  # Get number of columns
   num_class <- ncol(tree_interpretation_dt) - 1L
 
   # Refresh plot
@@ -82,7 +81,6 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
     )
   )
 
-  # Check for number of classes
   if (num_class == 1L) {
 
     # Only one class, plot straight away
