@@ -1,6 +1,7 @@
 # coding: utf-8
 import ctypes
-import os
+from os import environ
+from pathlib import Path
 from platform import system
 
 import numpy as np
@@ -8,28 +9,27 @@ from scipy import sparse
 
 
 def find_lib_path():
-    if os.environ.get('LIGHTGBM_BUILD_DOC', False):
+    if environ.get('LIGHTGBM_BUILD_DOC', False):
         # we don't need lib_lightgbm while building docs
         return []
 
-    curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+    curr_path = Path(__file__).absolute().parent
     dll_path = [curr_path,
-                os.path.join(curr_path, '../../'),
-                os.path.join(curr_path, '../../python-package/lightgbm/compile'),
-                os.path.join(curr_path, '../../python-package/compile'),
-                os.path.join(curr_path, '../../lib/')]
+                curr_path.parents[1],
+                curr_path.parents[1] / 'python-package' / 'lightgbm' / 'compile',
+                curr_path.parents[1] / 'python-package' / 'compile',
+                curr_path.parents[1] / 'lib']
     if system() in ('Windows', 'Microsoft'):
-        dll_path.append(os.path.join(curr_path, '../../python-package/compile/Release/'))
-        dll_path.append(os.path.join(curr_path, '../../python-package/compile/windows/x64/DLL/'))
-        dll_path.append(os.path.join(curr_path, '../../Release/'))
-        dll_path.append(os.path.join(curr_path, '../../windows/x64/DLL/'))
-        dll_path = [os.path.join(p, 'lib_lightgbm.dll') for p in dll_path]
+        dll_path.append(curr_path.parents[1] / 'python-package' / 'compile' / 'Release/')
+        dll_path.append(curr_path.parents[1] / 'python-package' / 'compile' / 'windows' / 'x64' / 'DLL')
+        dll_path.append(curr_path.parents[1] / 'Release')
+        dll_path.append(curr_path.parents[1] / 'windows' / 'x64' / 'DLL')
+        dll_path = [p / 'lib_lightgbm.dll' for p in dll_path]
     else:
-        dll_path = [os.path.join(p, 'lib_lightgbm.so') for p in dll_path]
-    lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
+        dll_path = [p / 'lib_lightgbm.so' for p in dll_path]
+    lib_path = [str(p) for p in dll_path if p.is_file()]
     if not lib_path:
-        dll_path = [os.path.realpath(p) for p in dll_path]
-        dll_path_joined = '\n'.join(dll_path)
+        dll_path_joined = '\n'.join(map(str, dll_path))
         raise Exception(f'Cannot find lightgbm library file in following paths:\n{dll_path_joined}')
     return lib_path
 
@@ -62,7 +62,7 @@ def load_from_file(filename, reference):
         ref = reference
     handle = ctypes.c_void_p()
     LIB.LGBM_DatasetCreateFromFile(
-        c_str(filename),
+        c_str(str(filename)),
         c_str('max_bin=15'),
         ref,
         ctypes.byref(handle))
@@ -80,16 +80,9 @@ def save_to_binary(handle, filename):
 
 
 def load_from_csr(filename, reference):
-    data = []
-    label = []
-    with open(filename, 'r') as inp:
-        for line in inp.readlines():
-            values = line.split('\t')
-            data.append([float(x) for x in values[1:]])
-            label.append(float(values[0]))
-    mat = np.array(data, dtype=np.float64)
-    label = np.array(label, dtype=np.float32)
-    csr = sparse.csr_matrix(mat)
+    data = np.loadtxt(str(filename), dtype=np.float64)
+    csr = sparse.csr_matrix(data[:, 1:])
+    label = data[:, 0].astype(np.float32)
     handle = ctypes.c_void_p()
     ref = None
     if reference is not None:
@@ -122,16 +115,9 @@ def load_from_csr(filename, reference):
 
 
 def load_from_csc(filename, reference):
-    data = []
-    label = []
-    with open(filename, 'r') as inp:
-        for line in inp.readlines():
-            values = line.split('\t')
-            data.append([float(x) for x in values[1:]])
-            label.append(float(values[0]))
-    mat = np.array(data, dtype=np.float64)
-    label = np.array(label, dtype=np.float32)
-    csc = sparse.csc_matrix(mat)
+    data = np.loadtxt(str(filename), dtype=np.float64)
+    csc = sparse.csc_matrix(data[:, 1:])
+    label = data[:, 0].astype(np.float32)
     handle = ctypes.c_void_p()
     ref = None
     if reference is not None:
@@ -164,16 +150,10 @@ def load_from_csc(filename, reference):
 
 
 def load_from_mat(filename, reference):
-    data = []
-    label = []
-    with open(filename, 'r') as inp:
-        for line in inp.readlines():
-            values = line.split('\t')
-            data.append([float(x) for x in values[1:]])
-            label.append(float(values[0]))
-    mat = np.array(data, dtype=np.float64)
+    mat = np.loadtxt(str(filename), dtype=np.float64)
+    label = mat[:, 0].astype(np.float32)
+    mat = mat[:, 1:]
     data = np.array(mat.reshape(mat.size), dtype=np.float64, copy=False)
-    label = np.array(label, dtype=np.float32)
     handle = ctypes.c_void_p()
     ref = None
     if reference is not None:
@@ -207,16 +187,13 @@ def free_dataset(handle):
 
 
 def test_dataset():
-    train = load_from_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                        '../../examples/binary_classification/binary.train'), None)
-    test = load_from_mat(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                      '../../examples/binary_classification/binary.test'), train)
+    binary_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'binary_classification'
+    train = load_from_file(binary_example_dir / 'binary.train', None)
+    test = load_from_mat(binary_example_dir / 'binary.test', train)
     free_dataset(test)
-    test = load_from_csr(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                      '../../examples/binary_classification/binary.test'), train)
+    test = load_from_csr(binary_example_dir / 'binary.test', train)
     free_dataset(test)
-    test = load_from_csc(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                      '../../examples/binary_classification/binary.test'), train)
+    test = load_from_csc(binary_example_dir / 'binary.test', train)
     free_dataset(test)
     save_to_binary(train, 'train.binary.bin')
     free_dataset(train)
@@ -225,10 +202,9 @@ def test_dataset():
 
 
 def test_booster():
-    train = load_from_mat(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       '../../examples/binary_classification/binary.train'), None)
-    test = load_from_mat(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                      '../../examples/binary_classification/binary.test'), train)
+    binary_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'binary_classification'
+    train = load_from_mat(binary_example_dir / 'binary.train', None)
+    test = load_from_mat(binary_example_dir / 'binary.test', train)
     booster = ctypes.c_void_p()
     LIB.LGBM_BoosterCreate(
         train,
@@ -262,13 +238,9 @@ def test_booster():
         c_str('model.txt'),
         ctypes.byref(num_total_model),
         ctypes.byref(booster2))
-    data = []
-    with open(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                           '../../examples/binary_classification/binary.test'), 'r') as inp:
-        for line in inp.readlines():
-            data.append([float(x) for x in line.split('\t')[1:]])
-    mat = np.array(data, dtype=np.float64)
-    preb = np.zeros(mat.shape[0], dtype=np.float64)
+    data = np.loadtxt(str(binary_example_dir / 'binary.test'), dtype=np.float64)
+    mat = data[:, 1:]
+    preb = np.empty(mat.shape[0], dtype=np.float64)
     num_preb = ctypes.c_int64(0)
     data = np.array(mat.reshape(mat.size), dtype=np.float64, copy=False)
     LIB.LGBM_BoosterPredictForMat(
@@ -286,8 +258,7 @@ def test_booster():
         preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
     LIB.LGBM_BoosterPredictForFile(
         booster2,
-        c_str(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                           '../../examples/binary_classification/binary.test')),
+        c_str(str(binary_example_dir / 'binary.test')),
         ctypes.c_int(0),
         ctypes.c_int(0),
         ctypes.c_int(0),
@@ -296,8 +267,7 @@ def test_booster():
         c_str('preb.txt'))
     LIB.LGBM_BoosterPredictForFile(
         booster2,
-        c_str(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                           '../../examples/binary_classification/binary.test')),
+        c_str(str(binary_example_dir / 'binary.test')),
         ctypes.c_int(0),
         ctypes.c_int(0),
         ctypes.c_int(10),

@@ -1,4 +1,6 @@
 # coding: utf-8
+from pathlib import Path
+
 import pandas as pd
 
 import lightgbm as lgb
@@ -10,8 +12,9 @@ else:
 
 print('Loading data...')
 # load or create your dataset
-df_train = pd.read_csv('../regression/regression.train', header=None, sep='\t')
-df_test = pd.read_csv('../regression/regression.test', header=None, sep='\t')
+regression_example_dir = Path(__file__).absolute().parents[1] / 'regression'
+df_train = pd.read_csv(str(regression_example_dir / 'regression.train'), header=None, sep='\t')
+df_test = pd.read_csv(str(regression_example_dir / 'regression.test'), header=None, sep='\t')
 
 y_train = df_train[0]
 y_test = df_test[0]
@@ -37,7 +40,7 @@ gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=100,
                 valid_sets=[lgb_train, lgb_test],
-                feature_name=['f' + str(i + 1) for i in range(X_train.shape[-1])],
+                feature_name=[f'f{i + 1}' for i in range(X_train.shape[-1])],
                 categorical_feature=[21],
                 evals_result=evals_result,
                 verbose_eval=10)

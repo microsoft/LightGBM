@@ -3,6 +3,7 @@
 import collections
 import copy
 from operator import attrgetter
+from pathlib import Path
 
 import numpy as np
 
@@ -76,7 +77,7 @@ def train(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
         set the ``metric`` parameter to the string ``"None"`` in ``params``.
-    init_model : string, Booster or None, optional (default=None)
+    init_model : string, pathlib.Path, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of strings or 'auto', optional (default="auto")
         Feature names.
@@ -161,7 +162,7 @@ def train(params, train_set, num_boost_round=100,
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
-    if isinstance(init_model, str):
+    if isinstance(init_model, (str, Path)):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))
@@ -333,7 +334,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
                 flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             else:
                 flatted_group = np.zeros(num_data, dtype=np.int32)
-            folds = folds.split(X=np.zeros(num_data), y=full_data.get_label(), groups=flatted_group)
+            folds = folds.split(X=np.empty(num_data), y=full_data.get_label(), groups=flatted_group)
     else:
         if any(params.get(obj_alias, "") in {"lambdarank", "rank_xendcg", "xendcg",
                                              "xe_ndcg", "xe_ndcg_mart", "xendcg_mart"}
@@ -344,12 +345,12 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             group_info = np.array(full_data.get_group(), dtype=np.int32, copy=False)
             flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             group_kfold = _LGBMGroupKFold(n_splits=nfold)
-            folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
+            folds = group_kfold.split(X=np.empty(num_data), groups=flatted_group)
         elif stratified:
             if not SKLEARN_INSTALLED:
                 raise LightGBMError('scikit-learn is required for stratified cv')
             skf = _LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
-            folds = skf.split(X=np.zeros(num_data), y=full_data.get_label())
+            folds = skf.split(X=np.empty(num_data), y=full_data.get_label())
         else:
             if shuffle:
                 randidx = np.random.RandomState(seed).permutation(num_data)
@@ -470,7 +471,7 @@ def cv(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
         set ``metrics`` to the string ``"None"``.
-    init_model : string, Booster or None, optional (default=None)
+    init_model : string, pathlib.Path, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of strings or 'auto', optional (default="auto")
         Feature names.
@@ -545,7 +546,7 @@ def cv(params, train_set, num_boost_round=100,
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
-    if isinstance(init_model, str):
+    if isinstance(init_model, (str, Path)):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))

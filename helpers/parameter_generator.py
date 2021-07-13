@@ -6,7 +6,7 @@ with list of all parameters, aliases table and other routines
 along with parameters description in LightGBM/docs/Parameters.rst file
 from the information in LightGBM/include/LightGBM/config.h file.
 """
-import os
+from pathlib import Path
 
 
 def get_parameter_infos(config_hpp):
@@ -14,7 +14,7 @@ def get_parameter_infos(config_hpp):
 
     Parameters
     ----------
-    config_hpp : string
+    config_hpp : pathlib.Path
         Path to the config header file.
 
     Returns
@@ -198,7 +198,7 @@ def gen_parameter_description(sections, descriptions, params_rst):
         Names of parameters sections.
     descriptions : list
         Structured descriptions of parameters.
-    params_rst : string
+    params_rst : pathlib.Path
         Path to the file with parameters documentation.
     """
     params_to_write = []
@@ -256,9 +256,9 @@ def gen_parameter_code(config_hpp, config_out_cpp):
 
     Parameters
     ----------
-    config_hpp : string
+    config_hpp : pathlib.Path
         Path to the config header file.
-    config_out_cpp : string
+    config_out_cpp : pathlib.Path
         Path to the auto config file.
 
     Returns
@@ -339,9 +339,9 @@ def gen_parameter_code(config_hpp, config_out_cpp):
 
 
 if __name__ == "__main__":
-    current_dir = os.path.abspath(os.path.dirname(__file__))
-    config_hpp = os.path.join(current_dir, os.path.pardir, 'include', 'LightGBM', 'config.h')
-    config_out_cpp = os.path.join(current_dir, os.path.pardir, 'src', 'io', 'config_auto.cpp')
-    params_rst = os.path.join(current_dir, os.path.pardir, 'docs', 'Parameters.rst')
+    current_dir = Path(__file__).absolute().parent
+    config_hpp = current_dir.parent / 'include' / 'LightGBM' / 'config.h'
+    config_out_cpp = current_dir.parent / 'src' / 'io' / 'config_auto.cpp'
+    params_rst = current_dir.parent / 'docs' / 'Parameters.rst'
     sections, descriptions = gen_parameter_code(config_hpp, config_out_cpp)
     gen_parameter_description(sections, descriptions, params_rst)
