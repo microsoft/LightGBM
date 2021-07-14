@@ -18,11 +18,18 @@ import numpy as np
 import scipy.sparse as ss
 
 from .basic import _LIB, LightGBMError, _choose_param_value, _ConfigAliases, _log_info, _log_warning, _safe_call
-from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
-                     dask_Array, dask_array_from_delayed, dask_bag_from_delayed, dask_DataFrame, dask_Series,
-                     default_client, delayed, pd_DataFrame, pd_Series, wait)
+from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, LGBMNotFittedError, concat,
+                     pd_DataFrame, pd_Series)
 from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _lgbmmodel_doc_custom_eval_note,
                       _lgbmmodel_doc_fit, _lgbmmodel_doc_predict)
+
+from dask import delayed
+from dask.array import Array as dask_Array
+from dask.array import from_delayed as dask_array_from_delayed
+from dask.bag import from_delayed as dask_bag_from_delayed
+from dask.dataframe import DataFrame as dask_DataFrame
+from dask.dataframe import Series as dask_Series
+from dask.distributed import Client, default_client, wait
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]

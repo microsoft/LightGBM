@@ -123,39 +123,8 @@ except ImportError:
 
 """dask"""
 try:
-    from dask import delayed
-    from dask.array import Array as dask_Array
-    from dask.array import from_delayed as dask_array_from_delayed
-    from dask.bag import from_delayed as dask_bag_from_delayed
-    from dask.dataframe import DataFrame as dask_DataFrame
-    from dask.dataframe import Series as dask_Series
-    from dask.distributed import Client, default_client, wait
+    import pkg_resources
+    pkg_resources.get_distribution('dask')
     DASK_INSTALLED = True
-except ImportError:
+except pkg_resources.DistributionNotFound:
     DASK_INSTALLED = False
-
-    dask_array_from_delayed = None
-    dask_bag_from_delayed = None
-    delayed = None
-    default_client = None
-    wait = None
-
-    class Client:  # type: ignore
-        """Dummy class for dask.distributed.Client."""
-
-        pass
-
-    class dask_Array:  # type: ignore
-        """Dummy class for dask.array.Array."""
-
-        pass
-
-    class dask_DataFrame:  # type: ignore
-        """Dummy class for dask.dataframe.DataFrame."""
-
-        pass
-
-    class dask_Series:  # type: ignore
-        """Dummy class for dask.dataframe.Series."""
-
-        pass

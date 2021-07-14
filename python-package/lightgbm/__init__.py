@@ -17,10 +17,11 @@ try:
     from .plotting import create_tree_digraph, plot_importance, plot_metric, plot_split_value_histogram, plot_tree
 except ImportError:
     pass
-try:
-    from .dask import DaskLGBMClassifier, DaskLGBMRanker, DaskLGBMRegressor
-except ImportError:
-    pass
+# Don't import dask unless used because have classes imported globally
+#try:
+#    from .dask import DaskLGBMClassifier, DaskLGBMRanker, DaskLGBMRegressor
+#except ImportError:
+#    pass
 
 
 _version_path = Path(__file__).absolute().parent / 'VERSION.txt'
@@ -31,6 +32,5 @@ __all__ = ['Dataset', 'Booster', 'CVBooster', 'Sequence',
            'register_logger',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
-           'DaskLGBMRegressor', 'DaskLGBMClassifier', 'DaskLGBMRanker',
            'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
            'plot_importance', 'plot_split_value_histogram', 'plot_metric', 'plot_tree', 'create_tree_digraph']
