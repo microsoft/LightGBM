@@ -9,6 +9,7 @@ from the information in LightGBM/include/LightGBM/config.h file.
 from pathlib import Path
 from typing import List, Tuple, Optional
 
+
 def get_parameter_infos(
     config_hpp: Path
 ) -> Tuple[List, List]:
