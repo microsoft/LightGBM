@@ -7,11 +7,11 @@ along with parameters description in LightGBM/docs/Parameters.rst file
 from the information in LightGBM/include/LightGBM/config.h file.
 """
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 def get_parameter_infos(
-    config_hpp : Path
-) -> Tuple[List , List]:
+    config_hpp: Path
+) -> Tuple[List, List]:
     """Parse config header file.
 
     Parameters
@@ -82,7 +82,7 @@ def get_parameter_infos(
 
 
 def get_names(
-    infos : List
+    infos: List
 ) -> List:
     """Get names of all parameters.
 
@@ -104,7 +104,7 @@ def get_names(
 
 
 def get_alias(
-    infos : List
+    infos: List
 ) -> List[Tuple]:
     """Get aliases of all parameters.
 
@@ -130,9 +130,9 @@ def get_alias(
 
 
 def parse_check(
-    check : str,
-    reverse : bool = False
-) -> Tuple[str , str]:
+    check: Optional[str],
+    reverse: bool = False
+) -> Tuple[Optional[str], Optional[str]]:
     """Parse the constraint.
 
     Parameters
@@ -161,10 +161,10 @@ def parse_check(
 
 
 def set_one_var_from_string(
-    name : str,
-    param_type : str,
-    checks : List
-) -> str:
+    name: Optional[str],
+    param_type: Optional[str],
+    checks: List
+) -> Optional[str]:
     """Construct code for auto config file for one param value.
 
     Parameters
@@ -203,9 +203,9 @@ def set_one_var_from_string(
 
 
 def gen_parameter_description(
-    sections : List,
-    descriptions : List,
-    params_rst : Path
+    sections: List,
+    descriptions: List,
+    params_rst: Path
 ):
     """Write descriptions of parameters to the documentation file.
 
@@ -269,9 +269,9 @@ def gen_parameter_description(
 
 
 def gen_parameter_code(
-    config_hpp : Path,
-    config_out_cpp : Path
-) -> Tuple[List , List]:
+    config_hpp: Path,
+    config_out_cpp: Path
+) -> Tuple[List, List]:
     """Generate auto config file.
 
     Parameters
