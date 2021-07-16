@@ -133,7 +133,7 @@ def get_alias(
 def parse_check(
     check: str,
     reverse: bool = False
-) -> Tuple[Optional[str], Optional[str]]:
+) -> Tuple[str, str]:
     """Parse the constraint.
 
     Parameters
