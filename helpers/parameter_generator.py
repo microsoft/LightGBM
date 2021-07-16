@@ -162,10 +162,10 @@ def parse_check(
 
 
 def set_one_var_from_string(
-    name: Optional[str],
-    param_type: Optional[str],
-    checks: List
-) -> Optional[str]:
+    name: str,
+    param_type: str,
+    checks: List[str]
+) -> str:
     """Construct code for auto config file for one param value.
 
     Parameters
