@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 def get_parameter_infos(
     config_hpp: Path
-) -> Tuple[List[Tuple[str, int]], List[Dict[str, Any]]]:
+) -> Tuple[List[Tuple[str, int]], List[List[Dict[str, Any]]]]:
     """Parse config header file.
 
     Parameters
@@ -28,9 +28,9 @@ def get_parameter_infos(
     is_inparameter = False
     cur_key = None
     key_lvl = 0
-    cur_info = {}
+    cur_info: Dict[str, Any] = {}
     keys = []
-    member_infos = []
+    member_infos: List[List[Dict[str, Any]]] = []
     with open(config_hpp) as config_hpp_file:
         for line in config_hpp_file:
             if "#pragma region Parameters" in line:
@@ -79,6 +79,7 @@ def get_parameter_infos(
                             cur_info["name"] = [tokens[1][:-1].strip()]
                     member_infos[-1].append(cur_info)
                     cur_info = {}
+
     return keys, member_infos
 
 
@@ -105,7 +106,7 @@ def get_names(
 
 
 def get_alias(
-    infos: List[List[Tuple[Dict[str, Any]]]]
+    infos: List[List[Dict[str, Any]]]
 ) -> List[Tuple[str, str]]:
     """Get aliases of all parameters.
 
