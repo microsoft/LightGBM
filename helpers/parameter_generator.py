@@ -204,10 +204,10 @@ def set_one_var_from_string(
 
 
 def gen_parameter_description(
-    sections: List,
-    descriptions: List,
+    sections: List[Tuple[str, int]],
+    descriptions: List[List[Dict[str, Any]]],
     params_rst: Path
-):
+) -> None:
     """Write descriptions of parameters to the documentation file.
 
     Parameters
