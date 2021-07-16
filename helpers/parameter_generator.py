@@ -12,7 +12,7 @@ from typing import List, Optional, Tuple
 
 def get_parameter_infos(
     config_hpp: Path
-) -> Tuple[List, List]:
+) -> Tuple[List[Tuple[str, int]], List[Dict[str, Any]]]:
     """Parse config header file.
 
     Parameters
