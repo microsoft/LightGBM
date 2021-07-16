@@ -83,8 +83,8 @@ def get_parameter_infos(
 
 
 def get_names(
-    infos: List
-) -> List:
+    infos: List[List[Dict[str, Any]]]
+) -> List[str]:
     """Get names of all parameters.
 
     Parameters
