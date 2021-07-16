@@ -272,7 +272,7 @@ def gen_parameter_description(
 def gen_parameter_code(
     config_hpp: Path,
     config_out_cpp: Path
-) -> Tuple[List, List]:
+) -> Tuple[List[Tuple[str, int]], List[List[Dict[str, Any]]]]:
     """Generate auto config file.
 
     Parameters
