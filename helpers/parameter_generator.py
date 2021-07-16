@@ -105,7 +105,7 @@ def get_names(
 
 
 def get_alias(
-    infos: List
+    infos: List[List[Tuple[Dict[str, Any]]]]
 ) -> List[Tuple[str, str]]:
     """Get aliases of all parameters.
 
