@@ -7,7 +7,7 @@ along with parameters description in LightGBM/docs/Parameters.rst file
 from the information in LightGBM/include/LightGBM/config.h file.
 """
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 def get_parameter_infos(
