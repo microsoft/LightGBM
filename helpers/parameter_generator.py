@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 def get_parameter_infos(
     config_hpp: Path
-) -> Tuple[List[Tuple[str, int]], List[List[Dict[str, Any]]]]:
+) -> Tuple[List[Tuple[str, int]], List[List[Dict[str, List]]]]:
     """Parse config header file.
 
     Parameters
@@ -28,9 +28,9 @@ def get_parameter_infos(
     is_inparameter = False
     cur_key = None
     key_lvl = 0
-    cur_info: Dict[str, Any] = {}
+    cur_info: Dict[str, List] = {}
     keys = []
-    member_infos: List[List[Dict[str, Any]]] = []
+    member_infos: List[List[Dict[str, List]]] = []
     with open(config_hpp) as config_hpp_file:
         for line in config_hpp_file:
             if "#pragma region Parameters" in line:
@@ -84,7 +84,7 @@ def get_parameter_infos(
 
 
 def get_names(
-    infos: List[List[Dict[str, Any]]]
+    infos: List[List[Dict[str, List]]]
 ) -> List[str]:
     """Get names of all parameters.
 
@@ -106,7 +106,7 @@ def get_names(
 
 
 def get_alias(
-    infos: List[List[Dict[str, Any]]]
+    infos: List[List[Dict[str, List]]]
 ) -> List[Tuple[str, str]]:
     """Get aliases of all parameters.
 
@@ -206,7 +206,7 @@ def set_one_var_from_string(
 
 def gen_parameter_description(
     sections: List[Tuple[str, int]],
-    descriptions: List[List[Dict[str, Any]]],
+    descriptions: List[List[Dict[str, List]]],
     params_rst: Path
 ) -> None:
     """Write descriptions of parameters to the documentation file.
@@ -273,7 +273,7 @@ def gen_parameter_description(
 def gen_parameter_code(
     config_hpp: Path,
     config_out_cpp: Path
-) -> Tuple[List[Tuple[str, int]], List[List[Dict[str, Any]]]]:
+) -> Tuple[List[Tuple[str, int]], List[List[Dict[str, List]]]]:
     """Generate auto config file.
 
     Parameters
