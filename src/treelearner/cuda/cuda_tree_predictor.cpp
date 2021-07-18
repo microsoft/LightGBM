@@ -26,7 +26,7 @@ CUDATreePredictor::CUDATreePredictor(const Config* config,
   const double* leaf_output):
 tree_split_leaf_index_(tree_split_leaf_index),
 tree_inner_feature_index_(tree_inner_feature_index),
-tree_threshold_(tree_threshold),
+tree_threshold_(tree_threshold)
   {
 
 }
