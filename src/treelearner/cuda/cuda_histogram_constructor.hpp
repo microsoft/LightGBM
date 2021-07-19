@@ -31,7 +31,7 @@ namespace LightGBM {
 class CUDAHistogramConstructor {
  public:
   CUDAHistogramConstructor(const Dataset* train_data, const int num_leaves, const int num_threads,
-    const score_t* cuda_gradients, const score_t* cuda_hessians, const std::vector<uint32_t>& feature_hist_offsets,
+    const std::vector<uint32_t>& feature_hist_offsets,
     const int min_data_in_leaf, const double min_sum_hessian_in_leaf);
 
   void Init(const Dataset* train_data, TrainingShareStates* share_state);
@@ -43,7 +43,7 @@ class CUDAHistogramConstructor {
     const data_size_t* cuda_leaf_num_data, const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
     const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf);
 
-  void BeforeTrain();
+  void BeforeTrain(const score_t* gradients, const score_t* hessians);
 
   const hist_t* cuda_hist() const { return cuda_hist_; }
 

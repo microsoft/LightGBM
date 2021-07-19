@@ -51,8 +51,6 @@ class NewCUDATreeLearner: public SerialTreeLearner {
 
   Tree* BuildTree(const int num_leaves);
 
-  void InitObjective();
-
   // number of GPUs
   int num_gpus_;
   // number of threads on CPU
@@ -70,10 +68,6 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   std::unique_ptr<CUDAHistogramConstructor> cuda_histogram_constructor_;
   // for best split information finding, given the histograms
   std::unique_ptr<CUDABestSplitFinder> cuda_best_split_finder_;
-
-  std::unique_ptr<CUDAScoreUpdater> cuda_score_updater_;
-
-  std::unique_ptr<CUDAObjective> cuda_objective_;
 
   std::vector<int> leaf_best_split_feature_;
   std::vector<uint32_t> leaf_best_split_threshold_;

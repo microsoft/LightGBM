@@ -425,6 +425,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
       ++num_numeric_features_;
     }
   }
+  device_type_ = io_config.device_type;
 }
 
 void Dataset::FinishLoad() {
@@ -435,6 +436,9 @@ void Dataset::FinishLoad() {
     for (int i = 0; i < num_groups_; ++i) {
       feature_groups_[i]->FinishLoad();
     }
+  }
+  if (device_type_ == std::string("cuda")) {
+    metadata_.CreateCUDAMetadata();
   }
   is_finish_load_ = true;
 }
@@ -767,6 +771,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   label_idx_ = dataset->label_idx_;
   real_feature_idx_ = dataset->real_feature_idx_;
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
+  device_type_ = dataset->device_type_;
 }
 
 void Dataset::ReSize(data_size_t num_data) {

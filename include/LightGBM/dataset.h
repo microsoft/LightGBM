@@ -6,6 +6,7 @@
 #define LIGHTGBM_DATASET_H_
 
 #include <LightGBM/config.h>
+#include <LightGBM/cuda/cuda_metadata.hpp>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/train_share_states.h>
@@ -210,6 +211,10 @@ class Metadata {
   /*! \brief Disable copy */
   Metadata(const Metadata&) = delete;
 
+  CUDAMetadata* cuda_metadata() const { return cuda_metadata_.get(); }
+
+  void CreateCUDAMetadata();
+
  private:
   /*! \brief Load initial scores from file */
   void LoadInitialScore();
@@ -246,6 +251,7 @@ class Metadata {
   bool weight_load_from_file_;
   bool query_load_from_file_;
   bool init_score_load_from_file_;
+  std::unique_ptr<CUDAMetadata> cuda_metadata_;
 };
 
 
@@ -739,6 +745,7 @@ class Dataset {
   /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */
   std::vector<int> numeric_feature_map_;
   int num_numeric_features_;
+  std::string device_type_;
 };
 
 }  // namespace LightGBM

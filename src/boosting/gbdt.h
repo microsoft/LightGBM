@@ -8,6 +8,7 @@
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/threading.h>
@@ -23,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "cuda/cuda_score_updater.hpp"
 #include "score_updater.hpp"
 
 namespace LightGBM {
@@ -440,7 +442,7 @@ class GBDT : public GBDTBase {
   * \brief eval results for one metric
 
   */
-  virtual std::vector<double> EvalOneMetric(const Metric* metric, const double* score) const;
+  virtual std::vector<double> EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const;
 
   /*!
   * \brief Print metric result of current iteration
@@ -495,7 +497,8 @@ class GBDT : public GBDTBase {
   /*! \brief Second order derivative of training data */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> hessians_;
 #endif
-
+  score_t* gradients_pointer_;
+  score_t* hessians_pointer_;
   /*! \brief Store the indices of in-bag data */
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices_;
   /*! \brief Number of in-bag data */

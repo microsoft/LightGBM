@@ -25,14 +25,12 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   const label_t* labels = train_data->metadata().label();
   cuda_centralized_info_.reset(new CUDACentralizedInfo(num_data_, this->config_->num_leaves, num_features_));
   cuda_centralized_info_->Init(labels, train_data_);
-  cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_, 0, cuda_centralized_info_->cuda_gradients(),
-    cuda_centralized_info_->cuda_hessians(), cuda_centralized_info_->cuda_num_data()));
+  cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_, 0, cuda_centralized_info_->cuda_num_data()));
   cuda_smaller_leaf_splits_->Init();
-  cuda_larger_leaf_splits_.reset(new CUDALeafSplits(num_data_, -1, cuda_centralized_info_->cuda_gradients(),
-    cuda_centralized_info_->cuda_hessians(), cuda_centralized_info_->cuda_num_data()));
+  cuda_larger_leaf_splits_.reset(new CUDALeafSplits(num_data_, -1, cuda_centralized_info_->cuda_num_data()));
   cuda_larger_leaf_splits_->Init();
   cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, this->config_->num_leaves, num_threads_,
-    cuda_centralized_info_->cuda_gradients(), cuda_centralized_info_->cuda_hessians(), share_state_->feature_hist_offsets(),
+    share_state_->feature_hist_offsets(),
     config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf));
   cuda_histogram_constructor_->Init(train_data_, share_state_.get());
   cuda_data_partition_.reset(new CUDADataPartition(num_data_, num_features_, this->config_->num_leaves, num_threads_,
@@ -46,9 +44,6 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
     this->config_->min_sum_hessian_in_leaf, this->config_->min_gain_to_split,
     cuda_centralized_info_->cuda_num_features()));
   cuda_best_split_finder_->Init();
-  cuda_score_updater_.reset(new CUDAScoreUpdater(num_data_));
-  cuda_score_updater_->Init();
-  InitObjective();
 
   leaf_best_split_feature_.resize(config_->num_leaves, -1);
   leaf_best_split_threshold_.resize(config_->num_leaves, 0);
@@ -61,14 +56,15 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
 void NewCUDATreeLearner::BeforeTrain() {
   cuda_data_partition_->BeforeTrain(nullptr);
   global_timer.Start("CUDACentralizedInfo::BeforeTrain");
-  cuda_objective_->GetGradients(cuda_score_updater_->cuda_scores(),
-    cuda_centralized_info_->cuda_gradients_ref(), cuda_centralized_info_->cuda_hessians_ref());
   global_timer.Stop("CUDACentralizedInfo::BeforeTrain");
-  cuda_smaller_leaf_splits_->InitValues(cuda_data_partition_->cuda_data_indices(),
+  cuda_smaller_leaf_splits_->InitValues(
+    gradients_,
+    hessians_,
+    cuda_data_partition_->cuda_data_indices(),
     cuda_histogram_constructor_->cuda_hist_pointer(),
     &leaf_sum_hessians_[0]);
   cuda_larger_leaf_splits_->InitValues();
-  cuda_histogram_constructor_->BeforeTrain();
+  cuda_histogram_constructor_->BeforeTrain(gradients_, hessians_);
   cuda_best_split_finder_->BeforeTrain();
   leaf_num_data_[0] = num_data_;
   leaf_data_start_[0] = 0;
@@ -87,8 +83,8 @@ void NewCUDATreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>&
 void NewCUDATreeLearner::Split(Tree* /*tree*/, int /*best_leaf*/,
   int* /*left_leaf*/, int* /*right_leaf*/) {}
 
-void NewCUDATreeLearner::AddPredictionToScore(const Tree* /*tree*/, double* /*out_score*/) const {
-  cuda_data_partition_->UpdateTrainScore(config_->learning_rate, cuda_score_updater_->cuda_score_ref());
+void NewCUDATreeLearner::AddPredictionToScore(const Tree* /*tree*/, double* out_score) const {
+  cuda_data_partition_->UpdateTrainScore(config_->learning_rate, out_score);
 }
 
 Tree* NewCUDATreeLearner::BuildTree(const int num_leaves) {
@@ -278,33 +274,6 @@ void NewCUDATreeLearner::ResetTrainingData(const Dataset* /*train_data*/,
 
 void NewCUDATreeLearner::SetBaggingData(const Dataset* /*subset*/,
   const data_size_t* /*used_indices*/, data_size_t /*num_data*/) {}
-
-void NewCUDATreeLearner::InitObjective() {
-  if (config_->objective == std::string("binary")) {
-    cuda_objective_.reset(new CUDABinaryObjective(num_data_,
-      cuda_centralized_info_->cuda_labels(), config_->sigmoid));
-  } else if (config_->objective == std::string("regression")) {
-    cuda_objective_.reset(new CUDARegressionObjective(num_data_, cuda_centralized_info_->cuda_labels()));
-  } else if (config_->objective == std::string("lambdarank")) {
-    cuda_objective_.reset(new CUDARankingObjective(num_data_,
-      cuda_centralized_info_->cuda_labels(),
-      cuda_centralized_info_->cuda_query_boundaries(),
-      train_data_->metadata().query_boundaries(),
-      train_data_->metadata().num_queries(),
-      config_->lambdarank_norm,
-      config_->sigmoid,
-      config_->lambdarank_truncation_level,
-      train_data_->metadata().label(),
-      config_->num_threads));
-  } else {
-    Log::Fatal("Unsupported objective %s for CUDA.", config_->objective.c_str());
-  }
-
-  cuda_objective_->Init();
-  cuda_objective_->CalcInitScore();
-
-  cuda_score_updater_->SetInitScore(cuda_objective_->cuda_init_score());
-}
 
 }  // namespace LightGBM
 

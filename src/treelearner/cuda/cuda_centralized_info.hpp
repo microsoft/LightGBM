@@ -38,10 +38,6 @@ class CUDACentralizedInfo {
 
   const label_t* cuda_labels() const { return cuda_labels_; }
 
-  score_t* cuda_gradients_ref() { return cuda_gradients_; }
-
-  score_t* cuda_hessians_ref() { return cuda_hessians_; }
-
   const data_size_t* cuda_query_boundaries() { return cuda_query_boundaries_; }
 
   void Test() {
@@ -67,8 +63,8 @@ class CUDACentralizedInfo {
   data_size_t* cuda_num_data_;
   int* cuda_num_leaves_;
   int* cuda_num_features_;
-  score_t* cuda_gradients_;
-  score_t* cuda_hessians_;
+  const score_t* cuda_gradients_;
+  const score_t* cuda_hessians_;
   label_t* cuda_labels_;
   data_size_t* cuda_query_boundaries_;
 };
