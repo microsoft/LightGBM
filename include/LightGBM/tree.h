@@ -366,13 +366,9 @@ class Tree {
   }
 
   inline int CategoricalDecision(double fval, int node) const {
-    uint8_t missing_type = GetMissingType(decision_type_[node]);
     int int_fval;
     if (std::isnan(fval)) {
-      if (missing_type == MissingType::NaN) {
-        return right_child_[node];
-      }
-      int_fval = 0;
+      return right_child_[node];
     } else {
       int_fval = static_cast<int>(fval);
       if (int_fval < 0) {
