@@ -644,6 +644,9 @@ class Sequence(abc.ABC):
                 return self._get_one_line(idx)
             elif isinstance(idx, slice):
                 return np.stack(self._get_one_line(i) for i in range(idx.start, idx.stop))
+            elif isinstance(idx, list):
+                # Only required if using ``Dataset.get_data``.
+                return np.array(self._get_one_line(i) for i in idx)
             else:
                 raise TypeError(f"Sequence index must be integer or slice, got {type(idx).__name__}")
 
@@ -2252,7 +2255,7 @@ class Dataset:
                 elif isinstance(self.data, dt_DataTable):
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, Sequence):
-                    self.data = np.array([self.data[i] for i in self.used_indices])
+                    self.data = self.data[self.used_indices]
                 elif isinstance(self.data, list) and len(self.data) > 0 and all(isinstance(x, Sequence) for x in self.data):
                     self.data = np.array([row for row in self._yield_row_from_seqlist(self.data, self.used_indices)])
                 else:
@@ -2368,10 +2371,6 @@ class Dataset:
         if other.data is None:
             self.data = None
         elif self.data is not None:
-            if isinstance(self.data, Sequence) or isinstance(other.data, Sequence):
-                raise ValueError('Add features from Sequence is not supported.'
-                                 'Please combine features in your Sequence implementation.')
-
             if isinstance(self.data, np.ndarray):
                 if isinstance(other.data, np.ndarray):
                     self.data = np.hstack((self.data, other.data))
