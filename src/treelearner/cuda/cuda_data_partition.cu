@@ -1123,18 +1123,6 @@ __global__ void AggregateBlockOffsetKernel0(const int* leaf_index, data_size_t* 
   data_size_t* block_to_right_offset_buffer, data_size_t* cuda_leaf_data_start,
   data_size_t* cuda_leaf_data_end, data_size_t* cuda_leaf_num_data, const data_size_t* cuda_data_indices,
   int* cuda_cur_num_leaves,
-  // for leaf splits information update
-  int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
-  double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
-  double* smaller_leaf_cuda_gain_pointer, double* smaller_leaf_cuda_leaf_value_pointer,
-  const data_size_t** smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-  hist_t** smaller_leaf_cuda_hist_pointer_pointer,
-  int* larger_leaf_cuda_leaf_index_pointer, double* larger_leaf_cuda_sum_of_gradients_pointer,
-  double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
-  double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
-  const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-  hist_t** larger_leaf_cuda_hist_pointer_pointer,
-  hist_t* cuda_hist, hist_t** cuda_hist_pool,
   const data_size_t num_blocks) {
   __shared__ uint32_t block_to_left_offset[AGGREGATE_BLOCK_SIZE_DATA_PARTITION + 2 +
     (AGGREGATE_BLOCK_SIZE_DATA_PARTITION + 2) / NUM_BANKS_DATA_PARTITION];
@@ -1202,18 +1190,6 @@ __global__ void AggregateBlockOffsetKernel1(const int* leaf_index, data_size_t* 
   data_size_t* block_to_right_offset_buffer, data_size_t* cuda_leaf_data_start,
   data_size_t* cuda_leaf_data_end, data_size_t* cuda_leaf_num_data, const data_size_t* cuda_data_indices,
   int* cuda_cur_num_leaves,
-  // for leaf splits information update
-  int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
-  double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
-  double* smaller_leaf_cuda_gain_pointer, double* smaller_leaf_cuda_leaf_value_pointer,
-  const data_size_t** smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-  hist_t** smaller_leaf_cuda_hist_pointer_pointer,
-  int* larger_leaf_cuda_leaf_index_pointer, double* larger_leaf_cuda_sum_of_gradients_pointer,
-  double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
-  double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
-  const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-  hist_t** larger_leaf_cuda_hist_pointer_pointer,
-  hist_t* cuda_hist, hist_t** cuda_hist_pool,
   const data_size_t num_blocks, const data_size_t num_blocks_aligned) {
   __shared__ uint32_t block_to_left_offset[AGGREGATE_BLOCK_SIZE_DATA_PARTITION + 2 +
     (AGGREGATE_BLOCK_SIZE_DATA_PARTITION + 2) / NUM_BANKS_DATA_PARTITION];
@@ -1263,16 +1239,8 @@ __global__ void SplitTreeStructureKernel(const int* leaf_index, data_size_t* blo
   const int* best_split_feature,
   CUDASplitInfo* best_split_info,
   // for leaf splits information update
-  int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
-  double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
-  double* smaller_leaf_cuda_gain_pointer, double* smaller_leaf_cuda_leaf_value_pointer,
-  const data_size_t** smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-  hist_t** smaller_leaf_cuda_hist_pointer_pointer,
-  int* larger_leaf_cuda_leaf_index_pointer, double* larger_leaf_cuda_sum_of_gradients_pointer,
-  double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
-  double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
-  const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-  hist_t** larger_leaf_cuda_hist_pointer_pointer,
+  CUDALeafSplitsStruct* smaller_leaf_splits,
+  CUDALeafSplitsStruct* larger_leaf_splits,
   const int num_total_bin,
   hist_t* cuda_hist, hist_t** cuda_hist_pool, const int split_indices_block_size_data_partition,
 
@@ -1346,75 +1314,75 @@ __global__ void SplitTreeStructureKernel(const int* leaf_index, data_size_t* blo
       hist_t* parent_hist_ptr = cuda_hist_pool[leaf_index_ref];
       cuda_hist_pool[cur_max_leaf_index] = parent_hist_ptr;
       cuda_hist_pool[leaf_index_ref] = cuda_hist + 2 * cur_max_leaf_index * num_total_bin;
-      *smaller_leaf_cuda_hist_pointer_pointer = cuda_hist_pool[leaf_index_ref];
-      *larger_leaf_cuda_hist_pointer_pointer = cuda_hist_pool[cur_max_leaf_index];
+      smaller_leaf_splits->hist_in_leaf = cuda_hist_pool[leaf_index_ref];
+      larger_leaf_splits->hist_in_leaf = cuda_hist_pool[cur_max_leaf_index];
     } else if (global_thread_index == 1) {
-      *smaller_leaf_cuda_sum_of_gradients_pointer = leaf_split_info->left_sum_gradients;
+      smaller_leaf_splits->sum_of_gradients = leaf_split_info->left_sum_gradients;
     } else if (global_thread_index == 2) {
-      *smaller_leaf_cuda_sum_of_hessians_pointer = leaf_split_info->left_sum_hessians;
+      smaller_leaf_splits->sum_of_hessians = leaf_split_info->left_sum_hessians;
     } else if (global_thread_index == 3) {
-      *smaller_leaf_cuda_num_data_in_leaf_pointer = to_left_total_cnt;
+      smaller_leaf_splits->num_data_in_leaf = to_left_total_cnt;
     } else if (global_thread_index == 4) {
-      *smaller_leaf_cuda_gain_pointer = leaf_split_info->left_gain;
+      smaller_leaf_splits->gain = leaf_split_info->left_gain;
     } else if (global_thread_index == 5) {
-      *smaller_leaf_cuda_leaf_value_pointer = leaf_split_info->left_value;
+      smaller_leaf_splits->leaf_value = leaf_split_info->left_value;
     } else if (global_thread_index == 6) {
-      *smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer = cuda_data_indices;
+      smaller_leaf_splits->data_indices_in_leaf = cuda_data_indices;
     } else if (global_thread_index == 7) {
-      *larger_leaf_cuda_leaf_index_pointer = cur_max_leaf_index;
+      larger_leaf_splits->leaf_index = cur_max_leaf_index;
     } else if (global_thread_index == 8) {
-      *larger_leaf_cuda_sum_of_gradients_pointer = leaf_split_info->right_sum_gradients;
+      larger_leaf_splits->sum_of_gradients = leaf_split_info->right_sum_gradients;
     } else if (global_thread_index == 9) {
-      *larger_leaf_cuda_sum_of_hessians_pointer = leaf_split_info->right_sum_hessians;
+      larger_leaf_splits->sum_of_hessians = leaf_split_info->right_sum_hessians;
     } else if (global_thread_index == 10) {
-      *larger_leaf_cuda_num_data_in_leaf_pointer = cuda_leaf_num_data[cur_max_leaf_index];
+      larger_leaf_splits->num_data_in_leaf = cuda_leaf_num_data[cur_max_leaf_index];
     } else if (global_thread_index == 11) {
-      *larger_leaf_cuda_gain_pointer = leaf_split_info->right_gain;
+      larger_leaf_splits->gain = leaf_split_info->right_gain;
     } else if (global_thread_index == 12) {
-      *larger_leaf_cuda_leaf_value_pointer = leaf_split_info->right_value;
+      larger_leaf_splits->leaf_value = leaf_split_info->right_value;
     } else if (global_thread_index == 13) {
-      *larger_leaf_cuda_data_indices_in_leaf_pointer_pointer = cuda_data_indices + cuda_leaf_num_data[leaf_index_ref];
+      larger_leaf_splits->data_indices_in_leaf = cuda_data_indices + cuda_leaf_num_data[leaf_index_ref];
     } else if (global_thread_index == 14) {
       cuda_split_info_buffer[6] = leaf_index_ref;
     } else if (global_thread_index == 15) {
       cuda_split_info_buffer[7] = cur_max_leaf_index;
     } else if (global_thread_index == 16) {
-      *smaller_leaf_cuda_leaf_index_pointer = leaf_index_ref;
+      smaller_leaf_splits->leaf_index = leaf_index_ref;
     }
   } else {
     if (global_thread_index == 0) {
-      *larger_leaf_cuda_leaf_index_pointer = leaf_index_ref;
+      larger_leaf_splits->leaf_index = leaf_index_ref;
     } else if (global_thread_index == 1) {
-      *larger_leaf_cuda_sum_of_gradients_pointer = leaf_split_info->left_sum_gradients;
+      larger_leaf_splits->sum_of_gradients = leaf_split_info->left_sum_gradients;
     } else if (global_thread_index == 2) {
-      *larger_leaf_cuda_sum_of_hessians_pointer = leaf_split_info->left_sum_hessians;
+      larger_leaf_splits->sum_of_hessians = leaf_split_info->left_sum_hessians;
     } else if (global_thread_index == 3) {
-      *larger_leaf_cuda_num_data_in_leaf_pointer = to_left_total_cnt;
+      larger_leaf_splits->num_data_in_leaf = to_left_total_cnt;
     } else if (global_thread_index == 4) {
-      *larger_leaf_cuda_gain_pointer = leaf_split_info->left_gain;
+      larger_leaf_splits->gain = leaf_split_info->left_gain;
     } else if (global_thread_index == 5) {
-      *larger_leaf_cuda_leaf_value_pointer = leaf_split_info->left_value;
+      larger_leaf_splits->leaf_value = leaf_split_info->left_value;
     } else if (global_thread_index == 6) {
-      *larger_leaf_cuda_data_indices_in_leaf_pointer_pointer = cuda_data_indices;
+      larger_leaf_splits->data_indices_in_leaf = cuda_data_indices;
     } else if (global_thread_index == 7) {
-      *smaller_leaf_cuda_leaf_index_pointer = cur_max_leaf_index;
+      smaller_leaf_splits->leaf_index = cur_max_leaf_index;
     } else if (global_thread_index == 8) {
-      *smaller_leaf_cuda_sum_of_gradients_pointer = leaf_split_info->right_sum_gradients;
+      smaller_leaf_splits->sum_of_gradients = leaf_split_info->right_sum_gradients;
     } else if (global_thread_index == 9) {
-      *smaller_leaf_cuda_sum_of_hessians_pointer = leaf_split_info->right_sum_hessians;
+      smaller_leaf_splits->sum_of_hessians = leaf_split_info->right_sum_hessians;
     } else if (global_thread_index == 10) {
-      *smaller_leaf_cuda_num_data_in_leaf_pointer = cuda_leaf_num_data[cur_max_leaf_index];
+      smaller_leaf_splits->num_data_in_leaf = cuda_leaf_num_data[cur_max_leaf_index];
     } else if (global_thread_index == 11) {
-      *smaller_leaf_cuda_gain_pointer = leaf_split_info->right_gain;
+      smaller_leaf_splits->gain = leaf_split_info->right_gain;
     } else if (global_thread_index == 12) {
-      *smaller_leaf_cuda_leaf_value_pointer = leaf_split_info->right_value;
+      smaller_leaf_splits->leaf_value = leaf_split_info->right_value;
     } else if (global_thread_index == 13) {
-      *smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer = cuda_data_indices + cuda_leaf_num_data[leaf_index_ref];
+      smaller_leaf_splits->data_indices_in_leaf = cuda_data_indices + cuda_leaf_num_data[leaf_index_ref];
     } else if (global_thread_index == 14) {
       cuda_hist_pool[cur_max_leaf_index] = cuda_hist + 2 * cur_max_leaf_index * num_total_bin;
-      *smaller_leaf_cuda_hist_pointer_pointer = cuda_hist_pool[cur_max_leaf_index];
+      smaller_leaf_splits->hist_in_leaf = cuda_hist_pool[cur_max_leaf_index];
     } else if (global_thread_index == 15) {
-      *larger_leaf_cuda_hist_pointer_pointer = cuda_hist_pool[leaf_index_ref];
+      larger_leaf_splits->hist_in_leaf = cuda_hist_pool[leaf_index_ref];
     } else if (global_thread_index == 16) {
       cuda_split_info_buffer[6] = cur_max_leaf_index;
     } else if (global_thread_index == 17) {
@@ -1493,124 +1461,6 @@ __global__ void SplitInnerKernel(const int* leaf_index, const int* cuda_cur_num_
   }
 }
 
-__global__ void SplitInnerKernel2(const int* leaf_index, const int* cuda_cur_num_leaves,
-  const data_size_t* cuda_leaf_data_start, const data_size_t* cuda_leaf_num_data,
-  const data_size_t* cuda_data_indices, const uint8_t* split_to_left_bit_vector,
-  const data_size_t* block_to_left_offset_buffer, const data_size_t* block_to_right_offset_buffer,
-  data_size_t* out_data_indices_in_leaf, const int split_indices_block_size_data_partition) {
-  __shared__ uint16_t thread_to_left_pos[(SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION << 1) + 1 +
-    ((SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION << 1) + 2) / NUM_BANKS_DATA_PARTITION];
-  __shared__ uint16_t thread_to_right_pos[(SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION << 1)];
-  const int leaf_index_ref = *leaf_index;
-  const data_size_t leaf_num_data_offset = cuda_leaf_data_start[leaf_index_ref];
-  const data_size_t num_data_in_leaf_ref = cuda_leaf_num_data[leaf_index_ref] + cuda_leaf_num_data[(*cuda_cur_num_leaves) - 1];
-  const unsigned int threadIdx_x = threadIdx.x;
-  const unsigned int blockDim_x = blockDim.x;
-  const unsigned int conflict_free_threadIdx_x_plus_1 = CONFLICT_FREE_INDEX(threadIdx_x + 1);
-  const unsigned int global_thread_index = blockIdx.x * blockDim_x * 2 + threadIdx_x;
-  const data_size_t* cuda_data_indices_in_leaf = cuda_data_indices + leaf_num_data_offset;
-  const uint32_t* split_to_left_bit_vector_uint32 = reinterpret_cast<const uint32_t*>(split_to_left_bit_vector);
-  const uint32_t bit32_0 = split_to_left_bit_vector_uint32[global_thread_index];
-  const uint8_t bit_0 = static_cast<uint8_t>(bit32_0 & 0xf);
-  uint8_t bit_1 = static_cast<uint8_t>((bit32_0 >> 8) & 0xf);
-  uint8_t bit_2 = static_cast<uint8_t>((bit32_0 >> 16) & 0xf);
-  uint8_t bit_3 = static_cast<uint8_t>((bit32_0 >> 24) & 0xf);
-  const uint8_t bit_1_acc = bit_1 + bit_0;
-  const uint8_t bit_2_acc = bit_1_acc + bit_2;
-  const uint8_t bit_3_acc = bit_2_acc + bit_3;
-  thread_to_left_pos[conflict_free_threadIdx_x_plus_1] = bit_3_acc;
-  const unsigned int conflict_free_threadIdx_x_plus_blockDim_x_plus_1 = CONFLICT_FREE_INDEX(threadIdx_x + blockDim_x + 1);
-  const unsigned int global_thread_index_plus_blockDim_x = global_thread_index + blockDim_x;
-  const uint32_t bit32_1 = split_to_left_bit_vector_uint32[global_thread_index_plus_blockDim_x];
-  const uint8_t bit_4 = static_cast<uint8_t>(bit32_1 & 0xf);
-  uint8_t bit_5 = static_cast<uint8_t>((bit32_1 >> 8) & 0xf);
-  uint8_t bit_6 = static_cast<uint8_t>((bit32_1 >> 16) & 0xf);
-  uint8_t bit_7 = static_cast<uint8_t>((bit32_1 >> 24) & 0xf);
-  const uint8_t bit_5_acc = bit_4 + bit_5;
-  const uint8_t bit_6_acc = bit_5_acc + bit_6;
-  const uint8_t bit_7_acc = bit_6_acc + bit_7;
-  thread_to_left_pos[conflict_free_threadIdx_x_plus_blockDim_x_plus_1] = bit_7_acc;
-  __syncthreads();
-  const uint32_t to_right_block_offset = block_to_right_offset_buffer[blockIdx.x];
-  const uint32_t to_left_block_offset = block_to_left_offset_buffer[blockIdx.x];
-  if (threadIdx_x == 0) {
-    thread_to_left_pos[0] = 0;
-    thread_to_right_pos[0] = 0;
-  }
-  __syncthreads();
-  PrefixSum(thread_to_left_pos, (split_indices_block_size_data_partition << 1));
-  __syncthreads();
-  if (threadIdx_x > 0) {
-    thread_to_right_pos[threadIdx_x] = ((threadIdx_x * 4) - thread_to_left_pos[conflict_free_threadIdx_x_plus_1]);
-  }
-  thread_to_right_pos[threadIdx_x + blockDim_x] = (((threadIdx_x + blockDim_x) * 4) - thread_to_left_pos[conflict_free_threadIdx_x_plus_blockDim_x_plus_1]);
-  __syncthreads();
-  data_size_t* left_out_data_indices_in_leaf = out_data_indices_in_leaf + to_left_block_offset;
-  data_size_t* right_out_data_indices_in_leaf = out_data_indices_in_leaf + to_right_block_offset;
-  const data_size_t global_thread_index_base = global_thread_index * 4;
-  const data_size_t global_thread_index_plus_blockDim_x_base = global_thread_index_plus_blockDim_x * 4;
-  const uint16_t to_left_pos_offset_0 = thread_to_left_pos[conflict_free_threadIdx_x_plus_1];
-  const uint16_t to_right_pos_offset_0 = thread_to_right_pos[threadIdx_x];
-  const uint16_t to_left_pos_offset_1 = thread_to_left_pos[conflict_free_threadIdx_x_plus_blockDim_x_plus_1];
-  const uint16_t to_right_pos_offset_1 = thread_to_right_pos[threadIdx_x + blockDim_x];
-  if (global_thread_index_base < num_data_in_leaf_ref) {
-    if (bit_0 == 1) {
-      left_out_data_indices_in_leaf[to_left_pos_offset_0] = cuda_data_indices_in_leaf[global_thread_index_base];
-    } else {
-      right_out_data_indices_in_leaf[to_right_pos_offset_0] = cuda_data_indices_in_leaf[global_thread_index_base];
-    }
-  }
-  if (global_thread_index_base + 1 < num_data_in_leaf_ref) {
-    if (bit_1 == 1) {
-      left_out_data_indices_in_leaf[to_left_pos_offset_0 + bit_0] = cuda_data_indices_in_leaf[global_thread_index_base + 1];
-    } else {
-      right_out_data_indices_in_leaf[to_right_pos_offset_0 + 1 - bit_0] = cuda_data_indices_in_leaf[global_thread_index_base + 1];
-    }
-  }
-  if (global_thread_index_base + 2 < num_data_in_leaf_ref) {
-    if (bit_2 == 1) {
-      left_out_data_indices_in_leaf[to_left_pos_offset_0 + bit_1_acc] = cuda_data_indices_in_leaf[global_thread_index_base + 2];
-    } else {
-      right_out_data_indices_in_leaf[to_right_pos_offset_0 + 2 - bit_1_acc] = cuda_data_indices_in_leaf[global_thread_index_base + 2];
-    }
-  }
-  if (global_thread_index_base + 3 < num_data_in_leaf_ref) {
-    if (bit_3 == 1) {
-      left_out_data_indices_in_leaf[to_left_pos_offset_0 + bit_2_acc] = cuda_data_indices_in_leaf[global_thread_index_base + 3];
-    } else {
-      right_out_data_indices_in_leaf[to_right_pos_offset_0 + 3 - bit_2_acc] = cuda_data_indices_in_leaf[global_thread_index_base + 3];
-    }
-  }
-  if (global_thread_index_plus_blockDim_x_base < num_data_in_leaf_ref) {
-    if (bit_4 == 1) {
-      left_out_data_indices_in_leaf[to_left_pos_offset_1] = cuda_data_indices_in_leaf[global_thread_index_plus_blockDim_x_base];
-    } else {
-      right_out_data_indices_in_leaf[to_right_pos_offset_1] = cuda_data_indices_in_leaf[global_thread_index_plus_blockDim_x_base];
-    }
-  }
-  if (global_thread_index_plus_blockDim_x_base + 1 < num_data_in_leaf_ref) {
-    if (bit_5 == 1) {
-      left_out_data_indices_in_leaf[to_left_pos_offset_1 + bit_4] = cuda_data_indices_in_leaf[global_thread_index_plus_blockDim_x_base + 1];
-    } else {
-      right_out_data_indices_in_leaf[to_right_pos_offset_1 + 1 - bit_4] = cuda_data_indices_in_leaf[global_thread_index_plus_blockDim_x_base + 1];
-    }
-  }
-  if (global_thread_index_plus_blockDim_x_base + 2 < num_data_in_leaf_ref) {
-    if (bit_6 == 1) {
-      left_out_data_indices_in_leaf[to_left_pos_offset_1 + bit_5_acc] = cuda_data_indices_in_leaf[global_thread_index_plus_blockDim_x_base + 2];
-    } else {
-      right_out_data_indices_in_leaf[to_right_pos_offset_1 + 2 - bit_5_acc] = cuda_data_indices_in_leaf[global_thread_index_plus_blockDim_x_base + 2];
-    }
-  }
-  if (global_thread_index_plus_blockDim_x_base + 3 < num_data_in_leaf_ref) {
-    if (bit_7 == 1) {
-      left_out_data_indices_in_leaf[to_left_pos_offset_1 + bit_6_acc] = cuda_data_indices_in_leaf[global_thread_index_plus_blockDim_x_base + 3];
-    } else {
-      right_out_data_indices_in_leaf[to_right_pos_offset_1 + 3 - bit_6_acc] = cuda_data_indices_in_leaf[global_thread_index_plus_blockDim_x_base + 3];
-    }
-  }
-}
-
 __global__ void CopyDataIndicesKernel(
   const data_size_t num_data_in_leaf,
   const data_size_t* out_data_indices_in_leaf,
@@ -1626,16 +1476,8 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
   const int* best_split_feature,
   CUDASplitInfo* best_split_info,
   // for leaf splits information update
-  int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
-  double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
-  double* smaller_leaf_cuda_gain_pointer, double* smaller_leaf_cuda_leaf_value_pointer,
-  const data_size_t** smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-  hist_t** smaller_leaf_cuda_hist_pointer_pointer,
-  int* larger_leaf_cuda_leaf_index_pointer, double* larger_leaf_cuda_sum_of_gradients_pointer,
-  double* larger_leaf_cuda_sum_of_hessians_pointer, data_size_t* larger_leaf_cuda_num_data_in_leaf_pointer,
-  double* larger_leaf_cuda_gain_pointer, double* larger_leaf_cuda_leaf_value_pointer,
-  const data_size_t** larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-  hist_t** larger_leaf_cuda_hist_pointer_pointer,
+  CUDALeafSplitsStruct* smaller_leaf_splits,
+  CUDALeafSplitsStruct* larger_leaf_splits,
   std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
   std::vector<double>* cpu_leaf_sum_hessians,
   int* smaller_leaf_index, int* larger_leaf_index, const int cpu_leaf_index) {
@@ -1661,38 +1503,12 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
       cuda_block_data_to_right_offset_, cuda_leaf_data_start_, cuda_leaf_data_end_,
       cuda_leaf_num_data_, cuda_data_indices_,
       cuda_cur_num_leaves_,
-
-      smaller_leaf_cuda_leaf_index_pointer, smaller_leaf_cuda_sum_of_gradients_pointer,
-      smaller_leaf_cuda_sum_of_hessians_pointer, smaller_leaf_cuda_num_data_in_leaf_pointer,
-      smaller_leaf_cuda_gain_pointer, smaller_leaf_cuda_leaf_value_pointer,
-      smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-      smaller_leaf_cuda_hist_pointer_pointer,
-      larger_leaf_cuda_leaf_index_pointer, larger_leaf_cuda_sum_of_gradients_pointer,
-      larger_leaf_cuda_sum_of_hessians_pointer, larger_leaf_cuda_num_data_in_leaf_pointer,
-      larger_leaf_cuda_gain_pointer, larger_leaf_cuda_leaf_value_pointer,
-      larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-      larger_leaf_cuda_hist_pointer_pointer,
-      cuda_hist_,
-      cuda_hist_pool_,
       num_blocks_final);
   } else {
     AggregateBlockOffsetKernel1<<<1, num_blocks_final_aligned, 0, cuda_streams_[0]>>>(leaf_index, cuda_block_data_to_left_offset_,
       cuda_block_data_to_right_offset_, cuda_leaf_data_start_, cuda_leaf_data_end_,
       cuda_leaf_num_data_, cuda_data_indices_,
       cuda_cur_num_leaves_,
-
-      smaller_leaf_cuda_leaf_index_pointer, smaller_leaf_cuda_sum_of_gradients_pointer,
-      smaller_leaf_cuda_sum_of_hessians_pointer, smaller_leaf_cuda_num_data_in_leaf_pointer,
-      smaller_leaf_cuda_gain_pointer, smaller_leaf_cuda_leaf_value_pointer,
-      smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-      smaller_leaf_cuda_hist_pointer_pointer,
-      larger_leaf_cuda_leaf_index_pointer, larger_leaf_cuda_sum_of_gradients_pointer,
-      larger_leaf_cuda_sum_of_hessians_pointer, larger_leaf_cuda_num_data_in_leaf_pointer,
-      larger_leaf_cuda_gain_pointer, larger_leaf_cuda_leaf_value_pointer,
-      larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-      larger_leaf_cuda_hist_pointer_pointer,
-      cuda_hist_,
-      cuda_hist_pool_,
       num_blocks_final, num_blocks_final_aligned);
   }
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
@@ -1713,17 +1529,8 @@ void CUDADataPartition::LaunchSplitInnerKernel(const int* leaf_index, const data
     cuda_cur_num_leaves_,
     best_split_feature,
     best_split_info,
-
-    smaller_leaf_cuda_leaf_index_pointer, smaller_leaf_cuda_sum_of_gradients_pointer,
-    smaller_leaf_cuda_sum_of_hessians_pointer, smaller_leaf_cuda_num_data_in_leaf_pointer,
-    smaller_leaf_cuda_gain_pointer, smaller_leaf_cuda_leaf_value_pointer,
-    smaller_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-    smaller_leaf_cuda_hist_pointer_pointer,
-    larger_leaf_cuda_leaf_index_pointer, larger_leaf_cuda_sum_of_gradients_pointer,
-    larger_leaf_cuda_sum_of_hessians_pointer, larger_leaf_cuda_num_data_in_leaf_pointer,
-    larger_leaf_cuda_gain_pointer, larger_leaf_cuda_leaf_value_pointer,
-    larger_leaf_cuda_data_indices_in_leaf_pointer_pointer,
-    larger_leaf_cuda_hist_pointer_pointer,
+    smaller_leaf_splits,
+    larger_leaf_splits,
     num_total_bin_,
     cuda_hist_,
     cuda_hist_pool_, split_indices_block_size_data_partition_aligned,

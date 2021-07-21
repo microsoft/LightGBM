@@ -40,27 +40,60 @@ __global__ void CUDAInitValuesKernel1(const score_t* cuda_gradients, const score
   }
 }
 
-__global__ void CUDAInitValuesKernel2(double* cuda_sum_of_gradients, double* cuda_sum_of_hessians) {
-  if (blockIdx.x == 0) {
-    double sum_of_gradients = 0.0f;
-    double sum_of_hessians = 0.0f;
-    for (unsigned int i = 1; i < gridDim.x; ++i) {
-      sum_of_gradients += cuda_sum_of_gradients[i];
-      sum_of_hessians += cuda_sum_of_hessians[i];
-    }
-    cuda_sum_of_gradients[0] += sum_of_gradients;
-    cuda_sum_of_hessians[0] += sum_of_hessians;
+__global__ void CUDAInitValuesKernel2(
+  double* cuda_sum_of_gradients,
+  double* cuda_sum_of_hessians,
+  const data_size_t num_data,
+  const data_size_t* cuda_data_indices_in_leaf,
+  hist_t* cuda_hist_in_leaf,
+  CUDALeafSplitsStruct* cuda_struct) {
+  double sum_of_gradients = 0.0f;
+  double sum_of_hessians = 0.0f;
+  for (unsigned int i = 0; i < gridDim.x; ++i) {
+    sum_of_gradients += cuda_sum_of_gradients[i];
+    sum_of_hessians += cuda_sum_of_hessians[i];
   }
+  cuda_sum_of_gradients[0] = sum_of_gradients;
+  cuda_sum_of_hessians[0] = sum_of_hessians;
+  cuda_struct->leaf_index = 0;
+  cuda_struct->sum_of_gradients = sum_of_gradients;
+  cuda_struct->sum_of_hessians = sum_of_hessians;
+  cuda_struct->num_data_in_leaf = num_data;
+  cuda_struct->gain = kMinScore;
+  cuda_struct->leaf_value = 0.0f;
+  cuda_struct->data_indices_in_leaf = cuda_data_indices_in_leaf;
+  cuda_struct->hist_in_leaf = cuda_hist_in_leaf;
 }
 
-void CUDALeafSplits::LaunchInitValuesKernal() {
+__global__ void InitValuesEmptyKernel(CUDALeafSplitsStruct* cuda_struct) {
+  cuda_struct->leaf_index = -1;
+  cuda_struct->sum_of_gradients = 0.0f;
+  cuda_struct->sum_of_hessians = 0.0f;
+  cuda_struct->num_data_in_leaf = 0;
+  cuda_struct->gain = kMinScore;
+  cuda_struct->leaf_value = 0.0f;
+  cuda_struct->data_indices_in_leaf = nullptr;
+  cuda_struct->hist_in_leaf = nullptr;
+}
+
+void CUDALeafSplits::LaunchInitValuesEmptyKernel() {
+  InitValuesEmptyKernel<<<1, 1>>>(cuda_struct_);
+}
+
+void CUDALeafSplits::LaunchInitValuesKernal(
+  const data_size_t* cuda_data_indices_in_leaf,
+  hist_t* cuda_hist_in_leaf) {
   CUDAInitValuesKernel1<<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
-    cuda_gradients_, cuda_hessians_, cuda_num_data_, cuda_sum_of_gradients_,
-    cuda_sum_of_hessians_);
-  CopyFromCUDADeviceToCUDADevice<data_size_t>(cuda_num_data_in_leaf_, cuda_num_data_, 1);
+    cuda_gradients_, cuda_hessians_, cuda_num_data_, cuda_sum_of_gradients_buffer_,
+    cuda_sum_of_hessians_buffer_);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-  CUDAInitValuesKernel2<<<num_blocks_init_from_gradients_, 1>>>(
-    cuda_sum_of_gradients_, cuda_sum_of_hessians_);
+  CUDAInitValuesKernel2<<<1, 1>>>(
+    cuda_sum_of_gradients_buffer_,
+    cuda_sum_of_hessians_buffer_,
+    num_data_,
+    cuda_data_indices_in_leaf,
+    cuda_hist_in_leaf,
+    cuda_struct_);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 

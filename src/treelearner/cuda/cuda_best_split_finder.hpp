@@ -38,7 +38,7 @@ class CUDABestSplitFinder {
 
   void BeforeTrain();
 
-  void FindBestSplitsForLeaf(const CUDALeafSplits* smaller_leaf_splits, const CUDALeafSplits* larger_leaf_splits,
+  void FindBestSplitsForLeaf(const CUDALeafSplitsStruct* smaller_leaf_splits, const CUDALeafSplitsStruct* larger_leaf_splits,
     const int smaller_leaf_index, const int larger_leaf_index,
     const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
     const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf);
@@ -54,8 +54,8 @@ class CUDABestSplitFinder {
   CUDASplitInfo* cuda_leaf_best_split_info() { return cuda_leaf_best_split_info_; }
 
  private:
-  void LaunchFindBestSplitsForLeafKernel(const CUDALeafSplits* smaller_leaf_splits,
-    const CUDALeafSplits* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index,
+  void LaunchFindBestSplitsForLeafKernel(const CUDALeafSplitsStruct* smaller_leaf_splits,
+    const CUDALeafSplitsStruct* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index,
     const bool is_smaller_leaf_valid, const bool is_larger_leaf_valid);
 
   void LaunchSyncBestSplitForLeafKernel(

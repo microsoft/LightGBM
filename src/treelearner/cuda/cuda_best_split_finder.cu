@@ -392,17 +392,9 @@ __global__ void FindBestSplitsForLeafKernel(
   const uint8_t* task_out_default_left,
   // input leaf information
   const int smaller_leaf_index,
-  const double* smaller_leaf_gain,
-  const double* smaller_sum_gradients_in_leaf,
-  const double* smaller_sum_hessians_in_leaf,
-  const data_size_t* smaller_num_data_in_leaf,
-  hist_t** smaller_leaf_hist,
+  const CUDALeafSplitsStruct* smaller_leaf_splits,
   const int larger_leaf_index,
-  const double* larger_leaf_gain,
-  const double* larger_sum_gradients_in_leaf,
-  const double* larger_sum_hessians_in_leaf,
-  const data_size_t* larger_num_data_in_leaf,
-  hist_t** larger_leaf_hist,
+  const CUDALeafSplitsStruct* larger_leaf_splits,
   // input config parameter values
   const data_size_t min_data_in_leaf,
   const double min_sum_hessian_in_leaf,
@@ -419,13 +411,13 @@ __global__ void FindBestSplitsForLeafKernel(
   const bool skip_default_bin = static_cast<bool>(task_skip_default_bin[task_index]);
   const bool na_as_missing = static_cast<bool>(task_na_as_missing[task_index]);
   const bool assume_out_default_left = task_out_default_left[task_index];
-  const double parent_gain = is_larger ? *larger_leaf_gain : *smaller_leaf_gain;
-  const double sum_gradients = is_larger ? *larger_sum_gradients_in_leaf : *smaller_sum_gradients_in_leaf;
-  const double sum_hessians = (is_larger ? *larger_sum_hessians_in_leaf : *smaller_sum_hessians_in_leaf) + 2 * K_EPSILON;
-  const double num_data = is_larger ? *larger_num_data_in_leaf : *smaller_num_data_in_leaf;
+  const double parent_gain = is_larger ? larger_leaf_splits->gain : smaller_leaf_splits->gain;
+  const double sum_gradients = is_larger ? larger_leaf_splits->sum_of_gradients : smaller_leaf_splits->sum_of_gradients;
+  const double sum_hessians = (is_larger ? larger_leaf_splits->sum_of_hessians : smaller_leaf_splits->sum_of_hessians) + 2 * K_EPSILON;
+  const double num_data = is_larger ? larger_leaf_splits->num_data_in_leaf : smaller_leaf_splits->num_data_in_leaf;
   const unsigned int output_offset = is_larger ? (task_index + num_tasks) : task_index;
   CUDASplitInfo* out = cuda_best_split_info + output_offset;
-  const hist_t* hist_ptr = (is_larger ? *larger_leaf_hist : *smaller_leaf_hist) + feature_hist_offsets[inner_feature_index] * 2;
+  const hist_t* hist_ptr = (is_larger ? larger_leaf_splits->hist_in_leaf : smaller_leaf_splits->hist_in_leaf) + feature_hist_offsets[inner_feature_index] * 2;
   FindBestSplitsForLeafKernelInner(
     // input feature information
     hist_ptr,
@@ -455,8 +447,8 @@ __global__ void FindBestSplitsForLeafKernel(
 }
 
 void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(
-  const CUDALeafSplits* smaller_leaf_splits,
-  const CUDALeafSplits* larger_leaf_splits,
+  const CUDALeafSplitsStruct* smaller_leaf_splits,
+  const CUDALeafSplitsStruct* larger_leaf_splits,
   const int smaller_leaf_index,
   const int larger_leaf_index,
   const bool is_smaller_leaf_valid,
@@ -486,17 +478,9 @@ void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(
       cuda_task_out_default_left_,
       // input leaf information
       smaller_leaf_index,
-      smaller_leaf_splits->cuda_gain(),
-      smaller_leaf_splits->cuda_sum_of_gradients(),
-      smaller_leaf_splits->cuda_sum_of_hessians(),
-      smaller_leaf_splits->cuda_num_data_in_leaf(),
-      smaller_leaf_splits->cuda_hist_in_leaf_pointer_pointer(),
+      smaller_leaf_splits,
       larger_leaf_index,
-      larger_leaf_splits->cuda_gain(),
-      larger_leaf_splits->cuda_sum_of_gradients(),
-      larger_leaf_splits->cuda_sum_of_hessians(),
-      larger_leaf_splits->cuda_num_data_in_leaf(),
-      larger_leaf_splits->cuda_hist_in_leaf_pointer_pointer(),
+      larger_leaf_splits,
       // configuration parameter values
       min_data_in_leaf_,
       min_sum_hessian_in_leaf_,
@@ -525,17 +509,9 @@ void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(
       cuda_task_out_default_left_,
       // input leaf information
       smaller_leaf_index,
-      smaller_leaf_splits->cuda_gain(),
-      smaller_leaf_splits->cuda_sum_of_gradients(),
-      smaller_leaf_splits->cuda_sum_of_hessians(),
-      smaller_leaf_splits->cuda_num_data_in_leaf(),
-      smaller_leaf_splits->cuda_hist_in_leaf_pointer_pointer(),
+      smaller_leaf_splits,
       larger_leaf_index,
-      larger_leaf_splits->cuda_gain(),
-      larger_leaf_splits->cuda_sum_of_gradients(),
-      larger_leaf_splits->cuda_sum_of_hessians(),
-      larger_leaf_splits->cuda_num_data_in_leaf(),
-      larger_leaf_splits->cuda_hist_in_leaf_pointer_pointer(),
+      larger_leaf_splits,
       // configuration parameter values
       min_data_in_leaf_,
       min_sum_hessian_in_leaf_,

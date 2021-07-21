@@ -14,6 +14,7 @@
 #include <fstream>
 
 #include "new_cuda_utils.hpp"
+#include "cuda_leaf_splits.hpp"
 
 #include <vector>
 
@@ -36,10 +37,8 @@ class CUDAHistogramConstructor {
 
   void Init(const Dataset* train_data, TrainingShareStates* share_state);
 
-  void ConstructHistogramForLeaf(const int* cuda_smaller_leaf_index, const data_size_t* cuda_num_data_in_smaller_leaf, const int* cuda_larger_leaf_index,
-    const data_size_t** cuda_data_indices_in_smaller_leaf, const data_size_t** cuda_data_indices_in_larger_leaf,
-    const double* cuda_smaller_leaf_sum_gradients, const double* cuda_smaller_leaf_sum_hessians, hist_t** cuda_smaller_leaf_hist,
-    const double* cuda_larger_leaf_sum_gradients, const double* cuda_larger_leaf_sum_hessians, hist_t** cuda_larger_leaf_hist,
+  void ConstructHistogramForLeaf(
+    const CUDALeafSplitsStruct* cuda_smaller_leaf_splits, const CUDALeafSplitsStruct* cuda_larger_leaf_splits, 
     const data_size_t* cuda_leaf_num_data, const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
     const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf);
 
@@ -53,58 +52,19 @@ class CUDAHistogramConstructor {
 
   const uint8_t* cuda_data() const { return cuda_data_uint8_t_; }
 
-  void TestAfterInit() {
-    /*std::vector<uint8_t> test_data(data_.size(), 0);
-    CopyFromCUDADeviceToHost(test_data.data(), cuda_data_, data_.size());
-    for (size_t i = 0; i < 100; ++i) {
-      Log::Warning("CUDAHistogramConstructor::TestAfterInit test_data[%d] = %d", i, test_data[i]);
-    }*/
-  }
-
-  void TestAfterConstructHistogram() {
-    PrintLastCUDAError();
-    std::vector<hist_t> test_hist(num_total_bin_ * 2, 0.0f);
-    /*CopyFromCUDADeviceToHost<hist_t>(test_hist.data(), cuda_hist_, static_cast<size_t>(num_total_bin_) * 2);
-    for (int i = 0; i < 100; ++i) {
-      Log::Warning("bin %d grad %f hess %f", i, test_hist[2 * i], test_hist[2 * i + 1]);
-    }*/
-    const hist_t* leaf_2_cuda_hist_ptr = cuda_hist_;// + 3 * 2 * num_total_bin_;
-    Log::Warning("cuda_hist_ptr = %ld", leaf_2_cuda_hist_ptr);
-    CopyFromCUDADeviceToHost<hist_t>(test_hist.data(), leaf_2_cuda_hist_ptr, 2 * num_total_bin_);
-    std::ofstream fout("leaf_2_cuda_hist.txt");
-    for (int i = 0; i < num_total_bin_; ++i) {
-      Log::Warning("bin %d grad %f hess %f", i, test_hist[2 * i], test_hist[2 * i + 1]);
-      fout << "bin " << i << " grad " << test_hist[2 * i] << " hess " << test_hist[2 * i + 1] << "\n"; 
-    }
-    fout.close();
-  }
-
  private:
-  void LaunchGetOrderedGradientsKernel(
-    const data_size_t num_data_in_leaf,
-    const data_size_t** cuda_data_indices_in_leaf);
 
   void CalcConstructHistogramKernelDim(int* grid_dim_x, int* grid_dim_y, int* block_dim_x, int* block_dim_y,
     const data_size_t num_data_in_smaller_leaf);
 
-  void LaunchConstructHistogramKernel(const int* cuda_leaf_index,
-    const data_size_t* cuda_smaller_leaf_num_data,
-    const data_size_t** cuda_data_indices_in_leaf,
+  void LaunchConstructHistogramKernel(
+    const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
     const data_size_t* cuda_leaf_num_data,
-    hist_t** cuda_leaf_hist,
     const data_size_t num_data_in_smaller_leaf);
 
-  void LaunchConstructHistogramKernel2(const int* cuda_leaf_index,
-    const data_size_t* cuda_smaller_leaf_num_data,
-    const data_size_t** cuda_data_indices_in_leaf,
-    const data_size_t* cuda_leaf_num_data,
-    hist_t** cuda_leaf_hist,
-    const data_size_t num_data_in_smaller_leaf);
-
-  void LaunchSubtractHistogramKernel(const int* cuda_smaller_leaf_index,
-    const int* cuda_larger_leaf_index, const double* smaller_leaf_sum_gradients, const double* smaller_leaf_sum_hessians,
-    const double* larger_leaf_sum_gradients, const double* larger_leaf_sum_hessians,
-    hist_t** cuda_smaller_leaf_hist, hist_t** cuda_larger_leaf_hist);
+  void LaunchSubtractHistogramKernel(
+    const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
+    const CUDALeafSplitsStruct* cuda_larger_leaf_splits);
 
   void InitCUDAData(TrainingShareStates* share_state);
 
