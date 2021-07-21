@@ -45,6 +45,7 @@ void CUDALeafSplits::InitValues(
   SetCUDAMemory<double>(cuda_sum_of_gradients_buffer_, 0, num_blocks_init_from_gradients_);
   SetCUDAMemory<double>(cuda_sum_of_hessians_buffer_, 0, num_blocks_init_from_gradients_);
   LaunchInitValuesKernal(cuda_data_indices_in_leaf, cuda_hist_in_leaf);
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   CopyFromCUDADeviceToHostAsync<double>(root_sum_hessians, cuda_sum_of_hessians_buffer_, 1, cuda_streams_[1]);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }

@@ -41,6 +41,7 @@ __global__ void CUDAInitValuesKernel1(const score_t* cuda_gradients, const score
 }
 
 __global__ void CUDAInitValuesKernel2(
+  const int num_blocks_to_reduce,
   double* cuda_sum_of_gradients,
   double* cuda_sum_of_hessians,
   const data_size_t num_data,
@@ -49,7 +50,7 @@ __global__ void CUDAInitValuesKernel2(
   CUDALeafSplitsStruct* cuda_struct) {
   double sum_of_gradients = 0.0f;
   double sum_of_hessians = 0.0f;
-  for (unsigned int i = 0; i < gridDim.x; ++i) {
+  for (unsigned int i = 0; i < num_blocks_to_reduce; ++i) {
     sum_of_gradients += cuda_sum_of_gradients[i];
     sum_of_hessians += cuda_sum_of_hessians[i];
   }
@@ -59,7 +60,7 @@ __global__ void CUDAInitValuesKernel2(
   cuda_struct->sum_of_gradients = sum_of_gradients;
   cuda_struct->sum_of_hessians = sum_of_hessians;
   cuda_struct->num_data_in_leaf = num_data;
-  cuda_struct->gain = kMinScore;
+  cuda_struct->gain = 0.0f;
   cuda_struct->leaf_value = 0.0f;
   cuda_struct->data_indices_in_leaf = cuda_data_indices_in_leaf;
   cuda_struct->hist_in_leaf = cuda_hist_in_leaf;
@@ -70,7 +71,7 @@ __global__ void InitValuesEmptyKernel(CUDALeafSplitsStruct* cuda_struct) {
   cuda_struct->sum_of_gradients = 0.0f;
   cuda_struct->sum_of_hessians = 0.0f;
   cuda_struct->num_data_in_leaf = 0;
-  cuda_struct->gain = kMinScore;
+  cuda_struct->gain = 0.0f;
   cuda_struct->leaf_value = 0.0f;
   cuda_struct->data_indices_in_leaf = nullptr;
   cuda_struct->hist_in_leaf = nullptr;
@@ -88,6 +89,7 @@ void CUDALeafSplits::LaunchInitValuesKernal(
     cuda_sum_of_hessians_buffer_);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   CUDAInitValuesKernel2<<<1, 1>>>(
+    num_blocks_init_from_gradients_,
     cuda_sum_of_gradients_buffer_,
     cuda_sum_of_hessians_buffer_,
     num_data_,

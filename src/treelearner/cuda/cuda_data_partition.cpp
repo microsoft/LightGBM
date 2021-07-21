@@ -123,9 +123,8 @@ void CUDADataPartition::BeforeTrain(const data_size_t* data_indices) {
   }
 }
 
-void CUDADataPartition::Split(const int* leaf_id,
-  const int* best_split_feature,
-  CUDASplitInfo* best_split_info,
+void CUDADataPartition::Split(
+  const CUDASplitInfo* best_split_info,
   // for leaf splits information update
   CUDALeafSplitsStruct* smaller_leaf_splits,
   CUDALeafSplitsStruct* larger_leaf_splits,
@@ -149,8 +148,7 @@ void CUDADataPartition::Split(const int* leaf_id,
   global_timer.Stop("GenDataToLeftBitVector");
   global_timer.Start("SplitInner");
 
-  SplitInner(leaf_id, num_data_in_leaf,
-    best_split_feature,
+  SplitInner(num_data_in_leaf,
     best_split_info,
     smaller_leaf_splits,
     larger_leaf_splits,
@@ -166,17 +164,17 @@ void CUDADataPartition::GenDataToLeftBitVector(const data_size_t num_data_in_lea
   LaunchGenDataToLeftBitVectorKernel(num_data_in_leaf, split_feature_index, split_threshold, split_default_left, leaf_data_start, left_leaf_index, right_leaf_index);
 }
 
-void CUDADataPartition::SplitInner(const int* leaf_index, const data_size_t num_data_in_leaf,
-  const int* best_split_feature,
-  CUDASplitInfo* best_split_info,
+void CUDADataPartition::SplitInner(
+  const data_size_t num_data_in_leaf,
+  const CUDASplitInfo* best_split_info,
   // for leaf splits information update
   CUDALeafSplitsStruct* smaller_leaf_splits,
   CUDALeafSplitsStruct* larger_leaf_splits,
   std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
   std::vector<double>* cpu_leaf_sum_hessians,
   int* smaller_leaf_index, int* larger_leaf_index, const int cpu_leaf_index) {
-  LaunchSplitInnerKernel(leaf_index, num_data_in_leaf,
-    best_split_feature,
+  LaunchSplitInnerKernel(
+    num_data_in_leaf,
     best_split_info,
     smaller_leaf_splits,
     larger_leaf_splits,

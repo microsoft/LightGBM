@@ -43,13 +43,11 @@ class CUDABestSplitFinder {
     const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
     const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf);
 
-  void FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
+  const CUDASplitInfo* FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
     const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
     std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index);
 
   const int* cuda_best_leaf() const { return cuda_best_leaf_; }
-
-  const int* cuda_leaf_best_split_feature() const { return cuda_leaf_best_split_feature_; }
 
   CUDASplitInfo* cuda_leaf_best_split_info() { return cuda_leaf_best_split_info_; }
 
@@ -96,7 +94,6 @@ class CUDABestSplitFinder {
   // CUDA memory, held by this object
   // for per leaf best split information
   int* cuda_best_leaf_;
-  int* cuda_leaf_best_split_feature_;
   CUDASplitInfo* cuda_leaf_best_split_info_;
   // for best split information when finding best split
   CUDASplitInfo* cuda_best_split_info_;

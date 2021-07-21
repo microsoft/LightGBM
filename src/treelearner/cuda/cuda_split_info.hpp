@@ -18,7 +18,7 @@ struct CUDASplitInfo {
   bool is_valid;
   int leaf_index;
   double gain;
-  int feature_index;
+  int inner_feature_index;
   uint32_t threshold;
   bool default_left;
 

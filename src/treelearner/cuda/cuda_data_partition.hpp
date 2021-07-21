@@ -39,19 +39,23 @@ class CUDADataPartition {
 
   void BeforeTrain(const data_size_t* data_indices);
 
-  void Split(const int* leaf_id, const int* best_split_feature,
-    CUDASplitInfo* best_split_info,
-    // for splits information update
+  void Split(
+    // input best split info
+    const CUDASplitInfo* best_split_info,
+    // for leaf information update
     CUDALeafSplitsStruct* smaller_leaf_splits,
     CUDALeafSplitsStruct* larger_leaf_splits,
-    std::vector<data_size_t>* cpu_leaf_num_data,
-    std::vector<data_size_t>* cpu_leaf_data_start,
-    std::vector<double>* cpu_leaf_sum_hessians,
-    const std::vector<int>& cpu_leaf_best_split_feature,
-    const std::vector<uint32_t>& cpu_leaf_best_split_threshold,
-    const std::vector<uint8_t>& cpu_leaf_best_split_default_left,
-    int* smaller_leaf_index, int* larger_leaf_index,
-    const int cpu_leaf_index, const int cur_max_leaf_index);
+    // gather information for CPU, used for launching kernels
+    std::vector<data_size_t>* leaf_num_data,
+    std::vector<data_size_t>* leaf_data_start,
+    std::vector<double>* leaf_sum_hessians,
+    const std::vector<int>& leaf_best_split_feature,
+    const std::vector<uint32_t>& leaf_best_split_threshold,
+    const std::vector<uint8_t>& leaf_best_split_default_left,
+    int* smaller_leaf_index,
+    int* larger_leaf_index,
+    const int leaf_index,
+    const int cur_max_leaf_index);
 
   Tree* GetCPUTree();
 
@@ -105,28 +109,34 @@ class CUDADataPartition {
     const uint8_t split_default_left, const data_size_t leaf_data_start,
     const int left_leaf_index, const int right_leaf_index);
 
-  void SplitInner(const int* leaf_index, const data_size_t num_data_in_leaf,
-    const int* best_split_feature,
-    CUDASplitInfo* best_split_info,
+  void SplitInner(
+    const data_size_t num_data_in_leaf,
+    const CUDASplitInfo* best_split_info,
     // for leaf splits information update
     CUDALeafSplitsStruct* smaller_leaf_splits,
     CUDALeafSplitsStruct* larger_leaf_splits,
-    std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
+    std::vector<data_size_t>* cpu_leaf_num_data,
+    std::vector<data_size_t>* cpu_leaf_data_start,
     std::vector<double>* cpu_leaf_sum_hessians,
-    int* smaller_leaf_index, int* larger_leaf_index, const int cpu_leaf_index);
+    int* smaller_leaf_index,
+    int* larger_leaf_index,
+    const int leaf_index);
 
   // kernel launch functions
   void LaunchFillDataIndicesBeforeTrain();
 
-  void LaunchSplitInnerKernel(const int* leaf_index, const data_size_t num_data_in_leaf,
-    const int* best_split_feature,
-    CUDASplitInfo* best_split_info,
+  void LaunchSplitInnerKernel(
+    const data_size_t num_data_in_leaf,
+    const CUDASplitInfo* best_split_info,
     // for leaf splits information update
     CUDALeafSplitsStruct* smaller_leaf_splits,
     CUDALeafSplitsStruct* larger_leaf_splits,
-    std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
+    std::vector<data_size_t>* cpu_leaf_num_data,
+    std::vector<data_size_t>* cpu_leaf_data_start,
     std::vector<double>* cpu_leaf_sum_hessians,
-    int* smaller_leaf_index, int* larger_leaf_index, const int cpu_leaf_index);
+    int* smaller_leaf_index,
+    int* larger_leaf_index,
+    const int cpu_leaf_index);
 
   void LaunchGenDataToLeftBitVectorKernel(const data_size_t num_data_in_leaf,
     const int split_feature_index, const uint32_t split_threshold,

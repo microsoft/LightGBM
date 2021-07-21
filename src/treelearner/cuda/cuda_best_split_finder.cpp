@@ -113,7 +113,6 @@ void CUDABestSplitFinder::Init() {
   const size_t cuda_best_leaf_split_info_buffer_size = static_cast<size_t>(num_task_blocks) * static_cast<size_t>(num_leaves_);
 
   AllocateCUDAMemoryOuter<CUDASplitInfo>(&cuda_leaf_best_split_info_, cuda_best_leaf_split_info_buffer_size, __FILE__, __LINE__);
-  AllocateCUDAMemory<int>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_feature_);
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_task_feature_index_, cpu_task_feature_index_.data(), cpu_task_feature_index_.size());
   InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_reverse_, cpu_task_reverse_.data(), cpu_task_reverse_.size());
@@ -147,12 +146,13 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplitsStruct* smal
   global_timer.Stop("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
 }
 
-void CUDABestSplitFinder::FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
+const CUDASplitInfo* CUDABestSplitFinder::FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
     const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
     std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index) {
   LaunchFindBestFromAllSplitsKernel(cuda_cur_num_leaves, smaller_leaf_index, larger_leaf_index,
     leaf_best_split_feature, leaf_best_split_threshold, leaf_best_split_default_left, best_leaf_index);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  return cuda_leaf_best_split_info_ + (*best_leaf_index);
 }
 
 }  // namespace LightGBM
