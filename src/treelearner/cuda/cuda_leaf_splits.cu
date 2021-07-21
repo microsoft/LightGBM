@@ -58,10 +58,10 @@ void CUDALeafSplits::LaunchInitValuesKernal() {
     cuda_gradients_, cuda_hessians_, cuda_num_data_, cuda_sum_of_gradients_,
     cuda_sum_of_hessians_);
   CopyFromCUDADeviceToCUDADevice<data_size_t>(cuda_num_data_in_leaf_, cuda_num_data_, 1);
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   CUDAInitValuesKernel2<<<num_blocks_init_from_gradients_, 1>>>(
     cuda_sum_of_gradients_, cuda_sum_of_hessians_);
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
 }  // namespace LightGBM

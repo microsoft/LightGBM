@@ -276,7 +276,7 @@ void CUDAHistogramConstructor::InitCUDAData(TrainingShareStates* share_state) {
   } else {
     Log::Fatal("Unknow bit type = %d", bit_type_);
   }
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
 void CUDAHistogramConstructor::PushOneData(const uint32_t feature_bin_value,
@@ -300,7 +300,7 @@ void CUDAHistogramConstructor::ConstructHistogramForLeaf(const int* cuda_smaller
   }
   LaunchConstructHistogramKernel(cuda_smaller_leaf_index, cuda_num_data_in_smaller_leaf,
     cuda_data_indices_in_smaller_leaf, cuda_leaf_num_data, cuda_smaller_leaf_hist, num_data_in_smaller_leaf);
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   global_timer.Start("CUDAHistogramConstructor::ConstructHistogramForLeaf::LaunchSubtractHistogramKernel");
   LaunchSubtractHistogramKernel(cuda_smaller_leaf_index,
     cuda_larger_leaf_index, cuda_smaller_leaf_sum_gradients, cuda_smaller_leaf_sum_hessians,

@@ -45,9 +45,9 @@ void CUDABinaryObjective::LaunchCalcInitScoreKernel() {
   const data_size_t num_data_per_block = CALC_INIT_SCORE_BLOCK_SIZE_BINARY * NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_BINARY;
   const int num_blocks = (num_data_ + num_data_per_block - 1) / num_data_per_block;
   CalcInitScoreKernel_1_Binary<<<num_blocks, CALC_INIT_SCORE_BLOCK_SIZE_BINARY>>>(cuda_labels_, num_data_, cuda_init_score_);
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   CalcInitScoreKernel_2_Binary<<<1, 1>>>(cuda_init_score_, num_data_, sigmoid_);
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
 __global__ void GetGradientsKernel_Binary(const double* cuda_scores, const label_t* cuda_labels,

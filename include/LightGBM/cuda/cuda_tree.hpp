@@ -68,12 +68,8 @@ class CUDATree : public Tree {
   void InitCUDA();
 
   void LaunchAddPredictionToScoreKernel(const Dataset* data,
-                                  data_size_t num_data,
-                                  double* score) const;
-
-  void LaunchAddPredictionToScoreKernel(const Dataset* data,
-                                  const data_size_t* used_data_indices,
-                                  data_size_t num_data, double* score) const;
+                                        const data_size_t* used_data_indices,
+                                        data_size_t num_data, double* score) const;
 
   void LaunchShrinkageKernel(const double rate);
 

@@ -687,13 +687,13 @@ void CUDAHistogramConstructor::LaunchSubtractHistogramKernel(const int* cuda_sma
     cuda_feature_most_freq_bins_, smaller_leaf_sum_gradients, smaller_leaf_sum_hessians,
     cuda_smaller_leaf_hist, cuda_need_fix_histogram_features_,
     cuda_need_fix_histogram_features_num_bin_aligned_);
-  //SynchronizeCUDADevice();
+  //SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   global_timer.Stop("CUDAHistogramConstructor::FixHistogramKernel");
   global_timer.Start("CUDAHistogramConstructor::SubtractHistogramKernel");
   SubtractHistogramKernel<<<num_subtract_blocks, SUBTRACT_BLOCK_SIZE, 0, cuda_streams_[0]>>>(
     cuda_smaller_leaf_index, cuda_larger_leaf_index, cuda_feature_mfb_offsets_,
     cuda_feature_num_bins_, cuda_num_total_bin_, cuda_smaller_leaf_hist, cuda_larger_leaf_hist);
-  //SynchronizeCUDADevice();
+  //SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   global_timer.Stop("CUDAHistogramConstructor::SubtractHistogramKernel");
 }
 
@@ -717,7 +717,7 @@ void CUDAHistogramConstructor::LaunchGetOrderedGradientsKernel(
     const int num_blocks = (num_data_in_leaf + num_data_per_block - 1) / num_data_per_block;
     GetOrderedGradientsKernel<<<num_blocks, num_data_per_block>>>(num_data_in_leaf, cuda_data_indices_in_leaf,
       cuda_gradients_, cuda_hessians_, cuda_ordered_gradients_, cuda_ordered_hessians_);
-    SynchronizeCUDADevice();
+    SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   }
 }
 

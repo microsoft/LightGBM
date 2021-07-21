@@ -11,6 +11,7 @@
 
 #include "new_cuda_utils.hpp"
 #include "cuda_leaf_splits.hpp"
+#include "cuda_split_info.hpp"
 
 #include <LightGBM/bin.h>
 #include <LightGBM/dataset.h>
@@ -159,6 +160,7 @@ class CUDABestSplitFinder {
   double* cuda_leaf_best_split_right_gain_;
   double* cuda_leaf_best_split_right_output_;
   uint8_t* cuda_leaf_best_split_found_;
+  CUDASplitInfo* cuda_leaf_best_split_info_;
   // for best split information when finding best split
   uint8_t* cuda_best_split_default_left_;
   uint32_t* cuda_best_split_threshold_;
@@ -175,6 +177,7 @@ class CUDABestSplitFinder {
   double* cuda_best_split_right_output_;
   uint8_t* cuda_best_split_found_;
   int* cuda_num_total_bin_;
+  CUDASplitInfo* cuda_best_split_info_;
   // TODO(shiyu1994): use prefix sum to accelerate best split finding
   hist_t* prefix_sum_hist_left_;
   hist_t* prefix_sum_hist_right_;

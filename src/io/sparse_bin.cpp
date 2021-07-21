@@ -9,7 +9,7 @@
 namespace LightGBM {
 
 template <>
-const uint8_t* SparseBin<uint8_t>::GetColWiseData(
+const void* SparseBin<uint8_t>::GetColWiseData(
   uint8_t* bit_type,
   bool* is_sparse,
   std::vector<BinIterator*>* bin_iterator,
@@ -23,7 +23,7 @@ const uint8_t* SparseBin<uint8_t>::GetColWiseData(
 }
 
 template <>
-const uint8_t* SparseBin<uint16_t>::GetColWiseData(
+const void* SparseBin<uint16_t>::GetColWiseData(
   uint8_t* bit_type,
   bool* is_sparse,
   std::vector<BinIterator*>* bin_iterator,
@@ -37,7 +37,7 @@ const uint8_t* SparseBin<uint16_t>::GetColWiseData(
 }
 
 template <>
-const uint8_t* SparseBin<uint32_t>::GetColWiseData(
+const void* SparseBin<uint32_t>::GetColWiseData(
   uint8_t* bit_type,
   bool* is_sparse,
   std::vector<BinIterator*>* bin_iterator,
@@ -47,6 +47,39 @@ const uint8_t* SparseBin<uint32_t>::GetColWiseData(
   for (int thread_index = 0; thread_index < num_threads; ++thread_index) {
     bin_iterator->emplace_back(new SparseBinIterator<uint32_t>(this, 0));
   }
+  return nullptr;
+}
+
+template <>
+const void* SparseBin<uint8_t>::GetColWiseData(
+  uint8_t* bit_type,
+  bool* is_sparse,
+  BinIterator** bin_iterator) const {
+  *is_sparse = true;
+  *bit_type = 8;
+  *bin_iterator = new SparseBinIterator<uint8_t>(this, 0);
+  return nullptr;
+}
+
+template <>
+const void* SparseBin<uint16_t>::GetColWiseData(
+  uint8_t* bit_type,
+  bool* is_sparse,
+  BinIterator** bin_iterator) const {
+  *is_sparse = true;
+  *bit_type = 16;
+  *bin_iterator = new SparseBinIterator<uint16_t>(this, 0);
+  return nullptr;
+}
+
+template <>
+const void* SparseBin<uint32_t>::GetColWiseData(
+  uint8_t* bit_type,
+  bool* is_sparse,
+  BinIterator** bin_iterator) const {
+  *is_sparse = true;
+  *bit_type = 32;
+  *bin_iterator = new SparseBinIterator<uint32_t>(this, 0);
   return nullptr;
 }
 

@@ -9,7 +9,7 @@
 namespace LightGBM {
 
 template <>
-const uint8_t* DenseBin<uint8_t, false>::GetColWiseData(
+const void* DenseBin<uint8_t, false>::GetColWiseData(
   uint8_t* bit_type,
   bool* is_sparse,
   std::vector<BinIterator*>* bin_iterator,
@@ -17,11 +17,11 @@ const uint8_t* DenseBin<uint8_t, false>::GetColWiseData(
   *is_sparse = false;
   *bit_type = 8;
   bin_iterator->clear();
-  return data_.data();
+  return reinterpret_cast<const void*>(data_.data());
 }
 
 template <>
-const uint8_t* DenseBin<uint16_t, false>::GetColWiseData(
+const void* DenseBin<uint16_t, false>::GetColWiseData(
   uint8_t* bit_type,
   bool* is_sparse,
   std::vector<BinIterator*>* bin_iterator,
@@ -29,11 +29,11 @@ const uint8_t* DenseBin<uint16_t, false>::GetColWiseData(
   *is_sparse = false;
   *bit_type = 16;
   bin_iterator->clear();
-  return reinterpret_cast<const uint8_t*>(data_.data());
+  return reinterpret_cast<const void*>(data_.data());
 }
 
 template <>
-const uint8_t* DenseBin<uint32_t, false>::GetColWiseData(
+const void* DenseBin<uint32_t, false>::GetColWiseData(
   uint8_t* bit_type,
   bool* is_sparse,
   std::vector<BinIterator*>* bin_iterator,
@@ -41,11 +41,11 @@ const uint8_t* DenseBin<uint32_t, false>::GetColWiseData(
   *is_sparse = false;
   *bit_type = 32;
   bin_iterator->clear();
-  return reinterpret_cast<const uint8_t*>(data_.data());
+  return reinterpret_cast<const void*>(data_.data());
 }
 
 template <>
-const uint8_t* DenseBin<uint8_t, true>::GetColWiseData(
+const void* DenseBin<uint8_t, true>::GetColWiseData(
   uint8_t* bit_type,
   bool* is_sparse,
   std::vector<BinIterator*>* bin_iterator,
@@ -53,7 +53,51 @@ const uint8_t* DenseBin<uint8_t, true>::GetColWiseData(
   *is_sparse = false;
   *bit_type = 4;
   bin_iterator->clear();
-  return data_.data();
+  return reinterpret_cast<const void*>(data_.data());
+}
+
+template <>
+const void* DenseBin<uint8_t, false>::GetColWiseData(
+  uint8_t* bit_type,
+  bool* is_sparse,
+  BinIterator** bin_iterator) const {
+  *is_sparse = false;
+  *bit_type = 8;
+  *bin_iterator = nullptr;
+  return reinterpret_cast<const void*>(data_.data());
+}
+
+template <>
+const void* DenseBin<uint16_t, false>::GetColWiseData(
+  uint8_t* bit_type,
+  bool* is_sparse,
+  BinIterator** bin_iterator) const {
+  *is_sparse = false;
+  *bit_type = 16;
+  *bin_iterator = nullptr;
+  return reinterpret_cast<const void*>(data_.data());
+}
+
+template <>
+const void* DenseBin<uint32_t, false>::GetColWiseData(
+  uint8_t* bit_type,
+  bool* is_sparse,
+  BinIterator** bin_iterator) const {
+  *is_sparse = false;
+  *bit_type = 32;
+  *bin_iterator = nullptr;
+  return reinterpret_cast<const void*>(data_.data());
+}
+
+template <>
+const void* DenseBin<uint8_t, true>::GetColWiseData(
+  uint8_t* bit_type,
+  bool* is_sparse,
+  BinIterator** bin_iterator) const {
+  *is_sparse = false;
+  *bit_type = 4;
+  *bin_iterator = nullptr;
+  return reinterpret_cast<const void*>(data_.data());
 }
 
 }  // namespace LightGBM

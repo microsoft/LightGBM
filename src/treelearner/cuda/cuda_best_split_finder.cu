@@ -571,7 +571,7 @@ void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(
       cuda_best_split_right_output_,
       cuda_best_split_found_);
   }
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   if (larger_leaf_index >= 0) {
     FindBestSplitsForLeafKernel<<<num_tasks_, MAX_NUM_BIN_IN_FEATURE, 0, cuda_streams_[1]>>>(
       // input feature information
@@ -871,7 +871,7 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
         cuda_leaf_best_split_found_,
         false);
     }
-    SynchronizeCUDADevice();
+    SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
     SyncBestSplitForLeafKernel<<<num_blocks_per_leaf, NUM_TASKS_PER_SYNC_BLOCK, 0, cuda_streams_[1]>>>(
       cpu_smaller_leaf_index,
       cpu_larger_leaf_index,
@@ -978,7 +978,7 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
       larger_only,
       num_leaves_);
     if (num_blocks_per_leaf > 1) {
-      SynchronizeCUDADevice();
+      SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
       SyncBestSplitForLeafKernelAllBlocks<<<1, 1>>>(
         cpu_smaller_leaf_index,
         cpu_larger_leaf_index,
@@ -1082,7 +1082,7 @@ void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(const int* cuda_cur_
     cuda_best_split_info_buffer_, cuda_leaf_best_split_feature_,
     cuda_leaf_best_split_threshold_, cuda_leaf_best_split_default_left_);
   std::vector<int> cpu_leaf_best_split_info_buffer(7);
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   CopyFromCUDADeviceToHost<int>(cpu_leaf_best_split_info_buffer.data(), cuda_best_split_info_buffer_, 7);
   (*leaf_best_split_feature)[smaller_leaf_index] = cpu_leaf_best_split_info_buffer[0];
   (*leaf_best_split_threshold)[smaller_leaf_index] = static_cast<uint32_t>(cpu_leaf_best_split_info_buffer[1]);

@@ -574,7 +574,7 @@ void CUDARankingObjective::LaunchCalcInverseMaxDCGKernel() {
     truncation_level_,
     num_queries_,
     cuda_inverse_max_dcgs_);
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
 }  // namespace LightGBM

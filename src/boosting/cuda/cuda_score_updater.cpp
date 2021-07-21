@@ -44,10 +44,7 @@ inline void CUDAScoreUpdater::AddScore(double val, int cur_tree_id) {
 inline void CUDAScoreUpdater::AddScore(const Tree* tree, int cur_tree_id) {
   Common::FunctionTimer fun_timer("ScoreUpdater::AddScore", global_timer);
   const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
-  std::vector<double> host_score(num_data_, 0.0f);
-  CopyFromCUDADeviceToHostOuter<double>(host_score.data(), cuda_score_ + offset, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-  tree->AddPredictionToScore(data_, num_data_, host_score.data());
-  CopyFromHostToCUDADeviceOuter<double>(cuda_score_ + offset, host_score.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  tree->AddPredictionToScore(data_, num_data_, cuda_score_ + offset);
 }
 
 inline void CUDAScoreUpdater::AddScore(const TreeLearner* tree_learner, const Tree* tree, int cur_tree_id) {

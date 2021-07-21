@@ -17,7 +17,6 @@ void CUDAMetadata::Init(const std::vector<label_t>& label,
                         const std::vector<label_t>& query_weights,
                         const std::vector<double>& init_score,
                         const std::vector<data_size_t>& queries) {
-  Log::Warning("label.size() = %d", label.size());
   InitCUDAMemoryFromHostMemoryOuter<label_t>(&cuda_label_, label.data(), label.size(), __FILE__, __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<label_t>(&cuda_weights_, weight.data(), weight.size(), __FILE__, __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<data_size_t>(&cuda_query_boundaries_, query_boundaries.data(), query_boundaries.size(), __FILE__, __LINE__);

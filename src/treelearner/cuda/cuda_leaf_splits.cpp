@@ -56,7 +56,7 @@ void CUDALeafSplits::InitValues(
   CopyFromHostToCUDADevice<hist_t*>(cuda_hist_in_leaf_, &cuda_hist_in_leaf, 1);
   CopyFromCUDADeviceToCUDADevice<double>(cuda_gain_, cuda_gain, 1);
   CopyFromCUDADeviceToCUDADevice<double>(cuda_leaf_value_, cuda_leaf_value, 1);
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
 void CUDALeafSplits::InitValues() {
@@ -66,7 +66,7 @@ void CUDALeafSplits::InitValues() {
   CopyFromHostToCUDADevice<int>(cuda_leaf_index_, &larger_leaf_index, 1);
   SetCUDAMemory<double>(cuda_gain_, 0, 1);
   SetCUDAMemory<double>(cuda_leaf_value_, 0, 1);
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
 void CUDALeafSplits::InitValues(
@@ -85,7 +85,7 @@ void CUDALeafSplits::InitValues(
   CopyFromCUDADeviceToHostAsync<double>(root_sum_hessians, cuda_sum_of_hessians_, 1, cuda_streams_[1]);
   SetCUDAMemory<double>(cuda_gain_, 0, 1);
   SetCUDAMemory<double>(cuda_leaf_value_, 0, 1);
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
 }  // namespace LightGBM

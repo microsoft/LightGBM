@@ -8,6 +8,7 @@
 
 #include "new_cuda_tree_learner.hpp"
 
+#include <LightGBM/cuda/cuda_tree.hpp>
 #include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/feature_group.h>
 
@@ -33,11 +34,12 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
     share_state_->feature_hist_offsets(),
     config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf));
   cuda_histogram_constructor_->Init(train_data_, share_state_.get());
-  cuda_data_partition_.reset(new CUDADataPartition(num_data_, num_features_, this->config_->num_leaves, num_threads_,
-    cuda_centralized_info_->cuda_num_data(), cuda_centralized_info_->cuda_num_leaves(),
-    cuda_centralized_info_->cuda_num_features(),
-    share_state_->feature_hist_offsets(), train_data_, cuda_histogram_constructor_->cuda_hist_pointer()));
-  cuda_data_partition_->Init(train_data_);
+
+  cuda_data_partition_.reset(new CUDADataPartition(
+    train_data_, share_state_->feature_hist_offsets().back(), this->config_->num_leaves, num_threads_,
+    cuda_centralized_info_->cuda_num_data(),
+    cuda_histogram_constructor_->cuda_hist_pointer()));
+  cuda_data_partition_->Init();
   cuda_best_split_finder_.reset(new CUDABestSplitFinder(cuda_histogram_constructor_->cuda_hist(),
     train_data_, this->share_state_->feature_hist_offsets(), this->config_->num_leaves,
     this->config_->lambda_l1, this->config_->lambda_l2, this->config_->min_data_in_leaf,
@@ -252,7 +254,7 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
     split_data_indices_time += duration.count();
     ++num_leaves;
   }
-  SynchronizeCUDADevice();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   const auto end = std::chrono::steady_clock::now();
   const double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
   const auto build_tree_start = std::chrono::steady_clock::now();
@@ -266,6 +268,7 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   Log::Warning("find best split time from all leaves %f", find_best_split_from_all_leaves_time);
   Log::Warning("split data indices time %f", split_data_indices_time);
   Log::Warning("build tree time %f", build_tre_duration);
+  tree.reset(new CUDATree(tree.get()));
   return tree.release();
 }
 
