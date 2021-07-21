@@ -124,15 +124,8 @@ void CUDADataPartition::BeforeTrain(const data_size_t* data_indices) {
 }
 
 void CUDADataPartition::Split(const int* leaf_id,
-  const double* best_split_gain,
   const int* best_split_feature,
-  const uint32_t* best_split_threshold,
-  const uint8_t* best_split_default_left,
-  const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
-  const double* best_left_gain, const double* best_left_leaf_value,
-  const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
-  const double* best_right_gain, const double* best_right_leaf_value,
-  uint8_t* best_split_found,
+  CUDASplitInfo* best_split_info,
   // for leaf splits information update
   int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
   double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
@@ -165,11 +158,8 @@ void CUDADataPartition::Split(const int* leaf_id,
   global_timer.Start("SplitInner");
 
   SplitInner(leaf_id, num_data_in_leaf,
-    best_split_feature, best_split_threshold, best_split_default_left, best_split_gain,
-    best_left_sum_gradients, best_left_sum_hessians, best_left_count,
-    best_left_gain, best_left_leaf_value,
-    best_right_sum_gradients, best_right_sum_hessians, best_right_count,
-    best_right_gain, best_right_leaf_value, best_split_found,
+    best_split_feature,
+    best_split_info,
     smaller_leaf_cuda_leaf_index_pointer, smaller_leaf_cuda_sum_of_gradients_pointer,
     smaller_leaf_cuda_sum_of_hessians_pointer, smaller_leaf_cuda_num_data_in_leaf_pointer,
     smaller_leaf_cuda_gain_pointer, smaller_leaf_cuda_leaf_value_pointer,
@@ -192,12 +182,8 @@ void CUDADataPartition::GenDataToLeftBitVector(const data_size_t num_data_in_lea
 }
 
 void CUDADataPartition::SplitInner(const int* leaf_index, const data_size_t num_data_in_leaf,
-  const int* best_split_feature, const uint32_t* best_split_threshold,
-  const uint8_t* best_split_default_left, const double* best_split_gain,
-  const double* best_left_sum_gradients, const double* best_left_sum_hessians, const data_size_t* best_left_count,
-  const double* best_left_gain, const double* best_left_leaf_value,
-  const double* best_right_sum_gradients, const double* best_right_sum_hessians, const data_size_t* best_right_count,
-  const double* best_right_gain, const double* best_right_leaf_value, uint8_t* best_split_found,
+  const int* best_split_feature,
+  CUDASplitInfo* best_split_info,
   // for leaf splits information update
   int* smaller_leaf_cuda_leaf_index_pointer, double* smaller_leaf_cuda_sum_of_gradients_pointer,
   double* smaller_leaf_cuda_sum_of_hessians_pointer, data_size_t* smaller_leaf_cuda_num_data_in_leaf_pointer,
@@ -213,11 +199,8 @@ void CUDADataPartition::SplitInner(const int* leaf_index, const data_size_t num_
   std::vector<double>* cpu_leaf_sum_hessians,
   int* smaller_leaf_index, int* larger_leaf_index, const int cpu_leaf_index) {
   LaunchSplitInnerKernel(leaf_index, num_data_in_leaf,
-    best_split_feature, best_split_threshold, best_split_default_left, best_split_gain,
-    best_left_sum_gradients, best_left_sum_hessians, best_left_count,
-    best_left_gain, best_left_leaf_value,
-    best_right_sum_gradients, best_right_sum_hessians, best_right_count,
-    best_right_gain, best_right_leaf_value, best_split_found,
+    best_split_feature,
+    best_split_info,
     smaller_leaf_cuda_leaf_index_pointer, smaller_leaf_cuda_sum_of_gradients_pointer,
     smaller_leaf_cuda_sum_of_hessians_pointer, smaller_leaf_cuda_num_data_in_leaf_pointer,
     smaller_leaf_cuda_gain_pointer, smaller_leaf_cuda_leaf_value_pointer,

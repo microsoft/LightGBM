@@ -51,56 +51,7 @@ class CUDABestSplitFinder {
 
   const int* cuda_leaf_best_split_feature() const { return cuda_leaf_best_split_feature_; }
 
-  const uint32_t* cuda_leaf_best_split_threshold() const { return cuda_leaf_best_split_threshold_; }
-
-  const uint8_t* cuda_leaf_best_split_default_left() const { return cuda_leaf_best_split_default_left_; }
-
-  const double* cuda_leaf_best_split_gain() const { return cuda_leaf_best_split_gain_; }
-
-  const double* cuda_leaf_best_split_left_sum_gradient() const { return cuda_leaf_best_split_left_sum_gradient_; }
-
-  const double* cuda_leaf_best_split_left_sum_hessian() const { return cuda_leaf_best_split_left_sum_hessian_; }
-
-  const data_size_t* cuda_leaf_best_split_left_count() const { return cuda_leaf_best_split_left_count_; }
-
-  const double* cuda_leaf_best_split_left_gain() const { return cuda_leaf_best_split_left_gain_; }
-
-  const double* cuda_leaf_best_split_left_output() const { return cuda_leaf_best_split_left_output_; }
-
-  const double* cuda_leaf_best_split_right_sum_gradient() const { return cuda_leaf_best_split_right_sum_gradient_; }
-
-  const double* cuda_leaf_best_split_right_sum_hessian() const { return cuda_leaf_best_split_right_sum_hessian_; }
-
-  const data_size_t* cuda_leaf_best_split_right_count() const { return cuda_leaf_best_split_right_count_; }
-
-  const double* cuda_leaf_best_split_right_gain() const { return cuda_leaf_best_split_right_gain_; }
-
-  const double* cuda_leaf_best_split_right_output() const { return cuda_leaf_best_split_right_output_; }
-
-  uint8_t* cuda_leaf_best_split_found() const { return cuda_leaf_best_split_found_; }
-
-  void TestAfterInit() {
-    PrintLastCUDAError();
-  }
-
-  void TestAfterFindBestSplits() {
-    PrintLastCUDAError();
-    const size_t feature_best_split_info_buffer_size = static_cast<size_t>(num_features_) * 4;
-    std::vector<uint32_t> test_best_split_threshold(feature_best_split_info_buffer_size, 0);
-    std::vector<uint8_t> test_best_split_found(feature_best_split_info_buffer_size, 0);
-    CopyFromCUDADeviceToHost<uint32_t>(test_best_split_threshold.data(),
-      cuda_best_split_threshold_, feature_best_split_info_buffer_size);
-    CopyFromCUDADeviceToHost<uint8_t>(test_best_split_found.data(),
-      cuda_best_split_found_, feature_best_split_info_buffer_size);
-    for (size_t i = 0; i < feature_best_split_info_buffer_size; ++i) {
-      Log::Warning("test_best_split_threshold[%d] = %d", i, test_best_split_threshold[i]);
-      Log::Warning("test_best_split_found[%d] = %d", i, test_best_split_found[i]);
-    }
-
-    int test_best_leaf = 0;
-    CopyFromCUDADeviceToHost<int>(&test_best_leaf, cuda_best_leaf_, 1);
-    Log::Warning("test_best_leaf = %d", test_best_leaf);
-  }
+  CUDASplitInfo* cuda_leaf_best_split_info() { return cuda_leaf_best_split_info_; }
 
  private:
   void LaunchFindBestSplitsForLeafKernel(const CUDALeafSplits* smaller_leaf_splits,
@@ -146,38 +97,10 @@ class CUDABestSplitFinder {
   // for per leaf best split information
   int* cuda_best_leaf_;
   int* cuda_leaf_best_split_feature_;
-  uint8_t* cuda_leaf_best_split_default_left_;
-  uint32_t* cuda_leaf_best_split_threshold_;
-  double* cuda_leaf_best_split_gain_;
-  double* cuda_leaf_best_split_left_sum_gradient_;
-  double* cuda_leaf_best_split_left_sum_hessian_;
-  data_size_t* cuda_leaf_best_split_left_count_;
-  double* cuda_leaf_best_split_left_gain_;
-  double* cuda_leaf_best_split_left_output_;
-  double* cuda_leaf_best_split_right_sum_gradient_;
-  double* cuda_leaf_best_split_right_sum_hessian_;
-  data_size_t* cuda_leaf_best_split_right_count_;
-  double* cuda_leaf_best_split_right_gain_;
-  double* cuda_leaf_best_split_right_output_;
-  uint8_t* cuda_leaf_best_split_found_;
   CUDASplitInfo* cuda_leaf_best_split_info_;
   // for best split information when finding best split
-  uint8_t* cuda_best_split_default_left_;
-  uint32_t* cuda_best_split_threshold_;
-  double* cuda_best_split_gain_;
-  double* cuda_best_split_left_sum_gradient_;
-  double* cuda_best_split_left_sum_hessian_;
-  data_size_t* cuda_best_split_left_count_;
-  double* cuda_best_split_left_gain_;
-  double* cuda_best_split_left_output_;
-  double* cuda_best_split_right_sum_gradient_;
-  double* cuda_best_split_right_sum_hessian_;
-  data_size_t* cuda_best_split_right_count_;
-  double* cuda_best_split_right_gain_;
-  double* cuda_best_split_right_output_;
-  uint8_t* cuda_best_split_found_;
-  int* cuda_num_total_bin_;
   CUDASplitInfo* cuda_best_split_info_;
+  int* cuda_num_total_bin_;
   // TODO(shiyu1994): use prefix sum to accelerate best split finding
   hist_t* prefix_sum_hist_left_;
   hist_t* prefix_sum_hist_right_;

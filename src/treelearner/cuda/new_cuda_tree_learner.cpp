@@ -204,24 +204,8 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
     global_timer.Start("NewCUDATreeLearner::Split");
     start = std::chrono::steady_clock::now();
     cuda_data_partition_->Split(cuda_best_split_finder_->cuda_best_leaf(),
-      cuda_best_split_finder_->cuda_leaf_best_split_gain(),
       cuda_best_split_finder_->cuda_leaf_best_split_feature(),
-      cuda_best_split_finder_->cuda_leaf_best_split_threshold(),
-      cuda_best_split_finder_->cuda_leaf_best_split_default_left(),
-
-      cuda_best_split_finder_->cuda_leaf_best_split_left_sum_gradient(),
-      cuda_best_split_finder_->cuda_leaf_best_split_left_sum_hessian(),
-      cuda_best_split_finder_->cuda_leaf_best_split_left_count(),
-      cuda_best_split_finder_->cuda_leaf_best_split_left_gain(),
-      cuda_best_split_finder_->cuda_leaf_best_split_left_output(),
-      cuda_best_split_finder_->cuda_leaf_best_split_right_sum_gradient(),
-      cuda_best_split_finder_->cuda_leaf_best_split_right_sum_hessian(),
-      cuda_best_split_finder_->cuda_leaf_best_split_right_count(),
-      cuda_best_split_finder_->cuda_leaf_best_split_right_gain(),
-      cuda_best_split_finder_->cuda_leaf_best_split_right_output(),
-
-      cuda_best_split_finder_->cuda_leaf_best_split_found(),
-
+      cuda_best_split_finder_->cuda_leaf_best_split_info(),
       cuda_smaller_leaf_splits_->cuda_leaf_index_pointer(),
       cuda_smaller_leaf_splits_->cuda_sum_of_gradients_pointer(),
       cuda_smaller_leaf_splits_->cuda_sum_of_hessians_pointer(),

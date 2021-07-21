@@ -114,20 +114,6 @@ void CUDABestSplitFinder::Init() {
 
   AllocateCUDAMemoryOuter<CUDASplitInfo>(&cuda_leaf_best_split_info_, cuda_best_leaf_split_info_buffer_size, __FILE__, __LINE__);
   AllocateCUDAMemory<int>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_feature_);
-  AllocateCUDAMemory<uint8_t>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_default_left_);
-  AllocateCUDAMemory<uint32_t>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_threshold_);
-  AllocateCUDAMemory<double>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_gain_);
-  AllocateCUDAMemory<double>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_left_sum_gradient_);
-  AllocateCUDAMemory<double>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_left_sum_hessian_);
-  AllocateCUDAMemory<data_size_t>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_left_count_);
-  AllocateCUDAMemory<double>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_left_gain_);
-  AllocateCUDAMemory<double>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_left_output_);
-  AllocateCUDAMemory<double>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_right_sum_gradient_);
-  AllocateCUDAMemory<double>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_right_sum_hessian_);
-  AllocateCUDAMemory<data_size_t>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_right_count_);
-  AllocateCUDAMemory<double>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_right_gain_);
-  AllocateCUDAMemory<double>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_right_output_);
-  AllocateCUDAMemory<uint8_t>(cuda_best_leaf_split_info_buffer_size, &cuda_leaf_best_split_found_);
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_task_feature_index_, cpu_task_feature_index_.data(), cpu_task_feature_index_.size());
   InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_reverse_, cpu_task_reverse_.data(), cpu_task_reverse_.size());
@@ -137,20 +123,6 @@ void CUDABestSplitFinder::Init() {
 
   const size_t output_buffer_size = 2 * static_cast<size_t>(num_tasks_);
   AllocateCUDAMemoryOuter<CUDASplitInfo>(&cuda_best_split_info_, output_buffer_size, __FILE__, __LINE__);
-  AllocateCUDAMemory<uint8_t>(output_buffer_size, &cuda_best_split_default_left_);
-  AllocateCUDAMemory<uint32_t>(output_buffer_size, &cuda_best_split_threshold_);
-  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_gain_);
-  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_left_sum_gradient_);
-  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_left_sum_hessian_);
-  AllocateCUDAMemory<data_size_t>(output_buffer_size, &cuda_best_split_left_count_);
-  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_left_gain_);
-  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_left_output_);
-  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_right_sum_gradient_);
-  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_right_sum_hessian_);
-  AllocateCUDAMemory<data_size_t>(output_buffer_size, &cuda_best_split_right_count_);
-  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_right_gain_);
-  AllocateCUDAMemory<double>(output_buffer_size, &cuda_best_split_right_output_);
-  AllocateCUDAMemory<uint8_t>(output_buffer_size, &cuda_best_split_found_);
 
   AllocateCUDAMemory<int>(7, &cuda_best_split_info_buffer_);
   cuda_streams_.resize(2);
@@ -158,12 +130,7 @@ void CUDABestSplitFinder::Init() {
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[1]));
 }
 
-void CUDABestSplitFinder::BeforeTrain() {
-  SetCUDAMemory<double>(cuda_leaf_best_split_gain_, 0, static_cast<size_t>(num_leaves_));
-  SetCUDAMemory<uint8_t>(cuda_best_split_found_, 0, static_cast<size_t>(num_tasks_));
-  SetCUDAMemory<double>(cuda_best_split_gain_, 0,  static_cast<size_t>(num_tasks_));
-  SetCUDAMemory<uint8_t>(cuda_leaf_best_split_found_, 0, static_cast<size_t>(num_leaves_));
-}
+void CUDABestSplitFinder::BeforeTrain() {}
 
 void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplits* smaller_leaf_splits,
   const CUDALeafSplits* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index,
