@@ -757,22 +757,21 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
   }
 }
 
-__global__ void FindBestFromAllSplitsKernel(const int* cuda_cur_num_leaves,
+__global__ void FindBestFromAllSplitsKernel(const int cur_num_leaves,
   int* out_best_leaf,
   const CUDASplitInfo* cuda_leaf_best_split_info,
   int* cuda_best_split_info_buffer) {
-  const int cuda_cur_num_leaves_ref = *cuda_cur_num_leaves;
   __shared__ double thread_best_gain[NUM_THREADS_FIND_BEST_LEAF];
   __shared__ int thread_best_leaf[NUM_THREADS_FIND_BEST_LEAF];
   const unsigned int threadIdx_x = threadIdx.x;
   thread_best_gain[threadIdx_x] = K_MIN_SCORE;
   thread_best_leaf[threadIdx_x] = -1;
-  const int num_leaves_per_thread = (cuda_cur_num_leaves_ref + NUM_THREADS_FIND_BEST_LEAF - 1) / NUM_THREADS_FIND_BEST_LEAF;
-  const int cur_num_valid_threads = (cuda_cur_num_leaves_ref + num_leaves_per_thread - 1) / num_leaves_per_thread;
+  const int num_leaves_per_thread = (cur_num_leaves + NUM_THREADS_FIND_BEST_LEAF - 1) / NUM_THREADS_FIND_BEST_LEAF;
+  const int cur_num_valid_threads = (cur_num_leaves + num_leaves_per_thread - 1) / num_leaves_per_thread;
   if (threadIdx_x < static_cast<unsigned int>(cur_num_valid_threads)) {
     const int start = num_leaves_per_thread * threadIdx_x;
-    const int end = min(start + num_leaves_per_thread, cuda_cur_num_leaves_ref);
-    for (int leaf_index = threadIdx_x; leaf_index < cuda_cur_num_leaves_ref; leaf_index += cur_num_valid_threads) {
+    const int end = min(start + num_leaves_per_thread, cur_num_leaves);
+    for (int leaf_index = threadIdx_x; leaf_index < cur_num_leaves; leaf_index += cur_num_valid_threads) {
       const double leaf_best_gain = cuda_leaf_best_split_info[leaf_index].gain;
       if (cuda_leaf_best_split_info[leaf_index].is_valid && leaf_best_gain > thread_best_gain[threadIdx_x]) {
         thread_best_gain[threadIdx_x] = leaf_best_gain;
@@ -812,10 +811,10 @@ __global__ void PrepareLeafBestSplitInfo(const int smaller_leaf_index, const int
   }
 }
 
-void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(const int* cuda_cur_num_leaves,
+void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(const int cur_num_leaves,
   const int smaller_leaf_index, const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
   std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index) {
-  FindBestFromAllSplitsKernel<<<1, NUM_THREADS_FIND_BEST_LEAF, 0, cuda_streams_[1]>>>(cuda_cur_num_leaves, cuda_best_leaf_,
+  FindBestFromAllSplitsKernel<<<1, NUM_THREADS_FIND_BEST_LEAF, 0, cuda_streams_[1]>>>(cur_num_leaves, cuda_best_leaf_,
     cuda_leaf_best_split_info_,
     cuda_best_split_info_buffer_);
   PrepareLeafBestSplitInfo<<<6, 1, 0, cuda_streams_[0]>>>(smaller_leaf_index, larger_leaf_index,

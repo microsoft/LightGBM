@@ -83,17 +83,14 @@ __global__ void CUDAConstructHistogramDenseKernel(
   const score_t* cuda_gradients,
   const score_t* cuda_hessians,
   const int* num_feature_groups,
-  const data_size_t* leaf_num_data,
   const BIN_TYPE* data,
   const uint32_t* column_hist_offsets,
   const uint32_t* column_hist_offsets_full,
   const int* feature_partition_column_index_offsets,
   const data_size_t num_data) {
-
-  const int leaf_index_ref = smaller_leaf_splits->leaf_index;
   const int dim_y = static_cast<int>(gridDim.y * blockDim.y);
-  const data_size_t num_data_in_smaller_leaf_ref = leaf_num_data[leaf_index_ref];
-  const data_size_t num_data_per_thread = (num_data_in_smaller_leaf_ref + dim_y - 1) / dim_y;
+  const data_size_t num_data_in_smaller_leaf = smaller_leaf_splits->num_data_in_leaf;
+  const data_size_t num_data_per_thread = (num_data_in_smaller_leaf + dim_y - 1) / dim_y;
   const data_size_t* data_indices_ref = smaller_leaf_splits->data_indices_in_leaf;
   __shared__ float shared_hist[SHRAE_HIST_SIZE];
   const unsigned int num_threads_per_block = blockDim.x * blockDim.y;
@@ -113,7 +110,7 @@ __global__ void CUDAConstructHistogramDenseKernel(
   const unsigned int blockIdx_y = blockIdx.y;
   const data_size_t block_start = (blockIdx_y * blockDim.y) * num_data_per_thread;
   const data_size_t* data_indices_ref_this_block = data_indices_ref + block_start;
-  data_size_t block_num_data = max(0, min(num_data_in_smaller_leaf_ref - block_start, num_data_per_thread * static_cast<data_size_t>(blockDim.y)));
+  data_size_t block_num_data = max(0, min(num_data_in_smaller_leaf - block_start, num_data_per_thread * static_cast<data_size_t>(blockDim.y)));
   const data_size_t num_iteration_total = (block_num_data + blockDim.y - 1) / blockDim.y;
   const data_size_t remainder = block_num_data % blockDim.y;
   const data_size_t num_iteration_this = remainder == 0 ? num_iteration_total : num_iteration_total - static_cast<data_size_t>(threadIdx_y >= remainder);
@@ -146,17 +143,14 @@ __global__ void CUDAConstructHistogramSparseKernel(
   const score_t* cuda_gradients,
   const score_t* cuda_hessians,
   const int* num_feature_groups,
-  const data_size_t* leaf_num_data,
   const BIN_TYPE* data,
   const DATA_PTR_TYPE* row_ptr,
   const DATA_PTR_TYPE* partition_ptr,
   const uint32_t* column_hist_offsets_full,
   const data_size_t num_data) {
-
-  const int leaf_index_ref = smaller_leaf_splits->leaf_index;
   const int dim_y = static_cast<int>(gridDim.y * blockDim.y);
-  const data_size_t num_data_in_smaller_leaf_ref = leaf_num_data[leaf_index_ref];
-  const data_size_t num_data_per_thread = (num_data_in_smaller_leaf_ref + dim_y - 1) / dim_y;
+  const data_size_t num_data_in_smaller_leaf = smaller_leaf_splits->num_data_in_leaf;
+  const data_size_t num_data_per_thread = (num_data_in_smaller_leaf + dim_y - 1) / dim_y;
   const data_size_t* data_indices_ref = smaller_leaf_splits->data_indices_in_leaf;
   __shared__ float shared_hist[SHRAE_HIST_SIZE];
   const unsigned int num_threads_per_block = blockDim.x * blockDim.y;
@@ -174,7 +168,7 @@ __global__ void CUDAConstructHistogramSparseKernel(
   const unsigned int blockIdx_y = blockIdx.y;
   const data_size_t block_start = (blockIdx_y * blockDim.y) * num_data_per_thread;
   const data_size_t* data_indices_ref_this_block = data_indices_ref + block_start;
-  data_size_t block_num_data = max(0, min(num_data_in_smaller_leaf_ref - block_start, num_data_per_thread * static_cast<data_size_t>(blockDim.y)));
+  data_size_t block_num_data = max(0, min(num_data_in_smaller_leaf - block_start, num_data_per_thread * static_cast<data_size_t>(blockDim.y)));
   const data_size_t num_iteration_total = (block_num_data + blockDim.y - 1) / blockDim.y;
   const data_size_t remainder = block_num_data % blockDim.y;
   const data_size_t num_iteration_this = remainder == 0 ? num_iteration_total : num_iteration_total - static_cast<data_size_t>(threadIdx_y >= remainder);
@@ -204,7 +198,6 @@ __global__ void CUDAConstructHistogramSparseKernel(
 
 void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
   const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
-  const data_size_t* cuda_leaf_num_data,
   const data_size_t num_data_in_smaller_leaf) {
   int grid_dim_x = 0;
   int grid_dim_y = 0;
@@ -219,7 +212,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
         CUDAConstructHistogramSparseKernel<uint8_t, uint16_t><<<grid_dim, block_dim, 0, cuda_streams_[0]>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_num_feature_groups_, cuda_leaf_num_data,
+          cuda_num_feature_groups_,
           cuda_data_uint8_t_,
           cuda_row_ptr_uint16_t_,
           cuda_partition_ptr_uint16_t_,
@@ -229,7 +222,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
         CUDAConstructHistogramSparseKernel<uint8_t, uint32_t><<<grid_dim, block_dim, 0, cuda_streams_[0]>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_num_feature_groups_, cuda_leaf_num_data,
+          cuda_num_feature_groups_,
           cuda_data_uint8_t_,
           cuda_row_ptr_uint32_t_,
           cuda_partition_ptr_uint32_t_,
@@ -239,7 +232,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
         CUDAConstructHistogramSparseKernel<uint8_t, uint64_t><<<grid_dim, block_dim, 0, cuda_streams_[0]>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_num_feature_groups_, cuda_leaf_num_data,
+          cuda_num_feature_groups_,
           cuda_data_uint8_t_,
           cuda_row_ptr_uint64_t_,
           cuda_partition_ptr_uint64_t_,
@@ -251,7 +244,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
         CUDAConstructHistogramSparseKernel<uint16_t, uint16_t><<<grid_dim, block_dim, 0, cuda_streams_[0]>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_num_feature_groups_, cuda_leaf_num_data,
+          cuda_num_feature_groups_,
           cuda_data_uint16_t_,
           cuda_row_ptr_uint16_t_,
           cuda_partition_ptr_uint16_t_,
@@ -261,7 +254,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
         CUDAConstructHistogramSparseKernel<uint16_t, uint32_t><<<grid_dim, block_dim, 0, cuda_streams_[0]>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_num_feature_groups_, cuda_leaf_num_data,
+          cuda_num_feature_groups_,
           cuda_data_uint16_t_,
           cuda_row_ptr_uint32_t_,
           cuda_partition_ptr_uint32_t_,
@@ -271,7 +264,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
         CUDAConstructHistogramSparseKernel<uint16_t, uint64_t><<<grid_dim, block_dim, 0, cuda_streams_[0]>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_num_feature_groups_, cuda_leaf_num_data,
+          cuda_num_feature_groups_,
           cuda_data_uint16_t_,
           cuda_row_ptr_uint64_t_,
           cuda_partition_ptr_uint64_t_,
@@ -283,7 +276,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
         CUDAConstructHistogramSparseKernel<uint32_t, uint16_t><<<grid_dim, block_dim, 0, cuda_streams_[0]>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_num_feature_groups_, cuda_leaf_num_data,
+          cuda_num_feature_groups_,
           cuda_data_uint32_t_,
           cuda_row_ptr_uint16_t_,
           cuda_partition_ptr_uint16_t_,
@@ -293,7 +286,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
         CUDAConstructHistogramSparseKernel<uint32_t, uint32_t><<<grid_dim, block_dim, 0, cuda_streams_[0]>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_num_feature_groups_, cuda_leaf_num_data,
+          cuda_num_feature_groups_,
           cuda_data_uint32_t_,
           cuda_row_ptr_uint32_t_,
           cuda_partition_ptr_uint32_t_,
@@ -303,7 +296,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
         CUDAConstructHistogramSparseKernel<uint32_t, uint64_t><<<grid_dim, block_dim, 0, cuda_streams_[0]>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_num_feature_groups_, cuda_leaf_num_data,
+          cuda_num_feature_groups_,
           cuda_data_uint32_t_,
           cuda_row_ptr_uint64_t_,
           cuda_partition_ptr_uint64_t_,
@@ -316,7 +309,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
       CUDAConstructHistogramDenseKernel<uint8_t><<<grid_dim, block_dim, 0, cuda_streams_[0]>>>(
         cuda_smaller_leaf_splits,
         cuda_gradients_, cuda_hessians_,
-        cuda_num_feature_groups_, cuda_leaf_num_data, cuda_data_uint8_t_,
+        cuda_num_feature_groups_, cuda_data_uint8_t_,
         cuda_column_hist_offsets_,
         cuda_column_hist_offsets_full_,
         cuda_feature_partition_column_index_offsets_,
@@ -325,7 +318,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
       CUDAConstructHistogramDenseKernel<uint16_t><<<grid_dim, block_dim, 0, cuda_streams_[0]>>>(
         cuda_smaller_leaf_splits,
         cuda_gradients_, cuda_hessians_,
-        cuda_num_feature_groups_, cuda_leaf_num_data, cuda_data_uint16_t_,
+        cuda_num_feature_groups_, cuda_data_uint16_t_,
         cuda_column_hist_offsets_,
         cuda_column_hist_offsets_full_,
         cuda_feature_partition_column_index_offsets_,
@@ -334,7 +327,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
       CUDAConstructHistogramDenseKernel<uint32_t><<<grid_dim, block_dim, 0, cuda_streams_[0]>>>(
         cuda_smaller_leaf_splits,
         cuda_gradients_, cuda_hessians_,
-        cuda_num_feature_groups_, cuda_leaf_num_data, cuda_data_uint32_t_,
+        cuda_num_feature_groups_, cuda_data_uint32_t_,
         cuda_column_hist_offsets_,
         cuda_column_hist_offsets_full_,
         cuda_feature_partition_column_index_offsets_,

@@ -14,7 +14,7 @@
 #include <LightGBM/bin.h>
 #include "new_cuda_utils.hpp"
 #include "cuda_leaf_splits.hpp"
-#include "cuda_split_info.hpp"
+#include <LightGBM/cuda/cuda_split_info.hpp>
 
 // TODO(shiyu1994): adjust these values according to different CUDA and GPU versions
 #define FILL_INDICES_BLOCK_SIZE_DATA_PARTITION (1024)
@@ -42,6 +42,8 @@ class CUDADataPartition {
   void Split(
     // input best split info
     const CUDASplitInfo* best_split_info,
+    const int left_leaf_index,
+    const int right_leaf_index,
     // for leaf information update
     CUDALeafSplitsStruct* smaller_leaf_splits,
     CUDALeafSplitsStruct* larger_leaf_splits,
@@ -53,47 +55,13 @@ class CUDADataPartition {
     const std::vector<uint32_t>& leaf_best_split_threshold,
     const std::vector<uint8_t>& leaf_best_split_default_left,
     int* smaller_leaf_index,
-    int* larger_leaf_index,
-    const int leaf_index,
-    const int cur_max_leaf_index);
+    int* larger_leaf_index);
 
   Tree* GetCPUTree();
 
   void UpdateTrainScore(const double learning_rate, double* cuda_scores);
 
-  const data_size_t* cuda_leaf_data_start() const { return cuda_leaf_data_start_; }
-
-  const data_size_t* cuda_leaf_data_end() const { return cuda_leaf_data_end_; }
-
-  const data_size_t* cuda_leaf_num_data() const { return cuda_leaf_num_data_; }
-
   const data_size_t* cuda_data_indices() const { return cuda_data_indices_; }
-
-  const int* cuda_cur_num_leaves() const { return cuda_cur_num_leaves_; }
-
-  const int* tree_split_leaf_index() const { return tree_split_leaf_index_; }
-
-  const int* tree_inner_feature_index() const { return tree_inner_feature_index_; }
-
-  const uint32_t* tree_threshold() const { return tree_threshold_; }
-
-  const double* tree_threshold_real() const { return tree_threshold_real_; }
-
-  const double* tree_left_output() const { return tree_left_output_; }
-
-  const double* tree_right_output() const { return tree_right_output_; }
-
-  const data_size_t* tree_left_count() const { return tree_left_count_; }
-
-  const data_size_t* tree_right_count() const { return tree_right_count_; }
-
-  const double* tree_left_sum_hessian() const { return tree_left_sum_hessian_; }
-
-  const double* tree_right_sum_hessian() const { return tree_right_sum_hessian_; }
-
-  const double* tree_gain() const { return tree_gain_; }
-
-  const uint8_t* tree_default_left() const { return tree_default_left_; }
 
  private:
   void CalcBlockDim(const data_size_t num_data_in_leaf,
@@ -112,6 +80,8 @@ class CUDADataPartition {
   void SplitInner(
     const data_size_t num_data_in_leaf,
     const CUDASplitInfo* best_split_info,
+    const int left_leaf_index,
+    const int right_leaf_index,
     // for leaf splits information update
     CUDALeafSplitsStruct* smaller_leaf_splits,
     CUDALeafSplitsStruct* larger_leaf_splits,
@@ -119,8 +89,7 @@ class CUDADataPartition {
     std::vector<data_size_t>* cpu_leaf_data_start,
     std::vector<double>* cpu_leaf_sum_hessians,
     int* smaller_leaf_index,
-    int* larger_leaf_index,
-    const int leaf_index);
+    int* larger_leaf_index);
 
   // kernel launch functions
   void LaunchFillDataIndicesBeforeTrain();
@@ -128,6 +97,8 @@ class CUDADataPartition {
   void LaunchSplitInnerKernel(
     const data_size_t num_data_in_leaf,
     const CUDASplitInfo* best_split_info,
+    const int left_leaf_index,
+    const int right_leaf_index,
     // for leaf splits information update
     CUDALeafSplitsStruct* smaller_leaf_splits,
     CUDALeafSplitsStruct* larger_leaf_splits,
@@ -135,8 +106,7 @@ class CUDADataPartition {
     std::vector<data_size_t>* cpu_leaf_data_start,
     std::vector<double>* cpu_leaf_sum_hessians,
     int* smaller_leaf_index,
-    int* larger_leaf_index,
-    const int cpu_leaf_index);
+    int* larger_leaf_index);
 
   void LaunchGenDataToLeftBitVectorKernel(const data_size_t num_data_in_leaf,
     const int split_feature_index, const uint32_t split_threshold,
@@ -254,8 +224,6 @@ class CUDADataPartition {
   data_size_t* cuda_leaf_data_end_;
   /*! \brief number of data in each leaf */
   data_size_t* cuda_leaf_num_data_;
-  /*! \brief currnet number of leaves in tree */
-  int* cuda_cur_num_leaves_;
   /*! \brief records the histogram of each leaf */
   hist_t** cuda_hist_pool_;
   /*! \brief records the value of each leaf */
@@ -276,30 +244,6 @@ class CUDADataPartition {
   // split tree structure algorithm related
   /*! \brief buffer to store split information, prepared to be copied to cpu */
   int* cuda_split_info_buffer_;
-  /*! \brief the sequence of leaf indices being split during tree growing */
-  int* tree_split_leaf_index_;
-  /*! \brief the sequence of inner split indices during tree growing */
-  int* tree_inner_feature_index_;
-  /*! \brief the sequence of inner threshold during tree growing */
-  uint32_t* tree_threshold_;
-  /*! \brief the sequence of real threshold during tree growing */
-  double* tree_threshold_real_;
-  /*! \brief the sequence of left child output value of splits during tree growing */
-  double* tree_left_output_;
-  /*! \brief the sequence of right child output value of splits during tree growing */
-  double* tree_right_output_;
-  /*! \brief the sequence of left child data number value of splits during tree growing */
-  data_size_t* tree_left_count_;
-  /*! \brief the sequence of right child data number value of splits during tree growing */
-  data_size_t* tree_right_count_;
-  /*! \brief the sequence of left child hessian sum value of splits during tree growing */
-  double* tree_left_sum_hessian_;
-  /*! \brief the sequence of right child hessian sum value of splits during tree growing */
-  double* tree_right_sum_hessian_;
-  /*! \brief the sequence of split gains during tree growing */
-  double* tree_gain_;
-  /*! \brief the sequence of split default left during tree growing */
-  uint8_t* tree_default_left_;
 
   // dataset information
   /*! \brief upper bounds of bin boundaries for feature histograms */

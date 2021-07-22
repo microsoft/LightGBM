@@ -7,7 +7,9 @@
 #define LIGHTGBM_IO_CUDA_CUDA_TREE_HPP_
 
 #include <LightGBM/cuda/cuda_column_data.hpp>
+#include <LightGBM/cuda/cuda_split_info.hpp>
 #include <LightGBM/tree.h>
+#include "../bin.h"
 
 namespace LightGBM {
 
@@ -24,6 +26,12 @@ class CUDATree : public Tree {
   explicit CUDATree(const Tree* host_tree);
 
   ~CUDATree() noexcept;
+
+  int Split(const int leaf_index,
+             const int real_feature_index,
+             const double real_threshold,
+             const MissingType missing_type,
+             const CUDASplitInfo* cuda_split_info);
 
   /*!
   * \brief Adding prediction value of this tree model to scores
@@ -65,7 +73,15 @@ class CUDATree : public Tree {
   inline void Shrinkage(double rate) override;
 
  private:
+  void InitCUDAMemory();
+
   void InitCUDA();
+
+  void LaunchSplitKernel(const int leaf_index,
+                         const int real_feature_index,
+                         const double real_threshold,
+                         const MissingType missing_type,
+                         const CUDASplitInfo* cuda_split_info);
 
   void LaunchAddPredictionToScoreKernel(const Dataset* data,
                                         const data_size_t* used_data_indices,
@@ -77,10 +93,20 @@ class CUDATree : public Tree {
   int* cuda_right_child_;
   int* cuda_split_feature_inner_;
   int* cuda_split_feature_;
+  int* cuda_leaf_depth_;
+  int* cuda_leaf_parent_;
   uint32_t* cuda_threshold_in_bin_;
   double* cuda_threshold_;
+  double* cuda_internal_weight_;
+  double* cuda_internal_value_;
   int8_t* cuda_decision_type_;
   double* cuda_leaf_value_;
+  data_size_t* cuda_leaf_count_;
+  double* cuda_leaf_weight_;
+  data_size_t* cuda_internal_count_;
+  double* cuda_split_gain_;
+
+  cudaStream_t cuda_stream_;
 
   const int num_threads_per_block_add_prediction_to_score_;
 };

@@ -11,9 +11,9 @@
 
 #include "new_cuda_utils.hpp"
 #include "cuda_leaf_splits.hpp"
-#include "cuda_split_info.hpp"
 
 #include <LightGBM/bin.h>
+#include <LightGBM/cuda/cuda_split_info.hpp>
 #include <LightGBM/dataset.h>
 
 #include <vector>
@@ -43,7 +43,7 @@ class CUDABestSplitFinder {
     const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
     const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf);
 
-  const CUDASplitInfo* FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
+  const CUDASplitInfo* FindBestFromAllSplits(const int cur_num_leaves, const int smaller_leaf_index,
     const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
     std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index);
 
@@ -62,7 +62,7 @@ class CUDABestSplitFinder {
     const bool is_smaller_leaf_valid,
     const bool is_larger_leaf_valid);
 
-  void LaunchFindBestFromAllSplitsKernel(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
+  void LaunchFindBestFromAllSplitsKernel(const int cur_num_leaves, const int smaller_leaf_index,
     const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
     std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index);
 

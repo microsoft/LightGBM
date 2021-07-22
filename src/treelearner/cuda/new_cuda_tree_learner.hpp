@@ -49,8 +49,6 @@ class NewCUDATreeLearner: public SerialTreeLearner {
 
   void BeforeTrain() override;
 
-  Tree* BuildTree(const int num_leaves);
-
   // number of GPUs
   int num_gpus_;
   // number of threads on CPU

@@ -139,17 +139,16 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(const CUDALeafSplitsStruct* smal
   const bool is_larger_leaf_valid = (num_data_in_larger_leaf > min_data_in_leaf_ && sum_hessians_in_larger_leaf > min_sum_hessian_in_leaf_ && larger_leaf_index >= 0);
   LaunchFindBestSplitsForLeafKernel(smaller_leaf_splits, larger_leaf_splits,
     smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
-  //SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   global_timer.Start("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
   LaunchSyncBestSplitForLeafKernel(smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   global_timer.Stop("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
 }
 
-const CUDASplitInfo* CUDABestSplitFinder::FindBestFromAllSplits(const int* cuda_cur_num_leaves, const int smaller_leaf_index,
+const CUDASplitInfo* CUDABestSplitFinder::FindBestFromAllSplits(const int cur_num_leaves, const int smaller_leaf_index,
     const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
     std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index) {
-  LaunchFindBestFromAllSplitsKernel(cuda_cur_num_leaves, smaller_leaf_index, larger_leaf_index,
+  LaunchFindBestFromAllSplitsKernel(cur_num_leaves, smaller_leaf_index, larger_leaf_index,
     leaf_best_split_feature, leaf_best_split_threshold, leaf_best_split_default_left, best_leaf_index);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   return cuda_leaf_best_split_info_ + (*best_leaf_index);

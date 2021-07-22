@@ -39,7 +39,7 @@ class CUDAHistogramConstructor {
 
   void ConstructHistogramForLeaf(
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits, const CUDALeafSplitsStruct* cuda_larger_leaf_splits, 
-    const data_size_t* cuda_leaf_num_data, const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
+    const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
     const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf);
 
   void BeforeTrain(const score_t* gradients, const score_t* hessians);
@@ -59,7 +59,6 @@ class CUDAHistogramConstructor {
 
   void LaunchConstructHistogramKernel(
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
-    const data_size_t* cuda_leaf_num_data,
     const data_size_t num_data_in_smaller_leaf);
 
   void LaunchSubtractHistogramKernel(

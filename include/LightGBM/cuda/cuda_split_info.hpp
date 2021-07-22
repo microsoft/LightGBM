@@ -9,7 +9,6 @@
 #ifdef USE_CUDA
 
 #include <LightGBM/meta.h>
-#include "new_cuda_utils.hpp"
 
 namespace LightGBM {
 

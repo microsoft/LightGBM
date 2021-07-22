@@ -290,13 +290,13 @@ void CUDAHistogramConstructor::PushOneData(const uint32_t feature_bin_value,
 
 void CUDAHistogramConstructor::ConstructHistogramForLeaf(
   const CUDALeafSplitsStruct* cuda_smaller_leaf_splits, const CUDALeafSplitsStruct* cuda_larger_leaf_splits, 
-  const data_size_t* cuda_leaf_num_data, const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
+  const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
   const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf) {
   if ((num_data_in_smaller_leaf <= min_data_in_leaf_ || sum_hessians_in_smaller_leaf <= min_sum_hessian_in_leaf_) &&
     (num_data_in_larger_leaf <= min_data_in_leaf_ || sum_hessians_in_larger_leaf <= min_sum_hessian_in_leaf_)) {
     return;
   }
-  LaunchConstructHistogramKernel(cuda_smaller_leaf_splits, cuda_leaf_num_data, num_data_in_smaller_leaf);
+  LaunchConstructHistogramKernel(cuda_smaller_leaf_splits, num_data_in_smaller_leaf);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   global_timer.Start("CUDAHistogramConstructor::ConstructHistogramForLeaf::LaunchSubtractHistogramKernel");
   LaunchSubtractHistogramKernel(cuda_smaller_leaf_splits, cuda_larger_leaf_splits);
