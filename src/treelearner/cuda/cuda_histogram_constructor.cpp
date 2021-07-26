@@ -57,30 +57,30 @@ CUDAHistogramConstructor::CUDAHistogramConstructor(
 void CUDAHistogramConstructor::BeforeTrain(const score_t* gradients, const score_t* hessians) {
   cuda_gradients_ = gradients;
   cuda_hessians_ = hessians;
-  SetCUDAMemory<hist_t>(cuda_hist_, 0, num_total_bin_ * 2 * num_leaves_);
+  SetCUDAMemoryOuter<hist_t>(cuda_hist_, 0, num_total_bin_ * 2 * num_leaves_, __FILE__, __LINE__);
 }
 
 void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStates* share_state) {
-  AllocateCUDAMemory<hist_t>(num_total_bin_ * 2 * num_leaves_, &cuda_hist_);
-  SetCUDAMemory<hist_t>(cuda_hist_, 0, num_total_bin_ * 2 * num_leaves_);
+  AllocateCUDAMemoryOuter<hist_t>(&cuda_hist_, num_total_bin_ * 2 * num_leaves_, __FILE__, __LINE__);
+  SetCUDAMemoryOuter<hist_t>(cuda_hist_, 0, num_total_bin_ * 2 * num_leaves_, __FILE__, __LINE__);
 
-  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_num_bins_,
-    feature_num_bins_.data(), feature_num_bins_.size());
+  InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_feature_num_bins_,
+    feature_num_bins_.data(), feature_num_bins_.size(), __FILE__, __LINE__);
 
-  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_hist_offsets_,
-    feature_hist_offsets_.data(), feature_hist_offsets_.size());
+  InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_feature_hist_offsets_,
+    feature_hist_offsets_.data(), feature_hist_offsets_.size(), __FILE__, __LINE__);
 
-  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_most_freq_bins_,
-    feature_most_freq_bins_.data(), feature_most_freq_bins_.size());
+  InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_feature_most_freq_bins_,
+    feature_most_freq_bins_.data(), feature_most_freq_bins_.size(), __FILE__, __LINE__);
 
   cuda_row_data_.reset(new CUDARowData(train_data, share_state));
   cuda_row_data_->Init(train_data, share_state);
 
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_stream_));
 
-  InitCUDAMemoryFromHostMemory<int>(&cuda_need_fix_histogram_features_, need_fix_histogram_features_.data(), need_fix_histogram_features_.size());
-  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_need_fix_histogram_features_num_bin_aligned_, need_fix_histogram_features_num_bin_aligend_.data(),
-    need_fix_histogram_features_num_bin_aligend_.size());
+  InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_need_fix_histogram_features_, need_fix_histogram_features_.data(), need_fix_histogram_features_.size(), __FILE__, __LINE__);
+  InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_need_fix_histogram_features_num_bin_aligned_, need_fix_histogram_features_num_bin_aligend_.data(),
+    need_fix_histogram_features_num_bin_aligend_.size(), __FILE__, __LINE__);
 }
 
 void CUDAHistogramConstructor::ConstructHistogramForLeaf(

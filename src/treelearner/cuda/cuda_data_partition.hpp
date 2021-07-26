@@ -12,7 +12,7 @@
 #include <LightGBM/meta.h>
 #include <LightGBM/tree.h>
 #include <LightGBM/bin.h>
-#include "new_cuda_utils.hpp"
+
 #include "cuda_leaf_splits.hpp"
 #include <LightGBM/cuda/cuda_split_info.hpp>
 
@@ -32,7 +32,6 @@ class CUDADataPartition {
     const int num_total_bin,
     const int num_leaves,
     const int num_threads,
-    const data_size_t* cuda_num_data,
     hist_t* cuda_hist);
 
   void Init();
@@ -277,13 +276,13 @@ class CUDADataPartition {
   double* cuda_bin_upper_bounds_;
   /*! \brief the bin offsets of features, used to access cuda_bin_upper_bounds_ */
   int* cuda_feature_num_bin_offsets_;
+  /*! \brief number of data in training set, for intialization of cuda_leaf_num_data_ and cuda_leaf_data_end_ */
+  data_size_t* cuda_num_data_;
 
 
   // CUDA memory, held by other object
 
   // dataset information
-  /*! \brief number of data in training set, for intialization of cuda_leaf_num_data_ and cuda_leaf_data_end_ */
-  const data_size_t* cuda_num_data_;
   /*! \brief beginning of histograms, for initialization of cuda_hist_pool_ */
   hist_t* cuda_hist_;
 };

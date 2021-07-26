@@ -1508,7 +1508,7 @@ void CUDADataPartition::LaunchSplitInnerKernel(
   std::vector<int> cpu_split_info_buffer(12);
   const double* cpu_sum_hessians_info = reinterpret_cast<const double*>(cpu_split_info_buffer.data() + 8);
   global_timer.Start("CUDADataPartition::CopyFromCUDADeviceToHostAsync");
-  CopyFromCUDADeviceToHostAsync<int>(cpu_split_info_buffer.data(), cuda_split_info_buffer_, 12, cuda_streams_[0]);
+  CopyFromCUDADeviceToHostAsyncOuter<int>(cpu_split_info_buffer.data(), cuda_split_info_buffer_, 12, cuda_streams_[0], __FILE__, __LINE__);
   global_timer.Stop("CUDADataPartition::CopyFromCUDADeviceToHostAsync");
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   const data_size_t left_leaf_num_data = cpu_split_info_buffer[1];

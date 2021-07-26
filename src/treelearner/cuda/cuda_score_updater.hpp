@@ -5,11 +5,11 @@
  */
 #ifndef LIGHTGBM_NEW_CUDA_SCORE_UPDATER_HPP_
 #define LIGHTGBM_NEW_CUDA_SCORE_UPDATER_HPP_
-
+/*
 #ifdef USE_CUDA
 
 #include <LightGBM/meta.h>
-#include "new_cuda_utils.hpp"
+
 
 #include <vector>
 
@@ -42,5 +42,5 @@ class CUDAScoreUpdater {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA*/
 #endif  // LIGHTGBM_NEW_CUDA_SCORE_UPDATER_HPP_

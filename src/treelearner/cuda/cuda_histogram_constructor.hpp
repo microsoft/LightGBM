@@ -14,7 +14,7 @@
 
 #include <fstream>
 
-#include "new_cuda_utils.hpp"
+
 #include "cuda_leaf_splits.hpp"
 
 #include <vector>

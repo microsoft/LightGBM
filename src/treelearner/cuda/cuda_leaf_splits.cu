@@ -11,17 +11,16 @@
 namespace LightGBM {
 
 __global__ void CUDAInitValuesKernel1(const score_t* cuda_gradients, const score_t* cuda_hessians,
-  const data_size_t* cuda_num_data, double* cuda_sum_of_gradients, double* cuda_sum_of_hessians) {
+  const data_size_t num_data, double* cuda_sum_of_gradients, double* cuda_sum_of_hessians) {
   __shared__ score_t shared_gradients[NUM_THRADS_PER_BLOCK_LEAF_SPLITS];
   __shared__ score_t shared_hessians[NUM_THRADS_PER_BLOCK_LEAF_SPLITS];
   const unsigned int tid = threadIdx.x;
   const unsigned int i = (blockIdx.x * blockDim.x + tid) * NUM_DATA_THREAD_ADD_LEAF_SPLITS;
-  const unsigned int num_data_ref = static_cast<unsigned int>(*cuda_num_data);
   shared_gradients[tid] = 0.0f;
   shared_hessians[tid] = 0.0f;
   __syncthreads();
   for (unsigned int j = 0; j < NUM_DATA_THREAD_ADD_LEAF_SPLITS; ++j) {
-    if (i + j < num_data_ref) {
+    if (i + j < num_data) {
       shared_gradients[tid] += cuda_gradients[i + j];
       shared_hessians[tid] += cuda_hessians[i + j];
     }
@@ -85,7 +84,7 @@ void CUDALeafSplits::LaunchInitValuesKernal(
   const data_size_t* cuda_data_indices_in_leaf,
   hist_t* cuda_hist_in_leaf) {
   CUDAInitValuesKernel1<<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
-    cuda_gradients_, cuda_hessians_, cuda_num_data_, cuda_sum_of_gradients_buffer_,
+    cuda_gradients_, cuda_hessians_, num_data_, cuda_sum_of_gradients_buffer_,
     cuda_sum_of_hessians_buffer_);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   CUDAInitValuesKernel2<<<1, 1>>>(

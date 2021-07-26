@@ -15,14 +15,14 @@
 
 namespace LightGBM {
 
-template <typenamce T>
-__device__ ReduceSum(T* values, size_t n);
+template <typename T>
+__device__ void ReduceSum(T* values, size_t n);
 
-template <typenamce T>
-__device__ ReduceMax(T* values, size_t n);
+template <typename T>
+__device__ void ReduceMax(T* values, size_t n);
 
-template <typenamce T>
-__device__ PrefixSum(T* values, size_t n);
+template <typename T>
+__device__ void PrefixSum(T* values, size_t n);
 
 }  // namespace LightGBM
 

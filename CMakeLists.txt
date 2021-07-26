@@ -230,9 +230,6 @@ if(USE_CUDA)
       add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
     endforeach()
 
-    add_library(new_cuda_utils OBJECT src/treelearner/cuda/new_cuda_utils.cu)
-    set_target_properties(new_cuda_utils PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
     add_library(cuda_leaf_splits OBJECT src/treelearner/cuda/cuda_leaf_splits.cu)
     set_target_properties(cuda_leaf_splits PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
@@ -244,18 +241,6 @@ if(USE_CUDA)
 
     add_library(cuda_best_split_finder OBJECT src/treelearner/cuda/cuda_best_split_finder.cu)
     set_target_properties(cuda_best_split_finder PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-    add_library(cuda_binary_objective OBJECT src/treelearner/cuda/cuda_binary_objective.cu)
-    set_target_properties(cuda_binary_objective PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-    add_library(cuda_regression_objective OBJECT src/treelearner/cuda/cuda_regression_objective.cu)
-    set_target_properties(cuda_regression_objective PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-    add_library(cuda_ranking_objective OBJECT src/treelearner/cuda/cuda_ranking_objective.cu)
-    set_target_properties(cuda_ranking_objective PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-    add_library(cuda_score_updater OBJECT src/treelearner/cuda/cuda_score_updater.cu)
-    set_target_properties(cuda_score_updater PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif(USE_CUDA)
 
 if(USE_HDFS)

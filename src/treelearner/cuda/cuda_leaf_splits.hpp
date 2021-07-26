@@ -8,10 +8,10 @@
 
 #ifdef USE_CUDA
 
+#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/bin.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/meta.h>
-#include <LightGBM/bin.h>
-#include "new_cuda_utils.hpp"
 
 #define INIT_SUM_BLOCK_SIZE_LEAF_SPLITS (6144)
 #define NUM_THRADS_PER_BLOCK_LEAF_SPLITS (1024)
@@ -33,8 +33,7 @@ struct CUDALeafSplitsStruct {
 
 class CUDALeafSplits {
  public:
-  CUDALeafSplits(const data_size_t num_data, const int leaf_index,
-    const int* cuda_num_data);
+  CUDALeafSplits(const data_size_t num_data, const int leaf_index);
 
   CUDALeafSplits();
 
@@ -71,7 +70,6 @@ class CUDALeafSplits {
   // CUDA memory, held by other object
   const score_t* cuda_gradients_;
   const score_t* cuda_hessians_;
-  const int* cuda_num_data_;
 };
 
 }  // namespace LightGBM

@@ -10,7 +10,7 @@
 
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
-#include "new_cuda_utils.hpp"
+#include <LightGBM/cuda/cuda_utils.h>
 
 #include <vector>
 

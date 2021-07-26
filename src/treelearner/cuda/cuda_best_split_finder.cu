@@ -772,7 +772,6 @@ __global__ void FindBestFromAllSplitsKernel(const int cur_num_leaves,
   __syncthreads();
   ReduceBestGainForLeaves(thread_best_gain, thread_best_leaf, cur_num_valid_threads);
   if (threadIdx_x == 0) {
-    const int best_leaf_index = thread_best_leaf[0];
     cuda_best_split_info_buffer[6] = thread_best_leaf[0];
   }
 }
@@ -816,7 +815,7 @@ void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(const int cur_num_le
     cuda_leaf_best_split_info_);
   std::vector<int> host_leaf_best_split_info_buffer(7);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-  CopyFromCUDADeviceToHost<int>(host_leaf_best_split_info_buffer.data(), cuda_best_split_info_buffer_, 7);
+  CopyFromCUDADeviceToHostOuter<int>(host_leaf_best_split_info_buffer.data(), cuda_best_split_info_buffer_, 7, __FILE__, __LINE__);
   *smaller_leaf_best_split_feature = host_leaf_best_split_info_buffer[0];
   *smaller_leaf_best_split_threshold = static_cast<uint32_t>(host_leaf_best_split_info_buffer[1]);
   *smaller_leaf_best_split_default_left = static_cast<uint8_t>(host_leaf_best_split_info_buffer[2]);

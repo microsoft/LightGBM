@@ -9,7 +9,6 @@
 
 #ifdef USE_CUDA
 
-#include "new_cuda_utils.hpp"
 #include "cuda_leaf_splits.hpp"
 
 #include <LightGBM/bin.h>

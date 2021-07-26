@@ -13,11 +13,6 @@
 #include "cuda_histogram_constructor.hpp"
 #include "cuda_data_partition.hpp"
 #include "cuda_best_split_finder.hpp"
-#include "cuda_centralized_info.hpp"
-#include "cuda_score_updater.hpp"
-#include "cuda_binary_objective.hpp"
-#include "cuda_regression_objective.hpp"
-#include "cuda_ranking_objective.hpp"
 
 namespace LightGBM {
 
@@ -55,8 +50,6 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   int num_threads_;
 
   // CUDA components for tree training
-  // centralized information shared by other CUDA components
-  std::unique_ptr<CUDACentralizedInfo> cuda_centralized_info_;
   // leaf splits information for smaller and larger leaves
   std::unique_ptr<CUDALeafSplits> cuda_smaller_leaf_splits_;
   std::unique_ptr<CUDALeafSplits> cuda_larger_leaf_splits_;
