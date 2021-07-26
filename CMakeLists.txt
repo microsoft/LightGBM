@@ -353,19 +353,23 @@ if(USE_CUDA)
 endif(USE_CUDA)
 )
 
-add_executable(lightgbm src/main.cpp src/application/application.cpp ${SOURCES})
-list(APPEND SOURCES "src/c_api.cpp")
+add_library(lightgbm_objs OBJECT ${SOURCES})
+
+add_executable(lightgbm src/main.cpp src/application/application.cpp $<TARGET_OBJECTS:lightgbm_objs>)
+set(API_SOURCES "src/c_api.cpp")
 
 # Only build the R part of the library if building for
 # use with the R package
 if(__BUILD_FOR_R)
-  list(APPEND SOURCES "src/lightgbm_R.cpp")
+  list(APPEND API_SOURCES "src/lightgbm_R.cpp")
 endif(__BUILD_FOR_R)
 
+add_library(lightgbm_capi_objs OBJECT ${API_SOURCES})
+
 if(BUILD_STATIC_LIB)
-  add_library(_lightgbm STATIC ${SOURCES})
+  add_library(_lightgbm STATIC $<TARGET_OBJECTS:lightgbm_capi_objs> $<TARGET_OBJECTS:lightgbm_objs>)
 else()
-  add_library(_lightgbm SHARED ${SOURCES})
+  add_library(_lightgbm SHARED $<TARGET_OBJECTS:lightgbm_capi_objs> $<TARGET_OBJECTS:lightgbm_objs>)
 endif(BUILD_STATIC_LIB)
 
 if(MSVC)
@@ -505,7 +509,7 @@ if(BUILD_CPP_TEST)
       string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
     endforeach()
   endif(MSVC)
-  add_executable(testlightgbm ${CPP_TEST_SOURCES} ${SOURCES})
+  add_executable(testlightgbm ${CPP_TEST_SOURCES} $<TARGET_OBJECTS:lightgbm_capi_objs> $<TARGET_OBJECTS:lightgbm_objs>)
   target_link_libraries(testlightgbm PRIVATE GTest::GTest)
 endif()
 
