@@ -256,13 +256,13 @@ def generate_r_docs(app):
         -y \
         -c conda-forge \
         -n r_env \
-            cmake=3.18.2=ha30ef3c_0 \
-            r-base=4.0.3=ha43b4e8_3 \
-            r-data.table=1.13.2=r40h0eb13af_0 \
-            r-jsonlite=1.7.1=r40hcdcec82_0 \
-            r-matrix=1.2_18=r40h7fa42b6_3 \
-            r-pkgdown=1.6.1=r40h6115d3f_0 \
-            r-roxygen2=7.1.1=r40h0357c0b_0
+            cmake=3.21.0=h8897547_0 \
+            r-base=4.1.0=hb67fd72_2 \
+            r-data.table=1.14.0=r41hcfec24a_0 \
+            r-jsonlite=1.7.2=r41hcfec24a_0 \
+            r-matrix=1.3_4=r41he454529_0 \
+            r-pkgdown=1.6.1=r41hc72bb7e_0 \
+            r-roxygen2=7.1.1=r41h03ef668_0
     source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
     cd {CURR_PATH.parent}
@@ -316,12 +316,12 @@ def setup(app):
         app.connect("builder-inited", generate_doxygen_xml)
     else:
         app.add_directive('doxygenfile', IgnoredDirective)
-#    if RTD:  # build R docs only on Read the Docs site
-#        if first_run:
-#            app.connect("builder-inited", generate_r_docs)
-#        app.connect("build-finished",
-#                    lambda app, _: copytree(CURR_PATH.parent / "lightgbm_r" / "docs",
-#                                            Path(app.outdir) / "R"))
+    if RTD:  # build R docs only on Read the Docs site
+        if first_run:
+            app.connect("builder-inited", generate_r_docs)
+        app.connect("build-finished",
+                    lambda app, _: copytree(CURR_PATH.parent / "lightgbm_r" / "docs",
+                                            Path(app.outdir) / "R"))
     app.add_transform(InternalRefTransform)
     add_js_file = getattr(app, 'add_js_file', False) or app.add_javascript
     add_js_file("js/script.js")
