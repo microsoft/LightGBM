@@ -41,10 +41,7 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
     cuda_histogram_constructor_->cuda_hist_pointer()));
   cuda_data_partition_->Init();
   cuda_best_split_finder_.reset(new CUDABestSplitFinder(cuda_histogram_constructor_->cuda_hist(),
-    train_data_, this->share_state_->feature_hist_offsets(), this->config_->num_leaves,
-    this->config_->lambda_l1, this->config_->lambda_l2, this->config_->min_data_in_leaf,
-    this->config_->min_sum_hessian_in_leaf, this->config_->min_gain_to_split,
-    cuda_centralized_info_->cuda_num_features()));
+    train_data_, this->share_state_->feature_hist_offsets(), config_));
   cuda_best_split_finder_->Init();
 
   leaf_best_split_feature_.resize(config_->num_leaves, -1);
@@ -137,14 +134,32 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
     find_best_split_time += duration.count();
     start = std::chrono::steady_clock::now();
     global_timer.Start("NewCUDATreeLearner::FindBestFromAllSplits");
-    const CUDASplitInfo* best_split_info = cuda_best_split_finder_->FindBestFromAllSplits(
-      tree->num_leaves(),
-      smaller_leaf_index_,
-      larger_leaf_index_,
-      &leaf_best_split_feature_,
-      &leaf_best_split_threshold_,
-      &leaf_best_split_default_left_,
-      &best_leaf_index_);
+    const CUDASplitInfo* best_split_info = nullptr;
+    if (larger_leaf_index_ >= 0) {
+      best_split_info = cuda_best_split_finder_->FindBestFromAllSplits(
+        tree->num_leaves(),
+        smaller_leaf_index_,
+        larger_leaf_index_,
+        &leaf_best_split_feature_[smaller_leaf_index_],
+        &leaf_best_split_threshold_[smaller_leaf_index_],
+        &leaf_best_split_default_left_[smaller_leaf_index_],
+        &leaf_best_split_feature_[larger_leaf_index_],
+        &leaf_best_split_threshold_[larger_leaf_index_],
+        &leaf_best_split_default_left_[larger_leaf_index_],
+        &best_leaf_index_);
+    } else {
+      best_split_info = cuda_best_split_finder_->FindBestFromAllSplits(
+        tree->num_leaves(),
+        smaller_leaf_index_,
+        larger_leaf_index_,
+        &leaf_best_split_feature_[smaller_leaf_index_],
+        &leaf_best_split_threshold_[smaller_leaf_index_],
+        &leaf_best_split_default_left_[smaller_leaf_index_],
+        nullptr,
+        nullptr,
+        nullptr,
+        &best_leaf_index_);
+    }
     global_timer.Stop("NewCUDATreeLearner::FindBestFromAllSplits");
     end = std::chrono::steady_clock::now();
     duration = static_cast<std::chrono::duration<double>>(end - start);
@@ -158,26 +173,30 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
     global_timer.Start("NewCUDATreeLearner::Split");
     start = std::chrono::steady_clock::now();
     int right_leaf_index = tree->Split(best_leaf_index_,
-                train_data_->RealFeatureIndex(leaf_best_split_feature_[best_leaf_index_]),
-                train_data_->RealThreshold(leaf_best_split_feature_[best_leaf_index_],
-                leaf_best_split_threshold_[best_leaf_index_]),
-                train_data_->FeatureBinMapper(leaf_best_split_feature_[best_leaf_index_])->missing_type(),
-                best_split_info);
+                                       train_data_->RealFeatureIndex(leaf_best_split_feature_[best_leaf_index_]),
+                                       train_data_->RealThreshold(leaf_best_split_feature_[best_leaf_index_],
+                                       leaf_best_split_threshold_[best_leaf_index_]),
+                                       train_data_->FeatureBinMapper(leaf_best_split_feature_[best_leaf_index_])->missing_type(),
+                                       best_split_info);
 
-    cuda_data_partition_->Split(
-      best_split_info,
-      best_leaf_index_,
-      right_leaf_index,
-      cuda_smaller_leaf_splits_->GetCUDAStructRef(),
-      cuda_larger_leaf_splits_->GetCUDAStructRef(),
-      &leaf_num_data_,
-      &leaf_data_start_,
-      &leaf_sum_hessians_,
-      leaf_best_split_feature_,
-      leaf_best_split_threshold_,
-      leaf_best_split_default_left_,
-      &smaller_leaf_index_,
-      &larger_leaf_index_);
+    cuda_data_partition_->Split(best_split_info,
+                                best_leaf_index_,
+                                right_leaf_index,
+                                leaf_best_split_feature_[best_leaf_index_],
+                                leaf_best_split_threshold_[best_leaf_index_],
+                                leaf_best_split_default_left_[best_leaf_index_],
+                                leaf_num_data_[best_leaf_index_],
+                                leaf_data_start_[best_leaf_index_],
+                                cuda_smaller_leaf_splits_->GetCUDAStructRef(),
+                                cuda_larger_leaf_splits_->GetCUDAStructRef(),
+                                &leaf_num_data_[best_leaf_index_],
+                                &leaf_num_data_[right_leaf_index],
+                                &leaf_data_start_[best_leaf_index_],
+                                &leaf_data_start_[right_leaf_index],
+                                &leaf_sum_hessians_[best_leaf_index_],
+                                &leaf_sum_hessians_[right_leaf_index]);
+    smaller_leaf_index_ = (leaf_num_data_[best_leaf_index_] <= leaf_num_data_[right_leaf_index] ? best_leaf_index_ : right_leaf_index);
+    larger_leaf_index_ = (smaller_leaf_index_ == best_leaf_index_ ? right_leaf_index : best_leaf_index_);
     end = std::chrono::steady_clock::now();
     duration = static_cast<std::chrono::duration<double>>(end - start);
     global_timer.Stop("NewCUDATreeLearner::Split");

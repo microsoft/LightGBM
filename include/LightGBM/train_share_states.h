@@ -178,9 +178,9 @@ struct TrainingShareStates {
 
   int num_hist_total_bin() { return num_hist_total_bin_; }
 
-  const std::vector<uint32_t>& feature_hist_offsets() { return feature_hist_offsets_; }
+  const std::vector<uint32_t>& feature_hist_offsets() const { return feature_hist_offsets_; }
 
-  const std::vector<uint32_t>& column_hist_offsets() { return column_hist_offsets_; }
+  const std::vector<uint32_t>& column_hist_offsets() const { return column_hist_offsets_; }
 
   bool IsSparseRowwise() {
     return (multi_val_bin_wrapper_ != nullptr && multi_val_bin_wrapper_->IsSparse());

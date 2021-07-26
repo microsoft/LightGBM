@@ -28,28 +28,37 @@ namespace LightGBM {
 
 class CUDABestSplitFinder {
  public:
-  CUDABestSplitFinder(const hist_t* cuda_hist, const Dataset* train_data,
-    const std::vector<uint32_t>& feature_hist_offsets, const int num_leaves,
-    const double lambda_l1, const double lambda_l2, const data_size_t min_data_in_leaf,
-    const double min_sum_hessian_in_leaf, const double min_gain_to_split,
-    const int* cuda_num_features);
+  CUDABestSplitFinder(
+    const hist_t* cuda_hist,
+    const Dataset* train_data,
+    const std::vector<uint32_t>& feature_hist_offsets,
+    const Config* config);
 
   void Init();
 
   void BeforeTrain();
 
-  void FindBestSplitsForLeaf(const CUDALeafSplitsStruct* smaller_leaf_splits, const CUDALeafSplitsStruct* larger_leaf_splits,
-    const int smaller_leaf_index, const int larger_leaf_index,
-    const data_size_t num_data_in_smaller_leaf, const data_size_t num_data_in_larger_leaf,
-    const double sum_hessians_in_smaller_leaf, const double sum_hessians_in_larger_leaf);
+  void FindBestSplitsForLeaf(
+    const CUDALeafSplitsStruct* smaller_leaf_splits,
+    const CUDALeafSplitsStruct* larger_leaf_splits,
+    const int smaller_leaf_index,
+    const int larger_leaf_index,
+    const data_size_t num_data_in_smaller_leaf,
+    const data_size_t num_data_in_larger_leaf,
+    const double sum_hessians_in_smaller_leaf,
+    const double sum_hessians_in_larger_leaf);
 
-  const CUDASplitInfo* FindBestFromAllSplits(const int cur_num_leaves, const int smaller_leaf_index,
-    const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
-    std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index);
-
-  const int* cuda_best_leaf() const { return cuda_best_leaf_; }
-
-  CUDASplitInfo* cuda_leaf_best_split_info() { return cuda_leaf_best_split_info_; }
+  const CUDASplitInfo* FindBestFromAllSplits(
+    const int cur_num_leaves,
+    const int smaller_leaf_index,
+    const int larger_leaf_index,
+    int* smaller_leaf_best_split_feature,
+    uint32_t* smaller_leaf_best_split_threshold,
+    uint8_t* smaller_leaf_best_split_default_left,
+    int* larger_leaf_best_split_feature,
+    uint32_t* larger_leaf_best_split_threshold,
+    uint8_t* larger_leaf_best_split_default_left,
+    int* best_leaf_index);
 
  private:
   void LaunchFindBestSplitsForLeafKernel(const CUDALeafSplitsStruct* smaller_leaf_splits,
@@ -57,14 +66,20 @@ class CUDABestSplitFinder {
     const bool is_smaller_leaf_valid, const bool is_larger_leaf_valid);
 
   void LaunchSyncBestSplitForLeafKernel(
-    const int cpu_smaller_leaf_index,
-    const int cpu_larger_leaf_index,
+    const int host_smaller_leaf_index,
+    const int host_larger_leaf_index,
     const bool is_smaller_leaf_valid,
     const bool is_larger_leaf_valid);
 
   void LaunchFindBestFromAllSplitsKernel(const int cur_num_leaves, const int smaller_leaf_index,
-    const int larger_leaf_index, std::vector<int>* leaf_best_split_feature,
-    std::vector<uint32_t>* leaf_best_split_threshold, std::vector<uint8_t>* leaf_best_split_default_left, int* best_leaf_index);
+    const int larger_leaf_index,
+    int* smaller_leaf_best_split_feature,
+    uint32_t* smaller_leaf_best_split_threshold,
+    uint8_t* smaller_leaf_best_split_default_left,
+    int* larger_leaf_best_split_feature,
+    uint32_t* larger_leaf_best_split_threshold,
+    uint8_t* larger_leaf_best_split_default_left,
+    int* best_leaf_index);
 
   // Host memory
   const int num_features_;
@@ -75,8 +90,7 @@ class CUDABestSplitFinder {
   std::vector<uint8_t> feature_mfb_offsets_;
   std::vector<uint32_t> feature_default_bins_;
   std::vector<uint32_t> feature_num_bins_;
-  // None --> 0, Zero --> 1, NaN --> 2
-  std::vector<uint8_t> feature_missing_type_;
+  std::vector<MissingType> feature_missing_type_;
   const double lambda_l1_;
   const double lambda_l2_;
   const data_size_t min_data_in_leaf_;
@@ -84,30 +98,24 @@ class CUDABestSplitFinder {
   const double min_gain_to_split_;
   std::vector<cudaStream_t> cuda_streams_;
   // for best split find tasks
-  std::vector<int> cpu_task_feature_index_;
-  std::vector<uint8_t> cpu_task_reverse_;
-  std::vector<uint8_t> cpu_task_skip_default_bin_;
-  std::vector<uint8_t> cpu_task_na_as_missing_;
-  std::vector<uint8_t> cpu_task_out_default_left_;
+  std::vector<int> host_task_feature_index_;
+  std::vector<uint8_t> host_task_reverse_;
+  std::vector<uint8_t> host_task_skip_default_bin_;
+  std::vector<uint8_t> host_task_na_as_missing_;
+  std::vector<uint8_t> host_task_out_default_left_;
   int num_tasks_;
 
   // CUDA memory, held by this object
   // for per leaf best split information
-  int* cuda_best_leaf_;
   CUDASplitInfo* cuda_leaf_best_split_info_;
   // for best split information when finding best split
   CUDASplitInfo* cuda_best_split_info_;
-  int* cuda_num_total_bin_;
-  // TODO(shiyu1994): use prefix sum to accelerate best split finding
-  hist_t* prefix_sum_hist_left_;
-  hist_t* prefix_sum_hist_right_;
   // feature information
   uint32_t* cuda_feature_hist_offsets_;
   uint8_t* cuda_feature_mfb_offsets_;
   uint32_t* cuda_feature_default_bins_;
-  uint8_t* cuda_feature_missing_type_;
   uint32_t* cuda_feature_num_bins_;
-  // best split information buffer, to be copied to CPU
+  // best split information buffer, to be copied to host
   int* cuda_best_split_info_buffer_;
   // find best split task information
   int* cuda_task_feature_index_;
@@ -118,7 +126,6 @@ class CUDABestSplitFinder {
 
   // CUDA memory, held by other object
   const hist_t* cuda_hist_;
-  const int* cuda_num_features_;
 };
 
 }

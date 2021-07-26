@@ -44,40 +44,48 @@ class CUDADataPartition {
     const CUDASplitInfo* best_split_info,
     const int left_leaf_index,
     const int right_leaf_index,
+    const int leaf_best_split_feature,
+    const uint32_t leaf_best_split_threshold,
+    const uint8_t leaf_best_split_default_left,
+    const data_size_t num_data_in_leaf,
+    const data_size_t leaf_data_start,
     // for leaf information update
     CUDALeafSplitsStruct* smaller_leaf_splits,
     CUDALeafSplitsStruct* larger_leaf_splits,
     // gather information for CPU, used for launching kernels
-    std::vector<data_size_t>* leaf_num_data,
-    std::vector<data_size_t>* leaf_data_start,
-    std::vector<double>* leaf_sum_hessians,
-    const std::vector<int>& leaf_best_split_feature,
-    const std::vector<uint32_t>& leaf_best_split_threshold,
-    const std::vector<uint8_t>& leaf_best_split_default_left,
-    int* smaller_leaf_index,
-    int* larger_leaf_index);
-
-  Tree* GetCPUTree();
+    data_size_t* left_leaf_num_data,
+    data_size_t* right_leaf_num_data,
+    data_size_t* left_leaf_start,
+    data_size_t* right_leaf_start,
+    double* left_leaf_sum_of_hessians,
+    double* right_leaf_sum_of_hessians);
 
   void UpdateTrainScore(const double learning_rate, double* cuda_scores);
 
   const data_size_t* cuda_data_indices() const { return cuda_data_indices_; }
 
  private:
-  void CalcBlockDim(const data_size_t num_data_in_leaf,
+  void CalcBlockDim(
+    const data_size_t num_data_in_leaf,
     int* grid_dim,
     int* block_dim);
 
-  void CalcBlockDimInCopy(const data_size_t num_data_in_leaf,
+  void CalcBlockDimInCopy(
+    const data_size_t num_data_in_leaf,
     int* grid_dim,
     int* block_dim);
 
-  void GenDataToLeftBitVector(const data_size_t num_data_in_leaf,
-    const int split_feature_index, const uint32_t split_threshold,
-    const uint8_t split_default_left, const data_size_t leaf_data_start,
-    const int left_leaf_index, const int right_leaf_index);
+  void GenDataToLeftBitVector(
+    const data_size_t num_data_in_leaf,
+    const int split_feature_index,
+    const uint32_t split_threshold,
+    const uint8_t split_default_left,
+    const data_size_t leaf_data_start,
+    const int left_leaf_index,
+    const int right_leaf_index);
 
   void SplitInner(
+    // input best split info
     const data_size_t num_data_in_leaf,
     const CUDASplitInfo* best_split_info,
     const int left_leaf_index,
@@ -85,16 +93,19 @@ class CUDADataPartition {
     // for leaf splits information update
     CUDALeafSplitsStruct* smaller_leaf_splits,
     CUDALeafSplitsStruct* larger_leaf_splits,
-    std::vector<data_size_t>* cpu_leaf_num_data,
-    std::vector<data_size_t>* cpu_leaf_data_start,
-    std::vector<double>* cpu_leaf_sum_hessians,
-    int* smaller_leaf_index,
-    int* larger_leaf_index);
+    // gather information for CPU, used for launching kernels
+    data_size_t* left_leaf_num_data,
+    data_size_t* right_leaf_num_data,
+    data_size_t* left_leaf_start,
+    data_size_t* right_leaf_start,
+    double* left_leaf_sum_of_hessians,
+    double* right_leaf_sum_of_hessians);
 
   // kernel launch functions
   void LaunchFillDataIndicesBeforeTrain();
 
   void LaunchSplitInnerKernel(
+    // input best split info
     const data_size_t num_data_in_leaf,
     const CUDASplitInfo* best_split_info,
     const int left_leaf_index,
@@ -102,16 +113,22 @@ class CUDADataPartition {
     // for leaf splits information update
     CUDALeafSplitsStruct* smaller_leaf_splits,
     CUDALeafSplitsStruct* larger_leaf_splits,
-    std::vector<data_size_t>* cpu_leaf_num_data,
-    std::vector<data_size_t>* cpu_leaf_data_start,
-    std::vector<double>* cpu_leaf_sum_hessians,
-    int* smaller_leaf_index,
-    int* larger_leaf_index);
+    // gather information for CPU, used for launching kernels
+    data_size_t* left_leaf_num_data,
+    data_size_t* right_leaf_num_data,
+    data_size_t* left_leaf_start,
+    data_size_t* right_leaf_start,
+    double* left_leaf_sum_of_hessians,
+    double* right_leaf_sum_of_hessians);
 
-  void LaunchGenDataToLeftBitVectorKernel(const data_size_t num_data_in_leaf,
-    const int split_feature_index, const uint32_t split_threshold,
-    const uint8_t split_default_left, const data_size_t leaf_data_start,
-    const int left_leaf_index, const int right_leaf_index);
+  void LaunchGenDataToLeftBitVectorKernel(
+    const data_size_t num_data_in_leaf,
+    const int split_feature_index,
+    const uint32_t split_threshold,
+    const uint8_t split_default_left,
+    const data_size_t leaf_data_start,
+    const int left_leaf_index,
+    const int right_leaf_index);
 
   template <typename BIN_TYPE>
   void LaunchGenDataToLeftBitVectorKernelMaxIsMinInner(
@@ -163,17 +180,27 @@ class CUDADataPartition {
     const int missing_default_leaf_index);
 
   template <typename BIN_TYPE>
-  void LaunchUpdateDataIndexToLeafIndexKernel(const data_size_t cuda_leaf_data_start,
-    const data_size_t num_data_in_leaf, const data_size_t* cuda_data_indices,
-    const uint32_t th, const BIN_TYPE* column_data,
+  void LaunchUpdateDataIndexToLeafIndexKernel(
+    const data_size_t num_data_in_leaf,
+    const data_size_t* data_indices_in_leaf,
+    const uint32_t th,
+    const BIN_TYPE* column_data,
     // values from feature
-    const uint32_t t_zero_bin, const uint32_t max_bin_ref, const uint32_t min_bin_ref,
-    int* cuda_data_index_to_leaf_index, const int left_leaf_index, const int right_leaf_index,
-    const int default_leaf_index, const int missing_default_leaf_index,
-    const bool missing_is_zero, const bool missing_is_na, const bool mfb_is_zero, const bool mfb_is_na, const bool max_to_left,
-    const int num_blocks, const int block_size);
-
-  void LaunchPrefixSumKernel(uint32_t* cuda_elements);
+    const uint32_t t_zero_bin,
+    const uint32_t max_bin_ref,
+    const uint32_t min_bin_ref,
+    int* cuda_data_index_to_leaf_index,
+    const int left_leaf_index,
+    const int right_leaf_index,
+    const int default_leaf_index,
+    const int missing_default_leaf_index,
+    const bool missing_is_zero,
+    const bool missing_is_na,
+    const bool mfb_is_zero,
+    const bool mfb_is_na,
+    const bool max_to_left,
+    const int num_blocks,
+    const int block_size);
 
   void LaunchAddPredictionToScoreKernel(const double learning_rate, double* cuda_scores);
 

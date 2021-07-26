@@ -108,47 +108,68 @@ void CUDADataPartition::BeforeTrain(const data_size_t* data_indices) {
 }
 
 void CUDADataPartition::Split(
+  // input best split info
   const CUDASplitInfo* best_split_info,
   const int left_leaf_index,
   const int right_leaf_index,
-  // for leaf splits information update
+  const int leaf_best_split_feature,
+  const uint32_t leaf_best_split_threshold,
+  const uint8_t leaf_best_split_default_left,
+  const data_size_t num_data_in_leaf,
+  const data_size_t leaf_data_start,
+  // for leaf information update
   CUDALeafSplitsStruct* smaller_leaf_splits,
   CUDALeafSplitsStruct* larger_leaf_splits,
-  std::vector<data_size_t>* cpu_leaf_num_data,
-  std::vector<data_size_t>* cpu_leaf_data_start,
-  std::vector<double>* cpu_leaf_sum_hessians,
-  const std::vector<int>& cpu_leaf_best_split_feature,
-  const std::vector<uint32_t>& cpu_leaf_best_split_threshold,
-  const std::vector<uint8_t>& cpu_leaf_best_split_default_left,
-  int* smaller_leaf_index, int* larger_leaf_index) {
+  // gather information for CPU, used for launching kernels
+  data_size_t* left_leaf_num_data,
+  data_size_t* right_leaf_num_data,
+  data_size_t* left_leaf_start,
+  data_size_t* right_leaf_start,
+  double* left_leaf_sum_of_hessians,
+  double* right_leaf_sum_of_hessians) {
   global_timer.Start("GenDataToLeftBitVector");
   global_timer.Start("SplitInner Copy CUDA To Host");
-  const data_size_t num_data_in_leaf = cpu_leaf_num_data->at(left_leaf_index);
-  const int split_feature_index = cpu_leaf_best_split_feature[left_leaf_index];
-  const uint32_t split_threshold = cpu_leaf_best_split_threshold[left_leaf_index];
-  const uint8_t split_default_left = cpu_leaf_best_split_default_left[left_leaf_index];
-  const data_size_t leaf_data_start = cpu_leaf_data_start->at(left_leaf_index);
   global_timer.Stop("SplitInner Copy CUDA To Host");
-  GenDataToLeftBitVector(num_data_in_leaf, split_feature_index, split_threshold, split_default_left, leaf_data_start, left_leaf_index, right_leaf_index);
+  GenDataToLeftBitVector(num_data_in_leaf,
+                         leaf_best_split_feature,
+                         leaf_best_split_threshold,
+                         leaf_best_split_default_left,
+                         leaf_data_start,
+                         left_leaf_index,
+                         right_leaf_index);
   global_timer.Stop("GenDataToLeftBitVector");
   global_timer.Start("SplitInner");
 
   SplitInner(num_data_in_leaf,
-    best_split_info,
-    left_leaf_index,
-    right_leaf_index,
-    smaller_leaf_splits,
-    larger_leaf_splits,
-    cpu_leaf_num_data, cpu_leaf_data_start, cpu_leaf_sum_hessians,
-    smaller_leaf_index, larger_leaf_index);
+             best_split_info,
+             left_leaf_index,
+             right_leaf_index,
+             smaller_leaf_splits,
+             larger_leaf_splits,
+             left_leaf_num_data,
+             right_leaf_num_data,
+             left_leaf_start,
+             right_leaf_start,
+             left_leaf_sum_of_hessians,
+             right_leaf_sum_of_hessians);
   global_timer.Stop("SplitInner");
 }
 
-void CUDADataPartition::GenDataToLeftBitVector(const data_size_t num_data_in_leaf,
-    const int split_feature_index, const uint32_t split_threshold,
-    const uint8_t split_default_left, const data_size_t leaf_data_start,
-    const int left_leaf_index, const int right_leaf_index) {
-  LaunchGenDataToLeftBitVectorKernel(num_data_in_leaf, split_feature_index, split_threshold, split_default_left, leaf_data_start, left_leaf_index, right_leaf_index);
+void CUDADataPartition::GenDataToLeftBitVector(
+    const data_size_t num_data_in_leaf,
+    const int split_feature_index,
+    const uint32_t split_threshold,
+    const uint8_t split_default_left,
+    const data_size_t leaf_data_start,
+    const int left_leaf_index,
+    const int right_leaf_index) {
+  LaunchGenDataToLeftBitVectorKernel(num_data_in_leaf,
+                                     split_feature_index,
+                                     split_threshold,
+                                     split_default_left,
+                                     leaf_data_start,
+                                     left_leaf_index,
+                                     right_leaf_index);
 }
 
 void CUDADataPartition::SplitInner(
@@ -159,9 +180,12 @@ void CUDADataPartition::SplitInner(
   // for leaf splits information update
   CUDALeafSplitsStruct* smaller_leaf_splits,
   CUDALeafSplitsStruct* larger_leaf_splits,
-  std::vector<data_size_t>* cpu_leaf_num_data, std::vector<data_size_t>* cpu_leaf_data_start,
-  std::vector<double>* cpu_leaf_sum_hessians,
-  int* smaller_leaf_index, int* larger_leaf_index) {
+  data_size_t* left_leaf_num_data,
+  data_size_t* right_leaf_num_data,
+  data_size_t* left_leaf_start,
+  data_size_t* right_leaf_start,
+  double* left_leaf_sum_of_hessians,
+  double* right_leaf_sum_of_hessians) {
   LaunchSplitInnerKernel(
     num_data_in_leaf,
     best_split_info,
@@ -169,12 +193,14 @@ void CUDADataPartition::SplitInner(
     right_leaf_index,
     smaller_leaf_splits,
     larger_leaf_splits,
-    cpu_leaf_num_data, cpu_leaf_data_start, cpu_leaf_sum_hessians,
-    smaller_leaf_index, larger_leaf_index);
+    left_leaf_num_data,
+    right_leaf_num_data,
+    left_leaf_start,
+    right_leaf_start,
+    left_leaf_sum_of_hessians,
+    right_leaf_sum_of_hessians);
   ++cur_num_leaves_;
 }
-
-Tree* CUDADataPartition::GetCPUTree() {}
 
 void CUDADataPartition::UpdateTrainScore(const double learning_rate, double* cuda_scores) {
   LaunchAddPredictionToScoreKernel(learning_rate, cuda_scores);

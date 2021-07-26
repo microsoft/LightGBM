@@ -331,14 +331,13 @@ __device__ void PrepareOffset(const data_size_t num_data_in_leaf_ref, const uint
 }
 
 template <bool MIN_IS_MAX, bool MAX_TO_LEFT, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
-__global__ void UpdateDataIndexToLeafIndexKernel(const data_size_t cuda_leaf_data_start,
-  const data_size_t num_data_in_leaf, const data_size_t* cuda_data_indices,
+__global__ void UpdateDataIndexToLeafIndexKernel(
+  const data_size_t num_data_in_leaf, const data_size_t* data_indices_in_leaf,
   const uint32_t th, const BIN_TYPE* column_data,
   // values from feature
   const uint32_t t_zero_bin, const uint32_t max_bin_ref, const uint32_t min_bin_ref,
   int* cuda_data_index_to_leaf_index, const int left_leaf_index, const int right_leaf_index,
   const int default_leaf_index, const int missing_default_leaf_index) {
-  const data_size_t* data_indices_in_leaf = cuda_data_indices + cuda_leaf_data_start;
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
   if (local_data_index < num_data_in_leaf) {
     const unsigned int global_data_index = data_indices_in_leaf[local_data_index];
@@ -378,14 +377,14 @@ __global__ void UpdateDataIndexToLeafIndexKernel(const data_size_t cuda_leaf_dat
   }
 }
 
-#define UpdateDataIndexToLeafIndex_ARGS leaf_data_start, \
-  num_data_in_leaf, cuda_data_indices, th, column_data, \
+#define UpdateDataIndexToLeafIndex_ARGS \
+  num_data_in_leaf, data_indices_in_leaf, th, column_data, \
   t_zero_bin, max_bin_ref, min_bin_ref, cuda_data_index_to_leaf_index, left_leaf_index, right_leaf_index, \
   default_leaf_index, missing_default_leaf_index
 
 template <typename BIN_TYPE>
-void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel(const data_size_t leaf_data_start,
-  const data_size_t num_data_in_leaf, const data_size_t* cuda_data_indices,
+void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel(
+  const data_size_t num_data_in_leaf, const data_size_t* data_indices_in_leaf,
   const uint32_t th, const BIN_TYPE* column_data,
   // values from feature
   const uint32_t t_zero_bin, const uint32_t max_bin_ref, const uint32_t min_bin_ref,
@@ -530,8 +529,8 @@ void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel(const data_size_t
 
 // min_bin_ref < max_bin_ref
 template <typename BIN_TYPE, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA>
-__global__ void GenDataToLeftBitVectorKernel0(const int best_split_feature_ref, const data_size_t cuda_leaf_data_start,
-  const data_size_t num_data_in_leaf, const data_size_t* cuda_data_indices,
+__global__ void GenDataToLeftBitVectorKernel0(const int best_split_feature_ref,
+  const data_size_t num_data_in_leaf, const data_size_t* data_indices_in_leaf,
   const uint32_t th, const int num_features_ref, const BIN_TYPE* column_data,
   // values from feature
   const uint32_t t_zero_bin, const uint32_t most_freq_bin_ref, const uint32_t max_bin_ref, const uint32_t min_bin_ref,
@@ -543,7 +542,6 @@ __global__ void GenDataToLeftBitVectorKernel0(const int best_split_feature_ref, 
   const int default_leaf_index, const int missing_default_leaf_index) {
   __shared__ uint16_t thread_to_left_offset_cnt[SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION + 1 +
     (SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION + 1) / NUM_BANKS_DATA_PARTITION];
-  const data_size_t* data_indices_in_leaf = cuda_data_indices + cuda_leaf_data_start;
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
   if (local_data_index < num_data_in_leaf) {
     const unsigned int global_data_index = data_indices_in_leaf[local_data_index];
@@ -577,8 +575,8 @@ __global__ void GenDataToLeftBitVectorKernel0(const int best_split_feature_ref, 
 
 // min_bin_ref == max_bin_ref
 template <typename BIN_TYPE, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT>
-__global__ void GenDataToLeftBitVectorKernel16(const int best_split_feature_ref, const data_size_t cuda_leaf_data_start,
-  const data_size_t num_data_in_leaf, const data_size_t* cuda_data_indices,
+__global__ void GenDataToLeftBitVectorKernel16(const int best_split_feature_ref,
+  const data_size_t num_data_in_leaf, const data_size_t* data_indices_in_leaf,
   const uint32_t th, const int num_features_ref, const BIN_TYPE* column_data,
   // values from feature
   const uint32_t t_zero_bin, const uint32_t most_freq_bin_ref, const uint32_t max_bin_ref, const uint32_t min_bin_ref,
@@ -590,7 +588,6 @@ __global__ void GenDataToLeftBitVectorKernel16(const int best_split_feature_ref,
   const int default_leaf_index, const int missing_default_leaf_index) {
   __shared__ uint16_t thread_to_left_offset_cnt[SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION + 1 +
     (SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION + 1) / NUM_BANKS_DATA_PARTITION];
-  const data_size_t* data_indices_in_leaf = cuda_data_indices + cuda_leaf_data_start;
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
   if (local_data_index < num_data_in_leaf) {
     const unsigned int global_data_index = data_indices_in_leaf[local_data_index];
@@ -629,7 +626,7 @@ __global__ void GenDataToLeftBitVectorKernel16(const int best_split_feature_ref,
 }
 
 #define GenBitVector_ARGS \
-  split_feature_index, leaf_data_start, num_data_in_leaf, cuda_data_indices_, \
+  split_feature_index, num_data_in_leaf, data_indices_in_leaf, \
   th, num_features_,  \
   column_data, t_zero_bin, most_freq_bin, max_bin, min_bin, split_default_to_left,  \
   split_missing_default_to_left, cuda_data_to_left_, cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_, \
@@ -661,6 +658,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelMaxIsMinInner(
   const int default_leaf_index,
   const int missing_default_leaf_index) {
   const void* column_data_pointer = cuda_column_data_->GetColumnData(column_index);
+  const data_size_t* data_indices_in_leaf = cuda_data_indices_ + leaf_data_start;
   if (!missing_is_zero && !missing_is_na && !mfb_is_zero && !mfb_is_na && !max_bin_to_left) {
     const BIN_TYPE* column_data = reinterpret_cast<const BIN_TYPE*>(column_data_pointer);
     GenDataToLeftBitVectorKernel16<BIN_TYPE, false, false, false, false, false><<<num_blocks_final, split_indices_block_size_data_partition_aligned, 0, cuda_streams_[0]>>>(GenBitVector_ARGS);
@@ -784,6 +782,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelMaxIsNotMinInner(
   const int default_leaf_index,
   const int missing_default_leaf_index) {
   const void* column_data_pointer = cuda_column_data_->GetColumnData(column_index);
+  const data_size_t* data_indices_in_leaf = cuda_data_indices_ + leaf_data_start;
   if (!missing_is_zero && !missing_is_na && !mfb_is_zero && !mfb_is_na) {
     const BIN_TYPE* column_data = reinterpret_cast<const BIN_TYPE*>(column_data_pointer);
     GenDataToLeftBitVectorKernel0<BIN_TYPE, false, false, false, false><<<num_blocks_final, split_indices_block_size_data_partition_aligned, 0, cuda_streams_[0]>>>(GenBitVector_ARGS);
@@ -931,6 +930,8 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(const data_size_t num
   const uint8_t bit_type = cuda_column_data_->column_bit_type(column_index);
 
   const bool max_bin_to_left = (max_bin <= th);
+
+  const data_size_t* data_indices_in_leaf = cuda_data_indices_ + leaf_data_start;
 
   if (min_bin < max_bin) {
     if (bit_type == 8) {
@@ -1082,8 +1083,8 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(const data_size_t num
   const void* column_data_pointer = cuda_column_data_->GetColumnData(column_index);
   if (bit_type == 8) {
     const uint8_t* column_data = reinterpret_cast<const uint8_t*>(column_data_pointer);
-    LaunchUpdateDataIndexToLeafIndexKernel<uint8_t>(leaf_data_start, num_data_in_leaf,
-      cuda_data_indices_, th, column_data, t_zero_bin, max_bin, min_bin, cuda_data_index_to_leaf_index_,
+    LaunchUpdateDataIndexToLeafIndexKernel<uint8_t>(num_data_in_leaf,
+      data_indices_in_leaf, th, column_data, t_zero_bin, max_bin, min_bin, cuda_data_index_to_leaf_index_,
       left_leaf_index, right_leaf_index, default_leaf_index, missing_default_leaf_index,
       static_cast<bool>(missing_is_zero),
       static_cast<bool>(missing_is_na),
@@ -1094,8 +1095,8 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(const data_size_t num
       split_indices_block_size_data_partition_aligned);
   } else if (bit_type == 16) {
     const uint16_t* column_data = reinterpret_cast<const uint16_t*>(column_data_pointer);
-    LaunchUpdateDataIndexToLeafIndexKernel<uint16_t>(leaf_data_start, num_data_in_leaf,
-      cuda_data_indices_, th, column_data, t_zero_bin, max_bin, min_bin, cuda_data_index_to_leaf_index_,
+    LaunchUpdateDataIndexToLeafIndexKernel<uint16_t>(num_data_in_leaf,
+      data_indices_in_leaf, th, column_data, t_zero_bin, max_bin, min_bin, cuda_data_index_to_leaf_index_,
       left_leaf_index, right_leaf_index, default_leaf_index, missing_default_leaf_index,
       static_cast<bool>(missing_is_zero),
       static_cast<bool>(missing_is_na),
@@ -1106,8 +1107,8 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(const data_size_t num
       split_indices_block_size_data_partition_aligned);
   } else if (bit_type == 32) {
     const uint32_t* column_data = reinterpret_cast<const uint32_t*>(column_data_pointer);
-    LaunchUpdateDataIndexToLeafIndexKernel<uint32_t>(leaf_data_start, num_data_in_leaf,
-      cuda_data_indices_, th, column_data, t_zero_bin, max_bin, min_bin, cuda_data_index_to_leaf_index_,
+    LaunchUpdateDataIndexToLeafIndexKernel<uint32_t>(num_data_in_leaf,
+      data_indices_in_leaf, th, column_data, t_zero_bin, max_bin, min_bin, cuda_data_index_to_leaf_index_,
       left_leaf_index, right_leaf_index, default_leaf_index, missing_default_leaf_index,
       static_cast<bool>(missing_is_zero),
       static_cast<bool>(missing_is_na),
@@ -1439,10 +1440,12 @@ void CUDADataPartition::LaunchSplitInnerKernel(
   // for leaf splits information update
   CUDALeafSplitsStruct* smaller_leaf_splits,
   CUDALeafSplitsStruct* larger_leaf_splits,
-  std::vector<data_size_t>* cpu_leaf_num_data,
-  std::vector<data_size_t>* cpu_leaf_data_start,
-  std::vector<double>* cpu_leaf_sum_hessians,
-  int* smaller_leaf_index, int* larger_leaf_index) {
+  data_size_t* left_leaf_num_data_ref,
+  data_size_t* right_leaf_num_data_ref,
+  data_size_t* left_leaf_start_ref,
+  data_size_t* right_leaf_start_ref,
+  double* left_leaf_sum_of_hessians_ref,
+  double* right_leaf_sum_of_hessians_ref) {
   const int min_num_blocks = num_data_in_leaf <= 100 ? 1 : 80;
   const int num_blocks = std::max(min_num_blocks, (num_data_in_leaf + SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION);
   int split_indices_block_size_data_partition = (num_data_in_leaf + num_blocks - 1) / num_blocks - 1;
@@ -1485,7 +1488,6 @@ void CUDADataPartition::LaunchSplitInnerKernel(
     left_leaf_index, right_leaf_index, cuda_leaf_data_start_, cuda_leaf_num_data_, cuda_data_indices_, cuda_data_to_left_,
     cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_,
     cuda_out_data_indices_in_leaf_, split_indices_block_size_data_partition_aligned);
-  //SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   global_timer.Stop("CUDADataPartition::SplitInnerKernel");
 
   global_timer.Start("CUDADataPartition::SplitTreeStructureKernel");
@@ -1517,32 +1519,12 @@ void CUDADataPartition::LaunchSplitInnerKernel(
     left_leaf_num_data + right_leaf_num_data, cuda_out_data_indices_in_leaf_, cuda_data_indices_ + left_leaf_data_start);
   global_timer.Stop("CUDADataPartition::CopyDataIndicesKernel");
   const data_size_t right_leaf_data_start = cpu_split_info_buffer[5];
-  (*cpu_leaf_num_data)[left_leaf_index] = left_leaf_num_data;
-  (*cpu_leaf_data_start)[left_leaf_index] = left_leaf_data_start;
-  (*cpu_leaf_num_data)[right_leaf_index] = right_leaf_num_data;
-  (*cpu_leaf_data_start)[right_leaf_index] = right_leaf_data_start;
-  (*cpu_leaf_sum_hessians)[left_leaf_index] = cpu_sum_hessians_info[0];
-  (*cpu_leaf_sum_hessians)[right_leaf_index] = cpu_sum_hessians_info[1];
-  *smaller_leaf_index = cpu_split_info_buffer[6];
-  *larger_leaf_index = cpu_split_info_buffer[7];
-}
-
-__global__ void PrefixSumKernel(uint32_t* cuda_elements) {
-  __shared__ uint32_t elements[SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION + 1];
-  const unsigned int threadIdx_x = threadIdx.x;
-  const unsigned int global_read_index = blockIdx.x * blockDim.x * 2 + threadIdx_x;
-  elements[threadIdx_x] = cuda_elements[global_read_index];
-  elements[threadIdx_x + blockDim.x] = cuda_elements[global_read_index + blockDim.x];
-  __syncthreads();
-  PrefixSum(elements, SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION);
-  __syncthreads();
-  cuda_elements[global_read_index] = elements[threadIdx_x];
-  cuda_elements[global_read_index + blockDim.x] = elements[threadIdx_x + blockDim.x];
-}
-
-void CUDADataPartition::LaunchPrefixSumKernel(uint32_t* cuda_elements) {
-  PrefixSumKernel<<<1, SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION / 2>>>(cuda_elements);
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  *left_leaf_num_data_ref = left_leaf_num_data;
+  *left_leaf_start_ref = left_leaf_data_start;
+  *right_leaf_num_data_ref = right_leaf_num_data;
+  *right_leaf_start_ref = right_leaf_data_start;
+  *left_leaf_sum_of_hessians_ref = cpu_sum_hessians_info[0];
+  *right_leaf_sum_of_hessians_ref = cpu_sum_hessians_info[1];
 }
 
 __global__ void AddPredictionToScoreKernel(const double* cuda_leaf_output,
@@ -1567,19 +1549,6 @@ void CUDADataPartition::LaunchAddPredictionToScoreKernel(const double learning_r
     cuda_leaf_num_data_, cuda_data_indices_, cuda_leaf_data_start_, learning_rate, cuda_scores, cuda_data_index_to_leaf_index_, num_data_);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   global_timer.Stop("CUDADataPartition::AddPredictionToScoreKernel");
-}
-
-__global__ void CopyColWiseDataKernel(const uint8_t* row_wise_data,
-  const data_size_t num_data, const int num_features,
-  uint8_t* col_wise_data) {
-  const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
-  if (data_index < num_data) {
-    const data_size_t read_offset = data_index * num_features;
-    for (int feature_index = 0; feature_index < num_features; ++feature_index) {
-      const data_size_t write_pos = feature_index * num_data + data_index;
-      col_wise_data[write_pos] = row_wise_data[read_offset + feature_index];
-    }
-  }
 }
 
 }  // namespace LightGBM
