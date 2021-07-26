@@ -643,10 +643,10 @@ class Sequence(abc.ABC):
             if isinstance(idx, numbers.Integral):
                 return self._get_one_line(idx)
             elif isinstance(idx, slice):
-                return np.stack(self._get_one_line(i) for i in range(idx.start, idx.stop))
+                return np.stack([self._get_one_line(i) for i in range(idx.start, idx.stop)])
             elif isinstance(idx, list):
-                # Only required if using ``Dataset.get_data``.
-                return np.array(self._get_one_line(i) for i in idx)
+                # Only required if using ``Dataset.get_data()``.
+                return np.array([self._get_one_line(i) for i in idx])
             else:
                 raise TypeError(f"Sequence index must be integer or slice, got {type(idx).__name__}")
 
