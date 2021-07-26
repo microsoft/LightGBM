@@ -316,12 +316,12 @@ def setup(app):
         app.connect("builder-inited", generate_doxygen_xml)
     else:
         app.add_directive('doxygenfile', IgnoredDirective)
-    if RTD:  # build R docs only on Read the Docs site
-        if first_run:
-            app.connect("builder-inited", generate_r_docs)
-        app.connect("build-finished",
-                    lambda app, _: copytree(CURR_PATH.parent / "lightgbm_r" / "docs",
-                                            Path(app.outdir) / "R"))
+#    if RTD:  # build R docs only on Read the Docs site
+#        if first_run:
+#            app.connect("builder-inited", generate_r_docs)
+#        app.connect("build-finished",
+#                    lambda app, _: copytree(CURR_PATH.parent / "lightgbm_r" / "docs",
+#                                            Path(app.outdir) / "R"))
     app.add_transform(InternalRefTransform)
     add_js_file = getattr(app, 'add_js_file', False) or app.add_javascript
     add_js_file("js/script.js")
