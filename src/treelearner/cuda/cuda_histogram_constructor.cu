@@ -9,44 +9,7 @@
 #include "cuda_histogram_constructor.hpp"
 
 namespace LightGBM {
-
-__device__ void PrefixSum(hist_t* elements, unsigned int n) {
-  unsigned int offset = 1;
-  unsigned int threadIdx_x = threadIdx.x;
-  const unsigned int conflict_free_n_minus_1 = (n - 1);
-  const hist_t last_element = elements[conflict_free_n_minus_1];
-  __syncthreads();
-  for (int d = (n >> 1); d > 0; d >>= 1) {
-    if (threadIdx_x < d) {
-      const unsigned int src_pos = offset * (2 * threadIdx_x + 1) - 1;
-      const unsigned int dst_pos = offset * (2 * threadIdx_x + 2) - 1;
-      elements[(dst_pos)] += elements[(src_pos)];
-    }
-    offset <<= 1;
-    __syncthreads();
-  }
-  if (threadIdx_x == 0) {
-    elements[conflict_free_n_minus_1] = 0; 
-  }
-  __syncthreads();
-  for (int d = 1; d < n; d <<= 1) {
-    offset >>= 1;
-    if (threadIdx_x < d) {
-      const unsigned int dst_pos = offset * (2 * threadIdx_x + 2) - 1;
-      const unsigned int src_pos = offset * (2 * threadIdx_x + 1) - 1;
-      const unsigned int conflict_free_dst_pos = (dst_pos);
-      const unsigned int conflict_free_src_pos = (src_pos);
-      const hist_t src_val = elements[conflict_free_src_pos];
-      elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-      elements[conflict_free_dst_pos] += src_val;
-    }
-    __syncthreads();
-  }
-  if (threadIdx_x == 0) {
-    elements[(n)] = elements[conflict_free_n_minus_1] + last_element;
-  }
-}
-
+/*
 __device__ void ReduceSumHistogramConstructor(hist_t* array, const size_t size) {
   const unsigned int threadIdx_x = threadIdx.x;
   const size_t atomic_size = size / 4;
@@ -60,22 +23,7 @@ __device__ void ReduceSumHistogramConstructor(hist_t* array, const size_t size) 
     atomicAdd_block(array, array[threadIdx_x]);
   }
   __syncthreads();
-}
-
-__device__ void ReduceSumHistogramConstructorMerge(hist_t* array, const size_t size) {
-  const unsigned int threadIdx_x = (threadIdx.x % USED_HISTOGRAM_BUFFER_NUM);
-  const size_t atomic_size = size / 4;
-  for (int s = 1; s < atomic_size; s <<= 1) {
-    if (threadIdx_x % (2 * s) == 0 && (threadIdx_x + s) < size) {
-      array[threadIdx_x] += array[threadIdx_x + s];
-    }
-    __syncthreads();
-  }
-  if (threadIdx_x > 0 && threadIdx_x % atomic_size == 0) {
-    atomicAdd_block(array, array[threadIdx_x]);
-  }
-  __syncthreads();
-}
+}*/
 
 template <typename BIN_TYPE>
 __global__ void CUDAConstructHistogramDenseKernel(
@@ -373,8 +321,8 @@ __global__ void FixHistogramKernel(
     hist_hessians[threadIdx_x] = 0.0f;
   }
   __syncthreads();
-  ReduceSumHistogramConstructor(hist_gradients, num_bin_aligned);
-  ReduceSumHistogramConstructor(hist_hessians, num_bin_aligned);
+  ReduceSum<hist_t>(hist_gradients, num_bin_aligned);
+  ReduceSum<hist_t>(hist_hessians, num_bin_aligned);
   __syncthreads();
   if (threadIdx_x == most_freq_bin) {
     feature_hist[hist_pos] = leaf_sum_gradients - hist_gradients[0];

@@ -12,6 +12,7 @@
 #include "cuda_leaf_splits.hpp"
 
 #include <LightGBM/bin.h>
+#include <LightGBM/cuda/cuda_algorithms.hpp>
 #include <LightGBM/cuda/cuda_split_info.hpp>
 #include <LightGBM/dataset.h>
 
@@ -19,8 +20,6 @@
 
 #define MAX_NUM_BIN_IN_FEATURE (256)
 #define NUM_THREADS_FIND_BEST_LEAF (256)
-#define LOG_NUM_BANKS_DATA_PARTITION_BEST_SPLIT_FINDER (4)
-#define NUM_BANKS_DATA_PARTITION_BEST_SPLIT_FINDER (16)
 #define NUM_TASKS_PER_SYNC_BLOCK (1024)
 
 namespace LightGBM {

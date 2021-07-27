@@ -229,18 +229,6 @@ if(USE_CUDA)
       add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
       add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
     endforeach()
-
-    add_library(cuda_leaf_splits OBJECT src/treelearner/cuda/cuda_leaf_splits.cu)
-    set_target_properties(cuda_leaf_splits PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-    add_library(cuda_data_partition OBJECT src/treelearner/cuda/cuda_data_partition.cu)
-    set_target_properties(cuda_data_partition PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-    add_library(cuda_histogram_constructor OBJECT src/treelearner/cuda/cuda_histogram_constructor.cu)
-    set_target_properties(cuda_histogram_constructor PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-    add_library(cuda_best_split_finder OBJECT src/treelearner/cuda/cuda_best_split_finder.cu)
-    set_target_properties(cuda_best_split_finder PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif(USE_CUDA)
 
 if(USE_HDFS)
@@ -453,11 +441,13 @@ endif()
 
 if(USE_CUDA)
   set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(lightgbm PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
   TARGET_LINK_LIBRARIES(
     lightgbm
     ${histograms}
   )
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(_lightgbm PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
   TARGET_LINK_LIBRARIES(
     _lightgbm
     ${histograms}

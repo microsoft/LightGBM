@@ -36,9 +36,6 @@ __global__ void BoostFromScoreKernel_1_BinaryLogloss(const label_t* cuda_labels,
 __global__ void BoostFromScoreKernel_2_BinaryLogloss(double* out_cuda_init_score, const data_size_t num_data, const double sigmoid) {
   const double suml = *out_cuda_init_score;
   const double sumw = static_cast<double>(num_data);
-  if (threadIdx.x == 0 && blockIdx.x == 0) {
-    printf("******************************************* suml = %f sumw = %f *******************************************\n", suml, sumw);
-  }
   const double pavg = suml / sumw;
   const double init_score = log(pavg / (1.0f - pavg)) / sigmoid;
   *out_cuda_init_score = init_score;

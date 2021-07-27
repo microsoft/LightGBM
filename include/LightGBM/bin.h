@@ -466,10 +466,10 @@ class MultiValBin {
 
   virtual MultiValBin* Clone() = 0;
 
-  virtual const uint8_t* GetRowWiseData(uint8_t* bit_type,
+  virtual const void* GetRowWiseData(uint8_t* bit_type,
     size_t* total_size,
     bool* is_sparse,
-    const uint8_t** out_data_ptr,
+    const void** out_data_ptr,
     uint8_t* data_ptr_bit_type) const = 0;
 };
 

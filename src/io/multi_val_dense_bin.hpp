@@ -210,10 +210,10 @@ class MultiValDenseBin : public MultiValBin {
 
   MultiValDenseBin<VAL_T>* Clone() override;
 
-  const uint8_t* GetRowWiseData(uint8_t* bit_type,
+  const void* GetRowWiseData(uint8_t* bit_type,
     size_t* total_size,
     bool* is_sparse,
-    const uint8_t** out_data_ptr,
+    const void** out_data_ptr,
     uint8_t* data_ptr_bit_type) const override;
 
  private:
@@ -235,10 +235,10 @@ MultiValDenseBin<VAL_T>* MultiValDenseBin<VAL_T>::Clone() {
 }
 
 template <>
-const uint8_t* MultiValDenseBin<uint8_t>::GetRowWiseData(uint8_t* bit_type,
+const void* MultiValDenseBin<uint8_t>::GetRowWiseData(uint8_t* bit_type,
     size_t* total_size,
     bool* is_sparse,
-    const uint8_t** out_data_ptr,
+    const void** out_data_ptr,
     uint8_t* data_ptr_bit_type) const {
   const uint8_t* to_return = data_.data();
   *bit_type = 8;
@@ -251,10 +251,10 @@ const uint8_t* MultiValDenseBin<uint8_t>::GetRowWiseData(uint8_t* bit_type,
 }
 
 template <>
-const uint8_t* MultiValDenseBin<uint16_t>::GetRowWiseData(uint8_t* bit_type,
+const void* MultiValDenseBin<uint16_t>::GetRowWiseData(uint8_t* bit_type,
   size_t* total_size,
   bool* is_sparse,
-  const uint8_t** out_data_ptr,
+  const void** out_data_ptr,
   uint8_t* data_ptr_bit_type) const {
   const uint16_t* data_ptr = data_.data();
   const uint8_t* to_return = reinterpret_cast<const uint8_t*>(data_ptr);
@@ -268,10 +268,10 @@ const uint8_t* MultiValDenseBin<uint16_t>::GetRowWiseData(uint8_t* bit_type,
 }
 
 template <>
-const uint8_t* MultiValDenseBin<uint32_t>::GetRowWiseData(uint8_t* bit_type,
+const void* MultiValDenseBin<uint32_t>::GetRowWiseData(uint8_t* bit_type,
   size_t* total_size,
   bool* is_sparse,
-  const uint8_t** out_data_ptr,
+  const void** out_data_ptr,
   uint8_t* data_ptr_bit_type) const {
   const uint32_t* data_ptr = data_.data();
   const uint8_t* to_return = reinterpret_cast<const uint8_t*>(data_ptr);

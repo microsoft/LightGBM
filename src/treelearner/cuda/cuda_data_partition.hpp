@@ -8,6 +8,7 @@
 
 #ifdef USE_CUDA
 
+#include <LightGBM/cuda/cuda_algorithms.hpp>
 #include <LightGBM/cuda/cuda_column_data.hpp>
 #include <LightGBM/meta.h>
 #include <LightGBM/tree.h>
@@ -19,8 +20,6 @@
 // TODO(shiyu1994): adjust these values according to different CUDA and GPU versions
 #define FILL_INDICES_BLOCK_SIZE_DATA_PARTITION (1024)
 #define SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION (512)
-#define NUM_BANKS_DATA_PARTITION (32)
-#define LOG_NUM_BANKS_DATA_PARTITION (5)
 #define AGGREGATE_BLOCK_SIZE_DATA_PARTITION (1024)
 
 namespace LightGBM {

@@ -11,287 +11,6 @@
 
 namespace LightGBM {
 
-#define CONFLICT_FREE_INDEX(n) \
-  ((n) + ((n) >> LOG_NUM_BANKS_DATA_PARTITION)) \
-
-__device__ void PrefixSum(uint32_t* elements, unsigned int n) {
-  unsigned int offset = 1;
-  unsigned int threadIdx_x = threadIdx.x;
-  const unsigned int conflict_free_n_minus_1 = CONFLICT_FREE_INDEX(n - 1);
-  const uint32_t last_element = elements[conflict_free_n_minus_1];
-  __syncthreads();
-  for (int d = (n >> 1); d > 0; d >>= 1) {
-    if (threadIdx_x < d) {
-      const unsigned int src_pos = offset * (2 * threadIdx_x + 1) - 1;
-      const unsigned int dst_pos = offset * (2 * threadIdx_x + 2) - 1;
-      elements[CONFLICT_FREE_INDEX(dst_pos)] += elements[CONFLICT_FREE_INDEX(src_pos)];
-    }
-    offset <<= 1;
-    __syncthreads();
-  }
-  if (threadIdx_x == 0) {
-    elements[conflict_free_n_minus_1] = 0; 
-  }
-  __syncthreads();
-  for (int d = 1; d < n; d <<= 1) {
-    offset >>= 1;
-    if (threadIdx_x < d) {
-      const unsigned int dst_pos = offset * (2 * threadIdx_x + 2) - 1;
-      const unsigned int src_pos = offset * (2 * threadIdx_x + 1) - 1;
-      const unsigned int conflict_free_dst_pos = CONFLICT_FREE_INDEX(dst_pos);
-      const unsigned int conflict_free_src_pos = CONFLICT_FREE_INDEX(src_pos);
-      const uint32_t src_val = elements[conflict_free_src_pos];
-      elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-      elements[conflict_free_dst_pos] += src_val;
-    }
-    __syncthreads();
-  }
-  if (threadIdx_x == 0) {
-    elements[CONFLICT_FREE_INDEX(n)] = elements[conflict_free_n_minus_1] + last_element;
-  }
-}
-
-__device__ void PrefixSum_1024(uint32_t* elements, unsigned int n) {
-  unsigned int threadIdx_x = threadIdx.x;
-  const unsigned int conflict_free_n_minus_1 = CONFLICT_FREE_INDEX(n - 1);
-  const uint32_t last_element = elements[conflict_free_n_minus_1];
-  __syncthreads();
-
-  if (threadIdx_x < 512) {
-    const unsigned int src_pos = (2 * threadIdx_x + 1) - 1;
-    const unsigned int dst_pos = (2 * threadIdx_x + 2) - 1;
-    elements[CONFLICT_FREE_INDEX(dst_pos)] += elements[CONFLICT_FREE_INDEX(src_pos)];
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 256) {
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 1) - 1;
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 1) - 1;
-    elements[CONFLICT_FREE_INDEX(dst_pos)] += elements[CONFLICT_FREE_INDEX(src_pos)];
-  }
-  __syncthreads();
-  
-  if (threadIdx_x < 128) {
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 2) - 1;
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 2) - 1;
-    elements[CONFLICT_FREE_INDEX(dst_pos)] += elements[CONFLICT_FREE_INDEX(src_pos)];
-  }
-  __syncthreads();
-  
-  if (threadIdx_x < 64) {
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 3) - 1;
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 3) - 1;
-    elements[CONFLICT_FREE_INDEX(dst_pos)] += elements[CONFLICT_FREE_INDEX(src_pos)];
-  }
-  __syncthreads();
-  
-  if (threadIdx_x < 32) {
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 4) - 1;
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 4) - 1;
-    elements[CONFLICT_FREE_INDEX(dst_pos)] += elements[CONFLICT_FREE_INDEX(src_pos)];
-  }
-  __syncthreads();
-  
-  if (threadIdx_x < 16) {
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 5) - 1;
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 5) - 1;
-    elements[CONFLICT_FREE_INDEX(dst_pos)] += elements[CONFLICT_FREE_INDEX(src_pos)];
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 8) {
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 6) - 1;
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 6) - 1;
-    elements[CONFLICT_FREE_INDEX(dst_pos)] += elements[CONFLICT_FREE_INDEX(src_pos)];
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 4) {
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 7) - 1;
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 7) - 1;
-    elements[CONFLICT_FREE_INDEX(dst_pos)] += elements[CONFLICT_FREE_INDEX(src_pos)];
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 2) {
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 8) - 1;
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 8) - 1;
-    elements[CONFLICT_FREE_INDEX(dst_pos)] += elements[CONFLICT_FREE_INDEX(src_pos)];
-  }
-  __syncthreads();
-
-  if (threadIdx_x == 0) {
-    const unsigned int conflict_free_dst_pos = CONFLICT_FREE_INDEX(1023);
-    const unsigned int conflict_free_src_pos = CONFLICT_FREE_INDEX(511);
-    elements[conflict_free_dst_pos] += elements[conflict_free_src_pos];
-    elements[conflict_free_n_minus_1] = 0; 
-    const uint32_t src_val = elements[conflict_free_src_pos];
-    elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-    elements[conflict_free_dst_pos] += src_val;
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 2) {
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 8) - 1;
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 8) - 1;
-    const unsigned int conflict_free_dst_pos = CONFLICT_FREE_INDEX(dst_pos);
-    const unsigned int conflict_free_src_pos = CONFLICT_FREE_INDEX(src_pos);
-    const uint32_t src_val = elements[conflict_free_src_pos];
-    elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-    elements[conflict_free_dst_pos] += src_val;
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 4) {
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 7) - 1;
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 7) - 1;
-    const unsigned int conflict_free_dst_pos = CONFLICT_FREE_INDEX(dst_pos);
-    const unsigned int conflict_free_src_pos = CONFLICT_FREE_INDEX(src_pos);
-    const uint32_t src_val = elements[conflict_free_src_pos];
-    elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-    elements[conflict_free_dst_pos] += src_val;
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 8) {
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 6) - 1;
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 6) - 1;
-    const unsigned int conflict_free_dst_pos = CONFLICT_FREE_INDEX(dst_pos);
-    const unsigned int conflict_free_src_pos = CONFLICT_FREE_INDEX(src_pos);
-    const uint32_t src_val = elements[conflict_free_src_pos];
-    elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-    elements[conflict_free_dst_pos] += src_val;
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 16) {
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 5) - 1;
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 5) - 1;
-    const unsigned int conflict_free_dst_pos = CONFLICT_FREE_INDEX(dst_pos);
-    const unsigned int conflict_free_src_pos = CONFLICT_FREE_INDEX(src_pos);
-    const uint32_t src_val = elements[conflict_free_src_pos];
-    elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-    elements[conflict_free_dst_pos] += src_val;
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 32) {
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 4) - 1;
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 4) - 1;
-    const unsigned int conflict_free_dst_pos = CONFLICT_FREE_INDEX(dst_pos);
-    const unsigned int conflict_free_src_pos = CONFLICT_FREE_INDEX(src_pos);
-    const uint32_t src_val = elements[conflict_free_src_pos];
-    elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-    elements[conflict_free_dst_pos] += src_val;
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 64) {
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 3) - 1;
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 3) - 1;
-    const unsigned int conflict_free_dst_pos = CONFLICT_FREE_INDEX(dst_pos);
-    const unsigned int conflict_free_src_pos = CONFLICT_FREE_INDEX(src_pos);
-    const uint32_t src_val = elements[conflict_free_src_pos];
-    elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-    elements[conflict_free_dst_pos] += src_val;
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 128) {
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 2) - 1;
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 2) - 1;
-    const unsigned int conflict_free_dst_pos = CONFLICT_FREE_INDEX(dst_pos);
-    const unsigned int conflict_free_src_pos = CONFLICT_FREE_INDEX(src_pos);
-    const uint32_t src_val = elements[conflict_free_src_pos];
-    elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-    elements[conflict_free_dst_pos] += src_val;
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 256) {
-    const unsigned int dst_pos = ((2 * threadIdx_x + 2) << 1) - 1;
-    const unsigned int src_pos = ((2 * threadIdx_x + 1) << 1) - 1;
-    const unsigned int conflict_free_dst_pos = CONFLICT_FREE_INDEX(dst_pos);
-    const unsigned int conflict_free_src_pos = CONFLICT_FREE_INDEX(src_pos);
-    const uint32_t src_val = elements[conflict_free_src_pos];
-    elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-    elements[conflict_free_dst_pos] += src_val;
-  }
-  __syncthreads();
-
-  if (threadIdx_x < 512) {
-    const unsigned int dst_pos = (2 * threadIdx_x + 2) - 1;
-    const unsigned int src_pos = (2 * threadIdx_x + 1) - 1;
-    const unsigned int conflict_free_dst_pos = CONFLICT_FREE_INDEX(dst_pos);
-    const unsigned int conflict_free_src_pos = CONFLICT_FREE_INDEX(src_pos);
-    const uint32_t src_val = elements[conflict_free_src_pos];
-    elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-    elements[conflict_free_dst_pos] += src_val;
-  }
-  __syncthreads();
-
-  if (threadIdx_x == 0) {
-    elements[CONFLICT_FREE_INDEX(n)] = elements[conflict_free_n_minus_1] + last_element;
-  }
-}
-
-__device__ void PrefixSum(uint16_t* elements, unsigned int n) {
-  unsigned int offset = 1;
-  unsigned int threadIdx_x = threadIdx.x;
-  const unsigned int conflict_free_n_minus_1 = CONFLICT_FREE_INDEX(n - 1);
-  const uint16_t last_element = elements[conflict_free_n_minus_1];
-  __syncthreads();
-  for (int d = (n >> 1); d > 0; d >>= 1) {
-    if (threadIdx_x < d) {
-      const unsigned int src_pos = offset * (2 * threadIdx_x + 1) - 1;
-      const unsigned int dst_pos = offset * (2 * threadIdx_x + 2) - 1;
-      elements[CONFLICT_FREE_INDEX(dst_pos)] += elements[CONFLICT_FREE_INDEX(src_pos)];
-    }
-    offset <<= 1;
-    __syncthreads();
-  }
-  if (threadIdx_x == 0) {
-    elements[conflict_free_n_minus_1] = 0; 
-  }
-  __syncthreads();
-  for (int d = 1; d < n; d <<= 1) {
-    offset >>= 1;
-    if (threadIdx_x < d) {
-      const unsigned int dst_pos = offset * (2 * threadIdx_x + 2) - 1;
-      const unsigned int src_pos = offset * (2 * threadIdx_x + 1) - 1;
-      const unsigned int conflict_free_dst_pos = CONFLICT_FREE_INDEX(dst_pos);
-      const unsigned int conflict_free_src_pos = CONFLICT_FREE_INDEX(src_pos);
-      const uint16_t src_val = elements[conflict_free_src_pos];
-      elements[conflict_free_src_pos] = elements[conflict_free_dst_pos];
-      elements[conflict_free_dst_pos] += src_val;
-    }
-    __syncthreads();
-  }
-  if (threadIdx_x == 0) {
-    elements[CONFLICT_FREE_INDEX(n)] = elements[conflict_free_n_minus_1] + last_element;
-  }
-}
-
-__device__ void ReduceSum(uint16_t* array, const size_t size) {
-  const unsigned int threadIdx_x = threadIdx.x;
-  for (int s = 1; s < size; s <<= 1) {
-    if (threadIdx_x % (2 * s) == 0 && (threadIdx_x + s) < size) {
-      array[CONFLICT_FREE_INDEX(threadIdx_x)] += array[CONFLICT_FREE_INDEX(threadIdx_x + s)];
-    }
-    __syncthreads();
-  }
-}
-
-__device__ void ReduceSum(double* array, const size_t size) {
-  const unsigned int threadIdx_x = threadIdx.x;
-  for (int s = 1; s < size; s <<= 1) {
-    if (threadIdx_x % (2 * s) == 0 && (threadIdx_x + s) < size) {
-      array[threadIdx_x] += array[threadIdx_x + s];
-    }
-    __syncthreads();
-  }
-}
-
 __global__ void FillDataIndicesBeforeTrainKernel(const data_size_t* cuda_num_data,
   data_size_t* data_indices, int* cuda_data_index_to_leaf_index) {
   const data_size_t num_data_ref = *cuda_num_data;
@@ -314,7 +33,7 @@ __device__ void PrepareOffset(const data_size_t num_data_in_leaf_ref, const uint
   const unsigned int threadIdx_x = threadIdx.x;
   const unsigned int blockDim_x = blockDim.x;
   __syncthreads();
-  ReduceSum(thread_to_left_offset_cnt, split_indices_block_size_data_partition);
+  ReduceSumConflictFree<uint16_t>(thread_to_left_offset_cnt, static_cast<size_t>(split_indices_block_size_data_partition));
   __syncthreads();
   if (threadIdx_x == 0) {
     const data_size_t num_data_in_block = (blockIdx.x + 1) * blockDim_x <= num_data_in_leaf_ref ? static_cast<data_size_t>(blockDim_x) :
@@ -1165,8 +884,8 @@ __global__ void AggregateBlockOffsetKernel0(
     block_to_right_offset[conflict_free_threadIdx_x] = 0;
   }
   __syncthreads();
-  PrefixSum_1024(block_to_left_offset, blockDim_x);
-  PrefixSum_1024(block_to_right_offset, blockDim_x);
+  PrefixSumConflictFree<uint32_t>(block_to_left_offset, blockDim_x);
+  PrefixSumConflictFree<uint32_t>(block_to_right_offset, blockDim_x);
   __syncthreads();
   const uint32_t to_left_total_count = block_to_left_offset[CONFLICT_FREE_INDEX(blockDim_x)];
   const uint32_t to_left_thread_block_offset = block_to_left_offset[conflict_free_threadIdx_x];
@@ -1209,8 +928,8 @@ __global__ void AggregateBlockOffsetKernel1(
     block_to_right_offset[conflict_free_threadIdx_x] = 0;
   }
   __syncthreads();
-  PrefixSum(block_to_left_offset, num_blocks_aligned);
-  PrefixSum(block_to_right_offset, num_blocks_aligned);
+  PrefixSumConflictFree<uint32_t>(block_to_left_offset, num_blocks_aligned);
+  PrefixSumConflictFree<uint32_t>(block_to_right_offset, num_blocks_aligned);
   __syncthreads();
   const uint32_t to_left_total_count = block_to_left_offset[CONFLICT_FREE_INDEX(num_blocks_aligned)];
   if (threadIdx_x < static_cast<unsigned int>(num_blocks)) {
@@ -1396,7 +1115,7 @@ __global__ void SplitInnerKernel(const int left_leaf_index, const int right_leaf
     thread_to_right_pos[0] = 0;
   }
   __syncthreads();
-  PrefixSum(thread_to_left_pos, split_indices_block_size_data_partition);
+  PrefixSumConflictFree<uint16_t>(thread_to_left_pos, split_indices_block_size_data_partition);
   __syncthreads();
   if (threadIdx_x > 0) {
     thread_to_right_pos[threadIdx_x] = (threadIdx_x - thread_to_left_pos[conflict_free_threadIdx_x_plus_1]);
