@@ -10,8 +10,8 @@
 
 namespace LightGBM {
 
-CUDALeafSplits::CUDALeafSplits(const data_size_t num_data, const int leaf_index):
-num_data_(num_data), leaf_index_(leaf_index) {
+CUDALeafSplits::CUDALeafSplits(const data_size_t num_data):
+num_data_(num_data) {
   cuda_struct_ = nullptr;
 }
 
@@ -24,10 +24,6 @@ void CUDALeafSplits::Init() {
   AllocateCUDAMemoryOuter<double>(&cuda_sum_of_hessians_buffer_, num_blocks_init_from_gradients_, __FILE__, __LINE__);
 
   AllocateCUDAMemoryOuter<CUDALeafSplitsStruct>(&cuda_struct_, 1, __FILE__, __LINE__);
-
-  cuda_streams_.resize(2);
-  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[0]));
-  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[1]));
 }
 
 void CUDALeafSplits::InitValues() {
@@ -44,8 +40,7 @@ void CUDALeafSplits::InitValues(
   SetCUDAMemoryOuter<double>(cuda_sum_of_gradients_buffer_, 0, num_blocks_init_from_gradients_, __FILE__, __LINE__);
   SetCUDAMemoryOuter<double>(cuda_sum_of_hessians_buffer_, 0, num_blocks_init_from_gradients_, __FILE__, __LINE__);
   LaunchInitValuesKernal(cuda_data_indices_in_leaf, cuda_hist_in_leaf);
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-  CopyFromCUDADeviceToHostAsyncOuter<double>(root_sum_hessians, cuda_sum_of_hessians_buffer_, 1, cuda_streams_[1], __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<double>(root_sum_hessians, cuda_sum_of_hessians_buffer_, 1, __FILE__, __LINE__);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 

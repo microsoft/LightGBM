@@ -23,9 +23,9 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   SerialTreeLearner::Init(train_data, is_constant_hessian);
   num_threads_ = OMP_NUM_THREADS();
   CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
-  cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_, 0));
+  cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_));
   cuda_smaller_leaf_splits_->Init();
-  cuda_larger_leaf_splits_.reset(new CUDALeafSplits(num_data_, -1));
+  cuda_larger_leaf_splits_.reset(new CUDALeafSplits(num_data_));
   cuda_larger_leaf_splits_->Init();
   cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, this->config_->num_leaves, num_threads_,
     share_state_->feature_hist_offsets(),

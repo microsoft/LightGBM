@@ -33,7 +33,7 @@ struct CUDALeafSplitsStruct {
 
 class CUDALeafSplits {
  public:
-  CUDALeafSplits(const data_size_t num_data, const int leaf_index);
+  CUDALeafSplits(const data_size_t num_data);
 
   CUDALeafSplits();
 
@@ -58,9 +58,7 @@ class CUDALeafSplits {
 
   // Host memory
   const int num_data_;
-  const int leaf_index_;
   int num_blocks_init_from_gradients_;
-  std::vector<cudaStream_t> cuda_streams_;
 
   // CUDA memory, held by this object
   CUDALeafSplitsStruct* cuda_struct_;

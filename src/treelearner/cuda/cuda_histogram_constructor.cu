@@ -6,24 +6,10 @@
 
 #ifdef USE_CUDA
 
+#include <LightGBM/cuda/cuda_algorithms.hpp>
 #include "cuda_histogram_constructor.hpp"
 
 namespace LightGBM {
-/*
-__device__ void ReduceSumHistogramConstructor(hist_t* array, const size_t size) {
-  const unsigned int threadIdx_x = threadIdx.x;
-  const size_t atomic_size = size / 4;
-  for (int s = 1; s < atomic_size; s <<= 1) {
-    if (threadIdx_x % (2 * s) == 0 && (threadIdx_x + s) < size) {
-      array[threadIdx_x] += array[threadIdx_x + s];
-    }
-    __syncthreads();
-  }
-  if (threadIdx_x > 0 && threadIdx_x % atomic_size == 0) {
-    atomicAdd_block(array, array[threadIdx_x]);
-  }
-  __syncthreads();
-}*/
 
 template <typename BIN_TYPE>
 __global__ void CUDAConstructHistogramDenseKernel(

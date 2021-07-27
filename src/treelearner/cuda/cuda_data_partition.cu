@@ -6,6 +6,7 @@
 
 #ifdef USE_CUDA
 
+#include <LightGBM/cuda/cuda_algorithms.hpp>
 #include "cuda_data_partition.hpp"
 #include <LightGBM/tree.h>
 

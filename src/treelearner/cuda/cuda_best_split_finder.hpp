@@ -12,7 +12,6 @@
 #include "cuda_leaf_splits.hpp"
 
 #include <LightGBM/bin.h>
-#include <LightGBM/cuda/cuda_algorithms.hpp>
 #include <LightGBM/cuda/cuda_split_info.hpp>
 #include <LightGBM/dataset.h>
 

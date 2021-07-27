@@ -6,12 +6,13 @@
 
 #ifdef USE_CUDA
 
+#include <LightGBM/cuda/cuda_algorithms.hpp>
 #include "cuda_best_split_finder.hpp"
 
 namespace LightGBM {
 
 __device__ void ReduceBestGain(double* gain, hist_t* sum_gradients,
-  hist_t* sum_hessians, /*data_size_t* num_data,*/ uint8_t* found,
+  hist_t* sum_hessians, uint8_t* found,
   uint32_t* threshold_value) {
   const unsigned int tid = threadIdx.x;
   const unsigned int conflict_free_tid_plus_1 = CONFLICT_FREE_INDEX(tid + 1);

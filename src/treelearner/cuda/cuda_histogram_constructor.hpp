@@ -8,7 +8,6 @@
 
 #ifdef USE_CUDA
 
-#include <LightGBM/cuda/cuda_algorithms.hpp>
 #include <LightGBM/cuda/cuda_row_data.hpp>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/tree.h>
