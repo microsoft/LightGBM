@@ -191,7 +191,7 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
                                 &leaf_data_start_[right_leaf_index],
                                 &leaf_sum_hessians_[best_leaf_index_],
                                 &leaf_sum_hessians_[right_leaf_index]);
-    smaller_leaf_index_ = (leaf_num_data_[best_leaf_index_] <= leaf_num_data_[right_leaf_index] ? best_leaf_index_ : right_leaf_index);
+    smaller_leaf_index_ = (leaf_num_data_[best_leaf_index_] < leaf_num_data_[right_leaf_index] ? best_leaf_index_ : right_leaf_index);
     larger_leaf_index_ = (smaller_leaf_index_ == best_leaf_index_ ? right_leaf_index : best_leaf_index_);
     end = std::chrono::steady_clock::now();
     duration = static_cast<std::chrono::duration<double>>(end - start);
