@@ -1,8 +1,8 @@
 # coding: utf-8
 import filecmp
 import numbers
-from pathlib import Path
 import types
+from pathlib import Path
 
 import numpy as np
 import pytest
