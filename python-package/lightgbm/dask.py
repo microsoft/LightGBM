@@ -510,7 +510,7 @@ def _train(
     # Some passed-in parameters can be removed:
     #   * 'num_machines': set automatically from Dask worker list
     #   * 'num_threads': overridden to match nthreads on each Dask process
-    for param_alias in _ConfigAliases.get('num_machines', 'num_threads'):
+    for param_alias in _ConfigAliases.get('num_machines'):  # , 'num_threads'
         if param_alias in params:
             _log_warning(f"Parameter {param_alias} will be ignored.")
             params.pop(param_alias)
@@ -766,7 +766,7 @@ def _train(
         client.submit(
             _train_part,
             model_factory=model_factory,
-            params={**params, 'num_threads': worker_ncores[worker]},
+            params=params,  #  'num_threads': worker_ncores[worker]
             list_of_parts=list_of_parts,
             machines=machines,
             local_listen_port=worker_address_to_port[worker],
