@@ -657,6 +657,7 @@ struct Config {
   // desc = used to specify the label column
   // desc = use number for index, e.g. ``label=0`` means column\_0 is the label
   // desc = add a prefix ``name:`` for column name, e.g. ``label=name:is_click``
+  // desc = if omitted, the first column in the training data is used as the label
   // desc = **Note**: works only in case of loading data directly from file
   std::string label_column = "";
 

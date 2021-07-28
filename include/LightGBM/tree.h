@@ -374,16 +374,14 @@ class Tree {
   }
 
   inline int CategoricalDecision(double fval, int node) const {
-    uint8_t missing_type = GetMissingType(decision_type_[node]);
-    int int_fval = static_cast<int>(fval);
-    if (int_fval < 0) {
-      return right_child_[node];;
-    } else if (std::isnan(fval)) {
-      // NaN is always in the right
-      if (missing_type == MissingType::NaN) {
+    int int_fval;
+    if (std::isnan(fval)) {
+      return right_child_[node];
+    } else {
+      int_fval = static_cast<int>(fval);
+      if (int_fval < 0) {
         return right_child_[node];
       }
-      int_fval = 0;
     }
     int cat_idx = static_cast<int>(threshold_[node]);
     if (Common::FindInBitset(cat_threshold_.data() + cat_boundaries_[cat_idx],

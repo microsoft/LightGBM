@@ -762,6 +762,8 @@ Dataset Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``label=name:is_click``
 
+   -  if omitted, the first column in the training data is used as the label
+
    -  **Note**: works only in case of loading data directly from file
 
 -  ``weight_column`` :raw-html:`<a id="weight_column" title="Permalink to this parameter" href="#weight_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``weight``

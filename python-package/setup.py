@@ -158,7 +158,7 @@ def compile_cpp(
             logger.info("Starting to compile with CMake and MinGW.")
             silent_call(cmake_cmd + ["-G", "MinGW Makefiles"], raise_error=True,
                         error_msg='Please install CMake and all required dependencies first')
-            silent_call(["mingw32-make.exe", "_lightgbm", f"-I{build_dir}"], raise_error=True,
+            silent_call(["mingw32-make.exe", "_lightgbm", f"-I{build_dir}", "-j4"], raise_error=True,
                         error_msg='Please install MinGW first')
         else:
             status = 1
