@@ -1,6 +1,7 @@
 # coding: utf-8
 import filecmp
 import numbers
+import types
 from pathlib import Path
 
 import numpy as np
@@ -194,6 +195,31 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
     assert filecmp.cmp(valid_npy_bin_fname, valid_seq2_bin_fname)
 
 
+def test_sequence_get_data():
+    nrow = 20
+    ncol = 11
+    data = np.arange(nrow * ncol, dtype=np.float64).reshape((nrow, ncol))
+
+    X = data[:, :-1]
+    Y = data[:, -1]
+
+    seqs = _create_sequence_from_ndarray(X, 2, 6)
+    seq_ds = lgb.Dataset(seqs, label=Y, params=None, free_raw_data=False)
+    seq_ds.construct()
+
+    assert seqs == seq_ds.get_data()
+
+    # This is a hack to add test coverage in get_data.
+    used_indices = [0, 5, 11, 15]
+    ref_data = types.SimpleNamespace()
+    ref_data.data = seqs
+
+    seq_ds.need_slice = True
+    seq_ds.reference = ref_data
+    seq_ds.used_indices = used_indices
+    assert (X[used_indices] == seq_ds.get_data()).all()
+
+
 def test_chunked_dataset():
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1,
                                                         random_state=2)
@@ -313,7 +339,7 @@ def test_add_features_from_different_sources():
     n_row = 100
     n_col = 5
     X = np.random.random((n_row, n_col))
-    xxs = [X, sparse.csr_matrix(X), pd.DataFrame(X)]
+    xxs = [X, sparse.csr_matrix(X), pd.DataFrame(X), _create_sequence_from_ndarray(X, 1, 30)]
     names = [f'col_{i}' for i in range(n_col)]
     for x_1 in xxs:
         # test that method works even with free_raw_data=True
@@ -333,6 +359,9 @@ def test_add_features_from_different_sources():
         d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=False).construct()
         res_feature_names = [name for name in names]
         for idx, x_2 in enumerate(xxs, 2):
+            # Dataset.get_data does not support Sequence input.
+            if isinstance(x_1, lgb.Sequence) or isinstance(x_2, lgb.Sequence):
+                continue
             original_type = type(d1.get_data())
             d2 = lgb.Dataset(x_2, feature_name=names, free_raw_data=False).construct()
             d1.add_features_from(d2)
