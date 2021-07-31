@@ -633,7 +633,7 @@ class Sequence(abc.ABC):
     batch_size = 4096  # Defaults to read 4K rows in each batch.
 
     @abc.abstractmethod
-    def __getitem__(self, idx: Union[int, slice]) -> np.ndarray:
+    def __getitem__(self, idx: Union[int, slice, List[int]]) -> np.ndarray:
         """Return data for given row index.
 
         A basic implementation should look like this:
@@ -645,20 +645,20 @@ class Sequence(abc.ABC):
             elif isinstance(idx, slice):
                 return np.stack([self._get_one_line(i) for i in range(idx.start, idx.stop)])
             elif isinstance(idx, list):
-                # Only required if using ``Dataset.get_data()``.
+                # Only required if using ``Dataset.subset()``.
                 return np.array([self._get_one_line(i) for i in idx])
             else:
-                raise TypeError(f"Sequence index must be integer or slice, got {type(idx).__name__}")
+                raise TypeError(f"Sequence index must be integer, slice or list, got {type(idx).__name__}")
 
         Parameters
         ----------
-        idx : int, slice[int]
+        idx : int, slice[int], list[int]
             Item index.
 
         Returns
         -------
         result : numpy 1-D array, numpy 2-D array
-            1-D array if idx is int, 2-D array if idx is slice.
+            1-D array if idx is int, 2-D array if idx is slice or list.
         """
         raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __getitem__()")
 
