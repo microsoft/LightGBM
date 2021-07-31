@@ -42,8 +42,12 @@ void DatasetLoader::SetHeader(const char* filename) {
     if (config_.header) {
       std::string first_line = text_reader.first_line();
       feature_names_ = Common::Split(first_line.c_str(), "\t,");
+    } else if (!config_.header_file.empty()) {
+      Log::Info("Get column names from separate header file.");
+      std::string first_line = Common::LoadStringFromFile(config_.header_file.c_str(), 1);
+      feature_names_ = Common::Split(first_line.c_str(), "\t,");
     }
-
+    
     // load label idx first
     if (config_.label_column.size() > 0) {
       if (Common::StartsWith(config_.label_column, name_prefix)) {
@@ -68,6 +72,15 @@ void DatasetLoader::SetHeader(const char* filename) {
                      "please add the prefix \"name:\" to the column name");
         }
         Log::Info("Using column number %d as label", label_idx_);
+      }
+    }
+
+    if (!config_.transform_file.empty()) {
+      // if transform file exists, feature names will be changed after transform applied.
+      // clear here so could use default filled feature names during dataset construction.
+      // may improve by saving real feature names defined in transform in the future.
+      if (!feature_names_.empty()) {
+        feature_names_.clear();
       }
     }
 
@@ -196,8 +209,20 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   auto bin_filename = CheckCanLoadFromBin(filename);
   bool is_load_from_binary = false;
   if (bin_filename.size() == 0) {
+#ifdef USE_TRANSFORM
+    dataset->transform_filename_ = config_.transform_file;
+    if (config_.header_file.empty() && config_.header) {
+      dataset->header_filename_ = filename;
+    } else {
+      dataset->header_filename_ = config_.header_file;
+    }
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_, config_.precise_float_parser,
+                                                               Common::LoadStringFromFile(dataset->transform_filename_.c_str()),
+                                                               Common::LoadStringFromFile(dataset->header_filename_.c_str(), 1)));
+#else
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_,
                                                                config_.precise_float_parser));
+#endif
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
@@ -268,8 +293,20 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   }
   auto bin_filename = CheckCanLoadFromBin(filename);
   if (bin_filename.size() == 0) {
+#ifdef USE_TRANSFORM
+    dataset->transform_filename_ = config_.transform_file;
+    if (config_.header_file.empty() && config_.header) {
+      dataset->header_filename_ = filename;
+    } else {
+      dataset->header_filename_ = config_.header_file;
+    }
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_, config_.precise_float_parser,
+                                                               Common::LoadStringFromFile(dataset->transform_filename_.c_str()),
+                                                               Common::LoadStringFromFile(dataset->header_filename_.c_str(), 1)));
+#else
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_,
                                                                config_.precise_float_parser));
+#endif
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
@@ -1014,7 +1051,11 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
                                                                                     categorical_features_);
 
   // check the range of label_idx, weight_idx and group_idx
-  CHECK(label_idx_ >= 0 && label_idx_ <= dataset->num_total_features_);
+  // skip label check if user input transform file,
+  // because label id is got from raw features while dataset features are consistent with transform file.
+  if (dataset->transform_filename_.empty()) {
+    CHECK(label_idx_ >= 0 && label_idx_ <= dataset->num_total_features_);
+  }
   CHECK(weight_idx_ < 0 || weight_idx_ < dataset->num_total_features_);
   CHECK(group_idx_ < 0 || group_idx_ < dataset->num_total_features_);
 

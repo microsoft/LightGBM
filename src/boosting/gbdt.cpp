@@ -116,6 +116,10 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   max_feature_idx_ = train_data_->num_total_features() - 1;
   // get label index
   label_idx_ = train_data_->label_idx();
+  // get transform file content
+  transform_str_ = Common::LoadStringFromFile(train_data_->transform_filename().c_str());
+  // get header file content
+  header_str_ = Common::LoadStringFromFile(train_data_->header_filename().c_str(), 1);
   // get feature names
   feature_names_ = train_data_->feature_names();
   feature_infos_ = train_data_->feature_infos();

@@ -26,6 +26,7 @@ LIGHTGBM_OPTIONS = [
     ('hdfs', 'h', 'Compile HDFS version'),
     ('bit32', None, 'Compile 32-bit version'),
     ('precompile', 'p', 'Use precompiled library'),
+    ('transform', None, 'Support transform'),
     ('boost-root=', None, 'Boost preferred installation prefix'),
     ('boost-dir=', None, 'Directory with Boost package configuration file'),
     ('boost-include-dir=', None, 'Directory containing Boost headers'),
@@ -114,7 +115,8 @@ def compile_cpp(
     opencl_library: Optional[str] = None,
     nomp: bool = False,
     bit32: bool = False,
-    integrated_opencl: bool = False
+    integrated_opencl: bool = False,
+    transform: bool = False
 ) -> None:
     build_dir = CURRENT_DIR / "build_cpp"
     rmtree(build_dir, ignore_errors=True)
@@ -150,6 +152,8 @@ def compile_cpp(
         cmake_cmd.append("-DUSE_OPENMP=OFF")
     if use_hdfs:
         cmake_cmd.append("-DUSE_HDFS=ON")
+    if transform:
+        cmake_cmd.append("-DUSE_TRANSFORM=ON")
 
     if system() in {'Windows', 'Microsoft'}:
         if use_mingw:
@@ -205,10 +209,11 @@ class CustomInstallLib(install_lib):
 
     def install(self) -> List[str]:
         outfiles = install_lib.install(self)
-        src = find_lib()[0]
+        src = find_lib()
         dst = Path(self.install_dir) / 'lightgbm'
-        dst, _ = self.copy_file(src, str(dst))
-        outfiles.append(dst)
+        for src_lib in src:
+            dst_lib, _ = self.copy_file(src_lib, str(dst))
+            outfiles.append(dst_lib)
         return outfiles
 
 
@@ -233,6 +238,7 @@ class CustomInstall(install):
         self.precompile = False
         self.nomp = False
         self.bit32 = False
+        self.transform = False
 
     def run(self) -> None:
         if (8 * struct.calcsize("P")) != 64:
@@ -249,7 +255,7 @@ class CustomInstall(install):
                         use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library,
-                        nomp=self.nomp, bit32=self.bit32, integrated_opencl=self.integrated_opencl)
+                        nomp=self.nomp, bit32=self.bit32, integrated_opencl=self.integrated_opencl, transform=self.transform)
         install.run(self)
         if LOG_PATH.is_file():
             LOG_PATH.unlink()
@@ -276,6 +282,7 @@ class CustomBdistWheel(bdist_wheel):
         self.precompile = False
         self.nomp = False
         self.bit32 = False
+        self.transform = False
 
     def finalize_options(self) -> None:
         bdist_wheel.finalize_options(self)
@@ -297,6 +304,7 @@ class CustomBdistWheel(bdist_wheel):
         install.precompile = self.precompile
         install.nomp = self.nomp
         install.bit32 = self.bit32
+        install.transform = self.transform
 
 
 class CustomSdist(sdist):

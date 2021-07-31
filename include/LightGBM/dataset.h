@@ -277,6 +277,21 @@ class Parser {
   * \return Object of parser
   */
   static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser);
+
+#ifdef USE_TRANSFORM
+  /*!
+  * \brief Create an object of parser, will auto choose the format depend on file
+  * \param filename One Filename of data
+  * \param num_features Pass num_features of this data file if you know, <=0 means don't know
+  * \param label_idx index of label column
+  * \param precise_float_parser using precise floating point number parsing if true
+  * \param transform_str transform file content
+  * \param header_str separate header file content
+  * \return Object of parser
+  */
+  static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser,
+                              const std::string& transform_str, const std::string& header_str);
+#endif
 };
 
 /*! \brief The main class of data set,
@@ -605,6 +620,12 @@ class Dataset {
   /*! \brief Get names of current data set */
   inline const std::vector<std::string>& feature_names() const { return feature_names_; }
 
+  /*! \brief Get name of transform file */
+  inline const std::string transform_filename() const {return transform_filename_;}
+
+  /*! \brief Get name of header file */
+  inline const std::string header_filename() const { return header_filename_;}
+
   inline void set_feature_names(const std::vector<std::string>& feature_names) {
     if (feature_names.size() != static_cast<size_t>(num_total_features_)) {
       Log::Fatal("Size of feature_names error, should equal with total number of features");
@@ -683,6 +704,8 @@ class Dataset {
 
  private:
   std::string data_filename_;
+  std::string transform_filename_ = "";
+  std::string header_filename_ = "";
   /*! \brief Store used features */
   std::vector<std::unique_ptr<FeatureGroup>> feature_groups_;
   /*! \brief Mapper from real feature index to used index*/

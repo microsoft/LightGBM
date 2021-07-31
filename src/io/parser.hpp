@@ -12,6 +12,9 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#ifdef USE_TRANSFORM
+#include "TransformProcessor.h"
+#endif
 
 namespace LightGBM {
 
@@ -131,5 +134,28 @@ class LibSVMParser: public Parser {
   AtofFunc atof_;
 };
 
+#ifdef USE_TRANSFORM
+class ParserWithTransform: public Parser {
+ public:
+  explicit ParserWithTransform(const std::string& transform_str, const std::string& header_str, int label_idx){
+      Log::Info("Initializing transform processor.");
+      transform_.reset(new TransformProcessor(transform_str, header_str, label_idx));
+  }
+  inline void ParseOneLine(const char* str,
+    std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
+    vector<string> out_feature_strs;
+    out_feature_strs.clear();
+    transform_->Parse(str, &out_feature_strs, out_label, "\t");
+    transform_->Apply(&out_feature_strs, out_features);
+  }
+
+  inline int NumFeatures() const override {
+    return transform_->GetFeatureCount();
+  }
+
+ private:
+  std::unique_ptr<TransformProcessor> transform_;
+};
+#endif
 }  // namespace LightGBM
 #endif   // LightGBM_IO_PARSER_HPP_

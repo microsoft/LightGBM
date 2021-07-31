@@ -161,6 +161,12 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::vector<std::string> valid;
 
+  // desc = path of transform file
+  std::string transform_file = "";
+
+  // desc = path of separate header file
+  std::string header_file = "";
+
   // alias = num_iteration, n_iter, num_tree, num_trees, num_round, num_rounds, num_boost_round, n_estimators, max_iter
   // check = >=0
   // desc = number of boosting iterations

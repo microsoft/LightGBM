@@ -98,7 +98,9 @@ def _load_lib():
     lib_path = find_lib_path()
     if len(lib_path) == 0:
         return None
-    lib = ctypes.cdll.LoadLibrary(lib_path[0])
+    # Load all c libraries, the last one is lib_lightgbm.so
+    for p in lib_path:
+        lib = ctypes.cdll.LoadLibrary(p)
     lib.LGBM_GetLastError.restype = ctypes.c_char_p
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
     lib.callback = callback(_log_callback)

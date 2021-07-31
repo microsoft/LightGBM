@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <fstream>
 
 #if (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
 #define FMT_HEADER_ONLY
@@ -198,6 +199,21 @@ inline static std::vector<std::string> Split(const char* c_str, const char* deli
     ret.push_back(str.substr(i));
   }
   return ret;
+}
+
+inline static std::string LoadStringFromFile(const char* filename, int row_num = INT_MAX) {
+  if(filename == NULL || *filename == '\0') {
+    return "";
+  }
+  std::stringstream ss;
+  Common::C_stringstream(ss);
+  std::ifstream fin(filename);
+  std::string line = "";
+  int i = 0;
+  while (std::getline(fin, line) && i++ < row_num) {
+    ss << line << "\n";
+  }
+  return ss.str();
 }
 
 template<typename T>

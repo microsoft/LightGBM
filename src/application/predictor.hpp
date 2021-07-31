@@ -8,6 +8,7 @@
 #include <LightGBM/boosting.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
 
@@ -20,6 +21,13 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#ifdef USE_TRANSFORM
+#include <boost/algorithm/string/split.hpp>
+#include "TransformProcessor.h"
+#include "IniFileParserInterface.h"
+#include "../io/parser.hpp"
+#include <fstream>
+#endif
 
 namespace LightGBM {
 
@@ -165,10 +173,15 @@ class Predictor {
     if (!writer->Init()) {
       Log::Fatal("Prediction results file %s cannot be created", result_filename);
     }
-    auto label_idx = header ? -1 : boosting_->LabelIdx();
+    auto label_idx = header? -1 : boosting_->LabelIdx();
+#ifdef USE_TRANSFORM
+    std::string header_str = header? Common::LoadStringFromFile(data_filename, 1) : boosting_->HeaderStr();
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, header, boosting_->MaxFeatureIdx() + 1, label_idx, precise_float_parser,
+                                                               boosting_->TransformStr(), header_str));
+#else
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, header, boosting_->MaxFeatureIdx() + 1, label_idx,
                                                                precise_float_parser));
-
+#endif
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
@@ -179,7 +192,8 @@ class Predictor {
     TextReader<data_size_t> predict_data_reader(data_filename, header);
     std::vector<int> feature_remapper(parser->NumFeatures(), -1);
     bool need_adjust = false;
-    if (header) {
+    // skip raw feature remapping if trained model has transform str which is used as real features.
+    if (header && boosting_->TransformStr().empty()) {
       std::string first_line = predict_data_reader.first_line();
       std::vector<std::string> header_words = Common::Split(first_line.c_str(), "\t,");
       std::unordered_map<std::string, int> header_mapper;

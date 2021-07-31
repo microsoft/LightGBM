@@ -394,6 +394,10 @@ class GBDT : public GBDTBase {
 
   bool IsLinear() const override { return linear_tree_; }
 
+  inline std::string TransformStr() const override {return transform_str_;}
+
+  inline std::string HeaderStr() const override {return header_str_;}
+
  protected:
   virtual bool GetIsConstHessian(const ObjectiveFunction* objective_function) {
     if (objective_function != nullptr) {
@@ -455,6 +459,12 @@ class GBDT : public GBDTBase {
   int iter_;
   /*! \brief Pointer to training data */
   const Dataset* train_data_;
+  /*! \brief Transform file content */
+  std::string transform_str_;
+  /*! \brief Header file content */
+  std::string header_str_;
+  /*! \brief Model path */
+  std::string model_path_;
   /*! \brief Config of gbdt */
   std::unique_ptr<Config> config_;
   /*! \brief Tree learner, will use this class to learn trees */

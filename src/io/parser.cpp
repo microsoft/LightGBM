@@ -258,4 +258,16 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
   return ret.release();
 }
 
+#ifdef USE_TRANSFORM
+Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser,
+                             const std::string& transform_str, const std::string& header_str) {
+  std::unique_ptr<Parser> ret;
+  if (!transform_str.empty() && !header_str.empty()) {
+    ret.reset(new ParserWithTransform(transform_str, header_str, label_idx));
+    return ret.release(); 
+  }
+  Log::Warning("Found transform or header does not exist when parsing with transform. Try other parsers.");
+  return CreateParser(filename, header, num_features, label_idx, precise_float_parser);
+}
+#endif
 }  // namespace LightGBM

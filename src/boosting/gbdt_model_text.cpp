@@ -399,6 +399,16 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
     ss << loaded_parameter_ << "\n";
     ss << "end of parameters" << '\n';
   }
+  if (!transform_str_.empty()) {
+    ss << "\ntransform:" << '\n';
+    ss << transform_str_ << "\n";
+    ss << "end of transform" << '\n';
+  }
+  if (!header_str_.empty()) {
+    ss << "\nheader:" << '\n';
+    ss << header_str_ << "\n";
+    ss << "end of header" << '\n';
+  }
   return ss.str();
 }
 
@@ -568,7 +578,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
   num_init_iteration_ = num_iteration_for_pred_;
   iter_ = 0;
-  bool is_inparameter = false;
+  bool is_inparameter = false, is_intransform = false, is_inheader = false;
   std::stringstream ss;
   Common::C_stringstream(ss);
   while (p < end) {
@@ -594,6 +604,46 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   if (!ss.str().empty()) {
     loaded_parameter_ = ss.str();
   }
+  ss.clear();
+  ss.str("");
+  while (p < end) {
+    auto line_len = Common::GetLine(p);
+    if (line_len > 0) {
+      std::string cur_line(p, line_len);
+      if (cur_line == std::string("transform:")) {
+        is_intransform = true;
+      } else if (cur_line == std::string("end of transform")) {
+        p += line_len;
+        p = Common::SkipNewLine(p);
+        break;
+      } else if (is_intransform) {
+        ss << cur_line << "\n";
+      }
+    }
+    p += line_len;
+    p = Common::SkipNewLine(p);
+  }
+  transform_str_ = ss.str();
+  ss.clear();
+  ss.str("");
+  while (p < end) {
+    auto line_len = Common::GetLine(p);
+    if (line_len > 0) {
+      std::string cur_line(p, line_len);
+      if (cur_line == std::string("header:")) {
+        is_inheader = true;
+      } else if (cur_line == std::string("end of header")) {
+        p += line_len;
+        p = Common::SkipNewLine(p);
+        break;
+      } else if (is_inheader) {
+        ss << cur_line << "\n";
+      }
+    }
+    p += line_len;
+    p = Common::SkipNewLine(p);
+  }
+  header_str_ = ss.str();
   return true;
 }
 

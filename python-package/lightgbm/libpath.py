@@ -31,7 +31,7 @@ def find_lib_path() -> List[str]:
         dll_path.append(curr_path.parents[1] / 'windows' / 'x64' / 'DLL')
         dll_path = [p / 'lib_lightgbm.dll' for p in dll_path]
     else:
-        dll_path = [p / 'lib_lightgbm.so' for p in dll_path]
+        dll_path = [p / lib_name for lib_name in ['lib_transform.so', 'lib_lightgbm.so'] for p in dll_path]
     lib_path = [str(p) for p in dll_path if p.is_file()]
     if not lib_path:
         dll_path_joined = '\n'.join(map(str, dll_path))

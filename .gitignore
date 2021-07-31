@@ -437,7 +437,7 @@ tests/distributed/mlist.txt
 tests/distributed/train*
 tests/distributed/model*
 tests/distributed/predict*
-
+TestData
 
 # Files from interactive R sessions
 .Rproj.user

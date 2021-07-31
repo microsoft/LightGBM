@@ -260,7 +260,7 @@ void Application::Predict() {
 
 void Application::InitPredict() {
   boosting_.reset(
-    Boosting::CreateBoosting("gbdt", config_.input_model.c_str()));
+  Boosting::CreateBoosting("gbdt", config_.input_model.c_str()));
   Log::Info("Finished initializing prediction, total used %d iterations", boosting_->GetCurrentIteration());
 }
 
