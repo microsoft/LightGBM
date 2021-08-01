@@ -32,6 +32,7 @@ _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Typ
 
 HostWorkers = namedtuple('HostWorkers', ['default', 'all'])
 
+
 class _DatasetNames(Enum):
     """Placeholder names used by lightgbm.dask internals to say 'also evaluate the training data'.
 
@@ -84,7 +85,7 @@ def _find_n_open_ports(n: int) -> List[int]:
 
 
 def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, HostWorkers]:
-    """Group al worker addresses by hostname.
+    """Group all worker addresses by hostname.
 
     Returns
     -------
@@ -105,9 +106,10 @@ def _assign_open_ports_to_workers(
     client: Client,
     host_to_workers: Dict[str, HostWorkers]
 ) -> Dict[str, int]:
-    """Assigns an open port to each worker.
+    """Assign an open port to each worker.
 
     Returns
+    -------
     worker_to_port: dict
         mapping from worker address to an open port.
     """
