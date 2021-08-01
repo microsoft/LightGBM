@@ -7,7 +7,7 @@ dask.Array and dask.DataFrame collections.
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
 import socket
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from copy import deepcopy
 from enum import Enum, auto
 from functools import partial
@@ -30,6 +30,7 @@ _DaskVectorLike = Union[dask_Array, dask_Series]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
+HostWorkers = namedtuple('HostWorkers', ['default', 'all'])
 
 class _DatasetNames(Enum):
     """Placeholder names used by lightgbm.dask internals to say 'also evaluate the training data'.
@@ -62,18 +63,70 @@ def _get_dask_client(client: Optional[Client]) -> Client:
         return client
 
 
-def _find_random_open_port() -> int:
-    """Find a random open port on localhost.
+def _find_n_open_ports(n: int) -> List[int]:
+    """Find n random open ports on localhost.
 
     Returns
     -------
-    port : int
-        A free port on localhost
+    ports : list of int
+        n random open ports on localhost.
     """
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    skts = []
+    for _ in range(n):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind(('', 0))
-        port = s.getsockname()[1]
-    return port
+        skts.append(s)
+    ports = []
+    for s in skts:
+        ports.append(s.getsockname()[1])
+        s.close()
+    return ports
+
+
+def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, HostWorkers]:
+    """Group al worker addresses by hostname.
+
+    Returns
+    -------
+    host_to_workers : dict
+        mapping from hostname to all its workers.
+    """
+    host_to_workers: Dict[str, HostWorkers] = {}
+    for address in worker_addresses:
+        hostname = urlparse(address).hostname
+        if hostname not in host_to_workers:
+            host_to_workers[hostname] = HostWorkers(default=address, all=[address])
+        else:
+            host_to_workers[hostname].all.append(address)
+    return host_to_workers
+
+
+def _assign_open_ports_to_workers(
+    client: Client,
+    host_to_workers: Dict[str, HostWorkers]
+) -> Dict[str, int]:
+    """Assigns an open port to each worker.
+
+    Returns
+    worker_to_port: dict
+        mapping from worker address to an open port.
+    """
+    host_ports_futures = {}
+    for hostname, workers in host_to_workers.items():
+        n_workers_in_host = len(workers.all)
+        host_ports_futures[hostname] = client.submit(
+            _find_n_open_ports,
+            n=n_workers_in_host,
+            workers=[workers.default],
+            pure=False,
+            allow_other_workers=False,
+        )
+    found_ports = client.gather(host_ports_futures)
+    worker_to_port = {}
+    for hostname, workers in host_to_workers.items():
+        for worker, port in zip(workers.all, found_ports[hostname]):
+            worker_to_port[worker] = port
+    return worker_to_port
 
 
 def _concat(seq: List[_DaskPart]) -> _DaskPart:
@@ -328,44 +381,6 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
         out[address] = machine_to_port[worker_host].pop()
 
     return out
-
-
-def _possibly_fix_worker_map_duplicates(worker_map: Dict[str, int], client: Client) -> Dict[str, int]:
-    """Fix any duplicate IP-port pairs in a ``worker_map``."""
-    worker_map = deepcopy(worker_map)
-    workers_that_need_new_ports = []
-    host_to_port = defaultdict(set)
-    for worker, port in worker_map.items():
-        host = urlparse(worker).hostname
-        if port in host_to_port[host]:
-            workers_that_need_new_ports.append(worker)
-        else:
-            host_to_port[host].add(port)
-
-    # if any duplicates were found, search for new ports one by one
-    for worker in workers_that_need_new_ports:
-        _log_info(f"Searching for a LightGBM training port for worker '{worker}'")
-        host = urlparse(worker).hostname
-        retries_remaining = 100
-        while retries_remaining > 0:
-            retries_remaining -= 1
-            new_port = client.submit(
-                _find_random_open_port,
-                workers=[worker],
-                allow_other_workers=False,
-                pure=False
-            ).result()
-            if new_port not in host_to_port[host]:
-                worker_map[worker] = new_port
-                host_to_port[host].add(new_port)
-                break
-
-        if retries_remaining == 0:
-            raise LightGBMError(
-                "Failed to find an open port. Try re-running training or explicitly setting 'machines' or 'local_listen_port'."
-            )
-
-    return worker_map
 
 
 def _train(
@@ -726,18 +741,8 @@ def _train(
             }
         else:
             _log_info("Finding random open ports for workers")
-            # this approach with client.run() is faster than searching for ports
-            # serially, but can produce duplicates sometimes. Try the fast approach one
-            # time, then pass it through a function that will use a slower but more reliable
-            # approach if duplicates are found.
-            worker_address_to_port = client.run(
-                _find_random_open_port,
-                workers=list(worker_addresses)
-            )
-            worker_address_to_port = _possibly_fix_worker_map_duplicates(
-                worker_map=worker_address_to_port,
-                client=client
-            )
+            host_to_workers = _group_workers_by_host(worker_map.keys())
+            worker_address_to_port = _assign_open_ports_to_workers(client, host_to_workers)
 
         machines = ','.join([
             f'{urlparse(worker_address).hostname}:{port}'

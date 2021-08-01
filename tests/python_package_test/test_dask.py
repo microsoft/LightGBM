@@ -446,48 +446,35 @@ def test_classifier_pred_contrib(output, task, cluster):
                 assert len(np.unique(preds_with_contrib[:, base_value_col]) == 1)
 
 
-def test_find_random_open_port(cluster):
+def test_group_workers_by_host():
+    hosts = [f'0.0.0.{i}' for i in range(2)]
+    workers = [f'tcp://{host}:{p}' for p in range(2) for host in hosts]
+    expected = {
+        host: lgb.dask.HostWorkers(
+            default=f'tcp://{host}:0',
+            all=[f'tcp://{host}:0', f'tcp://{host}:1']
+        )
+        for host in hosts
+    }
+    host_to_workers = lgb.dask._group_workers_by_host(workers)
+    assert host_to_workers == expected
+
+
+def test_assign_open_ports_to_workers(cluster):
     with Client(cluster) as client:
-        for _ in range(5):
-            worker_address_to_port = client.run(lgb.dask._find_random_open_port)
+        workers = client.scheduler_info()['workers'].keys()
+        n_workers = len(workers)
+        host_to_workers = lgb.dask._group_workers_by_host(workers)
+        for _ in range(1_000):
+            worker_address_to_port = lgb.dask._assign_open_ports_to_workers(client, host_to_workers)
             found_ports = worker_address_to_port.values()
+            assert len(found_ports) == n_workers
             # check that found ports are different for same address (LocalCluster)
             assert len(set(found_ports)) == len(found_ports)
             # check that the ports are indeed open
             for port in found_ports:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.bind(('', port))
-
-
-def test_possibly_fix_worker_map(capsys, cluster):
-    with Client(cluster) as client:
-        worker_addresses = list(client.scheduler_info()["workers"].keys())
-
-        retry_msg = 'Searching for a LightGBM training port for worker'
-
-        # should handle worker maps without any duplicates
-        map_without_duplicates = {
-            worker_address: 12400 + i
-            for i, worker_address in enumerate(worker_addresses)
-        }
-        patched_map = lgb.dask._possibly_fix_worker_map_duplicates(
-            client=client,
-            worker_map=map_without_duplicates
-        )
-        assert patched_map == map_without_duplicates
-        assert retry_msg not in capsys.readouterr().out
-
-        # should handle worker maps with duplicates
-        map_with_duplicates = {
-            worker_address: 12400
-            for i, worker_address in enumerate(worker_addresses)
-        }
-        patched_map = lgb.dask._possibly_fix_worker_map_duplicates(
-            client=client,
-            worker_map=map_with_duplicates
-        )
-        assert retry_msg in capsys.readouterr().out
-        assert len(set(patched_map.values())) == len(worker_addresses)
 
 
 def test_training_does_not_fail_on_port_conflicts(cluster):
@@ -1406,7 +1393,7 @@ def test_network_params_not_required_but_respected_if_given(task, listen_port, c
 
         # model 2 - machines given
         n_workers = len(client.scheduler_info()['workers'])
-        open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
+        open_ports = lgb.dask._find_n_open_ports(n_workers)
         dask_model2 = dask_model_factory(
             n_estimators=5,
             num_leaves=5,
@@ -1452,7 +1439,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
 
         n_workers = len(client.scheduler_info()['workers'])
         assert n_workers > 1
-        open_ports = [lgb.dask._find_random_open_port() for _ in range(n_workers)]
+        open_ports = lgb.dask._find_n_open_ports(n_workers)
         dask_model = dask_model_factory(
             n_estimators=5,
             num_leaves=5,
@@ -1474,7 +1461,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
         client.restart()
 
         # an informative error should be raised if "machines" has duplicates
-        one_open_port = lgb.dask._find_random_open_port()
+        one_open_port = lgb.dask._find_n_open_ports(1)
         dask_model.set_params(
             machines=",".join([
                 f"127.0.0.1:{one_open_port}"
