@@ -42,8 +42,7 @@ function Remove-From-Path {
 # copying the msys64 versions here and explicitly adding them to PATH
 $env:GZIP_INSTALL_LOCATION="C:\ProgramData\"
 if ($env:R_BUILD_TYPE -eq "cran") {
-    Copy-Item -Path "C:\msys64\usr\bin\gzip" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
-    Copy-Item -Path "C:\msys64\usr\bin\tar" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
+    Copy-Item -Path "C:\msys64\usr\bin\tar.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
 }
 
 # remove some details that exist in the GitHub Actions images which might
