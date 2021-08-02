@@ -30,17 +30,15 @@ Predictor <- R6::R6Class(
     initialize = function(modelfile, ...) {
       params <- list(...)
       private$params <- lgb.params2str(params = params)
-      # Create new lgb handle
-      handle <- lgb.null.handle()
+      handle <- NULL
 
       # Check if handle is a character
       if (is.character(modelfile)) {
 
         # Create handle on it
-        .Call(
+        handle <- .Call(
           LGBM_BoosterCreateFromModelfile_R
           , modelfile
-          , handle
         )
         private$need_free_handle <- TRUE
 

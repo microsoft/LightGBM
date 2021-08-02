@@ -324,7 +324,7 @@ result <- file.copy(
   , overwrite = TRUE
 )
 .handle_result(result)
-for (src_file in c("lightgbm_R.cpp", "lightgbm_R.h", "R_object_helper.h")) {
+for (src_file in c("lightgbm_R.cpp", "lightgbm_R.h")) {
   result <- file.copy(
     from = file.path(TEMP_SOURCE_DIR, src_file)
     , to = file.path(TEMP_SOURCE_DIR, "src", src_file)
@@ -395,11 +395,6 @@ dynlib_line <- grep(
 
 c_api_contents <- readLines(file.path(TEMP_SOURCE_DIR, "src", "lightgbm_R.h"))
 c_api_contents <- c_api_contents[grepl("^LIGHTGBM_C_EXPORT", c_api_contents)]
-c_api_contents <- gsub(
-  pattern = "LIGHTGBM_C_EXPORT LGBM_SE "
-  , replacement = ""
-  , x = c_api_contents
-)
 c_api_contents <- gsub(
   pattern = "LIGHTGBM_C_EXPORT SEXP "
   , replacement = ""
