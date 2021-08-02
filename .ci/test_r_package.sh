@@ -20,8 +20,8 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.0.5
-    export R_LINUX_VERSION="4.0.5-1.2004.0"
+    export R_MAC_VERSION=4.1.0
+    export R_LINUX_VERSION="4.1.0-1.2004.0"
     export R_APT_REPO="focal-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
@@ -94,7 +94,12 @@ fi
 
 # Manually install Depends and Imports libraries + 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
-packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'knitr', 'rmarkdown', 'testthat')"
+# NOTE: testthat is not required when running rchk
+if [[ "${TASK}" == "r-rchk" ]]; then
+    packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'knitr', 'rmarkdown')"
+else
+    packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat', 'knitr', 'rmarkdown')"
+fi
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
@@ -129,6 +134,28 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     fi
 
     ./build-cran-package.sh || exit -1
+
+    if [[ "${TASK}" == "r-rchk" ]]; then
+        echo "Checking R package with rchk"
+        mkdir -p packages
+        cp ${PKG_TARBALL} packages
+        RCHK_LOG_FILE="rchk-logs.txt"
+        docker run \
+            -v $(pwd)/packages:/rchk/packages \
+            kalibera/rchk:latest \
+            "/rchk/packages/${PKG_TARBALL}" \
+        2>&1 > ${RCHK_LOG_FILE} \
+        || (cat ${RCHK_LOG_FILE} && exit -1)
+        cat ${RCHK_LOG_FILE}
+
+        # the exception below is from R itself and not LightGBM:
+        # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
+        exit $(
+            cat ${RCHK_LOG_FILE} \
+            | grep -v "in function strptime_internal" \
+            | grep --count -E '\[PB\]|ERROR'
+        )
+    fi
 
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM

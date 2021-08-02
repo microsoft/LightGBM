@@ -61,3 +61,6 @@ Examples include:
     - Plot split value histogram
     - Plot one specified tree
     - Plot one specified tree with Graphviz
+- [dataset_from_multi_hdf5.py](https://github.com/microsoft/LightGBM/blob/master/examples/python-guide/dataset_from_multi_hdf5.py)
+  - Construct Dataset from multiple HDF5 files
+  - Avoid loading all data into memory

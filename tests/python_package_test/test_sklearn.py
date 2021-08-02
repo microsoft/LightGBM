@@ -1,7 +1,7 @@
 # coding: utf-8
 import itertools
 import math
-import os
+from pathlib import Path
 
 import joblib
 import numpy as np
@@ -33,7 +33,7 @@ decreasing_generator = itertools.count(0, -1)
 
 
 def custom_asymmetric_obj(y_true, y_pred):
-    residual = (y_true - y_pred).astype("float")
+    residual = (y_true - y_pred).astype(np.float64)
     grad = np.where(residual < 0, -2 * 10.0 * residual, -2 * residual)
     hess = np.where(residual < 0, 2 * 10.0, 2.0)
     return grad, hess
@@ -113,14 +113,11 @@ def test_multiclass():
 
 
 def test_lambdarank():
-    X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                       '../../examples/lambdarank/rank.train'))
-    X_test, y_test = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                     '../../examples/lambdarank/rank.test'))
-    q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                      '../../examples/lambdarank/rank.train.query'))
-    q_test = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                     '../../examples/lambdarank/rank.test.query'))
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    X_test, y_test = load_svmlight_file(str(rank_example_dir / 'rank.test'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
+    q_test = np.loadtxt(str(rank_example_dir / 'rank.test.query'))
     gbm = lgb.LGBMRanker(n_estimators=50)
     gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
             eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
@@ -131,11 +128,11 @@ def test_lambdarank():
 
 
 def test_xendcg():
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    X_train, y_train = load_svmlight_file(os.path.join(dir_path, '../../examples/xendcg/rank.train'))
-    X_test, y_test = load_svmlight_file(os.path.join(dir_path, '../../examples/xendcg/rank.test'))
-    q_train = np.loadtxt(os.path.join(dir_path, '../../examples/xendcg/rank.train.query'))
-    q_test = np.loadtxt(os.path.join(dir_path, '../../examples/xendcg/rank.test.query'))
+    xendcg_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'xendcg'
+    X_train, y_train = load_svmlight_file(str(xendcg_example_dir / 'rank.train'))
+    X_test, y_test = load_svmlight_file(str(xendcg_example_dir / 'rank.test'))
+    q_train = np.loadtxt(str(xendcg_example_dir / 'rank.train.query'))
+    q_test = np.loadtxt(str(xendcg_example_dir / 'rank.test.query'))
     gbm = lgb.LGBMRanker(n_estimators=50, objective='rank_xendcg', random_state=5, n_jobs=1)
     gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
             eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,

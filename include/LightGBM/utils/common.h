@@ -347,7 +347,7 @@ inline static const char* AtofPrecise(const char* p, double* out) {
     Log::Fatal("no conversion to double for: %s", p);
   }
   if (errno == ERANGE) {
-    Log::Fatal("convert to double got underflow or overflow: %s", p);
+    Log::Warning("convert to double got underflow or overflow: %s", p);
   }
   return end2;
 }
