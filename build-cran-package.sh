@@ -9,8 +9,8 @@
 
 set -e
 
-ORIG_WD=$(pwd)
-TEMP_R_DIR=$(pwd)/lightgbm_r
+ORIG_WD="$(pwd)"
+TEMP_R_DIR="$(pwd)/lightgbm_r"
 
 if test -d "${TEMP_R_DIR}"; then
     rm -r "${TEMP_R_DIR}"
