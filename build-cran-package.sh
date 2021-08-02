@@ -151,11 +151,14 @@ mkdir _tmp
 TARBALL_NAME=lightgbm_${LGB_VERSION}.tar.gz
 mv ${TARBALL_NAME} _tmp/
 
+echo "untarring ${TARBALL_NAME}"
 cd _tmp
     tar -xvf ${TARBALL_NAME}
     rm -rf ${TARBALL_NAME}
 cd ..
+echo "done untarring ${TARBALL_NAME}"
 
+echo "re-tarring ${TARBALL_NAME}"
 tar \
     -czv \
     -C ./_tmp \
@@ -166,6 +169,7 @@ tar \
     --exclude=*.tar.gz \
     -f ${TARBALL_NAME} \
     lightgbm
+echo "Done creating ${TARBALL_NAME}"
 
 rm -rf ./_tmp
 
