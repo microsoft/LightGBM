@@ -40,6 +40,9 @@ function Remove-From-Path {
 # some flavors of tar.exe can fail in some settings on Windows
 #
 # copying the msys64 versions here and explicitly adding them to PATH
+Write-Output "---- listing msys ----"
+Get-ChildItem -Path "C:\msys64" -Recurse
+Write-Output "---- done listing msys ----"
 $env:GZIP_INSTALL_LOCATION="C:\ProgramData\"
 if ($env:R_BUILD_TYPE -eq "cran") {
     Copy-Item -Path "C:\msys64\usr\bin\tar.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
