@@ -36,13 +36,14 @@ function Remove-From-Path {
   $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
 }
 
-# gzip is needed to create a CRAN package on Windows.
-# Install it here before chocolatey is removed from PATH, then
-# move it to a different location on PATH
-$env:GZIP_INSTALL_LOCATION="C:\ProgramData\gzip"
+# gzip and tar are needed to create a CRAN package on Windows, but
+# some flavors of tar.exe can fail in some settings on Windows
+#
+# copying the msys64 versions here and explicitly adding them to PATH
+$env:GZIP_INSTALL_LOCATION="C:\ProgramData\"
 if ($env:R_BUILD_TYPE -eq "cran") {
-    choco install --yes --no-progress --no-color gzip
-    Copy-Item -Path "C:\ProgramData\chocolatey\lib\gzip" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
+    Copy-Item -Path "C:\msys64\usr\bin\gzip" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
+    Copy-Item -Path "C:\msys64\usr\bin\tar" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
 }
 
 # remove some details that exist in the GitHub Actions images which might
