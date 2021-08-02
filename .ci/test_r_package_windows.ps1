@@ -41,13 +41,14 @@ function Remove-From-Path {
 #
 # copying the msys64 versions here and explicitly adding them to PATH
 Write-Output "---- listing msys ----"
-Get-ChildItem -Path "C:\msys64" -Recurse
+#Get-ChildItem -Path "C:\msys64" -Recurse
 Write-Output "---- done listing msys ----"
 $env:GZIP_INSTALL_LOCATION="C:\ProgramData\"
 if ($env:R_BUILD_TYPE -eq "cran") {
     Copy-Item -Path "C:\msys64\usr\bin\tar.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
     Copy-Item -Path "C:\msys64\usr\bin\gzip.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
     Copy-Item -Path "C:\msys64\usr\bin\gunzip" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
+    Copy-Item -Path "C:\msys64\usr\bin\sh.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
 }
 
 # remove some details that exist in the GitHub Actions images which might
@@ -178,7 +179,8 @@ if ($env:COMPILER -ne "MSVC") {
     }
     Run-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
-    Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
+    #Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
+    sh build-cran-package.sh
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths
