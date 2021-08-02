@@ -46,6 +46,8 @@ Write-Output "---- done listing msys ----"
 $env:GZIP_INSTALL_LOCATION="C:\ProgramData\"
 if ($env:R_BUILD_TYPE -eq "cran") {
     Copy-Item -Path "C:\msys64\usr\bin\tar.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
+    Copy-Item -Path "C:\msys64\usr\bin\gzip.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
+    Copy-Item -Path "C:\msys64\usr\bin\gunzip" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
 }
 
 # remove some details that exist in the GitHub Actions images which might
