@@ -316,7 +316,7 @@ class LIGHTGBM_EXPORT Boosting {
 
   virtual bool IsLinear() const { return false; }
 
-  virtual const std::vector<std::unique_ptr<Tree>>& models() const { return std::vector<std::unique_ptr<Tree>>(); }
+  virtual const std::vector<std::unique_ptr<Tree>>& models() const = 0;
 };
 
 class GBDTBase : public Boosting {
