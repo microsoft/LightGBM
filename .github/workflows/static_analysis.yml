@@ -48,6 +48,8 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     container: rocker/verse
+    env:
+      LGB_BUILD_VIGNETTES: "true"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2.3.4
