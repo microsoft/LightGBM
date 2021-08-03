@@ -376,6 +376,15 @@ description_contents <- description_contents[
   !grepl("^VignetteBuilder", description_contents)
 ]
 
+# {knitr} and {rmarkdown} can be removed, since we don't build vignettes
+# for CMake-based installations
+description_contents <- description_contents[
+  !grepl("^ +knitr,$", description_contents)
+]
+description_contents <- description_contents[
+  !grepl("^ +rmarkdown,$", description_contents)
+]
+
 writeLines(description_contents, DESCRIPTION_FILE)
 
 # CMake-based builds can't currently use R's builtin routine registration,
