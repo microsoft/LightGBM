@@ -4,13 +4,23 @@
 #     Prepare a source distribution of the R package
 #     to be submitted to CRAN.
 #
+#     Vignette building is skipped by default because it requires
+#     some shell features (tar and gzip) which can cause compatibility
+#     issues on Windows.
+#
+#     To build a package with vignettes, set environment variable
+#     `LGB_BUILD_VIGNETTES=true`.
+#
 # [usage]
 #     sh build-cran-package.sh
 
 set -e
 
+LGB_BUILD_VIGNETTES=${LGB_BUILD_VIGNETTES:-false}
 ORIG_WD="$(pwd)"
 TEMP_R_DIR="$(pwd)/lightgbm_r"
+
+echo "Building R package (build vignettes: ${LGB_BUILD_VIGNETTES})"
 
 if test -d "${TEMP_R_DIR}"; then
     rm -r "${TEMP_R_DIR}"
@@ -141,38 +151,45 @@ cd "${TEMP_R_DIR}"
 
 cd "${ORIG_WD}"
 
-R CMD build \
-    --keep-empty-dirs \
-    lightgbm_r
+if [[ $LGB_BUILD_VIGNETTES == "false" ]]; then
+    R CMD build \
+        --keep-empty-dirs \
+        --no-build-vignettes \
+        lightgbm_r
+else
+    R CMD build \
+        --keep-empty-dirs \
+        lightgbm_r
 
-echo "removing object files created by vignettes"
-rm -rf ./_tmp
-mkdir _tmp
-TARBALL_NAME="lightgbm_${LGB_VERSION}.tar.gz"
-mv "${TARBALL_NAME}" _tmp/
+    echo "removing object files created by vignettes"
+    rm -rf ./_tmp
+    mkdir _tmp
+    TARBALL_NAME="lightgbm_${LGB_VERSION}.tar.gz"
+    mv "${TARBALL_NAME}" _tmp/
 
-echo "untarring ${TARBALL_NAME}"
-cd _tmp
-    tar -xvf "${TARBALL_NAME}"
-    rm -rf "${TARBALL_NAME}"
-cd ..
-echo "done untarring ${TARBALL_NAME}"
+    echo "untarring ${TARBALL_NAME}"
+    cd _tmp
+        tar -xvf "${TARBALL_NAME}"
+        rm -rf "${TARBALL_NAME}"
+    cd ..
+    echo "done untarring ${TARBALL_NAME}"
 
-echo "re-tarring ${TARBALL_NAME}"
-tar \
-    -czv \
-    -C ./_tmp \
-    --exclude=*.a \
-    --exclude=*.dll \
-    --exclude=*.o \
-    --exclude=*.so \
-    --exclude=*.tar.gz \
-    --exclude=**/conftest.c \
-    --exclude=**/conftest.exe \
-    -f "${TARBALL_NAME}" \
-    lightgbm
-echo "Done creating ${TARBALL_NAME}"
+    echo "re-tarring ${TARBALL_NAME}"
+    tar \
+        -czv \
+        -C ./_tmp \
+        --exclude=*.a \
+        --exclude=*.dll \
+        --exclude=*.o \
+        --exclude=*.so \
+        --exclude=*.tar.gz \
+        --exclude=**/conftest.c \
+        --exclude=**/conftest.exe \
+        -f "${TARBALL_NAME}" \
+        lightgbm
+    echo "Done creating ${TARBALL_NAME}"
 
-rm -rf ./_tmp
+    rm -rf ./_tmp
+fi
 
 echo "Done building R package"
