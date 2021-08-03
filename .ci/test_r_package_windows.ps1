@@ -43,13 +43,14 @@ function Remove-From-Path {
 Write-Output "---- listing msys ----"
 #Get-ChildItem -Path "C:\msys64" -Recurse
 Write-Output "---- done listing msys ----"
-$env:GZIP_INSTALL_LOCATION="C:\ProgramData\"
-if ($env:R_BUILD_TYPE -eq "cran") {
-    Copy-Item -Path "C:\msys64\usr\bin\tar.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
-    Copy-Item -Path "C:\msys64\usr\bin\gzip.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
-    Copy-Item -Path "C:\msys64\usr\bin\gunzip" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
-    Copy-Item -Path "C:\msys64\usr\bin\sh.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
-}
+$env:GZIP_INSTALL_LOCATION="C:\msys64\usr\bin"
+# if ($env:R_BUILD_TYPE -eq "cran") {
+#     Copy-Item -Path "C:\msys64\usr\bin\tar.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
+#     Copy-Item -Path "C:\msys64\usr\bin\gzip.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
+#     Copy-Item -Path "C:\msys64\usr\bin\gunzip" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
+#     Copy-Item -Path "C:\msys64\usr\bin\pwd.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
+#     Copy-Item -Path "C:\msys64\usr\bin\sh.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
+# }
 
 # remove some details that exist in the GitHub Actions images which might
 # cause conflicts with R and other components installed by this script
