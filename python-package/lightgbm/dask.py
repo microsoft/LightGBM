@@ -30,7 +30,7 @@ _DaskVectorLike = Union[dask_Array, dask_Series]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
-HostWorkers = namedtuple('HostWorkers', ['default', 'all'])
+_HostWorkers = namedtuple('HostWorkers', ['default', 'all'])
 
 
 class _DatasetNames(Enum):
@@ -72,19 +72,19 @@ def _find_n_open_ports(n: int) -> List[int]:
     ports : list of int
         n random open ports on localhost.
     """
-    skts = []
+    sockets = []
     for _ in range(n):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind(('', 0))
-        skts.append(s)
+        sockets.append(s)
     ports = []
-    for s in skts:
+    for s in sockets:
         ports.append(s.getsockname()[1])
         s.close()
     return ports
 
 
-def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, HostWorkers]:
+def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, _HostWorkers]:
     """Group all worker addresses by hostname.
 
     Returns
@@ -92,11 +92,11 @@ def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, HostWor
     host_to_workers : dict
         mapping from hostname to all its workers.
     """
-    host_to_workers: Dict[str, HostWorkers] = {}
+    host_to_workers: Dict[str, _HostWorkers] = {}
     for address in worker_addresses:
         hostname = urlparse(address).hostname
         if hostname not in host_to_workers:
-            host_to_workers[hostname] = HostWorkers(default=address, all=[address])
+            host_to_workers[hostname] = _HostWorkers(default=address, all=[address])
         else:
             host_to_workers[hostname].all.append(address)
     return host_to_workers
@@ -104,7 +104,7 @@ def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, HostWor
 
 def _assign_open_ports_to_workers(
     client: Client,
-    host_to_workers: Dict[str, HostWorkers]
+    host_to_workers: Dict[str, _HostWorkers]
 ) -> Dict[str, int]:
     """Assign an open port to each worker.
 
