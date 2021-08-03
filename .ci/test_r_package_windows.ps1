@@ -36,22 +36,6 @@ function Remove-From-Path {
   $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
 }
 
-# gzip and tar are needed to create a CRAN package on Windows, but
-# some flavors of tar.exe can fail in some settings on Windows
-#
-# copying the msys64 versions here and explicitly adding them to PATH
-Write-Output "---- listing msys ----"
-#Get-ChildItem -Path "C:\msys64" -Recurse
-Write-Output "---- done listing msys ----"
-$env:GZIP_INSTALL_LOCATION="C:\msys64\usr\bin"
-# if ($env:R_BUILD_TYPE -eq "cran") {
-#     Copy-Item -Path "C:\msys64\usr\bin\tar.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
-#     Copy-Item -Path "C:\msys64\usr\bin\gzip.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
-#     Copy-Item -Path "C:\msys64\usr\bin\gunzip" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
-#     Copy-Item -Path "C:\msys64\usr\bin\pwd.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
-#     Copy-Item -Path "C:\msys64\usr\bin\sh.exe" -Destination "$env:GZIP_INSTALL_LOCATION" -Recurse
-# }
-
 # remove some details that exist in the GitHub Actions images which might
 # cause conflicts with R and other components installed by this script
 $env:RTOOLS40_HOME = ""
@@ -102,7 +86,11 @@ if ($env:R_MAJOR_VERSION -eq "3") {
 
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
-$env:PATH = "$env:GZIP_INSTALL_LOCATION;" + "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
+# NOTE: gzip and tar are needed to create a CRAN package on Windows, but
+# some flavors of tar.exe can fail in some settings on Windows. Putting
+# the msys64 utilities at the beginning of PATH to be sure they're used
+# for that purpose.
+$env:PATH = "C:\msys64\usr\bin;" + "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
