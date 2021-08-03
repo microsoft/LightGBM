@@ -35,9 +35,12 @@ LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
 
 # move relevant files
 cp -R R-package/* "${TEMP_R_DIR}"
-cp docs/logo/LightGBM_logo_black_text.svg "${TEMP_R_DIR}/vignettes/"
 cp -R include "${TEMP_R_DIR}/src/"
 cp -R src/* "${TEMP_R_DIR}/src/"
+
+if [[ ${LGB_BUILD_VIGNETTES} == "true" ]]; then
+    cp docs/logo/LightGBM_logo_black_text.svg "${TEMP_R_DIR}/vignettes/"
+fi
 
 cp \
     external_libs/fast_double_parser/include/fast_double_parser.h \
@@ -151,7 +154,7 @@ cd "${TEMP_R_DIR}"
 
 cd "${ORIG_WD}"
 
-if [[ $LGB_BUILD_VIGNETTES == "false" ]]; then
+if [[ ${LGB_BUILD_VIGNETTES} == "false" ]]; then
     R CMD build \
         --keep-empty-dirs \
         --no-build-vignettes \

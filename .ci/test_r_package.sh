@@ -7,10 +7,15 @@ mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
-# don't fail builds for long-running examples unless they're very long.
-# See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
-if [[ $R_BUILD_TYPE != "cran" ]]; then
+# vignettes are only built for CRAN builds
+R_CMD_CHECK_ARGS="--as-cran --run-donttest"
+if [[ $R_BUILD_TYPE == "cran" ]]; then
+    export LGB_BUILD_VIGNETTES="true"
+elif
+    # don't fail builds for long-running examples unless they're very long.
+    # See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
     export _R_CHECK_EXAMPLE_TIMING_THRESHOLD_=30
+    R_CMD_CHECK_ARGS="${R_CMD_CHECK_ARGS} --ignore-vignettes"
 fi
 
 # Get details needed for installing R components
@@ -92,20 +97,26 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
 fi
 
-# Manually install Depends and Imports libraries + 'testthat'
+# Manually install libraries
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
-# NOTE: testthat is not required when running rchk
-if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'knitr', 'rmarkdown')"
-else
-    packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat', 'knitr', 'rmarkdown')"
+packages="'data.table', 'jsonlite', 'Matrix', 'R6'"
+
+# testthat is not required when running rchk
+if [[ "${TASK}" != "r-rchk" ]]; then
+    packages="$packages, 'testthat'"
 fi
+
+# only need testthat and knitr if building vignettes
+if [[ "${LGB_BUILD_VIGNETTES}" == "true" ]]; then
+    packages="$packages, 'knitr', 'rmarkdown'"
+fi
+
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
     compile_from_source="never"
 fi
-Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit -1
+Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(c(${packages}), repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit -1
 
 cd ${BUILD_DIRECTORY}
 
@@ -167,18 +178,12 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     cd ${R_CMD_CHECK_DIR}
 fi
 
-# vignettes are only built for CRAN builds
-CHECK_ARGS="--as-cran --run-donttest"
-if [[ $R_BUILD_TYPE != "cran" ]]; then
-    CHECK_ARGS="${CHECK_FLAGS} --ignore-vignettes"
-fi
-
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
 check_succeeded="yes"
 (
     R CMD check ${PKG_TARBALL} \
-        ${CHECK_ARGS} \
+        ${R_CMD_CHECK_ARGS} \
     || check_succeeded="no"
 ) &
 
