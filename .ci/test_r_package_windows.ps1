@@ -91,11 +91,7 @@ if ($env:R_BUILD_TYPE -eq "cran") {
 
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
-# NOTE: gzip and tar are needed to create a CRAN package on Windows, but
-# some flavors of tar.exe can fail in some settings on Windows. Putting
-# the msys64 utilities at the beginning of PATH to be sure they're used
-# for that purpose.
-$env:PATH = "C:\msys64\usr\bin;" + "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
+$env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
@@ -176,7 +172,13 @@ if ($env:COMPILER -ne "MSVC") {
     }
     Run-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
+    # NOTE: gzip and tar are needed to create a CRAN package on Windows, but
+    # some flavors of tar.exe can fail in some settings on Windows.
+    # Putting the msys64 utilities at the beginning of PATH temporarily to be
+    # sure they're used for that purpose.
+    $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
+    Remove-From-Path ".*msys64.*"
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths

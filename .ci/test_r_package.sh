@@ -106,7 +106,7 @@ if [[ "${TASK}" != "r-rchk" ]]; then
     packages="$packages, 'testthat'"
 fi
 
-# only need testthat and knitr if building vignettes
+# only need knitr and rmarkdown if building vignettes
 if [[ "${LGB_BUILD_VIGNETTES}" == "true" ]]; then
     packages="$packages, 'knitr', 'rmarkdown'"
 fi
