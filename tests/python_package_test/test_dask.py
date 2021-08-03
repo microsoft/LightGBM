@@ -450,7 +450,7 @@ def test_group_workers_by_host():
     hosts = [f'0.0.0.{i}' for i in range(2)]
     workers = [f'tcp://{host}:{p}' for p in range(2) for host in hosts]
     expected = {
-        host: lgb.dask.HostWorkers(
+        host: lgb.dask._HostWorkers(
             default=f'tcp://{host}:0',
             all=[f'tcp://{host}:0', f'tcp://{host}:1']
         )
