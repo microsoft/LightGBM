@@ -11,7 +11,7 @@ export PATH="$R_LIB_PATH/R/bin:$PATH"
 R_CMD_CHECK_ARGS="--as-cran --run-donttest"
 if [[ $R_BUILD_TYPE == "cran" ]]; then
     export LGB_BUILD_VIGNETTES="true"
-elif
+else
     # don't fail builds for long-running examples unless they're very long.
     # See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
     export _R_CHECK_EXAMPLE_TIMING_THRESHOLD_=30
