@@ -7,7 +7,7 @@
 
 namespace LightGBM {
 
-__device__ void SetDecisionType(int8_t* decision_type, bool input, int8_t mask) {
+__device__ void SetDecisionTypeCUDA(int8_t* decision_type, bool input, int8_t mask) {
   if (input) {
     (*decision_type) |= mask;
   } else {
@@ -15,9 +15,21 @@ __device__ void SetDecisionType(int8_t* decision_type, bool input, int8_t mask) 
   }
 }
 
-__device__ void SetMissingType(int8_t* decision_type, int8_t input) {
+__device__ void SetMissingTypeCUDA(int8_t* decision_type, int8_t input) {
   (*decision_type) &= 3;
   (*decision_type) |= (input << 2);
+}
+
+__device__ bool GetDecisionTypeCUDA(int8_t decision_type, int8_t mask) {
+  return (decision_type & mask) > 0;
+}
+
+__device__ int8_t GetMissingTypeCUDA(int8_t decision_type) {
+  return (decision_type >> 2) & 3;
+}
+
+__device__ bool IsZeroCUDA(double fval) {
+  return (fval >= -kZeroThreshold && fval <= kZeroThreshold);
 }
 
 __global__ void SplitKernel(// split information
@@ -34,7 +46,7 @@ __global__ void SplitKernel(// split information
                             int* right_child,
                             int* split_feature_inner,
                             int* split_feature,
-                            double* split_gain,
+                            float* split_gain,
                             double* internal_weight,
                             double* internal_value,
                             data_size_t* internal_count,
@@ -62,7 +74,7 @@ __global__ void SplitKernel(// split information
   } else if (thread_index == 2) {
     split_feature[new_node_index] = real_feature_index;
   } else if (thread_index == 3) {
-    split_gain[new_node_index] = cuda_split_info->gain;
+    split_gain[new_node_index] = static_cast<float>(cuda_split_info->gain);
   } else if (thread_index == 4) {
     // add two new leaves
     left_child[new_node_index] = ~leaf_index;
@@ -79,13 +91,13 @@ __global__ void SplitKernel(// split information
     leaf_weight[leaf_index] = cuda_split_info->left_sum_hessians;
   } else if (thread_index == 9) {
     internal_value[new_node_index] = leaf_value[leaf_index];
-    leaf_value[leaf_index] = std::isnan(cuda_split_info->left_value) ? 0.0f : cuda_split_info->left_value;
+    leaf_value[leaf_index] = isnan(cuda_split_info->left_value) ? 0.0f : cuda_split_info->left_value;
   } else if (thread_index == 10) {
     internal_count[new_node_index] = cuda_split_info->left_count + cuda_split_info->right_count;
   } else if (thread_index == 11) {
     leaf_count[leaf_index] = cuda_split_info->left_count;
   } else if (thread_index == 12) {
-    leaf_value[num_leaves] = std::isnan(cuda_split_info->right_value) ? 0.0f : cuda_split_info->right_value;
+    leaf_value[num_leaves] = isnan(cuda_split_info->right_value) ? 0.0f : cuda_split_info->right_value;
   } else if (thread_index == 13) {
     leaf_weight[num_leaves] = cuda_split_info->right_sum_hessians;
   } else if (thread_index == 14) {
@@ -96,9 +108,9 @@ __global__ void SplitKernel(// split information
     leaf_depth[leaf_index]++;
   } else if (thread_index == 16) {
     decision_type[new_node_index] = 0;
-    SetDecisionType(&decision_type[new_node_index], false, kCategoricalMask);
-    SetDecisionType(&decision_type[new_node_index], cuda_split_info->default_left, kDefaultLeftMask);
-    SetMissingType(&decision_type[new_node_index], static_cast<int8_t>(missing_type));
+    SetDecisionTypeCUDA(&decision_type[new_node_index], false, kCategoricalMask);
+    SetDecisionTypeCUDA(&decision_type[new_node_index], cuda_split_info->default_left, kDefaultLeftMask);
+    SetMissingTypeCUDA(&decision_type[new_node_index], static_cast<int8_t>(missing_type));
   } else if (thread_index == 17) {
     threshold_in_bin[new_node_index] = cuda_split_info->threshold;
   } else if (thread_index == 18) {
@@ -164,7 +176,6 @@ __global__ void AddPredictionToScoreKernel(
   const data_size_t data_index = USE_INDICES ? cuda_used_indices[inner_data_index] : inner_data_index;
   if (data_index < num_data) {
     int node = 0;
-    int num_iter = 0;
     while (node >= 0) {
       const int split_feature_inner = cuda_split_feature_inner[node];
       const int column = cuda_feature_to_column[split_feature_inner];
@@ -204,10 +215,6 @@ __global__ void AddPredictionToScoreKernel(
           node = cuda_right_child[node];
         }
       }
-      ++num_iter;
-      if (num_iter >= 1000) {
-        printf("error num_iter = %d, node = %d, ~node = %d\n", num_iter, node, ~node);
-      }
     }
     score[data_index] += cuda_leaf_value[~node];
   }
@@ -219,9 +226,6 @@ void CUDATree::LaunchAddPredictionToScoreKernel(
   data_size_t num_data,
   double* score) const {
   const CUDAColumnData* cuda_column_data = data->cuda_column_data();
-  if (cuda_column_data == nullptr) {
-    Log::Warning("error cuda_column_data is nullptr");
-  }
   const int num_blocks = (num_data + num_threads_per_block_add_prediction_to_score_ - 1) / num_threads_per_block_add_prediction_to_score_;
   if (used_data_indices == nullptr) {
     AddPredictionToScoreKernel<false><<<num_blocks, num_threads_per_block_add_prediction_to_score_>>>(

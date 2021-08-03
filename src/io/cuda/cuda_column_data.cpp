@@ -25,28 +25,28 @@ void CUDAColumnData::InitOneColumnData(const void* in_column_data, BinIterator* 
         expanded_column_data[i] = static_cast<BIN_TYPE>((in_column_data_reintrepreted[i >> 1] >> ((i & 1) << 2)) & 0xf);
       }
       InitCUDAMemoryFromHostMemoryOuter<BIN_TYPE>(&cuda_column_data,
-                                         expanded_column_data.data(),
-                                         static_cast<size_t>(num_data_),
-                                         __FILE__,
-                                         __LINE__);
+                                                  expanded_column_data.data(),
+                                                  static_cast<size_t>(num_data_),
+                                                  __FILE__,
+                                                  __LINE__);
     } else {
       InitCUDAMemoryFromHostMemoryOuter<BIN_TYPE>(&cuda_column_data,
-                                         reinterpret_cast<const BIN_TYPE*>(in_column_data),
-                                         static_cast<size_t>(num_data_),
-                                         __FILE__,
-                                         __LINE__);
+                                                  reinterpret_cast<const BIN_TYPE*>(in_column_data),
+                                                  static_cast<size_t>(num_data_),
+                                                  __FILE__,
+                                                  __LINE__);
     }
   } else {
     // need to iterate bin iterator
     std::vector<BIN_TYPE> expanded_column_data(num_data_, 0);
     for (data_size_t i = 0; i < num_data_; ++i) {
-      expanded_column_data[i] = static_cast<BIN_TYPE>(bin_iterator->Get(i));
+      expanded_column_data[i] = static_cast<BIN_TYPE>(bin_iterator->RawGet(i));
     }
     InitCUDAMemoryFromHostMemoryOuter<BIN_TYPE>(&cuda_column_data,
-                                       reinterpret_cast<const BIN_TYPE*>(in_column_data),
-                                       static_cast<size_t>(num_data_),
-                                       __FILE__,
-                                       __LINE__);
+                                                expanded_column_data.data(),
+                                                static_cast<size_t>(num_data_),
+                                                __FILE__,
+                                                __LINE__);
   }
   *out_column_data_pointer = reinterpret_cast<void*>(cuda_column_data);
 }
@@ -84,30 +84,30 @@ void CUDAColumnData::Init(const int num_columns,
       // is dense column
       if (bit_type == 4) {
         column_bit_type_[column_index] = 8;
-        InitOneColumnData<false, true, uint8_t>(column_data[column_index], column_bin_iterator[column_index], &data_by_column_[column_index]);
+        InitOneColumnData<false, true, uint8_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
       } else if (bit_type == 8) {
-        InitOneColumnData<false, false, uint8_t>(column_data[column_index], column_bin_iterator[column_index], &data_by_column_[column_index]);
+        InitOneColumnData<false, false, uint8_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
       } else if (bit_type == 16) {
-        InitOneColumnData<false, false, uint16_t>(column_data[column_index], column_bin_iterator[column_index], &data_by_column_[column_index]);
+        InitOneColumnData<false, false, uint16_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
       } else if (bit_type == 32) {
-        InitOneColumnData<false, false, uint32_t>(column_data[column_index], column_bin_iterator[column_index], &data_by_column_[column_index]);
+        InitOneColumnData<false, false, uint32_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
       } else {
         Log::Fatal("Unknow column bit type %d", bit_type);
       }
     } else {
       // is sparse column
       if (bit_type == 8) {
-        InitOneColumnData<true, false, uint8_t>(column_data[column_index], column_bin_iterator[column_index], &data_by_column_[column_index]);
+        InitOneColumnData<true, false, uint8_t>(nullptr, column_bin_iterator[column_index], &data_by_column_[column_index]);
       } else if (bit_type == 16) {
-        InitOneColumnData<true, false, uint16_t>(column_data[column_index], column_bin_iterator[column_index], &data_by_column_[column_index]);
+        InitOneColumnData<true, false, uint16_t>(nullptr, column_bin_iterator[column_index], &data_by_column_[column_index]);
       } else if (bit_type == 32) {
-        InitOneColumnData<true, false, uint32_t>(column_data[column_index], column_bin_iterator[column_index], &data_by_column_[column_index]);
+        InitOneColumnData<true, false, uint32_t>(nullptr, column_bin_iterator[column_index], &data_by_column_[column_index]);
       } else {
         Log::Fatal("Unknow column bit type %d", bit_type);
       }
     }
-    feature_to_column_ = feature_to_column;
   }
+  feature_to_column_ = feature_to_column;
   InitCUDAMemoryFromHostMemoryOuter<void*>(&cuda_data_by_column_,
                                            data_by_column_.data(),
                                            data_by_column_.size(),

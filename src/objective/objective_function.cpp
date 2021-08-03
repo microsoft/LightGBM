@@ -11,6 +11,8 @@
 #include "xentropy_objective.hpp"
 
 #include "cuda/cuda_binary_objective.hpp"
+#include "cuda/cuda_regression_objective.hpp"
+#include "cuda/cuda_rank_objective.hpp"
 
 namespace LightGBM {
 
@@ -18,6 +20,10 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
   if (config.device_type == std::string("cuda")) {
     if (type == std::string("binary")) {
       return new CUDABinaryLogloss(config);
+    } else if (type == std::string("regression")) {
+      return new CUDARegressionL2loss(config);
+    } else if (type == std::string("lambdarank")) {
+      return new CUDALambdarankNDCG(config);
     }
   } else {
     if (type == std::string("regression")) {

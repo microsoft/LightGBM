@@ -207,6 +207,7 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   Log::Warning("find best split time %f", find_best_split_time);
   Log::Warning("find best split time from all leaves %f", find_best_split_from_all_leaves_time);
   Log::Warning("split data indices time %f", split_data_indices_time);
+  tree->ToHost();
   return tree.release();
 }
 

@@ -672,7 +672,7 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
 }
 
 __global__ void FindBestFromAllSplitsKernel(const int cur_num_leaves,
-  const CUDASplitInfo* cuda_leaf_best_split_info,
+  CUDASplitInfo* cuda_leaf_best_split_info,
   int* cuda_best_split_info_buffer) {
   __shared__ double thread_best_gain[NUM_THREADS_FIND_BEST_LEAF];
   __shared__ int thread_best_leaf[NUM_THREADS_FIND_BEST_LEAF];
@@ -695,7 +695,12 @@ __global__ void FindBestFromAllSplitsKernel(const int cur_num_leaves,
   __syncthreads();
   ReduceBestGainForLeaves(thread_best_gain, thread_best_leaf, cur_num_valid_threads);
   if (threadIdx_x == 0) {
-    cuda_best_split_info_buffer[6] = thread_best_leaf[0];
+    const int best_leaf_index = thread_best_leaf[0];
+    cuda_best_split_info_buffer[6] = best_leaf_index;
+    if (best_leaf_index != -1) {
+      cuda_leaf_best_split_info[best_leaf_index].is_valid = false;
+      cuda_leaf_best_split_info[cur_num_leaves].is_valid = false;
+    }
   }
 }
 

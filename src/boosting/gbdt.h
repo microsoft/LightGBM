@@ -396,6 +396,8 @@ class GBDT : public GBDTBase {
 
   bool IsLinear() const override { return linear_tree_; }
 
+  const std::vector<std::unique_ptr<Tree>>& models() const override { return models_; }
+
  protected:
   virtual bool GetIsConstHessian(const ObjectiveFunction* objective_function) {
     if (objective_function != nullptr) {

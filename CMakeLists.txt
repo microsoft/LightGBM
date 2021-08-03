@@ -350,6 +350,8 @@ if(USE_CUDA)
     src/objective/cuda/*.cu
     src/boosting/cuda/*.cpp
     src/boosting/cuda/*.cu
+    src/application/cuda/*.cpp
+    src/application/cuda/*.cu
 endif(USE_CUDA)
 )
 

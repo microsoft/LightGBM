@@ -1515,6 +1515,7 @@ void Dataset::CreateCUDAColumnData() {
   std::vector<uint8_t> feature_missing_is_na(num_features_, 0);
   std::vector<uint8_t> feature_mfb_is_zero(num_features_, 0);
   std::vector<uint8_t> feature_mfb_is_na(num_features_, 0);
+  Log::Warning("num_groups_ = %d", num_groups_);
   for (int feature_group_index = 0; feature_group_index < num_groups_; ++feature_group_index) {
     if (feature_groups_[feature_group_index]->is_multi_val_) {
       for (int sub_feature_index = 0; sub_feature_index < feature_groups_[feature_group_index]->num_feature_; ++sub_feature_index) {
@@ -1562,26 +1563,28 @@ void Dataset::CreateCUDAColumnData() {
       column_data.emplace_back(one_column_data);
       column_bin_iterator.emplace_back(bin_iterator);
       column_bit_type.emplace_back(bit_type);
-      feature_to_column[feature_index] = num_columns;
+      for (int sub_feature_index = 0; sub_feature_index < feature_groups_[feature_group_index]->num_feature_; ++sub_feature_index) {
+        feature_to_column[feature_index] = num_columns;
+        const BinMapper* feature_bin_mapper = FeatureBinMapper(feature_index);
+        feature_max_bins[feature_index] = feature_max_bin(feature_index);
+        feature_min_bins[feature_index] = feature_min_bin(feature_index);
+        const uint32_t most_freq_bin = feature_bin_mapper->GetMostFreqBin();
+        feature_offsets[feature_index] = static_cast<uint32_t>(most_freq_bin == 0);
+        feature_most_freq_bins[feature_index] = most_freq_bin;
+        feature_default_bin[feature_index] = feature_bin_mapper->GetDefaultBin();
+        if (feature_bin_mapper->missing_type() == MissingType::Zero) {
+            feature_missing_is_zero.emplace_back(1);
+            feature_missing_is_na.emplace_back(0);
+          } else if (feature_bin_mapper->missing_type() == MissingType::NaN) {
+            feature_missing_is_zero.emplace_back(0);
+            feature_missing_is_na.emplace_back(1);
+          } else {
+            feature_missing_is_zero.emplace_back(0);
+            feature_missing_is_na.emplace_back(0);
+          }
+        ++feature_index;
+      }
       ++num_columns;
-      const BinMapper* feature_bin_mapper = FeatureBinMapper(feature_index);
-      feature_max_bins[feature_index] = feature_max_bin(feature_index);
-      feature_min_bins[feature_index] = feature_min_bin(feature_index);
-      const uint32_t most_freq_bin = feature_bin_mapper->GetMostFreqBin();
-      feature_offsets[feature_index] = static_cast<uint32_t>(most_freq_bin == 0);
-      feature_most_freq_bins[feature_index] = most_freq_bin;
-      feature_default_bin[feature_index] = feature_bin_mapper->GetDefaultBin();
-      if (feature_bin_mapper->missing_type() == MissingType::Zero) {
-          feature_missing_is_zero.emplace_back(1);
-          feature_missing_is_na.emplace_back(0);
-        } else if (feature_bin_mapper->missing_type() == MissingType::NaN) {
-          feature_missing_is_zero.emplace_back(0);
-          feature_missing_is_na.emplace_back(1);
-        } else {
-          feature_missing_is_zero.emplace_back(0);
-          feature_missing_is_na.emplace_back(0);
-        }
-      ++feature_index;
     }
   }
   cuda_column_data_->Init(num_columns,

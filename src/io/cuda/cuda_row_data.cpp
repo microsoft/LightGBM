@@ -209,6 +209,8 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
     __FILE__,
     __LINE__);
 
+  Log::Warning("num_columns_ = %d", column_index);
+  Log::Warning("column_hist_offsets_.size() = %d", column_hist_offsets_.size());
   InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_column_hist_offsets_,
     column_hist_offsets_.data(),
     column_hist_offsets_.size(),

@@ -160,7 +160,7 @@ class Predictor {
   * \param data_filename Filename of data
   * \param result_filename Filename of output result
   */
-  void Predict(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check) {
+  virtual void Predict(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check) {
     auto writer = VirtualFileWriter::Make(result_filename);
     if (!writer->Init()) {
       Log::Fatal("Prediction results file %s cannot be found", result_filename);
@@ -249,10 +249,14 @@ class Predictor {
         writer->Write("\n", 1);
       }
     };
+    auto start = std::chrono::steady_clock::now();
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
+    auto end = std::chrono::steady_clock::now();
+    auto duration = static_cast<std::chrono::duration<double>>(end - start);
+    Log::Warning("duration cpu = %f", duration.count());
   }
 
- private:
+ protected:
   void CopyToPredictBuffer(double* pred_buf, const std::vector<std::pair<int, double>>& features) {
     for (const auto &feature : features) {
       if (feature.first < num_feature_) {

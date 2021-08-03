@@ -40,10 +40,11 @@ class CUDABinaryLogloss : public CUDAObjectiveInterface, public BinaryLogloss {
 
   // CUDA memory, held by other objects
   const label_t* cuda_label_;
+  // TODO(shiyu1994): add weighted gradients
   const label_t* cuda_weights_;
 
   // CUDA memory, held by this object
-  mutable double* cuda_boost_from_score_;
+  double* cuda_boost_from_score_;
 };
 
 }  // namespace LightGBM

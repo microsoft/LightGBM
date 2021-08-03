@@ -525,10 +525,14 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
 }
 
 std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const {
-  std::vector<double> tmp_score(num_data, 0.0f);
-  CopyFromCUDADeviceToHostOuter<double>(tmp_score.data(), score, static_cast<size_t>(num_data), __FILE__, __LINE__);
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-  return metric->Eval(tmp_score.data(), objective_function_);
+  if (config_->device_type == std::string("cuda")) {
+    std::vector<double> tmp_score(num_data, 0.0f);
+    CopyFromCUDADeviceToHostOuter<double>(tmp_score.data(), score, static_cast<size_t>(num_data), __FILE__, __LINE__);
+    SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+    return metric->Eval(tmp_score.data(), objective_function_);
+  } else {
+    return metric->Eval(score, objective_function_);
+  }
 }
 
 std::string GBDT::OutputMetric(int iter) {

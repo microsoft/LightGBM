@@ -13,6 +13,16 @@
 
 namespace LightGBM {
 
+__device__ void SetDecisionTypeCUDA(int8_t* decision_type, bool input, int8_t mask);
+
+__device__ void SetMissingTypeCUDA(int8_t* decision_type, int8_t input);
+
+__device__ bool GetDecisionTypeCUDA(int8_t decision_type, int8_t mask);
+
+__device__ int8_t GetMissingTypeCUDA(int8_t decision_type);
+
+__device__ bool IsZeroCUDA(double fval);
+
 class CUDATree : public Tree {
  public:
   /*!
@@ -72,6 +82,8 @@ class CUDATree : public Tree {
 
   inline void Shrinkage(double rate) override;
 
+  void ToHost();
+
  private:
   void InitCUDAMemory();
 
@@ -104,7 +116,7 @@ class CUDATree : public Tree {
   data_size_t* cuda_leaf_count_;
   double* cuda_leaf_weight_;
   data_size_t* cuda_internal_count_;
-  double* cuda_split_gain_;
+  float* cuda_split_gain_;
 
   cudaStream_t cuda_stream_;
 

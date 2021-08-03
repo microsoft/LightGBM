@@ -29,6 +29,8 @@ class CUDAMetadata {
 
   const label_t* cuda_weights() const { return cuda_weights_; }
 
+  const data_size_t* cuda_query_boundaries() const { return cuda_query_boundaries_; }
+
  private:
   label_t* cuda_label_;
   label_t* cuda_weights_;

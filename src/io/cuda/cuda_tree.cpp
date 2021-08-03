@@ -84,10 +84,13 @@ void CUDATree::InitCUDAMemory() {
                                        static_cast<size_t>(max_leaves_),
                                        __FILE__,
                                        __LINE__);
-  AllocateCUDAMemoryOuter<double>(&cuda_split_gain_,
+  AllocateCUDAMemoryOuter<float>(&cuda_split_gain_,
                                        static_cast<size_t>(max_leaves_),
                                        __FILE__,
                                        __LINE__);
+  SetCUDAMemoryOuter<int>(cuda_leaf_parent_, 0, 1, __FILE__, __LINE__);
+  SetCUDAMemoryOuter<double>(cuda_leaf_value_, 0.0f, 1, __FILE__, __LINE__);
+  SetCUDAMemoryOuter<double>(cuda_leaf_weight_, 0.0f, 1, __FILE__, __LINE__);
   SetCUDAMemoryOuter<int>(cuda_leaf_parent_, -1, 1, __FILE__, __LINE__);
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_stream_));
 }
@@ -164,6 +167,44 @@ void CUDATree::AddPredictionToScore(const Dataset* data,
 inline void CUDATree::Shrinkage(double rate) {
   Tree::Shrinkage(rate);
   LaunchShrinkageKernel(rate);
+}
+
+void CUDATree::ToHost() {
+  left_child_.resize(max_leaves_ - 1);
+  right_child_.resize(max_leaves_ - 1);
+  split_feature_inner_.resize(max_leaves_ - 1);
+  split_feature_.resize(max_leaves_ - 1);
+  threshold_in_bin_.resize(max_leaves_ - 1);
+  threshold_.resize(max_leaves_ - 1);
+  decision_type_.resize(max_leaves_ - 1, 0);
+  split_gain_.resize(max_leaves_ - 1);
+  leaf_parent_.resize(max_leaves_);
+  leaf_value_.resize(max_leaves_);
+  leaf_weight_.resize(max_leaves_);
+  leaf_count_.resize(max_leaves_);
+  internal_value_.resize(max_leaves_ - 1);
+  internal_weight_.resize(max_leaves_ - 1);
+  internal_count_.resize(max_leaves_ - 1);
+  leaf_depth_.resize(max_leaves_);
+
+  const size_t num_leaves_size = static_cast<size_t>(num_leaves_);
+  CopyFromCUDADeviceToHostOuter<int>(left_child_.data(), cuda_left_child_, num_leaves_size - 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<int>(right_child_.data(), cuda_right_child_, num_leaves_size - 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<int>(split_feature_inner_.data(), cuda_split_feature_inner_, num_leaves_size - 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<int>(split_feature_.data(), cuda_split_feature_, num_leaves_size - 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<uint32_t>(threshold_in_bin_.data(), cuda_threshold_in_bin_, num_leaves_size - 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<double>(threshold_.data(), cuda_threshold_, num_leaves_size - 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<int8_t>(decision_type_.data(), cuda_decision_type_, num_leaves_size - 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<float>(split_gain_.data(), cuda_split_gain_, num_leaves_size - 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<int>(leaf_parent_.data(), cuda_leaf_parent_, num_leaves_size - 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<double>(leaf_value_.data(), cuda_leaf_value_, num_leaves_size, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<double>(leaf_weight_.data(), cuda_leaf_weight_, num_leaves_size, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<data_size_t>(leaf_count_.data(), cuda_leaf_count_, num_leaves_size, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<double>(internal_value_.data(), cuda_internal_value_, num_leaves_size - 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<double>(internal_weight_.data(), cuda_internal_weight_, num_leaves_size - 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<data_size_t>(internal_count_.data(), cuda_internal_count_, num_leaves_size - 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<int>(leaf_depth_.data(), cuda_leaf_depth_, num_leaves_size, __FILE__, __LINE__);
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
 }  // namespace LightGBM
