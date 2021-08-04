@@ -1223,7 +1223,8 @@ class Dataset:
             ptr_data,
             ctypes.byref(actual_sample_cnt),
         ))
-        return indices[:actual_sample_cnt.value]
+        assert sample_cnt == actual_sample_cnt.value
+        return indices
 
     def _init_from_ref_dataset(self, total_nrow: int, ref_dataset: 'Dataset') -> 'Dataset':
         """Create dataset from a reference dataset.
