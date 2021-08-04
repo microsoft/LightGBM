@@ -7,11 +7,9 @@
 
 namespace LightGBM {
 
+template <bool IS_CSR, bool PREDICT_LEAF_INDEX>
 __global__ void PredictKernel(const data_size_t num_data,
                               const int num_feature,
-                              const int* feature_index,
-                              const double* feature_value,
-                              const data_size_t* row_ptr,
                               const int* num_leaves,
                               const int** left_child,
                               const int** right_child,
@@ -26,16 +24,9 @@ __global__ void PredictKernel(const data_size_t num_data,
   const unsigned int thread_index = threadIdx.x;
   double* data_pointer = nullptr;
   if (data_index < num_data) {
-    const data_size_t offset = row_ptr[data_index];
-    data_pointer = data + offset;
-    for (int i = 0; i < num_feature; ++i) {
-      data_pointer[i] = 0.0f;
-    }
-    const data_size_t num_value = row_ptr[data_index + 1] - offset;
-    const int* data_feature_index = feature_index + offset;
-    const double* data_feature_value = feature_value + offset;
-    for (int value_index = 0; value_index < num_value; ++value_index) {
-      data_pointer[data_feature_index[value_index]] = data_feature_value[value_index];
+    data_pointer = data + data_index * num_feature;
+    if (!PREDICT_LEAF_INDEX) {
+      cuda_result_buffer[data_index] = 0.0f;
     }
   }
   __shared__ double shared_tree_threshold[CUDA_PREDICTOR_MAX_TREE_SIZE];
@@ -87,29 +78,50 @@ __global__ void PredictKernel(const data_size_t num_data,
           }
         }
       }
-      cuda_result_buffer[data_index] += shared_tree_leaf_value[~node];
+      if (PREDICT_LEAF_INDEX) {
+        cuda_result_buffer[data_index * num_trees + tree_index] = ~node;
+      } else {
+        cuda_result_buffer[data_index] += shared_tree_leaf_value[~node];
+      }
     }
+    __syncthreads();
   }
 }
 
-void CUDAPredictor::LaunchPredictKernel(const data_size_t num_data) {
+#define PREDICT_KERNEL_ARGS \
+  num_data, \
+  num_feature_, \
+  cuda_tree_num_leaves_, \
+  cuda_left_child_, \
+  cuda_right_child_, \
+  cuda_threshold_, \
+  cuda_decision_type_, \
+  cuda_leaf_value_, \
+  cuda_split_feature_index_, \
+  num_iteration_, \
+  cuda_data_, \
+  cuda_result_buffer_
+
+void CUDAPredictor::LaunchPredictKernelAsync(const data_size_t num_data, const bool is_csr) {
   const int num_blocks = (num_data + CUAA_PREDICTOR_PREDICT_BLOCK_SIZE - 1) / CUAA_PREDICTOR_PREDICT_BLOCK_SIZE;
-  PredictKernel<<<num_blocks, CUAA_PREDICTOR_PREDICT_BLOCK_SIZE>>>(
-    num_data,
-    num_feature_,
-    cuda_predict_feature_index_,
-    cuda_predict_feature_value_,
-    cuda_predict_row_ptr_,
-    cuda_tree_num_leaves_,
-    cuda_left_child_,
-    cuda_right_child_,
-    cuda_threshold_,
-    cuda_decision_type_,
-    cuda_leaf_value_,
-    cuda_split_feature_index_,
-    num_trees_,
-    cuda_data_,
-    cuda_result_buffer_);
+  if (is_csr) {
+    if (predict_leaf_index_) {
+      PredictKernel<true, true><<<num_blocks, CUAA_PREDICTOR_PREDICT_BLOCK_SIZE, 0, cuda_stream_>>>(PREDICT_KERNEL_ARGS);
+    } else {
+      PredictKernel<true, false><<<num_blocks, CUAA_PREDICTOR_PREDICT_BLOCK_SIZE, 0, cuda_stream_>>>(PREDICT_KERNEL_ARGS);
+    }
+  } else {
+    if (predict_leaf_index_) {
+      PredictKernel<false, true><<<num_blocks, CUAA_PREDICTOR_PREDICT_BLOCK_SIZE, 0, cuda_stream_>>>(PREDICT_KERNEL_ARGS);
+    } else {
+      PredictKernel<false, false><<<num_blocks, CUAA_PREDICTOR_PREDICT_BLOCK_SIZE, 0, cuda_stream_>>>(PREDICT_KERNEL_ARGS);
+    }
+  }
+  if (!is_raw_score_ && !predict_leaf_index_) {
+    cuda_convert_output_function_(num_data, cuda_result_buffer_, cuda_result_buffer_);
+  }
 }
+
+#undef PREDICT_KERNEL_ARGS
 
 }  // namespace LightGBM

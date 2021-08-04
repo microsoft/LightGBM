@@ -16,7 +16,10 @@
 namespace LightGBM {
 
 class CUDAObjectiveInterface {
-
+ public:
+  virtual void ConvertOutputCUDA(const data_size_t /*num_data*/, const double* /*input*/, double* /*output*/) const {
+    Log::Warning("in naive convert output");
+  };
 };
 
 }  // namespace LightGBM

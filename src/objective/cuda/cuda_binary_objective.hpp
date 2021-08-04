@@ -13,7 +13,7 @@
 #define CALC_INIT_SCORE_BLOCK_SIZE_BINARY (1024)
 #define NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_BINARY (6)
 
-#include "cuda_objective_function.hpp"
+#include <LightGBM/cuda/cuda_objective_function.hpp>
 #include "../binary_objective.hpp"
 
 namespace LightGBM {
@@ -33,10 +33,20 @@ class CUDABinaryLogloss : public CUDAObjectiveInterface, public BinaryLogloss {
 
   double BoostFromScore(int) const override;
 
+  void ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const override;
+
+  std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const override {
+    return [this] (data_size_t num_data, const double* input, double* output) {
+      ConvertOutputCUDA(num_data, input, output);
+    };
+  }
+
  private:
   void LaunchGetGradientsKernel(const double* scores, score_t* gradients, score_t* hessians) const;
 
   void LaunchBoostFromScoreKernel() const;
+
+  void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const;
 
   // CUDA memory, held by other objects
   const label_t* cuda_label_;

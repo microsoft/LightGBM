@@ -85,9 +85,9 @@ void CUDATree::InitCUDAMemory() {
                                        __FILE__,
                                        __LINE__);
   AllocateCUDAMemoryOuter<float>(&cuda_split_gain_,
-                                       static_cast<size_t>(max_leaves_),
-                                       __FILE__,
-                                       __LINE__);
+                                 static_cast<size_t>(max_leaves_),
+                                 __FILE__,
+                                 __LINE__);
   SetCUDAMemoryOuter<int>(cuda_leaf_parent_, 0, 1, __FILE__, __LINE__);
   SetCUDAMemoryOuter<double>(cuda_leaf_value_, 0.0f, 1, __FILE__, __LINE__);
   SetCUDAMemoryOuter<double>(cuda_leaf_weight_, 0.0f, 1, __FILE__, __LINE__);
@@ -127,10 +127,10 @@ void CUDATree::InitCUDA() {
                                     __FILE__,
                                     __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<int8_t>(&cuda_decision_type_,
-                                    decision_type_.data(),
-                                    decision_type_.size(),
-                                    __FILE__,
-                                    __LINE__);
+                                            decision_type_.data(),
+                                            decision_type_.size(),
+                                            __FILE__,
+                                            __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<double>(&cuda_leaf_value_,
                                     leaf_value_.data(),
                                     leaf_value_.size(),
@@ -167,6 +167,11 @@ void CUDATree::AddPredictionToScore(const Dataset* data,
 inline void CUDATree::Shrinkage(double rate) {
   Tree::Shrinkage(rate);
   LaunchShrinkageKernel(rate);
+}
+
+inline void CUDATree::AddBias(double val) {
+  Tree::AddBias(val);
+  LaunchAddBiasKernel(val);
 }
 
 void CUDATree::ToHost() {

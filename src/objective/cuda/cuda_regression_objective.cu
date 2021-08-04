@@ -52,6 +52,7 @@ void CUDARegressionL2loss::LaunchCalcInitScoreKernel() const {
 __global__ void GetGradientsKernel_Regression(const double* cuda_scores, const label_t* cuda_labels, const data_size_t num_data,
   score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
   const data_size_t data_index = static_cast<data_size_t>(blockDim.x * blockIdx.x + threadIdx.x);
+  // TODO(shiyu1994): consider sqrt_
   if (data_index < num_data) {
     cuda_out_gradients[data_index] = static_cast<score_t>(cuda_scores[data_index] - cuda_labels[data_index]);
     cuda_out_hessians[data_index] = 1.0f;
@@ -61,6 +62,24 @@ __global__ void GetGradientsKernel_Regression(const double* cuda_scores, const l
 void CUDARegressionL2loss::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {
   const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
   GetGradientsKernel_Regression<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(score, cuda_labels_, num_data_, gradients, hessians);
+}
+
+// TODO(shiyu1994): try to use global kernels as class methods
+__global__ void ConvertOutputCUDAKernel(const bool sqrt, const data_size_t num_data, const double* input, double* output) {
+  const int data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (data_index < num_data) {
+    if (sqrt) {
+      const double sign = input[0] >= 0.0f ? 1 : -1; 
+      output[0] = sign * input[0] * input[0];
+    } else {
+      output[0] = input[0];
+    }
+  }
+}
+
+void CUDARegressionL2loss::LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const {
+  const int num_blocks = (num_data + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
+  ConvertOutputCUDAKernel<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(sqrt_, num_data, input, output);
 }
 
 }  // namespace LightGBM

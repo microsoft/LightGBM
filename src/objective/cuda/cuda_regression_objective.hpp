@@ -13,7 +13,7 @@
 #define CALC_INIT_SCORE_BLOCK_SIZE_REGRESSION (1024)
 #define NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_REGRESSION (6)
 
-#include "cuda_objective_function.hpp"
+#include <LightGBM/cuda/cuda_objective_function.hpp>
 #include "../regression_objective.hpp"
 
 namespace LightGBM {
@@ -32,10 +32,20 @@ class CUDARegressionL2loss : public CUDAObjectiveInterface, public RegressionL2l
 
   double BoostFromScore(int) const override;
 
+  void ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const override;
+
+  std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const override {
+    return [this] (data_size_t num_data, const double* input, double* output) {
+      ConvertOutputCUDA(num_data, input, output);
+    };
+  }
+
  private:
   void LaunchCalcInitScoreKernel() const;
 
   void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const;
+
+  void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const;
 
   const label_t* cuda_labels_;
   // TODO(shiyu1994): add weighted gradients

@@ -13,7 +13,7 @@
 #define NUM_QUERY_PER_BLOCK (10)
 #define MAX_RANK_LABEL (32)
 
-#include "cuda_objective_function.hpp"
+#include <LightGBM/cuda/cuda_objective_function.hpp>
 #include "../rank_objective.hpp"
 #include <LightGBM/utils/threading.h>
 

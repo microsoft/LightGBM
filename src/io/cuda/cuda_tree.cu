@@ -288,4 +288,17 @@ void CUDATree::LaunchShrinkageKernel(const double rate) {
   ShrinkageKernel<<<num_blocks, num_threads_per_block>>>(rate, cuda_leaf_value_, num_leaves_);
 }
 
+__global__ void AddBiasKernel(const double val, double* cuda_leaf_value, const int num_leaves) {
+  const int leaf_index = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (leaf_index < num_leaves) {
+    cuda_leaf_value[leaf_index] += val;
+  }
+}
+
+void CUDATree::LaunchAddBiasKernel(const double val) {
+  const int num_threads_per_block = 1024;
+  const int num_blocks = (num_leaves_ + num_threads_per_block - 1) / num_threads_per_block;
+  AddBiasKernel<<<num_blocks, num_threads_per_block>>>(val, cuda_leaf_value_, num_leaves_);
+}
+
 }  // namespace LightGBM

@@ -249,11 +249,23 @@ class Predictor {
         writer->Write("\n", 1);
       }
     };
-    auto start = std::chrono::steady_clock::now();
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
-    auto end = std::chrono::steady_clock::now();
-    auto duration = static_cast<std::chrono::duration<double>>(end - start);
-    Log::Warning("duration cpu = %f", duration.count());
+  }
+
+  virtual void Predict(const data_size_t num_data,
+                       const int64_t num_pred_in_one_row,
+                       const std::function<std::vector<std::pair<int, double>>(int row_idx)>& get_row_fun,
+                       double* out_result) {
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < num_data; ++i) {
+      OMP_LOOP_EX_BEGIN();
+      auto one_row = get_row_fun(i);
+      auto pred_wrt_ptr = out_result + static_cast<size_t>(num_pred_in_one_row) * i;
+      predict_fun_(one_row, pred_wrt_ptr);
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
   }
 
  protected:

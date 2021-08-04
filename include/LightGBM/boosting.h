@@ -317,6 +317,10 @@ class LIGHTGBM_EXPORT Boosting {
   virtual bool IsLinear() const { return false; }
 
   virtual const std::vector<std::unique_ptr<Tree>>& models() const = 0;
+
+  virtual int num_tree_per_iteration() const = 0;
+
+  virtual std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const = 0;
 };
 
 class GBDTBase : public Boosting {

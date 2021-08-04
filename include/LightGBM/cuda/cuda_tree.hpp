@@ -82,6 +82,8 @@ class CUDATree : public Tree {
 
   inline void Shrinkage(double rate) override;
 
+  inline void AddBias(double val) override;
+
   void ToHost();
 
  private:
@@ -100,6 +102,8 @@ class CUDATree : public Tree {
                                         data_size_t num_data, double* score) const;
 
   void LaunchShrinkageKernel(const double rate);
+
+  void LaunchAddBiasKernel(const double val);
 
   int* cuda_left_child_;
   int* cuda_right_child_;

@@ -209,7 +209,7 @@ class Tree {
 
   inline double shrinkage() const { return shrinkage_; }
 
-  inline void AddBias(double val) {
+  virtual inline void AddBias(double val) {
 #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_ - 1; ++i) {
       leaf_value_[i] = MaybeRoundToZero(leaf_value_[i] + val);

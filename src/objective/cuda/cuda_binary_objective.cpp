@@ -39,6 +39,10 @@ double CUDABinaryLogloss::BoostFromScore(int) const {
   return boost_from_score;
 }
 
+void CUDABinaryLogloss::ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const {
+  LaunchConvertOutputCUDAKernel(num_data, input, output);
+}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

@@ -37,6 +37,10 @@ double CUDARegressionL2loss::BoostFromScore(int) const {
   return boost_from_score;
 }
 
+void CUDARegressionL2loss::ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const {
+  LaunchConvertOutputCUDAKernel(num_data, input, output);
+}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

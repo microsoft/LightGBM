@@ -94,6 +94,10 @@ void CopyFromCUDADeviceToCUDADeviceAsyncOuter(T* dst_ptr, const T* src_ptr, size
 
 void SynchronizeCUDADeviceOuter(const char* file, const int line);
 
+void SynchronizeCUDADeviceOuter(cudaStream_t cuda_stream, const char* file, const int line) {
+  CUDASUCCESS_OR_FATAL_OUTER(cudaStreamSynchronize(cuda_stream));
+}
+
 template <typename T>
 void SetCUDAMemoryOuter(T* dst_ptr, int value, size_t size, const char* file, const int line) {
   CUDASUCCESS_OR_FATAL_OUTER(cudaMemset(reinterpret_cast<void*>(dst_ptr), value, size * sizeof(T)));

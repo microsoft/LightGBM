@@ -88,6 +88,10 @@ class ObjectiveFunction {
   * \brief Load objective function from string object
   */
   LIGHTGBM_EXPORT static ObjectiveFunction* CreateObjectiveFunction(const std::string& str);
+
+  virtual std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const {
+    return [] (data_size_t, const double*, double*) {};
+  }
 };
 
 }  // namespace LightGBM
