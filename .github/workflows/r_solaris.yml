@@ -38,6 +38,7 @@ jobs:
       - name: Run tests on Solaris
         shell: bash
         run: |
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat', 'knitr', 'rmarkdown'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh || exit -1
           apt-get install --no-install-recommends -y \
               libcurl4-openssl-dev \
