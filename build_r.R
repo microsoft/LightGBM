@@ -385,6 +385,13 @@ description_contents <- description_contents[
   !grepl("^ +rmarkdown,$", description_contents)
 ]
 
+# remove vignettes/ directory to avoid an R CMD CHECK note
+# like "files in the 'vignettes' directory but no files in inst/doc"
+unlink(
+  x = file.path(TEMP_R_DIR, "vignettes")
+  , recursive = TRUE
+)
+
 writeLines(description_contents, DESCRIPTION_FILE)
 
 # CMake-based builds can't currently use R's builtin routine registration,

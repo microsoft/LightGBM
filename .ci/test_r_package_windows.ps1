@@ -84,11 +84,6 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   Check-Output $false
 }
 
-# only build vignettes for CRAN-style builds
-if ($env:R_BUILD_TYPE -eq "cran") {
-  $env:LGB_BUILD_VIGNETTES = "true"
-}
-
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
@@ -127,7 +122,7 @@ Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat')"
-if ($env:LGB_BUILD_VIGNETTES -eq "true") {
+if ($env:R_BUILD_TYPE -eq "cran") {
   $packages = "$packages, 'knitr', 'rmarkdown'"
 }
 Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages(c($packages), dependencies = c('Imports', 'Depends', 'LinkingTo'), repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
@@ -194,8 +189,7 @@ if ($env:COMPILER -ne "MSVC") {
     # CRAN packages must pass without --no-multiarch (build on 64-bit and 32-bit)
     $check_args = "c('CMD', 'check', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
   } else {
-    # vignettes are only built for CRAN builds
-    $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '--ignore-vignettes', '$PKG_FILE_NAME')"
+    $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
   }
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
 

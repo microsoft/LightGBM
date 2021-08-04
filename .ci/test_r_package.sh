@@ -7,15 +7,16 @@ mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
-# vignettes are only built for CRAN builds
-R_CMD_CHECK_ARGS="--as-cran --run-donttest"
-if [[ $R_BUILD_TYPE == "cran" ]]; then
-    export LGB_BUILD_VIGNETTES="true"
-else
-    # don't fail builds for long-running examples unless they're very long.
-    # See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
+# don't fail builds for long-running examples unless they're very long.
+# See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
+if [[ $R_BUILD_TYPE != "cran" ]]; then
     export _R_CHECK_EXAMPLE_TIMING_THRESHOLD_=30
-    R_CMD_CHECK_ARGS="${R_CMD_CHECK_ARGS} --ignore-vignettes"
+fi
+
+# don't fail builds for long-running examples unless they're very long.
+# See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
+if [[ $R_BUILD_TYPE != "cran" ]]; then
+    export _R_CHECK_EXAMPLE_TIMING_THRESHOLD_=30
 fi
 
 # Get details needed for installing R components
@@ -107,7 +108,7 @@ if [[ "${TASK}" != "r-rchk" ]]; then
 fi
 
 # only need knitr and rmarkdown if building vignettes
-if [[ "${LGB_BUILD_VIGNETTES}" == "true" ]]; then
+if [[ $R_BUILD_TYPE == "cran" ]]; then
     packages="$packages, 'knitr', 'rmarkdown'"
 fi
 
@@ -183,7 +184,8 @@ fi
 check_succeeded="yes"
 (
     R CMD check ${PKG_TARBALL} \
-        ${R_CMD_CHECK_ARGS} \
+        --as-cran \
+        --run-donttest \
     || check_succeeded="no"
 ) &
 

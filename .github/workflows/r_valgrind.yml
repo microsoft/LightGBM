@@ -12,7 +12,6 @@ jobs:
     container: wch1/r-debug
     env:
       SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
-      LGB_BUILD_VIGNETTES: "true"
     steps:
       - name: Install essential software before checkout
         shell: bash

@@ -4,23 +4,36 @@
 #     Prepare a source distribution of the R package
 #     to be submitted to CRAN.
 #
-#     Vignette building is skipped by default because it requires
-#     some shell features (tar and gzip) which can cause compatibility
-#     issues on Windows.
+# [arguments]
 #
-#     To build a package with vignettes, set environment variable
-#     `LGB_BUILD_VIGNETTES=true`.
+#   --no-build-vignettes  Pass this flag to skip creating vignettes.
+#                         You might want to do this to avoid installing
+#                         vignette-only dependencies, or to avoid
+#                         portability issues.
 #
 # [usage]
 #     sh build-cran-package.sh
 
 set -e
 
-LGB_BUILD_VIGNETTES=${LGB_BUILD_VIGNETTES:-false}
+# Default values of arguments
+BUILD_VIGNETTES=true
+
+# Loop through arguments and process them
+for arg in "$@"
+do
+    case $arg in
+        --no-build-vignettes)
+        BUILD_VIGNETTES=false
+        shift
+        ;;
+    esac
+done
+
 ORIG_WD="$(pwd)"
 TEMP_R_DIR="$(pwd)/lightgbm_r"
 
-echo "Building R package (build vignettes: ${LGB_BUILD_VIGNETTES})"
+echo "Building R package (build vignettes: ${BUILD_VIGNETTES})"
 
 if test -d "${TEMP_R_DIR}"; then
     rm -r "${TEMP_R_DIR}"
@@ -38,7 +51,7 @@ cp -R R-package/* "${TEMP_R_DIR}"
 cp -R include "${TEMP_R_DIR}/src/"
 cp -R src/* "${TEMP_R_DIR}/src/"
 
-if [[ ${LGB_BUILD_VIGNETTES} == "true" ]]; then
+if ${BUILD_VIGNETTES} ; then
     cp docs/logo/LightGBM_logo_black_text.svg "${TEMP_R_DIR}/vignettes/"
 fi
 
@@ -154,12 +167,7 @@ cd "${TEMP_R_DIR}"
 
 cd "${ORIG_WD}"
 
-if [[ ${LGB_BUILD_VIGNETTES} == "false" ]]; then
-    R CMD build \
-        --keep-empty-dirs \
-        --no-build-vignettes \
-        lightgbm_r
-else
+if ${BUILD_VIGNETTES} ; then
     R CMD build \
         --keep-empty-dirs \
         lightgbm_r
@@ -193,6 +201,11 @@ else
     echo "Done creating ${TARBALL_NAME}"
 
     rm -rf ./_tmp
+else
+    R CMD build \
+        --keep-empty-dirs \
+        --no-build-vignettes \
+        lightgbm_r
 fi
 
 echo "Done building R package"
