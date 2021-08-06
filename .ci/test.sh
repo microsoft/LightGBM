@@ -148,7 +148,7 @@ elif [[ $TASK == "bdist" ]]; then
         fi
     fi
     pip install --user $BUILD_DIRECTORY/python-package/dist/*.whl || exit -1
-    pytest $BUILD_DIRECTORY/tests || exit -1
+    pytest --durations=0 $BUILD_DIRECTORY/tests || exit -1
     exit 0
 fi
 
@@ -207,7 +207,7 @@ fi
 make _lightgbm -j4 || exit -1
 
 cd $BUILD_DIRECTORY/python-package && python setup.py install --precompile --user || exit -1
-pytest --durations=0 $BUILD_DIRECTORY/tests || exit -1
+pytest $BUILD_DIRECTORY/tests || exit -1
 
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
