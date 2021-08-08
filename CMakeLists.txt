@@ -422,9 +422,10 @@ endif(USE_MPI)
 
 if(USE_OPENMP)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-	# Include directory has to be explicitly speicfied when using CMake object library
-        # to compile R package. Otherwise, omp.h can't be found.
-        # OpenMP_CXX_INCLUDE_DIRS is empty so use hard coded path here.
+        # Because we are using libomp installed by homebrew in CI scripts,
+        # include directory need to be speicfied when using CMake object library
+        # to compile R package on macOS.
+        # OpenMP_CXX_INCLUDE_DIRS is empty so use hard-code path here.
         include_directories(SYSTEM /usr/local/include)
 
         TARGET_LINK_LIBRARIES(lightgbm OpenMP::OpenMP_CXX)
