@@ -136,8 +136,6 @@ if(USE_OPENMP)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif(USE_OPENMP)
 
-message(STATUS "CMAKE_CXX_FLAGS after finding openmp: " ${CMAKE_CXX_FLAGS})
-
 if(USE_GPU)
     SET(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/external_libs/compute/include)
     include_directories(${BOOST_COMPUTE_HEADER_DIR})
