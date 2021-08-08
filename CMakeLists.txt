@@ -356,6 +356,7 @@ endif(USE_CUDA)
 )
 
 add_library(lightgbm_objs OBJECT ${SOURCES})
+target_compile_options(lightgbm_objs PRIVATE -D_lightgbm_EXPORTS)
 
 add_executable(lightgbm src/main.cpp src/application/application.cpp $<TARGET_OBJECTS:lightgbm_objs>)
 set(API_SOURCES "src/c_api.cpp")
@@ -367,6 +368,7 @@ if(__BUILD_FOR_R)
 endif(__BUILD_FOR_R)
 
 add_library(lightgbm_capi_objs OBJECT ${API_SOURCES})
+target_compile_options(lightgbm_capi_objs PRIVATE -D_lightgbm_EXPORTS)
 
 if(BUILD_STATIC_LIB)
   add_library(_lightgbm STATIC $<TARGET_OBJECTS:lightgbm_capi_objs> $<TARGET_OBJECTS:lightgbm_objs>)
@@ -422,6 +424,11 @@ endif(USE_MPI)
 
 if(USE_OPENMP)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+	# Include directory has to be explicitly speicfied when using CMake object library
+        # to compile R package. Otherwise, omp.h can't be found.
+        # OpenMP_CXX_INCLUDE_DIRS is empty so use hard coded path here.
+        include_directories(SYSTEM /usr/local/include)
+
         TARGET_LINK_LIBRARIES(lightgbm OpenMP::OpenMP_CXX)
         TARGET_LINK_LIBRARIES(_lightgbm OpenMP::OpenMP_CXX)
     endif()
