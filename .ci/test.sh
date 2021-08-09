@@ -148,7 +148,7 @@ elif [[ $TASK == "bdist" ]]; then
         fi
     fi
     pip install --user $BUILD_DIRECTORY/python-package/dist/*.whl || exit -1
-    pytest --durations=0 $BUILD_DIRECTORY/tests || exit -1
+    pytest $BUILD_DIRECTORY/tests || exit -1
     exit 0
 fi
 
