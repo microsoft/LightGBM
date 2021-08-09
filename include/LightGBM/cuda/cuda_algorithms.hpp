@@ -101,17 +101,16 @@ __device__ void PrefixSumConflictFree(T* values, size_t n) {
   PrefixSumInner(values, n, T);
 }
 
-template <typename T>
-void CUDAQuickSort(T* values, const size_t n);
-
-template <typename T>
-void CUDAMergeSort(T* values, const size_t n);
-
-template <typename VAL_T, typename INDEX_T>
-__device__ void BitonicArgSort(const VAL_T* values, INDEX_T* indices, const size_t len);
-
 template <typename VAL_T, bool ASCENDING>
 void BitonicSortGlobal(VAL_T* values, const size_t len);
+
+template <typename VAL_T, typename INDEX_T, bool ASCENDING>
+void BitonicArgSortGlobal(const VAL_T* values, INDEX_T* indices, const size_t len);
+
+void BitonicArgSortItemsGlobal(const double* values,
+                               const int num_queries,
+                               const data_size_t* cuda_query_boundaries,
+                               data_size_t* out_indices);
 
 }  // namespace LightGBM
 

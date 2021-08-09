@@ -52,13 +52,6 @@ void CUDALambdarankNDCG::Init(const Metadata& metadata, data_size_t num_data) {
 
 void CUDALambdarankNDCG::GetGradients(const double* score, score_t* gradients, score_t* hessians) const {
   LaunchGetGradientsKernel(score, gradients, hessians);
-  std::vector<score_t> host_gradients(100, 0.0f);
-  std::vector<score_t> host_hessians(100, 0.0f);
-  CopyFromCUDADeviceToHostOuter<score_t>(host_gradients.data(), gradients, 100, __FILE__, __LINE__);
-  CopyFromCUDADeviceToHostOuter<score_t>(host_hessians.data(), hessians, 100, __FILE__, __LINE__);
-  for (int i = 0; i < 100; ++i) {
-    Log::Warning("host_gradient[%d] = %f, host_hessians[%d] = %f", i, host_gradients[i], host_hessians[i]);
-  }
 }
 
 CUDARankXENDCG::CUDARankXENDCG(const Config& config): RankXENDCG(config) {}
