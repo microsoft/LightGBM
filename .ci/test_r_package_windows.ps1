@@ -171,9 +171,11 @@ if ($env:COMPILER -ne "MSVC") {
     # some flavors of tar.exe can fail in some settings on Windows.
     # Putting the msys64 utilities at the beginning of PATH temporarily to be
     # sure they're used for that purpose.
-    $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
+    # $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
+    $env:TAR = "C:\msys64\usr\bin\tar.exe"
+    $env:R_GZIPCMD = "C:\msys64\usr\bin\gzip.exe"
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
-    Remove-From-Path ".*msys64.*"
+    #Remove-From-Path ".*msys64.*"
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths

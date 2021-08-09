@@ -32,46 +32,46 @@ jobs:
           ################
           # CMake builds #
           ################
-          - os: ubuntu-latest
-            task: r-package
-            compiler: gcc
-            r_version: 3.6
-            build_type: cmake
-          - os: ubuntu-latest
-            task: r-package
-            compiler: gcc
-            r_version: 4.0
-            build_type: cmake
-          - os: ubuntu-latest
-            task: r-package
-            compiler: clang
-            r_version: 3.6
-            build_type: cmake
-          - os: ubuntu-latest
-            task: r-package
-            compiler: clang
-            r_version: 4.0
-            build_type: cmake
-          - os: macOS-latest
-            task: r-package
-            compiler: gcc
-            r_version: 3.6
-            build_type: cmake
-          - os: macOS-latest
-            task: r-package
-            compiler: gcc
-            r_version: 4.0
-            build_type: cmake
-          - os: macOS-latest
-            task: r-package
-            compiler: clang
-            r_version: 3.6
-            build_type: cmake
-          - os: macOS-latest
-            task: r-package
-            compiler: clang
-            r_version: 4.0
-            build_type: cmake
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 3.6
+          #   build_type: cmake
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 4.0
+          #   build_type: cmake
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 3.6
+          #   build_type: cmake
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 4.0
+          #   build_type: cmake
+          # - os: macOS-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 3.6
+          #   build_type: cmake
+          # - os: macOS-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 4.0
+          #   build_type: cmake
+          # - os: macOS-latest
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 3.6
+          #   build_type: cmake
+          # - os: macOS-latest
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 4.0
+          #   build_type: cmake
           - os: windows-latest
             task: r-package
             compiler: MINGW
@@ -113,24 +113,24 @@ jobs:
             toolchain: MSYS
             r_version: 4.0
             build_type: cran
-          - os: ubuntu-latest
-            task: r-package
-            compiler: gcc
-            r_version: 4.0
-            build_type: cran
-          - os: macOS-latest
-            task: r-package
-            compiler: clang
-            r_version: 4.0
-            build_type: cran
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 4.0
+          #   build_type: cran
+          # - os: macOS-latest
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 4.0
+          #   build_type: cran
           ################
           # Other checks #
           ################
-          - os: ubuntu-latest
-            task: r-rchk
-            compiler: gcc
-            r_version: 4.0
-            build_type: cran
+          # - os: ubuntu-latest
+          #   task: r-rchk
+          #   compiler: gcc
+          #   r_version: 4.0
+          #   build_type: cran
     steps:
       - name: Prevent conversion of line endings on Windows
         if: startsWith(matrix.os, 'windows')
@@ -172,66 +172,66 @@ jobs:
           $env:GITHUB_ACTIONS = "true"
           $env:TASK = "${{ matrix.task }}"
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
-  test-r-sanitizers:
-    name: r-package (ubuntu-latest, R-devel, GCC ASAN/UBSAN)
-    timeout-minutes: 60
-    runs-on: ubuntu-latest
-    container: rhub/rocker-gcc-san
-    steps:
-      - name: Install Git before checkout
-        shell: bash
-        run: |
-          apt-get update
-          apt-get install --no-install-recommends -y git
-      - name: Checkout repository
-        uses: actions/checkout@v2.3.4
-        with:
-          fetch-depth: 5
-          submodules: true
-      - name: Install packages
-        shell: bash
-        run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
-          sh build-cran-package.sh
-          Rdevel CMD INSTALL lightgbm_*.tar.gz || exit -1
-      - name: Run tests with sanitizers
-        shell: bash
-        run: |
-          cd R-package/tests
-          Rscriptdevel testthat.R 2>&1 > ubsan-tests.log
-          cat ubsan-tests.log
-          exit $(cat ubsan-tests.log | grep --count "runtime error")
-  test-r-debian-clang:
-    name: r-package (debian, R-devel, clang)
-    timeout-minutes: 60
-    runs-on: ubuntu-latest
-    container: rhub/debian-clang-devel
-    steps:
-      - name: Install Git before checkout
-        shell: bash
-        run: |
-          apt-get update
-          apt-get install --no-install-recommends -y git
-      - name: Checkout repository
-        uses: actions/checkout@v2.3.4
-        with:
-          fetch-depth: 5
-          submodules: true
-      - name: Install packages and run tests
-        shell: bash
-        run: |
-          export PATH=/opt/R-devel/bin/:${PATH}
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
-          sh build-cran-package.sh
-          R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
-          if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
-              echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
-              exit -1
-          fi
+  # test-r-sanitizers:
+  #   name: r-package (ubuntu-latest, R-devel, GCC ASAN/UBSAN)
+  #   timeout-minutes: 60
+  #   runs-on: ubuntu-latest
+  #   container: rhub/rocker-gcc-san
+  #   steps:
+  #     - name: Install Git before checkout
+  #       shell: bash
+  #       run: |
+  #         apt-get update
+  #         apt-get install --no-install-recommends -y git
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v2.3.4
+  #       with:
+  #         fetch-depth: 5
+  #         submodules: true
+  #     - name: Install packages
+  #       shell: bash
+  #       run: |
+  #         Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+  #         sh build-cran-package.sh
+  #         Rdevel CMD INSTALL lightgbm_*.tar.gz || exit -1
+  #     - name: Run tests with sanitizers
+  #       shell: bash
+  #       run: |
+  #         cd R-package/tests
+  #         Rscriptdevel testthat.R 2>&1 > ubsan-tests.log
+  #         cat ubsan-tests.log
+  #         exit $(cat ubsan-tests.log | grep --count "runtime error")
+  # test-r-debian-clang:
+  #   name: r-package (debian, R-devel, clang)
+  #   timeout-minutes: 60
+  #   runs-on: ubuntu-latest
+  #   container: rhub/debian-clang-devel
+  #   steps:
+  #     - name: Install Git before checkout
+  #       shell: bash
+  #       run: |
+  #         apt-get update
+  #         apt-get install --no-install-recommends -y git
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v2.3.4
+  #       with:
+  #         fetch-depth: 5
+  #         submodules: true
+  #     - name: Install packages and run tests
+  #       shell: bash
+  #       run: |
+  #         export PATH=/opt/R-devel/bin/:${PATH}
+  #         Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+  #         sh build-cran-package.sh
+  #         R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
+  #         if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
+  #             echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
+  #             exit -1
+  #         fi
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
     runs-on: ubuntu-latest
-    needs: [test, test-r-sanitizers, test-r-debian-clang]
+    needs: [test]
     steps:
     - name: Note that all tests succeeded
       run: echo "🎉"
