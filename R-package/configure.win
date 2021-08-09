@@ -5,7 +5,6 @@
 # find compiler and flags #
 ###########################
 
-R_SCRIPT="${R_HOME}/bin${R_ARCH_BIN}/Rscript"
 R_EXE="${R_HOME}/bin${R_ARCH_BIN}/R"
 CXX=`"${R_EXE}" CMD config CXX`
 CXXFLAGS=`"${R_EXE}" CMD config CXXFLAGS`
