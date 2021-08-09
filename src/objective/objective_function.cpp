@@ -11,6 +11,7 @@
 #include "xentropy_objective.hpp"
 
 #include "cuda/cuda_binary_objective.hpp"
+#include "cuda/cuda_multiclass_objective.hpp"
 #include "cuda/cuda_regression_objective.hpp"
 #include "cuda/cuda_rank_objective.hpp"
 
@@ -24,6 +25,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
       return new CUDARegressionL2loss(config);
     } else if (type == std::string("lambdarank")) {
       return new CUDALambdarankNDCG(config);
+    } else if (type == std::string("multiclass")) {
+      return new CUDAMulticlassSoftmax(config);
     }
   } else {
     if (type == std::string("regression")) {

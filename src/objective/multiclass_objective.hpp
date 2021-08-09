@@ -127,6 +127,12 @@ class MulticlassSoftmax: public ObjectiveFunction {
         }
       }
     }
+    for (int i = 0; i < 100; ++i) {
+      Log::Warning("class 0 data %d gradient %f hessian %f", i, gradients[i], hessians[i]);
+    }
+    for (int i = 0; i < 100; ++i) {
+      Log::Warning("class 1 data %d gradient %f hessian %f", i, gradients[i + num_data_], hessians[i + num_data_]);
+    }
   }
 
   void ConvertOutput(const double* input, double* output) const override {
@@ -165,7 +171,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     }
   }
 
- private:
+ protected:
   double factor_;
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -266,7 +272,9 @@ class MulticlassOVA: public ObjectiveFunction {
     return binary_loss_[class_id]->ClassNeedTrain(0);
   }
 
- private:
+ protected:
+  MulticlassOVA() {}
+
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of classes */

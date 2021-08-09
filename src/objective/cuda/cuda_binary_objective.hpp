@@ -20,8 +20,7 @@ namespace LightGBM {
 
 class CUDABinaryLogloss : public CUDAObjectiveInterface, public BinaryLogloss {
  public:
-  explicit CUDABinaryLogloss(const Config& config,
-                             std::function<bool(label_t)> is_pos = nullptr);
+  explicit CUDABinaryLogloss(const Config& config, const int ova_class_id = -1);
 
   explicit CUDABinaryLogloss(const std::vector<std::string>& strs);
 
@@ -50,11 +49,12 @@ class CUDABinaryLogloss : public CUDAObjectiveInterface, public BinaryLogloss {
 
   // CUDA memory, held by other objects
   const label_t* cuda_label_;
-  // TODO(shiyu1994): add weighted gradients
   const label_t* cuda_weights_;
 
   // CUDA memory, held by this object
   double* cuda_boost_from_score_;
+  double* cuda_label_weights_;
+  const int ova_class_id_ = -1;
 };
 
 }  // namespace LightGBM

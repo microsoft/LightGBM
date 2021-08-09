@@ -35,6 +35,8 @@ class CUDALambdarankNDCG : public CUDAObjectiveInterface, public LambdarankNDCG 
 
   void LaunchCalcInverseMaxDCGKernel();
 
+  void TestCUDAQuickSort() const;
+
   // CUDA memory, held by this object
   double* cuda_lambdas_;
   double* cuda_inverse_max_dcgs_;
@@ -46,6 +48,22 @@ class CUDALambdarankNDCG : public CUDAObjectiveInterface, public LambdarankNDCG 
   // Host memory
   label_t max_label_;
   int max_items_in_query_aligned_;
+};
+
+class CUDARankXENDCG : public CUDAObjectiveInterface, public RankXENDCG {
+ public:
+  explicit CUDARankXENDCG(const Config& config);
+
+  explicit CUDARankXENDCG(const std::vector<std::string>& strs);
+
+  ~CUDARankXENDCG();
+
+  void Init(const Metadata& metadata, data_size_t num_data) override;
+
+  void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override;
+
+ private:
+  void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const;
 };
 
 }  // namespace LightGBM

@@ -707,7 +707,6 @@ class Booster {
       predictor.reset(new CUDAPredictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin));
     } else {
-      Log::Warning("predict with cpu");
       predictor.reset(new Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin));
     }

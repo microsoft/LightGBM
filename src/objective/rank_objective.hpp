@@ -352,13 +352,13 @@ class RankXENDCG : public RankingObjective {
     }
   }
 
+  const char* GetName() const override { return "rank_xendcg"; }
+
+ protected:
   double Phi(const label_t l, double g) const {
     return Common::Pow(2, static_cast<int>(l)) - g;
   }
 
-  const char* GetName() const override { return "rank_xendcg"; }
-
- private:
   mutable std::vector<Random> rands_;
 };
 

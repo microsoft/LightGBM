@@ -13,6 +13,9 @@ CUDAPredictor::CUDAPredictor(Boosting* boosting, int start_iteration, int num_it
   int early_stop_freq, double early_stop_margin):
   Predictor(boosting, start_iteration, num_iteration, is_raw_score, predict_leaf_index, predict_contrib, early_stop, early_stop_freq, early_stop_margin),
   is_raw_score_(is_raw_score), predict_leaf_index_(predict_leaf_index), predict_contrib_(predict_contrib) {
+  if (predict_contrib_) {
+    Log::Fatal("pred_contrib=True is not supported by CUDA version yet.");
+  }
   InitCUDAModel(start_iteration, num_iteration);
   num_pred_in_one_row_ = static_cast<int64_t>(boosting_->NumPredictOneRow(start_iteration, num_iteration, predict_leaf_index, predict_contrib));
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_stream_));
@@ -93,6 +96,7 @@ void CUDAPredictor::PredictWithParserFun(std::function<void(const char*, std::ve
                             TextReader<data_size_t>* predict_data_reader,
                             VirtualFileWriter* writer) {
   // use lager buffer size to reduce the time spent in copying from Host to CUDA
+  // TODO(shiyu1994): optimize the pipeline and asynchronization behavior
   const data_size_t buffer_size = 50000;
   AllocateCUDAMemoryOuter<double>(&cuda_data_, static_cast<size_t>(buffer_size) * static_cast<size_t>(num_feature_), __FILE__, __LINE__);
   AllocateCUDAMemoryOuter<double>(&cuda_result_buffer_, static_cast<size_t>(buffer_size) * static_cast<size_t>(num_pred_in_one_row_), __FILE__, __LINE__);
@@ -126,25 +130,28 @@ void CUDAPredictor::PredictWithParserFun(std::function<void(const char*, std::ve
         OMP_LOOP_EX_END();
       }
       OMP_THROW_EX();
-      SynchronizeCUDADeviceOuter(cuda_stream_, __FILE__, __LINE__);
       CopyFromHostToCUDADeviceAsyncOuter<double>(cuda_data_, buffer.data(), static_cast<size_t>(buffer_size * num_feature_), cuda_stream_, __FILE__, __LINE__);
       LaunchPredictKernelAsync(buffer_size, false);
       CopyFromCUDADeviceToHostAsyncOuter<double>(result_buffer.data(),
-                                               cuda_result_buffer_,
-                                               static_cast<size_t>(buffer_size) * static_cast<size_t>(num_pred_in_one_row_),
-                                               cuda_stream_,
-                                               __FILE__,
-                                               __LINE__);
-      #pragma omp parallel for schedule(static)
-      for (data_size_t i = block_start; i < block_end; ++i) {
-        OMP_LOOP_EX_BEGIN();
-        const data_size_t index_in_block = i - block_start;
-        const double* begin = result_buffer.data() + index_in_block * num_pred_in_one_row_;
-        const double* end = begin + num_pred_in_one_row_;
-        result_to_write[i] = Common::Join<double>(std::vector<double>(begin, end), "\t");
-        OMP_LOOP_EX_END();
+                                                 cuda_result_buffer_,
+                                                 static_cast<size_t>(buffer_size) * static_cast<size_t>(num_pred_in_one_row_),
+                                                 cuda_stream_,
+                                                 __FILE__,
+                                                 __LINE__);
+      SynchronizeCUDADeviceOuter(cuda_stream_, __FILE__, __LINE__);
+      {
+        OMP_INIT_EX();
+        #pragma omp parallel for schedule(static)
+        for (data_size_t i = block_start; i < block_end; ++i) {
+          OMP_LOOP_EX_BEGIN();
+          const data_size_t index_in_block = i - block_start;
+          const double* begin = result_buffer.data() + index_in_block * num_pred_in_one_row_;
+          const double* end = begin + num_pred_in_one_row_;
+          result_to_write[i] = Common::Join<double>(std::vector<double>(begin, end), "\t");
+          OMP_LOOP_EX_END();
+        }
+        OMP_THROW_EX();
       }
-      OMP_THROW_EX();
     }
     for (data_size_t i = 0; i < static_cast<data_size_t>(result_to_write.size()); ++i) {
       writer->Write(result_to_write[i].c_str(), result_to_write[i].size());
@@ -183,7 +190,6 @@ void CUDAPredictor::Predict(const data_size_t num_data,
           }
         }
       });
-    SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
     CopyFromHostToCUDADeviceAsyncOuter<double>(cuda_data_, buffer.data(), static_cast<size_t>(buffer_size * num_feature_), cuda_stream_, __FILE__, __LINE__);
     LaunchPredictKernelAsync(buffer_size, false);
     CopyFromCUDADeviceToHostAsyncOuter<double>(out_result + static_cast<size_t>(block_offset) * static_cast<size_t>(num_pred_in_one_row_),
@@ -192,6 +198,7 @@ void CUDAPredictor::Predict(const data_size_t num_data,
                                                cuda_stream_,
                                                __FILE__,
                                                __LINE__);
+    SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
     block_offset += buffer_size;
   }
 }

@@ -14,7 +14,7 @@ __global__ void AddScoreConstantKernel(
   double* score) {
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   if (data_index < num_data) {
-    score[data_index] += val;
+    score[data_index + offset] += val;
   }
 }
 

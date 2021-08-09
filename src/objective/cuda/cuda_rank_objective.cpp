@@ -15,6 +15,7 @@ LambdarankNDCG(config) {}
 
 void CUDALambdarankNDCG::Init(const Metadata& metadata, data_size_t num_data) {
   const int num_threads = OMP_NUM_THREADS();
+  TestCUDAQuickSort();
   LambdarankNDCG::Init(metadata, num_data);
 
   std::vector<uint16_t> thread_max_num_items_in_query(num_threads);
@@ -50,6 +51,27 @@ void CUDALambdarankNDCG::Init(const Metadata& metadata, data_size_t num_data) {
 }
 
 void CUDALambdarankNDCG::GetGradients(const double* score, score_t* gradients, score_t* hessians) const {
+  LaunchGetGradientsKernel(score, gradients, hessians);
+  std::vector<score_t> host_gradients(100, 0.0f);
+  std::vector<score_t> host_hessians(100, 0.0f);
+  CopyFromCUDADeviceToHostOuter<score_t>(host_gradients.data(), gradients, 100, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<score_t>(host_hessians.data(), hessians, 100, __FILE__, __LINE__);
+  for (int i = 0; i < 100; ++i) {
+    Log::Warning("host_gradient[%d] = %f, host_hessians[%d] = %f", i, host_gradients[i], host_hessians[i]);
+  }
+}
+
+CUDARankXENDCG::CUDARankXENDCG(const Config& config): RankXENDCG(config) {}
+
+CUDARankXENDCG::CUDARankXENDCG(const std::vector<std::string>& strs): RankXENDCG(strs) {}
+
+CUDARankXENDCG::~CUDARankXENDCG() {}
+
+void CUDARankXENDCG::Init(const Metadata& metadata, data_size_t num_data) {
+  RankXENDCG::Init(metadata, num_data);
+}
+
+void CUDARankXENDCG::GetGradients(const double* score, score_t* gradients, score_t* hessians) const {
   LaunchGetGradientsKernel(score, gradients, hessians);
 }
 

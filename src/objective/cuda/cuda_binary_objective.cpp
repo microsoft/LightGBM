@@ -10,9 +10,8 @@
 
 namespace LightGBM {
 
-CUDABinaryLogloss::CUDABinaryLogloss(const Config& config,
-                  std::function<bool(label_t)> is_pos):
-BinaryLogloss(config, is_pos) {}
+CUDABinaryLogloss::CUDABinaryLogloss(const Config& config, const int ova_class_id):
+BinaryLogloss(config), ova_class_id_(ova_class_id) {}
 
 CUDABinaryLogloss::CUDABinaryLogloss(const std::vector<std::string>& strs): BinaryLogloss(strs) {}
 
@@ -24,6 +23,11 @@ void CUDABinaryLogloss::Init(const Metadata& metadata, data_size_t num_data) {
   cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
   AllocateCUDAMemoryOuter<double>(&cuda_boost_from_score_, 1, __FILE__, __LINE__);
   SetCUDAMemoryOuter<double>(cuda_boost_from_score_, 0, 1, __FILE__, __LINE__);
+  if (label_weights_[0] != 1.0f || label_weights_[1] != 1.0f) {
+    InitCUDAMemoryFromHostMemoryOuter<double>(&cuda_label_weights_, label_weights_, 2, __FILE__, __LINE__);
+  } else {
+    cuda_label_weights_ = nullptr;
+  }
 }
 
 void CUDABinaryLogloss::GetGradients(const double* scores, score_t* gradients, score_t* hessians) const {

@@ -13,6 +13,7 @@
 #include <stdio.h>
 
 #include <LightGBM/bin.h>
+#include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/utils/log.h>
 
 #define NUM_BANKS_DATA_PARTITION (16)
@@ -99,6 +100,18 @@ template <typename T>
 __device__ void PrefixSumConflictFree(T* values, size_t n) {
   PrefixSumInner(values, n, T);
 }
+
+template <typename T>
+void CUDAQuickSort(T* values, const size_t n);
+
+template <typename T>
+void CUDAMergeSort(T* values, const size_t n);
+
+template <typename VAL_T, typename INDEX_T>
+__device__ void BitonicArgSort(const VAL_T* values, INDEX_T* indices, const size_t len);
+
+template <typename VAL_T, bool ASCENDING>
+void BitonicSortGlobal(VAL_T* values, const size_t len);
 
 }  // namespace LightGBM
 

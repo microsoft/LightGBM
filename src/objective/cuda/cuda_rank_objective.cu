@@ -8,9 +8,83 @@
 
 #include "cuda_rank_objective.hpp"
 
+#include <LightGBM/cuda/cuda_algorithms.hpp>
+#include <random>
+#include <algorithm>
+
+#define BITONIC_SORT_NUM_ELEMENTS_LOCAL (1024)
+#define BITONIC_SORT_DEPTH_LOCAL (11)
+
 namespace LightGBM {
 
-__device__ void ArgSort(const score_t* scores, uint16_t* indices, const uint16_t num_items) {
+template <typename T, bool ASCENDING>
+__global__ void BitonicSortForMergeSortLocal(T* values, const int num_total_data) {
+  const int thread_index = static_cast<int>(threadIdx.x);
+  const int low = static_cast<int>(blockIdx.x * BITONIC_SORT_NUM_ELEMENTS_LOCAL);
+  T* values_pointer = values + low;
+  const int num_data = min(BITONIC_SORT_NUM_ELEMENTS_LOCAL, num_total_data - low);
+  __shared__ T shared_values[BITONIC_SORT_NUM_ELEMENTS_LOCAL];
+  if (thread_index < num_data) {
+    shared_values[thread_index] = values_pointer[thread_index];
+  }
+  __syncthreads();
+  for (int depth = BITONIC_SORT_DEPTH_LOCAL - 1; depth >= 1; --depth) {
+    const int segment_length = 1 << (BITONIC_SORT_DEPTH_LOCAL - depth);
+    const int segment_index = thread_index / segment_length;
+    const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
+    for (int inner_depth = depth; inner_depth < BITONIC_SORT_DEPTH_LOCAL; ++inner_depth) {
+      const int inner_segment_length_half = 1 << (BITONIC_SORT_DEPTH_LOCAL - 1 - inner_depth);
+      const int inner_segment_index_half = thread_index / inner_segment_length_half;
+      if (inner_segment_index_half % 2 == 0) {
+        const int index_to_compare = thread_index + inner_segment_length_half;
+        if (index_to_compare < num_data && (shared_values[thread_index] > shared_values[index_to_compare]) == ascending) {
+          const T tmp = shared_values[thread_index];
+          shared_values[thread_index] = shared_values[index_to_compare];
+          shared_values[index_to_compare] = tmp;
+        }
+      }
+      __syncthreads();
+    }
+  }
+  if (thread_index < num_data) {
+    values_pointer[thread_index] = shared_values[thread_index];
+  }
+}
+
+template <typename T, bool ASCENDING>
+__global__ void BitonicSortLocal(T* values, const int low, const int high) {
+  const int thread_index = static_cast<int>(threadIdx.x);
+  T* values_pointer = values + low;
+  const int num_data = high - low;
+  __shared__ T shared_values[1024];
+  if (thread_index < num_data) {
+    shared_values[thread_index] = values_pointer[thread_index];
+  }
+  __syncthreads();
+  for (int depth = 10; depth >= 1; --depth) {
+    const int segment_length = 1 << (11 - depth);
+    const int segment_index = thread_index / segment_length;
+    const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
+    for (int inner_depth = depth; inner_depth < 11; ++inner_depth) {
+      const int inner_segment_length_half = 1 << (10 - inner_depth);
+      const int inner_segment_index_half = thread_index / inner_segment_length_half;
+      if (inner_segment_index_half % 2 == 0) {
+        const int index_to_compare = thread_index + inner_segment_length_half;
+        if (index_to_compare < num_data && (shared_values[thread_index] > shared_values[index_to_compare]) == ascending) {
+          const T tmp = shared_values[thread_index];
+          shared_values[thread_index] = shared_values[index_to_compare];
+          shared_values[index_to_compare] = tmp;
+        }
+      }
+      __syncthreads();
+    }
+  }
+  if (thread_index < num_data) {
+    values_pointer[thread_index] = shared_values[thread_index];
+  }
+}
+
+__device__ __forceinline__ void ArgSort(const score_t* scores, uint16_t* indices, const uint16_t num_items) {
   uint16_t num_items_aligned = 1;
   uint16_t num_items_ref = num_items - 1;
   uint16_t depth = 1;
@@ -42,7 +116,7 @@ __device__ void ArgSort(const score_t* scores, uint16_t* indices, const uint16_t
   }
 }
 
-__device__ void ArgSort_Partial(const score_t* scores, uint16_t* indices, const uint16_t num_items, const bool outer_decending) {
+__device__ __forceinline__ void ArgSort_Partial(const score_t* scores, uint16_t* indices, const uint16_t num_items, const bool outer_decending) {
   uint16_t num_items_aligned = 1;
   uint16_t num_items_ref = num_items - 1;
   uint16_t depth = 1;
@@ -74,23 +148,21 @@ __device__ void ArgSort_Partial(const score_t* scores, uint16_t* indices, const 
   }
 }
 
-__device__ void ArgSort_2048(const score_t* scores, uint16_t* indices, const uint16_t num_items) {
-  const uint16_t depth = 11;
-  const uint16_t half_num_items_aligned = 1024;
-  ArgSort_Partial(scores, indices, half_num_items_aligned, true);
-  ArgSort_Partial(scores + half_num_items_aligned, indices + half_num_items_aligned, half_num_items_aligned, false);
-  const unsigned int index_to_compare = threadIdx.x + half_num_items_aligned;
+__device__ __forceinline__ void ArgSort_2048(const score_t* scores, uint16_t* indices, const uint16_t num_items) {
+  ArgSort_Partial(scores, indices, 1024, true);
+  ArgSort_Partial(scores + 1024, indices + 1024, 1024, false);
+  const unsigned int index_to_compare = threadIdx.x + 1024;
   if (scores[indices[index_to_compare]] > scores[indices[threadIdx.x]]) {
     const uint16_t temp_index = indices[index_to_compare];
     indices[index_to_compare] = indices[threadIdx.x];
     indices[threadIdx.x] = temp_index;
   }
   __syncthreads();
-  for (uint16_t inner_depth = 1; inner_depth < depth; ++inner_depth) {
-    const uint16_t segment_length = 1 << (depth - inner_depth);
+  for (uint16_t inner_depth = 1; inner_depth < 11; ++inner_depth) {
+    const uint16_t segment_length = 1 << (11 - inner_depth);
     const uint16_t half_segment_length = segment_length >> 1;
     const uint16_t half_segment_index = threadIdx.x / half_segment_length;
-    if (threadIdx.x < half_num_items_aligned) {
+    if (threadIdx.x < 1024) {
       if (half_segment_index % 2 == 0) {
         const uint16_t index_to_compare = threadIdx.x + half_segment_length;
         if (scores[indices[threadIdx.x]] < scores[indices[index_to_compare]]) {
@@ -102,13 +174,13 @@ __device__ void ArgSort_2048(const score_t* scores, uint16_t* indices, const uin
     }
     __syncthreads();
   }
-  const score_t* scores_ptr = scores + half_num_items_aligned;
-  uint16_t* indices_ptr = indices + half_num_items_aligned;
-  for (uint16_t inner_depth = 1; inner_depth < depth; ++inner_depth) {
-    const uint16_t segment_length = 1 << (depth - inner_depth);
+  const score_t* scores_ptr = scores + 1024;
+  uint16_t* indices_ptr = indices + 1024;
+  for (uint16_t inner_depth = 1; inner_depth < 11; ++inner_depth) {
+    const uint16_t segment_length = 1 << (11 - inner_depth);
     const uint16_t half_segment_length = segment_length >> 1;
     const uint16_t half_segment_index = threadIdx.x / half_segment_length;
-    if (threadIdx.x < half_num_items_aligned) {
+    if (threadIdx.x < 1024) {
       if (half_segment_index % 2 == 0) {
         const uint16_t index_to_compare = threadIdx.x + half_segment_length;
         if (scores_ptr[indices_ptr[threadIdx.x]] < scores_ptr[indices_ptr[index_to_compare]]) {
@@ -122,7 +194,7 @@ __device__ void ArgSort_2048(const score_t* scores, uint16_t* indices, const uin
   }
 }
 
-__global__ void GetGradientsKernel_Ranking(const double* cuda_scores, const label_t* cuda_labels, const data_size_t num_data,
+__global__ void GetGradientsKernel_LambdarankNDCG(const double* cuda_scores, const label_t* cuda_labels, const data_size_t num_data,
   const data_size_t num_queries, const data_size_t* cuda_query_boundaries, const double* cuda_inverse_max_dcgs,
   const bool norm, const double sigmoid, const int truncation_level,
   score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
@@ -242,7 +314,7 @@ __global__ void GetGradientsKernel_Ranking(const double* cuda_scores, const labe
   }
 }
 
-__global__ void GetGradientsKernel_Ranking_2048(const double* cuda_scores, const label_t* cuda_labels, const data_size_t num_data,
+__global__ void GetGradientsKernel_LambdarankNDCG_2048(const double* cuda_scores, const label_t* cuda_labels, const data_size_t num_data,
   const data_size_t num_queries, const data_size_t* cuda_query_boundaries, const double* cuda_inverse_max_dcgs,
   const bool norm, const double sigmoid, const int truncation_level,
   score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
@@ -252,7 +324,6 @@ __global__ void GetGradientsKernel_Ranking_2048(const double* cuda_scores, const
   __shared__ score_t shared_hessians[MAX_NUM_ITEM_IN_QUERY];
   const data_size_t query_index_start = static_cast<data_size_t>(blockIdx.x) * NUM_QUERY_PER_BLOCK;
   const data_size_t query_index_end = min(query_index_start + NUM_QUERY_PER_BLOCK, num_queries);
-  const double min_score = kMinScore;
   for (data_size_t query_index = query_index_start; query_index < query_index_end; ++query_index) {
     const double inverse_max_dcg = cuda_inverse_max_dcgs[query_index];
     const data_size_t query_start = cuda_query_boundaries[query_index];
@@ -268,7 +339,7 @@ __global__ void GetGradientsKernel_Ranking_2048(const double* cuda_scores, const
       shared_lambdas[threadIdx.x] = 0.0f;
       shared_hessians[threadIdx.x] = 0.0f;
     } else {
-      shared_scores[threadIdx.x] = min_score;
+      shared_scores[threadIdx.x] = kMinScore;
       shared_indices[threadIdx.x] = static_cast<uint16_t>(threadIdx.x);
     }
     if (query_item_count > 1024) {
@@ -279,7 +350,7 @@ __global__ void GetGradientsKernel_Ranking_2048(const double* cuda_scores, const
         shared_lambdas[threadIdx_x_plus_1024] = 0.0f;
         shared_hessians[threadIdx_x_plus_1024] = 0.0f;
       } else {
-        shared_scores[threadIdx_x_plus_1024] = min_score;
+        shared_scores[threadIdx_x_plus_1024] = kMinScore;
         shared_indices[threadIdx_x_plus_1024] = static_cast<uint16_t>(threadIdx_x_plus_1024);
       }
     }
@@ -293,7 +364,7 @@ __global__ void GetGradientsKernel_Ranking_2048(const double* cuda_scores, const
     // get best and worst score
     const double best_score = shared_scores[shared_indices[0]];
     data_size_t worst_idx = query_item_count - 1;
-    if (worst_idx > 0 && shared_scores[shared_indices[worst_idx]] == min_score) {
+    if (worst_idx > 0 && shared_scores[shared_indices[worst_idx]] == kMinScore) {
       worst_idx -= 1;
     }
     const double worst_score = shared_scores[shared_indices[worst_idx]];
@@ -315,7 +386,7 @@ __global__ void GetGradientsKernel_Ranking_2048(const double* cuda_scores, const
       const data_size_t j = pair_index % num_j_per_i + 1;
       if (j > i) {
         // skip pairs with the same labels
-        if (cuda_label_pointer[shared_indices[i]] != cuda_label_pointer[shared_indices[j]] && shared_scores[shared_indices[j]] != min_score) {
+        if (cuda_label_pointer[shared_indices[i]] != cuda_label_pointer[shared_indices[j]] && shared_scores[shared_indices[j]] != kMinScore) {
           data_size_t high_rank, low_rank;
           if (cuda_label_pointer[shared_indices[i]] > cuda_label_pointer[shared_indices[j]]) {
             high_rank = i;
@@ -365,7 +436,7 @@ __global__ void GetGradientsKernel_Ranking_2048(const double* cuda_scores, const
     atomicAdd_block(&sum_lambdas, thread_sum_lambdas);
     __syncthreads();
     if (norm && sum_lambdas > 0) {
-      double norm_factor = std::log2(1 + sum_lambdas) / sum_lambdas;
+      const double norm_factor = log2(1 + sum_lambdas) / sum_lambdas;
       if (threadIdx.x < static_cast<unsigned int>(query_item_count)) {
         cuda_out_gradients_pointer[threadIdx.x] = static_cast<score_t>(shared_lambdas[threadIdx.x] * norm_factor);
         cuda_out_hessians_pointer[threadIdx.x] = static_cast<score_t>(shared_hessians[threadIdx.x] * norm_factor);
@@ -397,18 +468,19 @@ __global__ void GetGradientsKernel_Ranking_2048(const double* cuda_scores, const
 void CUDALambdarankNDCG::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {
   const int num_blocks = (num_queries_ + NUM_QUERY_PER_BLOCK - 1) / NUM_QUERY_PER_BLOCK;
   if (max_items_in_query_aligned_ <= 1024) {
-    GetGradientsKernel_Ranking<<<num_blocks, max_items_in_query_aligned_>>>(score, cuda_labels_, num_data_,
+    GetGradientsKernel_LambdarankNDCG<<<num_blocks, max_items_in_query_aligned_>>>(score, cuda_labels_, num_data_,
       num_queries_, cuda_query_boundaries_, cuda_inverse_max_dcgs_,
       norm_, sigmoid_, truncation_level_,
       gradients, hessians);
   } else if (max_items_in_query_aligned_ <= 2048) {
-    GetGradientsKernel_Ranking_2048<<<num_blocks, 1024>>>(score, cuda_labels_, num_data_,
+    GetGradientsKernel_LambdarankNDCG_2048<<<num_blocks, 1024>>>(score, cuda_labels_, num_data_,
       num_queries_, cuda_query_boundaries_, cuda_inverse_max_dcgs_,
       norm_, sigmoid_, truncation_level_,
       gradients, hessians);
   } else {
     Log::Fatal("Too large max_items_in_query_aligned_ = %d", max_items_in_query_aligned_);
   }
+  PrintLastCUDAErrorOuter(__FILE__, __LINE__);
 }
 
 __device__ void PrefixSumBankConflict(uint16_t* elements, unsigned int n) {
@@ -510,6 +582,84 @@ void CUDALambdarankNDCG::LaunchCalcInverseMaxDCGKernel() {
     num_queries_,
     cuda_inverse_max_dcgs_);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+}
+
+__global__ void GetGradientsKernel_RankXENDCG() {}
+
+void CUDARankXENDCG::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {}
+
+void CUDALambdarankNDCG::TestCUDAQuickSort() const {
+  const int test_num_data = (1 << 24) + 13;
+  const int data_range = 1000;
+  const int num_threads = OMP_NUM_THREADS();
+  std::vector<int> rand_integers(test_num_data, 0);
+  std::vector<double> distribution_prob(data_range, 1.0f / data_range);
+  std::discrete_distribution<int> dist(distribution_prob.begin(), distribution_prob.end());
+  std::vector<std::mt19937> rand_engines(num_threads);
+  Threading::For<int>(0, test_num_data, 512,
+    [&rand_engines, &dist, &rand_integers] (int thread_index, int start, int end) {
+      rand_engines[thread_index] = std::mt19937(thread_index);
+      for (int i = start; i < end; ++i) {
+        rand_integers[i] = dist(rand_engines[thread_index]);
+      }
+    });
+
+  const int smaller_test_num_data = /*(1 << 11) +*/ 170;
+  std::vector<int> bitonic_sort_integers(rand_integers.begin(), rand_integers.begin() + smaller_test_num_data);
+  std::vector<int> cuda_bitonic_sort_integers = bitonic_sort_integers;
+  std::vector<int> host_bitonic_sort_integers = bitonic_sort_integers;
+  int* cuda_bitonic_sort_integers_pointer = nullptr;
+  InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_bitonic_sort_integers_pointer, cuda_bitonic_sort_integers.data(), smaller_test_num_data, __FILE__, __LINE__);
+  auto start_1024 = std::chrono::steady_clock::now();
+  BitonicSortGlobal<int, true>(cuda_bitonic_sort_integers_pointer, smaller_test_num_data);
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  auto end_1024 = std::chrono::steady_clock::now();
+  auto duration_1024 = static_cast<std::chrono::duration<double>>(end_1024 - start_1024);
+  Log::Warning("bitonic sort 1024 time = %f", duration_1024.count());
+  CopyFromCUDADeviceToHostOuter<int>(cuda_bitonic_sort_integers.data(), cuda_bitonic_sort_integers_pointer, smaller_test_num_data, __FILE__, __LINE__);
+  start_1024 = std::chrono::steady_clock::now();
+  std::sort(host_bitonic_sort_integers.begin(), host_bitonic_sort_integers.end());
+  end_1024 = std::chrono::steady_clock::now();
+  duration_1024 = static_cast<std::chrono::duration<double>>(end_1024 - start_1024);
+  Log::Warning("host sort 1024 time = %f", duration_1024.count());
+  for (int i = 0; i < smaller_test_num_data; ++i) {
+    if (host_bitonic_sort_integers[i] != cuda_bitonic_sort_integers[i]) {
+      Log::Warning("error index %d host_bitonic_sort_integers = %d, cuda_bitonic_sort_integers = %d", i, host_bitonic_sort_integers[i], cuda_bitonic_sort_integers[i]);
+    }
+  } 
+
+  std::vector<int> cuda_rand_integers = rand_integers;
+  std::vector<int> host_rand_integers = rand_integers;
+  int* cuda_data = nullptr;
+  InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_data, rand_integers.data(), rand_integers.size(), __FILE__, __LINE__);
+  auto start = std::chrono::steady_clock::now();
+  BitonicSortGlobal<int, true>(cuda_data, static_cast<size_t>(test_num_data));
+  auto end = std::chrono::steady_clock::now();
+  auto duration = static_cast<std::chrono::duration<double>>(end - start);
+  Log::Warning("cuda sort time = %f", duration.count());
+  CopyFromCUDADeviceToHostOuter<int>(cuda_rand_integers.data(), cuda_data, static_cast<size_t>(test_num_data), __FILE__, __LINE__);
+  start = std::chrono::steady_clock::now();
+  std::sort(host_rand_integers.begin(), host_rand_integers.end());
+  end = std::chrono::steady_clock::now();
+  duration = static_cast<std::chrono::duration<double>>(end - start);
+  Log::Warning("cpu sort time = %f", duration.count());
+  std::vector<int> parallel_rand_integers = rand_integers;
+  start = std::chrono::steady_clock::now();
+  Common::ParallelSort(parallel_rand_integers.begin(), parallel_rand_integers.end(), [](int a, int b) { return a < b; });
+  end = std::chrono::steady_clock::now();
+  duration = static_cast<std::chrono::duration<double>>(end - start);
+  Log::Warning("parallel sort time = %f", duration.count());
+  for (int i = 0; i < 100; ++i) {
+    Log::Warning("after sort cuda_rand_integers[%d] = %d", i, cuda_rand_integers[i]);
+  }
+  #pragma omp parallel for schedule(static) num_threads(num_threads)
+  for (int i = 0; i < test_num_data; ++i) {
+    if (cuda_rand_integers[i] != host_rand_integers[i]) {
+      Log::Warning("index %d cuda_rand_integers = %d, host_rand_integers = %d", i, cuda_rand_integers[i], host_rand_integers[i]);
+    }
+    CHECK_EQ(cuda_rand_integers[i], host_rand_integers[i]);
+  }
+  Log::Warning("cuda argsort test pass");
 }
 
 }  // namespace LightGBM

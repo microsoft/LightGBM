@@ -441,6 +441,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         }
         new_tree->AsConstantTree(output);
         // updates scores
+        // TODO(shiyu1994): check here, default score has been added in BoostFromAverage ?
         train_score_updater_->AddScore(output, cur_tree_id);
         for (auto& score_updater : valid_score_updater_) {
           score_updater->AddScore(output, cur_tree_id);
@@ -526,8 +527,8 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
 
 std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const {
   if (config_->device_type == std::string("cuda")) {
-    std::vector<double> tmp_score(num_data, 0.0f);
-    CopyFromCUDADeviceToHostOuter<double>(tmp_score.data(), score, static_cast<size_t>(num_data), __FILE__, __LINE__);
+    std::vector<double> tmp_score(num_data * num_class_, 0.0f);
+    CopyFromCUDADeviceToHostOuter<double>(tmp_score.data(), score, static_cast<size_t>(num_data * num_class_), __FILE__, __LINE__);
     SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
     return metric->Eval(tmp_score.data(), objective_function_);
   } else {
