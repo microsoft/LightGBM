@@ -91,7 +91,12 @@ fi
 # OpenMP #
 ##########
 
-OPENMP_CXXFLAGS="\$(SHLIB_OPENMP_CXXFLAGS)"
+OPENMP_CXXFLAGS=""
+
+if test `uname -s` = "Linux"
+then
+    OPENMP_CXXFLAGS="\$(SHLIB_OPENMP_CXXFLAGS)"
+fi
 
 if test `uname -s` = "Darwin"
 then
@@ -111,7 +116,18 @@ then
             )
         ]
     )
+
+    # test without any additional flags
     ${CXX} ${LDFLAGS} ${OPENMP_CXXFLAGS} ${OPENMP_LIB} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+    if test "${ac_pkg_openmp}" = no; then
+        if test -f "./conftest"; then
+            rm ./conftest
+        fi
+        OPENMP_CXXFLAGS="-Xclang -fopenmp"
+        ${CXX} ${LDFLAGS} ${OPENMP_CXXFLAGS} ${OPENMP_LIB} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+    fi
+    echo "${OPENMP_CXXFLAGS}" > /Users/jlamb/Desktop/flags.txt
+
     AC_MSG_RESULT([${ac_pkg_openmp}])
     if test "${ac_pkg_openmp}" = no; then
         OPENMP_CXXFLAGS=''
