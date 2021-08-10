@@ -465,7 +465,7 @@ def test_assign_open_ports_to_workers(cluster):
         workers = client.scheduler_info()['workers'].keys()
         n_workers = len(workers)
         host_to_workers = lgb.dask._group_workers_by_host(workers)
-        for _ in range(1_000):
+        for _ in range(25):
             worker_address_to_port = lgb.dask._assign_open_ports_to_workers(client, host_to_workers)
             found_ports = worker_address_to_port.values()
             assert len(found_ports) == n_workers
