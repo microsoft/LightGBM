@@ -22,6 +22,8 @@ if test -z "${R_HOME}"; then
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
 CXX=`"${R_HOME}/bin/R" CMD config CXX11`
+CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
 
 # LightGBM-specific flags
@@ -100,6 +102,7 @@ fi
 
 if test `uname -s` = "Darwin"
 then
+    OPENMP_CXXFLAGS='-Xclang -fopenmp'
     OPENMP_LIB='-lomp'
     ac_pkg_openmp=no
     AC_MSG_CHECKING([whether OpenMP will work in a package])
@@ -116,17 +119,17 @@ then
             )
         ]
     )
+    ${CXX} ${CPPFLAGS} ${CXXFLAGS} ${LDFLAGS} ${OPENMP_CXXFLAGS} ${OPENMP_LIB} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
 
-    # test without any additional flags
-    ${CXX} ${LDFLAGS} ${OPENMP_CXXFLAGS} ${OPENMP_LIB} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+    # -Xclang is not portable (it is clang-specific)
+    # if compilation above failed, try without that flag
     if test "${ac_pkg_openmp}" = no; then
         if test -f "./conftest"; then
             rm ./conftest
         fi
-        OPENMP_CXXFLAGS="-Xclang -fopenmp"
-        ${CXX} ${LDFLAGS} ${OPENMP_CXXFLAGS} ${OPENMP_LIB} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+        OPENMP_CXXFLAGS="-fopenmp"
+        ${CXX} ${CPPFLAGS} ${CXXFLAGS} ${LDFLAGS} ${OPENMP_CXXFLAGS} ${OPENMP_LIB} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
     fi
-    echo "${OPENMP_CXXFLAGS}" > /Users/jlamb/Desktop/flags.txt
 
     AC_MSG_RESULT([${ac_pkg_openmp}])
     if test "${ac_pkg_openmp}" = no; then
