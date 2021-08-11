@@ -17,244 +17,15 @@
 
 namespace LightGBM {
 
-__device__ __forceinline__ void ArgSort(const score_t* scores, uint16_t* indices, const uint16_t num_items) {
-  uint16_t num_items_aligned = 1;
-  uint16_t num_items_ref = num_items - 1;
-  uint16_t depth = 1;
-  while (num_items_ref > 0) {
-    num_items_aligned <<= 1;
-    num_items_ref >>= 1;
-    ++depth;
-  }
-  for (uint16_t outer_depth = depth - 1; outer_depth >= 1; --outer_depth) {
-    const uint16_t outer_segment_length = 1 << (depth - outer_depth);
-    const uint16_t outer_segment_index = threadIdx.x / outer_segment_length;
-    const bool ascending = (outer_segment_index % 2 > 0);
-    for (uint16_t inner_depth = outer_depth; inner_depth < depth; ++inner_depth) {
-      const uint16_t segment_length = 1 << (depth - inner_depth);
-      const uint16_t half_segment_length = segment_length >> 1;
-      const uint16_t half_segment_index = threadIdx.x / half_segment_length;
-      if (threadIdx.x < num_items_aligned) {
-        if (half_segment_index % 2 == 0) {
-          const uint16_t index_to_compare = threadIdx.x + half_segment_length;
-          if ((scores[indices[threadIdx.x]] > scores[indices[index_to_compare]]) == ascending) {
-            const uint16_t index = indices[threadIdx.x];
-            indices[threadIdx.x] = indices[index_to_compare];
-            indices[index_to_compare] = index;
-          }
-        }
-      }
-      __syncthreads();
-    }
-  }
-}
-
-__device__ __forceinline__ void ArgSort_Partial(const score_t* scores, uint16_t* indices, const uint16_t num_items, const bool outer_decending) {
-  uint16_t num_items_aligned = 1;
-  uint16_t num_items_ref = num_items - 1;
-  uint16_t depth = 1;
-  while (num_items_ref > 0) {
-    num_items_aligned <<= 1;
-    num_items_ref >>= 1;
-    ++depth;
-  }
-  for (uint16_t outer_depth = depth - 1; outer_depth >= 1; --outer_depth) {
-    const uint16_t outer_segment_length = 1 << (depth - outer_depth);
-    const uint16_t outer_segment_index = threadIdx.x / outer_segment_length;
-    const bool ascending = outer_decending ? (outer_segment_index % 2 > 0) : (outer_segment_index % 2 == 0);
-    for (uint16_t inner_depth = outer_depth; inner_depth < depth; ++inner_depth) {
-      const uint16_t segment_length = 1 << (depth - inner_depth);
-      const uint16_t half_segment_length = segment_length >> 1;
-      const uint16_t half_segment_index = threadIdx.x / half_segment_length;
-      if (threadIdx.x < num_items_aligned) {
-        if (half_segment_index % 2 == 0) {
-          const uint16_t index_to_compare = threadIdx.x + half_segment_length;
-          if ((scores[indices[threadIdx.x]] > scores[indices[index_to_compare]]) == ascending) {
-            const uint16_t index = indices[threadIdx.x];
-            indices[threadIdx.x] = indices[index_to_compare];
-            indices[index_to_compare] = index;
-          }
-        }
-      }
-      __syncthreads();
-    }
-  }
-}
-
-__device__ __forceinline__ void ArgSort_2048(const score_t* scores, uint16_t* indices, const uint16_t num_items) {
-  ArgSort_Partial(scores, indices, 1024, true);
-  ArgSort_Partial(scores + 1024, indices + 1024, 1024, false);
-  const unsigned int index_to_compare = threadIdx.x + 1024;
-  if (scores[indices[index_to_compare]] > scores[indices[threadIdx.x]]) {
-    const uint16_t temp_index = indices[index_to_compare];
-    indices[index_to_compare] = indices[threadIdx.x];
-    indices[threadIdx.x] = temp_index;
-  }
-  __syncthreads();
-  for (uint16_t inner_depth = 1; inner_depth < 11; ++inner_depth) {
-    const uint16_t segment_length = 1 << (11 - inner_depth);
-    const uint16_t half_segment_length = segment_length >> 1;
-    const uint16_t half_segment_index = threadIdx.x / half_segment_length;
-    if (threadIdx.x < 1024) {
-      if (half_segment_index % 2 == 0) {
-        const uint16_t index_to_compare = threadIdx.x + half_segment_length;
-        if (scores[indices[threadIdx.x]] < scores[indices[index_to_compare]]) {
-          const uint16_t index = indices[threadIdx.x];
-          indices[threadIdx.x] = indices[index_to_compare];
-          indices[index_to_compare] = index;
-        }
-      }
-    }
-    __syncthreads();
-  }
-  const score_t* scores_ptr = scores + 1024;
-  uint16_t* indices_ptr = indices + 1024;
-  for (uint16_t inner_depth = 1; inner_depth < 11; ++inner_depth) {
-    const uint16_t segment_length = 1 << (11 - inner_depth);
-    const uint16_t half_segment_length = segment_length >> 1;
-    const uint16_t half_segment_index = threadIdx.x / half_segment_length;
-    if (threadIdx.x < 1024) {
-      if (half_segment_index % 2 == 0) {
-        const uint16_t index_to_compare = threadIdx.x + half_segment_length;
-        if (scores_ptr[indices_ptr[threadIdx.x]] < scores_ptr[indices_ptr[index_to_compare]]) {
-          const uint16_t index = indices_ptr[threadIdx.x];
-          indices_ptr[threadIdx.x] = indices_ptr[index_to_compare];
-          indices_ptr[index_to_compare] = index;
-        }
-      }
-    }
-    __syncthreads();
-  }
-}
-
+template <bool MAX_ITEM_GREATER_THAN_1024>
 __global__ void GetGradientsKernel_LambdarankNDCG(const double* cuda_scores, const label_t* cuda_labels, const data_size_t num_data,
   const data_size_t num_queries, const data_size_t* cuda_query_boundaries, const double* cuda_inverse_max_dcgs,
   const bool norm, const double sigmoid, const int truncation_level,
   score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
-  __shared__ score_t shared_scores[MAX_NUM_ITEM_IN_QUERY];
-  __shared__ uint16_t shared_indices[MAX_NUM_ITEM_IN_QUERY];
-  __shared__ score_t shared_lambdas[MAX_NUM_ITEM_IN_QUERY];
-  __shared__ score_t shared_hessians[MAX_NUM_ITEM_IN_QUERY];
-  const data_size_t query_index_start = static_cast<data_size_t>(blockIdx.x) * NUM_QUERY_PER_BLOCK;
-  const data_size_t query_index_end = min(query_index_start + NUM_QUERY_PER_BLOCK, num_queries);
-  const double min_score = kMinScore;
-  for (data_size_t query_index = query_index_start; query_index < query_index_end; ++query_index) {
-    const double inverse_max_dcg = cuda_inverse_max_dcgs[query_index];
-    const data_size_t query_start = cuda_query_boundaries[query_index];
-    const data_size_t query_end = cuda_query_boundaries[query_index + 1];
-    const data_size_t query_item_count = query_end - query_start;
-    const double* cuda_scores_pointer = cuda_scores + query_start;
-    score_t* cuda_out_gradients_pointer = cuda_out_gradients + query_start;
-    score_t* cuda_out_hessians_pointer = cuda_out_hessians + query_start;
-    const label_t* cuda_label_pointer = cuda_labels + query_start;
-    if (threadIdx.x < query_item_count) {
-      shared_scores[threadIdx.x] = cuda_scores_pointer[threadIdx.x];
-      shared_indices[threadIdx.x] = static_cast<uint16_t>(threadIdx.x);
-      shared_lambdas[threadIdx.x] = 0.0f;
-      shared_hessians[threadIdx.x] = 0.0f;
-    } else {
-      shared_scores[threadIdx.x] = min_score;
-      shared_indices[threadIdx.x] = static_cast<uint16_t>(threadIdx.x);
-    }
-    __syncthreads();
-    ArgSort(shared_scores, shared_indices, static_cast<uint16_t>(query_item_count));
-    __syncthreads();
-    // get best and worst score
-    const double best_score = shared_scores[shared_indices[0]];
-    data_size_t worst_idx = query_item_count - 1;
-    if (worst_idx > 0 && shared_scores[shared_indices[worst_idx]] == min_score) {
-      worst_idx -= 1;
-    }
-    const double worst_score = shared_scores[shared_indices[worst_idx]];
-    __shared__ double sum_lambdas;
-    if (threadIdx.x == 0) {
-      sum_lambdas = 0.0f;
-    }
-    __syncthreads();
-    // start accumulate lambdas by pairs that contain at least one document above truncation level
-    const data_size_t num_items_i = min(query_item_count - 1, truncation_level);
-    const data_size_t num_j_per_i = query_item_count - 1;
-    const data_size_t num_pairs = num_items_i * num_j_per_i;
-    const data_size_t num_pairs_per_thread = (num_pairs + blockDim.x - 1) / blockDim.x;
-    const data_size_t thread_start = static_cast<data_size_t>(threadIdx.x) * num_pairs_per_thread;
-    const data_size_t thread_end = min(thread_start + num_pairs_per_thread, num_pairs);
-    for (data_size_t pair_index = thread_start; pair_index < thread_end; ++pair_index) {
-      const data_size_t i = pair_index / num_j_per_i;
-      const data_size_t j = pair_index % num_j_per_i + 1;
-      if (j > i) {
-        // skip pairs with the same labels
-        if (cuda_label_pointer[shared_indices[i]] != cuda_label_pointer[shared_indices[j]] && shared_scores[shared_indices[j]] != min_score) {
-          data_size_t high_rank, low_rank;
-          if (cuda_label_pointer[shared_indices[i]] > cuda_label_pointer[shared_indices[j]]) {
-            high_rank = i;
-            low_rank = j;
-          } else {
-            high_rank = j;
-            low_rank = i;
-          }
-          const data_size_t high = shared_indices[high_rank];
-          const int high_label = static_cast<int>(cuda_label_pointer[high]);
-          const double high_score = shared_scores[high];
-          const double high_label_gain = static_cast<double>((1 << high_label) - 1);
-          const double high_discount = log2(2.0f + high_rank);
-          const data_size_t low = shared_indices[low_rank];
-          const int low_label = static_cast<int>(cuda_label_pointer[low]);
-          const double low_score = shared_scores[low];
-          const double low_label_gain = static_cast<double>((1 << low_label) - 1);
-          const double low_discount = log2(2.0f + low_rank);
-
-          const double delta_score = high_score - low_score;
-
-          // get dcg gap
-          const double dcg_gap = high_label_gain - low_label_gain;
-          // get discount of this pair
-          const double paired_discount = fabs(high_discount - low_discount);
-          // get delta NDCG
-          double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
-          // regular the delta_pair_NDCG by score distance
-          if (norm && best_score != worst_score) {
-            delta_pair_NDCG /= (0.01f + fabs(delta_score));
-          }
-          // calculate lambda for this pair
-          double p_lambda = 1.0f / (1.0f + exp(sigmoid * delta_score));
-          double p_hessian = p_lambda * (1.0f - p_lambda);
-          // update
-          p_lambda *= -sigmoid * delta_pair_NDCG;
-          p_hessian *= sigmoid * sigmoid * delta_pair_NDCG;
-          atomicAdd_block(shared_lambdas + low, -static_cast<score_t>(p_lambda));
-          atomicAdd_block(shared_hessians + low, static_cast<score_t>(p_hessian));
-          atomicAdd_block(shared_lambdas + high, static_cast<score_t>(p_lambda));
-          atomicAdd_block(shared_hessians + high, static_cast<score_t>(p_hessian));
-          // lambda is negative, so use minus to accumulate
-          atomicAdd_block(&sum_lambdas, -2 * p_lambda);
-        }
-      }
-    }
-    __syncthreads();
-    if (norm && sum_lambdas > 0) {
-      double norm_factor = std::log2(1 + sum_lambdas) / sum_lambdas;
-      if (threadIdx.x < static_cast<unsigned int>(query_item_count)) {
-        cuda_out_gradients_pointer[threadIdx.x] = static_cast<score_t>(shared_lambdas[threadIdx.x] * norm_factor);
-        cuda_out_hessians_pointer[threadIdx.x] = static_cast<score_t>(shared_hessians[threadIdx.x] * norm_factor);
-      }
-    } else {
-      if (threadIdx.x < static_cast<unsigned int>(query_item_count)) {
-        cuda_out_gradients_pointer[threadIdx.x] = static_cast<score_t>(shared_lambdas[threadIdx.x]);
-        cuda_out_hessians_pointer[threadIdx.x] = static_cast<score_t>(shared_hessians[threadIdx.x]);
-      }
-    }
-    __syncthreads();
-  }
-}
-
-__global__ void GetGradientsKernel_LambdarankNDCG_2048(const double* cuda_scores, const label_t* cuda_labels, const data_size_t num_data,
-  const data_size_t num_queries, const data_size_t* cuda_query_boundaries, const double* cuda_inverse_max_dcgs,
-  const bool norm, const double sigmoid, const int truncation_level,
-  score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
-  __shared__ score_t shared_scores[MAX_NUM_ITEM_IN_QUERY];
-  __shared__ uint16_t shared_indices[MAX_NUM_ITEM_IN_QUERY];
-  __shared__ score_t shared_lambdas[MAX_NUM_ITEM_IN_QUERY];
-  __shared__ score_t shared_hessians[MAX_NUM_ITEM_IN_QUERY];
+  __shared__ score_t shared_scores[MAX_ITEM_GREATER_THAN_1024 ? 2048 : 1024];
+  __shared__ uint16_t shared_indices[MAX_ITEM_GREATER_THAN_1024 ? 2048 : 1024];
+  __shared__ score_t shared_lambdas[MAX_ITEM_GREATER_THAN_1024 ? 2048 : 1024];
+  __shared__ score_t shared_hessians[MAX_ITEM_GREATER_THAN_1024 ? 2048 : 1024];
   const data_size_t query_index_start = static_cast<data_size_t>(blockIdx.x) * NUM_QUERY_PER_BLOCK;
   const data_size_t query_index_end = min(query_index_start + NUM_QUERY_PER_BLOCK, num_queries);
   for (data_size_t query_index = query_index_start; query_index < query_index_end; ++query_index) {
@@ -275,23 +46,29 @@ __global__ void GetGradientsKernel_LambdarankNDCG_2048(const double* cuda_scores
       shared_scores[threadIdx.x] = kMinScore;
       shared_indices[threadIdx.x] = static_cast<uint16_t>(threadIdx.x);
     }
-    if (query_item_count > 1024) {
-      const unsigned int threadIdx_x_plus_1024 = threadIdx.x + 1024;
-      if (threadIdx_x_plus_1024 < query_item_count) {
-        shared_scores[threadIdx_x_plus_1024] = cuda_scores_pointer[threadIdx_x_plus_1024];
-        shared_indices[threadIdx_x_plus_1024] = static_cast<uint16_t>(threadIdx_x_plus_1024);
-        shared_lambdas[threadIdx_x_plus_1024] = 0.0f;
-        shared_hessians[threadIdx_x_plus_1024] = 0.0f;
-      } else {
-        shared_scores[threadIdx_x_plus_1024] = kMinScore;
-        shared_indices[threadIdx_x_plus_1024] = static_cast<uint16_t>(threadIdx_x_plus_1024);
+    if (MAX_ITEM_GREATER_THAN_1024) {
+      if (query_item_count > 1024) {
+        const unsigned int threadIdx_x_plus_1024 = threadIdx.x + 1024;
+        if (threadIdx_x_plus_1024 < query_item_count) {
+          shared_scores[threadIdx_x_plus_1024] = cuda_scores_pointer[threadIdx_x_plus_1024];
+          shared_indices[threadIdx_x_plus_1024] = static_cast<uint16_t>(threadIdx_x_plus_1024);
+          shared_lambdas[threadIdx_x_plus_1024] = 0.0f;
+          shared_hessians[threadIdx_x_plus_1024] = 0.0f;
+        } else {
+          shared_scores[threadIdx_x_plus_1024] = kMinScore;
+          shared_indices[threadIdx_x_plus_1024] = static_cast<uint16_t>(threadIdx_x_plus_1024);
+        }
       }
     }
     __syncthreads();
-    if (query_item_count > 1024) {
-      ArgSort_2048(shared_scores, shared_indices, static_cast<uint16_t>(query_item_count));
+    if (MAX_ITEM_GREATER_THAN_1024) {
+      if (query_item_count > 1024) {
+        BitonicArgSort_2048(shared_scores, shared_indices);
+      } else {
+        BitonicArgSort_1024(shared_scores, shared_indices, static_cast<uint16_t>(query_item_count));
+      }
     } else {
-      ArgSort(shared_scores, shared_indices, static_cast<uint16_t>(query_item_count));
+      BitonicArgSort_1024(shared_scores, shared_indices, static_cast<uint16_t>(query_item_count));
     }
     __syncthreads();
     // get best and worst score
@@ -309,33 +86,161 @@ __global__ void GetGradientsKernel_LambdarankNDCG_2048(const double* cuda_scores
     // start accumulate lambdas by pairs that contain at least one document above truncation level
     const data_size_t num_items_i = min(query_item_count - 1, truncation_level);
     const data_size_t num_j_per_i = query_item_count - 1;
-    const data_size_t num_pairs = num_items_i * num_j_per_i;
-    const data_size_t num_pairs_per_thread = (num_pairs + blockDim.x - 1) / blockDim.x;
-    const data_size_t thread_start = static_cast<data_size_t>(threadIdx.x) * num_pairs_per_thread;
-    const data_size_t thread_end = min(thread_start + num_pairs_per_thread, num_pairs);
+    const data_size_t s = num_j_per_i - num_items_i + 1;
+    const data_size_t num_pairs = (num_j_per_i + s) * num_items_i / 2;
     double thread_sum_lambdas = 0.0f;
-    for (data_size_t pair_index = thread_start; pair_index < thread_end; ++pair_index) {
-      const data_size_t i = pair_index / num_j_per_i;
-      const data_size_t j = pair_index % num_j_per_i + 1;
+    for (data_size_t pair_index = static_cast<data_size_t>(threadIdx.x); pair_index < num_pairs; pair_index += static_cast<data_size_t>(blockDim.x)) {
+      const double square = 2 * static_cast<double>(pair_index) + s * s - s;
+      const double sqrt_result = floor(sqrt(square));
+      const data_size_t row_index = static_cast<data_size_t>(floor(sqrt(square - sqrt_result)) + 1 - s);
+      const data_size_t i = num_items_i - 1 - row_index;
+      const data_size_t j = num_j_per_i - (pair_index - (2 * s + row_index - 1) * row_index / 2);
+      if (cuda_label_pointer[shared_indices[i]] != cuda_label_pointer[shared_indices[j]] && shared_scores[shared_indices[j]] != kMinScore) {
+        data_size_t high_rank, low_rank;
+        if (cuda_label_pointer[shared_indices[i]] > cuda_label_pointer[shared_indices[j]]) {
+          high_rank = i;
+          low_rank = j;
+        } else {
+          high_rank = j;
+          low_rank = i;
+        }
+        const data_size_t high = shared_indices[high_rank];
+        const int high_label = static_cast<int>(cuda_label_pointer[high]);
+        const double high_score = shared_scores[high];
+        const double high_label_gain = static_cast<double>((1 << high_label) - 1);
+        const double high_discount = log2(2.0f + high_rank);
+        const data_size_t low = shared_indices[low_rank];
+        const int low_label = static_cast<int>(cuda_label_pointer[low]);
+        const double low_score = shared_scores[low];
+        const double low_label_gain = static_cast<double>((1 << low_label) - 1);
+        const double low_discount = log2(2.0f + low_rank);
+
+        const double delta_score = high_score - low_score;
+
+        // get dcg gap
+        const double dcg_gap = high_label_gain - low_label_gain;
+        // get discount of this pair
+        const double paired_discount = fabs(high_discount - low_discount);
+        // get delta NDCG
+        double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
+        // regular the delta_pair_NDCG by score distance
+        if (norm && best_score != worst_score) {
+          delta_pair_NDCG /= (0.01f + fabs(delta_score));
+        }
+        // calculate lambda for this pair
+        double p_lambda = 1.0f / (1.0f + exp(sigmoid * delta_score));
+        double p_hessian = p_lambda * (1.0f - p_lambda);
+        // update
+        p_lambda *= -sigmoid * delta_pair_NDCG;
+        p_hessian *= sigmoid * sigmoid * delta_pair_NDCG;
+        atomicAdd_block(shared_lambdas + low, -static_cast<score_t>(p_lambda));
+        atomicAdd_block(shared_hessians + low, static_cast<score_t>(p_hessian));
+        atomicAdd_block(shared_lambdas + high, static_cast<score_t>(p_lambda));
+        atomicAdd_block(shared_hessians + high, static_cast<score_t>(p_hessian));
+        // lambda is negative, so use minus to accumulate
+        thread_sum_lambdas -= 2 * p_lambda;
+      }
+    }
+    atomicAdd_block(&sum_lambdas, thread_sum_lambdas);
+    __syncthreads();
+    if (norm && sum_lambdas > 0) {
+      const double norm_factor = log2(1 + sum_lambdas) / sum_lambdas;
+      if (threadIdx.x < static_cast<unsigned int>(query_item_count)) {
+        cuda_out_gradients_pointer[threadIdx.x] = static_cast<score_t>(shared_lambdas[threadIdx.x] * norm_factor);
+        cuda_out_hessians_pointer[threadIdx.x] = static_cast<score_t>(shared_hessians[threadIdx.x] * norm_factor);
+      }
+      if (MAX_ITEM_GREATER_THAN_1024) {
+        if (query_item_count > 1024) {
+          const unsigned int threadIdx_x_plus_1024 = threadIdx.x + 1024;
+          if (threadIdx_x_plus_1024 < static_cast<unsigned int>(query_item_count)) {
+            cuda_out_gradients_pointer[threadIdx_x_plus_1024] = static_cast<score_t>(shared_lambdas[threadIdx_x_plus_1024] * norm_factor);
+            cuda_out_hessians_pointer[threadIdx_x_plus_1024] = static_cast<score_t>(shared_hessians[threadIdx_x_plus_1024] * norm_factor);
+          }
+        }
+      }
+    } else {
+      if (threadIdx.x < static_cast<unsigned int>(query_item_count)) {
+        cuda_out_gradients_pointer[threadIdx.x] = static_cast<score_t>(shared_lambdas[threadIdx.x]);
+        cuda_out_hessians_pointer[threadIdx.x] = static_cast<score_t>(shared_hessians[threadIdx.x]);
+      }
+      if (MAX_ITEM_GREATER_THAN_1024) {
+        if (query_item_count > 1024) {
+          const unsigned int threadIdx_x_plus_1024 = threadIdx.x + 1024;
+          if (threadIdx_x_plus_1024 < static_cast<unsigned int>(query_item_count)) {
+            cuda_out_gradients_pointer[threadIdx_x_plus_1024] = static_cast<score_t>(shared_lambdas[threadIdx_x_plus_1024]);
+            cuda_out_hessians_pointer[threadIdx_x_plus_1024] = static_cast<score_t>(shared_hessians[threadIdx_x_plus_1024]);
+          }
+        }
+      }
+    }
+    __syncthreads();
+  }
+}
+
+__global__ void GetGradientsKernel_LambdarankNDCG_Sorted(
+  const double* cuda_scores, const int* cuda_item_indices_buffer, const label_t* cuda_labels, const data_size_t num_data,
+  const data_size_t num_queries, const data_size_t* cuda_query_boundaries, const double* cuda_inverse_max_dcgs,
+  const bool norm, const double sigmoid, const int truncation_level,
+  score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
+  const data_size_t query_index_start = static_cast<data_size_t>(blockIdx.x) * NUM_QUERY_PER_BLOCK;
+  const data_size_t query_index_end = min(query_index_start + NUM_QUERY_PER_BLOCK, num_queries);
+  for (data_size_t query_index = query_index_start; query_index < query_index_end; ++query_index) {
+    const double inverse_max_dcg = cuda_inverse_max_dcgs[query_index];
+    const data_size_t query_start = cuda_query_boundaries[query_index];
+    const data_size_t query_end = cuda_query_boundaries[query_index + 1];
+    const data_size_t query_item_count = query_end - query_start;
+    const double* cuda_scores_pointer = cuda_scores + query_start;
+    const int* cuda_item_indices_buffer_pointer = cuda_item_indices_buffer + query_start;
+    score_t* cuda_out_gradients_pointer = cuda_out_gradients + query_start;
+    score_t* cuda_out_hessians_pointer = cuda_out_hessians + query_start;
+    const label_t* cuda_label_pointer = cuda_labels + query_start;
+    // get best and worst score
+    const double best_score = cuda_scores_pointer[cuda_item_indices_buffer_pointer[0]];
+    data_size_t worst_idx = query_item_count - 1;
+    if (worst_idx > 0 && cuda_scores_pointer[cuda_item_indices_buffer_pointer[worst_idx]] == kMinScore) {
+      worst_idx -= 1;
+    }
+    const double worst_score = cuda_scores_pointer[cuda_item_indices_buffer_pointer[worst_idx]];
+    __shared__ double sum_lambdas;
+    if (threadIdx.x == 0) {
+      sum_lambdas = 0.0f;
+    }
+    for (int item_index = static_cast<int>(threadIdx.x); item_index < query_item_count; item_index += static_cast<int>(blockDim.x)) {
+      cuda_out_gradients_pointer[item_index] = 0.0f;
+      cuda_out_hessians_pointer[item_index] = 0.0f;
+    }
+    __syncthreads();
+    // start accumulate lambdas by pairs that contain at least one document above truncation level
+    const data_size_t num_items_i = min(query_item_count - 1, truncation_level);
+    const data_size_t num_j_per_i = query_item_count - 1;
+    const data_size_t s = num_j_per_i - num_items_i + 1;
+    const data_size_t num_pairs = (num_j_per_i + s) * num_items_i / 2;
+    double thread_sum_lambdas = 0.0f;
+    for (data_size_t pair_index = static_cast<data_size_t>(threadIdx.x); pair_index < num_pairs; pair_index += static_cast<data_size_t>(blockDim.x)) {
+      const double square = 2 * static_cast<double>(pair_index) + s * s - s;
+      const double sqrt_result = floor(sqrt(square));
+      const data_size_t row_index = static_cast<data_size_t>(floor(sqrt(square - sqrt_result)) + 1 - s);
+      const data_size_t i = num_items_i - 1 - row_index;
+      const data_size_t j = num_j_per_i - (pair_index - (2 * s + row_index - 1) * row_index / 2);
       if (j > i) {
         // skip pairs with the same labels
-        if (cuda_label_pointer[shared_indices[i]] != cuda_label_pointer[shared_indices[j]] && shared_scores[shared_indices[j]] != kMinScore) {
+        if (cuda_label_pointer[cuda_item_indices_buffer_pointer[i]] != cuda_label_pointer[cuda_item_indices_buffer_pointer[j]] && cuda_scores_pointer[cuda_item_indices_buffer_pointer[j]] != kMinScore) {
           data_size_t high_rank, low_rank;
-          if (cuda_label_pointer[shared_indices[i]] > cuda_label_pointer[shared_indices[j]]) {
+          if (cuda_label_pointer[cuda_item_indices_buffer_pointer[i]] > cuda_label_pointer[cuda_item_indices_buffer_pointer[j]]) {
             high_rank = i;
             low_rank = j;
           } else {
             high_rank = j;
             low_rank = i;
           }
-          const data_size_t high = shared_indices[high_rank];
+          const data_size_t high = cuda_item_indices_buffer_pointer[high_rank];
           const int high_label = static_cast<int>(cuda_label_pointer[high]);
-          const double high_score = shared_scores[high];
+          const double high_score = cuda_scores_pointer[high];
           const double high_label_gain = static_cast<double>((1 << high_label) - 1);
           const double high_discount = log2(2.0f + high_rank);
-          const data_size_t low = shared_indices[low_rank];
+          const data_size_t low = cuda_item_indices_buffer_pointer[low_rank];
           const int low_label = static_cast<int>(cuda_label_pointer[low]);
-          const double low_score = shared_scores[low];
+          const double low_score = cuda_scores_pointer[low];
           const double low_label_gain = static_cast<double>((1 << low_label) - 1);
           const double low_discount = log2(2.0f + low_rank);
 
@@ -357,10 +262,10 @@ __global__ void GetGradientsKernel_LambdarankNDCG_2048(const double* cuda_scores
           // update
           p_lambda *= -sigmoid * delta_pair_NDCG;
           p_hessian *= sigmoid * sigmoid * delta_pair_NDCG;
-          atomicAdd_block(shared_lambdas + low, -static_cast<score_t>(p_lambda));
-          atomicAdd_block(shared_hessians + low, static_cast<score_t>(p_hessian));
-          atomicAdd_block(shared_lambdas + high, static_cast<score_t>(p_lambda));
-          atomicAdd_block(shared_hessians + high, static_cast<score_t>(p_hessian));
+          atomicAdd_block(cuda_out_gradients_pointer + low, -static_cast<score_t>(p_lambda));
+          atomicAdd_block(cuda_out_hessians_pointer + low, static_cast<score_t>(p_hessian));
+          atomicAdd_block(cuda_out_gradients_pointer + high, static_cast<score_t>(p_lambda));
+          atomicAdd_block(cuda_out_hessians_pointer + high, static_cast<score_t>(p_hessian));
           // lambda is negative, so use minus to accumulate
           thread_sum_lambdas -= 2 * p_lambda;
         }
@@ -370,28 +275,9 @@ __global__ void GetGradientsKernel_LambdarankNDCG_2048(const double* cuda_scores
     __syncthreads();
     if (norm && sum_lambdas > 0) {
       const double norm_factor = log2(1 + sum_lambdas) / sum_lambdas;
-      if (threadIdx.x < static_cast<unsigned int>(query_item_count)) {
-        cuda_out_gradients_pointer[threadIdx.x] = static_cast<score_t>(shared_lambdas[threadIdx.x] * norm_factor);
-        cuda_out_hessians_pointer[threadIdx.x] = static_cast<score_t>(shared_hessians[threadIdx.x] * norm_factor);
-      }
-      if (query_item_count > 1024) {
-        const unsigned int threadIdx_x_plus_1024 = threadIdx.x + 1024;
-        if (threadIdx_x_plus_1024 < static_cast<unsigned int>(query_item_count)) {
-          cuda_out_gradients_pointer[threadIdx_x_plus_1024] = static_cast<score_t>(shared_lambdas[threadIdx_x_plus_1024] * norm_factor);
-          cuda_out_hessians_pointer[threadIdx_x_plus_1024] = static_cast<score_t>(shared_hessians[threadIdx_x_plus_1024] * norm_factor);
-        }
-      }
-    } else {
-      if (threadIdx.x < static_cast<unsigned int>(query_item_count)) {
-        cuda_out_gradients_pointer[threadIdx.x] = static_cast<score_t>(shared_lambdas[threadIdx.x]);
-        cuda_out_hessians_pointer[threadIdx.x] = static_cast<score_t>(shared_hessians[threadIdx.x]);
-      }
-      if (query_item_count > 1024) {
-        const unsigned int threadIdx_x_plus_1024 = threadIdx.x + 1024;
-        if (threadIdx_x_plus_1024 < static_cast<unsigned int>(query_item_count)) {
-          cuda_out_gradients_pointer[threadIdx_x_plus_1024] = static_cast<score_t>(shared_lambdas[threadIdx_x_plus_1024]);
-          cuda_out_hessians_pointer[threadIdx_x_plus_1024] = static_cast<score_t>(shared_hessians[threadIdx_x_plus_1024]);
-        }
+      for (int item_index = static_cast<int>(threadIdx.x); item_index < query_item_count; item_index += static_cast<int>(blockDim.x)) {
+        cuda_out_gradients_pointer[item_index] *= norm_factor;
+        cuda_out_hessians_pointer[item_index] *= norm_factor;
       }
     }
     __syncthreads();
@@ -401,54 +287,23 @@ __global__ void GetGradientsKernel_LambdarankNDCG_2048(const double* cuda_scores
 void CUDALambdarankNDCG::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {
   const int num_blocks = (num_queries_ + NUM_QUERY_PER_BLOCK - 1) / NUM_QUERY_PER_BLOCK;
   if (max_items_in_query_aligned_ <= 1024) {
-    GetGradientsKernel_LambdarankNDCG<<<num_blocks, max_items_in_query_aligned_>>>(score, cuda_labels_, num_data_,
+    GetGradientsKernel_LambdarankNDCG<false><<<num_blocks, max_items_in_query_aligned_>>>(score, cuda_labels_, num_data_,
       num_queries_, cuda_query_boundaries_, cuda_inverse_max_dcgs_,
       norm_, sigmoid_, truncation_level_,
       gradients, hessians);
   } else if (max_items_in_query_aligned_ <= 2048) {
-    GetGradientsKernel_LambdarankNDCG_2048<<<num_blocks, 1024>>>(score, cuda_labels_, num_data_,
+    GetGradientsKernel_LambdarankNDCG<true><<<num_blocks, 1024>>>(score, cuda_labels_, num_data_,
       num_queries_, cuda_query_boundaries_, cuda_inverse_max_dcgs_,
       norm_, sigmoid_, truncation_level_,
       gradients, hessians);
   } else {
-    Log::Fatal("Too large max_items_in_query_aligned_ = %d", max_items_in_query_aligned_);
+    BitonicArgSortItemsGlobal(score, num_queries_, cuda_query_boundaries_, cuda_item_indices_buffer_);
+    GetGradientsKernel_LambdarankNDCG_Sorted<<<num_blocks, 1024>>>(score, cuda_item_indices_buffer_, cuda_labels_, num_data_,
+      num_queries_, cuda_query_boundaries_, cuda_inverse_max_dcgs_,
+      norm_, sigmoid_, truncation_level_,
+      gradients, hessians);
   }
-  PrintLastCUDAErrorOuter(__FILE__, __LINE__);
-}
-
-__device__ void PrefixSumBankConflict(uint16_t* elements, unsigned int n) {
-  unsigned int offset = 1;
-  unsigned int threadIdx_x = threadIdx.x;
-  const uint16_t last_element = elements[n - 1];
-  __syncthreads();
-  for (int d = (n >> 1); d > 0; d >>= 1) {
-    if (threadIdx_x < d) {
-      const unsigned int src_pos = offset * (2 * threadIdx_x + 1) - 1;
-      const unsigned int dst_pos = offset * (2 * threadIdx_x + 2) - 1;
-      elements[dst_pos] += elements[src_pos];
-    }
-    offset <<= 1;
-    __syncthreads();
-  }
-  if (threadIdx_x == 0) {
-    elements[n - 1] = 0; 
-  }
-  __syncthreads();
-  for (int d = 1; d < n; d <<= 1) {
-    offset >>= 1;
-    if (threadIdx_x < d) {
-      const unsigned int dst_pos = offset * (2 * threadIdx_x + 2) - 1;
-      const unsigned int src_pos = offset * (2 * threadIdx_x + 1) - 1;
-      const uint32_t src_val = elements[src_pos];
-      elements[src_pos] = elements[dst_pos];
-      elements[dst_pos] += src_val;
-    }
-    __syncthreads();
-  }
-  if (threadIdx.x == 0) {
-    elements[n] = elements[n - 1] + last_element;
-  }
-  __syncthreads();
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
 __global__ void CalcInverseMaxDCGKernel(
@@ -478,7 +333,7 @@ __global__ void CalcInverseMaxDCGKernel(
       label_pos[threadIdx.x] = label_sum[threadIdx.x];
     }
     __syncthreads();
-    PrefixSumBankConflict(label_pos, MAX_RANK_LABEL);
+    PrefixSum<uint16_t>(label_pos, MAX_RANK_LABEL);
     __syncthreads();
     __shared__ double gain;
     if (threadIdx.x == 0) {
@@ -593,6 +448,76 @@ void CUDALambdarankNDCG::TestCUDAQuickSort() const {
     CHECK_EQ(cuda_rand_integers[i], host_rand_integers[i]);
   }
   Log::Warning("cuda argsort test pass");
+}
+
+void CUDALambdarankNDCG::TestCUDABitonicSortForQueryItems() const {
+  int num_queries = 1000;
+  std::vector<int> items_per_query(num_queries + 1, 0);
+  std::vector<double> item_scores;
+  const int max_item_per_query = 5000;
+  std::vector<double> num_item_probs(max_item_per_query, 1.0f / max_item_per_query);
+  std::discrete_distribution<int> num_item_distribution(num_item_probs.begin(), num_item_probs.end());
+  std::uniform_real_distribution<double> score_dist;
+  const int num_threads = OMP_NUM_THREADS();
+  std::vector<std::mt19937> thread_random_engines(num_threads);
+  for (int thread_index = 0; thread_index < num_threads; ++thread_index) {
+    thread_random_engines[thread_index] = std::mt19937(thread_index);
+  }
+  int num_total_items = 0;
+  #pragma omp parallel for schedule(static) num_threads(num_threads) reduction(+:num_total_items)
+  for (int query_index = 0; query_index < num_queries; ++query_index) {
+    const int thread_index = omp_get_thread_num();
+    items_per_query[query_index + 1] = num_item_distribution(thread_random_engines[thread_index]);
+    num_total_items += items_per_query[query_index + 1];
+  }
+  for (int query_index = 0; query_index < num_queries; ++query_index) {
+    items_per_query[query_index + 1] += items_per_query[query_index];
+  }
+  item_scores.resize(num_total_items, 0.0f);
+  #pragma omp parallel for schedule(static) num_threads(num_threads)
+  for (int item_index = 0; item_index < num_total_items; ++item_index) {
+    const int thread_index = omp_get_thread_num();
+    item_scores[item_index] = score_dist(thread_random_engines[thread_index]);
+  }
+  double* cuda_score = nullptr;
+  data_size_t* cuda_query_boundaries = nullptr;
+  data_size_t* cuda_out_indices = nullptr;
+  InitCUDAMemoryFromHostMemoryOuter<double>(&cuda_score, item_scores.data(), item_scores.size(), __FILE__, __LINE__);
+  InitCUDAMemoryFromHostMemoryOuter<data_size_t>(&cuda_query_boundaries, items_per_query.data(), items_per_query.size(), __FILE__, __LINE__);
+  AllocateCUDAMemoryOuter<data_size_t>(&cuda_out_indices, item_scores.size(), __FILE__, __LINE__);
+  const auto start = std::chrono::steady_clock::now();
+  BitonicArgSortItemsGlobal(cuda_score, num_queries, cuda_query_boundaries, cuda_out_indices);
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  const auto end = std::chrono::steady_clock::now();
+  const std::chrono::duration<double> duration = static_cast<std::chrono::duration<double>>(end - start);
+  Log::Warning("bitonic arg sort items global time = %f", duration.count());
+  std::vector<int> sorted_item_indices(item_scores.size());
+  CopyFromCUDADeviceToHostOuter<int>(sorted_item_indices.data(), cuda_out_indices, item_scores.size(), __FILE__, __LINE__);
+  std::vector<int> host_sorted_item_indices(item_scores.size());
+  PrintLastCUDAErrorOuter(__FILE__, __LINE__);
+  #pragma omp parallel for schedule(static) num_threads(num_threads)
+  for (int i = 0; i < num_queries; ++i) {
+    const int query_start = items_per_query[i];
+    const int query_end = items_per_query[i + 1];
+    for (int j = query_start; j < query_end; ++j) {
+      host_sorted_item_indices[j] = j - query_start;
+    }
+    std::sort(host_sorted_item_indices.data() + query_start, host_sorted_item_indices.data() + query_end, [&item_scores, query_start] (int a, int b) {
+      return item_scores[query_start + a] > item_scores[query_start + b];
+    });
+  }
+  for (int query_index = 0; query_index < num_queries; ++query_index) {
+    const int query_start = items_per_query[query_index];
+    const int query_end = items_per_query[query_index + 1];
+    for (int item_index = query_start; item_index < query_end; ++item_index) {
+      const double cuda_item_score = item_scores[query_start + sorted_item_indices[item_index]];
+      const double host_item_score = item_scores[query_start + host_sorted_item_indices[item_index]];
+      if (cuda_item_score != host_item_score) {
+        Log::Warning("item_index = %d, query_start = %d, cuda_item_score = %f, host_item_score = %f, sorted_item_indices = %d",
+                      item_index, query_start, cuda_item_score, host_item_score, sorted_item_indices[item_index]);
+      }
+    }
+  }
 }
 
 }  // namespace LightGBM

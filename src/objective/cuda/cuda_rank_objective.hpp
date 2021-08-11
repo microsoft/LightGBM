@@ -9,7 +9,6 @@
 
 #ifdef USE_CUDA
 
-#define MAX_NUM_ITEM_IN_QUERY (2048)
 #define NUM_QUERY_PER_BLOCK (10)
 #define MAX_RANK_LABEL (32)
 
@@ -37,9 +36,12 @@ class CUDALambdarankNDCG : public CUDAObjectiveInterface, public LambdarankNDCG 
 
   void TestCUDAQuickSort() const;
 
+  void TestCUDABitonicSortForQueryItems() const;
+
   // CUDA memory, held by this object
   double* cuda_lambdas_;
   double* cuda_inverse_max_dcgs_;
+  int* cuda_item_indices_buffer_;
 
   // CUDA memory, held by other objects
   const label_t* cuda_labels_;

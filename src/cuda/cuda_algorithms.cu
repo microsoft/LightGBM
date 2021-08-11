@@ -348,7 +348,6 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
       shared_indices[threadIdx.x] = len;
     }
     __syncthreads();
-    const int num_data_in_block = min(BITONIC_SORT_NUM_ELEMENTS, len - block_index * BITONIC_SORT_NUM_ELEMENTS);
     for (int depth = max_depth - 1; depth > max_depth - 11; --depth) {
       const int segment_length = (1 << (max_depth - depth));
       const int segment_index = this_index / segment_length;
@@ -356,12 +355,12 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
       {
         const int half_segment_length = (segment_length >> 1);
         const int half_segment_index = this_index / half_segment_length;
-        const int num_total_segment = (num_data_in_block + segment_length - 1) / segment_length;
+        const int num_total_segment = (len + segment_length - 1) / segment_length;
         const int offset = (segment_index == num_total_segment - 1 && ascending == ASCENDING) ?
-          (num_total_segment * segment_length - num_data_in_block) : 0; 
+          (num_total_segment * segment_length - len) : 0;
         if (half_segment_index % 2 == 0) {
           const int segment_start = segment_index * segment_length;
-          if (static_cast<int>(threadIdx.x) >= offset + segment_start) {
+          if (this_index >= offset + segment_start) {
             const int other_index = static_cast<int>(threadIdx.x) + half_segment_length - offset;
             const INDEX_T this_data_index = shared_indices[threadIdx.x];
             const INDEX_T other_data_index = shared_indices[other_index];
@@ -411,25 +410,28 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
         const int segment_index = this_index / segment_length;
         const int half_segment_index = this_index / half_segment_length;
         const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
-        const int offset = ((half_segment_index >> 1) == num_total_segment - 1 && ascending == ASCENDING) ?
+        const int offset = (segment_index == num_total_segment - 1 && ascending == ASCENDING) ?
           (num_total_segment * segment_length - len) : 0;
         if (half_segment_index % 2 == 0) {
           const int segment_start = segment_index * segment_length;
           if (this_index >= offset + segment_start) {
             const int other_index = this_index + half_segment_length - offset;
-            const INDEX_T this_data_index = indices[this_index];
-            const INDEX_T other_data_index = indices[other_index];
-            const VAL_T this_value = values[this_index];
-            const VAL_T other_value = values[other_index];
-            if ((this_value > other_value) == ascending) {
-              indices[this_index] = other_data_index;
-              indices[other_index] = this_data_index;
+            if (other_index < len) {
+              const INDEX_T this_data_index = indices[this_index];
+              const INDEX_T other_data_index = indices[other_index];
+              const VAL_T this_value = values[this_data_index];
+              const VAL_T other_value = values[other_data_index];
+              if ((this_value > other_value) == ascending) {
+                indices[this_index] = other_data_index;
+                indices[other_index] = this_data_index;
+              }
             }
           }
         }
       }
+      __syncthreads();
     }
-    for (int inner_depth = depth + 1; inner_depth < 11; ++inner_depth) {
+    for (int inner_depth = depth + 1; inner_depth <= max_depth - 11; ++inner_depth) {
       const int half_segment_length = (1 << (max_depth - inner_depth - 1));
       for (int block_index = 0; block_index < num_blocks; ++block_index) {
         const int this_index = block_index * BITONIC_SORT_NUM_ELEMENTS + static_cast<int>(threadIdx.x);
@@ -464,7 +466,7 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
         shared_indices[threadIdx.x] = len;
       }
       __syncthreads();
-      for (int inner_depth = 11; inner_depth < max_depth; ++inner_depth) {
+      for (int inner_depth = max_depth - 10; inner_depth < max_depth; ++inner_depth) {
         const int half_segment_length = (1 << (max_depth - inner_depth - 1));
         const int half_segment_index = this_index / half_segment_length;
         if (half_segment_index % 2 == 0) {
@@ -482,6 +484,10 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
         }
         __syncthreads();
       }
+      if (this_index < len) {
+        indices[this_index] = shared_indices[threadIdx.x];
+      }
+      __syncthreads();
     }
   }
 }
@@ -490,13 +496,16 @@ __global__ void BitonicArgSortItemsGlobalKernel(const double* scores,
                                                 const int num_queries,
                                                 const data_size_t* cuda_query_boundaries,
                                                 data_size_t* out_indices) {
-  for (int query_index = 0; query_index < num_queries; query_index += BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE) {
+  const int query_index_start = static_cast<int>(blockIdx.x) * BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE;
+  const int query_index_end = min(query_index_start + BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE, num_queries);
+  for (int query_index = query_index_start; query_index < query_index_end; ++query_index) {
     const data_size_t query_item_start = cuda_query_boundaries[query_index];
-    const data_size_t query_item_end = cuda_query_boundaries[query_index];
+    const data_size_t query_item_end = cuda_query_boundaries[query_index + 1];
     const data_size_t num_items_in_query = query_item_end - query_item_start;
     BitonicArgSortDevice<double, data_size_t, false>(scores + query_item_start,
                                                      out_indices + query_item_start,
                                                      num_items_in_query);
+    __syncthreads();
   }
 }
 
@@ -506,7 +515,7 @@ void BitonicArgSortItemsGlobal(
   const data_size_t* cuda_query_boundaries,
   data_size_t* out_indices) {
   const int num_blocks = (num_queries + BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE - 1) / BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE;
-  BitonicArgSortItemsGlobalKernel<<<num_blocks, BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE>>>(
+  BitonicArgSortItemsGlobalKernel<<<num_blocks, BITONIC_SORT_NUM_ELEMENTS>>>(
     scores, num_queries, cuda_query_boundaries, out_indices);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }

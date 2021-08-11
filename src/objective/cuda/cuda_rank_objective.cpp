@@ -15,7 +15,7 @@ LambdarankNDCG(config) {}
 
 void CUDALambdarankNDCG::Init(const Metadata& metadata, data_size_t num_data) {
   const int num_threads = OMP_NUM_THREADS();
-  TestCUDAQuickSort();
+  TestCUDABitonicSortForQueryItems();
   LambdarankNDCG::Init(metadata, num_data);
 
   std::vector<uint16_t> thread_max_num_items_in_query(num_threads);
@@ -40,8 +40,10 @@ void CUDALambdarankNDCG::Init(const Metadata& metadata, data_size_t num_data) {
     max_items_in_query >>= 1;
     max_items_in_query_aligned_ <<= 1;
   }
-  if (max_items_in_query_aligned_ > MAX_NUM_ITEM_IN_QUERY) {
-    Log::Warning("Too many items (%d) in a query.", max_items_in_query_aligned_);
+  if (max_items_in_query_aligned_ > 2048) {
+    AllocateCUDAMemoryOuter<int>(&cuda_item_indices_buffer_,
+                                 static_cast<size_t>(metadata.query_boundaries()[metadata.num_queries()]),
+                                 __FILE__, __LINE__);
   }
   cuda_labels_ = metadata.cuda_metadata()->cuda_label();
   cuda_query_boundaries_ = metadata.cuda_metadata()->cuda_query_boundaries();
