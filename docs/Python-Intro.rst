@@ -28,6 +28,23 @@ To verify your installation, try to ``import lightgbm`` in Python:
 
     import lightgbm as lgb
 
+You may also need to install the GCC OpenMP library if you see `OSError: libgomp.so.1: cannot open shared object file: No such file or directory` when trying to import lightgbm.
+
+yum (e.g. Centos, RedHat, Amazon Linux)
+::
+
+    yum install libgomp
+
+dnf (e.g. Fedora)
+::
+
+    dnf install libgomp
+
+apt (e.g. Ubuntu, Debian)
+::
+
+    apt install libgomp1
+
 Data Interface
 --------------
 
