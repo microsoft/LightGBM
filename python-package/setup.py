@@ -9,6 +9,7 @@ from pathlib import Path
 from platform import system
 from shutil import copyfile, copytree, rmtree
 from typing import List, Optional, Union
+import traceback
 
 from setuptools import find_packages, setup
 from setuptools.command.install import install
@@ -95,6 +96,7 @@ def silent_call(cmd: List[str], raise_error: bool = False, error_msg: str = '') 
             subprocess.check_call(cmd, stderr=log, stdout=log)
         return 0
     except Exception as err:
+        traceback.print_exc()
         if raise_error:
             raise Exception("\n".join((error_msg, LOG_NOTICE)))
         return 1
