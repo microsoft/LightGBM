@@ -4,11 +4,11 @@ import logging
 import struct
 import subprocess
 import sys
+import traceback
 from os import chdir
 from pathlib import Path
 from platform import system
 from shutil import copyfile, copytree, rmtree
-import traceback
 from typing import List, Optional, Union
 
 from setuptools import find_packages, setup
