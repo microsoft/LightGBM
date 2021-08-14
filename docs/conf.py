@@ -278,7 +278,7 @@ def generate_r_docs(app):
             , run_dont_run = TRUE \
             , seed = 42L \
             , preview = FALSE \
-            , new_process = TRUE \
+            , new_process = FALSE \
         )
         " || exit -1
     cd {CURR_PATH.parent}
