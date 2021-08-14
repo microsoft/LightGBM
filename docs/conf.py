@@ -256,7 +256,6 @@ def generate_r_docs(app):
         -y \
         -c conda-forge \
         -n r_env \
-            cmake=3.21.0=h8897547_0 \
             r-base=4.1.0=hb67fd72_2 \
             r-data.table=1.14.0=r41hcfec24a_0 \
             r-jsonlite=1.7.2=r41hcfec24a_0 \
@@ -267,7 +266,11 @@ def generate_r_docs(app):
     export TAR=/bin/tar
     cd {CURR_PATH.parent}
     export R_LIBS="$CONDA_PREFIX/lib/R/library"
-    Rscript build_r.R || exit -1
+    sh build-cran-package.sh || exit -1
+    R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit -1
+    cp -R \
+        {CURR_PATH.parent / "R-package" / "pkgdown"} \
+        {CURR_PATH.parent / "lightgbm_r" / "pkgdown"}
     cd {CURR_PATH.parent / "lightgbm_r"}
     Rscript -e "roxygen2::roxygenize(load = 'installed')" || exit -1
     Rscript -e "pkgdown::build_site( \
