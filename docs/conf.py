@@ -267,7 +267,7 @@ def generate_r_docs(app):
     cd {CURR_PATH.parent}
     export R_LIBS="$CONDA_PREFIX/lib/R/library"
     sh build-cran-package.sh || exit -1
-    R CMD INSTALL lightgbm_*.tar.gz || exit -1
+    R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit -1
     cd {CURR_PATH.parent / "lightgbm_r"}
     Rscript -e "roxygen2::roxygenize(load = 'installed')" || exit -1
     Rscript -e "pkgdown::build_site( \
