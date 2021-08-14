@@ -374,7 +374,7 @@ docker run \
     -it rhub/rocker-gcc-san \
     /bin/bash
 
-Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
 sh build-cran-package.sh
 
@@ -396,7 +396,7 @@ docker run \
     -it \
         wch1/r-debug
 
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
 sh build-cran-package.sh
 
