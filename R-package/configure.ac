@@ -21,7 +21,6 @@ if test -z "${R_HOME}"; then
     exit 1
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
-CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 CXX=`"${R_HOME}/bin/R" CMD config CXX11`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
@@ -119,7 +118,7 @@ then
             )
         ]
     )
-    ${CC} ${CFLAGS} -o conftest conftest.c ${OPENMP_LIB} ${OPENMP_CXXFLAGS} 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+    ${CC} -o conftest conftest.c ${OPENMP_LIB} ${OPENMP_CXXFLAGS} 2>/dev/null && ./conftest && ac_pkg_openmp=yes
     AC_MSG_RESULT([${ac_pkg_openmp}])
     if test "${ac_pkg_openmp}" = no; then
         OPENMP_CXXFLAGS=''
