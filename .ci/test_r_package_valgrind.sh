@@ -1,6 +1,6 @@
 #!/bin/bash
 
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
 sh build-cran-package.sh || exit -1
 RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz || exit -1
 
