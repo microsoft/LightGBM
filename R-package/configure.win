@@ -10,7 +10,7 @@ CXX11=`"${R_EXE}" CMD config CXX11`
 CXX11STD=`"${R_EXE}" CMD config CXX11STD`
 CXX="${CXX11} ${CXX11STD}"
 CXXFLAGS=`"${R_EXE}" CMD config CXX11FLAGS`
-CPPFLAGS=`"${R_EXE}" CMD config CPPFLAGS
+CPPFLAGS=`"${R_EXE}" CMD config CPPFLAGS`
 
 # LightGBM-specific flags
 LGB_CPPFLAGS=""
