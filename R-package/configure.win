@@ -6,7 +6,7 @@
 ###########################
 
 R_EXE="${R_HOME}/bin${R_ARCH_BIN}/R"
-CXX=`"${R_EXE}" CMD config CXX`
+CXX=`"${R_EXE}" CMD config CXX11`
 CXXFLAGS=`"${R_EXE}" CMD config CXXFLAGS`
 CPPFLAGS=`"${R_EXE}" CMD config CPPFLAGS`
 
