@@ -26,6 +26,7 @@ CXX11STD=`"${R_HOME}/bin/R" CMD config CXX11STD`
 CXX="${CXX11} ${CXX11STD}"
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX11FLAGS`
+AC_LANG(C++)
 
 # LightGBM-specific flags
 LGB_CPPFLAGS=""
@@ -42,7 +43,6 @@ LGB_CPPFLAGS="${LGB_CPPFLAGS} -DEIGEN_MPL2_ONLY"
 
 AC_MSG_CHECKING([whether MM_PREFETCH works])
 ac_mmprefetch=no
-AC_LANG(C++)
 AC_LANG_CONFTEST(
     [
         AC_LANG_PROGRAM(
@@ -69,7 +69,6 @@ fi
 
 AC_MSG_CHECKING([whether MM_MALLOC works])
 ac_mm_malloc=no
-AC_LANG(C++)
 AC_LANG_CONFTEST(
     [
         AC_LANG_PROGRAM(

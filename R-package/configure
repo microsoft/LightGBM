@@ -1699,6 +1699,12 @@ CXX11STD=`"${R_HOME}/bin/R" CMD config CXX11STD`
 CXX="${CXX11} ${CXX11STD}"
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX11FLAGS`
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
 
 # LightGBM-specific flags
 LGB_CPPFLAGS=""
@@ -1716,12 +1722,6 @@ LGB_CPPFLAGS="${LGB_CPPFLAGS} -DEIGEN_MPL2_ONLY"
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether MM_PREFETCH works" >&5
 $as_echo_n "checking whether MM_PREFETCH works... " >&6; }
 ac_mmprefetch=no
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -1757,12 +1757,6 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether MM_MALLOC works" >&5
 $as_echo_n "checking whether MM_MALLOC works... " >&6; }
 ac_mm_malloc=no
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
