@@ -24,6 +24,7 @@ from pathlib import Path
 from re import compile
 from shutil import copytree
 from subprocess import PIPE, Popen
+from typing import Any, List
 from unittest.mock import Mock
 
 import sphinx
@@ -51,7 +52,7 @@ class InternalRefTransform(Transform):
     default_priority = 210
     """Numerical priority of this transform, 0 through 999."""
 
-    def apply(self, **kwargs):
+    def apply(self, **kwargs: Any) -> None:
         """Apply the transform to the document tree."""
         for section in self.document.traverse(reference):
             if section.get("refuri") is not None:
@@ -63,7 +64,7 @@ class IgnoredDirective(Directive):
 
     has_content = True
 
-    def run(self):
+    def run(self) -> List:
         """Do nothing."""
         return []
 
@@ -197,7 +198,7 @@ htmlhelp_basename = 'LightGBMdoc'
 latex_logo = str(CURR_PATH / 'logo' / 'LightGBM_logo_black_text_small.png')
 
 
-def generate_doxygen_xml(app):
+def generate_doxygen_xml(app: Any) -> None:
     """Generate XML documentation for C API by Doxygen.
 
     Parameters
@@ -242,7 +243,7 @@ def generate_doxygen_xml(app):
         raise Exception(f"An error has occurred while executing Doxygen\n{e}")
 
 
-def generate_r_docs(app):
+def generate_r_docs(app: Any) -> None:
     """Generate documentation for R-package.
 
     Parameters
@@ -304,7 +305,7 @@ def generate_r_docs(app):
         raise Exception(f"An error has occurred while generating documentation for R-package\n{e}")
 
 
-def setup(app):
+def setup(app: Any) -> None:
     """Add new elements at Sphinx initialization time.
 
     Parameters
