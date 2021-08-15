@@ -128,7 +128,8 @@ into a predictor model which frees up memory and the original datasets}
                  the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
                  not the number of threads (most CPU using hyper-threading to generate 2 threads
                  per CPU core).}
-}}
+}
+NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
 }
 \value{
 a trained model \code{lgb.CVBooster}.
