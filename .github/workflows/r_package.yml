@@ -181,7 +181,7 @@ jobs:
       - name: Install Git before checkout
         shell: bash
         run: |
-          apt update -y
+          apt-get update --allow-releaseinfo-change
           apt-get install --no-install-recommends -y git
       - name: Checkout repository
         uses: actions/checkout@v2.3.4
@@ -210,7 +210,7 @@ jobs:
       - name: Install Git before checkout
         shell: bash
         run: |
-          apt update -y
+          apt-get update --allow-releaseinfo-change
           apt-get install --no-install-recommends -y git
       - name: Checkout repository
         uses: actions/checkout@v2.3.4
