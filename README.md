@@ -65,6 +65,8 @@ FLAML (AutoML library for hyperparameter optimization): https://github.com/micro
 
 Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
 
+Neptune + LightGBM integration: https://bit.ly/37MX3Mw
+
 Julia-package: https://github.com/IQVIA-ML/LightGBM.jl
 
 JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
