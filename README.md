@@ -44,7 +44,7 @@ Next you may want to read:
 - [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
 - [**FLAML**](https://www.microsoft.com/en-us/research/project/fast-and-lightweight-automl-for-large-scale-data/articles/flaml-a-fast-and-lightweight-automl-library/) provides automated tuning for LightGBM ([code examples](https://github.com/microsoft/FLAML/blob/main/notebook/flaml_lightgbm.ipynb)).
 - [**Optuna Hyperparameter Tuner**](https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258) provides automated tuning for LightGBM hyperparameters ([code examples](https://github.com/optuna/optuna/tree/master/examples/lightgbm)).
-- [**Understanding LightGBM Parameters (and How to Tune Them)**](https://neptune.ai/blog/lightgbm-parameters-guide)
+- [**Understanding LightGBM Parameters (and How to Tune Them)**](https://neptune.ai/blog/lightgbm-parameters-guide).
 
 Documentation for contributors:
 
