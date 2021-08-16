@@ -96,7 +96,7 @@ class BinaryMetric: public Metric {
     return std::vector<double>(1, loss);
   }
 
- private:
+ protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
@@ -250,7 +250,7 @@ class AUCMetric: public Metric {
     return std::vector<double>(1, auc);
   }
 
- private:
+ protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */

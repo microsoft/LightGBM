@@ -24,23 +24,6 @@ void CUDAMulticlassSoftmax::Init(const Metadata& metadata, data_size_t num_data)
 
 void CUDAMulticlassSoftmax::GetGradients(const double* score, score_t* gradients, score_t* hessians) const {
   LaunchGetGradientsKernel(score, gradients, hessians);
-  /*std::vector<score_t> cpu_gradients(100, 0.0f);
-  std::vector<score_t> cpu_hessians(100, 0.0f);
-  CopyFromCUDADeviceToHostOuter<score_t>(cpu_gradients.data(), gradients, 100, __FILE__, __LINE__);
-  CopyFromCUDADeviceToHostOuter<score_t>(cpu_hessians.data(), hessians, 100, __FILE__, __LINE__);
-  for (size_t i = 0; i < 100; ++i) {
-    Log::Warning("class 0 data %d gradient = %f, hessians = %f", i, cpu_gradients[i], cpu_hessians[i]);
-  }
-  CopyFromCUDADeviceToHostOuter<score_t>(cpu_gradients.data(), gradients + num_data_ - 100, 100, __FILE__, __LINE__);
-  CopyFromCUDADeviceToHostOuter<score_t>(cpu_hessians.data(), hessians + num_data_ - 100, 100, __FILE__, __LINE__);
-  for (size_t i = 0; i < 100; ++i) {
-    Log::Warning("class 0 data %d gradient = %f, hessians = %f", i + num_data_ - 100, cpu_gradients[i], cpu_hessians[i]);
-  }
-  CopyFromCUDADeviceToHostOuter<score_t>(cpu_gradients.data(), gradients + num_data_, 100, __FILE__, __LINE__);
-  CopyFromCUDADeviceToHostOuter<score_t>(cpu_hessians.data(), hessians + num_data_, 100, __FILE__, __LINE__);
-  for (size_t i = 0; i < 100; ++i) {
-    Log::Warning("class 1 data %d gradient = %f, hessians = %f", i, cpu_gradients[i], cpu_hessians[i]);
-  }*/
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 

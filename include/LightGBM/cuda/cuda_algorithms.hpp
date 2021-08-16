@@ -18,6 +18,7 @@
 
 #define NUM_BANKS_DATA_PARTITION (16)
 #define LOG_NUM_BANKS_DATA_PARTITION (4)
+#define GLOBAL_PREFIX_SUM_BLOCK_SIZE (1024)
 
 #define CONFLICT_FREE_INDEX(n) \
   ((n) + ((n) >> LOG_NUM_BANKS_DATA_PARTITION)) \
@@ -43,43 +44,6 @@ namespace LightGBM {
     __syncthreads(); \
   } \
 
-
-#define PrefixSumInner(elements, n, type) \
-  size_t offset = 1; \
-  unsigned int threadIdx_x = threadIdx.x; \
-  const size_t conflict_free_n_minus_1 = CONFLICT_FREE_INDEX(n - 1); \
-  const type last_element = elements[conflict_free_n_minus_1]; \
-  __syncthreads(); \
-  for (int d = (n >> 1); d > 0; d >>= 1) { \
-    if (threadIdx_x < d) { \
-      const size_t src_pos = offset * (2 * threadIdx_x + 1) - 1; \
-      const size_t dst_pos = offset * (2 * threadIdx_x + 2) - 1; \
-      elements[CONFLICT_FREE_INDEX(dst_pos)] += elements[CONFLICT_FREE_INDEX(src_pos)]; \
-    } \
-    offset <<= 1; \
-    __syncthreads(); \
-  } \
-  if (threadIdx_x == 0) { \
-    elements[conflict_free_n_minus_1] = 0; \
-  } \
-  __syncthreads(); \
-  for (int d = 1; d < n; d <<= 1) { \
-    offset >>= 1; \
-    if (threadIdx_x < d) { \
-      const size_t dst_pos = offset * (2 * threadIdx_x + 2) - 1; \
-      const size_t src_pos = offset * (2 * threadIdx_x + 1) - 1; \
-      const size_t conflict_free_dst_pos = CONFLICT_FREE_INDEX(dst_pos); \
-      const size_t conflict_free_src_pos = CONFLICT_FREE_INDEX(src_pos); \
-      const type src_val = elements[conflict_free_src_pos]; \
-      elements[conflict_free_src_pos] = elements[conflict_free_dst_pos]; \
-      elements[conflict_free_dst_pos] += src_val; \
-    } \
-    __syncthreads(); \
-  } \
-  if (threadIdx_x == 0) { \
-    elements[CONFLICT_FREE_INDEX(n)] = elements[conflict_free_n_minus_1] + last_element; \
-  } \
-
 template <typename T>
 __device__ void ReduceSum(T* values, size_t n) {
   ReduceSumInner(values, n);
@@ -92,6 +56,29 @@ __device__ void ReduceSumConflictFree(T* values, size_t n) {
 
 template <typename T>
 __device__ void ReduceMax(T* values, size_t n);
+
+template <typename T>
+void GlobalInclusivePrefixSum(T* values, size_t n);
+
+template <bool USE_WEIGHT, bool IS_POS>
+void GlobalGenAUCPosNegSum(const label_t* labels,
+                        const label_t* weights,
+                        const data_size_t* sorted_indices,
+                        double* sum_pos_buffer,
+                        double* block_sum_pos_buffer,
+                        const data_size_t num_data);
+
+void GloblGenAUCMark(const double* scores,
+                     const data_size_t* sorted_indices,
+                     data_size_t* mark_buffer,
+                     data_size_t* block_mark_buffer,
+                     uint16_t* block_mark_first_zero,
+                     const data_size_t num_data);
+
+void GlobalCalcAUC(const double* sum_pos_buffer,
+                   const data_size_t* mark_buffer,
+                   const data_size_t num_data,
+                   double* block_buffer);
 
 template <typename T>
 __device__ void PrefixSum(T* values, size_t n) {
@@ -255,6 +242,98 @@ __device__ __forceinline__ void BitonicArgSort_2048(const score_t* scores, uint1
       __syncthreads();
     }
   }
+}
+
+template <typename T>
+__device__ __forceinline__ T ShuffleReduceSumWarp(T value, const data_size_t len) {
+  if (len > 0) {
+    const uint32_t mask = (0xffffffff >> (warpSize - len));
+    for (int offset = warpSize / 2; offset > 0; offset >>= 1) { 
+      value += __shfl_down_sync(mask, value, offset);
+    }
+  }
+  return value;
+}
+
+// reduce values from an 1-dimensional block (block size must be no greather than 1024)
+template <typename T>
+__device__ __forceinline__ T ShuffleReduceSum(T value, T* shared_mem_buffer, const size_t len) {
+  const uint32_t warpLane = threadIdx.x % warpSize;
+  const uint32_t warpID = threadIdx.x / warpSize;
+  const data_size_t warp_len = min(static_cast<data_size_t>(warpSize), static_cast<data_size_t>(len) - static_cast<data_size_t>(warpID * warpSize));
+  value = ShuffleReduceSumWarp<T>(value, warp_len);
+  if (warpLane == 0) {
+    shared_mem_buffer[warpID] = value;
+  }
+  __syncthreads();
+  const data_size_t num_warp = static_cast<data_size_t>((len + warpSize - 1) / warpSize);
+  if (warpID == 0) {
+    value = shared_mem_buffer[warpLane];
+    value = ShuffleReduceSumWarp<T>(value, num_warp);
+  }
+  return value;
+}
+
+template <typename T>
+__device__ __forceinline__ T ShuffleReduceMaxWarp(T value, const data_size_t len) {
+  if (len > 0) {
+    const uint32_t mask = (0xffffffff >> (warpSize - len));
+    for (int offset = warpSize / 2; offset > 0; offset >>= 1) { 
+      const T other_value = __shfl_down_sync(mask, value, offset);
+      value = (other_value > value) ? other_value : value;
+    }
+  }
+  return value;
+}
+
+// reduce values from an 1-dimensional block (block size must be no greather than 1024)
+template <typename T>
+__device__ __forceinline__ T ShuffleReduceMax(T value, T* shared_mem_buffer, const size_t len) {
+  const uint32_t warpLane = threadIdx.x % warpSize;
+  const uint32_t warpID = threadIdx.x / warpSize;
+  const data_size_t warp_len = min(static_cast<data_size_t>(warpSize), static_cast<data_size_t>(len) - static_cast<data_size_t>(warpID * warpSize));
+  value = ShuffleReduceMaxWarp<T>(value, warp_len);
+  if (warpLane == 0) {
+    shared_mem_buffer[warpID] = value;
+  }
+  __syncthreads();
+  const data_size_t num_warp = static_cast<data_size_t>((len + warpSize - 1) / warpSize);
+  if (warpID == 0) {
+    value = shared_mem_buffer[warpLane];
+    value = ShuffleReduceMaxWarp<T>(value, num_warp);
+  }
+  return value;
+}
+
+template <typename T>
+__device__ __forceinline__ T ShuffleReduceMinWarp(T value, const data_size_t len) {
+  if (len > 0) {
+    const uint32_t mask = (0xffffffff >> (warpSize - len));
+    for (int offset = warpSize / 2; offset > 0; offset >>= 1) { 
+      const T other_value = __shfl_down_sync(mask, value, offset);
+      value = (other_value < value) ? other_value : value;
+    }
+  }
+  return value;
+}
+
+// reduce values from an 1-dimensional block (block size must be no greather than 1024)
+template <typename T>
+__device__ __forceinline__ T ShuffleReduceMin(T value, T* shared_mem_buffer, const size_t len) {
+  const uint32_t warpLane = threadIdx.x % warpSize;
+  const uint32_t warpID = threadIdx.x / warpSize;
+  const data_size_t warp_len = min(static_cast<data_size_t>(warpSize), static_cast<data_size_t>(len) - static_cast<data_size_t>(warpID * warpSize));
+  value = ShuffleReduceMinWarp<T>(value, warp_len);
+  if (warpLane == 0) {
+    shared_mem_buffer[warpID] = value;
+  }
+  __syncthreads();
+  const data_size_t num_warp = static_cast<data_size_t>((len + warpSize - 1) / warpSize);
+  if (warpID == 0) {
+    value = shared_mem_buffer[warpLane];
+    value = ShuffleReduceMinWarp<T>(value, num_warp);
+  }
+  return value;
 }
 
 }  // namespace LightGBM

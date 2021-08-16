@@ -28,15 +28,11 @@ class CUDALambdarankNDCG : public CUDAObjectiveInterface, public LambdarankNDCG 
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override;
 
- private:
+ protected:
 
   void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const;
 
   void LaunchCalcInverseMaxDCGKernel();
-
-  void TestCUDAQuickSort() const;
-
-  void TestCUDABitonicSortForQueryItems() const;
 
   // CUDA memory, held by this object
   double* cuda_lambdas_;
@@ -52,7 +48,7 @@ class CUDALambdarankNDCG : public CUDAObjectiveInterface, public LambdarankNDCG 
   int max_items_in_query_aligned_;
 };
 
-class CUDARankXENDCG : public CUDAObjectiveInterface, public RankXENDCG {
+class CUDARankXENDCG : public CUDALambdarankNDCG {
  public:
   explicit CUDARankXENDCG(const Config& config);
 
@@ -66,6 +62,14 @@ class CUDARankXENDCG : public CUDAObjectiveInterface, public RankXENDCG {
 
  private:
   void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const;
+
+  // TODO(shiyu1994): move random number generation into CUDA
+  void GenerateItemRands() const;
+
+  mutable std::vector<double> item_rands_;
+  mutable std::vector<Random> rands_;
+  mutable double* cuda_item_rands_;
+  mutable double* cuda_params_buffer_;
 };
 
 }  // namespace LightGBM

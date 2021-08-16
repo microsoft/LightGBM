@@ -58,10 +58,10 @@ __global__ void GetGradientsKernel_BinaryLogloss(const double* cuda_scores, cons
   const data_size_t data_index = static_cast<data_size_t>(blockDim.x * blockIdx.x + threadIdx.x);
   if (data_index < num_data) {
     const label_t cuda_label = static_cast<int>(cuda_labels[data_index]);
-    const int label = IS_OVA ? (cuda_label > 0 ? 1 : -1) : (cuda_label == ova_class_id ? 1 : -1);
-    const double response = -label * sigmoid / (1.0f + std::exp(label * sigmoid * cuda_scores[data_index]));
+    const int label = IS_OVA ? (cuda_label == ova_class_id ? 1 : -1) : (cuda_label > 0 ? 1 : -1);
+    const double response = -label * sigmoid / (1.0f + exp(label * sigmoid * cuda_scores[data_index]));
     const double abs_response = fabs(response);
-    if (USE_WEIGHT) {
+    if (!USE_WEIGHT) {
       if (USE_LABEL_WEIGHT) {
         const double label_weight = cuda_label_weights[label];
         cuda_out_gradients[data_index] = static_cast<score_t>(response * label_weight);
@@ -127,6 +127,8 @@ void CUDABinaryLogloss::LaunchGetGradientsKernel(const double* scores, score_t* 
     }
   }
 }
+
+#undef GetGradientsKernel_BinaryLogloss_ARGS
 
 __global__ void ConvertOutputCUDAKernel_BinaryLogloss(const double sigmoid, const data_size_t num_data, const double* input, double* output) {
   const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);

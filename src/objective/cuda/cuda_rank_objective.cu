@@ -372,151 +372,292 @@ void CUDALambdarankNDCG::LaunchCalcInverseMaxDCGKernel() {
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
-__global__ void GetGradientsKernel_RankXENDCG() {}
-
-void CUDARankXENDCG::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {}
-
-void CUDALambdarankNDCG::TestCUDAQuickSort() const {
-  const int test_num_data = (1 << 24) + 13;
-  const int data_range = 1000;
-  const int num_threads = OMP_NUM_THREADS();
-  std::vector<int> rand_integers(test_num_data, 0);
-  std::vector<double> distribution_prob(data_range, 1.0f / data_range);
-  std::discrete_distribution<int> dist(distribution_prob.begin(), distribution_prob.end());
-  std::vector<std::mt19937> rand_engines(num_threads);
-  Threading::For<int>(0, test_num_data, 512,
-    [&rand_engines, &dist, &rand_integers] (int thread_index, int start, int end) {
-      rand_engines[thread_index] = std::mt19937(thread_index);
-      for (int i = start; i < end; ++i) {
-        rand_integers[i] = dist(rand_engines[thread_index]);
-      }
-    });
-
-  const int smaller_test_num_data = /*(1 << 11) +*/ 170;
-  std::vector<int> bitonic_sort_integers(rand_integers.begin(), rand_integers.begin() + smaller_test_num_data);
-  std::vector<int> cuda_bitonic_sort_integers = bitonic_sort_integers;
-  std::vector<int> host_bitonic_sort_integers = bitonic_sort_integers;
-  int* cuda_bitonic_sort_integers_pointer = nullptr;
-  InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_bitonic_sort_integers_pointer, cuda_bitonic_sort_integers.data(), smaller_test_num_data, __FILE__, __LINE__);
-  auto start_1024 = std::chrono::steady_clock::now();
-  BitonicSortGlobal<int, true>(cuda_bitonic_sort_integers_pointer, smaller_test_num_data);
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-  auto end_1024 = std::chrono::steady_clock::now();
-  auto duration_1024 = static_cast<std::chrono::duration<double>>(end_1024 - start_1024);
-  Log::Warning("bitonic sort 1024 time = %f", duration_1024.count());
-  CopyFromCUDADeviceToHostOuter<int>(cuda_bitonic_sort_integers.data(), cuda_bitonic_sort_integers_pointer, smaller_test_num_data, __FILE__, __LINE__);
-  start_1024 = std::chrono::steady_clock::now();
-  std::sort(host_bitonic_sort_integers.begin(), host_bitonic_sort_integers.end());
-  end_1024 = std::chrono::steady_clock::now();
-  duration_1024 = static_cast<std::chrono::duration<double>>(end_1024 - start_1024);
-  Log::Warning("host sort 1024 time = %f", duration_1024.count());
-  for (int i = 0; i < smaller_test_num_data; ++i) {
-    if (host_bitonic_sort_integers[i] != cuda_bitonic_sort_integers[i]) {
-      Log::Warning("error index %d host_bitonic_sort_integers = %d, cuda_bitonic_sort_integers = %d", i, host_bitonic_sort_integers[i], cuda_bitonic_sort_integers[i]);
-    }
-  } 
-
-  std::vector<int> cuda_rand_integers = rand_integers;
-  std::vector<int> host_rand_integers = rand_integers;
-  int* cuda_data = nullptr;
-  InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_data, rand_integers.data(), rand_integers.size(), __FILE__, __LINE__);
-  auto start = std::chrono::steady_clock::now();
-  BitonicSortGlobal<int, true>(cuda_data, static_cast<size_t>(test_num_data));
-  auto end = std::chrono::steady_clock::now();
-  auto duration = static_cast<std::chrono::duration<double>>(end - start);
-  Log::Warning("cuda sort time = %f", duration.count());
-  CopyFromCUDADeviceToHostOuter<int>(cuda_rand_integers.data(), cuda_data, static_cast<size_t>(test_num_data), __FILE__, __LINE__);
-  start = std::chrono::steady_clock::now();
-  std::sort(host_rand_integers.begin(), host_rand_integers.end());
-  end = std::chrono::steady_clock::now();
-  duration = static_cast<std::chrono::duration<double>>(end - start);
-  Log::Warning("cpu sort time = %f", duration.count());
-  std::vector<int> parallel_rand_integers = rand_integers;
-  start = std::chrono::steady_clock::now();
-  Common::ParallelSort(parallel_rand_integers.begin(), parallel_rand_integers.end(), [](int a, int b) { return a < b; });
-  end = std::chrono::steady_clock::now();
-  duration = static_cast<std::chrono::duration<double>>(end - start);
-  Log::Warning("parallel sort time = %f", duration.count());
-  for (int i = 0; i < 100; ++i) {
-    Log::Warning("after sort cuda_rand_integers[%d] = %d", i, cuda_rand_integers[i]);
-  }
-  #pragma omp parallel for schedule(static) num_threads(num_threads)
-  for (int i = 0; i < test_num_data; ++i) {
-    if (cuda_rand_integers[i] != host_rand_integers[i]) {
-      Log::Warning("index %d cuda_rand_integers = %d, host_rand_integers = %d", i, cuda_rand_integers[i], host_rand_integers[i]);
-    }
-    CHECK_EQ(cuda_rand_integers[i], host_rand_integers[i]);
-  }
-  Log::Warning("cuda argsort test pass");
+__device__ __forceinline__ double CUDAPhi(const label_t l, double g) {
+  return pow(2.0f, static_cast<double>(l)) - g;
 }
 
-void CUDALambdarankNDCG::TestCUDABitonicSortForQueryItems() const {
-  int num_queries = 1000;
-  std::vector<int> items_per_query(num_queries + 1, 0);
-  std::vector<double> item_scores;
-  const int max_item_per_query = 5000;
-  std::vector<double> num_item_probs(max_item_per_query, 1.0f / max_item_per_query);
-  std::discrete_distribution<int> num_item_distribution(num_item_probs.begin(), num_item_probs.end());
-  std::uniform_real_distribution<double> score_dist;
-  const int num_threads = OMP_NUM_THREADS();
-  std::vector<std::mt19937> thread_random_engines(num_threads);
-  for (int thread_index = 0; thread_index < num_threads; ++thread_index) {
-    thread_random_engines[thread_index] = std::mt19937(thread_index);
-  }
-  int num_total_items = 0;
-  #pragma omp parallel for schedule(static) num_threads(num_threads) reduction(+:num_total_items)
-  for (int query_index = 0; query_index < num_queries; ++query_index) {
-    const int thread_index = omp_get_thread_num();
-    items_per_query[query_index + 1] = num_item_distribution(thread_random_engines[thread_index]);
-    num_total_items += items_per_query[query_index + 1];
-  }
-  for (int query_index = 0; query_index < num_queries; ++query_index) {
-    items_per_query[query_index + 1] += items_per_query[query_index];
-  }
-  item_scores.resize(num_total_items, 0.0f);
-  #pragma omp parallel for schedule(static) num_threads(num_threads)
-  for (int item_index = 0; item_index < num_total_items; ++item_index) {
-    const int thread_index = omp_get_thread_num();
-    item_scores[item_index] = score_dist(thread_random_engines[thread_index]);
-  }
-  double* cuda_score = nullptr;
-  data_size_t* cuda_query_boundaries = nullptr;
-  data_size_t* cuda_out_indices = nullptr;
-  InitCUDAMemoryFromHostMemoryOuter<double>(&cuda_score, item_scores.data(), item_scores.size(), __FILE__, __LINE__);
-  InitCUDAMemoryFromHostMemoryOuter<data_size_t>(&cuda_query_boundaries, items_per_query.data(), items_per_query.size(), __FILE__, __LINE__);
-  AllocateCUDAMemoryOuter<data_size_t>(&cuda_out_indices, item_scores.size(), __FILE__, __LINE__);
-  const auto start = std::chrono::steady_clock::now();
-  BitonicArgSortItemsGlobal(cuda_score, num_queries, cuda_query_boundaries, cuda_out_indices);
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-  const auto end = std::chrono::steady_clock::now();
-  const std::chrono::duration<double> duration = static_cast<std::chrono::duration<double>>(end - start);
-  Log::Warning("bitonic arg sort items global time = %f", duration.count());
-  std::vector<int> sorted_item_indices(item_scores.size());
-  CopyFromCUDADeviceToHostOuter<int>(sorted_item_indices.data(), cuda_out_indices, item_scores.size(), __FILE__, __LINE__);
-  std::vector<int> host_sorted_item_indices(item_scores.size());
-  PrintLastCUDAErrorOuter(__FILE__, __LINE__);
-  #pragma omp parallel for schedule(static) num_threads(num_threads)
-  for (int i = 0; i < num_queries; ++i) {
-    const int query_start = items_per_query[i];
-    const int query_end = items_per_query[i + 1];
-    for (int j = query_start; j < query_end; ++j) {
-      host_sorted_item_indices[j] = j - query_start;
-    }
-    std::sort(host_sorted_item_indices.data() + query_start, host_sorted_item_indices.data() + query_end, [&item_scores, query_start] (int a, int b) {
-      return item_scores[query_start + a] > item_scores[query_start + b];
-    });
-  }
-  for (int query_index = 0; query_index < num_queries; ++query_index) {
-    const int query_start = items_per_query[query_index];
-    const int query_end = items_per_query[query_index + 1];
-    for (int item_index = query_start; item_index < query_end; ++item_index) {
-      const double cuda_item_score = item_scores[query_start + sorted_item_indices[item_index]];
-      const double host_item_score = item_scores[query_start + host_sorted_item_indices[item_index]];
-      if (cuda_item_score != host_item_score) {
-        Log::Warning("item_index = %d, query_start = %d, cuda_item_score = %f, host_item_score = %f, sorted_item_indices = %d",
-                      item_index, query_start, cuda_item_score, host_item_score, sorted_item_indices[item_index]);
+template <size_t SHARED_MEMORY_SIZE>
+__global__ void GetGradientsKernel_RankXENDCG_SharedMemory(
+  const double* cuda_scores,
+  const label_t* cuda_labels,
+  const double* cuda_item_rands,
+  const data_size_t num_data,
+  const data_size_t num_queries,
+  const data_size_t* cuda_query_boundaries,
+  score_t* cuda_out_gradients,
+  score_t* cuda_out_hessians) {
+  const data_size_t query_index_start = static_cast<data_size_t>(blockIdx.x) * NUM_QUERY_PER_BLOCK;
+  const data_size_t query_index_end = min(query_index_start + NUM_QUERY_PER_BLOCK, num_queries);
+  for (data_size_t query_index = query_index_start; query_index < query_index_end; ++query_index) {
+    const data_size_t item_index_start = cuda_query_boundaries[query_index];
+    const data_size_t item_index_end = cuda_query_boundaries[query_index + 1];
+    const data_size_t query_item_count = item_index_end - item_index_start;
+    score_t* cuda_out_gradients_pointer = cuda_out_gradients + item_index_start;
+    score_t* cuda_out_hessians_pointer = cuda_out_hessians + item_index_start;
+    const label_t* cuda_labels_pointer = cuda_labels + item_index_start;
+    const double* cuda_scores_pointer = cuda_scores + item_index_start;
+    const double* cuda_item_rands_pointer = cuda_item_rands + item_index_start;
+    const data_size_t block_reduce_size = query_item_count >= 1024 ? 1024 : query_item_count;
+    __shared__ double shared_rho[SHARED_MEMORY_SIZE];
+    // assert that warpSize == 32
+    __shared__ double shared_buffer[32];
+    __shared__ double shared_params[SHARED_MEMORY_SIZE];
+    __shared__ score_t shared_lambdas[SHARED_MEMORY_SIZE];
+    __shared__ double reduce_result;
+    if (query_item_count <= 1) {
+      for (data_size_t i = 0; i <= query_item_count; ++i) {
+        cuda_out_gradients_pointer[i] = 0.0f;
+        cuda_out_hessians_pointer[i] = 0.0f;
       }
+      __syncthreads();
+    } else {
+      // compute softmax
+      double thread_reduce_result = kMinScore;
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        const double rho = cuda_scores_pointer[i];
+        shared_rho[i] = rho;
+        if (rho > thread_reduce_result) {
+          thread_reduce_result = rho;
+        }
+      }
+      __syncthreads();
+      thread_reduce_result = ShuffleReduceMax<double>(thread_reduce_result, shared_buffer, block_reduce_size);
+      if (threadIdx.x == 0) {
+        reduce_result = thread_reduce_result;
+        if (blockIdx.x == 0) {
+          printf("reduce max score = %f\n", reduce_result);
+        }
+      }
+      __syncthreads();
+      thread_reduce_result = 0.0f;
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        const double exp_value = exp(shared_rho[i] - reduce_result);
+        shared_rho[i] = exp_value;
+        thread_reduce_result += exp_value;
+      }
+      thread_reduce_result = ShuffleReduceSum<double>(thread_reduce_result, shared_buffer, block_reduce_size);
+      if (threadIdx.x == 0) {
+        reduce_result = thread_reduce_result;
+      }
+      __syncthreads();
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        shared_rho[i] /= reduce_result;
+      }
+      __syncthreads();
+
+      // compute params
+      thread_reduce_result = 0.0f;
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        const double param_value = CUDAPhi(cuda_labels_pointer[i], cuda_item_rands_pointer[i]);
+        shared_params[i] = param_value;
+        thread_reduce_result += param_value;
+      }
+      thread_reduce_result = ShuffleReduceSum<double>(thread_reduce_result, shared_buffer, block_reduce_size);
+      if (threadIdx.x == 0) {
+        reduce_result = thread_reduce_result;
+        reduce_result = 1.0f / max(kEpsilon, reduce_result);
+      }
+      __syncthreads();
+      const double inv_denominator = reduce_result;
+      thread_reduce_result = 0.0f;
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        const double term = -shared_params[i] * inv_denominator + shared_rho[i];
+        shared_lambdas[i] = static_cast<score_t>(term);
+        shared_params[i] = term / (1.0f - shared_rho[i]);
+        thread_reduce_result += shared_params[i];
+      }
+      thread_reduce_result = ShuffleReduceSum<double>(thread_reduce_result, shared_buffer, block_reduce_size);
+      if (threadIdx.x == 0) {
+        reduce_result = thread_reduce_result;
+      }
+      __syncthreads();
+      const double sum_l1 = reduce_result;
+      thread_reduce_result = 0.0f;
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        const double term = shared_rho[i] * (sum_l1 - shared_params[i]);
+        shared_lambdas[i] += static_cast<score_t>(term);
+        shared_params[i] = term / (1.0f - shared_rho[i]);
+        thread_reduce_result += shared_params[i];
+      }
+      thread_reduce_result = ShuffleReduceSum<double>(thread_reduce_result, shared_buffer, block_reduce_size);
+      if (threadIdx.x == 0) {
+        reduce_result = thread_reduce_result;
+      }
+      __syncthreads();
+      const double sum_l2 = reduce_result;
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        shared_lambdas[i] += static_cast<score_t>(shared_rho[i] * (sum_l2 - shared_params[i]));
+        cuda_out_hessians_pointer[i] = static_cast<score_t>(shared_rho[i] * (1.0f - shared_rho[i]));
+      }
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        cuda_out_gradients_pointer[i] = shared_lambdas[i];
+      }
+      __syncthreads();
     }
+  }
+}
+
+__global__ void GetGradientsKernel_RankXENDCG_GlobalMemory(
+  const double* cuda_scores,
+  const label_t* cuda_labels,
+  const double* cuda_item_rands,
+  const data_size_t num_data,
+  const data_size_t num_queries,
+  const data_size_t* cuda_query_boundaries,
+  double* cuda_params_buffer,
+  score_t* cuda_out_gradients,
+  score_t* cuda_out_hessians) {
+  const data_size_t query_index_start = static_cast<data_size_t>(blockIdx.x) * NUM_QUERY_PER_BLOCK;
+  const data_size_t query_index_end = min(query_index_start + NUM_QUERY_PER_BLOCK, num_queries);
+  for (data_size_t query_index = query_index_start; query_index < query_index_end; ++query_index) {
+    const data_size_t item_index_start = cuda_query_boundaries[query_index];
+    const data_size_t item_index_end = cuda_query_boundaries[query_index + 1];
+    const data_size_t query_item_count = item_index_end - item_index_start;
+    score_t* cuda_out_gradients_pointer = cuda_out_gradients + item_index_start;
+    score_t* cuda_out_hessians_pointer = cuda_out_hessians + item_index_start;
+    const label_t* cuda_labels_pointer = cuda_labels + item_index_start;
+    const double* cuda_scores_pointer = cuda_scores + item_index_start;
+    const double* cuda_item_rands_pointer = cuda_item_rands + item_index_start;
+    double* cuda_params_buffer_pointer = cuda_params_buffer + item_index_start;
+    const data_size_t block_reduce_size = query_item_count > 1024 ? 1024 : query_item_count;
+    // assert that warpSize == 32, so we use buffer size 1024 / 32 = 32
+    __shared__ double shared_buffer[32];
+    __shared__ double reduce_result;
+    if (query_item_count <= 1) {
+      for (data_size_t i = 0; i <= query_item_count; ++i) {
+        cuda_out_gradients_pointer[i] = 0.0f;
+        cuda_out_hessians_pointer[i] = 0.0f;
+      }
+      __syncthreads();
+    } else {
+      // compute softmax
+      double thread_reduce_result = kMinScore;
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        const double rho = cuda_scores_pointer[i];
+        if (rho > thread_reduce_result) {
+          thread_reduce_result = rho;
+        }
+      }
+      __syncthreads();
+      thread_reduce_result = ShuffleReduceMax<double>(thread_reduce_result, shared_buffer, block_reduce_size);
+      if (threadIdx.x == 0) {
+        reduce_result = thread_reduce_result;
+      }
+      __syncthreads();
+      thread_reduce_result = 0.0f;
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        const double exp_value = exp(cuda_scores_pointer[i] - reduce_result);
+        cuda_out_hessians_pointer[i] = exp_value;
+        thread_reduce_result += exp_value;
+      }
+      thread_reduce_result = ShuffleReduceSum<double>(thread_reduce_result, shared_buffer, block_reduce_size);
+      if (threadIdx.x == 0) {
+        reduce_result = thread_reduce_result;
+      }
+      __syncthreads();
+      // store probability into hessians
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        cuda_out_hessians_pointer[i] /= reduce_result;
+      }
+      __syncthreads();
+
+      // compute params
+      thread_reduce_result = 0.0f;
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        const double param_value = CUDAPhi(cuda_labels_pointer[i], cuda_item_rands_pointer[i]);
+        cuda_params_buffer_pointer[i] = param_value;
+        thread_reduce_result += param_value;
+      }
+      thread_reduce_result = ShuffleReduceSum<double>(thread_reduce_result, shared_buffer, block_reduce_size);
+      if (threadIdx.x == 0) {
+        reduce_result = thread_reduce_result;
+        reduce_result = 1.0f / max(kEpsilon, reduce_result);
+      }
+      __syncthreads();
+      const double inv_denominator = reduce_result;
+      thread_reduce_result = 0.0f;
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        const double term = -cuda_params_buffer_pointer[i] * inv_denominator + cuda_out_hessians_pointer[i];
+        cuda_out_gradients_pointer[i] = static_cast<score_t>(term);
+        const double param = term / (1.0f - cuda_out_hessians_pointer[i]);
+        cuda_params_buffer_pointer[i] = param;
+        thread_reduce_result += param;
+      }
+      thread_reduce_result = ShuffleReduceSum<double>(thread_reduce_result, shared_buffer, block_reduce_size);
+      if (threadIdx.x == 0) {
+        reduce_result = thread_reduce_result;
+      }
+      __syncthreads();
+      const double sum_l1 = reduce_result;
+      thread_reduce_result = 0.0f;
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        const double term = cuda_out_hessians_pointer[i] * (sum_l1 - cuda_params_buffer_pointer[i]);
+        cuda_out_gradients_pointer[i] += static_cast<score_t>(term);
+        const double param = term / (1.0f - cuda_out_hessians_pointer[i]);
+        cuda_params_buffer_pointer[i] = param;
+        thread_reduce_result += param;
+      }
+      thread_reduce_result = ShuffleReduceSum<double>(thread_reduce_result, shared_buffer, block_reduce_size);
+      if (threadIdx.x == 0) {
+        reduce_result = thread_reduce_result;
+      }
+      __syncthreads();
+      const double sum_l2 = reduce_result;
+      for (data_size_t i = static_cast<data_size_t>(threadIdx.x); i < query_item_count; i += static_cast<data_size_t>(blockDim.x)) {
+        const double prob = cuda_out_hessians_pointer[i];
+        cuda_out_gradients_pointer[i] += static_cast<score_t>(prob * (sum_l2 - cuda_params_buffer_pointer[i]));
+        cuda_out_hessians_pointer[i] = static_cast<score_t>(prob * (1.0f - prob));
+      }
+      __syncthreads();
+    }
+  }
+}
+
+void CUDARankXENDCG::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {
+  const int num_blocks = (num_queries_ + NUM_QUERY_PER_BLOCK - 1) / NUM_QUERY_PER_BLOCK;
+  if (max_items_in_query_aligned_ <= 1024) {
+    GetGradientsKernel_RankXENDCG_SharedMemory<1024><<<num_blocks, max_items_in_query_aligned_>>>(
+      score,
+      cuda_labels_,
+      cuda_item_rands_,
+      num_data_,
+      num_queries_,
+      cuda_query_boundaries_,
+      gradients,
+      hessians);
+  } else if (max_items_in_query_aligned_ <= 2 * 1024) {
+    GetGradientsKernel_RankXENDCG_SharedMemory<2 * 1024><<<num_blocks, 1024>>>(
+      score,
+      cuda_labels_,
+      cuda_item_rands_,
+      num_data_,
+      num_queries_,
+      cuda_query_boundaries_,
+      gradients,
+      hessians);
+  } else {
+    GetGradientsKernel_RankXENDCG_GlobalMemory<<<num_blocks, 1024>>>(
+      score,
+      cuda_labels_,
+      cuda_item_rands_,
+      num_data_,
+      num_queries_,
+      cuda_query_boundaries_,
+      cuda_params_buffer_,
+      gradients,
+      hessians);
+  }
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  PrintLastCUDAErrorOuter(__FILE__, __LINE__);
+  const int num_show = 1000;
+  std::vector<score_t> host_gradients(num_show, 0.0f);
+  std::vector<score_t> host_hessians(num_show, 0.0f);
+  std::vector<double> host_scores(num_show, 0.0f);
+  CopyFromCUDADeviceToHostOuter<score_t>(host_gradients.data(), gradients, num_show, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<score_t>(host_hessians.data(), hessians, num_show, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<double>(host_scores.data(), score, num_show, __FILE__, __LINE__);
+  for (int i = 0; i < num_show; ++i) {
+    Log::Warning("host_gradients[%d] = %f, host_hessians[%d] = %f, host_scores[%d] = %f", i, host_gradients[i], i, host_hessians[i], i, host_scores[i]);
   }
 }
 

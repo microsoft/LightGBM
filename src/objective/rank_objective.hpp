@@ -62,6 +62,10 @@ class RankingObjective : public ObjectiveFunction {
         }
       }
     }
+    const int num_show = 1000;
+    for (int i = 0; i < num_show; ++i) {
+      Log::Warning("gradients[%d] = %f, hessians[%d] = %f, score[%d] = %f", i, gradients[i], i, hessians[i], i, score[i]);
+    }
   }
 
   virtual void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt,

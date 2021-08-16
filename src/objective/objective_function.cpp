@@ -25,6 +25,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
       return new CUDARegressionL2loss(config);
     } else if (type == std::string("lambdarank")) {
       return new CUDALambdarankNDCG(config);
+    } else if (type == std::string("rank_xendcg")) {
+      return new CUDARankXENDCG(config);
     } else if (type == std::string("multiclass")) {
       return new CUDAMulticlassSoftmax(config);
     }

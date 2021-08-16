@@ -13,9 +13,10 @@ namespace LightGBM {
 CUDALambdarankNDCG::CUDALambdarankNDCG(const Config& config):
 LambdarankNDCG(config) {}
 
+CUDALambdarankNDCG::CUDALambdarankNDCG(const std::vector<std::string>& strs): LambdarankNDCG(strs) {}
+
 void CUDALambdarankNDCG::Init(const Metadata& metadata, data_size_t num_data) {
   const int num_threads = OMP_NUM_THREADS();
-  TestCUDABitonicSortForQueryItems();
   LambdarankNDCG::Init(metadata, num_data);
 
   std::vector<uint16_t> thread_max_num_items_in_query(num_threads);
@@ -56,17 +57,43 @@ void CUDALambdarankNDCG::GetGradients(const double* score, score_t* gradients, s
   LaunchGetGradientsKernel(score, gradients, hessians);
 }
 
-CUDARankXENDCG::CUDARankXENDCG(const Config& config): RankXENDCG(config) {}
+CUDARankXENDCG::CUDARankXENDCG(const Config& config): CUDALambdarankNDCG(config) {}
 
-CUDARankXENDCG::CUDARankXENDCG(const std::vector<std::string>& strs): RankXENDCG(strs) {}
+CUDARankXENDCG::CUDARankXENDCG(const std::vector<std::string>& strs): CUDALambdarankNDCG(strs) {}
 
 CUDARankXENDCG::~CUDARankXENDCG() {}
 
 void CUDARankXENDCG::Init(const Metadata& metadata, data_size_t num_data) {
-  RankXENDCG::Init(metadata, num_data);
+  CUDALambdarankNDCG::Init(metadata, num_data);
+  for (data_size_t i = 0; i < num_queries_; ++i) {
+    rands_.emplace_back(seed_ + i);
+  }
+  item_rands_.resize(num_data, 0.0f);
+  AllocateCUDAMemoryOuter<double>(&cuda_item_rands_, static_cast<size_t>(num_data), __FILE__, __LINE__);
+  //if (max_items_in_query_aligned_ >= 2048) {
+    AllocateCUDAMemoryOuter<double>(&cuda_params_buffer_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  //}
+}
+
+void CUDARankXENDCG::GenerateItemRands() const {
+  const int num_threads = OMP_NUM_THREADS();
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(static) num_threads(num_threads)
+  for (data_size_t i = 0; i < num_queries_; ++i) {
+    OMP_LOOP_EX_BEGIN();
+    const data_size_t start = query_boundaries_[i];
+    const data_size_t end = query_boundaries_[i + 1];
+    for (data_size_t j = start; j < end; ++j) {
+      item_rands_[j] = rands_[i].NextFloat();
+    }
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
 }
 
 void CUDARankXENDCG::GetGradients(const double* score, score_t* gradients, score_t* hessians) const {
+  GenerateItemRands();
+  CopyFromHostToCUDADeviceOuter<double>(cuda_item_rands_, item_rands_.data(), item_rands_.size(), __FILE__, __LINE__);
   LaunchGetGradientsKernel(score, gradients, hessians);
 }
 
