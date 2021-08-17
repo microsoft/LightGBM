@@ -419,7 +419,7 @@ if(USE_SWIG)
 endif(USE_SWIG)
 
 if(USE_MPI)
-  target_link_libraries(lightgbm_objs ${MPI_CXX_LIBRARIES})
+  target_link_libraries(lightgbm_objs PUBLIC ${MPI_CXX_LIBRARIES})
 endif(USE_MPI)
 
 if(USE_OPENMP)
@@ -430,12 +430,12 @@ if(USE_OPENMP)
         # OpenMP_CXX_INCLUDE_DIRS is empty so use hard-code path here.
         include_directories(SYSTEM /usr/local/include)
 
-        target_link_libraries(lightgbm_objs OpenMP::OpenMP_CXX)
+        target_link_libraries(lightgbm_objs PUBLIC OpenMP::OpenMP_CXX)
     endif()
 endif(USE_OPENMP)
 
 if(USE_GPU)
-  target_link_libraries(lightgbm_objs ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
+  target_link_libraries(lightgbm_objs PUBLIC ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
 endif(USE_GPU)
 
 if(__INTEGRATE_OPENCL)
@@ -444,30 +444,30 @@ if(__INTEGRATE_OPENCL)
   # variables INTEGRATED_OPENCL_* are set in IntegratedOpenCL.cmake
   target_include_directories(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
   target_compile_definitions(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_DEFINITIONS})
-  target_link_libraries(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_LIBRARIES})
+  target_link_libraries(lightgbm_objs PUBLIC ${INTEGRATED_OPENCL_LIBRARIES})
 endif()
 
 if(USE_CUDA)
   set_target_properties(lightgbm_objs PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES OFF)
-  target_link_libraries(lightgbm_objs ${histograms})
+  target_link_libraries(lightgbm_objs PUBLIC ${histograms})
 endif(USE_CUDA)
 
 if(USE_HDFS)
-  target_link_libraries(lightgbm_objs ${HDFS_CXX_LIBRARIES})
+  target_link_libraries(lightgbm_objs PUBLIC ${HDFS_CXX_LIBRARIES})
 endif(USE_HDFS)
 
 if(WIN32)
     if(MINGW OR CYGWIN)
-      target_link_libraries(lightgbm_objs Ws2_32 IPHLPAPI)
+      target_link_libraries(lightgbm_objs PUBLIC Ws2_32 IPHLPAPI)
     endif(MINGW OR CYGWIN)
 endif(WIN32)
 
 if(__BUILD_FOR_R)
   if(MSVC)
-    target_link_libraries(lightgbm_capi_objs ${LIBR_MSVC_CORE_LIBRARY})
+    target_link_libraries(lightgbm_capi_objs PUBLIC ${LIBR_MSVC_CORE_LIBRARY})
   else()
-    target_link_libraries(lightgbm_capi_objs ${LIBR_CORE_LIBRARY})
+    target_link_libraries(lightgbm_capi_objs PUBLIC ${LIBR_CORE_LIBRARY})
   endif(MSVC)
 endif(__BUILD_FOR_R)
 
