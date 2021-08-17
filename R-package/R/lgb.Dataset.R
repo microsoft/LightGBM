@@ -831,7 +831,7 @@ lgb.Dataset.construct <- function(dataset) {
 #' @title Dimensions of an \code{lgb.Dataset}
 #' @description Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
 #' @param x Object of class \code{lgb.Dataset}
-#' @param ... other parameters
+#' @param ... other parameters (ignored)
 #'
 #' @return a vector of numbers of rows and of columns
 #'
@@ -852,6 +852,16 @@ lgb.Dataset.construct <- function(dataset) {
 #' @rdname dim
 #' @export
 dim.lgb.Dataset <- function(x, ...) {
+
+  additional_args <- list(...)
+  if (length(additional_args) > 0L) {
+    warning(paste0(
+      "dim.lgb.Dataset: Found the following passed through '...': "
+      , paste(names(additional_args), collapse = ", ")
+      , ". These are ignored. In future releases of lightgbm, this warning will become an error. "
+      , "See ?dim.lgb.Dataset for documentation on how to call this function."
+    ))
+  }
 
   # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = x)) {
@@ -978,7 +988,7 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 #' @description Get one attribute of a \code{lgb.Dataset}
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param name the name of the information field to get (see details)
-#' @param ... other parameters
+#' @param ... other parameters (ignored)
 #' @return info data
 #'
 #' @details
@@ -1017,6 +1027,16 @@ getinfo <- function(dataset, ...) {
 #' @export
 getinfo.lgb.Dataset <- function(dataset, name, ...) {
 
+  additional_args <- list(...)
+  if (length(additional_args) > 0L) {
+    warning(paste0(
+      "getinfo.lgb.Dataset: Found the following passed through '...': "
+      , paste(names(additional_args), collapse = ", ")
+      , ". These are ignored. In future releases of lightgbm, this warning will become an error. "
+      , "See ?getinfo.lgb.Dataset for documentation on how to call this function."
+    ))
+  }
+
   # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("getinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
@@ -1032,7 +1052,7 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param name the name of the field to get
 #' @param info the specific field of information to set
-#' @param ... other parameters
+#' @param ... other parameters (ignored)
 #' @return the dataset you passed in
 #'
 #' @details
@@ -1070,6 +1090,16 @@ setinfo <- function(dataset, ...) {
 #' @rdname setinfo
 #' @export
 setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
+
+  additional_args <- list(...)
+  if (length(additional_args) > 0L) {
+    warning(paste0(
+      "setinfo.lgb.Dataset: Found the following passed through '...': "
+      , paste(names(additional_args), collapse = ", ")
+      , ". These are ignored. In future releases of lightgbm, this warning will become an error. "
+      , "See ?setinfo.lgb.Dataset for documentation on how to call this function."
+    ))
+  }
 
   if (!lgb.is.Dataset(x = dataset)) {
     stop("setinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
