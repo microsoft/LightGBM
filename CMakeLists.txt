@@ -359,9 +359,10 @@ endif(USE_CUDA)
 add_library(lightgbm_objs OBJECT ${SOURCES})
 target_compile_definitions(lightgbm_objs PRIVATE -D_lightgbm_EXPORTS)
 
-add_executable(lightgbm src/main.cpp src/application/application.cpp $<TARGET_OBJECTS:lightgbm_objs>)
-set(API_SOURCES "src/c_api.cpp")
+add_executable(lightgbm src/main.cpp src/application/application.cpp)
+target_link_libraries(lightgbm lightgbm_objs)
 
+set(API_SOURCES "src/c_api.cpp")
 # Only build the R part of the library if building for
 # use with the R package
 if(__BUILD_FOR_R)
@@ -372,10 +373,12 @@ add_library(lightgbm_capi_objs OBJECT ${API_SOURCES})
 target_compile_definitions(lightgbm_capi_objs PRIVATE -D_lightgbm_EXPORTS)
 
 if(BUILD_STATIC_LIB)
-  add_library(_lightgbm STATIC $<TARGET_OBJECTS:lightgbm_capi_objs> $<TARGET_OBJECTS:lightgbm_objs>)
+  add_library(_lightgbm STATIC ${API_SOURCES})
 else()
-  add_library(_lightgbm SHARED $<TARGET_OBJECTS:lightgbm_capi_objs> $<TARGET_OBJECTS:lightgbm_objs>)
+  add_library(_lightgbm SHARED ${API_SOURCES})
 endif(BUILD_STATIC_LIB)
+target_link_libraries(_lightgbm PUBLIC lightgbm_objs)
+target_compile_definitions(_lightgbm PRIVATE -D_lightgbm_EXPORTS)
 
 if(MSVC)
   set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
@@ -465,9 +468,9 @@ endif(WIN32)
 
 if(__BUILD_FOR_R)
   if(MSVC)
-    target_link_libraries(lightgbm_capi_objs PUBLIC ${LIBR_MSVC_CORE_LIBRARY})
+    target_link_libraries(_lightgbm PUBLIC ${LIBR_MSVC_CORE_LIBRARY})
   else()
-    target_link_libraries(lightgbm_capi_objs PUBLIC ${LIBR_CORE_LIBRARY})
+    target_link_libraries(_lightgbm PUBLIC ${LIBR_CORE_LIBRARY})
   endif(MSVC)
 endif(__BUILD_FOR_R)
 
@@ -500,8 +503,8 @@ if(BUILD_CPP_TEST)
       string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
     endforeach()
   endif(MSVC)
-  add_executable(testlightgbm ${CPP_TEST_SOURCES} $<TARGET_OBJECTS:lightgbm_capi_objs> $<TARGET_OBJECTS:lightgbm_objs>)
-  target_link_libraries(testlightgbm PRIVATE GTest::GTest)
+  add_executable(testlightgbm ${CPP_TEST_SOURCES})
+  target_link_libraries(testlightgbm PRIVATE _lightgbm lightgbm_objs GTest::GTest)
 endif()
 
 install(TARGETS lightgbm _lightgbm
