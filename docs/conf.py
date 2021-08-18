@@ -204,7 +204,7 @@ def generate_doxygen_xml(app: Sphinx) -> None:
 
     Parameters
     ----------
-    app : Sphinx
+    app : sphinx.application.Sphinx
         The application object representing the Sphinx process.
     """
     doxygen_args = [
@@ -249,7 +249,7 @@ def generate_r_docs(app: Sphinx) -> None:
 
     Parameters
     ----------
-    app : Sphinx
+    app : sphinx.application.Sphinx
         The application object representing the Sphinx process.
     """
     commands = f"""
@@ -311,7 +311,7 @@ def setup(app: Sphinx) -> None:
 
     Parameters
     ----------
-    app : Sphinx
+    app : sphinx.application.Sphinx
         The application object representing the Sphinx process.
     """
     first_run = not (CURR_PATH / '_FIRST_RUN.flag').exists()
