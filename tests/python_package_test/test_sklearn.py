@@ -112,30 +112,18 @@ def test_multiclass():
     assert gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
-<<<<<<< HEAD
 def lambdarank_test_runner(lambdarank_unbiased=False, **kwargs):
-    X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                       '../../examples/lambdarank/rank.train'))
-    X_test, y_test = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                     '../../examples/lambdarank/rank.test'))
-    q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                      '../../examples/lambdarank/rank.train.query'))
-    q_test = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                     '../../examples/lambdarank/rank.test.query'))
-    gbm = lgb.LGBMRanker(n_estimators=50, lambdarank_unbiased=lambdarank_unbiased, **kwargs)
-=======
-def test_lambdarank():
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
     X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
     X_test, y_test = load_svmlight_file(str(rank_example_dir / 'rank.test'))
     q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
     q_test = np.loadtxt(str(rank_example_dir / 'rank.test.query'))
-    gbm = lgb.LGBMRanker(n_estimators=50)
->>>>>>> master
+    gbm = lgb.LGBMRanker(n_estimators=50, lambdarank_unbiased=lambdarank_unbiased, **kwargs)
     gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
             eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
             callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))])
     return gbm
+
 
 def test_lambdarank():
     gbm = lambdarank_test_runner()

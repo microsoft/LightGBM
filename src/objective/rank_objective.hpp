@@ -409,7 +409,6 @@ class LambdarankNDCG : public RankingObjective {
   const char* GetName() const override { return "lambdarank"; }
 
  private:
-<<<<<<< HEAD
   void LogDebugPositionBiases() const {
     std::stringstream message_stream;
     message_stream  << std::setw(10) << "position"
@@ -432,10 +431,7 @@ class LambdarankNDCG : public RankingObjective {
     }
   }
 
-  /*! \brief Simgoid param */
-=======
   /*! \brief Sigmoid param */
->>>>>>> master
   double sigmoid_;
   /*! \brief Normalize the lambdas or not */
   bool norm_;
