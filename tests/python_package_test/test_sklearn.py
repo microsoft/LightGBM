@@ -127,7 +127,6 @@ def lambdarank_test_runner(lambdarank_unbiased=False, **kwargs):
 
 def test_lambdarank():
     gbm = lambdarank_test_runner()
-    print(gbm.best_iteration_)
     assert gbm.best_iteration_ <= 24
     assert gbm.best_score_['valid_0']['ndcg@1'] > 0.5674
     assert gbm.best_score_['valid_0']['ndcg@3'] > 0.578
