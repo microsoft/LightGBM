@@ -458,7 +458,7 @@ if(USE_CUDA)
   # used. Thus we have to call target_link_libraries on the two final targets
   # here.
   target_link_libraries(lightgbm PRIVATE ${histograms})
-  target_link_libraries(_lightgbm PRIVATE ${histograms})
+  target_link_libraries(_lightgbm PUBLIC ${histograms})
 endif(USE_CUDA)
 
 if(USE_HDFS)
