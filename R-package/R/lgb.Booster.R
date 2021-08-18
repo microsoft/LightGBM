@@ -23,11 +23,9 @@ Booster <- R6::R6Class(
     initialize = function(params = list(),
                           train_set = NULL,
                           modelfile = NULL,
-                          model_str = NULL,
-                          ...) {
+                          model_str = NULL) {
 
       # Create parameters and handle
-      params <- append(params, list(...))
       handle <- NULL
 
       # Attempts to create a handle for the dataset
