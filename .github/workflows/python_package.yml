@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
     - master
-    - position_unbiased
 
 env:
   CONDA_ENV: test-env

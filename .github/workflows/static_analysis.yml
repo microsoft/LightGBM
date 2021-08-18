@@ -9,7 +9,6 @@ on:
   pull_request:
     branches:
     - master
-    - position_debias
 
 env:
   COMPILER: 'gcc'
