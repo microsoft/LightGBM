@@ -110,7 +110,8 @@ the "Parameters" section of the documentation} for more information. A few key p
                  the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
                  not the number of threads (most CPU using hyper-threading to generate 2 threads
                  per CPU core).}
-}}
+}
+NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
 }
 \value{
 a trained booster model \code{lgb.Booster}.
