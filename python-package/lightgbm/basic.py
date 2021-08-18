@@ -63,7 +63,7 @@ def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], Non
     msg_normalized: List[str] = []
 
     @wraps(func)
-    def wrapper(msg):
+    def wrapper(msg: str) -> None:
         nonlocal msg_normalized
         if msg.strip() == '':
             msg = ''.join(msg_normalized)
