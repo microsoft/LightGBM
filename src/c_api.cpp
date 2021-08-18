@@ -287,8 +287,12 @@ class Booster {
           "You need to set `feature_pre_filter=false` to dynamically change "
           "the `min_data_in_leaf`.");
     }
-    if (new_param.count("linear_tree") && (new_config.linear_tree != old_config.linear_tree)) {
+    if (new_param.count("linear_tree") && new_config.linear_tree != old_config.linear_tree) {
       Log::Fatal("Cannot change linear_tree after constructed Dataset handle.");
+    }
+    if (new_param.count("precise_float_parser") &&
+        new_config.precise_float_parser != old_config.precise_float_parser) {
+      Log::Fatal("Cannot change precise_float_parser after constructed Dataset handle.");
     }
   }
 
@@ -416,9 +420,8 @@ class Booster {
       is_raw_score = false;
     }
 
-    Predictor predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
+    return Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
-    return predictor;
   }
 
   void Predict(int start_iteration, int num_iteration, int predict_type, int nrow, int ncol,
@@ -710,7 +713,8 @@ class Booster {
     Predictor predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
     bool bool_data_has_header = data_has_header > 0 ? true : false;
-    predictor.Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check);
+    predictor.Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check,
+                      config.precise_float_parser);
   }
 
   void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) const {
@@ -894,6 +898,51 @@ int LGBM_RegisterLogCallback(void (*callback)(const char*)) {
   API_END();
 }
 
+static inline int SampleCount(int32_t total_nrow, const Config& config) {
+  return static_cast<int>(total_nrow < config.bin_construct_sample_cnt ? total_nrow : config.bin_construct_sample_cnt);
+}
+
+static inline std::vector<int32_t> CreateSampleIndices(int32_t total_nrow, const Config& config) {
+  Random rand(config.data_random_seed);
+  int sample_cnt = SampleCount(total_nrow, config);
+  return rand.Sample(total_nrow, sample_cnt);
+}
+
+int LGBM_GetSampleCount(int32_t num_total_row,
+                        const char* parameters,
+                        int* out) {
+  API_BEGIN();
+  if (out == nullptr) {
+    Log::Fatal("LGBM_GetSampleCount output is nullptr");
+  }
+  auto param = Config::Str2Map(parameters);
+  Config config;
+  config.Set(param);
+
+  *out = SampleCount(num_total_row, config);
+  API_END();
+}
+
+int LGBM_SampleIndices(int32_t num_total_row,
+                       const char* parameters,
+                       void* out,
+                       int32_t* out_len) {
+  // This API is to keep python binding's behavior the same with C++ implementation.
+  // Sample count, random seed etc. should be provided in parameters.
+  API_BEGIN();
+  if (out == nullptr) {
+    Log::Fatal("LGBM_SampleIndices output is nullptr");
+  }
+  auto param = Config::Str2Map(parameters);
+  Config config;
+  config.Set(param);
+
+  auto sample_indices = CreateSampleIndices(num_total_row, config);
+  memcpy(out, sample_indices.data(), sizeof(int32_t) * sample_indices.size());
+  *out_len = static_cast<int32_t>(sample_indices.size());
+  API_END();
+}
+
 int LGBM_DatasetCreateFromFile(const char* filename,
                                const char* parameters,
                                const DatasetHandle reference,
@@ -1034,7 +1083,6 @@ int LGBM_DatasetCreateFromMat(const void* data,
                                     out);
 }
 
-
 int LGBM_DatasetCreateFromMats(int32_t nmat,
                                const void** data,
                                int data_type,
@@ -1064,10 +1112,8 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
 
   if (reference == nullptr) {
     // sample data first
-    Random rand(config.data_random_seed);
-    int sample_cnt = static_cast<int>(total_nrow < config.bin_construct_sample_cnt ? total_nrow : config.bin_construct_sample_cnt);
-    auto sample_indices = rand.Sample(total_nrow, sample_cnt);
-    sample_cnt = static_cast<int>(sample_indices.size());
+    auto sample_indices = CreateSampleIndices(total_nrow, config);
+    int sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol);
     std::vector<std::vector<int>> sample_idx(ncol);
 
@@ -1150,10 +1196,8 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
   if (reference == nullptr) {
     // sample data first
-    Random rand(config.data_random_seed);
-    int sample_cnt = static_cast<int>(nrow < config.bin_construct_sample_cnt ? nrow : config.bin_construct_sample_cnt);
-    auto sample_indices = rand.Sample(nrow, sample_cnt);
-    sample_cnt = static_cast<int>(sample_indices.size());
+    auto sample_indices = CreateSampleIndices(nrow, config);
+    int sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(num_col);
     std::vector<std::vector<int>> sample_idx(num_col);
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -1219,10 +1263,8 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
   int32_t nrow = num_rows;
   if (reference == nullptr) {
     // sample data first
-    Random rand(config.data_random_seed);
-    int sample_cnt = static_cast<int>(nrow < config.bin_construct_sample_cnt ? nrow : config.bin_construct_sample_cnt);
-    auto sample_indices = rand.Sample(nrow, sample_cnt);
-    sample_cnt = static_cast<int>(sample_indices.size());
+    auto sample_indices = CreateSampleIndices(nrow, config);
+    int sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(num_col);
     std::vector<std::vector<int>> sample_idx(num_col);
     // local buffer to re-use memory
@@ -1293,10 +1335,8 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int32_t nrow = static_cast<int32_t>(num_row);
   if (reference == nullptr) {
     // sample data first
-    Random rand(config.data_random_seed);
-    int sample_cnt = static_cast<int>(nrow < config.bin_construct_sample_cnt ? nrow : config.bin_construct_sample_cnt);
-    auto sample_indices = rand.Sample(nrow, sample_cnt);
-    sample_cnt = static_cast<int>(sample_indices.size());
+    auto sample_indices = CreateSampleIndices(nrow, config);
+    int sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
     std::vector<std::vector<int>> sample_idx(ncol_ptr - 1);
     OMP_INIT_EX();

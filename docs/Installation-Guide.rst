@@ -13,6 +13,23 @@ Users who want to perform benchmarking can make LightGBM output time costs for d
 
 It is possible to build LightGBM in debug mode. In this mode all compiler optimizations are disabled and LightGBM performs more checks internally. To enable debug mode you can add ``-DUSE_DEBUG=ON`` to CMake flags or choose ``Debug_*`` configuration (e.g. ``Debug_DLL``, ``Debug_mpi``) in Visual Studio depending on how you are building LightGBM.
 
+.. _sanitizers:
+
+In addition to the debug mode, LightGBM can be built with compiler sanitizers.
+To enable them add ``-DUSE_SANITIZER=ON -DENABLED_SANITIZERS="address;leak;undefined"`` to CMake flags.
+These values refer to the following supported sanitizers:
+
+- ``address`` - AddressSanitizer (ASan);
+- ``leak`` - LeakSanitizer (LSan);
+- ``undefined`` - UndefinedBehaviorSanitizer (UBSan);
+- ``thread`` - ThreadSanitizer (TSan).
+
+Please note, that ThreadSanitizer cannot be used together with other sanitizers.
+For more info and additional sanitizers' parameters please refer to the `following docs`_.
+It is very useful to build `C++ unit tests <#build-c-unit-tests>`__ with sanitizers.
+
+.. _nightly-builds:
+
 You can also download the artifacts of the latest successful build on master branch (nightly builds) here: |download artifacts|.
 
 .. contents:: **Contents**
@@ -111,6 +128,8 @@ On Linux LightGBM can be built using **CMake** and **gcc** or **Clang**.
      make -j4
 
 **Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
@@ -348,7 +367,7 @@ Build MPI Version
 The default build version of LightGBM is based on socket. LightGBM also supports MPI.
 `MPI`_ is a high performance communication approach with `RDMA`_ support.
 
-If you need to run a parallel learning application with high performance communication, you can build the LightGBM with MPI support.
+If you need to run a distributed learning application with high performance communication, you can build the LightGBM with MPI support.
 
 Windows
 ^^^^^^^
@@ -419,6 +438,8 @@ On Linux an MPI version of LightGBM can be built using **Open MPI**, **CMake** a
      make -j4
 
 **Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 macOS
 ^^^^^
@@ -498,7 +519,7 @@ Build GPU Version
 Linux
 ^^^^^
 
-On Linux a GPU version of LightGBM can be built using **OpenCL**, **Boost**, **CMake** and **gcc** or **Clang**.
+On Linux a GPU version of LightGBM (``device_type=gpu``) can be built using **OpenCL**, **Boost**, **CMake** and **gcc** or **Clang**.
 
 The following dependencies should be installed before compilation:
 
@@ -527,10 +548,14 @@ To build LightGBM GPU version, run the following commands:
   # cmake -DUSE_GPU=1 -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/ ..
   make -j4
 
+**Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+
 Windows
 ^^^^^^^
 
-On Windows a GPU version of LightGBM can be built using **OpenCL**, **Boost**, **CMake** and **VS Build Tools** or **MinGW**.
+On Windows a GPU version of LightGBM (``device_type=gpu``) can be built using **OpenCL**, **Boost**, **CMake** and **VS Build Tools** or **MinGW**.
 
 If you use **MinGW**, the build procedure is similar to the build on Linux. Refer to `GPU Windows Compilation <./GPU-Windows.rst>`__ to get more details.
 
@@ -581,9 +606,9 @@ Refer to `GPU Docker folder <https://github.com/microsoft/LightGBM/tree/master/d
 Build CUDA Version (Experimental)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The `original GPU build <#build-gpu-version>`__ of LightGBM is based on OpenCL.
+The `original GPU build <#build-gpu-version>`__ of LightGBM (``device_type=gpu``) is based on OpenCL.
 
-The CUDA-based build is a separate implementation and requires an NVIDIA graphics card with compute capability 6.0 and higher. It should be considered experimental, and we suggest using it only when it is impossible to use OpenCL version (for example, on IBM POWER microprocessors).
+The CUDA-based build (``device_type=cuda``) is a separate implementation and requires an NVIDIA graphics card with compute capability 6.0 and higher. It should be considered experimental, and we suggest using it only when it is impossible to use OpenCL version (for example, on IBM POWER microprocessors).
 
 **Note**: only Linux is supported, other operating systems are not supported yet.
 
@@ -608,6 +633,10 @@ To build LightGBM CUDA version, run the following commands:
   cd build
   cmake -DUSE_CUDA=1 ..
   make -j4
+
+**Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
@@ -637,6 +666,10 @@ On Linux a HDFS version of LightGBM can be built using **CMake** and **gcc**.
      #   -DHDFS_INCLUDE_DIR="/opt/cloudera/parcels/CDH-5.14.4-1.cdh5.14.4.p0.3/include/" \
      #   ..
      make -j4
+
+**Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 Build Java Wrapper
 ~~~~~~~~~~~~~~~~~~
@@ -693,7 +726,6 @@ The ``.jar`` file will be in ``LightGBM/build`` folder and the ``.dll`` files wi
 It is recommended to use **VS Build Tools (Visual Studio)** since it has better multithreading efficiency in **Windows** for many-core systems
 (see `Question 4 <./FAQ.rst#i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <./FAQ.rst#cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
 
-
 Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 Linux
@@ -713,6 +745,10 @@ On Linux a Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMa
      cd build
      cmake -DUSE_SWIG=ON ..
      make -j4
+
+**Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 macOS
 ^^^^^
@@ -779,6 +815,103 @@ gcc
 
 Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
+Build C++ Unit Tests
+~~~~~~~~~~~~~~~~~~~~
+
+Windows
+^^^^^^^
+
+On Windows, C++ unit tests of LightGBM can be built using **CMake** and **VS Build Tools**.
+
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
+
+2. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     mkdir build
+     cd build
+     cmake -A x64 -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF ..
+     cmake --build . --target testlightgbm --config Debug
+
+The ``.exe`` file will be in ``LightGBM/Debug`` folder.
+
+Linux
+^^^^^
+
+On Linux a C++ unit tests of LightGBM can be built using **CMake** and **gcc** or **Clang**.
+
+1. Install `CMake`_.
+
+2. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     mkdir build
+     cd build
+     cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF ..
+     make testlightgbm -j4
+
+**Note**: glibc >= 2.14 is required.
+
+macOS
+^^^^^
+
+On macOS a C++ unit tests of LightGBM can be built using **CMake** and **Apple Clang** or **gcc**.
+
+Apple Clang
+***********
+
+Only **Apple Clang** version 8.1 or higher is supported.
+
+1. Install `CMake`_ (3.16 or higher):
+
+   .. code::
+
+     brew install cmake
+
+2. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     mkdir build
+     cd build
+     cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF ..
+     make testlightgbm -j4
+
+gcc
+***
+
+1. Install `CMake`_ (3.2 or higher):
+
+   .. code::
+
+     brew install cmake
+
+2. Install **gcc**:
+
+   .. code::
+
+     brew install gcc
+
+3. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
+     mkdir build
+     cd build
+     cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF ..
+     make testlightgbm -j4
+
 
 .. |download artifacts| image:: ./_static/images/artifacts-not-available.svg
    :target: https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html
@@ -803,7 +936,7 @@ Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 .. _RDMA: https://en.wikipedia.org/wiki/Remote_direct_memory_access
 
-.. _MS MPI: https://www.microsoft.com/en-us/download/details.aspx?id=100593
+.. _MS MPI: https://docs.microsoft.com/en-us/message-passing-interface/microsoft-mpi-release-notes
 
 .. _Open MPI: https://www.open-mpi.org/
 
@@ -811,8 +944,10 @@ Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
-.. _Boost Binaries: https://bintray.com/boostorg/release/boost-binaries/_latestVersion#files
+.. _Boost Binaries: https://sourceforge.net/projects/boost/files/boost-binaries/
 
 .. _SWIG: http://www.swig.org/download.html
 
 .. _this detailed guide: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
+
+.. _following docs: https://github.com/google/sanitizers/wiki

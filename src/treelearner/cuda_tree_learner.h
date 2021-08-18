@@ -45,7 +45,7 @@ class CUDATreeLearner: public SerialTreeLearner {
     ~CUDATreeLearner();
     void Init(const Dataset* train_data, bool is_constant_hessian) override;
     void ResetTrainingDataInner(const Dataset* train_data, bool is_constant_hessian, bool reset_multi_val_bin) override;
-    Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree);
+    Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) override;
     void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override {
       SerialTreeLearner::SetBaggingData(subset, used_indices, num_data);
       if (subset == nullptr && used_indices != nullptr) {
@@ -99,7 +99,7 @@ class CUDATreeLearner: public SerialTreeLearner {
 
     /*! 
      * \brief Compute GPU feature histogram for the current leaf.
-     *        Indices, gradients and hessians have been copied to the device.
+     *        Indices, gradients and Hessians have been copied to the device.
      * \param leaf_num_data Number of data on current leaf
      * \param use_all_features Set to true to not use feature masks, with a faster kernel
      */
@@ -198,12 +198,8 @@ class CUDATreeLearner: public SerialTreeLearner {
     std::vector<uint8_t*> device_features_;
     /*! \brief GPU memory object holding the ordered gradient */
     std::vector<score_t*> device_gradients_;
-    /*! \brief Pointer to pinned memory of ordered gradient */
-    void * ptr_pinned_gradients_ = nullptr;
     /*! \brief GPU memory object holding the ordered hessian */
     std::vector<score_t*> device_hessians_;
-    /*! \brief Pointer to pinned memory of ordered hessian */
-    void * ptr_pinned_hessians_ = nullptr;
     /*! \brief A vector of feature mask. 1 = feature used, 0 = feature not used */
     std::vector<char> feature_masks_;
     /*! \brief GPU memory object holding the feature masks */
@@ -228,7 +224,7 @@ class CUDATreeLearner: public SerialTreeLearner {
     std::vector<cudaEvent_t> indices_future_;
     /*! Asynchronous waiting object for copying gradients */
     std::vector<cudaEvent_t> gradients_future_;
-    /*! Asynchronous waiting object for copying hessians */
+    /*! Asynchronous waiting object for copying Hessians */
     std::vector<cudaEvent_t> hessians_future_;
     /*! Asynchronous waiting object for copying dense features */
     std::vector<cudaEvent_t> features_future_;

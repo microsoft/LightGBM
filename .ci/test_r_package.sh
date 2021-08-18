@@ -7,18 +7,11 @@ mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
-# hack to get around this:
-# https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
-export _R_CHECK_SYSTEM_CLOCK_=0
-
-# ignore R CMD CHECK NOTE checking how long it has
-# been since the last submission
-export _R_CHECK_CRAN_INCOMING_REMOTE_=0
-
-# CRAN ignores the "installed size is too large" NOTE,
-# so our CI can too. Setting to a large value here just
-# to catch extreme problems
-export _R_CHECK_PKG_SIZES_THRESHOLD_=60
+# don't fail builds for long-running examples unless they're very long.
+# See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
+if [[ $R_BUILD_TYPE != "cran" ]]; then
+    export _R_CHECK_EXAMPLE_TIMING_THRESHOLD_=30
+fi
 
 # Get details needed for installing R components
 R_MAJOR_VERSION=( ${R_VERSION//./ } )
@@ -27,9 +20,9 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.0.3
-    export R_LINUX_VERSION="4.0.3-1.1804.0"
-    export R_APT_REPO="bionic-cran40/"
+    export R_MAC_VERSION=4.1.0
+    export R_LINUX_VERSION="4.1.0-1.2004.0"
+    export R_APT_REPO="focal-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
     exit -1
@@ -53,6 +46,7 @@ if [[ $OS_NAME == "linux" ]]; then
             devscripts \
             r-base-dev=${R_LINUX_VERSION} \
             texinfo \
+            texlive-latex-extra \
             texlive-latex-recommended \
             texlive-fonts-recommended \
             texlive-fonts-extra \
@@ -70,6 +64,7 @@ fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
+    brew update-reset && brew update
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         brew install automake
     fi
@@ -81,7 +76,7 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo tlmgr --verify-repo=none update --self
     sudo tlmgr --verify-repo=none install inconsolata helvetic
 
-    wget -q https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -O R.pkg
+    curl -sL https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -o R.pkg
     sudo installer \
         -pkg $(pwd)/R.pkg \
         -target /
@@ -99,11 +94,18 @@ fi
 
 # Manually install Depends and Imports libraries + 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
-packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
-if [[ $OS_NAME == "macos" ]]; then
-    packages+=", type = 'both'"
+# NOTE: testthat is not required when running rchk
+if [[ "${TASK}" == "r-rchk" ]]; then
+    packages="c('data.table', 'jsonlite', 'Matrix', 'R6')"
+else
+    packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
 fi
-Rscript --vanilla -e "options(install.packages.compile.from.source = 'both'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'))" || exit -1
+compile_from_source="both"
+if [[ $OS_NAME == "macos" ]]; then
+    packages+=", type = 'binary'"
+    compile_from_source="never"
+fi
+Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit -1
 
 cd ${BUILD_DIRECTORY}
 
@@ -132,6 +134,28 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     fi
 
     ./build-cran-package.sh || exit -1
+
+    if [[ "${TASK}" == "r-rchk" ]]; then
+        echo "Checking R package with rchk"
+        mkdir -p packages
+        cp ${PKG_TARBALL} packages
+        RCHK_LOG_FILE="rchk-logs.txt"
+        docker run \
+            -v $(pwd)/packages:/rchk/packages \
+            kalibera/rchk:latest \
+            "/rchk/packages/${PKG_TARBALL}" \
+        2>&1 > ${RCHK_LOG_FILE} \
+        || (cat ${RCHK_LOG_FILE} && exit -1)
+        cat ${RCHK_LOG_FILE}
+
+        # the exception below is from R itself and not LightGBM:
+        # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
+        exit $(
+            cat ${RCHK_LOG_FILE} \
+            | grep -v "in function strptime_internal" \
+            | grep --count -E '\[PB\]|ERROR'
+        )
+    fi
 
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM

@@ -2,6 +2,7 @@
 import logging
 
 import numpy as np
+
 import lightgbm as lgb
 
 
@@ -9,7 +10,7 @@ def test_register_logger(tmp_path):
     logger = logging.getLogger("LightGBM")
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(levelname)s | %(message)s')
-    log_filename = str(tmp_path / "LightGBM_test_logger.log")
+    log_filename = tmp_path / "LightGBM_test_logger.log"
     file_handler = logging.FileHandler(log_filename, mode="w", encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)

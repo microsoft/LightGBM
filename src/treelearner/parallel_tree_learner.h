@@ -21,7 +21,7 @@ namespace LightGBM {
 /*!
 * \brief Feature parallel learning algorithm.
 *        Different machine will find best split on different features, then sync global best split
-*        It is recommonded used when #data is small or #feature is large
+*        It is recommended used when #data is small or #feature is large
 */
 template <typename TREELEARNER_T>
 class FeatureParallelTreeLearner: public TREELEARNER_T {

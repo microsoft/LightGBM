@@ -10,6 +10,7 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
+#include <chrono>
 #include <fstream>
 
 namespace LightGBM {
@@ -179,10 +180,10 @@ void CheckSampleSize(size_t sample_cnt, size_t num_data) {
 }
 
 Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_machines) {
-  // don't support query id in data file when training in parallel
+  // don't support query id in data file when using distributed training
   if (num_machines > 1 && !config_.pre_partition) {
     if (group_idx_ > 0) {
-      Log::Fatal("Using a query id without pre-partitioning the data file is not supported for parallel training.\n"
+      Log::Fatal("Using a query id without pre-partitioning the data file is not supported for distributed training.\n"
                  "Please use an additional query file or pre-partition the data");
     }
   }
@@ -195,7 +196,8 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   auto bin_filename = CheckCanLoadFromBin(filename);
   bool is_load_from_binary = false;
   if (bin_filename.size() == 0) {
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_));
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_,
+                                                               config_.precise_float_parser));
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
@@ -237,7 +239,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       }
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
-      Log::Debug("Making second pass...");
+      Log::Info("Making second pass...");
       // extract features
       ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
     }
@@ -266,7 +268,8 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   }
   auto bin_filename = CheckCanLoadFromBin(filename);
   if (bin_filename.size() == 0) {
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_));
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_,
+                                                               config_.precise_float_parser));
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
@@ -950,6 +953,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
 void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
                                                     const std::vector<std::string>& sample_data,
                                                     const Parser* parser, Dataset* dataset) {
+  auto t1 = std::chrono::high_resolution_clock::now();
   std::vector<std::vector<double>> sample_values;
   std::vector<std::vector<int>> sample_indices;
   std::vector<std::pair<int, double>> oneline_features;
@@ -1127,6 +1131,10 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   if (dataset->has_raw()) {
     dataset->ResizeRaw(static_cast<int>(sample_data.size()));
   }
+
+  auto t2 = std::chrono::high_resolution_clock::now();
+  Log::Info("Construct bin mappers from text data time %.2f seconds",
+            std::chrono::duration<double, std::milli>(t2 - t1) * 1e-3);
 }
 
 /*! \brief Extract local features from memory */
@@ -1206,7 +1214,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
       dataset->metadata_.SetLabelAt(i, static_cast<label_t>(tmp_label));
       // free processed line:
       ref_text_data[i].clear();
-      // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
+      // shrink_to_fit will be very slow in Linux, and seems not free memory, disable for now
       // text_reader_->Lines()[i].shrink_to_fit();
       // push data
       std::vector<bool> is_feature_added(dataset->num_features_, false);
@@ -1380,7 +1388,7 @@ std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced
         int feature_num = forced_bins_arr[i]["feature"].int_value();
         CHECK_LT(feature_num, num_total_features);
         if (categorical_features.count(feature_num)) {
-          Log::Warning("Feature %d is categorical. Will ignore forced bins for this  feature.", feature_num);
+          Log::Warning("Feature %d is categorical. Will ignore forced bins for this feature.", feature_num);
         } else {
           std::vector<Json> bounds_arr = forced_bins_arr[i]["bin_upper_bound"].array_items();
           for (size_t j = 0; j < bounds_arr.size(); ++j) {

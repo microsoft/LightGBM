@@ -1,30 +1,31 @@
 # coding: utf-8
 import itertools
-import joblib
 import math
-import os
+from pathlib import Path
 
-import lightgbm as lgb
+import joblib
 import numpy as np
 import pytest
 from pkg_resources import parse_version
 from sklearn import __version__ as sk_version
 from sklearn.base import clone
 from sklearn.datasets import load_svmlight_file, make_multilabel_classification
-from sklearn.utils.estimator_checks import check_parameters_default_constructible
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
-from sklearn.multioutput import (MultiOutputClassifier, ClassifierChain, MultiOutputRegressor,
-                                 RegressorChain)
+from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
+from sklearn.utils.estimator_checks import check_parameters_default_constructible
 from sklearn.utils.validation import check_is_fitted
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud
+import lightgbm as lgb
+
+from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking
 
 sk_version = parse_version(sk_version)
 if sk_version < parse_version("0.23"):
     import warnings
+
     from sklearn.exceptions import SkipTestWarning
-    from sklearn.utils.estimator_checks import _yield_all_checks, SkipTest
+    from sklearn.utils.estimator_checks import SkipTest, _yield_all_checks
 else:
     from sklearn.utils.estimator_checks import parametrize_with_checks
 
@@ -32,7 +33,7 @@ decreasing_generator = itertools.count(0, -1)
 
 
 def custom_asymmetric_obj(y_true, y_pred):
-    residual = (y_true - y_pred).astype("float")
+    residual = (y_true - y_pred).astype(np.float64)
     grad = np.where(residual < 0, -2 * 10.0 * residual, -2 * residual)
     hess = np.where(residual < 0, 2 * 10.0, 2.0)
     return grad, hess
@@ -111,6 +112,7 @@ def test_multiclass():
     assert gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
+<<<<<<< HEAD
 def lambdarank_test_runner(lambdarank_unbiased=False, **kwargs):
     X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                        '../../examples/lambdarank/rank.train'))
@@ -121,6 +123,15 @@ def lambdarank_test_runner(lambdarank_unbiased=False, **kwargs):
     q_test = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                      '../../examples/lambdarank/rank.test.query'))
     gbm = lgb.LGBMRanker(n_estimators=50, lambdarank_unbiased=lambdarank_unbiased, **kwargs)
+=======
+def test_lambdarank():
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    X_test, y_test = load_svmlight_file(str(rank_example_dir / 'rank.test'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
+    q_test = np.loadtxt(str(rank_example_dir / 'rank.test.query'))
+    gbm = lgb.LGBMRanker(n_estimators=50)
+>>>>>>> master
     gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
             eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
             callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))])
@@ -142,11 +153,11 @@ def test_lambdarank_unbiased():
 
 
 def test_xendcg():
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    X_train, y_train = load_svmlight_file(os.path.join(dir_path, '../../examples/xendcg/rank.train'))
-    X_test, y_test = load_svmlight_file(os.path.join(dir_path, '../../examples/xendcg/rank.test'))
-    q_train = np.loadtxt(os.path.join(dir_path, '../../examples/xendcg/rank.train.query'))
-    q_test = np.loadtxt(os.path.join(dir_path, '../../examples/xendcg/rank.test.query'))
+    xendcg_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'xendcg'
+    X_train, y_train = load_svmlight_file(str(xendcg_example_dir / 'rank.train'))
+    X_test, y_test = load_svmlight_file(str(xendcg_example_dir / 'rank.test'))
+    q_train = np.loadtxt(str(xendcg_example_dir / 'rank.train.query'))
+    q_test = np.loadtxt(str(xendcg_example_dir / 'rank.test.query'))
     gbm = lgb.LGBMRanker(n_estimators=50, objective='rank_xendcg', random_state=5, n_jobs=1)
     gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
             eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
@@ -1203,3 +1214,36 @@ def test_parameters_default_constructible(estimator):
     name, Estimator = estimator.__class__.__name__, estimator.__class__
     # Test that estimators are default-constructible
     check_parameters_default_constructible(name, Estimator)
+
+
+@pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
+def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task):
+    pd = pytest.importorskip("pandas")
+    if task == 'ranking':
+        X, y, g = make_ranking()
+        g = np.bincount(g)
+        model_factory = lgb.LGBMRanker
+    elif task == 'classification':
+        X, y = load_iris(return_X_y=True)
+        model_factory = lgb.LGBMClassifier
+    elif task == 'regression':
+        X, y = load_boston(return_X_y=True)
+        model_factory = lgb.LGBMRegressor
+    X = pd.DataFrame(X)
+    y_col_array = y.reshape(-1, 1)
+    params = {
+        'n_estimators': 1,
+        'num_leaves': 3,
+        'random_state': 0
+    }
+    with pytest.warns(UserWarning, match='column-vector'):
+        if task == 'ranking':
+            model_1d = model_factory(**params).fit(X, y, group=g)
+            model_2d = model_factory(**params).fit(X, y_col_array, group=g)
+        else:
+            model_1d = model_factory(**params).fit(X, y)
+            model_2d = model_factory(**params).fit(X, y_col_array)
+
+    preds_1d = model_1d.predict(X)
+    preds_2d = model_2d.predict(X)
+    np.testing.assert_array_equal(preds_1d, preds_2d)

@@ -105,7 +105,7 @@ void Application::LoadData() {
                                config_.num_class, config_.data.c_str());
   // load Training data
   if (config_.is_data_based_parallel) {
-    // load data for parallel training
+    // load data for distributed training
     train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(),
                                                   Network::rank(), Network::num_machines()));
   } else {
@@ -187,6 +187,10 @@ void Application::InitTrain() {
                                                config_));
   // load training data
   LoadData();
+  if (config_.task == TaskType::kSaveBinary) {
+    Log::Info("Save data as binary finished, exit");
+    exit(0);
+  }
   // initialize the objective function
   objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
   // initialize the boosting
@@ -217,7 +221,8 @@ void Application::Predict() {
   if (config_.task == TaskType::KRefitTree) {
     // create predictor
     Predictor predictor(boosting_.get(), 0, -1, false, true, false, false, 1, 1);
-    predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check);
+    predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check,
+                      config_.precise_float_parser);
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
     std::vector<std::vector<int>> pred_leaf(result_reader.Lines().size());
@@ -247,7 +252,8 @@ void Application::Predict() {
                         config_.pred_early_stop, config_.pred_early_stop_freq,
                         config_.pred_early_stop_margin);
     predictor.Predict(config_.data.c_str(),
-                      config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check);
+                      config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check,
+                      config_.precise_float_parser);
     Log::Info("Finished prediction");
   }
 }

@@ -1,6 +1,8 @@
 /*!
  * Copyright (c) 2020 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ *
+ * Author: Alberto Ferreira
  */
 /**
  * This wraps the StringArray.hpp class for SWIG usage,
@@ -29,7 +31,7 @@
     StringArrayHandle StringArrayHandle_create(size_t num_strings, size_t string_size) {
         try {
             return new StringArray(num_strings, string_size);
-        } catch (std::bad_alloc &e) {
+        } catch (std::bad_alloc &/*e*/) {
             return nullptr;
         }
     }

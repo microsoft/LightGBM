@@ -85,7 +85,7 @@ class Random {
     } else {
       std::set<int> sample_set;
       for (int r = N - K; r < N; ++r) {
-        int v = NextInt(0, r);
+        int v = NextInt(0, r + 1);
         if (!sample_set.insert(v).second) {
           sample_set.insert(r);
         }

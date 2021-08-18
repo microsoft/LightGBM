@@ -89,12 +89,12 @@ class RankingObjective : public ObjectiveFunction {
   const label_t* label_;
   /*! \brief Pointer of weights */
   const label_t* weights_;
-  /*! \brief Query boundries */
+  /*! \brief Query boundaries */
   const data_size_t* query_boundaries_;
 };
 
 /*!
- * \brief Objective function for Lambdrank with NDCG
+ * \brief Objective function for LambdaRank with NDCG
  */
 class LambdarankNDCG : public RankingObjective {
  public:
@@ -131,6 +131,7 @@ class LambdarankNDCG : public RankingObjective {
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     RankingObjective::Init(metadata, num_data);
+    DCGCalculator::CheckMetadata(metadata, num_queries_);
     DCGCalculator::CheckLabel(label_, num_data_);
     inverse_max_dcgs_.resize(num_queries_);
 #pragma omp parallel for schedule(static)
@@ -143,7 +144,7 @@ class LambdarankNDCG : public RankingObjective {
         inverse_max_dcgs_[i] = 1.0f / inverse_max_dcgs_[i];
       }
     }
-    // construct sigmoid table to speed up sigmoid transform
+    // construct Sigmoid table to speed up Sigmoid transform
     ConstructSigmoidTable();
 
     // initialize position bias vectors
@@ -408,6 +409,7 @@ class LambdarankNDCG : public RankingObjective {
   const char* GetName() const override { return "lambdarank"; }
 
  private:
+<<<<<<< HEAD
   void LogDebugPositionBiases() const {
     std::stringstream message_stream;
     message_stream  << std::setw(10) << "position"
@@ -431,6 +433,9 @@ class LambdarankNDCG : public RankingObjective {
   }
 
   /*! \brief Simgoid param */
+=======
+  /*! \brief Sigmoid param */
+>>>>>>> master
   double sigmoid_;
   /*! \brief Normalize the lambdas or not */
   bool norm_;
@@ -446,9 +451,9 @@ class LambdarankNDCG : public RankingObjective {
   size_t _sigmoid_bins = 1024 * 1024;
   /*! \brief Minimal input of sigmoid table */
   double min_sigmoid_input_ = -50;
-  /*! \brief Maximal input of sigmoid table */
+  /*! \brief Maximal input of Sigmoid table */
   double max_sigmoid_input_ = 50;
-  /*! \brief Factor that covert score to bin in sigmoid table */
+  /*! \brief Factor that covert score to bin in Sigmoid table */
   double sigmoid_table_idx_factor_;
 
   // bias correction variables

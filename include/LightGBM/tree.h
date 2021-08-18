@@ -243,6 +243,9 @@ class Tree {
   /*! \brief Serialize this object to json*/
   std::string ToJSON() const;
 
+  /*! \brief Serialize linear model of tree node to json*/
+  std::string LinearModelToJSON(int index) const;
+
   /*! \brief Serialize this object to if-else statement*/
   std::string ToIfElse(int index, bool predict_leaf_index) const;
 
@@ -363,16 +366,14 @@ class Tree {
   }
 
   inline int CategoricalDecision(double fval, int node) const {
-    uint8_t missing_type = GetMissingType(decision_type_[node]);
-    int int_fval = static_cast<int>(fval);
-    if (int_fval < 0) {
-      return right_child_[node];;
-    } else if (std::isnan(fval)) {
-      // NaN is always in the right
-      if (missing_type == MissingType::NaN) {
+    int int_fval;
+    if (std::isnan(fval)) {
+      return right_child_[node];
+    } else {
+      int_fval = static_cast<int>(fval);
+      if (int_fval < 0) {
         return right_child_[node];
       }
-      int_fval = 0;
     }
     int cat_idx = static_cast<int>(threshold_[node]);
     if (Common::FindInBitset(cat_threshold_.data() + cat_boundaries_[cat_idx],
@@ -575,7 +576,7 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
 
 inline double Tree::Predict(const double* feature_values) const {
   if (is_linear_) {
-      int leaf = GetLeaf(feature_values);
+      int leaf = (num_leaves_ > 1) ? GetLeaf(feature_values) : 0;
       double output = leaf_const_[leaf];
       bool nan_found = false;
       for (size_t i = 0; i < leaf_features_[leaf].size(); ++i) {
@@ -605,7 +606,7 @@ inline double Tree::Predict(const double* feature_values) const {
 
 inline double Tree::PredictByMap(const std::unordered_map<int, double>& feature_values) const {
   if (is_linear_) {
-    int leaf = GetLeafByMap(feature_values);
+    int leaf = (num_leaves_ > 1) ? GetLeafByMap(feature_values) : 0;
     double output = leaf_const_[leaf];
     bool nan_found = false;
     for (size_t i = 0; i < leaf_features_[leaf].size(); ++i) {

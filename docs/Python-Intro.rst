@@ -1,7 +1,7 @@
 Python-package Introduction
 ===========================
 
-This document gives a basic walkthrough of LightGBM Python-package.
+This document gives a basic walk-through of LightGBM Python-package.
 
 **List of other helpful links**
 
@@ -39,6 +39,8 @@ The LightGBM Python module can load data from:
 
 -  LightGBM binary file
 
+-  LightGBM ``Sequence`` object(s)
+
 The data is stored in a ``Dataset`` object.
 
 Many of the examples in this page use functionality from ``numpy``. To run the examples, be sure to import ``numpy`` in your session.
@@ -69,6 +71,38 @@ Many of the examples in this page use functionality from ``numpy``. To run the e
     csr = scipy.sparse.csr_matrix((dat, (row, col)))
     train_data = lgb.Dataset(csr)
 
+**Load from Sequence objects:**
+
+We can implement ``Sequence`` interface to read binary files. The following example shows reading HDF5 file with ``h5py``.
+
+.. code:: python
+
+    import h5py
+
+    class HDFSequence(lgb.Sequence):
+        def __init__(self, hdf_dataset, batch_size):
+            self.data = hdf_dataset
+            self.batch_size = batch_size
+
+        def __getitem__(self, idx):
+            return self.data[idx]
+
+        def __len__(self):
+            return len(self.data)
+
+    f = h5py.File('train.hdf5', 'r')
+    train_data = lgb.Dataset(HDFSequence(f['X'], 8192), label=f['Y'][:])
+
+Features of using ``Sequence`` interface:
+
+- Data sampling uses random access, thus does not go through the whole dataset
+- Reading data in batch, thus saves memory when constructing ``Dataset`` object
+- Supports creating ``Dataset`` from multiple data files
+
+Please refer to ``Sequence`` `API doc <./Python-API.rst#data-structure-api>`__.
+
+`dataset_from_multi_hdf5.py <https://github.com/microsoft/LightGBM/blob/master/examples/python-guide/dataset_from_multi_hdf5.py>`__ is a detailed example.
+
 **Saving Dataset into a LightGBM binary file will make loading faster:**
 
 .. code:: python
@@ -97,7 +131,7 @@ In LightGBM, the validation data should be aligned with training data.
     train_data = lgb.Dataset(data, label=label, feature_name=['c1', 'c2', 'c3'], categorical_feature=['c3'])
 
 LightGBM can use categorical features as input directly.
-It doesn't need to convert to one-hot coding, and is much faster than one-hot coding (about 8x speed-up).
+It doesn't need to convert to one-hot encoding, and is much faster than one-hot encoding (about 8x speed-up).
 
 **Note**: You should convert your categorical features to ``int`` type before you construct ``Dataset``.
 

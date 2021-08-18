@@ -28,7 +28,7 @@ LightGBM uses histogram-based algorithms\ `[4, 5, 6] <#references>`__, which buc
 
    -  No need to store additional information for pre-sorting feature values
 
--  **Reduce communication cost for parallel learning**
+-  **Reduce communication cost for distributed learning**
 
 Sparse Optimization
 -------------------
@@ -45,6 +45,7 @@ Most decision tree learning algorithms grow trees by level (depth)-wise, like th
 
 .. image:: ./_static/images/level-wise.png
    :align: center
+   :alt: A diagram depicting level wise tree growth in which the best possible node is split one level down. The strategy results in a symmetric tree, where every node in a level has child nodes resulting in an additional layer of depth.
 
 LightGBM grows trees leaf-wise (best-first)\ `[7] <#references>`__. It will choose the leaf with max delta loss to grow.
 Holding ``#leaf`` fixed, leaf-wise algorithms tend to achieve lower loss than level-wise algorithms.
@@ -53,6 +54,7 @@ Leaf-wise may cause over-fitting when ``#data`` is small, so LightGBM includes t
 
 .. image:: ./_static/images/leaf-wise.png
    :align: center
+   :alt: A diagram depicting leaf wise tree growth in which only the node with the highest loss change is split and not bother with the rest of the nodes in the same level. This results in an asymmetrical tree where subsequent splitting is happening only on one side of the tree.
 
 Optimal Split for Categorical Features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -68,14 +70,16 @@ More specifically, LightGBM sorts the histogram (for a categorical feature) acco
 Optimization in Network Communication
 -------------------------------------
 
-It only needs to use some collective communication algorithms, like "All reduce", "All gather" and "Reduce scatter", in parallel learning of LightGBM.
+It only needs to use some collective communication algorithms, like "All reduce", "All gather" and "Reduce scatter", in distributed learning of LightGBM.
 LightGBM implements state-of-art algorithms\ `[9] <#references>`__.
 These collective communication algorithms can provide much better performance than point-to-point communication.
 
-Optimization in Parallel Learning
----------------------------------
+.. _Optimization in Parallel Learning:
 
-LightGBM provides the following parallel learning algorithms.
+Optimization in Distributed Learning
+------------------------------------
+
+LightGBM provides the following distributed learning algorithms.
 
 Feature Parallel
 ~~~~~~~~~~~~~~~~
@@ -183,7 +187,7 @@ LightGBM supports the following applications:
 
 -  cross-entropy, the objective function is logloss and supports training on non-binary labels
 
--  lambdarank, the objective function is lambdarank with NDCG
+-  LambdaRank, the objective function is LambdaRank with NDCG
 
 LightGBM supports the following metrics:
 

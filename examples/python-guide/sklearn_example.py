@@ -1,15 +1,18 @@
 # coding: utf-8
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
-
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV
 
+import lightgbm as lgb
+
 print('Loading data...')
 # load or create your dataset
-df_train = pd.read_csv('../regression/regression.train', header=None, sep='\t')
-df_test = pd.read_csv('../regression/regression.test', header=None, sep='\t')
+regression_example_dir = Path(__file__).absolute().parents[1] / 'regression'
+df_train = pd.read_csv(str(regression_example_dir / 'regression.train'), header=None, sep='\t')
+df_test = pd.read_csv(str(regression_example_dir / 'regression.test'), header=None, sep='\t')
 
 y_train = df_train[0]
 y_test = df_test[0]
@@ -30,10 +33,11 @@ print('Starting predicting...')
 # predict
 y_pred = gbm.predict(X_test, num_iteration=gbm.best_iteration_)
 # eval
-print('The rmse of prediction is:', mean_squared_error(y_test, y_pred) ** 0.5)
+rmse_test = mean_squared_error(y_test, y_pred) ** 0.5
+print(f'The RMSE of prediction is: {rmse_test}')
 
 # feature importances
-print('Feature importances:', list(gbm.feature_importances_))
+print(f'Feature importances: {list(gbm.feature_importances_)}')
 
 
 # self-defined eval metric
@@ -69,8 +73,10 @@ print('Starting predicting...')
 # predict
 y_pred = gbm.predict(X_test, num_iteration=gbm.best_iteration_)
 # eval
-print('The rmsle of prediction is:', rmsle(y_test, y_pred)[1])
-print('The rae of prediction is:', rae(y_test, y_pred)[1])
+rmsle_test = rmsle(y_test, y_pred)[1]
+rae_test = rae(y_test, y_pred)[1]
+print(f'The RMSLE of prediction is: {rmsle_test}')
+print(f'The RAE of prediction is: {rae_test}')
 
 # other scikit-learn modules
 estimator = lgb.LGBMRegressor(num_leaves=31)
@@ -83,4 +89,4 @@ param_grid = {
 gbm = GridSearchCV(estimator, param_grid, cv=3)
 gbm.fit(X_train, y_train)
 
-print('Best parameters found by grid search are:', gbm.best_params_)
+print(f'Best parameters found by grid search are: {gbm.best_params_}')

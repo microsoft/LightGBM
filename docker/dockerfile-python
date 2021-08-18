@@ -10,11 +10,11 @@ RUN apt-get update && \
         build-essential \
         gcc \
         g++ \
-        git \
-        wget && \
+        curl \
+        git && \
     # python environment
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
-    /bin/bash Miniconda3-latest-Linux-x86_64.sh -f -b -p $CONDA_DIR && \
+    curl -sL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o conda.sh && \
+    /bin/bash conda.sh -f -b -p $CONDA_DIR && \
     export PATH="$CONDA_DIR/bin:$PATH" && \
     conda config --set always_yes yes --set changeps1 no && \
     # lightgbm

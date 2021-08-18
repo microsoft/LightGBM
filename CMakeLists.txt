@@ -1,4 +1,4 @@
-OPTION(USE_MPI "Enable MPI-based parallel learning" OFF)
+OPTION(USE_MPI "Enable MPI-based distributed learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-accelerated training" OFF)
 OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
@@ -6,6 +6,11 @@ OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_TIMETAG "Set to ON to output time costs" OFF)
 OPTION(USE_CUDA "Enable CUDA-accelerated training (EXPERIMENTAL)" OFF)
 OPTION(USE_DEBUG "Set to ON for Debug mode" OFF)
+OPTION(USE_SANITIZER "Use santizer flags" OFF)
+SET(ENABLED_SANITIZERS "address" "leak" "undefined" CACHE STRING
+  "Semicolon separated list of sanitizer names. E.g 'address;leak'. Supported sanitizers are
+address, leak, undefined and thread.")
+OPTION(BUILD_CPP_TEST "Build C++ tests with Google Test" OFF)
 OPTION(BUILD_STATIC_LIB "Build static library" OFF)
 OPTION(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 OPTION(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
@@ -25,6 +30,17 @@ else()
 endif()
 
 PROJECT(lightgbm LANGUAGES C CXX)
+
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
+
+#-- Sanitizer
+if (USE_SANITIZER)
+  if(MSVC)
+    message(FATAL_ERROR "Sanitizers are not supported with MSVC.")
+  endif(MSVC)
+  include(cmake/Sanitizer.cmake)
+  enable_sanitizers("${ENABLED_SANITIZERS}")
+endif(USE_SANITIZER)
 
 if(__INTEGRATE_OPENCL)
   set(__INTEGRATE_OPENCL ON CACHE BOOL "" FORCE)
@@ -86,7 +102,6 @@ include_directories(${EIGEN_DIR})
 ADD_DEFINITIONS(-DEIGEN_MPL2_ONLY)
 
 if(__BUILD_FOR_R)
-    list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
     message(STATUS "LIBR_INCLUDE_DIRS: ${LIBR_INCLUDE_DIRS}")
@@ -143,7 +158,7 @@ endif(USE_GPU)
 
 if(__INTEGRATE_OPENCL)
     if(WIN32)
-        include(CMakeIntegratedOpenCL.cmake)
+        include(cmake/IntegratedOpenCL.cmake)
         ADD_DEFINITIONS(-DUSE_GPU)
     else()
         message(FATAL_ERROR "Integrated OpenCL build is available only for Windows")
@@ -158,6 +173,12 @@ if(USE_CUDA)
     set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0")
     if(CUDA_VERSION VERSION_GREATER_EQUAL "10.0")
         list(APPEND CUDA_ARCHS "7.5")
+    endif()
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.0")
+        list(APPEND CUDA_ARCHS "8.0")
+    endif()
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.1")
+        list(APPEND CUDA_ARCHS "8.6")
     endif()
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
     list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
@@ -197,6 +218,7 @@ if(USE_CUDA)
     function(add_histogram hsize hname hadd hconst hdir)
       add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
       set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES OFF)
       if(hadd)
         list(APPEND histograms histo${hsize}${hname})
         set(histograms ${histograms} PARENT_SCOPE)
@@ -269,6 +291,9 @@ if(UNIX OR MINGW OR CYGWIN)
     endif()
     if(NOT USE_OPENMP)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-unused-private-field")
+    endif()
+    if(__BUILD_FOR_R AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-function-type")
     endif()
 endif()
 
@@ -404,10 +429,10 @@ if(USE_GPU)
 endif(USE_GPU)
 
 if(__INTEGRATE_OPENCL)
-  # targets OpenCL and Boost are added in CMakeIntegratedOpenCL.cmake
+  # targets OpenCL and Boost are added in IntegratedOpenCL.cmake
   add_dependencies(lightgbm OpenCL Boost)
   add_dependencies(_lightgbm OpenCL Boost)
-  # variables INTEGRATED_OPENCL_* are set in CMakeIntegratedOpenCL.cmake
+  # variables INTEGRATED_OPENCL_* are set in IntegratedOpenCL.cmake
   target_include_directories(lightgbm PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
   target_include_directories(_lightgbm PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
   target_compile_definitions(lightgbm PRIVATE ${INTEGRATED_OPENCL_DEFINITIONS})
@@ -418,11 +443,13 @@ endif()
 
 if(USE_CUDA)
   set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
   TARGET_LINK_LIBRARIES(
     lightgbm
     ${histograms}
   )
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
   TARGET_LINK_LIBRARIES(
     _lightgbm
     ${histograms}
@@ -450,6 +477,39 @@ if(__BUILD_FOR_R)
     TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
   endif(MSVC)
 endif(__BUILD_FOR_R)
+
+#-- Google C++ tests
+if(BUILD_CPP_TEST)
+  find_package(GTest CONFIG)
+  if(NOT GTEST_FOUND)
+    message(STATUS "Did not find Google Test in the system root. Fetching Google Test now...")
+    include(FetchContent)
+    FetchContent_Declare(
+      googletest
+      GIT_REPOSITORY https://github.com/google/googletest.git
+      GIT_TAG        release-1.10.0
+    )
+    FetchContent_MakeAvailable(googletest)
+    add_library(GTest::GTest ALIAS gtest)
+  endif()
+  file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
+  if(MSVC)
+    set(
+      CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+    )
+    foreach(CompilerFlag ${CompilerFlags})
+      string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+    endforeach()
+  endif(MSVC)
+  add_executable(testlightgbm ${CPP_TEST_SOURCES} ${SOURCES})
+  target_link_libraries(testlightgbm PRIVATE GTest::GTest)
+endif()
 
 install(TARGETS lightgbm _lightgbm
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin

@@ -3,6 +3,7 @@
 import collections
 import copy
 from operator import attrgetter
+from pathlib import Path
 
 import numpy as np
 
@@ -39,14 +40,17 @@ def train(params, train_set, num_boost_round=100,
 
             preds : list or numpy 1-D array
                 The predicted values.
+                Predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task.
             train_data : Dataset
                 The training dataset.
             grad : list or numpy 1-D array
-                The value of the first order derivative (gradient) for each sample point.
+                The value of the first order derivative (gradient) of the loss
+                with respect to the elements of preds for each sample point.
             hess : list or numpy 1-D array
-                The value of the second order derivative (Hessian) for each sample point.
+                The value of the second order derivative (Hessian) of the loss
+                with respect to the elements of preds for each sample point.
 
-        For binary task, the preds is margin.
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
@@ -58,6 +62,8 @@ def train(params, train_set, num_boost_round=100,
 
             preds : list or numpy 1-D array
                 The predicted values.
+                If ``fobj`` is specified, predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task in this case.
             train_data : Dataset
                 The training dataset.
             eval_name : string
@@ -67,12 +73,11 @@ def train(params, train_set, num_boost_round=100,
             is_higher_better : bool
                 Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-        For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
         set the ``metric`` parameter to the string ``"None"`` in ``params``.
-    init_model : string, Booster or None, optional (default=None)
+    init_model : string, pathlib.Path, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of strings or 'auto', optional (default="auto")
         Feature names.
@@ -124,6 +129,7 @@ def train(params, train_set, num_boost_round=100,
     keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
         If False, the returned value will be converted into _InnerPredictor before returning.
+        This means you won't be able to use ``eval``, ``eval_train`` or ``eval_valid`` methods of the returned Booster.
         When your model is very large and cause the memory error,
         you can try to set this param to ``True`` to avoid the model conversion performed during the internal call of ``model_to_string``.
         You can still use _InnerPredictor as ``init_model`` for future continue training.
@@ -145,18 +151,18 @@ def train(params, train_set, num_boost_round=100,
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             num_boost_round = params.pop(alias)
-            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
     params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             early_stopping_rounds = params.pop(alias)
-            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
     params["early_stopping_round"] = early_stopping_rounds
     first_metric_only = params.get('first_metric_only', False)
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
-    if isinstance(init_model, str):
+    if isinstance(init_model, (str, Path)):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))
@@ -194,7 +200,7 @@ def train(params, train_set, num_boost_round=100,
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
             else:
-                name_valid_sets.append('valid_' + str(i))
+                name_valid_sets.append(f'valid_{i}')
     # process callbacks
     if callbacks is None:
         callbacks = set()
@@ -328,7 +334,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
                 flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             else:
                 flatted_group = np.zeros(num_data, dtype=np.int32)
-            folds = folds.split(X=np.zeros(num_data), y=full_data.get_label(), groups=flatted_group)
+            folds = folds.split(X=np.empty(num_data), y=full_data.get_label(), groups=flatted_group)
     else:
         if any(params.get(obj_alias, "") in {"lambdarank", "rank_xendcg", "xendcg",
                                              "xe_ndcg", "xe_ndcg_mart", "xendcg_mart"}
@@ -339,12 +345,12 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             group_info = np.array(full_data.get_group(), dtype=np.int32, copy=False)
             flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             group_kfold = _LGBMGroupKFold(n_splits=nfold)
-            folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
+            folds = group_kfold.split(X=np.empty(num_data), groups=flatted_group)
         elif stratified:
             if not SKLEARN_INSTALLED:
                 raise LightGBMError('scikit-learn is required for stratified cv')
             skf = _LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
-            folds = skf.split(X=np.zeros(num_data), y=full_data.get_label())
+            folds = skf.split(X=np.empty(num_data), y=full_data.get_label())
         else:
             if shuffle:
                 randidx = np.random.RandomState(seed).permutation(num_data)
@@ -379,7 +385,7 @@ def _agg_cv_result(raw_results, eval_train_metric=False):
     for one_result in raw_results:
         for one_line in one_result:
             if eval_train_metric:
-                key = "{} {}".format(one_line[0], one_line[1])
+                key = f"{one_line[0]} {one_line[1]}"
             else:
                 key = one_line[1]
             metric_type[key] = one_line[3]
@@ -396,7 +402,7 @@ def cv(params, train_set, num_boost_round=100,
        verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None, eval_train_metric=False,
        return_cvbooster=False):
-    """Perform the cross-validation with given paramaters.
+    """Perform the cross-validation with given parameters.
 
     Parameters
     ----------
@@ -428,14 +434,17 @@ def cv(params, train_set, num_boost_round=100,
 
             preds : list or numpy 1-D array
                 The predicted values.
+                Predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task.
             train_data : Dataset
                 The training dataset.
             grad : list or numpy 1-D array
-                The value of the first order derivative (gradient) for each sample point.
+                The value of the first order derivative (gradient) of the loss
+                with respect to the elements of preds for each sample point.
             hess : list or numpy 1-D array
-                The value of the second order derivative (Hessian) for each sample point.
+                The value of the second order derivative (Hessian) of the loss
+                with respect to the elements of preds for each sample point.
 
-        For binary task, the preds is margin.
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
@@ -447,21 +456,22 @@ def cv(params, train_set, num_boost_round=100,
 
             preds : list or numpy 1-D array
                 The predicted values.
+                If ``fobj`` is specified, predicted values are returned before any transformation,
+                e.g. they are raw margin instead of probability of positive class for binary task in this case.
             train_data : Dataset
                 The training dataset.
             eval_name : string
-                The name of evaluation function (without whitespaces).
+                The name of evaluation function (without whitespace).
             eval_result : float
                 The eval result.
             is_higher_better : bool
                 Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-        For binary task, the preds is probability of positive class (or margin in case of specified ``fobj``).
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
         set ``metrics`` to the string ``"None"``.
-    init_model : string, Booster or None, optional (default=None)
+    init_model : string, pathlib.Path, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of strings or 'auto', optional (default="auto")
         Feature names.
@@ -524,19 +534,19 @@ def cv(params, train_set, num_boost_round=100,
         params['objective'] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
-            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
             num_boost_round = params.pop(alias)
     params["num_iterations"] = num_boost_round
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
-            _log_warning("Found `{}` in params. Will use it instead of argument".format(alias))
+            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
             early_stopping_rounds = params.pop(alias)
     params["early_stopping_round"] = early_stopping_rounds
     first_metric_only = params.get('first_metric_only', False)
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
-    if isinstance(init_model, str):
+    if isinstance(init_model, (str, Path)):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))
@@ -589,8 +599,8 @@ def cv(params, train_set, num_boost_round=100,
         cvfolds.update(fobj=fobj)
         res = _agg_cv_result(cvfolds.eval_valid(feval), eval_train_metric)
         for _, key, mean, _, std in res:
-            results[key + '-mean'].append(mean)
-            results[key + '-stdv'].append(std)
+            results[f'{key}-mean'].append(mean)
+            results[f'{key}-stdv'].append(std)
         try:
             for cb in callbacks_after_iter:
                 cb(callback.CallbackEnv(model=cvfolds,

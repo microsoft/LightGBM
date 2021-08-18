@@ -37,13 +37,14 @@ class NDCGMetric:public Metric {
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
+    num_queries_ = metadata.num_queries();
+    DCGCalculator::CheckMetadata(metadata, num_queries_);
     DCGCalculator::CheckLabel(label_, num_data_);
     // get query boundaries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
       Log::Fatal("The NDCG metric requires query information");
     }
-    num_queries_ = metadata.num_queries();
     // get query weights
     query_weights_ = metadata.query_weights();
     if (query_weights_ == nullptr) {
@@ -55,7 +56,7 @@ class NDCGMetric:public Metric {
       }
     }
     inverse_max_dcgs_.resize(num_queries_);
-    // cache the inverse max DCG for all querys, used to calculate NDCG
+    // cache the inverse max DCG for all queries, used to calculate NDCG
     #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i].resize(eval_at_.size(), 0.0f);
@@ -66,7 +67,7 @@ class NDCGMetric:public Metric {
         if (inverse_max_dcgs_[i][j] > 0.0f) {
           inverse_max_dcgs_[i][j] = 1.0f / inverse_max_dcgs_[i][j];
         } else {
-          // marking negative for all negative querys.
+          // marking negative for all negative queries.
           // if one meet this query, it's ndcg will be set as -1.
           inverse_max_dcgs_[i][j] = -1.0f;
         }

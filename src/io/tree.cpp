@@ -120,15 +120,18 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   }                                                                           \
   for (data_size_t i = start; i < end; ++i) {                                 \
     int node = 0;                                                             \
-    while (node >= 0) {                                                       \
-      node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node,            \
-                          default_bins[node], max_bins[node]);                \
+    if (num_leaves_ > 1) {                                                    \
+      while (node >= 0) {                                                     \
+        node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node,          \
+                            default_bins[node], max_bins[node]);              \
+      }                                                                       \
+      node = ~node;                                                           \
     }                                                                         \
-    double add_score = leaf_const_[~node];                                    \
+    double add_score = leaf_const_[node];                                     \
     bool nan_found = false;                                                   \
-    const double* coeff_ptr = leaf_coeff_[~node].data();                      \
-    const float** data_ptr = feat_ptr[~node].data();                          \
-    for (size_t j = 0; j < leaf_features_inner_[~node].size(); ++j) {         \
+    const double* coeff_ptr = leaf_coeff_[node].data();                       \
+    const float** data_ptr = feat_ptr[node].data();                           \
+    for (size_t j = 0; j < leaf_features_inner_[node].size(); ++j) {          \
        float feat_val = data_ptr[j][(data_idx)];                              \
        if (std::isnan(feat_val)) {                                            \
           nan_found = true;                                                   \
@@ -137,7 +140,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
        add_score += coeff_ptr[j] * feat_val;                                  \
     }                                                                         \
     if (nan_found) {                                                          \
-       score[(data_idx)] += leaf_value_[~node];                               \
+       score[(data_idx)] += leaf_value_[node];                                \
     } else {                                                                  \
       score[(data_idx)] += add_score;                                         \
     }                                                                         \
@@ -376,7 +379,7 @@ std::string Tree::ToString() const {
 
   if (is_linear_) {
     str_buf << "leaf_const="
-      << ArrayToString(leaf_const_, num_leaves_) << '\n';
+      << ArrayToString<true>(leaf_const_, num_leaves_) << '\n';
     std::vector<int> num_feat(num_leaves_);
     for (int i = 0; i < num_leaves_; ++i) {
       num_feat[i] = static_cast<int>(leaf_coeff_[i].size());
@@ -394,7 +397,7 @@ std::string Tree::ToString() const {
     str_buf << "leaf_coeff=";
     for (int i = 0; i < num_leaves_; ++i) {
       if (num_feat[i] > 0) {
-        str_buf << ArrayToString(leaf_coeff_[i], leaf_coeff_[i].size()) << ' ';
+        str_buf << ArrayToString<true>(leaf_coeff_[i], leaf_coeff_[i].size()) << ' ';
       }
       str_buf << ' ';
     }
@@ -414,11 +417,39 @@ std::string Tree::ToJSON() const {
   str_buf << "\"num_cat\":" << num_cat_ << "," << '\n';
   str_buf << "\"shrinkage\":" << shrinkage_ << "," << '\n';
   if (num_leaves_ == 1) {
-    str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << "}" << '\n';
+    if (is_linear_) {
+      str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << ", " << "\n";
+      str_buf << LinearModelToJSON(0) << "}" << "\n";
+    } else {
+      str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << "}" << '\n';
+    }
   } else {
     str_buf << "\"tree_structure\":" << NodeToJSON(0) << '\n';
   }
+  return str_buf.str();
+}
 
+std::string Tree::LinearModelToJSON(int index) const {
+  std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+  str_buf << "\"leaf_const\":" << leaf_const_[index] << "," << "\n";
+  int num_features = static_cast<int>(leaf_features_[index].size());
+  if (num_features > 0) {
+    str_buf << "\"leaf_features\":[";
+    for (int i = 0; i < num_features - 1; ++i) {
+      str_buf << leaf_features_[index][i] << ", ";
+    }
+    str_buf << leaf_features_[index][num_features - 1] << "]" << ", " << "\n";
+    str_buf << "\"leaf_coeff\":[";
+    for (int i = 0; i < num_features - 1; ++i) {
+      str_buf << leaf_coeff_[index][i] << ", ";
+    }
+    str_buf << leaf_coeff_[index][num_features - 1] << "]" << "\n";
+  } else {
+    str_buf << "\"leaf_features\":[],\n";
+    str_buf << "\"leaf_coeff\":[]\n";
+  }
   return str_buf.str();
 }
 
@@ -476,10 +507,14 @@ std::string Tree::NodeToJSON(int index) const {
     str_buf << "\"leaf_index\":" << index << "," << '\n';
     str_buf << "\"leaf_value\":" << leaf_value_[index] << "," << '\n';
     str_buf << "\"leaf_weight\":" << leaf_weight_[index] << "," << '\n';
-    str_buf << "\"leaf_count\":" << leaf_count_[index] << '\n';
+    if (is_linear_) {
+      str_buf << "\"leaf_count\":" << leaf_count_[index] << "," << '\n';
+      str_buf << LinearModelToJSON(index);
+    } else {
+      str_buf << "\"leaf_count\":" << leaf_count_[index] << '\n';
+    }
     str_buf << "}";
   }
-
   return str_buf.str();
 }
 
@@ -695,6 +730,8 @@ Tree::Tree(const char* str, size_t* used_len) {
     int is_linear_int;
     Common::Atoi(key_vals["is_linear"].c_str(), &is_linear_int);
     is_linear_ = static_cast<bool>(is_linear_int);
+  } else {
+    is_linear_ = false;
   }
 
   if ((num_leaves_ <= 1) && !is_linear_) {
@@ -769,7 +806,7 @@ Tree::Tree(const char* str, size_t* used_len) {
 
   if (is_linear_) {
     if (key_vals.count("leaf_const")) {
-      leaf_const_ = Common::StringToArrayFast<double>(key_vals["leaf_const"], num_leaves_);
+      leaf_const_ = Common::StringToArray<double>(key_vals["leaf_const"], num_leaves_);
     } else {
       leaf_const_.resize(num_leaves_);
     }
@@ -791,7 +828,7 @@ Tree::Tree(const char* str, size_t* used_len) {
       }
       std::vector<double> all_leaf_coeff;
       if (key_vals.count("leaf_coeff")) {
-        all_leaf_coeff = Common::StringToArrayFast<double>(key_vals["leaf_coeff"], total_num_feat);
+        all_leaf_coeff = Common::StringToArray<double>(key_vals["leaf_coeff"], total_num_feat);
       }
       int sum_num_feat = 0;
       for (int i = 0; i < num_leaves_; ++i) {

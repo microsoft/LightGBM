@@ -12,6 +12,7 @@ Data Structure API
     Dataset
     Booster
     CVBooster
+    Sequence
 
 Training API
 ------------
@@ -35,6 +36,8 @@ Scikit-learn API
 
 Dask API
 --------
+
+.. versionadded:: 3.2.0
 
 .. autosummary::
     :toctree: pythonapi/

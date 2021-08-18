@@ -113,6 +113,8 @@ void GetTaskType(const std::unordered_map<std::string, std::string>& params, Tas
       *task = TaskType::kConvertModel;
     } else if (value == std::string("refit") || value == std::string("refit_tree")) {
       *task = TaskType::KRefitTree;
+    } else if (value == std::string("save_binary")) {
+      *task = TaskType::kSaveBinary;
     } else {
       Log::Fatal("Unknown task type %s", value.c_str());
     }
@@ -234,6 +236,11 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   }
   valid = new_valid;
 
+  if ((task == TaskType::kSaveBinary) && !save_binary) {
+    Log::Info("save_binary parameter set to true because task is save_binary");
+    save_binary = true;
+  }
+
   if (verbosity == 1) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
   } else if (verbosity == 0) {
@@ -340,7 +347,7 @@ void Config::CheckParamConflict() {
     Log::Warning("CUDA currently requires double precision calculations.");
     gpu_use_dp = true;
   }
-  // linear tree learner must be serial type and run on cpu device
+  // linear tree learner must be serial type and run on CPU device
   if (linear_tree) {
     if (device_type != std::string("cpu")) {
       device_type = "cpu";
@@ -367,7 +374,7 @@ void Config::CheckParamConflict() {
   }
   if (is_parallel && (monotone_constraints_method == std::string("intermediate") || monotone_constraints_method == std::string("advanced"))) {
     // In distributed mode, local node doesn't have histograms on all features, cannot perform "intermediate" monotone constraints.
-    Log::Warning("Cannot use \"intermediate\" or \"advanced\" monotone constraints in parallel learning, auto set to \"basic\" method.");
+    Log::Warning("Cannot use \"intermediate\" or \"advanced\" monotone constraints in distributed learning, auto set to \"basic\" method.");
     monotone_constraints_method = "basic";
   }
   if (feature_fraction_bynode != 1.0 && (monotone_constraints_method == std::string("intermediate") || monotone_constraints_method == std::string("advanced"))) {

@@ -12,15 +12,13 @@ setinfo(dataset, ...)
 \arguments{
 \item{dataset}{Object of class \code{lgb.Dataset}}
 
-\item{...}{other parameters}
+\item{...}{other parameters (ignored)}
 
 \item{name}{the name of the field to get}
 
 \item{info}{the specific field of information to set}
 }
 \value{
-the dataset you passed in
-
 the dataset you passed in
 }
 \description{

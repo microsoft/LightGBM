@@ -28,6 +28,38 @@ function Run-R-Code-Redirect-Stderr {
   Rscript --vanilla -e $decorated_code
 }
 
+# Remove all items matching some pattern from PATH environment variable
+function Remove-From-Path {
+  param(
+    [string]$pattern_to_remove
+  )
+  $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
+}
+
+# remove some details that exist in the GitHub Actions images which might
+# cause conflicts with R and other components installed by this script
+$env:RTOOLS40_HOME = ""
+Remove-From-Path ".*Amazon.*"
+Remove-From-Path ".*Anaconda.*"
+Remove-From-Path ".*android.*"
+Remove-From-Path ".*Android.*"
+Remove-From-Path ".*chocolatey.*"
+Remove-From-Path ".*Chocolatey.*"
+Remove-From-Path ".*\\Git\\.*"
+Remove-From-Path "(?!.*pandoc.*).*hostedtoolcache.*"
+Remove-From-Path ".*Microsoft SDKs.*"
+Remove-From-Path ".*mingw.*"
+Remove-From-Path ".*msys64.*"
+Remove-From-Path ".*PostgreSQL.*"
+Remove-From-Path ".*\\R\\.*"
+Remove-From-Path ".*R Client.*"
+Remove-From-Path ".*rtools40.*"
+Remove-From-Path ".*shells.*"
+Remove-From-Path ".*Strawberry.*"
+Remove-From-Path ".*tools.*"
+
+Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
+
 # Get details needed for installing R components
 #
 # NOTES:
@@ -45,8 +77,8 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $RTOOLS_INSTALL_PATH = "C:\rtools40"
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw64\bin"
-  $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.0.3"
+  $env:RTOOLS_EXE_FILE = "rtools40v2-x86_64.exe"
+  $env:R_WINDOWS_VERSION = "4.1.0"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -59,18 +91,11 @@ $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 
-# hack to get around this:
-# https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
-$env:_R_CHECK_SYSTEM_CLOCK_ = 0
-
-# ignore R CMD CHECK NOTE checking how long it has
-# been since the last submission
-$env:_R_CHECK_CRAN_INCOMING_REMOTE_ = 0
-
-# CRAN ignores the "installed size is too large" NOTE,
-# so our CI can too. Setting to a large value here just
-# to catch extreme problems
-$env:_R_CHECK_PKG_SIZES_THRESHOLD_ = 60
+# don't fail builds for long-running examples unless they're very long.
+# See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
+if ($env:R_BUILD_TYPE -ne "cran") {
+    $env:_R_CHECK_EXAMPLE_TIMING_THRESHOLD_ = 30
+}
 
 if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $env:CXX = "$env:RTOOLS_MINGW_BIN/g++.exe"
@@ -92,12 +117,12 @@ Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT 
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
-./Rtools.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH ; Check-Output $?
+Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH')" ; Check-Output $?
+Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 
 # MiKTeX and pandoc can be skipped on non-MinGW builds, since we don't
 # build the package documentation for those.

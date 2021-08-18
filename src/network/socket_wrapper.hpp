@@ -93,7 +93,7 @@ inline int inet_pton(int af, const char *src, void *dst) {
 namespace SocketConfig {
 const int kSocketBufferSize = 100 * 1000;
 const int kMaxReceiveSize = 100 * 1000;
-const bool kNoDelay = true;
+const int kNoDelay = 1;
 }
 
 class TcpSocket {
@@ -267,7 +267,12 @@ class TcpSocket {
   inline TcpSocket Accept() {
     SOCKET newfd = accept(sockfd_, NULL, NULL);
     if (newfd == INVALID_SOCKET) {
-      Log::Fatal("Socket accept error, code: %d", GetLastError());
+      int err_code = GetLastError();
+#if defined(_WIN32)
+      Log::Fatal("Socket accept error (code: %d)", err_code);
+#else
+      Log::Fatal("Socket accept error, %s (code: %d)", std::strerror(err_code), err_code);
+#endif
     }
     return TcpSocket(newfd);
   }
@@ -275,7 +280,12 @@ class TcpSocket {
   inline int Send(const char *buf_, int len, int flag = 0) {
     int cur_cnt = send(sockfd_, buf_, len, flag);
     if (cur_cnt == SOCKET_ERROR) {
-      Log::Fatal("Socket send error, code: %d", GetLastError());
+      int err_code = GetLastError();
+#if defined(_WIN32)
+      Log::Fatal("Socket send error (code: %d)", err_code);
+#else
+      Log::Fatal("Socket send error, %s (code: %d)", std::strerror(err_code), err_code);
+#endif
     }
     return cur_cnt;
   }
@@ -283,7 +293,12 @@ class TcpSocket {
   inline int Recv(char *buf_, int len, int flags = 0) {
     int cur_cnt = recv(sockfd_, buf_ , len , flags);
     if (cur_cnt == SOCKET_ERROR) {
-      Log::Fatal("Socket recv error, code: %d", GetLastError());
+      int err_code = GetLastError();
+#if defined(_WIN32)
+      Log::Fatal("Socket recv error (code: %d)", err_code);
+#else
+      Log::Fatal("Socket recv error, %s (code: %d)", std::strerror(err_code), err_code);
+#endif
     }
     return cur_cnt;
   }

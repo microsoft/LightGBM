@@ -1,12 +1,16 @@
 # coding: utf-8
-import lightgbm as lgb
+from pathlib import Path
+
 import pandas as pd
 from sklearn.metrics import mean_squared_error
 
+import lightgbm as lgb
+
 print('Loading data...')
 # load or create your dataset
-df_train = pd.read_csv('../regression/regression.train', header=None, sep='\t')
-df_test = pd.read_csv('../regression/regression.test', header=None, sep='\t')
+regression_example_dir = Path(__file__).absolute().parents[1] / 'regression'
+df_train = pd.read_csv(str(regression_example_dir / 'regression.train'), header=None, sep='\t')
+df_test = pd.read_csv(str(regression_example_dir / 'regression.test'), header=None, sep='\t')
 
 y_train = df_train[0]
 y_test = df_test[0]
@@ -46,4 +50,5 @@ print('Starting predicting...')
 # predict
 y_pred = gbm.predict(X_test, num_iteration=gbm.best_iteration)
 # eval
-print('The rmse of prediction is:', mean_squared_error(y_test, y_pred) ** 0.5)
+rmse_test = mean_squared_error(y_test, y_pred) ** 0.5
+print(f'The RMSE of prediction is: {rmse_test}')

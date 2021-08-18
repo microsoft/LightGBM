@@ -8,9 +8,9 @@ Missing Value Handle
 
 -  LightGBM uses NA (NaN) to represent missing values by default. Change it to use zero by setting ``zero_as_missing=true``.
 
--  When ``zero_as_missing=false`` (default), the unshown values in sparse matrices (and LightSVM) are treated as zeros.
+-  When ``zero_as_missing=false`` (default), the unrecorded values in sparse matrices (and LightSVM) are treated as zeros.
 
--  When ``zero_as_missing=true``, NA and zeros (including unshown values in sparse matrices (and LightSVM)) are treated as missing.
+-  When ``zero_as_missing=true``, NA and zeros (including unrecorded values in sparse matrices (and LightSVM)) are treated as missing.
 
 Categorical Feature Support
 ---------------------------
@@ -59,10 +59,12 @@ Parameters Tuning
 
 -  Refer to `Parameters Tuning <./Parameters-Tuning.rst>`__.
 
-Parallel Learning
------------------
+.. _Parallel Learning:
 
--  Refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__.
+Distributed Learning
+--------------------
+
+-  Refer to `Distributed Learning Guide <./Parallel-Learning-Guide.rst>`__.
 
 GPU Support
 -----------

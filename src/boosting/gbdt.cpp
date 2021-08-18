@@ -106,7 +106,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   train_score_updater_.reset(new ScoreUpdater(train_data_, num_tree_per_iteration_));
 
   num_data_ = train_data_->num_data();
-  // create buffer for gradients and hessians
+  // create buffer for gradients and Hessians
   if (objective_function_ != nullptr) {
     size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
     gradients_.resize(total_size);
@@ -320,7 +320,7 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
   }
 }
 
-/* If the custom "average" is implemented it will be used inplace of the label average (if enabled)
+/* If the custom "average" is implemented it will be used in place of the label average (if enabled)
 *
 * An improvement to this is to have options to explicitly choose
 * (i) standard average

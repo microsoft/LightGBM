@@ -17,7 +17,8 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "swig" ]]; then
         brew install swig
     fi
-    wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+    brew install graphviz
+    curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
@@ -25,13 +26,10 @@ else  # Linux
         echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
 
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends \
+        sudo apt-get install --no-install-recommends -y \
             software-properties-common
 
-        sudo add-apt-repository -y ppa:git-core/ppa
-        sudo apt-get update
-
-        sudo apt-get install -y --no-install-recommends \
+        sudo apt-get install --no-install-recommends -y \
             apt-utils \
             build-essential \
             ca-certificates \
@@ -44,10 +42,12 @@ else  # Linux
             libicu66 \
             libssl1.1 \
             libunwind8 \
+            libxau6 \
+            libxext6 \
+            libxrender1 \
             locales \
             netcat \
             unzip \
-            wget \
             zip
         if [[ $COMPILER == "clang" ]]; then
             sudo apt-get install --no-install-recommends -y \
@@ -62,29 +62,37 @@ else  # Linux
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
-        sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
+        sudo apt-get install --no-install-recommends -y \
+            libopenmpi-dev \
+            openmpi-bin
     fi
     if [[ $TASK == "gpu" ]]; then
         sudo add-apt-repository ppa:mhier/libboost-latest -y
         sudo apt-get update
-        sudo apt-get install --no-install-recommends -y libboost1.74-dev ocl-icd-opencl-dev
+        sudo apt-get install --no-install-recommends -y \
+            libboost1.74-dev \
+            ocl-icd-opencl-dev
         cd $BUILD_DIRECTORY  # to avoid permission errors
-        wget -q https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
-        tar -xjf AMD-APP-SDK*.tar.bz2
+        curl -sL -o AMD-APP-SDKInstaller.tar.bz2 https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+        tar -xjf AMD-APP-SDKInstaller.tar.bz2
         mkdir -p $OPENCL_VENDOR_PATH
         mkdir -p $AMDAPPSDK_PATH
         sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK_PATH
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
+    ARCH=$(uname -m)
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
         apt-get install --no-install-recommends -y \
             curl \
+            graphviz \
+            libxau6 \
+            libxext6 \
+            libxrender1 \
             lsb-release \
-            software-properties-common \
-            wget
+            software-properties-common
         if [[ $COMPILER == "clang" ]]; then
             apt-get install --no-install-recommends -y \
                 clang \
@@ -95,9 +103,23 @@ else  # Linux
         apt-get update
         apt-get install --no-install-recommends -y \
             cmake
+    else
+        if [[ $ARCH != "x86_64" ]]; then
+            yum update -y
+            yum install -y \
+                graphviz
+        else
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y \
+                graphviz
+        fi
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
-        wget -q -O conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        if [[ $ARCH == "x86_64" ]]; then
+            curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        else
+            curl -sL -o conda.sh https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh
+        fi
     fi
 fi
 
