@@ -770,20 +770,7 @@ __global__ void GlobalGenAUCMarkKernel(const double* scores,
   is_all_non_zero[threadIdx.x] = static_cast<bool>(shared_buffer[threadIdx.x]);
   __syncthreads();
   uint16_t block_first_zero = (shared_buffer[threadIdx.x] == 0 ? threadIdx.x : blockDim.x);
-  /*if (blockIdx.x == 0 && threadIdx.x == 0) {
-    for (uint32_t i = 0; i < blockDim.x; ++i) {
-      printf("before prefix sum shared_buffer[%d] = %d\n", i, shared_buffer[i]);
-    }
-  }*/
   PrefixSumZeroOut(shared_buffer, is_all_non_zero, blockDim.x);
-  /*if (blockIdx.x == 0 && threadIdx.x == 0) {
-    for (uint32_t i = 0; i < blockDim.x; ++i) {
-      const data_size_t local_data_index = static_cast<data_size_t>(i + blockIdx.x * blockDim.x);
-      printf("shared_buffer[%d] = %d, scores[%d] = %f, original_offset = %d\n", i, shared_buffer[i],
-        sorted_indices[local_data_index], scores[sorted_indices[local_data_index]],
-        static_cast<data_size_t>(local_data_index > 0 && scores[sorted_indices[local_data_index]] == scores[sorted_indices[local_data_index - 1]]));
-    }
-  }*/
   block_first_zero = ShuffleReduceMin<uint16_t>(block_first_zero, shuffle_reduce_shared_buffer, blockDim.x);
   if (data_index < num_data) {
     mark_buffer[data_index] = shared_buffer[threadIdx.x + 1];
@@ -882,8 +869,10 @@ void GlobalGenAUCPosNegSum<true, true>(const label_t* labels,
   GlobalGenAUCPosNegSumInner<true, true>(labels, weights, sorted_indices, sum_pos_buffer, block_sum_pos_buffer, num_data);
 }
 
+template <bool USE_WEIGHT>
 __global__ void GlobalCalcAUCKernel(
   const double* sum_pos_buffer,
+  const double* sum_neg_buffer,
   const data_size_t* mark_buffer,
   const data_size_t num_data,
   double* block_buffer) {
@@ -894,9 +883,16 @@ __global__ void GlobalCalcAUCKernel(
     if (data_index == num_data - 1 || mark_buffer[data_index + 1] == 0) {
       const data_size_t prev_data_index = data_index - mark_buffer[data_index] - 1;
       const double prev_sum_pos = (prev_data_index < 0 ? 0.0f : sum_pos_buffer[prev_data_index]);
-      const double cur_pos = sum_pos_buffer[data_index] - prev_sum_pos;
-      const double cur_neg = static_cast<double>(data_index - prev_data_index) - cur_pos;
-      area = cur_neg * (cur_pos * 0.5f + prev_sum_pos);
+      if (USE_WEIGHT) {
+        const double prev_sum_neg = (prev_data_index < 0 ? 0.0f : sum_neg_buffer[prev_data_index]);
+        const double cur_pos = sum_pos_buffer[data_index] - prev_sum_pos;
+        const double cur_neg = sum_neg_buffer[data_index] - prev_sum_neg;
+        area = cur_neg * (cur_pos * 0.5f + prev_sum_pos);
+      } else {
+        const double cur_pos = sum_pos_buffer[data_index] - prev_sum_pos;
+        const double cur_neg = static_cast<double>(data_index - prev_data_index) - cur_pos;
+        area = cur_neg * (cur_pos * 0.5f + prev_sum_pos);
+      }
     }
   }
   area = ShuffleReduceSum<double>(area, shared_buffer, blockDim.x);
@@ -918,13 +914,33 @@ __global__ void BlockReduceSum(T* block_buffer, const data_size_t num_blocks) {
   }
 }
 
-void GlobalCalcAUC(const double* sum_pos_buffer,
+template <bool USE_WEIGHT>
+void GlobalCalcAUCInner(const double* sum_pos_buffer,
+  const double* sum_neg_buffer,
   const data_size_t* mark_buffer,
   const data_size_t num_data,
   double* block_buffer) {
   const data_size_t num_blocks = (num_data + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
-  GlobalCalcAUCKernel<<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(sum_pos_buffer, mark_buffer, num_data, block_buffer);
+  GlobalCalcAUCKernel<USE_WEIGHT><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(sum_pos_buffer, sum_neg_buffer, mark_buffer, num_data, block_buffer);
   BlockReduceSum<double><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
+}
+
+template <>
+void GlobalCalcAUC<false>(const double* sum_pos_buffer,
+  const double* sum_neg_buffer,
+  const data_size_t* mark_buffer,
+  const data_size_t num_data,
+  double* block_buffer) {
+  GlobalCalcAUCInner<false>(sum_pos_buffer, sum_neg_buffer, mark_buffer, num_data, block_buffer);
+}
+
+template <>
+void GlobalCalcAUC<true>(const double* sum_pos_buffer,
+  const double* sum_neg_buffer,
+  const data_size_t* mark_buffer,
+  const data_size_t num_data,
+  double* block_buffer) {
+  GlobalCalcAUCInner<true>(sum_pos_buffer, sum_neg_buffer, mark_buffer, num_data, block_buffer);
 }
 
 }  // namespace LightGBM

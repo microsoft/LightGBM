@@ -108,11 +108,11 @@ class CUDAAUCMetric : public AUCMetric {
  private:
   void LaunchEvalKernel(const double* score) const;
 
-  void TestCUDABitonicSortForQueryItems() const;
-
   data_size_t* cuda_indices_buffer_;
   double* cuda_sum_pos_buffer_;
   double* cuda_block_sum_pos_buffer_;
+  double* cuda_sum_neg_buffer_;
+  double* cuda_block_sum_neg_buffer_;
   data_size_t* cuda_threshold_mark_;
   data_size_t* cuda_block_threshold_mark_buffer_;
   uint16_t* cuda_block_mark_first_zero_;

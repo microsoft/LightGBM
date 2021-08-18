@@ -75,7 +75,9 @@ void GloblGenAUCMark(const double* scores,
                      uint16_t* block_mark_first_zero,
                      const data_size_t num_data);
 
+template <bool USE_WEIGHT>
 void GlobalCalcAUC(const double* sum_pos_buffer,
+                   const double* sum_neg_buffer,
                    const data_size_t* mark_buffer,
                    const data_size_t num_data,
                    double* block_buffer);

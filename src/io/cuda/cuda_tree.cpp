@@ -88,7 +88,6 @@ void CUDATree::InitCUDAMemory() {
                                  static_cast<size_t>(max_leaves_),
                                  __FILE__,
                                  __LINE__);
-  SetCUDAMemoryOuter<int>(cuda_leaf_parent_, 0, 1, __FILE__, __LINE__);
   SetCUDAMemoryOuter<double>(cuda_leaf_value_, 0.0f, 1, __FILE__, __LINE__);
   SetCUDAMemoryOuter<double>(cuda_leaf_weight_, 0.0f, 1, __FILE__, __LINE__);
   SetCUDAMemoryOuter<int>(cuda_leaf_parent_, -1, 1, __FILE__, __LINE__);

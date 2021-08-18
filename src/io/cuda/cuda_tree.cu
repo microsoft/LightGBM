@@ -59,9 +59,6 @@ __global__ void SplitKernel(// split information
   const int new_node_index = num_leaves - 1;
   const int thread_index = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
   const int parent_index = leaf_parent[leaf_index];
-  if (parent_index == new_node_index) {
-    printf("error !!!! parent_index = %d, new_node_index = %d\n", parent_index, new_node_index);
-  }
   if (thread_index == 0) {
     if (parent_index >= 0) {
       // if cur node is left child
@@ -179,7 +176,6 @@ __global__ void AddPredictionToScoreKernel(
   const data_size_t data_index = USE_INDICES ? cuda_used_indices[inner_data_index] : inner_data_index;
   if (data_index < num_data) {
     int node = 0;
-    int iter = 0;
     while (node >= 0) {
       const int split_feature_inner = cuda_split_feature_inner[node];
       const int column = cuda_feature_to_column[split_feature_inner];
@@ -218,11 +214,6 @@ __global__ void AddPredictionToScoreKernel(
         } else {
           node = cuda_right_child[node];
         }
-      }
-      ++iter;
-      if (iter > 1000) {
-        printf("error iter = %d\n", iter);
-        printf("node = %d, cuda_left_child[%d] = %d, cuda_right_child[%d] = %d\n", node, node, cuda_left_child[node], node, cuda_right_child[node]);
       }
     }
     score[data_index] += cuda_leaf_value[~node];

@@ -352,6 +352,8 @@ if(USE_CUDA)
     src/boosting/cuda/*.cu
     src/application/cuda/*.cpp
     src/application/cuda/*.cu
+    src/metric/cuda/*.cpp
+    src/metric/cuda/*.cu
 endif(USE_CUDA)
 )
 
