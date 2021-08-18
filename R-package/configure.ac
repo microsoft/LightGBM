@@ -26,6 +26,7 @@ CXX="${CXX11} ${CXX11STD}"
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX11FLAGS`
 LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
+AC_LANG(C++)
 
 # LightGBM-specific flags
 LGB_CPPFLAGS=""
@@ -42,7 +43,6 @@ LGB_CPPFLAGS="${LGB_CPPFLAGS} -DEIGEN_MPL2_ONLY"
 
 AC_MSG_CHECKING([whether MM_PREFETCH works])
 ac_mmprefetch=no
-AC_LANG(C++)
 AC_LANG_CONFTEST(
     [
         AC_LANG_PROGRAM(
@@ -57,7 +57,7 @@ AC_LANG_CONFTEST(
         )
     ]
 )
-${CXX} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mmprefetch=yes
+${CXX} ${CPPFLAGS} ${CXXFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mmprefetch=yes
 AC_MSG_RESULT([${ac_mmprefetch}])
 if test "${ac_mmprefetch}" = yes; then
     LGB_CPPFLAGS+=" -DMM_PREFETCH=1"
@@ -69,7 +69,6 @@ fi
 
 AC_MSG_CHECKING([whether MM_MALLOC works])
 ac_mm_malloc=no
-AC_LANG(C++)
 AC_LANG_CONFTEST(
     [
         AC_LANG_PROGRAM(
@@ -84,7 +83,7 @@ AC_LANG_CONFTEST(
         )
     ]
 )
-${CXX} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_malloc=yes
+${CXX} ${CPPFLAGS} ${CXXFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_malloc=yes
 AC_MSG_RESULT([${ac_mm_malloc}])
 if test "${ac_mm_malloc}" = yes; then
     LGB_CPPFLAGS+=" -DMM_MALLOC=1"
@@ -107,7 +106,6 @@ then
     OPENMP_LIB='-lomp'
     ac_pkg_openmp=no
     AC_MSG_CHECKING([whether OpenMP will work in a package])
-    AC_LANG(C++)
     AC_LANG_CONFTEST(
         [
             AC_LANG_PROGRAM(
