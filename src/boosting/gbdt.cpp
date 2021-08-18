@@ -393,7 +393,6 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   }
   // bagging logic
   Bagging(iter_);
-
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     const size_t offset = static_cast<size_t>(cur_tree_id) * num_data_;

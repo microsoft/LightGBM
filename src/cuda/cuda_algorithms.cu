@@ -32,7 +32,7 @@ __global__ void BitonicSortGlobalKernel(T* values, const int num_total_data) {
       const int inner_depth = depth;
       const int inner_segment_length_half = 1 << (BITONIC_SORT_DEPTH - 1 - inner_depth);
       const int inner_segment_index_half = thread_index / inner_segment_length_half;
-      const int offset = ((inner_segment_index_half >> 1) == num_total_segment - 1 && ascending == ASCENDING) ?
+      const int offset = ((inner_segment_index_half >> 1) == num_total_segment - 1 && ascending == outer_ascending) ?
         (num_total_segment * segment_length - num_data) : 0;
       const int segment_start = segment_index * segment_length;
       if (inner_segment_index_half % 2 == 0) {
@@ -163,6 +163,16 @@ void BitonicSortGlobal<int, true>(int* values, const size_t len) {
   BitonicSortGlobalHelper<int, true>(values, len);
 }
 
+template <>
+void BitonicSortGlobal<double, true>(double* values, const size_t len) {
+  BitonicSortGlobalHelper<double, true>(values, len);
+}
+
+template <>
+void BitonicSortGlobal<double, false>(double* values, const size_t len) {
+  BitonicSortGlobalHelper<double, false>(values, len);
+}
+
 template <typename VAL_T, typename INDEX_T, bool ASCENDING>
 __global__ void BitonicArgSortGlobalKernel(const VAL_T* values, INDEX_T* indices, const int num_total_data) {
   const int thread_index = static_cast<int>(threadIdx.x);
@@ -187,7 +197,7 @@ __global__ void BitonicArgSortGlobalKernel(const VAL_T* values, INDEX_T* indices
       const int inner_depth = depth;
       const int inner_segment_length_half = 1 << (BITONIC_SORT_DEPTH - 1 - inner_depth);
       const int inner_segment_index_half = thread_index / inner_segment_length_half;
-      const int offset = ((inner_segment_index_half >> 1) == num_total_segment - 1 && ascending == ASCENDING) ?
+      const int offset = ((inner_segment_index_half >> 1) == num_total_segment - 1 && ascending == outer_ascending) ?
         (num_total_segment * segment_length - num_data) : 0;
       const int segment_start = segment_index * segment_length;
       if (inner_segment_index_half % 2 == 0) {
@@ -241,8 +251,9 @@ __global__ void BitonicArgSortMergeKernel(const VAL_T* values, INDEX_T* indices,
   const int offset = static_cast<int>(blockIdx.x * blockDim.x);
   const int local_len = min(BITONIC_SORT_NUM_ELEMENTS, len - offset);
   if (thread_index < len) {
-    shared_values[threadIdx.x] = values[thread_index];
-    shared_indices[threadIdx.x] = indices[thread_index];
+    const INDEX_T index = indices[thread_index];
+    shared_values[threadIdx.x] = values[index];
+    shared_indices[threadIdx.x] = index;
   }
   __syncthreads();
   int half_segment_length = BITONIC_SORT_NUM_ELEMENTS / 2;
@@ -282,18 +293,20 @@ __global__ void BitonicArgCompareKernel(const VAL_T* values, INDEX_T* indices, c
       const int segment_start = segment_index * outer_segment_length;
       if (thread_index >= offset + segment_start) {
         const int index_to_compare = thread_index + half_segment_length - offset;
-        const INDEX_T this_index = indices[thread_index];
-        const INDEX_T other_index = indices[index_to_compare];
-        if (index_to_compare < len && (values[this_index] > values[other_index]) == ascending) {
-          indices[thread_index] = other_index;
-          indices[index_to_compare] = this_index;
+        if (index_to_compare < len) {
+          const INDEX_T this_index = indices[thread_index];
+          const INDEX_T other_index = indices[index_to_compare];
+          if ((values[this_index] > values[other_index]) == ascending) {
+            indices[thread_index] = other_index;
+            indices[index_to_compare] = this_index;
+          }
         }
       }
     } else {
       const int index_to_compare = thread_index + half_segment_length;
-      const INDEX_T this_index = indices[thread_index];
-      const INDEX_T other_index = indices[index_to_compare];
       if (index_to_compare < len) {
+        const INDEX_T this_index = indices[thread_index];
+        const INDEX_T other_index = indices[index_to_compare];
         if ((values[this_index] > values[other_index]) == ascending) {
           indices[thread_index] = other_index;
           indices[index_to_compare] = this_index;
@@ -338,6 +351,11 @@ void BitonicArgSortGlobalHelper(const VAL_T* values, INDEX_T* indices, const siz
 template <>
 void BitonicArgSortGlobal<double, data_size_t, false>(const double* values, data_size_t* indices, const size_t len) {
   BitonicArgSortGlobalHelper<double, data_size_t, false>(values, indices, len);
+}
+
+template <>
+void BitonicArgSortGlobal<double, data_size_t, true>(const double* values, data_size_t* indices, const size_t len) {
+  BitonicArgSortGlobalHelper<double, data_size_t, true>(values, indices, len);
 }
 
 template <typename VAL_T, typename INDEX_T, bool ASCENDING>
@@ -577,6 +595,59 @@ __device__ void PrefixSumZeroOut(data_size_t* values, size_t n) {
   __syncthreads();
 }
 
+__device__ void PrefixSumZeroOut(data_size_t* values, bool* is_all_non_zero, size_t n) {
+  unsigned int offset = 1;
+  unsigned int threadIdx_x = static_cast<int>(threadIdx.x);
+  const data_size_t last_element = values[n - 1];
+  const bool last_is_all_non_zero = is_all_non_zero[n - 1];
+  __syncthreads();
+  for (int d = (n >> 1); d > 0; d >>= 1) {
+    if (threadIdx_x < d) {
+      const unsigned int src_pos = offset * (2 * threadIdx_x + 1) - 1;
+      const unsigned int dst_pos = offset * (2 * threadIdx_x + 2) - 1;
+      if (is_all_non_zero[dst_pos]) {
+        values[dst_pos] += values[src_pos];
+        is_all_non_zero[dst_pos] &= is_all_non_zero[src_pos];
+      }
+    }
+    offset <<= 1;
+    __syncthreads();
+  }
+  if (threadIdx_x == 0) {
+    values[n - 1] = 0; 
+    is_all_non_zero[n - 1] = true;
+  }
+  __syncthreads();
+  for (int d = 1; d < n; d <<= 1) {
+    offset >>= 1;
+    if (threadIdx_x < d) {
+      const unsigned int dst_pos = offset * (2 * threadIdx_x + 2) - 1;
+      const unsigned int src_pos = offset * (2 * threadIdx_x + 1) - 1;
+      const data_size_t src_val = values[src_pos];
+      const bool src_is_all_non_zero = is_all_non_zero[src_pos];
+      values[src_pos] = values[dst_pos];
+      is_all_non_zero[src_pos] = is_all_non_zero[dst_pos];
+      if (src_is_all_non_zero) {
+        values[dst_pos] += src_val;
+      } else {
+        values[dst_pos] = src_val;
+      }
+      is_all_non_zero[dst_pos] &= src_is_all_non_zero;
+    }
+    __syncthreads();
+  }
+  if (threadIdx.x == 0) {
+    if (last_is_all_non_zero) {
+      values[n] = values[n - 1] + last_element;
+      is_all_non_zero[n] = is_all_non_zero[n - 1];
+    } else {
+      values[n] = last_element;
+      is_all_non_zero[n] = last_is_all_non_zero;
+    }
+  }
+  __syncthreads();
+}
+
 template <typename T>
 __global__ void GlobalInclusivePrefixSumKernel(T* values, T* block_buffer, data_size_t num_data) {
   __shared__ T shared_buffer[GLOBAL_PREFIX_SUM_BLOCK_SIZE + 1];
@@ -588,7 +659,7 @@ __global__ void GlobalInclusivePrefixSumKernel(T* values, T* block_buffer, data_
     values[data_index] = shared_buffer[threadIdx.x + 1];
   }
   if (threadIdx.x == 0) {
-    block_buffer[blockIdx.x] = shared_buffer[blockDim.x];
+    block_buffer[blockIdx.x + 1] = shared_buffer[blockDim.x];
   }
 }
 
@@ -596,9 +667,9 @@ template <typename T>
 __global__ void GlobalInclusivePrefixSumReduceBlockKernel(T* block_buffer, data_size_t num_blocks) {
   __shared__ T shared_buffer[GLOBAL_PREFIX_SUM_BLOCK_SIZE + 1];
   T thread_sum = 0;
-  const data_size_t num_blocks_per_thread = (num_blocks + static_cast<data_size_t>(blockDim.x) - 1) / static_cast<data_size_t>(blockDim.x);
+  const data_size_t num_blocks_per_thread = (num_blocks + static_cast<data_size_t>(blockDim.x)) / static_cast<data_size_t>(blockDim.x);
   const data_size_t thread_start_block_index = static_cast<data_size_t>(threadIdx.x) * num_blocks_per_thread;
-  const data_size_t thread_end_block_index = min(thread_start_block_index + num_blocks_per_thread, num_blocks);
+  const data_size_t thread_end_block_index = min(thread_start_block_index + num_blocks_per_thread, num_blocks + 1);
   for (data_size_t block_index = thread_start_block_index; block_index < thread_end_block_index; ++block_index) {
     thread_sum += block_buffer[block_index];
   }
@@ -611,30 +682,35 @@ __global__ void GlobalInclusivePrefixSumReduceBlockKernel(T* block_buffer, data_
   }
 }
 
-__global__ void GlobalInclusivePrefixSumReduceBlockZeroOutKernel(data_size_t* block_buffer, data_size_t num_blocks) {
+__global__ void GlobalInclusivePrefixSumReduceBlockZeroOutKernel(data_size_t* block_buffer, const uint16_t* block_mark_first_zero, data_size_t num_blocks) {
   __shared__ data_size_t shared_buffer[GLOBAL_PREFIX_SUM_BLOCK_SIZE + 1];
+  __shared__ bool is_all_non_zero[GLOBAL_PREFIX_SUM_BLOCK_SIZE];
   data_size_t thread_sum = 0;
   const data_size_t num_blocks_per_thread = (num_blocks + static_cast<data_size_t>(blockDim.x) - 1) / static_cast<data_size_t>(blockDim.x);
   const data_size_t thread_start_block_index = static_cast<data_size_t>(threadIdx.x) * num_blocks_per_thread;
   const data_size_t thread_end_block_index = min(thread_start_block_index + num_blocks_per_thread, num_blocks);
+  bool thread_is_all_non_zero = true;
+  data_size_t first_with_zero_block = thread_end_block_index;
   for (data_size_t block_index = thread_start_block_index; block_index < thread_end_block_index; ++block_index) {
+    const uint16_t mark_first_zero = block_mark_first_zero[block_index];
     const data_size_t block_buffer_value = block_buffer[block_index];
-    if (block_buffer_value != 0) {
-      thread_sum += block_buffer[block_index];
+    if (mark_first_zero == GLOBAL_PREFIX_SUM_BLOCK_SIZE) {
+      thread_sum += block_buffer_value;
     } else {
-      thread_sum = 0;
+      thread_is_all_non_zero = false;
+      thread_sum = block_buffer_value;
+      if (first_with_zero_block == thread_end_block_index) {
+        first_with_zero_block = block_index;
+      }
     }
   }
+  is_all_non_zero[threadIdx.x] = thread_is_all_non_zero;
   shared_buffer[threadIdx.x] = thread_sum;
   __syncthreads();
-  PrefixSumZeroOut(shared_buffer, blockDim.x);
+  PrefixSumZeroOut(shared_buffer, is_all_non_zero, blockDim.x);
   data_size_t thread_sum_base = shared_buffer[threadIdx.x];
-  for (data_size_t block_index = thread_start_block_index; block_index < thread_end_block_index; ++block_index) {
-    if (block_buffer[block_index] != 0) {
-      block_buffer[block_index] += thread_sum_base;
-    } else {
-      thread_sum_base = 0;
-    }
+  for (data_size_t block_index = thread_start_block_index; block_index < first_with_zero_block; ++block_index) {
+    block_buffer[block_index] += thread_sum_base;
   }
 }
 
@@ -647,8 +723,12 @@ __global__ void GlobalInclusivePrefixSumAddBlockBaseKernel(const T* block_buffer
   }
 }
 
-__global__ void GlobalInclusivePrefixSumAddBlockBaseGenAUCMarkKernel(const data_size_t* block_buffer, data_size_t* values, const uint16_t* block_first_zero, data_size_t num_data) {
-  const data_size_t block_sum_base = block_buffer[blockIdx.x];
+__global__ void GlobalInclusivePrefixSumAddBlockBaseGenAUCMarkKernel(
+  const data_size_t* block_buffer,
+  data_size_t* values,
+  const uint16_t* block_first_zero,
+  data_size_t num_data) {
+  const data_size_t block_sum_base = (blockIdx.x == 0 ? 0 : block_buffer[blockIdx.x - 1]);
   const uint16_t first_zero = block_first_zero[blockIdx.x];
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   if (data_index < num_data && threadIdx.x < first_zero) {
@@ -676,19 +756,34 @@ __global__ void GlobalGenAUCMarkKernel(const double* scores,
                                        data_size_t num_data) {
   __shared__ data_size_t shared_buffer[GLOBAL_PREFIX_SUM_BLOCK_SIZE + 1];
   __shared__ uint16_t shuffle_reduce_shared_buffer[32];
+  __shared__ bool is_all_non_zero[GLOBAL_PREFIX_SUM_BLOCK_SIZE + 1];
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   if (data_index < num_data) {
-    if (data_index > 1) {
-      shared_buffer[threadIdx.x] = (scores[sorted_indices[data_index]] == scores[sorted_indices[data_index - 1]]);
+    if (data_index > 0) {
+      shared_buffer[threadIdx.x] = static_cast<data_size_t>(scores[sorted_indices[data_index]] == scores[sorted_indices[data_index - 1]]);
     } else {
       shared_buffer[threadIdx.x] = 0;
     }
   } else {
     shared_buffer[threadIdx.x] = 0;
   }
+  is_all_non_zero[threadIdx.x] = static_cast<bool>(shared_buffer[threadIdx.x]);
   __syncthreads();
-  PrefixSumZeroOut(shared_buffer, blockDim.x);
   uint16_t block_first_zero = (shared_buffer[threadIdx.x] == 0 ? threadIdx.x : blockDim.x);
+  /*if (blockIdx.x == 0 && threadIdx.x == 0) {
+    for (uint32_t i = 0; i < blockDim.x; ++i) {
+      printf("before prefix sum shared_buffer[%d] = %d\n", i, shared_buffer[i]);
+    }
+  }*/
+  PrefixSumZeroOut(shared_buffer, is_all_non_zero, blockDim.x);
+  /*if (blockIdx.x == 0 && threadIdx.x == 0) {
+    for (uint32_t i = 0; i < blockDim.x; ++i) {
+      const data_size_t local_data_index = static_cast<data_size_t>(i + blockIdx.x * blockDim.x);
+      printf("shared_buffer[%d] = %d, scores[%d] = %f, original_offset = %d\n", i, shared_buffer[i],
+        sorted_indices[local_data_index], scores[sorted_indices[local_data_index]],
+        static_cast<data_size_t>(local_data_index > 0 && scores[sorted_indices[local_data_index]] == scores[sorted_indices[local_data_index - 1]]));
+    }
+  }*/
   block_first_zero = ShuffleReduceMin<uint16_t>(block_first_zero, shuffle_reduce_shared_buffer, blockDim.x);
   if (data_index < num_data) {
     mark_buffer[data_index] = shared_buffer[threadIdx.x + 1];
@@ -708,13 +803,14 @@ void GloblGenAUCMark(const double* scores,
   const data_size_t num_blocks = (num_data + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
   GlobalGenAUCMarkKernel<<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(scores, sorted_indices, mark_buffer, block_mark_buffer, block_mark_first_zero, num_data);
   GlobalInclusivePrefixSumReduceBlockZeroOutKernel<<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(
-    block_mark_buffer, num_blocks);
+    block_mark_buffer, block_mark_first_zero, num_blocks);
   GlobalInclusivePrefixSumAddBlockBaseGenAUCMarkKernel<<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(
     block_mark_buffer, mark_buffer, block_mark_first_zero, num_data);
 }
 
 template <bool USE_WEIGHT, bool IS_POS>
-__global__ void GlobalGenAUCPosSumKernel(const label_t* labels,
+__global__ void GlobalGenAUCPosSumKernel(
+  const label_t* labels,
   const label_t* weights,
   const data_size_t* sorted_indices,
   double* sum_pos_buffer,
@@ -722,7 +818,7 @@ __global__ void GlobalGenAUCPosSumKernel(const label_t* labels,
   const data_size_t num_data) {
   __shared__ double shared_buffer[GLOBAL_PREFIX_SUM_BLOCK_SIZE + 1];
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
-  const double pos = IS_POS ? 
+  const double pos = IS_POS ?
     (USE_WEIGHT ?
       (data_index < num_data ? static_cast<double>(labels[sorted_indices[data_index]] > 0) * weights[sorted_indices[data_index]] : 0.0f) :
       (data_index < num_data ? static_cast<double>(labels[sorted_indices[data_index]] > 0) : 0.0f)) :
@@ -737,7 +833,7 @@ __global__ void GlobalGenAUCPosSumKernel(const label_t* labels,
     sum_pos_buffer[data_index] = shared_buffer[threadIdx.x + 1];
   }
   if (threadIdx.x == 0) {
-    block_sum_pos_buffer[blockIdx.x] = shared_buffer[blockDim.x];
+    block_sum_pos_buffer[blockIdx.x + 1] = shared_buffer[blockDim.x];
   }
 }
 
@@ -757,13 +853,13 @@ void GlobalGenAUCPosNegSumInner(const label_t* labels,
 }
 
 template <>
-void GlobalGenAUCPosNegSum<false, false>(const label_t* labels,
+void GlobalGenAUCPosNegSum<false, true>(const label_t* labels,
   const label_t* weights,
   const data_size_t* sorted_indices,
   double* sum_pos_buffer,
   double* block_sum_pos_buffer,
   const data_size_t num_data) {
-  GlobalGenAUCPosNegSumInner<false, false>(labels, weights, sorted_indices, sum_pos_buffer, block_sum_pos_buffer, num_data);
+  GlobalGenAUCPosNegSumInner<false, true>(labels, weights, sorted_indices, sum_pos_buffer, block_sum_pos_buffer, num_data);
 }
 
 template <>
@@ -828,7 +924,7 @@ void GlobalCalcAUC(const double* sum_pos_buffer,
   double* block_buffer) {
   const data_size_t num_blocks = (num_data + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
   GlobalCalcAUCKernel<<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(sum_pos_buffer, mark_buffer, num_data, block_buffer);
-  BlockReduceSum<double><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
+  BlockReduceSum<double><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
 }
 
 }  // namespace LightGBM

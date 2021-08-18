@@ -50,14 +50,30 @@ void CUDAAUCMetric::Init(const Metadata& metadata, data_size_t num_data) {
   AllocateCUDAMemoryOuter<data_size_t>(&cuda_threshold_mark_, static_cast<size_t>(num_data), __FILE__, __LINE__);
   const data_size_t num_blocks = (num_data + EVAL_BLOCK_SIZE_BINARY_METRIC - 1) / EVAL_BLOCK_SIZE_BINARY_METRIC;
   AllocateCUDAMemoryOuter<double>(&cuda_block_sum_pos_buffer_, static_cast<size_t>(num_blocks) + 1, __FILE__, __LINE__);
-  AllocateCUDAMemoryOuter<data_size_t>(&cuda_block_threshold_mark_buffer_, static_cast<size_t>(num_blocks), __FILE__, __LINE__);
-  AllocateCUDAMemoryOuter<uint16_t>(&cuda_block_mark_first_zero_, static_cast<size_t>(num_blocks), __FILE__, __LINE__);
+  SetCUDAMemoryOuter<double>(cuda_block_sum_pos_buffer_, 0, 1, __FILE__, __LINE__);
+  AllocateCUDAMemoryOuter<data_size_t>(&cuda_block_threshold_mark_buffer_, static_cast<size_t>(num_blocks) + 1, __FILE__, __LINE__);
+  SetCUDAMemoryOuter<data_size_t>(cuda_block_threshold_mark_buffer_, 0, 1, __FILE__, __LINE__);
+  AllocateCUDAMemoryOuter<uint16_t>(&cuda_block_mark_first_zero_, static_cast<size_t>(num_blocks) + 1, __FILE__, __LINE__);
+  SetCUDAMemoryOuter<uint16_t>(cuda_block_mark_first_zero_, 0, 1, __FILE__, __LINE__);
   cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
   cuda_label_ = metadata.cuda_metadata()->cuda_label();
+
+  TestCUDABitonicSortForQueryItems();
 }
 
 std::vector<double> CUDAAUCMetric::Eval(const double* score, const ObjectiveFunction*) const {
+  Log::Warning("before evaluate AUC");
   LaunchEvalKernel(score);
+  double total_area = 0.0f, sum_pos = 0.0f;
+  CopyFromCUDADeviceToHostOuter<double>(&total_area, cuda_block_sum_pos_buffer_, 1, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostOuter<double>(&sum_pos, cuda_sum_pos_buffer_ + static_cast<size_t>(num_data_ - 1), 1, __FILE__, __LINE__);
+  Log::Warning("sum_pos = %f", sum_pos);
+  Log::Warning("after evaluate AUC");
+  if (sum_pos != sum_weights_ && sum_pos > 0.0f) {
+    return std::vector<double>(1, total_area / (sum_pos * (sum_weights_ - sum_pos)));
+  } else {
+    return std::vector<double>(1, 1.0f);
+  }
 }
 
 }  // namespace LightGBM
