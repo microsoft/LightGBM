@@ -65,7 +65,7 @@ FLAML (AutoML library for hyperparameter optimization): https://github.com/micro
 
 Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
 
-Neptune + LightGBM integration: https://bit.ly/37MX3Mw
+Neptune (metadata store: data versioning, experiment tracking and model registry): https://github.com/neptune-ai/neptune-client
 
 Julia-package: https://github.com/IQVIA-ML/LightGBM.jl
 
