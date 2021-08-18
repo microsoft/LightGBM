@@ -360,7 +360,7 @@ add_library(lightgbm_objs OBJECT ${SOURCES})
 target_compile_definitions(lightgbm_objs PRIVATE -D_lightgbm_EXPORTS)
 
 add_executable(lightgbm src/main.cpp src/application/application.cpp)
-target_link_libraries(lightgbm lightgbm_objs)
+target_link_libraries(lightgbm PRIVATE lightgbm_objs)
 
 set(API_SOURCES "src/c_api.cpp")
 # Only build the R part of the library if building for
@@ -377,7 +377,7 @@ if(BUILD_STATIC_LIB)
 else()
   add_library(_lightgbm SHARED ${API_SOURCES})
 endif(BUILD_STATIC_LIB)
-target_link_libraries(_lightgbm PUBLIC lightgbm_objs)
+target_link_libraries(_lightgbm PRIVATE lightgbm_objs)
 target_compile_definitions(_lightgbm PRIVATE -D_lightgbm_EXPORTS)
 
 if(MSVC)
@@ -453,7 +453,12 @@ endif()
 if(USE_CUDA)
   set_target_properties(lightgbm_objs PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES OFF)
-  target_link_libraries(lightgbm_objs PUBLIC ${histograms})
+  # histograms are list of object library. Linking object library to other
+  # object librariese only gets usage requirements, the linked objects won't be
+  # used. Thus we have to call target_link_libraries on the two final targets
+  # here.
+  target_link_libraries(lightgbm PRIVATE ${histograms})
+  target_link_libraries(_lightgbm PRIVATE ${histograms})
 endif(USE_CUDA)
 
 if(USE_HDFS)
