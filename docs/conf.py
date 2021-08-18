@@ -31,6 +31,7 @@ import sphinx
 from docutils.nodes import reference
 from docutils.parsers.rst import Directive
 from docutils.transforms import Transform
+from sphinx.application import Sphinx
 from sphinx.errors import VersionRequirementError
 
 CURR_PATH = Path(__file__).absolute().parent
@@ -198,12 +199,12 @@ htmlhelp_basename = 'LightGBMdoc'
 latex_logo = str(CURR_PATH / 'logo' / 'LightGBM_logo_black_text_small.png')
 
 
-def generate_doxygen_xml(app: Any) -> None:
+def generate_doxygen_xml(app: Sphinx) -> None:
     """Generate XML documentation for C API by Doxygen.
 
     Parameters
     ----------
-    app : object
+    app : Sphinx
         The application object representing the Sphinx process.
     """
     doxygen_args = [
@@ -243,12 +244,12 @@ def generate_doxygen_xml(app: Any) -> None:
         raise Exception(f"An error has occurred while executing Doxygen\n{e}")
 
 
-def generate_r_docs(app: Any) -> None:
+def generate_r_docs(app: Sphinx) -> None:
     """Generate documentation for R-package.
 
     Parameters
     ----------
-    app : object
+    app : Sphinx
         The application object representing the Sphinx process.
     """
     commands = f"""
@@ -305,12 +306,12 @@ def generate_r_docs(app: Any) -> None:
         raise Exception(f"An error has occurred while generating documentation for R-package\n{e}")
 
 
-def setup(app: Any) -> None:
+def setup(app: Sphinx) -> None:
     """Add new elements at Sphinx initialization time.
 
     Parameters
     ----------
-    app : object
+    app : Sphinx
         The application object representing the Sphinx process.
     """
     first_run = not (CURR_PATH / '_FIRST_RUN.flag').exists()
