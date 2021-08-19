@@ -76,7 +76,7 @@ Hummingbird (model compiler into tensor computations): https://github.com/micros
 
 cuML Forest Inference Library (GPU-accelerated inference): https://github.com/rapidsai/cuml
 
-daal4py (Intel CPU-accelerated inference): https://github.com/IntelPython/daal4py
+daal4py (Intel CPU-accelerated inference): https://github.com/intel/scikit-learn-intelex/tree/master/daal4py
 
 m2cgen (model appliers for various languages): https://github.com/BayesWitnesses/m2cgen
 
