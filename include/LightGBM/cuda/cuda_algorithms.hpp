@@ -256,7 +256,8 @@ __device__ __forceinline__ void BitonicArgSort_2048(const score_t* scores, uint1
 template <typename T>
 __device__ __forceinline__ T ShuffleReduceSumWarp(T value, const data_size_t len) {
   if (len > 0) {
-    const uint32_t mask = (0xffffffff >> (warpSize - len));
+    // TODO(shiyu1994): check how mask works
+    const uint32_t mask = 0xffffffff;
     for (int offset = warpSize / 2; offset > 0; offset >>= 1) { 
       value += __shfl_down_sync(mask, value, offset);
     }
@@ -277,7 +278,7 @@ __device__ __forceinline__ T ShuffleReduceSum(T value, T* shared_mem_buffer, con
   __syncthreads();
   const data_size_t num_warp = static_cast<data_size_t>((len + warpSize - 1) / warpSize);
   if (warpID == 0) {
-    value = shared_mem_buffer[warpLane];
+    value = (warpLane < num_warp ? shared_mem_buffer[warpLane] : 0);
     value = ShuffleReduceSumWarp<T>(value, num_warp);
   }
   return value;
@@ -286,7 +287,8 @@ __device__ __forceinline__ T ShuffleReduceSum(T value, T* shared_mem_buffer, con
 template <typename T>
 __device__ __forceinline__ T ShuffleReduceMaxWarp(T value, const data_size_t len) {
   if (len > 0) {
-    const uint32_t mask = (0xffffffff >> (warpSize - len));
+    // TODO(shiyu1994): check how mask works
+    const uint32_t mask = 0xffffffff;
     for (int offset = warpSize / 2; offset > 0; offset >>= 1) { 
       const T other_value = __shfl_down_sync(mask, value, offset);
       value = (other_value > value) ? other_value : value;
@@ -308,7 +310,7 @@ __device__ __forceinline__ T ShuffleReduceMax(T value, T* shared_mem_buffer, con
   __syncthreads();
   const data_size_t num_warp = static_cast<data_size_t>((len + warpSize - 1) / warpSize);
   if (warpID == 0) {
-    value = shared_mem_buffer[warpLane];
+    value = (warpLane < num_warp ? shared_mem_buffer[warpLane] : shared_mem_buffer[0]);
     value = ShuffleReduceMaxWarp<T>(value, num_warp);
   }
   return value;

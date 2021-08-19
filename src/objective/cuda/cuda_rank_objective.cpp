@@ -70,9 +70,9 @@ void CUDARankXENDCG::Init(const Metadata& metadata, data_size_t num_data) {
   }
   item_rands_.resize(num_data, 0.0f);
   AllocateCUDAMemoryOuter<double>(&cuda_item_rands_, static_cast<size_t>(num_data), __FILE__, __LINE__);
-  //if (max_items_in_query_aligned_ >= 2048) {
+  if (max_items_in_query_aligned_ >= 2048) {
     AllocateCUDAMemoryOuter<double>(&cuda_params_buffer_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-  //}
+  }
 }
 
 void CUDARankXENDCG::GenerateItemRands() const {

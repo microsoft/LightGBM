@@ -16,6 +16,8 @@
 #include "../rank_objective.hpp"
 #include <LightGBM/utils/threading.h>
 
+#include <fstream>
+
 namespace LightGBM {
 
 class CUDALambdarankNDCG : public CUDAObjectiveInterface, public LambdarankNDCG {

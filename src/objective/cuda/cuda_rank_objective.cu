@@ -424,9 +424,6 @@ __global__ void GetGradientsKernel_RankXENDCG_SharedMemory(
       thread_reduce_result = ShuffleReduceMax<double>(thread_reduce_result, shared_buffer, block_reduce_size);
       if (threadIdx.x == 0) {
         reduce_result = thread_reduce_result;
-        if (blockIdx.x == 0) {
-          printf("reduce max score = %f\n", reduce_result);
-        }
       }
       __syncthreads();
       thread_reduce_result = 0.0f;
@@ -648,17 +645,6 @@ void CUDARankXENDCG::LaunchGetGradientsKernel(const double* score, score_t* grad
       hessians);
   }
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-  PrintLastCUDAErrorOuter(__FILE__, __LINE__);
-  const int num_show = 1000;
-  std::vector<score_t> host_gradients(num_show, 0.0f);
-  std::vector<score_t> host_hessians(num_show, 0.0f);
-  std::vector<double> host_scores(num_show, 0.0f);
-  CopyFromCUDADeviceToHostOuter<score_t>(host_gradients.data(), gradients, num_show, __FILE__, __LINE__);
-  CopyFromCUDADeviceToHostOuter<score_t>(host_hessians.data(), hessians, num_show, __FILE__, __LINE__);
-  CopyFromCUDADeviceToHostOuter<double>(host_scores.data(), score, num_show, __FILE__, __LINE__);
-  for (int i = 0; i < num_show; ++i) {
-    Log::Warning("host_gradients[%d] = %f, host_hessians[%d] = %f, host_scores[%d] = %f", i, host_gradients[i], i, host_hessians[i], i, host_scores[i]);
-  }
 }
 
 }  // namespace LightGBM

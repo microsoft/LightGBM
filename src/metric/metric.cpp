@@ -50,6 +50,8 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new CUDAGammaDevianceMetric(config);
     } else if (type == std::string("tweedie")) {
       return new CUDATweedieMetric(config);
+    } else if (type == std::string("ndcg")) {
+      return new NDCGMetric(config);
     }
   } else {
     if (type == std::string("l2")) {
