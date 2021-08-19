@@ -52,6 +52,7 @@ CVBooster <- R6::R6Class(
 #'                             not the number of threads (most CPU using hyper-threading to generate 2 threads
 #'                             per CPU core).}
 #'            }
+#'            NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained model \code{lgb.CVBooster}.
 #'
@@ -108,12 +109,22 @@ lgb.cv <- function(params = list()
   }
 
   # Setup temporary variables
-  params <- append(params, list(...))
+  additional_params <- list(...)
+  params <- append(params, additional_params)
   params$verbose <- verbose
   params <- lgb.check.obj(params = params, obj = obj)
   params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
   eval_functions <- list(NULL)
+
+  if (length(additional_params) > 0L) {
+    warning(paste0(
+      "lgb.cv: Found the following passed through '...': "
+      , paste(names(additional_params), collapse = ", ")
+      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
+      , "Add these to 'params' instead. See ?lgb.cv for documentation on how to call this function."
+    ))
+  }
 
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.

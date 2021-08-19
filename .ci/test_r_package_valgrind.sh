@@ -1,5 +1,9 @@
 #!/bin/bash
 
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
+sh build-cran-package.sh || exit -1
+RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz || exit -1
+
 cd R-package/tests
 
 ALL_LOGS_FILE="out.log"
