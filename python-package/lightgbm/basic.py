@@ -3357,7 +3357,15 @@ class Booster:
             What type of feature importance should be dumped.
             If "split", result contains numbers of times the feature is used in a model.
             If "gain", result contains total gains of splits which use the feature.
-        object_hook: function given to `json.loads`
+        object_hook : callable or None, optional (default=None)
+            If not None, object_hook is a function called while parsing the json
+            string returned by the C API. It may be used to alter the json, to store
+            specific values while building the json structure. It avoids
+            walking through the structure again. It saves a significant amount
+            of time if the number of trees is huge.
+            Signature is `def object_hook(node: dict) -> dict`.
+            None is equivalent to `lambda node: node`.
+            See documentation of `json.loads` for further details.
 
         Returns
         -------
