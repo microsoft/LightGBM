@@ -23,6 +23,11 @@ class CUDABinaryMetric : public CUDAMetricInterface, public BinaryMetric<CUDAPoi
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override;
 
+  inline static double LossOnPoint(label_t /*label*/, double /*score*/) {
+    Log::Fatal("Calling host LossOnPoint for a CUDA metric.");
+    return 0.0f;
+  }
+
  protected:
   void LaunchEvalKernel(const double* score) const;
 
@@ -38,19 +43,6 @@ class CUDABinaryMetric : public CUDAMetricInterface, public BinaryMetric<CUDAPoi
 class CUDABinaryLoglossMetric : public CUDABinaryMetric<CUDABinaryLoglossMetric> {
  public:
   explicit CUDABinaryLoglossMetric(const Config& config);
-
-  inline static double LossOnPoint(label_t label, double prob) {
-    if (label <= 0) {
-      if (1.0f - prob > kEpsilon) {
-        return -std::log(1.0f - prob);
-      }
-    } else {
-      if (prob > kEpsilon) {
-        return -std::log(prob);
-      }
-    }
-    return -std::log(kEpsilon);
-  }
 
   __device__ inline static double LossOnPointCUDA(label_t label, double prob) {
     if (label <= 0) {
@@ -74,14 +66,6 @@ class CUDABinaryErrorMetric: public CUDABinaryMetric<CUDABinaryErrorMetric> {
  public:
   explicit CUDABinaryErrorMetric(const Config& config);
 
-  inline static double LossOnPoint(label_t label, double prob) {
-    if (prob <= 0.5f) {
-      return label > 0;
-    } else {
-      return label <= 0;
-    }
-  }
-
   __device__ inline static double LossOnPointCUDA(label_t label, double prob) {
     if (prob <= 0.5f) {
       return label > 0;
@@ -95,11 +79,36 @@ class CUDABinaryErrorMetric: public CUDABinaryMetric<CUDABinaryErrorMetric> {
   }
 };
 
-class CUDAAUCMetric : public AUCMetric {
+class CUDAAUCMetric : public CUDAMetricInterface, public AUCMetric {
  public:
   CUDAAUCMetric(const Config& config);
 
   ~CUDAAUCMetric();
+
+  void Init(const Metadata& metadata, data_size_t num_data) override;
+
+  std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override;
+
+ private:
+  void LaunchEvalKernel(const double* score) const;
+
+  data_size_t* cuda_indices_buffer_;
+  double* cuda_sum_pos_buffer_;
+  double* cuda_block_sum_pos_buffer_;
+  double* cuda_sum_neg_buffer_;
+  double* cuda_block_sum_neg_buffer_;
+  data_size_t* cuda_threshold_mark_;
+  data_size_t* cuda_block_threshold_mark_buffer_;
+  uint16_t* cuda_block_mark_first_zero_;
+  const label_t* cuda_label_;
+  const label_t* cuda_weights_;
+};
+
+class CUDAAveragePrecisionMetric : public CUDAMetricInterface, public AveragePrecisionMetric {
+ public:
+  explicit CUDAAveragePrecisionMetric(const Config&);
+
+  ~CUDAAveragePrecisionMetric();
 
   void Init(const Metadata& metadata, data_size_t num_data) override;
 

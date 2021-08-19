@@ -69,10 +69,10 @@ __global__ void ConvertOutputCUDAKernel(const bool sqrt, const data_size_t num_d
   const int data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
   if (data_index < num_data) {
     if (sqrt) {
-      const double sign = input[0] >= 0.0f ? 1 : -1; 
-      output[0] = sign * input[0] * input[0];
+      const double sign = input[data_index] >= 0.0f ? 1 : -1; 
+      output[data_index] = sign * input[data_index] * input[data_index];
     } else {
-      output[0] = input[0];
+      output[data_index] = input[data_index];
     }
   }
 }

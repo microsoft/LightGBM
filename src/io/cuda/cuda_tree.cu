@@ -176,6 +176,7 @@ __global__ void AddPredictionToScoreKernel(
   const data_size_t data_index = USE_INDICES ? cuda_used_indices[inner_data_index] : inner_data_index;
   if (data_index < num_data) {
     int node = 0;
+    int iter = 0;
     while (node >= 0) {
       const int split_feature_inner = cuda_split_feature_inner[node];
       const int column = cuda_feature_to_column[split_feature_inner];
@@ -214,6 +215,10 @@ __global__ void AddPredictionToScoreKernel(
         } else {
           node = cuda_right_child[node];
         }
+      }
+      ++iter;
+      if (iter > 1000) {
+        printf("error iter = %d\n", iter);
       }
     }
     score[data_index] += cuda_leaf_value[~node];

@@ -82,6 +82,13 @@ void GlobalCalcAUC(const double* sum_pos_buffer,
                    const data_size_t num_data,
                    double* block_buffer);
 
+template <bool USE_WEIGHT>
+void GlobalCalcAveragePrecision(const double* sum_pos_buffer,
+                                const double* sum_neg_buffer,
+                                const data_size_t* mark_buffer,
+                                const data_size_t num_data,
+                                double* block_buffer);
+
 template <typename T>
 __device__ void PrefixSum(T* values, size_t n) {
   unsigned int offset = 1;

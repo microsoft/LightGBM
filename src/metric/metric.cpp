@@ -12,17 +12,44 @@
 #include "xentropy_metric.hpp"
 
 #include "cuda/cuda_binary_metric.hpp"
+#include "cuda/cuda_regression_metric.hpp"
 
 namespace LightGBM {
 
 Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
   if (config.device_type == std::string("cuda")) {
-    if (type == std::string("binary_logloss")) {
+    if (type == std::string("l2")) {
+      return new CUDAL2Metric(config);
+    } else if (type == std::string("rmse")) {
+      return new CUDARMSEMetric(config);
+    } else if (type == std::string("rmse")) {
+      return new CUDARMSEMetric(config);
+    } else if (type == std::string("l1")) {
+      return new CUDAL1Metric(config);
+    } else if (type == std::string("quantile")) {
+      return new CUDAQuantileMetric(config);
+    } else if (type == std::string("huber")) {
+      return new CUDAHuberLossMetric(config);
+    } else if (type == std::string("fair")) {
+      return new CUDAFairLossMetric(config);
+    } else if (type == std::string("poisson")) {
+      return new CUDAPoissonMetric(config);
+    } else if (type == std::string("binary_logloss")) {
       return new CUDABinaryLoglossMetric(config);
     } else if (type == std::string("binary_error")) {
       return new CUDABinaryErrorMetric(config);
     } else if (type == std::string("auc")) {
       return new CUDAAUCMetric(config);
+    } else if (type == std::string("average_precision")) {
+      return new CUDAAveragePrecisionMetric(config);
+    } else if (type == std::string("mape")) {
+      return new CUDAMAPEMetric(config);
+    } else if (type == std::string("gamma")) {
+      return new CUDAGammaMetric(config);
+    } else if (type == std::string("gamma_deviance")) {
+      return new CUDAGammaDevianceMetric(config);
+    } else if (type == std::string("tweedie")) {
+      return new CUDATweedieMetric(config);
     }
   } else {
     if (type == std::string("l2")) {

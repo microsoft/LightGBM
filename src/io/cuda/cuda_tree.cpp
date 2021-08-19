@@ -92,6 +92,7 @@ void CUDATree::InitCUDAMemory() {
   SetCUDAMemoryOuter<double>(cuda_leaf_weight_, 0.0f, 1, __FILE__, __LINE__);
   SetCUDAMemoryOuter<int>(cuda_leaf_parent_, -1, 1, __FILE__, __LINE__);
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_stream_));
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
 void CUDATree::InitCUDA() {

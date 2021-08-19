@@ -943,4 +943,65 @@ void GlobalCalcAUC<true>(const double* sum_pos_buffer,
   GlobalCalcAUCInner<true>(sum_pos_buffer, sum_neg_buffer, mark_buffer, num_data, block_buffer);
 }
 
+template <bool USE_WEIGHT>
+__global__ void GlobalCalcAveragePrecisionKernel(
+  const double* sum_pos_buffer,
+  const double* sum_neg_buffer,
+  const data_size_t* mark_buffer,
+  const data_size_t num_data,
+  double* block_buffer) {
+  __shared__ double shared_buffer[32];
+  const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
+  double area = 0.0f;
+  if (data_index < num_data) {
+    if (data_index == num_data - 1 || mark_buffer[data_index + 1] == 0) {
+      const data_size_t prev_data_index = data_index - mark_buffer[data_index] - 1;
+      const double prev_sum_pos = (prev_data_index < 0 ? 0.0f : sum_pos_buffer[prev_data_index]);
+      if (USE_WEIGHT) {
+        const double prev_sum_neg = (prev_data_index < 0 ? 0.0f : sum_neg_buffer[prev_data_index]);
+        const double cur_pos = sum_pos_buffer[data_index] - prev_sum_pos;
+        const double cur_neg = sum_neg_buffer[data_index] - prev_sum_neg;
+        area = cur_pos * (cur_pos + prev_sum_pos) / (prev_sum_neg + prev_sum_pos + cur_pos + cur_neg);
+      } else {
+        const double cur_pos = sum_pos_buffer[data_index] - prev_sum_pos;
+        const double cur_neg = static_cast<double>(data_index - prev_data_index) - cur_pos;
+        area = cur_pos * (cur_pos + prev_sum_pos) / static_cast<double>(data_index + 1);
+      }
+    }
+  }
+  area = ShuffleReduceSum<double>(area, shared_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    block_buffer[blockIdx.x] = area;
+  }
+}
+
+template <bool USE_WEIGHT>
+void GlobalCalcAveragePrecisionInner(const double* sum_pos_buffer,
+  const double* sum_neg_buffer,
+  const data_size_t* mark_buffer,
+  const data_size_t num_data,
+  double* block_buffer) {
+  const data_size_t num_blocks = (num_data + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
+  GlobalCalcAveragePrecisionKernel<USE_WEIGHT><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(sum_pos_buffer, sum_neg_buffer, mark_buffer, num_data, block_buffer);
+  BlockReduceSum<double><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
+}
+
+template <>
+void GlobalCalcAveragePrecision<false>(const double* sum_pos_buffer,
+  const double* sum_neg_buffer,
+  const data_size_t* mark_buffer,
+  const data_size_t num_data,
+  double* block_buffer) {
+  GlobalCalcAveragePrecisionInner<false>(sum_pos_buffer, sum_neg_buffer, mark_buffer, num_data, block_buffer);
+}
+
+template <>
+void GlobalCalcAveragePrecision<true>(const double* sum_pos_buffer,
+  const double* sum_neg_buffer,
+  const data_size_t* mark_buffer,
+  const data_size_t num_data,
+  double* block_buffer) {
+  GlobalCalcAveragePrecisionInner<true>(sum_pos_buffer, sum_neg_buffer, mark_buffer, num_data, block_buffer);
+}
+
 }  // namespace LightGBM

@@ -529,6 +529,7 @@ std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* scor
     std::vector<double> tmp_score(num_data * num_class_, 0.0f);
     CopyFromCUDADeviceToHostOuter<double>(tmp_score.data(), score, static_cast<size_t>(num_data * num_class_), __FILE__, __LINE__);
     SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+    Log::Warning("evaluating");
     return metric->Eval(tmp_score.data(), objective_function_);
   } else*/ {
     return metric->Eval(score, objective_function_);

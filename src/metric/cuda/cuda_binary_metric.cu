@@ -88,4 +88,21 @@ void CUDAAUCMetric::LaunchEvalKernel(const double* score) const {
   }
 }
 
+void CUDAAveragePrecisionMetric::LaunchEvalKernel(const double* score) const {
+  BitonicArgSortGlobal<double, data_size_t, false>(score, cuda_indices_buffer_, static_cast<size_t>(num_data_));
+  SetCUDAMemoryOuter<double>(cuda_block_sum_pos_buffer_, 0, 1, __FILE__, __LINE__);
+  if (cuda_weights_ == nullptr) {
+    GlobalGenAUCPosNegSum<false, true>(cuda_label_, cuda_weights_, cuda_indices_buffer_, cuda_sum_pos_buffer_, cuda_block_sum_pos_buffer_, num_data_);
+  } else {
+    GlobalGenAUCPosNegSum<true, false>(cuda_label_, cuda_weights_, cuda_indices_buffer_, cuda_sum_pos_buffer_, cuda_block_sum_pos_buffer_, num_data_);
+    GlobalGenAUCPosNegSum<true, false>(cuda_label_, cuda_weights_, cuda_indices_buffer_, cuda_sum_neg_buffer_, cuda_block_sum_neg_buffer_, num_data_);
+  }
+  GloblGenAUCMark(score, cuda_indices_buffer_, cuda_threshold_mark_, cuda_block_threshold_mark_buffer_, cuda_block_mark_first_zero_, num_data_);
+  if (cuda_weights_ == nullptr) {
+    GlobalCalcAveragePrecision<false>(cuda_sum_pos_buffer_, nullptr, cuda_threshold_mark_, num_data_, cuda_block_sum_pos_buffer_);
+  } else {
+    GlobalCalcAveragePrecision<true>(cuda_sum_pos_buffer_, cuda_sum_neg_buffer_, cuda_threshold_mark_, num_data_, cuda_block_sum_pos_buffer_);
+  }
+}
+
 }  // namespace LightGBM
