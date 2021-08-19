@@ -20,12 +20,12 @@ if test -z "${R_HOME}"; then
     echo "could not determine R_HOME"
     exit 1
 fi
-CC=`"${R_HOME}/bin/R" CMD config CC`
 CXX11=`"${R_HOME}/bin/R" CMD config CXX11`
 CXX11STD=`"${R_HOME}/bin/R" CMD config CXX11STD`
 CXX="${CXX11} ${CXX11STD}"
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX11FLAGS`
+LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
 AC_LANG(C++)
 
 # LightGBM-specific flags
@@ -106,7 +106,6 @@ then
     OPENMP_LIB='-lomp'
     ac_pkg_openmp=no
     AC_MSG_CHECKING([whether OpenMP will work in a package])
-    AC_LANG(C)
     AC_LANG_CONFTEST(
         [
             AC_LANG_PROGRAM(
@@ -119,7 +118,18 @@ then
             )
         ]
     )
-    ${CC} -o conftest conftest.c ${OPENMP_LIB} ${OPENMP_CXXFLAGS} 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+    ${CXX} ${CPPFLAGS} ${CXXFLAGS} ${LDFLAGS} ${OPENMP_CXXFLAGS} ${OPENMP_LIB} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+
+    # -Xclang is not portable (it is clang-specific)
+    # if compilation above failed, try without that flag
+    if test "${ac_pkg_openmp}" = no; then
+        if test -f "./conftest"; then
+            rm ./conftest
+        fi
+        OPENMP_CXXFLAGS="-fopenmp"
+        ${CXX} ${CPPFLAGS} ${CXXFLAGS} ${LDFLAGS} ${OPENMP_CXXFLAGS} ${OPENMP_LIB} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+    fi
+
     AC_MSG_RESULT([${ac_pkg_openmp}])
     if test "${ac_pkg_openmp}" = no; then
         OPENMP_CXXFLAGS=''
