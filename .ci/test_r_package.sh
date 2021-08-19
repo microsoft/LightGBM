@@ -213,6 +213,32 @@ if [[ $OS_NAME == "macos" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
     fi
 fi
 
+# this check makes sure that CI builds of the CRAN package
+# actually use MM_PREFETCH preprocessor definition
+if [[ $R_BUILD_TYPE == "cran" ]]; then
+    mm_prefetch_working=$(
+        cat $BUILD_LOG_FILE \
+        | grep --count -E "checking whether MM_PREFETCH work.*yes"
+    )
+    if [[ $mm_prefetch_working -ne 1 ]]; then
+        echo "MM_PREFETCH test was not passed, and should be when testing the CRAN package"
+        exit -1
+    fi
+fi
+
+# this check makes sure that CI builds of the CRAN package
+# actually use MM_MALLOC preprocessor definition
+if [[ $R_BUILD_TYPE == "cran" ]]; then
+    mm_malloc_working=$(
+        cat $BUILD_LOG_FILE \
+        | grep --count -E "checking whether MM_MALLOC work.*yes"
+    )
+    if [[ $mm_malloc_working -ne 1 ]]; then
+        echo "MM_MALLOC test was not passed, and should be when testing the CRAN package"
+        exit -1
+    fi
+fi
+
 # this check makes sure that no "warning: unknown pragma ignored" logs
 # reach the user leading them to believe that something went wrong
 if [[ $R_BUILD_TYPE == "cran" ]]; then
