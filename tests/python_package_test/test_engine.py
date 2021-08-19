@@ -2862,6 +2862,6 @@ def test_dump_model_hook():
         "verbose": -1
     }
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model_str = str(bst.dump_model(5, 0), object_hook=hook)
+    dumped_model_str = str(bst.dump_model(5, 0, object_hook=hook))
     assert "leaf_value" not in dumped_model_str
     assert "LV" in dumped_model_str
