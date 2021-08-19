@@ -2847,6 +2847,7 @@ def test_dump_model():
     assert "leaf_value" in dumped_model_str
     assert "leaf_count" in dumped_model_str
 
+
 def test_dump_model_hook():
 
     def hook(obj):
