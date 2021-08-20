@@ -232,22 +232,34 @@ if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   }
 }
 
-# Checking that MM_PREFETCH preprocessor definition is actually used in CRAN builds.
+# Checking that MM_PREFETCH preprocessor definition is actually used in CI builds.
 if ($env:R_BUILD_TYPE -eq "cran") {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "checking whether MM_PREFETCH work.*yes"
-  if ($checks.Matches.length -eq 0) {
-    Write-Output "MM_PREFETCH preprocessor definition wasn't used. Check the build logs."
-    Check-Output $False
-  }
+  $checks_cnt = $checks.Matches.length
+} elseif ($env:TOOLCHAIN -ne "MSVC") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern ".*Performing Test MM_PREFETCH - Success"
+  $checks_cnt = $checks.Matches.length
+} else {
+  $checks_cnt = 1
+}
+if ($checks_cnt -eq 0) {
+  Write-Output "MM_PREFETCH preprocessor definition wasn't used. Check the build logs."
+  Check-Output $False
 }
 
-# Checking that MM_MALLOC preprocessor definition is actually used in CRAN builds.
+# Checking that MM_MALLOC preprocessor definition is actually used in CI builds.
 if ($env:R_BUILD_TYPE -eq "cran") {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "checking whether MM_MALLOC work.*yes"
-  if ($checks.Matches.length -eq 0) {
-    Write-Output "MM_MALLOC preprocessor definition wasn't used. Check the build logs."
-    Check-Output $False
-  }
+  $checks_cnt = $checks.Matches.length
+} elseif ($env:TOOLCHAIN -ne "MSVC") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern ".*Performing Test MM_MALLOC - Success"
+  $checks_cnt = $checks.Matches.length
+} else {
+  $checks_cnt = 1
+}
+if ($checks_cnt -eq 0) {
+  Write-Output "MM_MALLOC preprocessor definition wasn't used. Check the build logs."
+  Check-Output $False
 }
 
 # Checking that OpenMP is actually used in CMake builds.
