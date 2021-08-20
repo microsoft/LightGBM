@@ -4,7 +4,6 @@ import logging
 import struct
 import subprocess
 import sys
-import traceback
 from os import chdir
 from pathlib import Path
 from platform import system
@@ -90,16 +89,12 @@ def clear_path(path: Path) -> None:
                 file_name.unlink()
 
 
-def silent_call(cmd: List[str], raise_error: bool = False, error_msg: str = '', log2stderr=False) -> int:
+def silent_call(cmd: List[str], raise_error: bool = False, error_msg: str = '') -> int:
     try:
-        if log2stderr:
-            subprocess.check_call(cmd, stderr=sys.stderr, stdout=sys.stderr)
-        else:
-            with open(LOG_PATH, "ab") as log:
-                subprocess.check_call(cmd, stderr=log, stdout=log)
+        with open(LOG_PATH, "ab") as log:
+            subprocess.check_call(cmd, stderr=log, stdout=log)
         return 0
     except Exception as err:
-        traceback.print_exc()
         if raise_error:
             raise Exception("\n".join((error_msg, LOG_NOTICE)))
         return 1
@@ -188,7 +183,7 @@ def compile_cpp(
                 vs_versions = ("Visual Studio 16 2019", "Visual Studio 15 2017", "Visual Studio 14 2015")
                 for vs in vs_versions:
                     logger.info(f"Starting to compile with {vs} ({arch}).")
-                    status = silent_call(cmake_cmd + ["-G", vs, "-A", arch], log2stderr=True)
+                    status = silent_call(cmake_cmd + ["-G", vs, "-A", arch])
                     if status == 0:
                         break
                     else:
@@ -197,7 +192,7 @@ def compile_cpp(
                     raise Exception("\n".join(('Please install Visual Studio or MS Build and all required dependencies first',
                                     LOG_NOTICE)))
                 silent_call(["cmake", "--build", str(build_dir), "--target", "_lightgbm", "--config", "Release"], raise_error=True,
-                            error_msg='Please install CMake first', log2stderr=True)
+                            error_msg='Please install CMake first')
     else:  # Linux, Darwin (macOS), etc.
         logger.info("Starting to compile with CMake.")
         silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake and all required dependencies first')
