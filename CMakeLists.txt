@@ -451,14 +451,18 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-  set_target_properties(lightgbm_objs PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-  set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES OFF)
-  # histograms are list of object library. Linking object library to other
+  # We need those CUDA related properties to affect the linker. But target
+  # properties are not propagated to linker, thus we have to set them on final
+  # targets instead of on lightgbm_objs.
+  set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+  set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+  # histograms are list of object libraries. Linking object library to other
   # object librariese only gets usage requirements, the linked objects won't be
-  # used. Thus we have to call target_link_libraries on the two final targets
-  # here.
+  # used. Thus we have to call target_link_libraries on final targets here.
   target_link_libraries(lightgbm PRIVATE ${histograms})
-  target_link_libraries(_lightgbm PUBLIC ${histograms})
+  target_link_libraries(_lightgbm PRIVATE ${histograms})
 endif(USE_CUDA)
 
 if(USE_HDFS)
