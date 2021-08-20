@@ -232,6 +232,33 @@ if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   }
 }
 
+# Checking that MM_PREFETCH preprocessor definition is actually used in CRAN builds.
+if ($env:R_BUILD_TYPE -eq "cran") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "checking whether MM_PREFETCH work.*yes"
+  if ($checks.Matches.length -eq 0) {
+    Write-Output "MM_PREFETCH preprocessor definition wasn't used. Check the build logs."
+    Check-Output $False
+  }
+}
+
+# Checking that MM_MALLOC preprocessor definition is actually used in CRAN builds.
+if ($env:R_BUILD_TYPE -eq "cran") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "checking whether MM_MALLOC work.*yes"
+  if ($checks.Matches.length -eq 0) {
+    Write-Output "MM_MALLOC preprocessor definition wasn't used. Check the build logs."
+    Check-Output $False
+  }
+}
+
+# Checking that OpenMP is actually used in CMake builds.
+if ($env:R_BUILD_TYPE -eq "cmake") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern ".*Found OpenMP: TRUE.*"
+  if ($checks.Matches.length -eq 0) {
+    Write-Output "OpenMP wasn't found. Check the build logs."
+    Check-Output $False
+  }
+}
+
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
