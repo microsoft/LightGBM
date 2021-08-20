@@ -355,7 +355,6 @@ endif(USE_CUDA)
 )
 
 add_library(lightgbm_objs OBJECT ${SOURCES})
-target_compile_definitions(lightgbm_objs PRIVATE -D_lightgbm_EXPORTS)
 
 add_executable(lightgbm src/main.cpp src/application/application.cpp)
 target_link_libraries(lightgbm PRIVATE lightgbm_objs)
