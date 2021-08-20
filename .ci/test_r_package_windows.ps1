@@ -250,6 +250,15 @@ if ($env:R_BUILD_TYPE -eq "cran") {
   }
 }
 
+# Checking that OpenMP is actually used in CMake builds.
+if ($env:R_BUILD_TYPE -eq "cmake") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern ".*Found OpenMP: TRUE.*"
+  if ($checks.Matches.length -eq 0) {
+    Write-Output "OpenMP wasn't found. Check the build logs."
+    Check-Output $False
+  }
+}
+
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
