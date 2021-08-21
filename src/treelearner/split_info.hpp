@@ -152,6 +152,7 @@ struct SplitInfo {
     }
   }
 
+  /*! \brief test if a candidate SplitInfo is equivalent to this one */
   inline bool operator == (const SplitInfo& si) const {
     double local_gain = this->gain;
     double other_gain = si.gain;
@@ -174,7 +175,7 @@ struct SplitInfo {
       other_feature = INT32_MAX;
     }
     if (local_gain != other_gain) {
-      return local_gain == other_gain;
+      return false;
     } else {
       // if same gain, use smaller feature
       return local_feature == other_feature;
