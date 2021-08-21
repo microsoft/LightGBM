@@ -511,7 +511,7 @@ if(BUILD_CPP_TEST)
     endforeach()
   endif(MSVC)
   add_executable(testlightgbm ${CPP_TEST_SOURCES})
-  target_link_libraries(testlightgbm PRIVATE _lightgbm lightgbm_objs GTest::GTest)
+  target_link_libraries(testlightgbm PRIVATE lightgbm_objs GTest::GTest)
 endif()
 
 install(TARGETS lightgbm _lightgbm
