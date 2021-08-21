@@ -177,7 +177,7 @@ struct SplitInfo {
     if (local_gain != other_gain) {
       return false;
     } else {
-      // if same gain, use smaller feature
+      // if same gain, splits are only equal if they also use the same feature
       return local_feature == other_feature;
     }
   }
@@ -247,6 +247,7 @@ struct LightSplitInfo {
     }
   }
 
+  /*! \brief test if a candidate LightSplitInfo is equivalent to this one */
   inline bool operator == (const LightSplitInfo& si) const {
     double local_gain = this->gain;
     double other_gain = si.gain;
@@ -269,9 +270,9 @@ struct LightSplitInfo {
       other_feature = INT32_MAX;
     }
     if (local_gain != other_gain) {
-      return local_gain == other_gain;
+      return false;
     } else {
-      // if same gain, use smaller feature
+      // if same gain, splits are only equal if they also use the same feature
       return local_feature == other_feature;
     }
   }
