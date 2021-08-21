@@ -372,7 +372,7 @@ if(BUILD_STATIC_LIB)
   add_library(_lightgbm STATIC ${API_SOURCES})
 else()
   add_library(_lightgbm SHARED ${API_SOURCES})
-	set_property(lightgbm_objs PROPERTY POSITION_INDEPENDENT_CODE ON)
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif(BUILD_STATIC_LIB)
 target_link_libraries(_lightgbm PRIVATE lightgbm_objs)
 
