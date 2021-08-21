@@ -184,7 +184,7 @@ DataType GetDataType(const char* filename, bool header,
   int tab_cnt = 0;
   int colon_cnt = 0;
   GetStatistic(lines[0].c_str(), &comma_cnt, &tab_cnt, &colon_cnt);
-  int num_lines = lines.size();
+  size_t num_lines = lines.size();
   if (num_lines == 1) {
     if (colon_cnt > 0) {
       type = DataType::LIBSVM;
