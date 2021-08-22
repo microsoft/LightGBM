@@ -776,8 +776,9 @@ lgb.Dataset <- function(data,
 #' @title Construct validation data
 #' @description Construct validation data according to training data
 #' @param dataset \code{lgb.Dataset} object, training data
-#' @param data a \code{matrix} object, a \code{dgCMatrix} object or
-#'             a character representing a path to a text file (CSV, TSV, or LibSVM)
+#' @param data a \code{matrix} object, a \code{dgCMatrix} object,
+#'             a character representing a path to a text file (CSV, TSV, or LibSVM),
+#'             or a character representing a path to a binary \code{Dataset} file
 #' @param info a list of information of the \code{lgb.Dataset} object
 #' @param ... other information to pass to \code{info}.
 #'

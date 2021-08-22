@@ -16,7 +16,7 @@ lgb.Dataset(
 )
 }
 \arguments{
-\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or
+\item{data}{a \code{matrix} object, a \code{dgCMatrix} object,
 a character representing a path to a text file (CSV, TSV, or LibSVM)
 or a LightGBM Dataset binary file}
 

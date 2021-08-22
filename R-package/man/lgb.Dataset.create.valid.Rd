@@ -9,8 +9,9 @@ lgb.Dataset.create.valid(dataset, data, info = list(), ...)
 \arguments{
 \item{dataset}{\code{lgb.Dataset} object, training data}
 
-\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or
-a character representing a path to a text file (CSV, TSV, or LibSVM)}
+\item{data}{a \code{matrix} object, a \code{dgCMatrix} object,
+a character representing a path to a text file (CSV, TSV, or LibSVM),
+or a character representing a path to a binary \code{Dataset} file}
 
 \item{info}{a list of information of the \code{lgb.Dataset} object}
 
