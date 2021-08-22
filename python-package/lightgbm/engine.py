@@ -4,6 +4,7 @@ import collections
 import copy
 from operator import attrgetter
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -11,14 +12,34 @@ from . import callback
 from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor, _log_warning
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
+_LGBM_CustomObjectiveFunction = Callable[
+    [Union[List, np.ndarray], Dataset],
+    Tuple[Union[List, np.ndarray], Union[List, np.ndarray]]
+]
+_LGBM_CustomMetricFunction = Callable[
+    [Union[List, np.ndarray], Dataset],
+    Tuple[str, float, bool]
+]
 
-def train(params, train_set, num_boost_round=100,
-          valid_sets=None, valid_names=None,
-          fobj=None, feval=None, init_model=None,
-          feature_name='auto', categorical_feature='auto',
-          early_stopping_rounds=None, evals_result=None,
-          verbose_eval=True, learning_rates=None,
-          keep_training_booster=False, callbacks=None):
+
+def train(
+    params: Dict[str, Any],
+    train_set: Dataset,
+    num_boost_round: int = 100,
+    valid_sets: Optional[List[Dataset]] = None,
+    valid_names: Optional[List[str]] = None,
+    fobj: Optional[_LGBM_CustomObjectiveFunction] = None,
+    feval: Optional[_LGBM_CustomMetricFunction] = None,
+    init_model: Optional[Union[str, Path, Booster]] = None,
+    feature_name: Union[List[str], str] = 'auto',
+    categorical_feature: Union[List[str], str] = 'auto',
+    early_stopping_rounds: Optional[int] = None,
+    evals_result: Optional[Dict[str, Any]] = None,
+    verbose_eval: bool = True,
+    learning_rates: Optional[Union[List[float], Callable[[int], float]]] = None,
+    keep_training_booster: bool = False,
+    callbacks: Optional[List[Callable]] = None
+) -> Booster:
     """Perform the training with given parameters.
 
     Parameters
