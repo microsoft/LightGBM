@@ -1693,12 +1693,12 @@ if test -z "${R_HOME}"; then
     echo "could not determine R_HOME"
     exit 1
 fi
-CC=`"${R_HOME}/bin/R" CMD config CC`
 CXX11=`"${R_HOME}/bin/R" CMD config CXX11`
 CXX11STD=`"${R_HOME}/bin/R" CMD config CXX11STD`
 CXX="${CXX11} ${CXX11STD}"
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX11FLAGS`
+LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -1803,12 +1803,6 @@ then
     ac_pkg_openmp=no
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether OpenMP will work in a package" >&5
 $as_echo_n "checking whether OpenMP will work in a package... " >&6; }
-    ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -1828,7 +1822,18 @@ main ()
 
 
 _ACEOF
-    ${CC} -o conftest conftest.c ${OPENMP_LIB} ${OPENMP_CXXFLAGS} 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+    ${CXX} ${CPPFLAGS} ${CXXFLAGS} ${LDFLAGS} ${OPENMP_CXXFLAGS} ${OPENMP_LIB} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+
+    # -Xclang is not portable (it is clang-specific)
+    # if compilation above failed, try without that flag
+    if test "${ac_pkg_openmp}" = no; then
+        if test -f "./conftest"; then
+            rm ./conftest
+        fi
+        OPENMP_CXXFLAGS="-fopenmp"
+        ${CXX} ${CPPFLAGS} ${CXXFLAGS} ${LDFLAGS} ${OPENMP_CXXFLAGS} ${OPENMP_LIB} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_pkg_openmp=yes
+    fi
+
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ac_pkg_openmp}" >&5
 $as_echo "${ac_pkg_openmp}" >&6; }
     if test "${ac_pkg_openmp}" = no; then
