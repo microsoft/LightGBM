@@ -235,7 +235,7 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
   int num_col = 0;
   DataType type = GetDataType(filename, header, lines, &num_col);
   if (type == DataType::INVALID) {
-    Log::Fatal("Unknown format of training data.");
+    Log::Fatal("Unknown format of training data. Only CSV, TSV, and LibSVM formats are supported.");
   }
   std::unique_ptr<Parser> ret;
   int output_label_index = -1;
