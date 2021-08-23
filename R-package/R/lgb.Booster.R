@@ -1,4 +1,5 @@
 #' @importFrom R6 R6Class
+#' @importFrom utils modifyList
 Booster <- R6::R6Class(
   classname = "lgb.Booster",
   cloneable = FALSE,
@@ -38,7 +39,7 @@ Booster <- R6::R6Class(
             stop("lgb.Booster: Can only use lgb.Dataset as training data")
           }
           train_set_handle <- train_set$.__enclos_env__$private$get_handle()
-          params <- modifyList(params, train_set$get_params())
+          params <- utils::modifyList(params, train_set$get_params())
           params_str <- lgb.params2str(params = params)
           # Store booster handle
           handle <- .Call(
@@ -187,10 +188,10 @@ Booster <- R6::R6Class(
       }
 
       if (methods::is(self$params, "list")) {
-        params <- modifyList(self$params, params)
+        params <- utils::modifyList(self$params, params)
       }
 
-      params <- modifyList(params, additional_params)
+      params <- utils::modifyList(params, additional_params)
       params_str <- lgb.params2str(params = params)
 
       .Call(
@@ -501,7 +502,7 @@ Booster <- R6::R6Class(
       }
 
       # Predict on new data
-      params <- modifyList(params, additional_params)
+      params <- utils::modifyList(params, additional_params)
       predictor <- Predictor$new(
         modelfile = private$handle
         , params = params
@@ -762,6 +763,7 @@ Booster <- R6::R6Class(
 #'    )
 #' )
 #' }
+#' @importFrom utils modifyList
 #' @export
 predict.lgb.Booster <- function(object,
                                 data,
@@ -799,7 +801,7 @@ predict.lgb.Booster <- function(object,
       , predcontrib =  predcontrib
       , header = header
       , reshape = reshape
-      , params = modifyList(params, additional_params)
+      , params = utils::modifyList(params, additional_params)
     )
   )
 }

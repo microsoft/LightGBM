@@ -8,6 +8,7 @@
 
 #' @importFrom methods is
 #' @importFrom R6 R6Class
+#' @importFrom utils modifyList
 Dataset <- R6::R6Class(
 
   classname = "lgb.Dataset",
@@ -535,7 +536,7 @@ Dataset <- R6::R6Class(
         return(invisible(self))
       }
       if (lgb.is.null.handle(x = private$handle)) {
-        private$params <- modifyList(private$params, params)
+        private$params <- utils::modifyList(private$params, params)
       } else {
         tryCatch({
           .Call(
@@ -552,7 +553,7 @@ Dataset <- R6::R6Class(
 
           # If updating failed but raw data is available, modify the params
           # on the R side and re-set ("deconstruct") the Dataset
-          private$params <- modifyList(private$params, params)
+          private$params <- utils::modifyList(private$params, params)
           self$finalize()
         })
       }
