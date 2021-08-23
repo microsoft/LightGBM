@@ -2846,3 +2846,23 @@ def test_dump_model():
     assert "leaf_const" in dumped_model_str
     assert "leaf_value" in dumped_model_str
     assert "leaf_count" in dumped_model_str
+
+
+def test_dump_model_hook():
+
+    def hook(obj):
+        if 'leaf_value' in obj:
+            obj['LV'] = obj['leaf_value']
+            del obj['leaf_value']
+        return obj
+
+    X, y = load_breast_cancer(return_X_y=True)
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "binary",
+        "verbose": -1
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model_str = str(bst.dump_model(5, 0, object_hook=hook))
+    assert "leaf_value" not in dumped_model_str
+    assert "LV" in dumped_model_str
