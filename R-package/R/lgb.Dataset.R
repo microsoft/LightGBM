@@ -6,6 +6,24 @@
   return(c("label", "weight", "init_score", "group"))
 }
 
+#' @name lgb_shared_dataset_params
+#' @title Shared Dataset parameter docs
+#' @description Parameter docs for fields used in \code{lgb.Dataset} construction
+#' @param label vector of labels to use as the target variable
+#' @param weight numeric vector of sample weights
+#' @param init_score initial score is the base prediction lightgbm will boost from
+#' @param group used for learning-to-rank tasks. An integer vector describing how to
+#'              group rows together as ordered results from the same set of candidate results
+#'              to be ranked. For example, if you have a 100-document dataset with
+#'              \code{group = c(10, 20, 40, 10, 10, 10)}, that means that you have 6 groups,
+#'              where the first 10 records are in the first group, records 11-30 are in the
+#'              second group, etc.
+#' @param info a list of information of the \code{lgb.Dataset} object. NOTE: use of \code{info}
+#'             is deprecated as of v3.3.0. Use keyword arguments (e.g. \code{init_score = init_score})
+#'             directly.
+#' @keywords internal
+NULL
+
 #' @importFrom methods is
 #' @importFrom R6 R6Class
 Dataset <- R6::R6Class(
@@ -34,7 +52,10 @@ Dataset <- R6::R6Class(
                           free_raw_data = TRUE,
                           used_indices = NULL,
                           info = list(),
-                          ...) {
+                          label = NULL,
+                          weight = NULL,
+                          group = NULL,
+                          init_score = NULL) {
 
       # validate inputs early to avoid unnecessary computation
       if (!(is.null(reference) || lgb.is.Dataset(reference))) {
@@ -44,25 +65,17 @@ Dataset <- R6::R6Class(
           stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
       }
 
-      # Check for additional parameters
-      additional_params <- list(...)
-
-      # Check if attribute key is in the known attribute list
-      for (key in names(additional_params)) {
-
-        # Key existing
-        if (key %in% .INFO_KEYS()) {
-
-          # Store as info
-          info[[key]] <- additional_params[[key]]
-
-        } else {
-
-          # Store as param
-          params[[key]] <- additional_params[[key]]
-
-        }
-
+      if (!is.null(label)) {
+        info[["label"]] <- label
+      }
+      if (!is.null(weight)) {
+        info[["weight"]] <- weight
+      }
+      if (!is.null(group)) {
+        info[["group"]] <- group
+      }
+      if (!is.null(init_score)) {
+        info[["init_score"]] <- init_score
       }
 
       # Check for matrix format
@@ -92,6 +105,10 @@ Dataset <- R6::R6Class(
 
     create_valid = function(data,
                             info = list(),
+                            label = NULL,
+                            weight = NULL,
+                            group = NULL,
+                            init_score = NULL,
                             ...) {
 
       # Create new dataset
@@ -105,6 +122,10 @@ Dataset <- R6::R6Class(
         , free_raw_data = private$free_raw_data
         , used_indices = NULL
         , info = info
+        , label = label
+        , weight = weight
+        , group = group
+        , init_score = init_score
         , ...
       )
 
@@ -710,6 +731,7 @@ Dataset <- R6::R6Class(
 #' @title Construct \code{lgb.Dataset} object
 #' @description Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
 #'              or local file (that was created previously by saving an \code{lgb.Dataset}).
+#' @inheritParams lgb_shared_dataset_params
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
 #' @param params a list of parameters. See
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
@@ -727,8 +749,7 @@ Dataset <- R6::R6Class(
 #'                      This reduces LightGBM's memory consumption, but it means that the Dataset object
 #'                      cannot be changed after it has been constructed. If you'd prefer to be able to
 #'                      change the Dataset object after construction, set \code{free_raw_data = FALSE}.
-#' @param info a list of information of the \code{lgb.Dataset} object
-#' @param ... other information to pass to \code{info} or parameters pass to \code{params}
+#' @param ... other parameters passed to \code{params}
 #'
 #' @return constructed dataset
 #'
@@ -750,7 +771,14 @@ lgb.Dataset <- function(data,
                         categorical_feature = NULL,
                         free_raw_data = TRUE,
                         info = list(),
+                        label = NULL,
+                        weight = NULL,
+                        group = NULL,
+                        init_score = NULL,
                         ...) {
+
+  additional_params <- list(...)
+  params <- moodifyList(params, additional_params)
 
   # Create new dataset
   return(
@@ -764,7 +792,10 @@ lgb.Dataset <- function(data,
       , free_raw_data = free_raw_data
       , used_indices = NULL
       , info = info
-      , ...
+      , label = label
+      , weight = weight
+      , group = group
+      , init_score = init_score
     ))
   )
 
@@ -773,10 +804,10 @@ lgb.Dataset <- function(data,
 #' @name lgb.Dataset.create.valid
 #' @title Construct validation data
 #' @description Construct validation data according to training data
+#' @inheritParams lgb_shared_dataset_params
 #' @param dataset \code{lgb.Dataset} object, training data
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
-#' @param info a list of information of the \code{lgb.Dataset} object
-#' @param ... other information to pass to \code{info}.
+#' @param ... additional \code{lgb.Dataset} parameters
 #'
 #' @return constructed dataset
 #'
@@ -790,7 +821,14 @@ lgb.Dataset <- function(data,
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 #' }
 #' @export
-lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
+lgb.Dataset.create.valid <- function(dataset,
+                                     data,
+                                     info = list(),
+                                     label = NULL,
+                                     weight = NULL,
+                                     group = NULL,
+                                     init_score = NULL,
+                                     ...) {
 
   # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
@@ -798,7 +836,17 @@ lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
   }
 
   # Create validation dataset
-  return(invisible(dataset$create_valid(data = data, info = info, ...)))
+  return(invisible(
+    dataset$create_valid(
+      data = data
+      , info = info
+      , label = label
+      , weight = weight
+      , group = group
+      , init_score = init_score
+      , ...
+    )
+  ))
 
 }
 

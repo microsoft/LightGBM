@@ -12,6 +12,10 @@ lgb.Dataset(
   categorical_feature = NULL,
   free_raw_data = TRUE,
   info = list(),
+  label = NULL,
+  weight = NULL,
+  group = NULL,
+  init_score = NULL,
   ...
 )
 }
@@ -39,9 +43,24 @@ This reduces LightGBM's memory consumption, but it means that the Dataset object
 cannot be changed after it has been constructed. If you'd prefer to be able to
 change the Dataset object after construction, set \code{free_raw_data = FALSE}.}
 
-\item{info}{a list of information of the \code{lgb.Dataset} object}
+\item{info}{a list of information of the \code{lgb.Dataset} object. NOTE: use of \code{info}
+is deprecated as of v3.3.0. Use keyword arguments (e.g. \code{init_score = init_score})
+directly.}
 
-\item{...}{other information to pass to \code{info} or parameters pass to \code{params}}
+\item{label}{vector of labels to use as the target variable}
+
+\item{weight}{numeric vector of sample weights}
+
+\item{group}{used for learning-to-rank tasks. An integer vector describing how to
+group rows together as ordered results from the same set of candidate results
+to be ranked. For example, if you have a 100-document dataset with
+\code{group = c(10, 20, 40, 10, 10, 10)}, that means that you have 6 groups,
+where the first 10 records are in the first group, records 11-30 are in the
+second group, etc.}
+
+\item{init_score}{initial score is the base prediction lightgbm will boost from}
+
+\item{...}{other parameters passed to \code{params}}
 }
 \value{
 constructed dataset

@@ -4,16 +4,40 @@
 \alias{lgb.Dataset.create.valid}
 \title{Construct validation data}
 \usage{
-lgb.Dataset.create.valid(dataset, data, info = list(), ...)
+lgb.Dataset.create.valid(
+  dataset,
+  data,
+  info = list(),
+  label = NULL,
+  weight = NULL,
+  group = NULL,
+  init_score = NULL,
+  ...
+)
 }
 \arguments{
 \item{dataset}{\code{lgb.Dataset} object, training data}
 
 \item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
 
-\item{info}{a list of information of the \code{lgb.Dataset} object}
+\item{info}{a list of information of the \code{lgb.Dataset} object. NOTE: use of \code{info}
+is deprecated as of v3.3.0. Use keyword arguments (e.g. \code{init_score = init_score})
+directly.}
 
-\item{...}{other information to pass to \code{info}.}
+\item{label}{vector of labels to use as the target variable}
+
+\item{weight}{numeric vector of sample weights}
+
+\item{group}{used for learning-to-rank tasks. An integer vector describing how to
+group rows together as ordered results from the same set of candidate results
+to be ranked. For example, if you have a 100-document dataset with
+\code{group = c(10, 20, 40, 10, 10, 10)}, that means that you have 6 groups,
+where the first 10 records are in the first group, records 11-30 are in the
+second group, etc.}
+
+\item{init_score}{initial score is the base prediction lightgbm will boost from}
+
+\item{...}{additional \code{lgb.Dataset} parameters}
 }
 \value{
 constructed dataset
