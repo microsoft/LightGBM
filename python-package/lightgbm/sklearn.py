@@ -11,7 +11,7 @@ from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
                      pd_DataFrame)
-from .engine import _LGBM_CustomObjectiveFunction, train
+from .engine import train
 
 
 class _ObjectiveFunctionWrapper:
@@ -357,7 +357,7 @@ class LGBMModel(_LGBMModelBase):
         learning_rate: float = 0.1,
         n_estimators: int = 100,
         subsample_for_bin: int = 200000,
-        objective: Optional[Union[str, _LGBM_CustomObjectiveFunction]] = None,
+        objective: Optional[Union[str, Callable]] = None,
         class_weight: Optional[Union[Dict, str]] = None,
         min_split_gain: float = 0.,
         min_child_weight: float = 1e-3,
