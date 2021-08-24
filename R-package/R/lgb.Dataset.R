@@ -711,8 +711,8 @@ Dataset <- R6::R6Class(
 #' @description Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
 #'              or local file (that was created previously by saving an \code{lgb.Dataset}).
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object,
-#'             a character representing a path to a text file (CSV, TSV, or LibSVM)
-#'             or a LightGBM Dataset binary file
+#'             a character representing a path to a text file (CSV, TSV, or LibSVM),
+#'             or a character representing a path to a binary \code{lgb.Dataset} file
 #' @param params a list of parameters. See
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
 #'               The "Dataset Parameters" section of the documentation} for a list of parameters
