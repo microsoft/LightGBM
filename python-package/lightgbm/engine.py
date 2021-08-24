@@ -122,7 +122,9 @@ def train(
         The index of iteration that has the best performance will be saved in the ``best_iteration`` field
         if early stopping logic is enabled by setting ``early_stopping_rounds``.
     evals_result: dict or None, optional (default=None)
-        This dictionary used to store all evaluation results of all the items in ``valid_sets``.
+        Dictionary used to store all evaluation results of all the items in ``valid_sets``.
+        This should be initialized outside of your call to ``train()`` and should be empty.
+        Any initial contents of the dictionary will be deleted by `train()`.
 
         .. rubric:: Example
 
