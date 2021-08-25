@@ -20,7 +20,8 @@
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
-\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
+\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or
+a character representing a path to a text file (CSV, TSV, or LibSVM)}
 
 \item{start_iteration}{int or None, optional (default=None)
 Start index of the iteration to predict.
