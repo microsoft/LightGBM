@@ -24,6 +24,7 @@
 #'                             not the number of threads (most CPU using hyper-threading to generate 2 threads
 #'                             per CPU core).}
 #'            }
+#'            NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained booster model \code{lgb.Booster}.
 #'
@@ -90,6 +91,15 @@ lgb.train <- function(params = list(),
   params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
   eval_functions <- list(NULL)
+
+  if (length(additional_params) > 0L) {
+    warning(paste0(
+      "lgb.train: Found the following passed through '...': "
+      , paste(names(additional_params), collapse = ", ")
+      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
+      , "Add these to 'params' instead. See ?lgb.train for documentation on how to call this function."
+    ))
+  }
 
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.

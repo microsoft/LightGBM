@@ -12,7 +12,7 @@ from os import SEEK_END
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import scipy.sparse
@@ -34,17 +34,17 @@ def _get_sample_count(total_nrow: int, params: str):
 
 
 class _DummyLogger:
-    def info(self, msg):
+    def info(self, msg: str) -> None:
         print(msg)
 
-    def warning(self, msg):
+    def warning(self, msg: str) -> None:
         warnings.warn(msg, stacklevel=3)
 
 
-_LOGGER = _DummyLogger()
+_LOGGER: Union[_DummyLogger, Logger] = _DummyLogger()
 
 
-def register_logger(logger):
+def register_logger(logger: Logger) -> None:
     """Register custom logger.
 
     Parameters
@@ -58,12 +58,12 @@ def register_logger(logger):
     _LOGGER = logger
 
 
-def _normalize_native_string(func):
+def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], None]:
     """Join log messages from native library which come by chunks."""
-    msg_normalized = []
+    msg_normalized: List[str] = []
 
     @wraps(func)
-    def wrapper(msg):
+    def wrapper(msg: str) -> None:
         nonlocal msg_normalized
         if msg.strip() == '':
             msg = ''.join(msg_normalized)
@@ -75,20 +75,20 @@ def _normalize_native_string(func):
     return wrapper
 
 
-def _log_info(msg):
+def _log_info(msg: str) -> None:
     _LOGGER.info(msg)
 
 
-def _log_warning(msg):
+def _log_warning(msg: str) -> None:
     _LOGGER.warning(msg)
 
 
 @_normalize_native_string
-def _log_native(msg):
+def _log_native(msg: str) -> None:
     _LOGGER.info(msg)
 
 
-def _log_callback(msg):
+def _log_callback(msg: bytes) -> None:
     """Redirect logs from native library into Python."""
     _log_native(str(msg.decode('utf-8')))
 
@@ -676,7 +676,7 @@ class Sequence(abc.ABC):
     batch_size = 4096  # Defaults to read 4K rows in each batch.
 
     @abc.abstractmethod
-    def __getitem__(self, idx: Union[int, slice]) -> np.ndarray:
+    def __getitem__(self, idx: Union[int, slice, List[int]]) -> np.ndarray:
         """Return data for given row index.
 
         A basic implementation should look like this:
@@ -684,21 +684,24 @@ class Sequence(abc.ABC):
         .. code-block:: python
 
             if isinstance(idx, numbers.Integral):
-                return self.__get_one_line__(idx)
+                return self._get_one_line(idx)
             elif isinstance(idx, slice):
-                return np.stack(self.__get_one_line__(i) for i in range(idx.start, idx.stop))
+                return np.stack([self._get_one_line(i) for i in range(idx.start, idx.stop)])
+            elif isinstance(idx, list):
+                # Only required if using ``Dataset.subset()``.
+                return np.array([self._get_one_line(i) for i in idx])
             else:
-                raise TypeError(f"Sequence index must be integer or slice, got {type(idx).__name__}")
+                raise TypeError(f"Sequence index must be integer, slice or list, got {type(idx).__name__}")
 
         Parameters
         ----------
-        idx : int, slice[int]
+        idx : int, slice[int], list[int]
             Item index.
 
         Returns
         -------
         result : numpy 1-D array, numpy 2-D array
-            1-D array if idx is int, 2-D array if idx is slice.
+            1-D array if idx is int, 2-D array if idx is slice or list.
         """
         raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __getitem__()")
 
@@ -784,7 +787,7 @@ class _InnerPredictor:
         ----------
         data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
-            When data type is string or pathlib.Path, it represents the path of txt file.
+            When data type is string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
         num_iteration : int, optional (default=-1)
@@ -1172,7 +1175,7 @@ class Dataset:
         ----------
         data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
             Data source of Dataset.
-            If string or pathlib.Path, it represents the path to txt file.
+            If string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         reference : Dataset or None, optional (default=None)
@@ -1263,7 +1266,8 @@ class Dataset:
             ptr_data,
             ctypes.byref(actual_sample_cnt),
         ))
-        return indices[:actual_sample_cnt.value]
+        assert sample_cnt == actual_sample_cnt.value
+        return indices
 
     def _init_from_ref_dataset(self, total_nrow: int, ref_dataset: 'Dataset') -> 'Dataset':
         """Create dataset from a reference dataset.
@@ -1558,7 +1562,8 @@ class Dataset:
         # set feature names
         return self.set_feature_name(feature_name)
 
-    def __yield_row_from(self, seqs: List[Sequence], indices: Iterable[int]):
+    @staticmethod
+    def _yield_row_from_seqlist(seqs: List[Sequence], indices: Iterable[int]):
         offset = 0
         seq_id = 0
         seq = seqs[seq_id]
@@ -1584,7 +1589,7 @@ class Dataset:
         indices = self._create_sample_indices(total_nrow)
 
         # Select sampled rows, transpose to column order.
-        sampled = np.array([row for row in self.__yield_row_from(seqs, indices)])
+        sampled = np.array([row for row in self._yield_row_from_seqlist(seqs, indices)])
         sampled = sampled.T
 
         filtered = []
@@ -1814,7 +1819,7 @@ class Dataset:
         ----------
         data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
             Data source of Dataset.
-            If string or pathlib.Path, it represents the path to txt file.
+            If string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
@@ -2294,7 +2299,7 @@ class Dataset:
 
         Returns
         -------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, list of numpy arrays or None
+        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays or None
             Raw data used in the Dataset construction.
         """
         if self.handle is None:
@@ -2308,6 +2313,10 @@ class Dataset:
                     self.data = self.data.iloc[self.used_indices].copy()
                 elif isinstance(self.data, dt_DataTable):
                     self.data = self.data[self.used_indices, :]
+                elif isinstance(self.data, Sequence):
+                    self.data = self.data[self.used_indices]
+                elif isinstance(self.data, list) and len(self.data) > 0 and all(isinstance(x, Sequence) for x in self.data):
+                    self.data = np.array([row for row in self._yield_row_from_seqlist(self.data, self.used_indices)])
                 else:
                     _log_warning(f"Cannot subset {type(self.data).__name__} type of raw data.\n"
                                  "Returning original raw data")
@@ -3391,7 +3400,7 @@ class Booster:
         ret += _dump_pandas_categorical(self.pandas_categorical)
         return ret
 
-    def dump_model(self, num_iteration=None, start_iteration=0, importance_type='split'):
+    def dump_model(self, num_iteration=None, start_iteration=0, importance_type='split', object_hook=None):
         """Dump Booster to JSON format.
 
         Parameters
@@ -3406,6 +3415,15 @@ class Booster:
             What type of feature importance should be dumped.
             If "split", result contains numbers of times the feature is used in a model.
             If "gain", result contains total gains of splits which use the feature.
+        object_hook : callable or None, optional (default=None)
+            If not None, ``object_hook`` is a function called while parsing the json
+            string returned by the C API. It may be used to alter the json, to store
+            specific values while building the json structure. It avoids
+            walking through the structure again. It saves a significant amount
+            of time if the number of trees is huge.
+            Signature is ``def object_hook(node: dict) -> dict``.
+            None is equivalent to ``lambda node: node``.
+            See documentation of ``json.loads()`` for further details.
 
         Returns
         -------
@@ -3440,7 +3458,7 @@ class Booster:
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
-        ret = json.loads(string_buffer.value.decode('utf-8'))
+        ret = json.loads(string_buffer.value.decode('utf-8'), object_hook=object_hook)
         ret['pandas_categorical'] = json.loads(json.dumps(self.pandas_categorical,
                                                           default=json_default_with_numpy))
         return ret
@@ -3454,7 +3472,7 @@ class Booster:
         ----------
         data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
-            If string or pathlib.Path, it represents the path to txt file.
+            If string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
             If <= 0, starts from the first iteration.
@@ -3509,7 +3527,7 @@ class Booster:
         ----------
         data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for refit.
-            If string or pathlib.Path, it represents the path to txt file.
+            If string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array or pandas Series / one-column DataFrame
             Label for refit.
         decay_rate : float, optional (default=0.9)

@@ -23,11 +23,9 @@ Booster <- R6::R6Class(
     initialize = function(params = list(),
                           train_set = NULL,
                           modelfile = NULL,
-                          model_str = NULL,
-                          ...) {
+                          model_str = NULL) {
 
       # Create parameters and handle
-      params <- append(params, list(...))
       handle <- NULL
 
       # Attempts to create a handle for the dataset
@@ -684,7 +682,8 @@ Booster <- R6::R6Class(
 #' @title Predict method for LightGBM model
 #' @description Predicted values based on class \code{lgb.Booster}
 #' @param object Object of class \code{lgb.Booster}
-#' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
+#' @param data a \code{matrix} object, a \code{dgCMatrix} object or
+#'             a character representing a path to a text file (CSV, TSV, or LibSVM)
 #' @param start_iteration int or None, optional (default=None)
 #'                        Start index of the iteration to predict.
 #'                        If None or <= 0, starts from the first iteration.
