@@ -171,16 +171,6 @@ Dataset <- R6::R6Class(
 
       }
 
-      # Check has header or not
-      has_header <- FALSE
-      if (!is.null(private$params$has_header) || !is.null(private$params$header)) {
-        params_has_header <- tolower(as.character(private$params$has_header)) == "true"
-        params_header <- tolower(as.character(private$params$header)) == "true"
-        if (params_has_header || params_header) {
-          has_header <- TRUE
-        }
-      }
-
       # Generate parameter str
       params_str <- lgb.params2str(params = private$params)
 
