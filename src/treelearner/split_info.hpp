@@ -134,6 +134,11 @@ struct SplitInfo {
     if (other_gain == NAN) {
       other_gain = kMinScore;
     }
+    if (local_gain != other_gain) {
+      return local_gain > other_gain;
+    }
+
+    // if gains are identical, choose the feature with the smaller index
     int local_feature = this->feature;
     int other_feature = si.feature;
     // replace -1 with max int
@@ -144,12 +149,7 @@ struct SplitInfo {
     if (other_feature == -1) {
       other_feature = INT32_MAX;
     }
-    if (local_gain != other_gain) {
-      return local_gain > other_gain;
-    } else {
-      // if same gain, use smaller feature
-      return local_feature < other_feature;
-    }
+    return local_feature < other_feature;
   }
 
   /*! \brief test if a candidate SplitInfo is equivalent to this one */
@@ -164,6 +164,11 @@ struct SplitInfo {
     if (other_gain == NAN) {
       other_gain = kMinScore;
     }
+    if (local_gain != other_gain) {
+      return false;
+    }
+
+    // if same gain, splits are only equal if they also use the same feature
     int local_feature = this->feature;
     int other_feature = si.feature;
     // replace -1 with max int
@@ -174,12 +179,7 @@ struct SplitInfo {
     if (other_feature == -1) {
       other_feature = INT32_MAX;
     }
-    if (local_gain != other_gain) {
-      return false;
-    } else {
-      // if same gain, splits are only equal if they also use the same feature
-      return local_feature == other_feature;
-    }
+    return local_feature == other_feature;
   }
 };
 
