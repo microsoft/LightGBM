@@ -381,7 +381,7 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
   cv_bst_linear <- lgb.cv(
     data = dtrain
     , nrounds = 10L
-    , params = modifyList(params, list(linear_tree = TRUE))
+    , params = utils::modifyList(params, list(linear_tree = TRUE))
     , nfold = 5L
   )
   expect_is(cv_bst_linear, "lgb.CVBooster")
@@ -1767,7 +1767,7 @@ test_that("lgb.train() fit on linearly-relatead data improves when using linear 
   bst_linear <- lgb.train(
     data = dtrain
     , nrounds = 10L
-    , params = modifyList(params, list(linear_tree = TRUE))
+    , params = utils::modifyList(params, list(linear_tree = TRUE))
     , valids = list("train" = dtrain)
   )
   expect_true(lgb.is.Booster(bst_linear))
@@ -1798,7 +1798,7 @@ test_that("lgb.train() w/ linear learner fails already-constructed dataset with 
     bst_linear <- lgb.train(
       data = dtrain
       , nrounds = 10L
-      , params = modifyList(params, list(linear_tree = TRUE))
+      , params = utils::modifyList(params, list(linear_tree = TRUE))
     )
   }, regexp = "Cannot change linear_tree after constructed Dataset handle")
 })
@@ -1839,7 +1839,7 @@ test_that("lgb.train() works with linear learners even if Dataset has missing va
   bst_linear <- lgb.train(
     data = dtrain
     , nrounds = 10L
-    , params = modifyList(params, list(linear_tree = TRUE))
+    , params = utils::modifyList(params, list(linear_tree = TRUE))
     , valids = list("train" = dtrain)
   )
   expect_true(lgb.is.Booster(bst_linear))
@@ -1887,7 +1887,7 @@ test_that("lgb.train() works with linear learners, bagging, and a Dataset that h
   bst_linear <- lgb.train(
     data = dtrain
     , nrounds = 10L
-    , params = modifyList(params, list(linear_tree = TRUE))
+    , params = utils::modifyList(params, list(linear_tree = TRUE))
     , valids = list("train" = dtrain)
   )
   expect_true(lgb.is.Booster(bst_linear))
@@ -1925,7 +1925,7 @@ test_that("lgb.train() works with linear learners and data where a feature has o
   bst_linear <- lgb.train(
     data = dtrain
     , nrounds = 10L
-    , params = modifyList(params, list(linear_tree = TRUE))
+    , params = utils::modifyList(params, list(linear_tree = TRUE))
   )
   expect_true(lgb.is.Booster(bst_linear))
 })
@@ -1964,7 +1964,7 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
   bst_linear <- lgb.train(
     data = dtrain
     , nrounds = 10L
-    , params = modifyList(params, list(linear_tree = TRUE))
+    , params = utils::modifyList(params, list(linear_tree = TRUE))
     , valids = list("train" = dtrain)
   )
   expect_true(lgb.is.Booster(bst_linear))
