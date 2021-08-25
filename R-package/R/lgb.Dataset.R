@@ -732,7 +732,9 @@ Dataset <- R6::R6Class(
 #' @description Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
 #'              or local file (that was created previously by saving an \code{lgb.Dataset}).
 #' @inheritParams lgb_shared_dataset_params
-#' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
+#' @param data a \code{matrix} object, a \code{dgCMatrix} object,
+#'             a character representing a path to a text file (CSV, TSV, or LibSVM),
+#'             or a character representing a path to a binary \code{lgb.Dataset} file
 #' @param params a list of parameters. See
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
 #'               The "Dataset Parameters" section of the documentation} for a list of parameters
@@ -806,7 +808,9 @@ lgb.Dataset <- function(data,
 #' @description Construct validation data according to training data
 #' @inheritParams lgb_shared_dataset_params
 #' @param dataset \code{lgb.Dataset} object, training data
-#' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
+#' @param data a \code{matrix} object, a \code{dgCMatrix} object,
+#'             a character representing a path to a text file (CSV, TSV, or LibSVM),
+#'             or a character representing a path to a binary \code{Dataset} file
 #' @param ... additional \code{lgb.Dataset} parameters
 #'
 #' @return constructed dataset
