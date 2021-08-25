@@ -285,101 +285,101 @@ jobs:
 #       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
 #       artifactName: PackageAssets
 #       artifactType: container
-###########################################
-- job: R_artifact
-###########################################
-  condition: not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
-  pool:
-    vmImage: 'ubuntu-latest'
-  container: rbase
-  steps:
-  - script: |
-      LGB_VER=$(head -n 1 VERSION.txt | sed "s/rc/-/g")
-      sh build-cran-package.sh || exit -1
-      mv lightgbm_${LGB_VER}.tar.gz $(Build.ArtifactStagingDirectory)/lightgbm-${LGB_VER}-r-cran.tar.gz
-    displayName: 'Build CRAN R-package'
-  - task: PublishBuildArtifacts@1
-    condition: succeeded()
-    inputs:
-      pathtoPublish: $(Build.ArtifactStagingDirectory)
-      artifactName: R-package
-      artifactType: container
+# ###########################################
+# - job: R_artifact
+# ###########################################
+#   condition: not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
+#   pool:
+#     vmImage: 'ubuntu-latest'
+#   container: rbase
+#   steps:
+#   - script: |
+#       LGB_VER=$(head -n 1 VERSION.txt | sed "s/rc/-/g")
+#       sh build-cran-package.sh || exit -1
+#       mv lightgbm_${LGB_VER}.tar.gz $(Build.ArtifactStagingDirectory)/lightgbm-${LGB_VER}-r-cran.tar.gz
+#     displayName: 'Build CRAN R-package'
+#   - task: PublishBuildArtifacts@1
+#     condition: succeeded()
+#     inputs:
+#       pathtoPublish: $(Build.ArtifactStagingDirectory)
+#       artifactName: R-package
+#       artifactType: container
 
-###########################################
-- job: Package
-###########################################
-  dependsOn:
-  - Linux
-  - Linux_latest
-  - QEMU_multiarch
-  - macOS
-  - Windows
-  - R_artifact
-  condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
-  pool:
-    vmImage: 'ubuntu-latest'
-  steps:
-  # Create archives with complete source code included (with git submodules)
-  - task: ArchiveFiles@2
-    displayName: Create zip archive
-    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-    inputs:
-      rootFolderOrFile: $(Build.SourcesDirectory)
-      includeRootFolder: false
-      archiveType: zip
-      archiveFile: '$(Build.ArtifactStagingDirectory)/archives/LightGBM-complete_source_code_zip.zip'
-      replaceExistingArchive: true
-  - task: ArchiveFiles@2
-    displayName: Create tar.gz archive
-    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-    inputs:
-      rootFolderOrFile: $(Build.SourcesDirectory)
-      includeRootFolder: false
-      archiveType: tar
-      tarCompression: gz
-      archiveFile: '$(Build.ArtifactStagingDirectory)/archives/LightGBM-complete_source_code_tar_gz.tar.gz'
-      replaceExistingArchive: true
-  # Download all agent packages from all previous phases
-  - task: DownloadBuildArtifacts@0
-    displayName: Download package assets
-    inputs:
-      artifactName: PackageAssets
-      downloadPath: $(Build.SourcesDirectory)/binaries
-  - task: DownloadBuildArtifacts@0
-    displayName: Download R-package
-    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-    inputs:
-      artifactName: R-package
-      downloadPath: $(Build.SourcesDirectory)/R
-  - script: |
-      python "$(Build.SourcesDirectory)/.nuget/create_nuget.py" "$(Build.SourcesDirectory)/binaries/PackageAssets"
-    displayName: 'Create NuGet configuration files'
-  - task: NuGetCommand@2
-    inputs:
-      command: pack
-      packagesToPack: '$(Build.SourcesDirectory)/.nuget/*.nuspec'
-      packDestination: '$(Build.ArtifactStagingDirectory)/nuget'
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathtoPublish: '$(Build.ArtifactStagingDirectory)/nuget'
-      artifactName: NuGet
-      artifactType: container
-  - task: GitHubRelease@0
-    displayName: 'Create GitHub Release'
-    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-    inputs:
-      gitHubConnection: guolinke
-      repositoryName: '$(Build.Repository.Name)'
-      action: 'create'
-      target: '$(Build.SourceVersion)'
-      tagSource: 'auto'
-      title: '$(Build.SourceBranchName)'
-      assets: |
-        $(Build.SourcesDirectory)/binaries/PackageAssets/*
-        $(Build.SourcesDirectory)/R/R-package/*
-        $(Build.ArtifactStagingDirectory)/nuget/*.nupkg
-        $(Build.ArtifactStagingDirectory)/archives/*
-      assetUploadMode: 'delete'
-      isDraft: true
-      isPreRelease: false
-      addChangeLog: false
+# ###########################################
+# - job: Package
+# ###########################################
+#   dependsOn:
+#   - Linux
+#   - Linux_latest
+#   - QEMU_multiarch
+#   - macOS
+#   - Windows
+#   - R_artifact
+#   condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
+#   pool:
+#     vmImage: 'ubuntu-latest'
+#   steps:
+#   # Create archives with complete source code included (with git submodules)
+#   - task: ArchiveFiles@2
+#     displayName: Create zip archive
+#     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+#     inputs:
+#       rootFolderOrFile: $(Build.SourcesDirectory)
+#       includeRootFolder: false
+#       archiveType: zip
+#       archiveFile: '$(Build.ArtifactStagingDirectory)/archives/LightGBM-complete_source_code_zip.zip'
+#       replaceExistingArchive: true
+#   - task: ArchiveFiles@2
+#     displayName: Create tar.gz archive
+#     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+#     inputs:
+#       rootFolderOrFile: $(Build.SourcesDirectory)
+#       includeRootFolder: false
+#       archiveType: tar
+#       tarCompression: gz
+#       archiveFile: '$(Build.ArtifactStagingDirectory)/archives/LightGBM-complete_source_code_tar_gz.tar.gz'
+#       replaceExistingArchive: true
+#   # Download all agent packages from all previous phases
+#   - task: DownloadBuildArtifacts@0
+#     displayName: Download package assets
+#     inputs:
+#       artifactName: PackageAssets
+#       downloadPath: $(Build.SourcesDirectory)/binaries
+#   - task: DownloadBuildArtifacts@0
+#     displayName: Download R-package
+#     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+#     inputs:
+#       artifactName: R-package
+#       downloadPath: $(Build.SourcesDirectory)/R
+#   - script: |
+#       python "$(Build.SourcesDirectory)/.nuget/create_nuget.py" "$(Build.SourcesDirectory)/binaries/PackageAssets"
+#     displayName: 'Create NuGet configuration files'
+#   - task: NuGetCommand@2
+#     inputs:
+#       command: pack
+#       packagesToPack: '$(Build.SourcesDirectory)/.nuget/*.nuspec'
+#       packDestination: '$(Build.ArtifactStagingDirectory)/nuget'
+#   - task: PublishBuildArtifacts@1
+#     inputs:
+#       pathtoPublish: '$(Build.ArtifactStagingDirectory)/nuget'
+#       artifactName: NuGet
+#       artifactType: container
+#   - task: GitHubRelease@0
+#     displayName: 'Create GitHub Release'
+#     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+#     inputs:
+#       gitHubConnection: guolinke
+#       repositoryName: '$(Build.Repository.Name)'
+#       action: 'create'
+#       target: '$(Build.SourceVersion)'
+#       tagSource: 'auto'
+#       title: '$(Build.SourceBranchName)'
+#       assets: |
+#         $(Build.SourcesDirectory)/binaries/PackageAssets/*
+#         $(Build.SourcesDirectory)/R/R-package/*
+#         $(Build.ArtifactStagingDirectory)/nuget/*.nupkg
+#         $(Build.ArtifactStagingDirectory)/archives/*
+#       assetUploadMode: 'delete'
+#       isDraft: true
+#       isPreRelease: false
+#       addChangeLog: false
