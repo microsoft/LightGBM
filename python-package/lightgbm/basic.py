@@ -684,7 +684,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        model_file : string, pathlib.Path or None, optional (default=None)
+        model_file : str, pathlib.Path or None, optional (default=None)
             Path to the model file.
         booster_handle : object or None, optional (default=None)
             Handle of Booster.
@@ -742,9 +742,9 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
-            When data type is string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
+            If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
         num_iteration : int, optional (default=-1)
@@ -1130,9 +1130,9 @@ class Dataset:
 
         Parameters
         ----------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
             Data source of Dataset.
-            If string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
+            If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         reference : Dataset or None, optional (default=None)
@@ -1149,13 +1149,13 @@ class Dataset:
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
-        feature_name : list of strings or 'auto', optional (default="auto")
+        feature_name : list of str, or 'auto', optional (default="auto")
             Feature names.
             If 'auto' and data is pandas DataFrame, data columns names are used.
-        categorical_feature : list of strings or int, or 'auto', optional (default="auto")
+        categorical_feature : list of str or int, or 'auto', optional (default="auto")
             Categorical features.
             If list of int, interpreted as indices.
-            If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
+            If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
             All values in categorical features should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
@@ -1774,9 +1774,9 @@ class Dataset:
 
         Parameters
         ----------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
             Data source of Dataset.
-            If string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
+            If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
@@ -1841,7 +1841,7 @@ class Dataset:
 
         Parameters
         ----------
-        filename : string or pathlib.Path
+        filename : str or pathlib.Path
             Name of the output file.
 
         Returns
@@ -1892,7 +1892,7 @@ class Dataset:
 
         Parameters
         ----------
-        field_name : string
+        field_name : str
             The field name of the information.
         data : list, numpy 1-D array, pandas Series or None
             The array of data to be set.
@@ -1941,7 +1941,7 @@ class Dataset:
 
         Parameters
         ----------
-        field_name : string
+        field_name : str
             The field name of the information.
 
         Returns
@@ -1978,7 +1978,7 @@ class Dataset:
 
         Parameters
         ----------
-        categorical_feature : list of int or strings
+        categorical_feature : list of int or str
             Names or indices of categorical features.
 
         Returns
@@ -2056,7 +2056,7 @@ class Dataset:
 
         Parameters
         ----------
-        feature_name : list of strings
+        feature_name : list of str
             Feature names.
 
         Returns
@@ -2241,7 +2241,7 @@ class Dataset:
 
         Returns
         -------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays or None
             Raw data used in the Dataset construction.
         """
         if self.handle is None:
@@ -2445,7 +2445,7 @@ class Dataset:
 
         Parameters
         ----------
-        filename : string or pathlib.Path
+        filename : str or pathlib.Path
             Name of the output file.
 
         Returns
@@ -2471,9 +2471,9 @@ class Booster:
             Parameters for Booster.
         train_set : Dataset or None, optional (default=None)
             Training dataset.
-        model_file : string, pathlib.Path or None, optional (default=None)
+        model_file : str, pathlib.Path or None, optional (default=None)
             Path to the model file.
-        model_str : string or None, optional (default=None)
+        model_str : str or None, optional (default=None)
             Model will be loaded from this string.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
@@ -2650,7 +2650,7 @@ class Booster:
 
         Parameters
         ----------
-        machines : list, set or string
+        machines : list, set or str
             Names of machines.
         local_listen_port : int, optional (default=12400)
             TCP listen port for local machines.
@@ -2692,18 +2692,18 @@ class Booster:
 
             - ``tree_index`` : int64, which tree a node belongs to. 0-based, so a value of ``6``, for example, means "this node is in the 7th tree".
             - ``node_depth`` : int64, how far a node is from the root of the tree. The root node has a value of ``1``, its direct children are ``2``, etc.
-            - ``node_index`` : string, unique identifier for a node.
-            - ``left_child`` : string, ``node_index`` of the child node to the left of a split. ``None`` for leaf nodes.
-            - ``right_child`` : string, ``node_index`` of the child node to the right of a split. ``None`` for leaf nodes.
-            - ``parent_index`` : string, ``node_index`` of this node's parent. ``None`` for the root node.
-            - ``split_feature`` : string, name of the feature used for splitting. ``None`` for leaf nodes.
+            - ``node_index`` : str, unique identifier for a node.
+            - ``left_child`` : str, ``node_index`` of the child node to the left of a split. ``None`` for leaf nodes.
+            - ``right_child`` : str, ``node_index`` of the child node to the right of a split. ``None`` for leaf nodes.
+            - ``parent_index`` : str, ``node_index`` of this node's parent. ``None`` for the root node.
+            - ``split_feature`` : str, name of the feature used for splitting. ``None`` for leaf nodes.
             - ``split_gain`` : float64, gain from adding this split to the tree. ``NaN`` for leaf nodes.
             - ``threshold`` : float64, value of the feature used to decide which side of the split a record will go down. ``NaN`` for leaf nodes.
-            - ``decision_type`` : string, logical operator describing how to compare a value to ``threshold``.
+            - ``decision_type`` : str, logical operator describing how to compare a value to ``threshold``.
               For example, ``split_feature = "Column_10", threshold = 15, decision_type = "<="`` means that
               records where ``Column_10 <= 15`` follow the left side of the split, otherwise follows the right side of the split. ``None`` for leaf nodes.
-            - ``missing_direction`` : string, split direction that missing values should go to. ``None`` for leaf nodes.
-            - ``missing_type`` : string, describes what types of values are treated as missing.
+            - ``missing_direction`` : str, split direction that missing values should go to. ``None`` for leaf nodes.
+            - ``missing_type`` : str, describes what types of values are treated as missing.
             - ``value`` : float64, predicted value for this leaf node, multiplied by the learning rate.
             - ``weight`` : float64 or int64, sum of hessian (second-order derivative of objective), summed over observations that fall in this node.
             - ``count`` : int64, number of records in the training data that fall into this node.
@@ -2826,7 +2826,7 @@ class Booster:
 
         Parameters
         ----------
-        name : string
+        name : str
             Name for the training Dataset.
 
         Returns
@@ -2844,7 +2844,7 @@ class Booster:
         ----------
         data : Dataset
             Validation data.
-        name : string
+        name : str
             Name of validation data.
 
         Returns
@@ -3086,7 +3086,7 @@ class Booster:
         ----------
         data : Dataset
             Data for the evaluating.
-        name : string
+        name : str
             Name of the data.
         feval : callable or None, optional (default=None)
             Customized evaluation function.
@@ -3099,7 +3099,7 @@ class Booster:
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The evaluation dataset.
-                eval_name : string
+                eval_name : str
                     The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
@@ -3147,7 +3147,7 @@ class Booster:
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 train_data : Dataset
                     The training dataset.
-                eval_name : string
+                eval_name : str
                     The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
@@ -3180,7 +3180,7 @@ class Booster:
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 valid_data : Dataset
                     The validation dataset.
-                eval_name : string
+                eval_name : str
                     The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
@@ -3203,7 +3203,7 @@ class Booster:
 
         Parameters
         ----------
-        filename : string or pathlib.Path
+        filename : str or pathlib.Path
             Filename to save Booster.
         num_iteration : int or None, optional (default=None)
             Index of the iteration that should be saved.
@@ -3211,7 +3211,7 @@ class Booster:
             If <= 0, all iterations are saved.
         start_iteration : int, optional (default=0)
             Start index of the iteration that should be saved.
-        importance_type : string, optional (default="split")
+        importance_type : str, optional (default="split")
             What type of feature importance should be saved.
             If "split", result contains numbers of times the feature is used in a model.
             If "gain", result contains total gains of splits which use the feature.
@@ -3260,7 +3260,7 @@ class Booster:
 
         Parameters
         ----------
-        model_str : string
+        model_str : str
             Model will be loaded from this string.
         verbose : bool, optional (default=True)
             Whether to print messages while loading model.
@@ -3300,14 +3300,14 @@ class Booster:
             If <= 0, all iterations are saved.
         start_iteration : int, optional (default=0)
             Start index of the iteration that should be saved.
-        importance_type : string, optional (default="split")
+        importance_type : str, optional (default="split")
             What type of feature importance should be saved.
             If "split", result contains numbers of times the feature is used in a model.
             If "gain", result contains total gains of splits which use the feature.
 
         Returns
         -------
-        str_repr : string
+        str_repr : str
             String representation of Booster.
         """
         if num_iteration is None:
@@ -3353,7 +3353,7 @@ class Booster:
             If <= 0, all iterations are dumped.
         start_iteration : int, optional (default=0)
             Start index of the iteration that should be dumped.
-        importance_type : string, optional (default="split")
+        importance_type : str, optional (default="split")
             What type of feature importance should be dumped.
             If "split", result contains numbers of times the feature is used in a model.
             If "gain", result contains total gains of splits which use the feature.
@@ -3412,9 +3412,9 @@ class Booster:
 
         Parameters
         ----------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
-            If string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
+            If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
             If <= 0, starts from the first iteration.
@@ -3440,7 +3440,7 @@ class Booster:
 
         data_has_header : bool, optional (default=False)
             Whether the data has header.
-            Used only if data is string.
+            Used only if data is str.
         is_reshape : bool, optional (default=True)
             If True, result is reshaped to [nrow, ncol].
         **kwargs
@@ -3467,9 +3467,9 @@ class Booster:
 
         Parameters
         ----------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for refit.
-            If string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
+            If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array or pandas Series / one-column DataFrame
             Label for refit.
         decay_rate : float, optional (default=0.9)
@@ -3603,7 +3603,7 @@ class Booster:
 
         Parameters
         ----------
-        importance_type : string, optional (default="split")
+        importance_type : str, optional (default="split")
             How the importance is calculated.
             If "split", result contains numbers of times the feature is used in a model.
             If "gain", result contains total gains of splits which use the feature.
@@ -3636,20 +3636,20 @@ class Booster:
 
         Parameters
         ----------
-        feature : int or string
+        feature : int or str
             The feature name or index the histogram is calculated for.
             If int, interpreted as index.
-            If string, interpreted as name.
+            If str, interpreted as name.
 
             .. warning::
 
                 Categorical features are not supported.
 
-        bins : int, string or None, optional (default=None)
+        bins : int, str or None, optional (default=None)
             The maximum number of bins.
             If None, or int and > number of unique split values and ``xgboost_style=True``,
             the number of bins equals number of unique split values.
-            If string, it should be one from the list of the supported values by ``numpy.histogram()`` function.
+            If str, it should be one from the list of the supported values by ``numpy.histogram()`` function.
         xgboost_style : bool, optional (default=False)
             Whether the returned result should be in the same form as it is in XGBoost.
             If False, the returned value is tuple of 2 numpy arrays as it is in ``numpy.histogram()`` function.
@@ -3816,12 +3816,12 @@ class Booster:
 
         Parameters
         ----------
-        key : string
+        key : str
             The name of the attribute.
 
         Returns
         -------
-        value : string or None
+        value : str or None
             The attribute value.
             Returns None if attribute does not exist.
         """
