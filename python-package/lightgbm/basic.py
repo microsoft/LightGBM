@@ -744,7 +744,7 @@ class _InnerPredictor:
         ----------
         data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
-            When data type is string or pathlib.Path, it represents the path of txt file.
+            When data type is string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
         num_iteration : int, optional (default=-1)
@@ -1132,7 +1132,7 @@ class Dataset:
         ----------
         data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
             Data source of Dataset.
-            If string or pathlib.Path, it represents the path to txt file.
+            If string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         reference : Dataset or None, optional (default=None)
@@ -1776,7 +1776,7 @@ class Dataset:
         ----------
         data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
             Data source of Dataset.
-            If string or pathlib.Path, it represents the path to txt file.
+            If string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
@@ -3342,7 +3342,7 @@ class Booster:
         ret += _dump_pandas_categorical(self.pandas_categorical)
         return ret
 
-    def dump_model(self, num_iteration=None, start_iteration=0, importance_type='split'):
+    def dump_model(self, num_iteration=None, start_iteration=0, importance_type='split', object_hook=None):
         """Dump Booster to JSON format.
 
         Parameters
@@ -3357,6 +3357,15 @@ class Booster:
             What type of feature importance should be dumped.
             If "split", result contains numbers of times the feature is used in a model.
             If "gain", result contains total gains of splits which use the feature.
+        object_hook : callable or None, optional (default=None)
+            If not None, ``object_hook`` is a function called while parsing the json
+            string returned by the C API. It may be used to alter the json, to store
+            specific values while building the json structure. It avoids
+            walking through the structure again. It saves a significant amount
+            of time if the number of trees is huge.
+            Signature is ``def object_hook(node: dict) -> dict``.
+            None is equivalent to ``lambda node: node``.
+            See documentation of ``json.loads()`` for further details.
 
         Returns
         -------
@@ -3391,7 +3400,7 @@ class Booster:
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
-        ret = json.loads(string_buffer.value.decode('utf-8'))
+        ret = json.loads(string_buffer.value.decode('utf-8'), object_hook=object_hook)
         ret['pandas_categorical'] = json.loads(json.dumps(self.pandas_categorical,
                                                           default=json_default_with_numpy))
         return ret
@@ -3405,7 +3414,7 @@ class Booster:
         ----------
         data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
-            If string or pathlib.Path, it represents the path to txt file.
+            If string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
             If <= 0, starts from the first iteration.
@@ -3460,7 +3469,7 @@ class Booster:
         ----------
         data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for refit.
-            If string or pathlib.Path, it represents the path to txt file.
+            If string or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array or pandas Series / one-column DataFrame
             Label for refit.
         decay_rate : float, optional (default=0.9)
