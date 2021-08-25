@@ -1951,19 +1951,22 @@ class Dataset:
                 ctypes.c_int(0),
                 ctypes.c_int(FIELD_TYPE_MAPPER[field_name])))
             return self
-        if field_name == 'group':
-            data = list_to_1d_numpy(data, np.int32, name='group')
-        elif field_name == 'init_score':
+        if field_name == 'init_score':
+            dtype = np.float64
             if is_1d_collection(data):
-                data = list_to_1d_numpy(data, np.float64, name='init_score')
+                data = list_to_1d_numpy(data, dtype, name=field_name)
             elif is_2d_collection(data):
-                data = data_to_2d_numpy(data, np.float64, name='init_score')
+                data = data_to_2d_numpy(data, dtype, name=field_name)
                 data = data.ravel(order='F')
             else:
                 raise TypeError(
                     'init_score must be list, numpy 1-D array or pandas Series.\n'
                     'In multiclass classification init_score can also be a list of lists, numpy 2-D array or pandas DataFrame.'
                 )
+        else:
+            dtype = np.int32 if field_name == 'group' else np.float32
+            data = list_to_1d_numpy(data, dtype, name=field_name)
+
         if data.dtype == np.float32 or data.dtype == np.float64:
             ptr_data, type_data, _ = c_float_array(data)
         elif data.dtype == np.int32:
@@ -2018,14 +2021,7 @@ class Dataset:
         else:
             raise TypeError("Unknown type")
         if field_name == 'init_score':
-            ptr_num_data = ctypes.c_int(0)
-            _safe_call(
-                _LIB.LGBM_DatasetGetNumData(
-                    self.handle,
-                    ctypes.byref(ptr_num_data),
-                )
-            )
-            num_data = ptr_num_data.value
+            num_data = self.num_data()
             num_classes = arr.size // num_data
             if num_classes > 1:
                 arr = arr.reshape((num_data, num_classes), order='F')
