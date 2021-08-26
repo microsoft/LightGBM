@@ -20,8 +20,8 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.1.0
-    export R_LINUX_VERSION="4.1.0-1.2004.0"
+    export R_MAC_VERSION=4.1.1
+    export R_LINUX_VERSION="4.1.1-1.2004.0"
     export R_APT_REPO="focal-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
