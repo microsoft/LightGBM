@@ -78,7 +78,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw64\bin"
   $env:RTOOLS_EXE_FILE = "rtools40v2-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.1.0"
+  $env:R_WINDOWS_VERSION = "4.1.1"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -90,6 +90,7 @@ $env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/b
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
+$env:MIKTEX_EXCEPTION_PATH = "$env:TEMP\miktex"
 
 # don't fail builds for long-running examples unless they're very long.
 # See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
