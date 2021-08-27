@@ -13,7 +13,7 @@ def check_dependicies(objdump_string: str) -> None:
 
     Parameters
     ----------
-    objdump_string : string
+    objdump_string : str
         The dynamic symbol table entries of the file (result of `objdump -T` command).
     """
     GLIBC_version = re.compile(r'0{16}[ \t]+GLIBC_(\d{1,2})[.](\d{1,3})[.]?\d{,3}[ \t]+')
