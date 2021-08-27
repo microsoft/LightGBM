@@ -1394,7 +1394,7 @@ class Dataset:
             if used_indices is not None:
                 assert not self.need_slice
                 if isinstance(data, (str, Path)):
-                    sub_init_score = np.empty(num_data * predictor.num_class, dtype=np.float32)
+                    sub_init_score = np.empty(num_data * predictor.num_class, dtype=np.float64)
                     assert num_data == len(used_indices)
                     for i in range(len(used_indices)):
                         for j in range(predictor.num_class):
@@ -1402,13 +1402,13 @@ class Dataset:
                     init_score = sub_init_score
             if predictor.num_class > 1:
                 # need to regroup init_score
-                new_init_score = np.empty(init_score.size, dtype=np.float32)
+                new_init_score = np.empty(init_score.size, dtype=np.float64)
                 for i in range(num_data):
                     for j in range(predictor.num_class):
                         new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
                 init_score = new_init_score
         elif self.init_score is not None:
-            init_score = np.zeros(self.init_score.shape, dtype=np.float32)
+            init_score = np.zeros(self.init_score.shape, dtype=np.float64)
         else:
             return self
         self.set_init_score(init_score)
