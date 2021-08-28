@@ -443,8 +443,8 @@ def _train(
         Initial model score for each validation set in eval_set.
     eval_group : list of Dask Arrays, Dask Series or None, optional (default=None)
         Group/query for each validation set in eval_set.
-    eval_metric : string, callable, list or None, optional (default=None)
-        If string, it should be a built-in evaluation metric to use.
+    eval_metric : str, callable, list or None, optional (default=None)
+        If str, it should be a built-in evaluation metric to use.
         If callable, it should be a custom evaluation metric, see note below for more details.
         If list, it can be a list of built-in metrics, a list of custom evaluation metrics, or a mix of both.
         In either case, the ``metric`` from the Dask model parameters (or inferred from the objective) will be evaluated and used as well.
