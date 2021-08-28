@@ -19,12 +19,15 @@ If you want to use validation data, you should set reference to training data
 }
 \examples{
 \donttest{
+# create training Dataset
 data(agaricus.train, package ="lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
+
+# create a validation Dataset, using dtrain as a reference
 data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
-dtest <- lgb.Dataset(test$data, test = train$label)
+dtest <- lgb.Dataset(test$data, label = test$label)
 lgb.Dataset.set.reference(dtest, dtrain)
 }
 }

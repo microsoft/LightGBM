@@ -759,7 +759,7 @@ Booster <- R6::R6Class(
 #' preds <- predict(model, test$data)
 #'
 #' # pass other prediction parameters
-#' predict(
+#' preds <- predict(
 #'     model,
 #'     test$data,
 #'     params = list(

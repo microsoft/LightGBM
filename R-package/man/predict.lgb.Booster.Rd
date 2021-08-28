@@ -90,7 +90,7 @@ model <- lgb.train(
 preds <- predict(model, test$data)
 
 # pass other prediction parameters
-predict(
+preds <- predict(
     model,
     test$data,
     params = list(
