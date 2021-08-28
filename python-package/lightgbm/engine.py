@@ -34,6 +34,7 @@ def train(
     feature_name: Union[List[str], str] = 'auto',
     categorical_feature: Union[List[str], List[int], str] = 'auto',
     early_stopping_rounds: Optional[int] = None,
+    early_stopping_threshold: Union[float, List[float]] = 0.0,
     evals_result: Optional[Dict[str, Any]] = None,
     verbose_eval: Union[bool, int] = True,
     learning_rates: Optional[Union[List[float], Callable[[int], float]]] = None,
@@ -121,6 +122,8 @@ def train(
         To check only the first metric, set the ``first_metric_only`` parameter to ``True`` in ``params``.
         The index of iteration that has the best performance will be saved in the ``best_iteration`` field
         if early stopping logic is enabled by setting ``early_stopping_rounds``.
+    early_stopping_threshold : float or list of float (default=0.0)
+        Minimum improvement in score to keep training.
     evals_result: dict or None, optional (default=None)
         Dictionary used to store all evaluation results of all the items in ``valid_sets``.
         This should be initialized outside of your call to ``train()`` and should be empty.
@@ -239,7 +242,7 @@ def train(
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
+        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval), threshold=early_stopping_threshold))
 
     if learning_rates is not None:
         callbacks.add(callback.reset_parameter(learning_rate=learning_rates))

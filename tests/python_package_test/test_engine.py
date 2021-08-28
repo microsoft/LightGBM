@@ -11,7 +11,7 @@ import numpy as np
 import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
-from sklearn.datasets import load_svmlight_file, make_multilabel_classification
+from sklearn.datasets import load_svmlight_file, make_classification, make_multilabel_classification
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
@@ -640,6 +640,74 @@ def test_early_stopping():
     assert gbm.best_iteration <= 39
     assert valid_set_name in gbm.best_score
     assert 'binary_logloss' in gbm.best_score[valid_set_name]
+
+
+@pytest.mark.parametrize('first_only', [True, False])
+@pytest.mark.parametrize('single_metric', [True, False])
+@pytest.mark.parametrize('greater_is_better', [True, False])
+def test_early_stopping_threshold(single_metric, first_only, greater_is_better):
+    metric2threshold = {
+        'auc': 0.001,
+        'binary_logloss': 0.01,
+        'average_precision': 0.001,
+        'l2': 0.001,
+    }
+    if single_metric:
+        if greater_is_better:
+            metric = ['auc']
+        else:
+            metric = ['binary_logloss']
+    else:
+        if first_only:
+            if greater_is_better:
+                metric = ['auc', 'binary_logloss']
+            else:
+                metric = ['binary_logloss', 'auc']
+        else:
+            if greater_is_better:
+                metric = ['auc', 'average_precision']
+            else:
+                metric = ['binary_logloss', 'l2']
+
+    X, y = make_classification(n_samples=1_000, n_features=2, n_redundant=0, n_classes=2, random_state=0)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
+    train_ds = lgb.Dataset(X_train, y_train)
+    valid_ds = lgb.Dataset(X_valid, y_valid, reference=train_ds)
+
+    params = {'objective': 'binary', 'metric': metric, 'first_metric_only': first_only, 'verbose': -1}
+    threshold = [metric2threshold[m] for m in metric]
+    train_kwargs = dict(
+        params=params,
+        train_set=train_ds,
+        num_boost_round=100,
+        valid_sets=[valid_ds],
+        early_stopping_rounds=10,
+        verbose_eval=0,
+    )
+
+    # regular early stopping
+    evals_result = {}
+    bst = lgb.train(evals_result=evals_result, **train_kwargs)
+    scores = np.vstack([res for res in evals_result['valid_0'].values()]).T
+
+    # positive threshold
+    threshold_result = {}
+    threshold_bst = lgb.train(early_stopping_threshold=threshold, evals_result=threshold_result, **train_kwargs)
+    threshold_scores = np.vstack([res for res in threshold_result['valid_0'].values()]).T
+
+    if first_only:
+        threshold = threshold[0]
+        scores = scores[:, 0]
+        threshold_scores = threshold_scores[:, 0]
+
+    assert threshold_bst.num_trees() < bst.num_trees()
+    np.testing.assert_equal(scores[:len(threshold_scores)], threshold_scores)
+    last_score = threshold_scores[-1]
+    best_score = threshold_scores[threshold_bst.num_trees() - 1]
+    if greater_is_better:
+        assert np.less_equal(last_score, best_score + threshold).any()
+    else:
+        assert np.greater_equal(last_score, best_score - threshold).any()
 
 
 def test_continue_train():
