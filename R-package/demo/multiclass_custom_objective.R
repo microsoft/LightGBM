@@ -28,7 +28,7 @@ params <- list(
     , metric = "multi_logloss"
 )
 model_builtin <- lgb.train(
-    params = params
+    params
     , dtrain
     , 100L
     , valids
@@ -100,7 +100,7 @@ params <- list(
     , num_class = 3L
 )
 model_custom <- lgb.train(
-    list()
+    params
     , dtrain
     , 100L
     , valids

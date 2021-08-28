@@ -35,7 +35,7 @@ params <- list(
     , max_depth = 3L
     , nthread = 1L
     , min_data = 1L
-    , learning_raate = 1.0
+    , learning_rate = 1.0
 )
 model <- lgb.train(
     params
