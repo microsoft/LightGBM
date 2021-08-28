@@ -2,22 +2,52 @@
 """Scikit-learn wrapper interface for LightGBM."""
 import copy
 from inspect import signature
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import scipy.sparse as ss
 
 from .basic import Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _log_warning
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
-                     pd_DataFrame)
+                     pd_DataFrame, pd_Series)
 from .engine import train
+
+_ArrayLike = Union[np.ndarray, ss.spmatrix, pd_Series]
+_EvalResultType = Tuple[str, float, bool]
+_GroupType = Union[_ArrayLike, List[int]]
+
+_LGBM_ScikitCustomObjectiveFunction = Union[
+    Callable[
+        [_ArrayLike, _ArrayLike],
+        Tuple[np.ndarray, np.ndarray]
+    ],
+    Callable[
+        [_ArrayLike, _ArrayLike, _GroupType],
+        Tuple[np.ndarray, np.ndarray]
+    ],
+]
+_LGBM_ScikitCustomEvalFunction = Union[
+    Callable[
+        [_ArrayLike, _ArrayLike],
+        Union[_EvalResultType, List[_EvalResultType]]
+    ],
+    Callable[
+        [_ArrayLike, _ArrayLike, _ArrayLike],
+        Union[_EvalResultType, List[_EvalResultType]]
+    ],
+    Callable[
+        [_ArrayLike, _ArrayLike, _ArrayLike, _GroupType],
+        Union[_EvalResultType, List[_EvalResultType]]
+    ],
+]
 
 
 class _ObjectiveFunctionWrapper:
     """Proxy class for objective function."""
 
-    def __init__(self, func):
+    def __init__(self, func: _LGBM_ScikitCustomObjectiveFunction):
         """Construct a proxy class.
 
         This class transforms objective function to match objective function with signature ``new_func(preds, dataset)``
@@ -106,7 +136,7 @@ class _ObjectiveFunctionWrapper:
 class _EvalFunctionWrapper:
     """Proxy class for evaluation function."""
 
-    def __init__(self, func):
+    def __init__(self, func: _LGBM_ScikitCustomEvalFunction):
         """Construct a proxy class.
 
         This class transforms evaluation function to match evaluation function with signature ``new_func(preds, dataset)``
@@ -357,7 +387,7 @@ class LGBMModel(_LGBMModelBase):
         learning_rate: float = 0.1,
         n_estimators: int = 100,
         subsample_for_bin: int = 200000,
-        objective: Optional[Union[str, Callable]] = None,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
         class_weight: Optional[Union[Dict, str]] = None,
         min_split_gain: float = 0.,
         min_child_weight: float = 1e-3,
