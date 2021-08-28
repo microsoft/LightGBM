@@ -41,7 +41,6 @@ my_preds <- predict(model, test[, 1L:4L])
 params <- list(
     min_data = 1L
     , learning_rate = 1.0
-    , early_stopping_rounds = 10L
     , objective = "multiclass"
     , metric = "multi_error"
     , num_class = 3L
@@ -51,6 +50,7 @@ model <- lgb.train(
     , dtrain
     , 100L
     , valids
+    , early_stopping_rounds = 10L
 )
 
 # We can predict on test data, identical
