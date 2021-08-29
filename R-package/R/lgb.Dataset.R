@@ -890,6 +890,7 @@ lgb.Dataset <- function(data,
 #' )
 #' dvalid$construct()
 #' }
+#' @importFrom utils modifyList
 #' @export
 lgb.Dataset.create.valid <- function(dataset,
                                      data,
@@ -925,7 +926,7 @@ lgb.Dataset.create.valid <- function(dataset,
       , weight = weight
       , group = group
       , init_score = init_score
-      , ...
+      , params = utils::modifyList(params, additional_params)
     )
   ))
 
