@@ -500,6 +500,15 @@ Dataset <- R6::R6Class(
     # Slice dataset
     slice = function(idxset, ...) {
 
+      additional_params <- list(...)
+      if (length(additional_params) > 0L) {
+        warning(paste0(
+          "Dataset$slice(): Found the following passed through '...': "
+          , paste(names(additional_params), collapse = ", ")
+          , ". These are ignored and should be removed. In future releases of lightgbm, this warning will become an error. "
+        ))
+      }
+
       # Perform slicing
       return(
         Dataset$new(
