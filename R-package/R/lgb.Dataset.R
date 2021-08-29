@@ -506,7 +506,7 @@ Dataset <- R6::R6Class(
           "Dataset$slice(): Found the following passed through '...': "
           , paste(names(additional_params), collapse = ", ")
           , ". These are ignored and should be removed. "
-          , "In future releases of lightgbm, this warning will become an error. "
+          , "In future releases of lightgbm, this warning will become an error."
         ))
       }
 
