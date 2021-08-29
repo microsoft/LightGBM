@@ -35,7 +35,7 @@ data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 set_field(
-  dtrain
+  dataset = dtrain
   , field_name = "init_score"
   , data = rep(Logit(mean(train$label)), length(train$label))
 )
