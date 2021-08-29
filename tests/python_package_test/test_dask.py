@@ -916,7 +916,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
 
             # check that early stopping was not applied.
             assert dask_model.booster_.num_trees() == model_trees
-            assert dask_model.best_iteration_ is None
+            assert dask_model.best_iteration_ == 0
 
             # checks that evals_result_ and best_score_ contain expected data and eval_set names.
             evals_result = dask_model.evals_result_
