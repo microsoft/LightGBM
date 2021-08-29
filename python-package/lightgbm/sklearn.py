@@ -720,15 +720,18 @@ class LGBMModel(_LGBMModelBase):
         else:
             callbacks = copy.deepcopy(callbacks)
 
-        evals_result = {}
-        callbacks.append(record_evaluation(evals_result))
-
         if verbose != 'warn':
             _log_warning("'verbose' argument is deprecated and will be removed in 4.0.0 release. "
                          "Pass 'print_evaluation()' callback via 'callbacks' argument instead.")
         if verbose == 'warn':
-            verbose = True
+            if callbacks:  # assume user has already specified print_evaluation callback
+                verbose = False
+            else:
+                verbose = True
         callbacks.append(print_evaluation(int(verbose)))
+
+        evals_result = {}
+        callbacks.append(record_evaluation(evals_result))
 
         self._Booster = train(
             params=params,

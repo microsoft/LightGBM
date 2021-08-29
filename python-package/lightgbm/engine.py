@@ -240,7 +240,10 @@ def train(
         _log_warning("'verbose_eval' argument is deprecated and will be removed in 4.0.0 release. "
                      "Pass 'print_evaluation()' callback via 'callbacks' argument instead.")
     if verbose_eval == "warn":
-        verbose_eval = True
+        if callbacks:  # assume user has already specified print_evaluation callback
+            verbose_eval = False
+        else:
+            verbose_eval = True
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation())
     elif isinstance(verbose_eval, int):
@@ -573,7 +576,7 @@ def cv(params, train_set, num_boost_round=100,
     params["num_iterations"] = num_boost_round
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
         _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in 4.0.0 release. "
-                     "Pass ``early_stopping()`` callback via ``callbacks`` argument instead.")
+                     "Pass 'early_stopping()' callback via 'callbacks' argument instead.")
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             early_stopping_rounds = params.pop(alias)

@@ -38,15 +38,13 @@ def test_register_logger(tmp_path):
     ]
     lgb.train({'objective': 'binary', 'metric': ['auc', 'binary_error']},
               lgb_data, num_boost_round=10, feval=dummy_metric,
-              valid_sets=[lgb_data], categorical_feature=[1], verbose_eval=False,
-              callbacks=callbacks)
+              valid_sets=[lgb_data], categorical_feature=[1], callbacks=callbacks)
 
     lgb.plot_metric(eval_records)
 
     expected_log = r"""
 WARNING | categorical_feature in Dataset is overridden.
 New categorical_feature is [1]
-WARNING | 'verbose_eval' argument is deprecated and will be removed in 4.0.0 release. Pass 'print_evaluation()' callback via 'callbacks' argument instead.
 INFO | [LightGBM] [Warning] There are no meaningful features, as all feature values are constant.
 INFO | [LightGBM] [Info] Number of positive: 2, number of negative: 2
 INFO | [LightGBM] [Info] Total Bins 0
