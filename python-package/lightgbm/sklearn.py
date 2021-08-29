@@ -717,6 +717,8 @@ class LGBMModel(_LGBMModelBase):
 
         if callbacks is None:
             callbacks = []
+        else:
+            callbacks = copy.deepcopy(callbacks)
 
         evals_result = {}
         callbacks.append(record_evaluation(evals_result))
@@ -729,17 +731,16 @@ class LGBMModel(_LGBMModelBase):
         callbacks.append(print_evaluation(int(verbose)))
 
         self._Booster = train(
-            params,
-            train_set,
-            self.n_estimators,
+            params=params,
+            train_set=train_set,
+            num_boost_round=self.n_estimators,
             valid_sets=valid_sets,
             valid_names=eval_names,
-            evals_result=evals_result,
             fobj=self._fobj,
             feval=eval_metrics_callable,
+            init_model=init_model,
             feature_name=feature_name,
-            callbacks=callbacks,
-            init_model=init_model
+            callbacks=callbacks
         )
 
         if evals_result:
@@ -806,7 +807,7 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def best_score_(self):
-        """:obj:`collections.OrderedDict`: The best score of fitted model."""
+        """:obj:`dict`: The best score of fitted model."""
         if self._n_features is None:
             raise LGBMNotFittedError('No best_score found. Need to call fit beforehand.')
         return self._best_score

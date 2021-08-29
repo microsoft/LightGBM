@@ -1145,12 +1145,15 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 #'
 #' @examples
 #' \donttest{
+#' # create training Dataset
 #' data(agaricus.train, package ="lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
+#'
+#' # create a validation Dataset, using dtrain as a reference
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
-#' dtest <- lgb.Dataset(test$data, test = train$label)
+#' dtest <- lgb.Dataset(test$data, label = test$label)
 #' lgb.Dataset.set.reference(dtest, dtrain)
 #' }
 #' @rdname lgb.Dataset.set.reference

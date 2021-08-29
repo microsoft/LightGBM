@@ -94,18 +94,19 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
 
         With two validation sets named 'eval' and 'train', and one evaluation metric named 'logloss'
         this dictionary after finishing a model training process will have the following structure:
-        ```
-        {
-         'train':
-             {
-              'logloss': [0.48253, 0.35953, ...]
-             },
-         'eval':
-             {
-              'logloss': [0.480385, 0.357756, ...]
-             }
-        }
-        ```
+
+        .. code-block::
+
+            {
+             'train':
+                 {
+                  'logloss': [0.48253, 0.35953, ...]
+                 },
+             'eval':
+                 {
+                  'logloss': [0.480385, 0.357756, ...]
+                 }
+            }
 
     Returns
     -------
