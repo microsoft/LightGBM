@@ -45,7 +45,7 @@ dtrain <- lgb.Dataset(
   , label = labels
 )
 set_field(
-  dtrain
+  dataset = dtrain
   , field_name = "init_score"
   , data = rep(Logit(mean(labels)), length(labels))
 )
