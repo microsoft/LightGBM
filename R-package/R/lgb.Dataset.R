@@ -26,6 +26,7 @@ NULL
 
 #' @importFrom methods is
 #' @importFrom R6 R6Class
+#' @importFrom utils modifyList
 Dataset <- R6::R6Class(
 
   classname = "lgb.Dataset",
@@ -205,16 +206,6 @@ Dataset <- R6::R6Class(
         # Store indices for categorical features
         private$params$categorical_feature <- cate_indices
 
-      }
-
-      # Check has header or not
-      has_header <- FALSE
-      if (!is.null(private$params$has_header) || !is.null(private$params$header)) {
-        params_has_header <- tolower(as.character(private$params$has_header)) == "true"
-        params_header <- tolower(as.character(private$params$header)) == "true"
-        if (params_has_header || params_header) {
-          has_header <- TRUE
-        }
       }
 
       # Generate parameter str
@@ -572,7 +563,7 @@ Dataset <- R6::R6Class(
         return(invisible(self))
       }
       if (lgb.is.null.handle(x = private$handle)) {
-        private$params <- modifyList(private$params, params)
+        private$params <- utils::modifyList(private$params, params)
       } else {
         tryCatch({
           .Call(
@@ -589,7 +580,7 @@ Dataset <- R6::R6Class(
 
           # If updating failed but raw data is available, modify the params
           # on the R side and re-set ("deconstruct") the Dataset
-          private$params <- modifyList(private$params, params)
+          private$params <- utils::modifyList(private$params, params)
           self$finalize()
         })
       }
@@ -1279,12 +1270,15 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 #'
 #' @examples
 #' \donttest{
+#' # create training Dataset
 #' data(agaricus.train, package ="lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
+#'
+#' # create a validation Dataset, using dtrain as a reference
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
-#' dtest <- lgb.Dataset(test$data, test = train$label)
+#' dtest <- lgb.Dataset(test$data, label = test$label)
 #' lgb.Dataset.set.reference(dtest, dtrain)
 #' }
 #' @rdname lgb.Dataset.set.reference

@@ -12,7 +12,9 @@ CVBooster <- R6::R6Class(
       return(invisible(NULL))
     },
     reset_parameter = function(new_params) {
-      for (x in boosters) { x$reset_parameter(new_params) }
+      for (x in boosters) {
+        x$reset_parameter(params = new_params)
+      }
       return(invisible(self))
     }
   )
@@ -61,14 +63,17 @@ CVBooster <- R6::R6Class(
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' model <- lgb.cv(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , nfold = 3L
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #' )
 #' }
 #' @importFrom data.table data.table setorderv

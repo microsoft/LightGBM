@@ -428,12 +428,12 @@ def _train(
         sum(group) = n_samples.
         For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-    eval_set : list of (X, y) tuples of Dask data collections or None, optional (default=None)
+    eval_set : list of (X, y) tuples of Dask data collections, or None, optional (default=None)
         List of (X, y) tuple pairs to use as validation sets.
         Note, that not all workers may receive chunks of every eval set within ``eval_set``. When the returned
         lightgbm estimator is not trained using any chunks of a particular eval set, its corresponding component
         of evals_result_ and best_score_ will be 'not_evaluated'.
-    eval_names : list of strings or None, optional (default=None)
+    eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
     eval_sample_weight : list of Dask Arrays, Dask Series or None, optional (default=None)
         Weights for each validation set in eval_set.
@@ -443,8 +443,8 @@ def _train(
         Initial model score for each validation set in eval_set.
     eval_group : list of Dask Arrays, Dask Series or None, optional (default=None)
         Group/query for each validation set in eval_set.
-    eval_metric : string, callable, list or None, optional (default=None)
-        If string, it should be a built-in evaluation metric to use.
+    eval_metric : str, callable, list or None, optional (default=None)
+        If str, it should be a built-in evaluation metric to use.
         If callable, it should be a custom evaluation metric, see note below for more details.
         If list, it can be a list of built-in metrics, a list of custom evaluation metrics, or a mix of both.
         In either case, the ``metric`` from the Dask model parameters (or inferred from the objective) will be evaluated and used as well.

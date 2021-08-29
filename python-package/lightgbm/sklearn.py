@@ -136,7 +136,7 @@ class _EvalFunctionWrapper:
                     sum(group) = n_samples.
                     For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                     where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-                eval_name : string
+                eval_name : str
                     The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
@@ -162,7 +162,7 @@ class _EvalFunctionWrapper:
 
         Returns
         -------
-        eval_name : string
+        eval_name : str
             The name of evaluation function (without whitespace).
         eval_result : float
             The eval result.
@@ -206,7 +206,7 @@ _lgbmmodel_doc_fit = (
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
     eval_set : list or None, optional (default=None)
         A list of (X, y) tuple pairs to use as validation sets.
-    eval_names : list of strings or None, optional (default=None)
+    eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
     eval_sample_weight : {eval_sample_weight_shape}
         Weights of eval data.
@@ -216,8 +216,8 @@ _lgbmmodel_doc_fit = (
         Init score of eval data.
     eval_group : {eval_group_shape}
         Group data of eval data.
-    eval_metric : string, callable, list or None, optional (default=None)
-        If string, it should be a built-in evaluation metric to use.
+    eval_metric : str, callable, list or None, optional (default=None)
+        If str, it should be a built-in evaluation metric to use.
         If callable, it should be a custom evaluation metric, see note below for more details.
         If list, it can be a list of built-in metrics, a list of custom evaluation metrics, or a mix of both.
         In either case, the ``metric`` from the model parameters will be evaluated and used as well.
@@ -241,22 +241,22 @@ _lgbmmodel_doc_fit = (
         With ``verbose`` = 4 and at least one item in ``eval_set``,
         an evaluation metric is printed every 4 (instead of 1) boosting stages.
 
-    feature_name : list of strings or 'auto', optional (default='auto')
+    feature_name : list of str, or 'auto', optional (default='auto')
         Feature names.
         If 'auto' and data is pandas DataFrame, data columns names are used.
-    categorical_feature : list of strings or int, or 'auto', optional (default='auto')
+    categorical_feature : list of str or int, or 'auto', optional (default='auto')
         Categorical features.
         If list of int, interpreted as indices.
-        If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
+        If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
         The output cannot be monotonically constrained with respect to a categorical feature.
-    callbacks : list of callback functions or None, optional (default=None)
+    callbacks : list of callback functions, or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
-    init_model : string, pathlib.Path, Booster, LGBMModel or None, optional (default=None)
+    init_model : str, pathlib.Path, Booster, LGBMModel or None, optional (default=None)
         Filename of LightGBM model, Booster instance or LGBMModel instance used for continue training.
 
     Returns
@@ -289,7 +289,7 @@ _lgbmmodel_doc_custom_eval_note = """
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        eval_name : string
+        eval_name : str
             The name of evaluation function (without whitespace).
         eval_result : float
             The eval result.
@@ -377,7 +377,7 @@ class LGBMModel(_LGBMModelBase):
 
         Parameters
         ----------
-        boosting_type : string, optional (default='gbdt')
+        boosting_type : str, optional (default='gbdt')
             'gbdt', traditional Gradient Boosting Decision Tree.
             'dart', Dropouts meet Multiple Additive Regression Trees.
             'goss', Gradient-based One-Side Sampling.
@@ -395,7 +395,7 @@ class LGBMModel(_LGBMModelBase):
             Number of boosted trees to fit.
         subsample_for_bin : int, optional (default=200000)
             Number of samples for constructing bins.
-        objective : string, callable or None, optional (default=None)
+        objective : str, callable or None, optional (default=None)
             Specify the learning task and the corresponding learning objective or
             a custom objective function to be used (see note below).
             Default: 'regression' for LGBMRegressor, 'binary' or 'multiclass' for LGBMClassifier, 'lambdarank' for LGBMRanker.
@@ -436,7 +436,7 @@ class LGBMModel(_LGBMModelBase):
             Number of parallel threads.
         silent : bool, optional (default=True)
             Whether to print messages while running boosting.
-        importance_type : string, optional (default='split')
+        importance_type : str, optional (default='split')
             The type of feature importance to be filled into ``feature_importances_``.
             If 'split', result contains numbers of times the feature is used in a model.
             If 'gain', result contains total gains of splits which use the feature.
@@ -737,9 +737,9 @@ class LGBMModel(_LGBMModelBase):
         sample_weight_shape="array-like of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="array-like of shape = [n_samples] or None, optional (default=None)",
         group_shape="array-like or None, optional (default=None)",
-        eval_sample_weight_shape="list of arrays or None, optional (default=None)",
-        eval_init_score_shape="list of arrays or None, optional (default=None)",
-        eval_group_shape="list of arrays or None, optional (default=None)"
+        eval_sample_weight_shape="list of arrays, or None, optional (default=None)",
+        eval_init_score_shape="list of arrays, or None, optional (default=None)",
+        eval_group_shape="list of arrays, or None, optional (default=None)"
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
 
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
@@ -796,7 +796,7 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def objective_(self):
-        """:obj:`string` or :obj:`callable`: The concrete objective used while fitting this model."""
+        """:obj:`str` or :obj:`callable`: The concrete objective used while fitting this model."""
         if self._n_features is None:
             raise LGBMNotFittedError('No objective found. Need to call fit beforehand.')
         return self._objective
