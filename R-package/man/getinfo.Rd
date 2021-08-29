@@ -43,10 +43,10 @@ train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 lgb.Dataset.construct(dtrain)
 
-labels <- lightgbm::getinfo(dtrain, "label")
-lightgbm::setinfo(dtrain, "label", 1 - labels)
+labels <- lightgbm::get_field(dtrain, "label")
+lightgbm::set_field(dtrain, "label", 1 - labels)
 
-labels2 <- lightgbm::getinfo(dtrain, "label")
+labels2 <- lightgbm::get_field(dtrain, "label")
 stopifnot(all(labels2 == 1 - labels))
 }
 }

@@ -1231,7 +1231,7 @@ set_field.lgb.Dataset <- function(dataset, field_name, data) {
     stop("set_field.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  return(invisible(dataset$set_field(field_name = name, data = data)))
+  return(invisible(dataset$set_field(field_name = field_name, data = data)))
 }
 
 #' @name lgb.Dataset.set.categorical
