@@ -12,6 +12,7 @@ lgb.Dataset.create.valid(
   weight = NULL,
   group = NULL,
   init_score = NULL,
+  params = list(),
   ...
 )
 }
@@ -39,7 +40,14 @@ second group, etc.}
 
 \item{init_score}{initial score is the base prediction lightgbm will boost from}
 
-\item{...}{additional \code{lgb.Dataset} parameters}
+\item{params}{a list of parameters. See
+\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
+The "Dataset Parameters" section of the documentation} for a list of parameters
+and valid values. If this is an empty list (the default), the validation Dataset
+will have the same parameters as the Dataset passed to argument \code{dataset}.}
+
+\item{...}{additional \code{lgb.Dataset} parameters.
+NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
 }
 \value{
 constructed dataset
@@ -55,5 +63,40 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
+
+# parameters can be changed between the training data and validation set,
+# for example to account for training data in a text file with a header row
+# and validation data in a text file without it
+train_file <- tempfile(pattern = "train_", fileext = ".csv")
+write.table(
+  data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+  , file = train_file
+  , sep = ","
+  , col.names = TRUE
+  , row.names = FALSE
+  , quote = FALSE
+)
+
+valid_file <- tempfile(pattern = "valid_", fileext = ".csv")
+write.table(
+  data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+  , file = valid_file
+  , sep = ","
+  , col.names = FALSE
+  , row.names = FALSE
+  , quote = FALSE
+)
+
+dtrain <- lgb.Dataset(
+  data = train_file
+  , params = list(has_header = TRUE)
+)
+dtrain$construct()
+
+dvalid <- lgb.Dataset(
+  data = valid_file
+  , params = list(has_header = FALSE)
+)
+dvalid$construct()
 }
 }

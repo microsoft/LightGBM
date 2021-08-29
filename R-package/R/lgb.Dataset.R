@@ -1,3 +1,21 @@
+#' @name lgb_shared_dataset_params
+#' @title Shared Dataset parameter docs
+#' @description Parameter docs for fields used in \code{lgb.Dataset} construction
+#' @param label vector of labels to use as the target variable
+#' @param weight numeric vector of sample weights
+#' @param init_score initial score is the base prediction lightgbm will boost from
+#' @param group used for learning-to-rank tasks. An integer vector describing how to
+#'              group rows together as ordered results from the same set of candidate results
+#'              to be ranked. For example, if you have a 100-document dataset with
+#'              \code{group = c(10, 20, 40, 10, 10, 10)}, that means that you have 6 groups,
+#'              where the first 10 records are in the first group, records 11-30 are in the
+#'              second group, etc.
+#' @param info a list of information of the \code{lgb.Dataset} object. NOTE: use of \code{info}
+#'             is deprecated as of v3.3.0. Use keyword arguments (e.g. \code{init_score = init_score})
+#'             directly.
+#' @keywords internal
+NULL
+
 # [description] List of valid keys for "info" arguments in lgb.Dataset.
 #               Wrapped in a function to take advantage of lazy evaluation
 #               (so it doesn't matter what order R sources files during installation).
@@ -46,6 +64,14 @@ Dataset <- R6::R6Class(
       }
       if (!(is.null(predictor) || lgb.is.Predictor(predictor))) {
           stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
+      }
+
+      if (length(info) > 0L) {
+        warning(paste0(
+          "lgb.Dataset: found fields passed through 'info'. "
+          , "As of v3.3.0, this behavior is deprecated, and support for it will be removed in a future release. "
+          , "To suppress this warning, use keyword arguments 'label', 'weight', 'group', or 'init_score' directly"
+        ))
       }
 
       if (!is.null(label)) {
@@ -815,7 +841,8 @@ lgb.Dataset <- function(data,
 #'               The "Dataset Parameters" section of the documentation} for a list of parameters
 #'               and valid values. If this is an empty list (the default), the validation Dataset
 #'               will have the same parameters as the Dataset passed to argument \code{dataset}.
-#' @param ... additional \code{lgb.Dataset} parameters
+#' @param ... additional \code{lgb.Dataset} parameters.
+#'            NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.
 #'
 #' @return constructed dataset
 #'
@@ -831,38 +858,37 @@ lgb.Dataset <- function(data,
 #' # parameters can be changed between the training data and validation set,
 #' # for example to account for training data in a text file with a header row
 #' # and validation data in a text file without it
-train_file <- tempfile(pattern = "train_", fileext = ".csv")
-write.table(
-  data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
-  , file = train_file
-  , sep = ","
-  , col.names = TRUE
-  , row.names = FALSE
-  , quote = FALSE
-)
-
-valid_file <- tempfile(pattern = "valid_", fileext = ".csv")
-write.table(
-  data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
-  , file = valid_file
-  , sep = ","
-  , col.names = FALSE
-  , row.names = FALSE
-  , quote = FALSE
-)
-
-dtrain <- lgb.Dataset(
-  data = train_file
-  , params = list(has_header = TRUE, label_column = 0L)
-)
-dtrain$construct()
-
-dvalid <- lgb.Dataset(
-  data = valid_file
-  , params = list(has_header = FALSE)
-)
-dvalid$construct()
-
+#' train_file <- tempfile(pattern = "train_", fileext = ".csv")
+#' write.table(
+#'   data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+#'   , file = train_file
+#'   , sep = ","
+#'   , col.names = TRUE
+#'   , row.names = FALSE
+#'   , quote = FALSE
+#' )
+#'
+#' valid_file <- tempfile(pattern = "valid_", fileext = ".csv")
+#' write.table(
+#'   data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+#'   , file = valid_file
+#'   , sep = ","
+#'   , col.names = FALSE
+#'   , row.names = FALSE
+#'   , quote = FALSE
+#' )
+#'
+#' dtrain <- lgb.Dataset(
+#'   data = train_file
+#'   , params = list(has_header = TRUE)
+#' )
+#' dtrain$construct()
+#'
+#' dvalid <- lgb.Dataset(
+#'   data = valid_file
+#'   , params = list(has_header = FALSE)
+#' )
+#' dvalid$construct()
 #' }
 #' @export
 lgb.Dataset.create.valid <- function(dataset,
