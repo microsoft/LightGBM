@@ -35,7 +35,7 @@ def train(
     categorical_feature: Union[List[str], List[int], str] = 'auto',
     early_stopping_rounds: Optional[int] = None,
     evals_result: Optional[Dict[str, Any]] = None,
-    verbose_eval: Union[bool, int] = True,
+    verbose_eval: Union[bool, int, str] = 'warn',
     learning_rates: Optional[Union[List[float], Callable[[int], float]]] = None,
     keep_training_booster: bool = False,
     callbacks: Optional[List[Callable]] = None
@@ -121,7 +121,7 @@ def train(
         To check only the first metric, set the ``first_metric_only`` parameter to ``True`` in ``params``.
         The index of iteration that has the best performance will be saved in the ``best_iteration`` field
         if early stopping logic is enabled by setting ``early_stopping_rounds``.
-    evals_result: dict or None, optional (default=None)
+    evals_result : dict or None, optional (default=None)
         Dictionary used to store all evaluation results of all the items in ``valid_sets``.
         This should be initialized outside of your call to ``train()`` and should be empty.
         Any initial contents of the dictionary will be deleted.
@@ -176,10 +176,13 @@ def train(
             num_boost_round = params.pop(alias)
             _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
     params["num_iterations"] = num_boost_round
+    # show deprecation warning only for early stop argument, setting early stop via global params should still be possible
+    if early_stopping_rounds is not None and early_stopping_rounds > 0:
+        _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in 4.0.0 release. "
+                     "Pass 'early_stopping()' callback via 'callbacks' argument instead.")
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
             early_stopping_rounds = params.pop(alias)
-            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
     params["early_stopping_round"] = early_stopping_rounds
     first_metric_only = params.get('first_metric_only', False)
 
@@ -233,6 +236,11 @@ def train(
         callbacks = set(callbacks)
 
     # Most of legacy advanced options becomes callbacks
+    if verbose_eval != "warn":
+        _log_warning("'verbose_eval' argument is deprecated and will be removed in 4.0.0 release. "
+                     "Pass 'print_evaluation()' callback via 'callbacks' argument instead.")
+    if verbose_eval == "warn":
+        verbose_eval = True
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation())
     elif isinstance(verbose_eval, int):
@@ -242,9 +250,13 @@ def train(
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
 
     if learning_rates is not None:
+        _log_warning("'learning_rates' argument is deprecated and will be removed in 4.0.0 release. "
+                     "Pass 'reset_parameter()' callback via 'callbacks' argument instead.")
         callbacks.add(callback.reset_parameter(learning_rate=learning_rates))
 
     if evals_result is not None:
+        _log_warning("'evals_result' argument is deprecated and will be removed in 4.0.0 release. "
+                     "Pass 'record_evaluation()' callback via 'callbacks' argument instead.")
         callbacks.add(callback.record_evaluation(evals_result))
 
     callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
@@ -520,7 +532,6 @@ def cv(params, train_set, num_boost_round=100,
         and returns transformed versions of those.
     verbose_eval : bool, int, or None, optional (default=None)
         Whether to display the progress.
-        If None, progress will be displayed when np.ndarray is returned.
         If True, progress will be displayed at every boosting stage.
         If int, progress will be displayed at every given ``verbose_eval`` boosting stage.
     show_stdv : bool, optional (default=True)
@@ -560,9 +571,11 @@ def cv(params, train_set, num_boost_round=100,
             _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
             num_boost_round = params.pop(alias)
     params["num_iterations"] = num_boost_round
+    if early_stopping_rounds is not None and early_stopping_rounds > 0:
+        _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in 4.0.0 release. "
+                     "Pass ``early_stopping()`` callback via ``callbacks`` argument instead.")
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
-            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
             early_stopping_rounds = params.pop(alias)
     params["early_stopping_round"] = early_stopping_rounds
     first_metric_only = params.get('first_metric_only', False)
@@ -601,6 +614,9 @@ def cv(params, train_set, num_boost_round=100,
         callbacks = set(callbacks)
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
+    if verbose_eval is not None:
+        _log_warning("'verbose_eval' argument is deprecated and will be removed in 4.0.0 release. "
+                     "Pass 'print_evaluation()' callback via 'callbacks' argument instead.")
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
     elif isinstance(verbose_eval, int):
