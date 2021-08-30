@@ -61,7 +61,7 @@ def print_evaluation(period: int = 1, show_stdv: bool = True) -> Callable:
 
     Returns
     -------
-    callback : function
+    callback : callable
         The callback that prints the evaluation results every ``period`` iteration(s).
     """
     def _callback(env: CallbackEnv) -> None:
@@ -84,7 +84,7 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
 
     Returns
     -------
-    callback : function
+    callback : callable
         The callback that records the evaluation history into the passed dictionary.
     """
     if not isinstance(eval_result, dict):
@@ -114,16 +114,16 @@ def reset_parameter(**kwargs: Union[list, Callable]) -> Callable:
 
     Parameters
     ----------
-    **kwargs : value should be list or function
+    **kwargs : value should be list or callable
         List of parameters for each boosting round
-        or a customized function that calculates the parameter in terms of
+        or a callable that calculates the parameter in terms of
         current number of round (e.g. yields learning rate decay).
         If list lst, parameter = lst[current_round].
-        If function func, parameter = func(current_round).
+        If callable func, parameter = func(current_round).
 
     Returns
     -------
-    callback : function
+    callback : callable
         The callback that resets the parameter after the first iteration.
     """
     def _callback(env: CallbackEnv) -> None:
@@ -167,7 +167,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
 
     Returns
     -------
-    callback : function
+    callback : callable
         The callback that activates early stopping.
     """
     best_score = []
