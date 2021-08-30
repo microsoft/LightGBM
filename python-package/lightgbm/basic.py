@@ -1123,7 +1123,7 @@ class Dataset:
     """Dataset in LightGBM."""
 
     def __init__(self, data, label=None, reference=None,
-                 weight=None, group=None, init_score=None, silent=False,
+                 weight=None, group=None, init_score=None, silent='warn',
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
         """Initialize Dataset.
@@ -1439,6 +1439,11 @@ class Dataset:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
                              f'Please use {key} argument of the Dataset constructor to pass this parameter.')
         # user can set verbose with params, it has higher priority
+        if silent != "warn":
+            _log_warning("'silent' argument is deprecated and will be removed in 4.0.0 release. "
+                         "Pass 'verbose' parameter via 'params' instead.")
+        else:
+            silent = False
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
         # get categorical features
@@ -1769,7 +1774,7 @@ class Dataset:
         return self
 
     def create_valid(self, data, label=None, weight=None, group=None,
-                     init_score=None, silent=False, params=None):
+                     init_score=None, silent='warn', params=None):
         """Create validation data align with current Dataset.
 
         Parameters
@@ -2462,7 +2467,7 @@ class Dataset:
 class Booster:
     """Booster in LightGBM."""
 
-    def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent=False):
+    def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent='warn'):
         """Initialize the Booster.
 
         Parameters
@@ -2488,6 +2493,11 @@ class Booster:
         self.best_score = {}
         params = {} if params is None else deepcopy(params)
         # user can set verbose with params, it has higher priority
+        if silent != 'warn':
+            _log_warning("'silent' argument is deprecated and will be removed in 4.0.0 release. "
+                         "Pass 'verbose' parameter via keyword arguments instead.")
+        else:
+            silent = False
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
         if train_set is not None:
@@ -2574,7 +2584,7 @@ class Booster:
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
         elif model_str is not None:
-            self.model_from_string(model_str, not silent)
+            self.model_from_string(model_str, verbose="_silent_false")
         else:
             raise TypeError('Need at least one training dataset or model file or model string '
                             'to create Booster instance')
@@ -3255,7 +3265,7 @@ class Booster:
             ctypes.c_int(end_iteration)))
         return self
 
-    def model_from_string(self, model_str, verbose=True):
+    def model_from_string(self, model_str, verbose='warn'):
         """Load Booster from a string.
 
         Parameters
@@ -3283,6 +3293,10 @@ class Booster:
         _safe_call(_LIB.LGBM_BoosterGetNumClasses(
             self.handle,
             ctypes.byref(out_num_class)))
+        if verbose not in {'warn', '_silent_false'}:
+            _log_warning("'verbose' argument is deprecated and will be removed in 4.0.0 release.")
+        else:
+            verbose = not verbose == '_silent_false'
         if verbose:
             _log_info(f'Finished loading model, total used {int(out_num_iterations.value)} iterations')
         self.__num_class = out_num_class.value
