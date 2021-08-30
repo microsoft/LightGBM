@@ -913,7 +913,7 @@ lgb.Dataset.create.valid <- function(dataset,
       "lgb.Dataset.create.valid: Found the following passed through '...': "
       , paste(names(additional_params), collapse = ", ")
       , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-      , "Add these to 'params' instead. See ?lgb.Dataset for documentation on how to call this function."
+      , "Add these to 'params' instead. See ?lgb.Dataset.create.valid for documentation on how to call this function."
     ))
   }
 
