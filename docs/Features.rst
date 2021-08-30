@@ -231,6 +231,15 @@ LightGBM supports the following metrics:
 
 For more details, please refer to `Parameters <./Parameters.rst#metric-parameters>`__.
 
+Transform
+---------
+
+LightGBM supports data transformation as a built-in way, more convenient for development and iteration. Compared to separate data transformation outside, 
+this way could put transformation and model in one place, so keep offline and online consistency. See below tutorials for further information.
+
+- `Transform Installation <./Installation-Guide.rst#build-transform-version>`__
+- `Transform Tutorial <./Transform-Tutorial.rst>`__
+
 Other Features
 --------------
 

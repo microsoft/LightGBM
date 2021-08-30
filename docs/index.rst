@@ -39,6 +39,7 @@ For more details, please refer to `Features <./Features.rst>`__.
    R API <https://lightgbm.readthedocs.io/en/latest/R/reference/>
    Distributed Learning Guide <Parallel-Learning-Guide>
    GPU Tutorial <GPU-Tutorial>
+   Transform Tutorial <Transform-Tutorial>
    Advanced Topics <Advanced-Topics>
    FAQ <FAQ>
    Development Guide <Development-Guide>
