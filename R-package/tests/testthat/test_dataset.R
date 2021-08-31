@@ -310,3 +310,45 @@ test_that("lgb.Dataset: should be able to use and retrieve long feature names", 
   expect_equal(col_names[1L], long_name)
   expect_equal(nchar(col_names[1L]), 1000L)
 })
+
+test_that("lgb.Dataset: should be able to create a Dataset from a text file with a header", {
+  train_file <- tempfile(pattern = "train_", fileext = ".csv")
+  write.table(
+    data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+    , file = train_file
+    , sep = ","
+    , col.names = TRUE
+    , row.names = FALSE
+    , quote = FALSE
+  )
+
+  dtrain <- lgb.Dataset(
+    data = train_file
+    , params = list(header = TRUE)
+  )
+  dtrain$construct()
+  expect_identical(dtrain$get_colnames(), c("x1", "x2"))
+  expect_identical(dtrain$get_params(), list(header = TRUE))
+  expect_identical(dtrain$dim(), c(100L, 2L))
+})
+
+test_that("lgb.Dataset: should be able to create a Dataset from a text file without a header", {
+  train_file <- tempfile(pattern = "train_", fileext = ".csv")
+  write.table(
+    data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+    , file = train_file
+    , sep = ","
+    , col.names = FALSE
+    , row.names = FALSE
+    , quote = FALSE
+  )
+
+  dtrain <- lgb.Dataset(
+    data = train_file
+    , params = list(header = FALSE)
+  )
+  dtrain$construct()
+  expect_identical(dtrain$get_colnames(), c("Column_0", "Column_1"))
+  expect_identical(dtrain$get_params(), list(header = FALSE))
+  expect_identical(dtrain$dim(), c(100L, 2L))
+})
