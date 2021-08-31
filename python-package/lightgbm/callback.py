@@ -78,7 +78,9 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
     Parameters
     ----------
     eval_result : dict
-       A dictionary to store the evaluation results.
+        Dictionary used to store all evaluation results of all validation sets.
+        This should be initialized outside of your call to ``record_evaluation()`` and should be empty.
+        Any initial contents of the dictionary will be deleted.
 
     Returns
     -------
@@ -157,9 +159,9 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
     Parameters
     ----------
     stopping_rounds : int
-       The possible number of rounds without the trend occurrence.
+        The possible number of rounds without the trend occurrence.
     first_metric_only : bool, optional (default=False)
-       Whether to use only the first metric for early stopping.
+        Whether to use only the first metric for early stopping.
     verbose : bool, optional (default=True)
         Whether to print message with early stopping information.
 

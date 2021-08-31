@@ -14,6 +14,7 @@
   predcontrib = FALSE,
   header = FALSE,
   reshape = FALSE,
+  params = list(),
   ...
 )
 }
@@ -46,8 +47,12 @@ for logistic regression would result in predictions for log-odds instead of prob
 \item{reshape}{whether to reshape the vector of predictions to a matrix form when there are several
 prediction outputs per case.}
 
-\item{...}{Additional named arguments passed to the \code{predict()} method of
-the \code{lgb.Booster} object passed to \code{object}.}
+\item{params}{a list of additional named parameters. See
+\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
+the "Predict Parameters" section of the documentation} for a list of parameters and
+valid values.}
+
+\item{...}{Additional prediction parameters. NOTE: deprecated as of v3.3.0. Use \code{params} instead.}
 }
 \value{
 For regression or binary classification, it returns a vector of length \code{nrows(data)}.
@@ -80,5 +85,14 @@ model <- lgb.train(
   , learning_rate = 1.0
 )
 preds <- predict(model, test$data)
+
+# pass other prediction parameters
+predict(
+    model,
+    test$data,
+    params = list(
+        predict_disable_shape_check = TRUE
+   )
+)
 }
 }
