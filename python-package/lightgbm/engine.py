@@ -178,7 +178,7 @@ def train(
     params["num_iterations"] = num_boost_round
     # show deprecation warning only for early stop argument, setting early stop via global params should still be possible
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in 4.0.0 release. "
+        _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in a future release of LightGBM. "
                      "Pass 'early_stopping()' callback via 'callbacks' argument instead.")
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
@@ -237,9 +237,9 @@ def train(
 
     # Most of legacy advanced options becomes callbacks
     if verbose_eval != "warn":
-        _log_warning("'verbose_eval' argument is deprecated and will be removed in 4.0.0 release. "
+        _log_warning("'verbose_eval' argument is deprecated and will be removed in a future release of LightGBM. "
                      "Pass 'print_evaluation()' callback via 'callbacks' argument instead.")
-    if verbose_eval == "warn":
+    else:
         if callbacks:  # assume user has already specified print_evaluation callback
             verbose_eval = False
         else:
@@ -253,12 +253,12 @@ def train(
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
 
     if learning_rates is not None:
-        _log_warning("'learning_rates' argument is deprecated and will be removed in 4.0.0 release. "
+        _log_warning("'learning_rates' argument is deprecated and will be removed in a future release of LightGBM. "
                      "Pass 'reset_parameter()' callback via 'callbacks' argument instead.")
         callbacks.add(callback.reset_parameter(learning_rate=learning_rates))
 
     if evals_result is not None:
-        _log_warning("'evals_result' argument is deprecated and will be removed in 4.0.0 release. "
+        _log_warning("'evals_result' argument is deprecated and will be removed in a future release of LightGBM. "
                      "Pass 'record_evaluation()' callback via 'callbacks' argument instead.")
         callbacks.add(callback.record_evaluation(evals_result))
 
@@ -575,7 +575,7 @@ def cv(params, train_set, num_boost_round=100,
             num_boost_round = params.pop(alias)
     params["num_iterations"] = num_boost_round
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in 4.0.0 release. "
+        _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in a future release of LightGBM. "
                      "Pass 'early_stopping()' callback via 'callbacks' argument instead.")
     for alias in _ConfigAliases.get("early_stopping_round"):
         if alias in params:
@@ -618,7 +618,7 @@ def cv(params, train_set, num_boost_round=100,
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
     if verbose_eval is not None:
-        _log_warning("'verbose_eval' argument is deprecated and will be removed in 4.0.0 release. "
+        _log_warning("'verbose_eval' argument is deprecated and will be removed in a future release of LightGBM. "
                      "Pass 'print_evaluation()' callback via 'callbacks' argument instead.")
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))

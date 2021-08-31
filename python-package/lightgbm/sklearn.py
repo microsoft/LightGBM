@@ -711,7 +711,7 @@ class LGBMModel(_LGBMModelBase):
             init_model = init_model.booster_
 
         if early_stopping_rounds is not None and early_stopping_rounds > 0:
-            _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in 4.0.0 release. "
+            _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in a future release of LightGBM. "
                          "Pass 'early_stopping()' callback via 'callbacks' argument instead.")
             params['early_stopping_rounds'] = early_stopping_rounds
 
@@ -721,9 +721,9 @@ class LGBMModel(_LGBMModelBase):
             callbacks = copy.deepcopy(callbacks)
 
         if verbose != 'warn':
-            _log_warning("'verbose' argument is deprecated and will be removed in 4.0.0 release. "
+            _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM. "
                          "Pass 'print_evaluation()' callback via 'callbacks' argument instead.")
-        if verbose == 'warn':
+        else:
             if callbacks:  # assume user has already specified print_evaluation callback
                 verbose = False
             else:
@@ -748,8 +748,14 @@ class LGBMModel(_LGBMModelBase):
 
         if evals_result:
             self._evals_result = evals_result
+        else:  # reset after previous call to fit()
+            self._evals_result = None
 
-        self._best_iteration = self._Booster.best_iteration
+        if self._Booster.best_iteration != 0:
+            self._best_iteration = self._Booster.best_iteration
+        else:  # reset after previous call to fit()
+            self._best_iteration = None
+
         self._best_score = self._Booster.best_score
 
         self.fitted_ = True
@@ -817,7 +823,7 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def best_iteration_(self):
-        """:obj:`int`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
+        """:obj:`int` or :obj:`None`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
         if self._n_features is None:
             raise LGBMNotFittedError('No best_iteration found. Need to call fit with early_stopping callback beforehand.')
         return self._best_iteration
