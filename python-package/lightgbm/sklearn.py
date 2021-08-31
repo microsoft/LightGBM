@@ -591,7 +591,7 @@ class LGBMModel(_LGBMModelBase):
         params = self.get_params()
         # user can set verbose with kwargs, it has higher priority
         if self.silent != "warn":
-            _log_warning("'silent' argument is deprecated and will be removed in 4.0.0 release. "
+            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
                          "Pass 'verbose' parameter via keyword arguments instead.")
             silent = self.silent
         else:

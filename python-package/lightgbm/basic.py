@@ -1440,7 +1440,7 @@ class Dataset:
                              f'Please use {key} argument of the Dataset constructor to pass this parameter.')
         # user can set verbose with params, it has higher priority
         if silent != "warn":
-            _log_warning("'silent' argument is deprecated and will be removed in 4.0.0 release. "
+            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
                          "Pass 'verbose' parameter via 'params' instead.")
         else:
             silent = False
@@ -2494,8 +2494,8 @@ class Booster:
         params = {} if params is None else deepcopy(params)
         # user can set verbose with params, it has higher priority
         if silent != 'warn':
-            _log_warning("'silent' argument is deprecated and will be removed in 4.0.0 release. "
-                         "Pass 'verbose' parameter via keyword arguments instead.")
+            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
+                         "Pass 'verbose' parameter via 'params' instead.")
         else:
             silent = False
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
@@ -3296,7 +3296,7 @@ class Booster:
         if verbose in {'warn', '_silent_false'}:
             verbose = verbose == 'warn'
         else:
-            _log_warning("'verbose' argument is deprecated and will be removed in 4.0.0 release.")
+            _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM.")
         if verbose:
             _log_info(f'Finished loading model, total used {int(out_num_iterations.value)} iterations')
         self.__num_class = out_num_class.value
