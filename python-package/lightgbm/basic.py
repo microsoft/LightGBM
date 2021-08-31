@@ -3293,10 +3293,10 @@ class Booster:
         _safe_call(_LIB.LGBM_BoosterGetNumClasses(
             self.handle,
             ctypes.byref(out_num_class)))
-        if verbose not in {'warn', '_silent_false'}:
-            _log_warning("'verbose' argument is deprecated and will be removed in 4.0.0 release.")
+        if verbose in {'warn', '_silent_false'}:
+            verbose = verbose == 'warn'
         else:
-            verbose = not verbose == '_silent_false'
+            _log_warning("'verbose' argument is deprecated and will be removed in 4.0.0 release.")
         if verbose:
             _log_info(f'Finished loading model, total used {int(out_num_iterations.value)} iterations')
         self.__num_class = out_num_class.value
