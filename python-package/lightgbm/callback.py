@@ -214,7 +214,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
         else:
             if threshold < 0:
                 raise ValueError('Early stopping threshold must be non-negative.')
-            if n_metrics > 1 and not first_metric_only:
+            if threshold > 0 and n_metrics > 1 and not first_metric_only:
                 _log_warning(f'Using {threshold} as the early stopping threshold for all metrics.')
             tholds = [threshold] * len(env.evaluation_result_list)
 
