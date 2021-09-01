@@ -646,6 +646,8 @@ def test_early_stopping():
 @pytest.mark.parametrize('single_metric', [True, False])
 @pytest.mark.parametrize('greater_is_better', [True, False])
 def test_early_stopping_threshold(single_metric, first_only, greater_is_better):
+    if single_metric and not first_only:
+        pytest.skip("first_metric_only doesn't affect single metric.")
     metric2threshold = {
         'auc': 0.001,
         'binary_logloss': 0.01,
@@ -701,7 +703,7 @@ def test_early_stopping_threshold(single_metric, first_only, greater_is_better):
         threshold_scores = threshold_scores[:, 0]
 
     assert threshold_bst.num_trees() < bst.num_trees()
-    np.testing.assert_equal(scores[:len(threshold_scores)], threshold_scores)
+    np.testing.assert_allclose(scores[:len(threshold_scores)], threshold_scores)
     last_score = threshold_scores[-1]
     best_score = threshold_scores[threshold_bst.num_trees() - 1]
     if greater_is_better:

@@ -199,14 +199,16 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
             _log_info(f"Training until validation scores don't improve for {stopping_rounds} rounds")
 
         n_metrics = len(env.evaluation_result_list)
-        if isinstance(threshold, float):
-            if n_metrics > 1:
-                _log_warning(f'Using {threshold} as the early stopping threshold for all metrics.')
-            tholds = [threshold] * n_metrics
-        else:
+        if isinstance(threshold, list):
             if len(threshold) != n_metrics:
                 raise ValueError('Must provide a single early stopping threshold or as many as metrics.')
             tholds = threshold
+        else:
+            if n_metrics > 1 and threshold > 0:
+                _log_warning(f'Using {threshold} as the early stopping threshold for all metrics.')
+            tholds = [threshold] * n_metrics
+        if not all(t >= 0 for t in tholds):
+            raise ValueError('Early stopping threshold must be non-negative.')
 
         # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
         first_metric[0] = env.evaluation_result_list[0][1].split(" ")[-1]
