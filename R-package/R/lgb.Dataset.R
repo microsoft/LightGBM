@@ -136,7 +136,7 @@ Dataset <- R6::R6Class(
       params <- modifyList(additional_params, params)
 
       # the Dataset's existing parameters should be overwritten by any passed in to this call
-      params <- modifyList(private$params, params)
+      params <- modifyList(private$get_params(), params)
 
       # Create new dataset
       ret <- Dataset$new(
@@ -923,7 +923,7 @@ lgb.Dataset.create.valid <- function(dataset,
       "lgb.Dataset.create.valid: Found the following passed through '...': "
       , paste(names(additional_params), collapse = ", ")
       , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-      , "Add these to 'params' instead. See ?lgb.Dataset for documentation on how to call this function."
+      , "Add these to 'params' instead. See ?lgb.Dataset.create.valid for documentation on how to call this function."
     ))
   }
 
