@@ -230,6 +230,8 @@ _lgbmmodel_doc_fit = (
         If there's more than one, will check all of them. But the training data is ignored anyway.
         To check only the first metric, set the ``first_metric_only`` parameter to ``True``
         in additional parameters ``**kwargs`` of the model constructor.
+    early_stopping_threshold : float or list of float (default=0.0)
+        Minimum improvement in score to keep training.
     verbose : bool or int, optional (default=True)
         Requires at least one evaluation data.
         If True, the eval metric on the eval set is printed at each boosting stage.
@@ -570,8 +572,8 @@ class LGBMModel(_LGBMModelBase):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_group=None,
-            eval_metric=None, early_stopping_rounds=None, verbose=True,
-            feature_name='auto', categorical_feature='auto',
+            eval_metric=None, early_stopping_rounds=None, early_stopping_threshold=0.0,
+            verbose=True, feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is set after definition, using a template."""
         if self._objective is None:
@@ -711,7 +713,7 @@ class LGBMModel(_LGBMModelBase):
 
         self._Booster = train(params, train_set,
                               self.n_estimators, valid_sets=valid_sets, valid_names=eval_names,
-                              early_stopping_rounds=early_stopping_rounds,
+                              early_stopping_rounds=early_stopping_rounds, early_stopping_threshold=early_stopping_threshold,
                               evals_result=evals_result, fobj=self._fobj, feval=eval_metrics_callable,
                               verbose_eval=verbose, feature_name=feature_name,
                               callbacks=callbacks, init_model=init_model)
@@ -843,13 +845,14 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_metric=None, early_stopping_rounds=None,
-            verbose=True, feature_name='auto', categorical_feature='auto',
-            callbacks=None, init_model=None):
+            early_stopping_threshold=0.0, verbose=True, feature_name='auto',
+            categorical_feature='auto', callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
         super().fit(X, y, sample_weight=sample_weight, init_score=init_score,
                     eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_init_score=eval_init_score, eval_metric=eval_metric,
-                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    early_stopping_rounds=early_stopping_rounds, early_stopping_threshold=early_stopping_threshold,
+                    verbose=verbose, feature_name=feature_name,
                     categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
@@ -869,8 +872,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_metric=None,
-            early_stopping_rounds=None, verbose=True,
-            feature_name='auto', categorical_feature='auto',
+            early_stopping_rounds=None, early_stopping_threshold=0.0,
+            verbose=True, feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
         _LGBMAssertAllFinite(y)
@@ -922,7 +925,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                     eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_class_weight=eval_class_weight, eval_init_score=eval_init_score,
                     eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds,
-                    verbose=verbose, feature_name=feature_name, categorical_feature=categorical_feature,
+                    early_stopping_threshold=early_stopping_threshold, verbose=verbose,
+                    feature_name=feature_name, categorical_feature=categorical_feature,
                     callbacks=callbacks, init_model=init_model)
         return self
 
@@ -997,7 +1001,8 @@ class LGBMRanker(LGBMModel):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric=None,
-            eval_at=(1, 2, 3, 4, 5), early_stopping_rounds=None, verbose=True,
+            eval_at=(1, 2, 3, 4, 5), early_stopping_rounds=None,
+            early_stopping_threshold=0.0, verbose=True,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
@@ -1021,8 +1026,9 @@ class LGBMRanker(LGBMModel):
         super().fit(X, y, sample_weight=sample_weight, init_score=init_score, group=group,
                     eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_init_score=eval_init_score, eval_group=eval_group, eval_metric=eval_metric,
-                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
-                    categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
+                    early_stopping_rounds=early_stopping_rounds, early_stopping_threshold=early_stopping_threshold,
+                    verbose=verbose, feature_name=feature_name, categorical_feature=categorical_feature,
+                    callbacks=callbacks, init_model=init_model)
         return self
 
     _base_doc = LGBMModel.fit.__doc__
