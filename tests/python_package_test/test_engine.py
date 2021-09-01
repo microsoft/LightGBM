@@ -645,20 +645,20 @@ def test_early_stopping():
 @pytest.mark.parametrize('first_only', [True, False])
 @pytest.mark.parametrize('single_metric', [True, False])
 @pytest.mark.parametrize('greater_is_better', [True, False])
-def test_early_stopping_threshold(single_metric, first_only, greater_is_better):
+def test_early_stopping_threshold(first_only, single_metric, greater_is_better):
     if single_metric and not first_only:
         pytest.skip("first_metric_only doesn't affect single metric.")
     metric2threshold = {
         'auc': 0.001,
         'binary_logloss': 0.01,
         'average_precision': 0.001,
-        'l2': 0.001,
+        'mape': 0.001,
     }
     if single_metric:
         if greater_is_better:
-            metric = ['auc']
+            metric = 'auc'
         else:
-            metric = ['binary_logloss']
+            metric = 'binary_logloss'
     else:
         if first_only:
             if greater_is_better:
@@ -669,7 +669,7 @@ def test_early_stopping_threshold(single_metric, first_only, greater_is_better):
             if greater_is_better:
                 metric = ['auc', 'average_precision']
             else:
-                metric = ['binary_logloss', 'l2']
+                metric = ['binary_logloss', 'mape']
 
     X, y = make_classification(n_samples=1_000, n_features=2, n_redundant=0, n_classes=2, random_state=0)
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
@@ -677,12 +677,18 @@ def test_early_stopping_threshold(single_metric, first_only, greater_is_better):
     valid_ds = lgb.Dataset(X_valid, y_valid, reference=train_ds)
 
     params = {'objective': 'binary', 'metric': metric, 'first_metric_only': first_only, 'verbose': -1}
-    threshold = [metric2threshold[m] for m in metric]
+    if isinstance(metric, str):
+        threshold = metric2threshold[metric]
+    elif first_only:
+        threshold = metric2threshold[metric[0]]
+    else:
+        threshold = [metric2threshold[m] for m in metric]
     train_kwargs = dict(
         params=params,
         train_set=train_ds,
         num_boost_round=100,
-        valid_sets=[valid_ds],
+        valid_sets=[train_ds, valid_ds],
+        valid_names=['training', 'valid'],
         early_stopping_rounds=10,
         verbose_eval=0,
     )
@@ -690,15 +696,14 @@ def test_early_stopping_threshold(single_metric, first_only, greater_is_better):
     # regular early stopping
     evals_result = {}
     bst = lgb.train(evals_result=evals_result, **train_kwargs)
-    scores = np.vstack([res for res in evals_result['valid_0'].values()]).T
+    scores = np.vstack([res for res in evals_result['valid'].values()]).T
 
     # positive threshold
     threshold_result = {}
     threshold_bst = lgb.train(early_stopping_threshold=threshold, evals_result=threshold_result, **train_kwargs)
-    threshold_scores = np.vstack([res for res in threshold_result['valid_0'].values()]).T
+    threshold_scores = np.vstack([res for res in threshold_result['valid'].values()]).T
 
     if first_only:
-        threshold = threshold[0]
         scores = scores[:, 0]
         threshold_scores = threshold_scores[:, 0]
 
