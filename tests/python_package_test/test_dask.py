@@ -7,15 +7,14 @@ import random
 import socket
 from itertools import groupby
 from os import getenv
-from platform import machine
 from sys import platform
 
 import pytest
 
 import lightgbm as lgb
 
-# if not platform.startswith('linux'):
-#     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
+if not platform.startswith('linux'):
+    pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
     pytest.skip('Dask is not installed', allow_module_level=True)
 
@@ -42,17 +41,6 @@ tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ra
 distributed_training_algorithms = ['data', 'voting']
 data_output = ['array', 'scipy_csr_matrix', 'dataframe', 'dataframe-with-categorical']
 boosting_types = ['gbdt', 'dart', 'goss', 'rf']
-
-on_non_x86_arch = machine() != 'x86_64'
-on_non_x86_arch = False
-
-# run fewer tests on aarch64 builds, since they are slower in CI
-if on_non_x86_arch:
-    tasks = ['binary-classification', 'regression', 'ranking']
-    distributed_training_algorithms = ['data']
-    data_output = ['array', 'dataframe-with-categorical']
-    boosting_types = ['gbdt']
-
 group_sizes = [5, 5, 5, 10, 10, 10, 20, 20, 20, 50, 50]
 task_to_dask_factory = {
     'regression': lgb.DaskLGBMRegressor,
@@ -1506,6 +1494,7 @@ def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except
     assert dask_spec.args[-1] == 'client'
     assert dask_spec.defaults[-1] is None
 
+
 @pytest.mark.parametrize(
     "methods",
     [
@@ -1518,7 +1507,6 @@ def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except
         (lgb.DaskLGBMRanker.predict, lgb.LGBMRanker.predict)
     ]
 )
-@pytest.mark.skipif(on_non_x86_arch, reason='scikit-learn compatibility tests are skipped to save time on non-x64_64 architectures')
 def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
     dask_spec = inspect.getfullargspec(methods[0])
     sklearn_spec = inspect.getfullargspec(methods[1])
