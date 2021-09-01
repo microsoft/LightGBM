@@ -32,7 +32,7 @@ def plot_importance(
     title: Optional[str] = 'Feature importance',
     xlabel: Optional[str] = 'Feature importance',
     ylabel: Optional[str] = 'Features',
-    importance_type: str = 'split',
+    importance_type: str = 'auto',
     max_num_features: Optional[int] = None,
     ignore_zero: bool = True,
     figsize: Optional[Tuple[float, float]] = None,
@@ -65,8 +65,9 @@ def plot_importance(
     ylabel : str or None, optional (default="Features")
         Y-axis title label.
         If None, title is disabled.
-    importance_type : str, optional (default="split")
+    importance_type : str, optional (default="auto")
         How the importance is calculated.
+        If "auto", if ``booster`` parameter is LGBMModel, ``booster.importance_type`` attribute is used; "split" otherwise.
         If "split", result contains numbers of times the feature is used in a model.
         If "gain", result contains total gains of splits which use the feature.
     max_num_features : int or None, optional (default=None)
@@ -96,8 +97,13 @@ def plot_importance(
         raise ImportError('You must install matplotlib and restart your session to plot importance.')
 
     if isinstance(booster, LGBMModel):
+        if importance_type == "auto":
+            importance_type = booster.importance_type
         booster = booster.booster_
-    elif not isinstance(booster, Booster):
+    elif isinstance(booster, Booster):
+        if importance_type == "auto":
+            importance_type = "split"
+    else:
         raise TypeError('booster must be Booster or LGBMModel.')
 
     importance = booster.feature_importance(importance_type=importance_type)
