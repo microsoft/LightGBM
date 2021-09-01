@@ -136,7 +136,7 @@ Dataset <- R6::R6Class(
       params <- modifyList(additional_params, params)
 
       # the Dataset's existing parameters should be overwritten by any passed in to this call
-      params <- modifyList(private$get_params(), params)
+      params <- modifyList(self$get_params(), params)
 
       # Create new dataset
       ret <- Dataset$new(
