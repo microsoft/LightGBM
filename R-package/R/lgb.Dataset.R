@@ -1,3 +1,21 @@
+#' @name lgb_shared_dataset_params
+#' @title Shared Dataset parameter docs
+#' @description Parameter docs for fields used in \code{lgb.Dataset} construction
+#' @param label vector of labels to use as the target variable
+#' @param weight numeric vector of sample weights
+#' @param init_score initial score is the base prediction lightgbm will boost from
+#' @param group used for learning-to-rank tasks. An integer vector describing how to
+#'              group rows together as ordered results from the same set of candidate results
+#'              to be ranked. For example, if you have a 100-document dataset with
+#'              \code{group = c(10, 20, 40, 10, 10, 10)}, that means that you have 6 groups,
+#'              where the first 10 records are in the first group, records 11-30 are in the
+#'              second group, etc.
+#' @param info a list of information of the \code{lgb.Dataset} object. NOTE: use of \code{info}
+#'             is deprecated as of v3.3.0. Use keyword arguments (e.g. \code{init_score = init_score})
+#'             directly.
+#' @keywords internal
+NULL
+
 # [description] List of valid keys for "info" arguments in lgb.Dataset.
 #               Wrapped in a function to take advantage of lazy evaluation
 #               (so it doesn't matter what order R sources files during installation).
@@ -35,7 +53,10 @@ Dataset <- R6::R6Class(
                           free_raw_data = TRUE,
                           used_indices = NULL,
                           info = list(),
-                          ...) {
+                          label = NULL,
+                          weight = NULL,
+                          group = NULL,
+                          init_score = NULL) {
 
       # validate inputs early to avoid unnecessary computation
       if (!(is.null(reference) || lgb.is.Dataset(reference))) {
@@ -45,25 +66,25 @@ Dataset <- R6::R6Class(
           stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
       }
 
-      # Check for additional parameters
-      additional_params <- list(...)
+      if (length(info) > 0L) {
+        warning(paste0(
+          "lgb.Dataset: found fields passed through 'info'. "
+          , "As of v3.3.0, this behavior is deprecated, and support for it will be removed in a future release. "
+          , "To suppress this warning, use keyword arguments 'label', 'weight', 'group', or 'init_score' directly"
+        ))
+      }
 
-      # Check if attribute key is in the known attribute list
-      for (key in names(additional_params)) {
-
-        # Key existing
-        if (key %in% .INFO_KEYS()) {
-
-          # Store as info
-          info[[key]] <- additional_params[[key]]
-
-        } else {
-
-          # Store as param
-          params[[key]] <- additional_params[[key]]
-
-        }
-
+      if (!is.null(label)) {
+        info[["label"]] <- label
+      }
+      if (!is.null(weight)) {
+        info[["weight"]] <- weight
+      }
+      if (!is.null(group)) {
+        info[["group"]] <- group
+      }
+      if (!is.null(init_score)) {
+        info[["init_score"]] <- init_score
       }
 
       # Check for matrix format
@@ -93,12 +114,34 @@ Dataset <- R6::R6Class(
 
     create_valid = function(data,
                             info = list(),
+                            label = NULL,
+                            weight = NULL,
+                            group = NULL,
+                            init_score = NULL,
+                            params = list(),
                             ...) {
+
+      additional_params <- list(...)
+      if (length(additional_params) > 0L) {
+        warning(paste0(
+          "Dataset$create_valid(): Found the following passed through '...': "
+          , paste(names(additional_params), collapse = ", ")
+          , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
+          , "Add these to 'params' instead. "
+          , "See ?lgb.Dataset.create.valid for documentation on how to call this function."
+        ))
+      }
+
+      # anything passed into '...' should be overwritten by things passed to 'params'
+      params <- modifyList(additional_params, params)
+
+      # the Dataset's existing parameters should be overwritten by any passed in to this call
+      params <- modifyList(self$get_params(), params)
 
       # Create new dataset
       ret <- Dataset$new(
         data = data
-        , params = private$params
+        , params = params
         , reference = self
         , colnames = private$colnames
         , categorical_feature = private$categorical_feature
@@ -106,7 +149,10 @@ Dataset <- R6::R6Class(
         , free_raw_data = private$free_raw_data
         , used_indices = NULL
         , info = info
-        , ...
+        , label = label
+        , weight = weight
+        , group = group
+        , init_score = init_score
       )
 
       return(invisible(ret))
@@ -532,6 +578,16 @@ Dataset <- R6::R6Class(
     # Slice dataset
     slice = function(idxset, ...) {
 
+      additional_params <- list(...)
+      if (length(additional_params) > 0L) {
+        warning(paste0(
+          "Dataset$slice(): Found the following passed through '...': "
+          , paste(names(additional_params), collapse = ", ")
+          , ". These are ignored and should be removed. "
+          , "In future releases of lightgbm, this warning will become an error."
+        ))
+      }
+
       # Perform slicing
       return(
         Dataset$new(
@@ -733,6 +789,7 @@ Dataset <- R6::R6Class(
 #' @title Construct \code{lgb.Dataset} object
 #' @description Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
 #'              or local file (that was created previously by saving an \code{lgb.Dataset}).
+#' @inheritParams lgb_shared_dataset_params
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object,
 #'             a character representing a path to a text file (CSV, TSV, or LibSVM),
 #'             or a character representing a path to a binary \code{lgb.Dataset} file
@@ -752,8 +809,7 @@ Dataset <- R6::R6Class(
 #'                      This reduces LightGBM's memory consumption, but it means that the Dataset object
 #'                      cannot be changed after it has been constructed. If you'd prefer to be able to
 #'                      change the Dataset object after construction, set \code{free_raw_data = FALSE}.
-#' @param info a list of information of the \code{lgb.Dataset} object
-#' @param ... other information to pass to \code{info} or parameters pass to \code{params}
+#' @param ... other parameters passed to \code{params}
 #'
 #' @return constructed dataset
 #'
@@ -775,7 +831,23 @@ lgb.Dataset <- function(data,
                         categorical_feature = NULL,
                         free_raw_data = TRUE,
                         info = list(),
+                        label = NULL,
+                        weight = NULL,
+                        group = NULL,
+                        init_score = NULL,
                         ...) {
+
+  additional_params <- list(...)
+  params <- modifyList(params, additional_params)
+
+  if (length(additional_params) > 0L) {
+    warning(paste0(
+      "lgb.Dataset: Found the following passed through '...': "
+      , paste(names(additional_params), collapse = ", ")
+      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
+      , "Add these to 'params' instead. See ?lgb.Dataset for documentation on how to call this function."
+    ))
+  }
 
   # Create new dataset
   return(
@@ -789,7 +861,10 @@ lgb.Dataset <- function(data,
       , free_raw_data = free_raw_data
       , used_indices = NULL
       , info = info
-      , ...
+      , label = label
+      , weight = weight
+      , group = group
+      , init_score = init_score
     ))
   )
 
@@ -798,12 +873,18 @@ lgb.Dataset <- function(data,
 #' @name lgb.Dataset.create.valid
 #' @title Construct validation data
 #' @description Construct validation data according to training data
+#' @inheritParams lgb_shared_dataset_params
 #' @param dataset \code{lgb.Dataset} object, training data
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object,
 #'             a character representing a path to a text file (CSV, TSV, or LibSVM),
 #'             or a character representing a path to a binary \code{Dataset} file
-#' @param info a list of information of the \code{lgb.Dataset} object
-#' @param ... other information to pass to \code{info}.
+#' @param params a list of parameters. See
+#'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
+#'               The "Dataset Parameters" section of the documentation} for a list of parameters
+#'               and valid values. If this is an empty list (the default), the validation Dataset
+#'               will have the same parameters as the Dataset passed to argument \code{dataset}.
+#' @param ... additional \code{lgb.Dataset} parameters.
+#'            NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.
 #'
 #' @return constructed dataset
 #'
@@ -815,17 +896,81 @@ lgb.Dataset <- function(data,
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
+#'
+#' # parameters can be changed between the training data and validation set,
+#' # for example to account for training data in a text file with a header row
+#' # and validation data in a text file without it
+#' train_file <- tempfile(pattern = "train_", fileext = ".csv")
+#' write.table(
+#'   data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+#'   , file = train_file
+#'   , sep = ","
+#'   , col.names = TRUE
+#'   , row.names = FALSE
+#'   , quote = FALSE
+#' )
+#'
+#' valid_file <- tempfile(pattern = "valid_", fileext = ".csv")
+#' write.table(
+#'   data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+#'   , file = valid_file
+#'   , sep = ","
+#'   , col.names = FALSE
+#'   , row.names = FALSE
+#'   , quote = FALSE
+#' )
+#'
+#' dtrain <- lgb.Dataset(
+#'   data = train_file
+#'   , params = list(has_header = TRUE)
+#' )
+#' dtrain$construct()
+#'
+#' dvalid <- lgb.Dataset(
+#'   data = valid_file
+#'   , params = list(has_header = FALSE)
+#' )
+#' dvalid$construct()
 #' }
+#' @importFrom utils modifyList
 #' @export
-lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
+lgb.Dataset.create.valid <- function(dataset,
+                                     data,
+                                     info = list(),
+                                     label = NULL,
+                                     weight = NULL,
+                                     group = NULL,
+                                     init_score = NULL,
+                                     params = list(),
+                                     ...) {
 
   # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.create.valid: input data should be an lgb.Dataset object")
   }
 
+  additional_params <- list(...)
+  if (length(additional_params) > 0L) {
+    warning(paste0(
+      "lgb.Dataset.create.valid: Found the following passed through '...': "
+      , paste(names(additional_params), collapse = ", ")
+      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
+      , "Add these to 'params' instead. See ?lgb.Dataset.create.valid for documentation on how to call this function."
+    ))
+  }
+
   # Create validation dataset
-  return(invisible(dataset$create_valid(data = data, info = info, ...)))
+  return(invisible(
+    dataset$create_valid(
+      data = data
+      , info = info
+      , label = label
+      , weight = weight
+      , group = group
+      , init_score = init_score
+      , params = utils::modifyList(params, additional_params)
+    )
+  ))
 
 }
 
