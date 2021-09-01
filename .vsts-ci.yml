@@ -162,6 +162,7 @@ jobs:
       sudo apt-get update
       sudo apt-get install --no-install-recommends -y \
         binfmt-support \
+        jq \
         qemu \
         qemu-user \
         qemu-user-static
@@ -190,13 +191,20 @@ jobs:
       $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
       $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
       EOF
+      IMAGE_URI="quay.io/pypa/manylinux2014_${ARCH}"
+      docker pull "${IMAGE_URI}" || exit -1
+      PLATFORM=$(
+        docker image inspect "${IMAGE_URI}"\
+        | jq -r '.[0] | "\(.Os)/\(.Architecture)"'
+      ) || exit -1
+      echo "detected image platform: ${PLATFORM}"
       docker run \
-        --platform linux/arm64 \
+        --platform "${PLATFORM}" \
         --rm \
         --env-file docker.env \
         -v "$(Build.SourcesDirectory)":"$ROOT_DOCKER_FOLDER" \
         -v "$(Build.ArtifactStagingDirectory)":"$(Build.ArtifactStagingDirectory)" \
-        "quay.io/pypa/manylinux2014_$ARCH" \
+        "${IMAGE_URI}" \
         /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
     displayName: 'Setup and run tests'
   - task: PublishBuildArtifacts@1
