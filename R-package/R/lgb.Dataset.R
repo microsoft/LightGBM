@@ -912,7 +912,6 @@ lgb.Dataset.create.valid <- function(dataset,
                                      params = list(),
                                      ...) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.create.valid: input data should be an lgb.Dataset object")
   }
@@ -958,12 +957,10 @@ lgb.Dataset.create.valid <- function(dataset,
 #' @export
 lgb.Dataset.construct <- function(dataset) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.construct: input data should be an lgb.Dataset object")
   }
 
-  # Construct the dataset
   return(invisible(dataset$construct()))
 
 }
@@ -1003,7 +1000,6 @@ dim.lgb.Dataset <- function(x, ...) {
     ))
   }
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = x)) {
     stop("dim.lgb.Dataset: input data should be an lgb.Dataset object")
   }
@@ -1039,7 +1035,6 @@ dim.lgb.Dataset <- function(x, ...) {
 #' @export
 dimnames.lgb.Dataset <- function(x) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = x)) {
     stop("dimnames.lgb.Dataset: input data should be an lgb.Dataset object")
   }
@@ -1114,7 +1109,6 @@ slice <- function(dataset, ...) {
 #' @export
 slice.lgb.Dataset <- function(dataset, idxset, ...) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("slice.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
@@ -1177,7 +1171,6 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
     ))
   }
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("getinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
