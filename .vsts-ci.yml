@@ -191,7 +191,7 @@ jobs:
       $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
       EOF
       docker run \
-        --platform linux/arm/v7 \
+        --platform linux/arm64 \
         --rm \
         --env-file docker.env \
         -v "$(Build.SourcesDirectory)":"$ROOT_DOCKER_FOLDER" \
