@@ -41,7 +41,7 @@ print(f'Feature importances: {list(gbm.feature_importances_)}')
 
 
 # self-defined eval metric
-# f(y_true: array, y_pred: array) -> name: string, eval_result: float, is_higher_better: bool
+# f(y_true: array, y_pred: array) -> name: str, eval_result: float, is_higher_better: bool
 # Root Mean Squared Logarithmic Error (RMSLE)
 def rmsle(y_true, y_pred):
     return 'RMSLE', np.sqrt(np.mean(np.power(np.log1p(y_pred) - np.log1p(y_true), 2))), False
@@ -56,7 +56,7 @@ gbm.fit(X_train, y_train,
 
 
 # another self-defined eval metric
-# f(y_true: array, y_pred: array) -> name: string, eval_result: float, is_higher_better: bool
+# f(y_true: array, y_pred: array) -> name: str, eval_result: float, is_higher_better: bool
 # Relative Absolute Error (RAE)
 def rae(y_true, y_pred):
     return 'RAE', np.sum(np.abs(y_pred - y_true)) / np.sum(np.abs(np.mean(y_true) - y_true)), False

@@ -34,14 +34,14 @@ params <- list(
     , num_leaves = 7L
     , max_depth = 3L
     , nthread = 1L
+    , min_data = 1L
+    , learning_rate = 1.0
 )
 model <- lgb.train(
     params
     , dtrain
     , 50L
     , valids
-    , min_data = 1L
-    , learning_rate = 1.0
     , early_stopping_rounds = 10L
 )
 weight_loss <- as.numeric(model$record_evals$test$l2$eval)
@@ -58,14 +58,14 @@ params <- list(
     , num_leaves = 7L
     , max_depth = 3L
     , nthread = 1L
+    , min_data = 1L
+    , learning_rate = 1.0
 )
 model <- lgb.train(
     params
     , dtrain
     , 50L
     , valids
-    , min_data = 1L
-    , learning_rate = 1.0
     , early_stopping_rounds = 10L
 )
 small_weight_loss <- as.numeric(model$record_evals$test$l2$eval)
@@ -94,14 +94,14 @@ params <- list(
     , num_leaves = 7L
     , max_depth = 3L
     , nthread = 1L
+    , min_data = 1L
+    , learning_rate = 1.0
 )
 model <- lgb.train(
     params
     , dtrain
     , 50L
     , valids
-    , min_data = 1L
-    , learning_rate = 1.0
     , early_stopping_rounds = 10L
 )
 large_weight_loss <- as.numeric(model$record_evals$test$l2$eval)

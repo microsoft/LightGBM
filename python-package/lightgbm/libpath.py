@@ -11,7 +11,7 @@ def find_lib_path() -> List[str]:
 
     Returns
     -------
-    lib_path: list of strings
+    lib_path: list of str
        List of all found library paths to LightGBM.
     """
     if environ.get('LIGHTGBM_BUILD_DOC', False):
