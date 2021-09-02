@@ -147,7 +147,7 @@ def loglikelihood(preds, train_data):
 
 
 # self-defined eval metric
-# f(preds: array, train_data: Dataset) -> name: string, eval_result: float, is_higher_better: bool
+# f(preds: array, train_data: Dataset) -> name: str, eval_result: float, is_higher_better: bool
 # binary error
 # NOTE: when you do customized loss function, the default prediction value is margin
 # This may make built-in evaluation metric calculate wrong results
@@ -171,7 +171,7 @@ print('Finished 40 - 50 rounds with self-defined objective function and eval met
 
 
 # another self-defined eval metric
-# f(preds: array, train_data: Dataset) -> name: string, eval_result: float, is_higher_better: bool
+# f(preds: array, train_data: Dataset) -> name: str, eval_result: float, is_higher_better: bool
 # accuracy
 # NOTE: when you do customized loss function, the default prediction value is margin
 # This may make built-in evaluation metric calculate wrong results

@@ -47,13 +47,13 @@ This section describes how to run distributed LightGBM training in various progr
 Apache Spark
 ^^^^^^^^^^^^
 
-Apache Spark users can use `MMLSpark`_ for machine learning workflows with LightGBM. This project is not maintained by LightGBM's maintainers.
+Apache Spark users can use `SynapseML`_ for machine learning workflows with LightGBM. This project is not maintained by LightGBM's maintainers.
 
-See `this MMLSpark example`_ and `the MMLSpark documentation`_ for additional information on using LightGBM on Spark.
+See `this SynapseML example`_ and `the SynapseML documentation`_ for additional information on using LightGBM on Spark.
 
 .. note::
 
-  ``MMLSpark`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/Azure/mmlspark/issues.
+  ``SynapseML`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/microsoft/SynapseML/issues.
 
 Dask
 ^^^^
@@ -453,9 +453,9 @@ Example
 
 .. _Dask: https://docs.dask.org/en/latest/
 
-.. _MMLSpark: https://aka.ms/spark
+.. _SynapseML: https://aka.ms/spark
 
-.. _this MMLSpark example: https://github.com/Azure/mmlspark/blob/master/notebooks/LightGBM%20-%20Overview.ipynb
+.. _this SynapseML example: https://github.com/microsoft/SynapseML/blob/master/notebooks/LightGBM%20-%20Overview.ipynb
 
 .. _the Dask Array documentation: https://docs.dask.org/en/latest/array.html
 
@@ -467,7 +467,7 @@ Example
 
 .. _the metrics functions from dask-ml: https://ml.dask.org/modules/api.html#dask-ml-metrics-metrics
 
-.. _the MMLSpark Documentation: https://github.com/Azure/mmlspark/blob/master/docs/lightgbm.md
+.. _the SynapseML Documentation: https://github.com/microsoft/SynapseML/blob/master/docs/lightgbm.md
 
 .. _these Dask examples: https://github.com/microsoft/lightgbm/tree/master/examples/python-guide/dask
 
