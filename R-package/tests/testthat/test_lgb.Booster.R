@@ -820,6 +820,93 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
 
 })
 
+test_that("Booster: methods called on a Booster with a null handle should raise an informative error and not segfault", {
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    dtrain <- lgb.Dataset(train$data, label = train$label)
+    bst <- lgb.train(
+        params = list(
+            objective = "regression"
+            , metric = "l2"
+            , num_leaves = 8L
+        )
+        , data = dtrain
+        , verbose = -1L
+        , nrounds = 5L
+        , valids = list(
+            train = dtrain
+        )
+    )
+    tmp_file <- tempfile(fileext = ".rds")
+    saveRDS(bst, tmp_file)
+    rm(bst)
+    bst <- readRDS(tmp_file)
+    .expect_booster_error <- function(object){
+        error_regexp <- "Attempting to use a Booster which no longer exists"
+        expect_error(object, regexp = error_regexp)
+    }
+    .expect_booster_error({
+        bst$current_iter()
+    })
+    .expect_booster_error({
+        bst$dump_model()
+    })
+    .expect_booster_error({
+        bst$eval(data = dtrain, name = "valid")
+    })
+    .expect_booster_error({
+        bst$eval_train()
+    })
+    .expect_booster_error({
+        bst$lower_bound()
+    })
+    .expect_booster_error({
+        bst$predict(data = train$data[seq_len(5L), ])
+    })
+    .expect_booster_error({
+        bst$reset_parameter(params = list(learning_rate = 0.123))
+    })
+    .expect_booster_error({
+        bst$rollback_one_iter()
+    })
+    .expect_booster_error({
+        bst$save()
+    })
+    .expect_booster_error({
+        bst$save_model(filename = tempfile(fileext = ".model"))
+    })
+    .expect_booster_error({
+        bst$save_model_to_string()
+    })
+    .expect_booster_error({
+        bst$update()
+    })
+    .expect_booster_error({
+        bst$upper_bound()
+    })
+    predictor <- bst$to_predictor()
+    .expect_booster_error({
+        predictor$current_iter()
+    })
+    .expect_booster_error({
+        predictor$predict(data = train$data[seq_len(5L), ])
+    })
+})
+
+test_that("Booster: attempting to create a Booster from a Dataset will a null handle should raise an informative error and not segfault", {
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    dtrain <- lgb.Dataset(train$data, label = train$label)
+    dtrain$construct()
+    tmp_file <- tempfile(fileext = ".bin")
+    saveRDS(dtrain, tmp_file)
+    rm(dtrain)
+    dtrain <- readRDS(tmp_file)
+    expect_error({
+        bst <- Booster$new(train_set = dtrain)
+    }, regexp = "Attempting to create a Dataset without any raw data")
+})
+
 # this is almost identical to the test above it, but for lgb.cv(). A lot of code
 # is duplicated between lgb.train() and lgb.cv(), and this will catch cases where
 # one is updated and the other isn't

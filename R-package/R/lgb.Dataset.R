@@ -167,6 +167,15 @@ Dataset <- R6::R6Class(
         return(invisible(self))
       }
 
+      if (is.null(private$raw_data)) {
+        stop(paste0(
+          "Attempting to create a Dataset without any raw data. "
+          , "This can happen if you have called Dataset$finalize() or if this Dataset was saved with saveRDS(). "
+          , "To avoid this error in the future, use lgb.Dataset.save() or "
+          , "Dataset$save_binary() to save lightgbm Datasets."
+        ))
+      }
+
       # Get feature names
       cnames <- NULL
       if (is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")) {
