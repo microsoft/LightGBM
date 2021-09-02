@@ -68,6 +68,10 @@ __global__ void SplitKernel(// split information
         right_child[parent_index] = new_node_index;
       }
     }
+    left_child[new_node_index] = ~leaf_index;
+    right_child[new_node_index] = ~num_leaves;
+    leaf_parent[leaf_index] = new_node_index;
+    leaf_parent[num_leaves] = new_node_index;
   } else if (thread_index == 1) {
     // add new node
     split_feature_inner[new_node_index] = cuda_split_info->inner_feature_index;
@@ -76,44 +80,34 @@ __global__ void SplitKernel(// split information
   } else if (thread_index == 3) {
     split_gain[new_node_index] = static_cast<float>(cuda_split_info->gain);
   } else if (thread_index == 4) {
-    // add two new leaves
-    left_child[new_node_index] = ~leaf_index;
-  } else if (thread_index == 5) {
-    right_child[new_node_index] = ~num_leaves;
-  } else if (thread_index == 6) {
-    // update new leaves
-    leaf_parent[leaf_index] = new_node_index;
-  } else if (thread_index == 7) {
-    leaf_parent[num_leaves] = new_node_index;
-  } else if (thread_index == 8) {
     // save current leaf value to internal node before change
     internal_weight[new_node_index] = leaf_weight[leaf_index];
     leaf_weight[leaf_index] = cuda_split_info->left_sum_hessians;
-  } else if (thread_index == 9) {
+  } else if (thread_index == 5) {
     internal_value[new_node_index] = leaf_value[leaf_index];
     leaf_value[leaf_index] = isnan(cuda_split_info->left_value) ? 0.0f : cuda_split_info->left_value;
-  } else if (thread_index == 10) {
+  } else if (thread_index == 6) {
     internal_count[new_node_index] = cuda_split_info->left_count + cuda_split_info->right_count;
-  } else if (thread_index == 11) {
+  } else if (thread_index == 7) {
     leaf_count[leaf_index] = cuda_split_info->left_count;
-  } else if (thread_index == 12) {
+  } else if (thread_index == 8) {
     leaf_value[num_leaves] = isnan(cuda_split_info->right_value) ? 0.0f : cuda_split_info->right_value;
-  } else if (thread_index == 13) {
+  } else if (thread_index == 9) {
     leaf_weight[num_leaves] = cuda_split_info->right_sum_hessians;
-  } else if (thread_index == 14) {
+  } else if (thread_index == 10) {
     leaf_count[num_leaves] = cuda_split_info->right_count;
-  } else if (thread_index == 15) {
+  } else if (thread_index == 11) {
     // update leaf depth
     leaf_depth[num_leaves] = leaf_depth[leaf_index] + 1;
     leaf_depth[leaf_index]++;
-  } else if (thread_index == 16) {
+  } else if (thread_index == 12) {
     decision_type[new_node_index] = 0;
     SetDecisionTypeCUDA(&decision_type[new_node_index], false, kCategoricalMask);
     SetDecisionTypeCUDA(&decision_type[new_node_index], cuda_split_info->default_left, kDefaultLeftMask);
     SetMissingTypeCUDA(&decision_type[new_node_index], static_cast<int8_t>(missing_type));
-  } else if (thread_index == 17) {
+  } else if (thread_index == 13) {
     threshold_in_bin[new_node_index] = cuda_split_info->threshold;
-  } else if (thread_index == 18) {
+  } else if (thread_index == 14) {
     threshold[new_node_index] = real_threshold;
   }
 }
@@ -123,7 +117,7 @@ void CUDATree::LaunchSplitKernel(const int leaf_index,
                                  const double real_threshold,
                                  const MissingType missing_type,
                                  const CUDASplitInfo* cuda_split_info) {
-  SplitKernel<<<4, 5, 0, cuda_stream_>>>(
+  SplitKernel<<<3, 5, 0, cuda_stream_>>>(
     // split information
     leaf_index,
     real_feature_index,
@@ -218,7 +212,8 @@ __global__ void AddPredictionToScoreKernel(
       }
       ++iter;
       if (iter > 1000) {
-        printf("error iter = %d\n", iter);
+        printf("error iter = %d, node = %d, cuda_left_child[%d] = %d, cuda_right_child[%d] = %d\n",
+          iter, node, node, cuda_left_child[node], node, cuda_right_child[node]);
       }
     }
     score[data_index] += cuda_leaf_value[~node];

@@ -419,7 +419,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto score_ptr = train_score_updater_->score() + offset;
       auto residual_getter = [score_ptr](const label_t* label, int i) {return static_cast<double>(label[i]) - score_ptr[i]; };
       tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, residual_getter,
-                                     num_data_, bag_data_indices_.data(), bag_data_cnt_);
+                                     score_ptr, num_data_, bag_data_indices_.data(), bag_data_cnt_);
       // shrinkage by learning rate
       new_tree->Shrinkage(shrinkage_rate_);
       // update score
@@ -525,12 +525,12 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
 }
 
 std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const {
-  if (config_->device_type == std::string("cuda")) {
+  /*if (config_->device_type == std::string("cuda")) {
     std::vector<double> tmp_score(num_data * num_class_, 0.0f);
     CopyFromCUDADeviceToHostOuter<double>(tmp_score.data(), score, static_cast<size_t>(num_data * num_class_), __FILE__, __LINE__);
     SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
     return metric->Eval(tmp_score.data(), objective_function_);
-  } else {
+  } else*/ {
     return metric->Eval(score, objective_function_);
   }
 }

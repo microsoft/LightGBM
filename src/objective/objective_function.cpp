@@ -23,12 +23,28 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
       return new CUDABinaryLogloss(config);
     } else if (type == std::string("regression")) {
       return new CUDARegressionL2loss(config);
+    } else if (type == std::string("regression_l1")) {
+      return new CUDARegressionL1loss(config);
+    } else if (type == std::string("quantile")) {
+      return new CUDARegressionQuantileloss(config);
+    } else if (type == std::string("huber")) {
+      return new CUDARegressionHuberLoss(config);
+    } else if (type == std::string("fair")) {
+      return new CUDARegressionFairLoss(config);
+    } else if (type == std::string("poisson")) {
+      return new CUDARegressionFairLoss(config);
     } else if (type == std::string("lambdarank")) {
       return new CUDALambdarankNDCG(config);
     } else if (type == std::string("rank_xendcg")) {
       return new CUDARankXENDCG(config);
     } else if (type == std::string("multiclass")) {
       return new CUDAMulticlassSoftmax(config);
+    } else if (type == std::string("mape")) {
+      return new CUDARegressionMAPELOSS(config);
+    } else if (type == std::string("gamma")) {
+      return new CUDARegressionGammaLoss(config);
+    } else if (type == std::string("tweedie")) {
+      return new CUDARegressionTweedieLoss(config);
     }
   } else {
     if (type == std::string("regression")) {

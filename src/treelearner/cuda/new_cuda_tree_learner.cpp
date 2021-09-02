@@ -11,6 +11,7 @@
 #include <LightGBM/cuda/cuda_tree.hpp>
 #include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/feature_group.h>
+#include <LightGBM/objective_function.h>
 
 namespace LightGBM {
 
@@ -78,8 +79,10 @@ void NewCUDATreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>&
 void NewCUDATreeLearner::Split(Tree* /*tree*/, int /*best_leaf*/,
   int* /*left_leaf*/, int* /*right_leaf*/) {}
 
-void NewCUDATreeLearner::AddPredictionToScore(const Tree* /*tree*/, double* out_score) const {
-  cuda_data_partition_->UpdateTrainScore(config_->learning_rate, out_score);
+void NewCUDATreeLearner::AddPredictionToScore(const Tree* tree, double* out_score) const {
+  CHECK(tree->is_cuda_tree());
+  const CUDATree* cuda_tree = reinterpret_cast<const CUDATree*>(tree);
+  cuda_data_partition_->UpdateTrainScore(cuda_tree->cuda_leaf_value(), out_score);
 }
 
 Tree* NewCUDATreeLearner::Train(const score_t* gradients,
@@ -216,6 +219,27 @@ void NewCUDATreeLearner::ResetTrainingData(const Dataset* /*train_data*/,
 
 void NewCUDATreeLearner::SetBaggingData(const Dataset* /*subset*/,
   const data_size_t* /*used_indices*/, data_size_t /*num_data*/) {}
+
+void NewCUDATreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> /*residual_getter*/,
+                       const double* score, data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
+  CHECK(tree->is_cuda_tree());
+  CUDATree* cuda_tree = reinterpret_cast<CUDATree*>(tree);
+  std::vector<double> host_leaf_values(cuda_tree->num_leaves(), 0.0f);
+  CopyFromCUDADeviceToHostOuter<double>(host_leaf_values.data(), cuda_tree->cuda_leaf_value(), static_cast<size_t>(cuda_tree->num_leaves()), __FILE__, __LINE__);
+  for (int leaf_index = 0; leaf_index < cuda_tree->num_leaves(); ++leaf_index) {
+    Log::Warning("before convert tree output, leaf_index = %d, leaf_value = %f", leaf_index, host_leaf_values[leaf_index]);
+  }
+  obj->RenewTreeOutputCUDA(score,
+                           cuda_data_partition_->cuda_data_indices(),
+                           cuda_data_partition_->cuda_leaf_num_data(),
+                           cuda_data_partition_->cuda_leaf_data_start(),
+                           tree->num_leaves(),
+                           cuda_tree->cuda_leaf_value_ref());
+  CopyFromCUDADeviceToHostOuter<double>(host_leaf_values.data(), cuda_tree->cuda_leaf_value(), static_cast<size_t>(cuda_tree->num_leaves()), __FILE__, __LINE__);
+  for (int leaf_index = 0; leaf_index < cuda_tree->num_leaves(); ++leaf_index) {
+    Log::Warning("after convert tree output, leaf_index = %d, leaf_value = %f", leaf_index, host_leaf_values[leaf_index]);
+  }
+}
 
 }  // namespace LightGBM
 

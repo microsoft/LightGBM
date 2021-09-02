@@ -358,6 +358,12 @@ void BitonicArgSortGlobal<double, data_size_t, true>(const double* values, data_
   BitonicArgSortGlobalHelper<double, data_size_t, true>(values, indices, len);
 }
 
+template <>
+void BitonicArgSortGlobal<label_t, data_size_t, false>(const label_t* values, data_size_t* indices, const size_t len) {
+  BitonicArgSortGlobalHelper<label_t, data_size_t, false>(values, indices, len);
+}
+
+
 template <typename VAL_T, typename INDEX_T, bool ASCENDING>
 __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, const int len) {
   __shared__ VAL_T shared_values[BITONIC_SORT_NUM_ELEMENTS];
@@ -497,6 +503,170 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
       }
       __syncthreads();
       for (int inner_depth = max_depth - 10; inner_depth < max_depth; ++inner_depth) {
+        const int half_segment_length = (1 << (max_depth - inner_depth - 1));
+        const int half_segment_index = this_index / half_segment_length;
+        if (half_segment_index % 2 == 0) {
+          const int other_index = static_cast<int>(threadIdx.x) + half_segment_length;
+          const INDEX_T this_data_index = shared_indices[threadIdx.x];
+          const INDEX_T other_data_index = shared_indices[other_index];
+          const VAL_T this_value = shared_values[threadIdx.x];
+          const VAL_T other_value = shared_values[other_index];
+          if (other_data_index < len && (this_value > other_value) == ascending) {
+            shared_indices[threadIdx.x] = other_data_index;
+            shared_indices[other_index] = this_data_index;
+            shared_values[threadIdx.x] = other_value;
+            shared_values[other_index] = this_value;
+          }
+        }
+        __syncthreads();
+      }
+      if (this_index < len) {
+        indices[this_index] = shared_indices[threadIdx.x];
+      }
+      __syncthreads();
+    }
+  }
+}
+
+template <typename VAL_T, typename INDEX_T, bool ASCENDING>
+__device__ void BitonicArgSortDevice512(const VAL_T* values, INDEX_T* indices, const int len) {
+  __shared__ VAL_T shared_values[BITONIC_SORT_NUM_ELEMENTS / 2];
+  __shared__ INDEX_T shared_indices[BITONIC_SORT_NUM_ELEMENTS / 2];
+  int len_to_shift = len - 1;
+  int max_depth = 1;
+  while (len_to_shift > 0) {
+    len_to_shift >>= 1;
+    ++max_depth;
+  }
+  const int num_blocks = (len + (BITONIC_SORT_NUM_ELEMENTS / 2) - 1) / (BITONIC_SORT_NUM_ELEMENTS / 2);
+  for (int block_index = 0; block_index < num_blocks; ++block_index) {
+    const int this_index = block_index * BITONIC_SORT_NUM_ELEMENTS / 2 + static_cast<int>(threadIdx.x);
+    if (this_index < len) {
+      shared_values[threadIdx.x] = values[this_index];
+      shared_indices[threadIdx.x] = this_index;
+    } else {
+      shared_indices[threadIdx.x] = len;
+    }
+    __syncthreads();
+    for (int depth = max_depth - 1; depth > max_depth - 10; --depth) {
+      const int segment_length = (1 << (max_depth - depth));
+      const int segment_index = this_index / segment_length;
+      const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
+      {
+        const int half_segment_length = (segment_length >> 1);
+        const int half_segment_index = this_index / half_segment_length;
+        const int num_total_segment = (len + segment_length - 1) / segment_length;
+        const int offset = (segment_index == num_total_segment - 1 && ascending == ASCENDING) ?
+          (num_total_segment * segment_length - len) : 0;
+        if (half_segment_index % 2 == 0) {
+          const int segment_start = segment_index * segment_length;
+          if (this_index >= offset + segment_start) {
+            const int other_index = static_cast<int>(threadIdx.x) + half_segment_length - offset;
+            const INDEX_T this_data_index = shared_indices[threadIdx.x];
+            const INDEX_T other_data_index = shared_indices[other_index];
+            const VAL_T this_value = shared_values[threadIdx.x];
+            const VAL_T other_value = shared_values[other_index];
+            if (other_data_index < len && (this_value > other_value) == ascending) {
+              shared_indices[threadIdx.x] = other_data_index;
+              shared_indices[other_index] = this_data_index;
+              shared_values[threadIdx.x] = other_value;
+              shared_values[other_index] = this_value;
+            }
+          }
+        }
+        __syncthreads();
+      }
+      for (int inner_depth = depth + 1; inner_depth < max_depth; ++inner_depth) {
+        const int half_segment_length = (1 << (max_depth - inner_depth - 1));
+        const int half_segment_index = this_index / half_segment_length;
+        if (half_segment_index % 2 == 0) {
+          const int other_index = static_cast<int>(threadIdx.x) + half_segment_length;
+          const INDEX_T this_data_index = shared_indices[threadIdx.x];
+          const INDEX_T other_data_index = shared_indices[other_index];
+          const VAL_T this_value = shared_values[threadIdx.x];
+          const VAL_T other_value = shared_values[other_index];
+          if (other_data_index < len && (this_value > other_value) == ascending) {
+            shared_indices[threadIdx.x] = other_data_index;
+            shared_indices[other_index] = this_data_index;
+            shared_values[threadIdx.x] = other_value;
+            shared_values[other_index] = this_value;
+          }
+        }
+        __syncthreads();
+      }
+    }
+    if (this_index < len) {
+      indices[this_index] = shared_indices[threadIdx.x];
+    }
+    __syncthreads();
+  }
+  for (int depth = max_depth - 10; depth >= 1; --depth) {
+    const int segment_length = (1 << (max_depth - depth));
+    {
+      const int num_total_segment = (len + segment_length - 1) / segment_length;
+      const int half_segment_length = (segment_length >> 1);
+      for (int block_index = 0; block_index < num_blocks; ++block_index) {
+        const int this_index = block_index * BITONIC_SORT_NUM_ELEMENTS / 2 + static_cast<int>(threadIdx.x);
+        const int segment_index = this_index / segment_length;
+        const int half_segment_index = this_index / half_segment_length;
+        const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
+        const int offset = (segment_index == num_total_segment - 1 && ascending == ASCENDING) ?
+          (num_total_segment * segment_length - len) : 0;
+        if (half_segment_index % 2 == 0) {
+          const int segment_start = segment_index * segment_length;
+          if (this_index >= offset + segment_start) {
+            const int other_index = this_index + half_segment_length - offset;
+            if (other_index < len) {
+              const INDEX_T this_data_index = indices[this_index];
+              const INDEX_T other_data_index = indices[other_index];
+              const VAL_T this_value = values[this_data_index];
+              const VAL_T other_value = values[other_data_index];
+              if ((this_value > other_value) == ascending) {
+                indices[this_index] = other_data_index;
+                indices[other_index] = this_data_index;
+              }
+            }
+          }
+        }
+      }
+      __syncthreads();
+    }
+    for (int inner_depth = depth + 1; inner_depth <= max_depth - 10; ++inner_depth) {
+      const int half_segment_length = (1 << (max_depth - inner_depth - 1));
+      for (int block_index = 0; block_index < num_blocks; ++block_index) {
+        const int this_index = block_index * BITONIC_SORT_NUM_ELEMENTS / 2 + static_cast<int>(threadIdx.x);
+        const int segment_index = this_index / segment_length;
+        const int half_segment_index = this_index / half_segment_length;
+        const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
+        if (half_segment_index % 2 == 0) {
+          const int other_index = this_index + half_segment_length;
+          if (other_index < len) {
+            const INDEX_T this_data_index = indices[this_index];
+            const INDEX_T other_data_index = indices[other_index];
+            const VAL_T this_value = values[this_data_index];
+            const VAL_T other_value = values[other_data_index];
+            if ((this_value > other_value) == ascending) {
+              indices[this_index] = other_data_index;
+              indices[other_index] = this_data_index;
+            }
+          }
+        }
+        __syncthreads();
+      }
+    }
+    for (int block_index = 0; block_index < num_blocks; ++block_index) {
+      const int this_index = block_index * BITONIC_SORT_NUM_ELEMENTS / 2 + static_cast<int>(threadIdx.x);
+      const int segment_index = this_index / segment_length;
+      const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
+      if (this_index < len) {
+        const INDEX_T index = indices[this_index];
+        shared_values[threadIdx.x] = values[index];
+        shared_indices[threadIdx.x] = index;
+      } else {
+        shared_indices[threadIdx.x] = len;
+      }
+      __syncthreads();
+      for (int inner_depth = max_depth - 9; inner_depth < max_depth; ++inner_depth) {
         const int half_segment_length = (1 << (max_depth - inner_depth - 1));
         const int half_segment_index = this_index / half_segment_length;
         if (half_segment_index % 2 == 0) {
@@ -663,6 +833,27 @@ __global__ void GlobalInclusivePrefixSumKernel(T* values, T* block_buffer, data_
   }
 }
 
+template <typename INDEX_T, typename VAL_T, typename REDUCE_T>
+__global__ void GlobalInclusiveArgPrefixSumKernel(
+  const INDEX_T* sorted_indices, const VAL_T* in_values, REDUCE_T* out_values, REDUCE_T* block_buffer, data_size_t num_data) {
+  __shared__ REDUCE_T shared_buffer[GLOBAL_PREFIX_SUM_BLOCK_SIZE + 1];
+  const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
+  if (data_index < num_data) {
+    if (sorted_indices[data_index] >= num_data || sorted_indices[data_index] < 0) {
+      printf("error find sorted_indices[%d] = %d\n", data_index, sorted_indices[data_index]);
+    }
+  }
+  shared_buffer[threadIdx.x] = (data_index < num_data ? in_values[sorted_indices[data_index]] : 0);
+  __syncthreads();
+  PrefixSum<REDUCE_T>(shared_buffer, blockDim.x);
+  if (data_index < num_data) {
+    out_values[data_index] = shared_buffer[threadIdx.x + 1];
+  }
+  if (threadIdx.x == 0) {
+    block_buffer[blockIdx.x + 1] = shared_buffer[blockDim.x];
+  }
+}
+
 template <typename T>
 __global__ void GlobalInclusivePrefixSumReduceBlockKernel(T* block_buffer, data_size_t num_blocks) {
   __shared__ T shared_buffer[GLOBAL_PREFIX_SUM_BLOCK_SIZE + 1];
@@ -746,6 +937,26 @@ void GlobalInclusivePrefixSum(T* values, T* block_buffer, size_t n) {
     block_buffer, num_blocks);
   GlobalInclusivePrefixSumAddBlockBaseKernel<T><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(
     block_buffer, values, num_data);
+}
+
+template <typename VAL_T, typename REDUCE_T, typename INDEX_T>
+void GlobalInclusiveArgPrefixSumInner(const INDEX_T* sorted_indices, const VAL_T* in_values, REDUCE_T* out_values, REDUCE_T* block_buffer, size_t n) {
+  const data_size_t num_data = static_cast<data_size_t>(n);
+  const data_size_t num_blocks = (num_data + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
+  GlobalInclusiveArgPrefixSumKernel<INDEX_T, VAL_T, REDUCE_T><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(
+    sorted_indices, in_values, out_values, block_buffer, num_data);
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  GlobalInclusivePrefixSumReduceBlockKernel<REDUCE_T><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(
+    block_buffer, num_blocks);
+    SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  GlobalInclusivePrefixSumAddBlockBaseKernel<REDUCE_T><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(
+    block_buffer, out_values, num_data);
+    SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+}
+
+template <>
+void GlobalInclusiveArgPrefixSum<label_t, double, data_size_t>(const data_size_t* sorted_indices, const label_t* in_values, double* out_values, double* block_buffer, size_t n) {
+  GlobalInclusiveArgPrefixSumInner<label_t, double, data_size_t>(sorted_indices, in_values, out_values, block_buffer, n);
 }
 
 __global__ void GlobalGenAUCMarkKernel(const double* scores,
@@ -914,6 +1125,38 @@ __global__ void BlockReduceSum(T* block_buffer, const data_size_t num_blocks) {
   }
 }
 
+template <typename T>
+__global__ void BlockReduceMax(T* block_buffer, const data_size_t num_blocks) {
+  __shared__ T shared_buffer[32];
+  T thread_max = 0;
+  for (data_size_t block_index = static_cast<data_size_t>(threadIdx.x); block_index < num_blocks; block_index += static_cast<data_size_t>(blockDim.x)) {
+    const T value = block_buffer[block_index];
+    if (value > thread_max) {
+      thread_max = value;
+    }
+  }
+  thread_max = ShuffleReduceMax<T>(thread_max, shared_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    block_buffer[0] = thread_max;
+  }
+}
+
+template <typename T>
+__global__ void BlockReduceMin(T* block_buffer, const data_size_t num_blocks) {
+  __shared__ T shared_buffer[32];
+  T thread_min = 0;
+  for (data_size_t block_index = static_cast<data_size_t>(threadIdx.x); block_index < num_blocks; block_index += static_cast<data_size_t>(blockDim.x)) {
+    const T value = block_buffer[block_index];
+    if (value < thread_min) {
+      thread_min = value;
+    }
+  }
+  thread_min = ShuffleReduceMin<T>(thread_min, shared_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    block_buffer[0] = thread_min;
+  }
+}
+
 template <bool USE_WEIGHT>
 void GlobalCalcAUCInner(const double* sum_pos_buffer,
   const double* sum_neg_buffer,
@@ -1002,6 +1245,148 @@ void GlobalCalcAveragePrecision<true>(const double* sum_pos_buffer,
   const data_size_t num_data,
   double* block_buffer) {
   GlobalCalcAveragePrecisionInner<true>(sum_pos_buffer, sum_neg_buffer, mark_buffer, num_data, block_buffer);
+}
+
+template <typename VAL_T, typename REDUCE_T>
+__global__ void ReduceSumGlobalKernel(const VAL_T* values, const data_size_t num_value, REDUCE_T* block_buffer) {
+  __shared__ REDUCE_T shared_buffer[32];
+  const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x); 
+  const REDUCE_T value = (data_index < num_value ? static_cast<REDUCE_T>(values[data_index]) : 0.0f);
+  const REDUCE_T reduce_value = ShuffleReduceSum<REDUCE_T>(value, shared_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    block_buffer[blockIdx.x] = reduce_value;
+  }
+}
+
+template <typename VAL_T, typename REDUCE_T>
+void ReduceSumGlobalInner(const VAL_T* values, size_t n, REDUCE_T* block_buffer) {
+  const data_size_t num_value = static_cast<data_size_t>(n);
+  const data_size_t num_blocks = (num_value + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
+  ReduceSumGlobalKernel<VAL_T, REDUCE_T><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(values, num_value, block_buffer);
+  BlockReduceSum<REDUCE_T><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
+}
+
+template <>
+void ReduceSumGlobal<label_t, double>(const label_t* values, size_t n, double* block_buffer) {
+  ReduceSumGlobalInner(values, n, block_buffer);
+}
+
+template <typename VAL_T, typename REDUCE_T>
+__global__ void ReduceMaxGlobalKernel(const VAL_T* values, const data_size_t num_value, REDUCE_T* block_buffer) {
+  __shared__ REDUCE_T shared_buffer[32];
+  const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x); 
+  const REDUCE_T value = (data_index < num_value ? static_cast<REDUCE_T>(values[data_index]) : 0.0f);
+  const REDUCE_T reduce_value = ShuffleReduceMax<REDUCE_T>(value, shared_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    block_buffer[blockIdx.x] = reduce_value;
+  }
+}
+
+template <typename VAL_T, typename REDUCE_T>
+void ReduceMaxGlobalInner(const VAL_T* values, size_t n, REDUCE_T* block_buffer) {
+  const data_size_t num_value = static_cast<data_size_t>(n);
+  const data_size_t num_blocks = (num_value + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
+  ReduceMaxGlobalKernel<VAL_T, REDUCE_T><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(values, num_value, block_buffer);
+  BlockReduceMax<REDUCE_T><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
+}
+
+template <>
+void ReduceMaxGlobal<label_t, double>(const label_t* values, size_t n, double* block_buffer) {
+  ReduceMaxGlobalInner(values, n, block_buffer);
+}
+
+template <typename VAL_T, typename REDUCE_T>
+__global__ void ReduceMinGlobalKernel(const VAL_T* values, const data_size_t num_value, REDUCE_T* block_buffer) {
+  __shared__ REDUCE_T shared_buffer[32];
+  const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x); 
+  const REDUCE_T value = (data_index < num_value ? static_cast<REDUCE_T>(values[data_index]) : 0.0f);
+  const REDUCE_T reduce_value = ShuffleReduceMin<REDUCE_T>(value, shared_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    block_buffer[blockIdx.x] = reduce_value;
+  }
+}
+
+template <typename VAL_T, typename REDUCE_T>
+void ReduceMinGlobalInner(const VAL_T* values, size_t n, REDUCE_T* block_buffer) {
+  const data_size_t num_value = static_cast<data_size_t>(n);
+  const data_size_t num_blocks = (num_value + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
+  ReduceMinGlobalKernel<VAL_T, REDUCE_T><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(values, num_value, block_buffer);
+  BlockReduceMin<REDUCE_T><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
+}
+
+template <>
+void ReduceMinGlobal<label_t, double>(const label_t* values, size_t n, double* block_buffer) {
+  ReduceMinGlobalInner(values, n, block_buffer);
+}
+
+template <typename VAL_T, typename INDEX_T, typename WEIGHT_T, typename REDUCE_WEIGHT_T, bool ASCENDING, bool USE_WEIGHT>
+__device__ VAL_T PercentileDeviceInner(const VAL_T* values,
+                                       const WEIGHT_T* weights,
+                                       INDEX_T* indices,
+                                       REDUCE_WEIGHT_T* weights_prefix_sum,
+                                       const double alpha,
+                                       const INDEX_T len) {
+  if (len <= 1) {
+    return values[0];
+  }
+  BitonicArgSortDevice512<VAL_T, INDEX_T, ASCENDING>(values, indices, len);
+  if (!USE_WEIGHT) {
+    const double float_pos = (1.0f - alpha) * len;
+    const INDEX_T pos = static_cast<INDEX_T>(float_pos);
+    if (pos < 1) {
+      return values[indices[0]];
+    } else if (pos >= len) {
+      return values[indices[len - 1]];
+    } else {
+      const double bias = float_pos - pos;
+      const VAL_T v1 = values[indices[pos - 1]];
+      const VAL_T v2 = values[indices[pos]];
+      return static_cast<VAL_T>(v1 - (v1 - v2) * bias);
+    }
+  } else {
+    PrefixSumDevice<WEIGHT_T, REDUCE_WEIGHT_T, INDEX_T>(weights, indices, weights_prefix_sum, len);
+    const REDUCE_WEIGHT_T threshold = weights_prefix_sum[len - 1] * (1.0f - alpha);
+    __shared__ INDEX_T pos;
+    if (threadIdx.x == 0) {
+      pos = len;
+    }
+    __syncthreads();
+    for (INDEX_T index = static_cast<INDEX_T>(threadIdx.x); index < len; index += static_cast<INDEX_T>(blockDim.x)) {
+      if (weights_prefix_sum[index] > threshold && (index == 0 || weights_prefix_sum[index - 1] <= threshold)) {
+        pos = index;
+      }
+    }
+    __syncthreads();
+    pos = min(pos, len - 1);
+    if (pos == 0 || pos == len - 1) {
+      return values[pos];
+    }
+    const VAL_T v1 = values[indices[pos - 1]];
+    const VAL_T v2 = values[indices[pos]];
+    return static_cast<VAL_T>(v1 - (v1 - v2) * (threshold - weights_prefix_sum[pos - 1]) / (weights_prefix_sum[pos] - weights_prefix_sum[pos - 1]));
+  }
+}
+
+template <>
+__device__ double PercentileDevice<double, data_size_t, label_t, double, false, true>(
+                                  const double* values,
+                                  const label_t* weights,
+                                  data_size_t* indices,
+                                  double* weights_prefix_sum,
+                                  const double alpha,
+                                  const data_size_t len) {
+  return PercentileDeviceInner<double, data_size_t, label_t, double, false, true>(values, weights, indices, weights_prefix_sum, alpha, len);
+}
+
+template <>
+__device__ double PercentileDevice<double, data_size_t, label_t, double, false, false>(
+                                  const double* values,
+                                  const label_t* weights,
+                                  data_size_t* indices,
+                                  double* weights_prefix_sum,
+                                  const double alpha,
+                                  const data_size_t len) {
+  return PercentileDeviceInner<double, data_size_t, label_t, double, false, false>(values, weights, indices, weights_prefix_sum, alpha, len);
 }
 
 }  // namespace LightGBM

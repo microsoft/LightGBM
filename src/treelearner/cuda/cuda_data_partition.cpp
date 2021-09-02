@@ -200,8 +200,8 @@ void CUDADataPartition::SplitInner(
   ++cur_num_leaves_;
 }
 
-void CUDADataPartition::UpdateTrainScore(const double learning_rate, double* cuda_scores) {
-  LaunchAddPredictionToScoreKernel(learning_rate, cuda_scores);
+void CUDADataPartition::UpdateTrainScore(const double* leaf_value, double* cuda_scores) {
+  LaunchAddPredictionToScoreKernel(leaf_value, cuda_scores);
 }
 
 void CUDADataPartition::CalcBlockDim(const data_size_t num_data_in_leaf,

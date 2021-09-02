@@ -57,9 +57,13 @@ class CUDADataPartition {
     double* left_leaf_sum_of_hessians,
     double* right_leaf_sum_of_hessians);
 
-  void UpdateTrainScore(const double learning_rate, double* cuda_scores);
+  void UpdateTrainScore(const double* leaf_value, double* cuda_scores);
 
   const data_size_t* cuda_data_indices() const { return cuda_data_indices_; }
+
+  const data_size_t* cuda_leaf_num_data() const { return cuda_leaf_num_data_; }
+
+  const data_size_t* cuda_leaf_data_start() const { return cuda_leaf_data_start_; }
 
  private:
   void CalcBlockDim(
@@ -199,7 +203,7 @@ class CUDADataPartition {
     const int num_blocks,
     const int block_size);
 
-  void LaunchAddPredictionToScoreKernel(const double learning_rate, double* cuda_scores);
+  void LaunchAddPredictionToScoreKernel(const double* leaf_value, double* cuda_scores);
 
 
   // Host memory

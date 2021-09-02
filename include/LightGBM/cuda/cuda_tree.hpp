@@ -80,6 +80,8 @@ class CUDATree : public Tree {
 
   const double* cuda_leaf_value() const { return cuda_leaf_value_; }
 
+  double* cuda_leaf_value_ref() { return cuda_leaf_value_; }
+
   inline void Shrinkage(double rate) override;
 
   inline void AddBias(double val) override;
