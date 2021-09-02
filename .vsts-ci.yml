@@ -62,14 +62,6 @@ jobs:
       echo "##vso[task.setvariable variable=LD_LIBRARY_PATH]$LD_LIBRARY_PATH"
       echo "##vso[task.setvariable variable=OPENCL_VENDOR_PATH]$AMDAPPSDK_PATH/etc/OpenCL/vendors"
     displayName: 'Set variables'
-  - task: CredScan@2
-    inputs:
-      toolMajorVersion: 'V2'
-  - task: ESLint@1
-    inputs:
-      Configuration: 'recommended'
-      TargetType: 'eslint'
-      ErrorLevel: 'warn'
   - bash: $(Build.SourcesDirectory)/.ci/setup.sh
     displayName: Setup
   - bash: $(Build.SourcesDirectory)/.ci/test.sh
@@ -287,6 +279,14 @@ jobs:
       cmd /c "conda init powershell"
       cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
     displayName: Test
+  - task: CredScan@2
+    inputs:
+      toolMajorVersion: 'V2'
+  - task: ESLint@1
+    inputs:
+      Configuration: 'recommended'
+      TargetType: 'eslint'
+      ErrorLevel: 'warn'
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), in(variables['TASK'], 'regular', 'bdist', 'swig'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
     inputs:
