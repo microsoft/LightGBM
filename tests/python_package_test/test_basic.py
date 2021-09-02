@@ -550,6 +550,6 @@ def test_init_score_for_multiclass_classification(init_score_type):
             pytest.skip('Pandas is not installed.')
         init_score = pd_DataFrame(init_score)
     data = np.random.rand(10, 2)
-    ds = lgb.basic.Dataset(data, init_score=init_score).construct()
+    ds = lgb.Dataset(data, init_score=init_score).construct()
     np.testing.assert_equal(ds.get_field('init_score'), init_score)
     np.testing.assert_equal(ds.init_score, init_score)
