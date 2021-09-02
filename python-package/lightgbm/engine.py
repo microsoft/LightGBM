@@ -50,7 +50,7 @@ def train(
         Data to be trained on.
     num_boost_round : int, optional (default=100)
         Number of boosting iterations.
-    valid_sets : list of Datasets, or None, optional (default=None)
+    valid_sets : list of Dataset, or None, optional (default=None)
         List of data to be evaluated on during training.
     valid_names : list of str, or None, optional (default=None)
         Names of ``valid_sets``.
@@ -76,7 +76,7 @@ def train(
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
 
-    feval : callable, list of callable functions, or None, optional (default=None)
+    feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
@@ -147,7 +147,7 @@ def train(
 
     learning_rates : list, callable or None, optional (default=None)
         List of learning rates for each boosting round
-        or a customized function that calculates ``learning_rate``
+        or a callable that calculates ``learning_rate``
         in terms of current number of round (e.g. yields learning rate decay).
     keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
@@ -156,7 +156,7 @@ def train(
         When your model is very large and cause the memory error,
         you can try to set this param to ``True`` to avoid the model conversion performed during the internal call of ``model_to_string``.
         You can still use _InnerPredictor as ``init_model`` for future continue training.
-    callbacks : list of callables, or None, optional (default=None)
+    callbacks : list of callable, or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
 
@@ -472,7 +472,7 @@ def cv(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
 
-    feval : callable, list of callable functions, or None, optional (default=None)
+    feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
@@ -528,7 +528,7 @@ def cv(params, train_set, num_boost_round=100,
         Results are not affected by this parameter, and always contain std.
     seed : int, optional (default=0)
         Seed used to generate the folds (passed to numpy.random.seed).
-    callbacks : list of callables, or None, optional (default=None)
+    callbacks : list of callable, or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
     eval_train_metric : bool, optional (default=False)

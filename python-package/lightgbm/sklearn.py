@@ -253,7 +253,7 @@ _lgbmmodel_doc_fit = (
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
         The output cannot be monotonically constrained with respect to a categorical feature.
-    callbacks : list of callback functions, or None, optional (default=None)
+    callbacks : list of callable, or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
     init_model : str, pathlib.Path, Booster, LGBMModel or None, optional (default=None)
@@ -737,9 +737,9 @@ class LGBMModel(_LGBMModelBase):
         sample_weight_shape="array-like of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="array-like of shape = [n_samples] or None, optional (default=None)",
         group_shape="array-like or None, optional (default=None)",
-        eval_sample_weight_shape="list of arrays, or None, optional (default=None)",
-        eval_init_score_shape="list of arrays, or None, optional (default=None)",
-        eval_group_shape="list of arrays, or None, optional (default=None)"
+        eval_sample_weight_shape="list of array, or None, optional (default=None)",
+        eval_init_score_shape="list of array, or None, optional (default=None)",
+        eval_group_shape="list of array, or None, optional (default=None)"
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
 
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
