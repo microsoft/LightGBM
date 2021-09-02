@@ -269,6 +269,7 @@ jobs:
         TASK: swig
       cpp_tests:
         TASK: cpp-tests
+  timeoutInMinutes: 480
   steps:
   - powershell: |
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
