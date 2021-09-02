@@ -62,6 +62,14 @@ jobs:
       echo "##vso[task.setvariable variable=LD_LIBRARY_PATH]$LD_LIBRARY_PATH"
       echo "##vso[task.setvariable variable=OPENCL_VENDOR_PATH]$AMDAPPSDK_PATH/etc/OpenCL/vendors"
     displayName: 'Set variables'
+  - task: CredScan@2
+    inputs:
+      toolMajorVersion: 'V2'
+  - task: ESLint@1
+    inputs:
+      Configuration: 'recommended'
+      TargetType: 'eslint'
+      ErrorLevel: 'warn'
   - bash: $(Build.SourcesDirectory)/.ci/setup.sh
     displayName: Setup
   - bash: $(Build.SourcesDirectory)/.ci/test.sh
