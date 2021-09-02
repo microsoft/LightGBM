@@ -546,21 +546,37 @@ Dataset <- R6::R6Class(
     # Slice dataset
     slice = function(idxset, ...) {
 
-      additional_params <- list(...)
-      if (length(additional_params) > 0L) {
+      additional_keyword_args <- list(...)
+
+      if (length(additional_keyword_args) > 0L) {
         warning(paste0(
           "Dataset$slice(): Found the following passed through '...': "
-          , paste(names(additional_params), collapse = ", ")
+          , paste(names(additional_keyword_args), collapse = ", ")
           , ". These are ignored and should be removed. "
+          , "To change the parameters of a Dataset produced by Dataset$slice(), use Dataset$set_params(). "
+          , "To modify attributes like 'init_score', use Dataset$setinfo(). "
           , "In future releases of lightgbm, this warning will become an error."
         ))
+      }
+
+      # extract Dataset attributes passed through '...'
+      #
+      # NOTE: takes advantage of the fact that list[["non-existent-key"]] returns NULL
+      group <- additional_keyword_args[["group"]]
+      init_score <- additional_keyword_args[["init_score"]]
+      label <- additional_keyword_args[["label"]]
+      weight <- additional_keyword_args[["weight"]]
+
+      # remove attributes from '...', so only params are left
+      for (info_key in .INFO_KEYS()) {
+        additional_keyword_args[[info_key]] <- NULL
       }
 
       # Perform slicing
       return(
         Dataset$new(
           data = NULL
-          , params = private$params
+          , params = utils::modifyList(self$get_params(), additional_keyword_args)
           , reference = self
           , colnames = private$colnames
           , categorical_feature = private$categorical_feature
@@ -568,7 +584,10 @@ Dataset <- R6::R6Class(
           , free_raw_data = private$free_raw_data
           , used_indices = sort(idxset, decreasing = FALSE)
           , info = NULL
-          , ...
+          , group = group
+          , init_score = init_score
+          , label = label
+          , weight = weight
         )
       )
 
