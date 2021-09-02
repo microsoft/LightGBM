@@ -381,7 +381,7 @@ test_that("lgb.Dataset: should be able to create a Dataset from a text file with
   expect_identical(dtrain$dim(), c(100L, 2L))
 })
 
-test_that("Dataset: methods called on a Dataset with a null handle should raise an informative error and not segfault", {
+test_that("Dataset: method calls on a Dataset with a null handle should raise an informative error and not segfault", {
   data(agaricus.train, package = "lightgbm")
   train <- agaricus.train
   dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -403,7 +403,7 @@ test_that("Dataset: methods called on a Dataset with a null handle should raise 
   }, regexp = "cannot get dimensions before dataset has been constructed")
   expect_error({
     dtrain$get_colnames()
-  }, regexp = "cannot get dimensions before dataset has been constructed")
+  }, regexp = "cannot get column names before dataset has been constructed")
   expect_error({
     dtrain$save_binary(fname = tempfile(fileext = ".bin"))
   }, regexp = "Attempting to create a Dataset without any raw data")
@@ -420,5 +420,5 @@ test_that("Dataset: methods called on a Dataset with a null handle should raise 
   dvalid <- readRDS(tmp_file)
   expect_error({
     dtrain$set_reference(reference = dvalid)
-  }, regexp = "please call lgb.Dataset.construct explicitly")
+  }, regexp = "cannot get column names before dataset has been constructed")
 })

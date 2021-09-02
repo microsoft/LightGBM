@@ -820,7 +820,7 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
 
 })
 
-test_that("Booster: methods called on a Booster with a null handle should raise an informative error and not segfault", {
+test_that("Booster: method calls Booster with a null handle should raise an informative error and not segfault", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -841,7 +841,7 @@ test_that("Booster: methods called on a Booster with a null handle should raise 
     saveRDS(bst, tmp_file)
     rm(bst)
     bst <- readRDS(tmp_file)
-    .expect_booster_error <- function(object){
+    .expect_booster_error <- function(object) {
         error_regexp <- "Attempting to use a Booster which no longer exists"
         expect_error(object, regexp = error_regexp)
     }
@@ -893,7 +893,7 @@ test_that("Booster: methods called on a Booster with a null handle should raise 
     })
 })
 
-test_that("Booster: attempting to create a Booster from a Dataset will a null handle should raise an informative error and not segfault", {
+test_that("Booster$new() using a Dataset with a null handle should raise an informative error and not segfault", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -904,7 +904,7 @@ test_that("Booster: attempting to create a Booster from a Dataset will a null ha
     dtrain <- readRDS(tmp_file)
     expect_error({
         bst <- Booster$new(train_set = dtrain)
-    }, regexp = "Attempting to create a Dataset without any raw data")
+    }, regexp = "lgb.Booster: cannot create Booster handle")
 })
 
 # this is almost identical to the test above it, but for lgb.cv(). A lot of code
