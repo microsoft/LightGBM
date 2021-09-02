@@ -24,12 +24,14 @@ from pathlib import Path
 from re import compile
 from shutil import copytree
 from subprocess import PIPE, Popen
+from typing import Any, List
 from unittest.mock import Mock
 
 import sphinx
 from docutils.nodes import reference
 from docutils.parsers.rst import Directive
 from docutils.transforms import Transform
+from sphinx.application import Sphinx
 from sphinx.errors import VersionRequirementError
 
 CURR_PATH = Path(__file__).absolute().parent
@@ -51,7 +53,7 @@ class InternalRefTransform(Transform):
     default_priority = 210
     """Numerical priority of this transform, 0 through 999."""
 
-    def apply(self, **kwargs):
+    def apply(self, **kwargs: Any) -> None:
         """Apply the transform to the document tree."""
         for section in self.document.traverse(reference):
             if section.get("refuri") is not None:
@@ -63,7 +65,7 @@ class IgnoredDirective(Directive):
 
     has_content = True
 
-    def run(self):
+    def run(self) -> List:
         """Do nothing."""
         return []
 
@@ -197,12 +199,12 @@ htmlhelp_basename = 'LightGBMdoc'
 latex_logo = str(CURR_PATH / 'logo' / 'LightGBM_logo_black_text_small.png')
 
 
-def generate_doxygen_xml(app):
+def generate_doxygen_xml(app: Sphinx) -> None:
     """Generate XML documentation for C API by Doxygen.
 
     Parameters
     ----------
-    app : object
+    app : sphinx.application.Sphinx
         The application object representing the Sphinx process.
     """
     doxygen_args = [
@@ -242,12 +244,12 @@ def generate_doxygen_xml(app):
         raise Exception(f"An error has occurred while executing Doxygen\n{e}")
 
 
-def generate_r_docs(app):
+def generate_r_docs(app: Sphinx) -> None:
     """Generate documentation for R-package.
 
     Parameters
     ----------
-    app : object
+    app : sphinx.application.Sphinx
         The application object representing the Sphinx process.
     """
     commands = f"""
@@ -256,7 +258,6 @@ def generate_r_docs(app):
         -y \
         -c conda-forge \
         -n r_env \
-            cmake=3.21.0=h8897547_0 \
             r-base=4.1.0=hb67fd72_2 \
             r-data.table=1.14.0=r41hcfec24a_0 \
             r-jsonlite=1.7.2=r41hcfec24a_0 \
@@ -267,7 +268,11 @@ def generate_r_docs(app):
     export TAR=/bin/tar
     cd {CURR_PATH.parent}
     export R_LIBS="$CONDA_PREFIX/lib/R/library"
-    Rscript build_r.R || exit -1
+    sh build-cran-package.sh || exit -1
+    R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit -1
+    cp -R \
+        {CURR_PATH.parent / "R-package" / "pkgdown"} \
+        {CURR_PATH.parent / "lightgbm_r" / "pkgdown"}
     cd {CURR_PATH.parent / "lightgbm_r"}
     Rscript -e "roxygen2::roxygenize(load = 'installed')" || exit -1
     Rscript -e "pkgdown::build_site( \
@@ -301,12 +306,12 @@ def generate_r_docs(app):
         raise Exception(f"An error has occurred while generating documentation for R-package\n{e}")
 
 
-def setup(app):
+def setup(app: Sphinx) -> None:
     """Add new elements at Sphinx initialization time.
 
     Parameters
     ----------
-    app : object
+    app : sphinx.application.Sphinx
         The application object representing the Sphinx process.
     """
     first_run = not (CURR_PATH / '_FIRST_RUN.flag').exists()

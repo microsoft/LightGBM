@@ -1,4 +1,5 @@
 #' @importFrom R6 R6Class
+#' @importFrom utils modifyList
 Booster <- R6::R6Class(
   classname = "lgb.Booster",
   cloneable = FALSE,
@@ -23,11 +24,9 @@ Booster <- R6::R6Class(
     initialize = function(params = list(),
                           train_set = NULL,
                           modelfile = NULL,
-                          model_str = NULL,
-                          ...) {
+                          model_str = NULL) {
 
       # Create parameters and handle
-      params <- append(params, list(...))
       handle <- NULL
 
       # Attempts to create a handle for the dataset
@@ -40,7 +39,7 @@ Booster <- R6::R6Class(
             stop("lgb.Booster: Can only use lgb.Dataset as training data")
           }
           train_set_handle <- train_set$.__enclos_env__$private$get_handle()
-          params <- modifyList(params, train_set$get_params())
+          params <- utils::modifyList(params, train_set$get_params())
           params_str <- lgb.params2str(params = params)
           # Store booster handle
           handle <- .Call(
@@ -178,11 +177,21 @@ Booster <- R6::R6Class(
 
     reset_parameter = function(params, ...) {
 
-      if (methods::is(self$params, "list")) {
-        params <- modifyList(self$params, params)
+      additional_params <- list(...)
+      if (length(additional_params) > 0L) {
+        warning(paste0(
+          "Booster$reset_parameter(): Found the following passed through '...': "
+          , paste(names(additional_params), collapse = ", ")
+          , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
+          , "Add these to 'params' instead."
+        ))
       }
 
-      params <- modifyList(params, list(...))
+      if (methods::is(self$params, "list")) {
+        params <- utils::modifyList(self$params, params)
+      }
+
+      params <- utils::modifyList(params, additional_params)
       params_str <- lgb.params2str(params = params)
 
       .Call(
@@ -471,7 +480,18 @@ Booster <- R6::R6Class(
                        predcontrib = FALSE,
                        header = FALSE,
                        reshape = FALSE,
+                       params = list(),
                        ...) {
+
+      additional_params <- list(...)
+      if (length(additional_params) > 0L) {
+        warning(paste0(
+          "Booster$predict(): Found the following passed through '...': "
+          , paste(names(additional_params), collapse = ", ")
+          , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
+          , "Add these to 'params' instead. See ?predict.lgb.Booster for documentation on how to call this function."
+        ))
+      }
 
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
@@ -482,7 +502,7 @@ Booster <- R6::R6Class(
       }
 
       # Predict on new data
-      params <- list(...)
+      params <- utils::modifyList(params, additional_params)
       predictor <- Predictor$new(
         modelfile = private$handle
         , params = params
@@ -684,7 +704,8 @@ Booster <- R6::R6Class(
 #' @title Predict method for LightGBM model
 #' @description Predicted values based on class \code{lgb.Booster}
 #' @param object Object of class \code{lgb.Booster}
-#' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
+#' @param data a \code{matrix} object, a \code{dgCMatrix} object or
+#'             a character representing a path to a text file (CSV, TSV, or LibSVM)
 #' @param start_iteration int or None, optional (default=None)
 #'                        Start index of the iteration to predict.
 #'                        If None or <= 0, starts from the first iteration.
@@ -701,8 +722,11 @@ Booster <- R6::R6Class(
 #' @param header only used for prediction for text file. True if text file has header
 #' @param reshape whether to reshape the vector of predictions to a matrix form when there are several
 #'                prediction outputs per case.
-#' @param ... Additional named arguments passed to the \code{predict()} method of
-#'            the \code{lgb.Booster} object passed to \code{object}.
+#' @param params a list of additional named parameters. See
+#'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
+#'               the "Predict Parameters" section of the documentation} for a list of parameters and
+#'               valid values.
+#' @param ... Additional prediction parameters. NOTE: deprecated as of v3.3.0. Use \code{params} instead.
 #' @return For regression or binary classification, it returns a vector of length \code{nrows(data)}.
 #'         For multiclass classification, either a \code{num_class * nrows(data)} vector or
 #'         a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
@@ -719,18 +743,31 @@ Booster <- R6::R6Class(
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #' )
 #' preds <- predict(model, test$data)
+#'
+#' # pass other prediction parameters
+#' preds <- predict(
+#'     model,
+#'     test$data,
+#'     params = list(
+#'         predict_disable_shape_check = TRUE
+#'    )
+#' )
 #' }
+#' @importFrom utils modifyList
 #' @export
 predict.lgb.Booster <- function(object,
                                 data,
@@ -741,10 +778,21 @@ predict.lgb.Booster <- function(object,
                                 predcontrib = FALSE,
                                 header = FALSE,
                                 reshape = FALSE,
+                                params = list(),
                                 ...) {
 
   if (!lgb.is.Booster(x = object)) {
     stop("predict.lgb.Booster: object should be an ", sQuote("lgb.Booster"))
+  }
+
+  additional_params <- list(...)
+  if (length(additional_params) > 0L) {
+    warning(paste0(
+      "predict.lgb.Booster: Found the following passed through '...': "
+      , paste(names(additional_params), collapse = ", ")
+      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
+      , "Add these to 'params' instead. See ?predict.lgb.Booster for documentation on how to call this function."
+    ))
   }
 
   return(
@@ -757,7 +805,7 @@ predict.lgb.Booster <- function(object,
       , predcontrib =  predcontrib
       , header = header
       , reshape = reshape
-      , ...
+      , params = utils::modifyList(params, additional_params)
     )
   )
 }
@@ -779,15 +827,18 @@ predict.lgb.Booster <- function(object,
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 3L
 #' )
 #' model_file <- tempfile(fileext = ".txt")
@@ -840,15 +891,18 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 10L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5L
 #' )
 #' lgb.save(model, tempfile(fileext = ".txt"))
@@ -891,15 +945,18 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 10L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5L
 #' )
 #' json_model <- lgb.dump(model)
@@ -938,15 +995,18 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #' )
 #'
 #' # Examine valid data_name values

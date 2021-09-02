@@ -12,7 +12,9 @@ CVBooster <- R6::R6Class(
       return(invisible(NULL))
     },
     reset_parameter = function(new_params) {
-      for (x in boosters) { x$reset_parameter(new_params) }
+      for (x in boosters) {
+        x$reset_parameter(params = new_params)
+      }
       return(invisible(self))
     }
   )
@@ -52,6 +54,7 @@ CVBooster <- R6::R6Class(
 #'                             not the number of threads (most CPU using hyper-threading to generate 2 threads
 #'                             per CPU core).}
 #'            }
+#'            NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained model \code{lgb.CVBooster}.
 #'
@@ -60,14 +63,17 @@ CVBooster <- R6::R6Class(
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' model <- lgb.cv(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , nfold = 3L
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #' )
 #' }
 #' @importFrom data.table data.table setorderv
@@ -108,12 +114,22 @@ lgb.cv <- function(params = list()
   }
 
   # Setup temporary variables
-  params <- append(params, list(...))
+  additional_params <- list(...)
+  params <- append(params, additional_params)
   params$verbose <- verbose
   params <- lgb.check.obj(params = params, obj = obj)
   params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
   eval_functions <- list(NULL)
+
+  if (length(additional_params) > 0L) {
+    warning(paste0(
+      "lgb.cv: Found the following passed through '...': "
+      , paste(names(additional_params), collapse = ", ")
+      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
+      , "Add these to 'params' instead. See ?lgb.cv for documentation on how to call this function."
+    ))
+  }
 
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.

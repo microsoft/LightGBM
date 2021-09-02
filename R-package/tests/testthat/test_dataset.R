@@ -46,6 +46,34 @@ test_that("lgb.Dataset: slice, dim", {
   expect_equal(ncol(dsub1), ncol(test_data))
 })
 
+test_that("Dataset$slice() supports passing additional parameters through '...'", {
+  dtest <- lgb.Dataset(test_data, label = test_label)
+  dtest$construct()
+  dsub1 <- slice(
+    dataset = dtest
+    , idxset = seq_len(42L)
+    , feature_pre_filter = FALSE
+  )
+  dsub1$construct()
+  expect_identical(dtest$get_params(), list())
+  expect_identical(dsub1$get_params(), list(feature_pre_filter = FALSE))
+})
+
+test_that("Dataset$slice() supports passing Dataset attributes through '...'", {
+  dtest <- lgb.Dataset(test_data, label = test_label)
+  dtest$construct()
+  num_subset_rows <- 51L
+  init_score <- rnorm(n = num_subset_rows)
+  dsub1 <- slice(
+    dataset = dtest
+    , idxset = seq_len(num_subset_rows)
+    , init_score = init_score
+  )
+  dsub1$construct()
+  expect_null(dtest$getinfo("init_score"), NULL)
+  expect_identical(dsub1$getinfo("init_score"), init_score)
+})
+
 test_that("lgb.Dataset: colnames", {
   dtest <- lgb.Dataset(test_data, label = test_label)
   expect_equal(colnames(dtest), colnames(test_data))
@@ -309,4 +337,46 @@ test_that("lgb.Dataset: should be able to use and retrieve long feature names", 
   col_names <- dtrain$get_colnames()
   expect_equal(col_names[1L], long_name)
   expect_equal(nchar(col_names[1L]), 1000L)
+})
+
+test_that("lgb.Dataset: should be able to create a Dataset from a text file with a header", {
+  train_file <- tempfile(pattern = "train_", fileext = ".csv")
+  write.table(
+    data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+    , file = train_file
+    , sep = ","
+    , col.names = TRUE
+    , row.names = FALSE
+    , quote = FALSE
+  )
+
+  dtrain <- lgb.Dataset(
+    data = train_file
+    , params = list(header = TRUE)
+  )
+  dtrain$construct()
+  expect_identical(dtrain$get_colnames(), c("x1", "x2"))
+  expect_identical(dtrain$get_params(), list(header = TRUE))
+  expect_identical(dtrain$dim(), c(100L, 2L))
+})
+
+test_that("lgb.Dataset: should be able to create a Dataset from a text file without a header", {
+  train_file <- tempfile(pattern = "train_", fileext = ".csv")
+  write.table(
+    data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+    , file = train_file
+    , sep = ","
+    , col.names = FALSE
+    , row.names = FALSE
+    , quote = FALSE
+  )
+
+  dtrain <- lgb.Dataset(
+    data = train_file
+    , params = list(header = FALSE)
+  )
+  dtrain$construct()
+  expect_identical(dtrain$get_colnames(), c("Column_0", "Column_1"))
+  expect_identical(dtrain$get_params(), list(header = FALSE))
+  expect_identical(dtrain$dim(), c(100L, 2L))
 })

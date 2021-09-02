@@ -326,7 +326,7 @@ coverage.xml
 .hypothesis/
 **/coverage.html
 **/coverage.html.zip
-R-package/tests/testthat/Rplots.pdf
+**/Rplots.pdf
 
 # Translations
 *.mo
@@ -427,6 +427,7 @@ miktex*.zip
 *.def
 
 # Files created by examples and tests
+*.buffer
 **/lgb-Dataset.data
 **/lgb.Dataset.data
 **/model.txt

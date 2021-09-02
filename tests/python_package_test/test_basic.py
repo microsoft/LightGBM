@@ -105,6 +105,8 @@ class NumpySequence(lgb.Sequence):
             if not (idx.step is None or idx.step == 1):
                 raise NotImplementedError("No need to implement, caller will not set step by now")
             return self.ndarray[idx.start:idx.stop]
+        elif isinstance(idx, list):
+            return self.ndarray[idx]
         else:
             raise TypeError(f"Sequence Index must be an integer/list/slice, got {type(idx).__name__}")
 
@@ -192,6 +194,23 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
     valid_seq_ds2 = seq_ds.create_valid(valid_seqs, label=valid_Y, params=params)
     valid_seq_ds2.save_binary(valid_seq2_bin_fname)
     assert filecmp.cmp(valid_npy_bin_fname, valid_seq2_bin_fname)
+
+
+@pytest.mark.parametrize('num_seq', [1, 2])
+def test_sequence_get_data(num_seq):
+    nrow = 20
+    ncol = 11
+    data = np.arange(nrow * ncol, dtype=np.float64).reshape((nrow, ncol))
+    X = data[:, :-1]
+    Y = data[:, -1]
+
+    seqs = _create_sequence_from_ndarray(data=X, num_seq=num_seq, batch_size=6)
+    seq_ds = lgb.Dataset(seqs, label=Y, params=None, free_raw_data=False).construct()
+    assert seq_ds.get_data() == seqs
+
+    used_indices = np.random.choice(np.arange(nrow), nrow // 3, replace=False)
+    subset_data = seq_ds.subset(used_indices).construct()
+    np.testing.assert_array_equal(subset_data.get_data(), X[sorted(used_indices)])
 
 
 def test_chunked_dataset():
@@ -315,6 +334,11 @@ def test_add_features_from_different_sources():
     X = np.random.random((n_row, n_col))
     xxs = [X, sparse.csr_matrix(X), pd.DataFrame(X)]
     names = [f'col_{i}' for i in range(n_col)]
+    seq = _create_sequence_from_ndarray(X, 1, 30)
+    seq_ds = lgb.Dataset(seq, feature_name=names, free_raw_data=False).construct()
+    npy_list_ds = lgb.Dataset([X[:n_row // 2, :], X[n_row // 2:, :]],
+                              feature_name=names, free_raw_data=False).construct()
+    immergeable_dds = [seq_ds, npy_list_ds]
     for x_1 in xxs:
         # test that method works even with free_raw_data=True
         d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=True).construct()
@@ -324,10 +348,9 @@ def test_add_features_from_different_sources():
 
         # test that method works but sets raw data to None in case of immergeable data types
         d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=False).construct()
-        d2 = lgb.Dataset([X[:n_row // 2, :], X[n_row // 2:, :]],
-                         feature_name=names, free_raw_data=False).construct()
-        d1.add_features_from(d2)
-        assert d1.data is None
+        for d2 in immergeable_dds:
+            d1.add_features_from(d2)
+            assert d1.data is None
 
         # test that method works for different data types
         d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=False).construct()

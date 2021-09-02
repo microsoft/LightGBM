@@ -7,7 +7,7 @@ dask.Array and dask.DataFrame collections.
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
 import socket
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from copy import deepcopy
 from enum import Enum, auto
 from functools import partial
@@ -36,6 +36,8 @@ _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
 _DaskVectorLike = Union[dask_Array, dask_Series]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
+
+_HostWorkers = namedtuple('HostWorkers', ['default', 'all'])
 
 
 class _DatasetNames(Enum):
@@ -69,18 +71,71 @@ def _get_dask_client(client: Optional[Client]) -> Client:
         return client
 
 
-def _find_random_open_port() -> int:
-    """Find a random open port on localhost.
+def _find_n_open_ports(n: int) -> List[int]:
+    """Find n random open ports on localhost.
 
     Returns
     -------
-    port : int
-        A free port on localhost
+    ports : list of int
+        n random open ports on localhost.
     """
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    sockets = []
+    for _ in range(n):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind(('', 0))
-        port = s.getsockname()[1]
-    return port
+        sockets.append(s)
+    ports = []
+    for s in sockets:
+        ports.append(s.getsockname()[1])
+        s.close()
+    return ports
+
+
+def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, _HostWorkers]:
+    """Group all worker addresses by hostname.
+
+    Returns
+    -------
+    host_to_workers : dict
+        mapping from hostname to all its workers.
+    """
+    host_to_workers: Dict[str, _HostWorkers] = {}
+    for address in worker_addresses:
+        hostname = urlparse(address).hostname
+        if hostname not in host_to_workers:
+            host_to_workers[hostname] = _HostWorkers(default=address, all=[address])
+        else:
+            host_to_workers[hostname].all.append(address)
+    return host_to_workers
+
+
+def _assign_open_ports_to_workers(
+    client: Client,
+    host_to_workers: Dict[str, _HostWorkers]
+) -> Dict[str, int]:
+    """Assign an open port to each worker.
+
+    Returns
+    -------
+    worker_to_port: dict
+        mapping from worker address to an open port.
+    """
+    host_ports_futures = {}
+    for hostname, workers in host_to_workers.items():
+        n_workers_in_host = len(workers.all)
+        host_ports_futures[hostname] = client.submit(
+            _find_n_open_ports,
+            n=n_workers_in_host,
+            workers=[workers.default],
+            pure=False,
+            allow_other_workers=False,
+        )
+    found_ports = client.gather(host_ports_futures)
+    worker_to_port = {}
+    for hostname, workers in host_to_workers.items():
+        for worker, port in zip(workers.all, found_ports[hostname]):
+            worker_to_port[worker] = port
+    return worker_to_port
 
 
 def _concat(seq: List[_DaskPart]) -> _DaskPart:
@@ -337,44 +392,6 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
     return out
 
 
-def _possibly_fix_worker_map_duplicates(worker_map: Dict[str, int], client: Client) -> Dict[str, int]:
-    """Fix any duplicate IP-port pairs in a ``worker_map``."""
-    worker_map = deepcopy(worker_map)
-    workers_that_need_new_ports = []
-    host_to_port = defaultdict(set)
-    for worker, port in worker_map.items():
-        host = urlparse(worker).hostname
-        if port in host_to_port[host]:
-            workers_that_need_new_ports.append(worker)
-        else:
-            host_to_port[host].add(port)
-
-    # if any duplicates were found, search for new ports one by one
-    for worker in workers_that_need_new_ports:
-        _log_info(f"Searching for a LightGBM training port for worker '{worker}'")
-        host = urlparse(worker).hostname
-        retries_remaining = 100
-        while retries_remaining > 0:
-            retries_remaining -= 1
-            new_port = client.submit(
-                _find_random_open_port,
-                workers=[worker],
-                allow_other_workers=False,
-                pure=False
-            ).result()
-            if new_port not in host_to_port[host]:
-                worker_map[worker] = new_port
-                host_to_port[host].add(new_port)
-                break
-
-        if retries_remaining == 0:
-            raise LightGBMError(
-                "Failed to find an open port. Try re-running training or explicitly setting 'machines' or 'local_listen_port'."
-            )
-
-    return worker_map
-
-
 def _train(
     client: Client,
     data: _DaskMatrixLike,
@@ -386,10 +403,10 @@ def _train(
     group: Optional[_DaskVectorLike] = None,
     eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
     eval_names: Optional[List[str]] = None,
-    eval_sample_weight: Optional[List[_DaskCollection]] = None,
+    eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
     eval_class_weight: Optional[List[Union[dict, str]]] = None,
-    eval_init_score: Optional[List[_DaskCollection]] = None,
-    eval_group: Optional[List[_DaskCollection]] = None,
+    eval_init_score: Optional[List[_DaskVectorLike]] = None,
+    eval_group: Optional[List[_DaskVectorLike]] = None,
     eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
     eval_at: Optional[Iterable[int]] = None,
     **kwargs: Any
@@ -418,23 +435,23 @@ def _train(
         sum(group) = n_samples.
         For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-    eval_set : list of (X, y) tuples of Dask data collections or None, optional (default=None)
+    eval_set : list of (X, y) tuples of Dask data collections, or None, optional (default=None)
         List of (X, y) tuple pairs to use as validation sets.
         Note, that not all workers may receive chunks of every eval set within ``eval_set``. When the returned
         lightgbm estimator is not trained using any chunks of a particular eval set, its corresponding component
         of evals_result_ and best_score_ will be 'not_evaluated'.
-    eval_names : list of strings or None, optional (default=None)
+    eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
-    eval_sample_weight : list of Dask Arrays, Dask Series or None, optional (default=None)
+    eval_sample_weight : list of Dask Array or Dask Series, or None, optional (default=None)
         Weights for each validation set in eval_set.
     eval_class_weight : list of dict or str, or None, optional (default=None)
         Class weights, one dict or str for each validation set in eval_set.
-    eval_init_score : list of Dask Arrays, Dask Series or None, optional (default=None)
+    eval_init_score : list of Dask Array or Dask Series, or None, optional (default=None)
         Initial model score for each validation set in eval_set.
-    eval_group : list of Dask Arrays, Dask Series or None, optional (default=None)
+    eval_group : list of Dask Array or Dask Series, or None, optional (default=None)
         Group/query for each validation set in eval_set.
-    eval_metric : string, callable, list or None, optional (default=None)
-        If string, it should be a built-in evaluation metric to use.
+    eval_metric : str, callable, list or None, optional (default=None)
+        If str, it should be a built-in evaluation metric to use.
         If callable, it should be a custom evaluation metric, see note below for more details.
         If list, it can be a list of built-in metrics, a list of custom evaluation metrics, or a mix of both.
         In either case, the ``metric`` from the Dask model parameters (or inferred from the objective) will be evaluated and used as well.
@@ -733,18 +750,8 @@ def _train(
             }
         else:
             _log_info("Finding random open ports for workers")
-            # this approach with client.run() is faster than searching for ports
-            # serially, but can produce duplicates sometimes. Try the fast approach one
-            # time, then pass it through a function that will use a slower but more reliable
-            # approach if duplicates are found.
-            worker_address_to_port = client.run(
-                _find_random_open_port,
-                workers=list(worker_addresses)
-            )
-            worker_address_to_port = _possibly_fix_worker_map_duplicates(
-                worker_map=worker_address_to_port,
-                client=client
-            )
+            host_to_workers = _group_workers_by_host(worker_map.keys())
+            worker_address_to_port = _assign_open_ports_to_workers(client, host_to_workers)
 
         machines = ','.join([
             f'{urlparse(worker_address).hostname}:{port}'
@@ -1025,10 +1032,10 @@ class _DaskLGBMModel:
         group: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
-        eval_init_score: Optional[List[_DaskCollection]] = None,
-        eval_group: Optional[List[_DaskCollection]] = None,
+        eval_init_score: Optional[List[_DaskVectorLike]] = None,
+        eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
         eval_at: Optional[Iterable[int]] = None,
         early_stopping_rounds: Optional[int] = None,
@@ -1162,9 +1169,9 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         init_score: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
-        eval_init_score: Optional[List[_DaskCollection]] = None,
+        eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
         early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
@@ -1194,9 +1201,9 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         sample_weight_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array or Dask Series or None, optional (default=None)",
-        eval_sample_weight_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_init_score_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_group_shape="list of Dask Arrays or Dask Series or None, optional (default=None)"
+        eval_sample_weight_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_init_score_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_group_shape="list of Dask Array or Dask Series, or None, optional (default=None)"
     )
 
     # DaskLGBMClassifier does not support group, eval_group, early_stopping_rounds.
@@ -1341,8 +1348,8 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         init_score: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_sample_weight: Optional[List[_DaskCollection]] = None,
-        eval_init_score: Optional[List[_DaskCollection]] = None,
+        eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
+        eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
         early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
@@ -1371,9 +1378,9 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         sample_weight_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array or Dask Series or None, optional (default=None)",
-        eval_sample_weight_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_init_score_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_group_shape="list of Dask Arrays or Dask Series or None, optional (default=None)"
+        eval_sample_weight_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_init_score_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_group_shape="list of Dask Array or Dask Series, or None, optional (default=None)"
     )
 
     # DaskLGBMRegressor does not support group, eval_class_weight, eval_group, early_stopping_rounds.
@@ -1503,9 +1510,9 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         group: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_sample_weight: Optional[List[_DaskCollection]] = None,
-        eval_init_score: Optional[List[_DaskCollection]] = None,
-        eval_group: Optional[List[_DaskCollection]] = None,
+        eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
+        eval_init_score: Optional[List[_DaskVectorLike]] = None,
+        eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
         eval_at: Iterable[int] = (1, 2, 3, 4, 5),
         early_stopping_rounds: Optional[int] = None,
@@ -1538,9 +1545,9 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         sample_weight_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array or Dask Series or None, optional (default=None)",
-        eval_sample_weight_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_init_score_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_group_shape="list of Dask Arrays or Dask Series or None, optional (default=None)"
+        eval_sample_weight_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_init_score_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_group_shape="list of Dask Array or Dask Series, or None, optional (default=None)"
     )
 
     # DaskLGBMRanker does not support eval_class_weight or early stopping

@@ -71,7 +71,7 @@ LIGHTGBM_C_EXPORT int LGBM_GetSampleCount(int32_t num_total_row,
  * \param num_total_row Number of total rows
  * \param parameters Additional parameters, namely, ``bin_construct_sample_cnt`` and ``data_random_seed`` are used to produce the output
  * \param[out] out Created indices, type is int32_t
- * \param[out] out_len Number of indices. This may be less than the one returned by ``LGBM_GetSampleCount``
+ * \param[out] out_len Number of indices
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t num_total_row,

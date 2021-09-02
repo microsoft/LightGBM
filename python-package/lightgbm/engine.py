@@ -4,6 +4,7 @@ import collections
 import copy
 from operator import attrgetter
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -11,15 +12,34 @@ from . import callback
 from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor, _log_warning
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
+_LGBM_CustomObjectiveFunction = Callable[
+    [Union[List, np.ndarray], Dataset],
+    Tuple[Union[List, np.ndarray], Union[List, np.ndarray]]
+]
+_LGBM_CustomMetricFunction = Callable[
+    [Union[List, np.ndarray], Dataset],
+    Tuple[str, float, bool]
+]
 
-def train(params, train_set, num_boost_round=100,
-          valid_sets=None, valid_names=None,
-          fobj=None, feval=None, init_model=None,
-          feature_name='auto', categorical_feature='auto',
-          early_stopping_rounds=None, 
-          evals_result=None,
-          verbose_eval=True, learning_rates=None,
-          keep_training_booster=False, callbacks=None):
+
+def train(
+    params: Dict[str, Any],
+    train_set: Dataset,
+    num_boost_round: int = 100,
+    valid_sets: Optional[List[Dataset]] = None,
+    valid_names: Optional[List[str]] = None,
+    fobj: Optional[_LGBM_CustomObjectiveFunction] = None,
+    feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
+    init_model: Optional[Union[str, Path, Booster]] = None,
+    feature_name: Union[List[str], str] = 'auto',
+    categorical_feature: Union[List[str], List[int], str] = 'auto',
+    early_stopping_rounds: Optional[int] = None,
+    evals_result: Optional[Dict[str, Any]] = None,
+    verbose_eval: Union[bool, int] = True,
+    learning_rates: Optional[Union[List[float], Callable[[int], float]]] = None,
+    keep_training_booster: bool = False,
+    callbacks: Optional[List[Callable]] = None
+) -> Booster:
     """Perform the training with given parameters.
 
     Parameters
@@ -30,9 +50,9 @@ def train(params, train_set, num_boost_round=100,
         Data to be trained on.
     num_boost_round : int, optional (default=100)
         Number of boosting iterations.
-    valid_sets : list of Datasets or None, optional (default=None)
+    valid_sets : list of Dataset, or None, optional (default=None)
         List of data to be evaluated on during training.
-    valid_names : list of strings or None, optional (default=None)
+    valid_names : list of str, or None, optional (default=None)
         Names of ``valid_sets``.
     fobj : callable or None, optional (default=None)
         Customized objective function.
@@ -56,7 +76,7 @@ def train(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
 
-    feval : callable, list of callable functions or None, optional (default=None)
+    feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
@@ -67,7 +87,7 @@ def train(params, train_set, num_boost_round=100,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             train_data : Dataset
                 The training dataset.
-            eval_name : string
+            eval_name : str
                 The name of evaluation function (without whitespaces).
             eval_result : float
                 The eval result.
@@ -78,15 +98,15 @@ def train(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
         set the ``metric`` parameter to the string ``"None"`` in ``params``.
-    init_model : string, pathlib.Path, Booster or None, optional (default=None)
+    init_model : str, pathlib.Path, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
-    feature_name : list of strings or 'auto', optional (default="auto")
+    feature_name : list of str, or 'auto', optional (default="auto")
         Feature names.
         If 'auto' and data is pandas DataFrame, data columns names are used.
-    categorical_feature : list of strings or int, or 'auto', optional (default="auto")
+    categorical_feature : list of str or int, or 'auto', optional (default="auto")
         Categorical features.
         If list of int, interpreted as indices.
-        If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
+        If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
@@ -102,7 +122,9 @@ def train(params, train_set, num_boost_round=100,
         The index of iteration that has the best performance will be saved in the ``best_iteration`` field
         if early stopping logic is enabled by setting ``early_stopping_rounds``.
     evals_result: dict or None, optional (default=None)
-        This dictionary used to store all evaluation results of all the items in ``valid_sets``.
+        Dictionary used to store all evaluation results of all the items in ``valid_sets``.
+        This should be initialized outside of your call to ``train()`` and should be empty.
+        Any initial contents of the dictionary will be deleted.
 
         .. rubric:: Example
 
@@ -125,7 +147,7 @@ def train(params, train_set, num_boost_round=100,
 
     learning_rates : list, callable or None, optional (default=None)
         List of learning rates for each boosting round
-        or a customized function that calculates ``learning_rate``
+        or a callable that calculates ``learning_rate``
         in terms of current number of round (e.g. yields learning rate decay).
     keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
@@ -134,7 +156,7 @@ def train(params, train_set, num_boost_round=100,
         When your model is very large and cause the memory error,
         you can try to set this param to ``True`` to avoid the model conversion performed during the internal call of ``model_to_string``.
         You can still use _InnerPredictor as ``init_model`` for future continue training.
-    callbacks : list of callables or None, optional (default=None)
+    callbacks : list of callable, or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
 
@@ -425,7 +447,7 @@ def cv(params, train_set, num_boost_round=100,
         Whether to perform stratified sampling.
     shuffle : bool, optional (default=True)
         Whether to shuffle before splitting data.
-    metrics : string, list of strings or None, optional (default=None)
+    metrics : str, list of str, or None, optional (default=None)
         Evaluation metrics to be monitored while CV.
         If not None, the metric in ``params`` will be overridden.
     fobj : callable or None, optional (default=None)
@@ -450,7 +472,7 @@ def cv(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
         and you should group grad and hess in this way as well.
 
-    feval : callable, list of callable functions or None, optional (default=None)
+    feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
@@ -461,7 +483,7 @@ def cv(params, train_set, num_boost_round=100,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             train_data : Dataset
                 The training dataset.
-            eval_name : string
+            eval_name : str
                 The name of evaluation function (without whitespace).
             eval_result : float
                 The eval result.
@@ -472,15 +494,15 @@ def cv(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
         set ``metrics`` to the string ``"None"``.
-    init_model : string, pathlib.Path, Booster or None, optional (default=None)
+    init_model : str, pathlib.Path, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
-    feature_name : list of strings or 'auto', optional (default="auto")
+    feature_name : list of str, or 'auto', optional (default="auto")
         Feature names.
         If 'auto' and data is pandas DataFrame, data columns names are used.
-    categorical_feature : list of strings or int, or 'auto', optional (default="auto")
+    categorical_feature : list of str or int, or 'auto', optional (default="auto")
         Categorical features.
         If list of int, interpreted as indices.
-        If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
+        If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
         All values in categorical features should be less than int32 max value (2147483647).
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
@@ -506,7 +528,7 @@ def cv(params, train_set, num_boost_round=100,
         Results are not affected by this parameter, and always contain std.
     seed : int, optional (default=0)
         Seed used to generate the folds (passed to numpy.random.seed).
-    callbacks : list of callables or None, optional (default=None)
+    callbacks : list of callable, or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
     eval_train_metric : bool, optional (default=False)

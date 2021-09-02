@@ -4,16 +4,50 @@
 \alias{lgb.Dataset.create.valid}
 \title{Construct validation data}
 \usage{
-lgb.Dataset.create.valid(dataset, data, info = list(), ...)
+lgb.Dataset.create.valid(
+  dataset,
+  data,
+  info = list(),
+  label = NULL,
+  weight = NULL,
+  group = NULL,
+  init_score = NULL,
+  params = list(),
+  ...
+)
 }
 \arguments{
 \item{dataset}{\code{lgb.Dataset} object, training data}
 
-\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
+\item{data}{a \code{matrix} object, a \code{dgCMatrix} object,
+a character representing a path to a text file (CSV, TSV, or LibSVM),
+or a character representing a path to a binary \code{Dataset} file}
 
-\item{info}{a list of information of the \code{lgb.Dataset} object}
+\item{info}{a list of information of the \code{lgb.Dataset} object. NOTE: use of \code{info}
+is deprecated as of v3.3.0. Use keyword arguments (e.g. \code{init_score = init_score})
+directly.}
 
-\item{...}{other information to pass to \code{info}.}
+\item{label}{vector of labels to use as the target variable}
+
+\item{weight}{numeric vector of sample weights}
+
+\item{group}{used for learning-to-rank tasks. An integer vector describing how to
+group rows together as ordered results from the same set of candidate results
+to be ranked. For example, if you have a 100-document dataset with
+\code{group = c(10, 20, 40, 10, 10, 10)}, that means that you have 6 groups,
+where the first 10 records are in the first group, records 11-30 are in the
+second group, etc.}
+
+\item{init_score}{initial score is the base prediction lightgbm will boost from}
+
+\item{params}{a list of parameters. See
+\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#dataset-parameters}{
+The "Dataset Parameters" section of the documentation} for a list of parameters
+and valid values. If this is an empty list (the default), the validation Dataset
+will have the same parameters as the Dataset passed to argument \code{dataset}.}
+
+\item{...}{additional \code{lgb.Dataset} parameters.
+NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
 }
 \value{
 constructed dataset
@@ -29,5 +63,40 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
+
+# parameters can be changed between the training data and validation set,
+# for example to account for training data in a text file with a header row
+# and validation data in a text file without it
+train_file <- tempfile(pattern = "train_", fileext = ".csv")
+write.table(
+  data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+  , file = train_file
+  , sep = ","
+  , col.names = TRUE
+  , row.names = FALSE
+  , quote = FALSE
+)
+
+valid_file <- tempfile(pattern = "valid_", fileext = ".csv")
+write.table(
+  data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+  , file = valid_file
+  , sep = ","
+  , col.names = FALSE
+  , row.names = FALSE
+  , quote = FALSE
+)
+
+dtrain <- lgb.Dataset(
+  data = train_file
+  , params = list(has_header = TRUE)
+)
+dtrain$construct()
+
+dvalid <- lgb.Dataset(
+  data = valid_file
+  , params = list(has_header = FALSE)
+)
+dvalid$construct()
 }
 }

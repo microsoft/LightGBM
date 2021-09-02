@@ -57,8 +57,7 @@ def test_plot_importance(params, breast_cancer_split, train_data):
     for patch in ax1.patches:
         assert patch.get_facecolor() == (1., 0, 0, 1.)  # red
 
-    ax2 = lgb.plot_importance(gbm0, color=['r', 'y', 'g', 'b'],
-                              title=None, xlabel=None, ylabel=None)
+    ax2 = lgb.plot_importance(gbm0, color=['r', 'y', 'g', 'b'], title=None, xlabel=None, ylabel=None)
     assert isinstance(ax2, matplotlib.axes.Axes)
     assert ax2.get_title() == ''
     assert ax2.get_xlabel() == ''
@@ -68,6 +67,25 @@ def test_plot_importance(params, breast_cancer_split, train_data):
     assert ax2.patches[1].get_facecolor() == (.75, .75, 0, 1.)  # y
     assert ax2.patches[2].get_facecolor() == (0, .5, 0, 1.)  # g
     assert ax2.patches[3].get_facecolor() == (0, 0, 1., 1.)  # b
+
+    gbm2 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True, importance_type="gain")
+    gbm2.fit(X_train, y_train)
+
+    def get_bounds_of_first_patch(axes):
+        return axes.patches[0].get_extents().bounds
+
+    first_bar1 = get_bounds_of_first_patch(lgb.plot_importance(gbm1))
+    first_bar2 = get_bounds_of_first_patch(lgb.plot_importance(gbm1, importance_type="split"))
+    first_bar3 = get_bounds_of_first_patch(lgb.plot_importance(gbm1, importance_type="gain"))
+    first_bar4 = get_bounds_of_first_patch(lgb.plot_importance(gbm2))
+    first_bar5 = get_bounds_of_first_patch(lgb.plot_importance(gbm2, importance_type="split"))
+    first_bar6 = get_bounds_of_first_patch(lgb.plot_importance(gbm2, importance_type="gain"))
+
+    assert first_bar1 == first_bar2
+    assert first_bar1 == first_bar5
+    assert first_bar3 == first_bar4
+    assert first_bar3 == first_bar6
+    assert first_bar1 != first_bar3
 
 
 @pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason='matplotlib is not installed')
