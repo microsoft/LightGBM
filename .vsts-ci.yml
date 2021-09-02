@@ -291,7 +291,7 @@ jobs:
       sourceCodeDirectory: '$(Build.SourcesDirectory)'
       language: 'cpp'
       querySuite: 'Recommended'
-      timeout: '1800'
+      timeout: '18000'
       ram: '16384'
       addProjectDirToScanningExclusionList: true
   - task: Semmle@1
@@ -301,7 +301,7 @@ jobs:
       sourceCodeDirectory: '$(Build.SourcesDirectory)'
       language: 'python'
       querySuite: 'Recommended'
-      timeout: '1800'
+      timeout: '18000'
       ram: '16384'
       addProjectDirToScanningExclusionList: true
   - task: ComponentGovernanceComponentDetection@0
