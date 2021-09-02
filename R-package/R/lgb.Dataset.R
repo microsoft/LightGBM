@@ -668,14 +668,14 @@ Dataset <- R6::R6Class(
         return(invisible(self))
       }
 
-      # Check for empty data
+      # changing the reference removes the Dataset object on the C++ side, so it should only
+      # be done if you still have the raw_data available, so that the new Dataset can be reconstructed
       if (is.null(private$raw_data)) {
         stop("set_reference: cannot set reference after freeing raw data,
           please set ", sQuote("free_raw_data = FALSE"), " when you construct lgb.Dataset")
       }
 
-      # Check for non-existing reference
-      if (!is.null(reference) && !lgb.is.Dataset(reference)) {
+      if (!lgb.is.Dataset(reference)) {
         stop("set_reference: Can only use lgb.Dataset as a reference")
       }
 
