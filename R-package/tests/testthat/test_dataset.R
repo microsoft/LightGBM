@@ -46,6 +46,34 @@ test_that("lgb.Dataset: slice, dim", {
   expect_equal(ncol(dsub1), ncol(test_data))
 })
 
+test_that("Dataset$slice() supports passing additional parameters through '...'", {
+  dtest <- lgb.Dataset(test_data, label = test_label)
+  dtest$construct()
+  dsub1 <- slice(
+    dataset = dtest
+    , idxset = seq_len(42L)
+    , feature_pre_filter = FALSE
+  )
+  dsub1$construct()
+  expect_identical(dtest$get_params(), list())
+  expect_identical(dsub1$get_params(), list(feature_pre_filter = FALSE))
+})
+
+test_that("Dataset$slice() supports passing Dataset attributes through '...'", {
+  dtest <- lgb.Dataset(test_data, label = test_label)
+  dtest$construct()
+  num_subset_rows <- 51L
+  init_score <- rnorm(n = num_subset_rows)
+  dsub1 <- slice(
+    dataset = dtest
+    , idxset = seq_len(num_subset_rows)
+    , init_score = init_score
+  )
+  dsub1$construct()
+  expect_null(dtest$getinfo("init_score"), NULL)
+  expect_identical(dsub1$getinfo("init_score"), init_score)
+})
+
 test_that("lgb.Dataset: colnames", {
   dtest <- lgb.Dataset(test_data, label = test_label)
   expect_equal(colnames(dtest), colnames(test_data))
