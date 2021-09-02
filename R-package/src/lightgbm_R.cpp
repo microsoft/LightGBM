@@ -53,8 +53,7 @@ void _AssertBoosterHandleNotNull(SEXP handle) {
     Rf_error(
       "Attempting to use a Booster which no longer exists. "
       "This can happen if you have called Booster$finalize() or if this Booster was saved with saveRDS(). "
-      "To avoid this error in the future, use saveRDS.lgb.Booster() or Booster$save_model() to save lightgbm Boosters."
-    );
+      "To avoid this error in the future, use saveRDS.lgb.Booster() or Booster$save_model() to save lightgbm Boosters.");
   }
 }
 
@@ -63,8 +62,7 @@ void _AssertDatasetHandleNotNull(SEXP handle) {
     Rf_error(
       "Attempting to use a Dataset which no longer exists. "
       "This can happen if you have called Dataset$finalize() or if this Dataset was saved with saveRDS(). "
-      "To avoid this error in the future, use lgb.Dataset.save() or Dataset$save_binary() to save lightgbm Datasets."
-    );
+      "To avoid this error in the future, use lgb.Dataset.save() or Dataset$save_binary() to save lightgbm Datasets.");
   }
 }
 
