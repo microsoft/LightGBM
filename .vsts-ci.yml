@@ -251,6 +251,8 @@ jobs:
 ###########################################
 - job: Windows
 ###########################################
+  variables:
+    LGTM.UploadSnapshot: true
   pool:
     vmImage: 'vs2017-win2016'
   strategy:
@@ -279,14 +281,43 @@ jobs:
       cmd /c "conda init powershell"
       cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
     displayName: Test
-  - task: CredScan@2
+  - task: CredScan@3
     inputs:
-      toolMajorVersion: 'V2'
-  - task: ESLint@1
+      toolMajorVersion: 'V3'
+  - task: Semmle@1
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     inputs:
-      Configuration: 'recommended'
-      TargetType: 'eslint'
-      ErrorLevel: 'warn'
+      sourceCodeDirectory: '$(Build.SourcesDirectory)'
+      language: 'cpp'
+      querySuite: 'Recommended'
+      timeout: '1800'
+      ram: '16384'
+      addProjectDirToScanningExclusionList: true
+  - task: Semmle@1
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    inputs:
+      sourceCodeDirectory: '$(Build.SourcesDirectory)'
+      language: 'python'
+      querySuite: 'Recommended'
+      timeout: '1800'
+      ram: '16384'
+      addProjectDirToScanningExclusionList: true
+  - task: ComponentGovernanceComponentDetection@0
+    inputs:
+      scanType: 'Register'
+      verbosity: 'Verbose'
+      alertWarningLevel: 'High'
+  - task: BinSkim@4
+    inputs:
+      InputType: 'Basic'
+      Function: 'analyze'
+      TargetPattern: 'guardianGlob'
+      AnalyzeTargetGlob: '$(Build.ArtifactStagingDirectory)\**.dll;$(Build.ArtifactStagingDirectory)\**.exe;'
+  - task: SdtReport@2
+    inputs:
+      GdnExportAllTools: true
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), in(variables['TASK'], 'regular', 'bdist', 'swig'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
     inputs:
