@@ -555,7 +555,7 @@ Dataset <- R6::R6Class(
           , ". These are ignored and should be removed. "
           , "To change the parameters of a Dataset produced by Dataset$slice(), use Dataset$set_params(). "
           , "To modify attributes like 'init_score', use Dataset$setinfo(). "
-          , "In future releases of lightgbm, this warning will become an error. "
+          , "In future releases of lightgbm, this warning will become an error."
         ))
       }
 
