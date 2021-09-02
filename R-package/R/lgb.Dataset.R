@@ -644,15 +644,15 @@ Dataset <- R6::R6Class(
     # Set reference
     set_reference = function(reference) {
 
+      # setting reference to this same Dataset object doesn't require any changes
+      if (identical(private$reference, reference)) {
+        return(invisible(self))
+      }
+
       # Set known references
       self$set_categorical_feature(categorical_feature = reference$.__enclos_env__$private$categorical_feature)
       self$set_colnames(colnames = reference$get_colnames())
       private$set_predictor(predictor = reference$.__enclos_env__$private$predictor)
-
-      # Check for identical references
-      if (identical(private$reference, reference)) {
-        return(invisible(self))
-      }
 
       # Check for empty data
       if (is.null(private$raw_data)) {
