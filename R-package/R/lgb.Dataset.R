@@ -410,7 +410,7 @@ Dataset <- R6::R6Class(
 
       } else {
 
-        # Trying to work with unknown dimensions is not possible
+        # Trying to work with unknown formats is not possible
         stop(
           "Dataset$get_colnames(): cannot get column names before dataset has been constructed, please call "
           , "lgb.Dataset.construct() explicitly"
