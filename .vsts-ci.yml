@@ -262,7 +262,7 @@ jobs:
         PYTHON_VERSION: 3.6
   timeoutInMinutes: 180
   steps:
-   - powershell: |
+  - powershell: |
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: 'Set Variables'
   - script: |
