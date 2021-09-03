@@ -249,6 +249,23 @@ jobs:
       artifactName: PackageAssets
       artifactType: container
 ###########################################
+- job: Windows_static
+###########################################
+  pool:
+    vmImage: 'vs2017-win2016'
+  strategy:
+    matrix:
+      security:
+        TASK: security
+        PYTHON_VERSION: 3.6
+  steps:
+  - task: CredScan@3
+    inputs:
+      toolMajorVersion: 'V3'
+  - task: SdtReport@2
+    inputs:
+      GdnExportAllTools: true
+###########################################
 - job: Windows
 ###########################################
   pool:
