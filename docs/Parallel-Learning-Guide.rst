@@ -435,7 +435,7 @@ MPI Version
 3. Run following command on one machine (not need to run on all machines), need to change ``your_config_file`` to real config file.
 
    For Windows:
-   
+
    .. code::
 
        mpiexec.exe /machinefile mlist.txt lightgbm.exe config=your_config_file
@@ -455,6 +455,8 @@ Ray
 ^^^
 
 `Ray`_ is a Python-based framework for distributed computing. The `lightgbm_ray`_ project, maintained within the official Ray GitHub organization, can be used to perform distributed LightGBM training using ``ray``.
+
+See `the lightgbm_ray documentation`_ for more usage examples.
 
 .. note::
 
@@ -495,3 +497,5 @@ Ray
 .. _lightgbm_ray: https://github.com/ray-project/lightgbm_ray
 
 .. _Ray: https://github.com/ray-project/ray
+
+.. _the lightgbm_ray documentation: https://docs.ray.io/en/latest/lightgbm-ray.html
