@@ -249,10 +249,48 @@ jobs:
       artifactName: PackageAssets
       artifactType: container
 ###########################################
-- job: Windows
+- job: Code_Security_Static_Analysis
 ###########################################
   variables:
     LGTM.UploadSnapshot: true
+  pool:
+    vmImage: 'vs2017-win2016'
+  timeoutInMinutes: 180
+  steps:
+  - task: ComponentGovernanceComponentDetection@0
+    inputs:
+      scanType: 'Register'
+      verbosity: 'Verbose'
+      alertWarningLevel: 'High'
+  - task: CredScan@3
+    inputs:
+      toolMajorVersion: 'V3'
+  - task: Semmle@1
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    inputs:
+      sourceCodeDirectory: '$(Build.SourcesDirectory)'
+      language: 'cpp'
+      querySuite: 'Recommended'
+      timeout: '7200'
+      ram: '16384'
+      addProjectDirToScanningExclusionList: true
+  - task: Semmle@1
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    inputs:
+      sourceCodeDirectory: '$(Build.SourcesDirectory)'
+      language: 'python'
+      querySuite: 'Recommended'
+      timeout: '1800'
+      ram: '16384'
+      addProjectDirToScanningExclusionList: true
+  - task: SdtReport@2
+    inputs:
+      GdnExportAllTools: true
+###########################################
+- job: Windows
+###########################################
   pool:
     vmImage: 'vs2017-win2016'
   strategy:
@@ -269,9 +307,6 @@ jobs:
         TASK: swig
       cpp_tests:
         TASK: cpp-tests
-  env:
-      USE_DEBUG: ON
-  timeoutInMinutes: 480
   steps:
   - powershell: |
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
@@ -284,43 +319,6 @@ jobs:
       cmd /c "conda init powershell"
       cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
     displayName: Test
-  - task: BinSkim@4
-    inputs:
-      InputType: 'Basic'
-      Function: 'analyze'
-      TargetPattern: 'guardianGlob'
-      AnalyzeTargetGlob: '$(Build.ArtifactStagingDirectory)\**.dll;$(Build.ArtifactStagingDirectory)\**.exe;'
-  - task: CredScan@3
-    inputs:
-      toolMajorVersion: 'V3'
-  - task: Semmle@1
-    env:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    inputs:
-      sourceCodeDirectory: '$(Build.SourcesDirectory)'
-      language: 'cpp'
-      querySuite: 'Recommended'
-      timeout: '18000'
-      ram: '16384'
-      addProjectDirToScanningExclusionList: true
-  - task: Semmle@1
-    env:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    inputs:
-      sourceCodeDirectory: '$(Build.SourcesDirectory)'
-      language: 'python'
-      querySuite: 'Recommended'
-      timeout: '18000'
-      ram: '16384'
-      addProjectDirToScanningExclusionList: true
-  - task: ComponentGovernanceComponentDetection@0
-    inputs:
-      scanType: 'Register'
-      verbosity: 'Verbose'
-      alertWarningLevel: 'High'
-  - task: SdtReport@2
-    inputs:
-      GdnExportAllTools: true
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), in(variables['TASK'], 'regular', 'bdist', 'swig'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
     inputs:
