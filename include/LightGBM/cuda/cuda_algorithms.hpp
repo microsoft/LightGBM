@@ -374,7 +374,7 @@ __device__ void PrefixSumDevice(const VAL_T* in_values,
   }
   shared_buffer[threadIdx.x] = thread_sum;
   __syncthreads();
-  PrefixSum<REDUCE_VAL_T>(shared_buffer, num_data);
+  PrefixSum<REDUCE_VAL_T>(shared_buffer, blockDim.x);
   const REDUCE_VAL_T thread_base = shared_buffer[threadIdx.x];
   for (INDEX_T index = start; index < end; ++index) {
     out_values[index] = thread_base + static_cast<REDUCE_VAL_T>(in_values[sorted_indices[index]]);

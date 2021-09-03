@@ -171,7 +171,7 @@ void CUDARegressionL1loss::LaunchRenewTreeOutputCUDAKernel(
       cuda_data_indices_buffer_,
       leaf_value);
   } else {
-    RenewTreeOutputCUDAKernel_RegressionL1<true><<<num_leaves, GET_GRADIENTS_BLOCK_SIZE_REGRESSION / 2>>>(
+    RenewTreeOutputCUDAKernel_RegressionL1<true><<<num_leaves, GET_GRADIENTS_BLOCK_SIZE_REGRESSION / 4>>>(
       score,
       cuda_labels_,
       cuda_weights_,
@@ -378,7 +378,7 @@ void CUDARegressionQuantileloss::LaunchRenewTreeOutputCUDAKernel(
       leaf_value,
       alpha_);
   } else {
-    RenewTreeOutputCUDAKernel_RegressionQuantile<true><<<num_leaves, GET_GRADIENTS_BLOCK_SIZE_REGRESSION / 2>>>(
+    RenewTreeOutputCUDAKernel_RegressionQuantile<true><<<num_leaves, GET_GRADIENTS_BLOCK_SIZE_REGRESSION / 4>>>(
       score,
       cuda_labels_,
       cuda_weights_,
@@ -499,7 +499,6 @@ double CUDARegressionMAPELOSS::LaunchCalcInitScoreKernel() const {
   return static_cast<label_t>(percentile_result);
 }
 
-template <bool USE_WEIGHT>
 __global__ void RenewTreeOutputCUDAKernel_RegressionMAPE(
   const double* score,
   const label_t* label,
@@ -525,13 +524,11 @@ __global__ void RenewTreeOutputCUDAKernel_RegressionMAPE(
     const label_t data_label = label[data_index];
     const double data_score = score[data_index];
     residual_buffer[inner_data_index] = static_cast<double>(data_label) - data_score;
-    if (USE_WEIGHT) {
-      weight_by_leaf[inner_data_index] = weight[data_index];
-    } 
+    weight_by_leaf[inner_data_index] = weight[data_index];
   }
   __syncthreads();
   // TODO(shiyu1994): replace this bitonic sort based percentile method with a more efficient one 
-  const double renew_leaf_value = PercentileDevice<double, data_size_t, label_t, double, false, USE_WEIGHT>(
+  const double renew_leaf_value = PercentileDevice<double, data_size_t, label_t, double, false, true>(
     residual_buffer_pointer, weight_by_leaf_pointer, data_indices_buffer_pointer,
     weight_prefix_sum_buffer_pointer, alpha, num_data);
   if (threadIdx.x == 0) {
@@ -546,8 +543,7 @@ void CUDARegressionMAPELOSS::LaunchRenewTreeOutputCUDAKernel(
   const data_size_t* data_start_in_leaf,
   const int num_leaves,
   double* leaf_value) const {
-  Log::Warning("laucnhing RenewTreeOutputCUDAKernel_RegressionMAPE");
-  RenewTreeOutputCUDAKernel_RegressionMAPE<true><<<num_leaves, GET_GRADIENTS_BLOCK_SIZE_REGRESSION / 2>>>(
+  RenewTreeOutputCUDAKernel_RegressionMAPE<<<num_leaves, GET_GRADIENTS_BLOCK_SIZE_REGRESSION / 4>>>(
     score,
     cuda_labels_,
     cuda_label_weights_,
@@ -559,7 +555,6 @@ void CUDARegressionMAPELOSS::LaunchRenewTreeOutputCUDAKernel(
     data_start_in_leaf,
     cuda_data_indices_buffer_,
     leaf_value);
-  PrintLastCUDAErrorOuter(__FILE__, __LINE__);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 

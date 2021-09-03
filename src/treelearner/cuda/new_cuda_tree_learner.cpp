@@ -224,21 +224,12 @@ void NewCUDATreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* ob
                        const double* score, data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
   CHECK(tree->is_cuda_tree());
   CUDATree* cuda_tree = reinterpret_cast<CUDATree*>(tree);
-  std::vector<double> host_leaf_values(cuda_tree->num_leaves(), 0.0f);
-  CopyFromCUDADeviceToHostOuter<double>(host_leaf_values.data(), cuda_tree->cuda_leaf_value(), static_cast<size_t>(cuda_tree->num_leaves()), __FILE__, __LINE__);
-  for (int leaf_index = 0; leaf_index < cuda_tree->num_leaves(); ++leaf_index) {
-    Log::Warning("before convert tree output, leaf_index = %d, leaf_value = %f", leaf_index, host_leaf_values[leaf_index]);
-  }
   obj->RenewTreeOutputCUDA(score,
                            cuda_data_partition_->cuda_data_indices(),
                            cuda_data_partition_->cuda_leaf_num_data(),
                            cuda_data_partition_->cuda_leaf_data_start(),
                            tree->num_leaves(),
                            cuda_tree->cuda_leaf_value_ref());
-  CopyFromCUDADeviceToHostOuter<double>(host_leaf_values.data(), cuda_tree->cuda_leaf_value(), static_cast<size_t>(cuda_tree->num_leaves()), __FILE__, __LINE__);
-  for (int leaf_index = 0; leaf_index < cuda_tree->num_leaves(); ++leaf_index) {
-    Log::Warning("after convert tree output, leaf_index = %d, leaf_value = %f", leaf_index, host_leaf_values[leaf_index]);
-  }
 }
 
 }  // namespace LightGBM
