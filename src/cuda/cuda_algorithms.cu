@@ -374,9 +374,9 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
     len_to_shift >>= 1;
     ++max_depth;
   }
-  const int num_blocks = (len + BLOCK_DIM - 1) / BLOCK_DIM;
+  const int num_blocks = (len + static_cast<int>(BLOCK_DIM) - 1) / static_cast<int>(BLOCK_DIM);
   for (int block_index = 0; block_index < num_blocks; ++block_index) {
-    const int this_index = block_index * BLOCK_DIM + static_cast<int>(threadIdx.x);
+    const int this_index = block_index * static_cast<int>(BLOCK_DIM) + static_cast<int>(threadIdx.x);
     if (this_index < len) {
       shared_values[threadIdx.x] = values[this_index];
       shared_indices[threadIdx.x] = this_index;
@@ -384,7 +384,7 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
       shared_indices[threadIdx.x] = len;
     }
     __syncthreads();
-    for (int depth = max_depth - 1; depth > max_depth - MAX_DEPTH; --depth) {
+    for (int depth = max_depth - 1; depth > max_depth - static_cast<int>(MAX_DEPTH); --depth) {
       const int segment_length = (1 << (max_depth - depth));
       const int segment_index = this_index / segment_length;
       const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
@@ -436,13 +436,13 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
     }
     __syncthreads();
   }
-  for (int depth = max_depth - MAX_DEPTH; depth >= 1; --depth) {
+  for (int depth = max_depth - static_cast<int>(MAX_DEPTH); depth >= 1; --depth) {
     const int segment_length = (1 << (max_depth - depth));
     {
       const int num_total_segment = (len + segment_length - 1) / segment_length;
       const int half_segment_length = (segment_length >> 1);
       for (int block_index = 0; block_index < num_blocks; ++block_index) {
-        const int this_index = block_index * BLOCK_DIM + static_cast<int>(threadIdx.x);
+        const int this_index = block_index * static_cast<int>(BLOCK_DIM) + static_cast<int>(threadIdx.x);
         const int segment_index = this_index / segment_length;
         const int half_segment_index = this_index / half_segment_length;
         const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
@@ -467,10 +467,10 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
       }
       __syncthreads();
     }
-    for (int inner_depth = depth + 1; inner_depth <= max_depth - MAX_DEPTH; ++inner_depth) {
+    for (int inner_depth = depth + 1; inner_depth <= max_depth - static_cast<int>(MAX_DEPTH); ++inner_depth) {
       const int half_segment_length = (1 << (max_depth - inner_depth - 1));
       for (int block_index = 0; block_index < num_blocks; ++block_index) {
-        const int this_index = block_index * BLOCK_DIM + static_cast<int>(threadIdx.x);
+        const int this_index = block_index * static_cast<int>(BLOCK_DIM) + static_cast<int>(threadIdx.x);
         const int segment_index = this_index / segment_length;
         const int half_segment_index = this_index / half_segment_length;
         const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
@@ -491,7 +491,7 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
       }
     }
     for (int block_index = 0; block_index < num_blocks; ++block_index) {
-      const int this_index = block_index * BLOCK_DIM + static_cast<int>(threadIdx.x);
+      const int this_index = block_index * static_cast<int>(BLOCK_DIM) + static_cast<int>(threadIdx.x);
       const int segment_index = this_index / segment_length;
       const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
       if (this_index < len) {
@@ -502,171 +502,7 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
         shared_indices[threadIdx.x] = len;
       }
       __syncthreads();
-      for (int inner_depth = max_depth - MAX_DEPTH + 1; inner_depth < max_depth; ++inner_depth) {
-        const int half_segment_length = (1 << (max_depth - inner_depth - 1));
-        const int half_segment_index = this_index / half_segment_length;
-        if (half_segment_index % 2 == 0) {
-          const int other_index = static_cast<int>(threadIdx.x) + half_segment_length;
-          const INDEX_T this_data_index = shared_indices[threadIdx.x];
-          const INDEX_T other_data_index = shared_indices[other_index];
-          const VAL_T this_value = shared_values[threadIdx.x];
-          const VAL_T other_value = shared_values[other_index];
-          if (other_data_index < len && (this_value > other_value) == ascending) {
-            shared_indices[threadIdx.x] = other_data_index;
-            shared_indices[other_index] = this_data_index;
-            shared_values[threadIdx.x] = other_value;
-            shared_values[other_index] = this_value;
-          }
-        }
-        __syncthreads();
-      }
-      if (this_index < len) {
-        indices[this_index] = shared_indices[threadIdx.x];
-      }
-      __syncthreads();
-    }
-  }
-}
-
-template <typename VAL_T, typename INDEX_T, bool ASCENDING>
-__device__ void BitonicArgSortDevice512(const VAL_T* values, INDEX_T* indices, const int len) {
-  __shared__ VAL_T shared_values[BITONIC_SORT_NUM_ELEMENTS / 2];
-  __shared__ INDEX_T shared_indices[BITONIC_SORT_NUM_ELEMENTS / 2];
-  int len_to_shift = len - 1;
-  int max_depth = 1;
-  while (len_to_shift > 0) {
-    len_to_shift >>= 1;
-    ++max_depth;
-  }
-  const int num_blocks = (len + (BITONIC_SORT_NUM_ELEMENTS / 2) - 1) / (BITONIC_SORT_NUM_ELEMENTS / 2);
-  for (int block_index = 0; block_index < num_blocks; ++block_index) {
-    const int this_index = block_index * BITONIC_SORT_NUM_ELEMENTS / 2 + static_cast<int>(threadIdx.x);
-    if (this_index < len) {
-      shared_values[threadIdx.x] = values[this_index];
-      shared_indices[threadIdx.x] = this_index;
-    } else {
-      shared_indices[threadIdx.x] = len;
-    }
-    __syncthreads();
-    for (int depth = max_depth - 1; depth > max_depth - 10; --depth) {
-      const int segment_length = (1 << (max_depth - depth));
-      const int segment_index = this_index / segment_length;
-      const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
-      {
-        const int half_segment_length = (segment_length >> 1);
-        const int half_segment_index = this_index / half_segment_length;
-        const int num_total_segment = (len + segment_length - 1) / segment_length;
-        const int offset = (segment_index == num_total_segment - 1 && ascending == ASCENDING) ?
-          (num_total_segment * segment_length - len) : 0;
-        if (half_segment_index % 2 == 0) {
-          const int segment_start = segment_index * segment_length;
-          if (this_index >= offset + segment_start) {
-            const int other_index = static_cast<int>(threadIdx.x) + half_segment_length - offset;
-            const INDEX_T this_data_index = shared_indices[threadIdx.x];
-            const INDEX_T other_data_index = shared_indices[other_index];
-            const VAL_T this_value = shared_values[threadIdx.x];
-            const VAL_T other_value = shared_values[other_index];
-            if (other_data_index < len && (this_value > other_value) == ascending) {
-              shared_indices[threadIdx.x] = other_data_index;
-              shared_indices[other_index] = this_data_index;
-              shared_values[threadIdx.x] = other_value;
-              shared_values[other_index] = this_value;
-            }
-          }
-        }
-        __syncthreads();
-      }
-      for (int inner_depth = depth + 1; inner_depth < max_depth; ++inner_depth) {
-        const int half_segment_length = (1 << (max_depth - inner_depth - 1));
-        const int half_segment_index = this_index / half_segment_length;
-        if (half_segment_index % 2 == 0) {
-          const int other_index = static_cast<int>(threadIdx.x) + half_segment_length;
-          const INDEX_T this_data_index = shared_indices[threadIdx.x];
-          const INDEX_T other_data_index = shared_indices[other_index];
-          const VAL_T this_value = shared_values[threadIdx.x];
-          const VAL_T other_value = shared_values[other_index];
-          if (other_data_index < len && (this_value > other_value) == ascending) {
-            shared_indices[threadIdx.x] = other_data_index;
-            shared_indices[other_index] = this_data_index;
-            shared_values[threadIdx.x] = other_value;
-            shared_values[other_index] = this_value;
-          }
-        }
-        __syncthreads();
-      }
-    }
-    if (this_index < len) {
-      indices[this_index] = shared_indices[threadIdx.x];
-    }
-    __syncthreads();
-  }
-  for (int depth = max_depth - 10; depth >= 1; --depth) {
-    const int segment_length = (1 << (max_depth - depth));
-    {
-      const int num_total_segment = (len + segment_length - 1) / segment_length;
-      const int half_segment_length = (segment_length >> 1);
-      for (int block_index = 0; block_index < num_blocks; ++block_index) {
-        const int this_index = block_index * BITONIC_SORT_NUM_ELEMENTS / 2 + static_cast<int>(threadIdx.x);
-        const int segment_index = this_index / segment_length;
-        const int half_segment_index = this_index / half_segment_length;
-        const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
-        const int offset = (segment_index == num_total_segment - 1 && ascending == ASCENDING) ?
-          (num_total_segment * segment_length - len) : 0;
-        if (half_segment_index % 2 == 0) {
-          const int segment_start = segment_index * segment_length;
-          if (this_index >= offset + segment_start) {
-            const int other_index = this_index + half_segment_length - offset;
-            if (other_index < len) {
-              const INDEX_T this_data_index = indices[this_index];
-              const INDEX_T other_data_index = indices[other_index];
-              const VAL_T this_value = values[this_data_index];
-              const VAL_T other_value = values[other_data_index];
-              if ((this_value > other_value) == ascending) {
-                indices[this_index] = other_data_index;
-                indices[other_index] = this_data_index;
-              }
-            }
-          }
-        }
-      }
-      __syncthreads();
-    }
-    for (int inner_depth = depth + 1; inner_depth <= max_depth - 10; ++inner_depth) {
-      const int half_segment_length = (1 << (max_depth - inner_depth - 1));
-      for (int block_index = 0; block_index < num_blocks; ++block_index) {
-        const int this_index = block_index * BITONIC_SORT_NUM_ELEMENTS / 2 + static_cast<int>(threadIdx.x);
-        const int segment_index = this_index / segment_length;
-        const int half_segment_index = this_index / half_segment_length;
-        const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
-        if (half_segment_index % 2 == 0) {
-          const int other_index = this_index + half_segment_length;
-          if (other_index < len) {
-            const INDEX_T this_data_index = indices[this_index];
-            const INDEX_T other_data_index = indices[other_index];
-            const VAL_T this_value = values[this_data_index];
-            const VAL_T other_value = values[other_data_index];
-            if ((this_value > other_value) == ascending) {
-              indices[this_index] = other_data_index;
-              indices[other_index] = this_data_index;
-            }
-          }
-        }
-        __syncthreads();
-      }
-    }
-    for (int block_index = 0; block_index < num_blocks; ++block_index) {
-      const int this_index = block_index * BITONIC_SORT_NUM_ELEMENTS / 2 + static_cast<int>(threadIdx.x);
-      const int segment_index = this_index / segment_length;
-      const bool ascending = ASCENDING ? (segment_index % 2 == 0) : (segment_index % 2 == 1);
-      if (this_index < len) {
-        const INDEX_T index = indices[this_index];
-        shared_values[threadIdx.x] = values[index];
-        shared_indices[threadIdx.x] = index;
-      } else {
-        shared_indices[threadIdx.x] = len;
-      }
-      __syncthreads();
-      for (int inner_depth = max_depth - 9; inner_depth < max_depth; ++inner_depth) {
+      for (int inner_depth = max_depth - static_cast<int>(MAX_DEPTH) + 1; inner_depth < max_depth; ++inner_depth) {
         const int half_segment_length = (1 << (max_depth - inner_depth - 1));
         const int half_segment_index = this_index / half_segment_length;
         if (half_segment_index % 2 == 0) {

@@ -452,14 +452,11 @@ void PercentileGlobal(const VAL_T* values,
   BitonicArgSortGlobal<VAL_T, INDEX_T, ASCENDING>(values, indices, len);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   if (USE_WEIGHT) {
-    Log::Warning("before prefix sum");
     GlobalInclusiveArgPrefixSum<WEIGHT_T, WEIGHT_REDUCE_T, INDEX_T>(indices, weights, weights_prefix_sum, weights_prefix_sum_buffer, static_cast<size_t>(len));
   }
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-    Log::Warning("after prefix sum");
   PercentileGlobalKernel<VAL_T, INDEX_T, WEIGHT_T, WEIGHT_REDUCE_T, ASCENDING, USE_WEIGHT><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(values, weights, indices, weights_prefix_sum, alpha, len, cuda_out_value);  
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-  Log::Warning("after percentile");
 }
 
 }  // namespace LightGBM
