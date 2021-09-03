@@ -162,7 +162,6 @@ jobs:
       sudo apt-get update
       sudo apt-get install --no-install-recommends -y \
         binfmt-support \
-        jq \
         qemu \
         qemu-user \
         qemu-user-static
@@ -193,10 +192,7 @@ jobs:
       EOF
       IMAGE_URI="quay.io/pypa/manylinux2014_${ARCH}"
       docker pull "${IMAGE_URI}" || exit -1
-      PLATFORM=$(
-        docker image inspect "${IMAGE_URI}" \
-        | jq -r '.[0] | "\(.Os)/\(.Architecture)"'
-      ) || exit -1
+      PLATFORM=$(docker inspect --format='{{.Os}}/{{.Architecture}}' "${IMAGE_URI}") || exit -1
       echo "detected image platform: ${PLATFORM}"
       docker run \
         --platform "${PLATFORM}" \
