@@ -496,6 +496,6 @@ See `the lightgbm_ray documentation`_ for more usage examples.
 
 .. _lightgbm_ray: https://github.com/ray-project/lightgbm_ray
 
-.. _Ray: https://github.com/ray-project/ray
+.. _Ray: https://ray.io/
 
 .. _the lightgbm_ray documentation: https://docs.ray.io/en/latest/lightgbm-ray.html
