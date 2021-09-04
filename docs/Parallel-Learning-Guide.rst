@@ -456,7 +456,7 @@ Ray
 
 `Ray`_ is a Python-based framework for distributed computing. The `lightgbm_ray`_ project, maintained within the official Ray GitHub organization, can be used to perform distributed LightGBM training using ``ray``.
 
-See `the lightgbm_ray documentation`_ for more usage examples.
+See `the lightgbm_ray documentation`_ for usage examples.
 
 .. note::
 
