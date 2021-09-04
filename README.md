@@ -97,6 +97,8 @@ Kubeflow Fairing (LightGBM on Kubernetes): https://github.com/kubeflow/fairing
 
 Kubeflow Operator (LightGBM on Kubernetes): https://github.com/kubeflow/xgboost-operator
 
+lightgbm_ray (LightGBM on Ray): https://github.com/ray-project/lightgbm_ray
+
 ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
 LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
@@ -104,8 +106,6 @@ LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 Ruby gem: https://github.com/ankane/lightgbm
 
 LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
-
-lightgbm_ray (LightGBM on Ray): https://github.com/ray-project/lightgbm_ray
 
 lightgbm-rs (Rust binding): https://github.com/vaaaaanquish/lightgbm-rs
 
