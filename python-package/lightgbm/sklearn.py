@@ -230,8 +230,6 @@ _lgbmmodel_doc_fit = (
         If there's more than one, will check all of them. But the training data is ignored anyway.
         To check only the first metric, set the ``first_metric_only`` parameter to ``True``
         in additional parameters ``**kwargs`` of the model constructor.
-    early_stopping_threshold : float or list of float (default=0.0)
-        Minimum improvement in score to keep training.
     verbose : bool or int, optional (default=True)
         Requires at least one evaluation data.
         If True, the eval metric on the eval set is printed at each boosting stage.
@@ -572,8 +570,8 @@ class LGBMModel(_LGBMModelBase):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_group=None,
-            eval_metric=None, early_stopping_rounds=None, early_stopping_threshold=0.0,
-            verbose=True, feature_name='auto', categorical_feature='auto',
+            eval_metric=None, early_stopping_rounds=None, verbose=True,
+            feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is set after definition, using a template."""
         if self._objective is None:
@@ -929,8 +927,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         super().fit(X, _y, sample_weight=sample_weight, init_score=init_score, eval_set=valid_sets,
                     eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_class_weight=eval_class_weight, eval_init_score=eval_init_score,
-                    eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds, verbose=verbose,
-                    feature_name=feature_name, categorical_feature=categorical_feature,
+                    eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds,
+                    verbose=verbose, feature_name=feature_name, categorical_feature=categorical_feature,
                     callbacks=callbacks, init_model=init_model)
         return self
 
