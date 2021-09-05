@@ -205,18 +205,24 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
         if isinstance(threshold, list):
             if not all(t >= 0 for t in threshold):
                 raise ValueError('Early stopping thresholds must be non-negative.')
-            if len(threshold) > 1:
+            if len(threshold) == 0:
+                _log_warning('Disabling threshold for early stopping.')
+                tholds = [0.0] * n_datasets * n_metrics
+            elif len(threshold) == 1:
+                _log_warning(f'Using {threshold[0]} as threshold for all metrics.')
+                tholds = threshold * n_datasets * n_metrics
+            else:
                 if len(threshold) != n_metrics:
                     raise ValueError('Must provide a single early stopping threshold or as many as metrics.')
                 if first_metric_only:
                     _log_warning(f'Using only {threshold[0]} as early stopping threshold.')
-            tholds = threshold * n_datasets
+                tholds = threshold * n_datasets
         else:
             if threshold < 0:
                 raise ValueError('Early stopping threshold must be non-negative.')
             if threshold > 0 and n_metrics > 1 and not first_metric_only:
-                _log_warning(f'Using {threshold} as the early stopping threshold for all metrics.')
-            tholds = [threshold] * len(env.evaluation_result_list)
+                _log_warning(f'Using {threshold} as threshold for all metrics.')
+            tholds = [threshold] * n_datasets * n_metrics
 
         # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
         first_metric[0] = env.evaluation_result_list[0][1].split(" ")[-1]
