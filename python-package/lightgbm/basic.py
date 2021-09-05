@@ -209,7 +209,7 @@ def _is_2d_collection(data: Any) -> bool:
     )
 
 
-def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str='list') -> np.ndarray:
+def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -> np.ndarray:
     """Convert data to numpy 2-D array."""
     if _is_numpy_2d_array(data):
         return cast_numpy_array_to_dtype(data, dtype)
