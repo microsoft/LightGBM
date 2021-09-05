@@ -34,7 +34,6 @@ def train(
     feature_name: Union[List[str], str] = 'auto',
     categorical_feature: Union[List[str], List[int], str] = 'auto',
     early_stopping_rounds: Optional[int] = None,
-    early_stopping_threshold: Union[float, List[float]] = 0.0,
     evals_result: Optional[Dict[str, Any]] = None,
     verbose_eval: Union[bool, int] = True,
     learning_rates: Optional[Union[List[float], Callable[[int], float]]] = None,
@@ -122,8 +121,6 @@ def train(
         To check only the first metric, set the ``first_metric_only`` parameter to ``True`` in ``params``.
         The index of iteration that has the best performance will be saved in the ``best_iteration`` field
         if early stopping logic is enabled by setting ``early_stopping_rounds``.
-    early_stopping_threshold : float or list of float (default=0.0)
-        Minimum improvement in score to keep training.
     evals_result: dict or None, optional (default=None)
         Dictionary used to store all evaluation results of all the items in ``valid_sets``.
         This should be initialized outside of your call to ``train()`` and should be empty.
@@ -242,7 +239,7 @@ def train(
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval), threshold=early_stopping_threshold))
+        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
 
     if learning_rates is not None:
         callbacks.add(callback.reset_parameter(learning_rate=learning_rates))
@@ -424,8 +421,8 @@ def cv(params, train_set, num_boost_round=100,
        folds=None, nfold=5, stratified=True, shuffle=True,
        metrics=None, fobj=None, feval=None, init_model=None,
        feature_name='auto', categorical_feature='auto',
-       early_stopping_rounds=None, early_stopping_threshold=0.0,
-       fpreproc=None, verbose_eval=None, show_stdv=True, seed=0,
+       early_stopping_rounds=None, fpreproc=None,
+       verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None, eval_train_metric=False,
        return_cvbooster=False):
     """Perform the cross-validation with given parameters.
@@ -518,8 +515,6 @@ def cv(params, train_set, num_boost_round=100,
         Requires at least one metric. If there's more than one, will check all of them.
         To check only the first metric, set the ``first_metric_only`` parameter to ``True`` in ``params``.
         Last entry in evaluation history is the one from the best iteration.
-    early_stopping_threshold : float or list of float (default=0.0)
-        Minimum improvement in score to keep training.
     fpreproc : callable or None, optional (default=None)
         Preprocessing function that takes (dtrain, dtest, params)
         and returns transformed versions of those.
@@ -605,7 +600,7 @@ def cv(params, train_set, num_boost_round=100,
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False, threshold=early_stopping_threshold))
+        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
     elif isinstance(verbose_eval, int):

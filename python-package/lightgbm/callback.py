@@ -7,11 +7,11 @@ from typing import Any, Callable, Dict, List, Union
 from .basic import _ConfigAliases, _log_info, _log_warning
 
 
-def _gt_threshold(curr_score, best_score, threshold):
+def _gt_threshold(curr_score: float, best_score: float, threshold: float) -> bool:
     return curr_score > best_score + threshold
 
 
-def _lt_threshold(curr_score, best_score, threshold):
+def _lt_threshold(curr_score: float, best_score: float, threshold: float) -> bool:
     return curr_score < best_score - threshold
 
 
