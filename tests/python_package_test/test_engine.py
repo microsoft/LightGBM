@@ -11,7 +11,7 @@ import numpy as np
 import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
-from sklearn.datasets import load_svmlight_file, make_classification, make_multilabel_classification
+from sklearn.datasets import load_svmlight_file, make_multilabel_classification
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
@@ -652,7 +652,7 @@ def test_early_stopping_threshold(first_only, single_metric, greater_is_better):
         'auc': 0.001,
         'binary_logloss': 0.01,
         'average_precision': 0.001,
-        'mape': 0.001,
+        'mape': 0.01,
     }
     if single_metric:
         if greater_is_better:
@@ -671,12 +671,12 @@ def test_early_stopping_threshold(first_only, single_metric, greater_is_better):
             else:
                 metric = ['binary_logloss', 'mape']
 
-    X, y = make_classification(n_samples=1_000, n_features=2, n_redundant=0, n_classes=2, random_state=0)
+    X, y = load_breast_cancer(return_X_y=True)
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
     train_ds = lgb.Dataset(X_train, y_train)
     valid_ds = lgb.Dataset(X_valid, y_valid, reference=train_ds)
 
-    params = {'objective': 'binary', 'metric': metric, 'first_metric_only': first_only, 'verbose': -1}
+    params = {'objective': 'binary', 'metric': metric, 'verbose': -1}
     if isinstance(metric, str):
         threshold = metric2threshold[metric]
     elif first_only:
@@ -689,18 +689,18 @@ def test_early_stopping_threshold(first_only, single_metric, greater_is_better):
         num_boost_round=100,
         valid_sets=[train_ds, valid_ds],
         valid_names=['training', 'valid'],
-        early_stopping_rounds=10,
-        verbose_eval=0,
     )
 
     # regular early stopping
+    train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0)]
     evals_result = {}
     bst = lgb.train(evals_result=evals_result, **train_kwargs)
     scores = np.vstack([res for res in evals_result['valid'].values()]).T
 
     # positive threshold
+    train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0, threshold=threshold)]
     threshold_result = {}
-    threshold_bst = lgb.train(early_stopping_threshold=threshold, evals_result=threshold_result, **train_kwargs)
+    threshold_bst = lgb.train(evals_result=threshold_result, **train_kwargs)
     threshold_scores = np.vstack([res for res in threshold_result['valid'].values()]).T
 
     if first_only:
