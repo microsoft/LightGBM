@@ -1195,7 +1195,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         init_score_shape="Dask Array or Dask Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task), or Dask Array or Dask DataFrame of shape = [n_samples, n_classes] (for multi-class task), or None, optional (default=None)",
         group_shape="Dask Array or Dask Series or None, optional (default=None)",
         eval_sample_weight_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
-        eval_init_score_shape="list of Dask Array, Dask Series or Dask DataFrame (for multiclass-task), or None, optional (default=None)",
+        eval_init_score_shape="list of Dask Array, Dask Series or Dask DataFrame (for multi-class task), or None, optional (default=None)",
         eval_group_shape="list of Dask Array or Dask Series, or None, optional (default=None)"
     )
 

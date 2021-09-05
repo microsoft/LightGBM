@@ -161,7 +161,7 @@ def is_1d_list(data):
     return isinstance(data, list) and (not data or is_numeric(data[0]))
 
 
-def is_1d_collection(data):
+def _is_1d_collection(data: Any) -> bool:
     """Check whether data is a 1-D collection."""
     return (
         is_numpy_1d_array(data)
@@ -190,30 +190,30 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
                         "It should be list, numpy 1-D array or pandas Series")
 
 
-def is_numpy_2d_array(data):
+def _is_numpy_2d_array(data: Any) -> bool:
     """Check whether data is a numpy 2-D array."""
     return isinstance(data, np.ndarray) and len(data.shape) == 2 and data.shape[1] > 1
 
 
-def is_2d_list(data):
+def _is_2d_list(data: Any) -> bool:
     """Check whether data is a 2-D list."""
     return isinstance(data, list) and len(data) > 0 and is_1d_list(data[0])
 
 
-def is_2d_collection(data):
+def _is_2d_collection(data: Any) -> bool:
     """Check whether data is a 2-D collection."""
     return (
-        is_numpy_2d_array(data)
-        or is_2d_list(data)
-        or isinstance(data, pd_DataFrame)
+        _is_numpy_2d_array(data)
+        or _is_2d_list(data)
+        or (isinstance(data, pd_DataFrame) and data.shape[1] > 1)
     )
 
 
-def data_to_2d_numpy(data, dtype=np.float32, name='list'):
+def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str='list') -> np.ndarray:
     """Convert data to numpy 2-D array."""
-    if is_numpy_2d_array(data):
+    if _is_numpy_2d_array(data):
         return cast_numpy_array_to_dtype(data, dtype)
-    if is_2d_list(data):
+    if _is_2d_list(data):
         return np.array(data, dtype=dtype)
     if isinstance(data, pd_DataFrame):
         if _get_bad_pandas_dtypes(data.dtypes):
@@ -1188,7 +1188,7 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task) or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
@@ -1830,7 +1830,7 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task) or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
@@ -1937,7 +1937,7 @@ class Dataset:
         ----------
         field_name : str
             The field name of the information.
-        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task) or None
+        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
             The data to be set.
 
         Returns
@@ -1958,10 +1958,10 @@ class Dataset:
             return self
         if field_name == 'init_score':
             dtype = np.float64
-            if is_1d_collection(data):
+            if _is_1d_collection(data):
                 data = list_to_1d_numpy(data, dtype, name=field_name)
-            elif is_2d_collection(data):
-                data = data_to_2d_numpy(data, dtype, name=field_name)
+            elif _is_2d_collection(data):
+                data = _data_to_2d_numpy(data, dtype, name=field_name)
                 data = data.ravel(order='F')
             else:
                 raise TypeError(
@@ -2182,7 +2182,7 @@ class Dataset:
 
         Parameters
         ----------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task) or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
             Init score for Booster.
 
         Returns
