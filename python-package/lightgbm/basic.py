@@ -205,7 +205,7 @@ def _is_2d_collection(data: Any) -> bool:
     return (
         _is_numpy_2d_array(data)
         or _is_2d_list(data)
-        or (isinstance(data, pd_DataFrame) and data.shape[1] > 1)
+        or isinstance(data, pd_DataFrame)
     )
 
 
