@@ -21,15 +21,18 @@
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #' )
 #'
 #' lgb.unloader(restore = FALSE, wipe = FALSE, envir = .GlobalEnv)

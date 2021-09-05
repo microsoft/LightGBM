@@ -32,7 +32,7 @@ def plot_importance(
     title: Optional[str] = 'Feature importance',
     xlabel: Optional[str] = 'Feature importance',
     ylabel: Optional[str] = 'Features',
-    importance_type: str = 'split',
+    importance_type: str = 'auto',
     max_num_features: Optional[int] = None,
     ignore_zero: bool = True,
     figsize: Optional[Tuple[float, float]] = None,
@@ -56,17 +56,18 @@ def plot_importance(
         Tuple passed to ``ax.xlim()``.
     ylim : tuple of 2 elements or None, optional (default=None)
         Tuple passed to ``ax.ylim()``.
-    title : string or None, optional (default="Feature importance")
+    title : str or None, optional (default="Feature importance")
         Axes title.
         If None, title is disabled.
-    xlabel : string or None, optional (default="Feature importance")
+    xlabel : str or None, optional (default="Feature importance")
         X-axis title label.
         If None, title is disabled.
-    ylabel : string or None, optional (default="Features")
+    ylabel : str or None, optional (default="Features")
         Y-axis title label.
         If None, title is disabled.
-    importance_type : string, optional (default="split")
+    importance_type : str, optional (default="auto")
         How the importance is calculated.
+        If "auto", if ``booster`` parameter is LGBMModel, ``booster.importance_type`` attribute is used; "split" otherwise.
         If "split", result contains numbers of times the feature is used in a model.
         If "gain", result contains total gains of splits which use the feature.
     max_num_features : int or None, optional (default=None)
@@ -96,8 +97,13 @@ def plot_importance(
         raise ImportError('You must install matplotlib and restart your session to plot importance.')
 
     if isinstance(booster, LGBMModel):
+        if importance_type == "auto":
+            importance_type = booster.importance_type
         booster = booster.booster_
-    elif not isinstance(booster, Booster):
+    elif isinstance(booster, Booster):
+        if importance_type == "auto":
+            importance_type = "split"
+    else:
         raise TypeError('booster must be Booster or LGBMModel.')
 
     importance = booster.feature_importance(importance_type=importance_type)
@@ -173,14 +179,14 @@ def plot_split_value_histogram(
     ----------
     booster : Booster or LGBMModel
         Booster or LGBMModel instance of which feature split value histogram should be plotted.
-    feature : int or string
+    feature : int or str
         The feature name or index the histogram is plotted for.
         If int, interpreted as index.
-        If string, interpreted as name.
-    bins : int, string or None, optional (default=None)
+        If str, interpreted as name.
+    bins : int, str or None, optional (default=None)
         The maximum number of bins.
         If None, the number of bins equals number of unique split values.
-        If string, it should be one from the list of the supported values by ``numpy.histogram()`` function.
+        If str, it should be one from the list of the supported values by ``numpy.histogram()`` function.
     ax : matplotlib.axes.Axes or None, optional (default=None)
         Target axes instance.
         If None, new figure and axes will be created.
@@ -190,17 +196,17 @@ def plot_split_value_histogram(
         Tuple passed to ``ax.xlim()``.
     ylim : tuple of 2 elements or None, optional (default=None)
         Tuple passed to ``ax.ylim()``.
-    title : string or None, optional (default="Split value histogram for feature with @index/name@ @feature@")
+    title : str or None, optional (default="Split value histogram for feature with @index/name@ @feature@")
         Axes title.
         If None, title is disabled.
         @feature@ placeholder can be used, and it will be replaced with the value of ``feature`` parameter.
         @index/name@ placeholder can be used,
         and it will be replaced with ``index`` word in case of ``int`` type ``feature`` parameter
-        or ``name`` word in case of ``string`` type ``feature`` parameter.
-    xlabel : string or None, optional (default="Feature split value")
+        or ``name`` word in case of ``str`` type ``feature`` parameter.
+    xlabel : str or None, optional (default="Feature split value")
         X-axis title label.
         If None, title is disabled.
-    ylabel : string or None, optional (default="Count")
+    ylabel : str or None, optional (default="Count")
         Y-axis title label.
         If None, title is disabled.
     figsize : tuple of 2 elements or None, optional (default=None)
@@ -288,11 +294,11 @@ def plot_metric(
     ----------
     booster : dict or LGBMModel
         Dictionary returned from ``lightgbm.train()`` or LGBMModel instance.
-    metric : string or None, optional (default=None)
+    metric : str or None, optional (default=None)
         The metric name to plot.
         Only one metric supported because different metrics have various scales.
         If None, first metric picked from dictionary (according to hashcode).
-    dataset_names : list of strings or None, optional (default=None)
+    dataset_names : list of str, or None, optional (default=None)
         List of the dataset names which are used to calculate metric to plot.
         If None, all datasets are used.
     ax : matplotlib.axes.Axes or None, optional (default=None)
@@ -302,13 +308,13 @@ def plot_metric(
         Tuple passed to ``ax.xlim()``.
     ylim : tuple of 2 elements or None, optional (default=None)
         Tuple passed to ``ax.ylim()``.
-    title : string or None, optional (default="Metric during training")
+    title : str or None, optional (default="Metric during training")
         Axes title.
         If None, title is disabled.
-    xlabel : string or None, optional (default="Iterations")
+    xlabel : str or None, optional (default="Iterations")
         X-axis title label.
         If None, title is disabled.
-    ylabel : string or None, optional (default="auto")
+    ylabel : str or None, optional (default="auto")
         Y-axis title label.
         If 'auto', metric name is used.
         If None, title is disabled.
@@ -536,7 +542,7 @@ def create_tree_digraph(
         Booster or LGBMModel instance to be converted.
     tree_index : int, optional (default=0)
         The index of a target tree to convert.
-    show_info : list of strings or None, optional (default=None)
+    show_info : list of str, or None, optional (default=None)
         What information should be shown in nodes.
 
             - ``'split_gain'`` : gain from adding this split to the model
@@ -548,7 +554,7 @@ def create_tree_digraph(
             - ``'data_percentage'`` : percentage of training data that fall into this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
-    orientation : string, optional (default='horizontal')
+    orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
     **kwargs
@@ -629,7 +635,7 @@ def plot_tree(
         Figure size.
     dpi : int or None, optional (default=None)
         Resolution of the figure.
-    show_info : list of strings or None, optional (default=None)
+    show_info : list of str, or None, optional (default=None)
         What information should be shown in nodes.
 
             - ``'split_gain'`` : gain from adding this split to the model
@@ -641,7 +647,7 @@ def plot_tree(
             - ``'data_percentage'`` : percentage of training data that fall into this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
-    orientation : string, optional (default='horizontal')
+    orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
     **kwargs
