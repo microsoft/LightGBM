@@ -18,6 +18,7 @@
 #ifdef LGB_R_BUILD
 #define R_NO_REMAP
 #define R_USE_C99_IN_CXX
+#include <R.h>
 #include <R_ext/Error.h>
 #include <R_ext/Print.h>
 #endif
@@ -124,7 +125,8 @@ class Log {
     fprintf(stderr, "[LightGBM] [Fatal] %s\n", str_buf);
     fflush(stderr);
 #else
-    Rf_error("[LightGBM] [Fatal] %s\n", str_buf);
+    REprintf("[LightGBM] [Fatal] %s\n", str_buf);
+    R_FlushConsole();
 #endif
     throw std::runtime_error(std::string(str_buf));
   }
@@ -154,6 +156,7 @@ class Log {
       Rprintf("[LightGBM] [%s] ", level_str);
       Rvprintf(format, val);
       Rprintf("\n");
+      R_FlushConsole();
 #endif
     }
   }
