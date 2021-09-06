@@ -42,32 +42,27 @@ struct LGBM_R_ErrorClass { SEXP cont_token; };
 
 // These are helper functions to allow doing a stack unwind
 // after an R allocation error, which would trigger a long jump.
-SEXP wrapped_R_string(void *len)
-{
+SEXP wrapped_R_string(void *len) {
   return Rf_allocVector(STRSXP, *(reinterpret_cast<R_xlen_t*>(len)));
 }
 
-SEXP wrapped_Rf_mkChar(void *txt)
-{
+SEXP wrapped_Rf_mkChar(void *txt) {
   return Rf_mkChar(reinterpret_cast<char*>(txt));
 }
 
-void throw_R_memerr(void *ptr_cont_token, Rboolean jump)
-{
+void throw_R_memerr(void *ptr_cont_token, Rboolean jump) {
   if (jump) {
     LGBM_R_ErrorClass err{*(reinterpret_cast<SEXP*>(ptr_cont_token))};
     throw err;
   }
 }
 
-SEXP safe_R_string(R_xlen_t len, SEXP &cont_token)
-{
-  return R_UnwindProtect(wrapped_R_string, reinterpret_cast<void*>(&len), throw_R_memerr, &cont_token, cont_token);
+SEXP safe_R_string(R_xlen_t len, SEXP *cont_token) {
+  return R_UnwindProtect(wrapped_R_string, reinterpret_cast<void*>(&len), throw_R_memerr, cont_token, *cont_token);
 }
 
-SEXP safe_R_mkChar(char *txt, SEXP &cont_token)
-{
-  return R_UnwindProtect(wrapped_Rf_mkChar, reinterpret_cast<void*>(txt), throw_R_memerr, &cont_token, cont_token);
+SEXP safe_R_mkChar(char *txt, SEXP *cont_token) {
+  return R_UnwindProtect(wrapped_Rf_mkChar, reinterpret_cast<void*>(txt), throw_R_memerr, cont_token, *cont_token);
 }
 
 using LightGBM::Common::Split;
@@ -237,9 +232,9 @@ SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle) {
   }
   CHECK_EQ(len, out_len);
   SEXP cont_token = PROTECT(R_MakeUnwindCont());
-  feature_names = PROTECT(safe_R_string(static_cast<R_xlen_t>(len), cont_token));
+  feature_names = PROTECT(safe_R_string(static_cast<R_xlen_t>(len), &cont_token));
   for (int i = 0; i < len; ++i) {
-    SET_STRING_ELT(feature_names, i, safe_R_mkChar(ptr_names[i], cont_token));
+    SET_STRING_ELT(feature_names, i, safe_R_mkChar(ptr_names[i], &cont_token));
   }
   UNPROTECT(2);
   return feature_names;
@@ -580,9 +575,9 @@ SEXP LGBM_BoosterGetEvalNames_R(SEXP handle) {
   }
   CHECK_EQ(out_len, len);
   SEXP cont_token = PROTECT(R_MakeUnwindCont());
-  eval_names = PROTECT(safe_R_string(static_cast<R_xlen_t>(len), cont_token));
+  eval_names = PROTECT(safe_R_string(static_cast<R_xlen_t>(len), &cont_token));
   for (int i = 0; i < len; ++i) {
-    SET_STRING_ELT(eval_names, i, safe_R_mkChar(ptr_names[i], cont_token));
+    SET_STRING_ELT(eval_names, i, safe_R_mkChar(ptr_names[i], &cont_token));
   }
   UNPROTECT(2);
   return eval_names;
@@ -770,8 +765,8 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
     CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, inner_char_buf.data()));
   }
   SEXP cont_token = PROTECT(R_MakeUnwindCont());
-  model_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), cont_token));
-  SET_STRING_ELT(model_str, 0, safe_R_mkChar(inner_char_buf.data(), cont_token));
+  model_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
+  SET_STRING_ELT(model_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
   UNPROTECT(2);
   return model_str;
   R_API_END();
@@ -794,8 +789,8 @@ SEXP LGBM_BoosterDumpModel_R(SEXP handle,
     CHECK_CALL(LGBM_BoosterDumpModel(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, inner_char_buf.data()));
   }
   SEXP cont_token = PROTECT(R_MakeUnwindCont());
-  model_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), cont_token));
-  SET_STRING_ELT(model_str, 0, safe_R_mkChar(inner_char_buf.data(), cont_token));
+  model_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
+  SET_STRING_ELT(model_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
   UNPROTECT(2);
   return model_str;
   R_API_END();
