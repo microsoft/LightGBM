@@ -264,7 +264,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
     return initscore;
   }
 
- private:
+ protected:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer for label */

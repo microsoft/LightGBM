@@ -1102,9 +1102,33 @@ void ReduceSumGlobalInner(const VAL_T* values, size_t n, REDUCE_T* block_buffer)
   BlockReduceSum<REDUCE_T><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
 }
 
+template <typename VAL_A_T, typename VAL_B_T, typename REDUCE_T>
+__global__ void ReduceDotProductGlobalKernel(const VAL_A_T* a, const VAL_B_T* b, const data_size_t num_value, REDUCE_T* block_buffer) {
+  __shared__ REDUCE_T shared_buffer[32];
+  const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x); 
+  const REDUCE_T value = (data_index < num_value ? static_cast<REDUCE_T>(a[data_index]) * static_cast<REDUCE_T>(b[data_index]) : 0.0f);
+  const REDUCE_T reduce_value = ShuffleReduceSum<REDUCE_T>(value, shared_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    block_buffer[blockIdx.x] = reduce_value;
+  }
+}
+
 template <>
 void ReduceSumGlobal<label_t, double>(const label_t* values, size_t n, double* block_buffer) {
   ReduceSumGlobalInner(values, n, block_buffer);
+}
+
+template <typename VAL_A_T, typename VAL_B_T, typename REDUCE_T>
+void ReduceDotProductGlobalInner(const VAL_A_T* a, const VAL_B_T* b, size_t n, REDUCE_T* block_buffer) {
+  const data_size_t num_value = static_cast<data_size_t>(n);
+  const data_size_t num_blocks = (num_value + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
+  ReduceDotProductGlobalKernel<VAL_A_T, VAL_B_T, REDUCE_T><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(a, b, num_value, block_buffer);
+  BlockReduceSum<REDUCE_T><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
+}
+
+template <>
+void ReduceDotProductGlobal<label_t, label_t, double>(const label_t* a, const label_t* b, size_t n, double* block_buffer) {
+  ReduceDotProductGlobalInner<label_t, label_t, double>(a, b, n, block_buffer);
 }
 
 template <typename VAL_T, typename REDUCE_T>

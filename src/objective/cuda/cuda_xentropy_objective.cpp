@@ -15,12 +15,41 @@ CUDACrossEntropy::~CUDACrossEntropy() {}
 
 void CUDACrossEntropy::Init(const Metadata& metadata, data_size_t num_data) {
   CrossEntropy::Init(metadata, num_data);
+  const int num_blocks = (num_data + GET_GRADIENTS_BLOCK_SIZE_XENTROPY - 1) / GET_GRADIENTS_BLOCK_SIZE_XENTROPY;
+  AllocateCUDAMemoryOuter<double>(&cuda_reduce_sum_buffer_, static_cast<size_t>(num_blocks), __FILE__, __LINE__);
   cuda_labels_ = metadata.cuda_metadata()->cuda_label();
   cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
+}
+
+double CUDACrossEntropy::BoostFromScore(int) const {
+  return LaunchCalcInitScoreKernel();
 }
 
 void CUDACrossEntropy::GetGradients(const double* score, score_t* gradients, score_t* hessians) const {
   LaunchGetGradientsKernel(score, gradients, hessians);
 }
+
+CUDACrossEntropyLambda::CUDACrossEntropyLambda(const Config& config): CrossEntropyLambda(config) {}
+
+CUDACrossEntropyLambda::CUDACrossEntropyLambda(const std::vector<std::string>& strs): CrossEntropyLambda(strs) {}
+
+CUDACrossEntropyLambda::~CUDACrossEntropyLambda() {}
+
+void CUDACrossEntropyLambda::Init(const Metadata& metadata, data_size_t num_data) {
+  CrossEntropyLambda::Init(metadata, num_data);
+  const int num_blocks = (num_data + GET_GRADIENTS_BLOCK_SIZE_XENTROPY - 1) / GET_GRADIENTS_BLOCK_SIZE_XENTROPY;
+  AllocateCUDAMemoryOuter<double>(&cuda_reduce_sum_buffer_, static_cast<size_t>(num_blocks), __FILE__, __LINE__);
+  cuda_labels_ = metadata.cuda_metadata()->cuda_label();
+  cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
+}
+
+double CUDACrossEntropyLambda::BoostFromScore(int) const {
+  return LaunchCalcInitScoreKernel();
+}
+
+void CUDACrossEntropyLambda::GetGradients(const double* score, score_t* gradients, score_t* hessians) const {
+  LaunchGetGradientsKernel(score, gradients, hessians);
+}
+
 
 }  // namespace LightGBM

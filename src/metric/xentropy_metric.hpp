@@ -146,7 +146,7 @@ class CrossEntropyMetric : public Metric {
     return -1.0f;  // negative means smaller loss is better, positive means larger loss is better
   }
 
- private:
+ protected:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer to label */
@@ -232,7 +232,7 @@ class CrossEntropyLambdaMetric : public Metric {
     return -1.0f;
   }
 
- private:
+ protected:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer to label */
@@ -338,7 +338,7 @@ class KullbackLeiblerDivergence : public Metric {
     return -1.0f;
   }
 
- private:
+ protected:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer to label */

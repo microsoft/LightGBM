@@ -21,13 +21,42 @@ class CUDACrossEntropy: public CrossEntropy {
 
   virtual void Init(const Metadata& metadata, data_size_t num_data) override;
 
+  double BoostFromScore(int) const override;
+
   virtual void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override;
 
  private:
   void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const;
 
+  double LaunchCalcInitScoreKernel() const;
+
   const label_t* cuda_labels_;
   const label_t* cuda_weights_;
+  double* cuda_reduce_sum_buffer_;
+};
+
+class CUDACrossEntropyLambda: public CrossEntropyLambda {
+ public:
+  explicit CUDACrossEntropyLambda(const Config& config);
+
+  explicit CUDACrossEntropyLambda(const std::vector<std::string>& strs);
+
+  ~CUDACrossEntropyLambda();
+
+  virtual void Init(const Metadata& metadata, data_size_t num_data) override;
+
+  double BoostFromScore(int) const override;
+
+  virtual void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override;
+
+ private:
+  void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const;
+
+  double LaunchCalcInitScoreKernel() const;
+
+  const label_t* cuda_labels_;
+  const label_t* cuda_weights_;
+  double* cuda_reduce_sum_buffer_;
 };
 
 }  // namespace LightGBM

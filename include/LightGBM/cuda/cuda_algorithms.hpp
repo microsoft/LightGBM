@@ -57,6 +57,9 @@ __device__ void ReduceSumConflictFree(T* values, size_t n) {
 template <typename VAL_T, typename REDUCE_T>
 void ReduceSumGlobal(const VAL_T* values, size_t n, REDUCE_T* block_buffer);
 
+template <typename VAL_A_T, typename VAL_B_T, typename REDUCE_T>
+void ReduceDotProductGlobal(const VAL_A_T* a, const VAL_B_T* b, size_t n, REDUCE_T* block_buffer);
+
 template <typename VAL_T, typename REDUCE_T>
 void ReduceMaxGlobal(const VAL_T* values, size_t n, REDUCE_T* block_buffer);
 
@@ -76,6 +79,30 @@ void GlobalGenAUCPosNegSum(const label_t* labels,
                         double* sum_pos_buffer,
                         double* block_sum_pos_buffer,
                         const data_size_t num_data);
+
+template <typename T>
+__global__ void GlobalInclusivePrefixSumReduceBlockKernel(T* block_buffer, data_size_t num_blocks);
+
+template <typename T>
+__global__ void GlobalInclusivePrefixSumAddBlockBaseKernel(const T* block_buffer, T* values, data_size_t num_data);
+
+__global__ void GlobalGenAUCMarkKernel(const double* scores,
+                                       const data_size_t* sorted_indices,
+                                       data_size_t* mark_buffer,
+                                       data_size_t* block_mark_buffer,
+                                       uint16_t* block_mark_first_zero,
+                                       data_size_t num_data);
+
+__global__ void GlobalInclusivePrefixSumReduceBlockZeroOutKernel(
+  data_size_t* block_buffer,
+  const uint16_t* block_mark_first_zero,
+  data_size_t num_blocks);
+
+__global__ void GlobalInclusivePrefixSumAddBlockBaseGenAUCMarkKernel(
+  const data_size_t* block_buffer,
+  data_size_t* values,
+  const uint16_t* block_first_zero,
+  data_size_t num_data);
 
 void GloblGenAUCMark(const double* scores,
                      const data_size_t* sorted_indices,
@@ -177,6 +204,15 @@ void BitonicSortGlobal(VAL_T* values, const size_t len);
 
 template <typename VAL_T, typename INDEX_T, bool ASCENDING>
 void BitonicArgSortGlobal(const VAL_T* values, INDEX_T* indices, const size_t len);
+
+template <typename VAL_T, typename INDEX_T, bool ASCENDING>
+__global__ void BitonicArgSortGlobalKernel(const VAL_T* values, INDEX_T* indices, const int num_total_data);
+
+template <typename VAL_T, typename INDEX_T, bool ASCENDING, bool BEGIN>
+__global__ void BitonicArgCompareKernel(const VAL_T* values, INDEX_T* indices, const int half_segment_length, const int outer_segment_length, const int len);
+
+template <typename VAL_T, typename INDEX_T, bool ASCENDING>
+__global__ void BitonicArgSortMergeKernel(const VAL_T* values, INDEX_T* indices, const int segment_length, const int len);
 
 void BitonicArgSortItemsGlobal(const double* values,
                                const int num_queries,

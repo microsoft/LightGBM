@@ -13,6 +13,8 @@
 
 #include "cuda/cuda_binary_metric.hpp"
 #include "cuda/cuda_regression_metric.hpp"
+#include "cuda/cuda_multiclass_metric.hpp"
+#include "cuda/cuda_xentropy_metric.hpp"
 
 namespace LightGBM {
 
@@ -20,8 +22,6 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
   if (config.device_type == std::string("cuda")) {
     if (type == std::string("l2")) {
       return new CUDAL2Metric(config);
-    } else if (type == std::string("rmse")) {
-      return new CUDARMSEMetric(config);
     } else if (type == std::string("rmse")) {
       return new CUDARMSEMetric(config);
     } else if (type == std::string("l1")) {
@@ -42,6 +42,14 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new CUDAAUCMetric(config);
     } else if (type == std::string("average_precision")) {
       return new CUDAAveragePrecisionMetric(config);
+    } else if (type == std::string("multi_error")) {
+      return new CUDAMultiErrorMetric(config);
+    } else if (type == std::string("cross_entropy")) {
+      return new CUDACrossEntropyMetric(config);
+    } else if (type == std::string("cross_entropy_lambda")) {
+      return new CUDACrossEntropyLambdaMetric(config);
+    } else if (type == std::string("kullback_leibler")) {
+      return new CUDAKullbackLeiblerDivergence(config);
     } else if (type == std::string("mape")) {
       return new CUDAMAPEMetric(config);
     } else if (type == std::string("gamma")) {
@@ -50,8 +58,6 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new CUDAGammaDevianceMetric(config);
     } else if (type == std::string("tweedie")) {
       return new CUDATweedieMetric(config);
-    } else if (type == std::string("ndcg")) {
-      return new NDCGMetric(config);
     }
   } else {
     if (type == std::string("l2")) {
@@ -102,6 +108,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new TweedieMetric(config);
     }
   }
+  Log::Fatal("Unknown metric type name: %s", type.c_str());
   return nullptr;
 }
 
