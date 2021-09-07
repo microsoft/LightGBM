@@ -25,14 +25,20 @@
 
 #define COL_MAJOR (0)
 
+#define MAX_LENGTH_ERR_MSG 1024
+char R_errmsg_buffer[MAX_LENGTH_ERR_MSG];
 struct LGBM_R_ErrorClass { SEXP cont_token; };
+void LGBM_R_save_exception_msg(const std::exception &err);
+void LGBM_R_save_exception_msg(const std::string &err);
+
 #define R_API_BEGIN() \
   try {
 #define R_API_END() } \
   catch(LGBM_R_ErrorClass &cont) { R_ContinueUnwind(cont.cont_token); } \
-  catch(std::exception& ex) { Rf_error(ex.what()); } \
-  catch(std::string& ex) { Rf_error(ex.c_str()); } \
+  catch(std::exception& ex) { LGBM_R_save_exception_msg(ex); goto throw_R_errormsg; } \
+  catch(std::string& ex) { LGBM_R_save_exception_msg(ex); goto throw_R_errormsg; } \
   catch(...) { Rf_error("unknown exception"); } \
+  throw_R_errormsg: Rf_error(R_errmsg_buffer); \
   return R_NilValue; /* <- won't be reached */
 
 #define CHECK_CALL(x) \
@@ -42,6 +48,14 @@ struct LGBM_R_ErrorClass { SEXP cont_token; };
 
 // These are helper functions to allow doing a stack unwind
 // after an R allocation error, which would trigger a long jump.
+void LGBM_R_save_exception_msg(const std::exception &err) {
+  std::snprintf(R_errmsg_buffer, MAX_LENGTH_ERR_MSG, "%s\n", err.what());
+}
+
+void LGBM_R_save_exception_msg(const std::string &err) {
+  std::snprintf(R_errmsg_buffer, MAX_LENGTH_ERR_MSG, "%s\n", err.c_str());
+}
+
 SEXP wrapped_R_string(void *len) {
   return Rf_allocVector(STRSXP, *(reinterpret_cast<R_xlen_t*>(len)));
 }
