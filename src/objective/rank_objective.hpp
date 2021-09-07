@@ -188,8 +188,7 @@ class LambdarankNDCG : public RankingObjective {
     }
     const double worst_score = score[sorted_idx[worst_idx]];
     double sum_lambdas = 0.0;
-
-    // accumulate lambdas by pairs that contain at least one document above truncation level
+    // start accmulate lambdas by pairs that contain at least one document above truncation level
     for (data_size_t i = 0; i < cnt - 1 && i < truncation_level_; ++i) {
       if (score[sorted_idx[i]] == kMinScore) { continue; }
       for (data_size_t j = i + 1; j < cnt; ++j) {
@@ -241,10 +240,9 @@ class LambdarankNDCG : public RankingObjective {
           i_costs_buffer_[tid][debias_high_rank] += p_cost / j_biases_pow_[debias_low_rank];
           j_costs_buffer_[tid][debias_low_rank] += p_cost / i_biases_pow_[debias_high_rank];  // and vice versa
         }
-
+        // update
         p_lambda *= -sigmoid_ * delta_pair_NDCG / i_biases_pow_[debias_high_rank] / j_biases_pow_[debias_low_rank];
         p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG / i_biases_pow_[debias_high_rank] / j_biases_pow_[debias_low_rank];
-
         lambdas[low] -= static_cast<score_t>(p_lambda);
         hessians[low] += static_cast<score_t>(p_hessian);
         lambdas[high] += static_cast<score_t>(p_lambda);
