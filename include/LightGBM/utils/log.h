@@ -18,9 +18,8 @@
 #ifdef LGB_R_BUILD
 #define R_NO_REMAP
 #define R_USE_C99_IN_CXX
-#include <R.h>
-#include <R_ext/Error.h>
 #include <R_ext/Print.h>
+extern "C" void R_FlushConsole(void);
 #endif
 
 namespace LightGBM {
