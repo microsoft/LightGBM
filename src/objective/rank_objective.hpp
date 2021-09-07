@@ -162,7 +162,6 @@ class LambdarankNDCG : public RankingObjective {
                                       const label_t* label, const double* score,
                                       score_t* lambdas,
                                       score_t* hessians) const override {
-
     const int tid = omp_get_thread_num();  // get thread id
 
     // get max DCG on current query
