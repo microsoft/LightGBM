@@ -167,13 +167,11 @@ class LambdarankNDCG : public RankingObjective {
 
     // get max DCG on current query
     const double inverse_max_dcg = inverse_max_dcgs_[query_id];
-
     // initialize with zero
     for (data_size_t i = 0; i < cnt; ++i) {
       lambdas[i] = 0.0f;
       hessians[i] = 0.0f;
     }
-
     // get sorted indices for scores
     std::vector<data_size_t> sorted_idx(cnt);
     for (data_size_t i = 0; i < cnt; ++i) {
@@ -182,7 +180,6 @@ class LambdarankNDCG : public RankingObjective {
     std::stable_sort(
         sorted_idx.begin(), sorted_idx.end(),
         [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
-
     // get best and worst score
     const double best_score = score[sorted_idx[0]];
     data_size_t worst_idx = cnt - 1;
@@ -197,10 +194,8 @@ class LambdarankNDCG : public RankingObjective {
       if (score[sorted_idx[i]] == kMinScore) { continue; }
       for (data_size_t j = i + 1; j < cnt; ++j) {
         if (score[sorted_idx[j]] == kMinScore) { continue; }
-
         // skip pairs with the same labels
         if (label[sorted_idx[i]] == label[sorted_idx[j]]) { continue; }
-
         data_size_t high_rank, low_rank;
         if (label[sorted_idx[i]] > label[sorted_idx[j]]) {
           high_rank = i;
@@ -209,15 +204,11 @@ class LambdarankNDCG : public RankingObjective {
           high_rank = j;
           low_rank = i;
         }
-
-        // info of more relevant doc
         const data_size_t high = sorted_idx[high_rank];
         const int high_label = static_cast<int>(label[high]);
         const double high_score = score[high];
         const double high_label_gain = label_gain_[high_label];
         const double high_discount = DCGCalculator::GetDiscount(high_rank);
-
-        // info of less relevant doc
         const data_size_t low = sorted_idx[low_rank];
         const int low_label = static_cast<int>(label[low]);
         const double low_score = score[low];
@@ -226,19 +217,16 @@ class LambdarankNDCG : public RankingObjective {
 
         const double delta_score = high_score - low_score;
 
+        // get dcg gap
         const double dcg_gap = high_label_gain - low_label_gain;
-
         // get discount of this pair
         const double paired_discount = fabs(high_discount - low_discount);
-
         // get delta NDCG
         double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
-
-        // regularize the delta_pair_NDCG by score distance
+        // regular the delta_pair_NDCG by score distance
         if ((norm_ || unbiased_) && best_score != worst_score) {
           delta_pair_NDCG /= (0.01f + fabs(delta_score));
         }
-
         // calculate lambda for this pair
         double p_lambda = GetSigmoid(delta_score);
         double p_hessian = p_lambda * (1.0f - p_lambda);
@@ -255,20 +243,16 @@ class LambdarankNDCG : public RankingObjective {
         }
 
         p_lambda *= -sigmoid_ * delta_pair_NDCG / i_biases_pow_[debias_high_rank] / j_biases_pow_[debias_low_rank];
-
-        // remainder of d/dx {(34) and (36) for debiasing}
         p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG / i_biases_pow_[debias_high_rank] / j_biases_pow_[debias_low_rank];
 
         lambdas[low] -= static_cast<score_t>(p_lambda);
         hessians[low] += static_cast<score_t>(p_hessian);
         lambdas[high] += static_cast<score_t>(p_lambda);
         hessians[high] += static_cast<score_t>(p_hessian);
-
         // lambda is negative, so use minus to accumulate
         sum_lambdas -= 2 * p_lambda;
       }
     }
-
     if (norm_ && sum_lambdas > 0) {
       double norm_factor = std::log2(1 + sum_lambdas) / sum_lambdas;
       for (data_size_t i = 0; i < cnt; ++i) {
