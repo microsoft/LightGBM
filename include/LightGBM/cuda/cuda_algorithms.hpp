@@ -20,6 +20,10 @@
 #define LOG_NUM_BANKS_DATA_PARTITION (4)
 #define GLOBAL_PREFIX_SUM_BLOCK_SIZE (1024)
 
+#define BITONIC_SORT_NUM_ELEMENTS (1024)
+#define BITONIC_SORT_DEPTH (11)
+#define BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE (10)
+
 #define CONFLICT_FREE_INDEX(n) \
   ((n) + ((n) >> LOG_NUM_BANKS_DATA_PARTITION)) \
 
@@ -56,6 +60,9 @@ __device__ void ReduceSumConflictFree(T* values, size_t n) {
 
 template <typename VAL_T, typename REDUCE_T>
 void ReduceSumGlobal(const VAL_T* values, size_t n, REDUCE_T* block_buffer);
+
+template <typename T>
+__global__ void BlockReduceSum(T* block_buffer, const data_size_t num_blocks);
 
 template <typename VAL_A_T, typename VAL_B_T, typename REDUCE_T>
 void ReduceDotProductGlobal(const VAL_A_T* a, const VAL_B_T* b, size_t n, REDUCE_T* block_buffer);

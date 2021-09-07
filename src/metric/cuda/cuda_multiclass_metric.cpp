@@ -75,14 +75,15 @@ void CUDAAucMuMetric::Init(const Metadata& metadata, data_size_t num_data) {
   AllocateCUDAMemoryOuter<double>(&cuda_dist_, total_pair_buffer_size, __FILE__, __LINE__);
   AllocateCUDAMemoryOuter<data_size_t>(&cuda_sorted_indices_by_dist_, total_pair_buffer_size, __FILE__, __LINE__);
   AllocateCUDAMemoryOuter<double>(&cuda_sum_pos_buffer_, total_pair_buffer_size, __FILE__, __LINE__);
-  AllocateCUDAMemoryOuter<double>(&cuda_sum_neg_buffer_, total_pair_buffer_size, __FILE__, __LINE__);
-  AllocateCUDAMemoryOuter<data_size_t>(&cuda_threshold_mask_, total_pair_buffer_size, __FILE__, __LINE__);
-  AllocateCUDAMemoryOuter<double>(&cuda_reduce_block_buffer_, static_cast<size_t>(num_class_pair), __FILE__, __LINE__);
+  AllocateCUDAMemoryOuter<data_size_t>(&cuda_threshold_mark_, total_pair_buffer_size, __FILE__, __LINE__);
 
   const int num_blocks = (max_pair_buffer_size_ + EVAL_BLOCK_SIZE_MULTICLASS_METRIC - 1) / EVAL_BLOCK_SIZE_MULTICLASS_METRIC;
-  AllocateCUDAMemoryOuter<data_size_t>(&cuda_block_mark_buffer_, static_cast<size_t>(num_blocks) + 1, __FILE__, __LINE__);
-  AllocateCUDAMemoryOuter<uint16_t>(&cuda_block_mark_first_zero_, static_cast<size_t>(num_blocks) + 1, __FILE__, __LINE__);
-
+  const size_t class_pair_block_buffer = static_cast<size_t>(num_class_pair * (num_blocks + 1));
+  AllocateCUDAMemoryOuter<data_size_t>(&cuda_block_mark_buffer_, class_pair_block_buffer, __FILE__, __LINE__);
+  AllocateCUDAMemoryOuter<uint16_t>(&cuda_block_mark_first_zero_, class_pair_block_buffer, __FILE__, __LINE__);
+  AllocateCUDAMemoryOuter<double>(&cuda_reduce_block_buffer_, class_pair_block_buffer, __FILE__, __LINE__);
+  SetCUDAMemoryOuter<double>(cuda_reduce_block_buffer_, 0, class_pair_block_buffer, __FILE__, __LINE__);
+  AllocateCUDAMemoryOuter<double>(&cuda_reduce_ans_buffer_, static_cast<size_t>(num_class_pair), __FILE__, __LINE__);
   const size_t curr_v_size = static_cast<size_t>(num_class_pair * num_class_);
   std::vector<double> all_curr_v(curr_v_size, 0.0f);
   for (int i = 0; i < num_class_ - 1; ++i) {
@@ -95,10 +96,17 @@ void CUDAAucMuMetric::Init(const Metadata& metadata, data_size_t num_data) {
     }
   }
   InitCUDAMemoryFromHostMemoryOuter<double>(&cuda_curr_v_, all_curr_v.data(), all_curr_v.size(), __FILE__, __LINE__);
+
+  cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
+  cuda_label_ = metadata.cuda_metadata()->cuda_label();
 }
 
 std::vector<double> CUDAAucMuMetric::Eval(const double* score, const ObjectiveFunction*) const {
   LaunchEvalKernel(score);
+  double ans = 0.0f;
+  const int num_class_pair = (num_class_ - 1) * num_class_ / 2;
+  CopyFromCUDADeviceToHostOuter<double>(&ans, cuda_reduce_ans_buffer_, static_cast<size_t>(num_class_pair), __FILE__, __LINE__);
+  return std::vector<double>(1, ans / static_cast<double>(num_class_pair));
 }
 
 }  // namespace LightGBM

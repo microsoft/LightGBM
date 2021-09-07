@@ -7,10 +7,6 @@
 
 namespace LightGBM {
 
-#define BITONIC_SORT_NUM_ELEMENTS (1024)
-#define BITONIC_SORT_DEPTH (11)
-#define BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE (10)
-
 template <typename T, bool ASCENDING>
 __global__ void BitonicSortGlobalKernel(T* values, const int num_total_data) {
   const int thread_index = static_cast<int>(threadIdx.x);

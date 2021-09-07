@@ -99,6 +99,9 @@ class CUDAAucMuMetric : public CUDAMetricInterface, public AucMuMetric {
  private:
   void LaunchEvalKernel(const double* score) const;
 
+  const label_t* cuda_label_;
+  const label_t* cuda_weights_;
+
   int num_class_pair_;
   data_size_t max_pair_buffer_size_;
 
@@ -112,12 +115,12 @@ class CUDAAucMuMetric : public CUDAMetricInterface, public AucMuMetric {
   double* cuda_curr_v_;
 
   double* cuda_sum_pos_buffer_;
-  double* cuda_sum_neg_buffer_;
-  data_size_t* cuda_threshold_mask_;
+  data_size_t* cuda_threshold_mark_;
   data_size_t* cuda_block_mark_buffer_;
   uint16_t* cuda_block_mark_first_zero_;
 
   double* cuda_reduce_block_buffer_;
+  double* cuda_reduce_ans_buffer_;
 };
 
 }  // namespace LightGBM

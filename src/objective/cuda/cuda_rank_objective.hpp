@@ -46,7 +46,6 @@ class CUDALambdarankNDCG : public CUDAObjectiveInterface, public LambdarankNDCG 
   const data_size_t* cuda_query_boundaries_;
 
   // Host memory
-  label_t max_label_;
   int max_items_in_query_aligned_;
 };
 
