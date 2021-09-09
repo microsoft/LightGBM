@@ -369,7 +369,7 @@ class LGBMModel(_LGBMModelBase):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = True,
+        silent: Union[bool, str] = 'warn',
         importance_type: str = 'split',
         **kwargs
     ):
@@ -590,7 +590,13 @@ class LGBMModel(_LGBMModelBase):
         evals_result = {}
         params = self.get_params()
         # user can set verbose with kwargs, it has higher priority
-        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and self.silent:
+        if self.silent != "warn":
+            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
+                         "Pass 'verbose' parameter via keyword arguments instead.")
+            silent = self.silent
+        else:
+            silent = True
+        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params['verbose'] = -1
         params.pop('silent', None)
         params.pop('importance_type', None)
