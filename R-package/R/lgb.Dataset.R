@@ -413,10 +413,10 @@ Dataset <- R6::R6Class(
 
       } else {
 
-        # Trying to work with unknown dimensions is not possible
+        # Trying to work with unknown formats is not possible
         stop(
-          "dim: cannot get dimensions before dataset has been constructed, please call "
-          , "lgb.Dataset.construct explicitly"
+          "Dataset$get_colnames(): cannot get column names before dataset has been constructed, please call "
+          , "lgb.Dataset.construct() explicitly"
         )
 
       }
@@ -578,21 +578,37 @@ Dataset <- R6::R6Class(
     # Slice dataset
     slice = function(idxset, ...) {
 
-      additional_params <- list(...)
-      if (length(additional_params) > 0L) {
+      additional_keyword_args <- list(...)
+
+      if (length(additional_keyword_args) > 0L) {
         warning(paste0(
           "Dataset$slice(): Found the following passed through '...': "
-          , paste(names(additional_params), collapse = ", ")
+          , paste(names(additional_keyword_args), collapse = ", ")
           , ". These are ignored and should be removed. "
+          , "To change the parameters of a Dataset produced by Dataset$slice(), use Dataset$set_params(). "
+          , "To modify attributes like 'init_score', use Dataset$setinfo(). "
           , "In future releases of lightgbm, this warning will become an error."
         ))
+      }
+
+      # extract Dataset attributes passed through '...'
+      #
+      # NOTE: takes advantage of the fact that list[["non-existent-key"]] returns NULL
+      group <- additional_keyword_args[["group"]]
+      init_score <- additional_keyword_args[["init_score"]]
+      label <- additional_keyword_args[["label"]]
+      weight <- additional_keyword_args[["weight"]]
+
+      # remove attributes from '...', so only params are left
+      for (info_key in .INFO_KEYS()) {
+        additional_keyword_args[[info_key]] <- NULL
       }
 
       # Perform slicing
       return(
         Dataset$new(
           data = NULL
-          , params = private$params
+          , params = utils::modifyList(self$get_params(), additional_keyword_args)
           , reference = self
           , colnames = private$colnames
           , categorical_feature = private$categorical_feature
@@ -600,7 +616,10 @@ Dataset <- R6::R6Class(
           , free_raw_data = private$free_raw_data
           , used_indices = sort(idxset, decreasing = FALSE)
           , info = NULL
-          , ...
+          , group = group
+          , init_score = init_score
+          , label = label
+          , weight = weight
         )
       )
 
@@ -676,33 +695,26 @@ Dataset <- R6::R6Class(
     # Set reference
     set_reference = function(reference) {
 
-      # Set known references
-      self$set_categorical_feature(categorical_feature = reference$.__enclos_env__$private$categorical_feature)
-      self$set_colnames(colnames = reference$get_colnames())
-      private$set_predictor(predictor = reference$.__enclos_env__$private$predictor)
-
-      # Check for identical references
+      # setting reference to this same Dataset object doesn't require any changes
       if (identical(private$reference, reference)) {
         return(invisible(self))
       }
 
-      # Check for empty data
+      # changing the reference removes the Dataset object on the C++ side, so it should only
+      # be done if you still have the raw_data available, so that the new Dataset can be reconstructed
       if (is.null(private$raw_data)) {
-
         stop("set_reference: cannot set reference after freeing raw data,
           please set ", sQuote("free_raw_data = FALSE"), " when you construct lgb.Dataset")
-
       }
 
-      # Check for non-existing reference
-      if (!is.null(reference)) {
-
-        # Reference is unknown
-        if (!lgb.is.Dataset(reference)) {
-          stop("set_reference: Can only use lgb.Dataset as a reference")
-        }
-
+      if (!lgb.is.Dataset(reference)) {
+        stop("set_reference: Can only use lgb.Dataset as a reference")
       }
+
+      # Set known references
+      self$set_categorical_feature(categorical_feature = reference$.__enclos_env__$private$categorical_feature)
+      self$set_colnames(colnames = reference$get_colnames())
+      private$set_predictor(predictor = reference$.__enclos_env__$private$predictor)
 
       # Store reference
       private$reference <- reference
@@ -944,7 +956,6 @@ lgb.Dataset.create.valid <- function(dataset,
                                      params = list(),
                                      ...) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.create.valid: input data should be an lgb.Dataset object")
   }
@@ -990,12 +1001,10 @@ lgb.Dataset.create.valid <- function(dataset,
 #' @export
 lgb.Dataset.construct <- function(dataset) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.construct: input data should be an lgb.Dataset object")
   }
 
-  # Construct the dataset
   return(invisible(dataset$construct()))
 
 }
@@ -1035,7 +1044,6 @@ dim.lgb.Dataset <- function(x, ...) {
     ))
   }
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = x)) {
     stop("dim.lgb.Dataset: input data should be an lgb.Dataset object")
   }
@@ -1071,7 +1079,6 @@ dim.lgb.Dataset <- function(x, ...) {
 #' @export
 dimnames.lgb.Dataset <- function(x) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = x)) {
     stop("dimnames.lgb.Dataset: input data should be an lgb.Dataset object")
   }
@@ -1146,7 +1153,6 @@ slice <- function(dataset, ...) {
 #' @export
 slice.lgb.Dataset <- function(dataset, idxset, ...) {
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("slice.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
@@ -1211,7 +1217,6 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
     ))
   }
 
-  # Check if dataset is not a dataset
   if (!lgb.is.Dataset(x = dataset)) {
     stop("getinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }

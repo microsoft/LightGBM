@@ -1,5 +1,9 @@
 context("testing lgb.Dataset functionality")
 
+data(agaricus.train, package = "lightgbm")
+train_data <- agaricus.train$data[seq_len(1000L), ]
+train_label <- agaricus.train$label[seq_len(1000L)]
+
 data(agaricus.test, package = "lightgbm")
 test_data <- agaricus.test$data[1L:100L, ]
 test_label <- agaricus.test$label[1L:100L]
@@ -61,6 +65,146 @@ test_that("lgb.Dataset: slice, dim", {
   lgb.Dataset.construct(dsub1)
   expect_equal(nrow(dsub1), 42L)
   expect_equal(ncol(dsub1), ncol(test_data))
+})
+
+test_that("Dataset$slice() supports passing additional parameters through '...'", {
+  dtest <- lgb.Dataset(test_data, label = test_label)
+  dtest$construct()
+  dsub1 <- slice(
+    dataset = dtest
+    , idxset = seq_len(42L)
+    , feature_pre_filter = FALSE
+  )
+  dsub1$construct()
+  expect_identical(dtest$get_params(), list())
+  expect_identical(dsub1$get_params(), list(feature_pre_filter = FALSE))
+})
+
+test_that("Dataset$slice() supports passing Dataset attributes through '...'", {
+  dtest <- lgb.Dataset(test_data, label = test_label)
+  dtest$construct()
+  num_subset_rows <- 51L
+  init_score <- rnorm(n = num_subset_rows)
+  dsub1 <- slice(
+    dataset = dtest
+    , idxset = seq_len(num_subset_rows)
+    , init_score = init_score
+  )
+  dsub1$construct()
+  expect_null(dtest$getinfo("init_score"), NULL)
+  expect_identical(dsub1$getinfo("init_score"), init_score)
+})
+
+test_that("Dataset$set_reference() on a constructed Dataset fails if raw data has been freed", {
+  dtrain <- lgb.Dataset(train_data, label = train_label)
+  dtrain$construct()
+  dtest <- lgb.Dataset(test_data, label = test_label)
+  dtest$construct()
+  expect_error({
+    dtest$set_reference(dtrain)
+  }, regexp = "cannot set reference after freeing raw data")
+})
+
+test_that("Dataset$set_reference() fails if reference is not a Dataset", {
+  dtrain <- lgb.Dataset(
+    train_data
+    , label = train_label
+    , free_raw_data = FALSE
+  )
+  expect_error({
+    dtrain$set_reference(reference = data.frame(x = rnorm(10L)))
+  }, regexp = "Can only use lgb.Dataset as a reference")
+
+  # passing NULL when the Dataset already has a reference raises an error
+  dtest <- lgb.Dataset(
+    test_data
+    , label = test_label
+    , free_raw_data = FALSE
+  )
+  dtrain$set_reference(dtest)
+  expect_error({
+    dtrain$set_reference(reference = NULL)
+  }, regexp = "Can only use lgb.Dataset as a reference")
+})
+
+test_that("Dataset$set_reference() setting reference to the same Dataset has no side effects", {
+  dtrain <- lgb.Dataset(
+    train_data
+    , label = train_label
+    , free_raw_data = FALSE
+    , categorical_feature = c(2L, 3L)
+  )
+  dtrain$construct()
+
+  cat_features_before <- dtrain$.__enclos_env__$private$categorical_feature
+  colnames_before <- dtrain$get_colnames()
+  predictor_before <- dtrain$.__enclos_env__$private$predictor
+
+  dtrain$set_reference(dtrain)
+  expect_identical(
+    cat_features_before
+    , dtrain$.__enclos_env__$private$categorical_feature
+  )
+  expect_identical(
+    colnames_before
+    , dtrain$get_colnames()
+  )
+  expect_identical(
+    predictor_before
+    , dtrain$.__enclos_env__$private$predictor
+  )
+})
+
+test_that("Dataset$set_reference() updates categorical_feature, colnames, and predictor", {
+  dtrain <- lgb.Dataset(
+    train_data
+    , label = train_label
+    , free_raw_data = FALSE
+    , categorical_feature = c(2L, 3L)
+  )
+  dtrain$construct()
+  bst <- Booster$new(
+    train_set = dtrain
+    , params = list(verbose = -1L)
+  )
+  dtrain$.__enclos_env__$private$predictor <- bst$to_predictor()
+
+  test_original_feature_names <- paste0("feature_col_", seq_len(ncol(test_data)))
+  dtest <- lgb.Dataset(
+    test_data
+    , label = test_label
+    , free_raw_data = FALSE
+    , colnames = test_original_feature_names
+  )
+  dtest$construct()
+
+  # at this point, dtest should not have categorical_feature
+  expect_null(dtest$.__enclos_env__$private$predictor)
+  expect_null(dtest$.__enclos_env__$private$categorical_feature)
+  expect_identical(
+    dtest$get_colnames()
+    , test_original_feature_names
+  )
+
+  dtest$set_reference(dtrain)
+
+  # after setting reference to dtrain, those attributes should have dtrain's values
+  expect_is(dtest$.__enclos_env__$private$predictor, "lgb.Predictor")
+  expect_identical(
+    dtest$.__enclos_env__$private$predictor$.__enclos_env__$private$handle
+    , dtrain$.__enclos_env__$private$predictor$.__enclos_env__$private$handle
+  )
+  expect_identical(
+    dtest$.__enclos_env__$private$categorical_feature
+    , dtrain$.__enclos_env__$private$categorical_feature
+  )
+  expect_identical(
+    dtest$get_colnames()
+    , dtrain$get_colnames()
+  )
+  expect_false(
+    identical(dtest$get_colnames(), test_original_feature_names)
+  )
 })
 
 test_that("lgb.Dataset: colnames", {

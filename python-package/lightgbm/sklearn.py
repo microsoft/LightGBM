@@ -26,7 +26,7 @@ class _ObjectiveFunctionWrapper:
         Parameters
         ----------
         func : callable
-            Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group)
+            Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group)``
             and returns (grad, hess):
 
                 y_true : array-like of shape = [n_samples]
@@ -369,7 +369,7 @@ class LGBMModel(_LGBMModelBase):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = True,
+        silent: Union[bool, str] = 'warn',
         importance_type: str = 'split',
         **kwargs
     ):
@@ -590,7 +590,13 @@ class LGBMModel(_LGBMModelBase):
         evals_result = {}
         params = self.get_params()
         # user can set verbose with kwargs, it has higher priority
-        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and self.silent:
+        if self.silent != "warn":
+            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
+                         "Pass 'verbose' parameter via keyword arguments instead.")
+            silent = self.silent
+        else:
+            silent = True
+        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params['verbose'] = -1
         params.pop('silent', None)
         params.pop('importance_type', None)
@@ -605,9 +611,12 @@ class LGBMModel(_LGBMModelBase):
                 params.pop(alias, None)
             params['num_class'] = self._n_classes
         if hasattr(self, '_eval_at'):
+            eval_at = self._eval_at
             for alias in _ConfigAliases.get('eval_at'):
-                params.pop(alias, None)
-            params['eval_at'] = self._eval_at
+                if alias in params:
+                    _log_warning(f"Found '{alias}' in params. Will use it instead of 'eval_at' argument")
+                    eval_at = params.pop(alias)
+            params['eval_at'] = eval_at
         params['objective'] = self._objective
         if self._fobj:
             params['objective'] = 'None'  # objective = nullptr for unknown objective
@@ -746,7 +755,7 @@ class LGBMModel(_LGBMModelBase):
                 pred_leaf=False, pred_contrib=False, **kwargs):
         """Docstring is set after definition, using a template."""
         if self._n_features is None:
-            raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
+            raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]

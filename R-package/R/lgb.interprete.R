@@ -209,10 +209,8 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
 
   }
 
-  # Check for numbe rof classes larger than 1
   if (num_class == 1L) {
 
-    # First interpretation element
     tree_interpretation_dt <- tree_interpretation[[1L]]
 
   } else {

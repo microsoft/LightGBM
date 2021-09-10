@@ -365,17 +365,13 @@ cb.early.stop <- function(stopping_rounds, first_metric_only, verbose) {
           # Check if early stopping is required
           if (cur_iter - best_iter[i] >= stopping_rounds) {
 
-            # Check if model is not null
             if (!is.null(env$model)) {
               env$model$best_score <- best_score[i]
               env$model$best_iter <- best_iter[i]
             }
 
-            # Print message if verbose
             if (isTRUE(verbose)) {
-
               print(paste0("Early stopping, best iteration is: ", best_msg[[i]]))
-
             }
 
             # Store best iteration and stop
@@ -386,13 +382,12 @@ cb.early.stop <- function(stopping_rounds, first_metric_only, verbose) {
         }
 
       if (!isTRUE(env$met_early_stop) && cur_iter == env$end_iteration) {
-        # Check if model is not null
+
         if (!is.null(env$model)) {
           env$model$best_score <- best_score[i]
           env$model$best_iter <- best_iter[i]
         }
 
-        # Print message if verbose
         if (isTRUE(verbose)) {
           print(paste0("Did not meet early stopping, best iteration is: ", best_msg[[i]]))
         }
@@ -427,7 +422,6 @@ add.cb <- function(cb_list, cb) {
   # Set names of elements
   names(cb_list) <- callback.names(cb_list = cb_list)
 
-  # Check for existence
   if ("cb.early.stop" %in% names(cb_list)) {
 
     # Concatenate existing elements
@@ -438,7 +432,6 @@ add.cb <- function(cb_list, cb) {
 
   }
 
-  # Return element
   return(cb_list)
 
 }
