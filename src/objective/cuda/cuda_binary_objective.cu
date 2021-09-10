@@ -142,6 +142,24 @@ void CUDABinaryLogloss::LaunchConvertOutputCUDAKernel(const data_size_t num_data
   ConvertOutputCUDAKernel_BinaryLogloss<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(sigmoid_, num_data, input, output);
 }
 
+__global__ void ResetOVACUDALableKernel(
+  const int ova_class_id,
+  const data_size_t num_data,
+  label_t* cuda_label) {
+  const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
+  if (data_index < num_data) {
+    const int int_label = static_cast<int>(cuda_label[data_index]);
+    cuda_label[data_index] == (int_label == ova_class_id ? 1.0f : 0.0f);
+  }
+}
+
+void CUDABinaryLogloss::LaunchResetOVACUDALableKernel() const {
+  Log::Warning("before LaunchResetOVACUDALableKernel, ova_class_id = %d", ova_class_id_);
+  const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_BINARY - 1) / GET_GRADIENTS_BLOCK_SIZE_BINARY;
+  ResetOVACUDALableKernel<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(ova_class_id_, num_data_, cuda_ova_label_);
+  Log::Warning("after LaunchResetOVACUDALableKernel");
+}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

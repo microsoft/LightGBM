@@ -124,6 +124,12 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
       gradients_pointer_ = gradients_.data();
       hessians_pointer_ = hessians_.data();
     }
+  } else {
+    if (config_->device_type == std::string("cuda")) {
+      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+      AllocateCUDAMemoryOuter<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
+      AllocateCUDAMemoryOuter<score_t>(&hessians_pointer_, total_size, __FILE__, __LINE__);
+    }
   }
   // get max feature index
   max_feature_idx_ = train_data_->num_total_features() - 1;

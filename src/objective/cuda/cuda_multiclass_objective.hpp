@@ -54,7 +54,25 @@ class CUDAMulticlassOVA: public CUDAObjectiveInterface, public MulticlassOVA {
 
   explicit CUDAMulticlassOVA(const std::vector<std::string>& strs);
 
+  void Init(const Metadata& metadata, data_size_t num_data) override;
+
+  void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override;
+
+  void ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const override;
+
+  double BoostFromScore(int class_id) const override {
+    Log::Warning("BoostFromScore class_id = %d", class_id);
+    return cuda_binary_loss_[class_id]->BoostFromScore(0);
+  }
+
+  bool ClassNeedTrain(int class_id) const override {
+    return cuda_binary_loss_[class_id]->ClassNeedTrain(0);
+  }
+
   ~CUDAMulticlassOVA();
+
+ private:
+  std::vector<std::unique_ptr<CUDABinaryLogloss>> cuda_binary_loss_;
 };
 
 }  // namespace LightGBM

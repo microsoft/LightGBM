@@ -10,8 +10,11 @@
 
 namespace LightGBM {
 
+CUDABinaryLogloss::CUDABinaryLogloss(const Config& config):
+BinaryLogloss(config), ova_class_id_(-1) {}
+
 CUDABinaryLogloss::CUDABinaryLogloss(const Config& config, const int ova_class_id):
-BinaryLogloss(config), ova_class_id_(ova_class_id) {}
+BinaryLogloss(config, [ova_class_id](label_t label) { return static_cast<int>(label) == ova_class_id; }), ova_class_id_(ova_class_id) {}
 
 CUDABinaryLogloss::CUDABinaryLogloss(const std::vector<std::string>& strs): BinaryLogloss(strs) {}
 
@@ -19,7 +22,15 @@ CUDABinaryLogloss::~CUDABinaryLogloss() {}
 
 void CUDABinaryLogloss::Init(const Metadata& metadata, data_size_t num_data) {
   BinaryLogloss::Init(metadata, num_data);
-  cuda_label_ = metadata.cuda_metadata()->cuda_label();
+  if (ova_class_id_ == -1) {
+    cuda_label_ = metadata.cuda_metadata()->cuda_label();
+    cuda_ova_label_ = nullptr;
+  } else {
+    Log::Warning("converting cuda labels with ova_class_id_ = %d", ova_class_id_);
+    InitCUDAMemoryFromHostMemoryOuter<label_t>(&cuda_ova_label_, metadata.cuda_metadata()->cuda_label(), static_cast<size_t>(num_data), __FILE__, __LINE__);
+    LaunchResetOVACUDALableKernel();
+    cuda_label_ = cuda_ova_label_;
+  }
   cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
   AllocateCUDAMemoryOuter<double>(&cuda_boost_from_score_, 1, __FILE__, __LINE__);
   SetCUDAMemoryOuter<double>(cuda_boost_from_score_, 0, 1, __FILE__, __LINE__);
@@ -40,6 +51,7 @@ double CUDABinaryLogloss::BoostFromScore(int) const {
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   double boost_from_score = 0.0f;
   CopyFromCUDADeviceToHostOuter<double>(&boost_from_score, cuda_boost_from_score_, 1, __FILE__, __LINE__);
+  Log::Warning("boost_from_score = %f", boost_from_score);
   return boost_from_score;
 }
 

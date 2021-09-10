@@ -20,7 +20,9 @@ namespace LightGBM {
 
 class CUDABinaryLogloss : public CUDAObjectiveInterface, public BinaryLogloss {
  public:
-  explicit CUDABinaryLogloss(const Config& config, const int ova_class_id = -1);
+  explicit CUDABinaryLogloss(const Config& config);
+
+  explicit CUDABinaryLogloss(const Config& config, const int ova_class_id);
 
   explicit CUDABinaryLogloss(const std::vector<std::string>& strs);
 
@@ -47,8 +49,11 @@ class CUDABinaryLogloss : public CUDAObjectiveInterface, public BinaryLogloss {
 
   void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const;
 
+  void LaunchResetOVACUDALableKernel() const;
+
   // CUDA memory, held by other objects
   const label_t* cuda_label_;
+  label_t* cuda_ova_label_;
   const label_t* cuda_weights_;
 
   // CUDA memory, held by this object
