@@ -78,7 +78,7 @@ test_that("Dataset$slice() supports passing Dataset attributes through '...'", {
   expect_identical(dsub1$getinfo("init_score"), init_score)
 })
 
-test_that("Dataset$set_reference() on a constructed datasetfails if raw data has been freed", {
+test_that("Dataset$set_reference() on a constructed Dataset fails if raw data has been freed", {
   dtrain <- lgb.Dataset(train_data, label = train_label)
   dtrain$construct()
   dtest <- lgb.Dataset(test_data, label = test_label)
