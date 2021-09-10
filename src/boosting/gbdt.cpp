@@ -392,6 +392,14 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     Boosting();
     gradients = gradients_pointer_;
     hessians = hessians_pointer_;
+  } else {
+    if (config_->device_type == std::string("cuda")) {
+      const size_t total_size = static_cast<size_t>(num_data_ * num_class_);
+      CopyFromHostToCUDADeviceOuter<score_t>(gradients_pointer_, gradients, total_size, __FILE__, __LINE__);
+      CopyFromHostToCUDADeviceOuter<score_t>(hessians_pointer_, hessians, total_size, __FILE__, __LINE__);
+      gradients = gradients_pointer_;
+      hessians = hessians_pointer_;
+    }
   }
   // bagging logic
   Bagging(iter_);
@@ -527,12 +535,12 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
 }
 
 std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const {
-  /*if (config_->device_type == std::string("cuda")) {
+  if (config_->device_type == std::string("cuda")) {
     std::vector<double> tmp_score(num_data * num_class_, 0.0f);
     CopyFromCUDADeviceToHostOuter<double>(tmp_score.data(), score, static_cast<size_t>(num_data * num_class_), __FILE__, __LINE__);
     SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
     return metric->Eval(tmp_score.data(), objective_function_);
-  } else*/ {
+  } else {
     return metric->Eval(score, objective_function_);
   }
 }

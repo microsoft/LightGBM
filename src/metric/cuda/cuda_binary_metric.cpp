@@ -29,7 +29,9 @@ void CUDABinaryMetric<CUDAPointWiseLossCalculator>::Init(const Metadata& metadat
 template <typename CUDAPointWiseLossCalculator>
 std::vector<double> CUDABinaryMetric<CUDAPointWiseLossCalculator>::Eval(const double* score, const ObjectiveFunction* objective) const {
   double sum_loss = 0.0f;
-  objective->GetCUDAConvertOutputFunc()(this->num_data_, score, cuda_score_convert_buffer_);
+  if (objective != nullptr) {
+    objective->GetCUDAConvertOutputFunc()(this->num_data_, score, cuda_score_convert_buffer_);
+  }
   LaunchEvalKernel(cuda_score_convert_buffer_);
   CopyFromCUDADeviceToHostOuter<double>(&sum_loss, cuda_sum_loss_, 1, __FILE__, __LINE__);
   return std::vector<double>(1, sum_loss / this->sum_weights_);

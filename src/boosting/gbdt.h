@@ -401,7 +401,11 @@ class GBDT : public GBDTBase {
   int num_tree_per_iteration() const override { return num_tree_per_iteration_; }
 
   virtual std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const {
-    return objective_function_->GetCUDAConvertOutputFunc();
+    if (objective_function_ != nullptr) {
+      return objective_function_->GetCUDAConvertOutputFunc();
+    } else {
+      return [] (data_size_t, const double*, double*) {};
+    }
   }
 
  protected:
