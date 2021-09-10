@@ -127,12 +127,6 @@ class MulticlassSoftmax: public ObjectiveFunction {
         }
       }
     }
-    for (int i = 0; i < 100; ++i) {
-      Log::Warning("class 0 data %d gradient %f hessian %f", i, gradients[i], hessians[i]);
-    }
-    for (int i = 0; i < 100; ++i) {
-      Log::Warning("class 1 data %d gradient %f hessian %f", i, gradients[i + num_data_], hessians[i + num_data_]);
-    }
   }
 
   void ConvertOutput(const double* input, double* output) const override {

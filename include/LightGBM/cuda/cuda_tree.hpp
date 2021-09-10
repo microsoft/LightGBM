@@ -31,7 +31,7 @@ class CUDATree : public Tree {
   * \param track_branch_features Whether to keep track of ancestors of leaf nodes
   * \param is_linear Whether the tree has linear models at each leaf
   */
-  explicit CUDATree(int max_leaves, bool track_branch_features, bool is_linear);
+  explicit CUDATree(int max_leaves, bool track_branch_features, bool is_linear, const int gpu_device_id);
 
   explicit CUDATree(const Tree* host_tree);
 

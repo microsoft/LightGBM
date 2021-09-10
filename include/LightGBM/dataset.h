@@ -214,7 +214,7 @@ class Metadata {
 
   CUDAMetadata* cuda_metadata() const { return cuda_metadata_.get(); }
 
-  void CreateCUDAMetadata();
+  void CreateCUDAMetadata(const int gpu_device_id);
 
  private:
   /*! \brief Load initial scores from file */
@@ -760,6 +760,7 @@ class Dataset {
   std::vector<int> numeric_feature_map_;
   int num_numeric_features_;
   std::string device_type_;
+  int gpu_device_id_;
   std::unique_ptr<CUDAColumnData> cuda_column_data_;
 };
 

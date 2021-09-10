@@ -21,7 +21,7 @@ namespace LightGBM {
 class CUDARowData {
  public:
   CUDARowData(const Dataset* train_data,
-              const TrainingShareStates* train_share_state);
+              const TrainingShareStates* train_share_state, const int gpu_device_id);
 
   void Init(const Dataset* train_data,
             TrainingShareStates* train_share_state);

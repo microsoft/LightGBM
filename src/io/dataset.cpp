@@ -426,6 +426,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
     }
   }
   device_type_ = io_config.device_type;
+  gpu_device_id_ = io_config.gpu_device_id;
 }
 
 void Dataset::FinishLoad() {
@@ -439,7 +440,7 @@ void Dataset::FinishLoad() {
   }
   if (device_type_ == std::string("cuda")) {
     CreateCUDAColumnData();
-    metadata_.CreateCUDAMetadata();
+    metadata_.CreateCUDAMetadata(gpu_device_id_);
   } else {
     cuda_column_data_.reset(nullptr);
   }
@@ -775,6 +776,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   real_feature_idx_ = dataset->real_feature_idx_;
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
   device_type_ = dataset->device_type_;
+  gpu_device_id_ = dataset->gpu_device_id_;
 }
 
 void Dataset::ReSize(data_size_t num_data) {
@@ -1499,7 +1501,7 @@ const void* Dataset::GetColWiseData(
 }
 
 void Dataset::CreateCUDAColumnData() {
-  cuda_column_data_.reset(new CUDAColumnData(num_data_));
+  cuda_column_data_.reset(new CUDAColumnData(num_data_, gpu_device_id_));
   int num_columns = 0;
   std::vector<const void*> column_data;
   std::vector<BinIterator*> column_bin_iterator;

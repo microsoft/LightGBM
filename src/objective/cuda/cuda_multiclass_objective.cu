@@ -21,21 +21,6 @@ __device__ void SoftmaxCUDA(double* softmax_buffer, int len) {
   }
 }
 
-__device__ void SoftmaxCUDA(const double* input, int len, double* output) {
-  double wmax = input[0];
-  for (int i = 1; i < len; ++i) {
-    wmax = max(input[i], wmax);
-  }
-  double wsum = 0.0f;
-  for (int i = 0; i < len; ++i) {
-    output[i] = exp(input[i] - wmax);
-    wsum += output[i];
-  }
-  for (int i = 0; i < len; ++i) {
-    output[i] /= static_cast<double>(wsum);
-  }
-}
-
 template <bool USE_WEIGHT>
 __global__ void GetGradientsKernel_MulticlassSoftmax(
   const double* cuda_scores, const label_t* cuda_labels, const label_t* cuda_weights,
@@ -46,6 +31,10 @@ __global__ void GetGradientsKernel_MulticlassSoftmax(
     const data_size_t offset = data_index * num_class;
     double* softmax_result = cuda_softmax_buffer + offset;
     for (int k = 0; k < num_class; ++k) {
+      const double point_score = cuda_scores[k * num_data + data_index];
+      if (isnan(point_score)) {
+        printf("error find nan %f in score ==================================================\n", point_score);
+      }
       softmax_result[k] = cuda_scores[k * num_data + data_index];
     }
     SoftmaxCUDA(softmax_result, num_class);
@@ -90,11 +79,18 @@ void CUDAMulticlassSoftmax::LaunchGetGradientsKernel(const double* scores, score
 }
 
 __global__ void ConvertOutputCUDAKernel_MulticlassSoftmax(
-  const int num_class, const data_size_t num_data, const double* input, double* output) {
+  const int num_class, const data_size_t num_data, const double* input, double* cuda_softmax_buffer, double* output) {
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   if (data_index < num_data) {
     const data_size_t offset = data_index * num_class;
-    SoftmaxCUDA(input + offset, num_class, output + offset);
+    double* cuda_softmax_buffer_ptr = cuda_softmax_buffer + offset;
+    for (int class_index = 0; class_index < num_class; ++class_index) {
+      cuda_softmax_buffer_ptr[class_index] = input[class_index * num_data + data_index];
+    }
+    SoftmaxCUDA(cuda_softmax_buffer_ptr, num_class);
+    for (int class_index = 0; class_index < num_class; ++class_index) {
+      output[class_index * num_data + data_index] = cuda_softmax_buffer_ptr[class_index];
+    }
   }
 }
 
@@ -102,7 +98,7 @@ void CUDAMulticlassSoftmax::LaunchConvertOutputCUDAKernel(
   const data_size_t num_data, const double* input, double* output) const {
   const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_MULTICLASS - 1) / GET_GRADIENTS_BLOCK_SIZE_MULTICLASS;
   ConvertOutputCUDAKernel_MulticlassSoftmax<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_MULTICLASS>>>(
-    num_class_, num_data, input, output);
+    num_class_, num_data, input, cuda_softmax_buffer_, output);
 }
 
 }  // namespace LightGBM

@@ -59,6 +59,18 @@ void CUDACrossEntropy::LaunchGetGradientsKernel(const double* score, score_t* gr
   }
 }
 
+__global__ void ConvertOutputCUDAKernel_CrossEntropy(const data_size_t num_data, const double* input, double* output) {
+  const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (data_index < num_data) {
+    output[data_index] = 1.0f / (1.0f + exp(-input[data_index]));
+  }
+}
+
+void CUDACrossEntropy::LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const {
+  const int num_blocks = (num_data + GET_GRADIENTS_BLOCK_SIZE_XENTROPY - 1) / GET_GRADIENTS_BLOCK_SIZE_XENTROPY;
+  ConvertOutputCUDAKernel_CrossEntropy<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_XENTROPY>>>(num_data, input, output);
+}
+
 double CUDACrossEntropyLambda::LaunchCalcInitScoreKernel() const {
   double suml = 0.0f;
   double sumw = 0.0f;
@@ -115,6 +127,18 @@ void CUDACrossEntropyLambda::LaunchGetGradientsKernel(const double* score, score
   } else {
     GetGradientsKernel_CrossEntropyLambda<true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_XENTROPY>>>(score, cuda_labels_, cuda_weights_, num_data_, gradients, hessians);
   }
+}
+
+__global__ void ConvertOutputCUDAKernel_CUDACrossEntropyLambda(const data_size_t num_data, const double* input, double* output) {
+  const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (data_index < num_data) {
+    output[data_index] = log(1.0f + exp(input[data_index]));
+  }
+}
+
+void CUDACrossEntropyLambda::LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const {
+  const int num_blocks = (num_data + GET_GRADIENTS_BLOCK_SIZE_XENTROPY - 1) / GET_GRADIENTS_BLOCK_SIZE_XENTROPY;
+  ConvertOutputCUDAKernel_CUDACrossEntropyLambda<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_XENTROPY>>>(num_data, input, output);
 }
 
 }  // namespace LightGBM

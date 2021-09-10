@@ -49,11 +49,19 @@ class CUDAMultiErrorMetric : public CUDAMulticlassMetric<CUDAMultiErrorMetric> {
  public:
   explicit CUDAMultiErrorMetric(const Config& config);
 
-  __device__ inline static double LossOnPointCUDA(label_t label, const double* score, const int num_classes, const int multi_error_top_k) {
+  __device__ inline static double LossOnPointCUDA(
+    label_t label,
+    const double* score,
+    const data_size_t data_index,
+    const data_size_t num_data,
+    const int num_classes,
+    const int multi_error_top_k) {
     const size_t k = static_cast<size_t>(label);
+    const double true_class_score = score[k * num_data + data_index];
     int num_larger = 0;
     for (int i = 0; i < num_classes; ++i) {
-      if (score[i] >= score[k]) ++num_larger;
+      const double this_class_score = score[i * num_data + data_index];
+      if (this_class_score >= true_class_score) ++num_larger;
       if (num_larger > multi_error_top_k) return 1.0f;
     }
     return 0.0f;
@@ -72,10 +80,14 @@ class CUDAMultiSoftmaxLoglossMetric : public CUDAMulticlassMetric<CUDAMultiSoftm
  public:
   explicit CUDAMultiSoftmaxLoglossMetric(const Config& config);
 
-  __device__ inline static double LossOnPointCUDA(label_t label, const double* score, const int /*num_classes*/, const int /*multi_error_top_k*/) {
+  __device__ inline static double LossOnPointCUDA(label_t label, const double* score,
+    const data_size_t data_index,
+    const data_size_t num_data,
+    const int /*num_classes*/, const int /*multi_error_top_k*/) {
     size_t k = static_cast<size_t>(label);
-    if (score[k] > kEpsilon) {
-      return static_cast<double>(-log(score[k]));
+    const double point_score = score[k * num_data + data_index];
+    if (point_score > kEpsilon) {
+      return static_cast<double>(-log(point_score));
     } else {
       return -log(kEpsilon);
     }

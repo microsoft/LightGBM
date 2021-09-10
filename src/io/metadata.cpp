@@ -473,8 +473,8 @@ void Metadata::LoadQueryWeights() {
   }
 }
 
-void Metadata::CreateCUDAMetadata() {
-  cuda_metadata_.reset(new CUDAMetadata());
+void Metadata::CreateCUDAMetadata(const int gpu_device_id) {
+  cuda_metadata_.reset(new CUDAMetadata(gpu_device_id));
   cuda_metadata_->Init(label_, weights_, query_boundaries_, query_weights_, init_score_, queries_);
 }
 

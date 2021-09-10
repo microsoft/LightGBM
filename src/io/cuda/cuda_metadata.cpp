@@ -7,7 +7,13 @@
 
 namespace LightGBM {
 
-CUDAMetadata::CUDAMetadata() {}
+CUDAMetadata::CUDAMetadata(const int gpu_device_id) {
+  if (gpu_device_id >= 0) {
+    CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
+  } else {
+    CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
+  }
+}
 
 CUDAMetadata::~CUDAMetadata() {}
 

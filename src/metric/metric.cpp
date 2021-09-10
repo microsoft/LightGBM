@@ -42,6 +42,8 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new CUDAAUCMetric(config);
     } else if (type == std::string("average_precision")) {
       return new CUDAAveragePrecisionMetric(config);
+    } else if (type == std::string("multi_logloss")) {
+      return new CUDAMultiSoftmaxLoglossMetric(config);
     } else if (type == std::string("multi_error")) {
       return new CUDAMultiErrorMetric(config);
     } else if (type == std::string("cross_entropy")) {

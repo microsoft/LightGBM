@@ -38,7 +38,8 @@ class CUDAHistogramConstructor {
     const int num_threads,
     const std::vector<uint32_t>& feature_hist_offsets,
     const int min_data_in_leaf,
-    const double min_sum_hessian_in_leaf);
+    const double min_sum_hessian_in_leaf,
+    const int gpu_device_id);
 
   void Init(const Dataset* train_data, TrainingShareStates* share_state);
 
@@ -132,6 +133,8 @@ class CUDAHistogramConstructor {
   const score_t* cuda_gradients_;
   /*! \brief hessians on CUDA */
   const score_t* cuda_hessians_;
+
+  const int gpu_device_id_;
 };
 
 }  // namespace LightGBM

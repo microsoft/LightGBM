@@ -7,10 +7,15 @@
 
 namespace LightGBM {
 
-CUDATree::CUDATree(int max_leaves, bool track_branch_features, bool is_linear):
+CUDATree::CUDATree(int max_leaves, bool track_branch_features, bool is_linear, const int gpu_device_id):
 Tree(max_leaves, track_branch_features, is_linear),
 num_threads_per_block_add_prediction_to_score_(1024) {
   is_cuda_tree_ = true;
+  if (gpu_device_id >= 0) {
+    CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
+  } else {
+    CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
+  }
   InitCUDAMemory();
 }
 

@@ -17,7 +17,7 @@ namespace LightGBM {
 
 class CUDAColumnData {
  public:
-  CUDAColumnData(const data_size_t num_data);
+  CUDAColumnData(const data_size_t num_data, const int gpu_device_id);
 
   ~CUDAColumnData();
 

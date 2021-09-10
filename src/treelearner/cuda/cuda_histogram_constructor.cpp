@@ -16,14 +16,16 @@ CUDAHistogramConstructor::CUDAHistogramConstructor(
   const int num_threads,
   const std::vector<uint32_t>& feature_hist_offsets,
   const int min_data_in_leaf,
-  const double min_sum_hessian_in_leaf):
+  const double min_sum_hessian_in_leaf,
+  const int gpu_device_id):
   num_data_(train_data->num_data()),
   num_features_(train_data->num_features()),
   num_leaves_(num_leaves),
   num_threads_(num_threads),
   num_feature_groups_(train_data->num_feature_groups()),
   min_data_in_leaf_(min_data_in_leaf),
-  min_sum_hessian_in_leaf_(min_sum_hessian_in_leaf) {
+  min_sum_hessian_in_leaf_(min_sum_hessian_in_leaf),
+  gpu_device_id_(gpu_device_id) {
   int offset = 0;
   for (int group_id = 0; group_id < train_data->num_feature_groups(); ++group_id) {
     offset += train_data->FeatureGroupNumBin(group_id);
@@ -73,7 +75,7 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStat
   InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_feature_most_freq_bins_,
     feature_most_freq_bins_.data(), feature_most_freq_bins_.size(), __FILE__, __LINE__);
 
-  cuda_row_data_.reset(new CUDARowData(train_data, share_state));
+  cuda_row_data_.reset(new CUDARowData(train_data, share_state, gpu_device_id_));
   cuda_row_data_->Init(train_data, share_state);
 
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_stream_));

@@ -20,11 +20,12 @@ __global__ void EvalKernel_MulticlassPointWiseLoss(const double* score,
   // assert that warpSize == 32 and maximum number of threads per block is 1024
   __shared__ double shared_buffer[32];
   const int data_index = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
-  const double* score_ptr = score + data_index * num_classes;
-  const double pointwise_loss = data_index < num_data ?
-    (USE_WEIGHT ? CUDAPointWiseLossCalculator::LossOnPointCUDA(label[data_index], score_ptr, num_classes, multi_error_top_k) * weights[data_index] :
-                  CUDAPointWiseLossCalculator::LossOnPointCUDA(label[data_index], score_ptr, num_classes, multi_error_top_k)) :
-                  0.0f;
+  double pointwise_loss = 0.0f; 
+  if (data_index < num_data) {
+    pointwise_loss = (USE_WEIGHT ?
+      CUDAPointWiseLossCalculator::LossOnPointCUDA(label[data_index], score, data_index, num_data, num_classes, multi_error_top_k) * weights[data_index] :
+      CUDAPointWiseLossCalculator::LossOnPointCUDA(label[data_index], score, data_index, num_data, num_classes, multi_error_top_k));
+  }
   const double loss = ShuffleReduceSum<double>(pointwise_loss, shared_buffer, blockDim.x);
   if (threadIdx.x == 0) {
     cuda_sum_loss_buffer[blockIdx.x] = loss;
@@ -408,7 +409,6 @@ void CUDAAucMuMetric::LaunchEvalKernel(const double* score) const {
       cuda_reduce_block_buffer_,
       cuda_reduce_ans_buffer_);
   }
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   BlockReduceSum<double><<<1, EVAL_BLOCK_SIZE_MULTICLASS_METRIC>>>(cuda_reduce_ans_buffer_, num_class_pair);
 }
 

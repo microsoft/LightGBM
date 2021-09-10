@@ -25,7 +25,7 @@ void CUDACrossEntropyMetric::Init(const Metadata& metadata, data_size_t num_data
 std::vector<double> CUDACrossEntropyMetric::Eval(const double* score, const ObjectiveFunction* objective) const {
   double sum_loss = 0.0f;
   objective->GetCUDAConvertOutputFunc()(num_data_, score, cuda_score_convert_buffer_);
-  LaunchEvalKernel(score);
+  LaunchEvalKernel(cuda_score_convert_buffer_);
   CopyFromCUDADeviceToHostOuter<double>(&sum_loss, cuda_sum_loss_, 1, __FILE__, __LINE__);
   return std::vector<double>(1, sum_loss / sum_weights_);
 }
@@ -47,7 +47,7 @@ void CUDACrossEntropyLambdaMetric::Init(const Metadata& metadata, data_size_t nu
 
 std::vector<double> CUDACrossEntropyLambdaMetric::Eval(const double* score, const ObjectiveFunction* objective) const {
   objective->GetCUDAConvertOutputFunc()(num_data_, score, cuda_score_convert_buffer_);
-  LaunchEvalKernel(score);
+  LaunchEvalKernel(cuda_score_convert_buffer_);
   double sum_loss = 0.0f;
   CopyFromCUDADeviceToHostOuter<double>(&sum_loss, cuda_sum_loss_, 1, __FILE__, __LINE__);
   return std::vector<double>(1, sum_loss / static_cast<double>(num_data_));
@@ -70,7 +70,7 @@ void CUDAKullbackLeiblerDivergence::Init(const Metadata& metadata, data_size_t n
 
 std::vector<double> CUDAKullbackLeiblerDivergence::Eval(const double* score, const ObjectiveFunction* objective) const {
   objective->GetCUDAConvertOutputFunc()(num_data_, score, cuda_score_convert_buffer_);
-  LaunchEvalKernel(score);
+  LaunchEvalKernel(cuda_score_convert_buffer_);
   double sum_loss = 0.0f;
   CopyFromCUDADeviceToHostOuter<double>(&sum_loss, cuda_sum_loss_, 1, __FILE__, __LINE__);
   return std::vector<double>(1, presum_label_entropy_ + sum_loss / sum_weights_);

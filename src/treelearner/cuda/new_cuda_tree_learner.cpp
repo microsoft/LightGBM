@@ -23,14 +23,15 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   // use the first gpu by now
   SerialTreeLearner::Init(train_data, is_constant_hessian);
   num_threads_ = OMP_NUM_THREADS();
-  CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
+  const int gpu_device_id = config_->gpu_device_id >= 0 ? config_->gpu_device_id : 0;
+  CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
   cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_));
   cuda_smaller_leaf_splits_->Init();
   cuda_larger_leaf_splits_.reset(new CUDALeafSplits(num_data_));
   cuda_larger_leaf_splits_->Init();
   cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, this->config_->num_leaves, num_threads_,
     share_state_->feature_hist_offsets(),
-    config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf));
+    config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf, config_->gpu_device_id));
   cuda_histogram_constructor_->Init(train_data_, share_state_.get());
 
   cuda_data_partition_.reset(new CUDADataPartition(
@@ -100,7 +101,7 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   double find_best_split_from_all_leaves_time = 0.0f;
   double split_data_indices_time = 0.0f;
   const bool track_branch_features = !(config_->interaction_constraints_vector.empty());
-  std::unique_ptr<CUDATree> tree(new CUDATree(config_->num_leaves, track_branch_features, config_->linear_tree));
+  std::unique_ptr<CUDATree> tree(new CUDATree(config_->num_leaves, track_branch_features, config_->linear_tree, config_->gpu_device_id));
   for (int i = 0; i < config_->num_leaves - 1; ++i) {
     global_timer.Start("NewCUDATreeLearner::ConstructHistogramForLeaf");
     auto start = std::chrono::steady_clock::now();
@@ -204,13 +205,16 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   const auto end = std::chrono::steady_clock::now();
   const double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
-  Log::Warning("Train time %f", duration);
+  /*Log::Warning("Train time %f", duration);
   Log::Warning("before train time %f", static_cast<std::chrono::duration<double>>(before_train_end - before_train_start).count());
   Log::Warning("construct histogram time %f", construct_histogram_time);
   Log::Warning("find best split time %f", find_best_split_time);
   Log::Warning("find best split time from all leaves %f", find_best_split_from_all_leaves_time);
-  Log::Warning("split data indices time %f", split_data_indices_time);
+  Log::Warning("split data indices time %f", split_data_indices_time);*/
   tree->ToHost();
+  /*for (int leaf_index = 0; leaf_index < tree->num_leaves(); ++leaf_index) {
+    Log::Warning("tree->LeafOutput(%d) = %f", leaf_index, tree->LeafOutput(leaf_index));
+  }*/
   return tree.release();
 }
 

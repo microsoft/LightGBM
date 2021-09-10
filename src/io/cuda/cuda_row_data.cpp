@@ -8,12 +8,18 @@
 namespace LightGBM {
 
 CUDARowData::CUDARowData(const Dataset* train_data,
-                         const TrainingShareStates* train_share_state) {
+                         const TrainingShareStates* train_share_state,
+                         const int gpu_device_id) {
   num_threads_ = OMP_NUM_THREADS();
   num_data_ = train_data->num_data();
   num_total_bin_ = static_cast<int>(train_share_state->feature_hist_offsets().back());
   num_feature_group_ = train_data->num_feature_groups();
   num_feature_ = train_data->num_features();
+  if (gpu_device_id >= 0) {
+    CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
+  } else {
+    CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
+  }
 }
 
 void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_share_state) {

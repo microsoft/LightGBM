@@ -7,9 +7,14 @@
 
 namespace LightGBM {
 
-CUDAColumnData::CUDAColumnData(const data_size_t num_data) {
+CUDAColumnData::CUDAColumnData(const data_size_t num_data, const int gpu_device_id) {
   num_threads_ = OMP_NUM_THREADS();
   num_data_ = num_data;
+  if (gpu_device_id >= 0) {
+    CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
+  } else {
+    CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
+  }
 }
 
 CUDAColumnData::~CUDAColumnData() {}

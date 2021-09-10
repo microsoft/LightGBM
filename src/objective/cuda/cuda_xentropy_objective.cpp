@@ -29,6 +29,10 @@ void CUDACrossEntropy::GetGradients(const double* score, score_t* gradients, sco
   LaunchGetGradientsKernel(score, gradients, hessians);
 }
 
+void CUDACrossEntropy::ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const {
+  LaunchConvertOutputCUDAKernel(num_data, input, output);
+}
+
 CUDACrossEntropyLambda::CUDACrossEntropyLambda(const Config& config): CrossEntropyLambda(config) {}
 
 CUDACrossEntropyLambda::CUDACrossEntropyLambda(const std::vector<std::string>& strs): CrossEntropyLambda(strs) {}
@@ -51,5 +55,8 @@ void CUDACrossEntropyLambda::GetGradients(const double* score, score_t* gradient
   LaunchGetGradientsKernel(score, gradients, hessians);
 }
 
+void CUDACrossEntropyLambda::ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const {
+  LaunchConvertOutputCUDAKernel(num_data, input, output);
+}
 
 }  // namespace LightGBM

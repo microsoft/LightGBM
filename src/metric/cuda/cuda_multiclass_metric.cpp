@@ -15,12 +15,13 @@ CUDAMulticlassMetric<CUDAPointWiseLossCalculator>::~CUDAMulticlassMetric() {}
 
 template <typename CUDAPointWiseLossCalculator>
 void CUDAMulticlassMetric<CUDAPointWiseLossCalculator>::Init(const Metadata& metadata, data_size_t num_data) {
+  MulticlassMetric<CUDAPointWiseLossCalculator>::Init(metadata, num_data);
   cuda_label_ = metadata.cuda_metadata()->cuda_label();
   cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
-  
+
   const data_size_t num_blocks = (num_data + EVAL_BLOCK_SIZE_MULTICLASS_METRIC - 1) / EVAL_BLOCK_SIZE_MULTICLASS_METRIC;
   AllocateCUDAMemoryOuter<double>(&cuda_sum_loss_buffer_, static_cast<size_t>(num_blocks), __FILE__, __LINE__);
-  AllocateCUDAMemoryOuter<double>(&cuda_score_convert_buffer_, static_cast<size_t>(num_data), __FILE__, __LINE__);
+  AllocateCUDAMemoryOuter<double>(&cuda_score_convert_buffer_, static_cast<size_t>(num_data * this->num_class_), __FILE__, __LINE__);
   AllocateCUDAMemoryOuter<double>(&cuda_sum_loss_, 1, __FILE__, __LINE__);
 }
 

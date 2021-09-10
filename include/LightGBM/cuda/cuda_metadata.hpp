@@ -14,7 +14,7 @@ namespace LightGBM {
 
 class CUDAMetadata {
  public:
-  CUDAMetadata();
+  CUDAMetadata(const int gpu_device_id);
 
   ~CUDAMetadata();
 
