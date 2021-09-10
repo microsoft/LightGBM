@@ -20,14 +20,13 @@ __global__ void EvalKernel_NDCG_SharedMemory(
   const double* inverse_max_dcgs,
   const double* label_gains,
   const double* discount,
-  const data_size_t max_items_in_query,
   double* block_ndcg_buffer) {
   __shared__ uint16_t shared_item_indices[SHARED_MEMORY_SIZE];
   __shared__ score_t shared_item_scores[SHARED_MEMORY_SIZE];
   __shared__ double shared_eval_result[MAX_NUM_EVAL];
   __shared__ data_size_t shared_eval_at[MAX_NUM_EVAL];
   __shared__ double shared_shuffle_buffer[32];
-  for (data_size_t eval_index = 0; eval_index < num_eval; eval_index += static_cast<data_size_t>(blockDim.x)) {
+  for (data_size_t eval_index = static_cast<data_size_t>(threadIdx.x); eval_index < num_eval; eval_index += static_cast<data_size_t>(blockDim.x)) {
     shared_eval_at[eval_index] = eval_at[eval_index];
     shared_eval_result[eval_index] = 0.0f;
   }
@@ -35,44 +34,59 @@ __global__ void EvalKernel_NDCG_SharedMemory(
   const data_size_t start_query_index = static_cast<data_size_t>(blockIdx.x) * NUM_QUERY_PER_BLOCK_METRIC;
   const data_size_t end_query_index = min(start_query_index + NUM_QUERY_PER_BLOCK_METRIC, num_queries);
   for (data_size_t query_index = start_query_index; query_index < end_query_index; ++query_index) {
-    const data_size_t item_start_index = query_boundareis[query_index];
-    const data_size_t item_end_index = query_boundareis[query_index + 1];
-    const data_size_t num_items = item_end_index - item_start_index;
-    const double* score_ptr = score + item_start_index;
-    const label_t* label_ptr = label + item_start_index;
     const double* inverse_max_dcgs_ptr = inverse_max_dcgs + query_index * num_eval;
-    for (data_size_t item_index = static_cast<data_size_t>(threadIdx.x); item_index < num_items; item_index += static_cast<data_size_t>(blockDim.x)) {
-      shared_item_scores[item_index] = static_cast<score_t>(score_ptr[item_index]);
-    }
-    __syncthreads();
-    if (MAX_ITEM_GREATER_THAN_1024) {
-      if (num_items > 1024) {
-        BitonicArgSort_2048(shared_item_scores, shared_item_indices);
+    if (inverse_max_dcgs_ptr[0] < 0.0f) {
+      for (data_size_t eval_index = static_cast<data_size_t>(threadIdx.x); eval_index < num_eval; eval_index += static_cast<data_size_t>(blockDim.x)) {
+        shared_eval_result[eval_index] += 1.0f;
+      }
+    } else {
+      const data_size_t item_start_index = query_boundareis[query_index];
+      const data_size_t item_end_index = query_boundareis[query_index + 1];
+      const data_size_t num_items = item_end_index - item_start_index;
+      const double* score_ptr = score + item_start_index;
+      const label_t* label_ptr = label + item_start_index;
+      for (data_size_t item_index = static_cast<data_size_t>(threadIdx.x); item_index < num_items; item_index += static_cast<data_size_t>(blockDim.x)) {
+        shared_item_scores[item_index] = static_cast<score_t>(score_ptr[item_index]);
+        shared_item_indices[item_index] = item_index;
+      }
+      for (data_size_t item_index = num_items + static_cast<data_size_t>(threadIdx.x); item_index < SHARED_MEMORY_SIZE; item_index += static_cast<data_size_t>(blockDim.x)) {
+        shared_item_scores[item_index] = kMinScore;
+        shared_item_indices[item_index] = item_index;
+      }
+      __syncthreads();
+      if (MAX_ITEM_GREATER_THAN_1024) {
+        if (num_items > 1024) {
+          for (data_size_t item_index = num_items + static_cast<data_size_t>(threadIdx.x); item_index < SHARED_MEMORY_SIZE; item_index += static_cast<data_size_t>(blockDim.x)) {
+            shared_item_scores[item_index] = kMinScore;
+          }
+          __syncthreads();
+          BitonicArgSort_2048(shared_item_scores, shared_item_indices);
+        } else {
+          BitonicArgSort_1024(shared_item_scores, shared_item_indices, static_cast<uint16_t>(num_items));
+        }
       } else {
         BitonicArgSort_1024(shared_item_scores, shared_item_indices, static_cast<uint16_t>(num_items));
       }
-    } else {
-      BitonicArgSort_1024(shared_item_scores, shared_item_indices, static_cast<uint16_t>(num_items));
-    }
-    __syncthreads();
-    double thread_eval = 0.0f;
-    data_size_t item_index = static_cast<data_size_t>(threadIdx.x);
-    for (data_size_t eval_index = 0; eval_index < num_eval; ++eval_index) {
-      data_size_t cur_eval_pos = min(num_items, shared_eval_at[eval_index]);
-      const double* discount_ptr = discount + eval_index * max_items_in_query;
-      for (; item_index < cur_eval_pos; item_index += static_cast<data_size_t>(blockDim.x)) {
-        thread_eval += label_ptr[shared_item_indices[item_index]] * discount_ptr[item_index];
+      __syncthreads();
+      double thread_eval = 0.0f;
+      data_size_t item_index = static_cast<data_size_t>(threadIdx.x);
+      for (data_size_t eval_index = 0; eval_index < num_eval; ++eval_index) {
+        data_size_t cur_eval_pos = min(num_items, shared_eval_at[eval_index]);
+        for (; item_index < cur_eval_pos; item_index += static_cast<data_size_t>(blockDim.x)) {
+          const int data_label = static_cast<int>(label_ptr[shared_item_indices[item_index]]);
+          thread_eval += label_gains[data_label] * discount[item_index];
+        }
+        __syncthreads();
+        double block_eval = ShuffleReduceSum<double>(thread_eval, shared_shuffle_buffer, blockDim.x);
+        if (USE_QUERY_WEIGHT) {
+          block_eval *= static_cast<double>(query_weights[query_index]);
+        }
+        if (threadIdx.x == 0) {
+          shared_eval_result[eval_index] += block_eval * inverse_max_dcgs_ptr[eval_index];
+        }
       }
       __syncthreads();
-      double block_eval = ShuffleReduceSum<double>(thread_eval, shared_shuffle_buffer, blockDim.x);
-      if (USE_QUERY_WEIGHT) {
-        block_eval *= static_cast<double>(query_weights[query_index]);
-      }
-      if (threadIdx.x == 0) {
-        shared_eval_result[eval_index] += block_eval * inverse_max_dcgs_ptr[eval_index];
-      }
     }
-    __syncthreads();
   }
   for (data_size_t eval_index = static_cast<data_size_t>(threadIdx.x); eval_index < num_eval; eval_index += static_cast<data_size_t>(blockDim.x)) {
     block_ndcg_buffer[eval_index * gridDim.x + blockIdx.x] = shared_eval_result[eval_index];
@@ -91,7 +105,6 @@ __global__ void EvalKernel_NDCG_GlobalMemory(
   const double* inverse_max_dcgs,
   const double* label_gains,
   const double* discount,
-  const data_size_t max_items_in_query,
   double* block_ndcg_buffer,
   const data_size_t* cuda_item_indices_buffer) {
   __shared__ double shared_eval_result[MAX_NUM_EVAL];
@@ -115,9 +128,13 @@ __global__ void EvalKernel_NDCG_GlobalMemory(
     data_size_t item_index = static_cast<data_size_t>(threadIdx.x);
     for (data_size_t eval_index = 0; eval_index < num_eval; ++eval_index) {
       data_size_t cur_eval_pos = min(num_items, shared_eval_at[eval_index]);
-      const double* discount_ptr = discount + eval_index * max_items_in_query;
       for (; item_index < cur_eval_pos; item_index += static_cast<data_size_t>(blockDim.x)) {
-        thread_eval += label_ptr[sorted_item_indices_ptr[item_index]] * discount_ptr[item_index];
+        const uint16_t sorted_item_index = sorted_item_indices_ptr[item_index];
+        if (static_cast<data_size_t>(sorted_item_index) >= num_items) {
+          printf("error sorted_item_index = %d, num_items = %d\n", sorted_item_index, num_items);
+        }
+        const int data_label = static_cast<int>(label_ptr[sorted_item_indices_ptr[item_index]]);
+        thread_eval += label_gains[data_label] * discount[item_index];
       }
       __syncthreads();
       double block_eval = ShuffleReduceSum<double>(thread_eval, shared_shuffle_buffer, blockDim.x);
@@ -135,6 +152,26 @@ __global__ void EvalKernel_NDCG_GlobalMemory(
   }
 }
 
+__global__ void ReduceNDCGFromBlocks(
+  const double* block_ndcg_buffer,
+  const data_size_t num_eval,
+  const int num_blocks,
+  double* ndcg_result,
+  const double sum_query_weights) {
+  __shared__ double shared_mem_buffer[32];
+  const data_size_t eval_index = static_cast<data_size_t>(blockIdx.x);
+  const double* block_ndcg_buffer_ptr = block_ndcg_buffer + eval_index * num_blocks;
+  double thread_sum = 0.0f;
+  for (data_size_t block_index = static_cast<data_size_t>(threadIdx.x); block_index < num_blocks; block_index += static_cast<data_size_t>(blockDim.x)) {
+    thread_sum += block_ndcg_buffer_ptr[block_index];
+  }
+  __syncthreads();
+  const double block_sum = ShuffleReduceSum<double>(thread_sum, shared_mem_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    ndcg_result[eval_index] = block_sum / sum_query_weights;
+  }
+}
+
 #define EvalKernel_NDCG_ARGS \
   score, \
   cuda_label_, \
@@ -146,7 +183,6 @@ __global__ void EvalKernel_NDCG_GlobalMemory(
   cuda_inverse_max_dcgs_, \
   cuda_label_gain_, \
   cuda_discount_, \
-  max_items_in_query_, \
   cuda_block_dcg_buffer_
 
 void CUDANDCGMetric::LaunchEvalKernel(const double* score) const {
@@ -218,6 +254,12 @@ void CUDANDCGMetric::LaunchEvalKernel(const double* score) const {
       }
     }
   }
+  ReduceNDCGFromBlocks<<<num_eval_, EVAL_BLOCK_SIZE_RANK_METRIC>>>(
+    cuda_block_dcg_buffer_,
+    num_eval_,
+    num_blocks,
+    cuda_ndcg_result_,
+    sum_query_weights_);
 }
 
 }  // namespace LightGBM

@@ -60,10 +60,14 @@ void CUDANDCGMetric::Init(const Metadata& metadata, data_size_t num_data) {
   const int num_blocks = (num_queries_ + NUM_QUERY_PER_BLOCK_METRIC - 1) / NUM_QUERY_PER_BLOCK_METRIC;
   AllocateCUDAMemoryOuter<double>(&cuda_block_dcg_buffer_, static_cast<size_t>(num_blocks * num_eval_), __FILE__, __LINE__);
   AllocateCUDAMemoryOuter<data_size_t>(&cuda_item_indices_buffer_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  AllocateCUDAMemoryOuter<double>(&cuda_ndcg_result_, static_cast<size_t>(num_eval_), __FILE__, __LINE__);
 }
 
 std::vector<double> CUDANDCGMetric::Eval(const double* score, const ObjectiveFunction*) const {
   LaunchEvalKernel(score);
+  std::vector<double> result(num_eval_, 0.0f);
+  CopyFromCUDADeviceToHostOuter<double>(result.data(), cuda_ndcg_result_, static_cast<size_t>(num_eval_), __FILE__, __LINE__);
+  return result;
 }
 
 }  // namespace LightGBM

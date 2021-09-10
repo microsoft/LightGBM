@@ -39,7 +39,7 @@ __global__ void ReduceLossKernel_Multiclass(const double* cuda_sum_loss_buffer, 
   for (int block_index = static_cast<int>(threadIdx.x); block_index < num_blocks; block_index += static_cast<int>(blockDim.x)) {
     thread_sum_loss += cuda_sum_loss_buffer[block_index];
   }
-  const double sum_loss = ShuffleReduceSum<double>(thread_sum_loss, shared_buffer, static_cast<size_t>(num_blocks));
+  const double sum_loss = ShuffleReduceSum<double>(thread_sum_loss, shared_buffer, blockDim.x);
   if (threadIdx.x == 0) {
     *out_loss = sum_loss;
   }
@@ -48,6 +48,7 @@ __global__ void ReduceLossKernel_Multiclass(const double* cuda_sum_loss_buffer, 
 template <typename CUDAPointWiseLossCalculator>
 void CUDAMulticlassMetric<CUDAPointWiseLossCalculator>::LaunchEvalKernelInner(const double* score) const {
   const data_size_t num_blocks = (MulticlassMetric<CUDAPointWiseLossCalculator>::num_data_ + EVAL_BLOCK_SIZE_MULTICLASS_METRIC - 1) / EVAL_BLOCK_SIZE_MULTICLASS_METRIC;
+  Log::Warning("num_blocks = %d", num_blocks);
   if (cuda_weights_ == nullptr) {
     EvalKernel_MulticlassPointWiseLoss<CUDAPointWiseLossCalculator, false><<<num_blocks, EVAL_BLOCK_SIZE_MULTICLASS_METRIC>>>(
       score, cuda_label_, cuda_weights_,

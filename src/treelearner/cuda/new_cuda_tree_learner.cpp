@@ -212,9 +212,14 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   Log::Warning("find best split time from all leaves %f", find_best_split_from_all_leaves_time);
   Log::Warning("split data indices time %f", split_data_indices_time);*/
   tree->ToHost();
-  /*for (int leaf_index = 0; leaf_index < tree->num_leaves(); ++leaf_index) {
-    Log::Warning("tree->LeafOutput(%d) = %f", leaf_index, tree->LeafOutput(leaf_index));
-  }*/
+  double max_abs_leaf_output = 0.0f;
+  for (int leaf_index = 0; leaf_index < tree->num_leaves(); ++leaf_index) {
+    //Log::Warning("leaf_index %d leaf_value %f", leaf_index, tree->LeafOutput(leaf_index));
+    if (std::fabs(tree->LeafOutput(leaf_index)) > std::fabs(max_abs_leaf_output)) {
+      max_abs_leaf_output = tree->LeafOutput(leaf_index);
+    }
+  }
+  Log::Warning("max_abs_leaf_output = %f", max_abs_leaf_output);
   return tree.release();
 }
 

@@ -31,12 +31,12 @@ class CUDANDCGMetric : public CUDAMetricInterface, public NDCGMetric {
   const label_t* cuda_weights_;
   const data_size_t* cuda_query_boundaries_;
   const label_t* cuda_query_weights_;
-  const double* cuda_block_reduce_buffer_;
   data_size_t* cuda_eval_at_;
   double* cuda_inverse_max_dcgs_;
   double* cuda_label_gain_;
   double* cuda_discount_;
   double* cuda_block_dcg_buffer_;
+  double* cuda_ndcg_result_;
   data_size_t* cuda_item_indices_buffer_;
   int max_items_in_query_aligned_;
   int max_items_in_query_;

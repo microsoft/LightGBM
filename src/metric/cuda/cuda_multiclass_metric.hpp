@@ -24,7 +24,6 @@ class CUDAMulticlassMetric : public CUDAMetricInterface, public MulticlassMetric
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override;
 
   inline static double AverageLoss(double sum_loss, double sum_weights) {
-    // need sqrt the result for RMSE loss
     return (sum_loss / sum_weights);
   }
 

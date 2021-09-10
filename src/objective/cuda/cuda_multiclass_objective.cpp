@@ -65,7 +65,7 @@ void CUDAMulticlassSoftmax::GetGradients(const double* score, score_t* gradients
         min_abs_hessian = thread_abs_min_hessian[thread_index];
       }
     }
-    Log::Warning("class %d max_abs_gradient = %f, max_abs_hessian = %f", class_index, max_abs_gradient, max_abs_hessian);
+    Log::Warning("class %d max_abs_gradient = %f, max_abs_hessian = %f, min_abs_hessian = %f", class_index, max_abs_gradient, max_abs_hessian, min_abs_hessian);
   }
 }
 

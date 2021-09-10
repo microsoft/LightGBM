@@ -27,7 +27,6 @@ CUDAScoreUpdater::CUDAScoreUpdater(const Dataset* data, int num_tree_per_iterati
 }
 
 void CUDAScoreUpdater::InitCUDA(const size_t total_size) {
-  Log::Warning("allocating cuda_score_ memory with size %d", total_size);
   AllocateCUDAMemoryOuter<double>(&cuda_score_, total_size, __FILE__, __LINE__);
 }
 
@@ -51,6 +50,25 @@ inline void CUDAScoreUpdater::AddScore(const TreeLearner* tree_learner, const Tr
   Common::FunctionTimer fun_timer("ScoreUpdater::AddScore", global_timer);
   const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
   tree_learner->AddPredictionToScore(tree, cuda_score_ + offset);
+  std::vector<double> class_train_score(num_data_, 0.0f);
+  CopyFromCUDADeviceToHostOuter<double>(class_train_score.data(), cuda_score_ + offset, num_data_, __FILE__, __LINE__);
+  const int num_threads = OMP_NUM_THREADS();
+  std::vector<double> thread_max_abs_train_score(num_threads, 0.0f);
+  Threading::For<data_size_t>(0, num_data_, 512,
+    [&thread_max_abs_train_score, &class_train_score] (int thread_index, data_size_t start, data_size_t end) {
+      for (data_size_t data_index = start; data_index < end; ++data_index) {
+        if (std::fabs(class_train_score[data_index]) > std::fabs(thread_max_abs_train_score[thread_index])) {
+          thread_max_abs_train_score[thread_index] = class_train_score[data_index];
+        }
+      }
+    });
+  double max_abs_train_score = 0.0f;
+  for (int thread_index = 0; thread_index < num_threads; ++thread_index) {
+    if (std::fabs(thread_max_abs_train_score[thread_index]) > std::fabs(max_abs_train_score)) {
+      max_abs_train_score = thread_max_abs_train_score[thread_index];
+    }
+  }
+  Log::Warning("class %d max_abs_train_score = %f", cur_tree_id, max_abs_train_score);
 }
 
 inline void CUDAScoreUpdater::AddScore(const Tree* tree, const data_size_t* data_indices,

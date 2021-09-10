@@ -15,6 +15,7 @@
 #include "cuda/cuda_regression_metric.hpp"
 #include "cuda/cuda_multiclass_metric.hpp"
 #include "cuda/cuda_xentropy_metric.hpp"
+#include "cuda/cuda_rank_metric.hpp"
 
 namespace LightGBM {
 
@@ -46,6 +47,8 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new CUDAMultiSoftmaxLoglossMetric(config);
     } else if (type == std::string("multi_error")) {
       return new CUDAMultiErrorMetric(config);
+    } else if (type == std::string("ndcg")) {
+      return new CUDANDCGMetric(config);
     } else if (type == std::string("cross_entropy")) {
       return new CUDACrossEntropyMetric(config);
     } else if (type == std::string("cross_entropy_lambda")) {

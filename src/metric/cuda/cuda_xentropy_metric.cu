@@ -60,7 +60,7 @@ __global__ void ReduceLossKernel_CrossEntropy(const double* cuda_sum_loss_buffer
   for (int block_index = static_cast<int>(threadIdx.x); block_index < num_blocks; block_index += static_cast<int>(blockDim.x)) {
     thread_sum_loss += cuda_sum_loss_buffer[block_index];
   }
-  const double sum_loss = ShuffleReduceSum<double>(thread_sum_loss, shared_buffer, static_cast<size_t>(num_blocks));
+  const double sum_loss = ShuffleReduceSum<double>(thread_sum_loss, shared_buffer, blockDim.x);
   if (threadIdx.x == 0) {
     *out_loss = sum_loss;
   }
