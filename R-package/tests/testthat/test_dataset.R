@@ -185,6 +185,9 @@ test_that("Dataset$set_reference() updates categorical_feature, colnames, and pr
     dtest$get_colnames()
     , dtrain$get_colnames()
   )
+  expect_false(
+    identical(dtest$get_colnames(), test_original_feature_names)
+  )
 })
 
 test_that("lgb.Dataset: colnames", {
