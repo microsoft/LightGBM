@@ -672,33 +672,26 @@ Dataset <- R6::R6Class(
     # Set reference
     set_reference = function(reference) {
 
-      # Set known references
-      self$set_categorical_feature(categorical_feature = reference$.__enclos_env__$private$categorical_feature)
-      self$set_colnames(colnames = reference$get_colnames())
-      private$set_predictor(predictor = reference$.__enclos_env__$private$predictor)
-
-      # Check for identical references
+      # setting reference to this same Dataset object doesn't require any changes
       if (identical(private$reference, reference)) {
         return(invisible(self))
       }
 
-      # Check for empty data
+      # changing the reference removes the Dataset object on the C++ side, so it should only
+      # be done if you still have the raw_data available, so that the new Dataset can be reconstructed
       if (is.null(private$raw_data)) {
-
         stop("set_reference: cannot set reference after freeing raw data,
           please set ", sQuote("free_raw_data = FALSE"), " when you construct lgb.Dataset")
-
       }
 
-      # Check for non-existing reference
-      if (!is.null(reference)) {
-
-        # Reference is unknown
-        if (!lgb.is.Dataset(reference)) {
-          stop("set_reference: Can only use lgb.Dataset as a reference")
-        }
-
+      if (!lgb.is.Dataset(reference)) {
+        stop("set_reference: Can only use lgb.Dataset as a reference")
       }
+
+      # Set known references
+      self$set_categorical_feature(categorical_feature = reference$.__enclos_env__$private$categorical_feature)
+      self$set_colnames(colnames = reference$get_colnames())
+      private$set_predictor(predictor = reference$.__enclos_env__$private$predictor)
 
       # Store reference
       private$reference <- reference
