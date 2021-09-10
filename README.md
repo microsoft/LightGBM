@@ -91,11 +91,13 @@ Shapash (model visualization and interpretation): https://github.com/MAIF/shapas
 
 dtreeviz (decision tree visualization and model interpretation): https://github.com/parrt/dtreeviz
 
-MMLSpark (LightGBM on Spark): https://github.com/Azure/mmlspark
+SynapseML (LightGBM on Spark): https://github.com/microsoft/SynapseML
 
 Kubeflow Fairing (LightGBM on Kubernetes): https://github.com/kubeflow/fairing
 
 Kubeflow Operator (LightGBM on Kubernetes): https://github.com/kubeflow/xgboost-operator
+
+lightgbm_ray (LightGBM on Ray): https://github.com/ray-project/lightgbm_ray
 
 ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 

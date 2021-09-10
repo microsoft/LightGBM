@@ -1123,14 +1123,14 @@ class Dataset:
     """Dataset in LightGBM."""
 
     def __init__(self, data, label=None, reference=None,
-                 weight=None, group=None, init_score=None, silent=False,
+                 weight=None, group=None, init_score=None, silent='warn',
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
         """Initialize Dataset.
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -1260,9 +1260,9 @@ class Dataset:
 
         Parameters
         ----------
-        sample_data : list of numpy arrays
+        sample_data : list of numpy array
             Sample data for each column.
-        sample_indices : list of numpy arrays
+        sample_indices : list of numpy array
             Sample data row index for each column.
         sample_cnt : int
             Number of samples.
@@ -1439,6 +1439,11 @@ class Dataset:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
                              f'Please use {key} argument of the Dataset constructor to pass this parameter.')
         # user can set verbose with params, it has higher priority
+        if silent != "warn":
+            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
+                         "Pass 'verbose' parameter via 'params' instead.")
+        else:
+            silent = False
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
         # get categorical features
@@ -1769,12 +1774,12 @@ class Dataset:
         return self
 
     def create_valid(self, data, label=None, weight=None, group=None,
-                     init_score=None, silent=False, params=None):
+                     init_score=None, silent='warn', params=None):
         """Create validation data align with current Dataset.
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -2241,7 +2246,7 @@ class Dataset:
 
         Returns
         -------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array or None
             Raw data used in the Dataset construction.
         """
         if self.handle is None:
@@ -2462,7 +2467,7 @@ class Dataset:
 class Booster:
     """Booster in LightGBM."""
 
-    def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent=False):
+    def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent='warn'):
         """Initialize the Booster.
 
         Parameters
@@ -2488,6 +2493,11 @@ class Booster:
         self.best_score = {}
         params = {} if params is None else deepcopy(params)
         # user can set verbose with params, it has higher priority
+        if silent != 'warn':
+            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
+                         "Pass 'verbose' parameter via 'params' instead.")
+        else:
+            silent = False
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
         if train_set is not None:
@@ -2574,7 +2584,7 @@ class Booster:
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
         elif model_str is not None:
-            self.model_from_string(model_str, not silent)
+            self.model_from_string(model_str, verbose="_silent_false")
         else:
             raise TypeError('Need at least one training dataset or model file or model string '
                             'to create Booster instance')
@@ -3255,7 +3265,7 @@ class Booster:
             ctypes.c_int(end_iteration)))
         return self
 
-    def model_from_string(self, model_str, verbose=True):
+    def model_from_string(self, model_str, verbose='warn'):
         """Load Booster from a string.
 
         Parameters
@@ -3283,6 +3293,10 @@ class Booster:
         _safe_call(_LIB.LGBM_BoosterGetNumClasses(
             self.handle,
             ctypes.byref(out_num_class)))
+        if verbose in {'warn', '_silent_false'}:
+            verbose = verbose == 'warn'
+        else:
+            _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM.")
         if verbose:
             _log_info(f'Finished loading model, total used {int(out_num_iterations.value)} iterations')
         self.__num_class = out_num_class.value

@@ -253,7 +253,7 @@ _lgbmmodel_doc_fit = (
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
         The output cannot be monotonically constrained with respect to a categorical feature.
-    callbacks : list of callback functions, or None, optional (default=None)
+    callbacks : list of callable, or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
     init_model : str, pathlib.Path, Booster, LGBMModel or None, optional (default=None)
@@ -369,7 +369,7 @@ class LGBMModel(_LGBMModelBase):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = True,
+        silent: Union[bool, str] = 'warn',
         importance_type: str = 'split',
         **kwargs
     ):
@@ -590,7 +590,13 @@ class LGBMModel(_LGBMModelBase):
         evals_result = {}
         params = self.get_params()
         # user can set verbose with kwargs, it has higher priority
-        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and self.silent:
+        if self.silent != "warn":
+            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
+                         "Pass 'verbose' parameter via keyword arguments instead.")
+            silent = self.silent
+        else:
+            silent = True
+        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params['verbose'] = -1
         params.pop('silent', None)
         params.pop('importance_type', None)
@@ -737,9 +743,9 @@ class LGBMModel(_LGBMModelBase):
         sample_weight_shape="array-like of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="array-like of shape = [n_samples] or None, optional (default=None)",
         group_shape="array-like or None, optional (default=None)",
-        eval_sample_weight_shape="list of arrays, or None, optional (default=None)",
-        eval_init_score_shape="list of arrays, or None, optional (default=None)",
-        eval_group_shape="list of arrays, or None, optional (default=None)"
+        eval_sample_weight_shape="list of array, or None, optional (default=None)",
+        eval_init_score_shape="list of array, or None, optional (default=None)",
+        eval_group_shape="list of array, or None, optional (default=None)"
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
 
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
