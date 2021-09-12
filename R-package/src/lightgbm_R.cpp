@@ -209,6 +209,7 @@ SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
 }
 
 SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle) {
+  SEXP cont_token = PROTECT(R_MakeUnwindCont());
   R_API_BEGIN();
   SEXP feature_names;
   int len = 0;
@@ -245,7 +246,6 @@ SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle) {
         ptr_names.data()));
   }
   CHECK_EQ(len, out_len);
-  SEXP cont_token = PROTECT(R_MakeUnwindCont());
   feature_names = PROTECT(safe_R_string(static_cast<R_xlen_t>(len), &cont_token));
   for (int i = 0; i < len; ++i) {
     SET_STRING_ELT(feature_names, i, safe_R_mkChar(ptr_names[i], &cont_token));
@@ -551,6 +551,7 @@ SEXP LGBM_BoosterGetLowerBoundValue_R(SEXP handle,
 }
 
 SEXP LGBM_BoosterGetEvalNames_R(SEXP handle) {
+  SEXP cont_token = PROTECT(R_MakeUnwindCont());
   R_API_BEGIN();
   SEXP eval_names;
   int len;
@@ -588,7 +589,6 @@ SEXP LGBM_BoosterGetEvalNames_R(SEXP handle) {
         ptr_names.data()));
   }
   CHECK_EQ(out_len, len);
-  SEXP cont_token = PROTECT(R_MakeUnwindCont());
   eval_names = PROTECT(safe_R_string(static_cast<R_xlen_t>(len), &cont_token));
   for (int i = 0; i < len; ++i) {
     SET_STRING_ELT(eval_names, i, safe_R_mkChar(ptr_names[i], &cont_token));
@@ -765,6 +765,7 @@ SEXP LGBM_BoosterSaveModel_R(SEXP handle,
 SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   SEXP num_iteration,
   SEXP feature_importance_type) {
+  SEXP cont_token = PROTECT(R_MakeUnwindCont());
   R_API_BEGIN();
   SEXP model_str;
   int64_t out_len = 0;
@@ -778,7 +779,6 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
     inner_char_buf.resize(out_len);
     CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, inner_char_buf.data()));
   }
-  SEXP cont_token = PROTECT(R_MakeUnwindCont());
   model_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
   SET_STRING_ELT(model_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
   UNPROTECT(2);
@@ -789,6 +789,7 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
 SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   SEXP num_iteration,
   SEXP feature_importance_type) {
+  SEXP cont_token = PROTECT(R_MakeUnwindCont());
   R_API_BEGIN();
   SEXP model_str;
   int64_t out_len = 0;
@@ -802,7 +803,6 @@ SEXP LGBM_BoosterDumpModel_R(SEXP handle,
     inner_char_buf.resize(out_len);
     CHECK_CALL(LGBM_BoosterDumpModel(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, inner_char_buf.data()));
   }
-  SEXP cont_token = PROTECT(R_MakeUnwindCont());
   model_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
   SET_STRING_ELT(model_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
   UNPROTECT(2);
