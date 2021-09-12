@@ -35,10 +35,10 @@ void LGBM_R_save_exception_msg(const std::string &err);
   try {
 #define R_API_END() } \
   catch(LGBM_R_ErrorClass &cont) { R_ContinueUnwind(cont.cont_token); } \
-  catch(std::exception& ex) { LGBM_R_save_exception_msg(ex); goto throw_R_errormsg; } \
-  catch(std::string& ex) { LGBM_R_save_exception_msg(ex); goto throw_R_errormsg; } \
+  catch(std::exception& ex) { LGBM_R_save_exception_msg(ex); } \
+  catch(std::string& ex) { LGBM_R_save_exception_msg(ex); } \
   catch(...) { Rf_error("unknown exception"); } \
-  throw_R_errormsg: Rf_error(R_errmsg_buffer); \
+  Rf_error(R_errmsg_buffer); \
   return R_NilValue; /* <- won't be reached */
 
 #define CHECK_CALL(x) \
