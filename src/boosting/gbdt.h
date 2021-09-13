@@ -549,6 +549,10 @@ class GBDT : public GBDTBase {
   ParallelPartitionRunner<data_size_t, false> bagging_runner_;
   Json forced_splits_json_;
   bool linear_tree_;
+  /*! \brief temporary storage on CPU for the evaluation of metric when CUDA tree learner is used */
+  mutable std::vector<double> metric_temp_score_;
+  /*! \brief temporary storage on CPU for training data when CUDA tree learner is used */
+  std::vector<double> training_temp_score_;
 };
 
 }  // namespace LightGBM

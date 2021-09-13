@@ -420,14 +420,8 @@ class Booster {
     } else {
       is_raw_score = false;
     }
-
-    if (config.device_type == "cuda") {
-      return new CUDAPredictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
-                          config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
-    } else {
-      return new Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
-                        config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
-    }
+    return new Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
+                      config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
   }
 
   void Predict(int start_iteration, int num_iteration, int predict_type, int nrow, int ncol,
@@ -707,13 +701,8 @@ class Booster {
       is_raw_score = false;
     }
     std::unique_ptr<Predictor> predictor;
-    if (config.device_type == std::string("cuda")) {
-      predictor.reset(new CUDAPredictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
-                        config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin));
-    } else {
-      predictor.reset(new Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
-                        config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin));
-    }
+    predictor.reset(new Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
+                      config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin));
     bool bool_data_has_header = data_has_header > 0 ? true : false;
     predictor->Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check,
                       config.precise_float_parser);

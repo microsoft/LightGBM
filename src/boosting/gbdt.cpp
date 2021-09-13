@@ -396,16 +396,15 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       init_scores[cur_tree_id] = BoostFromAverage(cur_tree_id, true);
     }
     Boosting();
+  }
+  if (config_->device_type == std::string("cuda")) {
+    const size_t total_size = static_cast<size_t>(num_data_ * num_class_);
+    CopyFromHostToCUDADeviceOuter<score_t>(gradients_pointer_, gradients, total_size, __FILE__, __LINE__);
+    CopyFromHostToCUDADeviceOuter<score_t>(hessians_pointer_, hessians, total_size, __FILE__, __LINE__);
+  }
+  if (gradients == nullptr || hessians == nullptr) {
     gradients = gradients_pointer_;
     hessians = hessians_pointer_;
-  } else {
-    if (config_->device_type == std::string("cuda")) {
-      const size_t total_size = static_cast<size_t>(num_data_ * num_class_);
-      CopyFromHostToCUDADeviceOuter<score_t>(gradients_pointer_, gradients, total_size, __FILE__, __LINE__);
-      CopyFromHostToCUDADeviceOuter<score_t>(hessians_pointer_, hessians, total_size, __FILE__, __LINE__);
-      gradients = gradients_pointer_;
-      hessians = hessians_pointer_;
-    }
   }
   // bagging logic
   Bagging(iter_);
@@ -542,10 +541,10 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
 
 std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const {
   if (config_->device_type == std::string("cuda")) {
-    std::vector<double> tmp_score(num_data * num_class_, 0.0f);
-    CopyFromCUDADeviceToHostOuter<double>(tmp_score.data(), score, static_cast<size_t>(num_data * num_class_), __FILE__, __LINE__);
+    metric_temp_score_.resize(num_data * num_class_, 0.0f);
+    CopyFromCUDADeviceToHostOuter<double>(metric_temp_score_.data(), score, static_cast<size_t>(num_data * num_class_), __FILE__, __LINE__);
     SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-    return metric->Eval(tmp_score.data(), objective_function_);
+    return metric->Eval(metric_temp_score_.data(), objective_function_);
   } else {
     return metric->Eval(score, objective_function_);
   }
@@ -637,7 +636,13 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
 /*! \brief Get training scores result */
 const double* GBDT::GetTrainingScore(int64_t* out_len) {
   *out_len = static_cast<int64_t>(train_score_updater_->num_data()) * num_class_;
-  return train_score_updater_->score();
+  if (config_->device_type == std::string("cpu")) {
+    return train_score_updater_->score();
+  } else if (config_->device_type == std::string("cuda")) {
+    training_temp_score_.resize(*out_len);
+    CopyFromCUDADeviceToHostOuter<double>(training_temp_score_.data(), train_score_updater_->score(), *out_len, __FILE__, __LINE__);
+    return training_temp_score_.data();
+  }
 }
 
 void GBDT::PredictContrib(const double* features, double* output) const {
