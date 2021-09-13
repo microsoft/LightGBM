@@ -281,10 +281,9 @@ __global__ void FixHistogramKernel(
   const int* cuda_need_fix_histogram_features,
   const uint32_t* cuda_need_fix_histogram_features_num_bin_aligned,
   const CUDALeafSplitsStruct* cuda_smaller_leaf_splits) {
+  __shared__ hist_t shared_mem_buffer[32];
   const unsigned int blockIdx_x = blockIdx.x;
   const int feature_index = cuda_need_fix_histogram_features[blockIdx_x];
-  __shared__ double hist_gradients[FIX_HISTOGRAM_SHARED_MEM_SIZE + 1];
-  __shared__ double hist_hessians[FIX_HISTOGRAM_SHARED_MEM_SIZE + 1];
   const uint32_t num_bin_aligned = cuda_need_fix_histogram_features_num_bin_aligned[blockIdx_x];
   const uint32_t feature_hist_offset = cuda_feature_hist_offsets[feature_index];
   const uint32_t most_freq_bin = cuda_feature_most_freq_bins[feature_index];
@@ -294,25 +293,13 @@ __global__ void FixHistogramKernel(
   const unsigned int threadIdx_x = threadIdx.x;
   const uint32_t num_bin = cuda_feature_num_bins[feature_index];
   const uint32_t hist_pos = threadIdx_x << 1;
-  if (threadIdx_x < num_bin) {
-    if (threadIdx_x == most_freq_bin) {
-      hist_gradients[threadIdx_x] = 0.0f;
-      hist_hessians[threadIdx_x] = 0.0f;
-    } else {
-      hist_gradients[threadIdx_x] = feature_hist[hist_pos];
-      hist_hessians[threadIdx_x] = feature_hist[hist_pos + 1];
-    }
-  } else {
-    hist_gradients[threadIdx_x] = 0.0f;
-    hist_hessians[threadIdx_x] = 0.0f;
-  }
-  __syncthreads();
-  ReduceSum<hist_t>(hist_gradients, num_bin_aligned);
-  ReduceSum<hist_t>(hist_hessians, num_bin_aligned);
-  __syncthreads();
-  if (threadIdx_x == most_freq_bin) {
-    feature_hist[hist_pos] = leaf_sum_gradients - hist_gradients[0];
-    feature_hist[hist_pos + 1] = leaf_sum_hessians - hist_hessians[0];
+  const hist_t bin_gradient = (threadIdx_x < num_bin && threadIdx_x != most_freq_bin) ? feature_hist[hist_pos] : 0.0f;
+  const hist_t bin_hessian = (threadIdx_x < num_bin && threadIdx_x != most_freq_bin) ? feature_hist[hist_pos + 1] : 0.0f;
+  const hist_t sum_gradient = ShuffleReduceSum<hist_t>(bin_gradient, shared_mem_buffer, num_bin_aligned);
+  const hist_t sum_hessian = ShuffleReduceSum<hist_t>(bin_hessian, shared_mem_buffer, num_bin_aligned);
+  if (threadIdx_x == 0) {
+    feature_hist[most_freq_bin << 1] = leaf_sum_gradients - sum_gradient;
+    feature_hist[(most_freq_bin << 1) + 1] = leaf_sum_hessians - sum_hessian;
   }
 }
 

@@ -69,17 +69,6 @@ void NewCUDATreeLearner::BeforeTrain() {
   larger_leaf_index_ = -1;
 }
 
-void NewCUDATreeLearner::FindBestSplits(const Tree* /*tree*/) {}
-
-void NewCUDATreeLearner::ConstructHistograms(const std::vector<int8_t>& /*is_feature_used*/,
-  bool /*use_subtract*/) {}
-
-void NewCUDATreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& /*is_feature_used*/,
-  bool /*use_subtract*/, const Tree* /*tree*/) {}
-
-void NewCUDATreeLearner::Split(Tree* /*tree*/, int /*best_leaf*/,
-  int* /*left_leaf*/, int* /*right_leaf*/) {}
-
 void NewCUDATreeLearner::AddPredictionToScore(const Tree* tree, double* out_score) const {
   CHECK(tree->is_cuda_tree());
   const CUDATree* cuda_tree = reinterpret_cast<const CUDATree*>(tree);
@@ -205,21 +194,7 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   const auto end = std::chrono::steady_clock::now();
   const double duration = (static_cast<std::chrono::duration<double>>(end - start)).count();
-  /*Log::Warning("Train time %f", duration);
-  Log::Warning("before train time %f", static_cast<std::chrono::duration<double>>(before_train_end - before_train_start).count());
-  Log::Warning("construct histogram time %f", construct_histogram_time);
-  Log::Warning("find best split time %f", find_best_split_time);
-  Log::Warning("find best split time from all leaves %f", find_best_split_from_all_leaves_time);
-  Log::Warning("split data indices time %f", split_data_indices_time);*/
   tree->ToHost();
-  double max_abs_leaf_output = 0.0f;
-  for (int leaf_index = 0; leaf_index < tree->num_leaves(); ++leaf_index) {
-    //Log::Warning("leaf_index %d leaf_value %f", leaf_index, tree->LeafOutput(leaf_index));
-    if (std::fabs(tree->LeafOutput(leaf_index)) > std::fabs(max_abs_leaf_output)) {
-      max_abs_leaf_output = tree->LeafOutput(leaf_index);
-    }
-  }
-  Log::Warning("max_abs_leaf_output = %f", max_abs_leaf_output);
   return tree.release();
 }
 

@@ -5,7 +5,6 @@
 #ifndef LIGHTGBM_APPLICATION_CUDA_CUDA_PREDICTOR_HPP_
 #define LIGHTGBM_APPLICATION_CUDA_CUDA_PREDICTOR_HPP_
 
-#include <LightGBM/cuda/cuda_objective_function.hpp>
 #include <LightGBM/cuda/cuda_tree.hpp>
 #include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/objective_function.h>

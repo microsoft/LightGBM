@@ -258,8 +258,7 @@ class CUDADataPartition {
   double* cuda_leaf_output_;
 
   // split data algorithm related
-  /*! \brief marks whether each data goes to left or right, 1 for left, and 0 for right */
-  uint8_t* cuda_data_to_left_;
+  uint16_t* cuda_block_to_left_offset_;
   /*! \brief maps data index to leaf index, for adding scores to training data set */
   int* cuda_data_index_to_leaf_index_;
   /*! \brief prefix sum of number of data going to left in all blocks */

@@ -113,22 +113,17 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   num_data_ = train_data_->num_data();
   // create buffer for gradients and Hessians
+  size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+  if (config_->device_type == std::string("cuda")) {
+    AllocateCUDAMemoryOuter<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
+    AllocateCUDAMemoryOuter<score_t>(&hessians_pointer_, total_size, __FILE__, __LINE__);
+  }
   if (objective_function_ != nullptr) {
-    size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-    if (config_->device_type == std::string("cuda")) {
-      AllocateCUDAMemoryOuter<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
-      AllocateCUDAMemoryOuter<score_t>(&hessians_pointer_, total_size, __FILE__, __LINE__);
-    } else {
-      gradients_.resize(total_size);
-      hessians_.resize(total_size);
+    gradients_.resize(total_size);
+    hessians_.resize(total_size);
+    if (config_->device_type == std::string("cpu")) {
       gradients_pointer_ = gradients_.data();
       hessians_pointer_ = hessians_.data();
-    }
-  } else {
-    if (config_->device_type == std::string("cuda")) {
-      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-      AllocateCUDAMemoryOuter<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
-      AllocateCUDAMemoryOuter<score_t>(&hessians_pointer_, total_size, __FILE__, __LINE__);
     }
   }
   // get max feature index
@@ -196,7 +191,7 @@ void GBDT::Boosting() {
   // objective function will calculate gradients and hessians
   int64_t num_score = 0;
   objective_function_->
-    GetGradients(GetTrainingScore(&num_score), gradients_pointer_, hessians_pointer_);
+    GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
 }
 
 data_size_t GBDT::BaggingHelper(data_size_t start, data_size_t cnt, data_size_t* buffer) {
@@ -399,10 +394,14 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   }
   if (config_->device_type == std::string("cuda")) {
     const size_t total_size = static_cast<size_t>(num_data_ * num_class_);
-    CopyFromHostToCUDADeviceOuter<score_t>(gradients_pointer_, gradients, total_size, __FILE__, __LINE__);
-    CopyFromHostToCUDADeviceOuter<score_t>(hessians_pointer_, hessians, total_size, __FILE__, __LINE__);
+    const score_t* host_gradients = gradients == nullptr ? gradients_.data() : gradients;
+    const score_t* host_hessians = hessians == nullptr ? hessians_.data() : hessians;
+    global_timer.Start("Copy gradients from Host to CUDA");
+    CopyFromHostToCUDADeviceOuter<score_t>(gradients_pointer_, host_gradients, total_size, __FILE__, __LINE__);
+    CopyFromHostToCUDADeviceOuter<score_t>(hessians_pointer_, host_hessians, total_size, __FILE__, __LINE__);
+    global_timer.Stop("Copy gradients from Host to CUDA");
   }
-  if (gradients == nullptr || hessians == nullptr) {
+  if (gradients == nullptr || hessians == nullptr || config_->device_type == std::string("cuda")) {
     gradients = gradients_pointer_;
     hessians = hessians_pointer_;
   }

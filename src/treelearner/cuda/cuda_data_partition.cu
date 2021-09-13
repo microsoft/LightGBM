@@ -27,20 +27,21 @@ void CUDADataPartition::LaunchFillDataIndicesBeforeTrain() {
   FillDataIndicesBeforeTrainKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(cuda_num_data_, cuda_data_indices_, cuda_data_index_to_leaf_index_);
 }
 
-__device__ void PrepareOffset(const data_size_t num_data_in_leaf_ref, const uint8_t* split_to_left_bit_vector,
+__device__ void PrepareOffset(const data_size_t num_data_in_leaf_ref, uint16_t* block_to_left_offset,
   data_size_t* block_to_left_offset_buffer, data_size_t* block_to_right_offset_buffer,
-  const int split_indices_block_size_data_partition,
-  uint16_t* thread_to_left_offset_cnt) {
+  const uint16_t thread_to_left_offset_cnt) {
+  __shared__ uint16_t shared_mem_buffer[32];
   const unsigned int threadIdx_x = threadIdx.x;
   const unsigned int blockDim_x = blockDim.x;
-  __syncthreads();
-  ReduceSumConflictFree<uint16_t>(thread_to_left_offset_cnt, static_cast<size_t>(split_indices_block_size_data_partition));
-  __syncthreads();
-  if (threadIdx_x == 0) {
-    const data_size_t num_data_in_block = (blockIdx.x + 1) * blockDim_x <= num_data_in_leaf_ref ? static_cast<data_size_t>(blockDim_x) :
-      num_data_in_leaf_ref - static_cast<data_size_t>(blockIdx.x * blockDim_x);
+  const uint16_t thread_to_left_offset = ShufflePrefixSum<uint16_t>(thread_to_left_offset_cnt, shared_mem_buffer);
+  const data_size_t num_data_in_block = (blockIdx.x + 1) * blockDim_x <= num_data_in_leaf_ref ? static_cast<data_size_t>(blockDim_x) :
+    num_data_in_leaf_ref - static_cast<data_size_t>(blockIdx.x * blockDim_x);
+  if (static_cast<data_size_t>(threadIdx_x) < num_data_in_block) {
+    block_to_left_offset[threadIdx_x] = thread_to_left_offset;
+  }
+  if (threadIdx_x == blockDim_x - 1) {
     if (num_data_in_block > 0) {
-      const data_size_t data_to_left = static_cast<data_size_t>(thread_to_left_offset_cnt[0]);
+      const data_size_t data_to_left = static_cast<data_size_t>(thread_to_left_offset);
       block_to_left_offset_buffer[blockIdx.x + 1] = data_to_left;
       block_to_right_offset_buffer[blockIdx.x + 1] = num_data_in_block - data_to_left;
     } else {
@@ -255,42 +256,31 @@ __global__ void GenDataToLeftBitVectorKernel0(const int best_split_feature_ref,
   // values from feature
   const uint32_t t_zero_bin, const uint32_t most_freq_bin_ref, const uint32_t max_bin_ref, const uint32_t min_bin_ref,
   const uint8_t split_default_to_left, const uint8_t split_missing_default_to_left,
-  uint8_t* cuda_data_to_left,
+  uint16_t* block_to_left_offset,
   data_size_t* block_to_left_offset_buffer, data_size_t* block_to_right_offset_buffer,
-  const int split_indices_block_size_data_partition,
   int* cuda_data_index_to_leaf_index, const int left_leaf_index, const int right_leaf_index,
   const int default_leaf_index, const int missing_default_leaf_index) {
-  __shared__ uint16_t thread_to_left_offset_cnt[SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION + 1 +
-    (SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION + 1) / NUM_BANKS_DATA_PARTITION];
+  uint16_t thread_to_left_offset_cnt = 0;
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
   if (local_data_index < num_data_in_leaf) {
     const unsigned int global_data_index = data_indices_in_leaf[local_data_index];
     const uint32_t bin = static_cast<uint32_t>(column_data[global_data_index]);
     if ((MISSING_IS_ZERO && !MFB_IS_ZERO && bin == t_zero_bin) ||
       (MISSING_IS_NA && !MFB_IS_NA && bin == max_bin_ref)) {
-      cuda_data_to_left[local_data_index] = split_missing_default_to_left;
-      thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = split_missing_default_to_left;
+      thread_to_left_offset_cnt = split_missing_default_to_left;
     } else if ((bin < min_bin_ref || bin > max_bin_ref)) {
       if ((MISSING_IS_NA && MFB_IS_NA) || (MISSING_IS_ZERO || MFB_IS_ZERO)) {
-        cuda_data_to_left[local_data_index] = split_missing_default_to_left;
-        thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = split_missing_default_to_left;
+        thread_to_left_offset_cnt = split_missing_default_to_left;
       } else {
-        cuda_data_to_left[local_data_index] = split_default_to_left;
-        thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = split_default_to_left;
+        thread_to_left_offset_cnt = split_default_to_left;
       }
-    } else if (bin > th) {
-      cuda_data_to_left[local_data_index] = 0;
-      thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = 0;
-    } else {
-      cuda_data_to_left[local_data_index] = 1;
-      thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = 1;
+    } else if (bin <= th) {
+      thread_to_left_offset_cnt = 1;
     }
-  } else {
-    thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = 0;
   }
   __syncthreads();
-  PrepareOffset(num_data_in_leaf, cuda_data_to_left, block_to_left_offset_buffer, block_to_right_offset_buffer,
-    split_indices_block_size_data_partition, thread_to_left_offset_cnt);
+  PrepareOffset(num_data_in_leaf, block_to_left_offset + blockIdx.x * blockDim.x, block_to_left_offset_buffer, block_to_right_offset_buffer,
+    thread_to_left_offset_cnt);
 }
 
 // min_bin_ref == max_bin_ref
@@ -301,56 +291,47 @@ __global__ void GenDataToLeftBitVectorKernel16(const int best_split_feature_ref,
   // values from feature
   const uint32_t t_zero_bin, const uint32_t most_freq_bin_ref, const uint32_t max_bin_ref, const uint32_t min_bin_ref,
   const uint8_t split_default_to_left, const uint8_t split_missing_default_to_left,
-  uint8_t* cuda_data_to_left,
+  uint16_t* block_to_left_offset,
   data_size_t* block_to_left_offset_buffer, data_size_t* block_to_right_offset_buffer,
-  const int split_indices_block_size_data_partition,
   int* cuda_data_index_to_leaf_index, const int left_leaf_index, const int right_leaf_index,
   const int default_leaf_index, const int missing_default_leaf_index) {
-  __shared__ uint16_t thread_to_left_offset_cnt[SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION + 1 +
-    (SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION + 1) / NUM_BANKS_DATA_PARTITION];
+  uint16_t thread_to_left_offset_cnt = 0;
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
   if (local_data_index < num_data_in_leaf) {
     const unsigned int global_data_index = data_indices_in_leaf[local_data_index];
     const uint32_t bin = static_cast<uint32_t>(column_data[global_data_index]);
     if (MISSING_IS_ZERO && !MFB_IS_ZERO && bin == t_zero_bin) {
-      cuda_data_to_left[local_data_index] = split_missing_default_to_left;
-      thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = split_missing_default_to_left;
+      thread_to_left_offset_cnt = split_missing_default_to_left;
     } else if (bin != max_bin_ref) {
       if ((MISSING_IS_NA && MFB_IS_NA) || (MISSING_IS_ZERO && MFB_IS_ZERO)) {
-        cuda_data_to_left[local_data_index] = split_missing_default_to_left;
-        thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = split_missing_default_to_left;
+        thread_to_left_offset_cnt = split_missing_default_to_left;
       } else {
-        cuda_data_to_left[local_data_index] = split_default_to_left;
-        thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = split_default_to_left;
+        thread_to_left_offset_cnt = split_default_to_left;
       }
     } else {
       if (MISSING_IS_NA && !MFB_IS_NA) {
-        cuda_data_to_left[local_data_index] = split_missing_default_to_left;
-        thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = split_missing_default_to_left;
+        thread_to_left_offset_cnt = split_missing_default_to_left;
       } else {
         if (MAX_TO_LEFT) {
-          cuda_data_to_left[local_data_index] = 1;
-          thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = 1;
+          thread_to_left_offset_cnt = 1;
         } else {
-          cuda_data_to_left[local_data_index] = 0;
-          thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = 0;
+          thread_to_left_offset_cnt = 0;
         }
       }
     }
   } else {
-    thread_to_left_offset_cnt[CONFLICT_FREE_INDEX(threadIdx.x)] = 0;
+    thread_to_left_offset_cnt = 0;
   }
   __syncthreads();
-  PrepareOffset(num_data_in_leaf, cuda_data_to_left, block_to_left_offset_buffer, block_to_right_offset_buffer,
-    split_indices_block_size_data_partition, thread_to_left_offset_cnt);
+  PrepareOffset(num_data_in_leaf, block_to_left_offset, block_to_left_offset_buffer, block_to_right_offset_buffer,
+    thread_to_left_offset_cnt);
 }
 
 #define GenBitVector_ARGS \
   split_feature_index, num_data_in_leaf, data_indices_in_leaf, \
   th, num_features_,  \
   column_data, t_zero_bin, most_freq_bin, max_bin, min_bin, split_default_to_left,  \
-  split_missing_default_to_left, cuda_data_to_left_, cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_, \
-  split_indices_block_size_data_partition_aligned, \
+  split_missing_default_to_left, cuda_block_to_left_offset_, cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_, \
   cuda_data_index_to_leaf_index_, left_leaf_index, right_leaf_index, default_leaf_index, missing_default_leaf_index
 
 template <typename BIN_TYPE>
@@ -847,14 +828,11 @@ __global__ void AggregateBlockOffsetKernel0(
   data_size_t* block_to_right_offset_buffer, data_size_t* cuda_leaf_data_start,
   data_size_t* cuda_leaf_data_end, data_size_t* cuda_leaf_num_data, const data_size_t* cuda_data_indices,
   const data_size_t num_blocks) {
-  __shared__ uint32_t block_to_left_offset[AGGREGATE_BLOCK_SIZE_DATA_PARTITION + 2 +
-    (AGGREGATE_BLOCK_SIZE_DATA_PARTITION + 2) / NUM_BANKS_DATA_PARTITION];
-  __shared__ uint32_t block_to_right_offset[AGGREGATE_BLOCK_SIZE_DATA_PARTITION + 2 +
-    (AGGREGATE_BLOCK_SIZE_DATA_PARTITION + 2) / NUM_BANKS_DATA_PARTITION];
+  __shared__ uint32_t shared_mem_buffer[32];
+  __shared__ uint32_t to_left_total_count;
   const data_size_t num_data_in_leaf = cuda_leaf_num_data[left_leaf_index];
   const unsigned int blockDim_x = blockDim.x;
   const unsigned int threadIdx_x = threadIdx.x;
-  const unsigned int conflict_free_threadIdx_x = CONFLICT_FREE_INDEX(threadIdx_x);
   const data_size_t num_blocks_plus_1 = num_blocks + 1;
   const uint32_t num_blocks_per_thread = (num_blocks_plus_1 + blockDim_x - 1) / blockDim_x;
   const uint32_t remain = num_blocks_plus_1 - ((num_blocks_per_thread - 1) * blockDim_x);
@@ -877,20 +855,24 @@ __global__ void AggregateBlockOffsetKernel0(
     block_to_right_offset_buffer[block_index] += block_to_right_offset_buffer[block_index - 1];
   }
   __syncthreads();
-  if (thread_start_block_index < thread_end_block_index) {
-    block_to_left_offset[conflict_free_threadIdx_x] = block_to_left_offset_buffer[thread_end_block_index - 1];
-    block_to_right_offset[conflict_free_threadIdx_x] = block_to_right_offset_buffer[thread_end_block_index - 1];
+  uint32_t block_to_left_offset = 0;
+  uint32_t block_to_right_offset = 0;
+  if (thread_start_block_index < thread_end_block_index && thread_start_block_index > 1) {
+    block_to_left_offset = block_to_left_offset_buffer[thread_start_block_index - 1];
+    block_to_right_offset = block_to_right_offset_buffer[thread_start_block_index - 1];
   } else {
-    block_to_left_offset[conflict_free_threadIdx_x] = 0;
-    block_to_right_offset[conflict_free_threadIdx_x] = 0;
+    block_to_left_offset = 0;
+    block_to_right_offset = 0;
+  }
+  block_to_left_offset = ShufflePrefixSum<uint32_t>(block_to_left_offset, shared_mem_buffer);
+  __syncthreads();
+  block_to_right_offset = ShufflePrefixSum<uint32_t>(block_to_right_offset, shared_mem_buffer);
+  if (threadIdx_x == blockDim_x - 1) {
+    to_left_total_count = block_to_left_offset + block_to_left_offset_buffer[num_blocks];
   }
   __syncthreads();
-  PrefixSumConflictFree<uint32_t>(block_to_left_offset, blockDim_x);
-  PrefixSumConflictFree<uint32_t>(block_to_right_offset, blockDim_x);
-  __syncthreads();
-  const uint32_t to_left_total_count = block_to_left_offset[CONFLICT_FREE_INDEX(blockDim_x)];
-  const uint32_t to_left_thread_block_offset = block_to_left_offset[conflict_free_threadIdx_x];
-  const uint32_t to_right_thread_block_offset = block_to_right_offset[conflict_free_threadIdx_x] + to_left_total_count;
+  const uint32_t to_left_thread_block_offset = block_to_left_offset;
+  const uint32_t to_right_thread_block_offset = block_to_right_offset + to_left_total_count;
   for (uint32_t block_index = thread_start_block_index; block_index < thread_end_block_index; ++block_index) {
     block_to_left_offset_buffer[block_index] += to_left_thread_block_offset;
     block_to_right_offset_buffer[block_index] += to_right_thread_block_offset;
@@ -913,29 +895,26 @@ __global__ void AggregateBlockOffsetKernel1(
   data_size_t* block_to_right_offset_buffer, data_size_t* cuda_leaf_data_start,
   data_size_t* cuda_leaf_data_end, data_size_t* cuda_leaf_num_data, const data_size_t* cuda_data_indices,
   const data_size_t num_blocks, const data_size_t num_blocks_aligned) {
-  __shared__ uint32_t block_to_left_offset[AGGREGATE_BLOCK_SIZE_DATA_PARTITION + 2 +
-    (AGGREGATE_BLOCK_SIZE_DATA_PARTITION + 2) / NUM_BANKS_DATA_PARTITION];
-  __shared__ uint32_t block_to_right_offset[AGGREGATE_BLOCK_SIZE_DATA_PARTITION + 2 +
-    (AGGREGATE_BLOCK_SIZE_DATA_PARTITION + 2) / NUM_BANKS_DATA_PARTITION];
+  __shared__ uint32_t shared_mem_buffer[32];
+  __shared__ uint32_t to_left_total_count;
   const data_size_t num_data_in_leaf = cuda_leaf_num_data[left_leaf_index];
   const unsigned int threadIdx_x = threadIdx.x;
-  const unsigned int conflict_free_threadIdx_x = CONFLICT_FREE_INDEX(threadIdx_x);
-  const unsigned int conflict_free_threadIdx_x_plus_1 = CONFLICT_FREE_INDEX(threadIdx_x + 1);
+  uint32_t block_to_left_offset = 0;
+  uint32_t block_to_right_offset = 0;
   if (threadIdx_x < static_cast<unsigned int>(num_blocks)) {
-    block_to_left_offset[conflict_free_threadIdx_x] = block_to_left_offset_buffer[threadIdx_x + 1];
-    block_to_right_offset[conflict_free_threadIdx_x] = block_to_right_offset_buffer[threadIdx_x + 1];
-  } else {
-    block_to_left_offset[conflict_free_threadIdx_x] = 0;
-    block_to_right_offset[conflict_free_threadIdx_x] = 0;
+    block_to_left_offset = block_to_left_offset_buffer[threadIdx_x + 1];
+    block_to_right_offset = block_to_right_offset_buffer[threadIdx_x + 1];
+  }
+  block_to_left_offset = ShufflePrefixSum<uint32_t>(block_to_left_offset, shared_mem_buffer);
+  __syncthreads();
+  block_to_right_offset = ShufflePrefixSum<uint32_t>(block_to_right_offset, shared_mem_buffer);
+  if (threadIdx.x == blockDim.x - 1) {
+    to_left_total_count = block_to_left_offset;
   }
   __syncthreads();
-  PrefixSumConflictFree<uint32_t>(block_to_left_offset, num_blocks_aligned);
-  PrefixSumConflictFree<uint32_t>(block_to_right_offset, num_blocks_aligned);
-  __syncthreads();
-  const uint32_t to_left_total_count = block_to_left_offset[CONFLICT_FREE_INDEX(num_blocks_aligned)];
   if (threadIdx_x < static_cast<unsigned int>(num_blocks)) {
-    block_to_left_offset_buffer[threadIdx_x + 1] = block_to_left_offset[conflict_free_threadIdx_x_plus_1];
-    block_to_right_offset_buffer[threadIdx_x + 1] = block_to_right_offset[conflict_free_threadIdx_x_plus_1] + to_left_total_count;
+    block_to_left_offset_buffer[threadIdx_x + 1] = block_to_left_offset;
+    block_to_right_offset_buffer[threadIdx_x + 1] = block_to_right_offset + to_left_total_count;
   }
   if (threadIdx_x == 0) {
     block_to_right_offset_buffer[0] = to_left_total_count;
@@ -1075,68 +1054,28 @@ __global__ void SplitTreeStructureKernel(const int left_leaf_index,
 
 __global__ void SplitInnerKernel(const int left_leaf_index, const int right_leaf_index,
   const data_size_t* cuda_leaf_data_start, const data_size_t* cuda_leaf_num_data,
-  const data_size_t* cuda_data_indices, const uint8_t* split_to_left_bit_vector,
+  const data_size_t* cuda_data_indices,
   const data_size_t* block_to_left_offset_buffer, const data_size_t* block_to_right_offset_buffer,
-  data_size_t* out_data_indices_in_leaf, const int split_indices_block_size_data_partition) {
-  __shared__ uint16_t thread_to_left_pos[SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION + 1 +
-    (SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION + 2) / NUM_BANKS_DATA_PARTITION];
-  __shared__ uint16_t thread_to_right_pos[SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION];
-  uint8_t first_to_left = 0;
-  uint8_t second_to_left = 0;
+  const uint16_t* block_to_left_offset, data_size_t* out_data_indices_in_leaf) {
   const data_size_t leaf_num_data_offset = cuda_leaf_data_start[left_leaf_index];
   const data_size_t num_data_in_leaf_ref = cuda_leaf_num_data[left_leaf_index] + cuda_leaf_num_data[right_leaf_index];
   const unsigned int threadIdx_x = threadIdx.x;
   const unsigned int blockDim_x = blockDim.x;
-  const unsigned int conflict_free_threadIdx_x_plus_1 = CONFLICT_FREE_INDEX(threadIdx_x + 1);
-  const unsigned int global_thread_index = blockIdx.x * blockDim_x * 2 + threadIdx_x;
+  const unsigned int global_thread_index = blockIdx.x * blockDim_x + threadIdx_x;
   const data_size_t* cuda_data_indices_in_leaf = cuda_data_indices + leaf_num_data_offset;
-  if (global_thread_index < num_data_in_leaf_ref) {
-    const uint8_t bit = split_to_left_bit_vector[global_thread_index];
-    first_to_left = bit;
-    thread_to_left_pos[conflict_free_threadIdx_x_plus_1] = bit;
-  } else {
-    first_to_left = 0;
-    thread_to_left_pos[conflict_free_threadIdx_x_plus_1] = 0;
-  }
-  const unsigned int conflict_free_threadIdx_x_plus_blockDim_x_plus_1 = CONFLICT_FREE_INDEX(threadIdx_x + blockDim_x + 1);
-  const unsigned int global_thread_index_plus_blockDim_x = global_thread_index + blockDim_x;
-  if (global_thread_index_plus_blockDim_x < num_data_in_leaf_ref) {
-    const uint8_t bit = split_to_left_bit_vector[global_thread_index_plus_blockDim_x];
-    second_to_left = bit;
-    thread_to_left_pos[conflict_free_threadIdx_x_plus_blockDim_x_plus_1] = bit;
-  } else {
-    second_to_left = 0;
-    thread_to_left_pos[conflict_free_threadIdx_x_plus_blockDim_x_plus_1] = 0;
-  }
-  __syncthreads();
+  const uint16_t* block_to_left_offset_ptr = block_to_left_offset + blockIdx.x * blockDim_x;
   const uint32_t to_right_block_offset = block_to_right_offset_buffer[blockIdx.x];
   const uint32_t to_left_block_offset = block_to_left_offset_buffer[blockIdx.x];
-  if (threadIdx_x == 0) {
-    thread_to_left_pos[0] = 0;
-    thread_to_right_pos[0] = 0;
-  }
-  __syncthreads();
-  PrefixSumConflictFree<uint16_t>(thread_to_left_pos, split_indices_block_size_data_partition);
-  __syncthreads();
-  if (threadIdx_x > 0) {
-    thread_to_right_pos[threadIdx_x] = (threadIdx_x - thread_to_left_pos[conflict_free_threadIdx_x_plus_1]);
-  }
-  thread_to_right_pos[threadIdx_x + blockDim_x] = (threadIdx_x + blockDim_x - thread_to_left_pos[conflict_free_threadIdx_x_plus_blockDim_x_plus_1]);
-  __syncthreads();
   data_size_t* left_out_data_indices_in_leaf = out_data_indices_in_leaf + to_left_block_offset;
   data_size_t* right_out_data_indices_in_leaf = out_data_indices_in_leaf + to_right_block_offset;
-  if (global_thread_index < num_data_in_leaf_ref) {
-    if (first_to_left == 1) {
-      left_out_data_indices_in_leaf[thread_to_left_pos[conflict_free_threadIdx_x_plus_1]] = cuda_data_indices_in_leaf[global_thread_index];
+  if (static_cast<data_size_t>(global_thread_index) < num_data_in_leaf_ref) {
+    const uint32_t thread_to_left_offset = (threadIdx_x == 0 ? 0 : block_to_left_offset_ptr[threadIdx_x - 1]);
+    const bool to_left = block_to_left_offset_ptr[threadIdx_x] > thread_to_left_offset;
+    if (to_left) {
+      left_out_data_indices_in_leaf[thread_to_left_offset] = cuda_data_indices_in_leaf[global_thread_index];
     } else {
-      right_out_data_indices_in_leaf[thread_to_right_pos[threadIdx_x]] = cuda_data_indices_in_leaf[global_thread_index];
-    }
-  }
-  if (global_thread_index_plus_blockDim_x < num_data_in_leaf_ref) {
-    if (second_to_left == 1) {
-      left_out_data_indices_in_leaf[thread_to_left_pos[conflict_free_threadIdx_x_plus_blockDim_x_plus_1]] = cuda_data_indices_in_leaf[global_thread_index_plus_blockDim_x];
-    } else {
-      right_out_data_indices_in_leaf[thread_to_right_pos[threadIdx_x + blockDim_x]] = cuda_data_indices_in_leaf[global_thread_index_plus_blockDim_x];
+      const uint32_t thread_to_right_offset = threadIdx.x - thread_to_left_offset;
+      right_out_data_indices_in_leaf[thread_to_right_offset] = cuda_data_indices_in_leaf[global_thread_index];
     }
   }
 }
@@ -1204,10 +1143,10 @@ void CUDADataPartition::LaunchSplitInnerKernel(
   global_timer.Stop("CUDADataPartition::AggregateBlockOffsetKernel");
   global_timer.Start("CUDADataPartition::SplitInnerKernel");
 
-  SplitInnerKernel<<<num_blocks_final, split_indices_block_size_data_partition_aligned / 2, 0, cuda_streams_[1]>>>(
-    left_leaf_index, right_leaf_index, cuda_leaf_data_start_, cuda_leaf_num_data_, cuda_data_indices_, cuda_data_to_left_,
-    cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_,
-    cuda_out_data_indices_in_leaf_, split_indices_block_size_data_partition_aligned);
+  SplitInnerKernel<<<num_blocks_final, split_indices_block_size_data_partition_aligned, 0, cuda_streams_[1]>>>(
+    left_leaf_index, right_leaf_index, cuda_leaf_data_start_, cuda_leaf_num_data_, cuda_data_indices_,
+    cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_, cuda_block_to_left_offset_,
+    cuda_out_data_indices_in_leaf_);
   global_timer.Stop("CUDADataPartition::SplitInnerKernel");
 
   global_timer.Start("CUDADataPartition::SplitTreeStructureKernel");
@@ -1229,8 +1168,8 @@ void CUDADataPartition::LaunchSplitInnerKernel(
   const double* cpu_sum_hessians_info = reinterpret_cast<const double*>(cpu_split_info_buffer.data() + 8);
   global_timer.Start("CUDADataPartition::CopyFromCUDADeviceToHostAsync");
   CopyFromCUDADeviceToHostAsyncOuter<int>(cpu_split_info_buffer.data(), cuda_split_info_buffer_, 12, cuda_streams_[0], __FILE__, __LINE__);
-  global_timer.Stop("CUDADataPartition::CopyFromCUDADeviceToHostAsync");
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  global_timer.Stop("CUDADataPartition::CopyFromCUDADeviceToHostAsync");
   const data_size_t left_leaf_num_data = cpu_split_info_buffer[1];
   const data_size_t left_leaf_data_start = cpu_split_info_buffer[2];
   const data_size_t right_leaf_num_data = cpu_split_info_buffer[4];

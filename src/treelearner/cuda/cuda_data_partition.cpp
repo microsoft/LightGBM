@@ -51,7 +51,7 @@ void CUDADataPartition::Init() {
   AllocateCUDAMemoryOuter<data_size_t>(&cuda_leaf_data_end_, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
   AllocateCUDAMemoryOuter<data_size_t>(&cuda_leaf_num_data_, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
   // leave some space for alignment
-  AllocateCUDAMemoryOuter<uint8_t>(&cuda_data_to_left_, static_cast<size_t>(num_data_) + 1024 * 8, __FILE__, __LINE__);
+  AllocateCUDAMemoryOuter<uint16_t>(&cuda_block_to_left_offset_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   AllocateCUDAMemoryOuter<int>(&cuda_data_index_to_leaf_index_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   AllocateCUDAMemoryOuter<data_size_t>(&cuda_block_data_to_left_offset_, static_cast<size_t>(max_num_split_indices_blocks_) + 1, __FILE__, __LINE__);
   AllocateCUDAMemoryOuter<data_size_t>(&cuda_block_data_to_right_offset_, static_cast<size_t>(max_num_split_indices_blocks_) + 1, __FILE__, __LINE__);

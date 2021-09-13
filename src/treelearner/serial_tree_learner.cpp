@@ -205,14 +205,6 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   }
 
   Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
-  double max_abs_leaf_output = 0.0f;
-  for (int leaf_index = 0; leaf_index < tree->num_leaves(); ++leaf_index) {
-    Log::Warning("leaf_index %d leaf_value %f", leaf_index, tree->LeafOutput(leaf_index));
-    if (std::fabs(tree->LeafOutput(leaf_index)) > std::fabs(max_abs_leaf_output)) {
-      max_abs_leaf_output = tree->LeafOutput(leaf_index);
-    }
-  }
-  Log::Warning("max_abs_leaf_output = %f", max_abs_leaf_output);
   return tree.release();
 }
 

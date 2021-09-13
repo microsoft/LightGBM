@@ -37,14 +37,6 @@ class NewCUDATreeLearner: public SerialTreeLearner {
                        const double* score, data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
  protected:
-  void FindBestSplits(const Tree* tree) override;
-
-  void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
-
-  void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract, const Tree* tree) override;
-
-  void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) override;
-
   void BeforeTrain() override;
 
   // number of GPUs
