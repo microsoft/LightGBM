@@ -7,7 +7,7 @@
 lgb.train(
   params = list(),
   data,
-  nrounds = 10L,
+  nrounds = 100L,
   valids = list(),
   obj = NULL,
   eval = NULL,
@@ -24,7 +24,8 @@ lgb.train(
 )
 }
 \arguments{
-\item{params}{List of parameters}
+\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+the "Parameters" section of the documentation} for a list of parameters and valid values.}
 
 \item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
 may allow you to pass other types of data like \code{matrix} and then separately supply
@@ -82,14 +83,15 @@ may allow you to pass other types of data like \code{matrix} and then separately
 
 \item{colnames}{feature names, if not null, will use this to overwrite the names in dataset}
 
-\item{categorical_feature}{list of str or int
-type int represents index,
-type str represents feature names}
+\item{categorical_feature}{categorical features. This can either be a character vector of feature
+names or an integer vector with the indices of the features (e.g.
+\code{c(1L, 10L)} to say "the first and tenth columns").}
 
-\item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
-and one metric. If there's more than one, will check all of them
-except the training data. Returns the model with (best_iter + early_stopping_rounds).
-If early stopping occurs, the model will have 'best_iter' field.}
+\item{early_stopping_rounds}{int. Activates early stopping. When this parameter is non-null,
+training will stop if the evaluation of any metric on any validation set
+fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
+If training stops early, the returned model will have attribute \code{best_iter}
+set to the iteration number of the best iteration.}
 
 \item{callbacks}{List of callback functions that are applied at each iteration.}
 
@@ -97,16 +99,19 @@ If early stopping occurs, the model will have 'best_iter' field.}
 booster model into a predictor model which frees up memory and the
 original datasets}
 
-\item{...}{other parameters, see Parameters.rst for more information. A few key parameters:
+\item{...}{other parameters, see \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+the "Parameters" section of the documentation} for more information. A few key parameters:
 \itemize{
     \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
     \item{\code{num_leaves}: Maximum number of leaves in one tree.}
     \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
-                     overfit when #data is small. Tree still grow by leaf-wise.}
+                     overfitting. Tree still grow by leaf-wise.}
     \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-                       the number of real CPU cores, not the number of threads (most
-                       CPU using hyper-threading to generate 2 threads per CPU core).}
-}}
+                 the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
+                 not the number of threads (most CPU using hyper-threading to generate 2 threads
+                 per CPU core).}
+}
+NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
 }
 \value{
 a trained booster model \code{lgb.Booster}.
@@ -139,15 +144,18 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-params <- list(objective = "regression", metric = "l2")
+params <- list(
+  objective = "regression"
+  , metric = "l2"
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 valids <- list(test = dtest)
 model <- lgb.train(
   params = params
   , data = dtrain
   , nrounds = 5L
   , valids = valids
-  , min_data = 1L
-  , learning_rate = 1.0
   , early_stopping_rounds = 3L
 )
 }

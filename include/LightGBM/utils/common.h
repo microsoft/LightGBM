@@ -18,6 +18,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <iomanip>
@@ -328,6 +329,27 @@ inline static const char* Atof(const char* p, double* out) {
   }
 
   return p;
+}
+
+// Use fast_double_parse and strtod (if parse failed) to parse double.
+inline static const char* AtofPrecise(const char* p, double* out) {
+  const char* end = fast_double_parser::parse_number(p, out);
+
+  if (end != nullptr) {
+    return end;
+  }
+
+  // Rare path: Not in RFC 7159 format. Possible "inf", "nan", etc. Fallback to standard library:
+  char* end2;
+  errno = 0;  // This is Required before calling strtod.
+  *out = std::strtod(p, &end2);  // strtod is locale aware.
+  if (end2 == p) {
+    Log::Fatal("no conversion to double for: %s", p);
+  }
+  if (errno == ERANGE) {
+    Log::Warning("convert to double got underflow or overflow: %s", p);
+  }
+  return end2;
 }
 
 inline static bool AtoiAndCheck(const char* p, int* out) {
@@ -1079,22 +1101,8 @@ struct __StringToTHelper<T, true> {
   T operator()(const std::string& str) const {
     double tmp;
 
-    // Fast (common) path: For numeric inputs in RFC 7159 format:
-    const bool fast_parse_succeeded = fast_double_parser::parse_number(str.c_str(), &tmp);
-
-    // Rare path: Not in RFC 7159 format. Possible "inf", "nan", etc.
-    if (!fast_parse_succeeded) {
-      std::string strlower(str);
-      std::transform(strlower.begin(), strlower.end(), strlower.begin(), [](int c) -> char { return static_cast<char>(::tolower(c)); });
-      if (strlower == std::string("inf"))
-        tmp = std::numeric_limits<double>::infinity();
-      else if (strlower == std::string("-inf"))
-        tmp = -std::numeric_limits<double>::infinity();
-      else if (strlower == std::string("nan"))
-        tmp = std::numeric_limits<double>::quiet_NaN();
-      else if (strlower == std::string("-nan"))
-        tmp = -std::numeric_limits<double>::quiet_NaN();
-      else
+    const char* end = Common::AtofPrecise(str.c_str(), &tmp);
+    if (end == str.c_str()) {
         Log::Fatal("Failed to parse double: %s", str.c_str());
     }
 

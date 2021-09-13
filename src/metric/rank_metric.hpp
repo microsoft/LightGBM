@@ -56,7 +56,7 @@ class NDCGMetric:public Metric {
       }
     }
     inverse_max_dcgs_.resize(num_queries_);
-    // cache the inverse max DCG for all querys, used to calculate NDCG
+    // cache the inverse max DCG for all queries, used to calculate NDCG
     #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i].resize(eval_at_.size(), 0.0f);
@@ -67,7 +67,7 @@ class NDCGMetric:public Metric {
         if (inverse_max_dcgs_[i][j] > 0.0f) {
           inverse_max_dcgs_[i][j] = 1.0f / inverse_max_dcgs_[i][j];
         } else {
-          // marking negative for all negative querys.
+          // marking negative for all negative queries.
           // if one meet this query, it's ndcg will be set as -1.
           inverse_max_dcgs_[i][j] = -1.0f;
         }

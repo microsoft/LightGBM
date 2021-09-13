@@ -6,9 +6,6 @@
 
 #include <string>
 #include <algorithm>
-#include <fstream>
-#include <functional>
-#include <iostream>
 #include <memory>
 
 namespace LightGBM {
@@ -187,7 +184,8 @@ DataType GetDataType(const char* filename, bool header,
   int tab_cnt = 0;
   int colon_cnt = 0;
   GetStatistic(lines[0].c_str(), &comma_cnt, &tab_cnt, &colon_cnt);
-  if (lines.size() == 1) {
+  size_t num_lines = lines.size();
+  if (num_lines == 1) {
     if (colon_cnt > 0) {
       type = DataType::LIBSVM;
     } else if (tab_cnt > 0) {
@@ -195,7 +193,7 @@ DataType GetDataType(const char* filename, bool header,
     } else if (comma_cnt > 0) {
       type = DataType::CSV;
     }
-  } else if (lines.size() > 1) {
+  } else {
     int comma_cnt2 = 0;
     int tab_cnt2 = 0;
     int colon_cnt2 = 0;
@@ -209,7 +207,7 @@ DataType GetDataType(const char* filename, bool header,
     }
     if (type == DataType::TSV || type == DataType::CSV) {
       // valid the type
-      for (size_t i = 2; i < lines.size(); ++i) {
+      for (size_t i = 2; i < num_lines; ++i) {
         GetStatistic(lines[i].c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
         if (type == DataType::TSV && tab_cnt2 != tab_cnt) {
           type = DataType::INVALID;
@@ -232,25 +230,26 @@ DataType GetDataType(const char* filename, bool header,
   return type;
 }
 
-Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx) {
+Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser) {
   const int n_read_line = 32;
   auto lines = ReadKLineFromFile(filename, header, n_read_line);
   int num_col = 0;
   DataType type = GetDataType(filename, header, lines, &num_col);
   if (type == DataType::INVALID) {
-    Log::Fatal("Unknown format of training data.");
+    Log::Fatal("Unknown format of training data. Only CSV, TSV, and LibSVM (zero-based) formatted text files are supported.");
   }
   std::unique_ptr<Parser> ret;
   int output_label_index = -1;
+  AtofFunc atof = precise_float_parser ? Common::AtofPrecise : Common::Atof;
   if (type == DataType::LIBSVM) {
     output_label_index = GetLabelIdxForLibsvm(lines[0], num_features, label_idx);
-    ret.reset(new LibSVMParser(output_label_index, num_col));
+    ret.reset(new LibSVMParser(output_label_index, num_col, atof));
   } else if (type == DataType::TSV) {
     output_label_index = GetLabelIdxForTSV(lines[0], num_features, label_idx);
-    ret.reset(new TSVParser(output_label_index, num_col));
+    ret.reset(new TSVParser(output_label_index, num_col, atof));
   } else if (type == DataType::CSV) {
     output_label_index = GetLabelIdxForCSV(lines[0], num_features, label_idx);
-    ret.reset(new CSVParser(output_label_index, num_col));
+    ret.reset(new CSVParser(output_label_index, num_col, atof));
   }
 
   if (output_label_index < 0 && label_idx >= 0) {

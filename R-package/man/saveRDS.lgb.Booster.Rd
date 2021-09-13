@@ -15,7 +15,7 @@ saveRDS.lgb.Booster(
 )
 }
 \arguments{
-\item{object}{R object to serialize.}
+\item{object}{\code{lgb.Booster} object to serialize.}
 
 \item{file}{a connection or the name of the file where the R object is saved to or read from.}
 
@@ -50,15 +50,18 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-params <- list(objective = "regression", metric = "l2")
+params <- list(
+  objective = "regression"
+  , metric = "l2"
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 valids <- list(test = dtest)
 model <- lgb.train(
     params = params
     , data = dtrain
     , nrounds = 10L
     , valids = valids
-    , min_data = 1L
-    , learning_rate = 1.0
     , early_stopping_rounds = 5L
 )
 model_file <- tempfile(fileext = ".rds")

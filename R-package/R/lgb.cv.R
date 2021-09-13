@@ -12,7 +12,9 @@ CVBooster <- R6::R6Class(
       return(invisible(NULL))
     },
     reset_parameter = function(new_params) {
-      for (x in boosters) { x$reset_parameter(new_params) }
+      for (x in boosters) {
+        x$reset_parameter(params = new_params)
+      }
       return(invisible(self))
     }
   )
@@ -26,7 +28,9 @@ CVBooster <- R6::R6Class(
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weight vector of response values. If not NULL, will set to dataset
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
-#' @param showsd \code{boolean}, whether to show standard deviation of cross validation
+#' @param showsd \code{boolean}, whether to show standard deviation of cross validation.
+#'               This parameter defaults to \code{TRUE}. Setting it to \code{FALSE} can lead to a
+#'               slight speedup by avoiding unnecessary computation.
 #' @param stratified a \code{boolean} indicating whether sampling of folds should be stratified
 #'                   by the values of outcome labels.
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
@@ -46,9 +50,11 @@ CVBooster <- R6::R6Class(
 #'                \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
 #'                                 overfit when #data is small. Tree still grow by leaf-wise.}
 #'                \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-#'                                   the number of real CPU cores, not the number of threads (most
-#'                                   CPU using hyper-threading to generate 2 threads per CPU core).}
+#'                             the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
+#'                             not the number of threads (most CPU using hyper-threading to generate 2 threads
+#'                             per CPU core).}
 #'            }
+#'            NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained model \code{lgb.CVBooster}.
 #'
@@ -57,21 +63,24 @@ CVBooster <- R6::R6Class(
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' model <- lgb.cv(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , nfold = 3L
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #' )
 #' }
 #' @importFrom data.table data.table setorderv
 #' @export
 lgb.cv <- function(params = list()
                    , data
-                   , nrounds = 10L
+                   , nrounds = 100L
                    , nfold = 3L
                    , label = NULL
                    , weight = NULL
@@ -105,12 +114,22 @@ lgb.cv <- function(params = list()
   }
 
   # Setup temporary variables
-  params <- append(params, list(...))
+  additional_params <- list(...)
+  params <- append(params, additional_params)
   params$verbose <- verbose
   params <- lgb.check.obj(params = params, obj = obj)
   params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
   eval_functions <- list(NULL)
+
+  if (length(additional_params) > 0L) {
+    warning(paste0(
+      "lgb.cv: Found the following passed through '...': "
+      , paste(names(additional_params), collapse = ", ")
+      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
+      , "Add these to 'params' instead. See ?lgb.cv for documentation on how to call this function."
+    ))
+  }
 
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.
@@ -165,6 +184,11 @@ lgb.cv <- function(params = list()
   }
   end_iteration <- begin_iteration + params[["num_iterations"]] - 1L
 
+  # pop interaction_constraints off of params. It needs some preprocessing on the
+  # R side before being passed into the Dataset object
+  interaction_constraints <- params[["interaction_constraints"]]
+  params["interaction_constraints"] <- NULL
+
   # Construct datasets, if needed
   data$update_params(params = params)
   data$construct()
@@ -176,9 +200,11 @@ lgb.cv <- function(params = list()
   } else if (!is.null(data$get_colnames())) {
     cnames <- data$get_colnames()
   }
-  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(params = params, column_names = cnames)
+  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(
+    interaction_constraints = interaction_constraints
+    , column_names = cnames
+  )
 
-  # Check for weights
   if (!is.null(weight)) {
     data$setinfo(name = "weight", info = weight)
   }
@@ -199,7 +225,6 @@ lgb.cv <- function(params = list()
     data$set_categorical_feature(categorical_feature = categorical_feature)
   }
 
-  # Check for folds
   if (!is.null(folds)) {
 
     # Check for list of folds or for single value
@@ -207,12 +232,10 @@ lgb.cv <- function(params = list()
       stop(sQuote("folds"), " must be a list with 2 or more elements that are vectors of indices for each CV-fold")
     }
 
-    # Set number of folds
     nfold <- length(folds)
 
   } else {
 
-    # Check fold value
     if (nfold <= 1L) {
       stop(sQuote("nfold"), " must be > 1")
     }
@@ -370,7 +393,10 @@ lgb.cv <- function(params = list()
     })
 
     # Prepare collection of evaluation results
-    merged_msg <- lgb.merge.cv.result(msg = msg)
+    merged_msg <- lgb.merge.cv.result(
+      msg = msg
+      , showsd = showsd
+    )
 
     # Write evaluation result in environment
     env$eval_list <- merged_msg$eval_list
@@ -500,7 +526,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 # It was borrowed from caret::createFolds and simplified
 # by always returning an unnamed list of fold indices.
 #' @importFrom stats quantile
-lgb.stratified.folds <- function(y, k = 10L) {
+lgb.stratified.folds <- function(y, k) {
 
   ## Group the numeric data based on their magnitudes
   ## and sample within those groups.
@@ -546,7 +572,7 @@ lgb.stratified.folds <- function(y, k = 10L) {
       ## of samples in a class is less than k, nothing is producd here.
       seqVector <- rep(seq_len(k), numInClass[i] %/% k)
 
-      ## Add enough random integers to get  length(seqVector) == numInClass[i]
+      ## Add enough random integers to get length(seqVector) == numInClass[i]
       if (numInClass[i] %% k > 0L) {
         seqVector <- c(seqVector, sample.int(k, numInClass[i] %% k))
       }
@@ -567,17 +593,14 @@ lgb.stratified.folds <- function(y, k = 10L) {
   return(out)
 }
 
-lgb.merge.cv.result <- function(msg, showsd = TRUE) {
+lgb.merge.cv.result <- function(msg, showsd) {
 
-  # Get CV message length
   if (length(msg) == 0L) {
     stop("lgb.cv: size of cv result error")
   }
 
-  # Get evaluation message length
   eval_len <- length(msg[[1L]])
 
-  # Is evaluation message empty?
   if (eval_len == 0L) {
     stop("lgb.cv: should provide at least one metric for CV")
   }
@@ -592,7 +615,6 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
   # get structure (name, higher_better, data_name)
   ret_eval <- msg[[1L]]
 
-  # Go through evaluation length items
   for (j in seq_len(eval_len)) {
     ret_eval[[j]]$value <- mean(eval_result[[j]])
   }
@@ -610,12 +632,10 @@ lgb.merge.cv.result <- function(msg, showsd = TRUE) {
       )
     }
 
-    # Convert to list
     ret_eval_err <- as.list(ret_eval_err)
 
   }
 
-  # Return errors
   return(
     list(
       eval_list = ret_eval

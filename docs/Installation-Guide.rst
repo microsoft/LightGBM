@@ -13,6 +13,23 @@ Users who want to perform benchmarking can make LightGBM output time costs for d
 
 It is possible to build LightGBM in debug mode. In this mode all compiler optimizations are disabled and LightGBM performs more checks internally. To enable debug mode you can add ``-DUSE_DEBUG=ON`` to CMake flags or choose ``Debug_*`` configuration (e.g. ``Debug_DLL``, ``Debug_mpi``) in Visual Studio depending on how you are building LightGBM.
 
+.. _sanitizers:
+
+In addition to the debug mode, LightGBM can be built with compiler sanitizers.
+To enable them add ``-DUSE_SANITIZER=ON -DENABLED_SANITIZERS="address;leak;undefined"`` to CMake flags.
+These values refer to the following supported sanitizers:
+
+- ``address`` - AddressSanitizer (ASan);
+- ``leak`` - LeakSanitizer (LSan);
+- ``undefined`` - UndefinedBehaviorSanitizer (UBSan);
+- ``thread`` - ThreadSanitizer (TSan).
+
+Please note, that ThreadSanitizer cannot be used together with other sanitizers.
+For more info and additional sanitizers' parameters please refer to the `following docs`_.
+It is very useful to build `C++ unit tests <#build-c-unit-tests>`__ with sanitizers.
+
+.. _nightly-builds:
+
 You can also download the artifacts of the latest successful build on master branch (nightly builds) here: |download artifacts|.
 
 .. contents:: **Contents**
@@ -111,6 +128,8 @@ On Linux LightGBM can be built using **CMake** and **gcc** or **Clang**.
      make -j4
 
 **Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
@@ -420,6 +439,8 @@ On Linux an MPI version of LightGBM can be built using **Open MPI**, **CMake** a
 
 **Note**: glibc >= 2.14 is required.
 
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+
 macOS
 ^^^^^
 
@@ -527,6 +548,10 @@ To build LightGBM GPU version, run the following commands:
   # cmake -DUSE_GPU=1 -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/ ..
   make -j4
 
+**Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+
 Windows
 ^^^^^^^
 
@@ -609,6 +634,10 @@ To build LightGBM CUDA version, run the following commands:
   cmake -DUSE_CUDA=1 ..
   make -j4
 
+**Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
 
@@ -637,6 +666,10 @@ On Linux a HDFS version of LightGBM can be built using **CMake** and **gcc**.
      #   -DHDFS_INCLUDE_DIR="/opt/cloudera/parcels/CDH-5.14.4-1.cdh5.14.4.p0.3/include/" \
      #   ..
      make -j4
+
+**Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 Build Java Wrapper
 ~~~~~~~~~~~~~~~~~~
@@ -712,6 +745,10 @@ On Linux a Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMa
      cd build
      cmake -DUSE_SWIG=ON ..
      make -j4
+
+**Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 macOS
 ^^^^^
@@ -899,7 +936,7 @@ gcc
 
 .. _RDMA: https://en.wikipedia.org/wiki/Remote_direct_memory_access
 
-.. _MS MPI: https://www.microsoft.com/en-us/download/details.aspx?id=100593
+.. _MS MPI: https://docs.microsoft.com/en-us/message-passing-interface/microsoft-mpi-release-notes
 
 .. _Open MPI: https://www.open-mpi.org/
 
@@ -912,3 +949,5 @@ gcc
 .. _SWIG: http://www.swig.org/download.html
 
 .. _this detailed guide: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
+
+.. _following docs: https://github.com/google/sanitizers/wiki

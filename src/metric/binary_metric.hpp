@@ -198,11 +198,11 @@ class AUCMetric: public Metric {
       sorted_idx.emplace_back(i);
     }
     Common::ParallelSort(sorted_idx.begin(), sorted_idx.end(), [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
-    // temp sum of postive label
+    // temp sum of positive label
     double cur_pos = 0.0f;
-    // total sum of postive label
+    // total sum of positive label
     double sum_pos = 0.0f;
-    // accumlate of auc
+    // accumulate of AUC
     double accum = 0.0f;
     // temp sum of negative label
     double cur_neg = 0.0f;
@@ -214,7 +214,7 @@ class AUCMetric: public Metric {
         // new threshold
         if (cur_score != threshold) {
           threshold = cur_score;
-          // accmulate
+          // accumulate
           accum += cur_neg*(cur_pos * 0.5f + sum_pos);
           sum_pos += cur_pos;
           // reset
@@ -231,7 +231,7 @@ class AUCMetric: public Metric {
         // new threshold
         if (cur_score != threshold) {
           threshold = cur_score;
-          // accmulate
+          // accumulate
           accum += cur_neg*(cur_pos * 0.5f + sum_pos);
           sum_pos += cur_pos;
           // reset
@@ -309,15 +309,15 @@ class AveragePrecisionMetric: public Metric {
       sorted_idx.emplace_back(i);
     }
     Common::ParallelSort(sorted_idx.begin(), sorted_idx.end(), [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
-    // temp sum of postive label
+    // temp sum of positive label
     double cur_actual_pos = 0.0f;
-    // total sum of postive label
+    // total sum of positive label
     double sum_actual_pos = 0.0f;
     // total sum of predicted positive
     double sum_pred_pos = 0.0f;
     // accumulated precision
     double accum_prec = 1.0f;
-    // accumlated pr-auc
+    // accumulated pr-auc
     double accum = 0.0f;
     // temp sum of negative label
     double cur_neg = 0.0f;
@@ -348,7 +348,7 @@ class AveragePrecisionMetric: public Metric {
         // new threshold
         if (cur_score != threshold) {
           threshold = cur_score;
-          // accmulate
+          // accumulate
           sum_actual_pos += cur_actual_pos;
           sum_pred_pos += cur_actual_pos + cur_neg;
           accum_prec = sum_actual_pos / sum_pred_pos;

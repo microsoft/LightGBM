@@ -2,10 +2,10 @@
 import copy
 import itertools
 import math
-import os
 import pickle
 import platform
 import random
+from pathlib import Path
 
 import numpy as np
 import psutil
@@ -455,9 +455,7 @@ def test_multiclass_prediction_early_stopping():
     assert ret < 0.8
     assert ret > 0.6  # loss will be higher than when evaluating the full model
 
-    pred_parameter = {"pred_early_stop": True,
-                      "pred_early_stop_freq": 5,
-                      "pred_early_stop_margin": 5.5}
+    pred_parameter["pred_early_stop_margin"] = 5.5
     ret = multi_logloss(y_test, gbm.predict(X_test, **pred_parameter))
     assert ret < 0.2
 
@@ -568,8 +566,9 @@ def test_auc_mu():
     lgb.train(params, lgb_X, num_boost_round=100, valid_sets=[lgb_X], evals_result=results)
     assert results['training']['auc_mu'][-1] == pytest.approx(1)
     # test loading class weights
-    Xy = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                 '../../examples/multiclass_classification/multiclass.train'))
+    Xy = np.loadtxt(
+        str(Path(__file__).absolute().parents[2] / 'examples' / 'multiclass_classification' / 'multiclass.train')
+    )
     y = Xy[:, 0]
     X = Xy[:, 1:]
     lgb_X = lgb.Dataset(X, label=y)
@@ -585,6 +584,29 @@ def test_auc_mu():
     results_no_weight = {}
     lgb.train(params, lgb_X, num_boost_round=5, valid_sets=[lgb_X], evals_result=results_no_weight)
     assert results_weight['training']['auc_mu'][-1] != results_no_weight['training']['auc_mu'][-1]
+
+
+def test_ranking_prediction_early_stopping():
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
+    X_test, _ = load_svmlight_file(str(rank_example_dir / 'rank.test'))
+    params = {
+        'objective': 'rank_xendcg',
+        'verbose': -1
+    }
+    lgb_train = lgb.Dataset(X_train, y_train, group=q_train, params=params)
+    gbm = lgb.train(params, lgb_train, num_boost_round=50)
+
+    pred_parameter = {"pred_early_stop": True,
+                      "pred_early_stop_freq": 5,
+                      "pred_early_stop_margin": 1.5}
+    ret_early = gbm.predict(X_test, **pred_parameter)
+
+    pred_parameter["pred_early_stop_margin"] = 5.5
+    ret_early_more_strict = gbm.predict(X_test, **pred_parameter)
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(ret_early, ret_early_more_strict)
 
 
 def test_early_stopping():
@@ -646,7 +668,6 @@ def test_continue_train():
     assert ret < 2.0
     assert evals_result['valid_0']['l1'][-1] == pytest.approx(ret)
     np.testing.assert_allclose(evals_result['valid_0']['l1'], evals_result['valid_0']['custom_mae'])
-    os.remove(model_name)
 
 
 def test_continue_train_reused_dataset():
@@ -747,11 +768,10 @@ def test_cv():
     cv_res_obj = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=tss,
                         verbose_eval=False)
     np.testing.assert_allclose(cv_res_gen['l2-mean'], cv_res_obj['l2-mean'])
-    # lambdarank
-    X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                       '../../examples/lambdarank/rank.train'))
-    q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                      '../../examples/lambdarank/rank.train.query'))
+    # LambdaRank
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
     params_lambdarank = {'objective': 'lambdarank', 'verbose': -1, 'eval_at': 3}
     lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
     # ... with l2 metric
@@ -820,11 +840,11 @@ def test_feature_name():
     X_train, y_train = load_boston(return_X_y=True)
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
-    feature_names = ['f_' + str(i) for i in range(X_train.shape[-1])]
+    feature_names = [f'f_{i}' for i in range(X_train.shape[-1])]
     gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names)
     assert feature_names == gbm.feature_name()
     # test feature_names with whitespaces
-    feature_names_with_space = ['f ' + str(i) for i in range(X_train.shape[-1])]
+    feature_names_with_space = [f'f {i}' for i in range(X_train.shape[-1])]
     gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names_with_space)
     assert feature_names == gbm.feature_name()
 
@@ -1088,7 +1108,7 @@ def test_contribs_sparse_multiclass():
     # convert data to dense and get back same contribs
     contribs_dense = gbm.predict(X_test.toarray(), pred_contrib=True)
     # validate the values are the same
-    contribs_csr_array = np.swapaxes(np.array([sparse_array.todense() for sparse_array in contribs_csr]), 0, 1)
+    contribs_csr_array = np.swapaxes(np.array([sparse_array.toarray() for sparse_array in contribs_csr]), 0, 1)
     contribs_csr_arr_re = contribs_csr_array.reshape((contribs_csr_array.shape[0],
                                                       contribs_csr_array.shape[1] * contribs_csr_array.shape[2]))
     if platform.machine() == 'aarch64':
@@ -1104,7 +1124,7 @@ def test_contribs_sparse_multiclass():
     for perclass_contribs_csc in contribs_csc:
         assert isspmatrix_csc(perclass_contribs_csc)
     # validate the values are the same
-    contribs_csc_array = np.swapaxes(np.array([sparse_array.todense() for sparse_array in contribs_csc]), 0, 1)
+    contribs_csc_array = np.swapaxes(np.array([sparse_array.toarray() for sparse_array in contribs_csc]), 0, 1)
     contribs_csc_array = contribs_csc_array.reshape((contribs_csc_array.shape[0],
                                                      contribs_csc_array.shape[1] * contribs_csc_array.shape[2]))
     if platform.machine() == 'aarch64':
@@ -1252,8 +1272,8 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     return trainset
 
 
-@pytest.mark.parametrize("test_with_interaction_constraints", [True, False])
-def test_monotone_constraints(test_with_interaction_constraints):
+@pytest.mark.parametrize("test_with_categorical_variable", [True, False])
+def test_monotone_constraints(test_with_categorical_variable):
     def is_increasing(y):
         return (np.diff(y) >= 0.0).all()
 
@@ -1316,10 +1336,12 @@ def test_monotone_constraints(test_with_interaction_constraints):
 
         return not has_interaction_flag.any()
 
-    for test_with_categorical_variable in [True, False]:
-        trainset = generate_trainset_for_monotone_constraints_tests(
-            test_with_categorical_variable
-        )
+    trainset = generate_trainset_for_monotone_constraints_tests(
+        test_with_categorical_variable
+    )
+    for test_with_interaction_constraints in [True, False]:
+        error_msg = ("Model not correctly constrained "
+                     f"(test_with_interaction_constraints={test_with_interaction_constraints})")
         for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
             params = {
                 "min_data": 20,
@@ -1333,7 +1355,7 @@ def test_monotone_constraints(test_with_interaction_constraints):
             constrained_model = lgb.train(params, trainset)
             assert is_correctly_constrained(
                 constrained_model, test_with_categorical_variable
-            )
+            ), error_msg
             if test_with_interaction_constraints:
                 feature_sets = [["Column_0"], ["Column_1"], "Column_2"]
                 assert are_interactions_enforced(constrained_model, feature_sets)
@@ -1399,8 +1421,9 @@ def test_monotone_penalty_max():
     }
 
     unconstrained_model = lgb.train(params_unconstrained_model, trainset_unconstrained_model, 10)
-    unconstrained_model_predictions = unconstrained_model.\
-        predict(x3_negatively_correlated_with_y.reshape(-1, 1))
+    unconstrained_model_predictions = unconstrained_model.predict(
+        x3_negatively_correlated_with_y.reshape(-1, 1)
+    )
 
     for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
         params_constrained_model["monotone_constraints_method"] = monotone_constraints_method
@@ -1438,9 +1461,8 @@ def test_max_bin_by_feature():
 def test_small_max_bin():
     np.random.seed(0)
     y = np.random.choice([0, 1], 100)
-    x = np.zeros((100, 1))
+    x = np.ones((100, 1))
     x[:30, 0] = -1
-    x[30:60, 0] = 1
     x[60:, 0] = 2
     params = {'objective': 'binary',
               'seed': 0,
@@ -2020,12 +2042,12 @@ def test_model_size():
     multiplier = 100
     total_trees = multiplier + 2
     try:
-        new_model_str = (model_str[:model_str.find('tree_sizes')]
-                         + '\n\n'
-                         + model_str[model_str.find('Tree=0'):model_str.find('end of trees')]
-                         + (one_tree * multiplier).format(*range(2, total_trees))
-                         + model_str[model_str.find('end of trees'):]
-                         + ' ' * (2**31 - one_tree_size * total_trees))
+        before_tree_sizes = model_str[:model_str.find('tree_sizes')]
+        trees = model_str[model_str.find('Tree=0'):model_str.find('end of trees')]
+        more_trees = (one_tree * multiplier).format(*range(2, total_trees))
+        after_trees = model_str[model_str.find('end of trees'):]
+        num_end_spaces = 2**31 - one_tree_size * total_trees
+        new_model_str = f"{before_tree_sizes}\n\n{trees}{more_trees}{after_trees}{'':{num_end_spaces}}"
         assert len(new_model_str) > 2**31
         bst.model_from_string(new_model_str, verbose=False)
         assert bst.num_trees() == total_trees
@@ -2256,12 +2278,13 @@ def test_node_level_subcol():
 
 
 def test_forced_bins():
-    x = np.zeros((100, 2))
+    x = np.empty((100, 2))
     x[:, 0] = np.arange(0, 1, 0.01)
     x[:, 1] = -np.arange(0, 1, 0.01)
     y = np.arange(0, 1, 0.01)
-    forcedbins_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       '../../examples/regression/forced_bins.json')
+    forcedbins_filename = (
+        Path(__file__).absolute().parents[2] / 'examples' / 'regression' / 'forced_bins.json'
+    )
     params = {'objective': 'regression_l1',
               'max_bin': 5,
               'forcedbins_filename': forcedbins_filename,
@@ -2272,7 +2295,6 @@ def test_forced_bins():
     est = lgb.train(params, lgb_x, num_boost_round=20)
     new_x = np.zeros((3, x.shape[1]))
     new_x[:, 0] = [0.31, 0.37, 0.41]
-    new_x[:, 1] = [0, 0, 0]
     predicted = est.predict(new_x)
     assert len(np.unique(predicted)) == 3
     new_x[:, 0] = [0, 0, 0]
@@ -2284,8 +2306,9 @@ def test_forced_bins():
     est = lgb.train(params, lgb_x, num_boost_round=20)
     predicted = est.predict(new_x)
     assert len(np.unique(predicted)) == 3
-    params['forcedbins_filename'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                 '../../examples/regression/forced_bins2.json')
+    params['forcedbins_filename'] = (
+        Path(__file__).absolute().parents[2] / 'examples' / 'regression' / 'forced_bins2.json'
+    )
     params['max_bin'] = 11
     lgb_x = lgb.Dataset(x[:, :1], label=y)
     est = lgb.train(params, lgb_x, num_boost_round=50)
@@ -2297,7 +2320,7 @@ def test_forced_bins():
 
 def test_binning_same_sign():
     # test that binning works properly for features with only positive or only negative values
-    x = np.zeros((99, 2))
+    x = np.empty((99, 2))
     x[:, 0] = np.arange(0.01, 1, 0.01)
     x[:, 1] = -np.arange(0.01, 1, 0.01)
     y = np.arange(0.01, 1, 0.01)
@@ -2342,6 +2365,7 @@ def test_dataset_update_params():
                       "ignore_column": 0,
                       "min_data_in_leaf": 10,
                       "linear_tree": False,
+                      "precise_float_parser": True,
                       "verbose": -1}
     unchangeable_params = {"max_bin": 150,
                            "max_bin_by_feature": [30, 5],
@@ -2363,7 +2387,8 @@ def test_dataset_update_params():
                            "ignore_column": 1,
                            "forcedbins_filename": "/some/path/forcedbins.json",
                            "min_data_in_leaf": 2,
-                           "linear_tree": True}
+                           "linear_tree": True,
+                           "precise_float_parser": False}
     X = np.random.random((100, 2))
     y = np.random.random(100)
 
@@ -2394,10 +2419,13 @@ def test_dataset_update_params():
     for key, value in unchangeable_params.items():
         new_params = default_params.copy()
         new_params[key] = value
+        if key != "forcedbins_filename":
+            param_name = key
+        else:
+            param_name = "forced bins"
         err_msg = ("Reducing `min_data_in_leaf` with `feature_pre_filter=true` may cause *"
                    if key == "min_data_in_leaf"
-                   else "Cannot change {} *".format(key if key != "forcedbins_filename"
-                                                    else "forced bins"))
+                   else f"Cannot change {param_name} *")
         with np.testing.assert_raises_regex(lgb.basic.LightGBMError, err_msg):
             lgb.train(new_params, lgb_data, num_boost_round=3)
 
@@ -2456,7 +2484,7 @@ def test_trees_to_dataframe():
     pytest.importorskip("pandas")
 
     def _imptcs_to_numpy(X, impcts_dict):
-        cols = ['Column_' + str(i) for i in range(X.shape[1])]
+        cols = [f'Column_{i}' for i in range(X.shape[1])]
         return [impcts_dict.get(col, 0.) for col in cols]
 
     X, y = load_breast_cancer(return_X_y=True)
@@ -2793,3 +2821,48 @@ def test_reset_params_works_with_metric_num_class_and_boosting():
     expected_params = dict(dataset_params, **booster_params)
     assert bst.params == expected_params
     assert new_bst.params == expected_params
+
+
+def test_dump_model():
+    X, y = load_breast_cancer(return_X_y=True)
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "binary",
+        "verbose": -1
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model_str = str(bst.dump_model(5, 0))
+    assert "leaf_features" not in dumped_model_str
+    assert "leaf_coeff" not in dumped_model_str
+    assert "leaf_const" not in dumped_model_str
+    assert "leaf_value" in dumped_model_str
+    assert "leaf_count" in dumped_model_str
+    params['linear_tree'] = True
+    train_data = lgb.Dataset(X, label=y)
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model_str = str(bst.dump_model(5, 0))
+    assert "leaf_features" in dumped_model_str
+    assert "leaf_coeff" in dumped_model_str
+    assert "leaf_const" in dumped_model_str
+    assert "leaf_value" in dumped_model_str
+    assert "leaf_count" in dumped_model_str
+
+
+def test_dump_model_hook():
+
+    def hook(obj):
+        if 'leaf_value' in obj:
+            obj['LV'] = obj['leaf_value']
+            del obj['leaf_value']
+        return obj
+
+    X, y = load_breast_cancer(return_X_y=True)
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "binary",
+        "verbose": -1
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model_str = str(bst.dump_model(5, 0, object_hook=hook))
+    assert "leaf_value" not in dumped_model_str
+    assert "LV" in dumped_model_str

@@ -7,7 +7,7 @@
 lgb.cv(
   params = list(),
   data,
-  nrounds = 10L,
+  nrounds = 100L,
   nfold = 3L,
   label = NULL,
   weight = NULL,
@@ -29,7 +29,8 @@ lgb.cv(
 )
 }
 \arguments{
-\item{params}{List of parameters}
+\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+the "Parameters" section of the documentation} for a list of parameters and valid values.}
 
 \item{data}{a \code{lgb.Dataset} object, used for training. Some functions, such as \code{\link{lgb.cv}},
 may allow you to pass other types of data like \code{matrix} and then separately supply
@@ -87,7 +88,9 @@ may allow you to pass other types of data like \code{matrix} and then separately
 
 \item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
 
-\item{showsd}{\code{boolean}, whether to show standard deviation of cross validation}
+\item{showsd}{\code{boolean}, whether to show standard deviation of cross validation.
+This parameter defaults to \code{TRUE}. Setting it to \code{FALSE} can lead to a
+slight speedup by avoiding unnecessary computation.}
 
 \item{stratified}{a \code{boolean} indicating whether sampling of folds should be stratified
 by the values of outcome labels.}
@@ -104,10 +107,11 @@ the \code{nfold} and \code{stratified} parameters are ignored.}
 names or an integer vector with the indices of the features (e.g.
 \code{c(1L, 10L)} to say "the first and tenth columns").}
 
-\item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
-and one metric. If there's more than one, will check all of them
-except the training data. Returns the model with (best_iter + early_stopping_rounds).
-If early stopping occurs, the model will have 'best_iter' field.}
+\item{early_stopping_rounds}{int. Activates early stopping. When this parameter is non-null,
+training will stop if the evaluation of any metric on any validation set
+fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
+If training stops early, the returned model will have attribute \code{best_iter}
+set to the iteration number of the best iteration.}
 
 \item{callbacks}{List of callback functions that are applied at each iteration.}
 
@@ -121,9 +125,11 @@ into a predictor model which frees up memory and the original datasets}
     \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
                      overfit when #data is small. Tree still grow by leaf-wise.}
     \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-                       the number of real CPU cores, not the number of threads (most
-                       CPU using hyper-threading to generate 2 threads per CPU core).}
-}}
+                 the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
+                 not the number of threads (most CPU using hyper-threading to generate 2 threads
+                 per CPU core).}
+}
+NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
 }
 \value{
 a trained model \code{lgb.CVBooster}.
@@ -153,14 +159,17 @@ Cross validation logic used by LightGBM
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
-params <- list(objective = "regression", metric = "l2")
+params <- list(
+  objective = "regression"
+  , metric = "l2"
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 model <- lgb.cv(
   params = params
   , data = dtrain
   , nrounds = 5L
   , nfold = 3L
-  , min_data = 1L
-  , learning_rate = 1.0
 )
 }
 }

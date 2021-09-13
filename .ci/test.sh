@@ -8,14 +8,22 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CC=clang
 fi
 
-if [[ "${TASK}" == "r-package" ]]; then
+if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
     bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
     exit 0
 fi
 
 if [[ "$TASK" == "cpp-tests" ]]; then
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
-    cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF ..
+    if [[ $METHOD == "with-sanitizers" ]]; then
+        extra_cmake_opts="-DUSE_SANITIZER=ON"
+        if [[ -n $SANITIZERS ]]; then
+            extra_cmake_opts="$extra_cmake_opts -DENABLED_SANITIZERS=$SANITIZERS"
+        fi
+    else
+        extra_cmake_opts=""
+    fi
+    cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts ..
     make testlightgbm -j4 || exit -1
     ./../testlightgbm || exit -1
     exit 0
@@ -32,9 +40,9 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     pip install --user -r requirements.txt
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
-    rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
+    rstcheck --report warning $(find . -type f -name "*.rst") || exit -1
     cd $BUILD_DIRECTORY/docs
-    rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile `find . -type f -name "*.rst"` || exit -1
+    rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile $(find . -type f -name "*.rst") || exit -1
     # build docs
     make html || exit -1
     if [[ $TASK == "check-links" ]]; then
@@ -105,13 +113,7 @@ if [[ $TASK == "swig" ]]; then
 fi
 
 conda install -q -y -n $CONDA_ENV cloudpickle dask distributed joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
-
-# graphviz must come from conda-forge to avoid this on some linux distros:
-# https://github.com/conda-forge/graphviz-feedstock/issues/18
-conda install -q -y \
-    -n $CONDA_ENV \
-    -c conda-forge \
-        python-graphviz
+pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
@@ -225,8 +227,9 @@ import matplotlib\
 matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
+    conda install -q -y -n $CONDA_ENV h5py ipywidgets notebook  # requirements for examples
     for f in *.py **/*.py; do python $f || exit -1; done  # run all examples
     cd $BUILD_DIRECTORY/examples/python-guide/notebooks
-    conda install -q -y -n $CONDA_ENV ipywidgets notebook
+    sed -i'.bak' 's/INTERACTIVE = False/assert False, \\"Interactive mode disabled\\"/' interactive_plot_example.ipynb
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks
 fi

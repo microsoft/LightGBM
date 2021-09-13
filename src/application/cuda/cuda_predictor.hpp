@@ -26,7 +26,7 @@ class CUDAPredictor : public Predictor {
 
   ~CUDAPredictor();
 
-  virtual void Predict(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check) override;
+  virtual void Predict(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check, bool precise_float_parser) override;
 
   virtual void Predict(const data_size_t num_data,
                        const int64_t num_pred_in_one_row,

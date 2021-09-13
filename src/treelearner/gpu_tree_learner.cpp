@@ -119,7 +119,7 @@ int GPUTreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
 }
 
 void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_features) {
-  // we have already copied ordered gradients, ordered hessians and indices to GPU
+  // we have already copied ordered gradients, ordered Hessians and indices to GPU
   // decide the best number of workgroups working on one feature4 tuple
   // set work group size based on feature size
   // each 2^exp_workgroups_per_feature workgroups work on a feature4 tuple
@@ -164,7 +164,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featur
   // there will be 2^exp_workgroups_per_feature = num_workgroups / num_dense_feature4 sub-histogram per feature4
   // and we will launch num_feature workgroups for this kernel
   // will launch threads for all features
-  // the queue should be asynchrounous, and we will can WaitAndGetHistograms() before we start processing dense feature groups
+  // the queue should be asynchronous, and we will can WaitAndGetHistograms() before we start processing dense feature groups
   if (leaf_num_data == num_data_) {
     kernel_wait_obj_ = boost::compute::wait_list(
       queue_.enqueue_1d_range_kernel(histogram_fulldata_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
@@ -256,7 +256,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   if (ptr_pinned_feature_masks_) {
     queue_.enqueue_unmap_buffer(pinned_feature_masks_, ptr_pinned_feature_masks_);
   }
-  // make ordered_gradients and hessians larger (including extra room for prefetching), and pin them
+  // make ordered_gradients and Hessians larger (including extra room for prefetching), and pin them
   ordered_gradients_.reserve(allocated_num_data_);
   ordered_hessians_.reserve(allocated_num_data_);
   pinned_gradients_ = boost::compute::buffer();  // deallocate
@@ -271,8 +271,8 @@ void GPUTreeLearner::AllocateGPUMemory() {
                                              ordered_hessians_.data());
   ptr_pinned_hessians_ = queue_.enqueue_map_buffer(pinned_hessians_, boost::compute::command_queue::map_write_invalidate_region,
                                                    0, allocated_num_data_ * sizeof(score_t));
-  // allocate space for gradients and hessians on device
-  // we will copy gradients and hessians in after ordered_gradients_ and ordered_hessians_ are constructed
+  // allocate space for gradients and Hessians on device
+  // we will copy gradients and Hessians in after ordered_gradients_ and ordered_hessians_ are constructed
   device_gradients_ = boost::compute::buffer();  // deallocate
   device_gradients_ = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t),
                       boost::compute::memory_object::read_only, nullptr);
@@ -599,7 +599,7 @@ void GPUTreeLearner::BuildGPUKernels() {
     }
     histogram_kernels_[i] = program.create_kernel(kernel_name_);
 
-    // kernel with all features enabled, with elimited branches
+    // kernel with all features enabled, with eliminated branches
     opts << " -D ENABLE_ALL_FEATURES=1";
     try {
       program = boost::compute::program::build_with_source(kernel_source_, ctx_, opts.str());
@@ -781,8 +781,8 @@ void GPUTreeLearner::BeforeTrain() {
 
   // use bagging
   if (data_partition_->leaf_count(0) != num_data_ && num_dense_feature_groups_) {
-    // On GPU, we start copying indices, gradients and hessians now, instead at ConstructHistogram()
-    // copy used gradients and hessians to ordered buffer
+    // On GPU, we start copying indices, gradients and Hessians now, instead at ConstructHistogram()
+    // copy used gradients and Hessians to ordered buffer
     const data_size_t* indices = data_partition_->indices();
     data_size_t cnt = data_partition_->leaf_count(0);
     #if GPU_DEBUG > 0
@@ -829,7 +829,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
     smaller_leaf = right_leaf;
   }
 
-  // Copy indices, gradients and hessians as early as possible
+  // Copy indices, gradients and Hessians as early as possible
   if (smaller_leaf >= 0 && num_dense_feature_groups_) {
     // only need to initialize for smaller leaf
     // Get leaf boundary
@@ -839,7 +839,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
 
     // copy indices to the GPU:
     #if GPU_DEBUG >= 2
-    Log::Info("Copying indices, gradients and hessians to GPU...");
+    Log::Info("Copying indices, gradients and Hessians to GPU...");
     printf("Indices size %d being copied (left = %d, right = %d)\n", end - begin, num_data_in_left_child, num_data_in_right_child);
     #endif
     indices_future_ = boost::compute::copy_async(indices + begin, indices + end, device_data_indices_->begin(), queue_);
@@ -849,7 +849,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
       for (data_size_t i = begin; i < end; ++i) {
         ordered_hessians_[i - begin] = hessians_[indices[i]];
       }
-      // copy ordered hessians to the GPU:
+      // copy ordered Hessians to the GPU:
       hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, (end - begin) * sizeof(score_t), ptr_pinned_hessians_);
     }
 
@@ -861,7 +861,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
     gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, (end - begin) * sizeof(score_t), ptr_pinned_gradients_);
 
     #if GPU_DEBUG >= 2
-    Log::Info("Gradients/hessians/indices copied to device with size %d", end - begin);
+    Log::Info("Gradients/Hessians/indices copied to device with size %d", end - begin);
     #endif
   }
   return SerialTreeLearner::BeforeFindBestSplit(tree, left_leaf, right_leaf);
@@ -896,7 +896,7 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
       gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, num_data * sizeof(score_t), gradients);
     }
   }
-  // generate and copy ordered_hessians if hessians is not null
+  // generate and copy ordered_hessians if Hessians is not null
   if (hessians != nullptr && !share_state_->is_constant_hessian) {
     if (num_data != num_data_) {
       #pragma omp parallel for schedule(static)
@@ -965,7 +965,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
   }
   // construct smaller leaf
   hist_t* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - kHistOffset;
-  // ConstructGPUHistogramsAsync will return true if there are availabe feature gourps dispatched to GPU
+  // ConstructGPUHistogramsAsync will return true if there are available feature groups dispatched to GPU
   bool is_gpu_used = ConstructGPUHistogramsAsync(is_feature_used,
     nullptr, smaller_leaf_splits_->num_data_in_leaf(),
     nullptr, nullptr,
@@ -988,7 +988,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     }
   }
 
-  // Compare GPU histogram with CPU histogram, useful for debuggin GPU code problem
+  // Compare GPU histogram with CPU histogram, useful for debugging GPU code problem
   // #define GPU_DEBUG_COMPARE
   #ifdef GPU_DEBUG_COMPARE
   for (int i = 0; i < num_dense_feature_groups_; ++i) {

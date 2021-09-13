@@ -111,7 +111,7 @@ cb.reset.parameters <- function(new_params) {
 }
 
 # Format the evaluation metric string
-format.eval.string <- function(eval_res, eval_err = NULL) {
+format.eval.string <- function(eval_res, eval_err) {
 
   # Check for empty evaluation string
   if (is.null(eval_res) || length(eval_res) == 0L) {
@@ -158,7 +158,7 @@ merge.eval.string <- function(env) {
 
 }
 
-cb.print.evaluation <- function(period = 1L) {
+cb.print.evaluation <- function(period) {
 
   # Create callback
   callback <- function(env) {
@@ -271,7 +271,7 @@ cb.record.evaluation <- function() {
 
 }
 
-cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = TRUE) {
+cb.early.stop <- function(stopping_rounds, first_metric_only, verbose) {
 
   factor_to_bigger_better <- NULL
   best_iter <- NULL
@@ -324,7 +324,7 @@ cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = 
   }
 
   # Create callback
-  callback <- function(env, finalize = FALSE) {
+  callback <- function(env) {
 
     # Check for empty evaluation
     if (is.null(eval_len)) {
@@ -365,17 +365,13 @@ cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = 
           # Check if early stopping is required
           if (cur_iter - best_iter[i] >= stopping_rounds) {
 
-            # Check if model is not null
             if (!is.null(env$model)) {
               env$model$best_score <- best_score[i]
               env$model$best_iter <- best_iter[i]
             }
 
-            # Print message if verbose
             if (isTRUE(verbose)) {
-
               print(paste0("Early stopping, best iteration is: ", best_msg[[i]]))
-
             }
 
             # Store best iteration and stop
@@ -386,13 +382,12 @@ cb.early.stop <- function(stopping_rounds, first_metric_only = FALSE, verbose = 
         }
 
       if (!isTRUE(env$met_early_stop) && cur_iter == env$end_iteration) {
-        # Check if model is not null
+
         if (!is.null(env$model)) {
           env$model$best_score <- best_score[i]
           env$model$best_iter <- best_iter[i]
         }
 
-        # Print message if verbose
         if (isTRUE(verbose)) {
           print(paste0("Did not meet early stopping, best iteration is: ", best_msg[[i]]))
         }
@@ -427,7 +422,6 @@ add.cb <- function(cb_list, cb) {
   # Set names of elements
   names(cb_list) <- callback.names(cb_list = cb_list)
 
-  # Check for existence
   if ("cb.early.stop" %in% names(cb_list)) {
 
     # Concatenate existing elements
@@ -438,7 +432,6 @@ add.cb <- function(cb_list, cb) {
 
   }
 
-  # Return element
   return(cb_list)
 
 }

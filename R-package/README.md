@@ -55,7 +55,7 @@ model <- lgb.cv(
 install.packages("lightgbm", repos = "https://cran.r-project.org")
 ```
 
-This is the easiest way to install `{lightgbm}`. It does not require `CMake` or `Visual Studio`, and  should work well on many different operating systems and compilers.
+This is the easiest way to install `{lightgbm}`. It does not require `CMake` or `Visual Studio`, and should work well on many different operating systems and compilers.
 
 Each CRAN package is also available on [LightGBM releases](https://github.com/microsoft/LightGBM/releases), with a name like `lightgbm-{VERSION}-r-cran.tar.gz`.
 
@@ -374,7 +374,7 @@ docker run \
     -it rhub/rocker-gcc-san \
     /bin/bash
 
-Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
+Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
 sh build-cran-package.sh
 
@@ -396,7 +396,7 @@ docker run \
     -it \
         wch1/r-debug
 
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.rstudio.com')"
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
 sh build-cran-package.sh
 

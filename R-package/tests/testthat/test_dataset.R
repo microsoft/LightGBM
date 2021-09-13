@@ -1,7 +1,8 @@
-library(lightgbm)
-library(Matrix)
-
 context("testing lgb.Dataset functionality")
+
+data(agaricus.train, package = "lightgbm")
+train_data <- agaricus.train$data[seq_len(1000L), ]
+train_label <- agaricus.train$label[seq_len(1000L)]
 
 data(agaricus.test, package = "lightgbm")
 test_data <- agaricus.test$data[1L:100L, ]
@@ -49,6 +50,146 @@ test_that("lgb.Dataset: slice, dim", {
   expect_equal(ncol(dsub1), ncol(test_data))
 })
 
+test_that("Dataset$slice() supports passing additional parameters through '...'", {
+  dtest <- lgb.Dataset(test_data, label = test_label)
+  dtest$construct()
+  dsub1 <- slice(
+    dataset = dtest
+    , idxset = seq_len(42L)
+    , feature_pre_filter = FALSE
+  )
+  dsub1$construct()
+  expect_identical(dtest$get_params(), list())
+  expect_identical(dsub1$get_params(), list(feature_pre_filter = FALSE))
+})
+
+test_that("Dataset$slice() supports passing Dataset attributes through '...'", {
+  dtest <- lgb.Dataset(test_data, label = test_label)
+  dtest$construct()
+  num_subset_rows <- 51L
+  init_score <- rnorm(n = num_subset_rows)
+  dsub1 <- slice(
+    dataset = dtest
+    , idxset = seq_len(num_subset_rows)
+    , init_score = init_score
+  )
+  dsub1$construct()
+  expect_null(dtest$getinfo("init_score"), NULL)
+  expect_identical(dsub1$getinfo("init_score"), init_score)
+})
+
+test_that("Dataset$set_reference() on a constructed Dataset fails if raw data has been freed", {
+  dtrain <- lgb.Dataset(train_data, label = train_label)
+  dtrain$construct()
+  dtest <- lgb.Dataset(test_data, label = test_label)
+  dtest$construct()
+  expect_error({
+    dtest$set_reference(dtrain)
+  }, regexp = "cannot set reference after freeing raw data")
+})
+
+test_that("Dataset$set_reference() fails if reference is not a Dataset", {
+  dtrain <- lgb.Dataset(
+    train_data
+    , label = train_label
+    , free_raw_data = FALSE
+  )
+  expect_error({
+    dtrain$set_reference(reference = data.frame(x = rnorm(10L)))
+  }, regexp = "Can only use lgb.Dataset as a reference")
+
+  # passing NULL when the Dataset already has a reference raises an error
+  dtest <- lgb.Dataset(
+    test_data
+    , label = test_label
+    , free_raw_data = FALSE
+  )
+  dtrain$set_reference(dtest)
+  expect_error({
+    dtrain$set_reference(reference = NULL)
+  }, regexp = "Can only use lgb.Dataset as a reference")
+})
+
+test_that("Dataset$set_reference() setting reference to the same Dataset has no side effects", {
+  dtrain <- lgb.Dataset(
+    train_data
+    , label = train_label
+    , free_raw_data = FALSE
+    , categorical_feature = c(2L, 3L)
+  )
+  dtrain$construct()
+
+  cat_features_before <- dtrain$.__enclos_env__$private$categorical_feature
+  colnames_before <- dtrain$get_colnames()
+  predictor_before <- dtrain$.__enclos_env__$private$predictor
+
+  dtrain$set_reference(dtrain)
+  expect_identical(
+    cat_features_before
+    , dtrain$.__enclos_env__$private$categorical_feature
+  )
+  expect_identical(
+    colnames_before
+    , dtrain$get_colnames()
+  )
+  expect_identical(
+    predictor_before
+    , dtrain$.__enclos_env__$private$predictor
+  )
+})
+
+test_that("Dataset$set_reference() updates categorical_feature, colnames, and predictor", {
+  dtrain <- lgb.Dataset(
+    train_data
+    , label = train_label
+    , free_raw_data = FALSE
+    , categorical_feature = c(2L, 3L)
+  )
+  dtrain$construct()
+  bst <- Booster$new(
+    train_set = dtrain
+    , params = list(verbose = -1L)
+  )
+  dtrain$.__enclos_env__$private$predictor <- bst$to_predictor()
+
+  test_original_feature_names <- paste0("feature_col_", seq_len(ncol(test_data)))
+  dtest <- lgb.Dataset(
+    test_data
+    , label = test_label
+    , free_raw_data = FALSE
+    , colnames = test_original_feature_names
+  )
+  dtest$construct()
+
+  # at this point, dtest should not have categorical_feature
+  expect_null(dtest$.__enclos_env__$private$predictor)
+  expect_null(dtest$.__enclos_env__$private$categorical_feature)
+  expect_identical(
+    dtest$get_colnames()
+    , test_original_feature_names
+  )
+
+  dtest$set_reference(dtrain)
+
+  # after setting reference to dtrain, those attributes should have dtrain's values
+  expect_is(dtest$.__enclos_env__$private$predictor, "lgb.Predictor")
+  expect_identical(
+    dtest$.__enclos_env__$private$predictor$.__enclos_env__$private$handle
+    , dtrain$.__enclos_env__$private$predictor$.__enclos_env__$private$handle
+  )
+  expect_identical(
+    dtest$.__enclos_env__$private$categorical_feature
+    , dtrain$.__enclos_env__$private$categorical_feature
+  )
+  expect_identical(
+    dtest$get_colnames()
+    , dtrain$get_colnames()
+  )
+  expect_false(
+    identical(dtest$get_colnames(), test_original_feature_names)
+  )
+})
+
 test_that("lgb.Dataset: colnames", {
   dtest <- lgb.Dataset(test_data, label = test_label)
   expect_equal(colnames(dtest), colnames(test_data))
@@ -73,20 +214,32 @@ test_that("lgb.Dataset: nrow is correct for a very sparse matrix", {
 
 test_that("lgb.Dataset: Dataset should be able to construct from matrix and return non-null handle", {
   rawData <- matrix(runif(1000L), ncol = 10L)
-  handle <- lgb.null.handle()
   ref_handle <- NULL
-  handle <- lightgbm:::lgb.call(
-    "LGBM_DatasetCreateFromMat_R"
-    , ret = handle
+  handle <- .Call(
+    LGBM_DatasetCreateFromMat_R
     , rawData
     , nrow(rawData)
     , ncol(rawData)
     , lightgbm:::lgb.params2str(params = list())
     , ref_handle
   )
-  expect_false(is.na(handle))
-  lgb.call("LGBM_DatasetFree_R", ret = NULL, handle)
+  expect_is(handle, "externalptr")
+  expect_false(is.null(handle))
+  .Call(LGBM_DatasetFree_R, handle)
   handle <- NULL
+})
+
+test_that("cpp errors should be raised as proper R errors", {
+  data(agaricus.train, package = "lightgbm")
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(
+    train$data
+    , label = train$label
+    , init_score = seq_len(10L)
+  )
+  expect_error({
+    dtrain$construct()
+  }, regexp = "Initial score size doesn't match data size")
 })
 
 test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {
@@ -206,6 +359,24 @@ test_that("Dataset$update_params() works correctly for recognized Dataset parame
   }
 })
 
+test_that("Dataset$finalize() should not fail on an already-finalized Dataset", {
+  dtest <- lgb.Dataset(
+    data = test_data
+    , label = test_label
+  )
+  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+
+  dtest$construct()
+  expect_false(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+
+  dtest$finalize()
+  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+
+  # calling finalize() a second time shouldn't cause any issues
+  dtest$finalize()
+  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+})
+
 test_that("lgb.Dataset: should be able to run lgb.train() immediately after using lgb.Dataset() on a file", {
   dtest <- lgb.Dataset(
     data = test_data
@@ -264,4 +435,64 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
   )
 
   expect_is(bst, "lgb.CVBooster")
+})
+
+test_that("lgb.Dataset: should be able to use and retrieve long feature names", {
+  # set one feature to a value longer than the default buffer size used
+  # in LGBM_DatasetGetFeatureNames_R
+  feature_names <- names(iris)
+  long_name <- paste0(rep("a", 1000L), collapse = "")
+  feature_names[1L] <- long_name
+  names(iris) <- feature_names
+  # check that feature name survived the trip from R to C++ and back
+  dtrain <- lgb.Dataset(
+    data = as.matrix(iris[, -5L])
+    , label = as.numeric(iris$Species) - 1L
+  )
+  dtrain$construct()
+  col_names <- dtrain$get_colnames()
+  expect_equal(col_names[1L], long_name)
+  expect_equal(nchar(col_names[1L]), 1000L)
+})
+
+test_that("lgb.Dataset: should be able to create a Dataset from a text file with a header", {
+  train_file <- tempfile(pattern = "train_", fileext = ".csv")
+  write.table(
+    data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+    , file = train_file
+    , sep = ","
+    , col.names = TRUE
+    , row.names = FALSE
+    , quote = FALSE
+  )
+
+  dtrain <- lgb.Dataset(
+    data = train_file
+    , params = list(header = TRUE)
+  )
+  dtrain$construct()
+  expect_identical(dtrain$get_colnames(), c("x1", "x2"))
+  expect_identical(dtrain$get_params(), list(header = TRUE))
+  expect_identical(dtrain$dim(), c(100L, 2L))
+})
+
+test_that("lgb.Dataset: should be able to create a Dataset from a text file without a header", {
+  train_file <- tempfile(pattern = "train_", fileext = ".csv")
+  write.table(
+    data.frame(y = rnorm(100L), x1 = rnorm(100L), x2 = rnorm(100L))
+    , file = train_file
+    , sep = ","
+    , col.names = FALSE
+    , row.names = FALSE
+    , quote = FALSE
+  )
+
+  dtrain <- lgb.Dataset(
+    data = train_file
+    , params = list(header = FALSE)
+  )
+  dtrain$construct()
+  expect_identical(dtrain$get_colnames(), c("Column_0", "Column_1"))
+  expect_identical(dtrain$get_params(), list(header = FALSE))
+  expect_identical(dtrain$dim(), c(100L, 2L))
 })

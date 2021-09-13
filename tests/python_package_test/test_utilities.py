@@ -10,7 +10,7 @@ def test_register_logger(tmp_path):
     logger = logging.getLogger("LightGBM")
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(levelname)s | %(message)s')
-    log_filename = str(tmp_path / "LightGBM_test_logger.log")
+    log_filename = tmp_path / "LightGBM_test_logger.log"
     file_handler = logging.FileHandler(log_filename, mode="w", encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
@@ -31,10 +31,14 @@ def test_register_logger(tmp_path):
     lgb_data = lgb.Dataset(X, y)
 
     eval_records = {}
+    callbacks = [
+        lgb.record_evaluation(eval_records),
+        lgb.print_evaluation(2),
+        lgb.early_stopping(4)
+    ]
     lgb.train({'objective': 'binary', 'metric': ['auc', 'binary_error']},
               lgb_data, num_boost_round=10, feval=dummy_metric,
-              valid_sets=[lgb_data], evals_result=eval_records,
-              categorical_feature=[1], early_stopping_rounds=4, verbose_eval=2)
+              valid_sets=[lgb_data], categorical_feature=[1], callbacks=callbacks)
 
     lgb.plot_metric(eval_records)
 

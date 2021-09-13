@@ -9,7 +9,7 @@ lightgbm(
   label = NULL,
   weight = NULL,
   params = list(),
-  nrounds = 10L,
+  nrounds = 100L,
   verbose = 1L,
   eval_freq = 1L,
   early_stopping_rounds = NULL,
@@ -28,7 +28,8 @@ may allow you to pass other types of data like \code{matrix} and then separately
 
 \item{weight}{vector of response values. If not NULL, will set to dataset}
 
-\item{params}{List of parameters}
+\item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+the "Parameters" section of the documentation} for a list of parameters and valid values.}
 
 \item{nrounds}{number of training rounds}
 
@@ -36,10 +37,11 @@ may allow you to pass other types of data like \code{matrix} and then separately
 
 \item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
 
-\item{early_stopping_rounds}{int. Activates early stopping. Requires at least one validation data
-and one metric. If there's more than one, will check all of them
-except the training data. Returns the model with (best_iter + early_stopping_rounds).
-If early stopping occurs, the model will have 'best_iter' field.}
+\item{early_stopping_rounds}{int. Activates early stopping. When this parameter is non-null,
+training will stop if the evaluation of any metric on any validation set
+fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
+If training stops early, the returned model will have attribute \code{best_iter}
+set to the iteration number of the best iteration.}
 
 \item{save_name}{File name to use when writing the trained model to disk. Should end in ".model".}
 
@@ -66,8 +68,9 @@ If early stopping occurs, the model will have 'best_iter' field.}
     \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
                      overfit when #data is small. Tree still grow by leaf-wise.}
      \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-                        the number of real CPU cores, not the number of threads (most
-                        CPU using hyper-threading to generate 2 threads per CPU core).}
+                        the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
+                        not the number of threads (most CPU using hyper-threading to generate 2 threads
+                        per CPU core).}
 }}
 }
 \value{

@@ -23,12 +23,12 @@ CUDAPredictor::CUDAPredictor(Boosting* boosting, int start_iteration, int num_it
 
 CUDAPredictor::~CUDAPredictor() {}
 
-void CUDAPredictor::Predict(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check) {
+void CUDAPredictor::Predict(const char* data_filename, const char* result_filename, bool header, bool disable_shape_check, bool precise_float_parser) {
   if (predict_leaf_index_) {
     CHECK_EQ(num_pred_in_one_row_, static_cast<int64_t>(num_iteration_));
   }
   auto label_idx = header ? -1 : boosting_->LabelIdx();
-  auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, header, boosting_->MaxFeatureIdx() + 1, label_idx));
+  auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, header, boosting_->MaxFeatureIdx() + 1, label_idx, precise_float_parser));
   if (parser == nullptr) {
     Log::Fatal("Could not recognize the data format of data file %s", data_filename);
   }

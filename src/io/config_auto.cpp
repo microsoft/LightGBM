@@ -72,6 +72,7 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"colsample_bytree", "feature_fraction"},
   {"sub_feature_bynode", "feature_fraction_bynode"},
   {"colsample_bynode", "feature_fraction_bynode"},
+  {"extra_tree", "extra_trees"},
   {"early_stopping_rounds", "early_stopping_round"},
   {"early_stopping", "early_stopping_round"},
   {"n_iter_no_change", "early_stopping_round"},
@@ -104,6 +105,7 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"model_output", "output_model"},
   {"model_out", "output_model"},
   {"save_period", "snapshot_freq"},
+  {"linear_trees", "linear_tree"},
   {"subsample_for_bin", "bin_construct_sample_cnt"},
   {"data_seed", "data_random_seed"},
   {"is_sparse", "is_enable_sparse"},
@@ -174,7 +176,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "task",
   "objective",
   "boosting",
-  "linear_tree",
   "data",
   "valid",
   "num_iterations",
@@ -239,6 +240,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "output_model",
   "saved_feature_importance_type",
   "snapshot_freq",
+  "linear_tree",
   "max_bin",
   "max_bin_by_feature",
   "min_data_in_bin",
@@ -259,6 +261,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "categorical_feature",
   "forcedbins_filename",
   "save_binary",
+  "precise_float_parser",
   "start_iteration_predict",
   "num_iteration_predict",
   "predict_raw_score",
@@ -306,8 +309,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
 
 void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {
   std::string tmp_str = "";
-  GetBool(params, "linear_tree", &linear_tree);
-
   GetString(params, "data", &data);
 
   if (GetString(params, "valid", &tmp_str)) {
@@ -480,6 +481,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetInt(params, "snapshot_freq", &snapshot_freq);
 
+  GetBool(params, "linear_tree", &linear_tree);
+
   GetInt(params, "max_bin", &max_bin);
   CHECK_GT(max_bin, 1);
 
@@ -524,6 +527,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetString(params, "forcedbins_filename", &forcedbins_filename);
 
   GetBool(params, "save_binary", &save_binary);
+
+  GetBool(params, "precise_float_parser", &precise_float_parser);
 
   GetInt(params, "start_iteration_predict", &start_iteration_predict);
 
@@ -629,7 +634,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
 std::string Config::SaveMembersToString() const {
   std::stringstream str_buf;
-  str_buf << "[linear_tree: " << linear_tree << "]\n";
   str_buf << "[data: " << data << "]\n";
   str_buf << "[valid: " << Common::Join(valid, ",") << "]\n";
   str_buf << "[num_iterations: " << num_iterations << "]\n";
@@ -688,6 +692,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[interaction_constraints: " << interaction_constraints << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[saved_feature_importance_type: " << saved_feature_importance_type << "]\n";
+  str_buf << "[linear_tree: " << linear_tree << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";
@@ -707,6 +712,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[ignore_column: " << ignore_column << "]\n";
   str_buf << "[categorical_feature: " << categorical_feature << "]\n";
   str_buf << "[forcedbins_filename: " << forcedbins_filename << "]\n";
+  str_buf << "[precise_float_parser: " << precise_float_parser << "]\n";
   str_buf << "[objective_seed: " << objective_seed << "]\n";
   str_buf << "[num_class: " << num_class << "]\n";
   str_buf << "[is_unbalance: " << is_unbalance << "]\n";

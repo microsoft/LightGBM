@@ -347,7 +347,7 @@ void Config::CheckParamConflict() {
     Log::Warning("CUDA currently requires double precision calculations.");
     gpu_use_dp = true;
   }
-  // linear tree learner must be serial type and run on cpu device
+  // linear tree learner must be serial type and run on CPU device
   if (linear_tree) {
     if (device_type != std::string("cpu")) {
       device_type = "cpu";

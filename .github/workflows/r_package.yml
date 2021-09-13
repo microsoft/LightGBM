@@ -123,6 +123,14 @@ jobs:
             compiler: clang
             r_version: 4.0
             build_type: cran
+          ################
+          # Other checks #
+          ################
+          - os: ubuntu-latest
+            task: r-rchk
+            compiler: gcc
+            r_version: 4.0
+            build_type: cran
     steps:
       - name: Prevent conversion of line endings on Windows
         if: startsWith(matrix.os, 'windows')
@@ -173,7 +181,7 @@ jobs:
       - name: Install Git before checkout
         shell: bash
         run: |
-          apt-get update
+          apt-get update --allow-releaseinfo-change
           apt-get install --no-install-recommends -y git
       - name: Checkout repository
         uses: actions/checkout@v2.3.4
@@ -183,7 +191,7 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.r-project.org')"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
           Rdevel CMD INSTALL lightgbm_*.tar.gz || exit -1
       - name: Run tests with sanitizers
@@ -202,7 +210,7 @@ jobs:
       - name: Install Git before checkout
         shell: bash
         run: |
-          apt-get update
+          apt-get update --allow-releaseinfo-change
           apt-get install --no-install-recommends -y git
       - name: Checkout repository
         uses: actions/checkout@v2.3.4
@@ -213,7 +221,7 @@ jobs:
         shell: bash
         run: |
           export PATH=/opt/R-devel/bin/:${PATH}
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.r-project.org')"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
           R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
           if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then

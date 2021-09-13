@@ -2,7 +2,7 @@
 #' @title saveRDS for \code{lgb.Booster} models
 #' @description Attempts to save a model using RDS. Has an additional parameter (\code{raw})
 #'              which decides whether to save the raw model or not.
-#' @param object R object to serialize.
+#' @param object \code{lgb.Booster} object to serialize.
 #' @param file a connection or the name of the file where the R object is saved to or read from.
 #' @param ascii a logical. If TRUE or NA, an ASCII representation is written; otherwise (default),
 #'              a binary one is used. See the comments in the help for save.
@@ -26,15 +26,18 @@
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'     params = params
 #'     , data = dtrain
 #'     , nrounds = 10L
 #'     , valids = valids
-#'     , min_data = 1L
-#'     , learning_rate = 1.0
 #'     , early_stopping_rounds = 5L
 #' )
 #' model_file <- tempfile(fileext = ".rds")

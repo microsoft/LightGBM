@@ -179,7 +179,7 @@ class MultiSoftmaxLoglossMetric: public MulticlassMetric<MultiSoftmaxLoglossMetr
   }
 };
 
-/*! \brief Auc-mu for multiclass task*/
+/*! \brief AUC mu for multiclass task*/
 class AucMuMetric : public Metric {
  public:
   explicit AucMuMetric(const Config& config) : config_(config) {
@@ -275,7 +275,7 @@ class AucMuMetric : public Metric {
             return false;
           }
         });
-        // calculate auc
+        // calculate AUC
         double num_j = 0;
         double last_j_dist = 0;
         double num_current_j = 0;

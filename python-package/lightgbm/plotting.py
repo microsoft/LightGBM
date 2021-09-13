@@ -2,6 +2,7 @@
 """Plotting library."""
 from copy import deepcopy
 from io import BytesIO
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -10,24 +11,36 @@ from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
 from .sklearn import LGBMModel
 
 
-def _check_not_tuple_of_2_elements(obj, obj_name='obj'):
+def _check_not_tuple_of_2_elements(obj: Any, obj_name: str = 'obj') -> None:
     """Check object is not tuple or does not have 2 elements."""
     if not isinstance(obj, tuple) or len(obj) != 2:
-        raise TypeError('%s must be a tuple of 2 elements.' % obj_name)
+        raise TypeError(f"{obj_name} must be a tuple of 2 elements.")
 
 
-def _float2str(value, precision=None):
-    return ("{0:.{1}f}".format(value, precision)
+def _float2str(value: float, precision: Optional[int] = None) -> str:
+    return (f"{value:.{precision}f}"
             if precision is not None and not isinstance(value, str)
             else str(value))
 
 
-def plot_importance(booster, ax=None, height=0.2,
-                    xlim=None, ylim=None, title='Feature importance',
-                    xlabel='Feature importance', ylabel='Features',
-                    importance_type='split', max_num_features=None,
-                    ignore_zero=True, figsize=None, dpi=None, grid=True,
-                    precision=3, **kwargs):
+def plot_importance(
+    booster: Union[Booster, LGBMModel],
+    ax=None,
+    height: float = 0.2,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None,
+    title: Optional[str] = 'Feature importance',
+    xlabel: Optional[str] = 'Feature importance',
+    ylabel: Optional[str] = 'Features',
+    importance_type: str = 'auto',
+    max_num_features: Optional[int] = None,
+    ignore_zero: bool = True,
+    figsize: Optional[Tuple[float, float]] = None,
+    dpi: Optional[int] = None,
+    grid: bool = True,
+    precision: Optional[int] = 3,
+    **kwargs: Any
+) -> Any:
     """Plot model's feature importances.
 
     Parameters
@@ -43,17 +56,18 @@ def plot_importance(booster, ax=None, height=0.2,
         Tuple passed to ``ax.xlim()``.
     ylim : tuple of 2 elements or None, optional (default=None)
         Tuple passed to ``ax.ylim()``.
-    title : string or None, optional (default="Feature importance")
+    title : str or None, optional (default="Feature importance")
         Axes title.
         If None, title is disabled.
-    xlabel : string or None, optional (default="Feature importance")
+    xlabel : str or None, optional (default="Feature importance")
         X-axis title label.
         If None, title is disabled.
-    ylabel : string or None, optional (default="Features")
+    ylabel : str or None, optional (default="Features")
         Y-axis title label.
         If None, title is disabled.
-    importance_type : string, optional (default="split")
+    importance_type : str, optional (default="auto")
         How the importance is calculated.
+        If "auto", if ``booster`` parameter is LGBMModel, ``booster.importance_type`` attribute is used; "split" otherwise.
         If "split", result contains numbers of times the feature is used in a model.
         If "gain", result contains total gains of splits which use the feature.
     max_num_features : int or None, optional (default=None)
@@ -80,11 +94,16 @@ def plot_importance(booster, ax=None, height=0.2,
     if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
     else:
-        raise ImportError('You must install matplotlib to plot importance.')
+        raise ImportError('You must install matplotlib and restart your session to plot importance.')
 
     if isinstance(booster, LGBMModel):
+        if importance_type == "auto":
+            importance_type = booster.importance_type
         booster = booster.booster_
-    elif not isinstance(booster, Booster):
+    elif isinstance(booster, Booster):
+        if importance_type == "auto":
+            importance_type = "split"
+    else:
         raise TypeError('booster must be Booster or LGBMModel.')
 
     importance = booster.feature_importance(importance_type=importance_type)
@@ -138,25 +157,36 @@ def plot_importance(booster, ax=None, height=0.2,
     return ax
 
 
-def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=0.8,
-                               xlim=None, ylim=None,
-                               title='Split value histogram for feature with @index/name@ @feature@',
-                               xlabel='Feature split value', ylabel='Count',
-                               figsize=None, dpi=None, grid=True, **kwargs):
+def plot_split_value_histogram(
+    booster: Union[Booster, LGBMModel],
+    feature: Union[int, str],
+    bins: Union[int, str, None] = None,
+    ax=None,
+    width_coef: float = 0.8,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None,
+    title: Optional[str] = 'Split value histogram for feature with @index/name@ @feature@',
+    xlabel: Optional[str] = 'Feature split value',
+    ylabel: Optional[str] = 'Count',
+    figsize: Optional[Tuple[float, float]] = None,
+    dpi: Optional[int] = None,
+    grid: bool = True,
+    **kwargs: Any
+) -> Any:
     """Plot split value histogram for the specified feature of the model.
 
     Parameters
     ----------
     booster : Booster or LGBMModel
         Booster or LGBMModel instance of which feature split value histogram should be plotted.
-    feature : int or string
+    feature : int or str
         The feature name or index the histogram is plotted for.
         If int, interpreted as index.
-        If string, interpreted as name.
-    bins : int, string or None, optional (default=None)
+        If str, interpreted as name.
+    bins : int, str or None, optional (default=None)
         The maximum number of bins.
         If None, the number of bins equals number of unique split values.
-        If string, it should be one from the list of the supported values by ``numpy.histogram()`` function.
+        If str, it should be one from the list of the supported values by ``numpy.histogram()`` function.
     ax : matplotlib.axes.Axes or None, optional (default=None)
         Target axes instance.
         If None, new figure and axes will be created.
@@ -166,17 +196,17 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
         Tuple passed to ``ax.xlim()``.
     ylim : tuple of 2 elements or None, optional (default=None)
         Tuple passed to ``ax.ylim()``.
-    title : string or None, optional (default="Split value histogram for feature with @index/name@ @feature@")
+    title : str or None, optional (default="Split value histogram for feature with @index/name@ @feature@")
         Axes title.
         If None, title is disabled.
         @feature@ placeholder can be used, and it will be replaced with the value of ``feature`` parameter.
         @index/name@ placeholder can be used,
         and it will be replaced with ``index`` word in case of ``int`` type ``feature`` parameter
-        or ``name`` word in case of ``string`` type ``feature`` parameter.
-    xlabel : string or None, optional (default="Feature split value")
+        or ``name`` word in case of ``str`` type ``feature`` parameter.
+    xlabel : str or None, optional (default="Feature split value")
         X-axis title label.
         If None, title is disabled.
-    ylabel : string or None, optional (default="Count")
+    ylabel : str or None, optional (default="Count")
         Y-axis title label.
         If None, title is disabled.
     figsize : tuple of 2 elements or None, optional (default=None)
@@ -197,7 +227,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
         import matplotlib.pyplot as plt
         from matplotlib.ticker import MaxNLocator
     else:
-        raise ImportError('You must install matplotlib to plot split value histogram.')
+        raise ImportError('You must install matplotlib and restart your session to plot split value histogram.')
 
     if isinstance(booster, LGBMModel):
         booster = booster.booster_
@@ -207,7 +237,7 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
     hist, bins = booster.get_split_value_histogram(feature=feature, bins=bins, xgboost_style=False)
     if np.count_nonzero(hist) == 0:
         raise ValueError('Cannot plot split value histogram, '
-                         'because feature {} was not used in splitting'.format(feature))
+                         f'because feature {feature} was not used in splitting')
     width = width_coef * (bins[1] - bins[0])
     centred = (bins[:-1] + bins[1:]) / 2
 
@@ -244,22 +274,31 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
     return ax
 
 
-def plot_metric(booster, metric=None, dataset_names=None,
-                ax=None, xlim=None, ylim=None,
-                title='Metric during training',
-                xlabel='Iterations', ylabel='auto',
-                figsize=None, dpi=None, grid=True):
+def plot_metric(
+    booster: Union[Dict, LGBMModel],
+    metric: Optional[str] = None,
+    dataset_names: Optional[List[str]] = None,
+    ax=None,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None,
+    title: Optional[str] = 'Metric during training',
+    xlabel: Optional[str] = 'Iterations',
+    ylabel: Optional[str] = 'auto',
+    figsize: Optional[Tuple[float, float]] = None,
+    dpi: Optional[int] = None,
+    grid: bool = True
+) -> Any:
     """Plot one metric during training.
 
     Parameters
     ----------
     booster : dict or LGBMModel
         Dictionary returned from ``lightgbm.train()`` or LGBMModel instance.
-    metric : string or None, optional (default=None)
+    metric : str or None, optional (default=None)
         The metric name to plot.
         Only one metric supported because different metrics have various scales.
         If None, first metric picked from dictionary (according to hashcode).
-    dataset_names : list of strings or None, optional (default=None)
+    dataset_names : list of str, or None, optional (default=None)
         List of the dataset names which are used to calculate metric to plot.
         If None, all datasets are used.
     ax : matplotlib.axes.Axes or None, optional (default=None)
@@ -269,13 +308,13 @@ def plot_metric(booster, metric=None, dataset_names=None,
         Tuple passed to ``ax.xlim()``.
     ylim : tuple of 2 elements or None, optional (default=None)
         Tuple passed to ``ax.ylim()``.
-    title : string or None, optional (default="Metric during training")
+    title : str or None, optional (default="Metric during training")
         Axes title.
         If None, title is disabled.
-    xlabel : string or None, optional (default="Iterations")
+    xlabel : str or None, optional (default="Iterations")
         X-axis title label.
         If None, title is disabled.
-    ylabel : string or None, optional (default="auto")
+    ylabel : str or None, optional (default="auto")
         Y-axis title label.
         If 'auto', metric name is used.
         If None, title is disabled.
@@ -294,7 +333,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
     else:
-        raise ImportError('You must install matplotlib to plot metric.')
+        raise ImportError('You must install matplotlib and restart your session to plot metric.')
 
     if isinstance(booster, LGBMModel):
         eval_results = deepcopy(booster.evals_result_)
@@ -369,8 +408,15 @@ def plot_metric(booster, metric=None, dataset_names=None,
     return ax
 
 
-def _to_graphviz(tree_info, show_info, feature_names, precision=3,
-                 orientation='horizontal', constraints=None, **kwargs):
+def _to_graphviz(
+    tree_info: Dict[str, Any],
+    show_info: List[str],
+    feature_names: Union[List[str], None],
+    precision: Optional[int] = 3,
+    orientation: str = 'horizontal',
+    constraints: Optional[List[int]] = None,
+    **kwargs: Any
+) -> Any:
     """Convert specified tree to graphviz instance.
 
     See:
@@ -379,7 +425,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
     if GRAPHVIZ_INSTALLED:
         from graphviz import Digraph
     else:
-        raise ImportError('You must install graphviz to plot tree.')
+        raise ImportError('You must install graphviz and restart your session to plot tree.')
 
     def add(root, total_count, parent=None, decision=None):
         """Recursively add node or edge."""
@@ -393,21 +439,21 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
                 operator = "="
             else:
                 raise ValueError('Invalid decision type in tree model.')
-            name = 'split{0}'.format(root['split_index'])
+            name = f"split{root['split_index']}"
             if feature_names is not None:
-                label = '<B>{0}</B> {1} '.format(feature_names[root['split_feature']], operator)
+                label = f"<B>{feature_names[root['split_feature']]}</B> {operator}"
             else:
-                label = 'feature <B>{0}</B> {1} '.format(root['split_feature'], operator)
-            label += '<B>{0}</B>'.format(_float2str(root['threshold'], precision))
+                label = f"feature <B>{root['split_feature']}</B> {operator} "
+            label += f"<B>{_float2str(root['threshold'], precision)}</B>"
             for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
                 if info in show_info:
                     output = info.split('_')[-1]
                     if info in {'split_gain', 'internal_value', 'internal_weight'}:
-                        label += '<br/>{0} {1}'.format(_float2str(root[info], precision), output)
+                        label += f"<br/>{_float2str(root[info], precision)} {output}"
                     elif info == 'internal_count':
-                        label += '<br/>{0}: {1}'.format(output, root[info])
+                        label += f"<br/>{output}: {root[info]}"
                     elif info == "data_percentage":
-                        label += '<br/>{0}% of data'.format(_float2str(root['internal_count'] / total_count * 100, 2))
+                        label += f"<br/>{_float2str(root['internal_count'] / total_count * 100, 2)}% of data"
 
             fillcolor = "white"
             style = ""
@@ -417,21 +463,21 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
                 if constraints[root['split_feature']] == -1:
                     fillcolor = "#ffdddd"  # light red
                 style = "filled"
-            label = "<" + label + ">"
+            label = f"<{label}>"
             graph.node(name, label=label, shape="rectangle", style=style, fillcolor=fillcolor)
             add(root['left_child'], total_count, name, l_dec)
             add(root['right_child'], total_count, name, r_dec)
         else:  # leaf
-            name = 'leaf{0}'.format(root['leaf_index'])
-            label = 'leaf {0}: '.format(root['leaf_index'])
-            label += '<B>{0}</B>'.format(_float2str(root['leaf_value'], precision))
+            name = f"leaf{root['leaf_index']}"
+            label = f"leaf {root['leaf_index']}: "
+            label += f"<B>{_float2str(root['leaf_value'], precision)}</B>"
             if 'leaf_weight' in show_info:
-                label += '<br/>{0} weight'.format(_float2str(root['leaf_weight'], precision))
+                label += f"<br/>{_float2str(root['leaf_weight'], precision)} weight"
             if 'leaf_count' in show_info:
-                label += '<br/>count: {0}'.format(root['leaf_count'])
+                label += f"<br/>count: {root['leaf_count']}"
             if "data_percentage" in show_info:
-                label += '<br/>{0}% of data'.format(_float2str(root['leaf_count'] / total_count * 100, 2))
-            label = "<" + label + ">"
+                label += f"<br/>{_float2str(root['leaf_count'] / total_count * 100, 2)}% of data"
+            label = f"<{label}>"
             graph.node(name, label=label)
         if parent is not None:
             graph.edge(parent, name, decision)
@@ -465,8 +511,14 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
     return graph
 
 
-def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
-                        orientation='horizontal', **kwargs):
+def create_tree_digraph(
+    booster: Union[Booster, LGBMModel],
+    tree_index: int = 0,
+    show_info: Optional[List[str]] = None,
+    precision: Optional[int] = 3,
+    orientation: str = 'horizontal',
+    **kwargs: Any
+) -> Any:
     """Create a digraph representation of specified tree.
 
     Each node in the graph represents a node in the tree.
@@ -490,7 +542,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
         Booster or LGBMModel instance to be converted.
     tree_index : int, optional (default=0)
         The index of a target tree to convert.
-    show_info : list of strings or None, optional (default=None)
+    show_info : list of str, or None, optional (default=None)
         What information should be shown in nodes.
 
             - ``'split_gain'`` : gain from adding this split to the model
@@ -502,7 +554,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
             - ``'data_percentage'`` : percentage of training data that fall into this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
-    orientation : string, optional (default='horizontal')
+    orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
     **kwargs
@@ -542,8 +594,17 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
     return graph
 
 
-def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
-              show_info=None, precision=3, orientation='horizontal', **kwargs):
+def plot_tree(
+    booster: Union[Booster, LGBMModel],
+    ax=None,
+    tree_index: int = 0,
+    figsize: Optional[Tuple[float, float]] = None,
+    dpi: Optional[int] = None,
+    show_info: Optional[List[str]] = None,
+    precision: Optional[int] = 3,
+    orientation: str = 'horizontal',
+    **kwargs: Any
+) -> Any:
     """Plot specified tree.
 
     Each node in the graph represents a node in the tree.
@@ -574,7 +635,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
         Figure size.
     dpi : int or None, optional (default=None)
         Resolution of the figure.
-    show_info : list of strings or None, optional (default=None)
+    show_info : list of str, or None, optional (default=None)
         What information should be shown in nodes.
 
             - ``'split_gain'`` : gain from adding this split to the model
@@ -586,7 +647,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
             - ``'data_percentage'`` : percentage of training data that fall into this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
-    orientation : string, optional (default='horizontal')
+    orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
     **kwargs
@@ -602,7 +663,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
         import matplotlib.image as image
         import matplotlib.pyplot as plt
     else:
-        raise ImportError('You must install matplotlib to plot tree.')
+        raise ImportError('You must install matplotlib and restart your session to plot tree.')
 
     if ax is None:
         if figsize is not None:

@@ -16,7 +16,7 @@ lgb.Booster
 }
 \description{
 Load LightGBM takes in either a file path or model string.
-              If both are provided, Load will default to loading from file
+             If both are provided, Load will default to loading from file
 }
 \examples{
 \donttest{
@@ -26,15 +26,18 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-params <- list(objective = "regression", metric = "l2")
+params <- list(
+  objective = "regression"
+  , metric = "l2"
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 valids <- list(test = dtest)
 model <- lgb.train(
   params = params
   , data = dtrain
   , nrounds = 5L
   , valids = valids
-  , min_data = 1L
-  , learning_rate = 1.0
   , early_stopping_rounds = 3L
 )
 model_file <- tempfile(fileext = ".txt")

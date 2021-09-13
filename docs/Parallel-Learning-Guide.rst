@@ -47,13 +47,13 @@ This section describes how to run distributed LightGBM training in various progr
 Apache Spark
 ^^^^^^^^^^^^
 
-Apache Spark users can use `MMLSpark`_ for machine learning workflows with LightGBM. This project is not maintained by LightGBM's maintainers.
+Apache Spark users can use `SynapseML`_ for machine learning workflows with LightGBM. This project is not maintained by LightGBM's maintainers.
 
-See `this MMLSpark example`_ and `the MMLSpark documentation`_ for additional information on using LightGBM on Spark.
+See `this SynapseML example`_ and `the SynapseML documentation`_ for additional information on using LightGBM on Spark.
 
 .. note::
 
-  ``MMLSpark`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/Azure/mmlspark/issues.
+  ``SynapseML`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/microsoft/SynapseML/issues.
 
 Dask
 ^^^^
@@ -435,7 +435,7 @@ MPI Version
 3. Run following command on one machine (not need to run on all machines), need to change ``your_config_file`` to real config file.
 
    For Windows:
-   
+
    .. code::
 
        mpiexec.exe /machinefile mlist.txt lightgbm.exe config=your_config_file
@@ -451,11 +451,22 @@ Example
 
 -  `A simple distributed learning example`_
 
+Ray
+^^^
+
+`Ray`_ is a Python-based framework for distributed computing. The `lightgbm_ray`_ project, maintained within the official Ray GitHub organization, can be used to perform distributed LightGBM training using ``ray``.
+
+See `the lightgbm_ray documentation`_ for usage examples.
+
+.. note::
+
+  ``lightgbm_ray`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/ray-project/lightgbm_ray/issues.
+
 .. _Dask: https://docs.dask.org/en/latest/
 
-.. _MMLSpark: https://aka.ms/spark
+.. _SynapseML: https://aka.ms/spark
 
-.. _this MMLSpark example: https://github.com/Azure/mmlspark/blob/master/notebooks/samples/LightGBM%20-%20Quantile%20Regression%20for%20Drug%20Discovery.ipynb
+.. _this SynapseML example: https://github.com/microsoft/SynapseML/blob/master/notebooks/LightGBM%20-%20Overview.ipynb
 
 .. _the Dask Array documentation: https://docs.dask.org/en/latest/array.html
 
@@ -467,7 +478,7 @@ Example
 
 .. _the metrics functions from dask-ml: https://ml.dask.org/modules/api.html#dask-ml-metrics-metrics
 
-.. _the MMLSpark Documentation: https://github.com/Azure/mmlspark/blob/master/docs/lightgbm.md
+.. _the SynapseML Documentation: https://github.com/microsoft/SynapseML/blob/master/docs/lightgbm.md
 
 .. _these Dask examples: https://github.com/microsoft/lightgbm/tree/master/examples/python-guide/dask
 
@@ -482,3 +493,9 @@ Example
 .. _here: https://www.youtube.com/watch?v=iqzXhp5TxUY
 
 .. _A simple distributed learning example: https://github.com/microsoft/lightgbm/tree/master/examples/parallel_learning
+
+.. _lightgbm_ray: https://github.com/ray-project/lightgbm_ray
+
+.. _Ray: https://ray.io/
+
+.. _the lightgbm_ray documentation: https://docs.ray.io/en/latest/lightgbm-ray.html

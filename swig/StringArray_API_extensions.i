@@ -54,7 +54,7 @@
 
         try {
             strings.reset(new StringArray(eval_counts, string_size));
-        } catch (std::bad_alloc &e) {
+        } catch (std::bad_alloc &/*e*/) {
             LGBM_SetLastError("Failure to allocate memory.");
             return nullptr;
         }
@@ -92,7 +92,7 @@
 
         try {
             strings.reset(new StringArray(num_features, max_feature_name_size));
-        } catch (std::bad_alloc &e) {
+        } catch (std::bad_alloc &/*e*/) {
             LGBM_SetLastError("Failure to allocate memory.");
             return nullptr;
         }
@@ -131,7 +131,7 @@
                                                    nullptr));
         try {
             strings.reset(new StringArray(num_features, max_feature_name_size));
-        } catch (std::bad_alloc &e) {
+        } catch (std::bad_alloc &/*e*/) {
             LGBM_SetLastError("Failure to allocate memory.");
             return nullptr;
         }

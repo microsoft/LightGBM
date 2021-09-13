@@ -152,6 +152,10 @@ class BinaryLogloss: public ObjectiveFunction {
         suml += is_pos_(label_[i]);
       }
     }
+    if (Network::num_machines() > 1) {
+      suml = Network::GlobalSyncUpBySum(suml);
+      sumw = Network::GlobalSyncUpBySum(sumw);
+    }
     double pavg = suml / sumw;
     pavg = std::min(pavg, 1.0 - kEpsilon);
     pavg = std::max<double>(pavg, kEpsilon);

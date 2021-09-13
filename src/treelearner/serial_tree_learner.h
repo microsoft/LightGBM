@@ -28,7 +28,7 @@
 #include "split_info.hpp"
 
 #ifdef USE_GPU
-// Use 4KBytes aligned allocator for ordered gradients and ordered hessians when GPU is enabled.
+// Use 4KBytes aligned allocator for ordered gradients and ordered Hessians when GPU is enabled.
 // This is necessary to pin the two arrays in memory and make transferring faster.
 #include <boost/align/aligned_allocator.hpp>
 #endif

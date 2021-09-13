@@ -5,23 +5,26 @@
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
-#' @param categorical_feature list of str or int
-#'                            type int represents index,
-#'                            type str represents feature names
+#' @param categorical_feature categorical features. This can either be a character vector of feature
+#'                            names or an integer vector with the indices of the features (e.g.
+#'                            \code{c(1L, 10L)} to say "the first and tenth columns").
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the
 #'                   booster model into a predictor model which frees up memory and the
 #'                   original datasets
-#' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
+#' @param ... other parameters, see \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+#'            the "Parameters" section of the documentation} for more information. A few key parameters:
 #'            \itemize{
 #'                \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
 #'                \item{\code{num_leaves}: Maximum number of leaves in one tree.}
 #'                \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
-#'                                 overfit when #data is small. Tree still grow by leaf-wise.}
+#'                                 overfitting. Tree still grow by leaf-wise.}
 #'                \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-#'                                   the number of real CPU cores, not the number of threads (most
-#'                                   CPU using hyper-threading to generate 2 threads per CPU core).}
+#'                             the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
+#'                             not the number of threads (most CPU using hyper-threading to generate 2 threads
+#'                             per CPU core).}
 #'            }
+#'            NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained booster model \code{lgb.Booster}.
 #'
@@ -33,22 +36,25 @@
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 3L
 #' )
 #' }
 #' @export
 lgb.train <- function(params = list(),
                       data,
-                      nrounds = 10L,
+                      nrounds = 100L,
                       valids = list(),
                       obj = NULL,
                       eval = NULL,
@@ -88,6 +94,15 @@ lgb.train <- function(params = list(),
   params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
   eval_functions <- list(NULL)
+
+  if (length(additional_params) > 0L) {
+    warning(paste0(
+      "lgb.train: Found the following passed through '...': "
+      , paste(names(additional_params), collapse = ", ")
+      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
+      , "Add these to 'params' instead. See ?lgb.train for documentation on how to call this function."
+    ))
+  }
 
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.
@@ -130,7 +145,7 @@ lgb.train <- function(params = list(),
 
   # Check for boosting from a trained model
   if (is.character(init_model)) {
-    predictor <- Predictor$new(init_model)
+    predictor <- Predictor$new(modelfile = init_model)
   } else if (lgb.is.Booster(x = init_model)) {
     predictor <- init_model$to_predictor()
   }
@@ -141,6 +156,11 @@ lgb.train <- function(params = list(),
     begin_iteration <- predictor$current_iter() + 1L
   }
   end_iteration <- begin_iteration + params[["num_iterations"]] - 1L
+
+  # pop interaction_constraints off of params. It needs some preprocessing on the
+  # R side before being passed into the Dataset object
+  interaction_constraints <- params[["interaction_constraints"]]
+  params["interaction_constraints"] <- NULL
 
   # Construct datasets, if needed
   data$update_params(params = params)
@@ -154,7 +174,7 @@ lgb.train <- function(params = list(),
     cnames <- data$get_colnames()
   }
   params[["interaction_constraints"]] <- lgb.check_interaction_constraints(
-    params = params
+    interaction_constraints = interaction_constraints
     , column_names = cnames
   )
 
@@ -181,7 +201,6 @@ lgb.train <- function(params = list(),
   # Parse validation datasets
   if (length(valids) > 0L) {
 
-    # Loop through all validation datasets using name
     for (key in names(valids)) {
 
       # Use names to get validation datasets
