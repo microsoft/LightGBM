@@ -82,16 +82,17 @@ void CUDALeafSplits::LaunchInitValuesEmptyKernel() {
 
 void CUDALeafSplits::LaunchInitValuesKernal(
   const data_size_t* cuda_data_indices_in_leaf,
+  const data_size_t num_used_indices,
   hist_t* cuda_hist_in_leaf) {
   CUDAInitValuesKernel1<<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
-    cuda_gradients_, cuda_hessians_, num_data_, cuda_sum_of_gradients_buffer_,
+    cuda_gradients_, cuda_hessians_, num_used_indices, cuda_sum_of_gradients_buffer_,
     cuda_sum_of_hessians_buffer_);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   CUDAInitValuesKernel2<<<1, 1>>>(
     num_blocks_init_from_gradients_,
     cuda_sum_of_gradients_buffer_,
     cuda_sum_of_hessians_buffer_,
-    num_data_,
+    num_used_indices,
     cuda_data_indices_in_leaf,
     cuda_hist_in_leaf,
     cuda_struct_);

@@ -41,8 +41,8 @@ class CUDALeafSplits {
 
   void InitValues(
     const score_t* cuda_gradients, const score_t* cuda_hessians,
-    const data_size_t* cuda_data_indices_in_leaf, hist_t* cuda_hist_in_leaf,
-    double* root_sum_hessians);
+    const data_size_t* cuda_data_indices_in_leaf, const data_size_t num_used_indices,
+    hist_t* cuda_hist_in_leaf, double* root_sum_hessians);
 
   void InitValues();
 
@@ -54,6 +54,7 @@ class CUDALeafSplits {
   void LaunchInitValuesEmptyKernel();
 
   void LaunchInitValuesKernal(const data_size_t* cuda_data_indices_in_leaf,
+                              const data_size_t num_used_indices,
                               hist_t* cuda_hist_in_leaf);
 
   // Host memory

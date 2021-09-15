@@ -86,23 +86,26 @@ void CUDADataPartition::Init() {
   InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_feature_num_bin_offsets_, feature_num_bin_offsets.data(), feature_num_bin_offsets.size(), __FILE__, __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<double>(&cuda_bin_upper_bounds_, flatten_bin_upper_bounds.data(), flatten_bin_upper_bounds.size(), __FILE__, __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<data_size_t>(&cuda_num_data_, &num_data_, 1, __FILE__, __LINE__);
+  use_bagging_ = false;
 }
 
-void CUDADataPartition::BeforeTrain(const data_size_t* data_indices) {
-  if (data_indices == nullptr) {
-    // no bagging
+void CUDADataPartition::BeforeTrain() {
+  if (!use_bagging_) {
     LaunchFillDataIndicesBeforeTrain();
-    SetCUDAMemoryOuter<data_size_t>(cuda_leaf_num_data_, 0, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
-    SetCUDAMemoryOuter<data_size_t>(cuda_leaf_data_start_, 0, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
-    SetCUDAMemoryOuter<data_size_t>(cuda_leaf_data_end_, 0, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
-    SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  }
+  SetCUDAMemoryOuter<data_size_t>(cuda_leaf_num_data_, 0, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
+  SetCUDAMemoryOuter<data_size_t>(cuda_leaf_data_start_, 0, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
+  SetCUDAMemoryOuter<data_size_t>(cuda_leaf_data_end_, 0, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  if (!use_bagging_) {
     CopyFromCUDADeviceToCUDADeviceOuter<data_size_t>(cuda_leaf_num_data_, cuda_num_data_, 1, __FILE__, __LINE__);
     CopyFromCUDADeviceToCUDADeviceOuter<data_size_t>(cuda_leaf_data_end_, cuda_num_data_, 1, __FILE__, __LINE__);
-    SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-    CopyFromHostToCUDADeviceOuter<hist_t*>(cuda_hist_pool_, &cuda_hist_, 1, __FILE__, __LINE__);
   } else {
-    Log::Fatal("bagging is not supported by GPU");
+    CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_leaf_num_data_, &num_used_indices_, 1, __FILE__, __LINE__);
+    CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_leaf_data_end_, &num_used_indices_, 1, __FILE__, __LINE__);
   }
+  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  CopyFromHostToCUDADeviceOuter<hist_t*>(cuda_hist_pool_, &cuda_hist_, 1, __FILE__, __LINE__);
 }
 
 void CUDADataPartition::Split(
@@ -216,6 +219,16 @@ void CUDADataPartition::CalcBlockDim(const data_size_t num_data_in_leaf) {
   const int num_blocks_final = (num_data_in_leaf + split_indices_block_size_data_partition_aligned - 1) / split_indices_block_size_data_partition_aligned;
   grid_dim_ = num_blocks_final;
   block_dim_ = split_indices_block_size_data_partition_aligned;
+}
+
+void CUDADataPartition::SetUsedDataIndices(const data_size_t* used_indices, const data_size_t num_used_indices) {
+  use_bagging_ = true;
+  num_used_indices_ = num_used_indices;
+  CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_data_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
+}
+
+void CUDADataPartition::SetUseBagging(const bool use_bagging) {
+  use_bagging_ = use_bagging;
 }
 
 }  // namespace LightGBM

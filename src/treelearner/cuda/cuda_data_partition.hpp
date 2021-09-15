@@ -34,7 +34,7 @@ class CUDADataPartition {
 
   void Init();
 
-  void BeforeTrain(const data_size_t* data_indices);
+  void BeforeTrain();
 
   void Split(
     // input best split info
@@ -58,6 +58,18 @@ class CUDADataPartition {
     double* right_leaf_sum_of_hessians);
 
   void UpdateTrainScore(const double* leaf_value, double* cuda_scores);
+
+  void SetUsedDataIndices(const data_size_t* used_indices, const data_size_t num_used_indices);
+
+  void SetUseBagging(const bool use_bagging);
+
+  data_size_t root_num_data() const {
+    if (use_bagging_) {
+      return num_used_indices_;
+    } else {
+      return num_data_;
+    }
+  }
 
   const data_size_t* cuda_data_indices() const { return cuda_data_indices_; }
 
@@ -217,6 +229,12 @@ class CUDADataPartition {
   const int num_leaves_;
   /*! \brief number of threads */
   const int num_threads_;
+
+  // per iteration information
+  /*! \brief whether bagging is used in this iteration */
+  bool use_bagging_;
+  /*! \brief number of used data indices in this iteration */
+  data_size_t num_used_indices_;
 
   // tree structure information
   /*! \brief current number of leaves in tree */

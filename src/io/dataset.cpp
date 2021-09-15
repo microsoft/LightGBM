@@ -427,6 +427,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   }
   device_type_ = io_config.device_type;
   gpu_device_id_ = io_config.gpu_device_id;
+  gpu_device_id_ = -1;
 }
 
 void Dataset::FinishLoad() {
@@ -841,6 +842,12 @@ void Dataset::CopySubrow(const Dataset* fullset,
         raw_data_[j][i] = fullset->raw_data_[j][used_indices[i]];
       }
     }
+  }
+  // update CUDA storage for column data and metadata
+  if (device_type_ == std::string("cuda")) {
+    cuda_column_data_.reset(new CUDAColumnData(num_used_indices, gpu_device_id_));
+    cuda_column_data_->CopySubrow(fullset->cuda_column_data(), used_indices, num_used_indices);
+    metadata_.CreateCUDAMetadata(gpu_device_id_);
   }
 }
 

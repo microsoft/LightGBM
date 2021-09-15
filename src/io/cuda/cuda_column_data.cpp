@@ -15,6 +15,8 @@ CUDAColumnData::CUDAColumnData(const data_size_t num_data, const int gpu_device_
   } else {
     CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
   }
+  cuda_used_indices_ = nullptr;
+  cuda_data_by_column_ = nullptr;
 }
 
 CUDAColumnData::~CUDAColumnData() {}
@@ -82,8 +84,10 @@ void CUDAColumnData::Init(const int num_columns,
   feature_mfb_is_zero_ = feature_mfb_is_zero;
   feature_mfb_is_na_ = feature_mfb_is_na;
   data_by_column_.resize(num_columns_, nullptr);
+  OMP_INIT_EX();
   #pragma omp parallel for schedule(static) num_threads(num_threads_)
   for (int column_index = 0; column_index < num_columns_; ++column_index) {
+    OMP_LOOP_EX_BEGIN();
     const int8_t bit_type = column_bit_type[column_index];
     if (column_data[column_index] != nullptr) {
       // is dense column
@@ -111,61 +115,113 @@ void CUDAColumnData::Init(const int num_columns,
         Log::Fatal("Unknow column bit type %d", bit_type);
       }
     }
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   feature_to_column_ = feature_to_column;
   InitCUDAMemoryFromHostMemoryOuter<void*>(&cuda_data_by_column_,
                                            data_by_column_.data(),
                                            data_by_column_.size(),
                                            __FILE__,
                                            __LINE__);
+  InitColumnMetaInfo();
+}
+
+void CUDAColumnData::CopySubrow(
+  const CUDAColumnData* full_set,
+  const data_size_t* used_indices,
+  const data_size_t num_used_indices) {
+  num_threads_ = full_set->num_threads_;
+  num_columns_ = full_set->num_columns_;
+  column_bit_type_ = full_set->column_bit_type_;
+  feature_min_bin_ = full_set->feature_min_bin_;
+  feature_max_bin_ = full_set->feature_max_bin_;
+  feature_offset_ = full_set->feature_offset_;
+  feature_most_freq_bin_ = full_set->feature_most_freq_bin_;
+  feature_default_bin_ = full_set->feature_default_bin_;
+  feature_missing_is_zero_ = full_set->feature_missing_is_zero_;
+  feature_missing_is_na_ = full_set->feature_missing_is_na_;
+  feature_mfb_is_zero_ = full_set->feature_mfb_is_zero_;
+  feature_mfb_is_na_ = full_set->feature_mfb_is_na_;
+  if (cuda_used_indices_ == nullptr) {
+    // initialize the subset cuda column data
+    const size_t full_set_num_data = static_cast<size_t>(full_set->num_data_);
+    AllocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, full_set_num_data, __FILE__, __LINE__);
+    CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_used_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
+    data_by_column_.resize(num_columns_, nullptr);
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(static) num_threads(num_threads_)
+    for (int column_index = 0; column_index < num_columns_; ++column_index) {
+      const uint8_t bit_type = column_bit_type_[column_index];
+      if (bit_type == 8) {
+        uint8_t* column_data = nullptr;
+        AllocateCUDAMemoryOuter<uint8_t>(&column_data, full_set_num_data, __FILE__, __LINE__);
+        data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+      } else if (bit_type == 16) {
+        uint16_t* column_data = nullptr;
+        AllocateCUDAMemoryOuter<uint16_t>(&column_data, full_set_num_data, __FILE__, __LINE__);
+        data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+      } else if (bit_type == 32) {
+        uint32_t* column_data = nullptr;
+        AllocateCUDAMemoryOuter<uint32_t>(&column_data, full_set_num_data, __FILE__, __LINE__);
+        data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+      }
+    }
+    InitCUDAMemoryFromHostMemoryOuter<void*>(&cuda_data_by_column_, data_by_column_.data(), data_by_column_.size(), __FILE__, __LINE__);
+    InitColumnMetaInfo();
+  }
+  LaunchCopySubrowKernel(full_set->cuda_data_by_column(), num_used_indices);
+}
+
+void CUDAColumnData::InitColumnMetaInfo() {
   InitCUDAMemoryFromHostMemoryOuter<uint8_t>(&cuda_column_bit_type_,
                                        column_bit_type_.data(),
                                        column_bit_type_.size(),
                                        __FILE__,
                                        __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_feature_max_bin_,
-                                         feature_max_bin.data(),
-                                         feature_max_bin.size(),
+                                         feature_max_bin_.data(),
+                                         feature_max_bin_.size(),
                                          __FILE__,
                                          __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_feature_min_bin_,
-                                         feature_min_bin.data(),
-                                         feature_min_bin.size(),
+                                         feature_min_bin_.data(),
+                                         feature_min_bin_.size(),
                                          __FILE__,
                                          __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_feature_offset_,
-                                         feature_offset.data(),
-                                         feature_offset.size(),
+                                         feature_offset_.data(),
+                                         feature_offset_.size(),
                                          __FILE__,
                                          __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_feature_most_freq_bin_,
-                                         feature_most_freq_bin.data(),
-                                         feature_most_freq_bin.size(),
+                                         feature_most_freq_bin_.data(),
+                                         feature_most_freq_bin_.size(),
                                          __FILE__,
                                          __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_feature_default_bin_,
-                                         feature_default_bin.data(),
-                                         feature_default_bin.size(),
+                                         feature_default_bin_.data(),
+                                         feature_default_bin_.size(),
                                          __FILE__,
                                          __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<uint8_t>(&cuda_feature_missing_is_zero_,
-                                         feature_missing_is_zero.data(),
-                                         feature_missing_is_zero.size(),
+                                         feature_missing_is_zero_.data(),
+                                         feature_missing_is_zero_.size(),
                                          __FILE__,
                                          __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<uint8_t>(&cuda_feature_missing_is_na_,
-                                        feature_missing_is_na.data(),
-                                        feature_missing_is_na.size(),
+                                        feature_missing_is_na_.data(),
+                                        feature_missing_is_na_.size(),
                                         __FILE__,
                                         __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<uint8_t>(&cuda_feature_mfb_is_zero_,
-                                        feature_mfb_is_zero.data(),
-                                        feature_mfb_is_zero.size(),
+                                        feature_mfb_is_zero_.data(),
+                                        feature_mfb_is_zero_.size(),
                                         __FILE__,
                                         __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<uint8_t>(&cuda_feature_mfb_is_na_,
-                                        feature_mfb_is_na.data(),
-                                        feature_mfb_is_na.size(),
+                                        feature_mfb_is_na_.data(),
+                                        feature_mfb_is_na_.size(),
                                         __FILE__,
                                         __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_feature_to_column_,
@@ -173,7 +229,6 @@ void CUDAColumnData::Init(const int num_columns,
                                     feature_to_column_.size(),
                                     __FILE__,
                                     __LINE__);
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
 }  // namespace LightGBM

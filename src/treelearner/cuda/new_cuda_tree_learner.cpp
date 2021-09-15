@@ -51,17 +51,18 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
 }
 
 void NewCUDATreeLearner::BeforeTrain() {
-  cuda_data_partition_->BeforeTrain(nullptr);
+  cuda_data_partition_->BeforeTrain();
   cuda_smaller_leaf_splits_->InitValues(
     gradients_,
     hessians_,
     cuda_data_partition_->cuda_data_indices(),
+    cuda_data_partition_->root_num_data(),
     cuda_histogram_constructor_->cuda_hist_pointer(),
     &leaf_sum_hessians_[0]);
+  leaf_num_data_[0] = cuda_data_partition_->root_num_data();
   cuda_larger_leaf_splits_->InitValues();
   cuda_histogram_constructor_->BeforeTrain(gradients_, hessians_);
   cuda_best_split_finder_->BeforeTrain();
-  leaf_num_data_[0] = num_data_;
   leaf_data_start_[0] = 0;
   smaller_leaf_index_ = 0;
   larger_leaf_index_ = -1;
@@ -199,8 +200,13 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
 void NewCUDATreeLearner::ResetTrainingData(const Dataset* /*train_data*/,
                          bool /*is_constant_hessian*/) {}
 
-void NewCUDATreeLearner::SetBaggingData(const Dataset* /*subset*/,
-  const data_size_t* /*used_indices*/, data_size_t /*num_data*/) {}
+void NewCUDATreeLearner::SetBaggingData(const Dataset* subset,
+  const data_size_t* used_indices, data_size_t num_data) {
+  cuda_data_partition_->SetUsedDataIndices(used_indices, num_data);
+  if (subset == nullptr) {
+    
+  }
+}
 
 void NewCUDATreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> /*residual_getter*/,
                        const double* score, data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
@@ -212,6 +218,10 @@ void NewCUDATreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* ob
                            cuda_data_partition_->cuda_leaf_data_start(),
                            tree->num_leaves(),
                            cuda_tree->cuda_leaf_value_ref());
+}
+
+void NewCUDATreeLearner::AfterTrain() {
+  cuda_data_partition_->SetUseBagging(false);
 }
 
 }  // namespace LightGBM
