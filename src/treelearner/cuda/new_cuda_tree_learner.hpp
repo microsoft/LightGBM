@@ -67,10 +67,14 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   int larger_leaf_index_;
   int best_leaf_index_;
 
-  // added train score buffer in CUDA
+  /*! \brief added train score buffer in CUDA */
   double* cuda_add_train_score_;
-  // add train score buffer in host
+  /*! \brief add train score buffer in host */
   mutable std::vector<double> add_train_score_;
+  /*! \brief gradients on CUDA */
+  score_t* cuda_gradients_;
+  /*! \brief hessians on CUDA */
+  score_t* cuda_hessians_;
 };
 
 }  // namespace LightGBM
