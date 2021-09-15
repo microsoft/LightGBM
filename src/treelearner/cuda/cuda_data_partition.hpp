@@ -18,7 +18,7 @@
 
 // TODO(shiyu1994): adjust these values according to different CUDA and GPU versions
 #define FILL_INDICES_BLOCK_SIZE_DATA_PARTITION (1024)
-#define SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION (512)
+#define SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION (1024)
 #define AGGREGATE_BLOCK_SIZE_DATA_PARTITION (1024)
 
 namespace LightGBM {
@@ -66,15 +66,7 @@ class CUDADataPartition {
   const data_size_t* cuda_leaf_data_start() const { return cuda_leaf_data_start_; }
 
  private:
-  void CalcBlockDim(
-    const data_size_t num_data_in_leaf,
-    int* grid_dim,
-    int* block_dim);
-
-  void CalcBlockDimInCopy(
-    const data_size_t num_data_in_leaf,
-    int* grid_dim,
-    int* block_dim);
+  void CalcBlockDim(const data_size_t num_data_in_leaf);
 
   void GenDataToLeftBitVector(
     const data_size_t num_data_in_leaf,
@@ -139,8 +131,6 @@ class CUDADataPartition {
     const bool mfb_is_na,
     const bool max_bin_to_left,
     const int column_index,
-    const int num_blocks_final,
-    const int split_indices_block_size_data_partition_aligned,
     const int split_feature_index,
     const data_size_t leaf_data_start,
     const data_size_t num_data_in_leaf,
@@ -163,8 +153,6 @@ class CUDADataPartition {
     const bool mfb_is_zero,
     const bool mfb_is_na,
     const int column_index,
-    const int num_blocks_final,
-    const int split_indices_block_size_data_partition_aligned,
     const int split_feature_index,
     const data_size_t leaf_data_start,
     const data_size_t num_data_in_leaf,
@@ -199,9 +187,7 @@ class CUDADataPartition {
     const bool missing_is_na,
     const bool mfb_is_zero,
     const bool mfb_is_na,
-    const bool max_to_left,
-    const int num_blocks,
-    const int block_size);
+    const bool max_to_left);
 
   void LaunchAddPredictionToScoreKernel(const double* leaf_value, double* cuda_scores);
 
@@ -221,6 +207,10 @@ class CUDADataPartition {
   std::vector<int> feature_num_bins_;
   /*! \brief bin data stored by column */
   const CUDAColumnData* cuda_column_data_;
+  /*! \brief grid dimension when splitting one leaf */
+  int grid_dim_;
+  /*! \brief block dimension when splitting one leaf */
+  int block_dim_;
 
   // config information
   /*! \brief maximum number of leaves in a tree */

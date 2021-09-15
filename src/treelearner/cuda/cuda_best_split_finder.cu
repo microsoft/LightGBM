@@ -228,9 +228,6 @@ __device__ void FindBestSplitsForLeafKernelInner(
       const unsigned int bin_offset = threadIdx_x << 1;
       local_grad_hist = feature_hist_ptr[bin_offset];
       local_hess_hist = feature_hist_ptr[bin_offset + 1];
-    } else {
-      local_grad_hist = 0.0f;
-      local_hess_hist = 0.0f;
     }
   } else {
     if (threadIdx_x < feature_num_bin_minus_offset && !skip_sum) {
@@ -238,9 +235,6 @@ __device__ void FindBestSplitsForLeafKernelInner(
       const unsigned int bin_offset = read_index << 1;
       local_grad_hist = feature_hist_ptr[bin_offset];
       local_hess_hist = feature_hist_ptr[bin_offset + 1];
-    } else {
-      local_grad_hist = 0.0f;
-      local_hess_hist = 0.0f;
     }
   }
   __syncthreads();
@@ -266,21 +260,15 @@ __device__ void FindBestSplitsForLeafKernelInner(
           sum_right_hessian, lambda_l1, use_l1,
           lambda_l2);
         // gain with split is worse than without split
-        if (current_gain <= min_gain_shift) {
-          threshold_found = false;
-        } else {
+        if (current_gain > min_gain_shift) {
           local_gain = current_gain - min_gain_shift;
           threshold_value = static_cast<uint32_t>(feature_num_bin - 2 - threadIdx_x);
           threshold_found = true;
         }
-      } else {
-        threshold_found = false;
       }
-    } else {
-      threshold_found = true;
     }
   } else {
-    if (threadIdx_x <= feature_num_bin_minus_offset - 2 && !skip_sum) {
+    if (threadIdx_x <= feature_num_bin_minus_offset - 2/* && !skip_sum*/) {
       const double sum_left_gradient = local_grad_hist;
       const double sum_left_hessian = local_hess_hist;
       const data_size_t left_count = static_cast<data_size_t>(__double2int_rn(sum_left_hessian * cnt_factor));
@@ -294,18 +282,12 @@ __device__ void FindBestSplitsForLeafKernelInner(
           sum_right_hessian, lambda_l1, use_l1,
           lambda_l2);
         // gain with split is worse than without split
-        if (current_gain <= min_gain_shift) {
-          threshold_found = false;
-        } else {
+        if (current_gain > min_gain_shift) {
           local_gain = current_gain - min_gain_shift;
           threshold_value = static_cast<uint32_t>(threadIdx_x + feature_mfb_offset);
           threshold_found = true;
         }
-      } else {
-        threshold_found = false;
       }
-    } else {
-      threshold_found = false;
     }
   }
   __syncthreads();
@@ -541,36 +523,38 @@ __global__ void SyncBestSplitForLeafKernel(const int smaller_leaf_index, const i
   const int num_blocks_per_leaf,
   const bool larger_only,
   const int num_leaves) {
-
+  __shared__ double shared_gain_buffer[32];
+  __shared__ bool shared_found_buffer[32];
+  __shared__ uint32_t shared_thread_index_buffer[32];
   const uint32_t threadIdx_x = threadIdx.x;
   const uint32_t blockIdx_x = blockIdx.x;
 
-  __shared__ bool best_found[NUM_TASKS_PER_SYNC_BLOCK];
-  __shared__ double best_gain[NUM_TASKS_PER_SYNC_BLOCK];
-  __shared__ uint32_t shared_read_index[NUM_TASKS_PER_SYNC_BLOCK];
+  bool best_found = false;
+  double best_gain = kMinScore;
+  uint32_t shared_read_index = 0;
 
   const bool is_smaller = (blockIdx_x < static_cast<unsigned int>(num_blocks_per_leaf) && !larger_only);
   const uint32_t leaf_block_index = (is_smaller || larger_only) ? blockIdx_x : (blockIdx_x - static_cast<unsigned int>(num_blocks_per_leaf));
   const int task_index = static_cast<int>(leaf_block_index * blockDim.x + threadIdx_x);
   const uint32_t read_index = is_smaller ? static_cast<uint32_t>(task_index) : static_cast<uint32_t>(task_index + num_tasks);
   if (task_index < num_tasks) {
-    best_found[threadIdx_x] = cuda_best_split_info[read_index].is_valid;
-    best_gain[threadIdx_x] = cuda_best_split_info[read_index].gain;
-    shared_read_index[threadIdx_x] = read_index;
+    best_found = cuda_best_split_info[read_index].is_valid;
+    best_gain = cuda_best_split_info[read_index].gain;
+    shared_read_index = read_index;
   } else {
-    best_found[threadIdx_x] = false;
+    best_found = false;
   }
 
   __syncthreads();
-  ReduceBestSplit(best_found, best_gain, shared_read_index, NUM_TASKS_PER_SYNC_BLOCK);
+  const uint32_t best_read_index = ReduceBestGain(best_gain, best_found, shared_read_index,
+      shared_gain_buffer, shared_found_buffer, shared_thread_index_buffer);
   if (threadIdx.x == 0) {
     const int leaf_index_ref = is_smaller ? smaller_leaf_index : larger_leaf_index;
     const unsigned buffer_write_pos = static_cast<unsigned int>(leaf_index_ref) + leaf_block_index * num_leaves;
-    const uint32_t best_read_index = shared_read_index[0];
     CUDASplitInfo* cuda_split_info = cuda_leaf_best_split_info + buffer_write_pos;
     const CUDASplitInfo* best_split_info = cuda_best_split_info + best_read_index;
-    if (best_found[0]) {
-      cuda_split_info->gain = best_gain[0];
+    if (best_split_info->is_valid) {
+      /*cuda_split_info->gain = best_split_info->gain;
       cuda_split_info->inner_feature_index = is_smaller ? cuda_task_feature_index[best_read_index] :
         cuda_task_feature_index[static_cast<int>(best_read_index) - num_tasks];
       cuda_split_info->default_left = best_split_info->default_left;
@@ -585,6 +569,10 @@ __global__ void SyncBestSplitForLeafKernel(const int smaller_leaf_index, const i
       cuda_split_info->right_count = best_split_info->right_count;
       cuda_split_info->right_gain = best_split_info->right_gain; 
       cuda_split_info->right_value = best_split_info->right_value;
+      cuda_split_info->is_valid = true;*/
+      *cuda_split_info = *best_split_info;
+      cuda_split_info->inner_feature_index = is_smaller ? cuda_task_feature_index[best_read_index] :
+        cuda_task_feature_index[static_cast<int>(best_read_index) - num_tasks];
       cuda_split_info->is_valid = true;
     } else {
       cuda_split_info->gain = kMinScore;

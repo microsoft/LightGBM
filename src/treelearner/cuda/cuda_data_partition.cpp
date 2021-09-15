@@ -23,8 +23,8 @@ CUDADataPartition::CUDADataPartition(
   num_leaves_(num_leaves),
   num_threads_(num_threads),
   cuda_hist_(cuda_hist) {
-  max_num_split_indices_blocks_ = (num_data_ + SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) /
-    SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION;
+  CalcBlockDim(num_data_);
+  max_num_split_indices_blocks_ = grid_dim_;
   cur_num_leaves_ = 1;
   bin_upper_bounds_.resize(num_features_);
   feature_num_bins_.resize(num_features_);
@@ -125,9 +125,8 @@ void CUDADataPartition::Split(
   data_size_t* right_leaf_start,
   double* left_leaf_sum_of_hessians,
   double* right_leaf_sum_of_hessians) {
+  CalcBlockDim(num_data_in_leaf);
   global_timer.Start("GenDataToLeftBitVector");
-  global_timer.Start("SplitInner Copy CUDA To Host");
-  global_timer.Stop("SplitInner Copy CUDA To Host");
   GenDataToLeftBitVector(num_data_in_leaf,
                          leaf_best_split_feature,
                          leaf_best_split_threshold,
@@ -204,29 +203,7 @@ void CUDADataPartition::UpdateTrainScore(const double* leaf_value, double* cuda_
   LaunchAddPredictionToScoreKernel(leaf_value, cuda_scores);
 }
 
-void CUDADataPartition::CalcBlockDim(const data_size_t num_data_in_leaf,
-    int* grid_dim,
-    int* block_dim) {
-  const int num_threads_per_block = SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION;
-  const int min_grid_dim = num_data_in_leaf <= 100 ? 1 : 10;
-  const int num_data_per_block = (num_threads_per_block * 8);
-  const int num_blocks = std::max(min_grid_dim, (num_data_in_leaf + num_data_per_block - 1) / num_data_per_block);
-  const int num_threads_per_block_final = (num_data_in_leaf + (num_blocks * 8) - 1) / (num_blocks * 8);
-  int num_threads_per_block_final_ref = num_threads_per_block_final - 1;
-  CHECK_GT(num_threads_per_block_final_ref, 0);
-  int num_threads_per_block_final_aligned = 1;
-  while (num_threads_per_block_final_ref > 0) {
-    num_threads_per_block_final_aligned <<= 1;
-    num_threads_per_block_final_ref >>= 1;
-  }
-  const int num_blocks_final = (num_data_in_leaf + (num_threads_per_block_final_aligned * 8) - 1) / (num_threads_per_block_final_aligned * 8);
-  *grid_dim = num_blocks_final;
-  *block_dim = num_threads_per_block_final_aligned;
-}
-
-void CUDADataPartition::CalcBlockDimInCopy(const data_size_t num_data_in_leaf,
-    int* grid_dim,
-    int* block_dim) {
+void CUDADataPartition::CalcBlockDim(const data_size_t num_data_in_leaf) {
   const int min_num_blocks = num_data_in_leaf <= 100 ? 1 : 80;
   const int num_blocks = std::max(min_num_blocks, (num_data_in_leaf + SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION);
   int split_indices_block_size_data_partition = (num_data_in_leaf + num_blocks - 1) / num_blocks - 1;
@@ -237,8 +214,8 @@ void CUDADataPartition::CalcBlockDimInCopy(const data_size_t num_data_in_leaf,
     split_indices_block_size_data_partition >>= 1;
   }
   const int num_blocks_final = (num_data_in_leaf + split_indices_block_size_data_partition_aligned - 1) / split_indices_block_size_data_partition_aligned;
-  *grid_dim = num_blocks_final;
-  *block_dim = split_indices_block_size_data_partition_aligned;
+  grid_dim_ = num_blocks_final;
+  block_dim_ = split_indices_block_size_data_partition_aligned;
 }
 
 }  // namespace LightGBM

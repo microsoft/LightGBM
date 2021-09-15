@@ -416,10 +416,13 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto hess = hessians + offset;
       // need to copy gradients for bagging subset.
       if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-        for (int i = 0; i < bag_data_cnt_; ++i) {
-          // TODO(shiyu1994): bagging is not supported, the copy operation should be done in GPU
-          gradients_pointer_[offset + i] = grad[bag_data_indices_[i]];
-          gradients_pointer_[offset + i] = hess[bag_data_indices_[i]];
+        if (config_->device_type == std::string("cuda")) {
+          CopySubsampleGradientsCUDA(gradients_pointer_ + offset, hessians_pointer_ + offset, grad, hess);
+        } else {
+          for (int i = 0; i < bag_data_cnt_; ++i) {
+            gradients_pointer_[offset + i] = grad[bag_data_indices_[i]];
+            gradients_pointer_[offset + i] = hess[bag_data_indices_[i]];
+          }
         }
         grad = gradients_pointer_ + offset;
         hess = hessians_pointer_ + offset;
@@ -888,6 +891,12 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     bagging_runner_.ReSize(0);
     is_use_subset_ = false;
   }
+}
+
+void GBDT::CopySubsampleGradientsCUDA(
+score_t* dst_grad, score_t* dst_hess,
+const score_t* src_grad, const score_t* src_hess) {
+  LaunchCopySubsampleGradientsKernel(dst_grad, dst_hess, src_grad, src_hess);
 }
 
 }  // namespace LightGBM

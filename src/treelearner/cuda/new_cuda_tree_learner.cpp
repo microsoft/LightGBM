@@ -52,8 +52,6 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
 
 void NewCUDATreeLearner::BeforeTrain() {
   cuda_data_partition_->BeforeTrain(nullptr);
-  global_timer.Start("CUDACentralizedInfo::BeforeTrain");
-  global_timer.Stop("CUDACentralizedInfo::BeforeTrain");
   cuda_smaller_leaf_splits_->InitValues(
     gradients_,
     hessians_,

@@ -465,6 +465,14 @@ class GBDT : public GBDTBase {
 
   double BoostFromAverage(int class_id, bool update_scorer);
 
+  void CopySubsampleGradientsCUDA(
+    score_t* dst_grad, score_t* dst_hess,
+    const score_t* src_grad, const score_t* src_hess);
+
+  void LaunchCopySubsampleGradientsKernel(
+    score_t* dst_grad, score_t* dst_hess,
+    const score_t* src_grad, const score_t* src_hess);
+
   /*! \brief current iteration */
   int iter_;
   /*! \brief Pointer to training data */
