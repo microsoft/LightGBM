@@ -7,7 +7,7 @@ from typing import Callable, Dict, Optional, Union
 import numpy as np
 
 from .basic import Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _log_warning
-from .callback import print_evaluation, record_evaluation
+from .callback import log_evaluation, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
@@ -731,13 +731,13 @@ class LGBMModel(_LGBMModelBase):
 
         if verbose != 'warn':
             _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM. "
-                         "Pass 'print_evaluation()' callback via 'callbacks' argument instead.")
+                         "Pass 'log_evaluation()' callback via 'callbacks' argument instead.")
         else:
-            if callbacks:  # assume user has already specified print_evaluation callback
+            if callbacks:  # assume user has already specified log_evaluation callback
                 verbose = False
             else:
                 verbose = True
-        callbacks.append(print_evaluation(int(verbose)))
+        callbacks.append(log_evaluation(int(verbose)))
 
         evals_result = {}
         callbacks.append(record_evaluation(evals_result))

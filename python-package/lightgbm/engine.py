@@ -238,16 +238,16 @@ def train(
     # Most of legacy advanced options becomes callbacks
     if verbose_eval != "warn":
         _log_warning("'verbose_eval' argument is deprecated and will be removed in a future release of LightGBM. "
-                     "Pass 'print_evaluation()' callback via 'callbacks' argument instead.")
+                     "Pass 'log_evaluation()' callback via 'callbacks' argument instead.")
     else:
-        if callbacks:  # assume user has already specified print_evaluation callback
+        if callbacks:  # assume user has already specified log_evaluation callback
             verbose_eval = False
         else:
             verbose_eval = True
     if verbose_eval is True:
-        callbacks.add(callback.print_evaluation())
+        callbacks.add(callback.log_evaluation())
     elif isinstance(verbose_eval, int):
-        callbacks.add(callback.print_evaluation(verbose_eval))
+        callbacks.add(callback.log_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
@@ -619,11 +619,11 @@ def cv(params, train_set, num_boost_round=100,
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
     if verbose_eval is not None:
         _log_warning("'verbose_eval' argument is deprecated and will be removed in a future release of LightGBM. "
-                     "Pass 'print_evaluation()' callback via 'callbacks' argument instead.")
+                     "Pass 'log_evaluation()' callback via 'callbacks' argument instead.")
     if verbose_eval is True:
-        callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
+        callbacks.add(callback.log_evaluation(show_stdv=show_stdv))
     elif isinstance(verbose_eval, int):
-        callbacks.add(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
+        callbacks.add(callback.log_evaluation(verbose_eval, show_stdv=show_stdv))
 
     callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
     callbacks_after_iter = callbacks - callbacks_before_iter
