@@ -143,6 +143,19 @@ def test_xendcg():
     assert gbm.best_score_['valid_0']['ndcg@3'] > 0.6253
 
 
+def test_eval_at_aliases():
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    X_test, y_test = load_svmlight_file(str(rank_example_dir / 'rank.test'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
+    q_test = np.loadtxt(str(rank_example_dir / 'rank.test.query'))
+    for alias in ('eval_at', 'ndcg_eval_at', 'ndcg_at', 'map_eval_at', 'map_at'):
+        gbm = lgb.LGBMRanker(n_estimators=5, **{alias: [1, 2, 3, 9]})
+        with pytest.warns(UserWarning, match=f"Found '{alias}' in params. Will use it instead of 'eval_at' argument"):
+            gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)], eval_group=[q_test])
+        assert list(gbm.evals_result_['valid_0'].keys()) == ['ndcg@1', 'ndcg@2', 'ndcg@3', 'ndcg@9']
+
+
 def test_regression_with_custom_objective():
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
