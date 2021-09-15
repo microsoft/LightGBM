@@ -1152,10 +1152,10 @@ void Dataset::ConstructHistogramsMultiVal(const data_size_t* data_indices,
 
 template <bool USE_INDICES, bool USE_HESSIAN>
 void Dataset::ConstructHistogramsInner(
-    const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
-    data_size_t num_data, const score_t* gradients, const score_t* hessians,
-    score_t* ordered_gradients, score_t* ordered_hessians,
-    TrainingShareStates* share_state, hist_t* hist_data) const {
+  const std::vector<int8_t>& is_feature_used, const data_size_t* data_indices,
+  data_size_t num_data, const score_t* gradients, const score_t* hessians,
+  score_t* ordered_gradients, score_t* ordered_hessians,
+  TrainingShareStates* share_state, hist_t* hist_data) const {
   if (!share_state->is_col_wise) {
     return ConstructHistogramsMultiVal<USE_INDICES, false>(
         data_indices, num_data, gradients, hessians, share_state, hist_data);

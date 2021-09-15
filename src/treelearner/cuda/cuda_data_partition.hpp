@@ -15,6 +15,7 @@
 
 #include "cuda_leaf_splits.hpp"
 #include <LightGBM/cuda/cuda_split_info.hpp>
+#include <LightGBM/cuda/cuda_tree.hpp>
 
 // TODO(shiyu1994): adjust these values according to different CUDA and GPU versions
 #define FILL_INDICES_BLOCK_SIZE_DATA_PARTITION (1024)
@@ -57,7 +58,7 @@ class CUDADataPartition {
     double* left_leaf_sum_of_hessians,
     double* right_leaf_sum_of_hessians);
 
-  void UpdateTrainScore(const double* leaf_value, double* cuda_scores);
+  void UpdateTrainScore(const Tree* tree, double* cuda_scores);
 
   void SetUsedDataIndices(const data_size_t* used_indices, const data_size_t num_used_indices);
 
@@ -203,6 +204,7 @@ class CUDADataPartition {
 
   void LaunchAddPredictionToScoreKernel(const double* leaf_value, double* cuda_scores);
 
+  void LaunchFillDataIndexToLeafIndex();
 
   // Host memory
 
@@ -223,6 +225,10 @@ class CUDADataPartition {
   int grid_dim_;
   /*! \brief block dimension when splitting one leaf */
   int block_dim_;
+  /*! \brief add train score buffer in host */
+  mutable std::vector<double> add_train_score_;
+  /*! \brief data indices used in this iteration */
+  const data_size_t* used_indices_;
 
   // config information
   /*! \brief maximum number of leaves in a tree */
@@ -287,6 +293,10 @@ class CUDADataPartition {
   int* cuda_feature_num_bin_offsets_;
   /*! \brief number of data in training set, for intialization of cuda_leaf_num_data_ and cuda_leaf_data_end_ */
   data_size_t* cuda_num_data_;
+
+  // for train score update
+  /*! \brief added train score buffer in CUDA */
+  double* cuda_add_train_score_;
 
 
   // CUDA memory, held by other object

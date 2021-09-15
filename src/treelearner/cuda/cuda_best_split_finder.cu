@@ -554,7 +554,7 @@ __global__ void SyncBestSplitForLeafKernel(const int smaller_leaf_index, const i
     CUDASplitInfo* cuda_split_info = cuda_leaf_best_split_info + buffer_write_pos;
     const CUDASplitInfo* best_split_info = cuda_best_split_info + best_read_index;
     if (best_split_info->is_valid) {
-      /*cuda_split_info->gain = best_split_info->gain;
+      cuda_split_info->gain = best_split_info->gain;
       cuda_split_info->inner_feature_index = is_smaller ? cuda_task_feature_index[best_read_index] :
         cuda_task_feature_index[static_cast<int>(best_read_index) - num_tasks];
       cuda_split_info->default_left = best_split_info->default_left;
@@ -569,11 +569,11 @@ __global__ void SyncBestSplitForLeafKernel(const int smaller_leaf_index, const i
       cuda_split_info->right_count = best_split_info->right_count;
       cuda_split_info->right_gain = best_split_info->right_gain; 
       cuda_split_info->right_value = best_split_info->right_value;
-      cuda_split_info->is_valid = true;*/
-      *cuda_split_info = *best_split_info;
-      cuda_split_info->inner_feature_index = is_smaller ? cuda_task_feature_index[best_read_index] :
-        cuda_task_feature_index[static_cast<int>(best_read_index) - num_tasks];
       cuda_split_info->is_valid = true;
+      //*cuda_split_info = *best_split_info;
+      //cuda_split_info->inner_feature_index = is_smaller ? cuda_task_feature_index[best_read_index] :
+      //  cuda_task_feature_index[static_cast<int>(best_read_index) - num_tasks];
+      //cuda_split_info->is_valid = true;
     } else {
       cuda_split_info->gain = kMinScore;
       cuda_split_info->is_valid = false;

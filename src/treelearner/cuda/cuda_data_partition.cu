@@ -22,9 +22,25 @@ __global__ void FillDataIndicesBeforeTrainKernel(const data_size_t* cuda_num_dat
   }
 }
 
+__global__ void FillDataIndexToLeafIndexKernel(
+  const data_size_t num_data,
+  const data_size_t* data_indices,
+  int* data_index_to_leaf_index) {
+  const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
+  if (data_index < num_data) {
+    data_index_to_leaf_index[data_indices[data_index]] = 0;
+  }
+}
+
 void CUDADataPartition::LaunchFillDataIndicesBeforeTrain() {
   const int num_blocks = (num_data_ + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
   FillDataIndicesBeforeTrainKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(cuda_num_data_, cuda_data_indices_, cuda_data_index_to_leaf_index_);
+}
+
+void CUDADataPartition::LaunchFillDataIndexToLeafIndex() {
+  const data_size_t num_data_in_root = root_num_data();
+  const int num_blocks = (num_data_in_root + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
+  FillDataIndexToLeafIndexKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(num_data_in_root, cuda_data_indices_, cuda_data_index_to_leaf_index_);
 }
 
 __device__ __forceinline__ void PrepareOffset(const data_size_t num_data_in_leaf_ref, uint16_t* block_to_left_offset,
@@ -1142,26 +1158,40 @@ void CUDADataPartition::LaunchSplitInnerKernel(
   *right_leaf_sum_of_hessians_ref = cpu_sum_hessians_info[1];
 }
 
+template <bool USE_BAGGING>
 __global__ void AddPredictionToScoreKernel(
-  const data_size_t* num_data_in_leaf, const data_size_t* data_indices_in_leaf,
-  const data_size_t* leaf_data_start, const double* leaf_value, double* cuda_scores,
+  const data_size_t* data_indices_in_leaf,
+  const double* leaf_value, double* cuda_scores,
   const int* cuda_data_index_to_leaf_index, const data_size_t num_data) {
   const unsigned int threadIdx_x = threadIdx.x;
   const unsigned int blockIdx_x = blockIdx.x;
   const unsigned int blockDim_x = blockDim.x;
-  const int data_index = static_cast<int>(blockIdx_x * blockDim_x + threadIdx_x);
-  if (data_index < num_data) {
-    const int leaf_index = cuda_data_index_to_leaf_index[data_index];
-    const double leaf_prediction_value = leaf_value[leaf_index];
-    cuda_scores[data_index] = leaf_prediction_value;
+  const data_size_t local_data_index = static_cast<data_size_t>(blockIdx_x * blockDim_x + threadIdx_x);
+  if (local_data_index < num_data) {
+    if (USE_BAGGING) {
+      const data_size_t global_data_index = data_indices_in_leaf[local_data_index];
+      const int leaf_index = cuda_data_index_to_leaf_index[global_data_index];
+      const double leaf_prediction_value = leaf_value[leaf_index];
+      cuda_scores[local_data_index] = leaf_prediction_value;
+    } else {
+      const int leaf_index = cuda_data_index_to_leaf_index[local_data_index];
+      const double leaf_prediction_value = leaf_value[leaf_index];
+      cuda_scores[local_data_index] = leaf_prediction_value;
+    }
   }
 }
 
 void CUDADataPartition::LaunchAddPredictionToScoreKernel(const double* leaf_value, double* cuda_scores) {
   global_timer.Start("CUDADataPartition::AddPredictionToScoreKernel");
-  const int num_blocks = (num_data_ + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
-  AddPredictionToScoreKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(
-    cuda_leaf_num_data_, cuda_data_indices_, cuda_leaf_data_start_, leaf_value, cuda_scores, cuda_data_index_to_leaf_index_, num_data_);
+  const data_size_t num_data_in_root = root_num_data();
+  const int num_blocks = (num_data_in_root + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
+  if (use_bagging_) {
+    AddPredictionToScoreKernel<true><<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(
+      cuda_data_indices_, leaf_value, cuda_scores, cuda_data_index_to_leaf_index_, num_data_in_root);
+  } else {
+    AddPredictionToScoreKernel<false><<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(
+      cuda_data_indices_, leaf_value, cuda_scores, cuda_data_index_to_leaf_index_, num_data_in_root);
+  }
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   global_timer.Stop("CUDADataPartition::AddPredictionToScoreKernel");
 }

@@ -49,16 +49,14 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   leaf_data_start_.resize(config_->num_leaves, 0);
   leaf_sum_hessians_.resize(config_->num_leaves, 0.0f);
 
-  AllocateCUDAMemoryOuter<double>(&cuda_add_train_score_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   AllocateCUDAMemoryOuter<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   AllocateCUDAMemoryOuter<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-  add_train_score_.resize(num_data_, 0.0f);
 }
 
 void NewCUDATreeLearner::BeforeTrain() {
   const data_size_t root_num_data = cuda_data_partition_->root_num_data();
-  CopyFromHostToCUDADeviceOuter<score_t>(cuda_gradients_, gradients_, static_cast<size_t>(root_num_data), __FILE__, __LINE__);
-  CopyFromHostToCUDADeviceOuter<score_t>(cuda_hessians_, hessians_, static_cast<size_t>(root_num_data), __FILE__, __LINE__);
+  CopyFromHostToCUDADeviceOuter<score_t>(cuda_gradients_, gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  CopyFromHostToCUDADeviceOuter<score_t>(cuda_hessians_, hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   cuda_data_partition_->BeforeTrain();
   cuda_smaller_leaf_splits_->InitValues(
     cuda_gradients_,
@@ -77,17 +75,7 @@ void NewCUDATreeLearner::BeforeTrain() {
 }
 
 void NewCUDATreeLearner::AddPredictionToScore(const Tree* tree, double* out_score) const {
-  CHECK(tree->is_cuda_tree());
-  const CUDATree* cuda_tree = reinterpret_cast<const CUDATree*>(tree);
-  cuda_data_partition_->UpdateTrainScore(cuda_tree->cuda_leaf_value(), cuda_add_train_score_);
-  CopyFromCUDADeviceToHostOuter<double>(add_train_score_.data(),
-    cuda_add_train_score_, static_cast<size_t>(cuda_data_partition_->root_num_data()), __FILE__, __LINE__);
-  OMP_INIT_EX();
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
-  for (data_size_t data_index = 0; data_index < cuda_data_partition_->root_num_data(); ++data_index) {
-    out_score[data_index] += add_train_score_[data_index];
-  }
-  OMP_THROW_EX();
+  cuda_data_partition_->UpdateTrainScore(tree, out_score);
 }
 
 Tree* NewCUDATreeLearner::Train(const score_t* gradients,
@@ -184,6 +172,7 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
     global_timer.Stop("NewCUDATreeLearner::Split");
   }
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  //AfterTrain();
   tree->ToHost();
   return tree.release();
 }
@@ -193,8 +182,9 @@ void NewCUDATreeLearner::ResetTrainingData(const Dataset* /*train_data*/,
 
 void NewCUDATreeLearner::SetBaggingData(const Dataset* subset,
   const data_size_t* used_indices, data_size_t num_data) {
-  cuda_data_partition_->SetUsedDataIndices(used_indices, num_data);
   if (subset == nullptr) {
+    cuda_data_partition_->SetUsedDataIndices(used_indices, num_data);
+  } else {
     
   }
 }
