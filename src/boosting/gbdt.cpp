@@ -67,8 +67,6 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   if (config_->device_type == std::string("cuda")) {
     LGBM_config_::current_learner = use_cuda_learner;
-    const int gpu_device_id = config_->gpu_device_id >= 0 ? config_->gpu_device_id : 0;
-    CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
   }
 
   // load forced_splits file
@@ -105,26 +103,14 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   }
   training_metrics_.shrink_to_fit();
 
-  if (config_->device_type == std::string("cuda")) {
-    train_score_updater_.reset(new CUDAScoreUpdater(train_data_, num_tree_per_iteration_));
-  } else {
-    train_score_updater_.reset(new ScoreUpdater(train_data_, num_tree_per_iteration_));
-  }
+  train_score_updater_.reset(new ScoreUpdater(train_data_, num_tree_per_iteration_));
 
   num_data_ = train_data_->num_data();
   // create buffer for gradients and Hessians
-  size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-  if (config_->device_type == std::string("cuda")) {
-    AllocateCUDAMemoryOuter<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
-    AllocateCUDAMemoryOuter<score_t>(&hessians_pointer_, total_size, __FILE__, __LINE__);
-  }
   if (objective_function_ != nullptr) {
+    size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
     gradients_.resize(total_size);
     hessians_.resize(total_size);
-    if (config_->device_type == std::string("cpu")) {
-      gradients_pointer_ = gradients_.data();
-      hessians_pointer_ = hessians_.data();
-    }
   }
   // get max feature index
   max_feature_idx_ = train_data_->num_total_features() - 1;
@@ -157,9 +143,7 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
     Log::Fatal("Cannot add validation data, since it has different bin mappers with training data");
   }
   // for a validation dataset, we need its score and metric
-  auto new_score_updater = config_->device_type == std::string("cuda") ?
-    std::unique_ptr<CUDAScoreUpdater>(new CUDAScoreUpdater(valid_data, num_tree_per_iteration_)) :
-    std::unique_ptr<ScoreUpdater>(new ScoreUpdater(valid_data, num_tree_per_iteration_));
+  auto new_score_updater = std::unique_ptr<ScoreUpdater>(new ScoreUpdater(valid_data, num_tree_per_iteration_));
   // update score
   for (int i = 0; i < iter_; ++i) {
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
@@ -327,8 +311,8 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
         CHECK_LT(leaf_pred[i], models_[model_index]->num_leaves());
       }
       size_t offset = static_cast<size_t>(tree_id) * num_data_;
-      auto grad = gradients_pointer_ + offset;
-      auto hess = hessians_pointer_ + offset;
+      auto grad = gradients_.data() + offset;
+      auto hess = hessians_.data() + offset;
       auto new_tree = tree_learner_->FitByExistingTree(models_[model_index].get(), leaf_pred, grad, hess);
       train_score_updater_->AddScore(tree_learner_.get(), new_tree, tree_id);
       models_[model_index].reset(new_tree);
@@ -391,22 +375,12 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       init_scores[cur_tree_id] = BoostFromAverage(cur_tree_id, true);
     }
     Boosting();
-  }
-  if (config_->device_type == std::string("cuda")) {
-    const size_t total_size = static_cast<size_t>(num_data_ * num_class_);
-    const score_t* host_gradients = gradients == nullptr ? gradients_.data() : gradients;
-    const score_t* host_hessians = hessians == nullptr ? hessians_.data() : hessians;
-    global_timer.Start("Copy gradients from Host to CUDA");
-    CopyFromHostToCUDADeviceOuter<score_t>(gradients_pointer_, host_gradients, total_size, __FILE__, __LINE__);
-    CopyFromHostToCUDADeviceOuter<score_t>(hessians_pointer_, host_hessians, total_size, __FILE__, __LINE__);
-    global_timer.Stop("Copy gradients from Host to CUDA");
-  }
-  if (gradients == nullptr || hessians == nullptr || config_->device_type == std::string("cuda")) {
-    gradients = gradients_pointer_;
-    hessians = hessians_pointer_;
+    gradients = gradients_.data();
+    hessians = hessians_.data();
   }
   // bagging logic
   Bagging(iter_);
+
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     const size_t offset = static_cast<size_t>(cur_tree_id) * num_data_;
@@ -416,16 +390,12 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto hess = hessians + offset;
       // need to copy gradients for bagging subset.
       if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-        if (config_->device_type == std::string("cuda")) {
-          CopySubsampleGradientsCUDA(gradients_pointer_ + offset, hessians_pointer_ + offset, grad, hess);
-        } else {
-          for (int i = 0; i < bag_data_cnt_; ++i) {
-            gradients_pointer_[offset + i] = grad[bag_data_indices_[i]];
-            gradients_pointer_[offset + i] = hess[bag_data_indices_[i]];
-          }
+        for (int i = 0; i < bag_data_cnt_; ++i) {
+          gradients_[offset + i] = grad[bag_data_indices_[i]];
+          hessians_[offset + i] = hess[bag_data_indices_[i]];
         }
-        grad = gradients_pointer_ + offset;
-        hess = hessians_pointer_ + offset;
+        grad = gradients_.data() + offset;
+        hess = hessians_.data() + offset;
       }
       bool is_first_tree = models_.size() < static_cast<size_t>(num_tree_per_iteration_);
       new_tree.reset(tree_learner_->Train(grad, hess, is_first_tree));
@@ -436,7 +406,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto score_ptr = train_score_updater_->score() + offset;
       auto residual_getter = [score_ptr](const label_t* label, int i) {return static_cast<double>(label[i]) - score_ptr[i]; };
       tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, residual_getter,
-                                     score_ptr, num_data_, bag_data_indices_.data(), bag_data_cnt_);
+                                     num_data_, bag_data_indices_.data(), bag_data_cnt_);
       // shrinkage by learning rate
       new_tree->Shrinkage(shrinkage_rate_);
       // update score
@@ -457,7 +427,6 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         }
         new_tree->AsConstantTree(output);
         // updates scores
-        // TODO(shiyu1994): check here, default score has been added in BoostFromAverage ?
         train_score_updater_->AddScore(output, cur_tree_id);
         for (auto& score_updater : valid_score_updater_) {
           score_updater->AddScore(output, cur_tree_id);
@@ -541,15 +510,8 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
   }
 }
 
-std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const {
-  if (config_->device_type == std::string("cuda")) {
-    metric_temp_score_.resize(num_data * num_class_, 0.0f);
-    CopyFromCUDADeviceToHostOuter<double>(metric_temp_score_.data(), score, static_cast<size_t>(num_data * num_class_), __FILE__, __LINE__);
-    SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-    return metric->Eval(metric_temp_score_.data(), objective_function_);
-  } else {
-    return metric->Eval(score, objective_function_);
-  }
+std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score) const {
+  return metric->Eval(score, objective_function_);
 }
 
 std::string GBDT::OutputMetric(int iter) {
@@ -561,7 +523,7 @@ std::string GBDT::OutputMetric(int iter) {
   if (need_output) {
     for (auto& sub_metric : training_metrics_) {
       auto name = sub_metric->GetName();
-      auto scores = EvalOneMetric(sub_metric, train_score_updater_->score(), train_data_->num_data());
+      auto scores = EvalOneMetric(sub_metric, train_score_updater_->score());
       for (size_t k = 0; k < name.size(); ++k) {
         std::stringstream tmp_buf;
         tmp_buf << "Iteration:" << iter
@@ -578,7 +540,7 @@ std::string GBDT::OutputMetric(int iter) {
   if (need_output || early_stopping_round_ > 0) {
     for (size_t i = 0; i < valid_metrics_.size(); ++i) {
       for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
-        auto test_scores = EvalOneMetric(valid_metrics_[i][j], valid_score_updater_[i]->score(), valid_score_updater_[i]->num_data());
+        auto test_scores = EvalOneMetric(valid_metrics_[i][j], valid_score_updater_[i]->score());
         auto name = valid_metrics_[i][j]->GetName();
         for (size_t k = 0; k < name.size(); ++k) {
           std::stringstream tmp_buf;
@@ -618,7 +580,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
   std::vector<double> ret;
   if (data_idx == 0) {
     for (auto& sub_metric : training_metrics_) {
-      auto scores = EvalOneMetric(sub_metric, train_score_updater_->score(), train_score_updater_->num_data());
+      auto scores = EvalOneMetric(sub_metric, train_score_updater_->score());
       for (auto score : scores) {
         ret.push_back(score);
       }
@@ -626,7 +588,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
   } else {
     auto used_idx = data_idx - 1;
     for (size_t j = 0; j < valid_metrics_[used_idx].size(); ++j) {
-      auto test_scores = EvalOneMetric(valid_metrics_[used_idx][j], valid_score_updater_[used_idx]->score(), valid_score_updater_[used_idx]->num_data());
+      auto test_scores = EvalOneMetric(valid_metrics_[used_idx][j], valid_score_updater_[used_idx]->score());
       for (auto score : test_scores) {
         ret.push_back(score);
       }
@@ -638,13 +600,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
 /*! \brief Get training scores result */
 const double* GBDT::GetTrainingScore(int64_t* out_len) {
   *out_len = static_cast<int64_t>(train_score_updater_->num_data()) * num_class_;
-  if (config_->device_type == std::string("cpu")) {
-    return train_score_updater_->score();
-  } else if (config_->device_type == std::string("cuda")) {
-    training_temp_score_.resize(*out_len);
-    CopyFromCUDADeviceToHostOuter<double>(training_temp_score_.data(), train_score_updater_->score(), *out_len, __FILE__, __LINE__);
-    return training_temp_score_.data();
-  }
+  return train_score_updater_->score();
 }
 
 void GBDT::PredictContrib(const double* features, double* output) const {
@@ -766,15 +722,8 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
     // create buffer for gradients and hessians
     if (objective_function_ != nullptr) {
       size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-      if (config_->device_type == std::string("cuda")) {
-        AllocateCUDAMemoryOuter<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
-        AllocateCUDAMemoryOuter<score_t>(&hessians_pointer_, total_size, __FILE__, __LINE__);
-      } else {
-        gradients_.resize(total_size);
-        hessians_.resize(total_size);
-        gradients_pointer_ = gradients_.data();
-        hessians_pointer_ = hessians_.data();
-      }
+      gradients_.resize(total_size);
+      hessians_.resize(total_size);
     }
 
     max_feature_idx_ = train_data_->num_total_features() - 1;
@@ -874,15 +823,8 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     if (is_use_subset_ && bag_data_cnt_ < num_data_) {
       if (objective_function_ == nullptr) {
         size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-        if (config_->device_type == std::string("cuda")) {
-          AllocateCUDAMemoryOuter<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
-          AllocateCUDAMemoryOuter<score_t>(&hessians_pointer_, total_size, __FILE__, __LINE__);
-        } else {
-          gradients_.resize(total_size);
-          hessians_.resize(total_size);
-          gradients_pointer_ = gradients_.data();
-          hessians_pointer_ = hessians_.data();
-        }
+        gradients_.resize(total_size);
+        hessians_.resize(total_size);
       }
     }
   } else {
@@ -891,12 +833,6 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     bagging_runner_.ReSize(0);
     is_use_subset_ = false;
   }
-}
-
-void GBDT::CopySubsampleGradientsCUDA(
-score_t* dst_grad, score_t* dst_hess,
-const score_t* src_grad, const score_t* src_hess) {
-  LaunchCopySubsampleGradientsKernel(dst_grad, dst_hess, src_grad, src_hess);
 }
 
 }  // namespace LightGBM

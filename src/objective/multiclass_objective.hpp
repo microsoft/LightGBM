@@ -165,7 +165,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     }
   }
 
- protected:
+ private:
   double factor_;
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -266,7 +266,7 @@ class MulticlassOVA: public ObjectiveFunction {
     return binary_loss_[class_id]->ClassNeedTrain(0);
   }
 
- protected:
+ private:
   MulticlassOVA() {}
 
   /*! \brief Number of data */

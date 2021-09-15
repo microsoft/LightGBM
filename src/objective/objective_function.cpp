@@ -53,7 +53,6 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
 }
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& str) {
-  // TODO(shiyu1994): consider the case for CUDA
   auto strs = Common::Split(str.c_str(), ' ');
   auto type = strs[0];
   if (type == std::string("regression")) {

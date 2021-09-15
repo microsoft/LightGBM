@@ -101,7 +101,7 @@ class RegressionMetric: public Metric {
   inline static void CheckLabel(label_t) {
   }
 
- protected:
+ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */

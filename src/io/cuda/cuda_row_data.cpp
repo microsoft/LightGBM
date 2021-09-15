@@ -29,7 +29,6 @@ void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_sha
   const void* host_row_ptr = nullptr;
   row_ptr_bit_type_ = 0;
   const void* host_data = train_share_state->GetRowWiseData(&bit_type_, &total_size, &is_sparse_, &host_row_ptr, &row_ptr_bit_type_);
-  Log::Warning("bit_type_ = %d, is_sparse_ = %d, row_ptr_bit_type_ = %d", bit_type_, static_cast<int>(is_sparse_), row_ptr_bit_type_);
   if (bit_type_ == 8) {
     if (!is_sparse_) {
       std::vector<uint8_t> partitioned_data;
@@ -215,8 +214,6 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
     __FILE__,
     __LINE__);
 
-  Log::Warning("num_columns_ = %d", column_index);
-  Log::Warning("column_hist_offsets_.size() = %d", column_hist_offsets_.size());
   InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_column_hist_offsets_,
     column_hist_offsets_.data(),
     column_hist_offsets_.size(),

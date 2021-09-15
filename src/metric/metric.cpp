@@ -61,7 +61,6 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
   } else if (type == std::string("tweedie")) {
     return new TweedieMetric(config);
   }
-  Log::Fatal("Unknown metric type name: %s", type.c_str());
   return nullptr;
 }
 

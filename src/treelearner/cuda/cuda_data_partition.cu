@@ -23,10 +23,8 @@ __global__ void FillDataIndicesBeforeTrainKernel(const data_size_t* cuda_num_dat
 }
 
 void CUDADataPartition::LaunchFillDataIndicesBeforeTrain() {
-  if (used_indices == nullptr) {
-    const int num_blocks = (num_data_ + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
-    FillDataIndicesBeforeTrainKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(cuda_num_data_, cuda_data_indices_, cuda_data_index_to_leaf_index_);
-  }
+  const int num_blocks = (num_data_ + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
+  FillDataIndicesBeforeTrainKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(cuda_num_data_, cuda_data_indices_, cuda_data_index_to_leaf_index_);
 }
 
 __device__ __forceinline__ void PrepareOffset(const data_size_t num_data_in_leaf_ref, uint16_t* block_to_left_offset,
@@ -1155,7 +1153,7 @@ __global__ void AddPredictionToScoreKernel(
   if (data_index < num_data) {
     const int leaf_index = cuda_data_index_to_leaf_index[data_index];
     const double leaf_prediction_value = leaf_value[leaf_index];
-    cuda_scores[data_index] += leaf_prediction_value;
+    cuda_scores[data_index] = leaf_prediction_value;
   }
 }
 

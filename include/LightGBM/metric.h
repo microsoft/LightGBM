@@ -135,10 +135,6 @@ class DCGCalculator {
   */
   inline static double GetDiscount(data_size_t k) { return discount_[k]; }
 
-  inline static const std::vector<double>& label_gain() { return label_gain_; }
-
-  inline static const std::vector<double>& discount() { return discount_; }
-
  private:
   /*! \brief store gains for different label */
   static std::vector<double> label_gain_;

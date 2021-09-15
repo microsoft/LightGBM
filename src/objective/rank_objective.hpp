@@ -62,10 +62,6 @@ class RankingObjective : public ObjectiveFunction {
         }
       }
     }
-    const int num_show = 1000;
-    for (int i = 0; i < num_show; ++i) {
-      Log::Warning("gradients[%d] = %f, hessians[%d] = %f, score[%d] = %f", i, gradients[i], i, hessians[i], i, score[i]);
-    }
   }
 
   virtual void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt,
@@ -259,7 +255,7 @@ class LambdarankNDCG : public RankingObjective {
 
   const char* GetName() const override { return "lambdarank"; }
 
- protected:
+ private:
   /*! \brief Simgoid param */
   double sigmoid_;
   /*! \brief Normalize the lambdas or not */
@@ -356,13 +352,13 @@ class RankXENDCG : public RankingObjective {
     }
   }
 
-  const char* GetName() const override { return "rank_xendcg"; }
-
- protected:
   double Phi(const label_t l, double g) const {
     return Common::Pow(2, static_cast<int>(l)) - g;
   }
 
+  const char* GetName() const override { return "rank_xendcg"; }
+
+ private:
   mutable std::vector<Random> rands_;
 };
 

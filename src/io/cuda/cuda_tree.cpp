@@ -154,21 +154,6 @@ int CUDATree::Split(const int leaf_index,
   return num_leaves_ - 1;
 }
 
-void CUDATree::AddPredictionToScore(const Dataset* data,
-                                    data_size_t num_data,
-                                    double* score) const {
-  LaunchAddPredictionToScoreKernel(data, nullptr, num_data, score);
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-}
-
-void CUDATree::AddPredictionToScore(const Dataset* data,
-                                    const data_size_t* used_data_indices,
-                                    data_size_t num_data, double* score) const {
-  // TODO(shiyu1994): used_data_indices should reside on GPU
-  LaunchAddPredictionToScoreKernel(data, used_data_indices, num_data, score);
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-}
-
 inline void CUDATree::Shrinkage(double rate) {
   Tree::Shrinkage(rate);
   LaunchShrinkageKernel(rate);
@@ -215,6 +200,10 @@ void CUDATree::ToHost() {
   CopyFromCUDADeviceToHostOuter<data_size_t>(internal_count_.data(), cuda_internal_count_, num_leaves_size - 1, __FILE__, __LINE__);
   CopyFromCUDADeviceToHostOuter<int>(leaf_depth_.data(), cuda_leaf_depth_, num_leaves_size, __FILE__, __LINE__);
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+}
+
+void CUDATree::SyncLeafOutputFromHostToCUDA() {
+  CopyFromHostToCUDADeviceOuter<double>(cuda_leaf_value_, leaf_value_.data(), leaf_value_.size(), __FILE__, __LINE__);
 }
 
 }  // namespace LightGBM

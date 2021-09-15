@@ -170,7 +170,6 @@ __global__ void AddPredictionToScoreKernel(
   const data_size_t data_index = USE_INDICES ? cuda_used_indices[inner_data_index] : inner_data_index;
   if (data_index < num_data) {
     int node = 0;
-    int iter = 0;
     while (node >= 0) {
       const int split_feature_inner = cuda_split_feature_inner[node];
       const int column = cuda_feature_to_column[split_feature_inner];
@@ -210,69 +209,9 @@ __global__ void AddPredictionToScoreKernel(
           node = cuda_right_child[node];
         }
       }
-      ++iter;
-      if (iter > 1000) {
-        printf("error iter = %d, node = %d, cuda_left_child[%d] = %d, cuda_right_child[%d] = %d\n",
-          iter, node, node, cuda_left_child[node], node, cuda_right_child[node]);
-      }
     }
     score[data_index] += cuda_leaf_value[~node];
   }
-}
-
-void CUDATree::LaunchAddPredictionToScoreKernel(
-  const Dataset* data,
-  const data_size_t* used_data_indices,
-  data_size_t num_data,
-  double* score) const {
-  const CUDAColumnData* cuda_column_data = data->cuda_column_data();
-  const int num_blocks = (num_data + num_threads_per_block_add_prediction_to_score_ - 1) / num_threads_per_block_add_prediction_to_score_;
-  if (used_data_indices == nullptr) {
-    AddPredictionToScoreKernel<false><<<num_blocks, num_threads_per_block_add_prediction_to_score_>>>(
-      // dataset information
-      num_data,
-      cuda_column_data->cuda_data_by_column(),
-      cuda_column_data->cuda_column_bit_type(),
-      cuda_column_data->cuda_feature_min_bin(),
-      cuda_column_data->cuda_feature_max_bin(),
-      cuda_column_data->cuda_feature_offset(),
-      cuda_column_data->cuda_feature_default_bin(),
-      cuda_column_data->cuda_feature_most_freq_bin(),
-      cuda_column_data->cuda_feature_to_column(),
-      nullptr,
-      // tree information
-      cuda_threshold_in_bin_,
-      cuda_decision_type_,
-      cuda_split_feature_inner_,
-      cuda_left_child_,
-      cuda_right_child_,
-      cuda_leaf_value_,
-      // output
-      score);
-  } else {
-    AddPredictionToScoreKernel<true><<<num_blocks, num_threads_per_block_add_prediction_to_score_>>>(
-      // dataset information
-      num_data,
-      cuda_column_data->cuda_data_by_column(),
-      cuda_column_data->cuda_column_bit_type(),
-      cuda_column_data->cuda_feature_min_bin(),
-      cuda_column_data->cuda_feature_max_bin(),
-      cuda_column_data->cuda_feature_offset(),
-      cuda_column_data->cuda_feature_default_bin(),
-      cuda_column_data->cuda_feature_most_freq_bin(),
-      cuda_column_data->cuda_feature_to_column(),
-      used_data_indices,
-      // tree information
-      cuda_threshold_in_bin_,
-      cuda_decision_type_,
-      cuda_split_feature_inner_,
-      cuda_left_child_,
-      cuda_right_child_,
-      cuda_leaf_value_,
-      // output
-      score);
-  }
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
 }
 
 __global__ void ShrinkageKernel(const double rate, double* cuda_leaf_value, const int num_leaves) {

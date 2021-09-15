@@ -43,27 +43,6 @@ class CUDATree : public Tree {
              const MissingType missing_type,
              const CUDASplitInfo* cuda_split_info);
 
-  /*!
-  * \brief Adding prediction value of this tree model to scores
-  * \param data The dataset
-  * \param num_data Number of total data
-  * \param score Will add prediction to score
-  */
-  void AddPredictionToScore(const Dataset* data,
-                            data_size_t num_data,
-                            double* score) const override;
-
-  /*!
-  * \brief Adding prediction value of this tree model to scores
-  * \param data The dataset
-  * \param used_data_indices Indices of used data
-  * \param num_data Number of total data
-  * \param score Will add prediction to score
-  */
-  void AddPredictionToScore(const Dataset* data,
-                            const data_size_t* used_data_indices,
-                            data_size_t num_data, double* score) const override;
-
   const int* cuda_left_child() const { return cuda_left_child_; }
 
   const int* cuda_right_child() const { return cuda_right_child_; }
@@ -88,6 +67,8 @@ class CUDATree : public Tree {
 
   void ToHost();
 
+  void SyncLeafOutputFromHostToCUDA();
+
  private:
   void InitCUDAMemory();
 
@@ -98,10 +79,6 @@ class CUDATree : public Tree {
                          const double real_threshold,
                          const MissingType missing_type,
                          const CUDASplitInfo* cuda_split_info);
-
-  void LaunchAddPredictionToScoreKernel(const Dataset* data,
-                                        const data_size_t* used_data_indices,
-                                        data_size_t num_data, double* score) const;
 
   void LaunchShrinkageKernel(const double rate);
 

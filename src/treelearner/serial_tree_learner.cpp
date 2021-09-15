@@ -573,6 +573,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   }
   *left_leaf = best_leaf;
   auto next_leaf_id = tree->NextLeafId();
+
   // update before tree split
   constraints_->BeforeSplit(best_leaf, next_leaf_id,
                             best_split_info.monotone_type);
@@ -681,7 +682,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
 }
 
 void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
-                                        const double* score, data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
+                                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
   if (obj != nullptr && obj->IsRenewTreeOutput()) {
     CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
     const data_size_t* bag_mapper = nullptr;

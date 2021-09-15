@@ -253,23 +253,7 @@ class Predictor {
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
   }
 
-  virtual void Predict(const data_size_t num_data,
-                       const int64_t num_pred_in_one_row,
-                       const std::function<std::vector<std::pair<int, double>>(int row_idx)>& get_row_fun,
-                       double* out_result) {
-    OMP_INIT_EX();
-    #pragma omp parallel for schedule(static)
-    for (int i = 0; i < num_data; ++i) {
-      OMP_LOOP_EX_BEGIN();
-      auto one_row = get_row_fun(i);
-      auto pred_wrt_ptr = out_result + static_cast<size_t>(num_pred_in_one_row) * i;
-      predict_fun_(one_row, pred_wrt_ptr);
-      OMP_LOOP_EX_END();
-    }
-    OMP_THROW_EX();
-  }
-
- protected:
+ private:
   void CopyToPredictBuffer(double* pred_buf, const std::vector<std::pair<int, double>>& features) {
     for (const auto &feature : features) {
       if (feature.first < num_feature_) {

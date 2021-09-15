@@ -34,7 +34,7 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   void AddPredictionToScore(const Tree* tree, double* out_score) const override;
 
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
-                       const double* score, data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
+                       data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
  protected:
   void BeforeTrain() override;
@@ -66,6 +66,11 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   int smaller_leaf_index_;
   int larger_leaf_index_;
   int best_leaf_index_;
+
+  // added train score buffer in CUDA
+  double* cuda_add_train_score_;
+  // add train score buffer in host
+  mutable std::vector<double> add_train_score_;
 };
 
 }  // namespace LightGBM

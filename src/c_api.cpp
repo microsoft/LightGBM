@@ -26,7 +26,6 @@
 #include <stdexcept>
 #include <vector>
 
-#include "application/cuda/cuda_predictor.hpp"
 #include "application/predictor.hpp"
 #include <LightGBM/utils/yamc/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/yamc/yamc_shared_lock.hpp>
@@ -403,7 +402,7 @@ class Booster {
     *out_len = single_row_predictor->num_pred_in_one_row;
   }
 
-  Predictor* CreatePredictor(int start_iteration, int num_iteration, int predict_type, int ncol, const Config& config) const {
+  Predictor CreatePredictor(int start_iteration, int num_iteration, int predict_type, int ncol, const Config& config) const {
     if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
@@ -420,7 +419,8 @@ class Booster {
     } else {
       is_raw_score = false;
     }
-    return new Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
+
+    return Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                       config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
   }
 
@@ -429,7 +429,7 @@ class Booster {
                const Config& config,
                double* out_result, int64_t* out_len) const {
     SHARED_LOCK(mutex_);
-    auto predictor = std::unique_ptr<Predictor>(CreatePredictor(start_iteration, num_iteration, predict_type, ncol, config));
+    auto predictor = CreatePredictor(start_iteration, num_iteration, predict_type, ncol, config);
     bool is_predict_leaf = false;
     bool predict_contrib = false;
     if (predict_type == C_API_PREDICT_LEAF_INDEX) {
@@ -438,7 +438,17 @@ class Booster {
       predict_contrib = true;
     }
     int64_t num_pred_in_one_row = boosting_->NumPredictOneRow(start_iteration, num_iteration, is_predict_leaf, predict_contrib);
-    predictor->Predict(nrow, num_pred_in_one_row, get_row_fun, out_result);
+    auto pred_fun = predictor.GetPredictFunction();
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < nrow; ++i) {
+      OMP_LOOP_EX_BEGIN();
+      auto one_row = get_row_fun(i);
+      auto pred_wrt_ptr = out_result + static_cast<size_t>(num_pred_in_one_row) * i;
+      pred_fun(one_row, pred_wrt_ptr);
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
     *out_len = num_pred_in_one_row * nrow;
   }
 
@@ -448,8 +458,8 @@ class Booster {
                      std::vector<std::vector<std::unordered_map<int, double>>>* agg_ptr,
                      int32_t** out_indices, void** out_data, int data_type,
                      bool* is_data_float32_ptr, int num_matrices) const {
-    auto predictor = std::unique_ptr<Predictor>(CreatePredictor(start_iteration, num_iteration, predict_type, ncol, config));
-    auto pred_sparse_fun = predictor->GetPredictSparseFunction();
+    auto predictor = CreatePredictor(start_iteration, num_iteration, predict_type, ncol, config);
+    auto pred_sparse_fun = predictor.GetPredictSparseFunction();
     std::vector<std::vector<std::unordered_map<int, double>>>& agg = *agg_ptr;
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static)
@@ -583,8 +593,8 @@ class Booster {
     SHARED_LOCK(mutex_);
     // Get the number of trees per iteration (for multiclass scenario we output multiple sparse matrices)
     int num_matrices = boosting_->NumModelPerIteration();
-    auto predictor = std::unique_ptr<Predictor>(CreatePredictor(start_iteration, num_iteration, predict_type, ncol, config));
-    auto pred_sparse_fun = predictor->GetPredictSparseFunction();
+    auto predictor = CreatePredictor(start_iteration, num_iteration, predict_type, ncol, config);
+    auto pred_sparse_fun = predictor.GetPredictSparseFunction();
     bool is_col_ptr_int32 = false;
     bool is_data_float32 = false;
     int num_output_cols = ncol + 1;
@@ -700,11 +710,10 @@ class Booster {
     } else {
       is_raw_score = false;
     }
-    std::unique_ptr<Predictor> predictor;
-    predictor.reset(new Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
-                      config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin));
+    Predictor predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
+                        config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
     bool bool_data_has_header = data_has_header > 0 ? true : false;
-    predictor->Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check,
+    predictor.Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check,
                       config.precise_float_parser);
   }
 

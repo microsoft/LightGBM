@@ -1524,7 +1524,6 @@ void Dataset::CreateCUDAColumnData() {
   std::vector<uint8_t> feature_missing_is_na(num_features_, 0);
   std::vector<uint8_t> feature_mfb_is_zero(num_features_, 0);
   std::vector<uint8_t> feature_mfb_is_na(num_features_, 0);
-  Log::Warning("num_groups_ = %d", num_groups_);
   for (int feature_group_index = 0; feature_group_index < num_groups_; ++feature_group_index) {
     if (feature_groups_[feature_group_index]->is_multi_val_) {
       for (int sub_feature_index = 0; sub_feature_index < feature_groups_[feature_group_index]->num_feature_; ++sub_feature_index) {
