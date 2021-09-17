@@ -143,7 +143,7 @@ Build with MinGW-w64 on Windows
 
     pip install lightgbm --install-option=--mingw
 
-`CMake`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
+`CMake`_ and `MinGW-w64 <https://www.mingw-w64.org/>`_ should be installed first.
 
 It is recommended to use **Visual Studio** for its better multithreading efficiency in **Windows** for many-core systems
 (see `Question 4 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#4-i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#8-cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
