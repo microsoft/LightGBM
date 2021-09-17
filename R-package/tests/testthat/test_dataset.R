@@ -531,9 +531,9 @@ test_that("Dataset: method calls on a Dataset with a null handle should raise an
   }, regexp = "cannot set reference after freeing raw data")
 
   tmp_valid_file <- tempfile(fileext = ".rds")
-  saveRDS(dvalid, tmp_file)
+  saveRDS(dvalid, tmp_valid_file)
   rm(dvalid)
-  dvalid <- readRDS(tmp_file)
+  dvalid <- readRDS(tmp_valid_file)
   expect_error({
     dtrain$set_reference(reference = dvalid)
   }, regexp = "cannot get column names before dataset has been constructed")
