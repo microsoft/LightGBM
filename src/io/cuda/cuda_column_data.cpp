@@ -143,34 +143,77 @@ void CUDAColumnData::CopySubrow(
   feature_missing_is_na_ = full_set->feature_missing_is_na_;
   feature_mfb_is_zero_ = full_set->feature_mfb_is_zero_;
   feature_mfb_is_na_ = full_set->feature_mfb_is_na_;
+  feature_to_column_ = full_set->feature_to_column_;
   if (cuda_used_indices_ == nullptr) {
     // initialize the subset cuda column data
-    const size_t full_set_num_data = static_cast<size_t>(full_set->num_data_);
-    AllocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, full_set_num_data, __FILE__, __LINE__);
-    CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_used_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
+    const size_t num_used_indices_size = static_cast<size_t>(num_used_indices);
+    AllocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, num_used_indices_size, __FILE__, __LINE__);
     data_by_column_.resize(num_columns_, nullptr);
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static) num_threads(num_threads_)
     for (int column_index = 0; column_index < num_columns_; ++column_index) {
+      OMP_LOOP_EX_BEGIN();
       const uint8_t bit_type = column_bit_type_[column_index];
       if (bit_type == 8) {
         uint8_t* column_data = nullptr;
-        AllocateCUDAMemoryOuter<uint8_t>(&column_data, full_set_num_data, __FILE__, __LINE__);
+        AllocateCUDAMemoryOuter<uint8_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
         data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
       } else if (bit_type == 16) {
         uint16_t* column_data = nullptr;
-        AllocateCUDAMemoryOuter<uint16_t>(&column_data, full_set_num_data, __FILE__, __LINE__);
+        AllocateCUDAMemoryOuter<uint16_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
         data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
       } else if (bit_type == 32) {
         uint32_t* column_data = nullptr;
-        AllocateCUDAMemoryOuter<uint32_t>(&column_data, full_set_num_data, __FILE__, __LINE__);
+        AllocateCUDAMemoryOuter<uint32_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
         data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
       }
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     InitCUDAMemoryFromHostMemoryOuter<void*>(&cuda_data_by_column_, data_by_column_.data(), data_by_column_.size(), __FILE__, __LINE__);
     InitColumnMetaInfo();
+    cur_subset_buffer_size_ = num_used_indices;
+  } else {
+    if (num_used_indices > cur_subset_buffer_size_) {
+      ResizeWhenCopySubrow(num_used_indices);
+      cur_subset_buffer_size_ = num_used_indices;
+    }
   }
-  LaunchCopySubrowKernel(full_set->cuda_data_by_column(), num_used_indices);
+  CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_used_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
+  num_used_indices_ = num_used_indices;
+  LaunchCopySubrowKernel(full_set->cuda_data_by_column());
+}
+
+void CUDAColumnData::ResizeWhenCopySubrow(const data_size_t num_used_indices) {
+  const size_t num_used_indices_size = static_cast<size_t>(num_used_indices);
+  DeallocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, __FILE__, __LINE__);
+  AllocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, num_used_indices_size, __FILE__, __LINE__);
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(static) num_threads(num_threads_)
+  for (int column_index = 0; column_index < num_columns_; ++column_index) {
+    OMP_LOOP_EX_BEGIN();
+    const uint8_t bit_type = column_bit_type_[column_index];
+    if (bit_type == 8) {
+      uint8_t* column_data = reinterpret_cast<uint8_t*>(data_by_column_[column_index]);
+      DeallocateCUDAMemoryOuter<uint8_t>(&column_data, __FILE__, __LINE__);
+      AllocateCUDAMemoryOuter<uint8_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
+      data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+    } else if (bit_type == 16) {
+      uint16_t* column_data = reinterpret_cast<uint16_t*>(data_by_column_[column_index]);
+      DeallocateCUDAMemoryOuter<uint16_t>(&column_data, __FILE__, __LINE__);
+      AllocateCUDAMemoryOuter<uint16_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
+      data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+    } else if (bit_type == 32) {
+      uint32_t* column_data = reinterpret_cast<uint32_t*>(data_by_column_[column_index]);
+      DeallocateCUDAMemoryOuter<uint32_t>(&column_data, __FILE__, __LINE__);
+      AllocateCUDAMemoryOuter<uint32_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
+      data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+    }
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
+  DeallocateCUDAMemoryOuter<void*>(&cuda_data_by_column_, __FILE__, __LINE__);
+  InitCUDAMemoryFromHostMemoryOuter<void*>(&cuda_data_by_column_, data_by_column_.data(), data_by_column_.size(), __FILE__, __LINE__);
 }
 
 void CUDAColumnData::InitColumnMetaInfo() {

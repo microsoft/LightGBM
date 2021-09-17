@@ -12,11 +12,10 @@
 
 namespace LightGBM {
 
-__global__ void FillDataIndicesBeforeTrainKernel(const data_size_t* cuda_num_data,
+__global__ void FillDataIndicesBeforeTrainKernel(const data_size_t num_data,
   data_size_t* data_indices, int* cuda_data_index_to_leaf_index) {
-  const data_size_t num_data_ref = *cuda_num_data;
   const unsigned int data_index = threadIdx.x + blockIdx.x * blockDim.x;
-  if (data_index < num_data_ref) {
+  if (data_index < num_data) {
     data_indices[data_index] = data_index;
     cuda_data_index_to_leaf_index[data_index] = 0;
   }
@@ -33,8 +32,9 @@ __global__ void FillDataIndexToLeafIndexKernel(
 }
 
 void CUDADataPartition::LaunchFillDataIndicesBeforeTrain() {
-  const int num_blocks = (num_data_ + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
-  FillDataIndicesBeforeTrainKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(cuda_num_data_, cuda_data_indices_, cuda_data_index_to_leaf_index_);
+  const data_size_t num_data_in_root = root_num_data();
+  const int num_blocks = (num_data_in_root + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
+  FillDataIndicesBeforeTrainKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(num_data_in_root, cuda_data_indices_, cuda_data_index_to_leaf_index_);
 }
 
 void CUDADataPartition::LaunchFillDataIndexToLeafIndex() {
@@ -603,7 +603,6 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(const data_size_t num
   const uint32_t most_freq_bin = cuda_column_data_->feature_most_freq_bin(split_feature_index);
   const uint32_t min_bin = cuda_column_data_->feature_min_bin(split_feature_index);
   const uint32_t max_bin = cuda_column_data_->feature_max_bin(split_feature_index);
-
   uint32_t th = split_threshold + min_bin;
   uint32_t t_zero_bin = min_bin + default_bin;
   if (most_freq_bin == 0) {
@@ -1115,7 +1114,6 @@ void CUDADataPartition::LaunchSplitInnerKernel(
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
   global_timer.Stop("CUDADataPartition::AggregateBlockOffsetKernel");
   global_timer.Start("CUDADataPartition::SplitInnerKernel");
-
   SplitInnerKernel<<<grid_dim_, block_dim_, 0, cuda_streams_[1]>>>(
     left_leaf_index, right_leaf_index, cuda_leaf_data_start_, cuda_leaf_num_data_, cuda_data_indices_,
     cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_, cuda_block_to_left_offset_,

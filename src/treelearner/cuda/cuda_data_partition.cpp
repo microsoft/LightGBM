@@ -89,11 +89,12 @@ void CUDADataPartition::Init() {
   add_train_score_.resize(num_data_, 0.0f);
   AllocateCUDAMemoryOuter<double>(&cuda_add_train_score_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   use_bagging_ = false;
+  use_bagging_subset_ = false;
   used_indices_ = nullptr;
 }
 
 void CUDADataPartition::BeforeTrain() {
-  if (!use_bagging_) {
+  if (!use_bagging_ || use_bagging_subset_) {
     LaunchFillDataIndicesBeforeTrain();
   }
   SetCUDAMemoryOuter<data_size_t>(cuda_leaf_num_data_, 0, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
@@ -209,7 +210,9 @@ void CUDADataPartition::UpdateTrainScore(const Tree* tree, double* scores) {
   CHECK(tree->is_cuda_tree());
   const CUDATree* cuda_tree = reinterpret_cast<const CUDATree*>(tree);
   const data_size_t num_data_in_root = root_num_data();
-  CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_data_indices_, used_indices_, static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
+  if (use_bagging_) {
+    CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_data_indices_, used_indices_, static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
+  }
   LaunchAddPredictionToScoreKernel(cuda_tree->cuda_leaf_value(), cuda_add_train_score_);
   CopyFromCUDADeviceToHostOuter<double>(add_train_score_.data(),
     cuda_add_train_score_, static_cast<size_t>(num_data_in_root), __FILE__, __LINE__);
@@ -251,17 +254,49 @@ void CUDADataPartition::CalcBlockDim(const data_size_t num_data_in_leaf) {
 
 void CUDADataPartition::SetUsedDataIndices(const data_size_t* used_indices, const data_size_t num_used_indices) {
   use_bagging_ = true;
+  use_bagging_subset_ = false;
   num_used_indices_ = num_used_indices;
   used_indices_ = used_indices;
   CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_data_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
   LaunchFillDataIndexToLeafIndex();
 }
 
-void CUDADataPartition::SetUseBagging(const bool use_bagging) {
-  use_bagging_ = use_bagging;
-  if (!use_bagging_) {
-    used_indices_ = nullptr;
+void CUDADataPartition::ResetTrainingData(const Dataset* train_data) {
+  const data_size_t old_num_data = num_data_;
+  num_data_ = train_data->num_data();
+  if (num_data_ > old_num_data) {
+    CalcBlockDim(num_data_);
+    const int old_max_num_split_indices_blocks = max_num_split_indices_blocks_;
+    max_num_split_indices_blocks_ = grid_dim_;
+    if (max_num_split_indices_blocks_ > old_max_num_split_indices_blocks) {
+      DeallocateCUDAMemoryOuter<data_size_t>(&cuda_block_data_to_left_offset_, __FILE__, __LINE__);
+      DeallocateCUDAMemoryOuter<data_size_t>(&cuda_block_data_to_right_offset_, __FILE__, __LINE__);
+      AllocateCUDAMemoryOuter<data_size_t>(&cuda_block_data_to_left_offset_, static_cast<size_t>(max_num_split_indices_blocks_) + 1, __FILE__, __LINE__);
+      AllocateCUDAMemoryOuter<data_size_t>(&cuda_block_data_to_right_offset_, static_cast<size_t>(max_num_split_indices_blocks_) + 1, __FILE__, __LINE__);
+      SetCUDAMemoryOuter<data_size_t>(cuda_block_data_to_left_offset_, 0, static_cast<size_t>(max_num_split_indices_blocks_) + 1, __FILE__, __LINE__);
+      SetCUDAMemoryOuter<data_size_t>(cuda_block_data_to_right_offset_, 0, static_cast<size_t>(max_num_split_indices_blocks_) + 1, __FILE__, __LINE__);
+    }
+    DeallocateCUDAMemoryOuter<data_size_t>(&cuda_data_indices_, __FILE__, __LINE__);
+    DeallocateCUDAMemoryOuter<uint16_t>(&cuda_block_to_left_offset_, __FILE__, __LINE__);
+    DeallocateCUDAMemoryOuter<int>(&cuda_data_index_to_leaf_index_, __FILE__, __LINE__);
+    DeallocateCUDAMemoryOuter<data_size_t>(&cuda_out_data_indices_in_leaf_, __FILE__, __LINE__);
+    DeallocateCUDAMemoryOuter<double>(&cuda_add_train_score_, __FILE__, __LINE__);
+    add_train_score_.resize(num_data_, 0.0f);
+
+    AllocateCUDAMemoryOuter<data_size_t>(&cuda_data_indices_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    AllocateCUDAMemoryOuter<uint16_t>(&cuda_block_to_left_offset_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    AllocateCUDAMemoryOuter<int>(&cuda_data_index_to_leaf_index_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    AllocateCUDAMemoryOuter<data_size_t>(&cuda_out_data_indices_in_leaf_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    AllocateCUDAMemoryOuter<double>(&cuda_add_train_score_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   }
+}
+
+void CUDADataPartition::SetBaggingSubset(const Dataset* subset) {
+  num_used_indices_ = subset->num_data();
+  used_indices_ = nullptr;
+  use_bagging_ = true;
+  use_bagging_subset_ = true;
+  cuda_column_data_ = subset->cuda_column_data();
 }
 
 }  // namespace LightGBM

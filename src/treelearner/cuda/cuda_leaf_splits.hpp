@@ -13,7 +13,6 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/meta.h>
 
-#define INIT_SUM_BLOCK_SIZE_LEAF_SPLITS (6144)
 #define NUM_THRADS_PER_BLOCK_LEAF_SPLITS (1024)
 #define NUM_DATA_THREAD_ADD_LEAF_SPLITS (6)
 
@@ -41,6 +40,7 @@ class CUDALeafSplits {
 
   void InitValues(
     const score_t* cuda_gradients, const score_t* cuda_hessians,
+    const data_size_t* cuda_bagging_data_indices,
     const data_size_t* cuda_data_indices_in_leaf, const data_size_t num_used_indices,
     hist_t* cuda_hist_in_leaf, double* root_sum_hessians);
 
@@ -50,15 +50,18 @@ class CUDALeafSplits {
 
   CUDALeafSplitsStruct* GetCUDAStructRef() { return cuda_struct_; }
 
+  void Resize(const data_size_t num_data);
+
  private:
   void LaunchInitValuesEmptyKernel();
 
-  void LaunchInitValuesKernal(const data_size_t* cuda_data_indices_in_leaf,
+  void LaunchInitValuesKernal(const data_size_t* cuda_bagging_data_indices,
+                              const data_size_t* cuda_data_indices_in_leaf,
                               const data_size_t num_used_indices,
                               hist_t* cuda_hist_in_leaf);
 
   // Host memory
-  const int num_data_;
+  data_size_t num_data_;
   int num_blocks_init_from_gradients_;
 
   // CUDA memory, held by this object

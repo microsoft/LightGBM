@@ -31,7 +31,7 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   cuda_larger_leaf_splits_->Init();
   cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, this->config_->num_leaves, num_threads_,
     share_state_->feature_hist_offsets(),
-    config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf, config_->gpu_device_id));
+    config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf, gpu_device_id));
   cuda_histogram_constructor_->Init(train_data_, share_state_.get());
 
   cuda_data_partition_.reset(new CUDADataPartition(
@@ -55,12 +55,16 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
 
 void NewCUDATreeLearner::BeforeTrain() {
   const data_size_t root_num_data = cuda_data_partition_->root_num_data();
-  CopyFromHostToCUDADeviceOuter<score_t>(cuda_gradients_, gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-  CopyFromHostToCUDADeviceOuter<score_t>(cuda_hessians_, hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  const size_t num_gradients_to_copy = cuda_data_partition_->use_bagging_subset() ? static_cast<size_t>(root_num_data) : static_cast<size_t>(num_data_);
+  CopyFromHostToCUDADeviceOuter<score_t>(cuda_gradients_, gradients_, num_gradients_to_copy, __FILE__, __LINE__);
+  CopyFromHostToCUDADeviceOuter<score_t>(cuda_hessians_, hessians_, num_gradients_to_copy, __FILE__, __LINE__);
+  const data_size_t* leaf_splits_init_indices =
+    (cuda_data_partition_->use_bagging_subset() || !cuda_data_partition_->use_bagging()) ? nullptr : cuda_data_partition_->cuda_data_indices();
   cuda_data_partition_->BeforeTrain();
   cuda_smaller_leaf_splits_->InitValues(
     cuda_gradients_,
     cuda_hessians_,
+    leaf_splits_init_indices,
     cuda_data_partition_->cuda_data_indices(),
     root_num_data,
     cuda_histogram_constructor_->cuda_hist_pointer(),
@@ -172,20 +176,34 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
     global_timer.Stop("NewCUDATreeLearner::Split");
   }
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-  //AfterTrain();
   tree->ToHost();
   return tree.release();
 }
 
-void NewCUDATreeLearner::ResetTrainingData(const Dataset* /*train_data*/,
-                         bool /*is_constant_hessian*/) {}
+void NewCUDATreeLearner::ResetTrainingData(
+  const Dataset* train_data,
+  bool is_constant_hessian) {
+  // TODO(shiyu1994): separte logic of reset training data and set bagging data
+  train_data_ = train_data;
+  num_data_ = train_data_->num_data();
+  CHECK_EQ(num_features_, train_data_->num_features());
+  //cuda_data_partition_->ResetTrainingData(train_data);
+  cuda_histogram_constructor_->ResetTrainingData(train_data);
+  cuda_smaller_leaf_splits_->Resize(num_data_);
+  cuda_larger_leaf_splits_->Resize(num_data_);
+  CHECK_EQ(is_constant_hessian, share_state_->is_constant_hessian);
+}
 
 void NewCUDATreeLearner::SetBaggingData(const Dataset* subset,
   const data_size_t* used_indices, data_size_t num_data) {
   if (subset == nullptr) {
     cuda_data_partition_->SetUsedDataIndices(used_indices, num_data);
   } else {
-    
+    cuda_histogram_constructor_->SetUsedDataIndices(used_indices, num_data);
+    train_data_ = subset;
+    num_data_ = train_data_->num_data();
+    CHECK_EQ(num_features_, train_data_->num_features());
+    cuda_data_partition_->SetBaggingSubset(subset);
   }
 }
 
@@ -195,10 +213,6 @@ void NewCUDATreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* ob
   CUDATree* cuda_tree = reinterpret_cast<CUDATree*>(tree);
   SerialTreeLearner::RenewTreeOutput(tree, obj, residual_getter, total_num_data, bag_indices, bag_cnt);
   cuda_tree->SyncLeafOutputFromHostToCUDA();
-}
-
-void NewCUDATreeLearner::AfterTrain() {
-  cuda_data_partition_->SetUseBagging(false);
 }
 
 }  // namespace LightGBM

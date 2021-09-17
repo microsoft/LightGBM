@@ -20,6 +20,7 @@ CUDARowData::CUDARowData(const Dataset* train_data,
   } else {
     CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
   }
+  cuda_used_indices_ = nullptr;
 }
 
 void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_share_state) {
@@ -332,5 +333,58 @@ void CUDARowData::InitSparseData(const BIN_TYPE* host_data,
     CopyFromHostToCUDADeviceOuter<ROW_PTR_TYPE>((*cuda_row_ptr) + i * (num_data_ + 1), data_ptr_for_this_partition.data(), data_ptr_for_this_partition.size(), __FILE__, __LINE__);
   }
 }
+
+void CUDARowData::CopySubrow(
+  const CUDARowData* full_set,
+  const data_size_t* used_indices,
+  const data_size_t num_used_indices) {
+  num_used_indices_ = num_used_indices;
+  if (cuda_used_indices_ == nullptr) {
+    // initialize meta information
+    bit_type_ = full_set->bit_type_;
+    row_ptr_bit_type_ = full_set->row_ptr_bit_type_;
+    is_sparse_ = full_set->is_sparse_;
+    feature_partition_column_index_offsets_ = full_set->feature_partition_column_index_offsets_;
+    column_hist_offsets_ = full_set->column_hist_offsets_;
+    partition_hist_offsets_ = full_set->partition_hist_offsets_;
+    max_num_column_per_partition_ = full_set->max_num_column_per_partition_;
+    num_feature_partitions_ = full_set->num_feature_partitions_;
+
+    InitCUDAMemoryFromHostMemoryOuter<int>(
+      &cuda_feature_partition_column_index_offsets_,
+      feature_partition_column_index_offsets_.data(),
+      feature_partition_column_index_offsets_.size(), __FILE__, __LINE__);
+    InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_column_hist_offsets_,
+      column_hist_offsets_.data(), column_hist_offsets_.size(), __FILE__, __LINE__);
+    InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_partition_hist_offsets_,
+      partition_hist_offsets_.data(), partition_hist_offsets_.size(), __FILE__, __LINE__);
+
+    cur_subset_buffer_size_ = num_used_indices_;
+    InitCUDAMemoryFromHostMemoryOuter<data_size_t>(&cuda_used_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
+    if (!is_sparse_) {
+      const int num_column = feature_partition_column_index_offsets_.back();
+      size_t total_size = static_cast<size_t>(num_used_indices_ * num_column);
+      if (bit_type_ == 8) {
+        AllocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, total_size, __FILE__, __LINE__);
+      } else if (bit_type_ == 16) {
+        AllocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, total_size, __FILE__, __LINE__);
+      } else if (bit_type_ == 32) {
+        AllocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, total_size, __FILE__, __LINE__);
+      }
+    } else {
+      // TODO(shiyu1994): copy subrow for sparse data
+    }
+  } else {
+    if (num_used_indices_ > cur_subset_buffer_size_) {
+      ResizeWhenCopySubrow(num_used_indices_);
+      cur_subset_buffer_size_ = num_used_indices_;
+    }
+    CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_used_indices_, used_indices, static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
+    LaunchCopySubrowKernel(full_set);
+  }
+}
+
+// TODO(shiyu1994): implement this
+void CUDARowData::ResizeWhenCopySubrow(const data_size_t /*num_used_indices*/) {}
 
 }  // namespace LightGBM

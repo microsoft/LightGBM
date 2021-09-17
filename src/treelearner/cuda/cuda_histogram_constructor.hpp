@@ -51,6 +51,10 @@ class CUDAHistogramConstructor {
     const double sum_hessians_in_smaller_leaf,
     const double sum_hessians_in_larger_leaf);
 
+  void SetUsedDataIndices(const data_size_t* used_indices, const data_size_t num_data);
+
+  void ResetTrainingData(const Dataset* train_data);
+
   void BeforeTrain(const score_t* gradients, const score_t* hessians);
 
   const hist_t* cuda_hist() const { return cuda_hist_; }
@@ -78,7 +82,7 @@ class CUDAHistogramConstructor {
   // Host memory
 
   /*! \brief size of training data */
-  const data_size_t num_data_;
+  data_size_t num_data_;
   /*! \brief number of features in training data */
   const int num_features_;
   /*! \brief maximum number of leaves */
@@ -113,6 +117,8 @@ class CUDAHistogramConstructor {
 
   /*! \brief CUDA row wise data */
   std::unique_ptr<CUDARowData> cuda_row_data_;
+  /*! \brief CUDA row wise data, used when bagging with subset */
+  std::unique_ptr<CUDARowData> cuda_row_data_subset_;
   /*! \brief number of bins per feature */
   uint32_t* cuda_feature_num_bins_;
   /*! \brief offsets in histogram of all features */
@@ -125,6 +131,8 @@ class CUDAHistogramConstructor {
   int* cuda_need_fix_histogram_features_;
   /*! \brief aligned number of bins of the features whose histograms need to be fixed */
   uint32_t* cuda_need_fix_histogram_features_num_bin_aligned_;
+  /*! \brief used data indices when using subset for bagging */
+  data_size_t* cuda_used_indices_;
 
 
   // CUDA memory, held by other object

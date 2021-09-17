@@ -19,7 +19,7 @@ __global__ void CopySubrowKernel_ColumnData(
   const void* in_column_data = in_cuda_data_by_column[column_index];
   void* out_column_data = out_cuda_data_by_column[column_index];
   const uint8_t bit_type = cuda_column_bit_type[column_index];
-  const data_size_t local_data_index_start = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
+  const data_size_t local_data_index_start = static_cast<data_size_t>(threadIdx.x);
   if (bit_type == 8) {
     const uint8_t* true_in_column_data = reinterpret_cast<const uint8_t*>(in_column_data);
     uint8_t* true_out_column_data = reinterpret_cast<uint8_t*>(out_column_data);
@@ -44,12 +44,12 @@ __global__ void CopySubrowKernel_ColumnData(
   }
 }
 
-void CUDAColumnData::LaunchCopySubrowKernel(void* const* in_cuda_data_by_column, const data_size_t num_used_indices) {
+void CUDAColumnData::LaunchCopySubrowKernel(void* const* in_cuda_data_by_column) {
   CopySubrowKernel_ColumnData<<<num_columns_, COPY_SUBROW_BLOCK_SIZE_COLUMN_DATA>>>(
     in_cuda_data_by_column,
     cuda_column_bit_type_,
     cuda_used_indices_,
-    num_used_indices,
+    num_used_indices_,
     cuda_data_by_column_);
 }
 

@@ -90,9 +90,11 @@ class CUDAColumnData {
   template <bool IS_SPARSE, bool IS_4BIT, typename BIN_TYPE>
   void InitOneColumnData(const void* in_column_data, BinIterator* bin_iterator, void** out_column_data_pointer);
 
-  void LaunchCopySubrowKernel(void* const* in_cuda_data_by_column, const data_size_t num_used_indices);
+  void LaunchCopySubrowKernel(void* const* in_cuda_data_by_column);
 
   void InitColumnMetaInfo();
+
+  void ResizeWhenCopySubrow(const data_size_t num_used_indices);
 
   int num_threads_;
   data_size_t num_data_;
@@ -122,7 +124,11 @@ class CUDAColumnData {
   uint8_t* cuda_feature_mfb_is_zero_;
   uint8_t* cuda_feature_mfb_is_na_;
   int* cuda_feature_to_column_;
+
+  // used when bagging with subset
   data_size_t* cuda_used_indices_;
+  data_size_t num_used_indices_;
+  data_size_t cur_subset_buffer_size_;
 };
 
 }  // namespace LightGBM

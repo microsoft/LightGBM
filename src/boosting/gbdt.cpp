@@ -253,10 +253,14 @@ void GBDT::Bagging(int iter) {
     } else {
       // get subset
       tmp_subset_->ReSize(bag_data_cnt_);
+      global_timer.Start("GBDT::CopySubrow");
       tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                               bag_data_cnt_, false);
+      global_timer.Stop("GBDT::CopySubrow");
+      global_timer.Start("GBDT::SetBaggingData");
       tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
                                     bag_data_cnt_);
+      global_timer.Stop("GBDT::SetBaggingData");
     }
   }
 }
@@ -390,7 +394,6 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto hess = hessians + offset;
       // need to copy gradients for bagging subset.
       if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-        Log::Warning("use subset !!!");
         for (int i = 0; i < bag_data_cnt_; ++i) {
           gradients_[offset + i] = grad[bag_data_indices_[i]];
           hessians_[offset + i] = hess[bag_data_indices_[i]];

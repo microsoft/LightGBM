@@ -62,7 +62,9 @@ class CUDADataPartition {
 
   void SetUsedDataIndices(const data_size_t* used_indices, const data_size_t num_used_indices);
 
-  void SetUseBagging(const bool use_bagging);
+  void SetBaggingSubset(const Dataset* subset);
+
+  void ResetTrainingData(const Dataset* train_data);
 
   data_size_t root_num_data() const {
     if (use_bagging_) {
@@ -77,6 +79,10 @@ class CUDADataPartition {
   const data_size_t* cuda_leaf_num_data() const { return cuda_leaf_num_data_; }
 
   const data_size_t* cuda_leaf_data_start() const { return cuda_leaf_data_start_; }
+
+  bool use_bagging() const { return use_bagging_; }
+
+  bool use_bagging_subset() const { return use_bagging_subset_; }
 
  private:
   void CalcBlockDim(const data_size_t num_data_in_leaf);
@@ -210,7 +216,7 @@ class CUDADataPartition {
 
   // dataset information
   /*! \brief number of training data */
-  const data_size_t num_data_;
+  data_size_t num_data_;
   /*! \brief number of features in training data */
   const int num_features_;
   /*! \brief number of total bins in training data */
@@ -239,6 +245,8 @@ class CUDADataPartition {
   // per iteration information
   /*! \brief whether bagging is used in this iteration */
   bool use_bagging_;
+  /*! \brief whether use subset data for bagging in this iteration */
+  bool use_bagging_subset_;
   /*! \brief number of used data indices in this iteration */
   data_size_t num_used_indices_;
 

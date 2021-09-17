@@ -26,6 +26,8 @@ class CUDARowData {
   void Init(const Dataset* train_data,
             TrainingShareStates* train_share_state);
 
+  void CopySubrow(const CUDARowData* full_set, const data_size_t* used_indices, const data_size_t num_used_indices);
+
   int num_feature_partitions() const { return num_feature_partitions_; }
 
   int max_num_column_per_partition() const { return max_num_column_per_partition_; }
@@ -80,6 +82,11 @@ class CUDARowData {
                       ROW_PTR_TYPE** cuda_row_ptr,
                       ROW_PTR_TYPE** cuda_partition_ptr);
 
+  void ResizeWhenCopySubrow(const data_size_t num_used_indices);
+
+
+  void LaunchCopySubrowKernel(const CUDARowData* full_set);
+
   /*! \brief number of threads to use */
   int num_threads_;
   /*! \brief number of training data */
@@ -106,6 +113,10 @@ class CUDARowData {
   int max_num_column_per_partition_;
   /*! \brief number of partitions */
   int num_feature_partitions_;
+  /*! \brief used when bagging with subset, number of used indice */
+  data_size_t num_used_indices_;
+  /*! \brief used when bagging with subset, the size of buffer for copy subrow */
+  data_size_t cur_subset_buffer_size_;
 
   // CUDA memory
 
@@ -133,6 +144,8 @@ class CUDARowData {
   uint32_t* cuda_column_hist_offsets_;
   /*! \brief hisotgram offset of each partition */
   uint32_t* cuda_partition_hist_offsets_;
+  /*! \brief used when bagging with subset, used indice */
+  data_size_t* cuda_used_indices_;
 };
 
 }  // namespace LightGBM
