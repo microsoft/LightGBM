@@ -1329,7 +1329,7 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines,
                                                     void* allgather_ext_fun);
 
 #ifndef __cplusplus
-#define THREAD_LOCAL
+#define THREAD_LOCAL  /*!< \brief Thread local specifier no-op in C builds. */
 #elif defined(_MSC_VER)
 #define THREAD_LOCAL __declspec(thread)  /*!< \brief Thread local specifier. */
 #else
