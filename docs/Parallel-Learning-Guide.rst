@@ -462,6 +462,17 @@ See `the lightgbm_ray documentation`_ for usage examples.
 
   ``lightgbm_ray`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/ray-project/lightgbm_ray/issues.
 
+Mars
+^^^^
+
+`Mars`_ is a tensor-based framework for large-scale data computation. LightGBM integration, maintained within the Ray GitHub repository, can be used to perform distributed LightGBM training using ``pymars``.
+
+See `the mars documentation`_ for usage examples.
+
+.. note::
+
+  ``Mars`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/mars-project/mars/issues.
+
 .. _Dask: https://docs.dask.org/en/latest/
 
 .. _SynapseML: https://aka.ms/spark
@@ -499,3 +510,7 @@ See `the lightgbm_ray documentation`_ for usage examples.
 .. _Ray: https://ray.io/
 
 .. _the lightgbm_ray documentation: https://docs.ray.io/en/latest/lightgbm-ray.html
+
+.. _Mars: https://docs.pymars.org/en/latest/index.html
+
+.. _the mars documentation: https://docs.pymars.org/en/latest/user_guide/learn/lightgbm.html
