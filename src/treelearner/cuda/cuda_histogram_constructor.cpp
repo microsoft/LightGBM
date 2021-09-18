@@ -54,6 +54,8 @@ CUDAHistogramConstructor::CUDAHistogramConstructor(
   }
   num_total_bin_ = offset;
   cuda_row_data_.reset(nullptr);
+  cuda_row_data_subset_.reset(nullptr);
+  use_bagging_subset_ = false;
 }
 
 void CUDAHistogramConstructor::BeforeTrain(const score_t* gradients, const score_t* hessians) {
@@ -83,7 +85,6 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStat
   InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_need_fix_histogram_features_, need_fix_histogram_features_.data(), need_fix_histogram_features_.size(), __FILE__, __LINE__);
   InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_need_fix_histogram_features_num_bin_aligned_, need_fix_histogram_features_num_bin_aligend_.data(),
     need_fix_histogram_features_num_bin_aligend_.size(), __FILE__, __LINE__);
-  cuda_used_indices_ = nullptr;
 }
 
 void CUDAHistogramConstructor::ConstructHistogramForLeaf(
@@ -110,9 +111,10 @@ void CUDAHistogramConstructor::CalcConstructHistogramKernelDim(
   int* block_dim_x,
   int* block_dim_y,
   const data_size_t num_data_in_smaller_leaf) {
-  *block_dim_x = cuda_row_data_->max_num_column_per_partition();
-  *block_dim_y = NUM_THRADS_PER_BLOCK / cuda_row_data_->max_num_column_per_partition();
-  *grid_dim_x = cuda_row_data_->num_feature_partitions();
+  const CUDARowData* cuda_row_data = use_bagging_subset_ ? cuda_row_data_subset_.get() : cuda_row_data_.get();
+  *block_dim_x = cuda_row_data->max_num_column_per_partition();
+  *block_dim_y = NUM_THRADS_PER_BLOCK / cuda_row_data->max_num_column_per_partition();
+  *grid_dim_x = cuda_row_data->num_feature_partitions();
   *grid_dim_y = std::max(min_grid_dim_y_,
     ((num_data_in_smaller_leaf + NUM_DATA_PER_THREAD - 1) / NUM_DATA_PER_THREAD + (*block_dim_y) - 1) / (*block_dim_y));
 }
@@ -121,11 +123,12 @@ void CUDAHistogramConstructor::ResetTrainingData(const Dataset* train_data) {
   num_data_ = train_data->num_data();
 }
 
-void CUDAHistogramConstructor::SetUsedDataIndices(const data_size_t* used_indices, const data_size_t num_data) {
-  if (cuda_used_indices_ == nullptr) {
-    AllocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+void CUDAHistogramConstructor::SetBaggingSubset(const data_size_t* used_indices, const data_size_t num_data) {
+  if (cuda_row_data_subset_ == nullptr) {
+    cuda_row_data_subset_.reset(new CUDARowData());
   }
-  CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_used_indices_, used_indices, static_cast<size_t>(num_data), __FILE__, __LINE__);
+  cuda_row_data_subset_->CopySubrow(cuda_row_data_.get(), used_indices, num_data);
+  use_bagging_subset_ = true;
 }
 
 }  // namespace LightGBM

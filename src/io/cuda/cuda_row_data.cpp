@@ -9,7 +9,7 @@ namespace LightGBM {
 
 CUDARowData::CUDARowData(const Dataset* train_data,
                          const TrainingShareStates* train_share_state,
-                         const int gpu_device_id) {
+                         const int gpu_device_id): gpu_device_id_(gpu_device_id) {
   num_threads_ = OMP_NUM_THREADS();
   num_data_ = train_data->num_data();
   num_total_bin_ = static_cast<int>(train_share_state->feature_hist_offsets().back());
@@ -21,6 +21,14 @@ CUDARowData::CUDARowData(const Dataset* train_data,
     CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
   }
   cuda_used_indices_ = nullptr;
+  cur_subset_buffer_size_ = 0;
+  cur_total_elements_buffer_size_ = 0;
+}
+
+CUDARowData::CUDARowData() {
+  cuda_used_indices_ = nullptr;
+  cur_subset_buffer_size_ = 0;
+  cur_total_elements_buffer_size_ = 0;
 }
 
 void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_share_state) {
@@ -338,11 +346,22 @@ void CUDARowData::CopySubrow(
   const CUDARowData* full_set,
   const data_size_t* used_indices,
   const data_size_t num_used_indices) {
-  num_used_indices_ = num_used_indices;
   if (cuda_used_indices_ == nullptr) {
+    CHECK_EQ(cur_subset_buffer_size_, 0);
+    CHECK_EQ(cur_total_elements_buffer_size_, 0);
     // initialize meta information
+    num_threads_ = full_set->num_threads_;
+    num_data_ = full_set->num_data_;
+    num_total_bin_ = full_set->num_total_bin_;
+    num_feature_group_ = full_set->num_feature_group_;
+    num_feature_ = full_set->num_feature_;
+    gpu_device_id_ = full_set->gpu_device_id_;
+    if (gpu_device_id_ >= 0) {
+      CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id_));
+    } else {
+      CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
+    }
     bit_type_ = full_set->bit_type_;
-    row_ptr_bit_type_ = full_set->row_ptr_bit_type_;
     is_sparse_ = full_set->is_sparse_;
     feature_partition_column_index_offsets_ = full_set->feature_partition_column_index_offsets_;
     column_hist_offsets_ = full_set->column_hist_offsets_;
@@ -358,33 +377,134 @@ void CUDARowData::CopySubrow(
       column_hist_offsets_.data(), column_hist_offsets_.size(), __FILE__, __LINE__);
     InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_partition_hist_offsets_,
       partition_hist_offsets_.data(), partition_hist_offsets_.size(), __FILE__, __LINE__);
-
-    cur_subset_buffer_size_ = num_used_indices_;
-    InitCUDAMemoryFromHostMemoryOuter<data_size_t>(&cuda_used_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
-    if (!is_sparse_) {
-      const int num_column = feature_partition_column_index_offsets_.back();
-      size_t total_size = static_cast<size_t>(num_used_indices_ * num_column);
-      if (bit_type_ == 8) {
-        AllocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, total_size, __FILE__, __LINE__);
-      } else if (bit_type_ == 16) {
-        AllocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, total_size, __FILE__, __LINE__);
-      } else if (bit_type_ == 32) {
-        AllocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, total_size, __FILE__, __LINE__);
-      }
-    } else {
-      // TODO(shiyu1994): copy subrow for sparse data
-    }
+  }
+  if (!full_set->is_sparse_) {
+    CopyDenseSubrowData(full_set, num_used_indices, used_indices);
   } else {
-    if (num_used_indices_ > cur_subset_buffer_size_) {
-      ResizeWhenCopySubrow(num_used_indices_);
-      cur_subset_buffer_size_ = num_used_indices_;
-    }
-    CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_used_indices_, used_indices, static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
-    LaunchCopySubrowKernel(full_set);
+    CopySparseSubrowData(full_set, num_used_indices, used_indices);
   }
 }
 
-// TODO(shiyu1994): implement this
-void CUDARowData::ResizeWhenCopySubrow(const data_size_t /*num_used_indices*/) {}
+uint64_t CUDARowData::CalcTotalNumberOfElements(const CUDARowData* full_set) {
+  return LaunchCalcTotalNumberOfElementsKernel(full_set);
+}
+
+void CUDARowData::CopyDenseSubrowData(const CUDARowData* full_set, const data_size_t num_used_indices, const data_size_t* used_indices) {
+  num_used_indices_ = num_used_indices;
+  if (num_used_indices_ > cur_subset_buffer_size_) {
+    // allocate cuda memory
+    if (cur_subset_buffer_size_ == 0) {
+      CHECK_EQ(cuda_used_indices_, nullptr);
+      CHECK_EQ(cur_total_elements_buffer_size_, 0);
+    } else {
+      DeallocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, __FILE__, __LINE__);
+      if (bit_type_ == 8) {
+        DeallocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, __FILE__, __LINE__);
+      } else if (bit_type_ == 16) {
+        DeallocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, __FILE__, __LINE__);
+      } else if (bit_type_ == 32) {
+        DeallocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, __FILE__, __LINE__);
+      }
+    }
+    AllocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
+    const int num_column = feature_partition_column_index_offsets_.back();
+    size_t total_size = static_cast<size_t>(num_used_indices_ * num_column);
+    if (bit_type_ == 8) {
+      AllocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, total_size, __FILE__, __LINE__);
+    } else if (bit_type_ == 16) {
+      AllocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, total_size, __FILE__, __LINE__);
+    } else if (bit_type_ == 32) {
+      AllocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, total_size, __FILE__, __LINE__);
+    }
+    cur_subset_buffer_size_ = num_used_indices_;
+  }
+  CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_used_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
+  LaunchCopyDenseSubrowKernel(full_set);
+}
+
+void CUDARowData::CopySparseSubrowData(const CUDARowData* full_set, const data_size_t num_used_indices, const data_size_t* used_indices) {
+  num_used_indices_ = num_used_indices;
+  bool need_reallocate_row_ptr = false;
+  bool need_reallocate_data = false;
+  if (num_used_indices_ > cur_subset_buffer_size_) {
+    if (cur_subset_buffer_size_ == 0) {
+      CHECK_EQ(cur_total_elements_buffer_size_, 0);
+      CHECK_EQ(cuda_used_indices_, nullptr);
+      const int num_blocks = (num_data_ + COPY_SUBROW_BLOCK_SIZE_ROW_DATA - 1) / COPY_SUBROW_BLOCK_SIZE_ROW_DATA;
+      AllocateCUDAMemoryOuter<uint64_t>(&cuda_block_sum_buffer_, static_cast<size_t>(num_blocks * num_feature_partitions_) + 1, __FILE__, __LINE__);
+      AllocateCUDAMemoryOuter<uint16_t>(&cuda_partition_ptr_uint16_t_, static_cast<size_t>(num_feature_partitions_), __FILE__, __LINE__);
+      AllocateCUDAMemoryOuter<uint32_t>(&cuda_partition_ptr_uint32_t_, static_cast<size_t>(num_feature_partitions_), __FILE__, __LINE__);
+      AllocateCUDAMemoryOuter<uint64_t>(&cuda_partition_ptr_uint64_t_, static_cast<size_t>(num_feature_partitions_), __FILE__, __LINE__);
+      AllocateCUDAMemoryOuter<uint64_t>(&cuda_partition_ptr_buffer_, static_cast<size_t>(num_feature_partitions_) + 1, __FILE__, __LINE__);
+    } else {
+      DeallocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, __FILE__, __LINE__);
+    }
+    AllocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
+    need_reallocate_row_ptr = true;
+  }
+  num_total_elements_ = CalcTotalNumberOfElements(full_set);
+  if (num_total_elements_ > cur_total_elements_buffer_size_) {
+    need_reallocate_data = true;
+  }
+  if (num_total_elements_ <= std::numeric_limits<uint16_t>::max()) {
+    if (row_ptr_bit_type_ != 16) {
+      need_reallocate_row_ptr = true;
+    }
+  } else if (num_total_elements_ <= std::numeric_limits<uint32_t>::max()) {
+    if (row_ptr_bit_type_ != 32) {
+      need_reallocate_row_ptr = true;
+    }
+  } else {
+    if (row_ptr_bit_type_ != 64) {
+      need_reallocate_row_ptr = true;
+    }
+  }
+  if (need_reallocate_row_ptr) {
+    if (cur_subset_buffer_size_ > 0) {
+      if (row_ptr_bit_type_ == 16) {
+        DeallocateCUDAMemoryOuter<uint16_t>(&cuda_row_ptr_uint16_t_, __FILE__, __LINE__);
+      } else if (row_ptr_bit_type_ == 32) {
+        DeallocateCUDAMemoryOuter<uint32_t>(&cuda_row_ptr_uint32_t_, __FILE__, __LINE__);
+      } else if (row_ptr_bit_type_ == 64) {
+        DeallocateCUDAMemoryOuter<uint64_t>(&cuda_row_ptr_uint64_t_, __FILE__, __LINE__);
+      }
+    }
+    if (num_total_elements_ <= std::numeric_limits<uint16_t>::max()) {
+      row_ptr_bit_type_ = 16;
+      AllocateCUDAMemoryOuter<uint16_t>(&cuda_row_ptr_uint16_t_, static_cast<size_t>(num_used_indices_) + 1, __FILE__, __LINE__);
+      SetCUDAMemoryOuter<uint16_t>(cuda_row_ptr_uint16_t_, 0, 1, __FILE__, __LINE__);
+    } else if (num_total_elements_ <= std::numeric_limits<uint32_t>::max()) {
+      row_ptr_bit_type_ = 32;
+      AllocateCUDAMemoryOuter<uint32_t>(&cuda_row_ptr_uint32_t_, static_cast<size_t>(num_used_indices_) + 1, __FILE__, __LINE__);
+      SetCUDAMemoryOuter<uint32_t>(cuda_row_ptr_uint32_t_, 0, 1, __FILE__, __LINE__);
+    } else {
+      row_ptr_bit_type_ = 64;
+      AllocateCUDAMemoryOuter<uint64_t>(&cuda_row_ptr_uint64_t_, static_cast<size_t>(num_used_indices_) + 1, __FILE__, __LINE__);
+      SetCUDAMemoryOuter<uint64_t>(cuda_row_ptr_uint64_t_, 0, 1, __FILE__, __LINE__);
+    }
+    cur_subset_buffer_size_ = num_used_indices_;
+  }
+  if (need_reallocate_data) {
+    if (cur_total_elements_buffer_size_ > 0) {
+      if (bit_type_ == 8) {
+        DeallocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, __FILE__, __LINE__);
+      } else if (bit_type_ == 16) {
+        DeallocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, __FILE__, __LINE__);
+      } else if (bit_type_ == 32) {
+        DeallocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, __FILE__, __LINE__);
+      }
+    }
+    if (bit_type_ == 8) {
+      AllocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, num_total_elements_, __FILE__, __LINE__);
+    } else if (bit_type_ == 16) {
+      AllocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, num_total_elements_, __FILE__, __LINE__);
+    } else if (bit_type_ == 32) {
+      AllocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, num_total_elements_, __FILE__, __LINE__);
+    }
+    cur_total_elements_buffer_size_ = num_total_elements_;
+  }
+  CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_used_indices_, used_indices, static_cast<data_size_t>(num_used_indices_), __FILE__, __LINE__);
+  LaunchCopySparseSubrowKernel(full_set);
+}
 
 }  // namespace LightGBM

@@ -51,7 +51,7 @@ class CUDAHistogramConstructor {
     const double sum_hessians_in_smaller_leaf,
     const double sum_hessians_in_larger_leaf);
 
-  void SetUsedDataIndices(const data_size_t* used_indices, const data_size_t num_data);
+  void SetBaggingSubset(const data_size_t* used_indices, const data_size_t num_data);
 
   void ResetTrainingData(const Dataset* train_data);
 
@@ -111,6 +111,8 @@ class CUDAHistogramConstructor {
   std::vector<uint32_t> need_fix_histogram_features_num_bin_aligend_;
   /*! \brief minimum number of blocks allowed in the y dimension */
   const int min_grid_dim_y_ = 160;
+  /*! \brief whether use bagging with subset */
+  bool use_bagging_subset_;
 
 
   // CUDA memory, held by this object
@@ -131,9 +133,6 @@ class CUDAHistogramConstructor {
   int* cuda_need_fix_histogram_features_;
   /*! \brief aligned number of bins of the features whose histograms need to be fixed */
   uint32_t* cuda_need_fix_histogram_features_num_bin_aligned_;
-  /*! \brief used data indices when using subset for bagging */
-  data_size_t* cuda_used_indices_;
-
 
   // CUDA memory, held by other object
 

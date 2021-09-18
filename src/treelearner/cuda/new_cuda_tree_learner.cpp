@@ -199,7 +199,7 @@ void NewCUDATreeLearner::SetBaggingData(const Dataset* subset,
   if (subset == nullptr) {
     cuda_data_partition_->SetUsedDataIndices(used_indices, num_data);
   } else {
-    cuda_histogram_constructor_->SetUsedDataIndices(used_indices, num_data);
+    cuda_histogram_constructor_->SetBaggingSubset(used_indices, num_data);
     train_data_ = subset;
     num_data_ = train_data_->num_data();
     CHECK_EQ(num_features_, train_data_->num_features());

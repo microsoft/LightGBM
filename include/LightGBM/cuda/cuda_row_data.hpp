@@ -15,6 +15,7 @@
 #include "../train_share_states.h"
 
 #define SHRAE_HIST_SIZE (6144 * 2)
+#define COPY_SUBROW_BLOCK_SIZE_ROW_DATA (1024)
 
 namespace LightGBM {
 
@@ -22,6 +23,8 @@ class CUDARowData {
  public:
   CUDARowData(const Dataset* train_data,
               const TrainingShareStates* train_share_state, const int gpu_device_id);
+
+  CUDARowData();
 
   void Init(const Dataset* train_data,
             TrainingShareStates* train_share_state);
@@ -82,10 +85,17 @@ class CUDARowData {
                       ROW_PTR_TYPE** cuda_row_ptr,
                       ROW_PTR_TYPE** cuda_partition_ptr);
 
-  void ResizeWhenCopySubrow(const data_size_t num_used_indices);
+  void CopyDenseSubrowData(const CUDARowData* full_set, const data_size_t num_used_indices, const data_size_t* used_indices);
 
+  void CopySparseSubrowData(const CUDARowData* full_set, const data_size_t num_used_indices, const data_size_t* used_indices);
 
-  void LaunchCopySubrowKernel(const CUDARowData* full_set);
+  uint64_t CalcTotalNumberOfElements(const CUDARowData* full_set);
+
+  uint64_t LaunchCalcTotalNumberOfElementsKernel(const CUDARowData* full_set);
+
+  void LaunchCopyDenseSubrowKernel(const CUDARowData* full_set);
+
+  void LaunchCopySparseSubrowKernel(const CUDARowData* full_set);
 
   /*! \brief number of threads to use */
   int num_threads_;
@@ -115,8 +125,16 @@ class CUDARowData {
   int num_feature_partitions_;
   /*! \brief used when bagging with subset, number of used indice */
   data_size_t num_used_indices_;
+  /*! \brief used when bagging with subset, number of total elements */
+  uint64_t num_total_elements_;
   /*! \brief used when bagging with subset, the size of buffer for copy subrow */
   data_size_t cur_subset_buffer_size_;
+  /*! \brief used when bagging with subset, the size of buffer for copy subrow */
+  uint64_t cur_total_elements_buffer_size_;
+  /*! \brief used when bagging with subset, block buffer when reducing the number of elements in the subset */
+  uint64_t* cuda_block_sum_buffer_;
+  /*! \brief CUDA device ID */
+  int gpu_device_id_;
 
   // CUDA memory
 
@@ -146,6 +164,14 @@ class CUDARowData {
   uint32_t* cuda_partition_hist_offsets_;
   /*! \brief used when bagging with subset, used indice */
   data_size_t* cuda_used_indices_;
+  /*! \brief block buffer when calculating prefix sum */
+  uint16_t* cuda_block_buffer_uint16_t_; 
+  /*! \brief block buffer when calculating prefix sum */
+  uint32_t* cuda_block_buffer_uint32_t_; 
+  /*! \brief block buffer when calculating prefix sum */
+  uint64_t* cuda_block_buffer_uint64_t_; 
+  /*! \brief partition ptr buffer */
+  uint64_t* cuda_partition_ptr_buffer_;
 };
 
 }  // namespace LightGBM
