@@ -319,8 +319,11 @@ if(MSVC)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2 /Ob2 /Oi /Ot /Oy")
     endif()
 else()
+    if(NOT BUILD_STATIC_LIB)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+    endif()
     if(NOT USE_DEBUG)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -funroll-loops")
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funroll-loops")
     endif()
 endif(MSVC)
 
@@ -355,20 +358,24 @@ if(USE_CUDA)
 endif(USE_CUDA)
 )
 
-add_executable(lightgbm src/main.cpp src/application/application.cpp ${SOURCES})
-list(APPEND SOURCES "src/c_api.cpp")
+add_library(lightgbm_objs OBJECT ${SOURCES})
 
+add_executable(lightgbm src/main.cpp src/application/application.cpp)
+target_link_libraries(lightgbm PRIVATE lightgbm_objs)
+
+set(API_SOURCES "src/c_api.cpp")
 # Only build the R part of the library if building for
 # use with the R package
 if(__BUILD_FOR_R)
-  list(APPEND SOURCES "src/lightgbm_R.cpp")
+  list(APPEND API_SOURCES "src/lightgbm_R.cpp")
 endif(__BUILD_FOR_R)
 
 if (BUILD_STATIC_LIB)
-  add_library(_lightgbm STATIC ${SOURCES})
+  add_library(_lightgbm STATIC ${API_SOURCES})
 else()
-  add_library(_lightgbm SHARED ${SOURCES})
+  add_library(_lightgbm SHARED ${API_SOURCES})
 endif(BUILD_STATIC_LIB)
+target_link_libraries(_lightgbm PRIVATE lightgbm_objs)
 
 if(MSVC)
   set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
@@ -412,69 +419,64 @@ if(USE_SWIG)
 endif(USE_SWIG)
 
 if(USE_MPI)
-  TARGET_LINK_LIBRARIES(lightgbm ${MPI_CXX_LIBRARIES})
-  TARGET_LINK_LIBRARIES(_lightgbm ${MPI_CXX_LIBRARIES})
+  target_link_libraries(lightgbm_objs PUBLIC ${MPI_CXX_LIBRARIES})
 endif(USE_MPI)
 
 if(USE_OPENMP)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-        TARGET_LINK_LIBRARIES(lightgbm OpenMP::OpenMP_CXX)
-        TARGET_LINK_LIBRARIES(_lightgbm OpenMP::OpenMP_CXX)
+        # Because we are using libomp installed by homebrew in CI scripts,
+        # include directory need to be speicfied when using CMake object library
+        # to compile R package on macOS.
+        # OpenMP_CXX_INCLUDE_DIRS is empty so use hard-code path here.
+        include_directories(SYSTEM /usr/local/include)
+
+        target_link_libraries(lightgbm_objs PUBLIC OpenMP::OpenMP_CXX)
     endif()
 endif(USE_OPENMP)
 
 if(USE_GPU)
-  TARGET_LINK_LIBRARIES(lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
-  TARGET_LINK_LIBRARIES(_lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
+  target_link_libraries(lightgbm_objs PUBLIC ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
 endif(USE_GPU)
 
 if(__INTEGRATE_OPENCL)
   # targets OpenCL and Boost are added in IntegratedOpenCL.cmake
-  add_dependencies(lightgbm OpenCL Boost)
-  add_dependencies(_lightgbm OpenCL Boost)
+  add_dependencies(lightgbm_objs OpenCL Boost)
   # variables INTEGRATED_OPENCL_* are set in IntegratedOpenCL.cmake
-  target_include_directories(lightgbm PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
-  target_include_directories(_lightgbm PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
-  target_compile_definitions(lightgbm PRIVATE ${INTEGRATED_OPENCL_DEFINITIONS})
-  target_compile_definitions(_lightgbm PRIVATE ${INTEGRATED_OPENCL_DEFINITIONS})
-  target_link_libraries(lightgbm PRIVATE ${INTEGRATED_OPENCL_LIBRARIES})
-  target_link_libraries(_lightgbm PRIVATE ${INTEGRATED_OPENCL_LIBRARIES})
+  target_include_directories(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
+  target_compile_definitions(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_DEFINITIONS})
+  target_link_libraries(lightgbm_objs PUBLIC ${INTEGRATED_OPENCL_LIBRARIES})
 endif()
 
 if(USE_CUDA)
+  # We need those CUDA related properties to affect the linker. But target
+  # properties are not propagated to linker, thus we have to set them on final
+  # targets instead of on lightgbm_objs.
   set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
-  TARGET_LINK_LIBRARIES(
-    lightgbm
-    ${histograms}
-  )
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
-  TARGET_LINK_LIBRARIES(
-    _lightgbm
-    ${histograms}
-  )
+  # histograms are list of object libraries. Linking object library to other
+  # object librariese only gets usage requirements, the linked objects won't be
+  # used. Thus we have to call target_link_libraries on final targets here.
+  target_link_libraries(lightgbm PRIVATE ${histograms})
+  target_link_libraries(_lightgbm PRIVATE ${histograms})
 endif(USE_CUDA)
 
 if(USE_HDFS)
-  TARGET_LINK_LIBRARIES(lightgbm ${HDFS_CXX_LIBRARIES})
-  TARGET_LINK_LIBRARIES(_lightgbm ${HDFS_CXX_LIBRARIES})
+  target_link_libraries(lightgbm_objs PUBLIC ${HDFS_CXX_LIBRARIES})
 endif(USE_HDFS)
 
 if(WIN32)
     if(MINGW OR CYGWIN)
-      TARGET_LINK_LIBRARIES(lightgbm Ws2_32)
-      TARGET_LINK_LIBRARIES(_lightgbm Ws2_32)
-      TARGET_LINK_LIBRARIES(lightgbm IPHLPAPI)
-      TARGET_LINK_LIBRARIES(_lightgbm IPHLPAPI)
+      target_link_libraries(lightgbm_objs PUBLIC Ws2_32 IPHLPAPI)
     endif(MINGW OR CYGWIN)
 endif(WIN32)
 
 if(__BUILD_FOR_R)
   if(MSVC)
-    TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_MSVC_CORE_LIBRARY})
+    target_link_libraries(_lightgbm PUBLIC ${LIBR_MSVC_CORE_LIBRARY})
   else()
-    TARGET_LINK_LIBRARIES(_lightgbm ${LIBR_CORE_LIBRARY})
+    target_link_libraries(_lightgbm PUBLIC ${LIBR_CORE_LIBRARY})
   endif(MSVC)
 endif(__BUILD_FOR_R)
 
@@ -507,8 +509,8 @@ if(BUILD_CPP_TEST)
       string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
     endforeach()
   endif(MSVC)
-  add_executable(testlightgbm ${CPP_TEST_SOURCES} ${SOURCES})
-  target_link_libraries(testlightgbm PRIVATE GTest::GTest)
+  add_executable(testlightgbm ${CPP_TEST_SOURCES})
+  target_link_libraries(testlightgbm PRIVATE lightgbm_objs GTest::GTest)
 endif()
 
 install(TARGETS lightgbm _lightgbm
