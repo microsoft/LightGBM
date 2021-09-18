@@ -99,7 +99,7 @@ Kubeflow Operator (LightGBM on Kubernetes): https://github.com/kubeflow/xgboost-
 
 lightgbm_ray (LightGBM on Ray): https://github.com/ray-project/lightgbm_ray
 
-mars (LightGBM on Mars): https://github.com/mars-project/mars
+Mars (LightGBM on Mars): https://github.com/mars-project/mars
 
 ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
