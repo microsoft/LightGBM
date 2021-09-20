@@ -30,7 +30,7 @@ _DaskVectorLike = Union[dask_Array, dask_Series]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
-_HostWorkers = namedtuple('HostWorkers', ['default', 'all'])
+_HostWorkers = namedtuple('_HostWorkers', ['default', 'all'])
 
 
 class _DatasetNames(Enum):
