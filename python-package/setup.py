@@ -218,21 +218,21 @@ class CustomInstall(install):
 
     def initialize_options(self) -> None:
         install.initialize_options(self)
-        self.mingw = 0
-        self.integrated_opencl = 0
-        self.gpu = 0
-        self.cuda = 0
+        self.mingw = False
+        self.integrated_opencl = False
+        self.gpu = False
+        self.cuda = False
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
         self.boost_librarydir = None
         self.opencl_include_dir = None
         self.opencl_library = None
-        self.mpi = 0
-        self.hdfs = 0
-        self.precompile = 0
-        self.nomp = 0
-        self.bit32 = 0
+        self.mpi = False
+        self.hdfs = False
+        self.precompile = False
+        self.nomp = False
+        self.bit32 = False
 
     def run(self) -> None:
         if (8 * struct.calcsize("P")) != 64:
@@ -261,21 +261,21 @@ class CustomBdistWheel(bdist_wheel):
 
     def initialize_options(self) -> None:
         bdist_wheel.initialize_options(self)
-        self.mingw = 0
-        self.integrated_opencl = 0
-        self.gpu = 0
-        self.cuda = 0
+        self.mingw = False
+        self.integrated_opencl = False
+        self.gpu = False
+        self.cuda = False
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
         self.boost_librarydir = None
         self.opencl_include_dir = None
         self.opencl_library = None
-        self.mpi = 0
-        self.hdfs = 0
-        self.precompile = 0
-        self.nomp = 0
-        self.bit32 = 0
+        self.mpi = False
+        self.hdfs = False
+        self.precompile = False
+        self.nomp = False
+        self.bit32 = False
 
     def finalize_options(self) -> None:
         bdist_wheel.finalize_options(self)
