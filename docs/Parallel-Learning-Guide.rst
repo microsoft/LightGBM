@@ -465,7 +465,7 @@ See `the lightgbm_ray documentation`_ for usage examples.
 Mars
 ^^^^
 
-`Mars`_ is a tensor-based framework for large-scale data computation. LightGBM integration, maintained within the Ray GitHub repository, can be used to perform distributed LightGBM training using ``pymars``.
+`Mars`_ is a tensor-based framework for large-scale data computation. LightGBM integration, maintained within the Mars GitHub repository, can be used to perform distributed LightGBM training using ``pymars``.
 
 See `the mars documentation`_ for usage examples.
 
