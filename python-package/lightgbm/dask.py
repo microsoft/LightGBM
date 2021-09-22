@@ -30,7 +30,7 @@ _DaskVectorLike = Union[dask_Array, dask_Series]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
-_HostWorkers = namedtuple('HostWorkers', ['default', 'all'])
+_HostWorkers = namedtuple('_HostWorkers', ['default', 'all'])
 
 
 class _DatasetNames(Enum):
@@ -392,14 +392,14 @@ def _train(
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
     sample_weight: Optional[_DaskVectorLike] = None,
-    init_score: Optional[_DaskVectorLike] = None,
+    init_score: Optional[_DaskCollection] = None,
     group: Optional[_DaskVectorLike] = None,
     eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
     eval_names: Optional[List[str]] = None,
-    eval_sample_weight: Optional[List[_DaskCollection]] = None,
+    eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
     eval_class_weight: Optional[List[Union[dict, str]]] = None,
     eval_init_score: Optional[List[_DaskCollection]] = None,
-    eval_group: Optional[List[_DaskCollection]] = None,
+    eval_group: Optional[List[_DaskVectorLike]] = None,
     eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
     eval_at: Optional[Iterable[int]] = None,
     **kwargs: Any
@@ -420,7 +420,7 @@ def _train(
         Class of the local underlying model.
     sample_weight : Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)
         Weights of training data.
-    init_score : Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)
+    init_score : Dask Array or Dask Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task), or Dask Array or Dask DataFrame of shape = [n_samples, n_classes] (for multi-class task), or None, optional (default=None)
         Init score of training data.
     group : Dask Array or Dask Series or None, optional (default=None)
         Group/query data.
@@ -435,16 +435,16 @@ def _train(
         of evals_result_ and best_score_ will be 'not_evaluated'.
     eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
-    eval_sample_weight : list of Dask Arrays, Dask Series or None, optional (default=None)
+    eval_sample_weight : list of Dask Array or Dask Series, or None, optional (default=None)
         Weights for each validation set in eval_set.
     eval_class_weight : list of dict or str, or None, optional (default=None)
         Class weights, one dict or str for each validation set in eval_set.
-    eval_init_score : list of Dask Arrays, Dask Series or None, optional (default=None)
+    eval_init_score : list of Dask Array, Dask Series or Dask DataFrame (for multi-class task), or None, optional (default=None)
         Initial model score for each validation set in eval_set.
-    eval_group : list of Dask Arrays, Dask Series or None, optional (default=None)
+    eval_group : list of Dask Array or Dask Series, or None, optional (default=None)
         Group/query for each validation set in eval_set.
-    eval_metric : string, callable, list or None, optional (default=None)
-        If string, it should be a built-in evaluation metric to use.
+    eval_metric : str, callable, list or None, optional (default=None)
+        If str, it should be a built-in evaluation metric to use.
         If callable, it should be a custom evaluation metric, see note below for more details.
         If list, it can be a list of built-in metrics, a list of custom evaluation metrics, or a mix of both.
         In either case, the ``metric`` from the Dask model parameters (or inferred from the objective) will be evaluated and used as well.
@@ -1021,14 +1021,14 @@ class _DaskLGBMModel:
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskVectorLike] = None,
-        init_score: Optional[_DaskVectorLike] = None,
+        init_score: Optional[_DaskCollection] = None,
         group: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
-        eval_group: Optional[List[_DaskCollection]] = None,
+        eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
         eval_at: Optional[Iterable[int]] = None,
         early_stopping_rounds: Optional[int] = None,
@@ -1108,7 +1108,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = True,
+        silent: bool = "warn",
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1159,10 +1159,10 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskVectorLike] = None,
-        init_score: Optional[_DaskVectorLike] = None,
+        init_score: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
@@ -1192,11 +1192,11 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
-        init_score_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array or Dask Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task), or Dask Array or Dask DataFrame of shape = [n_samples, n_classes] (for multi-class task), or None, optional (default=None)",
         group_shape="Dask Array or Dask Series or None, optional (default=None)",
-        eval_sample_weight_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_init_score_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_group_shape="list of Dask Arrays or Dask Series or None, optional (default=None)"
+        eval_sample_weight_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_init_score_shape="list of Dask Array, Dask Series or Dask DataFrame (for multi-class task), or None, optional (default=None)",
+        eval_group_shape="list of Dask Array or Dask Series, or None, optional (default=None)"
     )
 
     # DaskLGBMClassifier does not support group, eval_group, early_stopping_rounds.
@@ -1288,7 +1288,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = True,
+        silent: bool = "warn",
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1341,8 +1341,8 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         init_score: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_sample_weight: Optional[List[_DaskCollection]] = None,
-        eval_init_score: Optional[List[_DaskCollection]] = None,
+        eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
+        eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
         early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
@@ -1371,9 +1371,9 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         sample_weight_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array or Dask Series or None, optional (default=None)",
-        eval_sample_weight_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_init_score_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_group_shape="list of Dask Arrays or Dask Series or None, optional (default=None)"
+        eval_sample_weight_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_init_score_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_group_shape="list of Dask Array or Dask Series, or None, optional (default=None)"
     )
 
     # DaskLGBMRegressor does not support group, eval_class_weight, eval_group, early_stopping_rounds.
@@ -1448,7 +1448,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = True,
+        silent: bool = "warn",
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1503,9 +1503,9 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         group: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_sample_weight: Optional[List[_DaskCollection]] = None,
-        eval_init_score: Optional[List[_DaskCollection]] = None,
-        eval_group: Optional[List[_DaskCollection]] = None,
+        eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
+        eval_init_score: Optional[List[_DaskVectorLike]] = None,
+        eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
         eval_at: Iterable[int] = (1, 2, 3, 4, 5),
         early_stopping_rounds: Optional[int] = None,
@@ -1538,9 +1538,9 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         sample_weight_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array or Dask Series or None, optional (default=None)",
-        eval_sample_weight_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_init_score_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_group_shape="list of Dask Arrays or Dask Series or None, optional (default=None)"
+        eval_sample_weight_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_init_score_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_group_shape="list of Dask Array or Dask Series, or None, optional (default=None)"
     )
 
     # DaskLGBMRanker does not support eval_class_weight or early stopping

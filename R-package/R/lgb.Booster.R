@@ -743,20 +743,23 @@ Booster <- R6::R6Class(
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #' )
 #' preds <- predict(model, test$data)
 #'
 #' # pass other prediction parameters
-#' predict(
+#' preds <- predict(
 #'     model,
 #'     test$data,
 #'     params = list(
@@ -824,15 +827,18 @@ predict.lgb.Booster <- function(object,
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 3L
 #' )
 #' model_file <- tempfile(fileext = ".txt")
@@ -885,15 +891,18 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 10L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5L
 #' )
 #' lgb.save(model, tempfile(fileext = ".txt"))
@@ -936,15 +945,18 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 10L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 5L
 #' )
 #' json_model <- lgb.dump(model)
@@ -983,15 +995,18 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #' )
 #'
 #' # Examine valid data_name values

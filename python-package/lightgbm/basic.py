@@ -149,8 +149,8 @@ def is_numpy_column_array(data):
     return len(shape) == 2 and shape[1] == 1
 
 
-def cast_numpy_1d_array_to_dtype(array, dtype):
-    """Cast numpy 1d array to given dtype."""
+def cast_numpy_array_to_dtype(array, dtype):
+    """Cast numpy array to given dtype."""
     if array.dtype == dtype:
         return array
     return array.astype(dtype=dtype, copy=False)
@@ -161,14 +161,24 @@ def is_1d_list(data):
     return isinstance(data, list) and (not data or is_numeric(data[0]))
 
 
+def _is_1d_collection(data: Any) -> bool:
+    """Check whether data is a 1-D collection."""
+    return (
+        is_numpy_1d_array(data)
+        or is_numpy_column_array(data)
+        or is_1d_list(data)
+        or isinstance(data, pd_Series)
+    )
+
+
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
     if is_numpy_1d_array(data):
-        return cast_numpy_1d_array_to_dtype(data, dtype)
+        return cast_numpy_array_to_dtype(data, dtype)
     elif is_numpy_column_array(data):
         _log_warning('Converting column-vector to 1d array')
         array = data.ravel()
-        return cast_numpy_1d_array_to_dtype(array, dtype)
+        return cast_numpy_array_to_dtype(array, dtype)
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, pd_Series):
@@ -178,6 +188,39 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     else:
         raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
                         "It should be list, numpy 1-D array or pandas Series")
+
+
+def _is_numpy_2d_array(data: Any) -> bool:
+    """Check whether data is a numpy 2-D array."""
+    return isinstance(data, np.ndarray) and len(data.shape) == 2 and data.shape[1] > 1
+
+
+def _is_2d_list(data: Any) -> bool:
+    """Check whether data is a 2-D list."""
+    return isinstance(data, list) and len(data) > 0 and is_1d_list(data[0])
+
+
+def _is_2d_collection(data: Any) -> bool:
+    """Check whether data is a 2-D collection."""
+    return (
+        _is_numpy_2d_array(data)
+        or _is_2d_list(data)
+        or isinstance(data, pd_DataFrame)
+    )
+
+
+def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -> np.ndarray:
+    """Convert data to numpy 2-D array."""
+    if _is_numpy_2d_array(data):
+        return cast_numpy_array_to_dtype(data, dtype)
+    if _is_2d_list(data):
+        return np.array(data, dtype=dtype)
+    if isinstance(data, pd_DataFrame):
+        if _get_bad_pandas_dtypes(data.dtypes):
+            raise ValueError('DataFrame.dtypes must be int, float or bool')
+        return cast_numpy_array_to_dtype(data.values, dtype)
+    raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
+                    "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
 
 def cfloat32_array_to_numpy(cptr, length):
@@ -1123,14 +1166,14 @@ class Dataset:
     """Dataset in LightGBM."""
 
     def __init__(self, data, label=None, reference=None,
-                 weight=None, group=None, init_score=None, silent=False,
+                 weight=None, group=None, init_score=None, silent='warn',
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
         """Initialize Dataset.
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -1145,7 +1188,7 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
@@ -1260,9 +1303,9 @@ class Dataset:
 
         Parameters
         ----------
-        sample_data : list of numpy arrays
+        sample_data : list of numpy array
             Sample data for each column.
-        sample_indices : list of numpy arrays
+        sample_indices : list of numpy array
             Sample data row index for each column.
         sample_cnt : int
             Number of samples.
@@ -1439,6 +1482,11 @@ class Dataset:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
                              f'Please use {key} argument of the Dataset constructor to pass this parameter.')
         # user can set verbose with params, it has higher priority
+        if silent != "warn":
+            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
+                         "Pass 'verbose' parameter via 'params' instead.")
+        else:
+            silent = False
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
         # get categorical features
@@ -1769,12 +1817,12 @@ class Dataset:
         return self
 
     def create_valid(self, data, label=None, weight=None, group=None,
-                     init_score=None, silent=False, params=None):
+                     init_score=None, silent='warn', params=None):
         """Create validation data align with current Dataset.
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -1787,7 +1835,7 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
@@ -1894,8 +1942,8 @@ class Dataset:
         ----------
         field_name : str
             The field name of the information.
-        data : list, numpy 1-D array, pandas Series or None
-            The array of data to be set.
+        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
+            The data to be set.
 
         Returns
         -------
@@ -1913,12 +1961,22 @@ class Dataset:
                 ctypes.c_int(0),
                 ctypes.c_int(FIELD_TYPE_MAPPER[field_name])))
             return self
-        dtype = np.float32
-        if field_name == 'group':
-            dtype = np.int32
-        elif field_name == 'init_score':
+        if field_name == 'init_score':
             dtype = np.float64
-        data = list_to_1d_numpy(data, dtype, name=field_name)
+            if _is_1d_collection(data):
+                data = list_to_1d_numpy(data, dtype, name=field_name)
+            elif _is_2d_collection(data):
+                data = _data_to_2d_numpy(data, dtype, name=field_name)
+                data = data.ravel(order='F')
+            else:
+                raise TypeError(
+                    'init_score must be list, numpy 1-D array or pandas Series.\n'
+                    'In multiclass classification init_score can also be a list of lists, numpy 2-D array or pandas DataFrame.'
+                )
+        else:
+            dtype = np.int32 if field_name == 'group' else np.float32
+            data = list_to_1d_numpy(data, dtype, name=field_name)
+
         if data.dtype == np.float32 or data.dtype == np.float64:
             ptr_data, type_data, _ = c_float_array(data)
         elif data.dtype == np.int32:
@@ -1965,13 +2023,19 @@ class Dataset:
         if tmp_out_len.value == 0:
             return None
         if out_type.value == C_API_DTYPE_INT32:
-            return cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
+            arr = cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT32:
-            return cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
+            arr = cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT64:
-            return cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
+            arr = cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
         else:
             raise TypeError("Unknown type")
+        if field_name == 'init_score':
+            num_data = self.num_data()
+            num_classes = arr.size // num_data
+            if num_classes > 1:
+                arr = arr.reshape((num_data, num_classes), order='F')
+        return arr
 
     def set_categorical_feature(self, categorical_feature):
         """Set categorical features.
@@ -2123,7 +2187,7 @@ class Dataset:
 
         Parameters
         ----------
-        init_score : list, numpy 1-D array, pandas Series or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
             Init score for Booster.
 
         Returns
@@ -2133,7 +2197,6 @@ class Dataset:
         """
         self.init_score = init_score
         if self.handle is not None and init_score is not None:
-            init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
             self.set_field('init_score', init_score)
             self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
         return self
@@ -2241,7 +2304,7 @@ class Dataset:
 
         Returns
         -------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array or None
             Raw data used in the Dataset construction.
         """
         if self.handle is None:
@@ -2462,7 +2525,7 @@ class Dataset:
 class Booster:
     """Booster in LightGBM."""
 
-    def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent=False):
+    def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent='warn'):
         """Initialize the Booster.
 
         Parameters
@@ -2488,6 +2551,11 @@ class Booster:
         self.best_score = {}
         params = {} if params is None else deepcopy(params)
         # user can set verbose with params, it has higher priority
+        if silent != 'warn':
+            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
+                         "Pass 'verbose' parameter via 'params' instead.")
+        else:
+            silent = False
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
         if train_set is not None:
@@ -2574,7 +2642,7 @@ class Booster:
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
         elif model_str is not None:
-            self.model_from_string(model_str, not silent)
+            self.model_from_string(model_str, verbose="_silent_false")
         else:
             raise TypeError('Need at least one training dataset or model file or model string '
                             'to create Booster instance')
@@ -3255,7 +3323,7 @@ class Booster:
             ctypes.c_int(end_iteration)))
         return self
 
-    def model_from_string(self, model_str, verbose=True):
+    def model_from_string(self, model_str, verbose='warn'):
         """Load Booster from a string.
 
         Parameters
@@ -3283,6 +3351,10 @@ class Booster:
         _safe_call(_LIB.LGBM_BoosterGetNumClasses(
             self.handle,
             ctypes.byref(out_num_class)))
+        if verbose in {'warn', '_silent_false'}:
+            verbose = verbose == 'warn'
+        else:
+            _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM.")
         if verbose:
             _log_info(f'Finished loading model, total used {int(out_num_iterations.value)} iterations')
         self.__num_class = out_num_class.value

@@ -26,6 +26,7 @@ You may also ping a member of the core team according to the relevant area of ex
 -  `@btrotta <https://github.com/btrotta>`__ **Belinda Trotta** (C++ code)
 -  `@Laurae2 <https://github.com/Laurae2>`__ **Damien Soukhavong** (R-package)
 -  `@jameslamb <https://github.com/jameslamb>`__ **James Lamb** (R-package / Dask-package)
+-  `@jmoralez <https://github.com/jmoralez>`__ **José Morales** (Dask-package)
 -  `@wxchan <https://github.com/wxchan>`__ **Wenxuan Chen** (Python-package)
 -  `@henry0312 <https://github.com/henry0312>`__ **Tsukasa Omoto** (Python-package)
 -  `@StrikerRUS <https://github.com/StrikerRUS>`__ **Nikita Titov** (Python-package)

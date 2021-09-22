@@ -33,8 +33,8 @@ R-package/    @Laurae2 @jameslamb
 python-package/    @StrikerRUS @chivee @wxchan @henry0312 @shiyu1994 @jameslamb
 
 # Dask integration
-python-package/lightgbm/dask.py    @jameslamb
-tests/python_package_test/test_dask.py    @jameslamb
+python-package/lightgbm/dask.py    @jameslamb @jmoralez
+tests/python_package_test/test_dask.py    @jameslamb @jmoralez
 
 # helpers
 helpers/    @StrikerRUS @guolinke
