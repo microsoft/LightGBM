@@ -1190,10 +1190,10 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #' lgb.Dataset.construct(dtrain)
 #'
-#' labels <- lightgbm::get_field(dtrain, "label")
-#' lightgbm::set_field(dtrain, "label", 1 - labels)
+#' labels <- lightgbm::getinfo(dtrain, "label")
+#' lightgbm::setinfo(dtrain, "label", 1 - labels)
 #'
-#' labels2 <- lightgbm::get_field(dtrain, "label")
+#' labels2 <- lightgbm::getinfo(dtrain, "label")
 #' stopifnot(all(labels2 == 1 - labels))
 #' }
 #' @export
@@ -1205,7 +1205,7 @@ getinfo <- function(dataset, ...) {
 #' @export
 getinfo.lgb.Dataset <- function(dataset, name, ...) {
 
-  warning("Calling getinfo() on a lgb.Dataset is deprecated. Use set_field() instead.")
+  warning("Calling getinfo() on a lgb.Dataset is deprecated. Use get_field() instead.")
 
   additional_args <- list(...)
   if (length(additional_args) > 0L) {
@@ -1255,10 +1255,10 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #' lgb.Dataset.construct(dtrain)
 #'
-#' labels <- lightgbm::get_field(dtrain, "label")
-#' lightgbm::set_field(dtrain, "label", 1 - labels)
+#' labels <- lightgbm::getinfo(dtrain, "label")
+#' lightgbm::setinfo(dtrain, "label", 1 - labels)
 #'
-#' labels2 <- lightgbm::get_field(dtrain, "label")
+#' labels2 <- lightgbm::getinfo(dtrain, "label")
 #' stopifnot(all.equal(labels2, 1 - labels))
 #' }
 #' @export
@@ -1341,7 +1341,7 @@ get_field.lgb.Dataset <- function(dataset, field_name) {
 #' @title Set one attribute of a \code{lgb.Dataset} object
 #' @description Set one attribute of a \code{lgb.Dataset}
 #' @param dataset Object of class \code{lgb.Dataset}
-#' @param field_name String with the name of the attribute to get. One of the following.
+#' @param field_name String with the name of the attribute to set. One of the following.
 #' \itemize{
 #'     \item \code{label}: label lightgbm learns from ;
 #'     \item \code{weight}: to do a weight rescale ;
