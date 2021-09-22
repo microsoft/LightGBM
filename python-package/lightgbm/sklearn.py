@@ -7,6 +7,7 @@ from typing import Callable, Dict, Optional, Union
 import numpy as np
 
 from .basic import Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _log_warning
+from .callback import log_evaluation, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
@@ -26,7 +27,7 @@ class _ObjectiveFunctionWrapper:
         Parameters
         ----------
         func : callable
-            Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group)
+            Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group)``
             and returns (grad, hess):
 
                 y_true : array-like of shape = [n_samples]
@@ -570,7 +571,7 @@ class LGBMModel(_LGBMModelBase):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_group=None,
-            eval_metric=None, early_stopping_rounds=None, verbose=True,
+            eval_metric=None, early_stopping_rounds=None, verbose='warn',
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is set after definition, using a template."""
@@ -587,7 +588,7 @@ class LGBMModel(_LGBMModelBase):
             self._fobj = _ObjectiveFunctionWrapper(self._objective)
         else:
             self._fobj = None
-        evals_result = {}
+
         params = self.get_params()
         # user can set verbose with kwargs, it has higher priority
         if self.silent != "warn":
@@ -611,9 +612,12 @@ class LGBMModel(_LGBMModelBase):
                 params.pop(alias, None)
             params['num_class'] = self._n_classes
         if hasattr(self, '_eval_at'):
+            eval_at = self._eval_at
             for alias in _ConfigAliases.get('eval_at'):
-                params.pop(alias, None)
-            params['eval_at'] = self._eval_at
+                if alias in params:
+                    _log_warning(f"Found '{alias}' in params. Will use it instead of 'eval_at' argument")
+                    eval_at = params.pop(alias)
+            params['eval_at'] = eval_at
         params['objective'] = self._objective
         if self._fobj:
             params['objective'] = 'None'  # objective = nullptr for unknown objective
@@ -715,18 +719,51 @@ class LGBMModel(_LGBMModelBase):
         if isinstance(init_model, LGBMModel):
             init_model = init_model.booster_
 
-        self._Booster = train(params, train_set,
-                              self.n_estimators, valid_sets=valid_sets, valid_names=eval_names,
-                              early_stopping_rounds=early_stopping_rounds,
-                              evals_result=evals_result, fobj=self._fobj, feval=eval_metrics_callable,
-                              verbose_eval=verbose, feature_name=feature_name,
-                              callbacks=callbacks, init_model=init_model)
+        if early_stopping_rounds is not None and early_stopping_rounds > 0:
+            _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in a future release of LightGBM. "
+                         "Pass 'early_stopping()' callback via 'callbacks' argument instead.")
+            params['early_stopping_rounds'] = early_stopping_rounds
+
+        if callbacks is None:
+            callbacks = []
+        else:
+            callbacks = copy.deepcopy(callbacks)
+
+        if verbose != 'warn':
+            _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM. "
+                         "Pass 'log_evaluation()' callback via 'callbacks' argument instead.")
+        else:
+            if callbacks:  # assume user has already specified log_evaluation callback
+                verbose = False
+            else:
+                verbose = True
+        callbacks.append(log_evaluation(int(verbose)))
+
+        evals_result = {}
+        callbacks.append(record_evaluation(evals_result))
+
+        self._Booster = train(
+            params=params,
+            train_set=train_set,
+            num_boost_round=self.n_estimators,
+            valid_sets=valid_sets,
+            valid_names=eval_names,
+            fobj=self._fobj,
+            feval=eval_metrics_callable,
+            init_model=init_model,
+            feature_name=feature_name,
+            callbacks=callbacks
+        )
 
         if evals_result:
             self._evals_result = evals_result
+        else:  # reset after previous call to fit()
+            self._evals_result = None
 
-        if early_stopping_rounds is not None and early_stopping_rounds > 0:
+        if self._Booster.best_iteration != 0:
             self._best_iteration = self._Booster.best_iteration
+        else:  # reset after previous call to fit()
+            self._best_iteration = None
 
         self._best_score = self._Booster.best_score
 
@@ -741,7 +778,7 @@ class LGBMModel(_LGBMModelBase):
         X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
         y_shape="array-like of shape = [n_samples]",
         sample_weight_shape="array-like of shape = [n_samples] or None, optional (default=None)",
-        init_score_shape="array-like of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
         group_shape="array-like or None, optional (default=None)",
         eval_sample_weight_shape="list of array, or None, optional (default=None)",
         eval_init_score_shape="list of array, or None, optional (default=None)",
@@ -752,7 +789,7 @@ class LGBMModel(_LGBMModelBase):
                 pred_leaf=False, pred_contrib=False, **kwargs):
         """Docstring is set after definition, using a template."""
         if self._n_features is None:
-            raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
+            raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
@@ -788,16 +825,16 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def best_score_(self):
-        """:obj:`dict` or :obj:`None`: The best score of fitted model."""
+        """:obj:`dict`: The best score of fitted model."""
         if self._n_features is None:
             raise LGBMNotFittedError('No best_score found. Need to call fit beforehand.')
         return self._best_score
 
     @property
     def best_iteration_(self):
-        """:obj:`int` or :obj:`None`: The best iteration of fitted model if ``early_stopping_rounds`` has been specified."""
+        """:obj:`int` or :obj:`None`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
         if self._n_features is None:
-            raise LGBMNotFittedError('No best_iteration found. Need to call fit with early_stopping_rounds beforehand.')
+            raise LGBMNotFittedError('No best_iteration found. Need to call fit with early_stopping callback beforehand.')
         return self._best_iteration
 
     @property
@@ -816,7 +853,7 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def evals_result_(self):
-        """:obj:`dict` or :obj:`None`: The evaluation results if ``early_stopping_rounds`` has been specified."""
+        """:obj:`dict` or :obj:`None`: The evaluation results if validation sets have been specified."""
         if self._n_features is None:
             raise LGBMNotFittedError('No results found. Need to call fit with eval_set beforehand.')
         return self._evals_result
@@ -849,7 +886,7 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_metric=None, early_stopping_rounds=None,
-            verbose=True, feature_name='auto', categorical_feature='auto',
+            verbose='warn', feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
         super().fit(X, y, sample_weight=sample_weight, init_score=init_score,
@@ -875,7 +912,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_metric=None,
-            early_stopping_rounds=None, verbose=True,
+            early_stopping_rounds=None, verbose='warn',
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
@@ -1003,7 +1040,7 @@ class LGBMRanker(LGBMModel):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric=None,
-            eval_at=(1, 2, 3, 4, 5), early_stopping_rounds=None, verbose=True,
+            eval_at=(1, 2, 3, 4, 5), early_stopping_rounds=None, verbose='warn',
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""

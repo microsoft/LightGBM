@@ -113,7 +113,7 @@ By default, the package will be built with [Visual Studio Build Tools](https://v
 
 **MinGW (R 3.x)**
 
-If you are using R 3.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MinGW](http://mingw-w64.org/doku.php) bundled with `Rtools`.
+If you are using R 3.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MinGW](https://www.mingw-w64.org/) bundled with `Rtools`.
 
 If you want to force `LightGBM` to use MinGW (for any R version), pass `--use-mingw` to the installation script.
 
