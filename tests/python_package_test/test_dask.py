@@ -64,6 +64,15 @@ pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface')
 ]
 
+on_non_x86_arch = machine() != 'x86_64'
+
+# run fewer tests on aarch64 builds, since they are slower in CI
+if on_non_x86_arch:
+    tasks = ['regression']
+    distributed_training_algorithms = ['data']
+    data_output = ['array']
+    boosting_types = ['gbdt']
+
 
 @pytest.fixture(scope='module')
 def cluster():
