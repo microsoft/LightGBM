@@ -8,6 +8,7 @@
 
 #include <LightGBM/metric.h>
 #include <LightGBM/objective_function.h>
+#include <LightGBM/utils/log.h>
 
 #include <algorithm>
 #include <cmath>
@@ -101,7 +102,9 @@ class LambdarankNDCG : public RankingObjective {
       : RankingObjective(config),
         sigmoid_(config.sigmoid),
         norm_(config.lambdarank_norm),
-        truncation_level_(config.lambdarank_truncation_level) {
+        truncation_level_(config.lambdarank_truncation_level),
+        unbiased_(config.lambdarank_unbiased),
+        bias_p_norm_(config.lambdarank_bias_p_norm) {
     label_gain_ = config.label_gain;
     // initialize DCG calculator
     DCGCalculator::DefaultLabelGain(&label_gain_);
@@ -111,6 +114,14 @@ class LambdarankNDCG : public RankingObjective {
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid param %f should be greater than zero", sigmoid_);
     }
+
+    #pragma omp parallel
+    #pragma omp master
+    {
+      num_threads_ = omp_get_num_threads();
+    }
+
+    position_bias_regularizer = 1.0f / (1.0f + bias_p_norm_);
   }
 
   explicit LambdarankNDCG(const std::vector<std::string>& strs)
@@ -135,12 +146,24 @@ class LambdarankNDCG : public RankingObjective {
     }
     // construct Sigmoid table to speed up Sigmoid transform
     ConstructSigmoidTable();
+
+    // initialize position bias vectors
+    InitPositionBiasesAndGradients();
+  }
+
+  void GetGradients(const double* score, score_t* gradients,
+                    score_t* hessians) const override {
+    RankingObjective::GetGradients(score, gradients, hessians);
+
+    if (unbiased_) { UpdatePositionBiasesAndGradients(); }
   }
 
   inline void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt,
                                       const label_t* label, const double* score,
                                       score_t* lambdas,
                                       score_t* hessians) const override {
+    const int tid = omp_get_thread_num();  // get thread id
+
     // get max DCG on current query
     const double inverse_max_dcg = inverse_max_dcgs_[query_id];
     // initialize with zero
@@ -199,15 +222,26 @@ class LambdarankNDCG : public RankingObjective {
         // get delta NDCG
         double delta_pair_NDCG = dcg_gap * paired_discount * inverse_max_dcg;
         // regular the delta_pair_NDCG by score distance
-        if (norm_ && best_score != worst_score) {
+        if ((norm_ || unbiased_) && best_score != worst_score) {
           delta_pair_NDCG /= (0.01f + fabs(delta_score));
         }
         // calculate lambda for this pair
         double p_lambda = GetSigmoid(delta_score);
         double p_hessian = p_lambda * (1.0f - p_lambda);
+
+        int debias_high_rank = static_cast<int>(std::min(high, truncation_level_ - 1));
+        int debias_low_rank = static_cast<int>(std::min(low, truncation_level_ - 1));
+
+        if (unbiased_) {
+          double p_cost = log(1.0f / (1.0f - p_lambda)) * delta_pair_NDCG;
+
+          // more relevant (clicked) gets debiased by less relevant (unclicked)
+          i_costs_buffer_[tid][debias_high_rank] += p_cost / j_biases_pow_[debias_low_rank];
+          j_costs_buffer_[tid][debias_low_rank] += p_cost / i_biases_pow_[debias_high_rank];  // and vice versa
+        }
         // update
-        p_lambda *= -sigmoid_ * delta_pair_NDCG;
-        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG;
+        p_lambda *= -sigmoid_ * delta_pair_NDCG / i_biases_pow_[debias_high_rank] / j_biases_pow_[debias_low_rank];
+        p_hessian *= sigmoid_ * sigmoid_ * delta_pair_NDCG / i_biases_pow_[debias_high_rank] / j_biases_pow_[debias_low_rank];
         lambdas[low] -= static_cast<score_t>(p_lambda);
         hessians[low] += static_cast<score_t>(p_hessian);
         lambdas[high] += static_cast<score_t>(p_lambda);
@@ -253,9 +287,86 @@ class LambdarankNDCG : public RankingObjective {
     }
   }
 
+  void InitPositionBiasesAndGradients() {
+    i_biases_pow_.resize(truncation_level_);
+    j_biases_pow_.resize(truncation_level_);
+    i_costs_.resize(truncation_level_);
+    j_costs_.resize(truncation_level_);
+
+    for (int i = 0; i < truncation_level_; ++i) {
+      // init position biases
+      i_biases_pow_[i] = 1.0f;
+      j_biases_pow_[i] = 1.0f;
+
+      // init position gradients
+      i_costs_[i] = 0.0f;
+      j_costs_[i] = 0.0f;
+    }
+
+    // init gradient buffers for gathering results across threads
+    for (int i = 0; i < num_threads_; i++) {
+      i_costs_buffer_.emplace_back(truncation_level_, 0.0f);
+      j_costs_buffer_.emplace_back(truncation_level_, 0.0f);
+    }
+  }
+
+  void UpdatePositionBiasesAndGradients() const {
+    // accumulate the parallel results
+    for (int i = 0; i < num_threads_; i++) {
+      for (int j = 0; j < truncation_level_; j++) {
+        i_costs_[j] += i_costs_buffer_[i][j];
+        j_costs_[j] += j_costs_buffer_[i][j];
+      }
+    }
+
+    for (int i = 0; i < num_threads_; i++) {
+      for (int j = 0; j < truncation_level_; j++) {
+        // clear buffer for next run
+        i_costs_buffer_[i][j] = 0.0f;
+        j_costs_buffer_[i][j] = 0.0f;
+      }
+    }
+
+    for (int i = 0; i < truncation_level_; i++) {
+      // Update bias
+      i_biases_pow_[i] = pow(i_costs_[i] / i_costs_[0], position_bias_regularizer);
+      j_biases_pow_[i] = pow(j_costs_[i] / j_costs_[0], position_bias_regularizer);
+    }
+
+    LogDebugPositionBiases();
+
+    for (int i = 0; i < truncation_level_; i++) {
+      // Clear position info
+      i_costs_[i] = 0.0f;
+      j_costs_[i] = 0.0f;
+    }
+  }
+
   const char* GetName() const override { return "lambdarank"; }
 
  private:
+  void LogDebugPositionBiases() const {
+    std::stringstream message_stream;
+    message_stream  << std::setw(10) << "position"
+                    << std::setw(15) << "bias_i"
+                    << std::setw(15) << "bias_j"
+                    << std::setw(15) << "i_cost"
+                    << std::setw(15) << "j_cost"
+                    << std::endl;
+    Log::Debug(message_stream.str().c_str());
+    message_stream.str("");
+
+    for (int i = 0; i < truncation_level_; ++i) {
+      message_stream  << std::setw(10) << i
+                      << std::setw(15) << i_biases_pow_[i]
+                      << std::setw(15) << j_biases_pow_[i]
+                      << std::setw(15) << i_costs_[i]
+                      << std::setw(15) << j_costs_[i];
+      Log::Debug(message_stream.str().c_str());
+      message_stream.str("");
+    }
+  }
+
   /*! \brief Sigmoid param */
   double sigmoid_;
   /*! \brief Normalize the lambdas or not */
@@ -276,6 +387,35 @@ class LambdarankNDCG : public RankingObjective {
   double max_sigmoid_input_ = 50;
   /*! \brief Factor that covert score to bin in Sigmoid table */
   double sigmoid_table_idx_factor_;
+
+  // bias correction variables
+  /*! \brief power of (click) position biases */
+  mutable std::vector<label_t> i_biases_pow_;
+
+  /*! \brief power of (unclick) position biases */
+  mutable std::vector<label_t> j_biases_pow_;
+
+  // mutable double position cost;
+  mutable std::vector<label_t> i_costs_;
+  mutable std::vector<std::vector<label_t>> i_costs_buffer_;
+
+  mutable std::vector<label_t> j_costs_;
+  mutable std::vector<std::vector<label_t>> j_costs_buffer_;
+
+  /*! 
+   * \brief Should use lambdarank with position bias correction
+   * [arxiv.org/pdf/1809.05818.pdf]
+   */
+  bool unbiased_;
+
+  /*! \brief Position bias regularizer norm */
+  double bias_p_norm_;
+
+  /*! \brief Position bias regularizer exponent, 1 / (1 + bias_p_norm_) */
+  double position_bias_regularizer;
+
+  /*! \brief Number of threads */
+  int num_threads_;
 };
 
 /*!

@@ -127,6 +127,21 @@ def test_lambdarank():
     assert gbm.best_score_['valid_0']['ndcg@3'] > 0.578
 
 
+def test_lambdarank_unbiased():
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    X_test, y_test = load_svmlight_file(str(rank_example_dir / 'rank.test'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
+    q_test = np.loadtxt(str(rank_example_dir / 'rank.test.query'))
+    gbm = lgb.LGBMRanker(n_estimators=50, lambdarank_unbiased=True, sigmoid=2)
+    gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
+            eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
+            callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))])
+    assert gbm.best_iteration_ <= 24
+    assert gbm.best_score_['valid_0']['ndcg@1'] > 0.569
+    assert gbm.best_score_['valid_0']['ndcg@3'] > 0.62
+
+
 def test_xendcg():
     xendcg_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'xendcg'
     X_train, y_train = load_svmlight_file(str(xendcg_example_dir / 'rank.train'))
