@@ -198,6 +198,8 @@ class BinMapper {
     }
   }
 
+  inline const std::vector<double>& bin_upper_bound() const { return bin_upper_bound_; }
+
  private:
   /*! \brief Number of bins */
   int num_bin_;
@@ -386,6 +388,10 @@ class Bin {
   * \brief Deep copy the bin
   */
   virtual Bin* Clone() = 0;
+
+  virtual const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, std::vector<BinIterator*>* bin_iterator, const int num_threads) const = 0;
+
+  virtual const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const = 0;
 };
 
 
@@ -459,6 +465,12 @@ class MultiValBin {
   static constexpr double multi_val_bin_sparse_threshold = 0.25f;
 
   virtual MultiValBin* Clone() = 0;
+
+  virtual const void* GetRowWiseData(uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const = 0;
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {

@@ -461,6 +461,10 @@ class DenseBin : public Bin {
 
   DenseBin<VAL_T, IS_4BIT>* Clone() override;
 
+  const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, std::vector<BinIterator*>* bin_iterator, const int num_threads) const override;
+
+  const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const override;
+
  private:
   data_size_t num_data_;
 #ifdef USE_CUDA

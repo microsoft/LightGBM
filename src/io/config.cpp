@@ -334,8 +334,8 @@ void Config::CheckParamConflict() {
       num_leaves = static_cast<int>(full_num_leaves);
     }
   }
-  // force col-wise for gpu & CUDA
-  if (device_type == std::string("gpu") || device_type == std::string("cuda")) {
+  // force col-wise for gpu
+  if (device_type == std::string("gpu")/* || device_type == std::string("cuda")*/) {
     force_col_wise = true;
     force_row_wise = false;
     if (deterministic) {

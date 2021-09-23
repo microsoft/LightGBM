@@ -478,6 +478,50 @@ class FeatureGroup {
     }
   }
 
+  const void* GetColWiseData(const int sub_feature_index,
+    uint8_t* bit_type,
+    bool* is_sparse,
+    std::vector<BinIterator*>* bin_iterator,
+    const int num_threads) const {
+    if (sub_feature_index >= 0) {
+      CHECK(is_multi_val_);
+      return multi_bin_data_[sub_feature_index]->GetColWiseData(bit_type, is_sparse, bin_iterator, num_threads);
+    } else {
+      CHECK(!is_multi_val_);
+      return bin_data_->GetColWiseData(bit_type, is_sparse, bin_iterator, num_threads);
+    }
+  }
+
+  const void* GetColWiseData(const int sub_feature_index,
+    uint8_t* bit_type,
+    bool* is_sparse,
+    BinIterator** bin_iterator) const {
+    if (sub_feature_index >= 0) {
+      CHECK(is_multi_val_);
+      return multi_bin_data_[sub_feature_index]->GetColWiseData(bit_type, is_sparse, bin_iterator);
+    } else {
+      CHECK(!is_multi_val_);
+      return bin_data_->GetColWiseData(bit_type, is_sparse, bin_iterator);
+    }
+  }
+
+  uint32_t feature_max_bin(const int sub_feature_index) {
+    if (!is_multi_val_) {
+      return bin_offsets_[sub_feature_index + 1] - 1;
+    } else {
+      int addi = bin_mappers_[sub_feature_index]->GetMostFreqBin() == 0 ? 0 : 1;
+      return bin_mappers_[sub_feature_index]->num_bin() - 1 + addi;
+    }
+  }
+
+  uint32_t feature_min_bin(const int sub_feature_index) {
+    if (!is_multi_val_) {
+      return bin_offsets_[sub_feature_index];
+    } else {
+      return 1;
+    }
+  }
+
  private:
   void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
     if (is_multi_val) {

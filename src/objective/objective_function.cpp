@@ -10,49 +10,96 @@
 #include "regression_objective.hpp"
 #include "xentropy_objective.hpp"
 
+#include "cuda/cuda_binary_objective.hpp"
+#include "cuda/cuda_multiclass_objective.hpp"
+#include "cuda/cuda_regression_objective.hpp"
+#include "cuda/cuda_rank_objective.hpp"
+#include "cuda/cuda_xentropy_objective.hpp"
+
 namespace LightGBM {
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& type, const Config& config) {
-  if (type == std::string("regression")) {
-    return new RegressionL2loss(config);
-  } else if (type == std::string("regression_l1")) {
-    return new RegressionL1loss(config);
-  } else if (type == std::string("quantile")) {
-    return new RegressionQuantileloss(config);
-  } else if (type == std::string("huber")) {
-    return new RegressionHuberLoss(config);
-  } else if (type == std::string("fair")) {
-    return new RegressionFairLoss(config);
-  } else if (type == std::string("poisson")) {
-    return new RegressionPoissonLoss(config);
-  } else if (type == std::string("binary")) {
-    return new BinaryLogloss(config);
-  } else if (type == std::string("lambdarank")) {
-    return new LambdarankNDCG(config);
-  } else if (type == std::string("rank_xendcg")) {
-    return new RankXENDCG(config);
-  } else if (type == std::string("multiclass")) {
-    return new MulticlassSoftmax(config);
-  } else if (type == std::string("multiclassova")) {
-    return new MulticlassOVA(config);
-  } else if (type == std::string("cross_entropy")) {
-    return new CrossEntropy(config);
-  } else if (type == std::string("cross_entropy_lambda")) {
-    return new CrossEntropyLambda(config);
-  } else if (type == std::string("mape")) {
-    return new RegressionMAPELOSS(config);
-  } else if (type == std::string("gamma")) {
-    return new RegressionGammaLoss(config);
-  } else if (type == std::string("tweedie")) {
-    return new RegressionTweedieLoss(config);
-  } else if (type == std::string("custom")) {
-    return nullptr;
+  if (config.device_type == std::string("cuda")) {
+    if (type == std::string("regression")) {
+      return new CUDARegressionL2loss(config);
+    } else if (type == std::string("regression_l1")) {
+      return new CUDARegressionL1loss(config);
+    } else if (type == std::string("quantile")) {
+      return new CUDARegressionQuantileloss(config);
+    } else if (type == std::string("huber")) {
+      return new CUDARegressionHuberLoss(config);
+    } else if (type == std::string("fair")) {
+      return new CUDARegressionFairLoss(config);
+    } else if (type == std::string("poisson")) {
+      return new CUDARegressionFairLoss(config);
+    } else if (type == std::string("binary")) {
+      return new CUDABinaryLogloss(config);
+    } else if (type == std::string("lambdarank")) {
+      return new CUDALambdarankNDCG(config);
+    } else if (type == std::string("rank_xendcg")) {
+      return new CUDARankXENDCG(config);
+    } else if (type == std::string("multiclass")) {
+      return new CUDAMulticlassSoftmax(config);
+    } else if (type == std::string("multiclassova")) {
+      return new CUDAMulticlassOVA(config);
+    } else if (type == std::string("cross_entropy")) {
+      return new CUDACrossEntropy(config);
+    } else if (type == std::string("cross_entropy_lambda")) {
+      return new CUDACrossEntropyLambda(config);
+    } else if (type == std::string("mape")) {
+      return new CUDARegressionMAPELOSS(config);
+    } else if (type == std::string("gamma")) {
+      return new CUDARegressionGammaLoss(config);
+    } else if (type == std::string("tweedie")) {
+      return new CUDARegressionTweedieLoss(config);
+    } else if (type == std::string("custom")) {
+      // TODO(shiyu1994): when using customized objective function
+      // TODO(shiyu1994): we should copy gradients manually to GPU
+      return nullptr;
+    }
+  } else {
+    if (type == std::string("regression")) {
+      return new RegressionL2loss(config);
+    } else if (type == std::string("regression_l1")) {
+      return new RegressionL1loss(config);
+    } else if (type == std::string("quantile")) {
+      return new RegressionQuantileloss(config);
+    } else if (type == std::string("huber")) {
+      return new RegressionHuberLoss(config);
+    } else if (type == std::string("fair")) {
+      return new RegressionFairLoss(config);
+    } else if (type == std::string("poisson")) {
+      return new RegressionPoissonLoss(config);
+    } else if (type == std::string("binary")) {
+      return new BinaryLogloss(config);
+    } else if (type == std::string("lambdarank")) {
+      return new LambdarankNDCG(config);
+    } else if (type == std::string("rank_xendcg")) {
+      return new RankXENDCG(config);
+    } else if (type == std::string("multiclass")) {
+      return new MulticlassSoftmax(config);
+    } else if (type == std::string("multiclassova")) {
+      return new MulticlassOVA(config);
+    } else if (type == std::string("cross_entropy")) {
+      return new CrossEntropy(config);
+    } else if (type == std::string("cross_entropy_lambda")) {
+      return new CrossEntropyLambda(config);
+    } else if (type == std::string("mape")) {
+      return new RegressionMAPELOSS(config);
+    } else if (type == std::string("gamma")) {
+      return new RegressionGammaLoss(config);
+    } else if (type == std::string("tweedie")) {
+      return new RegressionTweedieLoss(config);
+    } else if (type == std::string("custom")) {
+      return nullptr;
+    }
   }
   Log::Fatal("Unknown objective type name: %s", type.c_str());
   return nullptr;
 }
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& str) {
+  // TODO(shiyu1994): consider the case for CUDA
   auto strs = Common::Split(str.c_str(), ' ');
   auto type = strs[0];
   if (type == std::string("regression")) {

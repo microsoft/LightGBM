@@ -205,6 +205,14 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   }
 
   Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
+  double max_abs_leaf_output = 0.0f;
+  for (int leaf_index = 0; leaf_index < tree->num_leaves(); ++leaf_index) {
+    Log::Warning("leaf_index %d leaf_value %f", leaf_index, tree->LeafOutput(leaf_index));
+    if (std::fabs(tree->LeafOutput(leaf_index)) > std::fabs(max_abs_leaf_output)) {
+      max_abs_leaf_output = tree->LeafOutput(leaf_index);
+    }
+  }
+  Log::Warning("max_abs_leaf_output = %f", max_abs_leaf_output);
   return tree.release();
 }
 
@@ -573,7 +581,6 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   }
   *left_leaf = best_leaf;
   auto next_leaf_id = tree->NextLeafId();
-
   // update before tree split
   constraints_->BeforeSplit(best_leaf, next_leaf_id,
                             best_split_info.monotone_type);
@@ -682,7 +689,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
 }
 
 void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
-                                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
+                                        const double* score, data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
   if (obj != nullptr && obj->IsRenewTreeOutput()) {
     CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
     const data_size_t* bag_mapper = nullptr;

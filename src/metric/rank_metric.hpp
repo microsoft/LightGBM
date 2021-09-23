@@ -143,7 +143,7 @@ class NDCGMetric:public Metric {
     return result;
   }
 
- private:
+ protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */

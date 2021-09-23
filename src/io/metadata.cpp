@@ -18,6 +18,7 @@ Metadata::Metadata() {
   weight_load_from_file_ = false;
   query_load_from_file_ = false;
   init_score_load_from_file_ = false;
+  cuda_metadata_ = nullptr;
 }
 
 void Metadata::Init(const char* data_filename) {
@@ -470,6 +471,11 @@ void Metadata::LoadQueryWeights() {
     }
     query_weights_[i] /= (query_boundaries_[i + 1] - query_boundaries_[i]);
   }
+}
+
+void Metadata::CreateCUDAMetadata(const int gpu_device_id) {
+  cuda_metadata_.reset(new CUDAMetadata(gpu_device_id));
+  cuda_metadata_->Init(label_, weights_, query_boundaries_, query_weights_, init_score_, queries_);
 }
 
 void Metadata::LoadFromMemory(const void* memory) {

@@ -7,6 +7,7 @@
 
 #include <LightGBM/config.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/tree.h>
 
 #include <string>
 #include <map>
@@ -314,6 +315,12 @@ class LIGHTGBM_EXPORT Boosting {
   static Boosting* CreateBoosting(const std::string& type, const char* filename);
 
   virtual bool IsLinear() const { return false; }
+
+  virtual const std::vector<std::unique_ptr<Tree>>& models() const = 0;
+
+  virtual int num_tree_per_iteration() const = 0;
+
+  virtual std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const = 0;
 };
 
 class GBDTBase : public Boosting {

@@ -352,6 +352,20 @@ file(GLOB SOURCES
     src/treelearner/*.cpp
 if(USE_CUDA)
     src/treelearner/*.cu
+    src/treelearner/cuda/*.cpp
+    src/treelearner/cuda/*.cu
+    src/io/cuda/*.cu
+    src/io/cuda/*.cpp
+    src/cuda/*.cpp
+    src/cuda/*.cu
+    src/objective/cuda/*.cpp
+    src/objective/cuda/*.cu
+    src/boosting/cuda/*.cpp
+    src/boosting/cuda/*.cu
+    src/application/cuda/*.cpp
+    src/application/cuda/*.cu
+    src/metric/cuda/*.cpp
+    src/metric/cuda/*.cu
 endif(USE_CUDA)
 )
 
@@ -443,12 +457,14 @@ endif()
 
 if(USE_CUDA)
   set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(lightgbm PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
   set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
   TARGET_LINK_LIBRARIES(
     lightgbm
     ${histograms}
   )
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(_lightgbm PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
   set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
   TARGET_LINK_LIBRARIES(
     _lightgbm

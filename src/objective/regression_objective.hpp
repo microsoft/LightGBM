@@ -620,6 +620,7 @@ class RegressionMAPELOSS : public RegressionL1loss {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
+      // TODO(shiyu1994): sample weight should be considered in the gradient calculation
         gradients[i] = static_cast<score_t>(Common::Sign(diff) * label_weight_[i]);
         hessians[i] = weights_[i];
       }
@@ -662,6 +663,7 @@ class RegressionMAPELOSS : public RegressionL1loss {
   }
 
   bool IsConstantHessian() const override {
+    // TODO(shiyu1994): true only when weights is constant
     return true;
   }
 
