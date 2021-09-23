@@ -367,6 +367,31 @@ description_contents <- gsub(
   , replacement = as.character(Sys.Date())
   , x = description_contents
 )
+
+# CMake-based builds don't get vignettes built. The
+# VignetteBuilder field needs to be removed to avoid
+# the R CMD CHECK note
+# "Package has a VignetteBuilder field but no prebuilt vignette index"
+description_contents <- description_contents[
+  !grepl("^VignetteBuilder", description_contents)
+]
+
+# {knitr} and {rmarkdown} can be removed, since we don't build vignettes
+# for CMake-based installations
+description_contents <- description_contents[
+  !grepl("^ +knitr,$", description_contents)
+]
+description_contents <- description_contents[
+  !grepl("^ +rmarkdown,$", description_contents)
+]
+
+# remove vignettes/ directory to avoid an R CMD CHECK note
+# like "files in the 'vignettes' directory but no files in inst/doc"
+unlink(
+  x = file.path(TEMP_R_DIR, "vignettes")
+  , recursive = TRUE
+)
+
 writeLines(description_contents, DESCRIPTION_FILE)
 
 # CMake-based builds can't currently use R's builtin routine registration,
@@ -407,7 +432,7 @@ writeLines(namespace_contents, NAMESPACE_FILE)
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
 #       on demand
-.run_shell_command("R", c("CMD", "build", TEMP_R_DIR, "--keep-empty-dirs"))
+.run_shell_command("R", c("CMD", "build", TEMP_R_DIR, "--keep-empty-dirs", "--no-build-vignettes"))
 
 # Install the package
 version <- gsub(

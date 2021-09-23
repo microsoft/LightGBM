@@ -4,13 +4,36 @@
 #     Prepare a source distribution of the R package
 #     to be submitted to CRAN.
 #
+# [arguments]
+#
+#   --no-build-vignettes  Pass this flag to skip creating vignettes.
+#                         You might want to do this to avoid installing
+#                         vignette-only dependencies, or to avoid
+#                         portability issues.
+#
 # [usage]
 #     sh build-cran-package.sh
 
 set -e
 
+# Default values of arguments
+BUILD_VIGNETTES=true
+
+# Loop through arguments and process them
+for arg in "$@"
+do
+    case $arg in
+        --no-build-vignettes)
+        BUILD_VIGNETTES=false
+        shift
+        ;;
+    esac
+done
+
 ORIG_WD="$(pwd)"
 TEMP_R_DIR="$(pwd)/lightgbm_r"
+
+echo "Building R package (build vignettes: ${BUILD_VIGNETTES})"
 
 if test -d "${TEMP_R_DIR}"; then
     rm -r "${TEMP_R_DIR}"
@@ -27,6 +50,10 @@ LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
 cp -R R-package/* "${TEMP_R_DIR}"
 cp -R include "${TEMP_R_DIR}/src/"
 cp -R src/* "${TEMP_R_DIR}/src/"
+
+if ${BUILD_VIGNETTES} ; then
+    cp docs/logo/LightGBM_logo_black_text.svg "${TEMP_R_DIR}/vignettes/"
+fi
 
 cp \
     external_libs/fast_double_parser/include/fast_double_parser.h \
@@ -140,8 +167,45 @@ cd "${TEMP_R_DIR}"
 
 cd "${ORIG_WD}"
 
-R CMD build \
-    --keep-empty-dirs \
-    lightgbm_r
+if ${BUILD_VIGNETTES} ; then
+    R CMD build \
+        --keep-empty-dirs \
+        lightgbm_r
+
+    echo "removing object files created by vignettes"
+    rm -rf ./_tmp
+    mkdir _tmp
+    TARBALL_NAME="lightgbm_${LGB_VERSION}.tar.gz"
+    mv "${TARBALL_NAME}" _tmp/
+
+    echo "untarring ${TARBALL_NAME}"
+    cd _tmp
+        tar -xvf "${TARBALL_NAME}"
+        rm -rf "${TARBALL_NAME}"
+    cd ..
+    echo "done untarring ${TARBALL_NAME}"
+
+    echo "re-tarring ${TARBALL_NAME}"
+    tar \
+        -czv \
+        -C ./_tmp \
+        --exclude=*.a \
+        --exclude=*.dll \
+        --exclude=*.o \
+        --exclude=*.so \
+        --exclude=*.tar.gz \
+        --exclude=**/conftest.c \
+        --exclude=**/conftest.exe \
+        -f "${TARBALL_NAME}" \
+        lightgbm
+    echo "Done creating ${TARBALL_NAME}"
+
+    rm -rf ./_tmp
+else
+    R CMD build \
+        --keep-empty-dirs \
+        --no-build-vignettes \
+        lightgbm_r
+fi
 
 echo "Done building R package"

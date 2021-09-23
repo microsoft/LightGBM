@@ -92,20 +92,26 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
 fi
 
-# Manually install Depends and Imports libraries + 'testthat'
+# Manually install libraries
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
-# NOTE: testthat is not required when running rchk
-if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'Matrix', 'R6')"
-else
-    packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
+packages="'data.table', 'jsonlite', 'Matrix', 'R6'"
+
+# testthat is not required when running rchk
+if [[ "${TASK}" != "r-rchk" ]]; then
+    packages="$packages, 'testthat'"
 fi
+
+# only need knitr and rmarkdown if building vignettes
+if [[ $R_BUILD_TYPE == "cran" ]]; then
+    packages="$packages, 'knitr', 'rmarkdown'"
+fi
+
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
     compile_from_source="never"
 fi
-Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit -1
+Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(c(${packages}), repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit -1
 
 cd ${BUILD_DIRECTORY}
 
