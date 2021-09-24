@@ -586,7 +586,7 @@ Dataset <- R6::R6Class(
           , paste(names(additional_keyword_args), collapse = ", ")
           , ". These are ignored and should be removed. "
           , "To change the parameters of a Dataset produced by Dataset$slice(), use Dataset$set_params(). "
-          , "To modify attributes like 'init_score', use Dataset$setinfo(). "
+          , "To modify attributes like 'init_score', use Dataset$set_field(). "
           , "In future releases of lightgbm, this warning will become an error."
         ))
       }

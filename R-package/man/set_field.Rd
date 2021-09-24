@@ -12,7 +12,7 @@ set_field(dataset, field_name, data)
 \arguments{
 \item{dataset}{Object of class \code{lgb.Dataset}}
 
-\item{field_name}{String with the name of the attribute to get. One of the following.
+\item{field_name}{String with the name of the attribute to set. One of the following.
 \itemize{
     \item \code{label}: label lightgbm learns from ;
     \item \code{weight}: to do a weight rescale ;
