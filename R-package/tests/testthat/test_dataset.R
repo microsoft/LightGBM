@@ -534,6 +534,12 @@ test_that("Dataset: method calls on a Dataset with a null handle should raise an
   saveRDS(dvalid, tmp_valid_file)
   rm(dvalid)
   dvalid <- readRDS(tmp_valid_file)
+  dtrain <- lgb.Dataset(
+    train$data
+    , label = train$label
+    , free_raw_data = FALSE
+  )
+  dtrain$construct()
   expect_error({
     dtrain$set_reference(reference = dvalid)
   }, regexp = "cannot get column names before dataset has been constructed")
