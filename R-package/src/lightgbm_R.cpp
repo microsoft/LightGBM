@@ -486,6 +486,7 @@ SEXP LGBM_BoosterMerge_R(SEXP handle,
 SEXP LGBM_BoosterAddValidData_R(SEXP handle,
   SEXP valid_data) {
   _AssertBoosterHandleNotNull(handle);
+  _AssertDatasetHandleNotNull(valid_data);
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterAddValidData(R_ExternalPtrAddr(handle), R_ExternalPtrAddr(valid_data)));
   return R_NilValue;
@@ -495,6 +496,7 @@ SEXP LGBM_BoosterAddValidData_R(SEXP handle,
 SEXP LGBM_BoosterResetTrainingData_R(SEXP handle,
   SEXP train_data) {
   _AssertBoosterHandleNotNull(handle);
+  _AssertDatasetHandleNotNull(train_data);
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterResetTrainingData(R_ExternalPtrAddr(handle), R_ExternalPtrAddr(train_data)));
   return R_NilValue;
