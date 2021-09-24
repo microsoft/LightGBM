@@ -62,6 +62,7 @@ def plot_importance(
     xlabel : str or None, optional (default="Feature importance")
         X-axis title label.
         If None, title is disabled.
+        @importance_type@ placeholder can be used, and it will be replaced with the value of ``importance_type`` parameter.
     ylabel : str or None, optional (default="Features")
         Y-axis title label.
         If None, title is disabled.
@@ -150,6 +151,7 @@ def plot_importance(
     if title is not None:
         ax.set_title(title)
     if xlabel is not None:
+        xlabel = xlabel.replace('@importance_type@', importance_type)
         ax.set_xlabel(xlabel)
     if ylabel is not None:
         ax.set_ylabel(ylabel)
@@ -318,6 +320,7 @@ def plot_metric(
         Y-axis title label.
         If 'auto', metric name is used.
         If None, title is disabled.
+        @metric@ placeholder can be used, and it will be replaced with metric name.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
     dpi : int or None, optional (default=None)
@@ -370,14 +373,17 @@ def plot_metric(
         if metric not in metrics_for_one:
             raise KeyError('No given metric in eval results.')
         results = metrics_for_one[metric]
-    num_iteration, max_result, min_result = len(results), max(results), min(results)
+    num_iteration = len(results)
+    max_result = max(results)
+    min_result = min(results)
     x_ = range(num_iteration)
     ax.plot(x_, results, label=name)
 
     for name in dataset_names:
         metrics_for_one = eval_results[name]
         results = metrics_for_one[metric]
-        max_result, min_result = max(max(results), max_result), min(min(results), min_result)
+        max_result = max(max(results), max_result)
+        min_result = min(min(results), min_result)
         ax.plot(x_, results, label=name)
 
     ax.legend(loc='best')
@@ -396,13 +402,14 @@ def plot_metric(
     ax.set_ylim(ylim)
 
     if ylabel == 'auto':
-        ylabel = metric
+        ylabel = '@metric@'
 
     if title is not None:
         ax.set_title(title)
     if xlabel is not None:
         ax.set_xlabel(xlabel)
     if ylabel is not None:
+        ylabel = ylabel.replace('@metric@', metric)
         ax.set_ylabel(ylabel)
     ax.grid(grid)
     return ax
