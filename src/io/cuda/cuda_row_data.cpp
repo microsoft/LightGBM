@@ -442,7 +442,9 @@ void CUDARowData::CopySparseSubrowData(const CUDARowData* full_set, const data_s
     AllocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
     need_reallocate_row_ptr = true;
   }
+  CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_used_indices_, used_indices, static_cast<data_size_t>(num_used_indices_), __FILE__, __LINE__);
   num_total_elements_ = CalcTotalNumberOfElements(full_set);
+  Log::Warning("num_total_elements_ = %d", num_total_elements_);
   if (num_total_elements_ > cur_total_elements_buffer_size_) {
     need_reallocate_data = true;
   }
@@ -503,7 +505,6 @@ void CUDARowData::CopySparseSubrowData(const CUDARowData* full_set, const data_s
     }
     cur_total_elements_buffer_size_ = num_total_elements_;
   }
-  CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_used_indices_, used_indices, static_cast<data_size_t>(num_used_indices_), __FILE__, __LINE__);
   LaunchCopySparseSubrowKernel(full_set);
 }
 

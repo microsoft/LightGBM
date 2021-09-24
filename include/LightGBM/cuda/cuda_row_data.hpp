@@ -97,6 +97,18 @@ class CUDARowData {
 
   void LaunchCopySparseSubrowKernel(const CUDARowData* full_set);
 
+  template <typename OUT_ROW_PTR_TYPE>
+  void LaunchCopySparseSubrowKernelInner0(
+    const CUDARowData* full_set,
+    OUT_ROW_PTR_TYPE* out_cuda_row_ptr);
+
+  template <typename OUT_ROW_PTR_TYPE, typename BIN_TYPE>
+  void LaunchCopySparseSubrowKernelInner1(
+    const CUDARowData* full_set,
+    const BIN_TYPE* in_cuda_data,
+    const OUT_ROW_PTR_TYPE* out_cuda_row_ptr,
+    BIN_TYPE* out_cuda_data);
+
   /*! \brief number of threads to use */
   int num_threads_;
   /*! \brief number of training data */
