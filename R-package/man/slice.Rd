@@ -31,6 +31,6 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 
 dsub <- lightgbm::slice(dtrain, seq_len(42L))
 lgb.Dataset.construct(dsub)
-labels <- lightgbm::getinfo(dsub, "label")
+labels <- lightgbm::get_field(dsub, "label")
 }
 }

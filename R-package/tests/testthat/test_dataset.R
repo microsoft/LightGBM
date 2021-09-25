@@ -14,6 +14,7 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
   # from dense matrix
   dtest2 <- lgb.Dataset(as.matrix(test_data), label = test_label)
   expect_equal(getinfo(dtest1, "label"), getinfo(dtest2, "label"))
+  expect_equal(get_field(dtest1, "label"), get_field(dtest2, "label"))
 
   # save to a local file
   tmp_file <- tempfile("lgb.Dataset_")
@@ -23,6 +24,7 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
   lgb.Dataset.construct(dtest3)
   unlink(tmp_file)
   expect_equal(getinfo(dtest1, "label"), getinfo(dtest3, "label"))
+  expect_equal(get_field(dtest1, "label"), get_field(dtest3, "label"))
 })
 
 test_that("lgb.Dataset: getinfo & setinfo", {
@@ -38,6 +40,21 @@ test_that("lgb.Dataset: getinfo & setinfo", {
 
   # any other label should error
   expect_error(setinfo(dtest, "asdf", test_label))
+})
+
+test_that("lgb.Dataset: get_field & set_field", {
+  dtest <- lgb.Dataset(test_data)
+  dtest$construct()
+
+  set_field(dtest, "label", test_label)
+  labels <- get_field(dtest, "label")
+  expect_equal(test_label, get_field(dtest, "label"))
+
+  expect_true(length(get_field(dtest, "weight")) == 0L)
+  expect_true(length(get_field(dtest, "init_score")) == 0L)
+
+  # any other label should error
+  expect_error(set_field(dtest, "asdf", test_label))
 })
 
 test_that("lgb.Dataset: slice, dim", {
@@ -253,6 +270,19 @@ test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {
   group_as_numeric <- rep(25.0, 2L)
   ds$setinfo("group", group_as_numeric)
   expect_identical(ds$getinfo("group"), as.integer(group_as_numeric))
+})
+
+test_that("lgb.Dataset$set_field() should convert 'group' to integer", {
+  ds <- lgb.Dataset(
+    data = matrix(rnorm(100L), nrow = 50L, ncol = 2L)
+    , label = sample(c(0L, 1L), size = 50L, replace = TRUE)
+  )
+  ds$construct()
+  current_group <- ds$get_field("group")
+  expect_null(current_group)
+  group_as_numeric <- rep(25.0, 2L)
+  ds$set_field("group", group_as_numeric)
+  expect_identical(ds$get_field("group"), as.integer(group_as_numeric))
 })
 
 test_that("lgb.Dataset should throw an error if 'reference' is provided but of the wrong format", {
