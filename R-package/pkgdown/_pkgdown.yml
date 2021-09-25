@@ -56,8 +56,8 @@ reference:
     contents:
     - '`dim.lgb.Dataset`'
     - '`dimnames.lgb.Dataset`'
-    - '`getinfo`'
-    - '`setinfo`'
+    - '`get_field`'
+    - '`set_field`'
     - '`slice`'
     - '`lgb.Dataset`'
     - '`lgb.Dataset.construct`'
