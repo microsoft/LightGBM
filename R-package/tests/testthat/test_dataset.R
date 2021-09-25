@@ -526,3 +526,51 @@ test_that("lgb.Dataset: should be able to create a Dataset from a text file with
   expect_identical(dtrain$get_params(), list(header = FALSE))
   expect_identical(dtrain$dim(), c(100L, 2L))
 })
+
+test_that("Dataset: method calls on a Dataset with a null handle should raise an informative error and not segfault", {
+  data(agaricus.train, package = "lightgbm")
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  dtrain$construct()
+  dvalid <- dtrain$create_valid(
+    data = train$data[seq_len(100L), ]
+    , label = train$label[seq_len(100L)]
+  )
+  dvalid$construct()
+  tmp_file <- tempfile(fileext = ".rds")
+  saveRDS(dtrain, tmp_file)
+  rm(dtrain)
+  dtrain <- readRDS(tmp_file)
+  expect_error({
+    dtrain$construct()
+  }, regexp = "Attempting to create a Dataset without any raw data")
+  expect_error({
+    dtrain$dim()
+  }, regexp = "cannot get dimensions before dataset has been constructed")
+  expect_error({
+    dtrain$get_colnames()
+  }, regexp = "cannot get column names before dataset has been constructed")
+  expect_error({
+    dtrain$save_binary(fname = tempfile(fileext = ".bin"))
+  }, regexp = "Attempting to create a Dataset without any raw data")
+  expect_error({
+    dtrain$set_categorical_feature(categorical_feature = 1L)
+  }, regexp = "cannot set categorical feature after freeing raw data")
+  expect_error({
+    dtrain$set_reference(reference = dvalid)
+  }, regexp = "cannot set reference after freeing raw data")
+
+  tmp_valid_file <- tempfile(fileext = ".rds")
+  saveRDS(dvalid, tmp_valid_file)
+  rm(dvalid)
+  dvalid <- readRDS(tmp_valid_file)
+  dtrain <- lgb.Dataset(
+    train$data
+    , label = train$label
+    , free_raw_data = FALSE
+  )
+  dtrain$construct()
+  expect_error({
+    dtrain$set_reference(reference = dvalid)
+  }, regexp = "cannot get column names before dataset has been constructed")
+})
