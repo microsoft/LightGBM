@@ -1,10 +1,18 @@
 # coding: utf-8
 """Callbacks library."""
 import collections
-from operator import gt, lt
+from functools import partial
 from typing import Any, Callable, Dict, List, Union
 
 from .basic import _ConfigAliases, _log_info, _log_warning
+
+
+def _gt_threshold(curr_score: float, best_score: float, threshold: float) -> bool:
+    return curr_score > best_score + threshold
+
+
+def _lt_threshold(curr_score: float, best_score: float, threshold: float) -> bool:
+    return curr_score < best_score - threshold
 
 
 class EarlyStopException(Exception):
@@ -181,7 +189,7 @@ def reset_parameter(**kwargs: Union[list, Callable]) -> Callable:
     return _callback
 
 
-def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True) -> Callable:
+def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True, threshold: Union[float, List[float]] = 0.0) -> Callable:
     """Create a callback that activates early stopping.
 
     Activates early stopping.
@@ -203,6 +211,8 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
         Whether to log message with early stopping information.
         By default, standard output resource is used.
         Use ``register_logger()`` function to register a custom logger.
+    threshold : float or list of float, optional (default=0.0)
+        Minimum improvement in score to keep training.
 
     Returns
     -------
@@ -229,17 +239,41 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
         if verbose:
             _log_info(f"Training until validation scores don't improve for {stopping_rounds} rounds")
 
+        n_metrics = len(set(m[1] for m in env.evaluation_result_list))
+        n_datasets = len(env.evaluation_result_list) // n_metrics
+        if isinstance(threshold, list):
+            if not all(t >= 0 for t in threshold):
+                raise ValueError('Early stopping thresholds must be non-negative.')
+            if len(threshold) == 0:
+                _log_warning('Disabling threshold for early stopping.')
+                tholds = [0.0] * n_datasets * n_metrics
+            elif len(threshold) == 1:
+                _log_warning(f'Using {threshold[0]} as threshold for all metrics.')
+                tholds = threshold * n_datasets * n_metrics
+            else:
+                if len(threshold) != n_metrics:
+                    raise ValueError('Must provide a single early stopping threshold or as many as metrics.')
+                if first_metric_only:
+                    _log_warning(f'Using only {threshold[0]} as early stopping threshold.')
+                tholds = threshold * n_datasets
+        else:
+            if threshold < 0:
+                raise ValueError('Early stopping threshold must be non-negative.')
+            if threshold > 0 and n_metrics > 1 and not first_metric_only:
+                _log_warning(f'Using {threshold} as threshold for all metrics.')
+            tholds = [threshold] * n_datasets * n_metrics
+
         # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
         first_metric[0] = env.evaluation_result_list[0][1].split(" ")[-1]
-        for eval_ret in env.evaluation_result_list:
+        for i, eval_ret in enumerate(env.evaluation_result_list):
             best_iter.append(0)
             best_score_list.append(None)
-            if eval_ret[3]:
+            if eval_ret[3]:  # greater is better
                 best_score.append(float('-inf'))
-                cmp_op.append(gt)
+                cmp_op.append(partial(_gt_threshold, threshold=tholds[i]))
             else:
                 best_score.append(float('inf'))
-                cmp_op.append(lt)
+                cmp_op.append(partial(_lt_threshold, threshold=tholds[i]))
 
     def _final_iteration_check(env: CallbackEnv, eval_name_splitted: List[str], i: int) -> None:
         if env.iteration == env.end_iteration - 1:

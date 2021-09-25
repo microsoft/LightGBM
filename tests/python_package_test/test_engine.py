@@ -642,6 +642,81 @@ def test_early_stopping():
     assert 'binary_logloss' in gbm.best_score[valid_set_name]
 
 
+@pytest.mark.parametrize('first_only', [True, False])
+@pytest.mark.parametrize('single_metric', [True, False])
+@pytest.mark.parametrize('greater_is_better', [True, False])
+def test_early_stopping_threshold(first_only, single_metric, greater_is_better):
+    if single_metric and not first_only:
+        pytest.skip("first_metric_only doesn't affect single metric.")
+    metric2threshold = {
+        'auc': 0.001,
+        'binary_logloss': 0.01,
+        'average_precision': 0.001,
+        'mape': 0.01,
+    }
+    if single_metric:
+        if greater_is_better:
+            metric = 'auc'
+        else:
+            metric = 'binary_logloss'
+    else:
+        if first_only:
+            if greater_is_better:
+                metric = ['auc', 'binary_logloss']
+            else:
+                metric = ['binary_logloss', 'auc']
+        else:
+            if greater_is_better:
+                metric = ['auc', 'average_precision']
+            else:
+                metric = ['binary_logloss', 'mape']
+
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
+    train_ds = lgb.Dataset(X_train, y_train)
+    valid_ds = lgb.Dataset(X_valid, y_valid, reference=train_ds)
+
+    params = {'objective': 'binary', 'metric': metric, 'verbose': -1}
+    if isinstance(metric, str):
+        threshold = metric2threshold[metric]
+    elif first_only:
+        threshold = metric2threshold[metric[0]]
+    else:
+        threshold = [metric2threshold[m] for m in metric]
+    train_kwargs = dict(
+        params=params,
+        train_set=train_ds,
+        num_boost_round=100,
+        valid_sets=[train_ds, valid_ds],
+        valid_names=['training', 'valid'],
+    )
+
+    # regular early stopping
+    train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0)]
+    evals_result = {}
+    bst = lgb.train(evals_result=evals_result, **train_kwargs)
+    scores = np.vstack([res for res in evals_result['valid'].values()]).T
+
+    # positive threshold
+    train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0, threshold=threshold)]
+    threshold_result = {}
+    threshold_bst = lgb.train(evals_result=threshold_result, **train_kwargs)
+    threshold_scores = np.vstack([res for res in threshold_result['valid'].values()]).T
+
+    if first_only:
+        scores = scores[:, 0]
+        threshold_scores = threshold_scores[:, 0]
+
+    assert threshold_bst.num_trees() < bst.num_trees()
+    np.testing.assert_allclose(scores[:len(threshold_scores)], threshold_scores)
+    last_score = threshold_scores[-1]
+    best_score = threshold_scores[threshold_bst.num_trees() - 1]
+    if greater_is_better:
+        assert np.less_equal(last_score, best_score + threshold).any()
+    else:
+        assert np.greater_equal(last_score, best_score - threshold).any()
+
+
 def test_continue_train():
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
