@@ -87,6 +87,12 @@ elseif ($env:TASK -eq "bdist") {
   } else {
     python setup.py install ; Check-Output $?
   }
+} elseif ($env:TASK -eq "security") {
+  mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
+  cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Debug ; Check-Output $?
+  cp $env:BUILD_SOURCESDIRECTORY/Debug/lib_lightgbm.dll $env:BUILD_ARTIFACTSTAGINGDIRECTORY
+  cp $env:BUILD_SOURCESDIRECTORY/Debug/lightgbm.exe $env:BUILD_ARTIFACTSTAGINGDIRECTORY
+  cp $env:BUILD_SOURCESDIRECTORY/Debug/*.pdb $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 }
 
 if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
@@ -100,7 +106,9 @@ if ($env:TASK -eq "bdist") {
   $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
 }
 
-pytest $tests ; Check-Output $?
+if ($env:TASK -ne "security") {
+  pytest $tests ; Check-Output $?
+}
 
 if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
