@@ -435,7 +435,7 @@ MPI Version
 3. Run following command on one machine (not need to run on all machines), need to change ``your_config_file`` to real config file.
 
    For Windows:
-   
+
    .. code::
 
        mpiexec.exe /machinefile mlist.txt lightgbm.exe config=your_config_file
@@ -450,6 +450,17 @@ Example
 '''''''
 
 -  `A simple distributed learning example`_
+
+Ray
+^^^
+
+`Ray`_ is a Python-based framework for distributed computing. The `lightgbm_ray`_ project, maintained within the official Ray GitHub organization, can be used to perform distributed LightGBM training using ``ray``.
+
+See `the lightgbm_ray documentation`_ for usage examples.
+
+.. note::
+
+  ``lightgbm_ray`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should be directed to https://github.com/ray-project/lightgbm_ray/issues.
 
 .. _Dask: https://docs.dask.org/en/latest/
 
@@ -482,3 +493,9 @@ Example
 .. _here: https://www.youtube.com/watch?v=iqzXhp5TxUY
 
 .. _A simple distributed learning example: https://github.com/microsoft/lightgbm/tree/master/examples/parallel_learning
+
+.. _lightgbm_ray: https://github.com/ray-project/lightgbm_ray
+
+.. _Ray: https://ray.io/
+
+.. _the lightgbm_ray documentation: https://docs.ray.io/en/latest/lightgbm-ray.html
