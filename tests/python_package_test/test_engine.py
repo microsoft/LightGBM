@@ -645,10 +645,10 @@ def test_early_stopping():
 @pytest.mark.parametrize('first_only', [True, False])
 @pytest.mark.parametrize('single_metric', [True, False])
 @pytest.mark.parametrize('greater_is_better', [True, False])
-def test_early_stopping_threshold(first_only, single_metric, greater_is_better):
+def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
     if single_metric and not first_only:
         pytest.skip("first_metric_only doesn't affect single metric.")
-    metric2threshold = {
+    metric2min_delta = {
         'auc': 0.001,
         'binary_logloss': 0.01,
         'average_precision': 0.001,
@@ -678,11 +678,11 @@ def test_early_stopping_threshold(first_only, single_metric, greater_is_better):
 
     params = {'objective': 'binary', 'metric': metric, 'verbose': -1}
     if isinstance(metric, str):
-        threshold = metric2threshold[metric]
+        min_delta = metric2min_delta[metric]
     elif first_only:
-        threshold = metric2threshold[metric[0]]
+        min_delta = metric2min_delta[metric[0]]
     else:
-        threshold = [metric2threshold[m] for m in metric]
+        min_delta = [metric2min_delta[m] for m in metric]
     train_kwargs = dict(
         params=params,
         train_set=train_ds,
@@ -697,24 +697,24 @@ def test_early_stopping_threshold(first_only, single_metric, greater_is_better):
     bst = lgb.train(evals_result=evals_result, **train_kwargs)
     scores = np.vstack([res for res in evals_result['valid'].values()]).T
 
-    # positive threshold
-    train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0, threshold=threshold)]
-    threshold_result = {}
-    threshold_bst = lgb.train(evals_result=threshold_result, **train_kwargs)
-    threshold_scores = np.vstack([res for res in threshold_result['valid'].values()]).T
+    # positive min_delta
+    train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0, min_delta=min_delta)]
+    delta_result = {}
+    delta_bst = lgb.train(evals_result=delta_result, **train_kwargs)
+    delta_scores = np.vstack([res for res in delta_result['valid'].values()]).T
 
     if first_only:
         scores = scores[:, 0]
-        threshold_scores = threshold_scores[:, 0]
+        delta_scores = delta_scores[:, 0]
 
-    assert threshold_bst.num_trees() < bst.num_trees()
-    np.testing.assert_allclose(scores[:len(threshold_scores)], threshold_scores)
-    last_score = threshold_scores[-1]
-    best_score = threshold_scores[threshold_bst.num_trees() - 1]
+    assert delta_bst.num_trees() < bst.num_trees()
+    np.testing.assert_allclose(scores[:len(delta_scores)], delta_scores)
+    last_score = delta_scores[-1]
+    best_score = delta_scores[delta_bst.num_trees() - 1]
     if greater_is_better:
-        assert np.less_equal(last_score, best_score + threshold).any()
+        assert np.less_equal(last_score, best_score + min_delta).any()
     else:
-        assert np.greater_equal(last_score, best_score - threshold).any()
+        assert np.greater_equal(last_score, best_score - min_delta).any()
 
 
 def test_continue_train():
