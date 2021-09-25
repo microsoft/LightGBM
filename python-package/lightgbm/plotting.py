@@ -285,7 +285,7 @@ def plot_metric(
     ylim: Optional[Tuple[float, float]] = None,
     title: Optional[str] = 'Metric during training',
     xlabel: Optional[str] = 'Iterations',
-    ylabel: Optional[str] = 'auto',
+    ylabel: Optional[str] = '@metric@',
     figsize: Optional[Tuple[float, float]] = None,
     dpi: Optional[int] = None,
     grid: bool = True
@@ -316,7 +316,7 @@ def plot_metric(
     xlabel : str or None, optional (default="Iterations")
         X-axis title label.
         If None, title is disabled.
-    ylabel : str or None, optional (default="auto")
+    ylabel : str or None, optional (default="@metric@")
         Y-axis title label.
         If 'auto', metric name is used.
         If None, title is disabled.
@@ -402,6 +402,8 @@ def plot_metric(
     ax.set_ylim(ylim)
 
     if ylabel == 'auto':
+        _log_warning("'auto' value of 'ylabel' argument is deprecated and will be removed in a future release of LightGBM. "
+                     "Use '@metric@' placeholder instead.")
         ylabel = '@metric@'
 
     if title is not None:
