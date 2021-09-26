@@ -52,6 +52,9 @@ void CUDAHistogramConstructor::InitFeatureMetaInfo(const Dataset* train_data, co
   feature_most_freq_bins_.clear();
   for (int feature_index = 0; feature_index < train_data->num_features(); ++feature_index) {
     const BinMapper* bin_mapper = train_data->FeatureBinMapper(feature_index);
+    if (bin_mapper->bin_type() == BinType::CategoricalBin) {
+      Log::Fatal("CUDA tree learner doesn't support training categorical features.");
+    }
     const uint32_t most_freq_bin = bin_mapper->GetMostFreqBin();
     if (most_freq_bin != 0) {
       need_fix_histogram_features_.emplace_back(feature_index);
