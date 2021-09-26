@@ -9,7 +9,7 @@
 #include "linear_tree_learner.h"
 #include "parallel_tree_learner.h"
 #include "serial_tree_learner.h"
-#include "cuda/new_cuda_tree_learner.hpp"
+#include "cuda/cuda_single_gpu_tree_learner.hpp"
 
 namespace LightGBM {
 
@@ -41,7 +41,11 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
     }
   } else if (device_type == std::string("cuda")) {
     if (learner_type == std::string("serial")) {
-      return new NewCUDATreeLearner(config);
+      if (config->num_gpu == 1) {
+        return new CUDASingleGPUTreeLearner(config);
+      } else {
+        return new CUDATreeLearner(config);
+      }
     } else if (learner_type == std::string("feature")) {
       return new FeatureParallelTreeLearner<CUDATreeLearner>(config);
     } else if (learner_type == std::string("data")) {

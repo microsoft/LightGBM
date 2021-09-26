@@ -16,11 +16,11 @@
 
 namespace LightGBM {
 
-class NewCUDATreeLearner: public SerialTreeLearner {
+class CUDASingleGPUTreeLearner: public SerialTreeLearner {
  public:
-  explicit NewCUDATreeLearner(const Config* config);
+  explicit CUDASingleGPUTreeLearner(const Config* config);
 
-  ~NewCUDATreeLearner();
+  ~CUDASingleGPUTreeLearner();
 
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
@@ -82,10 +82,10 @@ class NewCUDATreeLearner: public SerialTreeLearner {
 
 namespace LightGBM {
 
-class NewCUDATreeLearner: public SerialTreeLearner {
+class CUDASingleGPUTreeLearner: public SerialTreeLearner {
  public:
     #pragma warning(disable : 4702)
-    explicit NewCUDATreeLearner(const Config* tree_config) : SerialTreeLearner(tree_config) {
+    explicit CUDASingleGPUTreeLearner(const Config* tree_config) : SerialTreeLearner(tree_config) {
       Log::Fatal("CUDA Tree Learner was not enabled in this build.\n"
                  "Please recompile with CMake option -DUSE_CUDA=1");
     }
