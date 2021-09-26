@@ -61,7 +61,7 @@ __global__ void CalcTotalNumberOfElementsKernel(
   }
   const uint64_t num_elements_in_block = ShuffleReduceSum<uint64_t>(num_elements_in_row, shared_mem_buffer, blockDim.x);
   if (threadIdx.x == 0) {
-    printf("blockIdx.x = %d, partition_index = %d, num_elements_in_block = %d\n", blockIdx.x, partition_index, num_elements_in_block);
+    //printf("blockIdx.x = %d, partition_index = %d, num_elements_in_block = %lu\n", blockIdx.x, partition_index, num_elements_in_block);
     block_sum_buffer[partition_index * gridDim.x + blockIdx.x] = num_elements_in_block;
   }
 }
@@ -78,12 +78,12 @@ __global__ void ReduceBlockSumKernel(
   for (data_size_t block_index = static_cast<data_size_t>(threadIdx.x); block_index < num_blocks; block_index += static_cast<data_size_t>(blockDim.x)) {
     thread_sum += block_sum_buffer_ptr[block_index];
   }
-  if (threadIdx.x == 0) {
-    printf("thread_sum = %d\n", thread_sum);
-  }
+  /*if (threadIdx.x == 0) {
+    printf("thread_sum = %lu\n", thread_sum);
+  }*/
   const uint64_t num_total_elements = ShuffleReduceSum<uint64_t>(thread_sum, shared_mem_buffer, blockDim.x);
   if (threadIdx.x == 0) {
-    printf("partition_index = %d, num_total_elements = %d\n", partition_index, num_total_elements);
+    //printf("partition_index = %d, num_total_elements = %lu\n", partition_index, num_total_elements);
     cuda_partition_ptr_buffer[partition_index + 1] = num_total_elements;
     if (blockIdx.x == 0) {
       cuda_partition_ptr_buffer[0] = 0;
@@ -112,7 +112,7 @@ __global__ void ComputePartitionPtr(
     cuda_partition_ptr_buffer[partition_index] += thread_base;
   }
   if (threadIdx.x == blockDim.x - 1) {
-    cuda_partition_ptr_buffer[num_feature_partitions] = thread_sum;
+    cuda_partition_ptr_buffer[num_feature_partitions] = thread_base;
   }
 }
 
@@ -144,13 +144,13 @@ uint64_t CUDARowData::LaunchCalcTotalNumberOfElementsKernel(const CUDARowData* f
       num_data_,
       cuda_block_sum_buffer_);
   }
-  Log::Warning("num_feature_partitions_ = %d", num_feature_partitions_);
+  //Log::Warning("num_feature_partitions_ = %d", num_feature_partitions_);
   ReduceBlockSumKernel<<<num_feature_partitions_, COPY_SUBROW_BLOCK_SIZE_ROW_DATA>>>(
     cuda_block_sum_buffer_, num_blocks, num_feature_partitions_, cuda_partition_ptr_buffer_);
   ComputePartitionPtr<<<1, COPY_SUBROW_BLOCK_SIZE_ROW_DATA>>>(cuda_partition_ptr_buffer_, num_feature_partitions_);
   uint64_t num_total_elements = 0;
   CopyFromCUDADeviceToHostOuter<uint64_t>(&num_total_elements, cuda_partition_ptr_buffer_ + num_feature_partitions_, 1, __FILE__, __LINE__);
-  Log::Warning("num_used_indices = %d, num_blocks = %d", num_used_indices_, num_blocks);
+  //Log::Warning("num_used_indices = %d, num_blocks = %d, num_total_elements = %d", num_used_indices_, num_blocks, num_total_elements);
   return num_total_elements;
 }
 
@@ -197,12 +197,13 @@ __global__ void CopySparseSubrowDataKernel(
     const OUT_ROW_PTR_TYPE out_row_start = out_cuda_row_ptr[local_data_index];
     const OUT_ROW_PTR_TYPE out_row_end = out_cuda_row_ptr[local_data_index + 1];
     const OUT_ROW_PTR_TYPE out_num_elements_in_row = out_row_end - out_row_start;
-    if (in_num_elements_in_row != out_num_elements_in_row) {
-      printf("error !!!!!, in_num_elements_in_row = %d, out_num_elements_in_row = %d\n", in_num_elements_in_row, out_num_elements_in_row);
+    /*if (in_num_elements_in_row != out_num_elements_in_row) {
+      printf("error !!!!!, in_num_elements_in_row = %d, out_num_elements_in_row = %d\n", static_cast<int>(in_num_elements_in_row), static_cast<int>(out_num_elements_in_row));
     }
     if (out_row_end > in_row_end || out_row_start > in_row_start) {
-      printf("error !!!!!, out_row_end = %d, in_row_end = %d, out_row_start = %d, in_row_start = %d\n", out_row_end, in_row_end, out_row_start, in_row_start);
-    }
+      printf("error !!!!!, out_row_end = %d, in_row_end = %d, out_row_start = %d, in_row_start = %d\n",
+        static_cast<int>(out_row_end), static_cast<int>(in_row_end), static_cast<int>(out_row_start), static_cast<int>(in_row_start));
+    }*/
     const BIN_TYPE* in_cuda_data_ptr = in_cuda_data + in_row_start; 
     BIN_TYPE* out_cuda_data_ptr = out_cuda_data + out_row_start;
     for (IN_ROW_PTR_TYPE element_index = 0; element_index < in_num_elements_in_row; ++element_index) {
@@ -294,6 +295,69 @@ void CUDARowData::LaunchCopySparseSubrowKernel(const CUDARowData* full_set) {
     LaunchCopySparseSubrowKernelInner0<uint64_t>(full_set, cuda_row_ptr_uint64_t_);
   }
   SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+}
+
+template <typename BIN_TYPE>
+void __global__ CopyDenseSubcolKernel(
+  const BIN_TYPE* in_cuda_data,
+  const int out_num_feature_partitions,
+  const int* cuda_used_columns,
+  const int* cuda_column_index_to_partition_index,
+  const int* in_cuda_feature_partition_column_index_offsets,
+  const int* out_cuda_feature_partition_column_index_offsets,
+  const data_size_t num_data,
+  BIN_TYPE* out_cuda_data) {
+  const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
+  if (data_index < num_data) {
+    for (int out_partition_index = 0; out_partition_index < out_num_feature_partitions; ++out_partition_index) {
+      const int out_partition_column_start = out_cuda_feature_partition_column_index_offsets[out_partition_index];
+      const int out_partition_column_end = out_cuda_feature_partition_column_index_offsets[out_partition_index + 1];
+      BIN_TYPE* out_cuda_data_ptr = out_cuda_data + out_partition_column_start * num_data + data_index * (out_partition_column_end - out_partition_column_start);
+      for (int local_column_index = out_partition_column_start; local_column_index < out_partition_column_end; ++local_column_index) {
+        const int global_column_index = cuda_used_columns[local_column_index];
+        const int global_partition_index = cuda_column_index_to_partition_index[global_column_index];
+        const int in_partition_column_start = in_cuda_feature_partition_column_index_offsets[global_partition_index];
+        const int in_partition_column_end = in_cuda_feature_partition_column_index_offsets[global_partition_index + 1];
+        const BIN_TYPE* in_cuda_data_ptr = in_cuda_data + in_partition_column_start * num_data + data_index * (in_partition_column_end - in_partition_column_start);
+        out_cuda_data_ptr[local_column_index - out_partition_column_start] = in_cuda_data_ptr[global_column_index - in_partition_column_start];
+      }
+    }
+  }
+}
+
+void CUDARowData::LaunchCopyDenseSubcolKernel(const CUDARowData* full_set) {
+  const int num_blocks = (num_data_ + COPY_SUBROW_BLOCK_SIZE_ROW_DATA - 1) / COPY_SUBROW_BLOCK_SIZE_ROW_DATA;
+  if (bit_type_ == 8) {
+    CopyDenseSubcolKernel<<<num_blocks, COPY_SUBROW_BLOCK_SIZE_ROW_DATA>>>(
+      full_set->cuda_data_uint8_t_,
+      num_feature_partitions_,
+      cuda_used_columns_,
+      cuda_column_index_to_partition_index_,
+      cuda_feature_partition_column_index_offsets_,
+      full_set->cuda_feature_partition_column_index_offsets_,
+      num_data_,
+      cuda_data_uint8_t_);
+  } else if (bit_type_ == 16) {
+    CopyDenseSubcolKernel<<<num_blocks, COPY_SUBROW_BLOCK_SIZE_ROW_DATA>>>(
+      full_set->cuda_data_uint16_t_,
+      num_feature_partitions_,
+      cuda_used_columns_,
+      cuda_column_index_to_partition_index_,
+      cuda_feature_partition_column_index_offsets_,
+      full_set->cuda_feature_partition_column_index_offsets_,
+      num_data_,
+      cuda_data_uint16_t_);
+  } else if (bit_type_ == 32) {
+    CopyDenseSubcolKernel<<<num_blocks, COPY_SUBROW_BLOCK_SIZE_ROW_DATA>>>(
+      full_set->cuda_data_uint32_t_,
+      num_feature_partitions_,
+      cuda_used_columns_,
+      cuda_column_index_to_partition_index_,
+      cuda_feature_partition_column_index_offsets_,
+      full_set->cuda_feature_partition_column_index_offsets_,
+      num_data_,
+      cuda_data_uint32_t_);
+  }
 }
 
 }  // namespace LightGBM

@@ -31,6 +31,11 @@ class CUDARowData {
 
   void CopySubrow(const CUDARowData* full_set, const data_size_t* used_indices, const data_size_t num_used_indices);
 
+  void CopySubcol(const CUDARowData* full_set, const std::vector<int8_t>& is_feature_used, const Dataset* train_data);
+
+  void CopySubrowAndSubcol(const CUDARowData* full_set, const data_size_t* used_indices,
+    const data_size_t num_used_indices, const std::vector<bool>& is_feature_used, const Dataset* train_data);
+
   int num_feature_partitions() const { return num_feature_partitions_; }
 
   int max_num_column_per_partition() const { return max_num_column_per_partition_; }
@@ -85,17 +90,33 @@ class CUDARowData {
                       ROW_PTR_TYPE** cuda_row_ptr,
                       ROW_PTR_TYPE** cuda_partition_ptr);
 
+  void InitMetaInfoBeforeCopy(const CUDARowData* full_set);
+
+  void PrepareSubsetColumnInfo(const std::vector<int8_t>& is_feature_used, const CUDARowData* full_set);
+
   void CopyDenseSubrowData(const CUDARowData* full_set, const data_size_t num_used_indices, const data_size_t* used_indices);
 
   void CopySparseSubrowData(const CUDARowData* full_set, const data_size_t num_used_indices, const data_size_t* used_indices);
+
+  void CopyDenseSubcolData(const CUDARowData* full_set);
+
+  void CopySparseSubcolData(const CUDARowData* full_set);
 
   uint64_t CalcTotalNumberOfElements(const CUDARowData* full_set);
 
   uint64_t LaunchCalcTotalNumberOfElementsKernel(const CUDARowData* full_set);
 
+  uint64_t CalcTotalNumberOfElementsSubcol(const CUDARowData* full_set);
+
+  uint64_t LaunchCalcTotalNumberOfElementsSubcolKernel(const CUDARowData* full_set);
+
   void LaunchCopyDenseSubrowKernel(const CUDARowData* full_set);
 
   void LaunchCopySparseSubrowKernel(const CUDARowData* full_set);
+
+  void LaunchCopyDenseSubcolKernel(const CUDARowData* full_set);
+
+  void BuildBinToColumnMap(const CUDARowData* full_set);
 
   template <typename OUT_ROW_PTR_TYPE>
   void LaunchCopySparseSubrowKernelInner0(
@@ -141,12 +162,23 @@ class CUDARowData {
   uint64_t num_total_elements_;
   /*! \brief used when bagging with subset, the size of buffer for copy subrow */
   data_size_t cur_subset_buffer_size_;
-  /*! \brief used when bagging with subset, the size of buffer for copy subrow */
+  /*! \brief used when bagging with subset, the size of buffer for copy subrow of sparse data */
   uint64_t cur_total_elements_buffer_size_;
-  /*! \brief used when bagging with subset, block buffer when reducing the number of elements in the subset */
-  uint64_t* cuda_block_sum_buffer_;
+  /*! \brief used when bagging with column subset, the size of maximum number of feature partitions */
+  int cur_num_feature_partition_buffer_size_;
   /*! \brief CUDA device ID */
   int gpu_device_id_;
+  /*! \brief whether data is initialized */
+  bool is_data_initialized_;
+
+  /*! \brief used column indices when copying sub column */
+  std::vector<int> used_columns_;
+  /*! \brief a map from feature_index to column index, used when copying sub column */
+  std::vector<int> feature_index_to_column_index_;
+  /*! \brief complete histogram offset of each column, which equals that in train share states, used in copying sub columns */
+  std::vector<uint32_t> complete_column_hist_offsets_;
+  /*! \brief used when bagging with column subset, the size of buffer for columns */
+  data_size_t cur_subcol_buffer_size_;
 
   // CUDA memory
 
@@ -184,6 +216,14 @@ class CUDARowData {
   uint64_t* cuda_block_buffer_uint64_t_; 
   /*! \brief partition ptr buffer */
   uint64_t* cuda_partition_ptr_buffer_;
+  /*! \brief used when bagging with subset, block buffer when reducing the number of elements in the subset */
+  uint64_t* cuda_block_sum_buffer_;
+  /*! \brief used with column subset, maps the original column_index to partition index */
+  int* cuda_column_index_to_partition_index_;
+  /*! \brief used column indices */
+  int* cuda_used_columns_;
+  /*! \brief maps bin to column index, used when copy column subsets in sparse data */
+  int* cuda_bin_to_column_index_;
 };
 
 }  // namespace LightGBM
