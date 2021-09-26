@@ -1045,17 +1045,9 @@ __global__ void SplitInnerKernel(const int left_leaf_index, const int right_leaf
     const uint32_t thread_to_left_offset = (threadIdx_x == 0 ? 0 : block_to_left_offset_ptr[threadIdx_x - 1]);
     const bool to_left = block_to_left_offset_ptr[threadIdx_x] > thread_to_left_offset;
     if (to_left) {
-      if (static_cast<data_size_t>(thread_to_left_offset) >= block_to_left_offset_buffer[blockIdx.x + 1] - block_to_left_offset_buffer[blockIdx.x]) {
-        printf("error: thread_to_left_offset = %d, block_to_left_offset_buffer[%d] - block_to_left_offset_buffer[%d] = %d\n",
-          thread_to_left_offset, blockIdx.x + 1, blockIdx.x, block_to_left_offset_buffer[blockIdx.x + 1] - block_to_left_offset_buffer[blockIdx.x]);
-      }
       left_out_data_indices_in_leaf[thread_to_left_offset] = cuda_data_indices_in_leaf[global_thread_index];
     } else {
       const uint32_t thread_to_right_offset = threadIdx.x - thread_to_left_offset;
-      if (static_cast<data_size_t>(thread_to_right_offset) >= block_to_right_offset_buffer[blockIdx.x + 1] - block_to_right_offset_buffer[blockIdx.x]) {
-        printf("error: thread_to_right_offset = %d, block_to_right_offset_buffer[%d] - block_to_right_offset_buffer[%d] = %d\n",
-          thread_to_right_offset, blockIdx.x + 1, blockIdx.x, block_to_right_offset_buffer[blockIdx.x + 1] - block_to_right_offset_buffer[blockIdx.x]);
-      }
       right_out_data_indices_in_leaf[thread_to_right_offset] = cuda_data_indices_in_leaf[global_thread_index];
     }
   }
