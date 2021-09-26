@@ -3,6 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
+#ifdef USE_CUDA
+
 #include <LightGBM/cuda/cuda_metadata.hpp>
 
 namespace LightGBM {
@@ -70,3 +72,5 @@ void CUDAMetadata::Init(const std::vector<label_t>& label,
 }
 
 } // namespace LightGBM
+
+#endif  // USE_CUDA

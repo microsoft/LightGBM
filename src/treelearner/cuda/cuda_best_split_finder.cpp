@@ -62,10 +62,10 @@ CUDABestSplitFinder::~CUDABestSplitFinder() {
 }
 
 void CUDABestSplitFinder::InitFeatureMetaInfo(const Dataset* train_data) {
-  feature_missing_type_.clear();
-  feature_mfb_offsets_.clear();
-  feature_default_bins_.clear();
-  feature_num_bins_.clear();
+  feature_missing_type_.resize(num_features_);
+  feature_mfb_offsets_.resize(num_features_);
+  feature_default_bins_.resize(num_features_);
+  feature_num_bins_.resize(num_features_);
   max_num_bin_in_feature_ = 0;
   for (int inner_feature_index = 0; inner_feature_index < num_features_; ++inner_feature_index) {
     const BinMapper* bin_mapper = train_data->FeatureBinMapper(inner_feature_index);

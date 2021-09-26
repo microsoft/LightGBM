@@ -3,6 +3,9 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
+
+#ifdef USE_CUDA
+
 #include <LightGBM/cuda/cuda_column_data.hpp>
 
 #define COPY_SUBROW_BLOCK_SIZE_COLUMN_DATA (1024)
@@ -54,3 +57,5 @@ void CUDAColumnData::LaunchCopySubrowKernel(void* const* in_cuda_data_by_column)
 }
 
 }  // namespace LightGBM
+
+#endif  // USE_CUDA

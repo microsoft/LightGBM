@@ -3,6 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
+#ifdef USE_CUDA
+
 #include <LightGBM/cuda/cuda_row_data.hpp>
 
 namespace LightGBM {
@@ -365,3 +367,5 @@ void CUDARowData::InitSparseData(const BIN_TYPE* host_data,
 }
 
 }  // namespace LightGBM
+
+#endif  // USE_CUDA

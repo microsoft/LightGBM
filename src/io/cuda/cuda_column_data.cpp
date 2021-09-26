@@ -3,6 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
+#ifdef USE_CUDA
+
 #include <LightGBM/cuda/cuda_column_data.hpp>
 
 namespace LightGBM {
@@ -305,3 +307,5 @@ void CUDAColumnData::InitColumnMetaInfo() {
 }
 
 }  // namespace LightGBM
+
+#endif  // USE_CUDA

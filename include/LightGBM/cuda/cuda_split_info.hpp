@@ -3,10 +3,11 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_SPLIT_INFO_HPP_
-#define LIGHTGBM_TREELEARNER_CUDA_CUDA_SPLIT_INFO_HPP_
 
 #ifdef USE_CUDA
+
+#ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_SPLIT_INFO_HPP_
+#define LIGHTGBM_TREELEARNER_CUDA_CUDA_SPLIT_INFO_HPP_
 
 #include <LightGBM/meta.h>
 
@@ -36,6 +37,6 @@ struct CUDASplitInfo {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
-
 #endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_SPLIT_INFO_HPP_
+
+#endif  // USE_CUDA
