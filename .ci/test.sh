@@ -71,7 +71,7 @@ if [[ $TASK == "lint" ]]; then
             libxml2 \
             "r-xfun>=0.19" \
             "r-lintr>=2.0"
-    pip install --user cpplint isort mypy
+    pip install --user cmakelint cpplint isort mypy
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
@@ -81,6 +81,8 @@ if [[ $TASK == "lint" ]]; then
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
     cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package ./swig ./tests || exit -1
+    cmake_files=$(find . -name CMakeLists.txt -o -path "*/cmake/*.cmake")
+    cmakelint --linelength=120 ${cmake_files} || true
     exit 0
 fi
 

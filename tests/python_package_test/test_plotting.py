@@ -68,6 +68,13 @@ def test_plot_importance(params, breast_cancer_split, train_data):
     assert ax2.patches[2].get_facecolor() == (0, .5, 0, 1.)  # g
     assert ax2.patches[3].get_facecolor() == (0, 0, 1., 1.)  # b
 
+    ax3 = lgb.plot_importance(gbm0, title='t @importance_type@', xlabel='x @importance_type@', ylabel='y @importance_type@')
+    assert isinstance(ax3, matplotlib.axes.Axes)
+    assert ax3.get_title() == 't @importance_type@'
+    assert ax3.get_xlabel() == 'x split'
+    assert ax3.get_ylabel() == 'y @importance_type@'
+    assert len(ax3.patches) <= 30
+
     gbm2 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True, importance_type="gain")
     gbm2.fit(X_train, y_train)
 
@@ -194,26 +201,77 @@ def test_plot_metrics(params, breast_cancer_split, train_data):
               num_boost_round=10,
               evals_result=evals_result0,
               verbose_eval=False)
-    ax0 = lgb.plot_metric(evals_result0)
+    with pytest.warns(UserWarning, match="More than one metric available, picking one to plot."):
+        ax0 = lgb.plot_metric(evals_result0)
     assert isinstance(ax0, matplotlib.axes.Axes)
     assert ax0.get_title() == 'Metric during training'
     assert ax0.get_xlabel() == 'Iterations'
     assert ax0.get_ylabel() in {'binary_logloss', 'binary_error'}
-    ax0 = lgb.plot_metric(evals_result0, metric='binary_error')
-    ax0 = lgb.plot_metric(evals_result0, metric='binary_logloss', dataset_names=['v2'])
+    legend_items = ax0.get_legend().get_texts()
+    assert len(legend_items) == 2
+    assert legend_items[0].get_text() == 'v1'
+    assert legend_items[1].get_text() == 'v2'
+
+    ax1 = lgb.plot_metric(evals_result0, metric='binary_error')
+    assert isinstance(ax1, matplotlib.axes.Axes)
+    assert ax1.get_title() == 'Metric during training'
+    assert ax1.get_xlabel() == 'Iterations'
+    assert ax1.get_ylabel() == 'binary_error'
+    legend_items = ax1.get_legend().get_texts()
+    assert len(legend_items) == 2
+    assert legend_items[0].get_text() == 'v1'
+    assert legend_items[1].get_text() == 'v2'
+
+    ax2 = lgb.plot_metric(evals_result0, metric='binary_logloss', dataset_names=['v2'])
+    assert isinstance(ax2, matplotlib.axes.Axes)
+    assert ax2.get_title() == 'Metric during training'
+    assert ax2.get_xlabel() == 'Iterations'
+    assert ax2.get_ylabel() == 'binary_logloss'
+    legend_items = ax2.get_legend().get_texts()
+    assert len(legend_items) == 1
+    assert legend_items[0].get_text() == 'v2'
+
+    ax3 = lgb.plot_metric(
+        evals_result0,
+        metric='binary_logloss',
+        dataset_names=['v1'],
+        title='Metric @metric@',
+        xlabel='Iterations @metric@',
+        ylabel='Value of "@metric@"',
+        figsize=(5, 5),
+        dpi=600,
+        grid=False
+    )
+    assert isinstance(ax3, matplotlib.axes.Axes)
+    assert ax3.get_title() == 'Metric @metric@'
+    assert ax3.get_xlabel() == 'Iterations @metric@'
+    assert ax3.get_ylabel() == 'Value of "binary_logloss"'
+    legend_items = ax3.get_legend().get_texts()
+    assert len(legend_items) == 1
+    assert legend_items[0].get_text() == 'v1'
+    assert ax3.get_figure().get_figheight() == 5
+    assert ax3.get_figure().get_figwidth() == 5
+    assert ax3.get_figure().get_dpi() == 600
+    for grid_line in ax3.get_xgridlines():
+        assert not grid_line.get_visible()
+    for grid_line in ax3.get_ygridlines():
+        assert not grid_line.get_visible()
 
     evals_result1 = {}
     lgb.train(params, train_data,
               num_boost_round=10,
               evals_result=evals_result1,
               verbose_eval=False)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="eval results cannot be empty."):
         lgb.plot_metric(evals_result1)
 
     gbm2 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True)
     gbm2.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
-    ax2 = lgb.plot_metric(gbm2, title=None, xlabel=None, ylabel=None)
-    assert isinstance(ax2, matplotlib.axes.Axes)
-    assert ax2.get_title() == ''
-    assert ax2.get_xlabel() == ''
-    assert ax2.get_ylabel() == ''
+    ax4 = lgb.plot_metric(gbm2, title=None, xlabel=None, ylabel=None)
+    assert isinstance(ax4, matplotlib.axes.Axes)
+    assert ax4.get_title() == ''
+    assert ax4.get_xlabel() == ''
+    assert ax4.get_ylabel() == ''
+    legend_items = ax4.get_legend().get_texts()
+    assert len(legend_items) == 1
+    assert legend_items[0].get_text() == 'valid_0'
