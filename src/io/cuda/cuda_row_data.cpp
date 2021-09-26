@@ -20,21 +20,36 @@ CUDARowData::CUDARowData(const Dataset* train_data,
   } else {
     CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
   }
-  cuda_used_indices_ = nullptr;
-  cur_subset_buffer_size_ = 0;
-  cur_total_elements_buffer_size_ = 0;
-  cur_subcol_buffer_size_ = 0;
-  cur_num_feature_partition_buffer_size_ = 0;
-  is_data_initialized_ = false;
+  cuda_data_uint8_t_ = nullptr;
+  cuda_data_uint16_t_ = nullptr;
+  cuda_data_uint32_t_ = nullptr;
+  cuda_row_ptr_uint16_t_ = nullptr;
+  cuda_row_ptr_uint32_t_ = nullptr;
+  cuda_row_ptr_uint64_t_ = nullptr;
+  cuda_partition_ptr_uint16_t_ = nullptr;
+  cuda_partition_ptr_uint32_t_ = nullptr;
+  cuda_partition_ptr_uint64_t_ = nullptr;
+  cuda_feature_partition_column_index_offsets_ = nullptr;
+  cuda_column_hist_offsets_ = nullptr;
+  cuda_partition_hist_offsets_ = nullptr;
+  cuda_block_buffer_uint16_t_ = nullptr;
+  cuda_block_buffer_uint32_t_ = nullptr;
+  cuda_block_buffer_uint64_t_ = nullptr;
 }
 
 CUDARowData::CUDARowData() {
-  cuda_used_indices_ = nullptr;
-  cur_subset_buffer_size_ = 0;
-  cur_total_elements_buffer_size_ = 0;
-  cur_subcol_buffer_size_ = 0;
-  cur_num_feature_partition_buffer_size_ = 0;
-  is_data_initialized_ = false;
+  DeallocateCUDAMemory<uint8_t>(&cuda_data_uint8_t_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint16_t>(&cuda_data_uint16_t_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint32_t>(&cuda_data_uint32_t_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint16_t>(&cuda_row_ptr_uint16_t_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint32_t>(&cuda_row_ptr_uint32_t_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint64_t>(&cuda_row_ptr_uint64_t_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<int>(&cuda_feature_partition_column_index_offsets_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint32_t>(&cuda_column_hist_offsets_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint32_t>(&cuda_partition_hist_offsets_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint16_t>(&cuda_block_buffer_uint16_t_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint32_t>(&cuda_block_buffer_uint32_t_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint64_t>(&cuda_block_buffer_uint64_t_, __FILE__, __LINE__);
 }
 
 void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_share_state) {
@@ -48,7 +63,7 @@ void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_sha
     if (!is_sparse_) {
       std::vector<uint8_t> partitioned_data;
       GetDenseDataPartitioned<uint8_t>(reinterpret_cast<const uint8_t*>(host_data), &partitioned_data);
-      InitCUDAMemoryFromHostMemoryOuter<uint8_t>(&cuda_data_uint8_t_, partitioned_data.data(), total_size, __FILE__, __LINE__);
+      InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_data_uint8_t_, partitioned_data.data(), total_size, __FILE__, __LINE__);
     } else {
       if (row_ptr_bit_type_ == 16) {
         InitSparseData<uint8_t, uint16_t>(
@@ -79,7 +94,7 @@ void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_sha
     if (!is_sparse_) {
       std::vector<uint16_t> partitioned_data;
       GetDenseDataPartitioned<uint16_t>(reinterpret_cast<const uint16_t*>(host_data), &partitioned_data);
-      InitCUDAMemoryFromHostMemoryOuter<uint16_t>(&cuda_data_uint16_t_, partitioned_data.data(), total_size, __FILE__, __LINE__);
+      InitCUDAMemoryFromHostMemory<uint16_t>(&cuda_data_uint16_t_, partitioned_data.data(), total_size, __FILE__, __LINE__);
     } else {
       if (row_ptr_bit_type_ == 16) {
         InitSparseData<uint16_t, uint16_t>(
@@ -110,7 +125,7 @@ void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_sha
     if (!is_sparse_) {
       std::vector<uint32_t> partitioned_data;
       GetDenseDataPartitioned<uint32_t>(reinterpret_cast<const uint32_t*>(host_data), &partitioned_data);
-      InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_data_uint32_t_, partitioned_data.data(), total_size, __FILE__, __LINE__);
+      InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_data_uint32_t_, partitioned_data.data(), total_size, __FILE__, __LINE__);
     } else {
       if (row_ptr_bit_type_ == 16) {
         InitSparseData<uint32_t, uint16_t>(
@@ -140,8 +155,7 @@ void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_sha
   } else {
     Log::Fatal("Unknow bit type = %d", bit_type_);
   }
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
-  is_data_initialized_ = true;
+  SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 
 void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingShareStates* share_state) {
@@ -225,19 +239,19 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
     }
   }
 
-  InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_feature_partition_column_index_offsets_,
+  InitCUDAMemoryFromHostMemory<int>(&cuda_feature_partition_column_index_offsets_,
     feature_partition_column_index_offsets_.data(),
     feature_partition_column_index_offsets_.size(),
     __FILE__,
     __LINE__);
 
-  InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_column_hist_offsets_,
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_column_hist_offsets_,
     column_hist_offsets_.data(),
     column_hist_offsets_.size(),
     __FILE__,
     __LINE__);
 
-  InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_partition_hist_offsets_,
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_partition_hist_offsets_,
     partition_hist_offsets_.data(),
     partition_hist_offsets_.size(),
     __FILE__,
@@ -339,404 +353,15 @@ void CUDARowData::InitSparseData(const BIN_TYPE* host_data,
   std::vector<std::vector<ROW_PTR_TYPE>> partitioned_data_ptr;
   std::vector<ROW_PTR_TYPE> partition_ptr;
   GetSparseDataPartitioned<BIN_TYPE, ROW_PTR_TYPE>(host_data, host_row_ptr, &partitioned_data, &partitioned_data_ptr, &partition_ptr);
-  InitCUDAMemoryFromHostMemoryOuter<ROW_PTR_TYPE>(cuda_partition_ptr, partition_ptr.data(), partition_ptr.size(), __FILE__, __LINE__);
-  AllocateCUDAMemoryOuter<BIN_TYPE>(cuda_data, partition_ptr.back(), __FILE__, __LINE__);
-  AllocateCUDAMemoryOuter<ROW_PTR_TYPE>(cuda_row_ptr, (num_data_ + 1) * partitioned_data_ptr.size(),  __FILE__, __LINE__);
+  InitCUDAMemoryFromHostMemory<ROW_PTR_TYPE>(cuda_partition_ptr, partition_ptr.data(), partition_ptr.size(), __FILE__, __LINE__);
+  AllocateCUDAMemory<BIN_TYPE>(cuda_data, partition_ptr.back(), __FILE__, __LINE__);
+  AllocateCUDAMemory<ROW_PTR_TYPE>(cuda_row_ptr, (num_data_ + 1) * partitioned_data_ptr.size(),  __FILE__, __LINE__);
   for (size_t i = 0; i < partitioned_data.size(); ++i) {
     const std::vector<ROW_PTR_TYPE>& data_ptr_for_this_partition = partitioned_data_ptr[i];
     const std::vector<BIN_TYPE>& data_for_this_partition = partitioned_data[i];
-    CopyFromHostToCUDADeviceOuter<BIN_TYPE>((*cuda_data) + partition_ptr[i], data_for_this_partition.data(), data_for_this_partition.size(), __FILE__, __LINE__);
-    CopyFromHostToCUDADeviceOuter<ROW_PTR_TYPE>((*cuda_row_ptr) + i * (num_data_ + 1), data_ptr_for_this_partition.data(), data_ptr_for_this_partition.size(), __FILE__, __LINE__);
+    CopyFromHostToCUDADevice<BIN_TYPE>((*cuda_data) + partition_ptr[i], data_for_this_partition.data(), data_for_this_partition.size(), __FILE__, __LINE__);
+    CopyFromHostToCUDADevice<ROW_PTR_TYPE>((*cuda_row_ptr) + i * (num_data_ + 1), data_ptr_for_this_partition.data(), data_ptr_for_this_partition.size(), __FILE__, __LINE__);
   }
-}
-
-void CUDARowData::InitMetaInfoBeforeCopy(const CUDARowData* full_set) {
-  CHECK_EQ(cur_subset_buffer_size_, 0);
-  CHECK_EQ(cur_total_elements_buffer_size_, 0);
-  // initialize meta information
-  num_threads_ = full_set->num_threads_;
-  num_data_ = full_set->num_data_;
-  num_total_bin_ = full_set->num_total_bin_;
-  num_feature_group_ = full_set->num_feature_group_;
-  num_feature_ = full_set->num_feature_;
-  gpu_device_id_ = full_set->gpu_device_id_;
-  if (gpu_device_id_ >= 0) {
-    CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id_));
-  } else {
-    CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
-  }
-  bit_type_ = full_set->bit_type_;
-  is_sparse_ = full_set->is_sparse_;
-  feature_partition_column_index_offsets_ = full_set->feature_partition_column_index_offsets_;
-  column_hist_offsets_ = full_set->column_hist_offsets_;
-  partition_hist_offsets_ = full_set->partition_hist_offsets_;
-  max_num_column_per_partition_ = full_set->max_num_column_per_partition_;
-  num_feature_partitions_ = full_set->num_feature_partitions_;
-
-  InitCUDAMemoryFromHostMemoryOuter<int>(
-    &cuda_feature_partition_column_index_offsets_,
-    feature_partition_column_index_offsets_.data(),
-    feature_partition_column_index_offsets_.size(), __FILE__, __LINE__);
-  InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_column_hist_offsets_,
-    column_hist_offsets_.data(), column_hist_offsets_.size(), __FILE__, __LINE__);
-  InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_partition_hist_offsets_,
-    partition_hist_offsets_.data(), partition_hist_offsets_.size(), __FILE__, __LINE__);
-}
-
-void CUDARowData::CopySubrow(
-  const CUDARowData* full_set,
-  const data_size_t* used_indices,
-  const data_size_t num_used_indices) {
-  if (!is_data_initialized_) {
-    InitMetaInfoBeforeCopy(full_set);
-    is_data_initialized_ = true;
-  }
-  if (!full_set->is_sparse_) {
-    CopyDenseSubrowData(full_set, num_used_indices, used_indices);
-  } else {
-    CopySparseSubrowData(full_set, num_used_indices, used_indices);
-  }
-}
-
-void CUDARowData::PrepareSubsetColumnInfo(const std::vector<int8_t>& is_feature_used, const CUDARowData* full_set) {
-  // get used columns
-  const int num_column = feature_partition_column_index_offsets_.back();
-  std::vector<int8_t> is_column_used(num_column, 0);
-  OMP_INIT_EX();
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
-  for (int feature_index = 0; feature_index < num_feature_; ++feature_index) {
-    OMP_LOOP_EX_BEGIN();
-    if (is_feature_used[feature_index]) {
-      const int column_index = feature_index_to_column_index_[feature_index];
-      is_column_used[column_index] = 1;
-    }
-    OMP_LOOP_EX_END();
-  }
-  OMP_THROW_EX();
-  used_columns_.clear();
-  for (int column_index = 0; column_index < num_column; ++column_index) {
-    if (is_column_used[column_index]) {
-      used_columns_.emplace_back(column_index);
-    }
-  }
-
-  std::vector<int> column_index_to_partition_index(full_set->feature_partition_column_index_offsets_.back());
-  // get column index to partition index map
-  for (int partition_index = 0; partition_index < full_set->num_feature_partitions_; ++partition_index) {
-    const int partition_column_start = full_set->feature_partition_column_index_offsets_[partition_index];
-    const int partition_column_end = full_set->feature_partition_column_index_offsets_[partition_index + 1];
-    for (int column_index = partition_column_start; column_index < partition_column_end; ++column_index) {
-      column_index_to_partition_index[column_index] = partition_index;
-    }
-  }
-  InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_column_index_to_partition_index_,
-                                         column_index_to_partition_index.data(),
-                                         column_index_to_partition_index.size(), __FILE__, __LINE__);
-  InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_used_columns_, used_columns_.data(), used_columns_.size(), __FILE__, __LINE__);
-
-  const uint32_t max_num_bin_per_partition = SHRAE_HIST_SIZE / 2;
-  int cur_partition_index = 0;
-  feature_partition_column_index_offsets_.clear();
-  column_hist_offsets_.clear();
-  partition_hist_offsets_.clear();
-  max_num_column_per_partition_ = 0;
-  num_feature_partitions_ = 0;
-  int cur_num_bin_in_partition = 0;
-  int cur_num_bin = 0;
-  feature_partition_column_index_offsets_.emplace_back(0);
-  partition_hist_offsets_.emplace_back(0);
-  for (int column_index = 0; column_index < static_cast<int>(used_columns_.size()); ++column_index) {
-    const int real_column_index = used_columns_[column_index];
-    const int num_bin_in_column = complete_column_hist_offsets_[real_column_index + 1] - complete_column_hist_offsets_[real_column_index];
-    const int next_num_bin_in_partition = cur_num_bin_in_partition + num_bin_in_column;
-    if (next_num_bin_in_partition >= max_num_bin_per_partition) {
-      feature_partition_column_index_offsets_.emplace_back(column_index);
-      partition_hist_offsets_.emplace_back(cur_num_bin);
-      cur_num_bin_in_partition = num_bin_in_column;
-      ++num_feature_partitions_;
-    }
-    cur_num_bin += num_bin_in_column;
-    column_hist_offsets_.emplace_back(complete_column_hist_offsets_[column_index] - partition_hist_offsets_.back());
-  }
-  feature_partition_column_index_offsets_.emplace_back(static_cast<int>(used_columns_.size()));
-  partition_hist_offsets_.emplace_back(cur_num_bin);
-  ++num_feature_partitions_;
-
-  for (int partition_index = 0; partition_index < num_feature_partitions_; ++partition_index) {
-    const int num_column_in_partition = feature_partition_column_index_offsets_[partition_index + 1] - feature_partition_column_index_offsets_[partition_index];
-    if (num_column_in_partition > max_num_column_per_partition_) {
-      max_num_column_per_partition_ = num_column_in_partition;
-    }
-  }
-
-  CopyFromHostToCUDADeviceOuter<int>(cuda_feature_partition_column_index_offsets_,
-                                     feature_partition_column_index_offsets_.data(),
-                                     feature_partition_column_index_offsets_.size(), __FILE__, __LINE__);
-  CopyFromHostToCUDADeviceOuter<uint32_t>(cuda_column_hist_offsets_,
-                                          column_hist_offsets_.data(),
-                                          column_hist_offsets_.size(), __FILE__, __LINE__);
-  CopyFromHostToCUDADeviceOuter<uint32_t>(cuda_partition_hist_offsets_,
-                                          partition_hist_offsets_.data(),
-                                          partition_hist_offsets_.size(), __FILE__, __LINE__);
-
-}
-
-void CUDARowData::CopyDenseSubcolData(const CUDARowData* full_set) {
-  const data_size_t num_used_column = static_cast<data_size_t>(used_columns_.size());
-  if (cur_subcol_buffer_size_ > num_used_column) {
-    const uint64_t num_total_elements = used_columns_.size() * static_cast<uint64_t>(num_data_);
-    if (cur_subcol_buffer_size_ > 0) {
-      if (bit_type_ == 8) {
-        DeallocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, __FILE__, __LINE__);
-      } else if (bit_type_ == 16) {
-        DeallocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, __FILE__, __LINE__);
-      } else if (bit_type_ == 32) {
-        DeallocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, __FILE__, __LINE__);
-      }
-    }
-    if (bit_type_ == 8) {
-      AllocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, num_total_elements, __FILE__, __LINE__);
-    } else if (bit_type_ == 16) {
-      AllocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, num_total_elements, __FILE__, __LINE__);
-    } else if (bit_type_ == 32) {
-      AllocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, num_total_elements, __FILE__, __LINE__);
-    }
-  }
-  LaunchCopyDenseSubcolKernel(full_set);
-}
-
-void CUDARowData::BuildBinToColumnMap(const CUDARowData* full_set) {
-  std::vector<int> bin_to_column(complete_column_hist_offsets_.back());
-  const int num_column = full_set->feature_partition_column_index_offsets_.back();
-  OMP_INIT_EX();
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
-  for (int column_index = 0; column_index < num_column; ++column_index) {
-    OMP_LOOP_EX_BEGIN();
-    const uint32_t column_hist_bin_start = complete_column_hist_offsets_[column_index];
-    const uint32_t column_hist_bin_end = complete_column_hist_offsets_[column_index + 1];
-    for (uint32_t bin = column_hist_bin_start; bin < column_hist_bin_end; ++bin) {
-      bin_to_column[bin] = column_index;
-    }
-    OMP_LOOP_EX_END();
-  }
-  OMP_THROW_EX();
-  InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_bin_to_column_index_, bin_to_column.data(), bin_to_column.size(), __FILE__, __LINE__);
-}
-
-uint64_t CUDARowData::CalcTotalNumberOfElementsSubcol(const CUDARowData* full_set) {
-  return LaunchCalcTotalNumberOfElementsSubcolKernel(full_set);
-}
-
-void CUDARowData::CopySparseSubcolData(const CUDARowData* full_set) {
-  if (!is_data_initialized_) {
-    const int num_blocks = (num_data_ + COPY_SUBROW_BLOCK_SIZE_ROW_DATA - 1) / COPY_SUBROW_BLOCK_SIZE_ROW_DATA;
-    AllocateCUDAMemoryOuter<uint64_t>(&cuda_block_sum_buffer_, static_cast<size_t>(num_blocks * full_set->num_feature_partitions_) + 1, __FILE__, __LINE__);
-    AllocateCUDAMemoryOuter<uint16_t>(&cuda_partition_ptr_uint16_t_, static_cast<size_t>(full_set->num_feature_partitions_), __FILE__, __LINE__);
-    AllocateCUDAMemoryOuter<uint32_t>(&cuda_partition_ptr_uint32_t_, static_cast<size_t>(full_set->num_feature_partitions_), __FILE__, __LINE__);
-    AllocateCUDAMemoryOuter<uint64_t>(&cuda_partition_ptr_uint64_t_, static_cast<size_t>(full_set->num_feature_partitions_), __FILE__, __LINE__);
-    AllocateCUDAMemoryOuter<uint64_t>(&cuda_partition_ptr_buffer_, static_cast<size_t>(full_set->num_feature_partitions_) + 1, __FILE__, __LINE__);
-    is_data_initialized_ = true;
-    BuildBinToColumnMap(full_set);
-  }
-  num_total_elements_ = CalcTotalNumberOfElementsSubcol(full_set);
-  if (num_total_elements_ > cur_total_elements_buffer_size_) {
-    if (cur_total_elements_buffer_size_ > 0) {
-      if (bit_type_ == 8) {
-        DeallocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, __FILE__, __LINE__);
-      } else if (bit_type_ == 16) {
-        DeallocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, __FILE__, __LINE__);
-      } else if (bit_type_ == 32) {
-        DeallocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, __FILE__, __LINE__);
-      }
-    }
-    if (bit_type_ == 8) {
-      AllocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, num_total_elements_, __FILE__, __LINE__);
-    } else if (bit_type_ == 16) {
-      AllocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, num_total_elements_, __FILE__, __LINE__);
-    } else if (bit_type_ == 32) {
-      AllocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, num_total_elements_, __FILE__, __LINE__);
-    }
-    cur_total_elements_buffer_size_ = num_total_elements_;
-  }
-  if (num_feature_partitions_ > cur_num_feature_partition_buffer_size_) {
-    if (cur_num_feature_partition_buffer_size_ > 0) {
-      if (row_ptr_bit_type_ == 16) {
-        DeallocateCUDAMemoryOuter<uint16_t>(&cuda_row_ptr_uint16_t_, __FILE__, __LINE__);
-      } else if (row_ptr_bit_type_ == 32) {
-        DeallocateCUDAMemoryOuter<uint32_t>(&cuda_row_ptr_uint32_t_, __FILE__, __LINE__);
-      } else if (row_ptr_bit_type_ == 64) {
-        DeallocateCUDAMemoryOuter<uint64_t>(&cuda_row_ptr_uint64_t_, __FILE__, __LINE__);
-      }
-    }
-    const size_t row_ptr_size = static_cast<size_t>(num_feature_partitions_) * (static_cast<size_t>(num_data_) + 1);
-    if (row_ptr_bit_type_ == 16) {
-      AllocateCUDAMemoryOuter<uint16_t>(&cuda_row_ptr_uint16_t_, row_ptr_size, __FILE__, __LINE__);
-    } else if (row_ptr_bit_type_ == 32) {
-      AllocateCUDAMemoryOuter<uint32_t>(&cuda_row_ptr_uint32_t_, row_ptr_size, __FILE__, __LINE__);
-    } else if (row_ptr_bit_type_ == 64) {
-      AllocateCUDAMemoryOuter<uint64_t>(&cuda_row_ptr_uint64_t_, row_ptr_size, __FILE__, __LINE__);
-    }
-    cur_num_feature_partition_buffer_size_ = num_feature_partitions_;
-  }
-}
-
-void CUDARowData::CopySubcol(const CUDARowData* full_set, const std::vector<int8_t>& is_feature_used, const Dataset* train_data) {
-  if (!is_data_initialized_) {
-    InitMetaInfoBeforeCopy(full_set);
-    is_data_initialized_ = true;
-    feature_index_to_column_index_.resize(num_feature_, -1);
-    int cur_group_index = -1;
-    int cur_column_index = -1;
-    for (int feature_index = 0; feature_index < num_feature_; ++feature_index) {
-      const int group_index = train_data->Feature2Group(feature_index);
-      if (!train_data->IsMultiGroup(group_index)) {
-        if (group_index != cur_group_index) {
-          ++cur_column_index;
-        }
-      } else {
-        ++cur_column_index;
-      }
-      feature_index_to_column_index_[feature_index] = cur_column_index;
-    }
-    complete_column_hist_offsets_ = column_hist_offsets_;
-    const int num_column = feature_partition_column_index_offsets_.back();
-    uint32_t offset = 0;
-    for (int i = 1; i <= num_column; ++i) {
-      if (complete_column_hist_offsets_[i] == 0) {
-        offset = complete_column_hist_offsets_[i - 1];
-      }
-      complete_column_hist_offsets_[i] += offset;
-    }
-  }
-  PrepareSubsetColumnInfo(is_feature_used, full_set);
-  if (!full_set->is_sparse_) {
-    CopyDenseSubcolData(full_set);
-  } else {
-    CopySparseSubcolData(full_set);
-  }
-}
-
-uint64_t CUDARowData::CalcTotalNumberOfElements(const CUDARowData* full_set) {
-  return LaunchCalcTotalNumberOfElementsKernel(full_set);
-}
-
-void CUDARowData::CopyDenseSubrowData(const CUDARowData* full_set, const data_size_t num_used_indices, const data_size_t* used_indices) {
-  num_used_indices_ = num_used_indices;
-  if (num_used_indices_ > cur_subset_buffer_size_) {
-    // allocate cuda memory
-    if (cur_subset_buffer_size_ == 0) {
-      CHECK_EQ(cuda_used_indices_, nullptr);
-      CHECK_EQ(cur_total_elements_buffer_size_, 0);
-    } else {
-      DeallocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, __FILE__, __LINE__);
-      if (bit_type_ == 8) {
-        DeallocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, __FILE__, __LINE__);
-      } else if (bit_type_ == 16) {
-        DeallocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, __FILE__, __LINE__);
-      } else if (bit_type_ == 32) {
-        DeallocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, __FILE__, __LINE__);
-      }
-    }
-    AllocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
-    const int num_column = feature_partition_column_index_offsets_.back();
-    size_t total_size = static_cast<size_t>(num_used_indices_ * num_column);
-    if (bit_type_ == 8) {
-      AllocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, total_size, __FILE__, __LINE__);
-    } else if (bit_type_ == 16) {
-      AllocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, total_size, __FILE__, __LINE__);
-    } else if (bit_type_ == 32) {
-      AllocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, total_size, __FILE__, __LINE__);
-    }
-    cur_subset_buffer_size_ = num_used_indices_;
-  }
-  CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_used_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
-  LaunchCopyDenseSubrowKernel(full_set);
-}
-
-void CUDARowData::CopySparseSubrowData(const CUDARowData* full_set, const data_size_t num_used_indices, const data_size_t* used_indices) {
-  num_used_indices_ = num_used_indices;
-  bool need_reallocate_row_ptr = false;
-  bool need_reallocate_data = false;
-  if (num_used_indices_ > cur_subset_buffer_size_) {
-    if (cur_subset_buffer_size_ == 0) {
-      CHECK_EQ(cur_total_elements_buffer_size_, 0);
-      CHECK_EQ(cuda_used_indices_, nullptr);
-      const int num_blocks = (num_data_ + COPY_SUBROW_BLOCK_SIZE_ROW_DATA - 1) / COPY_SUBROW_BLOCK_SIZE_ROW_DATA;
-      AllocateCUDAMemoryOuter<uint64_t>(&cuda_block_sum_buffer_, static_cast<size_t>(num_blocks * num_feature_partitions_) + 1, __FILE__, __LINE__);
-      AllocateCUDAMemoryOuter<uint16_t>(&cuda_partition_ptr_uint16_t_, static_cast<size_t>(num_feature_partitions_), __FILE__, __LINE__);
-      AllocateCUDAMemoryOuter<uint32_t>(&cuda_partition_ptr_uint32_t_, static_cast<size_t>(num_feature_partitions_), __FILE__, __LINE__);
-      AllocateCUDAMemoryOuter<uint64_t>(&cuda_partition_ptr_uint64_t_, static_cast<size_t>(num_feature_partitions_), __FILE__, __LINE__);
-      AllocateCUDAMemoryOuter<uint64_t>(&cuda_partition_ptr_buffer_, static_cast<size_t>(num_feature_partitions_) + 1, __FILE__, __LINE__);
-    } else {
-      DeallocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, __FILE__, __LINE__);
-    }
-    AllocateCUDAMemoryOuter<data_size_t>(&cuda_used_indices_, static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
-    need_reallocate_row_ptr = true;
-  }
-  CopyFromHostToCUDADeviceOuter<data_size_t>(cuda_used_indices_, used_indices, static_cast<data_size_t>(num_used_indices_), __FILE__, __LINE__);
-  num_total_elements_ = CalcTotalNumberOfElements(full_set);
-  //Log::Warning("num_total_elements_ = %d", num_total_elements_);
-  if (num_total_elements_ > cur_total_elements_buffer_size_) {
-    need_reallocate_data = true;
-  }
-  if (num_total_elements_ <= std::numeric_limits<uint16_t>::max()) {
-    if (row_ptr_bit_type_ != 16) {
-      need_reallocate_row_ptr = true;
-    }
-  } else if (num_total_elements_ <= std::numeric_limits<uint32_t>::max()) {
-    if (row_ptr_bit_type_ != 32) {
-      need_reallocate_row_ptr = true;
-    }
-  } else {
-    if (row_ptr_bit_type_ != 64) {
-      need_reallocate_row_ptr = true;
-    }
-  }
-  if (need_reallocate_row_ptr) {
-    if (cur_subset_buffer_size_ > 0) {
-      if (row_ptr_bit_type_ == 16) {
-        DeallocateCUDAMemoryOuter<uint16_t>(&cuda_row_ptr_uint16_t_, __FILE__, __LINE__);
-      } else if (row_ptr_bit_type_ == 32) {
-        DeallocateCUDAMemoryOuter<uint32_t>(&cuda_row_ptr_uint32_t_, __FILE__, __LINE__);
-      } else if (row_ptr_bit_type_ == 64) {
-        DeallocateCUDAMemoryOuter<uint64_t>(&cuda_row_ptr_uint64_t_, __FILE__, __LINE__);
-      }
-    }
-    if (num_total_elements_ <= std::numeric_limits<uint16_t>::max()) {
-      row_ptr_bit_type_ = 16;
-      AllocateCUDAMemoryOuter<uint16_t>(&cuda_row_ptr_uint16_t_, static_cast<size_t>(num_used_indices_) + 1, __FILE__, __LINE__);
-      SetCUDAMemoryOuter<uint16_t>(cuda_row_ptr_uint16_t_, 0, 1, __FILE__, __LINE__);
-    } else if (num_total_elements_ <= std::numeric_limits<uint32_t>::max()) {
-      row_ptr_bit_type_ = 32;
-      AllocateCUDAMemoryOuter<uint32_t>(&cuda_row_ptr_uint32_t_, static_cast<size_t>(num_used_indices_) + 1, __FILE__, __LINE__);
-      SetCUDAMemoryOuter<uint32_t>(cuda_row_ptr_uint32_t_, 0, 1, __FILE__, __LINE__);
-    } else {
-      row_ptr_bit_type_ = 64;
-      AllocateCUDAMemoryOuter<uint64_t>(&cuda_row_ptr_uint64_t_, static_cast<size_t>(num_used_indices_) + 1, __FILE__, __LINE__);
-      SetCUDAMemoryOuter<uint64_t>(cuda_row_ptr_uint64_t_, 0, 1, __FILE__, __LINE__);
-    }
-    cur_subset_buffer_size_ = num_used_indices_;
-  }
-  if (need_reallocate_data) {
-    if (cur_total_elements_buffer_size_ > 0) {
-      if (bit_type_ == 8) {
-        DeallocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, __FILE__, __LINE__);
-      } else if (bit_type_ == 16) {
-        DeallocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, __FILE__, __LINE__);
-      } else if (bit_type_ == 32) {
-        DeallocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, __FILE__, __LINE__);
-      }
-    }
-    if (bit_type_ == 8) {
-      AllocateCUDAMemoryOuter<uint8_t>(&cuda_data_uint8_t_, num_total_elements_, __FILE__, __LINE__);
-    } else if (bit_type_ == 16) {
-      AllocateCUDAMemoryOuter<uint16_t>(&cuda_data_uint16_t_, num_total_elements_, __FILE__, __LINE__);
-    } else if (bit_type_ == 32) {
-      AllocateCUDAMemoryOuter<uint32_t>(&cuda_data_uint32_t_, num_total_elements_, __FILE__, __LINE__);
-    }
-    cur_total_elements_buffer_size_ = num_total_elements_;
-  }
-  LaunchCopySparseSubrowKernel(full_set);
 }
 
 }  // namespace LightGBM

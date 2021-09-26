@@ -138,124 +138,122 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
   CalcConstructHistogramKernelDim(&grid_dim_x, &grid_dim_y, &block_dim_x, &block_dim_y, num_data_in_smaller_leaf);
   dim3 grid_dim(grid_dim_x, grid_dim_y);
   dim3 block_dim(block_dim_x, block_dim_y);
-  const CUDARowData* cuda_row_data = use_bagging_subset_ ? cuda_row_data_subset_.get() : cuda_row_data_.get();
-
-  if (cuda_row_data->is_sparse()) {
-    if (cuda_row_data->bit_type() == 8) {
-      if (cuda_row_data->row_ptr_bit_type() == 16) {
+  if (cuda_row_data_->is_sparse()) {
+    if (cuda_row_data_->bit_type() == 8) {
+      if (cuda_row_data_->row_ptr_bit_type() == 16) {
         CUDAConstructHistogramSparseKernel<uint8_t, uint16_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_row_data->cuda_data_uint8(),
-          cuda_row_data->cuda_row_ptr_uint16(),
-          cuda_row_data->cuda_partition_ptr_uint16(),
-          cuda_row_data->cuda_partition_hist_offsets(),
+          cuda_row_data_->cuda_data_uint8(),
+          cuda_row_data_->cuda_row_ptr_uint16(),
+          cuda_row_data_->cuda_partition_ptr_uint16(),
+          cuda_row_data_->cuda_partition_hist_offsets(),
           num_data_);
-      } else if (cuda_row_data->row_ptr_bit_type() == 32) {
+      } else if (cuda_row_data_->row_ptr_bit_type() == 32) {
         CUDAConstructHistogramSparseKernel<uint8_t, uint32_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_row_data->cuda_data_uint8(),
-          cuda_row_data->cuda_row_ptr_uint32(),
-          cuda_row_data->cuda_partition_ptr_uint32(),
-          cuda_row_data->cuda_partition_hist_offsets(),
+          cuda_row_data_->cuda_data_uint8(),
+          cuda_row_data_->cuda_row_ptr_uint32(),
+          cuda_row_data_->cuda_partition_ptr_uint32(),
+          cuda_row_data_->cuda_partition_hist_offsets(),
           num_data_);
-      } else if (cuda_row_data->row_ptr_bit_type() == 64) {
+      } else if (cuda_row_data_->row_ptr_bit_type() == 64) {
         CUDAConstructHistogramSparseKernel<uint8_t, uint64_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_row_data->cuda_data_uint8(),
-          cuda_row_data->cuda_row_ptr_uint64(),
-          cuda_row_data->cuda_partition_ptr_uint64(),
-          cuda_row_data->cuda_partition_hist_offsets(),
+          cuda_row_data_->cuda_data_uint8(),
+          cuda_row_data_->cuda_row_ptr_uint64(),
+          cuda_row_data_->cuda_partition_ptr_uint64(),
+          cuda_row_data_->cuda_partition_hist_offsets(),
           num_data_);
       }
-    } else if (cuda_row_data->bit_type() == 16) {
-      if (cuda_row_data->row_ptr_bit_type() == 16) {
+    } else if (cuda_row_data_->bit_type() == 16) {
+      if (cuda_row_data_->row_ptr_bit_type() == 16) {
         CUDAConstructHistogramSparseKernel<uint16_t, uint16_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_row_data->cuda_data_uint16(),
-          cuda_row_data->cuda_row_ptr_uint16(),
-          cuda_row_data->cuda_partition_ptr_uint16(),
-          cuda_row_data->cuda_partition_hist_offsets(),
+          cuda_row_data_->cuda_data_uint16(),
+          cuda_row_data_->cuda_row_ptr_uint16(),
+          cuda_row_data_->cuda_partition_ptr_uint16(),
+          cuda_row_data_->cuda_partition_hist_offsets(),
           num_data_);
-      } else if (cuda_row_data->row_ptr_bit_type() == 32) {
+      } else if (cuda_row_data_->row_ptr_bit_type() == 32) {
         CUDAConstructHistogramSparseKernel<uint16_t, uint32_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_row_data->cuda_data_uint16(),
-          cuda_row_data->cuda_row_ptr_uint32(),
-          cuda_row_data->cuda_partition_ptr_uint32(),
-          cuda_row_data->cuda_partition_hist_offsets(),
+          cuda_row_data_->cuda_data_uint16(),
+          cuda_row_data_->cuda_row_ptr_uint32(),
+          cuda_row_data_->cuda_partition_ptr_uint32(),
+          cuda_row_data_->cuda_partition_hist_offsets(),
           num_data_);
-      } else if (cuda_row_data->row_ptr_bit_type() == 64) {
+      } else if (cuda_row_data_->row_ptr_bit_type() == 64) {
         CUDAConstructHistogramSparseKernel<uint16_t, uint64_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_row_data->cuda_data_uint16(),
-          cuda_row_data->cuda_row_ptr_uint64(),
-          cuda_row_data->cuda_partition_ptr_uint64(),
-          cuda_row_data->cuda_partition_hist_offsets(),
+          cuda_row_data_->cuda_data_uint16(),
+          cuda_row_data_->cuda_row_ptr_uint64(),
+          cuda_row_data_->cuda_partition_ptr_uint64(),
+          cuda_row_data_->cuda_partition_hist_offsets(),
           num_data_);
       }
-    } else if (cuda_row_data->bit_type() == 32) {
-      if (cuda_row_data->row_ptr_bit_type() == 16) {
+    } else if (cuda_row_data_->bit_type() == 32) {
+      if (cuda_row_data_->row_ptr_bit_type() == 16) {
         CUDAConstructHistogramSparseKernel<uint32_t, uint16_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_row_data->cuda_data_uint32(),
-          cuda_row_data->cuda_row_ptr_uint16(),
-          cuda_row_data->cuda_partition_ptr_uint16(),
-          cuda_row_data->cuda_partition_hist_offsets(),
+          cuda_row_data_->cuda_data_uint32(),
+          cuda_row_data_->cuda_row_ptr_uint16(),
+          cuda_row_data_->cuda_partition_ptr_uint16(),
+          cuda_row_data_->cuda_partition_hist_offsets(),
           num_data_);
-      } else if (cuda_row_data->row_ptr_bit_type() == 32) {
+      } else if (cuda_row_data_->row_ptr_bit_type() == 32) {
         CUDAConstructHistogramSparseKernel<uint32_t, uint32_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_row_data->cuda_data_uint32(),
-          cuda_row_data->cuda_row_ptr_uint32(),
-          cuda_row_data->cuda_partition_ptr_uint32(),
-          cuda_row_data->cuda_partition_hist_offsets(),
+          cuda_row_data_->cuda_data_uint32(),
+          cuda_row_data_->cuda_row_ptr_uint32(),
+          cuda_row_data_->cuda_partition_ptr_uint32(),
+          cuda_row_data_->cuda_partition_hist_offsets(),
           num_data_);
-      } else if (cuda_row_data->row_ptr_bit_type() == 64) {
+      } else if (cuda_row_data_->row_ptr_bit_type() == 64) {
         CUDAConstructHistogramSparseKernel<uint32_t, uint64_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
-          cuda_row_data->cuda_data_uint32(),
-          cuda_row_data->cuda_row_ptr_uint64(),
-          cuda_row_data->cuda_partition_ptr_uint64(),
-          cuda_row_data->cuda_partition_hist_offsets(),
+          cuda_row_data_->cuda_data_uint32(),
+          cuda_row_data_->cuda_row_ptr_uint64(),
+          cuda_row_data_->cuda_partition_ptr_uint64(),
+          cuda_row_data_->cuda_partition_hist_offsets(),
           num_data_);
       }
     }
   } else {
-    if (cuda_row_data->bit_type() == 8) {
+    if (cuda_row_data_->bit_type() == 8) {
       CUDAConstructHistogramDenseKernel<uint8_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
         cuda_smaller_leaf_splits,
         cuda_gradients_, cuda_hessians_,
-        cuda_row_data->cuda_data_uint8(),
-        cuda_row_data->cuda_column_hist_offsets(),
-        cuda_row_data->cuda_partition_hist_offsets(),
-        cuda_row_data->cuda_feature_partition_column_index_offsets(),
+        cuda_row_data_->cuda_data_uint8(),
+        cuda_row_data_->cuda_column_hist_offsets(),
+        cuda_row_data_->cuda_partition_hist_offsets(),
+        cuda_row_data_->cuda_feature_partition_column_index_offsets(),
         num_data_);
-    } else if (cuda_row_data->bit_type() == 16) {
+    } else if (cuda_row_data_->bit_type() == 16) {
       CUDAConstructHistogramDenseKernel<uint16_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
         cuda_smaller_leaf_splits,
         cuda_gradients_, cuda_hessians_,
-        cuda_row_data->cuda_data_uint16(),
-        cuda_row_data->cuda_column_hist_offsets(),
-        cuda_row_data->cuda_partition_hist_offsets(),
-        cuda_row_data->cuda_feature_partition_column_index_offsets(),
+        cuda_row_data_->cuda_data_uint16(),
+        cuda_row_data_->cuda_column_hist_offsets(),
+        cuda_row_data_->cuda_partition_hist_offsets(),
+        cuda_row_data_->cuda_feature_partition_column_index_offsets(),
         num_data_);
-    } else if (cuda_row_data->bit_type() == 32) {
+    } else if (cuda_row_data_->bit_type() == 32) {
       CUDAConstructHistogramDenseKernel<uint32_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
         cuda_smaller_leaf_splits,
         cuda_gradients_, cuda_hessians_,
-        cuda_row_data->cuda_data_uint32(),
-        cuda_row_data->cuda_column_hist_offsets(),
-        cuda_row_data->cuda_partition_hist_offsets(),
-        cuda_row_data->cuda_feature_partition_column_index_offsets(),
+        cuda_row_data_->cuda_data_uint32(),
+        cuda_row_data_->cuda_column_hist_offsets(),
+        cuda_row_data_->cuda_partition_hist_offsets(),
+        cuda_row_data_->cuda_feature_partition_column_index_offsets(),
         num_data_);
     }
   }

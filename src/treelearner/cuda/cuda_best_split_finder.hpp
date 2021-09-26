@@ -31,9 +31,15 @@ class CUDABestSplitFinder {
     const std::vector<uint32_t>& feature_hist_offsets,
     const Config* config);
 
+  ~CUDABestSplitFinder();
+
+  void InitFeatureMetaInfo(const Dataset* train_data);
+
   void Init();
 
-  void BeforeTrain();
+  void InitCUDAFeatureMetaInfo();
+
+  void BeforeTrain(const std::vector<int8_t>& is_feature_used_bytree);
 
   void FindBestSplitsForLeaf(
     const CUDALeafSplitsStruct* smaller_leaf_splits,
@@ -57,6 +63,13 @@ class CUDABestSplitFinder {
     uint8_t* larger_leaf_best_split_default_left,
     int* best_leaf_index);
 
+  void ResetTrainingData(
+    const hist_t* cuda_hist,
+    const Dataset* train_data,
+    const std::vector<uint32_t>& feature_hist_offsets);
+
+  void ResetConfig(const Config* config);
+
  private:
   void LaunchFindBestSplitsForLeafKernel(const CUDALeafSplitsStruct* smaller_leaf_splits,
     const CUDALeafSplitsStruct* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index,
@@ -79,20 +92,19 @@ class CUDABestSplitFinder {
     int* best_leaf_index);
 
   // Host memory
-  const int num_features_;
-  const int num_leaves_;
-  const int num_total_bin_;
+  int num_features_;
+  int num_leaves_;
   int max_num_bin_in_feature_;
   std::vector<uint32_t> feature_hist_offsets_;
   std::vector<uint8_t> feature_mfb_offsets_;
   std::vector<uint32_t> feature_default_bins_;
   std::vector<uint32_t> feature_num_bins_;
   std::vector<MissingType> feature_missing_type_;
-  const double lambda_l1_;
-  const double lambda_l2_;
-  const data_size_t min_data_in_leaf_;
-  const double min_sum_hessian_in_leaf_;
-  const double min_gain_to_split_;
+  double lambda_l1_;
+  double lambda_l2_;
+  data_size_t min_data_in_leaf_;
+  double min_sum_hessian_in_leaf_;
+  double min_gain_to_split_;
   std::vector<cudaStream_t> cuda_streams_;
   // for best split find tasks
   std::vector<int> host_task_feature_index_;
@@ -120,6 +132,7 @@ class CUDABestSplitFinder {
   uint8_t* cuda_task_skip_default_bin_;
   uint8_t* cuda_task_na_as_missing_;
   uint8_t* cuda_task_out_default_left_;
+  int8_t* cuda_is_feature_used_bytree_;
 
   // CUDA memory, held by other object
   const hist_t* cuda_hist_;

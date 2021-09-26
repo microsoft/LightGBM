@@ -33,6 +33,8 @@ class CUDADataPartition {
     const int num_threads,
     hist_t* cuda_hist);
 
+  ~CUDADataPartition();
+
   void Init();
 
   void BeforeTrain();
@@ -64,7 +66,9 @@ class CUDADataPartition {
 
   void SetBaggingSubset(const Dataset* subset);
 
-  void ResetTrainingData(const Dataset* train_data);
+  void ResetTrainingData(const Dataset* train_data, const int num_total_bin, hist_t* cuda_hist);
+
+  void ResetConfig(const Config* config);
 
   data_size_t root_num_data() const {
     if (use_bagging_) {
@@ -81,8 +85,6 @@ class CUDADataPartition {
   const data_size_t* cuda_leaf_data_start() const { return cuda_leaf_data_start_; }
 
   bool use_bagging() const { return use_bagging_; }
-
-  bool use_bagging_subset() const { return use_bagging_subset_; }
 
  private:
   void CalcBlockDim(const data_size_t num_data_in_leaf);
@@ -218,13 +220,9 @@ class CUDADataPartition {
   /*! \brief number of training data */
   data_size_t num_data_;
   /*! \brief number of features in training data */
-  const int num_features_;
+  int num_features_;
   /*! \brief number of total bins in training data */
-  const int num_total_bin_;
-  /*! \brief upper bounds of feature histogram bins */
-  std::vector<std::vector<double>> bin_upper_bounds_;
-  /*! \brief number of bins per feature */
-  std::vector<int> feature_num_bins_;
+  int num_total_bin_;
   /*! \brief bin data stored by column */
   const CUDAColumnData* cuda_column_data_;
   /*! \brief grid dimension when splitting one leaf */
@@ -238,15 +236,13 @@ class CUDADataPartition {
 
   // config information
   /*! \brief maximum number of leaves in a tree */
-  const int num_leaves_;
+  int num_leaves_;
   /*! \brief number of threads */
-  const int num_threads_;
+  int num_threads_;
 
   // per iteration information
   /*! \brief whether bagging is used in this iteration */
   bool use_bagging_;
-  /*! \brief whether use subset data for bagging in this iteration */
-  bool use_bagging_subset_;
   /*! \brief number of used data indices in this iteration */
   data_size_t num_used_indices_;
 
@@ -295,10 +291,6 @@ class CUDADataPartition {
   int* cuda_split_info_buffer_;
 
   // dataset information
-  /*! \brief upper bounds of bin boundaries for feature histograms */
-  double* cuda_bin_upper_bounds_;
-  /*! \brief the bin offsets of features, used to access cuda_bin_upper_bounds_ */
-  int* cuda_feature_num_bin_offsets_;
   /*! \brief number of data in training set, for intialization of cuda_leaf_num_data_ and cuda_leaf_data_end_ */
   data_size_t* cuda_num_data_;
 

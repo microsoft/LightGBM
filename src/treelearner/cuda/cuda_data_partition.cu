@@ -1111,7 +1111,7 @@ void CUDADataPartition::LaunchSplitInnerKernel(
       cuda_leaf_num_data_, cuda_data_indices_,
       grid_dim_);
   }
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
   global_timer.Stop("CUDADataPartition::AggregateBlockOffsetKernel");
   global_timer.Start("CUDADataPartition::SplitInnerKernel");
   SplitInnerKernel<<<grid_dim_, block_dim_, 0, cuda_streams_[1]>>>(
@@ -1119,7 +1119,7 @@ void CUDADataPartition::LaunchSplitInnerKernel(
     cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_, cuda_block_to_left_offset_,
     cuda_out_data_indices_in_leaf_);
   global_timer.Stop("CUDADataPartition::SplitInnerKernel");
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
 
   global_timer.Start("CUDADataPartition::SplitTreeStructureKernel");
   SplitTreeStructureKernel<<<4, 5, 0, cuda_streams_[0]>>>(left_leaf_index, right_leaf_index,
@@ -1137,8 +1137,8 @@ void CUDADataPartition::LaunchSplitInnerKernel(
   std::vector<int> cpu_split_info_buffer(12);
   const double* cpu_sum_hessians_info = reinterpret_cast<const double*>(cpu_split_info_buffer.data() + 8);
   global_timer.Start("CUDADataPartition::CopyFromCUDADeviceToHostAsync");
-  CopyFromCUDADeviceToHostAsyncOuter<int>(cpu_split_info_buffer.data(), cuda_split_info_buffer_, 12, cuda_streams_[0], __FILE__, __LINE__);
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  CopyFromCUDADeviceToHostAsync<int>(cpu_split_info_buffer.data(), cuda_split_info_buffer_, 12, cuda_streams_[0], __FILE__, __LINE__);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
   global_timer.Stop("CUDADataPartition::CopyFromCUDADeviceToHostAsync");
   const data_size_t left_leaf_num_data = cpu_split_info_buffer[1];
   const data_size_t left_leaf_data_start = cpu_split_info_buffer[2];
@@ -1190,7 +1190,7 @@ void CUDADataPartition::LaunchAddPredictionToScoreKernel(const double* leaf_valu
     AddPredictionToScoreKernel<false><<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(
       cuda_data_indices_, leaf_value, cuda_scores, cuda_data_index_to_leaf_index_, num_data_in_root);
   }
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
   global_timer.Stop("CUDADataPartition::AddPredictionToScoreKernel");
 }
 

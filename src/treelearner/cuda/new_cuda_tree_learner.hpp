@@ -36,15 +36,18 @@ class NewCUDATreeLearner: public SerialTreeLearner {
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
+  void ResetConfig(const Config* config) override;
+
  protected:
   void BeforeTrain() override;
 
-  // number of GPUs
-  int num_gpus_;
+  // GPU device ID
+  int gpu_device_id_;
   // number of threads on CPU
   int num_threads_;
 
   // CUDA components for tree training
+
   // leaf splits information for smaller and larger leaves
   std::unique_ptr<CUDALeafSplits> cuda_smaller_leaf_splits_;
   std::unique_ptr<CUDALeafSplits> cuda_larger_leaf_splits_;

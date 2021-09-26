@@ -26,14 +26,14 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 #define CUDASUCCESS_OR_FATAL_OUTER(ans) { gpuAssert((ans), file, line); }
 
 template <typename T>
-void AllocateCUDAMemoryOuter(T** out_ptr, size_t size, const char* file, const int line) {
+void AllocateCUDAMemory(T** out_ptr, size_t size, const char* file, const int line) {
   void* tmp_ptr = nullptr;
   CUDASUCCESS_OR_FATAL_OUTER(cudaMalloc(&tmp_ptr, size * sizeof(T)));
   *out_ptr = reinterpret_cast<T*>(tmp_ptr);
 }
 
 template <typename T>
-void CopyFromHostToCUDADeviceOuter(T* dst_ptr, const T* src_ptr, size_t size, const char* file, const int line) {
+void CopyFromHostToCUDADevice(T* dst_ptr, const T* src_ptr, size_t size, const char* file, const int line) {
   void* void_dst_ptr = reinterpret_cast<void*>(dst_ptr);
   const void* void_src_ptr = reinterpret_cast<const void*>(src_ptr);
   size_t size_in_bytes = size * sizeof(T);
@@ -41,27 +41,13 @@ void CopyFromHostToCUDADeviceOuter(T* dst_ptr, const T* src_ptr, size_t size, co
 }
 
 template <typename T>
-void CopyFromHostToCUDADeviceAsyncOuter(T* dst_ptr, const T* src_ptr, size_t size, cudaStream_t stream, const char* file, const int line) {
-  void* void_dst_ptr = reinterpret_cast<void*>(dst_ptr);
-  const void* void_src_ptr = reinterpret_cast<const void*>(src_ptr);
-  size_t size_in_bytes = size * sizeof(T);
-  CUDASUCCESS_OR_FATAL_OUTER(cudaMemcpyAsync(void_dst_ptr, void_src_ptr, size_in_bytes, cudaMemcpyHostToDevice, stream));
+void InitCUDAMemoryFromHostMemory(T** dst_ptr, const T* src_ptr, size_t size, const char* file, const int line) {
+  AllocateCUDAMemory<T>(dst_ptr, size, file, line);
+  CopyFromHostToCUDADevice<T>(*dst_ptr, src_ptr, size, file, line);
 }
 
 template <typename T>
-void InitCUDAMemoryFromHostMemoryOuter(T** dst_ptr, const T* src_ptr, size_t size, const char* file, const int line) {
-  AllocateCUDAMemoryOuter<T>(dst_ptr, size, file, line);
-  CopyFromHostToCUDADeviceOuter<T>(*dst_ptr, src_ptr, size, file, line);
-}
-
-template <typename T>
-void InitCUDAValueFromConstantOuter(T** dst_ptr, const T value, const char* file, const int line) {
-  AllocateCUDAMemoryOuter<T>(1, dst_ptr, file, line);
-  CopyFromHostToCUDADeviceOuter<T>(*dst_ptr, &value, 1, file, line);
-}
-
-template <typename T>
-void CopyFromCUDADeviceToHostOuter(T* dst_ptr, const T* src_ptr, size_t size, const char* file, const int line) {
+void CopyFromCUDADeviceToHost(T* dst_ptr, const T* src_ptr, size_t size, const char* file, const int line) {
   void* void_dst_ptr = reinterpret_cast<void*>(dst_ptr);
   const void* void_src_ptr = reinterpret_cast<const void*>(src_ptr);
   size_t size_in_bytes = size * sizeof(T);
@@ -69,7 +55,7 @@ void CopyFromCUDADeviceToHostOuter(T* dst_ptr, const T* src_ptr, size_t size, co
 }
 
 template <typename T>
-void CopyFromCUDADeviceToHostAsyncOuter(T* dst_ptr, const T* src_ptr, size_t size, cudaStream_t stream, const char* file, const int line) {
+void CopyFromCUDADeviceToHostAsync(T* dst_ptr, const T* src_ptr, size_t size, cudaStream_t stream, const char* file, const int line) {
   void* void_dst_ptr = reinterpret_cast<void*>(dst_ptr);
   const void* void_src_ptr = reinterpret_cast<const void*>(src_ptr);
   size_t size_in_bytes = size * sizeof(T);
@@ -77,7 +63,7 @@ void CopyFromCUDADeviceToHostAsyncOuter(T* dst_ptr, const T* src_ptr, size_t siz
 }
 
 template <typename T>
-void CopyFromCUDADeviceToCUDADeviceOuter(T* dst_ptr, const T* src_ptr, size_t size, const char* file, const int line) {
+void CopyFromCUDADeviceToCUDADevice(T* dst_ptr, const T* src_ptr, size_t size, const char* file, const int line) {
   void* void_dst_ptr = reinterpret_cast<void*>(dst_ptr);
   const void* void_src_ptr = reinterpret_cast<const void*>(src_ptr);
   size_t size_in_bytes = size * sizeof(T);
@@ -85,28 +71,26 @@ void CopyFromCUDADeviceToCUDADeviceOuter(T* dst_ptr, const T* src_ptr, size_t si
 }
 
 template <typename T>
-void CopyFromCUDADeviceToCUDADeviceAsyncOuter(T* dst_ptr, const T* src_ptr, size_t size, const char* file, const int line) {
+void CopyFromCUDADeviceToCUDADeviceAsync(T* dst_ptr, const T* src_ptr, size_t size, const char* file, const int line) {
   void* void_dst_ptr = reinterpret_cast<void*>(dst_ptr);
   const void* void_src_ptr = reinterpret_cast<const void*>(src_ptr);
   size_t size_in_bytes = size * sizeof(T);
   CUDASUCCESS_OR_FATAL_OUTER(cudaMemcpyAsync(void_dst_ptr, void_src_ptr, size_in_bytes, cudaMemcpyDeviceToDevice));
 }
 
-void SynchronizeCUDADeviceOuter(const char* file, const int line);
-
-void SynchronizeCUDADeviceOuter(cudaStream_t cuda_stream, const char* file, const int line);
+void SynchronizeCUDADevice(const char* file, const int line);
 
 template <typename T>
-void SetCUDAMemoryOuter(T* dst_ptr, int value, size_t size, const char* file, const int line) {
+void SetCUDAMemory(T* dst_ptr, int value, size_t size, const char* file, const int line) {
   CUDASUCCESS_OR_FATAL_OUTER(cudaMemset(reinterpret_cast<void*>(dst_ptr), value, size * sizeof(T)));
 }
 
-void PrintLastCUDAErrorOuter(const char* /*file*/, const int /*line*/);
-
 template <typename T>
-void DeallocateCUDAMemoryOuter(T** ptr, const char* file, const int line) {
-  CUDASUCCESS_OR_FATAL_OUTER(cudaFree(reinterpret_cast<void*>(*ptr)));
-  *ptr = nullptr;
+void DeallocateCUDAMemory(T** ptr, const char* file, const int line) {
+  if (*ptr != nullptr) {
+    CUDASUCCESS_OR_FATAL_OUTER(cudaFree(reinterpret_cast<void*>(*ptr)));
+    *ptr = nullptr;
+  }
 }
 
 }

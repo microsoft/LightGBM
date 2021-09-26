@@ -15,29 +15,38 @@
 
 namespace LightGBM {
 
-NewCUDATreeLearner::NewCUDATreeLearner(const Config* config): SerialTreeLearner(config) {}
+NewCUDATreeLearner::NewCUDATreeLearner(const Config* config): SerialTreeLearner(config) {
+  cuda_gradients_ = nullptr;
+  cuda_hessians_ = nullptr;
+}
 
-NewCUDATreeLearner::~NewCUDATreeLearner() {}
+NewCUDATreeLearner::~NewCUDATreeLearner() {
+  DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
+}
 
 void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
-  // use the first gpu by now
   SerialTreeLearner::Init(train_data, is_constant_hessian);
   num_threads_ = OMP_NUM_THREADS();
-  const int gpu_device_id = config_->gpu_device_id >= 0 ? config_->gpu_device_id : 0;
-  CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
+  // use the first gpu by default
+  gpu_device_id_ = config_->gpu_device_id >= 0 ? config_->gpu_device_id : 0;
+  CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id_));
+
   cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_));
   cuda_smaller_leaf_splits_->Init();
   cuda_larger_leaf_splits_.reset(new CUDALeafSplits(num_data_));
   cuda_larger_leaf_splits_->Init();
-  cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, this->config_->num_leaves, num_threads_,
+
+  cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, config_->num_leaves, num_threads_,
     share_state_->feature_hist_offsets(),
-    config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf, gpu_device_id));
+    config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf, gpu_device_id_));
   cuda_histogram_constructor_->Init(train_data_, share_state_.get());
 
   cuda_data_partition_.reset(new CUDADataPartition(
-    train_data_, share_state_->feature_hist_offsets().back(), this->config_->num_leaves, num_threads_,
+    train_data_, share_state_->feature_hist_offsets().back(), config_->num_leaves, num_threads_,
     cuda_histogram_constructor_->cuda_hist_pointer()));
   cuda_data_partition_->Init();
+
   cuda_best_split_finder_.reset(new CUDABestSplitFinder(cuda_histogram_constructor_->cuda_hist(),
     train_data_, this->share_state_->feature_hist_offsets(), config_));
   cuda_best_split_finder_->Init();
@@ -49,17 +58,16 @@ void NewCUDATreeLearner::Init(const Dataset* train_data, bool is_constant_hessia
   leaf_data_start_.resize(config_->num_leaves, 0);
   leaf_sum_hessians_.resize(config_->num_leaves, 0.0f);
 
-  AllocateCUDAMemoryOuter<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-  AllocateCUDAMemoryOuter<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
 }
 
 void NewCUDATreeLearner::BeforeTrain() {
   const data_size_t root_num_data = cuda_data_partition_->root_num_data();
-  const size_t num_gradients_to_copy = cuda_data_partition_->use_bagging_subset() ? static_cast<size_t>(root_num_data) : static_cast<size_t>(num_data_);
-  CopyFromHostToCUDADeviceOuter<score_t>(cuda_gradients_, gradients_, num_gradients_to_copy, __FILE__, __LINE__);
-  CopyFromHostToCUDADeviceOuter<score_t>(cuda_hessians_, hessians_, num_gradients_to_copy, __FILE__, __LINE__);
+  CopyFromHostToCUDADevice<score_t>(cuda_gradients_, gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  CopyFromHostToCUDADevice<score_t>(cuda_hessians_, hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   const data_size_t* leaf_splits_init_indices =
-    (cuda_data_partition_->use_bagging_subset() || !cuda_data_partition_->use_bagging()) ? nullptr : cuda_data_partition_->cuda_data_indices();
+    cuda_data_partition_->use_bagging() ? cuda_data_partition_->cuda_data_indices() : nullptr;
   cuda_data_partition_->BeforeTrain();
   cuda_smaller_leaf_splits_->InitValues(
     cuda_gradients_,
@@ -72,7 +80,8 @@ void NewCUDATreeLearner::BeforeTrain() {
   leaf_num_data_[0] = root_num_data;
   cuda_larger_leaf_splits_->InitValues();
   cuda_histogram_constructor_->BeforeTrain(cuda_gradients_, cuda_hessians_);
-  cuda_best_split_finder_->BeforeTrain();
+  col_sampler_.ResetByTree();
+  cuda_best_split_finder_->BeforeTrain(col_sampler_.is_feature_used_bytree());
   leaf_data_start_[0] = 0;
   smaller_leaf_index_ = 0;
   larger_leaf_index_ = -1;
@@ -175,7 +184,7 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
     larger_leaf_index_ = (smaller_leaf_index_ == best_leaf_index_ ? right_leaf_index : best_leaf_index_);
     global_timer.Stop("NewCUDATreeLearner::Split");
   }
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
   tree->ToHost();
   return tree.release();
 }
@@ -183,28 +192,48 @@ Tree* NewCUDATreeLearner::Train(const score_t* gradients,
 void NewCUDATreeLearner::ResetTrainingData(
   const Dataset* train_data,
   bool is_constant_hessian) {
-  // TODO(shiyu1994): separte logic of reset training data and set bagging data
-  train_data_ = train_data;
-  num_data_ = train_data_->num_data();
+  SerialTreeLearner::ResetTrainingData(train_data, is_constant_hessian);
   CHECK_EQ(num_features_, train_data_->num_features());
-  //cuda_data_partition_->ResetTrainingData(train_data);
-  cuda_histogram_constructor_->ResetTrainingData(train_data);
+  cuda_histogram_constructor_->ResetTrainingData(train_data, share_state_.get());
+  cuda_data_partition_->ResetTrainingData(train_data,
+    static_cast<int>(share_state_->feature_hist_offsets().back()),
+    cuda_histogram_constructor_->cuda_hist_pointer());
+  cuda_best_split_finder_->ResetTrainingData(
+    cuda_histogram_constructor_->cuda_hist(),
+    train_data,
+    share_state_->feature_hist_offsets());
   cuda_smaller_leaf_splits_->Resize(num_data_);
   cuda_larger_leaf_splits_->Resize(num_data_);
   CHECK_EQ(is_constant_hessian, share_state_->is_constant_hessian);
+  DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
+  AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
 }
 
-void NewCUDATreeLearner::SetBaggingData(const Dataset* subset,
-  const data_size_t* used_indices, data_size_t num_data) {
-  if (subset == nullptr) {
-    cuda_data_partition_->SetUsedDataIndices(used_indices, num_data);
-  } else {
-    cuda_histogram_constructor_->SetBaggingSubset(used_indices, num_data);
-    train_data_ = subset;
-    num_data_ = train_data_->num_data();
-    CHECK_EQ(num_features_, train_data_->num_features());
-    cuda_data_partition_->SetBaggingSubset(subset);
+void NewCUDATreeLearner::ResetConfig(const Config* config) {
+  const int old_num_leaves = config_->num_leaves;
+  SerialTreeLearner::ResetConfig(config);
+  if (config_->gpu_device_id >= 0 && config_->gpu_device_id != gpu_device_id_) {
+    Log::Fatal("Changing gpu device ID by resetting configuration parameter is not allowed for CUDA tree learner.");
   }
+  num_threads_ = OMP_NUM_THREADS();
+  if (config_->num_leaves != old_num_leaves) {
+    leaf_best_split_feature_.resize(config_->num_leaves, -1);
+    leaf_best_split_threshold_.resize(config_->num_leaves, 0);
+    leaf_best_split_default_left_.resize(config_->num_leaves, 0);
+    leaf_num_data_.resize(config_->num_leaves, 0);
+    leaf_data_start_.resize(config_->num_leaves, 0);
+    leaf_sum_hessians_.resize(config_->num_leaves, 0.0f);
+  }
+  cuda_histogram_constructor_->ResetConfig(config);
+  cuda_best_split_finder_->ResetConfig(config);
+  cuda_data_partition_->ResetConfig(config);
+}
+
+void NewCUDATreeLearner::SetBaggingData(const Dataset* /*subset*/,
+  const data_size_t* used_indices, data_size_t num_data) {
+  cuda_data_partition_->SetUsedDataIndices(used_indices, num_data);
 }
 
 void NewCUDATreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,

@@ -41,6 +41,8 @@ class CUDAHistogramConstructor {
     const double min_sum_hessian_in_leaf,
     const int gpu_device_id);
 
+  ~CUDAHistogramConstructor();
+
   void Init(const Dataset* train_data, TrainingShareStates* share_state);
 
   void ConstructHistogramForLeaf(
@@ -51,9 +53,9 @@ class CUDAHistogramConstructor {
     const double sum_hessians_in_smaller_leaf,
     const double sum_hessians_in_larger_leaf);
 
-  void SetBaggingSubset(const data_size_t* used_indices, const data_size_t num_data);
+  void ResetTrainingData(const Dataset* train_data, TrainingShareStates* share_states);
 
-  void ResetTrainingData(const Dataset* train_data);
+  void ResetConfig(const Config* config);
 
   void BeforeTrain(const score_t* gradients, const score_t* hessians);
 
@@ -64,6 +66,8 @@ class CUDAHistogramConstructor {
   hist_t* cuda_hist_pointer() { return cuda_hist_; }
 
  private:
+  void InitFeatureMetaInfo(const Dataset* train_data, const std::vector<uint32_t>& feature_hist_offsets);
+
   void CalcConstructHistogramKernelDim(
     int* grid_dim_x,
     int* grid_dim_y,
@@ -84,15 +88,13 @@ class CUDAHistogramConstructor {
   /*! \brief size of training data */
   data_size_t num_data_;
   /*! \brief number of features in training data */
-  const int num_features_;
+  int num_features_;
   /*! \brief maximum number of leaves */
-  const int num_leaves_;
+  int num_leaves_;
   /*! \brief number of threads */
-  const int num_threads_;
+  int num_threads_;
   /*! \brief total number of bins in histogram */
   int num_total_bin_;
-  /*! \brief number of feature groups */
-  int num_feature_groups_;
   /*! \brief number of bins per feature */
   std::vector<uint32_t> feature_num_bins_;
   /*! \brief offsets in histogram of all features */
@@ -100,9 +102,9 @@ class CUDAHistogramConstructor {
   /*! \brief most frequent bins in each feature */
   std::vector<uint32_t> feature_most_freq_bins_;
   /*! \brief minimum number of data allowed per leaf */
-  const int min_data_in_leaf_;
+  int min_data_in_leaf_;
   /*! \brief minimum sum value of hessians allowed per leaf */
-  const double min_sum_hessian_in_leaf_;
+  double min_sum_hessian_in_leaf_;
   /*! \brief cuda stream for histogram construction */
   cudaStream_t cuda_stream_;
   /*! \brief indices of feature whose histograms need to be fixed */
@@ -111,16 +113,12 @@ class CUDAHistogramConstructor {
   std::vector<uint32_t> need_fix_histogram_features_num_bin_aligend_;
   /*! \brief minimum number of blocks allowed in the y dimension */
   const int min_grid_dim_y_ = 160;
-  /*! \brief whether use bagging with subset */
-  bool use_bagging_subset_;
 
 
   // CUDA memory, held by this object
 
   /*! \brief CUDA row wise data */
   std::unique_ptr<CUDARowData> cuda_row_data_;
-  /*! \brief CUDA row wise data, used when bagging with subset */
-  std::unique_ptr<CUDARowData> cuda_row_data_subset_;
   /*! \brief number of bins per feature */
   uint32_t* cuda_feature_num_bins_;
   /*! \brief offsets in histogram of all features */

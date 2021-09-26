@@ -18,7 +18,6 @@ CUDABestSplitFinder::CUDABestSplitFinder(
   const Config* config):
   num_features_(train_data->num_features()),
   num_leaves_(config->num_leaves),
-  num_total_bin_(feature_hist_offsets.back()),
   feature_hist_offsets_(feature_hist_offsets),
   lambda_l1_(config->lambda_l1),
   lambda_l2_(config->lambda_l2),
@@ -26,10 +25,47 @@ CUDABestSplitFinder::CUDABestSplitFinder(
   min_sum_hessian_in_leaf_(config->min_sum_hessian_in_leaf),
   min_gain_to_split_(config->min_gain_to_split),
   cuda_hist_(cuda_hist) {
-  feature_missing_type_.resize(num_features_);
-  feature_mfb_offsets_.resize(num_features_);
-  feature_default_bins_.resize(num_features_);
-  feature_num_bins_.resize(num_features_);
+  InitFeatureMetaInfo(train_data);
+  cuda_leaf_best_split_info_ = nullptr;
+  cuda_best_split_info_ = nullptr;
+  cuda_feature_hist_offsets_ = nullptr;
+  cuda_feature_mfb_offsets_ = nullptr;
+  cuda_feature_default_bins_ = nullptr;
+  cuda_feature_num_bins_ = nullptr;
+  cuda_best_split_info_buffer_ = nullptr;
+  cuda_task_feature_index_ = nullptr;
+  cuda_task_reverse_ = nullptr;
+  cuda_task_skip_default_bin_ = nullptr;
+  cuda_task_na_as_missing_ = nullptr;
+  cuda_task_out_default_left_ = nullptr;
+  cuda_is_feature_used_bytree_ = nullptr;
+}
+
+CUDABestSplitFinder::~CUDABestSplitFinder() {
+  DeallocateCUDAMemory<CUDASplitInfo>(&cuda_leaf_best_split_info_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<CUDASplitInfo>(&cuda_best_split_info_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint32_t>(&cuda_feature_hist_offsets_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint8_t>(&cuda_feature_mfb_offsets_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint32_t>(&cuda_feature_default_bins_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint32_t>(&cuda_feature_num_bins_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<int>(&cuda_best_split_info_buffer_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<int>(&cuda_task_feature_index_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint8_t>(&cuda_task_reverse_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint8_t>(&cuda_task_skip_default_bin_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint8_t>(&cuda_task_na_as_missing_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint8_t>(&cuda_task_out_default_left_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<int8_t>(&cuda_is_feature_used_bytree_, __FILE__, __LINE__);
+  gpuAssert(cudaStreamDestroy(cuda_streams_[0]), __FILE__, __LINE__);
+  gpuAssert(cudaStreamDestroy(cuda_streams_[1]), __FILE__, __LINE__);
+  cuda_streams_.clear();
+  cuda_streams_.shrink_to_fit();
+}
+
+void CUDABestSplitFinder::InitFeatureMetaInfo(const Dataset* train_data) {
+  feature_missing_type_.clear();
+  feature_mfb_offsets_.clear();
+  feature_default_bins_.clear();
+  feature_num_bins_.clear();
   max_num_bin_in_feature_ = 0;
   for (int inner_feature_index = 0; inner_feature_index < num_features_; ++inner_feature_index) {
     const BinMapper* bin_mapper = train_data->FeatureBinMapper(inner_feature_index);
@@ -49,38 +85,35 @@ CUDABestSplitFinder::CUDABestSplitFinder(
 }
 
 void CUDABestSplitFinder::Init() {
-  AllocateCUDAMemoryOuter<uint32_t>(&cuda_feature_hist_offsets_,
-                                    feature_hist_offsets_.size() * 2,
-                                    __FILE__,
-                                    __LINE__);
-  CopyFromHostToCUDADeviceOuter<uint32_t>(cuda_feature_hist_offsets_,
+  InitCUDAFeatureMetaInfo();
+  cuda_streams_.resize(2);
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[0]));
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[1]));
+  AllocateCUDAMemory<int>(&cuda_best_split_info_buffer_, 7, __FILE__, __LINE__);
+}
+
+void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_hist_offsets_,
                                           feature_hist_offsets_.data(),
                                           feature_hist_offsets_.size(),
                                           __FILE__,
                                           __LINE__);
-  AllocateCUDAMemoryOuter<uint8_t>(&cuda_feature_mfb_offsets_,
-                                   feature_mfb_offsets_.size(),
-                                   __FILE__,
-                                   __LINE__);
-  CopyFromHostToCUDADeviceOuter<uint8_t>(cuda_feature_mfb_offsets_,
+  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_feature_mfb_offsets_,
                                          feature_mfb_offsets_.data(),
                                          feature_mfb_offsets_.size(),
                                          __FILE__,
                                          __LINE__);
-  AllocateCUDAMemoryOuter<uint32_t>(&cuda_feature_default_bins_,
-                                    feature_default_bins_.size(),
-                                    __FILE__,
-                                    __LINE__);
-  CopyFromHostToCUDADeviceOuter<uint32_t>(cuda_feature_default_bins_,
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_default_bins_,
                                           feature_default_bins_.data(),
                                           feature_default_bins_.size(),
                                           __FILE__,
                                           __LINE__);
-  InitCUDAMemoryFromHostMemoryOuter<uint32_t>(&cuda_feature_num_bins_,
+  InitCUDAMemoryFromHostMemory<uint32_t>(&cuda_feature_num_bins_,
                                               feature_num_bins_.data(),
                                               static_cast<size_t>(num_features_),
                                               __FILE__,
                                               __LINE__);
+  AllocateCUDAMemory<int8_t>(&cuda_is_feature_used_bytree_, static_cast<size_t>(num_features_), __FILE__, __LINE__);
   num_tasks_ = 0;
   for (int inner_feature_index = 0; inner_feature_index < num_features_; ++inner_feature_index) {
     const uint32_t num_bin = feature_num_bins_[inner_feature_index];
@@ -128,46 +161,84 @@ void CUDABestSplitFinder::Init() {
   const int num_task_blocks = (num_tasks_ + NUM_TASKS_PER_SYNC_BLOCK - 1) / NUM_TASKS_PER_SYNC_BLOCK;
   const size_t cuda_best_leaf_split_info_buffer_size = static_cast<size_t>(num_task_blocks) * static_cast<size_t>(num_leaves_);
 
-  AllocateCUDAMemoryOuter<CUDASplitInfo>(&cuda_leaf_best_split_info_,
+  AllocateCUDAMemory<CUDASplitInfo>(&cuda_leaf_best_split_info_,
                                          cuda_best_leaf_split_info_buffer_size,
                                          __FILE__,
                                          __LINE__);
-  InitCUDAMemoryFromHostMemoryOuter<int>(&cuda_task_feature_index_,
+  InitCUDAMemoryFromHostMemory<int>(&cuda_task_feature_index_,
                                          host_task_feature_index_.data(),
                                          host_task_feature_index_.size(),
                                          __FILE__,
                                          __LINE__);
-  InitCUDAMemoryFromHostMemoryOuter<uint8_t>(&cuda_task_reverse_,
+  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_reverse_,
                                              host_task_reverse_.data(),
                                              host_task_reverse_.size(),
                                              __FILE__,
                                              __LINE__);
-  InitCUDAMemoryFromHostMemoryOuter<uint8_t>(&cuda_task_skip_default_bin_,
+  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_skip_default_bin_,
                                              host_task_skip_default_bin_.data(),
                                              host_task_skip_default_bin_.size(),
                                              __FILE__,
                                              __LINE__);
-  InitCUDAMemoryFromHostMemoryOuter<uint8_t>(&cuda_task_na_as_missing_,
+  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_na_as_missing_,
                                              host_task_na_as_missing_.data(),
                                              host_task_na_as_missing_.size(),
                                              __FILE__,
                                              __LINE__);
-  InitCUDAMemoryFromHostMemoryOuter<uint8_t>(&cuda_task_out_default_left_,
+  InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_out_default_left_,
                                              host_task_out_default_left_.data(),
                                              host_task_out_default_left_.size(),
                                              __FILE__,
                                              __LINE__);
 
   const size_t output_buffer_size = 2 * static_cast<size_t>(num_tasks_);
-  AllocateCUDAMemoryOuter<CUDASplitInfo>(&cuda_best_split_info_, output_buffer_size, __FILE__, __LINE__);
-
-  AllocateCUDAMemoryOuter<int>(&cuda_best_split_info_buffer_, 7, __FILE__, __LINE__);
-  cuda_streams_.resize(2);
-  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[0]));
-  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[1]));
+  AllocateCUDAMemory<CUDASplitInfo>(&cuda_best_split_info_, output_buffer_size, __FILE__, __LINE__);
 }
 
-void CUDABestSplitFinder::BeforeTrain() {}
+void CUDABestSplitFinder::ResetTrainingData(
+  const hist_t* cuda_hist,
+  const Dataset* train_data,
+  const std::vector<uint32_t>& feature_hist_offsets) {
+  cuda_hist_ = cuda_hist;
+  num_features_ = train_data->num_features();
+  feature_hist_offsets_ = feature_hist_offsets;
+  InitFeatureMetaInfo(train_data);
+  DeallocateCUDAMemory<uint32_t>(&cuda_feature_hist_offsets_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint32_t>(&cuda_feature_hist_offsets_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint8_t>(&cuda_feature_mfb_offsets_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint32_t>(&cuda_feature_default_bins_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<uint32_t>(&cuda_feature_num_bins_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<int8_t>(&cuda_is_feature_used_bytree_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<CUDASplitInfo>(&cuda_best_split_info_, __FILE__, __LINE__);
+  host_task_reverse_.clear();
+  host_task_skip_default_bin_.clear();
+  host_task_na_as_missing_.clear();
+  host_task_feature_index_.clear();
+  host_task_out_default_left_.clear();
+  InitCUDAFeatureMetaInfo();
+}
+
+void CUDABestSplitFinder::ResetConfig(const Config* config) {
+  num_leaves_ = config->num_leaves;
+  lambda_l1_ = config->lambda_l1;
+  lambda_l2_ = config->lambda_l2;
+  min_data_in_leaf_ = config->min_data_in_leaf;
+  min_sum_hessian_in_leaf_ = config->min_sum_hessian_in_leaf;
+  min_gain_to_split_ = config->min_gain_to_split;
+  const int num_task_blocks = (num_tasks_ + NUM_TASKS_PER_SYNC_BLOCK - 1) / NUM_TASKS_PER_SYNC_BLOCK;
+  const size_t cuda_best_leaf_split_info_buffer_size = static_cast<size_t>(num_task_blocks) * static_cast<size_t>(num_leaves_);
+  DeallocateCUDAMemory<CUDASplitInfo>(&cuda_leaf_best_split_info_, __FILE__, __LINE__);
+  AllocateCUDAMemory<CUDASplitInfo>(&cuda_leaf_best_split_info_,
+                                         cuda_best_leaf_split_info_buffer_size,
+                                         __FILE__,
+                                         __LINE__);
+}
+
+void CUDABestSplitFinder::BeforeTrain(const std::vector<int8_t>& is_feature_used_bytree) {
+  CopyFromHostToCUDADevice<int8_t>(cuda_is_feature_used_bytree_,
+                                        is_feature_used_bytree.data(),
+                                        is_feature_used_bytree.size(), __FILE__, __LINE__);
+}
 
 void CUDABestSplitFinder::FindBestSplitsForLeaf(
   const CUDALeafSplitsStruct* smaller_leaf_splits,
@@ -186,7 +257,7 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(
     smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
   global_timer.Start("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
   LaunchSyncBestSplitForLeafKernel(smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
   global_timer.Stop("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
 }
 
@@ -212,7 +283,7 @@ const CUDASplitInfo* CUDABestSplitFinder::FindBestFromAllSplits(
     larger_leaf_best_split_threshold,
     larger_leaf_best_split_default_left,
     best_leaf_index);
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
   return cuda_leaf_best_split_info_ + (*best_leaf_index);
 }
 

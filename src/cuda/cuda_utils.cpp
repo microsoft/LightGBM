@@ -9,17 +9,8 @@
 
 namespace LightGBM {
 
-void SynchronizeCUDADeviceOuter(const char* file, const int line) {
+void SynchronizeCUDADevice(const char* file, const int line) {
   CUDASUCCESS_OR_FATAL_OUTER(cudaDeviceSynchronize());
-}
-
-void SynchronizeCUDADeviceOuter(cudaStream_t cuda_stream, const char* file, const int line) {
-  CUDASUCCESS_OR_FATAL_OUTER(cudaStreamSynchronize(cuda_stream));
-}
-
-void PrintLastCUDAErrorOuter(const char* /*file*/, const int /*line*/) {
-  const char* error_name = cudaGetErrorName(cudaGetLastError());
-  Log::Warning(error_name); 
 }
 
 }  // namespace LightGBM

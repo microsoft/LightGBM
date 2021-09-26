@@ -90,7 +90,7 @@ void CUDALeafSplits::LaunchInitValuesKernal(
       cuda_gradients_, cuda_hessians_, num_used_indices, cuda_bagging_data_indices, cuda_sum_of_gradients_buffer_,
       cuda_sum_of_hessians_buffer_);
   }
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
   CUDAInitValuesKernel2<<<1, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
     num_blocks_init_from_gradients_,
     cuda_sum_of_gradients_buffer_,
@@ -99,7 +99,7 @@ void CUDALeafSplits::LaunchInitValuesKernal(
     cuda_data_indices_in_leaf,
     cuda_hist_in_leaf,
     cuda_struct_);
-  SynchronizeCUDADeviceOuter(__FILE__, __LINE__);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 
 }  // namespace LightGBM
