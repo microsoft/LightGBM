@@ -212,9 +212,13 @@ class Metadata {
   /*! \brief Disable copy */
   Metadata(const Metadata&) = delete;
 
+  #ifdef USE_CUDA
+
   CUDAMetadata* cuda_metadata() const { return cuda_metadata_.get(); }
 
   void CreateCUDAMetadata(const int gpu_device_id);
+
+  #endif  // USE_CUDA
 
  private:
   /*! \brief Load initial scores from file */
@@ -252,7 +256,9 @@ class Metadata {
   bool weight_load_from_file_;
   bool query_load_from_file_;
   bool init_score_load_from_file_;
+  #ifdef USE_CUDA
   std::unique_ptr<CUDAMetadata> cuda_metadata_;
+  #endif  // USE_CUDA
 };
 
 
@@ -715,9 +721,13 @@ class Dataset {
     return feature_groups_[feature_group_index]->feature_min_bin(sub_feature_index);
   }
 
+  #ifdef USE_CUDA
+
   const CUDAColumnData* cuda_column_data() const {
     return cuda_column_data_.get();
   }
+
+  #endif  // USE_CUDA
 
  private:
   void CreateCUDAColumnData();
@@ -764,7 +774,12 @@ class Dataset {
   int num_numeric_features_;
   std::string device_type_;
   int gpu_device_id_;
+
+  #ifdef USE_CUDA
+
   std::unique_ptr<CUDAColumnData> cuda_column_data_;
+
+  #endif  // USE_CUDA
 };
 
 }  // namespace LightGBM

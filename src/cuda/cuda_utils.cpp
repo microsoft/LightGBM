@@ -5,14 +5,14 @@
 
 #include <LightGBM/cuda/cuda_utils.h>
 
-//#ifdef USE_CUDA
+#ifdef USE_CUDA
 
 namespace LightGBM {
 
 void SynchronizeCUDADevice(const char* file, const int line) {
-  CUDASUCCESS_OR_FATAL_OUTER(cudaDeviceSynchronize());
+  gpuAssert(cudaDeviceSynchronize(), file, line);
 }
 
 }  // namespace LightGBM
 
-//#endif  // USE_CUDA
+#endif  // USE_CUDA

@@ -393,7 +393,7 @@ __global__ void FindBestSplitsForLeafKernel(
   const double num_data = is_larger ? larger_leaf_splits->num_data_in_leaf : smaller_leaf_splits->num_data_in_leaf;
   const unsigned int output_offset = is_larger ? (task_index + num_tasks) : task_index;
   CUDASplitInfo* out = cuda_best_split_info + output_offset;
-  //if (is_feature_used_bytree[inner_feature_index]) {
+  if (is_feature_used_bytree[inner_feature_index]) {
     const hist_t* hist_ptr = (is_larger ? larger_leaf_splits->hist_in_leaf : smaller_leaf_splits->hist_in_leaf) + feature_hist_offsets[inner_feature_index] * 2;
     FindBestSplitsForLeafKernelInner(
       // input feature information
@@ -420,9 +420,9 @@ __global__ void FindBestSplitsForLeafKernel(
       assume_out_default_left,
       // output parameters
       out);
-  /*} else {
+  } else {
     out->is_valid = false;
-  }*/
+  }
 }
 
 void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(
