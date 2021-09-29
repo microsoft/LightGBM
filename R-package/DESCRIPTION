@@ -4,7 +4,7 @@ Title: Light Gradient Boosting Machine
 Version: ~~VERSION~~
 Date: ~~DATE~~
 Authors@R: c(
-    person("Yu", "Shi", email = "", role = c("aut", "cre")),
+    person("Yu", "Shi", email = "yushi2@microsoft.com", role = c("aut", "cre")),
     person("Guolin", "Ke", email = "guolin.ke@outlook.com", role = c("aut")),
     person("Damien", "Soukhavong", email = "damien.soukhavong@skema.edu", role = c("aut")),
     person("James", "Lamb", email="jaylamb20@gmail.com", role = c("aut")),
