@@ -8,6 +8,8 @@
 
 #include "cuda_histogram_constructor.hpp"
 
+#include <algorithm>
+
 namespace LightGBM {
 
 CUDAHistogramConstructor::CUDAHistogramConstructor(
@@ -107,7 +109,7 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStat
 
 void CUDAHistogramConstructor::ConstructHistogramForLeaf(
   const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
-  const CUDALeafSplitsStruct* cuda_larger_leaf_splits, 
+  const CUDALeafSplitsStruct* cuda_larger_leaf_splits,
   const data_size_t num_data_in_smaller_leaf,
   const data_size_t num_data_in_larger_leaf,
   const double sum_hessians_in_smaller_leaf,
@@ -148,7 +150,7 @@ void CUDAHistogramConstructor::ResetTrainingData(const Dataset* train_data, Trai
     DeallocateCUDAMemory<uint32_t>(&cuda_need_fix_histogram_features_num_bin_aligned_, __FILE__, __LINE__);
     DeallocateCUDAMemory<hist_t>(&cuda_hist_, __FILE__, __LINE__);
   }
-  
+
   AllocateCUDAMemory<hist_t>(&cuda_hist_, num_total_bin_ * 2 * num_leaves_, __FILE__, __LINE__);
   SetCUDAMemory<hist_t>(cuda_hist_, 0, num_total_bin_ * 2 * num_leaves_, __FILE__, __LINE__);
 

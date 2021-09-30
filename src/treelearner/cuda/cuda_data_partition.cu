@@ -6,9 +6,13 @@
 
 #ifdef USE_CUDA
 
-#include <LightGBM/cuda/cuda_algorithms.hpp>
 #include "cuda_data_partition.hpp"
+
+#include <LightGBM/cuda/cuda_algorithms.hpp>
 #include <LightGBM/tree.h>
+
+#include <algorithm>
+#include <vector>
 
 namespace LightGBM {
 
@@ -607,7 +611,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(const data_size_t num
   uint32_t t_zero_bin = min_bin + default_bin;
   if (most_freq_bin == 0) {
     --th;
-    --t_zero_bin;  
+    --t_zero_bin;
   }
   uint8_t split_default_to_left = 0;
   uint8_t split_missing_default_to_left = 0;

@@ -9,13 +9,13 @@
 
 #ifdef USE_CUDA
 
-#include "cuda_leaf_splits.hpp"
-
 #include <LightGBM/bin.h>
 #include <LightGBM/cuda/cuda_split_info.hpp>
 #include <LightGBM/dataset.h>
 
 #include <vector>
+
+#include "cuda_leaf_splits.hpp"
 
 #define MAX_NUM_BIN_IN_FEATURE (256)
 #define NUM_THREADS_FIND_BEST_LEAF (256)
@@ -138,7 +138,7 @@ class CUDABestSplitFinder {
   const hist_t* cuda_hist_;
 };
 
-}
+}  // namespace LightGBM
 
 #endif  // USE_CUDA
 #endif  // LIGHTGBM_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_

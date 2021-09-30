@@ -6,6 +6,8 @@
 
 #ifdef USE_CUDA
 
+#include <algorithm>
+
 #include "cuda_data_partition.hpp"
 
 namespace LightGBM {

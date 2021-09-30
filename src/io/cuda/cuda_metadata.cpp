@@ -71,6 +71,6 @@ void CUDAMetadata::Init(const std::vector<label_t>& label,
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 
-} // namespace LightGBM
+}  // namespace LightGBM
 
 #endif  // USE_CUDA

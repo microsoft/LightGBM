@@ -201,7 +201,6 @@ __device__ void FindBestSplitsForLeafKernelInner(
   const uint8_t assume_out_default_left,
   // output parameters
   CUDASplitInfo* cuda_best_split_info) {
-
   const double cnt_factor = num_data / sum_hessians;
   const bool use_l1 = lambda_l1 > 0.0f;
   const double min_gain_shift = parent_gain + min_gain_to_split;
@@ -379,7 +378,6 @@ __global__ void FindBestSplitsForLeafKernel(
   const double lambda_l2,
   // output
   CUDASplitInfo* cuda_best_split_info) {
-
   const unsigned int task_index = blockIdx.x % num_tasks;
   const bool is_larger = static_cast<bool>(blockIdx.x >= num_tasks || larger_only);
   const int inner_feature_index = task_feature_index[task_index];
@@ -516,7 +514,7 @@ __device__ void ReduceBestSplit(bool* found, double* gain, uint32_t* shared_read
       }
     }
     __syncthreads();
-  } 
+  }
 }
 
 __global__ void SyncBestSplitForLeafKernel(const int smaller_leaf_index, const int larger_leaf_index,
@@ -642,7 +640,6 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
   const int host_larger_leaf_index,
   const bool is_smaller_leaf_valid,
   const bool is_larger_leaf_valid) {
-
   int num_tasks = num_tasks_;
   int num_tasks_aligned = 1;
   num_tasks -= 1;
@@ -758,7 +755,7 @@ __global__ void PrepareLeafBestSplitInfo(const int smaller_leaf_index, const int
   } else if (threadIdx_x == 2) {
     cuda_best_split_info_buffer[2] = cuda_leaf_best_split_info[smaller_leaf_index].default_left;
   }
-  if (larger_leaf_index >= 0) { 
+  if (larger_leaf_index >= 0) {
     if (threadIdx_x == 3) {
       cuda_best_split_info_buffer[3] = cuda_leaf_best_split_info[larger_leaf_index].inner_feature_index;
     } else if (threadIdx_x == 4) {
@@ -770,7 +767,7 @@ __global__ void PrepareLeafBestSplitInfo(const int smaller_leaf_index, const int
 }
 
 void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(const int cur_num_leaves,
-  const int smaller_leaf_index, const int larger_leaf_index, 
+  const int smaller_leaf_index, const int larger_leaf_index,
   int* smaller_leaf_best_split_feature,
   uint32_t* smaller_leaf_best_split_threshold,
   uint8_t* smaller_leaf_best_split_default_left,

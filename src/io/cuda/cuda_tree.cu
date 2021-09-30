@@ -35,7 +35,7 @@ __device__ bool IsZeroCUDA(double fval) {
   return (fval >= -kZeroThreshold && fval <= kZeroThreshold);
 }
 
-__global__ void SplitKernel(// split information
+__global__ void SplitKernel(  // split information
                             const int leaf_index,
                             const int real_feature_index,
                             const double real_threshold,
