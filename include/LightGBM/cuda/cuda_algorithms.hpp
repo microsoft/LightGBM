@@ -8,10 +8,11 @@
 
 #ifdef USE_CUDA
 
+#include <stdio.h>
+
 #include <algorithm>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <stdio.h>
 
 #include <LightGBM/bin.h>
 #include <LightGBM/cuda/cuda_utils.h>

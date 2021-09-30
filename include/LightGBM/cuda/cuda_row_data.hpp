@@ -8,13 +8,13 @@
 #ifndef LIGHTGBM_CUDA_ROW_DATA_HPP_
 #define LIGHTGBM_CUDA_ROW_DATA_HPP_
 
-#include <vector>
-
 #include <LightGBM/bin.h>
 #include <LightGBM/config.h>
 #include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+
+#include <vector>
 
 #include "../train_share_states.h"
 
