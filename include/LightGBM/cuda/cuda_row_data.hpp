@@ -8,10 +8,12 @@
 #ifndef LIGHTGBM_CUDA_ROW_DATA_HPP_
 #define LIGHTGBM_CUDA_ROW_DATA_HPP_
 
+#include <vector>
+
+#include <LightGBM/bin.h>
 #include <LightGBM/config.h>
 #include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/dataset.h>
-#include <LightGBM/bin.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
 #include "../train_share_states.h"
@@ -155,9 +157,9 @@ class CUDARowData {
   /*! \brief hisotgram offset of each partition */
   uint32_t* cuda_partition_hist_offsets_;
   /*! \brief block buffer when calculating prefix sum */
-  uint16_t* cuda_block_buffer_uint16_t_; 
+  uint16_t* cuda_block_buffer_uint16_t_;
   /*! \brief block buffer when calculating prefix sum */
-  uint32_t* cuda_block_buffer_uint32_t_; 
+  uint32_t* cuda_block_buffer_uint32_t_;
   /*! \brief block buffer when calculating prefix sum */
   uint64_t* cuda_block_buffer_uint64_t_;
 };

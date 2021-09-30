@@ -320,6 +320,8 @@
     <ClCompile Include="..\src\io\file_io.cpp" />
     <ClCompile Include="..\src\io\json11.cpp" />
     <ClCompile Include="..\src\io\metadata.cpp" />
+    <ClCompile Include="..\src\io\multi_val_dense_bin.cpp" />
+    <ClCompile Include="..\src\io\multi_val_sparse_bin.cpp" />
     <ClCompile Include="..\src\io\parser.cpp" />
     <ClCompile Include="..\src\io\train_share_states.cpp" />
     <ClCompile Include="..\src\io\tree.cpp" />

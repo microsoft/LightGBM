@@ -8,15 +8,16 @@
 #ifndef LIGHTGBM_CUDA_META_DATA_HPP_
 #define LIGHTGBM_CUDA_META_DATA_HPP_
 
-#include "../meta.h"
-
 #include <LightGBM/cuda/cuda_utils.h>
+#include <vector>
+
+#include "../meta.h"
 
 namespace LightGBM {
 
 class CUDAMetadata {
  public:
-  CUDAMetadata(const int gpu_device_id);
+  explicit CUDAMetadata(const int gpu_device_id);
 
   ~CUDAMetadata();
 

@@ -108,7 +108,7 @@ class CUDATree : public Tree {
   const int num_threads_per_block_add_prediction_to_score_;
 };
 
-}  //namespace LightGBM
+}  // namespace LightGBM
 
 #endif  // LIGHTGBM_IO_CUDA_CUDA_TREE_HPP_
 

@@ -94,7 +94,7 @@ void DeallocateCUDAMemory(T** ptr, const char* file, const int line) {
   }
 }
 
-}
+}  // namespace LightGBM
 
 #endif  // LIGHTGBM_CUDA_CUDA_UTILS_H_
 
