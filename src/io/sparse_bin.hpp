@@ -669,4 +669,5 @@ BinIterator* SparseBin<VAL_T>::GetIterator(uint32_t min_bin, uint32_t max_bin,
 }
 
 }  // namespace LightGBM
+
 #endif  // LightGBM_IO_SPARSE_BIN_HPP_

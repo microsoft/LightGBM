@@ -8,15 +8,15 @@
 
 #ifdef USE_CUDA
 
-#include <stdio.h>
-
-#include <algorithm>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <stdio.h>
 
 #include <LightGBM/bin.h>
 #include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/utils/log.h>
+
+#include <algorithm>
 
 #define NUM_BANKS_DATA_PARTITION (16)
 #define LOG_NUM_BANKS_DATA_PARTITION (4)

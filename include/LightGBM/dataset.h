@@ -13,9 +13,6 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
 
-#include <LightGBM/cuda/cuda_column_data.hpp>
-#include <LightGBM/cuda/cuda_metadata.hpp>
-
 #include <string>
 #include <functional>
 #include <memory>
@@ -23,6 +20,9 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <LightGBM/cuda/cuda_column_data.hpp>
+#include <LightGBM/cuda/cuda_metadata.hpp>
 
 namespace LightGBM {
 
