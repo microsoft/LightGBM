@@ -13,6 +13,8 @@
 #include <LightGBM/feature_group.h>
 #include <LightGBM/objective_function.h>
 
+#include <memory>
+
 namespace LightGBM {
 
 CUDASingleGPUTreeLearner::CUDASingleGPUTreeLearner(const Config* config): SerialTreeLearner(config) {

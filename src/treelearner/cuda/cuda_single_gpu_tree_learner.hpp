@@ -8,11 +8,15 @@
 
 #ifdef USE_CUDA
 
-#include "../serial_tree_learner.h"
+#include <memory>
+#include <vector>
+
 #include "cuda_leaf_splits.hpp"
 #include "cuda_histogram_constructor.hpp"
 #include "cuda_data_partition.hpp"
 #include "cuda_best_split_finder.hpp"
+
+#include "../serial_tree_learner.h"
 
 namespace LightGBM {
 
@@ -28,7 +32,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
                          bool is_constant_hessian) override;
 
   Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) override;
-  
+
   void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override;
 
   void AddPredictionToScore(const Tree* tree, double* out_score) const override;

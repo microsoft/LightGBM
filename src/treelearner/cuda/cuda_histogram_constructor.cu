@@ -6,8 +6,11 @@
 
 #ifdef USE_CUDA
 
-#include <LightGBM/cuda/cuda_algorithms.hpp>
 #include "cuda_histogram_constructor.hpp"
+
+#include <LightGBM/cuda/cuda_algorithms.hpp>
+
+#include <algorithm>
 
 namespace LightGBM {
 
@@ -265,7 +268,7 @@ __global__ void SubtractHistogramKernel(
   const CUDALeafSplitsStruct* cuda_larger_leaf_splits) {
   const unsigned int global_thread_index = threadIdx.x + blockIdx.x * blockDim.x;
   const int cuda_larger_leaf_index_ref = cuda_larger_leaf_splits->leaf_index;
-  if (cuda_larger_leaf_index_ref >= 0) { 
+  if (cuda_larger_leaf_index_ref >= 0) {
     const hist_t* smaller_leaf_hist = cuda_smaller_leaf_splits->hist_in_leaf;
     hist_t* larger_leaf_hist = cuda_larger_leaf_splits->hist_in_leaf;
     if (global_thread_index < 2 * num_total_bin) {

@@ -41,7 +41,7 @@ void CUDALeafSplits::InitValues() {
 
 void CUDALeafSplits::InitValues(
   const score_t* cuda_gradients, const score_t* cuda_hessians,
-  const data_size_t* cuda_bagging_data_indices, const data_size_t* cuda_data_indices_in_leaf, 
+  const data_size_t* cuda_bagging_data_indices, const data_size_t* cuda_data_indices_in_leaf,
   const data_size_t num_used_indices, hist_t* cuda_hist_in_leaf, double* root_sum_hessians) {
   cuda_gradients_ = cuda_gradients;
   cuda_hessians_ = cuda_hessians;

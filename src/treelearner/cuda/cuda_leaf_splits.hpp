@@ -32,7 +32,7 @@ struct CUDALeafSplitsStruct {
 
 class CUDALeafSplits {
  public:
-  CUDALeafSplits(const data_size_t num_data);
+  explicit CUDALeafSplits(const data_size_t num_data);
 
   ~CUDALeafSplits();
 
