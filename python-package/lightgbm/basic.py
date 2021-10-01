@@ -113,7 +113,7 @@ _LIB = _load_lib()
 NUMERIC_TYPES = (int, float, bool)
 
 
-def _safe_call(ret):
+def _safe_call(ret: int) -> None:
     """Check the return value from C API call.
 
     Parameters
