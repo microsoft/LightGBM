@@ -213,7 +213,7 @@ jobs:
 - job: macOS
 ###########################################
   variables:
-    COMPILER: clang
+    COMPILER: gcc
     OS_NAME: 'macos'
     PRODUCES_ARTIFACTS: 'true'
   pool:

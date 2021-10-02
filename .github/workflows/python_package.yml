@@ -58,7 +58,7 @@ jobs:
           export METHOD="${{ matrix.method }}"
           export PYTHON_VERSION="${{ matrix.python_version }}"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
-              export COMPILER="gcc"
+              export COMPILER="clang"
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export COMPILER="clang"
