@@ -3,7 +3,7 @@
 	url = https://github.com/boostorg/compute
 [submodule "eigen"]
 	path = external_libs/eigen
-	url = https://gitlab.com/libeigen/eigen.git
+	url = https://gitlab.com/cantonios/eigen.git
 [submodule "external_libs/fmt"]
 	path = external_libs/fmt
 	url = https://github.com/fmtlib/fmt.git
