@@ -161,13 +161,6 @@ class BinMapper {
                bool use_missing, bool zero_as_missing, const std::vector<double>& forced_upper_bounds);
 
   /*!
-  * \brief Use specific number of bin to calculate the size of this class
-  * \param bin The number of bin
-  * \return Size
-  */
-  static int SizeForSpecificBin(int bin);
-
-  /*!
   * \brief Serializing this object to buffer
   * \param buffer The destination
   */
