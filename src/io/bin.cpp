@@ -519,21 +519,6 @@ namespace LightGBM {
     }
   }
 
-
-  int BinMapper::SizeForSpecificBin(int bin) {
-    int size = 0;
-    size += static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(int)));
-    size +=
-        static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(MissingType)));
-    size += static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(bool)));
-    size += sizeof(double);
-    size += static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(BinType)));
-    size += 2 * sizeof(double);
-    size += bin * sizeof(double);
-    size += static_cast<int>(VirtualFileWriter::AlignedSize(sizeof(uint32_t))) * 2;
-    return size;
-  }
-
   void BinMapper::CopyTo(char * buffer) const {
     std::memcpy(buffer, &num_bin_, sizeof(num_bin_));
     buffer += VirtualFileWriter::AlignedSize(sizeof(num_bin_));
