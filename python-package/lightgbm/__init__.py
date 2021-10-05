@@ -6,7 +6,7 @@ Contributors: https://github.com/microsoft/LightGBM/graphs/contributors.
 from pathlib import Path
 
 from .basic import Booster, Dataset, Sequence, register_logger
-from .callback import early_stopping, print_evaluation, record_evaluation, reset_parameter
+from .callback import early_stopping, log_evaluation, print_evaluation, record_evaluation, reset_parameter
 from .engine import CVBooster, cv, train
 
 try:
@@ -32,5 +32,5 @@ __all__ = ['Dataset', 'Booster', 'CVBooster', 'Sequence',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
            'DaskLGBMRegressor', 'DaskLGBMClassifier', 'DaskLGBMRanker',
-           'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
+           'log_evaluation', 'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
            'plot_importance', 'plot_split_value_histogram', 'plot_metric', 'plot_tree', 'create_tree_digraph']

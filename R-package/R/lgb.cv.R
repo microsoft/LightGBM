@@ -206,7 +206,7 @@ lgb.cv <- function(params = list()
   )
 
   if (!is.null(weight)) {
-    data$setinfo(name = "weight", info = weight)
+    data$set_field(field_name = "weight", data = weight)
   }
 
   # Update parameters with parsed parameters
@@ -245,8 +245,8 @@ lgb.cv <- function(params = list()
       nfold = nfold
       , nrows = nrow(data)
       , stratified = stratified
-      , label = getinfo(dataset = data, name = "label")
-      , group = getinfo(dataset = data, name = "group")
+      , label = get_field(dataset = data, field_name = "label")
+      , group = get_field(dataset = data, field_name = "group")
       , params = params
     )
 
@@ -320,8 +320,8 @@ lgb.cv <- function(params = list()
       if (folds_have_group) {
         test_indices <- folds[[k]]$fold
         test_group_indices <- folds[[k]]$group
-        test_groups <- getinfo(dataset = data, name = "group")[test_group_indices]
-        train_groups <- getinfo(dataset = data, name = "group")[-test_group_indices]
+        test_groups <- get_field(dataset = data, field_name = "group")[test_group_indices]
+        train_groups <- get_field(dataset = data, field_name = "group")[-test_group_indices]
       } else {
         test_indices <- folds[[k]]
       }
@@ -330,28 +330,28 @@ lgb.cv <- function(params = list()
       # set up test set
       indexDT <- data.table::data.table(
         indices = test_indices
-        , weight = getinfo(dataset = data, name = "weight")[test_indices]
-        , init_score = getinfo(dataset = data, name = "init_score")[test_indices]
+        , weight = get_field(dataset = data, field_name = "weight")[test_indices]
+        , init_score = get_field(dataset = data, field_name = "init_score")[test_indices]
       )
       data.table::setorderv(x = indexDT, cols = "indices", order = 1L)
       dtest <- slice(data, indexDT$indices)
-      setinfo(dataset = dtest, name = "weight", info = indexDT$weight)
-      setinfo(dataset = dtest, name = "init_score", info = indexDT$init_score)
+      set_field(dataset = dtest, field_name = "weight", data = indexDT$weight)
+      set_field(dataset = dtest, field_name = "init_score", data = indexDT$init_score)
 
       # set up training set
       indexDT <- data.table::data.table(
         indices = train_indices
-        , weight = getinfo(dataset = data, name = "weight")[train_indices]
-        , init_score = getinfo(dataset = data, name = "init_score")[train_indices]
+        , weight = get_field(dataset = data, field_name = "weight")[train_indices]
+        , init_score = get_field(dataset = data, field_name = "init_score")[train_indices]
       )
       data.table::setorderv(x = indexDT, cols = "indices", order = 1L)
       dtrain <- slice(data, indexDT$indices)
-      setinfo(dataset = dtrain, name = "weight", info = indexDT$weight)
-      setinfo(dataset = dtrain, name = "init_score", info = indexDT$init_score)
+      set_field(dataset = dtrain, field_name = "weight", data = indexDT$weight)
+      set_field(dataset = dtrain, field_name = "init_score", data = indexDT$init_score)
 
       if (folds_have_group) {
-        setinfo(dataset = dtest, name = "group", info = test_groups)
-        setinfo(dataset = dtrain, name = "group", info = train_groups)
+        set_field(dataset = dtest, field_name = "group", data = test_groups)
+        set_field(dataset = dtrain, field_name = "group", data = train_groups)
       }
 
       booster <- Booster$new(params = params, train_set = dtrain)
