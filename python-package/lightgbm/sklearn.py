@@ -529,6 +529,9 @@ class LGBMModel(_LGBMModelBase):
             }
         }
 
+    def __sklearn_is_fitted__(self) -> bool:
+        return getattr(self, "fitted_", False)
+
     def get_params(self, deep=True):
         """Get parameters for this estimator.
 
