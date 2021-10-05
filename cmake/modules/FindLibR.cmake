@@ -79,7 +79,7 @@ elseif(WIN32)
 endif()
 
 
-if (NOT LIBR_EXECUTABLE)
+if(NOT LIBR_EXECUTABLE)
   find_program(
     LIBR_EXECUTABLE
     NAMES R R.exe
@@ -99,7 +99,7 @@ if (NOT LIBR_EXECUTABLE)
 endif()
 
 # Find R executable unless it has been provided directly or already found
-if (NOT LIBR_EXECUTABLE)
+if(NOT LIBR_EXECUTABLE)
   if(APPLE)
 
     find_library(LIBR_LIBRARIES R)
@@ -193,7 +193,7 @@ find_library(
 
 # starting from CMake 3.17, find_library() will not find .dll files by default
 # https://cmake.org/cmake/help/v3.17/release/3.17.html#other-changes
-if (WIN32 AND NOT LIBR_CORE_LIBRARY)
+if(WIN32 AND NOT LIBR_CORE_LIBRARY)
     find_file(
         LIBR_CORE_LIBRARY
         NAME R.dll

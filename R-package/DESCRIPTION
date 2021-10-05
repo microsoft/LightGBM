@@ -58,4 +58,4 @@ Imports:
     utils
 SystemRequirements:
     C++11
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
