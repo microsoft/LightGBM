@@ -136,7 +136,7 @@ class Log {
 // R code should write back to R's output stream,
 // otherwise to stdout
 #ifndef LGB_R_BUILD
-      if (GetLogCallBack() == nullptr) {
+      if (GetLogCallBack() == nullptr || getenv("DAI_LIGHTGBM_AVOID_LOGGER")) {
         printf("[LightGBM] [%s] ", level_str);
         vprintf(format, val);
         printf("\n");
