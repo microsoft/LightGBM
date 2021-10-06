@@ -421,6 +421,7 @@ def _to_graphviz(
     tree_info: Dict[str, Any],
     show_info: List[str],
     feature_names: Union[List[str], None],
+    categorical_encoding: Union[Dict[str, List], None],
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
     constraints: Optional[List[int]] = None,
@@ -436,6 +437,13 @@ def _to_graphviz(
     else:
         raise ImportError('You must install graphviz and restart your session to plot tree.')
 
+    def threshold_decode(threshold_str, encoding):
+        list_indexes = threshold_str.split('||')
+        decoded = []
+        for el in list_indexes:
+            decoded.append(encoding[int(el)])
+        return ' || '.join(decoded)
+
     def add(root, total_count, parent=None, decision=None):
         """Recursively add node or edge."""
         if 'split_index' in root:  # non-leaf
@@ -449,11 +457,21 @@ def _to_graphviz(
             else:
                 raise ValueError('Invalid decision type in tree model.')
             name = f"split{root['split_index']}"
+            categorical = False
             if feature_names is not None:
                 label = f"<B>{feature_names[root['split_feature']]}</B> {operator}"
+                if feature_names[root['split_feature']] in categorical_encoding:
+                    categorical = True
             else:
                 label = f"feature <B>{root['split_feature']}</B> {operator} "
-            label += f"<B>{_float2str(root['threshold'], precision)}</B>"
+
+            if categorical:
+                threshold_decoded = threshold_decode(root['threshold'],
+                                                     categorical_encoding[feature_names[root['split_feature']]])
+                label += '<B>{0}</B>'.format(threshold_decoded)
+            else:
+                label += '<B>{0}</B>'.format(_float2str(root['threshold'], precision))
+
             for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
                 if info in show_info:
                     output = info.split('_')[-1]
@@ -526,6 +544,7 @@ def create_tree_digraph(
     show_info: Optional[List[str]] = None,
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
+    decode_categorical: bool = False,
     **kwargs: Any
 ) -> Any:
     """Create a digraph representation of specified tree.
@@ -566,6 +585,8 @@ def create_tree_digraph(
     orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
+    decode_categorical : bool, optional (default=False)
+        If categorical variables should be decoded back to initial values.
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
         Check https://graphviz.readthedocs.io/en/stable/api.html#digraph for the full list of supported parameters.
@@ -580,12 +601,21 @@ def create_tree_digraph(
     elif not isinstance(booster, Booster):
         raise TypeError('booster must be Booster or LGBMModel.')
 
+    categorical_columns = booster.params.get('categorical_column')
     model = booster.dump_model()
     tree_infos = model['tree_info']
     if 'feature_names' in model:
         feature_names = model['feature_names']
     else:
         feature_names = None
+
+    categorical_encoding = {}
+    if decode_categorical:
+        pandas_encodings = model.get('pandas_categorical')
+        if pandas_encodings:
+            for idx, feature_encoding in enumerate(pandas_encodings):
+                categorical_feature_idx = categorical_columns[idx]
+                categorical_encoding[feature_names[categorical_feature_idx]] = feature_encoding
 
     monotone_constraints = model.get('monotone_constraints', None)
 
@@ -597,7 +627,7 @@ def create_tree_digraph(
     if show_info is None:
         show_info = []
 
-    graph = _to_graphviz(tree_info, show_info, feature_names, precision,
+    graph = _to_graphviz(tree_info, show_info, feature_names, categorical_encoding, precision,
                          orientation, monotone_constraints, **kwargs)
 
     return graph
