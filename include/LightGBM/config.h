@@ -109,7 +109,7 @@ struct Config {
   // [doc-only]
   // type = enum
   // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gamma, tweedie, binary, multiclass, multiclassova, cross_entropy, cross_entropy_lambda, lambdarank, rank_xendcg
-  // alias = objective_type, app, application
+  // alias = objective_type, app, application, loss
   // desc = regression application
   // descl2 = ``regression``, L2 loss, aliases: ``regression_l2``, ``l2``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
   // descl2 = ``regression_l1``, L1 loss, aliases: ``l1``, ``mean_absolute_error``, ``mae``
@@ -161,7 +161,7 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::vector<std::string> valid;
 
-  // alias = num_iteration, n_iter, num_tree, num_trees, num_round, num_rounds, num_boost_round, n_estimators
+  // alias = num_iteration, n_iter, num_tree, num_trees, num_round, num_rounds, num_boost_round, n_estimators, max_iter
   // check = >=0
   // desc = number of boosting iterations
   // desc = **Note**: internally, LightGBM constructs ``num_class * num_iterations`` trees for multi-class classification problems
@@ -174,7 +174,7 @@ struct Config {
   double learning_rate = 0.1;
 
   // default = 31
-  // alias = num_leaf, max_leaves, max_leaf
+  // alias = num_leaf, max_leaves, max_leaf, max_leaf_nodes
   // check = >1
   // check = <=131072
   // desc = max number of leaves in one tree
@@ -261,7 +261,7 @@ struct Config {
   // desc = ``<= 0`` means no limit
   int max_depth = -1;
 
-  // alias = min_data_per_leaf, min_data, min_child_samples
+  // alias = min_data_per_leaf, min_data, min_child_samples, min_samples_leaf
   // check = >=0
   // desc = minimal number of data in one leaf. Can be used to deal with over-fitting
   // desc = **Note**: this is an approximation based on the Hessian, so occasionally you may observe splits which produce leaf nodes that have less than this many observations
@@ -360,12 +360,12 @@ struct Config {
   // desc = the final max output of leaves is ``learning_rate * max_delta_step``
   double max_delta_step = 0.0;
 
-  // alias = reg_alpha
+  // alias = reg_alpha, l1_regularization
   // check = >=0.0
   // desc = L1 regularization
   double lambda_l1 = 0.0;
 
-  // alias = reg_lambda, lambda
+  // alias = reg_lambda, lambda, l2_regularization
   // check = >=0.0
   // desc = L2 regularization
   double lambda_l2 = 0.0;
@@ -453,7 +453,7 @@ struct Config {
   int top_k = 20;
 
   // type = multi-int
-  // alias = mc, monotone_constraint
+  // alias = mc, monotone_constraint, monotonic_cst
   // default = None
   // desc = used for constraints of monotonic features
   // desc = ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
@@ -586,6 +586,7 @@ struct Config {
   // descl2 = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
   bool linear_tree = false;
 
+  // alias = max_bins
   // check = >1
   // desc = max number of bins that feature values will be bucketed in
   // desc = small number of bins may reduce training accuracy but may increase general power (deal with over-fitting)
@@ -691,7 +692,7 @@ struct Config {
   std::string ignore_column = "";
 
   // type = multi-int or string
-  // alias = cat_feature, categorical_column, cat_column
+  // alias = cat_feature, categorical_column, cat_column, categorical_features
   // desc = used to specify categorical features
   // desc = use number for index, e.g. ``categorical_feature=0,1,2`` means column\_0, column\_1 and column\_2 are categorical features
   // desc = add a prefix ``name:`` for column name, e.g. ``categorical_feature=name:c1,c2,c3`` means c1, c2 and c3 are categorical features
