@@ -791,7 +791,7 @@ class LGBMModel(_LGBMModelBase):
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
                 pred_leaf=False, pred_contrib=False, **kwargs):
         """Docstring is set after definition, using a template."""
-        if self._n_features is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
@@ -815,49 +815,49 @@ class LGBMModel(_LGBMModelBase):
     @property
     def n_features_(self):
         """:obj:`int`: The number of features of fitted model."""
-        if self._n_features is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_features found. Need to call fit beforehand.')
         return self._n_features
 
     @property
     def n_features_in_(self):
         """:obj:`int`: The number of features of fitted model."""
-        if self._n_features_in is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_features_in found. Need to call fit beforehand.')
         return self._n_features_in
 
     @property
     def best_score_(self):
         """:obj:`dict`: The best score of fitted model."""
-        if self._n_features is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No best_score found. Need to call fit beforehand.')
         return self._best_score
 
     @property
     def best_iteration_(self):
         """:obj:`int` or :obj:`None`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
-        if self._n_features is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No best_iteration found. Need to call fit with early_stopping callback beforehand.')
         return self._best_iteration
 
     @property
     def objective_(self):
         """:obj:`str` or :obj:`callable`: The concrete objective used while fitting this model."""
-        if self._n_features is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No objective found. Need to call fit beforehand.')
         return self._objective
 
     @property
     def booster_(self):
         """Booster: The underlying Booster of this model."""
-        if self._Booster is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No booster found. Need to call fit beforehand.')
         return self._Booster
 
     @property
     def evals_result_(self):
         """:obj:`dict` or :obj:`None`: The evaluation results if validation sets have been specified."""
-        if self._n_features is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No results found. Need to call fit with eval_set beforehand.')
         return self._evals_result
 
@@ -870,14 +870,14 @@ class LGBMModel(_LGBMModelBase):
             ``importance_type`` attribute is passed to the function
             to configure the type of importance values to be extracted.
         """
-        if self._n_features is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
         return self._Booster.feature_importance(importance_type=self.importance_type)
 
     @property
     def feature_name_(self):
         """:obj:`array` of shape = [n_features]: The names of features."""
-        if self._n_features is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No feature_name found. Need to call fit beforehand.')
         return self._Booster.feature_name()
 
@@ -1017,14 +1017,14 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     @property
     def classes_(self):
         """:obj:`array` of shape = [n_classes]: The class label array."""
-        if self._classes is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No classes found. Need to call fit beforehand.')
         return self._classes
 
     @property
     def n_classes_(self):
         """:obj:`int`: The number of classes."""
-        if self._n_classes is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No classes found. Need to call fit beforehand.')
         return self._n_classes
 
