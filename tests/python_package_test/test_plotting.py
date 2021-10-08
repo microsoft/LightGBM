@@ -168,7 +168,7 @@ def test_create_tree_digraph(breast_cancer_split):
 
     graph = lgb.create_tree_digraph(gbm, tree_index=3,
                                     show_info=['split_gain', 'internal_value', 'internal_weight'],
-                                    name='Tree4', node_attr={'color': 'red'})
+                                    name='Tree4', node_attr={'color': 'red'}, decode_categorical = True)
     graph.render(view=False)
     assert isinstance(graph, graphviz.Digraph)
     assert graph.name == 'Tree4'
