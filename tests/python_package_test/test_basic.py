@@ -510,19 +510,23 @@ def test_choose_param_value():
     assert original_params == expected_params
 
 
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
-@pytest.mark.parametrize(
-    'y',
-    [
-        np.random.rand(10),
-        np.random.rand(10, 1),
-        pd_Series(np.random.rand(10)),
-        pd_Series(['a', 'b']),
-        [1] * 10,
-        [[1], [2]]
-    ])
+@pytest.mark.parametrize('collection', ['1d_np', '2d_np', 'pd_float', 'pd_str', '1d_list', '2d_list'])
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
-def test_list_to_1d_numpy(y, dtype):
+def test_list_to_1d_numpy(collection, dtype):
+    collection2y = {
+        '1d_np': np.random.rand(10),
+        '2d_np': np.random.rand(10, 1),
+        'pd_float': np.random.rand(10),
+        'pd_str': ['a', 'b'],
+        '1d_list': [1] * 10,
+        '2d_list': [[1], [2]],
+    }
+    y = collection2y[collection]
+    if collection.startswith('pd'):
+        if not PANDAS_INSTALLED:
+            pytest.skip('pandas is not installed')
+        else:
+            y = pd_Series(y)
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match='column-vector'):
             lgb.basic.list_to_1d_numpy(y)
