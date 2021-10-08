@@ -7,6 +7,8 @@
 
 namespace LightGBM {
 
+
+#ifdef USE_CUDA
 template <>
 const void* MultiValDenseBin<uint8_t>::GetRowWiseData(uint8_t* bit_type,
     size_t* total_size,
@@ -56,5 +58,7 @@ const void* MultiValDenseBin<uint32_t>::GetRowWiseData(uint8_t* bit_type,
   *data_ptr_bit_type = 0;
   return to_return;
 }
+
+#endif  // USE_CUDA
 
 }  // namespace LightGBM

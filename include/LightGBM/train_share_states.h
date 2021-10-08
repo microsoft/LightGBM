@@ -125,6 +125,8 @@ class MultiValBinWrapper {
     is_subrow_copied_ = is_subrow_copied;
   }
 
+
+  #ifdef USE_CUDA
   const void* GetRowWiseData(
     uint8_t* bit_type,
     size_t* total_size,
@@ -140,6 +142,7 @@ class MultiValBinWrapper {
       return multi_val_bin_->GetRowWiseData(bit_type, total_size, is_sparse, out_data_ptr, data_ptr_bit_type);
     }
   }
+  #endif  // USE_CUDA
 
  private:
   bool is_use_subcol_ = false;
@@ -229,6 +232,8 @@ struct TrainingShareStates {
     }
   }
 
+
+  #ifdef USE_CUDA
   const void* GetRowWiseData(uint8_t* bit_type,
     size_t* total_size,
     bool* is_sparse,
@@ -243,6 +248,7 @@ struct TrainingShareStates {
       return nullptr;
     }
   }
+  #endif  // USE_CUDA
 
  private:
   std::vector<uint32_t> feature_hist_offsets_;

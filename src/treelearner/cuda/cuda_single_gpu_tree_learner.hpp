@@ -6,10 +6,10 @@
 #ifndef LIGHTGBM_NEW_CUDA_TREE_LEARNER_HPP_
 #define LIGHTGBM_NEW_CUDA_TREE_LEARNER_HPP_
 
-#ifdef USE_CUDA
-
 #include <memory>
 #include <vector>
+
+#ifdef USE_CUDA
 
 #include "cuda_leaf_splits.hpp"
 #include "cuda_histogram_constructor.hpp"

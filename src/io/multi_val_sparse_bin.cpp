@@ -7,6 +7,8 @@
 
 namespace LightGBM {
 
+#ifdef USE_CUDA
+
 template <>
 const void* MultiValSparseBin<uint16_t, uint8_t>::GetRowWiseData(
   uint8_t* bit_type,
@@ -150,5 +152,7 @@ const void* MultiValSparseBin<uint64_t, uint32_t>::GetRowWiseData(
   *data_ptr_bit_type = 64;
   return to_return;
 }
+
+#endif  // USE_CUDA
 
 }  // namespace LightGBM
