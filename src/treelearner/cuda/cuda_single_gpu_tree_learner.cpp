@@ -11,6 +11,7 @@
 #include <LightGBM/cuda/cuda_tree.hpp>
 #include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/feature_group.h>
+#include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 
 #include <memory>
@@ -44,8 +45,10 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
     config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf, gpu_device_id_));
   cuda_histogram_constructor_->Init(train_data_, share_state_.get());
 
+  const auto& feature_hist_offsets = share_state_->feature_hist_offsets();
+  const int num_total_bin = feature_hist_offsets.empty() ? 0 : static_cast<int>(feature_hist_offsets.back());
   cuda_data_partition_.reset(new CUDADataPartition(
-    train_data_, share_state_->feature_hist_offsets().back(), config_->num_leaves, num_threads_,
+    train_data_, num_total_bin, config_->num_leaves, num_threads_,
     cuda_histogram_constructor_->cuda_hist_pointer()));
   cuda_data_partition_->Init();
 
@@ -242,7 +245,44 @@ void CUDASingleGPUTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFuncti
                                          data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
   CHECK(tree->is_cuda_tree());
   CUDATree* cuda_tree = reinterpret_cast<CUDATree*>(tree);
-  SerialTreeLearner::RenewTreeOutput(tree, obj, residual_getter, total_num_data, bag_indices, bag_cnt);
+  if (obj != nullptr && obj->IsRenewTreeOutput()) {
+    CHECK_LE(cuda_tree->num_leaves(), data_partition_->num_leaves());
+    const data_size_t* bag_mapper = nullptr;
+    if (total_num_data != num_data_) {
+      CHECK_EQ(bag_cnt, num_data_);
+      bag_mapper = bag_indices;
+    }
+    std::vector<int> n_nozeroworker_perleaf(tree->num_leaves(), 1);
+    int num_machines = Network::num_machines();
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < tree->num_leaves(); ++i) {
+      const double output = static_cast<double>(tree->LeafOutput(i));
+      data_size_t cnt_leaf_data = leaf_num_data_[i];
+      std::vector<data_size_t> index_mapper(cnt_leaf_data, -1);
+      CopyFromCUDADeviceToHost<data_size_t>(index_mapper.data(),
+        cuda_data_partition_->cuda_data_indices() + leaf_data_start_[i],
+        static_cast<size_t>(cnt_leaf_data), __FILE__, __LINE__);
+      if (cnt_leaf_data > 0) {
+        const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper.data(), bag_mapper, cnt_leaf_data);
+        tree->SetLeafOutput(i, new_output);
+      } else {
+        CHECK_GT(num_machines, 1);
+        tree->SetLeafOutput(i, 0.0);
+        n_nozeroworker_perleaf[i] = 0;
+      }
+    }
+    if (num_machines > 1) {
+      std::vector<double> outputs(tree->num_leaves());
+      for (int i = 0; i < tree->num_leaves(); ++i) {
+        outputs[i] = static_cast<double>(tree->LeafOutput(i));
+      }
+      outputs = Network::GlobalSum(&outputs);
+      n_nozeroworker_perleaf = Network::GlobalSum(&n_nozeroworker_perleaf);
+      for (int i = 0; i < tree->num_leaves(); ++i) {
+        tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
+      }
+    }
+  }
   cuda_tree->SyncLeafOutputFromHostToCUDA();
 }
 

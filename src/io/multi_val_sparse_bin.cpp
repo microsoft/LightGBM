@@ -104,7 +104,7 @@ const void* MultiValSparseBin<uint32_t, uint32_t>::GetRowWiseData(
 }
 
 template <>
-const void* MultiValSparseBin<size_t, uint8_t>::GetRowWiseData(
+const void* MultiValSparseBin<uint64_t, uint8_t>::GetRowWiseData(
   uint8_t* bit_type,
   size_t* total_size,
   bool* is_sparse,
@@ -120,7 +120,7 @@ const void* MultiValSparseBin<size_t, uint8_t>::GetRowWiseData(
 }
 
 template <>
-const void* MultiValSparseBin<size_t, uint16_t>::GetRowWiseData(
+const void* MultiValSparseBin<uint64_t, uint16_t>::GetRowWiseData(
   uint8_t* bit_type,
   size_t* total_size,
   bool* is_sparse,
@@ -136,7 +136,7 @@ const void* MultiValSparseBin<size_t, uint16_t>::GetRowWiseData(
 }
 
 template <>
-const void* MultiValSparseBin<size_t, uint32_t>::GetRowWiseData(
+const void* MultiValSparseBin<uint64_t, uint32_t>::GetRowWiseData(
   uint8_t* bit_type,
   size_t* total_size,
   bool* is_sparse,

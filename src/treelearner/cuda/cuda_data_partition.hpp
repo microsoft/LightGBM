@@ -8,16 +8,16 @@
 
 #ifdef USE_CUDA
 
-#include <LightGBM/cuda/cuda_column_data.hpp>
 #include <LightGBM/meta.h>
 #include <LightGBM/tree.h>
 #include <LightGBM/bin.h>
 
-#include "cuda_leaf_splits.hpp"
+#include <LightGBM/cuda/cuda_column_data.hpp>
 #include <LightGBM/cuda/cuda_split_info.hpp>
 #include <LightGBM/cuda/cuda_tree.hpp>
 
-// TODO(shiyu1994): adjust these values according to different CUDA and GPU versions
+#include "cuda_leaf_splits.hpp"
+
 #define FILL_INDICES_BLOCK_SIZE_DATA_PARTITION (1024)
 #define SPLIT_INDICES_BLOCK_SIZE_DATA_PARTITION (1024)
 #define AGGREGATE_BLOCK_SIZE_DATA_PARTITION (1024)

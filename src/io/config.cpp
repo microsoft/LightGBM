@@ -342,9 +342,14 @@ void Config::CheckParamConflict() {
     if (deterministic) {
       Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
     }
+  } else if (device_type == std::string("cuda")) {
+    // force row-wise for single GPU CUDA version
+    force_col_wise = false;
+    force_row_wise = true;
   }
-  // force gpu_use_dp for CUDA
-  if (device_type == std::string("cuda") && !gpu_use_dp) {
+  // force gpu_use_dp for non-single GPU CUDA version
+  if (device_type == std::string("cuda") &&
+    (num_gpu > 1 || tree_learner != std::string("serial")) && !gpu_use_dp) {
     Log::Warning("CUDA currently requires double precision calculations.");
     gpu_use_dp = true;
   }

@@ -248,6 +248,16 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     is_load_from_binary = true;
     Log::Info("Load from binary file %s", bin_filename.c_str());
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), rank, num_machines, &num_global_data, &used_data_indices));
+    #ifdef USE_CUDA
+    dataset->device_type_ = config_.device_type;
+    dataset->gpu_device_id_ = config_.gpu_device_id;
+    if (config_.device_type == std::string("cuda")) {
+      dataset->CreateCUDAColumnData();
+      dataset->metadata_.CreateCUDAMetadata(dataset->gpu_device_id_);
+    } else {
+      dataset->cuda_column_data_ = nullptr;
+    }
+    #endif  // USE_CUDA
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);

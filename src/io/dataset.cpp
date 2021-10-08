@@ -1498,6 +1498,13 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
       raw_data_.push_back(other->raw_data_[i]);
     }
   }
+  #ifdef USE_CUDA
+  if (device_type_ == std::string("cuda")) {
+    CreateCUDAColumnData();
+  } else {
+    cuda_column_data_ = nullptr;
+  }
+  #endif  // USE_CUDA
 }
 
 const void* Dataset::GetColWiseData(

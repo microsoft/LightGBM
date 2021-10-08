@@ -14,7 +14,12 @@ CUDARowData::CUDARowData(const Dataset* train_data,
                          const int gpu_device_id): gpu_device_id_(gpu_device_id) {
   num_threads_ = OMP_NUM_THREADS();
   num_data_ = train_data->num_data();
-  num_total_bin_ = static_cast<int>(train_share_state->feature_hist_offsets().back());
+  const auto& feature_hist_offsets = train_share_state->feature_hist_offsets();
+  if (feature_hist_offsets.empty()) {
+    num_total_bin_ = 0;
+  } else {
+    num_total_bin_ = static_cast<int>(feature_hist_offsets.back());
+  }
   num_feature_group_ = train_data->num_feature_groups();
   num_feature_ = train_data->num_features();
   if (gpu_device_id >= 0) {
@@ -39,7 +44,7 @@ CUDARowData::CUDARowData(const Dataset* train_data,
   cuda_block_buffer_uint64_t_ = nullptr;
 }
 
-CUDARowData::CUDARowData() {
+CUDARowData::~CUDARowData() {
   DeallocateCUDAMemory<uint8_t>(&cuda_data_uint8_t_, __FILE__, __LINE__);
   DeallocateCUDAMemory<uint16_t>(&cuda_data_uint16_t_, __FILE__, __LINE__);
   DeallocateCUDAMemory<uint32_t>(&cuda_data_uint32_t_, __FILE__, __LINE__);
@@ -55,6 +60,9 @@ CUDARowData::CUDARowData() {
 }
 
 void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_share_state) {
+  if (num_feature_ == 0) {
+    return;
+  }
   DivideCUDAFeatureGroups(train_data, train_share_state);
   bit_type_ = 0;
   size_t total_size = 0;

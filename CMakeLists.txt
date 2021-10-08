@@ -358,14 +358,6 @@ if(USE_CUDA)
     src/io/cuda/*.cpp
     src/cuda/*.cpp
     src/cuda/*.cu
-    src/objective/cuda/*.cpp
-    src/objective/cuda/*.cu
-    src/boosting/cuda/*.cpp
-    src/boosting/cuda/*.cu
-    src/application/cuda/*.cpp
-    src/application/cuda/*.cu
-    src/metric/cuda/*.cpp
-    src/metric/cuda/*.cu
 endif(USE_CUDA)
 )
 

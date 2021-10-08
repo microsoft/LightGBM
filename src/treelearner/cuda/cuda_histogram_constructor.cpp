@@ -75,7 +75,11 @@ void CUDAHistogramConstructor::InitFeatureMetaInfo(const Dataset* train_data, co
   for (size_t i = 0; i < feature_hist_offsets.size(); ++i) {
     feature_hist_offsets_.emplace_back(feature_hist_offsets[i]);
   }
-  num_total_bin_ = static_cast<int>(feature_hist_offsets.back());
+  if (feature_hist_offsets.empty()) {
+    num_total_bin_ = 0;
+  } else {
+    num_total_bin_ = static_cast<int>(feature_hist_offsets.back());
+  }
 }
 
 void CUDAHistogramConstructor::BeforeTrain(const score_t* gradients, const score_t* hessians) {

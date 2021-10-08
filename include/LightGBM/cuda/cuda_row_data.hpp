@@ -28,7 +28,7 @@ class CUDARowData {
   CUDARowData(const Dataset* train_data,
               const TrainingShareStates* train_share_state, const int gpu_device_id);
 
-  CUDARowData();
+  ~CUDARowData();
 
   void Init(const Dataset* train_data,
             TrainingShareStates* train_share_state);
