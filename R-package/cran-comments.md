@@ -1,8 +1,19 @@
 # CRAN Submission History
 
-## v3.2.1 - Submission 1 - (TBD)
+## v3.3.0 - Submission 1 - (TBD)
 
 ### CRAN response
+
+### Maintainer Notes
+
+In this submission, we attempted to switch the maintainer of the package (in the CRAN official sense) from Guolin Ke to Yu Shi.
+Did this by adding a note in the CRAN submission web form explaining Guolin's departure from Microsoft.
+
+## v3.2.1 - Submission 1 - (April 12, 2021)
+
+### CRAN response
+
+Accepted to CRAN.
 
 ### Maintainer Notes
 
