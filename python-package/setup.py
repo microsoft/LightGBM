@@ -350,7 +350,7 @@ if __name__ == "__main__":
               ],
           },
           maintainer='Guolin Ke',
-          maintainer_email='guolin.ke@microsoft.com',
+          maintainer_email='guolin.ke@outlook.com',
           zip_safe=False,
           cmdclass={
               'install': CustomInstall,
