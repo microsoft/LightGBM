@@ -229,7 +229,8 @@ __device__ void FindBestSplitsForLeafKernelInner(
       local_hess_hist = feature_hist_ptr[bin_offset + 1];
     }
   } else {
-    if (threadIdx_x < feature_num_bin_minus_offset && !skip_sum) {
+    if (threadIdx_x >= static_cast<unsigned int>(na_as_missing) &&
+      threadIdx_x < feature_num_bin_minus_offset && !skip_sum) {
       const unsigned int read_index = feature_num_bin_minus_offset - 1 - threadIdx_x;
       const unsigned int bin_offset = read_index << 1;
       local_grad_hist = feature_hist_ptr[bin_offset];

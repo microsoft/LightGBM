@@ -1568,14 +1568,14 @@ void Dataset::CreateCUDAColumnData() {
         feature_most_freq_bins[feature_index] = most_freq_bin;
         feature_default_bin[feature_index] = feature_bin_mapper->GetDefaultBin();
         if (feature_bin_mapper->missing_type() == MissingType::Zero) {
-          feature_missing_is_zero.emplace_back(1);
-          feature_missing_is_na.emplace_back(0);
+          feature_missing_is_zero[feature_index] = 1;
+          feature_missing_is_na[feature_index] = 0;
         } else if (feature_bin_mapper->missing_type() == MissingType::NaN) {
-          feature_missing_is_zero.emplace_back(0);
-          feature_missing_is_na.emplace_back(1);
+          feature_missing_is_zero[feature_index] = 0;
+          feature_missing_is_na[feature_index] = 1;
         } else {
-          feature_missing_is_zero.emplace_back(0);
-          feature_missing_is_na.emplace_back(0);
+          feature_missing_is_zero[feature_index] = 0;
+          feature_missing_is_na[feature_index] = 0;
         }
         ++feature_index;
       }
@@ -1601,14 +1601,14 @@ void Dataset::CreateCUDAColumnData() {
         feature_most_freq_bins[feature_index] = most_freq_bin;
         feature_default_bin[feature_index] = feature_bin_mapper->GetDefaultBin();
         if (feature_bin_mapper->missing_type() == MissingType::Zero) {
-            feature_missing_is_zero.emplace_back(1);
-            feature_missing_is_na.emplace_back(0);
+            feature_missing_is_zero[feature_index] = 1;
+            feature_missing_is_na[feature_index] = 0;
           } else if (feature_bin_mapper->missing_type() == MissingType::NaN) {
-            feature_missing_is_zero.emplace_back(0);
-            feature_missing_is_na.emplace_back(1);
+            feature_missing_is_zero[feature_index] = 0;
+            feature_missing_is_na[feature_index] = 1;
           } else {
-            feature_missing_is_zero.emplace_back(0);
-            feature_missing_is_na.emplace_back(0);
+            feature_missing_is_zero[feature_index] = 0;
+            feature_missing_is_na[feature_index] = 0;
           }
         ++feature_index;
       }
