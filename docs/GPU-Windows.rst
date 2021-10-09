@@ -187,6 +187,7 @@ We can now start downloading and compiling the required Boost libraries:
        bootstrap.bat gcc
        b2 install --prefix="C:\boost\boost-build" toolset=gcc
        cd C:\boost\boost_1_63_0
+       bootstrap.bat gcc
 
 To build the Boost libraries, you have two choices for command prompt:
 
@@ -237,7 +238,7 @@ If you are getting an error:
    ``C:\boost\boost-build\bin``, ``C:\boost\boost-build\include\boost`` to
    your PATH (adjust accordingly if you use another folder)
 
--  Do the Boost compilation steps again (extract => command prompt => ``cd`` => ``bootstrap`` => ``b2`` => ``cd`` => ``b2``
+-  Do the Boost compilation steps again (extract => command prompt => ``cd`` => ``bootstrap`` => ``b2`` => ``cd`` => ``bootstrap`` => ``b2``)
 
 --------------
 
