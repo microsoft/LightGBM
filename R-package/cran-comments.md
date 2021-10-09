@@ -1,6 +1,6 @@
 # CRAN Submission History
 
-## v3.3.0 - Submission 1 - (TBD)
+## v3.3.0 - Submission 1 - (October 8, 2021)
 
 ### CRAN response
 
