@@ -28,6 +28,7 @@ if __name__ == "__main__":
         <version>{version}</version>
         <authors>Guolin Ke</authors>
         <owners>Guolin Ke</owners>
+        <license type="expression">MIT</license>
         <licenseUrl>https://github.com/microsoft/LightGBM/blob/master/LICENSE</licenseUrl>
         <projectUrl>https://github.com/microsoft/LightGBM</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
