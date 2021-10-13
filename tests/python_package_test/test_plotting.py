@@ -162,13 +162,12 @@ def test_create_tree_digraph(breast_cancer_split):
     constraints = [-1, 1] * int(X_train.shape[1] / 2)
     gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True, monotone_constraints=constraints)
     gbm.fit(X_train, y_train, verbose=False)
-
     with pytest.raises(IndexError):
         lgb.create_tree_digraph(gbm, tree_index=83)
 
     graph = lgb.create_tree_digraph(gbm, tree_index=3,
                                     show_info=['split_gain', 'internal_value', 'internal_weight'],
-                                    name='Tree4', node_attr={'color': 'red'}, decode_categorical = True)
+                                    name='Tree4', node_attr={'color': 'red'}, decode_categorical=True)
     graph.render(view=False)
     assert isinstance(graph, graphviz.Digraph)
     assert graph.name == 'Tree4'
