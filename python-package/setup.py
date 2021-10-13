@@ -349,8 +349,8 @@ if __name__ == "__main__":
                   'pandas',
               ],
           },
-          maintainer='Guolin Ke',
-          maintainer_email='guolin.ke@microsoft.com',
+          maintainer='Yu Shi',
+          maintainer_email='yushi2@microsoft.com',
           zip_safe=False,
           cmdclass={
               'install': CustomInstall,
