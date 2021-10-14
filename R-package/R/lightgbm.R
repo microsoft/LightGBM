@@ -54,7 +54,6 @@
 #' @param verbose verbosity for output, if <= 0, also will disable the print of evaluation during training
 #' @param serializable whether to make the resulting objects serializable through functions such as
 #' \code{save} or \code{saveRDS} (see section "Model serialization").
-#' 
 #' @section Early Stopping:
 #'
 #'          "early stopping" refers to stopping the training process if the model's performance on a given

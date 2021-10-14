@@ -928,7 +928,7 @@ test_that("params (including dataset params) should be stored in .rds file for B
 
 test_that("Handle is automatically restored when calling predict", {
     data(agaricus.train, package = "lightgbm")
-    bst <- lightgbm(agaricus.train$data, agaricus.train$label, nrounds=5L, obj="binary")
+    bst <- lightgbm(agaricus.train$data, agaricus.train$label, nrounds = 5L, obj = "binary")
     bst_file <- tempfile(fileext = ".rds")
     saveRDS(bst, file = bst_file)
 

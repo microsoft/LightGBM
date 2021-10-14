@@ -438,7 +438,7 @@ Booster <- R6::R6Class(
       return(invisible(self))
     },
 
-    save_model_to_string = function(num_iteration = NULL, feature_importance_type = 0L, as_char=TRUE) {
+    save_model_to_string = function(num_iteration = NULL, feature_importance_type = 0L, as_char = TRUE) {
 
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
