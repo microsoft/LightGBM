@@ -41,6 +41,7 @@ lgb.importance <- function(model, percentage = TRUE) {
   if (!lgb.is.Booster(x = model)) {
     stop("'model' has to be an object of class lgb.Booster")
   }
+  model$restore_handle()
 
   # Setup importance
   tree_dt <- lgb.model.dt.tree(model = model)

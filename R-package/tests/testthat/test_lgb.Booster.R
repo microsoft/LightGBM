@@ -819,79 +819,6 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
 
 })
 
-test_that("Booster: method calls Booster with a null handle should raise an informative error and not segfault", {
-    data(agaricus.train, package = "lightgbm")
-    train <- agaricus.train
-    dtrain <- lgb.Dataset(train$data, label = train$label)
-    bst <- lgb.train(
-        params = list(
-            objective = "regression"
-            , metric = "l2"
-            , num_leaves = 8L
-        )
-        , data = dtrain
-        , verbose = -1L
-        , nrounds = 5L
-        , valids = list(
-            train = dtrain
-        )
-    )
-    tmp_file <- tempfile(fileext = ".rds")
-    saveRDS(bst, tmp_file)
-    rm(bst)
-    bst <- readRDS(tmp_file)
-    .expect_booster_error <- function(object) {
-        error_regexp <- "Attempting to use a Booster which no longer exists"
-        expect_error(object, regexp = error_regexp)
-    }
-    .expect_booster_error({
-        bst$current_iter()
-    })
-    .expect_booster_error({
-        bst$dump_model()
-    })
-    .expect_booster_error({
-        bst$eval(data = dtrain, name = "valid")
-    })
-    .expect_booster_error({
-        bst$eval_train()
-    })
-    .expect_booster_error({
-        bst$lower_bound()
-    })
-    .expect_booster_error({
-        bst$predict(data = train$data[seq_len(5L), ])
-    })
-    .expect_booster_error({
-        bst$reset_parameter(params = list(learning_rate = 0.123))
-    })
-    .expect_booster_error({
-        bst$rollback_one_iter()
-    })
-    .expect_booster_error({
-        bst$save()
-    })
-    .expect_booster_error({
-        bst$save_model(filename = tempfile(fileext = ".model"))
-    })
-    .expect_booster_error({
-        bst$save_model_to_string()
-    })
-    .expect_booster_error({
-        bst$update()
-    })
-    .expect_booster_error({
-        bst$upper_bound()
-    })
-    predictor <- bst$to_predictor()
-    .expect_booster_error({
-        predictor$current_iter()
-    })
-    .expect_booster_error({
-        predictor$predict(data = train$data[seq_len(5L), ])
-    })
-})
-
 test_that("Booster$new() using a Dataset with a null handle should raise an informative error and not segfault", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
@@ -964,7 +891,7 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
 
 })
 
-context("saveRDS.lgb.Booster() and readRDS.lgb.Booster()")
+context("saveRDS and readRDS work on Booster")
 
 test_that("params (including dataset params) should be stored in .rds file for Booster", {
     data(agaricus.train, package = "lightgbm")
@@ -985,9 +912,9 @@ test_that("params (including dataset params) should be stored in .rds file for B
         , train_set = dtrain
     )
     bst_file <- tempfile(fileext = ".rds")
-    saveRDS.lgb.Booster(bst, file = bst_file)
+    saveRDS(bst, file = bst_file)
 
-    bst_from_file <- readRDS.lgb.Booster(file = bst_file)
+    bst_from_file <- readRDS(file = bst_file)
     expect_identical(
         bst_from_file$params
         , list(
@@ -997,6 +924,19 @@ test_that("params (including dataset params) should be stored in .rds file for B
             , max_bin = 17L
         )
     )
+})
+
+test_that("Handle is automatically restored when calling predict", {
+    data(agaricus.train, package = "lightgbm")
+    bst <- lightgbm(agaricus.train$data, agaricus.train$label, nrounds=5L, obj="binary")
+    bst_file <- tempfile(fileext = ".rds")
+    saveRDS(bst, file = bst_file)
+
+    bst_from_file <- readRDS(file = bst_file)
+
+    pred_before <- predict(bst, agaricus.train$data)
+    pred_after <- predict(bst_from_file, agaricus.train$data)
+    expect_equal(pred_before, pred_after)
 })
 
 test_that("boosters with linear models at leaves can be written to RDS and re-loaded successfully", {
@@ -1025,13 +965,13 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
     # save predictions, then write the model to a file and destroy it in R
     preds <- predict(bst, X)
     model_file <- tempfile(fileext = ".rds")
-    saveRDS.lgb.Booster(bst, file = model_file)
+    saveRDS(bst, file = model_file)
     bst$finalize()
     expect_null(bst$.__enclos_env__$private$handle)
     rm(bst)
 
     # load the booster and make predictions...should be the same
-    bst2 <- readRDS.lgb.Booster(file = model_file)
+    bst2 <- readRDS(file = model_file)
     preds2 <- predict(bst2, X)
     expect_identical(preds, preds2)
 })

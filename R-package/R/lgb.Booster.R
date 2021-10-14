@@ -84,9 +84,11 @@ Booster <- R6::R6Class(
 
         } else if (!is.null(model_str)) {
 
-          # Do we have a model_str as character?
-          if (!is.character(model_str)) {
-            stop("lgb.Booster: Can only use a string as model_str")
+          # Do we have a model_str as character/raw?
+          if (is.character(model_str))
+            model_str <- charToRaw(model_str)
+          if (!is.raw(model_str)) {
+            stop("lgb.Booster: Can only use a character/raw vector as model_str")
           }
 
           # Create booster from model
@@ -436,7 +438,7 @@ Booster <- R6::R6Class(
       return(invisible(self))
     },
 
-    save_model_to_string = function(num_iteration = NULL, feature_importance_type = 0L) {
+    save_model_to_string = function(num_iteration = NULL, feature_importance_type = 0L, as_char=TRUE) {
 
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
@@ -448,6 +450,9 @@ Booster <- R6::R6Class(
           , as.integer(num_iteration)
           , as.integer(feature_importance_type)
       )
+
+      if (as_char)
+        model_str <- rawToChar(model_str)
 
       return(model_str)
 
@@ -527,17 +532,37 @@ Booster <- R6::R6Class(
       return(Predictor$new(modelfile = private$handle))
     },
 
-    # Used for save
-    raw = NA,
+    # Used for serialization
+    raw = NULL,
 
-    # Save model to temporary file for in-memory saving
-    save = function() {
-
-      # Overwrite model in object
-      self$raw <- self$save_model_to_string(NULL)
-
+    # Store serialized raw bytes in model object
+    save_raw = function() {
+      if (is.null(self$raw))
+        self$raw <- self$save_model_to_string(NULL, as_char=FALSE)
       return(invisible(NULL))
 
+    },
+
+    drop_raw = function() {
+      self$raw <- NULL
+      return(invisible(NULL))
+    },
+
+    check_null_handle = function() {
+      return(lgb.is.null.handle(private$handle))
+    },
+
+    restore_handle = function() {
+      if (self$check_null_handle()) {
+        if (is.null(self$raw))
+          stop("LightGBM model is not de-serializable. Try using 'serializable=TRUE'.")
+        private$handle <- .Call(LGBM_BoosterLoadModelFromString_R, self$raw)
+      }
+      return(invisible(NULL))
+    },
+
+    get_handle = function() {
+      return(private$handle)
     }
 
   ),
@@ -784,6 +809,7 @@ predict.lgb.Booster <- function(object,
   if (!lgb.is.Booster(x = object)) {
     stop("predict.lgb.Booster: object should be an ", sQuote("lgb.Booster"))
   }
+  object$restore_handle()
 
   additional_params <- list(...)
   if (length(additional_params) > 0L) {
@@ -815,7 +841,7 @@ predict.lgb.Booster <- function(object,
 #' @description Load LightGBM takes in either a file path or model string.
 #'              If both are provided, Load will default to loading from file
 #' @param filename path of model file
-#' @param model_str a str containing the model
+#' @param model_str a str containing the model (as a `character` or `raw` vector)
 #'
 #' @return lgb.Booster
 #'
@@ -863,9 +889,11 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
     return(invisible(Booster$new(modelfile = filename)))
   }
 
+  if (is.character(model_str))
+    model_str <- charToRaw(model_str)
   if (model_str_provided) {
-    if (!is.character(model_str)) {
-      stop("lgb.load: model_str should be character")
+    if (!is.raw(model_str)) {
+      stop("lgb.load: model_str should be a character/raw vector")
     }
     return(invisible(Booster$new(model_str = model_str)))
   }

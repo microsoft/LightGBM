@@ -60,6 +60,10 @@ SEXP wrapped_R_string(void *len) {
   return Rf_allocVector(STRSXP, *(reinterpret_cast<R_xlen_t*>(len)));
 }
 
+SEXP wrapped_R_raw(void *len) {
+  return Rf_allocVector(RAWSXP, *(reinterpret_cast<R_xlen_t*>(len)));
+}
+
 SEXP wrapped_Rf_mkChar(void *txt) {
   return Rf_mkChar(reinterpret_cast<char*>(txt));
 }
@@ -73,6 +77,10 @@ void throw_R_memerr(void *ptr_cont_token, Rboolean jump) {
 
 SEXP safe_R_string(R_xlen_t len, SEXP *cont_token) {
   return R_UnwindProtect(wrapped_R_string, reinterpret_cast<void*>(&len), throw_R_memerr, cont_token, *cont_token);
+}
+
+SEXP safe_R_raw(R_xlen_t len, SEXP *cont_token) {
+  return R_UnwindProtect(wrapped_R_raw, reinterpret_cast<void*>(&len), throw_R_memerr, cont_token, *cont_token);
 }
 
 SEXP safe_R_mkChar(char *txt, SEXP *cont_token) {
@@ -463,12 +471,12 @@ SEXP LGBM_BoosterLoadModelFromString_R(SEXP model_str) {
   R_API_BEGIN();
   SEXP ret = PROTECT(R_MakeExternalPtr(nullptr, R_NilValue, R_NilValue));
   int out_num_iterations = 0;
-  const char* model_str_ptr = CHAR(PROTECT(Rf_asChar(model_str)));
+  const char* model_str_ptr = reinterpret_cast<char*>(RAW(model_str));
   BoosterHandle handle = nullptr;
   CHECK_CALL(LGBM_BoosterLoadModelFromString(model_str_ptr, &out_num_iterations, &handle));
   R_SetExternalPtrAddr(ret, handle);
   R_RegisterCFinalizerEx(ret, _BoosterFinalizer, TRUE);
-  UNPROTECT(2);
+  UNPROTECT(1);
   return ret;
   R_API_END();
 }
@@ -819,20 +827,19 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   SEXP cont_token = PROTECT(R_MakeUnwindCont());
   R_API_BEGIN();
   _AssertBoosterHandleNotNull(handle);
-  SEXP model_str;
   int64_t out_len = 0;
   int64_t buf_len = 1024 * 1024;
   int num_iter = Rf_asInteger(num_iteration);
   int importance_type = Rf_asInteger(feature_importance_type);
   std::vector<char> inner_char_buf(buf_len);
   CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, buf_len, &out_len, inner_char_buf.data()));
+  SEXP model_str = PROTECT(safe_R_raw(out_len, &cont_token));
   // if the model string was larger than the initial buffer, allocate a bigger buffer and try again
   if (out_len > buf_len) {
-    inner_char_buf.resize(out_len);
-    CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, inner_char_buf.data()));
+    CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, reinterpret_cast<char*>(RAW(model_str))));
+  } else {
+    std::copy(inner_char_buf.begin(), inner_char_buf.begin() + out_len, reinterpret_cast<char*>(RAW(model_str)));
   }
-  model_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
-  SET_STRING_ELT(model_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
   UNPROTECT(2);
   return model_str;
   R_API_END();

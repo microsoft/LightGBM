@@ -66,6 +66,7 @@ lgb.train <- function(params = list(),
                       categorical_feature = NULL,
                       early_stopping_rounds = NULL,
                       callbacks = list(),
+                      serializable = TRUE,
                       reset_data = FALSE,
                       ...) {
 
@@ -394,6 +395,9 @@ lgb.train <- function(params = list(),
     booster$record_evals <- booster_old$record_evals
 
   }
+
+  if (serializable)
+    booster$save_raw()
 
   return(booster)
 
