@@ -257,16 +257,14 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
             else:
                 if len(min_delta) != n_metrics:
                     raise ValueError('Must provide a single value for min_delta or as many as metrics.')
-                if first_metric_only:
-                    if verbose:
-                        _log_info(f'Using only {min_delta[0]} as early stopping min_delta.')
+                if first_metric_only and verbose:
+                    _log_info(f'Using only {min_delta[0]} as early stopping min_delta.')
                 deltas = min_delta * n_datasets
         else:
             if min_delta < 0:
                 raise ValueError('Early stopping min_delta must be non-negative.')
-            if min_delta > 0 and n_metrics > 1 and not first_metric_only:
-                if verbose:
-                    _log_info(f'Using {min_delta} as min_delta for all metrics.')
+            if min_delta > 0 and n_metrics > 1 and not first_metric_only and verbose:
+                _log_info(f'Using {min_delta} as min_delta for all metrics.')
             deltas = [min_delta] * n_datasets * n_metrics
 
         # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
