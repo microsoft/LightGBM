@@ -686,7 +686,7 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
     train_kwargs = dict(
         params=params,
         train_set=train_ds,
-        num_boost_round=100,
+        num_boost_round=50,
         valid_sets=[train_ds, valid_ds],
         valid_names=['training', 'valid'],
     )
