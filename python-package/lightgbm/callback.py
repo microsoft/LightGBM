@@ -211,7 +211,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
         Whether to log message with early stopping information.
         By default, standard output resource is used.
         Use ``register_logger()`` function to register a custom logger.
-    min_delta: float or list of float (default=0.0)
+    min_delta : float or list of float, optional (default=0.0)
         Minimum improvement in score to keep training.
         If float, this single value is used for all metrics.
         If list, its length should match the total number of metrics.
@@ -247,22 +247,26 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
             if not all(t >= 0 for t in min_delta):
                 raise ValueError('Values for early stopping min_delta must be non-negative.')
             if len(min_delta) == 0:
-                _log_info('Disabling min_delta for early stopping.')
+                if verbose:
+                    _log_info('Disabling min_delta for early stopping.')
                 deltas = [0.0] * n_datasets * n_metrics
             elif len(min_delta) == 1:
-                _log_info(f'Using {min_delta[0]} as min_delta for all metrics.')
+                if verbose:
+                    _log_info(f'Using {min_delta[0]} as min_delta for all metrics.')
                 deltas = min_delta * n_datasets * n_metrics
             else:
                 if len(min_delta) != n_metrics:
                     raise ValueError('Must provide a single value for min_delta or as many as metrics.')
                 if first_metric_only:
-                    _log_info(f'Using only {min_delta[0]} as early stopping min_delta.')
+                    if verbose:
+                        _log_info(f'Using only {min_delta[0]} as early stopping min_delta.')
                 deltas = min_delta * n_datasets
         else:
             if min_delta < 0:
                 raise ValueError('Early stopping min_delta must be non-negative.')
             if min_delta > 0 and n_metrics > 1 and not first_metric_only:
-                _log_info(f'Using {min_delta} as min_delta for all metrics.')
+                if verbose:
+                    _log_info(f'Using {min_delta} as min_delta for all metrics.')
             deltas = [min_delta] * n_datasets * n_metrics
 
         # split is needed for "<dataset type> <metric>" case (e.g. "train l1")

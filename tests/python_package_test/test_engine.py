@@ -695,13 +695,13 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
     train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0)]
     evals_result = {}
     bst = lgb.train(evals_result=evals_result, **train_kwargs)
-    scores = np.vstack([res for res in evals_result['valid'].values()]).T
+    scores = np.vstack(list(evals_result['valid'].values())).T
 
     # positive min_delta
     train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0, min_delta=min_delta)]
     delta_result = {}
     delta_bst = lgb.train(evals_result=delta_result, **train_kwargs)
-    delta_scores = np.vstack([res for res in delta_result['valid'].values()]).T
+    delta_scores = np.vstack(list(delta_result['valid'].values())).T
 
     if first_only:
         scores = scores[:, 0]
