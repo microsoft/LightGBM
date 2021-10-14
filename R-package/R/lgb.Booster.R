@@ -538,7 +538,7 @@ Booster <- R6::R6Class(
     # Store serialized raw bytes in model object
     save_raw = function() {
       if (is.null(self$raw))
-        self$raw <- self$save_model_to_string(NULL, as_char=FALSE)
+        self$raw <- self$save_model_to_string(NULL, as_char = FALSE)
       return(invisible(NULL))
 
     },
