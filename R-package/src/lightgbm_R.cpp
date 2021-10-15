@@ -98,12 +98,17 @@ void _DatasetFinalizer(SEXP handle) {
   LGBM_DatasetFree_R(handle);
 }
 
+SEXP LGBM_NullHandleError() {
+  Rf_error(
+      "Attempting to use a Booster which no longer exists and/or cannot be restored. "
+      "This can happen if you have called Booster$finalize() "
+      "or if this Booster was saved through saveRDS() using 'serializable=FALSE'.");
+  return R_NilValue;
+}
+
 void _AssertBoosterHandleNotNull(SEXP handle) {
   if (Rf_isNull(handle) || !R_ExternalPtrAddr(handle)) {
-    Rf_error(
-      "Attempting to use a Booster which no longer exists. "
-      "This can happen if you have called Booster$finalize() or if this Booster was saved with saveRDS(). "
-      "To avoid this error in the future, use saveRDS.lgb.Booster() or Booster$save_model() to save lightgbm Boosters.");
+    LGBM_NullHandleError();
   }
 }
 
@@ -913,6 +918,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterSaveModel_R"          , (DL_FUNC) &LGBM_BoosterSaveModel_R          , 4},
   {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 3},
   {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 3},
+  {"LGBM_NullHandleError"             , (DL_FUNC) &LGBM_NullHandleError             , 0},
   {NULL, NULL, 0}
 };
 

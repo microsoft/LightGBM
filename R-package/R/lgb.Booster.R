@@ -539,8 +539,9 @@ Booster <- R6::R6Class(
 
     # Store serialized raw bytes in model object
     save_raw = function() {
-      if (is.null(self$raw))
+      if (is.null(self$raw)) {
         self$raw <- self$save_model_to_string(NULL, as_char = FALSE)
+      }
       return(invisible(NULL))
 
     },
@@ -557,7 +558,7 @@ Booster <- R6::R6Class(
     restore_handle = function() {
       if (self$check_null_handle()) {
         if (is.null(self$raw)) {
-          stop("LightGBM model is not de-serializable. Try using 'serializable=TRUE'.")
+          .Call(LGBM_NullHandleError)
         }
         private$handle <- .Call(LGBM_BoosterLoadModelFromString_R, self$raw)
       }
