@@ -44,7 +44,8 @@ fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
 If training stops early, the returned model will have attribute \code{best_iter}
 set to the iteration number of the best iteration.}
 
-\item{save_name}{File name to use when writing the trained model to disk. Should end in ".model".}
+\item{save_name}{File name to use when writing the trained model to disk. Should end in ".model".
+If passing `NULL`, will not save the trained model to disk.}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
