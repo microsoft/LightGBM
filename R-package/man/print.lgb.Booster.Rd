@@ -4,10 +4,12 @@
 \alias{print.lgb.Booster}
 \title{Print method for LightGBM model}
 \usage{
-\method{print}{lgb.Booster}(x)
+\method{print}{lgb.Booster}(x, ...)
 }
 \arguments{
 \item{x}{Object of class \code{lgb.Booster}}
+
+\item{...}{Not used}
 }
 \value{
 The same input `x`, returned as invisible.

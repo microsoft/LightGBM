@@ -814,9 +814,10 @@ predict.lgb.Booster <- function(object,
 #' @title Print method for LightGBM model
 #' @description Show summary information about a LightGBM model object (same as \code{summary}).
 #' @param x Object of class \code{lgb.Booster}
+#' @param ... Not used
 #' @return The same input `x`, returned as invisible.
 #' @export
-print.lgb.Booster <- function(x) {
+print.lgb.Booster <- function(x, ...) {
   handle <- x$.__enclos_env__$private$handle
   handle_is_null <- lgb.is.null.handle(handle)
 
