@@ -20,6 +20,14 @@ LIGHTGBM_C_EXPORT SEXP LGBM_HandleIsNull_R(
   SEXP handle
 );
 
+/*!
+* \brief Throw a standardized error message when encountering a null Booster handle
+* \return No return, will throw an error
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_NullHandleError_R(
+  SEXP handle
+);
+
 // --- start Dataset interface
 
 /*!

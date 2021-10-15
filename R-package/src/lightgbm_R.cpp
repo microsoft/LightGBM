@@ -98,7 +98,7 @@ void _DatasetFinalizer(SEXP handle) {
   LGBM_DatasetFree_R(handle);
 }
 
-SEXP LGBM_NullHandleError() {
+SEXP LGBM_NullHandleError_R() {
   Rf_error(
       "Attempting to use a Booster which no longer exists and/or cannot be restored. "
       "This can happen if you have called Booster$finalize() "
@@ -108,7 +108,7 @@ SEXP LGBM_NullHandleError() {
 
 void _AssertBoosterHandleNotNull(SEXP handle) {
   if (Rf_isNull(handle) || !R_ExternalPtrAddr(handle)) {
-    LGBM_NullHandleError();
+    LGBM_NullHandleError_R();
   }
 }
 
@@ -918,7 +918,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterSaveModel_R"          , (DL_FUNC) &LGBM_BoosterSaveModel_R          , 4},
   {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 3},
   {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 3},
-  {"LGBM_NullHandleError"             , (DL_FUNC) &LGBM_NullHandleError             , 0},
+  {"LGBM_NullHandleError_R"           , (DL_FUNC) &LGBM_NullHandleError_R           , 0},
   {NULL, NULL, 0}
 };
 
