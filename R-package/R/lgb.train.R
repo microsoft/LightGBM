@@ -396,8 +396,9 @@ lgb.train <- function(params = list(),
 
   }
 
-  if (serializable)
+  if (serializable) {
     booster$save_raw()
+  }
 
   return(booster)
 
