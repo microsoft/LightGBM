@@ -66,8 +66,8 @@ lgb.train <- function(params = list(),
                       categorical_feature = NULL,
                       early_stopping_rounds = NULL,
                       callbacks = list(),
-                      serializable = TRUE,
                       reset_data = FALSE,
+                      serializable = TRUE,
                       ...) {
 
   # validate inputs early to avoid unnecessary computation

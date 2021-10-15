@@ -85,8 +85,9 @@ Booster <- R6::R6Class(
         } else if (!is.null(model_str)) {
 
           # Do we have a model_str as character/raw?
-          if (is.character(model_str))
+          if (is.character(model_str)) {
             model_str <- charToRaw(model_str)
+          }
           if (!is.raw(model_str)) {
             stop("lgb.Booster: Can only use a character/raw vector as model_str")
           }
@@ -451,8 +452,9 @@ Booster <- R6::R6Class(
           , as.integer(feature_importance_type)
       )
 
-      if (as_char)
+      if (as_char) {
         model_str <- rawToChar(model_str)
+      }
 
       return(model_str)
 
@@ -554,8 +556,9 @@ Booster <- R6::R6Class(
 
     restore_handle = function() {
       if (self$check_null_handle()) {
-        if (is.null(self$raw))
+        if (is.null(self$raw)) {
           stop("LightGBM model is not de-serializable. Try using 'serializable=TRUE'.")
+        }
         private$handle <- .Call(LGBM_BoosterLoadModelFromString_R, self$raw)
       }
       return(invisible(NULL))
@@ -889,8 +892,9 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
     return(invisible(Booster$new(modelfile = filename)))
   }
 
-  if (is.character(model_str))
+  if (is.character(model_str)) {
     model_str <- charToRaw(model_str)
+  }
   if (model_str_provided) {
     if (!is.raw(model_str)) {
       stop("lgb.load: model_str should be a character/raw vector")
