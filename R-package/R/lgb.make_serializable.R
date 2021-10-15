@@ -8,7 +8,6 @@
 #'
 #' @return \code{lgb.Booster} (the same `model` object that was passed as input, as invisible).
 #' @seealso \link{lgb.restore_handle}, \link{lgb.drop_serialized}.
-#' @examples
 #' @export
 lgb.make_serializable <- function(model) {
   stopifnot(lgb.is.Booster(model))

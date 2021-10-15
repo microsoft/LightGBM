@@ -10,6 +10,21 @@
 #' @return \code{lgb.Booster} (the same `model` object that was passed as input, as invisible).
 #' @seealso \link{lgb.make_serializable}, \link{lgb.drop_serialized}.
 #' @examples
+#' library(lightgbm)
+#' data("agaricus.train")
+#' model <- lightgbm(
+#'   agaricus.train$data
+#'   , agaricus.train$label
+#'   , params = list(objective = "binary", nthreads = 1L)
+#'   , nrounds = 5L
+#'   , verbose = 0)
+#' fname <- tempfile(fileext="rds")
+#' saveRDS(model, fname)
+#'
+#' model_new <- readRDS(fname)
+#' model_new$check_null_handle()
+#' lgb.restore_handle(model_new)
+#' model_new$check_null_handle()
 #' @export
 lgb.restore_handle <- function(model) {
   stopifnot(lgb.is.Booster(model))

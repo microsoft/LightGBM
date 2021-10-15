@@ -19,6 +19,23 @@ After a LightGBM model object is de-serialized through functions such as \code{s
 object is restored automatically when calling functions such as \code{predict}, but this function can be
 used to forcibly restore it beforehand. Note that the object will be modified in-place.
 }
+\examples{
+library(lightgbm)
+data("agaricus.train")
+model <- lightgbm(
+  agaricus.train$data
+  , agaricus.train$label
+  , params = list(objective = "binary", nthreads = 1L)
+  , nrounds = 5L
+  , verbose = 0)
+fname <- tempfile(fileext="rds")
+saveRDS(model, fname)
+
+model_new <- readRDS(fname)
+model_new$check_null_handle()
+lgb.restore_handle(model_new)
+model_new$check_null_handle()
+}
 \seealso{
 \link{lgb.make_serializable}, \link{lgb.drop_serialized}.
 }
