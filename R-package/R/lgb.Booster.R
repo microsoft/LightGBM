@@ -477,6 +477,8 @@ Booster <- R6::R6Class(
     # Dump model in memory
     dump_model = function(num_iteration = NULL, feature_importance_type = 0L) {
 
+      self$restore_handle()
+
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
       }
