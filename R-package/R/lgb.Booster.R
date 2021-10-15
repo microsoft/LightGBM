@@ -810,6 +810,53 @@ predict.lgb.Booster <- function(object,
   )
 }
 
+#' @name print.lgb.Booster
+#' @title Print method for LightGBM model
+#' @description Show summary information about a LightGBM model object (same as \code{summary}).
+#' @param x Object of class \code{lgb.Booster}
+#' @return The same input `x`, returned as invisible.
+#' @export
+print.lgb.Booster <- function(x) {
+  handle <- x$.__enclos_env__$private$handle
+  handle_is_null <- lgb.is.null.handle(handle)
+
+  if (!handle_is_null) {
+    cat(sprintf("LightGBM Model (%d trees)\n", x$current_iter()))
+  } else {
+    cat("LightGBM Model\n")
+  }
+
+  if (!handle_is_null) {
+    if (x$.__enclos_env__$private$num_class == 1L) {
+      cat(sprintf("Objective: %s\n", x$params$objective))
+    } else {
+      cat(sprintf("Objective: %s (%d classes)\n"
+          , x$params$objective
+          , x$.__enclos_env__$private$num_class == 1L))
+    }
+  } else {
+    cat("(Booster handle is invalid)\n")
+  }
+
+  if (!handle_is_null) {
+    ncols <- .Call(LGBM_BoosterGetNumFeatures_R, handle)
+    cat(sprintf("Fitted to dataset with %d columns\n", ncols))
+  }
+
+  return(invisible(x))
+}
+
+#' @name summary.lgb.Booster
+#' @title Summary method for LightGBM model
+#' @description Show summary information about a LightGBM model object (same as \code{print}).
+#' @param object Object of class \code{lgb.Booster}
+#' @param ... Not used
+#' @return The same input `object`, returned as invisible.
+#' @export
+summary.lgb.Booster <- function(object, ...) {
+  print(object)
+}
+
 #' @name lgb.load
 #' @title Load LightGBM model
 #' @description Load LightGBM takes in either a file path or model string.

@@ -525,6 +525,15 @@ SEXP LGBM_BoosterGetNumClasses_R(SEXP handle,
   R_API_END();
 }
 
+SEXP LGBM_BoosterGetNumFeatures_R(SEXP handle) {
+  R_API_BEGIN();
+  _AssertBoosterHandleNotNull(handle);
+  int out = 0;
+  CHECK_CALL(LGBM_BoosterGetNumFeatures(R_ExternalPtrAddr(handle), &out));
+  return Rf_ScalarInteger(out);
+  R_API_END();
+}
+
 SEXP LGBM_BoosterUpdateOneIter_R(SEXP handle) {
   R_API_BEGIN();
   _AssertBoosterHandleNotNull(handle);
@@ -889,6 +898,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterResetTrainingData_R"  , (DL_FUNC) &LGBM_BoosterResetTrainingData_R  , 2},
   {"LGBM_BoosterResetParameter_R"     , (DL_FUNC) &LGBM_BoosterResetParameter_R     , 2},
   {"LGBM_BoosterGetNumClasses_R"      , (DL_FUNC) &LGBM_BoosterGetNumClasses_R      , 2},
+  {"LGBM_BoosterGetNumFeatures_R"     , (DL_FUNC) &LGBM_BoosterGetNumFeatures_R     , 1},
   {"LGBM_BoosterUpdateOneIter_R"      , (DL_FUNC) &LGBM_BoosterUpdateOneIter_R      , 1},
   {"LGBM_BoosterUpdateOneIterCustom_R", (DL_FUNC) &LGBM_BoosterUpdateOneIterCustom_R, 4},
   {"LGBM_BoosterRollbackOneIter_R"    , (DL_FUNC) &LGBM_BoosterRollbackOneIter_R    , 1},

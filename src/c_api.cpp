@@ -2308,6 +2308,13 @@ int LGBM_BoosterSetLeafValue(BoosterHandle handle,
   API_END();
 }
 
+int LGBM_BoosterGetNumFeatures(BoosterHandle handle, int *out_val) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_val = ref_booster->GetBoosting()->MaxFeatureIdx() + 1;
+  API_END();
+}
+
 int LGBM_BoosterFeatureImportance(BoosterHandle handle,
                                   int num_iteration,
                                   int importance_type,
