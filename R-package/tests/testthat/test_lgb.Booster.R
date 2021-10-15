@@ -1051,9 +1051,9 @@ test_that("Booster's print, show, and summary work correctly", {
     model <- lgb.train(
         params = list(objective = "regression")
         , data = lgb.Dataset(
-            as.matrix(mtcars[, -1])
+            as.matrix(mtcars[, -1L])
             , label = mtcars$mpg)
-        , verbose = 0
+        , verbose = 0L
         , nrounds = 5L
     )
     check_methods_work(model)
@@ -1062,10 +1062,10 @@ test_that("Booster's print, show, and summary work correctly", {
     model <- lgb.train(
         params = list(objective = "multiclass", num_class = 3L)
         , data = lgb.Dataset(
-            as.matrix(iris[, -5])
-            , label = as.numeric(factor(iris$Species)) - 1
+            as.matrix(iris[, -5L])
+            , label = as.numeric(factor(iris$Species)) - 1.0
         )
-        , verbose = 0
+        , verbose = 0L
         , nrounds = 5L
     )
     check_methods_work(model)
@@ -1076,9 +1076,9 @@ test_that("LGBM_BoosterGetNumFeatures_R returns correct outputs", {
     model <- lgb.train(
         params = list(objective = "regression")
         , data = lgb.Dataset(
-            as.matrix(mtcars[, -1])
+            as.matrix(mtcars[, -1L])
             , label = mtcars$mpg)
-        , verbose = 0
+        , verbose = 0L
         , nrounds = 5L
     )
     ncols <- .Call(LGBM_BoosterGetNumFeatures_R, model$.__enclos_env__$private$handle)
@@ -1088,10 +1088,10 @@ test_that("LGBM_BoosterGetNumFeatures_R returns correct outputs", {
     model <- lgb.train(
         params = list(objective = "multiclass", num_class = 3L)
         , data = lgb.Dataset(
-            as.matrix(iris[, -5])
-            , label = as.numeric(factor(iris$Species)) - 1
+            as.matrix(iris[, -5L])
+            , label = as.numeric(factor(iris$Species)) - 1.0
         )
-        , verbose = 0
+        , verbose = 0L
         , nrounds = 5L
     )
     ncols <- .Call(LGBM_BoosterGetNumFeatures_R, model$.__enclos_env__$private$handle)
