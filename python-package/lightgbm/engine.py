@@ -188,12 +188,11 @@ def train(
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
+    predictor: Optional[_InnerPredictor] = None
     if isinstance(init_model, (str, Path)):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))
-    else:
-        predictor = None
     init_iteration = predictor.num_total_iteration if predictor is not None else 0
     # check dataset
     if not isinstance(train_set, Dataset):
