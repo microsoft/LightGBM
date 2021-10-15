@@ -76,6 +76,8 @@ Booster <- R6::R6Class(
             stop("lgb.Booster: Can only use a string as model file path")
           }
 
+          modelfile <- path.expand(modelfile)
+
           # Create booster from model
           handle <- .Call(
             LGBM_BoosterCreateFromModelfile_R
@@ -424,6 +426,8 @@ Booster <- R6::R6Class(
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
       }
+
+      filename <- path.expand(filename)
 
       .Call(
         LGBM_BoosterSaveModel_R
@@ -857,6 +861,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
     if (!is.character(filename)) {
       stop("lgb.load: filename should be character")
     }
+    filename <- path.expand(filename)
     if (!file.exists(filename)) {
       stop(sprintf("lgb.load: file '%s' passed to filename does not exist", filename))
     }
@@ -917,6 +922,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
   if (!(is.character(filename) && length(filename) == 1L)) {
     stop("lgb.save: filename should be a string")
   }
+  filename <- path.expand(filename)
 
   # Store booster
   return(
