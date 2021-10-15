@@ -70,7 +70,7 @@ __device__ __forceinline__ void PrepareOffset(const data_size_t num_data_in_leaf
   }
 }
 
-template <bool MIN_IS_MAX, bool MAX_TO_LEFT, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
 __global__ void UpdateDataIndexToLeafIndexKernel(
   const data_size_t num_data_in_leaf, const data_size_t* data_indices_in_leaf,
   const uint32_t th, const BIN_TYPE* column_data,
@@ -94,6 +94,8 @@ __global__ void UpdateDataIndexToLeafIndexKernel(
         }
       } else if (bin > th) {
         cuda_data_index_to_leaf_index[global_data_index] = right_leaf_index;
+      } else {
+        cuda_data_index_to_leaf_index[global_data_index] = left_leaf_index;
       }
     } else {
       if (MISSING_IS_ZERO && !MFB_IS_ZERO && bin == t_zero_bin) {
@@ -110,6 +112,8 @@ __global__ void UpdateDataIndexToLeafIndexKernel(
         } else {
           if (!MAX_TO_LEFT) {
             cuda_data_index_to_leaf_index[global_data_index] = right_leaf_index;
+          } else {
+            cuda_data_index_to_leaf_index[global_data_index] = left_leaf_index;
           }
         }
       }
