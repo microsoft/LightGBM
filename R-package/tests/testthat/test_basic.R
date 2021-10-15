@@ -231,6 +231,23 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
   expect_true(abs(bst$record_evals[["valid2"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
 })
 
+test_that("lightgbm() accepts a NULL for save_name" {
+  files_before <- list.files(getwd())
+
+  model <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , params = list(objective = "binary")
+    , verbose = 0L
+    , save_name = NULL
+  )
+
+  files_after <- list.files(getwd())
+
+  expect_equal(files_before, files_after)
+})
+
 
 context("training continuation")
 
