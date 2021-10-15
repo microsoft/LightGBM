@@ -818,6 +818,7 @@ predict.lgb.Booster <- function(object,
 #' @return The same input `x`, returned as invisible.
 #' @export
 print.lgb.Booster <- function(x, ...) {
+  # nolint start
   handle <- x$.__enclos_env__$private$handle
   handle_is_null <- lgb.is.null.handle(handle)
 
@@ -843,6 +844,7 @@ print.lgb.Booster <- function(x, ...) {
     ncols <- .Call(LGBM_BoosterGetNumFeatures_R, handle)
     cat(sprintf("Fitted to dataset with %d columns\n", ncols))
   }
+  # nolint end
 
   return(invisible(x))
 }
