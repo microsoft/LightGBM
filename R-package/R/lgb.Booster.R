@@ -823,7 +823,12 @@ print.lgb.Booster <- function(x, ...) {
   handle_is_null <- lgb.is.null.handle(handle)
 
   if (!handle_is_null) {
-    cat(sprintf("LightGBM Model (%d trees)\n", x$current_iter()))
+    ntrees <- x$current_iter()
+    if (ntrees == 1L) {
+      cat("LightGBM Model (1 tree)\n")
+    } else {
+      cat(sprintf("LightGBM Model (%d trees)\n", ntrees))
+    }
   } else {
     cat("LightGBM Model\n")
   }
