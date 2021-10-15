@@ -217,8 +217,14 @@ void CUDADataPartition::SplitInner(
 }
 
 void CUDADataPartition::UpdateTrainScore(const Tree* tree, double* scores) {
-  CHECK(tree->is_cuda_tree());
-  const CUDATree* cuda_tree = reinterpret_cast<const CUDATree*>(tree);
+  const CUDATree* cuda_tree = nullptr;
+  std::unique_ptr<CUDATree> cuda_tree_ptr;
+  if (tree->is_cuda_tree()) {
+    cuda_tree = reinterpret_cast<const CUDATree*>(tree);
+  } else {
+    cuda_tree_ptr.reset(new CUDATree(tree));
+    cuda_tree = cuda_tree_ptr.get();
+  }
   const data_size_t num_data_in_root = root_num_data();
   if (use_bagging_) {
     // we need restore the order of indices in cuda_data_indices_
@@ -322,6 +328,7 @@ void CUDADataPartition::ResetConfig(const Config* config) {
   AllocateCUDAMemory<data_size_t>(&cuda_leaf_data_start_, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
   AllocateCUDAMemory<data_size_t>(&cuda_leaf_data_end_, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
   AllocateCUDAMemory<data_size_t>(&cuda_leaf_num_data_, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
+  AllocateCUDAMemory<hist_t*>(&cuda_hist_pool_, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
   AllocateCUDAMemory<double>(&cuda_leaf_output_, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
 }
 

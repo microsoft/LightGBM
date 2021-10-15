@@ -161,6 +161,17 @@ void CUDATree::InitCUDA() {
                                     leaf_value_.size(),
                                     __FILE__,
                                     __LINE__);
+  InitCUDAMemoryFromHostMemory<double>(&cuda_leaf_weight_,
+                                    leaf_weight_.data(),
+                                    leaf_weight_.size(),
+                                    __FILE__,
+                                    __LINE__);
+  InitCUDAMemoryFromHostMemory<int>(&cuda_leaf_parent_,
+                                    leaf_parent_.data(),
+                                    leaf_parent_.size(),
+                                    __FILE__,
+                                    __LINE__);
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_stream_));
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 
