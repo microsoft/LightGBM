@@ -1035,3 +1035,65 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
     preds2 <- predict(bst2, X)
     expect_identical(preds, preds2)
 })
+
+test_that("Booster's print, show, and summary work correctly", {
+    check_methods_work <- function(model) {
+        expect_error(print(model), NA)
+        expect_error(show(model), NA)
+        expect_error(summary(model), NA)
+        model$finalize()
+        expect_error(print(model), NA)
+        expect_error(show(model), NA)
+        expect_error(summary(model), NA)
+    }
+
+    data("mtcars")
+    model <- lgb.train(
+        params = list(objective = "regression")
+        , data = lgb.Dataset(
+            as.matrix(mtcars[, -1])
+            , label = mtcars$mpg)
+        , verbose = 0
+        , nrounds = 5L
+    )
+    check_methods_work(model)
+
+    data("iris")
+    model <- lgb.train(
+        params = list(objective = "multiclass", num_class = 3L)
+        , data = lgb.Dataset(
+            as.matrix(iris[, -5])
+            , label = as.numeric(factor(iris$Species)) - 1
+        )
+        , verbose = 0
+        , nrounds = 5L
+    )
+    check_methods_work(model)
+})
+
+test_that("LGBM_BoosterGetNumFeatures_R returns correct outputs", {
+    data("mtcars")
+    model <- lgb.train(
+        params = list(objective = "regression")
+        , data = lgb.Dataset(
+            as.matrix(mtcars[, -1])
+            , label = mtcars$mpg)
+        , verbose = 0
+        , nrounds = 5L
+    )
+    ncols <- .Call(LGBM_BoosterGetNumFeatures_R, model$.__enclos_env__$private$handle)
+    expect_equal(ncols, ncol(mtcars) - 1L)
+
+    data("iris")
+    model <- lgb.train(
+        params = list(objective = "multiclass", num_class = 3L)
+        , data = lgb.Dataset(
+            as.matrix(iris[, -5])
+            , label = as.numeric(factor(iris$Species)) - 1
+        )
+        , verbose = 0
+        , nrounds = 5L
+    )
+    ncols <- .Call(LGBM_BoosterGetNumFeatures_R, model$.__enclos_env__$private$handle)
+    expect_equal(ncols, ncol(iris) - 1L)
+})
