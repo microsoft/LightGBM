@@ -1264,9 +1264,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSetLeafValue(BoosterHandle handle,
                                                double val);
 
 /*!
- * \brief Get number of features (columns) to which a booster was fit.
+ * \brief Get number of features in the training data used when fitting this Booster.
  * \param handle Handle of booster
- * \param[out] out_val Output result from the specified leaf
+ * \param[out] out_val Number of features in the training data used when fitting this Booster.
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumFeatures(BoosterHandle handle,
