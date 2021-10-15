@@ -834,7 +834,7 @@ print.lgb.Booster <- function(x, ...) {
     } else {
       cat(sprintf("Objective: %s (%d classes)\n"
           , x$params$objective
-          , x$.__enclos_env__$private$num_class == 1L))
+          , x$.__enclos_env__$private$num_class))
     }
   } else {
     cat("(Booster handle is invalid)\n")
