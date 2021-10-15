@@ -870,7 +870,7 @@ test_that("Booster: method calls Booster with a null handle should raise an info
         bst$rollback_one_iter()
     })
     .expect_booster_error({
-        bst$save()
+        bst$save_raw()
     })
     .expect_booster_error({
         bst$save_model(filename = tempfile(fileext = ".model"))

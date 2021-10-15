@@ -197,6 +197,8 @@ Booster <- R6::R6Class(
       params <- utils::modifyList(params, additional_params)
       params_str <- lgb.params2str(params = params)
 
+      self$restore_handle()
+
       .Call(
         LGBM_BoosterResetParameter_R
         , private$handle
@@ -290,6 +292,8 @@ Booster <- R6::R6Class(
     # Return one iteration behind
     rollback_one_iter = function() {
 
+      self$restore_handle()
+
       .Call(
         LGBM_BoosterRollbackOneIter_R
         , private$handle
@@ -307,6 +311,8 @@ Booster <- R6::R6Class(
     # Get current iteration
     current_iter = function() {
 
+      self$restore_handle()
+
       cur_iter <- 0L
       .Call(
         LGBM_BoosterGetCurrentIteration_R
@@ -320,6 +326,8 @@ Booster <- R6::R6Class(
     # Get upper bound
     upper_bound = function() {
 
+      self$restore_handle()
+
       upper_bound <- 0.0
       .Call(
         LGBM_BoosterGetUpperBoundValue_R
@@ -332,6 +340,8 @@ Booster <- R6::R6Class(
 
     # Get lower bound
     lower_bound = function() {
+
+      self$restore_handle()
 
       lower_bound <- 0.0
       .Call(
@@ -424,6 +434,8 @@ Booster <- R6::R6Class(
     # Save model
     save_model = function(filename, num_iteration = NULL, feature_importance_type = 0L) {
 
+      self$restore_handle()
+
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
       }
@@ -440,6 +452,8 @@ Booster <- R6::R6Class(
     },
 
     save_model_to_string = function(num_iteration = NULL, feature_importance_type = 0L, as_char = TRUE) {
+
+      self$restore_handle()
 
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
@@ -664,6 +678,8 @@ Booster <- R6::R6Class(
       if (data_idx > private$num_dataset) {
         stop("data_idx should not be greater than num_dataset")
       }
+
+      self$restore_handle()
 
       private$get_eval_info()
 
