@@ -79,7 +79,7 @@
 #'          reconstruct the C++ object after deserialization (e.g. after calling \code{readRDS} or similar), one
 #'          can use the function \link{lgb.restore_handle} (for example, if one makes predictions in parallel or in
 #'          forked processes, it will be faster to restore the handle beforehand).
-#'          
+#'
 #'          Producing and keeping these raw bytes however uses extra memory, and if they are not required,
 #'          it is possible to avoid producing them by passing `serializable=FALSE`. In such cases, these raw
 #'          bytes can be added to the model on demand through function \link{lgb.make_serializable}.
