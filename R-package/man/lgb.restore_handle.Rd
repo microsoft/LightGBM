@@ -11,7 +11,7 @@ lgb.restore_handle(model)
 need to be restored.}
 }
 \value{
-\code{lgb.Booster} (the same `model` object that was passed as input, as invisible).
+\code{lgb.Booster} (the same `model` object that was passed as input, invisibly).
 }
 \description{
 After a LightGBM model object is de-serialized through functions such as \code{save} or
