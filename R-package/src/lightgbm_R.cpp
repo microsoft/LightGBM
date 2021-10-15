@@ -22,6 +22,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 #define COL_MAJOR (0)
 
