@@ -7,7 +7,7 @@
 #' @param model \code{lgb.Booster} object which was de-serialized and whose underlying C++ object and R handle
 #' need to be restored.
 #'
-#' @return \code{lgb.Booster} (the same `model` object that was passed as input, as invisible).
+#' @return \code{lgb.Booster} (the same `model` object that was passed as input, invisibly).
 #' @seealso \link{lgb.make_serializable}, \link{lgb.drop_serialized}.
 #' @examples
 #' library(lightgbm)
