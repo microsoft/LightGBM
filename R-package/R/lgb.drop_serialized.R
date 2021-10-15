@@ -10,9 +10,9 @@
 #' @seealso \link{lgb.restore_handle}, \link{lgb.make_serializable}.
 #' @export
 lgb.drop_serialized <- function(model) {
-  if (!lgb.is.Booster(x = model)) { 
-    stop("lgb.drop_serialized: model should be an ", sQuote("lgb.Booster")) 
-  } 
+  if (!lgb.is.Booster(x = model)) {
+    stop("lgb.drop_serialized: model should be an ", sQuote("lgb.Booster"))
+  }
   model$drop_raw()
   return(invisible(model))
 }
