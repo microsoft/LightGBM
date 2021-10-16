@@ -99,7 +99,7 @@ void _DatasetFinalizer(SEXP handle) {
   LGBM_DatasetFree_R(handle);
 }
 
-SEXP LGBM_NullHandleError_R() {
+SEXP LGBM_NullBoosterHandleError_R() {
   Rf_error(
       "Attempting to use a Booster which no longer exists and/or cannot be restored. "
       "This can happen if you have called Booster$finalize() "
