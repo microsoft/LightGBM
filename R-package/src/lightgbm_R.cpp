@@ -109,7 +109,7 @@ SEXP LGBM_NullBoosterHandleError_R() {
 
 void _AssertBoosterHandleNotNull(SEXP handle) {
   if (Rf_isNull(handle) || !R_ExternalPtrAddr(handle)) {
-    LGBM_NullHandleError_R();
+    LGBM_NullBoosterHandleError_R();
   }
 }
 
@@ -919,7 +919,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterSaveModel_R"          , (DL_FUNC) &LGBM_BoosterSaveModel_R          , 4},
   {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 3},
   {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 3},
-  {"LGBM_NullHandleError_R"           , (DL_FUNC) &LGBM_NullHandleError_R           , 0},
+  {"LGBM_NullBoosterHandleError_R"    , (DL_FUNC) &LGBM_NullBoosterHandleError_R    , 0},
   {NULL, NULL, 0}
 };
 

@@ -574,7 +574,7 @@ Booster <- R6::R6Class(
     restore_handle = function() {
       if (self$check_null_handle()) {
         if (is.null(self$raw)) {
-          .Call(LGBM_NullHandleError_R)
+          .Call(LGBM_NullBoosterHandleError_R)
         }
         private$handle <- .Call(LGBM_BoosterLoadModelFromString_R, self$raw)
       }
