@@ -840,7 +840,7 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   std::vector<char> inner_char_buf(buf_len);
   CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, buf_len, &out_len, inner_char_buf.data()));
   SEXP model_str = PROTECT(safe_R_raw(out_len, &cont_token));
-  // if the model string was larger than the initial buffer, allocate a bigger buffer and try again
+  // if the model string was larger than the initial buffer, call the function again, writing directly to the R object
   if (out_len > buf_len) {
     CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, reinterpret_cast<char*>(RAW(model_str))));
   } else {
