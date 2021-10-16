@@ -221,6 +221,7 @@ def generate_doxygen_xml(app: Sphinx) -> None:
         "MACRO_EXPANSION=YES",
         "EXPAND_ONLY_PREDEF=NO",
         "SKIP_FUNCTION_MACROS=NO",
+        "PREDEFINED=__cplusplus",
         "SORT_BRIEF_DOCS=YES",
         "WARN_AS_ERROR=YES",
     ]

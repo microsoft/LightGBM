@@ -1329,19 +1329,19 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines,
                                                     void* allgather_ext_fun);
 
 #if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 199901L))
-#define INLINE_FUNCTION /*!< \brief inline specifier no-op in C using standards before C99. */
+#define INLINE_FUNCTION  //!< \brief Inline specifier no-op in C using standards before C99.
 #else
-#define INLINE_FUNCTION inline /*!< \brief Inline specifier. */
+#define INLINE_FUNCTION inline  //!< \brief Inline specifier.
 #endif
 
 #if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 201112L))
-#define THREAD_LOCAL  /*!< \brief Thread local specifier no-op in C using standards before C11. */
+#define THREAD_LOCAL  //!< \brief Thread local specifier no-op in C using standards before C11.
 #elif !defined(__cplusplus)
-#define THREAD_LOCAL _Thread_local  /*!< \brief Thread local specifier. */
+#define THREAD_LOCAL _Thread_local  //!< \brief Thread local specifier.
 #elif defined(_MSC_VER)
-#define THREAD_LOCAL __declspec(thread)  /*!< \brief Thread local specifier. */
+#define THREAD_LOCAL __declspec(thread)  //!< \brief Thread local specifier.
 #else
-#define THREAD_LOCAL thread_local  /*!< \brief Thread local specifier. */
+#define THREAD_LOCAL thread_local  //!< \brief Thread local specifier.
 #endif
 
 /*!
