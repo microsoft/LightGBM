@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgb.restore_handle.R
 \name{lgb.restore_handle}
 \alias{lgb.restore_handle}
-\title{Restore the C++ component of a deserialized LGB model}
+\title{Restore the C++ component of a de-serialized LightGBM model}
 \usage{
 lgb.restore_handle(model)
 }
