@@ -1,5 +1,5 @@
 #' @name lgb.restore_handle
-#' @title Restore the C++ component of a deserialized LGB model
+#' @title Restore the C++ component of a de-serialized LightGBM model
 #' @description After a LightGBM model object is de-serialized through functions such as \code{save} or
 #' \code{saveRDS}, its underlying C++ object will be blank and needs to be restored to able to use it. Such
 #' object is restored automatically when calling functions such as \code{predict}, but this function can be
