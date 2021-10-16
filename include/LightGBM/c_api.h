@@ -1264,15 +1264,6 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSetLeafValue(BoosterHandle handle,
                                                double val);
 
 /*!
- * \brief Get number of features in the training data used when fitting this Booster.
- * \param handle Handle of booster
- * \param[out] out_val Number of features in the training data used when fitting this Booster.
- * \return 0 when succeed, -1 when failure happens
- */
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumFeatures(BoosterHandle handle,
-                                                 int *out_val);
-
-/*!
  * \brief Get model feature importance.
  * \param handle Handle of booster
  * \param num_iteration Number of iterations for which feature importance is calculated, <= 0 means use all

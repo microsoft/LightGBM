@@ -846,7 +846,7 @@ print.lgb.Booster <- function(x, ...) {
   }
 
   if (!handle_is_null) {
-    ncols <- .Call(LGBM_BoosterGetNumFeatures_R, handle)
+    ncols <- .Call(LGBM_BoosterGetNumFeature_R, handle)
     cat(sprintf("Fitted to dataset with %d columns\n", ncols))
   }
   # nolint end
