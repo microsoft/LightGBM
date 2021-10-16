@@ -1071,7 +1071,7 @@ test_that("Booster's print, show, and summary work correctly", {
     check_methods_work(model)
 })
 
-test_that("LGBM_BoosterGetNumFeatures_R returns correct outputs", {
+test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
     data("mtcars")
     model <- lgb.train(
         params = list(objective = "regression")
@@ -1081,7 +1081,7 @@ test_that("LGBM_BoosterGetNumFeatures_R returns correct outputs", {
         , verbose = 0L
         , nrounds = 5L
     )
-    ncols <- .Call(LGBM_BoosterGetNumFeatures_R, model$.__enclos_env__$private$handle)
+    ncols <- .Call(LGBM_BoosterGetNumFeature_R, model$.__enclos_env__$private$handle)
     expect_equal(ncols, ncol(mtcars) - 1L)
 
     data("iris")
@@ -1094,6 +1094,6 @@ test_that("LGBM_BoosterGetNumFeatures_R returns correct outputs", {
         , verbose = 0L
         , nrounds = 5L
     )
-    ncols <- .Call(LGBM_BoosterGetNumFeatures_R, model$.__enclos_env__$private$handle)
+    ncols <- .Call(LGBM_BoosterGetNumFeature_R, model$.__enclos_env__$private$handle)
     expect_equal(ncols, ncol(iris) - 1L)
 })

@@ -303,15 +303,6 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumClasses_R(
 );
 
 /*!
-* \brief  Get number of features in the training data used when fitting this Booster.
-* \param handle Booster handle
-* \return R integer
-*/
-LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumFeatures_R(
-  SEXP handle
-);
-
-/*!
 * \brief update the model in one round
 * \param handle Booster handle
 * \return R NULL value
