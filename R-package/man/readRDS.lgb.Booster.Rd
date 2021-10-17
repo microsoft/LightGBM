@@ -18,7 +18,7 @@ readRDS.lgb.Booster(file, refhook = NULL)
 Calls \code{readRDS} in what is expected to a serialized \code{lgb.Booster} object,
              and then restores its handle through \code{lgb.restore_handle}.
 
-             \bold{This function throws a warning and will be deprecated in future versions.}
+             \bold{This function throws a warning and will be removed in future versions.}
 }
 \examples{
 \donttest{

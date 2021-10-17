@@ -41,7 +41,7 @@ NULL invisibly.
 Calls \code{saveRDS} on an \code{lgb.Booster} object, making it serializable before the call if
              it isn't already.
 
-             \bold{This function throws a warning and will be deprecated in future versions.}
+             \bold{This function throws a warning and will be removed in future versions.}
 }
 \examples{
 \donttest{
