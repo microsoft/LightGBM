@@ -3,7 +3,7 @@
 #' @description Calls \code{saveRDS} on an \code{lgb.Booster} object, making it serializable before the call if
 #'              it isn't already.
 #'
-#'              \bold{This function throws a warning and will be deprecated in future versions.}
+#'              \bold{This function throws a warning and will be removed in future versions.}
 #' @param object \code{lgb.Booster} object to serialize.
 #' @param file a connection or the name of the file where the R object is saved to or read from.
 #' @param ascii a logical. If TRUE or NA, an ASCII representation is written; otherwise (default),
