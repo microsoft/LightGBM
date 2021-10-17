@@ -4,6 +4,7 @@ PKGROOT=.
 
 LGB_CPPFLAGS = \
     @LGB_CPPFLAGS@ \
+    -DEIGEN_USE_BLAS
     -DUSE_SOCKET \
     -DLGB_R_BUILD
 
@@ -18,6 +19,9 @@ PKG_CXXFLAGS = \
 PKG_LIBS = \
     @OPENMP_CXXFLAGS@ \
     @OPENMP_LIB@ \
+    $(LAPACK_LIBS) \
+    $(BLAS_LIBS) \
+    $(FLIBS) \
     -pthread
 
 OBJECTS = \

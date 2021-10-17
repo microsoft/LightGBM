@@ -5,6 +5,7 @@ PKGROOT=.
 LGB_CPPFLAGS = \
     @LGB_CPPFLAGS@ \
     -DUSE_SOCKET \
+    -DEIGEN_USE_BLAS \
     -DLGB_R_BUILD
 
 PKG_CPPFLAGS = \
@@ -18,6 +19,9 @@ PKG_CXXFLAGS = \
 PKG_LIBS = \
     ${SHLIB_OPENMP_CXXFLAGS} \
     ${SHLIB_PTHREAD_FLAGS} \
+    $(LAPACK_LIBS) \
+    $(BLAS_LIBS) \
+    $(FLIBS) \
     -lws2_32 \
     -lIphlpapi
 
