@@ -8,9 +8,11 @@ $(function() {
         var current_version = $(current_version_elems[0]).contents().filter(function() {
             return this.nodeType == 3;
         }).text().trim().split(' ').pop();
-        $('a.reference.external[href$="/latest/R/reference/"]').each(function() {
-            $(this).attr('href', function (_, val) { return val.replace('/latest/', '/' + current_version + '/'); });
-        });
+        if(current_version !== 'latest') {
+            $('a.reference.external[href$="/latest/R/reference/"]').each(function() {
+                $(this).attr('href', function (_, val) { return val.replace('/latest/', '/' + current_version + '/'); });
+            });
+        }
     }
 
     /* Collapse specified sections in the installation guide */
