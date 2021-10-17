@@ -305,8 +305,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumClasses_R(
 /*!
 * \brief Get number of features.
 * \param handle Booster handle
-* \param out Total number of features
-* \return R NULL value
+* \return Total number of features, as R integer
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumFeature_R(
   SEXP handle
