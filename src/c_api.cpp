@@ -1660,7 +1660,7 @@ int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len) {
 int LGBM_BoosterGetLinear(BoosterHandle handle, int* out) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  if(ref_booster->GetBoosting()->IsLinear()) {
+  if (ref_booster->GetBoosting()->IsLinear()) {
     *out = 1;
   } else {
     *out = 0;

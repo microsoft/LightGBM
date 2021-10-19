@@ -80,7 +80,8 @@ if [[ $TASK == "lint" ]]; then
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
-    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package ./swig ./tests || exit -1
+    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length,-runtime/printf ./include/LightGBM/c_api.h || exit -1
+    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive --exclude=./include/LightGBM/c_api.h ./src ./include ./R-package ./swig ./tests || exit -1
     cmake_files=$(find . -name CMakeLists.txt -o -path "*/cmake/*.cmake")
     cmakelint --linelength=120 ${cmake_files} || true
     exit 0
