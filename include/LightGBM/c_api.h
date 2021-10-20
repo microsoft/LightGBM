@@ -1361,7 +1361,7 @@ static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everythin
 INLINE_FUNCTION void LGBM_SetLastError(const char* msg) {
   const int err_buf_len = 512;
 #if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 199901L))
-  sprintf(LastErrorMsg(), "%s", msg);
+  sprintf(LastErrorMsg(), "%s", msg);  /* NOLINT(runtime/printf) */
 #else
   snprintf(LastErrorMsg(), err_buf_len, "%s", msg);
 #endif
