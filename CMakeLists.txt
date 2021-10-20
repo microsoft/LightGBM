@@ -376,7 +376,8 @@ if(BUILD_STATIC_LIB)
 else()
   add_library(_lightgbm SHARED)
 endif(BUILD_STATIC_LIB)
-target_link_libraries(_lightgbm PRIVATE lightgbm_capi_objs lightgbm_objs)
+# LightGBM headers include openmp, cuda, R etc. headers, thus use PUBLIC here.
+target_link_libraries(_lightgbm PUBLIC lightgbm_capi_objs lightgbm_objs)
 
 if(MSVC)
   set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
