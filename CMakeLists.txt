@@ -424,9 +424,10 @@ if(USE_MPI)
 endif(USE_MPI)
 
 if(USE_OPENMP)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-        target_link_libraries(lightgbm_objs PUBLIC OpenMP::OpenMP_CXX)
-    endif()
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    target_link_libraries(lightgbm_objs PUBLIC OpenMP::OpenMP_CXX)
+    target_link_libraries(lightgbm_capi_objs PUBLIC OpenMP::OpenMP_CXX)
+  endif()
 endif(USE_OPENMP)
 
 if(USE_GPU)
