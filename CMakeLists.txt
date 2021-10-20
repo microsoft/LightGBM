@@ -372,11 +372,11 @@ add_library(lightgbm_capi_objs OBJECT ${API_SOURCES})
 target_compile_definitions(lightgbm_capi_objs PRIVATE -D_lightgbm_EXPORTS)
 
 if(BUILD_STATIC_LIB)
-  add_library(_lightgbm STATIC ${API_SOURCES})
+  add_library(_lightgbm STATIC)
 else()
-  add_library(_lightgbm SHARED ${API_SOURCES})
+  add_library(_lightgbm SHARED)
 endif(BUILD_STATIC_LIB)
-target_link_libraries(_lightgbm PRIVATE lightgbm_objs)
+target_link_libraries(_lightgbm PRIVATE lightgbm_capi_objs lightgbm_objs)
 
 if(MSVC)
   set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
@@ -474,11 +474,15 @@ if(WIN32)
 endif(WIN32)
 
 if(__BUILD_FOR_R)
+  # utils/log.h and capi uses R headers, thus both object libraries need to link
+  # with R lib.
   if(MSVC)
-    target_link_libraries(_lightgbm PUBLIC ${LIBR_MSVC_CORE_LIBRARY})
+    set(R_LIB ${LIBR_MSVC_CORE_LIBARY})
   else()
-    target_link_libraries(_lightgbm PUBLIC ${LIBR_CORE_LIBRARY})
+    set(R_LIB ${LIBR_CORE_LIBRARY})
   endif(MSVC)
+  target_link_libraries(lightgbm_objs PUBLIC ${R_LIB})
+  target_link_libraries(lightgbm_capi_objs PUBLIC ${R_LIB})
 endif(__BUILD_FOR_R)
 
 #-- Google C++ tests
