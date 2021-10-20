@@ -369,7 +369,6 @@ if(__BUILD_FOR_R)
 endif(__BUILD_FOR_R)
 
 add_library(lightgbm_capi_objs OBJECT ${API_SOURCES})
-target_compile_definitions(lightgbm_capi_objs PRIVATE -D_lightgbm_EXPORTS)
 
 if(BUILD_STATIC_LIB)
   add_library(_lightgbm STATIC)
