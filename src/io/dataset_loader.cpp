@@ -22,7 +22,10 @@ DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& pre
   label_idx_ = 0;
   weight_idx_ = NO_SPECIFIC;
   group_idx_ = NO_SPECIFIC;
-  SetHeader(filename);
+  if (filename != nullptr && CheckCanLoadFromBin(filename) == "") {
+    // SetHeader should only be called when loading from text file
+    SetHeader(filename);
+  }
   store_raw_ = false;
   if (io_config.linear_tree) {
     store_raw_ = true;
@@ -836,6 +839,10 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
       }
     } else {
       Log::Info("Recommend use integer for label index when loading data from binary for sanity check.");
+    }
+
+    if (config_.ignore_column != "") {
+      Log::Warning("Config ignore_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
     }
   }
 }
