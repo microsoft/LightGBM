@@ -193,14 +193,26 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
   const int num_feature_groups = train_data->num_feature_groups();
   int column_index = 0;
   num_feature_partitions_ = 0;
+  large_bin_partitions_.clear();
   for (int feature_group_index = 0; feature_group_index < num_feature_groups; ++feature_group_index) {
     if (!train_data->IsMultiGroup(feature_group_index)) {
       const uint32_t column_feature_hist_start = column_hist_offsets[column_index];
       const uint32_t column_feature_hist_end = column_hist_offsets[column_index + 1];
       const uint32_t num_bin_in_dense_group = column_feature_hist_end - column_feature_hist_start;
+
+      // if one column has too many bins, use a separate partition for that column
       if (num_bin_in_dense_group > max_num_bin_per_partition) {
-        Log::Fatal("Too many bins in a dense feature group.");
+        feature_partition_column_index_offsets_.emplace_back(column_index + 1);
+        start_hist_offset = column_feature_hist_end;
+        partition_hist_offsets_.emplace_back(start_hist_offset);
+        large_bin_partitions_.emplace_back(num_feature_partitions_);
+        ++num_feature_partitions_;
+        column_hist_offsets_.emplace_back(0);
+        ++column_index;
+        continue;
       }
+
+      // try if adding this column exceed the maximum number per partition
       const uint32_t cur_hist_num_bin = column_feature_hist_end - start_hist_offset;
       if (cur_hist_num_bin > max_num_bin_per_partition) {
         feature_partition_column_index_offsets_.emplace_back(column_index);
@@ -222,6 +234,21 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
         const int feature_index = group_feature_index_start + sub_feature_index;
         const uint32_t column_feature_hist_start = column_hist_offsets[column_index];
         const uint32_t column_feature_hist_end = column_hist_offsets[column_index + 1];
+        const uint32_t num_bin_in_dense_group = column_feature_hist_end - column_feature_hist_start;
+
+        // if one column has too many bins, use a separate partition for that column
+        if (num_bin_in_dense_group > max_num_bin_per_partition) {
+          feature_partition_column_index_offsets_.emplace_back(column_index + 1);
+          start_hist_offset = column_feature_hist_end;
+          partition_hist_offsets_.emplace_back(start_hist_offset);
+          large_bin_partitions_.emplace_back(num_feature_partitions_);
+          ++num_feature_partitions_;
+          column_hist_offsets_.emplace_back(0);
+          ++column_index;
+          continue;
+        }
+
+        // try if adding this column exceed the maximum number per partition
         const uint32_t cur_hist_num_bin = column_feature_hist_end - start_hist_offset;
         if (cur_hist_num_bin > max_num_bin_per_partition) {
           feature_partition_column_index_offsets_.emplace_back(column_index);
@@ -247,6 +274,38 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
     if (num_column > max_num_column_per_partition_) {
       max_num_column_per_partition_ = num_column;
     }
+  }
+
+  if (!large_bin_partitions_.empty()) {
+    std::vector<int> small_partition_index_to_global_partition_index;
+    std::vector<int> large_partition_index_to_global_partition_index;
+    int partition_index = 0;
+    int large_bin_partition_index = 0;
+    while (partition_index < num_feature_partitions_ &&
+      large_bin_partition_index < static_cast<int>(large_bin_partitions_.size())) {
+      while (partition_index != large_bin_partitions_[large_bin_partition_index]) {
+        small_partition_index_to_global_partition_index.emplace_back(partition_index);
+        ++partition_index;
+      }
+      large_partition_index_to_global_partition_index.emplace_back(partition_index);
+      ++partition_index;
+      ++large_bin_partition_index;
+    }
+    // push remaining partitions into small bin partitions
+    while (partition_index < num_feature_partitions_) {
+      small_partition_index_to_global_partition_index.emplace_back(partition_index);
+      ++partition_index;
+    }
+    InitCUDAMemoryFromHostMemory<int>(&cuda_large_partition_index_to_global_partition_index_,
+                                      large_partition_index_to_global_partition_index.data(),
+                                      large_partition_index_to_global_partition_index.size(),
+                                      __FILE__,
+                                      __LINE__);
+    InitCUDAMemoryFromHostMemory<int>(&cuda_small_partition_index_to_global_partition_index_,
+                                      small_partition_index_to_global_partition_index.data(),
+                                      small_partition_index_to_global_partition_index.size(),
+                                      __FILE__,
+                                      __LINE__);
   }
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_feature_partition_column_index_offsets_,

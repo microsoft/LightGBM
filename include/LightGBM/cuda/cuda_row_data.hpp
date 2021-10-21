@@ -40,6 +40,8 @@ class CUDARowData {
   void CopySubrowAndSubcol(const CUDARowData* full_set, const data_size_t* used_indices,
     const data_size_t num_used_indices, const std::vector<bool>& is_feature_used, const Dataset* train_data);
 
+  int NumLargeBinPartition() const { return static_cast<int>(large_bin_partitions_.size()); }
+
   int num_feature_partitions() const { return num_feature_partitions_; }
 
   int max_num_column_per_partition() const { return max_num_column_per_partition_; }
@@ -128,7 +130,8 @@ class CUDARowData {
   int cur_num_feature_partition_buffer_size_;
   /*! \brief CUDA device ID */
   int gpu_device_id_;
-
+  /*! \brief index of partitions with large bins that its histogram cannot fit into shared memory */
+  std::vector<int> large_bin_partitions_;
 
   // CUDA memory
 
@@ -162,6 +165,10 @@ class CUDARowData {
   uint32_t* cuda_block_buffer_uint32_t_;
   /*! \brief block buffer when calculating prefix sum */
   uint64_t* cuda_block_buffer_uint64_t_;
+  /*! \brief small bin partition index to global partition index */
+  int* cuda_small_partition_index_to_global_partition_index_;
+  /*! \brief large bin partition index to global partition index */
+  int* cuda_large_partition_index_to_global_partition_index_;
 };
 
 }  // namespace LightGBM
