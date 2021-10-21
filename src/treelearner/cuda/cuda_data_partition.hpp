@@ -72,6 +72,8 @@ class CUDADataPartition {
 
   void ResetConfig(const Config* config);
 
+  void ResetByLeafPred(const std::vector<int>& leaf_pred, int num_leaves);
+
   data_size_t root_num_data() const {
     if (use_bagging_) {
       return num_used_indices_;
@@ -85,6 +87,8 @@ class CUDADataPartition {
   const data_size_t* cuda_leaf_num_data() const { return cuda_leaf_num_data_; }
 
   const data_size_t* cuda_leaf_data_start() const { return cuda_leaf_data_start_; }
+
+  const int* cuda_data_index_to_leaf_index() const { return cuda_data_index_to_leaf_index_; }
 
   bool use_bagging() const { return use_bagging_; }
 

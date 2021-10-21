@@ -339,6 +339,18 @@ void CUDADataPartition::SetBaggingSubset(const Dataset* subset) {
   cuda_column_data_ = subset->cuda_column_data();
 }
 
+void CUDADataPartition::ResetByLeafPred(const std::vector<int>& leaf_pred, int num_leaves) {
+  if (leaf_pred.size() != static_cast<size_t>(num_data_)) {
+    DeallocateCUDAMemory<int>(&cuda_data_index_to_leaf_index_, __FILE__, __LINE__);
+    InitCUDAMemoryFromHostMemory<int>(&cuda_data_index_to_leaf_index_, leaf_pred.data(), leaf_pred.size(), __FILE__, __LINE__);
+    num_data_ = static_cast<data_size_t>(leaf_pred.size());
+  } else {
+    CopyFromHostToCUDADevice<int>(cuda_data_index_to_leaf_index_, leaf_pred.data(), leaf_pred.size(), __FILE__, __LINE__);
+  }
+  num_leaves_ = num_leaves;
+  cur_num_leaves_ = num_leaves;
+}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

@@ -151,11 +151,36 @@ void CUDATree::InitCUDA() {
                                     threshold_.size(),
                                     __FILE__,
                                     __LINE__);
+  InitCUDAMemoryFromHostMemory<int>(&cuda_leaf_depth_,
+                                    leaf_depth_.data(),
+                                    leaf_depth_.size(),
+                                    __FILE__,
+                                    __LINE__);
   InitCUDAMemoryFromHostMemory<int8_t>(&cuda_decision_type_,
-                                            decision_type_.data(),
-                                            decision_type_.size(),
-                                            __FILE__,
-                                            __LINE__);
+                                       decision_type_.data(),
+                                       decision_type_.size(),
+                                       __FILE__,
+                                       __LINE__);
+  InitCUDAMemoryFromHostMemory<double>(&cuda_internal_weight_,
+                                       internal_weight_.data(),
+                                       internal_weight_.size(),
+                                       __FILE__,
+                                       __LINE__);
+  InitCUDAMemoryFromHostMemory<double>(&cuda_internal_value_,
+                                       internal_value_.data(),
+                                       internal_value_.size(),
+                                       __FILE__,
+                                       __LINE__);
+  InitCUDAMemoryFromHostMemory<data_size_t>(&cuda_internal_count_,
+                                       internal_count_.data(),
+                                       internal_count_.size(),
+                                       __FILE__,
+                                       __LINE__);
+  InitCUDAMemoryFromHostMemory<float>(&cuda_split_gain_,
+                                       split_gain_.data(),
+                                       split_gain_.size(),
+                                       __FILE__,
+                                       __LINE__);
   InitCUDAMemoryFromHostMemory<double>(&cuda_leaf_value_,
                                     leaf_value_.data(),
                                     leaf_value_.size(),
