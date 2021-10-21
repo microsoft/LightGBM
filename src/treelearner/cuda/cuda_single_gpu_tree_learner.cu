@@ -10,8 +10,6 @@
 
 namespace LightGBM {
 
-#define CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE (1024)
-
 __global__ void ReduceLeafStatKernel_SharedMemory(
   const score_t* gradients,
   const score_t* hessians,
@@ -28,6 +26,7 @@ __global__ void ReduceLeafStatKernel_SharedMemory(
     shared_grad_sum[leaf_index] = 0.0f;
     shared_hess_sum[leaf_index] = 0.0f;
   }
+  __syncthreads();
   if (data_index < num_data) {
     const int leaf_index = data_index_to_leaf_index[data_index];
     atomicAdd_block(shared_grad_sum + leaf_index, gradients[data_index]);
@@ -56,6 +55,7 @@ __global__ void ReduceLeafStatKernel_GlobalMemory(
     grad_sum[leaf_index] = 0.0f;
     hess_sum[leaf_index] = 0.0f;
   }
+  __syncthreads();
   if (data_index < num_data) {
     const int leaf_index = data_index_to_leaf_index[data_index];
     atomicAdd_block(grad_sum + leaf_index, gradients[data_index]);
@@ -68,18 +68,49 @@ __global__ void ReduceLeafStatKernel_GlobalMemory(
   }
 }
 
+__global__ void CalcRefitLeafOutputKernel(
+  const int num_leaves,
+  const double* leaf_grad_stat_buffer,
+  const double* leaf_hess_stat_buffer,
+  const double lambda_l1,
+  const bool use_l1,
+  const double lambda_l2,
+  const double shrinkage_rate,
+  const double refit_decay_rate,
+  double* leaf_value) {
+  const int leaf_index = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
+  if (leaf_index < num_leaves) {
+    const double sum_gradients = leaf_grad_stat_buffer[leaf_index];
+    const double sum_hessians = leaf_hess_stat_buffer[leaf_index];
+    const double old_leaf_value = leaf_value[leaf_index];
+    double new_leaf_value = CUDABestSplitFinder::CalculateSplittedLeafOutput(sum_gradients, sum_hessians, lambda_l1, use_l1, lambda_l2);
+    if (isnan(new_leaf_value)) {
+      new_leaf_value = 0.0f;
+    } else {
+      new_leaf_value *= shrinkage_rate;
+    }
+    leaf_value[leaf_index] = refit_decay_rate * old_leaf_value + (1.0f - refit_decay_rate) * new_leaf_value;
+  }
+}
+
 void CUDASingleGPUTreeLearner::LaunchReduceLeafStatKernel(
-  const score_t* gradients, const score_t* hessians, const int num_leaves, const data_size_t num_data) const {
-  const int num_block = (num_data + CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE - 1) / CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE;
+  const score_t* gradients, const score_t* hessians, const int num_leaves,
+  const data_size_t num_data, double* cuda_leaf_value, const double shrinkage_rate) const {
+  int num_block = (num_data + CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE - 1) / CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE;
   if (num_leaves <= 2048) {
     ReduceLeafStatKernel_SharedMemory<<<num_block, CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE, 2 * num_leaves * sizeof(double)>>>(
       gradients, hessians, num_leaves, num_data, cuda_data_partition_->cuda_data_index_to_leaf_index(),
-      leaf_gradient_stat_buffer_, leaf_hessian_stat_buffer_);
+      cuda_leaf_gradient_stat_buffer_, cuda_leaf_hessian_stat_buffer_);
   } else {
     ReduceLeafStatKernel_GlobalMemory<<<num_block, CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE>>>(
       gradients, hessians, num_leaves, num_data, cuda_data_partition_->cuda_data_index_to_leaf_index(),
-      leaf_gradient_stat_buffer_, leaf_hessian_stat_buffer_);
+      cuda_leaf_gradient_stat_buffer_, cuda_leaf_hessian_stat_buffer_);
   }
+  const bool use_l1 = config_->lambda_l1 > 0.0f;
+  num_block = (num_leaves + CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE - 1) / CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE;
+  CalcRefitLeafOutputKernel<<<num_block, CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE>>>(
+    num_leaves, cuda_leaf_gradient_stat_buffer_, cuda_leaf_hessian_stat_buffer_,
+    config_->lambda_l1, use_l1, config_->lambda_l2, shrinkage_rate, config_->refit_decay_rate, cuda_leaf_value);
 }
 
 }  // namespace LightGBM

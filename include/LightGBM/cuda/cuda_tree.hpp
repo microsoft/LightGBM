@@ -71,6 +71,8 @@ class CUDATree : public Tree {
 
   void SyncLeafOutputFromHostToCUDA();
 
+  void SyncLeafOutputFromCUDAToHost();
+
  private:
   void InitCUDAMemory();
 

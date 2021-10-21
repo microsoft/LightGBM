@@ -129,7 +129,7 @@ __device__ double ThresholdL1(double s, double l1) {
   }
 }
 
-__device__ double CalculateSplittedLeafOutput(double sum_gradients,
+__device__ double CUDABestSplitFinder::CalculateSplittedLeafOutput(double sum_gradients,
                                           double sum_hessians, double l1, const bool use_l1,
                                           double l2) {
   double ret;
@@ -308,9 +308,9 @@ __device__ void FindBestSplitsForLeafKernelInner(
       const double sum_left_gradient = sum_gradients - sum_right_gradient;
       const double sum_left_hessian = sum_hessians - sum_right_hessian - kEpsilon;
       const data_size_t left_count = num_data - right_count;
-      const double left_output = CalculateSplittedLeafOutput(sum_left_gradient,
+      const double left_output = CUDABestSplitFinder::CalculateSplittedLeafOutput(sum_left_gradient,
         sum_left_hessian, lambda_l1, use_l1, lambda_l2);
-      const double right_output = CalculateSplittedLeafOutput(sum_right_gradient,
+      const double right_output = CUDABestSplitFinder::CalculateSplittedLeafOutput(sum_right_gradient,
         sum_right_hessian, lambda_l1, use_l1, lambda_l2);
       cuda_best_split_info->left_sum_gradients = sum_left_gradient;
       cuda_best_split_info->left_sum_hessians = sum_left_hessian;
@@ -331,9 +331,9 @@ __device__ void FindBestSplitsForLeafKernelInner(
       const double sum_right_gradient = sum_gradients - sum_left_gradient;
       const double sum_right_hessian = sum_hessians - sum_left_hessian - kEpsilon;
       const data_size_t right_count = num_data - left_count;
-      const double left_output = CalculateSplittedLeafOutput(sum_left_gradient,
+      const double left_output = CUDABestSplitFinder::CalculateSplittedLeafOutput(sum_left_gradient,
         sum_left_hessian, lambda_l1, use_l1, lambda_l2);
-      const double right_output = CalculateSplittedLeafOutput(sum_right_gradient,
+      const double right_output = CUDABestSplitFinder::CalculateSplittedLeafOutput(sum_right_gradient,
         sum_right_hessian, lambda_l1, use_l1, lambda_l2);
       cuda_best_split_info->left_sum_gradients = sum_left_gradient;
       cuda_best_split_info->left_sum_hessians = sum_left_hessian;

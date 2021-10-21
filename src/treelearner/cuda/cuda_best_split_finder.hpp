@@ -71,6 +71,11 @@ class CUDABestSplitFinder {
 
   void ResetConfig(const Config* config);
 
+  __device__ static double CalculateSplittedLeafOutput(
+    double sum_gradients,
+    double sum_hessians, double l1, const bool use_l1,
+    double l2);
+
  private:
   void LaunchFindBestSplitsForLeafKernel(const CUDALeafSplitsStruct* smaller_leaf_splits,
     const CUDALeafSplitsStruct* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index,

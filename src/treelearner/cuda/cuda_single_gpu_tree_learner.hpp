@@ -20,6 +20,8 @@
 
 namespace LightGBM {
 
+#define CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE (1024)
+
 class CUDASingleGPUTreeLearner: public SerialTreeLearner {
  public:
   explicit CUDASingleGPUTreeLearner(const Config* config);
@@ -50,9 +52,10 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
  protected:
   void BeforeTrain() override;
 
-  void ReduceLeafStat(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const;
+  void ReduceLeafStat(CUDATree* old_tree, const score_t* gradients, const score_t* hessians) const;
 
-  void LaunchReduceLeafStatKernel(const score_t* gradients, const score_t* hessians, const int num_leaves, const data_size_t num_data) const;
+  void LaunchReduceLeafStatKernel(const score_t* gradients, const score_t* hessians,
+    const int num_leaves, const data_size_t num_data, double* cuda_leaf_value, const double shrinkage_rate) const;
 
   // GPU device ID
   int gpu_device_id_;
@@ -81,9 +84,9 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   int larger_leaf_index_;
   int best_leaf_index_;
 
-  double* leaf_gradient_stat_buffer_;
-  double* leaf_hessian_stat_buffer_;
-  data_size_t leaf_stat_buffer_size_;
+  mutable double* cuda_leaf_gradient_stat_buffer_;
+  mutable double* cuda_leaf_hessian_stat_buffer_;
+  mutable data_size_t leaf_stat_buffer_size_;
   mutable data_size_t refit_num_data_;
 
   /*! \brief gradients on CUDA */

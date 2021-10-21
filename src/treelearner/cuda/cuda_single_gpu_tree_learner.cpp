@@ -66,8 +66,8 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
   AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
 
-  leaf_gradient_stat_buffer_ = nullptr;
-  leaf_hessian_stat_buffer_ = nullptr;
+  cuda_leaf_gradient_stat_buffer_ = nullptr;
+  cuda_leaf_hessian_stat_buffer_ = nullptr;
   leaf_stat_buffer_size_ = 0;
 }
 
@@ -291,19 +291,37 @@ void CUDASingleGPUTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFuncti
 }
 
 Tree* CUDASingleGPUTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const {
-  ReduceLeafStat(old_tree, gradients, hessians);
+  std::unique_ptr<CUDATree> cuda_tree(new CUDATree(old_tree));
+  SetCUDAMemory<double>(cuda_leaf_gradient_stat_buffer_, 0, static_cast<size_t>(old_tree->num_leaves()), __FILE__, __LINE__);
+  SetCUDAMemory<double>(cuda_leaf_hessian_stat_buffer_, 0, static_cast<size_t>(old_tree->num_leaves()), __FILE__, __LINE__);
+  ReduceLeafStat(cuda_tree.get(), gradients, hessians);
+  cuda_tree->SyncLeafOutputFromCUDAToHost();
+  return cuda_tree.release();
 }
 
 Tree* CUDASingleGPUTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
                                                   const score_t* gradients, const score_t* hessians) const {
   cuda_data_partition_->ResetByLeafPred(leaf_pred, old_tree->num_leaves());
   refit_num_data_ = static_cast<data_size_t>(leaf_pred.size());
-  FitByExistingTree(old_tree, gradients, hessians);
+  data_size_t buffer_size = static_cast<data_size_t>(old_tree->num_leaves());
+  if (old_tree->num_leaves() > 2048) {
+    const int num_block = (refit_num_data_ + CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE - 1) / CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE;
+    buffer_size *= static_cast<data_size_t>(num_block + 1);
+  }
+  if (buffer_size != leaf_stat_buffer_size_) {
+    if (leaf_stat_buffer_size_ != 0) {
+      DeallocateCUDAMemory<double>(&cuda_leaf_gradient_stat_buffer_, __FILE__, __LINE__);
+      DeallocateCUDAMemory<double>(&cuda_leaf_hessian_stat_buffer_, __FILE__, __LINE__);
+    }
+    AllocateCUDAMemory<double>(&cuda_leaf_gradient_stat_buffer_, static_cast<size_t>(buffer_size), __FILE__, __LINE__);
+    AllocateCUDAMemory<double>(&cuda_leaf_hessian_stat_buffer_, static_cast<size_t>(buffer_size), __FILE__, __LINE__);
+  }
+  return FitByExistingTree(old_tree, gradients, hessians);
 }
 
 void CUDASingleGPUTreeLearner::ReduceLeafStat(
-  const Tree* old_tree, const score_t* gradients, const score_t* hessians) const {
-  LaunchReduceLeafStatKernel(gradients, hessians, old_tree->num_leaves(), refit_num_data_);
+  CUDATree* old_tree, const score_t* gradients, const score_t* hessians) const {
+  LaunchReduceLeafStatKernel(gradients, hessians, old_tree->num_leaves(), refit_num_data_, old_tree->cuda_leaf_value_ref(), old_tree->shrinkage());
 }
 
 }  // namespace LightGBM

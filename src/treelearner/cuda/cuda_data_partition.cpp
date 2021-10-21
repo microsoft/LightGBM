@@ -98,6 +98,7 @@ void CUDADataPartition::Init() {
 
   InitCUDAMemoryFromHostMemory<data_size_t>(&cuda_num_data_, &num_data_, 1, __FILE__, __LINE__);
   add_train_score_.resize(num_data_, 0.0f);
+  Log::Warning("cuda_add_train_score_ size = %d", num_data_);
   AllocateCUDAMemory<double>(&cuda_add_train_score_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   use_bagging_ = false;
   used_indices_ = nullptr;
