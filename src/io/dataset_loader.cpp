@@ -22,10 +22,7 @@ DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& pre
   label_idx_ = 0;
   weight_idx_ = NO_SPECIFIC;
   group_idx_ = NO_SPECIFIC;
-  if (filename != nullptr && CheckCanLoadFromBin(filename) == "") {
-    // SetHeader should only be called when loading from text file
-    SetHeader(filename);
-  }
+  SetHeader(filename);
   store_raw_ = false;
   if (io_config.linear_tree) {
     store_raw_ = true;
@@ -38,7 +35,7 @@ DatasetLoader::~DatasetLoader() {
 void DatasetLoader::SetHeader(const char* filename) {
   std::unordered_map<std::string, int> name2idx;
   std::string name_prefix("name:");
-  if (filename != nullptr) {
+  if (filename != nullptr && CheckCanLoadFromBin(filename) == "") {
     TextReader<data_size_t> text_reader(filename, config_.header);
 
     // get column names
@@ -841,6 +838,15 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
       Log::Info("Recommend use integer for label index when loading data from binary for sanity check.");
     }
 
+    if (config_.label_column != "") {
+      Log::Warning("Config label_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.weight_column != "") {
+      Log::Warning("Config weight_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.group_column != "") {
+      Log::Warning("Config group_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
     if (config_.ignore_column != "") {
       Log::Warning("Config ignore_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
     }
