@@ -1143,7 +1143,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
   double tmp_label = 0.0f;
   auto& ref_text_data = *text_data;
   std::vector<float> feature_row(dataset->num_features_);
-  if (predict_fun_ == nullptr) {
+  if (!predict_fun_) {
     OMP_INIT_EX();
     // if doesn't need to prediction with initial model
     #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label, feature_row)
@@ -1262,7 +1262,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
 void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* parser,
                                             const std::vector<data_size_t>& used_data_indices, Dataset* dataset) {
   std::vector<double> init_score;
-  if (predict_fun_ != nullptr) {
+  if (predict_fun_) {
     init_score = std::vector<double>(dataset->num_data_ * num_class_);
   }
   std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =

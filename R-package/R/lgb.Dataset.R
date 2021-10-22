@@ -243,7 +243,7 @@ Dataset <- R6::R6Class(
 
           handle <- .Call(
             LGBM_DatasetCreateFromFile_R
-            , private$raw_data
+            , path.expand(private$raw_data)
             , params_str
             , ref_handle
           )
@@ -742,7 +742,7 @@ Dataset <- R6::R6Class(
       .Call(
         LGBM_DatasetSaveBinary_R
         , private$handle
-        , fname
+        , path.expand(fname)
       )
       return(invisible(self))
     }
