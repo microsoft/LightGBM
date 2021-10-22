@@ -188,13 +188,6 @@ jobs:
             compiler: gcc
           - r_customization: csan
             compiler: clang
-    env:
-      # env variables from CRAN's configuration: https://www.stats.ox.ac.uk/pub/bdr/memtests/README.txt
-      ASAN_OPTIONS: "detect_leaks=0:detect_odr_violation=0"
-      UBSAN_OPTIONS: "print_stacktrace=1"
-      RJAVA_JVM_STACK_WORKAROUND: 0
-      RGL_USE_NULL: true
-      R_DONT_USE_TK: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2.3.4
