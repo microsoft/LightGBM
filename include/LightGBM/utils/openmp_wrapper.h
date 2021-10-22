@@ -100,6 +100,7 @@ class ThreadExceptionHelper {
       simulate a single thread running.
       All #pragma omp should be ignored by the compiler **/
   inline void omp_set_num_threads(int) __GOMP_NOTHROW {}  // NOLINT (no cast done here)
+  inline void omp_reset_num_threads() __GOMP_NOTHROW {}
   inline int omp_get_num_threads() __GOMP_NOTHROW {return 1;}
   inline int omp_get_max_threads() __GOMP_NOTHROW {return 1;}
   inline int omp_get_thread_num() __GOMP_NOTHROW {return 0;}
