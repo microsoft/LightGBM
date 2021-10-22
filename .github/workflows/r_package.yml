@@ -181,9 +181,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          ################
-          # CMake builds #
-          ################
           - r_customization: san
             compiler: gcc
           - r_customization: csan
