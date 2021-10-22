@@ -25,6 +25,12 @@ inline int OMP_NUM_THREADS() {
   return ret;
 }
 
+const static int default_omp_num_threads = OMP_NUM_THREADS();
+
+inline void omp_reset_num_threads() {
+  omp_set_num_threads(default_omp_num_threads);
+}
+
 class ThreadExceptionHelper {
  public:
   ThreadExceptionHelper() {
