@@ -472,7 +472,7 @@ if(__BUILD_FOR_R)
   # utils/log.h and capi uses R headers, thus both object libraries need to link
   # with R lib.
   if(MSVC)
-    set(R_LIB ${LIBR_MSVC_CORE_LIBARY})
+    set(R_LIB ${LIBR_MSVC_CORE_LIBRARY})
   else()
     set(R_LIB ${LIBR_CORE_LIBRARY})
   endif(MSVC)
