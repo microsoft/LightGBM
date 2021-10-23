@@ -81,6 +81,20 @@ else  # Linux
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
+    if [[ $TASK == "transform" ]]; then
+        sudo apt-get update && apt-get -y upgrade
+        sudo DEBIAN_FRONTEND="noninteractive" apt-get install -y libboost-all-dev gcc g++ wget cmake git curl
+        cmake --version
+        gcc --version
+        cd $BUILD_DIRECTORY
+        wget https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-3.5.1.tar.gz && tar zxvf llvmorg-3.5.1.tar.gz
+        cd ./llvm-project-llvmorg-3.5.1/llvm && mkdir build && cd build && cmake -DLLVM_REQUIRES_RTTI=1 .. && make -j4 && sudo make install || exit -1
+        cd $BUILD_DIRECTORY
+        git clone --recursive https://github.com/microsoft/bond.git
+        sudo DEBIAN_FRONTEND="noninteractive" apt-get install -y clang zlib1g-dev
+        sudo curl -sSL https://get.haskellstack.org/ | sh
+        cd ./bond && mkdir build && cd build && cmake -DBOND_ENABLE_GRPC=FALSE .. && make -j4 && sudo make install || exit -1
+    fi
     ARCH=$(uname -m)
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections

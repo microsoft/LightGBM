@@ -45,6 +45,10 @@ jobs:
             task: mpi
             method: wheel
             python_version: 3.7
+          - os: ubuntu-latest
+            task: transform
+            method: wheel
+            python_version: 3.7
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2.3.4
@@ -61,7 +65,11 @@ jobs:
               export COMPILER="gcc"
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-              export COMPILER="clang"
+              if [[ "${{ matrix.task }}" == "transform" ]]; then
+                  export COMPILER="gcc"
+              else
+                  export COMPILER="clang"
+              fi
               export OS_NAME="linux"
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"

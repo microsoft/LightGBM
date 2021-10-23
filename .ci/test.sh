@@ -202,6 +202,20 @@ elif [[ $TASK == "mpi" ]]; then
     elif [[ $METHOD == "source" ]]; then
         cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
     fi
+elif [[ $TASK == "transform" ]]; then
+    if [[ $METHOD == "pip" ]]; then
+        cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--transform || exit -1
+        pytest $BUILD_DIRECTORY/tests || exit -1
+        exit 0
+    elif [[ $METHOD == "wheel" ]]; then
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --transform || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
+        pytest $BUILD_DIRECTORY/tests || exit -1
+        exit 0
+    elif [[ $METHOD == "source" ]]; then
+        cmake -DUSE_TRANSFORM=ON -DUSE_DEBUG=ON ..
+    fi
 else
     cmake ..
 fi

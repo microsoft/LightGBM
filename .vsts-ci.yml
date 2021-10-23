@@ -143,6 +143,45 @@ jobs:
   - bash: $(Build.SourcesDirectory)/.ci/test.sh
     displayName: Test
 ###########################################
+- job: Transform
+###########################################
+  variables:
+    COMPILER: gcc
+    DEBIAN_FRONTEND: 'noninteractive'
+    IN_UBUNTU_LATEST_CONTAINER: 'true'
+    OS_NAME: 'linux'
+    SETUP_CONDA: 'true'
+  pool:
+    vmImage: 'ubuntu-latest'
+  container: ubuntu-latest
+  strategy:
+    matrix:
+      transform:
+        TASK: transform
+        METHOD: sdist 
+        PYTHON_VERSION: 3.7
+  steps:
+  - script: |
+      echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
+      echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
+      CONDA=$HOME/miniconda
+      echo "##vso[task.setvariable variable=CONDA]$CONDA"
+      echo "##vso[task.prependpath]$CONDA/bin"
+      AMDAPPSDK_PATH=$BUILD_SOURCESDIRECTORY/AMDAPPSDK
+      echo "##vso[task.setvariable variable=AMDAPPSDK_PATH]$AMDAPPSDK_PATH"
+      LD_LIBRARY_PATH=$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH
+      echo "##vso[task.setvariable variable=LD_LIBRARY_PATH]$LD_LIBRARY_PATH"
+      echo "##vso[task.setvariable variable=OPENCL_VENDOR_PATH]$AMDAPPSDK_PATH/etc/OpenCL/vendors"
+    displayName: 'Set variables'
+  - script: |
+      /tmp/docker exec -t -u 0 ci-container \
+      sh -c "apt-get update && apt-get -o Dpkg::Options::="--force-confold" -y install sudo"
+    displayName: 'Install sudo'
+  - bash: $(Build.SourcesDirectory)/.ci/setup.sh
+    displayName: Setup
+  - bash: $(Build.SourcesDirectory)/.ci/test.sh
+    displayName: Test
+###########################################
 - job: QEMU_multiarch
 ###########################################
   variables:
