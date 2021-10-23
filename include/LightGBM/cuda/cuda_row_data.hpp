@@ -130,8 +130,10 @@ class CUDARowData {
   int cur_num_feature_partition_buffer_size_;
   /*! \brief CUDA device ID */
   int gpu_device_id_;
-  /*! \brief index of partitions with large bins that its histogram cannot fit into shared memory */
+  /*! \brief index of partitions with large bins that its histogram cannot fit into shared memory, each large bin partition contains a single column */
   std::vector<int> large_bin_partitions_;
+  /*! \brief index of partitions with small bins */
+  std::vector<int> small_bin_partitions_;
 
   // CUDA memory
 
@@ -165,10 +167,6 @@ class CUDARowData {
   uint32_t* cuda_block_buffer_uint32_t_;
   /*! \brief block buffer when calculating prefix sum */
   uint64_t* cuda_block_buffer_uint64_t_;
-  /*! \brief small bin partition index to global partition index */
-  int* cuda_small_partition_index_to_global_partition_index_;
-  /*! \brief large bin partition index to global partition index */
-  int* cuda_large_partition_index_to_global_partition_index_;
 };
 
 }  // namespace LightGBM

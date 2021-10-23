@@ -24,6 +24,7 @@ CUDABestSplitFinder::CUDABestSplitFinder(
   min_data_in_leaf_(config->min_data_in_leaf),
   min_sum_hessian_in_leaf_(config->min_sum_hessian_in_leaf),
   min_gain_to_split_(config->min_gain_to_split),
+  num_total_bin_(feature_hist_offsets.back()),
   cuda_hist_(cuda_hist) {
   InitFeatureMetaInfo(train_data);
   cuda_leaf_best_split_info_ = nullptr;
@@ -80,7 +81,9 @@ void CUDABestSplitFinder::InitFeatureMetaInfo(const Dataset* train_data) {
     }
   }
   if (max_num_bin_in_feature_ > MAX_NUM_BIN_IN_FEATURE) {
-    Log::Fatal("feature bin size %d exceeds limit %d", max_num_bin_in_feature_, MAX_NUM_BIN_IN_FEATURE);
+    use_global_memory_ = true;
+  } else {
+    use_global_memory_ = false;
   }
 }
 
@@ -90,6 +93,10 @@ void CUDABestSplitFinder::Init() {
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[0]));
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[1]));
   AllocateCUDAMemory<int>(&cuda_best_split_info_buffer_, 7, __FILE__, __LINE__);
+  if (use_global_memory_) {
+    AllocateCUDAMemory<hist_t>(&cuda_feature_hist_grad_buffer_, static_cast<size_t>(num_total_bin_), __FILE__, __LINE__);
+    AllocateCUDAMemory<hist_t>(&cuda_feature_hist_hess_buffer_, static_cast<size_t>(num_total_bin_), __FILE__, __LINE__);
+  }
 }
 
 void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {

@@ -18,7 +18,7 @@
 
 #include "cuda_leaf_splits.hpp"
 
-#define MAX_NUM_BIN_IN_FEATURE (256)
+#define MAX_NUM_BIN_IN_FEATURE (1024)
 #define NUM_THREADS_FIND_BEST_LEAF (256)
 #define NUM_TASKS_PER_SYNC_BLOCK (1024)
 
@@ -119,6 +119,10 @@ class CUDABestSplitFinder {
   std::vector<uint8_t> host_task_na_as_missing_;
   std::vector<uint8_t> host_task_out_default_left_;
   int num_tasks_;
+  // use global memory
+  bool use_global_memory_;
+  // number of total bins in the dataset
+  const int num_total_bin_;
 
   // CUDA memory, held by this object
   // for per leaf best split information
@@ -139,6 +143,9 @@ class CUDABestSplitFinder {
   uint8_t* cuda_task_na_as_missing_;
   uint8_t* cuda_task_out_default_left_;
   int8_t* cuda_is_feature_used_bytree_;
+  // used when finding best split with global memory
+  hist_t* cuda_feature_hist_grad_buffer_;
+  hist_t* cuda_feature_hist_hess_buffer_;
 
   // CUDA memory, held by other object
   const hist_t* cuda_hist_;

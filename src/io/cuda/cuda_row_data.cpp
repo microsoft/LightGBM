@@ -194,6 +194,7 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
   int column_index = 0;
   num_feature_partitions_ = 0;
   large_bin_partitions_.clear();
+  small_bin_partitions_.clear();
   for (int feature_group_index = 0; feature_group_index < num_feature_groups; ++feature_group_index) {
     if (!train_data->IsMultiGroup(feature_group_index)) {
       const uint32_t column_feature_hist_start = column_hist_offsets[column_index];
@@ -218,12 +219,14 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
         feature_partition_column_index_offsets_.emplace_back(column_index);
         start_hist_offset = column_feature_hist_start;
         partition_hist_offsets_.emplace_back(start_hist_offset);
+        small_bin_partitions_.emplace_back(num_feature_partitions_);
         ++num_feature_partitions_;
       }
       column_hist_offsets_.emplace_back(column_hist_offsets[column_index] - start_hist_offset);
       if (feature_group_index == num_feature_groups - 1) {
         feature_partition_column_index_offsets_.emplace_back(column_index + 1);
         partition_hist_offsets_.emplace_back(column_hist_offsets.back());
+        small_bin_partitions_.emplace_back(num_feature_partitions_);
         ++num_feature_partitions_;
       }
       ++column_index;
@@ -254,6 +257,7 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
           feature_partition_column_index_offsets_.emplace_back(column_index);
           start_hist_offset = column_feature_hist_start;
           partition_hist_offsets_.emplace_back(start_hist_offset);
+          small_bin_partitions_.emplace_back(num_feature_partitions_);
           ++num_feature_partitions_;
         }
         column_hist_offsets_.emplace_back(column_hist_offsets[column_index] - start_hist_offset);
@@ -261,6 +265,7 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
           CHECK_EQ(feature_index, num_feature_ - 1);
           feature_partition_column_index_offsets_.emplace_back(column_index + 1);
           partition_hist_offsets_.emplace_back(column_hist_offsets.back());
+          small_bin_partitions_.emplace_back(num_feature_partitions_);
           ++num_feature_partitions_;
         }
         ++column_index;
@@ -274,38 +279,6 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
     if (num_column > max_num_column_per_partition_) {
       max_num_column_per_partition_ = num_column;
     }
-  }
-
-  if (!large_bin_partitions_.empty()) {
-    std::vector<int> small_partition_index_to_global_partition_index;
-    std::vector<int> large_partition_index_to_global_partition_index;
-    int partition_index = 0;
-    int large_bin_partition_index = 0;
-    while (partition_index < num_feature_partitions_ &&
-      large_bin_partition_index < static_cast<int>(large_bin_partitions_.size())) {
-      while (partition_index != large_bin_partitions_[large_bin_partition_index]) {
-        small_partition_index_to_global_partition_index.emplace_back(partition_index);
-        ++partition_index;
-      }
-      large_partition_index_to_global_partition_index.emplace_back(partition_index);
-      ++partition_index;
-      ++large_bin_partition_index;
-    }
-    // push remaining partitions into small bin partitions
-    while (partition_index < num_feature_partitions_) {
-      small_partition_index_to_global_partition_index.emplace_back(partition_index);
-      ++partition_index;
-    }
-    InitCUDAMemoryFromHostMemory<int>(&cuda_large_partition_index_to_global_partition_index_,
-                                      large_partition_index_to_global_partition_index.data(),
-                                      large_partition_index_to_global_partition_index.size(),
-                                      __FILE__,
-                                      __LINE__);
-    InitCUDAMemoryFromHostMemory<int>(&cuda_small_partition_index_to_global_partition_index_,
-                                      small_partition_index_to_global_partition_index.data(),
-                                      small_partition_index_to_global_partition_index.size(),
-                                      __FILE__,
-                                      __LINE__);
   }
 
   InitCUDAMemoryFromHostMemory<int>(&cuda_feature_partition_column_index_offsets_,

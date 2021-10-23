@@ -96,6 +96,20 @@ __device__ __forceinline__ T ShuffleReduceSum(T value, T* shared_mem_buffer, con
   return value;
 }
 
+template <typename T>
+__device__ __forceinline__ T GlobalMemoryPrefixSum(T* array, const size_t len) {
+  const size_t num_values_per_thread = (len + blockDim.x - 1) / blockDim.x;
+  const size_t start = threadIdx.x * num_values_per_thread;
+  const size_t end = min(start + num_values_per_thread, len);
+  T thread_sum = 0;
+  for (size_t index = start; index < end; ++index) {
+    thread_sum += array[index];
+  }
+  __shared__ T shared_mem[32];
+  const T thread_base = ShuffleReduceSum<T>(thread_sum, shared_mem);
+  
+}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

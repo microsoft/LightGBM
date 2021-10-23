@@ -77,6 +77,11 @@ class CUDAHistogramConstructor {
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
     const data_size_t num_data_in_smaller_leaf);
 
+  void LaunchSparseConstructHistogramKernel(
+    const dim3 grid_dim,
+    const dim3 block_dim,
+    const CUDALeafSplitsStruct* cuda_smaller_leaf_splits);
+
   void LaunchSubtractHistogramKernel(
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
     const CUDALeafSplitsStruct* cuda_larger_leaf_splits);
@@ -125,6 +130,8 @@ class CUDAHistogramConstructor {
   uint32_t* cuda_feature_most_freq_bins_;
   /*! \brief CUDA histograms */
   hist_t* cuda_hist_;
+  /*! \brief CUDA histograms buffer for each block */
+  float* cuda_hist_buffer_;
   /*! \brief indices of feature whose histograms need to be fixed */
   int* cuda_need_fix_histogram_features_;
   /*! \brief aligned number of bins of the features whose histograms need to be fixed */
