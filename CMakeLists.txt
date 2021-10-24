@@ -170,7 +170,7 @@ if(USE_CUDA)
     include_directories(${CUDA_INCLUDE_DIRS})
     LIST(APPEND CMAKE_CUDA_FLAGS -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall)
 
-    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0")
+    set(CUDA_ARCHS "6.0" "6.1" "7.0")
     if(CUDA_VERSION VERSION_GREATER_EQUAL "10.0")
         list(APPEND CUDA_ARCHS "7.5")
     endif()
