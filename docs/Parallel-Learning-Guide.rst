@@ -489,7 +489,7 @@ See `the mars documentation`_ for usage examples.
 
 .. _the metrics functions from dask-ml: https://ml.dask.org/modules/api.html#dask-ml-metrics-metrics
 
-.. _the SynapseML Documentation: https://github.com/microsoft/SynapseML/blob/master/docs/lightgbm.md
+.. _the SynapseML Documentation: https://github.com/microsoft/SynapseML
 
 .. _these Dask examples: https://github.com/microsoft/lightgbm/tree/master/examples/python-guide/dask
 
