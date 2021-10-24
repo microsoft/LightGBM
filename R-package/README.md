@@ -374,7 +374,7 @@ For more background, see
 You can replicate these checks locally using Docker.
 For more information on the image used for testing, see https://github.com/wch/r-debug.
 
-In the code below, environment variable `R_CUSTOMIZATION` should be set to one of two environment variables.
+In the code below, environment variable `R_CUSTOMIZATION` should be set to one of two values.
 
 * `"san"` = replicates CRAN's `gcc-ASAN` and `gcc-UBSAN` checks
 * `"csan"` = replicates CRAN's `clang-ASAN` and `clang-UBSAN` checks

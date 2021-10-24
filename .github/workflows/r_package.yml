@@ -174,9 +174,9 @@ jobs:
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
   test-r-sanitizers:
     name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     container: wch1/r-debug
-    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
