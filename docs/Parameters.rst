@@ -746,13 +746,13 @@ Dataset Parameters
 
    -  by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed, but may cause run out of memory error when the data file is very big
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: works only in case of loading data directly from text file
 
 -  ``header`` :raw-html:`<a id="header" title="Permalink to this parameter" href="#header">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``has_header``
 
    -  set this to ``true`` if input data has header
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: works only in case of loading data directly from text file
 
 -  ``label_column`` :raw-html:`<a id="label_column" title="Permalink to this parameter" href="#label_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``label``
 
@@ -764,7 +764,7 @@ Dataset Parameters
 
    -  if omitted, the first column in the training data is used as the label
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: works only in case of loading data directly from text file
 
 -  ``weight_column`` :raw-html:`<a id="weight_column" title="Permalink to this parameter" href="#weight_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``weight``
 
@@ -774,7 +774,7 @@ Dataset Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``weight=name:weight``
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: works only in case of loading data directly from text file
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0, and weight is column\_1, the correct parameter is ``weight=0``
 
@@ -786,7 +786,7 @@ Dataset Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``query=name:query_id``
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: works only in case of loading data directly from text file
 
    -  **Note**: data should be grouped by query\_id, for more information, see `Query Data <#query-data>`__
 
@@ -800,7 +800,7 @@ Dataset Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``ignore_column=name:c1,c2,c3`` means c1, c2 and c3 will be ignored
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: works only in case of loading data directly from text file
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
 
