@@ -365,7 +365,7 @@ set(API_SOURCES "src/c_api.cpp")
 # Only build the R part of the library if building for
 # use with the R package
 if(__BUILD_FOR_R)
-  list(APPEND API_SOURCES "src/lightgbm_R.cpp")
+  list(APPEND API_SOURCES "R-package/src/lightgbm_R.cpp")
 endif(__BUILD_FOR_R)
 
 add_library(lightgbm_capi_objs OBJECT ${API_SOURCES})
@@ -375,7 +375,8 @@ if(BUILD_STATIC_LIB)
 else()
   add_library(_lightgbm SHARED)
 endif(BUILD_STATIC_LIB)
-# LightGBM headers include openmp, cuda, R etc. headers, thus use PUBLIC here.
+# LightGBM headers include openmp, cuda, R etc. headers, 
+# thus PUBLIC is required for building _lightgbm_swig target.
 target_link_libraries(_lightgbm PUBLIC lightgbm_capi_objs lightgbm_objs)
 
 if(MSVC)
@@ -426,6 +427,12 @@ endif(USE_MPI)
 if(USE_OPENMP)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_libraries(lightgbm_objs PUBLIC OpenMP::OpenMP_CXX)
+    # c_api headers also includes OpenMP headers, thus compiling
+    # lightgbm_capi_objs needs include directory for OpenMP.
+    # Specifying OpenMP in target_link_libraries will get include directory
+    # requirements for compilation.
+    # This uses CMake's Transitive Usage Requirements. Refer to CMake doc:
+    # https://cmake.org/cmake/help/v3.16/manual/cmake-buildsystem.7.html#transitive-usage-requirements
     target_link_libraries(lightgbm_capi_objs PUBLIC OpenMP::OpenMP_CXX)
   endif()
 endif(USE_OPENMP)
