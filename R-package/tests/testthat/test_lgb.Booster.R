@@ -466,7 +466,7 @@ test_that("Booster$eval() should work on a Dataset stored in a binary file", {
     )
 
     expect_true(abs(eval_in_mem[[1L]][["value"]] - 0.1744423) < TOLERANCE)
-    expect_identical(eval_in_mem, eval_from_file)
+    expect_equal(eval_in_mem, eval_from_file)
 })
 
 test_that("Booster$rollback_one_iter() should work as expected", {
