@@ -1,6 +1,6 @@
 #' @name readRDS.lgb.Booster
 #' @title readRDS for \code{lgb.Booster} models (DEPRECATED)
-#' @description Calls \code{readRDS} in what is expected to a serialized \code{lgb.Booster} object,
+#' @description Calls \code{readRDS} in what is expected to be a serialized \code{lgb.Booster} object,
 #'              and then restores its handle through \code{lgb.restore_handle}.
 #'
 #'              \bold{This function throws a warning and will be removed in future versions.}
