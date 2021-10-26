@@ -1045,7 +1045,7 @@ test_that("Booster's print, show, and summary work correctly", {
     }
 
     .check_methods_work <- function(model) {
-      
+
         # should work for fitted models
         ret <- print(model)
         .have_same_handle(ret, model)
