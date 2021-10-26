@@ -32,7 +32,7 @@ You may also ping a member of the core team according to the relevant area of ex
 -  `@StrikerRUS <https://github.com/StrikerRUS>`__ **Nikita Titov** (Python-package)
 -  `@huanzhang12 <https://github.com/huanzhang12>`__ **Huan Zhang** (GPU support)
 -  `@tongwu-msft <https://github.com/tongwu-msft>`__ **Tong Wu** (C++ code / Python-package)
--  `@hzy46 <https://github.com/tongwu-msft>`__ **Zhiyuan He** (C++ code / Python-package)
+-  `@hzy46 <https://github.com/hzy46>`__ **Zhiyuan He** (C++ code / Python-package)
 
 Please include as much of the following information as possible when submitting a critical issue:
 
