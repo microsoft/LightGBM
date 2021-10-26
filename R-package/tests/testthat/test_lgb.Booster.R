@@ -467,6 +467,7 @@ test_that("Booster$eval() should work on a Dataset stored in a binary file", {
     )
 
     expect_true(abs(eval_in_mem[[1L]][["value"]] - 0.1744423) < TOLERANCE)
+    # refer to https://github.com/microsoft/LightGBM/issues/4680
     if (isTRUE(ON_WINDOWS)) {
       expect_equal(eval_in_mem, eval_from_file)
     } else {
