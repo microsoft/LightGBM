@@ -15,7 +15,7 @@ readRDS.lgb.Booster(file, refhook = NULL)
 \code{lgb.Booster}
 }
 \description{
-Calls \code{readRDS} in what is expected to a serialized \code{lgb.Booster} object,
+Calls \code{readRDS} in what is expected to be a serialized \code{lgb.Booster} object,
              and then restores its handle through \code{lgb.restore_handle}.
 
              \bold{This function throws a warning and will be removed in future versions.}

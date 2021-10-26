@@ -506,6 +506,8 @@ Booster <- R6::R6Class(
                        params = list(),
                        ...) {
 
+      object$restore_handle()
+
       additional_params <- list(...)
       if (length(additional_params) > 0L) {
         warning(paste0(
@@ -831,7 +833,6 @@ predict.lgb.Booster <- function(object,
   if (!lgb.is.Booster(x = object)) {
     stop("predict.lgb.Booster: object should be an ", sQuote("lgb.Booster"))
   }
-  object$restore_handle()
 
   additional_params <- list(...)
   if (length(additional_params) > 0L) {

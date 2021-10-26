@@ -965,6 +965,41 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
 
 })
 
+context("saveRDS.lgb.Booster() and readRDS.lgb.Booster()")
+
+test_that("params (including dataset params) should be stored in .rds file for Booster", {
+    data(agaricus.train, package = "lightgbm")
+    dtrain <- lgb.Dataset(
+        agaricus.train$data
+        , label = agaricus.train$label
+        , params = list(
+            max_bin = 17L
+        )
+    )
+    params <- list(
+        objective = "binary"
+        , max_depth = 4L
+        , bagging_fraction = 0.8
+    )
+    bst <- Booster$new(
+        params = params
+        , train_set = dtrain
+    )
+    bst_file <- tempfile(fileext = ".rds")
+    expect_warning(saveRDS.lgb.Booster(bst, file = bst_file))
+
+    expect_warning(bst_from_file <- readRDS.lgb.Booster(file = bst_file))
+    expect_identical(
+        bst_from_file$params
+        , list(
+            objective = "binary"
+            , max_depth = 4L
+            , bagging_fraction = 0.8
+            , max_bin = 17L
+        )
+    )
+})
+
 context("saveRDS and readRDS work on Booster")
 
 test_that("params (including dataset params) should be stored in .rds file for Booster", {
