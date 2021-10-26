@@ -451,14 +451,18 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-  # lightgbm_objs contains cuda sources.
-  # Disable cmake warning about ploy CMP0104. Refer to issue #3754 and PR #4268.
+  # Disable cmake warning about policy CMP0104. Refer to issue #3754 and PR #4268.
+  # Custom target properties does not propagate, thus we need to specify for
+  # each target that contains or depends on cuda source.
   set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES OFF)
   set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+  set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+
   # Device linking is not supported for object libraries.
   # Thus we have to specify them on final targets.
   set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+
   # histograms are list of object libraries. Linking object library to other
   # object libraries only gets usage requirements, the linked objects won't be
   # used. Thus we have to call target_link_libraries on final targets here.
