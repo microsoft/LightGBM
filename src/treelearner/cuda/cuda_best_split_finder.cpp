@@ -80,7 +80,7 @@ void CUDABestSplitFinder::InitFeatureMetaInfo(const Dataset* train_data) {
       max_num_bin_in_feature_ = num_bin_hist;
     }
   }
-  if (max_num_bin_in_feature_ > MAX_NUM_BIN_IN_FEATURE) {
+  if (max_num_bin_in_feature_ > NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER) {
     use_global_memory_ = true;
   } else {
     use_global_memory_ = false;

@@ -18,7 +18,7 @@
 
 #include "cuda_leaf_splits.hpp"
 
-#define MAX_NUM_BIN_IN_FEATURE (1024)
+#define NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER (1024)
 #define NUM_THREADS_FIND_BEST_LEAF (256)
 #define NUM_TASKS_PER_SYNC_BLOCK (1024)
 

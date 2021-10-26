@@ -33,6 +33,15 @@ struct CUDASplitInfo {
   data_size_t right_count;
   double right_gain;
   double right_value;
+
+  int num_cat_threshold = 0;
+  uint32_t* cat_threshold = nullptr;
+
+  __device__ ~CUDASplitInfo() {
+    if (num_cat_threshold > 0 && cat_threshold != nullptr) {
+      cudaFree(cat_threshold);
+    }
+  }
 };
 
 }  // namespace LightGBM
