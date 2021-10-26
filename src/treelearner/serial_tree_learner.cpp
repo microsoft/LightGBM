@@ -322,10 +322,15 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
 }
 
 void SerialTreeLearner::FindBestSplits(const Tree* tree) {
+  FindBestSplits(tree, nullptr);
+}
+
+void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::set<int>* force_features)
+{
   std::vector<int8_t> is_feature_used(num_features_, 0);
 #pragma omp parallel for schedule(static, 256) if (num_features_ >= 512)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
-    if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
+    if (!col_sampler_.is_feature_used_bytree()[feature_index] && (force_features == nullptr || force_features->find(feature_index) == force_features->end())) continue;
     if (parent_leaf_histogram_array_ != nullptr
       && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
       smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
@@ -334,11 +339,6 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree) {
     is_feature_used[feature_index] = 1;
   }
 
-  FindBestSplits(tree, is_feature_used);
-}
-
-void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::vector<int8_t>& is_feature_used)
-{
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
 
 #ifdef USE_CUDA
@@ -570,23 +570,21 @@ void SerialTreeLearner::FindBestSplitsForForceSplitLeaf(Tree* tree, int* left_le
   // before processing next node from queue, store info for current left/right leaf
   // store "best split" for left and right, even if they might be overwritten by forced split
   if (BeforeFindBestSplit(tree, *left_leaf, *right_leaf)) {
-    std::vector<int8_t> is_feature_used(num_features_, 0);
+    std::set<int> force_features;
 
     if (!left_force_split_leaf_setting.is_null()) {
       const int left_feature = left_force_split_leaf_setting["feature"].int_value();
       const int left_inner_feature_index = train_data_->InnerFeatureIndex(left_feature);
-
-      is_feature_used[left_inner_feature_index] = 1;
+      force_features.insert(left_inner_feature_index);
     }
 
     if (!right_force_split_leaf_setting.is_null()) {
       const int right_feature = right_force_split_leaf_setting["feature"].int_value();
       const int right_inner_feature_index = train_data_->InnerFeatureIndex(right_feature);
-
-      is_feature_used[right_inner_feature_index] = 1;
+      force_features.insert(right_inner_feature_index);
     }
 
-    FindBestSplits(tree, is_feature_used);
+    FindBestSplits(tree, &force_features);
   }
 }
 

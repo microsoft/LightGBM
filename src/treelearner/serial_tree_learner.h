@@ -142,7 +142,7 @@ class SerialTreeLearner: public TreeLearner {
 
   virtual void FindBestSplits(const Tree* tree);
 
-  virtual void FindBestSplits(const Tree* tree, const std::vector<int8_t>& is_feature_used);
+  virtual void FindBestSplits(const Tree* tree, const std::set<int>* force_features);
 
   virtual void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
