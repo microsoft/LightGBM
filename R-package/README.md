@@ -361,13 +361,13 @@ Alternatively, GitHub Actions can run code above for you. On a pull request, cre
 
 **NOTE:** Please do this only once you see that other R tests on a pull request are passing. R Hub is a free resource with limited capacity, and we want to be respectful community members.
 
-#### UBSAN
+#### <a id="UBSAN"></a>ASAN and UBSAN
 
 All packages uploaded to CRAN must pass builds using `gcc` and `clang`, instrumented with two sanitizers: the Address Sanitizer (ASAN) and the Undefined Behavior Sanitizer (UBSAN).
 
 For more background, see
 
-* [this blog post](http://dirk.eddelbuettel.com/code/sanitizers.html)
+* [this blog post](https://dirk.eddelbuettel.com/code/sanitizers.html)
 * [top-level CRAN documentation on these checks](https://cran.r-project.org/web/checks/check_issue_kinds.html)
 * [CRAN's configuration of these checks](https://www.stats.ox.ac.uk/pub/bdr/memtests/README.txt)
 
