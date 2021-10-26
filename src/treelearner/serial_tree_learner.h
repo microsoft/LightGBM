@@ -142,6 +142,8 @@ class SerialTreeLearner: public TreeLearner {
 
   virtual void FindBestSplits(const Tree* tree);
 
+  virtual void FindBestSplits(const Tree* tree, const std::vector<int8_t>& is_feature_used);
+
   virtual void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
   virtual void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract, const Tree*);
@@ -164,6 +166,8 @@ class SerialTreeLearner: public TreeLearner {
   /* Force splits with forced_split_json dict and then return num splits forced.*/
   int32_t ForceSplits(Tree* tree, int* left_leaf, int* right_leaf,
                       int* cur_depth);
+
+  void FindBestSplitsForForceSplitLeaf(LightGBM::Tree* tree, int* left_leaf, int* right_leaf, Json left, Json right);
 
   /*!
   * \brief Get the number of data in a leaf

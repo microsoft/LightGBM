@@ -323,22 +323,29 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
 
 void SerialTreeLearner::FindBestSplits(const Tree* tree) {
   std::vector<int8_t> is_feature_used(num_features_, 0);
-  #pragma omp parallel for schedule(static, 256) if (num_features_ >= 512)
+#pragma omp parallel for schedule(static, 256) if (num_features_ >= 512)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!col_sampler_.is_feature_used_bytree()[feature_index]) continue;
     if (parent_leaf_histogram_array_ != nullptr
-        && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
+      && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
       smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
       continue;
     }
     is_feature_used[feature_index] = 1;
   }
+
+  FindBestSplits(tree, is_feature_used);
+}
+
+void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::vector<int8_t>& is_feature_used)
+{
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
 
 #ifdef USE_CUDA
   if (LGBM_config_::current_learner == use_cpu_learner) {
     SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract);
-  } else {
+  }
+  else {
     ConstructHistograms(is_feature_used, use_subtract);
   }
 #else
@@ -463,11 +470,8 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
   std::unordered_map<int, SplitInfo> forceSplitMap;
   q.push(std::make_pair(left, *left_leaf));
   while (!q.empty()) {
-    // before processing next node from queue, store info for current left/right leaf
-    // store "best split" for left and right, even if they might be overwritten by forced split
-    if (BeforeFindBestSplit(tree, *left_leaf, *right_leaf)) {
-      FindBestSplits(tree);
-    }
+    FindBestSplitsForForceSplitLeaf(tree, left_leaf, right_leaf, left, right);
+
     // then, compute own splits
     SplitInfo left_split;
     SplitInfo right_split;
@@ -559,6 +563,31 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
     ++result_count;
   }
   return result_count;
+}
+
+void SerialTreeLearner::FindBestSplitsForForceSplitLeaf(Tree* tree, int* left_leaf, int* right_leaf, Json left_force_split_leaf_setting, Json right_force_split_leaf_setting)
+{
+  // before processing next node from queue, store info for current left/right leaf
+  // store "best split" for left and right, even if they might be overwritten by forced split
+  if (BeforeFindBestSplit(tree, *left_leaf, *right_leaf)) {
+    std::vector<int8_t> is_feature_used(num_features_, 0);
+
+    if (!left_force_split_leaf_setting.is_null()) {
+      const int left_feature = left_force_split_leaf_setting["feature"].int_value();
+      const int left_inner_feature_index = train_data_->InnerFeatureIndex(left_feature);
+
+      is_feature_used[left_inner_feature_index] = 1;
+    }
+
+    if (!right_force_split_leaf_setting.is_null()) {
+      const int right_feature = right_force_split_leaf_setting["feature"].int_value();
+      const int right_inner_feature_index = train_data_->InnerFeatureIndex(right_feature);
+
+      is_feature_used[right_inner_feature_index] = 1;
+    }
+
+    FindBestSplits(tree, is_feature_used);
+  }
 }
 
 void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
