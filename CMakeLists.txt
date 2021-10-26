@@ -365,7 +365,7 @@ set(API_SOURCES "src/c_api.cpp")
 # Only build the R part of the library if building for
 # use with the R package
 if(__BUILD_FOR_R)
-  list(APPEND API_SOURCES "R-package/src/lightgbm_R.cpp")
+  list(APPEND API_SOURCES "src/lightgbm_R.cpp")
 endif(__BUILD_FOR_R)
 
 add_library(lightgbm_capi_objs OBJECT ${API_SOURCES})
