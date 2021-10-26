@@ -1037,7 +1037,7 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
 })
 
 test_that("Booster's print, show, and summary work correctly", {
-    .have_same_handle <- function(model, other_model){
+    .have_same_handle <- function(model, other_model) {
        expect_equal(
          model$.__enclos_env__$private$handle
          , other_model$.__enclos_env__$private$handle
