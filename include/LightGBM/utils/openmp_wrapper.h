@@ -25,7 +25,8 @@ inline int OMP_NUM_THREADS() {
   return ret;
 }
 
-static const int default_omp_num_threads = OMP_NUM_THREADS();
+static const int default_omp_num_threads = omp_get_num_threads();
+
 
 inline void omp_reset_num_threads() {
   omp_set_num_threads(default_omp_num_threads);
