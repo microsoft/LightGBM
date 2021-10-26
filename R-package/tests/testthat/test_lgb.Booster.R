@@ -1037,14 +1037,31 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
 })
 
 test_that("Booster's print, show, and summary work correctly", {
-    check_methods_work <- function(model) {
-        expect_error(print(model), NA)
-        expect_error(show(model), NA)
-        expect_error(summary(model), NA)
+    .have_same_handle <- function(model, other_model){
+       expect_equal(
+         model$.__enclos_env__$private$handle
+         , other_model$.__enclos_env__$private$handle
+       )
+    }
+
+    .check_methods_work <- function(model) {
+      
+        # should work for fitted models
+        ret <- print(model)
+        .have_same_handle(ret, model)
+        ret <- show(model)
+        expect_null(ret)
+        ret <- summary(model)
+        .have_same_handle(ret, model)
+
+        # should not fail for finalized models
         model$finalize()
-        expect_error(print(model), NA)
-        expect_error(show(model), NA)
-        expect_error(summary(model), NA)
+        ret <- print(model)
+        .have_same_handle(ret, model)
+        ret <- show(model)
+        expect_null(ret)
+        ret <- summary(model)
+        .have_same_handle(ret, model)
     }
 
     data("mtcars")
@@ -1056,7 +1073,7 @@ test_that("Booster's print, show, and summary work correctly", {
         , verbose = 0L
         , nrounds = 5L
     )
-    check_methods_work(model)
+    .check_methods_work(model)
 
     data("iris")
     model <- lgb.train(
@@ -1068,7 +1085,7 @@ test_that("Booster's print, show, and summary work correctly", {
         , verbose = 0L
         , nrounds = 5L
     )
-    check_methods_work(model)
+    .check_methods_work(model)
 })
 
 test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
