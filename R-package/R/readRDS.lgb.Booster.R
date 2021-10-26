@@ -39,7 +39,7 @@
 #' @export
 readRDS.lgb.Booster <- function(file, refhook = NULL) {
 
-  warning("'readRDS.lgb.Booster' is deprecated and will be removed in a future release.")
+  warning("'readRDS.lgb.Booster' is deprecated and will be removed in a future release. Use readRDS() instead.")
 
   object <- readRDS(file = file, refhook = refhook)
   lgb.restore_handle(object)
