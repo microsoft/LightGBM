@@ -1214,6 +1214,11 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         Other parameters passed through to ``LGBMClassifier.fit()``.
 
     {_lgbmmodel_doc_custom_eval_note}
+
+    Returns
+    -------
+    self : lightgbm.DaskLGBMClassifier
+        Returns self.
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
@@ -1394,6 +1399,11 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         Other parameters passed through to ``LGBMRegressor.fit()``.
 
     {_lgbmmodel_doc_custom_eval_note}
+
+    Returns
+    -------
+    self : lightgbm.DaskLGBMRegressor
+        Returns self.
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
@@ -1557,6 +1567,11 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         Other parameters passed through to ``LGBMRanker.fit()``.
 
     {_lgbmmodel_doc_custom_eval_note}
+
+    Returns
+    -------
+    self : lightgbm.DaskLGBMRanker
+        Returns self.
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
