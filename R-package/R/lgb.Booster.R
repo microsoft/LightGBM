@@ -506,7 +506,7 @@ Booster <- R6::R6Class(
                        params = list(),
                        ...) {
 
-      object$restore_handle()
+      self$restore_handle()
 
       additional_params <- list(...)
       if (length(additional_params) > 0L) {
