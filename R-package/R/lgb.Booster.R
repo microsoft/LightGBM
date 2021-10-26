@@ -834,11 +834,15 @@ print.lgb.Booster <- function(x, ...) {
   }
 
   if (!handle_is_null) {
+    obj <- x$params$objective
+    if (obj == "none") {
+      obj <- "custom"
+    }
     if (x$.__enclos_env__$private$num_class == 1L) {
-      cat(sprintf("Objective: %s\n", x$params$objective))
+      cat(sprintf("Objective: %s\n", obj))
     } else {
       cat(sprintf("Objective: %s (%d classes)\n"
-          , x$params$objective
+          , obj
           , x$.__enclos_env__$private$num_class))
     }
   } else {

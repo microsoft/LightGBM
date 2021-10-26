@@ -1086,6 +1086,40 @@ test_that("Booster's print, show, and summary work correctly", {
         , nrounds = 5L
     )
     .check_methods_work(model)
+
+
+    # with custom objective
+    .logregobj <- function(preds, dtrain) {
+        labels <- get_field(dtrain, "label")
+        preds <- 1.0 / (1.0 + exp(-preds))
+        grad <- preds - labels
+        hess <- preds * (1.0 - preds)
+        return(list(grad = grad, hess = hess))
+    }
+
+    .evalerror <- function(preds, dtrain) {
+        labels <- get_field(dtrain, "label")
+        preds <- 1.0 / (1.0 + exp(-preds))
+        err <- as.numeric(sum(labels != (preds > 0.5))) / length(labels)
+        return(list(
+            name = "error"
+            , value = err
+            , higher_better = FALSE
+        ))
+    }
+
+    model <- lgb.train(
+        data = lgb.Dataset(
+            as.matrix(iris[, -5L])
+            , label = as.numeric(iris$Species == "virginica")
+        )
+        , obj = .logregobj
+        , eval = .evalerror
+        , verbose = 0L
+        , nrounds = 5L
+    )
+
+    .check_methods_work(model)
 })
 
 test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
