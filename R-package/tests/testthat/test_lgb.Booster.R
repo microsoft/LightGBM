@@ -1048,6 +1048,43 @@ test_that("Handle is automatically restored when calling predict", {
     expect_equal(pred_before, pred_after)
 })
 
+test_that("boosters with linear models at leaves work with saveRDS.lgb.Booster and readRDS.lgb.Booster", {
+    X <- matrix(rnorm(100L), ncol = 1L)
+    labels <- 2L * X + runif(nrow(X), 0L, 0.1)
+    dtrain <- lgb.Dataset(
+        data = X
+        , label = labels
+    )
+
+    params <- list(
+        objective = "regression"
+        , verbose = -1L
+        , metric = "mse"
+        , seed = 0L
+        , num_leaves = 2L
+    )
+
+    bst <- lgb.train(
+        data = dtrain
+        , nrounds = 10L
+        , params = params
+    )
+    expect_true(lgb.is.Booster(bst))
+
+    # save predictions, then write the model to a file and destroy it in R
+    preds <- predict(bst, X)
+    model_file <- tempfile(fileext = ".rds")
+    expect_warning(saveRDS.lgb.Booster(bst, file = model_file))
+    bst$finalize()
+    expect_null(bst$.__enclos_env__$private$handle)
+    rm(bst)
+
+    # load the booster and make predictions...should be the same
+    expect_warning({bst2 <- readRDS.lgb.Booster(file = model_file)})
+    preds2 <- predict(bst2, X)
+    expect_identical(preds, preds2)
+})
+
 test_that("boosters with linear models at leaves can be written to RDS and re-loaded successfully", {
     X <- matrix(rnorm(100L), ncol = 1L)
     labels <- 2L * X + runif(nrow(X), 0L, 0.1)
