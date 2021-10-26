@@ -342,6 +342,8 @@ def plot_metric(
         eval_results = deepcopy(booster.evals_result_)
     elif isinstance(booster, dict):
         eval_results = deepcopy(booster)
+    elif isinstance(booster, Booster):
+        raise TypeError("booster must be dict or LGBMModel. To use plot_metric with Booster type, first record the metrics using record_evaluation callback then pass that to plot_metric as argument `booster`")
     else:
         raise TypeError('booster must be dict or LGBMModel.')
 
