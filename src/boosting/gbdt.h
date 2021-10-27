@@ -421,6 +421,14 @@ class GBDT : public GBDTBase {
   virtual data_size_t BaggingHelper(data_size_t start, data_size_t cnt,
                                     data_size_t* buffer);
 
+  void GOSS(int iter);
+
+  data_size_t GOSSHelper(data_size_t start, data_size_t cnt,
+                                    data_size_t* buffer);
+  void ResetGoss();
+  bool use_goss_as_strategy;
+  bool use_goss_as_boosting;
+
   data_size_t BalancedBaggingHelper(data_size_t start, data_size_t cnt,
                                     data_size_t* buffer);
 

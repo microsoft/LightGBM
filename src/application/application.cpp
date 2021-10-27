@@ -82,6 +82,7 @@ void Application::LoadParameters(int argc, char** argv) {
   // load configs
   config_.Set(params);
   Log::Info("Finished loading parameters");
+  Log::Info("Sample strategy: %s", config_.data_sample_strategy.c_str());
 }
 
 void Application::LoadData() {
