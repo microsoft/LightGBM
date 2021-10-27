@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <queue>
+#include <set>
 #include <unordered_map>
 #include <utility>
 
@@ -325,8 +326,7 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree) {
   FindBestSplits(tree, nullptr);
 }
 
-void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::set<int>* force_features)
-{
+void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::set<int>* force_features) {
   std::vector<int8_t> is_feature_used(num_features_, 0);
 #pragma omp parallel for schedule(static, 256) if (num_features_ >= 512)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
@@ -344,13 +344,13 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::set<int>* fo
 #ifdef USE_CUDA
   if (LGBM_config_::current_learner == use_cpu_learner) {
     SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract);
-  }
-  else {
+  } else {
     ConstructHistograms(is_feature_used, use_subtract);
   }
 #else
   ConstructHistograms(is_feature_used, use_subtract);
 #endif
+
   FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
 }
 
@@ -565,8 +565,7 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
   return result_count;
 }
 
-void SerialTreeLearner::FindBestSplitsForForceSplitLeaf(Tree* tree, int* left_leaf, int* right_leaf, Json left_force_split_leaf_setting, Json right_force_split_leaf_setting)
-{
+void SerialTreeLearner::FindBestSplitsForForceSplitLeaf(Tree* tree, int* left_leaf, int* right_leaf, Json left_force_split_leaf_setting, Json right_force_split_leaf_setting) {
   // before processing next node from queue, store info for current left/right leaf
   // store "best split" for left and right, even if they might be overwritten by forced split
   if (BeforeFindBestSplit(tree, *left_leaf, *right_leaf)) {

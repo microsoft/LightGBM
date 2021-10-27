@@ -19,6 +19,7 @@
 #include <memory>
 #include <random>
 #include <vector>
+#include <set>
 
 #include "col_sampler.hpp"
 #include "data_partition.hpp"
