@@ -361,26 +361,51 @@ Alternatively, GitHub Actions can run code above for you. On a pull request, cre
 
 **NOTE:** Please do this only once you see that other R tests on a pull request are passing. R Hub is a free resource with limited capacity, and we want to be respectful community members.
 
-#### UBSAN
+#### <a id="UBSAN"></a>ASAN and UBSAN
 
-All packages uploaded to CRAN must pass a build using `gcc` instrumented with two sanitizers: the Address Sanitizer (ASAN) and the Undefined Behavior Sanitizer (UBSAN). For more background, see [this blog post](http://dirk.eddelbuettel.com/code/sanitizers.html).
+All packages uploaded to CRAN must pass builds using `gcc` and `clang`, instrumented with two sanitizers: the Address Sanitizer (ASAN) and the Undefined Behavior Sanitizer (UBSAN).
+
+For more background, see
+
+* [this blog post](https://dirk.eddelbuettel.com/code/sanitizers.html)
+* [top-level CRAN documentation on these checks](https://cran.r-project.org/web/checks/check_issue_kinds.html)
+* [CRAN's configuration of these checks](https://www.stats.ox.ac.uk/pub/bdr/memtests/README.txt)
 
 You can replicate these checks locally using Docker.
+For more information on the image used for testing, see https://github.com/wch/r-debug.
+
+In the code below, environment variable `R_CUSTOMIZATION` should be set to one of two values.
+
+* `"san"` = replicates CRAN's `gcc-ASAN` and `gcc-UBSAN` checks
+* `"csan"` = replicates CRAN's `clang-ASAN` and `clang-UBSAN` checks
 
 ```shell
 docker run \
-    -v $(pwd):/opt/LightGBM \
-    -w /opt/LightGBM \
-    -it rhub/rocker-gcc-san \
-    /bin/bash
+  --rm \
+  -it \
+  -v $(pwd):/opt/LightGBM \
+  -w /opt/LightGBM \
+  --env R_CUSTOMIZATION=san \
+  wch1/r-debug:latest \
+  /bin/bash
 
-Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+# install dependencies
+RDscript${R_CUSTOMIZATION} \
+  -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
 
+# install lightgbm
 sh build-cran-package.sh
+RD${R_CUSTOMIZATION} \
+  CMD INSTALL lightgbm_*.tar.gz
 
-Rdevel CMD install lightgbm_*.tar.gz
+# run tests
 cd R-package/tests
-Rscriptdevel testthat.R
+rm -f ./tests.log
+RDscript${R_CUSTOMIZATION} testthat.R >> tests.log 2>&1
+
+# check that tests passed
+echo "test exit code: $?"
+tail -300 ./tests.log
 ```
 
 #### Valgrind
