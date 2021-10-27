@@ -2915,4 +2915,3 @@ def test_force_split_with_feature_fraction():
     ret = mean_absolute_error(y_test, gbm.predict(X_test))
 
     assert ret < 2.0
-
