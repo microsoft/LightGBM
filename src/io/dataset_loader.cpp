@@ -850,6 +850,12 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
     if (config_.ignore_column != "") {
       Log::Warning("Config ignore_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
     }
+    if (config_.two_round) {
+      Log::Warning("Config two_round works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.header) {
+      Log::Warning("Config header works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
   }
 }
 
