@@ -57,6 +57,10 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   void LaunchReduceLeafStatKernel(const score_t* gradients, const score_t* hessians,
     const int num_leaves, const data_size_t num_data, double* cuda_leaf_value, const double shrinkage_rate) const;
 
+  void ConstructBitsetForCategoricalSplit(const CUDASplitInfo* best_split_info) const;
+
+  void LaunchConstructBitsetForCategoricalSplitKernel(const CUDASplitInfo* best_split_info) const;
+
   // GPU device ID
   int gpu_device_id_;
   // number of threads on CPU

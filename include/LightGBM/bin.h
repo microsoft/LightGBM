@@ -120,6 +120,23 @@ class BinMapper {
   }
 
   /*!
+  * \brief Maximum categorical value
+  * \return Maximum categorical value for categorical features, 0 for numerical features  
+  */
+  inline int MaxCatValue() const {
+    if (bin_2_categorical_.size() == 0) {
+      return 0;
+    }
+    int max_cat_value = bin_2_categorical_[0];
+    for (size_t i = 1; i < bin_2_categorical_.size(); ++i) {
+      if (bin_2_categorical_[i] > max_cat_value) {
+        max_cat_value = bin_2_categorical_[i];
+      }
+    }
+    return max_cat_value;
+  }
+
+  /*!
   * \brief Get sizes in byte of this object
   */
   size_t SizesInByte() const;

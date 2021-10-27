@@ -610,6 +610,12 @@ class Dataset {
     return feature_groups_[group]->bin_mappers_[sub_feature]->ValueToBin(threshold_double);
   }
 
+  inline int MaxRealCatValue(int i) const {
+    const int group = feature2group_[i];
+    const int sub_feature = feature2subfeature_[i];
+    return feature_groups_[group]->bin_mappers_[sub_feature]->MaxCatValue();
+  }
+
   /*!
   * \brief Get meta data pointer
   * \return Pointer of meta data

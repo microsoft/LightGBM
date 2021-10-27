@@ -169,7 +169,7 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
     int right_leaf_index = tree->Split(best_leaf_index_,
                                        train_data_->RealFeatureIndex(leaf_best_split_feature_[best_leaf_index_]),
                                        train_data_->RealThreshold(leaf_best_split_feature_[best_leaf_index_],
-                                       leaf_best_split_threshold_[best_leaf_index_]),
+                                        leaf_best_split_threshold_[best_leaf_index_]),
                                        train_data_->FeatureBinMapper(leaf_best_split_feature_[best_leaf_index_])->missing_type(),
                                        best_split_info);
 
@@ -322,6 +322,11 @@ Tree* CUDASingleGPUTreeLearner::FitByExistingTree(const Tree* old_tree, const st
 void CUDASingleGPUTreeLearner::ReduceLeafStat(
   CUDATree* old_tree, const score_t* gradients, const score_t* hessians) const {
   LaunchReduceLeafStatKernel(gradients, hessians, old_tree->num_leaves(), refit_num_data_, old_tree->cuda_leaf_value_ref(), old_tree->shrinkage());
+}
+
+void CUDASingleGPUTreeLearner::ConstructBitsetForCategoricalSplit(
+  const CUDASplitInfo* best_split_info) const {
+  LaunchConstructBitsetForCategoricalSplitKernel(best_split_info);
 }
 
 }  // namespace LightGBM

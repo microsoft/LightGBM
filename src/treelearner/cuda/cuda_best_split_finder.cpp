@@ -24,6 +24,7 @@ CUDABestSplitFinder::CUDABestSplitFinder(
   min_data_in_leaf_(config->min_data_in_leaf),
   min_sum_hessian_in_leaf_(config->min_sum_hessian_in_leaf),
   min_gain_to_split_(config->min_gain_to_split),
+  max_cat_threshold_(config->max_cat_threshold),
   num_total_bin_(feature_hist_offsets.back()),
   cuda_hist_(cuda_hist) {
   InitFeatureMetaInfo(train_data);
@@ -68,8 +69,16 @@ void CUDABestSplitFinder::InitFeatureMetaInfo(const Dataset* train_data) {
   feature_default_bins_.resize(num_features_);
   feature_num_bins_.resize(num_features_);
   max_num_bin_in_feature_ = 0;
+  has_categorical_feature_ = false;
+  max_num_categorical_bin_ = 0;
   for (int inner_feature_index = 0; inner_feature_index < num_features_; ++inner_feature_index) {
     const BinMapper* bin_mapper = train_data->FeatureBinMapper(inner_feature_index);
+    if (bin_mapper->bin_type() == BinType::CategoricalBin) {
+      has_categorical_feature_ = true;
+      if (bin_mapper->num_bin() > max_num_categorical_bin_) {
+        max_num_categorical_bin_ = bin_mapper->num_bin();
+      }
+    }
     const MissingType missing_type = bin_mapper->missing_type();
     feature_missing_type_[inner_feature_index] = missing_type;
     feature_mfb_offsets_[inner_feature_index] = static_cast<int8_t>(bin_mapper->GetMostFreqBin() == 0);
@@ -169,37 +178,41 @@ void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
   const size_t cuda_best_leaf_split_info_buffer_size = static_cast<size_t>(num_task_blocks) * static_cast<size_t>(num_leaves_);
 
   AllocateCUDAMemory<CUDASplitInfo>(&cuda_leaf_best_split_info_,
-                                         cuda_best_leaf_split_info_buffer_size,
-                                         __FILE__,
-                                         __LINE__);
+                                    cuda_best_leaf_split_info_buffer_size,
+                                    __FILE__,
+                                    __LINE__);
   InitCUDAMemoryFromHostMemory<int>(&cuda_task_feature_index_,
-                                         host_task_feature_index_.data(),
-                                         host_task_feature_index_.size(),
-                                         __FILE__,
-                                         __LINE__);
+                                    host_task_feature_index_.data(),
+                                    host_task_feature_index_.size(),
+                                    __FILE__,
+                                    __LINE__);
   InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_reverse_,
-                                             host_task_reverse_.data(),
-                                             host_task_reverse_.size(),
-                                             __FILE__,
-                                             __LINE__);
+                                        host_task_reverse_.data(),
+                                        host_task_reverse_.size(),
+                                        __FILE__,
+                                        __LINE__);
   InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_skip_default_bin_,
-                                             host_task_skip_default_bin_.data(),
-                                             host_task_skip_default_bin_.size(),
-                                             __FILE__,
-                                             __LINE__);
+                                        host_task_skip_default_bin_.data(),
+                                        host_task_skip_default_bin_.size(),
+                                        __FILE__,
+                                        __LINE__);
   InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_na_as_missing_,
-                                             host_task_na_as_missing_.data(),
-                                             host_task_na_as_missing_.size(),
-                                             __FILE__,
-                                             __LINE__);
+                                        host_task_na_as_missing_.data(),
+                                        host_task_na_as_missing_.size(),
+                                        __FILE__,
+                                        __LINE__);
   InitCUDAMemoryFromHostMemory<uint8_t>(&cuda_task_out_default_left_,
-                                             host_task_out_default_left_.data(),
-                                             host_task_out_default_left_.size(),
-                                             __FILE__,
-                                             __LINE__);
+                                        host_task_out_default_left_.data(),
+                                        host_task_out_default_left_.size(),
+                                        __FILE__,
+                                        __LINE__);
 
   const size_t output_buffer_size = 2 * static_cast<size_t>(num_tasks_);
   AllocateCUDAMemory<CUDASplitInfo>(&cuda_best_split_info_, output_buffer_size, __FILE__, __LINE__);
+  if (has_categorical_feature_) {
+    AllocateCatVectors(cuda_leaf_best_split_info_, cuda_best_leaf_split_info_buffer_size);
+    AllocateCatVectors(cuda_best_split_info_, output_buffer_size);
+  }
 }
 
 void CUDABestSplitFinder::ResetTrainingData(
@@ -236,9 +249,12 @@ void CUDABestSplitFinder::ResetConfig(const Config* config) {
   const size_t cuda_best_leaf_split_info_buffer_size = static_cast<size_t>(num_task_blocks) * static_cast<size_t>(num_leaves_);
   DeallocateCUDAMemory<CUDASplitInfo>(&cuda_leaf_best_split_info_, __FILE__, __LINE__);
   AllocateCUDAMemory<CUDASplitInfo>(&cuda_leaf_best_split_info_,
-                                         cuda_best_leaf_split_info_buffer_size,
-                                         __FILE__,
-                                         __LINE__);
+                                    cuda_best_leaf_split_info_buffer_size,
+                                    __FILE__,
+                                    __LINE__);
+  if (has_categorical_feature_) {
+    AllocateCatVectors(cuda_leaf_best_split_info_, cuda_best_leaf_split_info_buffer_size);
+  }
 }
 
 void CUDABestSplitFinder::BeforeTrain(const std::vector<int8_t>& is_feature_used_bytree) {
@@ -292,6 +308,10 @@ const CUDASplitInfo* CUDABestSplitFinder::FindBestFromAllSplits(
     best_leaf_index);
   SynchronizeCUDADevice(__FILE__, __LINE__);
   return cuda_leaf_best_split_info_ + (*best_leaf_index);
+}
+
+void CUDABestSplitFinder::AllocateCatVectors(CUDASplitInfo* cuda_split_infos, size_t len) const {
+  LaunchAllocateCatVectorsKernel(cuda_split_infos, len);
 }
 
 }  // namespace LightGBM

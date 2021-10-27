@@ -36,10 +36,16 @@ struct CUDASplitInfo {
 
   int num_cat_threshold = 0;
   uint32_t* cat_threshold = nullptr;
+  int* cat_threshold_real = nullptr;
 
   __device__ ~CUDASplitInfo() {
-    if (num_cat_threshold > 0 && cat_threshold != nullptr) {
-      cudaFree(cat_threshold);
+    if (num_cat_threshold > 0) {
+      if (cat_threshold != nullptr) {
+        cudaFree(cat_threshold);
+      }
+      if (cat_threshold_real != nullptr) {
+        cudaFree(cat_threshold_real);
+      }
     }
   }
 };

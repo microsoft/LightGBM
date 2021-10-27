@@ -138,6 +138,37 @@ __device__ __forceinline__ T ShuffleReduceSum(T value, T* shared_mem_buffer, con
   return value;
 }
 
+template <typename T>
+__device__ __forceinline__ T ShuffleReduceMaxWarp(T value, const data_size_t len) {
+  if (len > 0) {
+    // TODO(shiyu1994): check how mask works
+    const uint32_t mask = 0xffffffff;
+    for (int offset = warpSize / 2; offset > 0; offset >>= 1) {
+      value = max(value, __shfl_down_sync(mask, value, offset));
+    }
+  }
+  return value;
+}
+
+// reduce values from an 1-dimensional block (block size must be no greather than 1024)
+template <typename T>
+__device__ __forceinline__ T ShuffleReduceMax(T value, T* shared_mem_buffer, const size_t len) {
+  const uint32_t warpLane = threadIdx.x % warpSize;
+  const uint32_t warpID = threadIdx.x / warpSize;
+  const data_size_t warp_len = min(static_cast<data_size_t>(warpSize), static_cast<data_size_t>(len) - static_cast<data_size_t>(warpID * warpSize));
+  value = ShuffleReduceMaxWarp<T>(value, warp_len);
+  if (warpLane == 0) {
+    shared_mem_buffer[warpID] = value;
+  }
+  __syncthreads();
+  const data_size_t num_warp = static_cast<data_size_t>((len + warpSize - 1) / warpSize);
+  if (warpID == 0) {
+    value = (warpLane < num_warp ? shared_mem_buffer[warpLane] : 0);
+    value = ShuffleReduceMaxWarp<T>(value, num_warp);
+  }
+  return value;
+}
+
 // calculate prefix sum values within an 1-dimensional block in global memory, exclusively
 template <typename T>
 __device__ __forceinline__ void GlobalMemoryPrefixSum(T* array, const size_t len) {

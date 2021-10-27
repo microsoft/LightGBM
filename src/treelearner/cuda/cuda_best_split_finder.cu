@@ -1660,7 +1660,8 @@ __global__ void PrepareLeafBestSplitInfo(const int smaller_leaf_index, const int
   }
 }
 
-void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(const int cur_num_leaves,
+void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(
+  const int cur_num_leaves,
   const int smaller_leaf_index, const int larger_leaf_index,
   int* smaller_leaf_best_split_feature,
   uint32_t* smaller_leaf_best_split_threshold,
@@ -1687,6 +1688,21 @@ void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(const int cur_num_le
     *larger_leaf_best_split_default_left = static_cast<uint8_t>(host_leaf_best_split_info_buffer[5]);
   }
   *best_leaf_index = host_leaf_best_split_info_buffer[6];
+}
+
+__global__ void AllocateCatVectorsKernel(
+  CUDASplitInfo* cuda_split_infos, size_t len,
+  const int max_num_categories_in_split) {
+  const size_t i = threadIdx.x + blockIdx.x * blockDim.x;
+  if (i < len) {
+    cuda_split_infos[i]->cat_threshold = new uint32_t[max_num_categories_in_split];
+    cuda_split_infos[i]->cat_threshold_real = new int[max_num_categories_in_split];
+  }
+}
+
+void CUDABestSplitFinder::LaunchAllocateCatVectorsKernel(CUDASplitInfo* cuda_split_infos, size_t len) const {
+  const int max_num_categories_in_split = min(max_cat_threshold_ / 2, max_num_categorical_bin_);
+  AllocateCatVectorsKernel(cuda_split_infos, len, max_num_categories_in_split);
 }
 
 }  // namespace LightGBM

@@ -113,6 +113,13 @@ void CUDASingleGPUTreeLearner::LaunchReduceLeafStatKernel(
     config_->lambda_l1, use_l1, config_->lambda_l2, shrinkage_rate, config_->refit_decay_rate, cuda_leaf_value);
 }
 
+
+
+void CUDASingleGPUTreeLearner::LaunchConstructBitsetForCategoricalSplitKernel(
+  const CUDASplitInfo* best_split_info) const {
+  
+}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

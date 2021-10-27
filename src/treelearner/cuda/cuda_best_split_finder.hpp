@@ -87,7 +87,9 @@ class CUDABestSplitFinder {
     const bool is_smaller_leaf_valid,
     const bool is_larger_leaf_valid);
 
-  void LaunchFindBestFromAllSplitsKernel(const int cur_num_leaves, const int smaller_leaf_index,
+  void LaunchFindBestFromAllSplitsKernel(
+    const int cur_num_leaves,
+    const int smaller_leaf_index,
     const int larger_leaf_index,
     int* smaller_leaf_best_split_feature,
     uint32_t* smaller_leaf_best_split_threshold,
@@ -96,6 +98,10 @@ class CUDABestSplitFinder {
     uint32_t* larger_leaf_best_split_threshold,
     uint8_t* larger_leaf_best_split_default_left,
     int* best_leaf_index);
+
+  void AllocateCatVectors(CUDASplitInfo* cuda_split_infos, size_t len) const;
+
+  void LaunchAllocateCatVectorsKernel(CUDASplitInfo* cuda_split_infos, size_t len) const;
 
   // Host memory
   int num_features_;
@@ -111,6 +117,7 @@ class CUDABestSplitFinder {
   data_size_t min_data_in_leaf_;
   double min_sum_hessian_in_leaf_;
   double min_gain_to_split_;
+  int max_cat_threshold_;
   std::vector<cudaStream_t> cuda_streams_;
   // for best split find tasks
   std::vector<int> host_task_feature_index_;
@@ -123,6 +130,10 @@ class CUDABestSplitFinder {
   bool use_global_memory_;
   // number of total bins in the dataset
   const int num_total_bin_;
+  // has categorical feature
+  bool has_categorical_feature_;
+  // maximum number of bins of categorical features
+  int max_num_categorical_bin_;
 
   // CUDA memory, held by this object
   // for per leaf best split information
