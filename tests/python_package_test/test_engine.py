@@ -1,6 +1,7 @@
 # coding: utf-8
 import copy
 import itertools
+import json
 import math
 import pickle
 import platform
@@ -2887,3 +2888,29 @@ def test_dump_model_hook():
     dumped_model_str = str(bst.dump_model(5, 0, object_hook=hook))
     assert "leaf_value" not in dumped_model_str
     assert "LV" in dumped_model_str
+
+def test_force_split_with_feature_fraction():
+    X, y = load_boston(return_X_y=True) 
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+
+    forced_split = {
+        "feature": 0,
+        "threshold": 0.5
+    }
+
+    with open("forced_split.json", "w") as f:
+        f.write(json.dumps(forced_split))
+
+    params = {
+            "objective": "regression",
+            "feature_fraction": 0.6,
+            "force_col_wise": True,
+            "feature_fraction_seed": 1,
+            "forcedsplits_filename": "forced_split.json"
+        }
+
+    gbm = lgb.train(params, lgb_train)
+    ret = mean_absolute_error(y_test, gbm.predict(X_test))
+
+    assert ret < 2.0
