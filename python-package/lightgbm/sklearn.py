@@ -730,7 +730,7 @@ class LGBMModel(_LGBMModelBase):
         if callbacks is None:
             callbacks = []
         else:
-            callbacks = copy.deepcopy(callbacks)
+            callbacks = copy.copy(callbacks)  # don't use deepcopy here to allow non-serializable objects
 
         if verbose != 'warn':
             _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM. "
