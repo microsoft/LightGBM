@@ -105,7 +105,7 @@ ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
 LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 
-Ruby gem: https://github.com/ankane/lightgbm
+Ruby gem: https://github.com/ankane/lightgbm-ruby
 
 LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
 
