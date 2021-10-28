@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #pragma once
 
 #include <cstdio>
@@ -9,7 +13,7 @@
 namespace FreeForm2
 {
     // This class redirects an output file to a NUL output stream and restores
-    // the original output mechanism when destroyed. If the class fails to 
+    // the original output mechanism when destroyed. If the class fails to
     // restore the output stream for some reason, it is redirected to console
     // output.
     class IORedirectGuard
@@ -17,9 +21,9 @@ namespace FreeForm2
     public:
         static const int c_badFileDescriptor = -1;
 
-        // Redirect the file parameter to a NUL output stream. Do nothing if 
+        // Redirect the file parameter to a NUL output stream. Do nothing if
         // any I/O call fails.
-        explicit IORedirectGuard(FILE* p_out)
+        explicit IORedirectGuard(FILE *p_out)
             : m_out(p_out),
               m_redirect(nullptr),
               m_duplicatedFd(c_badFileDescriptor)
@@ -57,10 +61,10 @@ namespace FreeForm2
                 fclose(m_redirect);
                 if (_dup2(m_duplicatedFd, _fileno(m_out)) != 0)
                 {
-                    // On failure, redirect the output stream to console 
+                    // On failure, redirect the output stream to console
                     // output. This could cause issues with scripts, but it's
                     // better than silencing the output.
-                    FILE* out = nullptr;
+                    FILE *out = nullptr;
                     const errno_t err = freopen_s(&out, "CONOUT$", "w", m_out);
                     FF2_ASSERT(err == 0);
                 }
@@ -69,22 +73,21 @@ namespace FreeForm2
 
     private:
         // The file being redirected.
-        FILE* m_out;
+        FILE *m_out;
 
         // The newly created output stream to which m_out is redirected.
-        FILE* m_redirect;
+        FILE *m_redirect;
 
         // The duplicated file descriptor of the original output source.
         int m_duplicatedFd;
     };
 
-
     // Load a metastream definition list from a file, returning a unique_ptr
     // to the object. Because the MetaStreams constructor produces (incredibly)
     // versbose output, this method will silence stdout and stderr during the
     // loading process.
-    template<typename String>
-    std::unique_ptr<MetaStreams> QuietLoadMSDL(const String& p_path)
+    template <typename String>
+    std::unique_ptr<MetaStreams> QuietLoadMSDL(const String &p_path)
     {
         std::unique_ptr<MetaStreams> msdl;
         {

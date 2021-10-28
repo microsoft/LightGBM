@@ -1,70 +1,72 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
+ */
 #pragma once
 
 #ifndef FREEFORM2_OBJECT_TYPE_H
 #define FREEFORM2_OBJECT_TYPE_H
 
-#include "CompoundType.h"
 #include <map>
 #include <string>
 #include <vector>
 
-namespace FreeForm2
-{
-    // Object types are used to store information about external objects.
-    class ObjectType : public CompoundType
-    {
-    public:
-        // A struct that holds the information about members of an object.
-        struct ObjectMember : public CompoundType::Member
-        {
-            // Constructor to initialize all members of the class.
-            ObjectMember(const std::string& p_name,
-                         const TypeImpl& p_type,
-                         const std::string& p_externName);
+#include "CompoundType.h"
 
-            // Constructor used when frontend name matches the external name.
-            ObjectMember(const std::string& p_name,
-                         const TypeImpl& p_type);
+namespace FreeForm2 {
+// Object types are used to store information about external objects.
+class ObjectType : public CompoundType {
+ public:
+  // A struct that holds the information about members of an object.
+  struct ObjectMember : public CompoundType::Member {
+    // Constructor to initialize all members of the class.
+    ObjectMember(const std::string &p_name, const TypeImpl &p_type,
+                 const std::string &p_externName);
 
-            // The C++ name of the member.
-            std::string m_externName;
-        };
+    // Constructor used when frontend name matches the external name.
+    ObjectMember(const std::string &p_name, const TypeImpl &p_type);
 
-        // Get the name of this object type.
-        virtual const std::string& GetName() const override;
+    // The C++ name of the member.
+    std::string m_externName;
+  };
 
-        // Get the name of this object type.
-        const std::string& GetExternName() const;
+  // Get the name of this object type.
+  virtual const std::string &GetName() const override;
 
-        // Find a member by name. Return value is NULL if the object
-        // does not contain the specified member.
-        virtual const ObjectType::ObjectMember* FindMember(const std::string& p_name) const override;
+  // Get the name of this object type.
+  const std::string &GetExternName() const;
 
-        // Create derived types based on this type.
-        virtual const TypeImpl& AsConstType() const override;
-        virtual const TypeImpl& AsMutableType() const override;
-    private:
-        // Create an ObjectType of the given function information.
-        ObjectType(const std::string& p_name,
-                   const std::string& p_externName,
-                   const std::vector<ObjectMember>& p_members,
-                   bool p_isConst,
-                   TypeManager& p_typeManager);
+  // Find a member by name. Return value is NULL if the object
+  // does not contain the specified member.
+  virtual const ObjectType::ObjectMember *FindMember(
+      const std::string &p_name) const override;
 
-        friend class TypeManager;
+  // Create derived types based on this type.
+  virtual const TypeImpl &AsConstType() const override;
+  virtual const TypeImpl &AsMutableType() const override;
 
-        // Compare subclass type data.
-        virtual bool IsSameSubType(const TypeImpl& p_type, bool p_ignoreConst) const override;
+ private:
+  // Create an ObjectType of the given function information.
+  ObjectType(const std::string &p_name, const std::string &p_externName,
+             const std::vector<ObjectMember> &p_members, bool p_isConst,
+             TypeManager &p_typeManager);
 
-        // Functions associated with this type.
-        std::map<std::string, ObjectType::ObjectMember> m_members;
+  friend class TypeManager;
 
-        // Name of this object in the frontend.
-        std::string m_name;
+  // Compare subclass type data.
+  virtual bool IsSameSubType(const TypeImpl &p_type,
+                             bool p_ignoreConst) const override;
 
-        // Name of this object in the backend.
-        std::string m_externName;
-    };
-}
+  // Functions associated with this type.
+  std::map<std::string, ObjectType::ObjectMember> m_members;
+
+  // Name of this object in the frontend.
+  std::string m_name;
+
+  // Name of this object in the backend.
+  std::string m_externName;
+};
+}  // namespace FreeForm2
 
 #endif

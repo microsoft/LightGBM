@@ -1,12 +1,15 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include "StateMachineType.h"
 
 #include <boost/make_shared.hpp>
 #include "FreeForm2Assert.h"
 
-
-FreeForm2::StateMachineType::StateMachineType(TypeManager& p_typeManager,
-                                              const std::string& p_name,
-                                              const Member* p_members,
+FreeForm2::StateMachineType::StateMachineType(TypeManager &p_typeManager,
+                                              const std::string &p_name,
+                                              const Member *p_members,
                                               size_t p_numMembers,
                                               boost::weak_ptr<const StateMachineExpression> p_expr)
     : CompoundType(Type::StateMachine, false, &p_typeManager),
@@ -26,7 +29,6 @@ FreeForm2::StateMachineType::StateMachineType(TypeManager& p_typeManager,
     }
 }
 
-
 FreeForm2::StateMachineType::~StateMachineType()
 {
     // Only members > 1 need to be destructed; member 0 will be destructed
@@ -37,16 +39,14 @@ FreeForm2::StateMachineType::~StateMachineType()
     }
 }
 
-
-const std::string&
+const std::string &
 FreeForm2::StateMachineType::GetName() const
 {
     return m_name;
 }
 
-
-const FreeForm2::CompoundType::Member*
-FreeForm2::StateMachineType::FindMember(const std::string& p_name) const
+const FreeForm2::CompoundType::Member *
+FreeForm2::StateMachineType::FindMember(const std::string &p_name) const
 {
     const MemberIterator end = EndMembers();
     for (MemberIterator iter = BeginMembers(); iter != end; ++iter)
@@ -59,13 +59,11 @@ FreeForm2::StateMachineType::FindMember(const std::string& p_name) const
     return NULL;
 }
 
-
 FreeForm2::StateMachineType::MemberIterator
 FreeForm2::StateMachineType::BeginMembers() const
 {
     return m_members;
 }
-
 
 FreeForm2::StateMachineType::MemberIterator
 FreeForm2::StateMachineType::EndMembers() const
@@ -73,47 +71,38 @@ FreeForm2::StateMachineType::EndMembers() const
     return BeginMembers() + m_numMembers;
 }
 
-
 size_t
 FreeForm2::StateMachineType::GetMemberCount() const
 {
     return m_numMembers;
 }
 
-
-const FreeForm2::TypeImpl& 
+const FreeForm2::TypeImpl &
 FreeForm2::StateMachineType::AsConstType() const
 {
     return *this;
 }
 
-
-const FreeForm2::TypeImpl& 
+const FreeForm2::TypeImpl &
 FreeForm2::StateMachineType::AsMutableType() const
 {
     return *this;
 }
 
-
-bool
-FreeForm2::StateMachineType::HasDefinition() const
+bool FreeForm2::StateMachineType::HasDefinition() const
 {
     return !m_expr.expired();
 }
 
-
-boost::shared_ptr<const FreeForm2::StateMachineExpression> 
+boost::shared_ptr<const FreeForm2::StateMachineExpression>
 FreeForm2::StateMachineType::GetDefinition() const
 {
     return m_expr.lock();
 }
 
-
-bool
-FreeForm2::StateMachineType::IsSameSubType(const TypeImpl& p_type, bool p_ignoreConst) const
+bool FreeForm2::StateMachineType::IsSameSubType(const TypeImpl &p_type, bool p_ignoreConst) const
 {
     FF2_ASSERT(p_type.Primitive() == Type::StateMachine);
-    const StateMachineType& other = static_cast<const StateMachineType&>(p_type);
+    const StateMachineType &other = static_cast<const StateMachineType &>(p_type);
     return StateMachineType::GetName() == other.StateMachineType::GetName();
 }
-

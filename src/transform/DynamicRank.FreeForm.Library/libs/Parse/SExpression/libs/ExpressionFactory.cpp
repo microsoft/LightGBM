@@ -1,15 +1,18 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include "ExpressionFactory.h"
 
 #include <sstream>
 
-const FreeForm2::Expression& 
-FreeForm2::ExpressionFactory::Create(const ProgramParseState::ExpressionParseState& p_state, 
-                                     SimpleExpressionOwner& p_owner,
-                                     TypeManager& p_typeManager) const
+const FreeForm2::Expression &
+FreeForm2::ExpressionFactory::Create(const ProgramParseState::ExpressionParseState &p_state,
+                                     SimpleExpressionOwner &p_owner,
+                                     TypeManager &p_typeManager) const
 {
     std::pair<unsigned int, unsigned int> arity = Arity();
-    if (p_state.m_children.size() >= arity.first 
-        && p_state.m_children.size() <= arity.second)
+    if (p_state.m_children.size() >= arity.first && p_state.m_children.size() <= arity.second)
     {
         return CreateExpression(p_state, p_owner, p_typeManager);
     }
@@ -18,7 +21,7 @@ FreeForm2::ExpressionFactory::Create(const ProgramParseState::ExpressionParseSta
         // Incorrect arity, throw exception.
         std::ostringstream err;
         err << "Arity of " << std::string(SIZED_STR(p_state.m_atom)) << " was "
-            << p_state.m_children.size() << " but was expected to be in range [" 
+            << p_state.m_children.size() << " but was expected to be in range ["
             << Arity().first << ", "
             << Arity().second << "]";
         throw std::runtime_error(err.str());

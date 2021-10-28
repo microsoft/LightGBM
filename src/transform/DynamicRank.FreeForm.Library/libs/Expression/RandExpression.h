@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #pragma once
 
 #ifndef FREEFORM2_RAND_EXPRESSION_H
@@ -13,41 +17,40 @@ namespace FreeForm2
     {
     public:
         // Methods inherited from Expression.
-        void Accept(Visitor& p_visitor) const override;
-        virtual const TypeImpl& GetType() const override;
+        void Accept(Visitor &p_visitor) const override;
+        virtual const TypeImpl &GetType() const override;
         virtual size_t GetNumChildren() const override;
 
         // Get a reference to the singleton for RandFloatExpression.
-        static const RandFloatExpression& GetInstance();
+        static const RandFloatExpression &GetInstance();
 
     private:
         // Private constructor for singleton class.
-        RandFloatExpression(const Annotations& p_annotations);
+        RandFloatExpression(const Annotations &p_annotations);
     };
 
     // The RandIntExpression generates a random integer
     // in the range specified inclusive of the lower bound
     // and upper bound exclusive.
-    class RandIntExpression: public Expression
+    class RandIntExpression : public Expression
     {
     public:
         // Constructor for RandIntExpression.
-        RandIntExpression(const Annotations& p_annotations,
-                          const Expression& p_lowerBoundExpression,
-                          const Expression& p_upperBoundExpression);
+        RandIntExpression(const Annotations &p_annotations,
+                          const Expression &p_lowerBoundExpression,
+                          const Expression &p_upperBoundExpression);
 
         // Methods inherited from Expression.
-        void Accept(Visitor& p_visitor) const override;
-        virtual const TypeImpl& GetType() const override;
+        void Accept(Visitor &p_visitor) const override;
+        virtual const TypeImpl &GetType() const override;
         virtual size_t GetNumChildren() const override;
-        
+
     private:
-        
         // Lower bound expression to generate a random number.
-        const Expression& m_lowerBoundExpression;
+        const Expression &m_lowerBoundExpression;
 
         // Upper bound expression to generate a random number.
-        const Expression& m_upperBoundExpression;
+        const Expression &m_upperBoundExpression;
     };
 };
 

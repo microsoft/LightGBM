@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
+ */
 //===-- JIT.h - Class definition for the JIT --------------------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
@@ -29,7 +34,7 @@ class TargetJITInfo;
 class TargetMachine;
 
 class JITState {
-private:
+ private:
   FunctionPassManager PM;  // Passes to compile a function
   Module *M;               // Module used to create the PM
 
@@ -37,12 +42,10 @@ private:
   /// were called from a function being code generated.
   std::vector<AssertingVH<Function> > PendingFunctions;
 
-public:
+ public:
   explicit JITState(Module *M) : PM(M), M(M) {}
 
-  FunctionPassManager &getPM() {
-    return PM;
-  }
+  FunctionPassManager &getPM() { return PM; }
 
   Module *getModule() const { return M; }
   std::vector<AssertingVH<Function> > &getPendingFunctions() {
@@ -50,17 +53,15 @@ public:
   }
 };
 
-
 class JIT : public ExecutionEngine {
   /// types
-  typedef ValueMap<const BasicBlock *, void *>
-      BasicBlockAddressMapTy;
+  typedef ValueMap<const BasicBlock *, void *> BasicBlockAddressMapTy;
   /// data
-  TargetMachine &TM;       // The current target we are compiling to
-  TargetJITInfo &TJI;      // The JITInfo for the target we are compiling to
-  JITCodeEmitter *JCE;     // JCE object
+  TargetMachine &TM;    // The current target we are compiling to
+  TargetJITInfo &TJI;   // The JITInfo for the target we are compiling to
+  JITCodeEmitter *JCE;  // JCE object
   JITMemoryManager *JMM;
-  std::vector<JITEventListener*> EventListeners;
+  std::vector<JITEventListener *> EventListeners;
 
   /// AllocateGVsWithCode - Some applications require that global variables and
   /// code be allocated into the same region of memory, in which case this flag
@@ -78,15 +79,13 @@ class JIT : public ExecutionEngine {
   /// taken.
   BasicBlockAddressMapTy BasicBlockAddressMap;
 
+  JIT(Module *M, TargetMachine &tm, TargetJITInfo &tji, JITMemoryManager *JMM,
+      bool AllocateGVsWithCode);
 
-  JIT(Module *M, TargetMachine &tm, TargetJITInfo &tji,
-      JITMemoryManager *JMM, bool AllocateGVsWithCode);
-public:
+ public:
   ~JIT();
 
-  static void Register() {
-    JITCtor = createJIT;
-  }
+  static void Register() { JITCtor = createJIT; }
 
   /// getJITInfo - Return the target JIT information structure.
   ///
@@ -95,16 +94,13 @@ public:
   /// create - Create an return a new JIT compiler if there is one available
   /// for the current target.  Otherwise, return null.
   ///
-  static ExecutionEngine *create(Module *M,
-                                 std::string *Err,
-                                 JITMemoryManager *JMM,
-                                 CodeGenOpt::Level OptLevel =
-                                   CodeGenOpt::Default,
-                                 bool GVsWithCode = true,
-                                 Reloc::Model RM = Reloc::Default,
-                                 CodeModel::Model CMM = CodeModel::JITDefault) {
-    return ExecutionEngine::createJIT(M, Err, JMM, OptLevel, GVsWithCode,
-                                      RM, CMM);
+  static ExecutionEngine *create(
+      Module *M, std::string *Err, JITMemoryManager *JMM,
+      CodeGenOpt::Level OptLevel = CodeGenOpt::Default, bool GVsWithCode = true,
+      Reloc::Model RM = Reloc::Default,
+      CodeModel::Model CMM = CodeModel::JITDefault) {
+    return ExecutionEngine::createJIT(M, Err, JMM, OptLevel, GVsWithCode, RM,
+                                      CMM);
   }
 
   void addModule(Module *M) override;
@@ -183,10 +179,8 @@ public:
   ///
   JITCodeEmitter *getCodeEmitter() const { return JCE; }
 
-  static ExecutionEngine *createJIT(Module *M,
-                                    std::string *ErrorStr,
-                                    JITMemoryManager *JMM,
-                                    bool GVsWithCode,
+  static ExecutionEngine *createJIT(Module *M, std::string *ErrorStr,
+                                    JITMemoryManager *JMM, bool GVsWithCode,
                                     TargetMachine *TM);
 
   // Run the JIT on F and return information about the generated code
@@ -200,33 +194,29 @@ public:
   /// These functions correspond to the methods on JITEventListener.  They
   /// iterate over the registered listeners and call the corresponding method on
   /// each.
-  void NotifyFunctionEmitted(
-      const Function &F, void *Code, size_t Size,
-      const JITEvent_EmittedFunctionDetails &Details);
+  void NotifyFunctionEmitted(const Function &F, void *Code, size_t Size,
+                             const JITEvent_EmittedFunctionDetails &Details);
   void NotifyFreeingMachineCode(void *OldPtr);
 
-  BasicBlockAddressMapTy &
-  getBasicBlockAddressMap() {
+  BasicBlockAddressMapTy &getBasicBlockAddressMap() {
     return BasicBlockAddressMap;
   }
 
-
-private:
+ private:
   static JITCodeEmitter *createEmitter(JIT &J, JITMemoryManager *JMM,
                                        TargetMachine &tm);
   void runJITOnFunctionUnlocked(Function *F);
   void updateFunctionStubUnlocked(Function *F);
   void jitTheFunctionUnlocked(Function *F);
 
-protected:
-
+ protected:
   /// getMemoryforGV - Allocate memory for a global variable.
-  char* getMemoryForGV(const GlobalVariable* GV) override;
-
+  char *getMemoryForGV(const GlobalVariable *GV) override;
 };
 
-const std::vector<MachineRelocation>& GetJitMachineRelocations(const JIT* p_jit);
+const std::vector<MachineRelocation> &GetJitMachineRelocations(
+    const JIT *p_jit);
 
-} // End llvm namespace
+}  // namespace llvm
 
 #endif

@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
+ */
 #pragma once
 
 #include <NeuralInput.h>
@@ -6,24 +11,21 @@
 class InputExtractor;
 class MinimalFeatureMap;
 
-InputExtractor* InputExtractorCreateFromInputStr(const std::string& str);
-InputExtractor* InputExtractorCreateFromFreeformV2(const char* freeform);
-void InputExtractorDispose(InputExtractor* extractor);
-MinimalFeatureMap* InputExtractorGetFeatureMap(InputExtractor* extractor);
+InputExtractor *InputExtractorCreateFromInputStr(const std::string &str);
+InputExtractor *InputExtractorCreateFromFreeformV2(const char *freeform);
+void InputExtractorDispose(InputExtractor *extractor);
+MinimalFeatureMap *InputExtractorGetFeatureMap(InputExtractor *extractor);
 
-bool InputExtractorGetInputName(
-        InputExtractor* extractor,
-        UInt32 inputIndex,
-        char* buffer,
-        UInt32 sizeOfBuffer,
-        UInt32* length);
+bool InputExtractorGetInputName(InputExtractor *extractor, UInt32 inputIndex,
+                                char *buffer, UInt32 sizeOfBuffer,
+                                UInt32 *length);
 
-UInt32 InputExtractorGetInputCount(InputExtractor* extractor);
-const DynamicRank::NeuralInput* InputExtractorGetInput(InputExtractor* extractor, UInt32 index);
+UInt32 InputExtractorGetInputCount(InputExtractor *extractor);
+const DynamicRank::NeuralInput *InputExtractorGetInput(
+    InputExtractor *extractor, UInt32 index);
 
-bool InputExtractorGetSectionContent(
-        InputExtractor* extractor, 
-        char* sectionName, 
-        char* sectionContentBuffer,
-        UInt32 sizeOfBuffer,
-        UInt32* sectionContentLength);
+bool InputExtractorGetSectionContent(InputExtractor *extractor,
+                                     char *sectionName,
+                                     char *sectionContentBuffer,
+                                     UInt32 sizeOfBuffer,
+                                     UInt32 *sectionContentLength);

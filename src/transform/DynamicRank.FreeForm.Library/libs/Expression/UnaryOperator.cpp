@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include "UnaryOperator.h"
 
 #include "FreeForm2Assert.h"
@@ -6,8 +10,7 @@
 #include "TypeUtil.h"
 #include <vector>
 
-static
-std::vector<FreeForm2::Type::TypePrimitive>
+static std::vector<FreeForm2::Type::TypePrimitive>
 GetOperandTypes(FreeForm2::UnaryOperator::Operation p_op)
 {
     using FreeForm2::UnaryOperator;
@@ -20,12 +23,18 @@ GetOperandTypes(FreeForm2::UnaryOperator::Operation p_op)
         types.push_back(FreeForm2::Type::Bool);
         break;
 
-    case UnaryOperator::abs: __attribute__((__fallthrough__));
-    case UnaryOperator::minus: __attribute__((__fallthrough__));
-    case UnaryOperator::round: __attribute__((__fallthrough__));
-    case UnaryOperator::trunc: __attribute__((__fallthrough__));
-    case UnaryOperator::log: __attribute__((__fallthrough__));
-    case UnaryOperator::log1: __attribute__((__fallthrough__));
+    case UnaryOperator::abs:
+        __attribute__((__fallthrough__));
+    case UnaryOperator::minus:
+        __attribute__((__fallthrough__));
+    case UnaryOperator::round:
+        __attribute__((__fallthrough__));
+    case UnaryOperator::trunc:
+        __attribute__((__fallthrough__));
+    case UnaryOperator::log:
+        __attribute__((__fallthrough__));
+    case UnaryOperator::log1:
+        __attribute__((__fallthrough__));
     case UnaryOperator::tanh:
         types.push_back(FreeForm2::Type::Int);
         types.push_back(FreeForm2::Type::Int32);
@@ -48,9 +57,9 @@ GetOperandTypes(FreeForm2::UnaryOperator::Operation p_op)
     return types;
 }
 
-const FreeForm2::TypeImpl&
-FreeForm2::UnaryOperator::GetBestOperandType(Operation p_operator, 
-                                             const TypeImpl& p_operand)
+const FreeForm2::TypeImpl &
+FreeForm2::UnaryOperator::GetBestOperandType(Operation p_operator,
+                                             const TypeImpl &p_operand)
 {
     if (p_operand.Primitive() == Type::Unknown)
     {
@@ -69,37 +78,40 @@ FreeForm2::UnaryOperator::GetBestOperandType(Operation p_operator,
     }
 }
 
-const FreeForm2::TypeImpl&
-FreeForm2::UnaryOperator::GetReturnType(Operation p_operator, 
-                                        const TypeImpl& p_operand)
+const FreeForm2::TypeImpl &
+FreeForm2::UnaryOperator::GetReturnType(Operation p_operator,
+                                        const TypeImpl &p_operand)
 {
     switch (p_operator)
     {
-        case UnaryOperator::minus:
-        {
-            if (p_operand.Primitive() == Type::UInt32)
-            {
-                return TypeImpl::GetIntInstance(true);
-            }
-            else
-            {
-                return p_operand;
-            }
-        }
-        case UnaryOperator::trunc: __attribute__((__fallthrough__));
-        case UnaryOperator::round:
+    case UnaryOperator::minus:
+    {
+        if (p_operand.Primitive() == Type::UInt32)
         {
             return TypeImpl::GetIntInstance(true);
         }
-        case UnaryOperator::log: __attribute__((__fallthrough__));
-        case UnaryOperator::log1: __attribute__((__fallthrough__)); 
-        case UnaryOperator::tanh:
-        {
-            return TypeImpl::GetFloatInstance(true);
-        }
-        default:
+        else
         {
             return p_operand;
         }
+    }
+    case UnaryOperator::trunc:
+        __attribute__((__fallthrough__));
+    case UnaryOperator::round:
+    {
+        return TypeImpl::GetIntInstance(true);
+    }
+    case UnaryOperator::log:
+        __attribute__((__fallthrough__));
+    case UnaryOperator::log1:
+        __attribute__((__fallthrough__));
+    case UnaryOperator::tanh:
+    {
+        return TypeImpl::GetFloatInstance(true);
+    }
+    default:
+    {
+        return p_operand;
+    }
     }
 }

@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #pragma once
 
 #include <basic_types.h>
@@ -68,7 +72,7 @@ namespace FreeForm2
             // Because there is no 48-bit integer type, the m_tuple member of
             // ExtraLargeTuple is actually the size of a 64-bit integer, though
             // only the lower 48-bits are used.
-            struct 
+            struct
             {
                 UInt64 m_decodeType : 2;
                 UInt64 m_bodyBlockFlag : 2;
@@ -157,8 +161,7 @@ namespace FreeForm2
         BOOST_STATIC_ASSERT(sizeof(PhraseNormalizer) * 8 == 64);
 
         // The number of UInt32s required to hold the configuration bitmask.
-        static const size_t c_numberOfConfigBlocks 
-            = (ExtractorConfig::ExtractorConfigCount - 1) / (sizeof(UInt32) * 8) + 1;
+        static const size_t c_numberOfConfigBlocks = (ExtractorConfig::ExtractorConfigCount - 1) / (sizeof(UInt32) * 8) + 1;
 
         struct PerStreamFeatures
         {

@@ -1,111 +1,116 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
+ */
 #pragma once
 
 #ifndef FREEFORM2_TYPEIMPL_H
 #define FREEFORM2_TYPEIMPL_H
 
 #include <boost/noncopyable.hpp>
-#include "FreeForm2Type.h"
 #include <ostream>
 #include <string>
 #include <vector>
 
-namespace FreeForm2 
-{
-    class TypeManager;
+#include "FreeForm2Type.h"
 
-    class TypeImpl : boost::noncopyable
-    {
-    public:
-        // Construct a type implementation from the given type primitive 
-        // and const-ness.
-        TypeImpl(Type::TypePrimitive p_prim, bool p_isConst, TypeManager* p_typeManager);
+namespace FreeForm2 {
+class TypeManager;
 
-        // Get the type primitive of this type.
-        Type::TypePrimitive Primitive() const;
+class TypeImpl : boost::noncopyable {
+ public:
+  // Construct a type implementation from the given type primitive
+  // and const-ness.
+  TypeImpl(Type::TypePrimitive p_prim, bool p_isConst,
+           TypeManager *p_typeManager);
 
-        // Equality comparison for types. This function returns true if two 
-        // types are equivalent; otherwise returns false. This function will
-        // ignore constness if p_ignoreConst is true.
-        bool IsSameAs(const TypeImpl& p_type, bool p_ignoreConst) const;
+  // Get the type primitive of this type.
+  Type::TypePrimitive Primitive() const;
 
-        // Equality operator. Implemented in terms of IsSameAs, taking 
-        // constness into account.
-        bool operator==(const TypeImpl& p_other) const;
+  // Equality comparison for types. This function returns true if two
+  // types are equivalent; otherwise returns false. This function will
+  // ignore constness if p_ignoreConst is true.
+  bool IsSameAs(const TypeImpl &p_type, bool p_ignoreConst) const;
 
-        // Inequality operator. Implemented in terms of operator ==.
-        bool operator!=(const TypeImpl& p_other) const;
+  // Equality operator. Implemented in terms of IsSameAs, taking
+  // constness into account.
+  bool operator==(const TypeImpl &p_other) const;
 
-        // Get a string representation of the type.
-        virtual const std::string& GetName() const = 0;
+  // Inequality operator. Implemented in terms of operator ==.
+  bool operator!=(const TypeImpl &p_other) const;
 
-        // A static and member function to determine whether a given or the
-        // current type is of fixed size.  Types that are not of fixed size
-        // include arrays (variable-sized) and void (doesn't have a size).
-        static bool IsLeafType(Type::TypePrimitive p_prim);
-        bool IsLeafType() const;
+  // Get a string representation of the type.
+  virtual const std::string &GetName() const = 0;
 
-        // Check if this type is an integer type.
-        bool IsIntegerType() const;
+  // A static and member function to determine whether a given or the
+  // current type is of fixed size.  Types that are not of fixed size
+  // include arrays (variable-sized) and void (doesn't have a size).
+  static bool IsLeafType(Type::TypePrimitive p_prim);
+  bool IsLeafType() const;
 
-        // Check if this type is a floating-point type.
-        bool IsFloatingPointType() const;
+  // Check if this type is an integer type.
+  bool IsIntegerType() const;
 
-        // Check if this type is signed. Signed types include signed integer
-        // types and the float type.
-        bool IsSigned() const;
+  // Check if this type is a floating-point type.
+  bool IsFloatingPointType() const;
 
-        // Check if this type is valid. Unknown types are valid.
-        bool IsValid() const;
+  // Check if this type is signed. Signed types include signed integer
+  // types and the float type.
+  bool IsSigned() const;
 
-        // Check if this type is const.
-        bool IsConst() const;
+  // Check if this type is valid. Unknown types are valid.
+  bool IsValid() const;
 
-        // Create derived types based on this type.
-        virtual const TypeImpl& AsConstType() const = 0;
-        virtual const TypeImpl& AsMutableType() const = 0;
+  // Check if this type is const.
+  bool IsConst() const;
 
-        // Return convenience single instances of some common, leaf types.
-        static const TypeImpl& GetFloatInstance(bool p_isConst);
-        static const TypeImpl& GetIntInstance(bool p_isConst);
-        static const TypeImpl& GetUInt64Instance(bool p_isConst);
-        static const TypeImpl& GetInt32Instance(bool p_isConst);
-        static const TypeImpl& GetUInt32Instance(bool p_isConst);
-        static const TypeImpl& GetBoolInstance(bool p_isConst);
-        static const TypeImpl& GetVoidInstance();
-        static const TypeImpl& GetStreamInstance(bool p_isConst);
-        static const TypeImpl& GetWordInstance(bool p_isConst);
-        static const TypeImpl& GetInstanceHeaderInstance(bool p_isConst);
-        static const TypeImpl& GetBodyBlockHeaderInstance(bool p_isConst);
-        static const TypeImpl& GetUnknownType();
-        static const TypeImpl& GetInvalidType();
+  // Create derived types based on this type.
+  virtual const TypeImpl &AsConstType() const = 0;
+  virtual const TypeImpl &AsMutableType() const = 0;
 
-        // Get the type for the singleton types above.
-        static const TypeImpl& GetCommonType(Type::TypePrimitive p_prim, bool p_isConst);
+  // Return convenience single instances of some common, leaf types.
+  static const TypeImpl &GetFloatInstance(bool p_isConst);
+  static const TypeImpl &GetIntInstance(bool p_isConst);
+  static const TypeImpl &GetUInt64Instance(bool p_isConst);
+  static const TypeImpl &GetInt32Instance(bool p_isConst);
+  static const TypeImpl &GetUInt32Instance(bool p_isConst);
+  static const TypeImpl &GetBoolInstance(bool p_isConst);
+  static const TypeImpl &GetVoidInstance();
+  static const TypeImpl &GetStreamInstance(bool p_isConst);
+  static const TypeImpl &GetWordInstance(bool p_isConst);
+  static const TypeImpl &GetInstanceHeaderInstance(bool p_isConst);
+  static const TypeImpl &GetBodyBlockHeaderInstance(bool p_isConst);
+  static const TypeImpl &GetUnknownType();
+  static const TypeImpl &GetInvalidType();
 
-    protected:
-        // For derived classes, return the TypeManager passed to the 
-        // constructor of this TypeImpl.
-        TypeManager* GetTypeManager() const;
+  // Get the type for the singleton types above.
+  static const TypeImpl &GetCommonType(Type::TypePrimitive p_prim,
+                                       bool p_isConst);
 
-    private:
-        // This method determines if the subclass data for this TypeImpl is the
-        // same as the paramter. This method may assume that Primitive() ==
-        // p_type.Primitive().
-        virtual bool IsSameSubType(const TypeImpl& p_type, bool p_ignoreConst) const = 0;
+ protected:
+  // For derived classes, return the TypeManager passed to the
+  // constructor of this TypeImpl.
+  TypeManager *GetTypeManager() const;
 
-        // Type primitive of this type.
-        Type::TypePrimitive m_prim;
+ private:
+  // This method determines if the subclass data for this TypeImpl is the
+  // same as the paramter. This method may assume that Primitive() ==
+  // p_type.Primitive().
+  virtual bool IsSameSubType(const TypeImpl &p_type,
+                             bool p_ignoreConst) const = 0;
 
-        // Constness of the type.
-        bool m_isConst;
+  // Type primitive of this type.
+  Type::TypePrimitive m_prim;
 
-        // Owning TypeManager of this type.
-        TypeManager* m_typeManager;
-    };
+  // Constness of the type.
+  bool m_isConst;
 
-    std::ostream&
-    operator<<(std::ostream& p_out, const TypeImpl& p_type);
-}
+  // Owning TypeManager of this type.
+  TypeManager *m_typeManager;
+};
+
+std::ostream &operator<<(std::ostream &p_out, const TypeImpl &p_type);
+}  // namespace FreeForm2
 
 #endif
-

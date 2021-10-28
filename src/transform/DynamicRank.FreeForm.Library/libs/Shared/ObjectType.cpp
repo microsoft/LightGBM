@@ -1,30 +1,33 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include "ObjectType.h"
 
 #include <boost/foreach.hpp>
 #include "FreeForm2Assert.h"
 #include "TypeManager.h"
 
-FreeForm2::ObjectType::ObjectMember::ObjectMember(const std::string& p_name,
-                                                  const TypeImpl& p_type,
-                                                  const std::string& p_externName)
+FreeForm2::ObjectType::ObjectMember::ObjectMember(const std::string &p_name,
+                                                  const TypeImpl &p_type,
+                                                  const std::string &p_externName)
     : CompoundType::Member(p_name, p_type),
       m_externName(p_externName)
 {
 }
 
-FreeForm2::ObjectType::ObjectMember::ObjectMember(const std::string& p_name,
-                                                  const TypeImpl& p_type)
+FreeForm2::ObjectType::ObjectMember::ObjectMember(const std::string &p_name,
+                                                  const TypeImpl &p_type)
     : CompoundType::Member(p_name, p_type),
       m_externName(p_name)
 {
 }
 
-
-FreeForm2::ObjectType::ObjectType(const std::string& p_name, 
-                                  const std::string& p_externName, 
-                                  const std::vector<ObjectType::ObjectMember>& p_members, 
-                                  bool p_isConst, 
-                                  TypeManager& p_typeManager)
+FreeForm2::ObjectType::ObjectType(const std::string &p_name,
+                                  const std::string &p_externName,
+                                  const std::vector<ObjectType::ObjectMember> &p_members,
+                                  bool p_isConst,
+                                  TypeManager &p_typeManager)
     : CompoundType(Type::Object, p_isConst, &p_typeManager),
       m_name(p_name),
       m_externName(p_externName)
@@ -37,30 +40,26 @@ FreeForm2::ObjectType::ObjectType(const std::string& p_name,
     }
 }
 
-
-const std::string&
+const std::string &
 FreeForm2::ObjectType::GetName() const
 {
     return m_name;
 }
 
-
-const std::string&
+const std::string &
 FreeForm2::ObjectType::GetExternName() const
 {
     return m_externName;
 }
 
-
-const FreeForm2::ObjectType::ObjectMember*
-FreeForm2::ObjectType::FindMember(const std::string& p_name) const
+const FreeForm2::ObjectType::ObjectMember *
+FreeForm2::ObjectType::FindMember(const std::string &p_name) const
 {
     std::map<std::string, ObjectType::ObjectMember>::const_iterator member = m_members.find(p_name);
     return member != m_members.end() ? &member->second : NULL;
 }
 
-
-const FreeForm2::TypeImpl& 
+const FreeForm2::TypeImpl &
 FreeForm2::ObjectType::AsConstType() const
 {
     if (IsConst())
@@ -69,11 +68,11 @@ FreeForm2::ObjectType::AsConstType() const
     }
     else
     {
-        FF2_ASSERT(GetTypeManager() != NULL);    
-        
+        FF2_ASSERT(GetTypeManager() != NULL);
+
         std::vector<ObjectType::ObjectMember> members;
         for (std::map<std::string, ObjectType::ObjectMember>::const_iterator memberIterator = m_members.begin();
-             memberIterator !=  m_members.end();
+             memberIterator != m_members.end();
              ++memberIterator)
         {
             members.push_back(memberIterator->second);
@@ -83,8 +82,7 @@ FreeForm2::ObjectType::AsConstType() const
     }
 }
 
-
-const FreeForm2::TypeImpl& 
+const FreeForm2::TypeImpl &
 FreeForm2::ObjectType::AsMutableType() const
 {
     if (!IsConst())
@@ -97,7 +95,7 @@ FreeForm2::ObjectType::AsMutableType() const
 
         std::vector<ObjectType::ObjectMember> members;
         for (std::map<std::string, ObjectType::ObjectMember>::const_iterator memberIterator = m_members.begin();
-             memberIterator !=  m_members.end();
+             memberIterator != m_members.end();
              ++memberIterator)
         {
             members.push_back(memberIterator->second);
@@ -107,13 +105,10 @@ FreeForm2::ObjectType::AsMutableType() const
     }
 }
 
-
-bool
-FreeForm2::ObjectType::IsSameSubType(const TypeImpl& p_other, bool p_ignoreConst) const
+bool FreeForm2::ObjectType::IsSameSubType(const TypeImpl &p_other, bool p_ignoreConst) const
 {
     FF2_ASSERT(p_other.Primitive() == Type::Object);
-    const ObjectType& other = static_cast<const ObjectType&>(p_other);
+    const ObjectType &other = static_cast<const ObjectType &>(p_other);
 
-    return GetName() == other.GetName() 
-           && GetExternName() == other.GetExternName();
+    return GetName() == other.GetName() && GetExternName() == other.GetExternName();
 }

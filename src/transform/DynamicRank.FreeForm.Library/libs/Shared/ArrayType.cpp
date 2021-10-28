@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include "ArrayType.h"
 
 #include <boost/foreach.hpp>
@@ -8,17 +12,17 @@
 #include <stdexcept>
 #include "TypeManager.h"
 
-FreeForm2::ArrayType::ArrayType(const TypeImpl& p_child, 
+FreeForm2::ArrayType::ArrayType(const TypeImpl &p_child,
                                 bool p_isConst,
-                                unsigned int p_dimensions, 
+                                unsigned int p_dimensions,
                                 unsigned int p_maxElements,
-                                TypeManager& p_typeManager)
+                                TypeManager &p_typeManager)
     : TypeImpl(Type::Array, p_isConst, &p_typeManager),
       m_typeManager(p_typeManager),
       m_derefType(NULL),
       m_oppositeConstnessType(NULL),
       m_isFixedSize(false),
-      m_child(p_child), 
+      m_child(p_child),
       m_dimensionCount(p_dimensions),
       m_maxElements(p_maxElements)
 {
@@ -37,19 +41,18 @@ FreeForm2::ArrayType::ArrayType(const TypeImpl& p_child,
     m_dimensions[0] = 0;
 }
 
-
-FreeForm2::ArrayType::ArrayType(const TypeImpl& p_child, 
+FreeForm2::ArrayType::ArrayType(const TypeImpl &p_child,
                                 bool p_isConst,
                                 unsigned int p_dimensions,
                                 const unsigned int p_elementCounts[],
                                 unsigned int p_maxElements,
-                                TypeManager& p_typeManager)
+                                TypeManager &p_typeManager)
     : TypeImpl(Type::Array, p_isConst, &p_typeManager),
       m_typeManager(p_typeManager),
       m_derefType(NULL),
       m_oppositeConstnessType(NULL),
       m_isFixedSize(true),
-      m_child(p_child), 
+      m_child(p_child),
       m_dimensionCount(p_dimensions),
       m_maxElements(p_maxElements)
 {
@@ -68,21 +71,18 @@ FreeForm2::ArrayType::ArrayType(const TypeImpl& p_child,
     memcpy(m_dimensions, p_elementCounts, sizeof(unsigned int) * m_dimensionCount);
 }
 
-
-const FreeForm2::TypeImpl&
+const FreeForm2::TypeImpl &
 FreeForm2::ArrayType::GetChildType() const
 {
     return m_child;
 }
 
-
-const unsigned int*
+const unsigned int *
 FreeForm2::ArrayType::GetDimensions() const
 {
     FF2_ASSERT(IsFixedSize());
     return m_dimensions;
 }
-
 
 unsigned int
 FreeForm2::ArrayType::GetDimensionCount() const
@@ -90,27 +90,22 @@ FreeForm2::ArrayType::GetDimensionCount() const
     return m_dimensionCount;
 }
 
-
 unsigned int
 FreeForm2::ArrayType::GetMaxElements() const
 {
     return m_maxElements;
 }
 
-
-bool
-FreeForm2::ArrayType::IsFixedSize() const
+bool FreeForm2::ArrayType::IsFixedSize() const
 {
     return m_isFixedSize;
 }
 
-
-bool
-FreeForm2::ArrayType::IsSameSubType(const TypeImpl& p_other, bool p_ignoreConst) const
+bool FreeForm2::ArrayType::IsSameSubType(const TypeImpl &p_other, bool p_ignoreConst) const
 {
     FF2_ASSERT(p_other.Primitive() == Type::Array);
 
-    const ArrayType& other = static_cast<const ArrayType&>(p_other);
+    const ArrayType &other = static_cast<const ArrayType &>(p_other);
     if ((IsFixedSize() != other.IsFixedSize()) || !GetChildType().IsSameAs(other.GetChildType(), p_ignoreConst))
     {
         return false;
@@ -120,9 +115,9 @@ FreeForm2::ArrayType::IsSameSubType(const TypeImpl& p_other, bool p_ignoreConst)
     {
         if (IsFixedSize())
         {
-            return memcmp(GetDimensions(), 
-                               other.GetDimensions(), 
-                               sizeof(unsigned int) * GetDimensionCount()) == 0;
+            return memcmp(GetDimensions(),
+                          other.GetDimensions(),
+                          sizeof(unsigned int) * GetDimensionCount()) == 0;
         }
         else
         {
@@ -135,12 +130,11 @@ FreeForm2::ArrayType::IsSameSubType(const TypeImpl& p_other, bool p_ignoreConst)
     }
 }
 
-
 std::string
-FreeForm2::ArrayType::GetName(const TypeImpl& p_child,
+FreeForm2::ArrayType::GetName(const TypeImpl &p_child,
                               bool p_isConst,
                               unsigned int p_dimensionCount,
-                              const unsigned int* p_dimensions,
+                              const unsigned int *p_dimensions,
                               unsigned int p_maxElements)
 {
     // Ignore the const-ness on arrays, because the const-ness of the child and
@@ -165,23 +159,21 @@ FreeForm2::ArrayType::GetName(const TypeImpl& p_child,
     return out.str();
 }
 
-
-const std::string&
+const std::string &
 FreeForm2::ArrayType::GetName() const
 {
     if (m_name.empty())
     {
-        m_name = GetName(GetChildType(), 
-                         IsConst(), 
-                         GetDimensionCount(), 
-                         IsFixedSize() ? GetDimensions() : NULL, 
+        m_name = GetName(GetChildType(),
+                         IsConst(),
+                         GetDimensionCount(),
+                         IsFixedSize() ? GetDimensions() : NULL,
                          GetMaxElements());
     }
     return m_name;
 }
 
-
-const FreeForm2::TypeImpl& 
+const FreeForm2::TypeImpl &
 FreeForm2::ArrayType::AsConstType() const
 {
     if (IsConst())
@@ -194,17 +186,17 @@ FreeForm2::ArrayType::AsConstType() const
         {
             if (IsFixedSize())
             {
-                m_oppositeConstnessType = &m_typeManager.GetArrayType(GetChildType().AsConstType(), 
-                                                                      true, 
-                                                                      GetDimensionCount(), 
-                                                                      GetDimensions(), 
+                m_oppositeConstnessType = &m_typeManager.GetArrayType(GetChildType().AsConstType(),
+                                                                      true,
+                                                                      GetDimensionCount(),
+                                                                      GetDimensions(),
                                                                       GetMaxElements());
             }
             else
             {
-                m_oppositeConstnessType = &m_typeManager.GetArrayType(GetChildType().AsConstType(), 
-                                                                      true, 
-                                                                      GetDimensionCount(), 
+                m_oppositeConstnessType = &m_typeManager.GetArrayType(GetChildType().AsConstType(),
+                                                                      true,
+                                                                      GetDimensionCount(),
                                                                       GetMaxElements());
             }
         }
@@ -212,8 +204,7 @@ FreeForm2::ArrayType::AsConstType() const
     }
 }
 
-
-const FreeForm2::TypeImpl& 
+const FreeForm2::TypeImpl &
 FreeForm2::ArrayType::AsMutableType() const
 {
     if (!IsConst())
@@ -226,17 +217,17 @@ FreeForm2::ArrayType::AsMutableType() const
         {
             if (IsFixedSize())
             {
-                m_oppositeConstnessType = &m_typeManager.GetArrayType(GetChildType().AsMutableType(), 
-                                                                      false, 
-                                                                      GetDimensionCount(), 
-                                                                      GetDimensions(), 
+                m_oppositeConstnessType = &m_typeManager.GetArrayType(GetChildType().AsMutableType(),
+                                                                      false,
+                                                                      GetDimensionCount(),
+                                                                      GetDimensions(),
                                                                       GetMaxElements());
             }
             else
             {
-                m_oppositeConstnessType = &m_typeManager.GetArrayType(GetChildType().AsMutableType(), 
-                                                                      false, 
-                                                                      GetDimensionCount(), 
+                m_oppositeConstnessType = &m_typeManager.GetArrayType(GetChildType().AsMutableType(),
+                                                                      false,
+                                                                      GetDimensionCount(),
                                                                       GetMaxElements());
             }
         }
@@ -244,8 +235,7 @@ FreeForm2::ArrayType::AsMutableType() const
     }
 }
 
-
-const FreeForm2::TypeImpl&
+const FreeForm2::TypeImpl &
 FreeForm2::ArrayType::GetDerefType() const
 {
     if (m_derefType == NULL)
@@ -254,9 +244,8 @@ FreeForm2::ArrayType::GetDerefType() const
         {
             if (IsFixedSize())
             {
-                const unsigned int newMaxElements 
-                    = GetMaxElements() / GetDimensions()[0];
-                
+                const unsigned int newMaxElements = GetMaxElements() / GetDimensions()[0];
+
                 FF2_ASSERT(GetTypeManager() != NULL);
                 m_derefType = &GetTypeManager()->GetArrayType(
                     GetChildType(), IsConst(), GetDimensionCount() - 1, GetDimensions() + 1, newMaxElements);
@@ -279,4 +268,3 @@ FreeForm2::ArrayType::GetDerefType() const
     }
     return *m_derefType;
 }
-

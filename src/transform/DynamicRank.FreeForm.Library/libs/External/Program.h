@@ -1,72 +1,73 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
+ */
 #pragma once
 
 #ifndef FREEFORM2_PROGRAM_H
 #define FREEFORM2_PROGRAM_H
 
-#include "AllocationVisitor.h"
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
-#include "FreeForm2Type.h"
 #include <vector>
 
-namespace DynamicRank
-{
-    class IFeatureMap;
-    class INeuralNetFeatures;
-}
+#include "AllocationVisitor.h"
+#include "FreeForm2Type.h"
 
-namespace FreeForm2
-{
-    class Allocation;
-    class Expression;
-    class ExpressionOwner;
-    class TypeManager;
+namespace DynamicRank {
+class IFeatureMap;
+class INeuralNetFeatures;
+}  // namespace DynamicRank
 
-    // A ProgramImpl is essentially just the concrete instantiation of the
-    // Program class, into which we parse expressions.
-    class ProgramImpl : boost::noncopyable
-    {
-    public:
-        ProgramImpl(const Expression& p_exp, 
-                    boost::shared_ptr<ExpressionOwner> p_owner,
-                    boost::shared_ptr<TypeManager> p_typeManager,
-                    DynamicRank::IFeatureMap& p_map);
+namespace FreeForm2 {
+class Allocation;
+class Expression;
+class ExpressionOwner;
+class TypeManager;
 
-        const Type& GetType() const;
+// A ProgramImpl is essentially just the concrete instantiation of the
+// Program class, into which we parse expressions.
+class ProgramImpl : boost::noncopyable {
+ public:
+  ProgramImpl(const Expression &p_exp,
+              boost::shared_ptr<ExpressionOwner> p_owner,
+              boost::shared_ptr<TypeManager> p_typeManager,
+              DynamicRank::IFeatureMap &p_map);
 
-        void 
-        ProcessFeaturesUsed(DynamicRank::INeuralNetFeatures& p_features) const;
+  const Type &GetType() const;
 
-        const Expression& GetExpression() const;
+  void ProcessFeaturesUsed(DynamicRank::INeuralNetFeatures &p_features) const;
 
-        DynamicRank::IFeatureMap&
-        GetFeatureMap() const;
+  const Expression &GetExpression() const;
 
-        const std::vector<boost::shared_ptr<Allocation>>& GetAllocations() const;
+  DynamicRank::IFeatureMap &GetFeatureMap() const;
 
-    private:
-        // Top-level type implementation of this program.
-        const TypeImpl& m_typeImpl;
+  const std::vector<boost::shared_ptr<Allocation> > &GetAllocations() const;
 
-        // Top-level type of this program.
-        Type m_type;
+ private:
+  // Top-level type implementation of this program.
+  const TypeImpl &m_typeImpl;
 
-        // Pointer to root of parsed expression tree.
-        const Expression* m_exp;
-       
-        // Expression owner.
-        boost::shared_ptr<ExpressionOwner> m_owner;
+  // Top-level type of this program.
+  Type m_type;
 
-        // Type manager.
-        boost::shared_ptr<TypeManager> m_typeManager;
+  // Pointer to root of parsed expression tree.
+  const Expression *m_exp;
 
-        // Feature map used to compile expression, used to print program
-        // information if exceptions occur.
-        DynamicRank::IFeatureMap& m_map;
+  // Expression owner.
+  boost::shared_ptr<ExpressionOwner> m_owner;
 
-        // A visitor to extract all the allocations from the program.
-        const AllocationVisitor m_allocationVisitor;
-    };
-}
+  // Type manager.
+  boost::shared_ptr<TypeManager> m_typeManager;
+
+  // Feature map used to compile expression, used to print program
+  // information if exceptions occur.
+  DynamicRank::IFeatureMap &m_map;
+
+  // A visitor to extract all the allocations from the program.
+  const AllocationVisitor m_allocationVisitor;
+};
+}  // namespace FreeForm2
 
 #endif

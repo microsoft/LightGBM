@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #pragma once
 
 #include "Expression.h"
@@ -14,29 +18,29 @@ namespace FreeForm2
     {
     public:
         static boost::shared_ptr<PhiNodeExpression>
-        Alloc(const Annotations& p_annotations,
+        Alloc(const Annotations &p_annotations,
               size_t p_version,
               size_t p_incomingVersionsCount,
-              const size_t* p_incomingVersions);
+              const size_t *p_incomingVersions);
 
         // Methods inherited from Expression
-        virtual void Accept(Visitor&) const override;
+        virtual void Accept(Visitor &) const override;
         virtual size_t GetNumChildren() const override;
-        virtual const TypeImpl& GetType() const override;
+        virtual const TypeImpl &GetType() const override;
 
         // Getter methods.
         size_t GetVersion() const;
         size_t GetIncomingVersionsCount() const;
-        const size_t* GetIncomingVersions() const;
-    
+        const size_t *GetIncomingVersions() const;
+
     private:
         // Create a PhiNode expression.
-        PhiNodeExpression(const Annotations& p_annotations,
+        PhiNodeExpression(const Annotations &p_annotations,
                           size_t p_version,
                           size_t p_incomingVersionsCount,
-                          const size_t* p_incomingVersions);
+                          const size_t *p_incomingVersions);
 
-        static void DeleteAlloc(PhiNodeExpression* p_allocated);
+        static void DeleteAlloc(PhiNodeExpression *p_allocated);
 
         size_t m_version;
 

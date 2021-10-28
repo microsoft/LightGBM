@@ -1,4 +1,10 @@
-//===-- JIT.cpp - LLVM Just in Time Compiler ------------------------------===//
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
+ */
+//= == --JIT.cpp - LLVM Just in Time Compiler-- -- -- -- -- -- -- -- -- -- -- --
+//-- -- -- == = //
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -13,6 +19,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "JITExtend.h"
+
 #include <llvm/ADT/SmallPtrSet.h>
 #include <llvm/CodeGen/JITCodeEmitter.h>
 #include <llvm/CodeGen/MachineCodeInfo.h>
@@ -42,19 +49,19 @@ using namespace llvm;
 // of atexit). It passes the address of linker generated symbol __dso_handle
 // to the function.
 // This configuration change happened at version 5330.
-# include <AvailabilityMacros.h>
-# if defined(MAC_OS_X_VERSION_10_4) && \
-     ((MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_4) || \
-      (MAC_OS_X_VERSION_MIN_REQUIRED == MAC_OS_X_VERSION_10_4 && \
-       __APPLE_CC__ >= 5330))
-#  ifndef HAVE___DSO_HANDLE
-#   define HAVE___DSO_HANDLE 1
-#  endif
-# endif
+#include <AvailabilityMacros.h>
+#if defined(MAC_OS_X_VERSION_10_4) &&                           \
+    ((MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_4) || \
+     (MAC_OS_X_VERSION_MIN_REQUIRED == MAC_OS_X_VERSION_10_4 && \
+      __APPLE_CC__ >= 5330))
+#ifndef HAVE___DSO_HANDLE
+#define HAVE___DSO_HANDLE 1
+#endif
+#endif
 #endif
 
 #if HAVE___DSO_HANDLE
-extern void *__dso_handle __attribute__ ((__visibility__ ("hidden")));
+extern void *__dso_handle __attribute__((__visibility__("hidden")));
 #endif
 
 namespace {
@@ -63,18 +70,15 @@ static struct RegisterJIT {
   RegisterJIT() { JIT::Register(); }
 } JITRegistrator;
 
-}
+}  // namespace
 
-extern "C" void LLVMLinkInJIT() {
-}
+extern "C" void LLVMLinkInJIT() {}
 
 /// createJIT - This is the factory method for creating a JIT for the current
 /// machine, it does not fall back to the interpreter.  This takes ownership
 /// of the module.
-ExecutionEngine *JIT::createJIT(Module *M,
-                                std::string *ErrorStr,
-                                JITMemoryManager *JMM,
-                                bool GVsWithCode,
+ExecutionEngine *JIT::createJIT(Module *M, std::string *ErrorStr,
+                                JITMemoryManager *JMM, bool GVsWithCode,
                                 TargetMachine *TM) {
   // Try to register the program as a source of symbols to resolve against.
   //
@@ -85,8 +89,7 @@ ExecutionEngine *JIT::createJIT(Module *M,
   if (TargetJITInfo *TJ = TM->getJITInfo()) {
     return new JIT(M, *TM, *TJ, JMM, GVsWithCode);
   } else {
-    if (ErrorStr)
-      *ErrorStr = "target does not support JIT code generation";
+    if (ErrorStr) *ErrorStr = "target does not support JIT code generation";
     return nullptr;
   }
 }
@@ -95,9 +98,10 @@ namespace {
 /// This class supports the global getPointerToNamedFunction(), which allows
 /// bugpoint or gdb users to search for a function by name without any context.
 class JitPool {
-  SmallPtrSet<JIT*, 1> JITs;  // Optimize for process containing just 1 JIT.
+  SmallPtrSet<JIT *, 1> JITs;  // Optimize for process containing just 1 JIT.
   mutable sys::Mutex Lock;
-public:
+
+ public:
   void Add(JIT *jit) {
     MutexGuard guard(Lock);
     JITs.insert(jit);
@@ -109,9 +113,9 @@ public:
   void *getPointerToNamedFunction(const char *Name) const {
     MutexGuard guard(Lock);
     assert(JITs.size() != 0 && "No Jit registered");
-    //search function in every instance of JIT
-    for (SmallPtrSet<JIT*, 1>::const_iterator Jit = JITs.begin(),
-           end = JITs.end();
+    // search function in every instance of JIT
+    for (SmallPtrSet<JIT *, 1>::const_iterator Jit = JITs.begin(),
+                                               end = JITs.end();
          Jit != end; ++Jit) {
       if (Function *F = (*Jit)->FindFunctionNamed(Name))
         return (*Jit)->getPointerToFunction(F);
@@ -122,23 +126,26 @@ public:
   }
 };
 ManagedStatic<JitPool> AllJits;
-}
+}  // namespace
 extern "C" {
-  // getPointerToNamedFunction - This function is used as a global wrapper to
-  // JIT::getPointerToNamedFunction for the purpose of resolving symbols when
-  // bugpoint is debugging the JIT. In that scenario, we are loading an .so and
-  // need to resolve function(s) that are being mis-codegenerated, so we need to
-  // resolve their addresses at runtime, and this is the way to do it.
-  void *getPointerToNamedFunction(const char *Name) {
-    return AllJits->getPointerToNamedFunction(Name);
-  }
+// getPointerToNamedFunction - This function is used as a global wrapper to
+// JIT::getPointerToNamedFunction for the purpose of resolving symbols when
+// bugpoint is debugging the JIT. In that scenario, we are loading an .so and
+// need to resolve function(s) that are being mis-codegenerated, so we need to
+// resolve their addresses at runtime, and this is the way to do it.
+void *getPointerToNamedFunction(const char *Name) {
+  return AllJits->getPointerToNamedFunction(Name);
+}
 }
 
 JIT::JIT(Module *M, TargetMachine &tm, TargetJITInfo &tji,
          JITMemoryManager *jmm, bool GVsWithCode)
-  : ExecutionEngine(M), TM(tm), TJI(tji),
-    JMM(jmm ? jmm : JITMemoryManager::CreateDefaultMemManager()),
-    AllocateGVsWithCode(GVsWithCode), isAlreadyCodeGenerating(false) {
+    : ExecutionEngine(M),
+      TM(tm),
+      TJI(tji),
+      JMM(jmm ? jmm : JITMemoryManager::CreateDefaultMemManager()),
+      AllocateGVsWithCode(GVsWithCode),
+      isAlreadyCodeGenerating(false) {
   setDataLayout(TM.getDataLayout());
 
   jitstate = new JITState(M);
@@ -253,47 +260,47 @@ GenericValue JIT::runFunction(Function *F,
   // prototypes.
   if (RetTy->isIntegerTy(32) || RetTy->isVoidTy()) {
     switch (ArgValues.size()) {
-    case 3:
-      if (FTy->getParamType(0)->isIntegerTy(32) &&
-          FTy->getParamType(1)->isPointerTy() &&
-          FTy->getParamType(2)->isPointerTy()) {
-        int (*PF)(int, char **, const char **) =
-          (int(*)(int, char **, const char **))(intptr_t)FPtr;
+      case 3:
+        if (FTy->getParamType(0)->isIntegerTy(32) &&
+            FTy->getParamType(1)->isPointerTy() &&
+            FTy->getParamType(2)->isPointerTy()) {
+          int (*PF)(int, char **, const char **) =
+              (int (*)(int, char **, const char **))(intptr_t)FPtr;
 
-        // Call the function.
-        GenericValue rv;
-        rv.IntVal = APInt(32, PF(ArgValues[0].IntVal.getZExtValue(),
-                                 (char **)GVTOP(ArgValues[1]),
-                                 (const char **)GVTOP(ArgValues[2])));
-        return rv;
-      }
-      break;
-    case 2:
-      if (FTy->getParamType(0)->isIntegerTy(32) &&
-          FTy->getParamType(1)->isPointerTy()) {
-        int (*PF)(int, char **) = (int(*)(int, char **))(intptr_t)FPtr;
+          // Call the function.
+          GenericValue rv;
+          rv.IntVal = APInt(32, PF(ArgValues[0].IntVal.getZExtValue(),
+                                   (char **)GVTOP(ArgValues[1]),
+                                   (const char **)GVTOP(ArgValues[2])));
+          return rv;
+        }
+        break;
+      case 2:
+        if (FTy->getParamType(0)->isIntegerTy(32) &&
+            FTy->getParamType(1)->isPointerTy()) {
+          int (*PF)(int, char **) = (int (*)(int, char **))(intptr_t)FPtr;
 
-        // Call the function.
-        GenericValue rv;
-        rv.IntVal = APInt(32, PF(ArgValues[0].IntVal.getZExtValue(),
-                                 (char **)GVTOP(ArgValues[1])));
-        return rv;
-      }
-      break;
-    case 1:
-      if (FTy->getParamType(0)->isIntegerTy(32)) {
-        GenericValue rv;
-        int (*PF)(int) = (int(*)(int))(intptr_t)FPtr;
-        rv.IntVal = APInt(32, PF(ArgValues[0].IntVal.getZExtValue()));
-        return rv;
-      }
-      if (FTy->getParamType(0)->isPointerTy()) {
-        GenericValue rv;
-        int (*PF)(char *) = (int(*)(char *))(intptr_t)FPtr;
-        rv.IntVal = APInt(32, PF((char*)GVTOP(ArgValues[0])));
-        return rv;
-      }
-      break;
+          // Call the function.
+          GenericValue rv;
+          rv.IntVal = APInt(32, PF(ArgValues[0].IntVal.getZExtValue(),
+                                   (char **)GVTOP(ArgValues[1])));
+          return rv;
+        }
+        break;
+      case 1:
+        if (FTy->getParamType(0)->isIntegerTy(32)) {
+          GenericValue rv;
+          int (*PF)(int) = (int (*)(int))(intptr_t)FPtr;
+          rv.IntVal = APInt(32, PF(ArgValues[0].IntVal.getZExtValue()));
+          return rv;
+        }
+        if (FTy->getParamType(0)->isPointerTy()) {
+          GenericValue rv;
+          int (*PF)(char *) = (int (*)(char *))(intptr_t)FPtr;
+          rv.IntVal = APInt(32, PF((char *)GVTOP(ArgValues[0])));
+          return rv;
+        }
+        break;
     }
   }
 
@@ -301,38 +308,39 @@ GenericValue JIT::runFunction(Function *F,
   if (ArgValues.empty()) {
     GenericValue rv;
     switch (RetTy->getTypeID()) {
-    default: llvm_unreachable("Unknown return type for function call!");
-    case Type::IntegerTyID: {
-      unsigned BitWidth = cast<IntegerType>(RetTy)->getBitWidth();
-      if (BitWidth == 1)
-        rv.IntVal = APInt(BitWidth, ((bool(*)())(intptr_t)FPtr)());
-      else if (BitWidth <= 8)
-        rv.IntVal = APInt(BitWidth, ((char(*)())(intptr_t)FPtr)());
-      else if (BitWidth <= 16)
-        rv.IntVal = APInt(BitWidth, ((short(*)())(intptr_t)FPtr)());
-      else if (BitWidth <= 32)
-        rv.IntVal = APInt(BitWidth, ((int(*)())(intptr_t)FPtr)());
-      else if (BitWidth <= 64)
-        rv.IntVal = APInt(BitWidth, ((int64_t(*)())(intptr_t)FPtr)());
-      else
-        llvm_unreachable("Integer types > 64 bits not supported");
-      return rv;
-    }
-    case Type::VoidTyID:
-      rv.IntVal = APInt(32, ((int(*)())(intptr_t)FPtr)());
-      return rv;
-    case Type::FloatTyID:
-      rv.FloatVal = ((float(*)())(intptr_t)FPtr)();
-      return rv;
-    case Type::DoubleTyID:
-      rv.DoubleVal = ((double(*)())(intptr_t)FPtr)();
-      return rv;
-    case Type::X86_FP80TyID:
-    case Type::FP128TyID:
-    case Type::PPC_FP128TyID:
-      llvm_unreachable("long double not supported yet");
-    case Type::PointerTyID:
-      return PTOGV(((void*(*)())(intptr_t)FPtr)());
+      default:
+        llvm_unreachable("Unknown return type for function call!");
+      case Type::IntegerTyID: {
+        unsigned BitWidth = cast<IntegerType>(RetTy)->getBitWidth();
+        if (BitWidth == 1)
+          rv.IntVal = APInt(BitWidth, ((bool (*)())(intptr_t)FPtr)());
+        else if (BitWidth <= 8)
+          rv.IntVal = APInt(BitWidth, ((char (*)())(intptr_t)FPtr)());
+        else if (BitWidth <= 16)
+          rv.IntVal = APInt(BitWidth, ((short (*)())(intptr_t)FPtr)());
+        else if (BitWidth <= 32)
+          rv.IntVal = APInt(BitWidth, ((int (*)())(intptr_t)FPtr)());
+        else if (BitWidth <= 64)
+          rv.IntVal = APInt(BitWidth, ((int64_t(*)())(intptr_t)FPtr)());
+        else
+          llvm_unreachable("Integer types > 64 bits not supported");
+        return rv;
+      }
+      case Type::VoidTyID:
+        rv.IntVal = APInt(32, ((int (*)())(intptr_t)FPtr)());
+        return rv;
+      case Type::FloatTyID:
+        rv.FloatVal = ((float (*)())(intptr_t)FPtr)();
+        return rv;
+      case Type::DoubleTyID:
+        rv.DoubleVal = ((double (*)())(intptr_t)FPtr)();
+        return rv;
+      case Type::X86_FP80TyID:
+      case Type::FP128TyID:
+      case Type::PPC_FP128TyID:
+        llvm_unreachable("long double not supported yet");
+      case Type::PointerTyID:
+        return PTOGV(((void *(*)())(intptr_t)FPtr)());
     }
   }
 
@@ -342,48 +350,49 @@ GenericValue JIT::runFunction(Function *F,
   // arguments.  Make this function and return.
 
   // First, create the function.
-  FunctionType *STy=FunctionType::get(RetTy, false);
-  Function *Stub = Function::Create(STy, Function::InternalLinkage, "",
-                                    F->getParent());
+  FunctionType *STy = FunctionType::get(RetTy, false);
+  Function *Stub =
+      Function::Create(STy, Function::InternalLinkage, "", F->getParent());
 
   // Insert a basic block.
   BasicBlock *StubBB = BasicBlock::Create(F->getContext(), "", Stub);
 
   // Convert all of the GenericValue arguments over to constants.  Note that we
   // currently don't support varargs.
-  SmallVector<Value*, 8> Args;
+  SmallVector<Value *, 8> Args;
   for (unsigned i = 0, e = ArgValues.size(); i != e; ++i) {
     Constant *C = nullptr;
     Type *ArgTy = FTy->getParamType(i);
     const GenericValue &AV = ArgValues[i];
     switch (ArgTy->getTypeID()) {
-    default: llvm_unreachable("Unknown argument type for function call!");
-    case Type::IntegerTyID:
+      default:
+        llvm_unreachable("Unknown argument type for function call!");
+      case Type::IntegerTyID:
         C = ConstantInt::get(F->getContext(), AV.IntVal);
         break;
-    case Type::FloatTyID:
+      case Type::FloatTyID:
         C = ConstantFP::get(F->getContext(), APFloat(AV.FloatVal));
         break;
-    case Type::DoubleTyID:
+      case Type::DoubleTyID:
         C = ConstantFP::get(F->getContext(), APFloat(AV.DoubleVal));
         break;
-    case Type::PPC_FP128TyID:
-    case Type::X86_FP80TyID:
-    case Type::FP128TyID:
-        C = ConstantFP::get(F->getContext(), APFloat(ArgTy->getFltSemantics(),
-                                                     AV.IntVal));
+      case Type::PPC_FP128TyID:
+      case Type::X86_FP80TyID:
+      case Type::FP128TyID:
+        C = ConstantFP::get(F->getContext(),
+                            APFloat(ArgTy->getFltSemantics(), AV.IntVal));
         break;
-    case Type::PointerTyID:
-      void *ArgPtr = GVTOP(AV);
-      if (sizeof(void*) == 4)
-        C = ConstantInt::get(Type::getInt32Ty(F->getContext()),
-                             (int)(intptr_t)ArgPtr);
-      else
-        C = ConstantInt::get(Type::getInt64Ty(F->getContext()),
-                             (intptr_t)ArgPtr);
-      // Cast the integer to pointer
-      C = ConstantExpr::getIntToPtr(C, ArgTy);
-      break;
+      case Type::PointerTyID:
+        void *ArgPtr = GVTOP(AV);
+        if (sizeof(void *) == 4)
+          C = ConstantInt::get(Type::getInt32Ty(F->getContext()),
+                               (int)(intptr_t)ArgPtr);
+        else
+          C = ConstantInt::get(Type::getInt64Ty(F->getContext()),
+                               (intptr_t)ArgPtr);
+        // Cast the integer to pointer
+        C = ConstantExpr::getIntToPtr(C, ArgTy);
+        break;
     }
     Args.push_back(C);
   }
@@ -395,7 +404,7 @@ GenericValue JIT::runFunction(Function *F,
     // Return result of the call.
     ReturnInst::Create(F->getContext(), TheCall, StubBB);
   else
-    ReturnInst::Create(F->getContext(), StubBB);           // Just return void.
+    ReturnInst::Create(F->getContext(), StubBB);  // Just return void.
 
   // Finally, call our nullary stub function.
   GenericValue Result = runFunction(Stub, std::vector<GenericValue>());
@@ -406,16 +415,14 @@ GenericValue JIT::runFunction(Function *F,
 }
 
 void JIT::RegisterJITEventListener(JITEventListener *L) {
-  if (!L)
-    return;
+  if (!L) return;
   MutexGuard locked(lock);
   EventListeners.push_back(L);
 }
 void JIT::UnregisterJITEventListener(JITEventListener *L) {
-  if (!L)
-    return;
+  if (!L) return;
   MutexGuard locked(lock);
-  std::vector<JITEventListener*>::reverse_iterator I=
+  std::vector<JITEventListener *>::reverse_iterator I =
       std::find(EventListeners.rbegin(), EventListeners.rend(), L);
   if (I != EventListeners.rend()) {
     std::swap(*I, EventListeners.back());
@@ -423,8 +430,7 @@ void JIT::UnregisterJITEventListener(JITEventListener *L) {
   }
 }
 void JIT::NotifyFunctionEmitted(
-    const Function &F,
-    void *Code, size_t Size,
+    const Function &F, void *Code, size_t Size,
     const JITEvent_EmittedFunctionDetails &Details) {
   MutexGuard locked(lock);
   for (unsigned I = 0, S = EventListeners.size(); I < S; ++I) {
@@ -448,6 +454,7 @@ void JIT::runJITOnFunction(Function *F, MachineCodeInfo *MCI) {
 
   class MCIListener : public JITEventListener {
     MachineCodeInfo *const MCI;
+
    public:
     MCIListener(MachineCodeInfo *mci) : MCI(mci) {}
     void NotifyFunctionEmitted(const Function &, void *Code, size_t Size,
@@ -457,13 +464,11 @@ void JIT::runJITOnFunction(Function *F, MachineCodeInfo *MCI) {
     }
   };
   MCIListener MCIL(MCI);
-  if (MCI)
-    RegisterJITEventListener(&MCIL);
+  if (MCI) RegisterJITEventListener(&MCIL);
 
   runJITOnFunctionUnlocked(F);
 
-  if (MCI)
-    UnregisterJITEventListener(&MCIL);
+  if (MCI) UnregisterJITEventListener(&MCIL);
 }
 
 void JIT::runJITOnFunctionUnlocked(Function *F) {
@@ -501,9 +506,8 @@ void JIT::jitTheFunctionUnlocked(Function *F) {
 /// specified function, compiling it if necessary.
 ///
 void *JIT::getPointerToFunction(Function *F) {
-
   if (void *Addr = getPointerToGlobalIfAvailable(F))
-    return Addr;   // Check if function already code gen'd
+    return Addr;  // Check if function already code gen'd
 
   MutexGuard locked(lock);
 
@@ -511,13 +515,12 @@ void *JIT::getPointerToFunction(Function *F) {
   // exists in this Module.
   std::string ErrorMsg;
   if (F->Materialize(&ErrorMsg)) {
-    report_fatal_error("Error reading function '" + F->getName()+
-                      "' from bitcode file: " + ErrorMsg);
+    report_fatal_error("Error reading function '" + F->getName() +
+                       "' from bitcode file: " + ErrorMsg);
   }
 
   // ... and check if another thread has already code gen'd the function.
-  if (void *Addr = getPointerToGlobalIfAvailable(F))
-    return Addr;
+  if (void *Addr = getPointerToGlobalIfAvailable(F)) return Addr;
 
   if (F->isDeclaration() || F->hasAvailableExternallyLinkage()) {
     bool AbortOnFailure = !F->hasExternalWeakLinkage();
@@ -536,8 +539,7 @@ void *JIT::getPointerToFunction(Function *F) {
 void JIT::addPointerToBasicBlock(const BasicBlock *BB, void *Addr) {
   MutexGuard locked(lock);
 
-  BasicBlockAddressMapTy::iterator I =
-    getBasicBlockAddressMap().find(BB);
+  BasicBlockAddressMapTy::iterator I = getBasicBlockAddressMap().find(BB);
   if (I == getBasicBlockAddressMap().end()) {
     getBasicBlockAddressMap()[BB] = Addr;
   } else {
@@ -557,36 +559,33 @@ void *JIT::getPointerToBasicBlock(BasicBlock *BB) {
   // resolve basic block address
   MutexGuard locked(lock);
 
-  BasicBlockAddressMapTy::iterator I =
-    getBasicBlockAddressMap().find(BB);
+  BasicBlockAddressMapTy::iterator I = getBasicBlockAddressMap().find(BB);
   if (I != getBasicBlockAddressMap().end()) {
     return I->second;
   } else {
-    llvm_unreachable("JIT does not have BB address for address-of-label, was"
-                     " it eliminated by optimizer?");
+    llvm_unreachable(
+        "JIT does not have BB address for address-of-label, was"
+        " it eliminated by optimizer?");
   }
 }
 
 void *JIT::getPointerToNamedFunction(const std::string &Name,
-                                     bool AbortOnFailure){
+                                     bool AbortOnFailure) {
   if (!isSymbolSearchingDisabled()) {
     void *ptr = JMM->getPointerToNamedFunction(Name, false);
-    if (ptr)
-      return ptr;
+    if (ptr) return ptr;
   }
 
   /// If a LazyFunctionCreator is installed, use it to get/create the function.
   if (LazyFunctionCreator)
-    if (void *RP = LazyFunctionCreator(Name))
-      return RP;
+    if (void *RP = LazyFunctionCreator(Name)) return RP;
 
   if (AbortOnFailure) {
-    report_fatal_error("Program used external function '"+Name+
-                      "' which could not be resolved!");
+    report_fatal_error("Program used external function '" + Name +
+                       "' which could not be resolved!");
   }
   return nullptr;
 }
-
 
 /// getOrEmitGlobalVariable - Return the address of the specified global
 /// variable, possibly emitting it to memory if needed.  This is used by the
@@ -600,13 +599,12 @@ void *JIT::getOrEmitGlobalVariable(const GlobalVariable *GV) {
   // If the global is external, just remember the address.
   if (GV->isDeclaration() || GV->hasAvailableExternallyLinkage()) {
 #if HAVE___DSO_HANDLE
-    if (GV->getName() == "__dso_handle")
-      return (void*)&__dso_handle;
+    if (GV->getName() == "__dso_handle") return (void *)&__dso_handle;
 #endif
     Ptr = sys::DynamicLibrary::SearchForAddressOfSymbol(GV->getName());
     if (!Ptr) {
-      report_fatal_error("Could not resolve external global address: "
-                        +GV->getName());
+      report_fatal_error("Could not resolve external global address: " +
+                         GV->getName());
     }
     addGlobalMapping(GV, Ptr);
   } else {
@@ -648,7 +646,7 @@ void *JIT::recompileAndRelinkFunction(Function *F) {
 /// variable so that the JIT can allocate thread local variables depending
 /// on the target.
 ///
-char* JIT::getMemoryForGV(const GlobalVariable* GV) {
+char *JIT::getMemoryForGV(const GlobalVariable *GV) {
   char *Ptr;
 
   // GlobalVariable's which are not "constant" will cause trouble in a server
@@ -670,18 +668,18 @@ char* JIT::getMemoryForGV(const GlobalVariable* GV) {
     Ptr = TJI.allocateThreadLocalMemory(S);
   } else if (TJI.allocateSeparateGVMemory()) {
     if (A <= 8) {
-      Ptr = (char*)malloc(S);
+      Ptr = (char *)malloc(S);
     } else {
       // Allocate S+A bytes of memory, then use an aligned pointer within that
       // space.
-      Ptr = (char*)malloc(S+A);
-      unsigned MisAligned = ((intptr_t)Ptr & (A-1));
-      Ptr = Ptr + (MisAligned ? (A-MisAligned) : 0);
+      Ptr = (char *)malloc(S + A);
+      unsigned MisAligned = ((intptr_t)Ptr & (A - 1));
+      Ptr = Ptr + (MisAligned ? (A - MisAligned) : 0);
     }
   } else if (AllocateGVsWithCode) {
-    Ptr = (char*)JCE->allocateSpace(S, A);
+    Ptr = (char *)JCE->allocateSpace(S, A);
   } else {
-    Ptr = (char*)JCE->allocateGlobal(S, A);
+    Ptr = (char *)JCE->allocateGlobal(S, A);
   }
   return Ptr;
 }
@@ -690,6 +688,5 @@ void JIT::addPendingFunction(Function *F) {
   MutexGuard locked(lock);
   jitstate->getPendingFunctions().push_back(F);
 }
-
 
 JITEventListener::~JITEventListener() {}

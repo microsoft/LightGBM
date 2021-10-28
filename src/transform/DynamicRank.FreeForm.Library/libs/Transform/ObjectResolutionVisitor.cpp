@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include "ObjectResolutionVisitor.h"
 
 #include <boost/cast.hpp>
@@ -16,29 +20,25 @@ FreeForm2::ObjectResolutionVisitor::ObjectResolutionVisitor()
 {
 }
 
-
-bool 
-FreeForm2::ObjectResolutionVisitor::AlternativeVisit(const StateMachineExpression& p_expr)
+bool FreeForm2::ObjectResolutionVisitor::AlternativeVisit(const StateMachineExpression &p_expr)
 {
     FF2_ASSERT(p_expr.GetType().Primitive() == Type::StateMachine);
-    const TypeImpl& copiedType = CopyType(p_expr.GetType());
+    const TypeImpl &copiedType = CopyType(p_expr.GetType());
     FF2_ASSERT(copiedType.IsSameAs(p_expr.GetType(), false));
-    const StateMachineType& machineType = static_cast<const StateMachineType&>(copiedType);
+    const StateMachineType &machineType = static_cast<const StateMachineType &>(copiedType);
 
     m_thisTypeStack.push(&machineType);
     const bool result = CopyingVisitor::AlternativeVisit(p_expr);
     FF2_ASSERT(m_thisTypeStack.top() == &machineType);
     m_thisTypeStack.pop();
 
-    // Assert that we are correct in not calling the CopyingVisitor::Visit 
+    // Assert that we are correct in not calling the CopyingVisitor::Visit
     // method for this expression.
     FF2_ASSERT(result);
     return true;
 }
 
-
-void 
-FreeForm2::ObjectResolutionVisitor::Visit(const ThisExpression& p_expr)
+void FreeForm2::ObjectResolutionVisitor::Visit(const ThisExpression &p_expr)
 {
     if (m_thisTypeStack.empty())
     {
@@ -47,9 +47,8 @@ FreeForm2::ObjectResolutionVisitor::Visit(const ThisExpression& p_expr)
         throw ParseError(err.str(), p_expr.GetSourceLocation());
     }
 
-    const CompoundType& currentThisType = *m_thisTypeStack.top();
-    if (p_expr.GetType().Primitive() != Type::Unknown
-        && !p_expr.GetType().IsSameAs(currentThisType, false))
+    const CompoundType &currentThisType = *m_thisTypeStack.top();
+    if (p_expr.GetType().Primitive() != Type::Unknown && !p_expr.GetType().IsSameAs(currentThisType, false))
     {
         std::ostringstream err;
         err << "Object types not compatible. Expected type: "
@@ -62,11 +61,9 @@ FreeForm2::ObjectResolutionVisitor::Visit(const ThisExpression& p_expr)
                                                      currentThisType));
 }
 
-
-void 
-FreeForm2::ObjectResolutionVisitor::Visit(const UnresolvedAccessExpression& p_expr)
+void FreeForm2::ObjectResolutionVisitor::Visit(const UnresolvedAccessExpression &p_expr)
 {
-    const Expression& object = *m_stack.back();
+    const Expression &object = *m_stack.back();
     m_stack.pop_back();
 
     if (object.GetType().Primitive() != Type::StateMachine)
@@ -77,12 +74,11 @@ FreeForm2::ObjectResolutionVisitor::Visit(const UnresolvedAccessExpression& p_ex
         throw ParseError(err.str(), p_expr.GetSourceLocation());
     }
 
-    const StateMachineType& type = static_cast<const StateMachineType&>(object.GetType());
-    
-    const std::string memberName
-        = StateMachineExpression::GetAugmentedMemberName(type.GetName(), p_expr.GetMemberName());
+    const StateMachineType &type = static_cast<const StateMachineType &>(object.GetType());
 
-    const CompoundType::Member* member = type.FindMember(memberName);
+    const std::string memberName = StateMachineExpression::GetAugmentedMemberName(type.GetName(), p_expr.GetMemberName());
+
+    const CompoundType::Member *member = type.FindMember(memberName);
     if (member == NULL)
     {
         std::ostringstream err;
@@ -91,8 +87,7 @@ FreeForm2::ObjectResolutionVisitor::Visit(const UnresolvedAccessExpression& p_ex
         throw ParseError(err.str(), p_expr.GetSourceLocation());
     }
 
-    if (!member->m_type->IsSameAs(p_expr.GetType(), false) 
-        && p_expr.GetType().Primitive() != Type::Unknown)
+    if (!member->m_type->IsSameAs(p_expr.GetType(), false) && p_expr.GetType().Primitive() != Type::Unknown)
     {
         std::ostringstream err;
         err << "expected member " << p_expr.GetMemberName()
@@ -107,21 +102,19 @@ FreeForm2::ObjectResolutionVisitor::Visit(const UnresolvedAccessExpression& p_ex
                                                              0));
 }
 
-
-bool 
-FreeForm2::ObjectResolutionVisitor::AlternativeVisit(const TypeInitializerExpression& p_expr)
+bool FreeForm2::ObjectResolutionVisitor::AlternativeVisit(const TypeInitializerExpression &p_expr)
 {
     FF2_ASSERT(p_expr.GetType().Primitive() == Type::StateMachine);
-    const TypeImpl& copiedType = CopyType(p_expr.GetType());
+    const TypeImpl &copiedType = CopyType(p_expr.GetType());
     FF2_ASSERT(copiedType.IsSameAs(p_expr.GetType(), false));
-    const StateMachineType& machineType = static_cast<const StateMachineType&>(copiedType);
+    const StateMachineType &machineType = static_cast<const StateMachineType &>(copiedType);
 
     m_thisTypeStack.push(&machineType);
     const bool result = CopyingVisitor::AlternativeVisit(p_expr);
     FF2_ASSERT(m_thisTypeStack.top() == &machineType);
     m_thisTypeStack.pop();
 
-    // Assert that we are correct in not calling the CopyingVisitor::Visit 
+    // Assert that we are correct in not calling the CopyingVisitor::Visit
     // method for this expression.
     FF2_ASSERT(result);
     return true;

@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #pragma once
 
 #ifndef FREEFORM2_COMPILER
@@ -17,7 +21,7 @@ namespace FreeForm2
         virtual ~CompilerImpl();
 
         // Compile the given program.
-        virtual std::unique_ptr<CompilerResults> Compile(const ProgramImpl& p_program, 
+        virtual std::unique_ptr<CompilerResults> Compile(const ProgramImpl &p_program,
                                                          bool p_debugOutput) = 0;
     };
 }

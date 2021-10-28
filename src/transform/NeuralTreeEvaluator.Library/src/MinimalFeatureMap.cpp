@@ -1,24 +1,26 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include "MinimalFeatureMap.h"
 #include <algorithm>
 #include "MigratedApi.h"
-
 
 MinimalFeatureMap::MinimalFeatureMap()
     : m_numberOfFeatures(0)
 {
 }
 
-
 MinimalFeatureMap::~MinimalFeatureMap()
 {
 }
 
 bool MinimalFeatureMap::GetExistingFeatureIndex(
-    const char* featureName, UInt32& featureIndex) const
+    const char *featureName, UInt32 &featureIndex) const
 {
     std::string featureNameStr(featureName);
     std::map<std::string, UInt32>::const_iterator it = m_featureMap.find(featureNameStr);
-    
+
     if (it == m_featureMap.end())
     {
         return false;
@@ -27,9 +29,8 @@ bool MinimalFeatureMap::GetExistingFeatureIndex(
     return true;
 }
 
-
 bool MinimalFeatureMap::ObtainFeatureIndex(
-    const char* featureName, UInt32& featureIndex)
+    const char *featureName, UInt32 &featureIndex)
 {
     const std::string featureNameStr(featureName);
     std::map<std::string, UInt32>::iterator it = m_featureMap.find(featureNameStr);
@@ -49,11 +50,10 @@ bool MinimalFeatureMap::ObtainFeatureIndex(
     return true;
 }
 
-
 bool MinimalFeatureMap::ObtainFeatureIndex(
-    const SIZED_STRING& featureName, UInt32& featureIndex)
+    const SIZED_STRING &featureName, UInt32 &featureIndex)
 {
-    std::string localFeatureName((const char*)featureName.pbData, featureName.cbData);
+    std::string localFeatureName((const char *)featureName.pbData, featureName.cbData);
     return ObtainFeatureIndex(localFeatureName.c_str(), featureIndex);
 }
 
@@ -63,17 +63,17 @@ bool MinimalFeatureMap::GetFeatureName(
     if (featureIndex < m_numberOfFeatures)
     {
         _snprintf_s(
-            featureName, 
-            maxNameLength, 
+            featureName,
+            maxNameLength,
             _TRUNCATE,
-            "%s", 
+            "%s",
             m_reverseFeatureMap[featureIndex].c_str());
         return true;
     }
     return false;
-}  
+}
 
-const std::string& MinimalFeatureMap::GetFeatureName(UInt32 featureIndex) const
+const std::string &MinimalFeatureMap::GetFeatureName(UInt32 featureIndex) const
 {
     return m_reverseFeatureMap[featureIndex];
 }

@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #pragma once
 
 #ifndef FREEFORM2_RESULTITERATORIMPL_H
@@ -21,7 +25,7 @@ namespace FreeForm2
         virtual void decrement() = 0;
 
         // Delegated iterator_facade function to get the current element.
-        virtual const Result& dereference() const = 0;
+        virtual const Result &dereference() const = 0;
 
         // Delegated iterator_facade function to get the current element.
         virtual void advance(std::ptrdiff_t p_distance) = 0;
@@ -39,7 +43,7 @@ namespace FreeForm2
         // knowledge.
 
         // Returns a pointer indicating current position, plus the element index.
-        virtual std::pair<const char*, unsigned int> Position() const = 0;
+        virtual std::pair<const char *, unsigned int> Position() const = 0;
 
         // Returns number of bytes per element.
         virtual unsigned int ElementSize() const = 0;
@@ -47,4 +51,3 @@ namespace FreeForm2
 }
 
 #endif
-

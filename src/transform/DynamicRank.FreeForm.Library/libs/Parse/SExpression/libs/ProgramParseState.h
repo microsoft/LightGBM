@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #pragma once
 
 #ifndef FREEFORM2_PROGRAM_PARSE_STATE_H
@@ -31,26 +35,26 @@ namespace FreeForm2
             // Construct an ExpressionParseState object, from the
             // expression factory used for parsing, and the atom that
             // caused this object to be constructed (only used in error messages).
-            ExpressionParseState(const ExpressionFactory& p_factory, 
+            ExpressionParseState(const ExpressionFactory &p_factory,
                                  SIZED_STRING p_atom,
                                  unsigned int p_offset);
-    
+
             // Add a subexpression to this expression.
-            void Add(const Expression& p_expr);
-    
+            void Add(const Expression &p_expr);
+
             // Finish parsing and return this expression.
-            const Expression& Finish(SimpleExpressionOwner& p_owner,
-                                     TypeManager& p_typeManager) const;
-    
+            const Expression &Finish(SimpleExpressionOwner &p_owner,
+                                     TypeManager &p_typeManager) const;
+
             // Accumulated children.
-            std::vector<const Expression*> m_children;
+            std::vector<const Expression *> m_children;
 
             // Variable IDs allocated by the parser for this expression.
             std::vector<VariableID> m_variableIds;
-    
+
             // Expression factory that will produce the finished expression.
-            const ExpressionFactory* m_factory;
-    
+            const ExpressionFactory *m_factory;
+
             // Atom that caused this parsestate to be created.
             SIZED_STRING m_atom;
 
@@ -59,12 +63,12 @@ namespace FreeForm2
         };
 
         // Function that parses a special form (such as 'let').
-        typedef Token (*ParsingFunction)(ProgramParseState& p_state);
+        typedef Token (*ParsingFunction)(ProgramParseState &p_state);
 
         // Variant that provides either an expression factory for standard
         // parsing, or a ParsingFunction for special form parsing, depending on
         // the operator.
-        typedef boost::variant<const ExpressionFactory*, ParsingFunction> OperatorInfo;
+        typedef boost::variant<const ExpressionFactory *, ParsingFunction> OperatorInfo;
 
         // Map of operator names to parsing method.
         typedef std::map<std::string, OperatorInfo> OpMap;
@@ -74,9 +78,9 @@ namespace FreeForm2
         // indication as to whether this program must produce a float (by
         // conversion, if necessary - this also means things that can't be
         // converted to a float produce errors during parsing).
-        ProgramParseState(SIZED_STRING p_input, 
-                          DynamicRank::IFeatureMap& p_map, 
-                          const OpMap& p_operators, 
+        ProgramParseState(SIZED_STRING p_input,
+                          DynamicRank::IFeatureMap &p_map,
+                          const OpMap &p_operators,
                           bool p_mustProduceFloat,
                           bool p_parsingAggregatedExpression);
 
@@ -84,7 +88,7 @@ namespace FreeForm2
         VariableID GetNextVariableId();
 
         // Return the last expression parsed.
-        const Expression& GetLastParsed() const;
+        const Expression &GetLastParsed() const;
 
         // Finish parsing, producing the final expression and owner.
         SExpressionParse::ParserResults Finish();
@@ -102,7 +106,7 @@ namespace FreeForm2
         std::list<ExpressionParseState> m_parseStack;
 
         // List of available operators.
-        const OpMap& m_operators;
+        const OpMap &m_operators;
 
         // Tokenizer, to turn textual input into tokens of different types.
         Tokenizer m_tokenizer;
@@ -117,13 +121,12 @@ namespace FreeForm2
         const bool m_parsingAggregatedExpression;
 
     private:
-        // Counter to keep track of the next variable ID.  This tracks the 
-        // number of values that have been allocated for a let statement, or 
-        // other special forms, and allows us to assign IDs to each value for 
+        // Counter to keep track of the next variable ID.  This tracks the
+        // number of values that have been allocated for a let statement, or
+        // other special forms, and allows us to assign IDs to each value for
         // later use.
         VariableID m_variableIdCounter;
     };
 }
 
 #endif
-

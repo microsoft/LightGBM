@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include "FunctionType.h"
 
 #include <boost/foreach.hpp>
@@ -5,10 +9,9 @@
 #include <sstream>
 #include "TypeManager.h"
 
-
-FreeForm2::FunctionType::FunctionType(TypeManager& p_typeManager,
-                                      const TypeImpl& p_returnType,
-                                      const TypeImpl* const* p_parameterTypes,
+FreeForm2::FunctionType::FunctionType(TypeManager &p_typeManager,
+                                      const TypeImpl &p_returnType,
+                                      const TypeImpl *const *p_parameterTypes,
                                       size_t p_numParameters)
     : TypeImpl(Type::Function, true, &p_typeManager),
       m_returnType(&p_returnType),
@@ -25,13 +28,11 @@ FreeForm2::FunctionType::FunctionType(TypeManager& p_typeManager,
     }
 }
 
-
-const FreeForm2::TypeImpl&
+const FreeForm2::TypeImpl &
 FreeForm2::FunctionType::GetReturnType() const
 {
     return *m_returnType;
 }
-
 
 FreeForm2::FunctionType::ParameterIterator
 FreeForm2::FunctionType::BeginParameters() const
@@ -39,13 +40,11 @@ FreeForm2::FunctionType::BeginParameters() const
     return const_cast<FreeForm2::FunctionType::ParameterIterator>(&m_parameterTypes[0]);
 }
 
-
 FreeForm2::FunctionType::ParameterIterator
 FreeForm2::FunctionType::EndParameters() const
 {
     return BeginParameters() + m_numParameters;
 }
-
 
 size_t
 FreeForm2::FunctionType::GetParameterCount() const
@@ -53,8 +52,7 @@ FreeForm2::FunctionType::GetParameterCount() const
     return m_numParameters;
 }
 
-
-const std::string&
+const std::string &
 FreeForm2::FunctionType::GetName() const
 {
     if (m_name.size() == 0)
@@ -65,10 +63,9 @@ FreeForm2::FunctionType::GetName() const
     return m_name;
 }
 
-
 std::string
-FreeForm2::FunctionType::GetName(const TypeImpl& p_returnType,
-                                 const TypeImpl* const* p_parameterTypes,
+FreeForm2::FunctionType::GetName(const TypeImpl &p_returnType,
+                                 const TypeImpl *const *p_parameterTypes,
                                  size_t p_numParams)
 {
     std::ostringstream out;
@@ -93,27 +90,23 @@ FreeForm2::FunctionType::GetName(const TypeImpl& p_returnType,
     return out.str();
 }
 
-
-const FreeForm2::TypeImpl& 
+const FreeForm2::TypeImpl &
 FreeForm2::FunctionType::AsConstType() const
 {
     return *this;
 }
 
-
-const FreeForm2::TypeImpl& 
+const FreeForm2::TypeImpl &
 FreeForm2::FunctionType::AsMutableType() const
 {
     FF2_ASSERT("Functions cannot be mutable." && false);
     Unreachable(__FILE__, __LINE__);
 }
 
-
-bool
-FreeForm2::FunctionType::IsSameSubType(const TypeImpl& p_other, bool p_ignoreConst) const
+bool FreeForm2::FunctionType::IsSameSubType(const TypeImpl &p_other, bool p_ignoreConst) const
 {
     FF2_ASSERT(p_other.Primitive() == Type::Function);
-    const FunctionType& other = static_cast<const FunctionType&>(p_other);
+    const FunctionType &other = static_cast<const FunctionType &>(p_other);
 
     if (m_numParameters != other.m_numParameters)
     {
@@ -122,8 +115,8 @@ FreeForm2::FunctionType::IsSameSubType(const TypeImpl& p_other, bool p_ignoreCon
 
     for (size_t i = 0; i < m_numParameters; i++)
     {
-        const TypeImpl& m1 = *m_parameterTypes[i];
-        const TypeImpl& m2 = *other.m_parameterTypes[i];
+        const TypeImpl &m1 = *m_parameterTypes[i];
+        const TypeImpl &m2 = *other.m_parameterTypes[i];
         if (!m1.IsSameAs(m2, p_ignoreConst))
         {
             return false;

@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
+ */
 #pragma once
 
 #include <stdint.h>
@@ -21,69 +26,60 @@ typedef size_t Size_t;
 
 #define MAX_UINT32 ((UInt32)-1)
 
-struct SIZED_STRING
-{
-    union
-    {
-        const UInt8 *pbData;
-        const char  *pcData;
-    };
-    size_t cbData;
+struct SIZED_STRING {
+  union {
+    const UInt8 *pbData;
+    const char *pcData;
+  };
+  size_t cbData;
 };
 
 #define _TRUNCATE ((size_t)-1)
 
 // A utility class for creating temporary SIZED_STRINGs
-class CStackSizedString : public SIZED_STRING
-{
-public:
-    // Null-terminated input
-    CStackSizedString(_In_z_ const char *szValue)
-    {
+class CStackSizedString : public SIZED_STRING {
+ public:
+  // Null-terminated input
+  CStackSizedString(_In_z_ const char *szValue) {
 #if defined(_MSC_VER) && _MSC_VER >= 1910
-        // Suppression: error C26490: Don't use reinterpret_cast.
-        // reinterpreting the bits of the char* to the UInt* (both 8 bits per item) is necessary here
-        [[gsl::suppress(type.1)]]
+    // Suppression: error C26490: Don't use reinterpret_cast.
+    // reinterpreting the bits of the char* to the UInt* (both 8 bits per item)
+    // is necessary here
+    [[gsl::suppress(type .1)]]
 #endif
-        pbData = reinterpret_cast<const UInt8 *>(szValue);
-        cbData = strlen(szValue);
-    }
+    pbData = reinterpret_cast<const UInt8 *>(szValue);
+    cbData = strlen(szValue);
+  }
 
-    // Name/size pair
-    CStackSizedString(
-        const UInt8 *pbValue,
-        size_t cbValue)
-    {
-        pbData = pbValue;
-        cbData = cbValue;
-    }
+  // Name/size pair
+  CStackSizedString(const UInt8 *pbValue, size_t cbValue) {
+    pbData = pbValue;
+    cbData = cbValue;
+  }
 
-    // Name/size pair
-    CStackSizedString(
-        const char *pcValue,
-        size_t cbValue)
-    {
-        pcData = pcValue;
-        cbData = cbValue;
-    }
+  // Name/size pair
+  CStackSizedString(const char *pcValue, size_t cbValue) {
+    pcData = pcValue;
+    cbData = cbValue;
+  }
 
-private:
-    // prevent heap allocation
-    void *operator new(size_t);
+ private:
+  // prevent heap allocation
+  void *operator new(size_t);
 };
 
 #define UINT_MAX 0xffffffffu
 
-
-// convenience macros to make SIZED_STRINGs more usable, particularly with the FEX Document class and FexSprintf
-// expand a SIZED_STRING:
-#define SIZED_STR(sizedstr) (char*)sizedstr.pbData, sizedstr.cbData
+// convenience macros to make SIZED_STRINGs more usable, particularly with the
+// FEX Document class and FexSprintf expand a SIZED_STRING:
+#define SIZED_STR(sizedstr) (char *)sizedstr.pbData, sizedstr.cbData
 // reverse, for printing to FexSprintf:
 #define SIZED_STR_REV(sizedstr) sizedstr.cbData, sizedstr.pcData
 // References, for loading with document->GetField( SIZED_STR_REF(str) );
 #define SIZED_STR_REF(sizedstr) &sizedstr.pcData, &sizedstr.cbData
 // Convert a SIZED_STRING to std::basic_string
-#define SIZED_STR_STL(sizedstr) (sizedstr.cbData>0 ? std::string(SIZED_STR(sizedstr)) : std::string())
+#define SIZED_STR_STL(sizedstr) \
+  (sizedstr.cbData > 0 ? std::string(SIZED_STR(sizedstr)) : std::string())
 
 typedef int BOOL;
 

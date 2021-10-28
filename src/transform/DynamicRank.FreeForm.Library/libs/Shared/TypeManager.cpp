@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
 #include "TypeManager.h"
 
 #include "ArrayType.h"
@@ -25,11 +29,11 @@ using namespace FreeForm2;
 namespace
 {
     template <typename T>
-    void ByteArrayDeleter(T* p_delete)
+    void ByteArrayDeleter(T *p_delete)
     {
         // Cast to char*, as this structure was allocated as char[].
         p_delete->~T();
-        char* data = reinterpret_cast<char*>(p_delete);
+        char *data = reinterpret_cast<char *>(p_delete);
         delete[] data;
     }
 
@@ -39,25 +43,25 @@ namespace
     {
     public:
         // Create an empty type manager with the specified parent.
-        NamedTypeManager(const TypeManager& p_parent);
+        NamedTypeManager(const TypeManager &p_parent);
 
         // Constructor to create the global TypeManager.
         NamedTypeManager();
 
         // Gets the type information for the provided name. Returns NULL if the
         // type is not found.
-        virtual const TypeImpl* GetTypeInfo(const std::string& p_name) const override;
+        virtual const TypeImpl *GetTypeInfo(const std::string &p_name) const override;
 
         // Create a variable sized array type owned by this TypeManager.
-        virtual const ArrayType&
-        GetArrayType(const TypeImpl& p_child, 
+        virtual const ArrayType &
+        GetArrayType(const TypeImpl &p_child,
                      bool p_isConst,
-                     unsigned int p_dimensions, 
+                     unsigned int p_dimensions,
                      unsigned int p_maxElements) override;
 
         // Create a fixed-sized array type owned by this TypeManager.
-        virtual const ArrayType&
-        GetArrayType(const TypeImpl& p_child,
+        virtual const ArrayType &
+        GetArrayType(const TypeImpl &p_child,
                      bool p_isConst,
                      unsigned int p_dimensions,
                      const unsigned int p_elementCounts[],
@@ -65,73 +69,65 @@ namespace
 
         // Returns an array type owned by this TypeManager which has the same
         // properties as another ArrayType.
-        virtual
-        const ArrayType&
-        GetArrayType(const ArrayType& p_type) override;
+        virtual const ArrayType &
+        GetArrayType(const ArrayType &p_type) override;
 
-        // Create a struct type owned by this TypeManager. If the specified 
+        // Create a struct type owned by this TypeManager. If the specified
         // name exists, the existing structure is returned iff it is exactly
         // the same as the parameters; otherwise, an the function asserts.
-        virtual const StructType&
-        GetStructType(const std::string& p_name,
-                      const std::string& p_externName,
-                      const std::vector<StructType::MemberInfo>& p_members,
+        virtual const StructType &
+        GetStructType(const std::string &p_name,
+                      const std::string &p_externName,
+                      const std::vector<StructType::MemberInfo> &p_members,
                       bool p_isConst) override;
 
         // Returns a struct type owned by this TypeManager which has the same
         // properties as another StructType.
-        virtual
-        const StructType&
-        GetStructType(const StructType& p_type) override;
+        virtual const StructType &
+        GetStructType(const StructType &p_type) override;
 
         // Get an object type owned by this TypeManager. The TypeManager is not
         // required to allow multiple non-unique names exist in the context of
         // its owned types.
-        virtual
-        const ObjectType&
-        GetObjectType(const std::string& p_name,
-                      const std::string& p_externName,
-                      const std::vector<ObjectType::ObjectMember>& p_members,
+        virtual const ObjectType &
+        GetObjectType(const std::string &p_name,
+                      const std::string &p_externName,
+                      const std::vector<ObjectType::ObjectMember> &p_members,
                       bool p_isConst) override;
 
         // Returns an object type owned by this TypeManager which has the same
         // properties as another StructType.
-        virtual
-        const ObjectType&
-        GetObjectType(const ObjectType& p_type) override;
+        virtual const ObjectType &
+        GetObjectType(const ObjectType &p_type) override;
 
         // Returns a state machine type owned by this TypeManager with the same
         // semantics as GetStructType.
-        virtual
-        const StateMachineType&
-        GetStateMachineType(const std::string& p_name,
-                            const CompoundType::Member* p_members,
+        virtual const StateMachineType &
+        GetStateMachineType(const std::string &p_name,
+                            const CompoundType::Member *p_members,
                             size_t p_numMembers,
                             boost::weak_ptr<const StateMachineExpression> p_expr) override;
 
         // Returns a state machine type owned by this TypeManager which has the
         // same properties as another state machine type.
-        virtual
-        const StateMachineType&
-        GetStateMachineType(const StateMachineType& p_type) override;
+        virtual const StateMachineType &
+        GetStateMachineType(const StateMachineType &p_type) override;
 
         // Get a function type owned by this TypeManager. The TypeManager will just store one
         // function type per signature.
-        virtual
-        const FunctionType&
-        GetFunctionType(const TypeImpl& p_returnType,
-                        const TypeImpl* const* p_parameters,
+        virtual const FunctionType &
+        GetFunctionType(const TypeImpl &p_returnType,
+                        const TypeImpl *const *p_parameters,
                         size_t p_numParameters) override;
 
         // Returns a function type owned by this TypeManager which has the same
         // properties as another FunctionType.
-        virtual
-        const FunctionType&
-        GetFunctionType(const FunctionType& p_type) override;
+        virtual const FunctionType &
+        GetFunctionType(const FunctionType &p_type) override;
 
     private:
         template <typename T>
-        const T& RegisterType(boost::shared_ptr<const T> p_type, const std::string& p_name)
+        const T &RegisterType(boost::shared_ptr<const T> p_type, const std::string &p_name)
         {
             BOOST_STATIC_ASSERT((boost::is_base_of<TypeImpl, T>::value == true));
             boost::shared_ptr<const TypeImpl> ptr = boost::static_pointer_cast<const TypeImpl>(p_type);
@@ -139,104 +135,88 @@ namespace
             return *p_type;
         }
 
-
         template <typename T>
-        const T& RegisterType(boost::shared_ptr<const T> p_type)
+        const T &RegisterType(boost::shared_ptr<const T> p_type)
         {
             BOOST_STATIC_ASSERT((boost::is_base_of<TypeImpl, T>::value == true));
             return RegisterType(p_type, p_type->GetName());
         }
 
         // A mapping from names to types.
-        std::map<std::string, boost::shared_ptr<const TypeImpl>> m_typeMap;
+        std::map<std::string, boost::shared_ptr<const TypeImpl> > m_typeMap;
     };
 }
 
-
-TypeManager::TypeManager(const TypeManager* p_parent) 
+TypeManager::TypeManager(const TypeManager *p_parent)
     : m_parent(p_parent)
 {
 }
-
 
 TypeManager::~TypeManager()
 {
 }
 
-
 NamedTypeManager::NamedTypeManager() : TypeManager(NULL)
 {
     // Tuples of interest.
-    boost::array<StructType::MemberInfo, 3> tuplesOfInterestArray = {{
-        StructType::MemberInfo("WordStart", TypeImpl::GetUInt32Instance(true), "iWordStart", 0, 4),
-        StructType::MemberInfo("WordEnd", TypeImpl::GetUInt32Instance(true), "iWordEnd", 4, 4),
-        StructType::MemberInfo("Weight", TypeImpl::GetUInt32Instance(true), "iWeight", 8, 4)
-    }};
+    boost::array<StructType::MemberInfo, 3> tuplesOfInterestArray = {{StructType::MemberInfo("WordStart", TypeImpl::GetUInt32Instance(true), "iWordStart", 0, 4),
+                                                                      StructType::MemberInfo("WordEnd", TypeImpl::GetUInt32Instance(true), "iWordEnd", 4, 4),
+                                                                      StructType::MemberInfo("Weight", TypeImpl::GetUInt32Instance(true), "iWeight", 8, 4)}};
 
     std::vector<StructType::MemberInfo> tuplesOfInterest(tuplesOfInterestArray.begin(),
                                                          tuplesOfInterestArray.end());
 
-    NamedTypeManager::GetStructType("TupleOfInterest","FreeForm2::TupleOfInterest", tuplesOfInterest, true);
+    NamedTypeManager::GetStructType("TupleOfInterest", "FreeForm2::TupleOfInterest", tuplesOfInterest, true);
 
     // AllDoublesDecodeIndexes
-    boost::array<StructType::MemberInfo, 2> allDoublesDecodeIndexesArray = {{
-        StructType::MemberInfo("FirstIndex", TypeImpl::GetUInt32Instance(true), "m_firstIndex", 0, 4),
-        StructType::MemberInfo("SecondIndex", TypeImpl::GetUInt32Instance(true), "m_secondIndex", 4, 4)
-    }};
+    boost::array<StructType::MemberInfo, 2> allDoublesDecodeIndexesArray = {{StructType::MemberInfo("FirstIndex", TypeImpl::GetUInt32Instance(true), "m_firstIndex", 0, 4),
+                                                                             StructType::MemberInfo("SecondIndex", TypeImpl::GetUInt32Instance(true), "m_secondIndex", 4, 4)}};
 
     std::vector<StructType::MemberInfo> allDoublesDecodeIndexes(allDoublesDecodeIndexesArray.begin(),
                                                                 allDoublesDecodeIndexesArray.end());
 
-    NamedTypeManager::GetStructType("AllDoublesDecodeIndexes","FreeForm2::RuntimeLibrary::AllDoublesDecodeIndexes", allDoublesDecodeIndexes, true);
+    NamedTypeManager::GetStructType("AllDoublesDecodeIndexes", "FreeForm2::RuntimeLibrary::AllDoublesDecodeIndexes", allDoublesDecodeIndexes, true);
 
     // AllTriplesDecodeIndexes
-    boost::array<StructType::MemberInfo, 3> allTriplesDecodeIndexesArray = {{
-        StructType::MemberInfo("FirstIndex", TypeImpl::GetUInt32Instance(true), "m_firstIndex", 0, 4),
-        StructType::MemberInfo("SecondIndex", TypeImpl::GetUInt32Instance(true), "m_secondIndex", 4, 4),
-        StructType::MemberInfo("ThirdIndex", TypeImpl::GetUInt32Instance(true), "m_thirdIndex", 8, 4)
-    }};
+    boost::array<StructType::MemberInfo, 3> allTriplesDecodeIndexesArray = {{StructType::MemberInfo("FirstIndex", TypeImpl::GetUInt32Instance(true), "m_firstIndex", 0, 4),
+                                                                             StructType::MemberInfo("SecondIndex", TypeImpl::GetUInt32Instance(true), "m_secondIndex", 4, 4),
+                                                                             StructType::MemberInfo("ThirdIndex", TypeImpl::GetUInt32Instance(true), "m_thirdIndex", 8, 4)}};
 
     std::vector<StructType::MemberInfo> allTriplesDecodeIndexes(allTriplesDecodeIndexesArray.begin(),
                                                                 allTriplesDecodeIndexesArray.end());
 
-    NamedTypeManager::GetStructType("AllTriplesDecodeIndexes","FreeForm2::RuntimeLibrary::AllTriplesDecodeIndexes", allTriplesDecodeIndexes, true);
+    NamedTypeManager::GetStructType("AllTriplesDecodeIndexes", "FreeForm2::RuntimeLibrary::AllTriplesDecodeIndexes", allTriplesDecodeIndexes, true);
 
     // NumberOfTuples Object.
     std::vector<ObjectType::ObjectMember> numberOfTuplesCommonMembers;
 
-    const FunctionType& numberOfTuplesInitialize
-        = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
+    const FunctionType &numberOfTuplesInitialize = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
     numberOfTuplesCommonMembers.push_back(ObjectType::ObjectMember("Initialize", numberOfTuplesInitialize));
 
-    const FunctionType& numberOfTuplesReset
-        = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
+    const FunctionType &numberOfTuplesReset = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
     numberOfTuplesCommonMembers.push_back(ObjectType::ObjectMember("Reset", numberOfTuplesReset));
 
-    const FunctionType& numberOfTuplesInflateMatrix
-        = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
+    const FunctionType &numberOfTuplesInflateMatrix = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
     numberOfTuplesCommonMembers.push_back(ObjectType::ObjectMember("InflateMatrix", numberOfTuplesInflateMatrix));
 
-    const TypeImpl* numberOfTuplesAddWordArray[] = { &TypeImpl::GetWordInstance(true) };
-    const FunctionType& numberOfTuplesAddWord
-        = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), 
-                                            numberOfTuplesAddWordArray, 
-                                            countof(numberOfTuplesAddWordArray));
+    const TypeImpl *numberOfTuplesAddWordArray[] = {&TypeImpl::GetWordInstance(true)};
+    const FunctionType &numberOfTuplesAddWord = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(),
+                                                                                  numberOfTuplesAddWordArray,
+                                                                                  countof(numberOfTuplesAddWordArray));
     numberOfTuplesCommonMembers.push_back(ObjectType::ObjectMember("AddWord", numberOfTuplesAddWord));
 
-    const TypeImpl* numberOfTuplesValueArray[] = { &TypeImpl::GetUInt32Instance(true),
-                                                   &TypeImpl::GetUInt32Instance(true) };
-    const FunctionType& numberOfTuplesValue
-        = NamedTypeManager::GetFunctionType(TypeImpl::GetInt32Instance(true), 
-                                            numberOfTuplesValueArray, 
-                                            countof(numberOfTuplesValueArray));
-    const FunctionType& offsetOfTuplesValue
-        = NamedTypeManager::GetFunctionType(TypeImpl::GetUInt32Instance(true), 
-                                            numberOfTuplesValueArray, 
-                                            countof(numberOfTuplesValueArray));
+    const TypeImpl *numberOfTuplesValueArray[] = {&TypeImpl::GetUInt32Instance(true),
+                                                  &TypeImpl::GetUInt32Instance(true)};
+    const FunctionType &numberOfTuplesValue = NamedTypeManager::GetFunctionType(TypeImpl::GetInt32Instance(true),
+                                                                                numberOfTuplesValueArray,
+                                                                                countof(numberOfTuplesValueArray));
+    const FunctionType &offsetOfTuplesValue = NamedTypeManager::GetFunctionType(TypeImpl::GetUInt32Instance(true),
+                                                                                numberOfTuplesValueArray,
+                                                                                countof(numberOfTuplesValueArray));
     numberOfTuplesCommonMembers.push_back(ObjectType::ObjectMember("numberOfTuples", numberOfTuplesValue));
     numberOfTuplesCommonMembers.push_back(ObjectType::ObjectMember("firstOccurrenceOffsetOfTuples", offsetOfTuplesValue));
     numberOfTuplesCommonMembers.push_back(ObjectType::ObjectMember("lastOccurrenceOffsetOfTuples", offsetOfTuplesValue));
-    numberOfTuplesCommonMembers.push_back(ObjectType::ObjectMember("incrementValue", 
+    numberOfTuplesCommonMembers.push_back(ObjectType::ObjectMember("incrementValue",
                                                                    TypeImpl::GetInt32Instance(false),
                                                                    "m_iIncrementingValue"));
 
@@ -253,79 +233,70 @@ NamedTypeManager::NamedTypeManager() : TypeManager(NULL)
     // NumberOfTuplesInTriples Object.
     std::vector<ObjectType::ObjectMember> numberOfTuplesInTriplesCommonMembers;
 
-    const TypeImpl* numberOfTuplesInTriplesInitializeArray[] = { &TypeImpl::GetUInt32Instance(true),
-                                                                 &TypeImpl::GetUInt32Instance(true),
-                                                                 &TypeImpl::GetUInt32Instance(true) };
-    const FunctionType& numberOfTuplesInTriplesInitialize
-        = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), 
-                                            numberOfTuplesInTriplesInitializeArray, 
-                                            countof(numberOfTuplesInTriplesInitializeArray));
+    const TypeImpl *numberOfTuplesInTriplesInitializeArray[] = {&TypeImpl::GetUInt32Instance(true),
+                                                                &TypeImpl::GetUInt32Instance(true),
+                                                                &TypeImpl::GetUInt32Instance(true)};
+    const FunctionType &numberOfTuplesInTriplesInitialize = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(),
+                                                                                              numberOfTuplesInTriplesInitializeArray,
+                                                                                              countof(numberOfTuplesInTriplesInitializeArray));
     numberOfTuplesInTriplesCommonMembers.push_back(ObjectType::ObjectMember("Initialize", numberOfTuplesInTriplesInitialize));
 
-    const TypeImpl* numberOfTuplesInTriplesStartPhraseArray[] = { &TypeImpl::GetUInt32Instance(true) };
-    const FunctionType& numberOfTuplesInTriplesStartPhrase
-        = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), 
-                                            numberOfTuplesInTriplesStartPhraseArray, 
-                                            countof(numberOfTuplesInTriplesStartPhraseArray));
+    const TypeImpl *numberOfTuplesInTriplesStartPhraseArray[] = {&TypeImpl::GetUInt32Instance(true)};
+    const FunctionType &numberOfTuplesInTriplesStartPhrase = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(),
+                                                                                               numberOfTuplesInTriplesStartPhraseArray,
+                                                                                               countof(numberOfTuplesInTriplesStartPhraseArray));
     numberOfTuplesInTriplesCommonMembers.push_back(ObjectType::ObjectMember("StartPhrase", numberOfTuplesInTriplesStartPhrase));
 
-    const TypeImpl* numberOfTuplesInTriplesAddWordArray[] = { &TypeImpl::GetWordInstance(true) };
-    const FunctionType& numberOfTuplesInTriplesAddWord
-        = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), 
-                                            numberOfTuplesInTriplesAddWordArray, 
-                                            countof(numberOfTuplesInTriplesAddWordArray));
+    const TypeImpl *numberOfTuplesInTriplesAddWordArray[] = {&TypeImpl::GetWordInstance(true)};
+    const FunctionType &numberOfTuplesInTriplesAddWord = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(),
+                                                                                           numberOfTuplesInTriplesAddWordArray,
+                                                                                           countof(numberOfTuplesInTriplesAddWordArray));
     numberOfTuplesInTriplesCommonMembers.push_back(ObjectType::ObjectMember("AddWord", numberOfTuplesInTriplesAddWord));
 
-    const FunctionType& numberOfTuplesInTriplesEndPage
-        = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
+    const FunctionType &numberOfTuplesInTriplesEndPage = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
     numberOfTuplesInTriplesCommonMembers.push_back(ObjectType::ObjectMember("EndPage", numberOfTuplesInTriplesEndPage));
 
-    const TypeImpl* numberOfTuplesInTriplesValueArray[] = { &TypeImpl::GetUInt32Instance(true) };
-    const FunctionType& numberOfTuplesInTriplesValue
-        = NamedTypeManager::GetFunctionType(TypeImpl::GetUInt32Instance(true), 
-                                            numberOfTuplesInTriplesValueArray, 
-                                            countof(numberOfTuplesInTriplesValueArray));
+    const TypeImpl *numberOfTuplesInTriplesValueArray[] = {&TypeImpl::GetUInt32Instance(true)};
+    const FunctionType &numberOfTuplesInTriplesValue = NamedTypeManager::GetFunctionType(TypeImpl::GetUInt32Instance(true),
+                                                                                         numberOfTuplesInTriplesValueArray,
+                                                                                         countof(numberOfTuplesInTriplesValueArray));
     numberOfTuplesInTriplesCommonMembers.push_back(ObjectType::ObjectMember("numberOfTuples", numberOfTuplesInTriplesValue));
     numberOfTuplesInTriplesCommonMembers.push_back(ObjectType::ObjectMember("numberOfTuplesInOrder", numberOfTuplesInTriplesValue));
-    
+
     NamedTypeManager::GetObjectType("NumberOfTuplesInTriplesCommon",
                                     "CNumberOfTuplesInTriples",
                                     numberOfTuplesInTriplesCommonMembers,
                                     false);
 
-     // WeightingCalculator Object
+    // WeightingCalculator Object
     std::vector<ObjectType::ObjectMember> weightingCalculatorMembers;
 
-    const FunctionType& weightingCalculatorReset
-        = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
+    const FunctionType &weightingCalculatorReset = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
     weightingCalculatorMembers.push_back(ObjectType::ObjectMember("Reset", weightingCalculatorReset));
 
     {
-        const TypeImpl* weightingCalculatorAddWordArray[] = { &TypeImpl::GetWordInstance(true) };
-        const FunctionType& weightingCalculatorAddWord
-            = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), 
-                                                weightingCalculatorAddWordArray, 
-                                                countof(weightingCalculatorAddWordArray));
+        const TypeImpl *weightingCalculatorAddWordArray[] = {&TypeImpl::GetWordInstance(true)};
+        const FunctionType &weightingCalculatorAddWord = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(),
+                                                                                           weightingCalculatorAddWordArray,
+                                                                                           countof(weightingCalculatorAddWordArray));
         weightingCalculatorMembers.push_back(ObjectType::ObjectMember("AddWord", weightingCalculatorAddWord));
     }
 
     {
-        const TypeImpl* weightingCalculatorApplyWeightingArray[] = { &TypeImpl::GetIntInstance(true) };
-        const FunctionType& weightingCalculatorApplyWeighting
-            = NamedTypeManager::GetFunctionType(TypeImpl::GetIntInstance(true), 
-                                                weightingCalculatorApplyWeightingArray, 
-                                                countof(weightingCalculatorApplyWeightingArray));
-        weightingCalculatorMembers.push_back(ObjectType::ObjectMember("ApplyWeightingRound", 
-                                                                      weightingCalculatorApplyWeighting, 
+        const TypeImpl *weightingCalculatorApplyWeightingArray[] = {&TypeImpl::GetIntInstance(true)};
+        const FunctionType &weightingCalculatorApplyWeighting = NamedTypeManager::GetFunctionType(TypeImpl::GetIntInstance(true),
+                                                                                                  weightingCalculatorApplyWeightingArray,
+                                                                                                  countof(weightingCalculatorApplyWeightingArray));
+        weightingCalculatorMembers.push_back(ObjectType::ObjectMember("ApplyWeightingRound",
+                                                                      weightingCalculatorApplyWeighting,
                                                                       "ApplyWeighting"));
     }
 
     {
-        const TypeImpl* weightingCalculatorApplyWeightingArray[] = { &TypeImpl::GetFloatInstance(true) };
-        const FunctionType& weightingCalculatorApplyWeighting
-            = NamedTypeManager::GetFunctionType(TypeImpl::GetFloatInstance(true), 
-                                                weightingCalculatorApplyWeightingArray, 
-                                                countof(weightingCalculatorApplyWeightingArray));
+        const TypeImpl *weightingCalculatorApplyWeightingArray[] = {&TypeImpl::GetFloatInstance(true)};
+        const FunctionType &weightingCalculatorApplyWeighting = NamedTypeManager::GetFunctionType(TypeImpl::GetFloatInstance(true),
+                                                                                                  weightingCalculatorApplyWeightingArray,
+                                                                                                  countof(weightingCalculatorApplyWeightingArray));
         weightingCalculatorMembers.push_back(
             ObjectType::ObjectMember("ApplyWeighting", weightingCalculatorApplyWeighting));
     }
@@ -343,16 +314,16 @@ NamedTypeManager::NamedTypeManager() : TypeManager(NULL)
     // TrueNearDoublesQueue Object
     std::vector<ObjectType::ObjectMember> trueNearDoubleQueueMembers;
 
-    const FunctionType& trueNearDoublesQueueReset = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
+    const FunctionType &trueNearDoublesQueueReset = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
     trueNearDoubleQueueMembers.push_back(ObjectType::ObjectMember("Reset", trueNearDoublesQueueReset));
 
     {
-        const TypeImpl* trueNearDoublesQueueReceiveWordArray[] = { &TypeImpl::GetWordInstance(true), 
-                                                                   &TypeImpl::GetUInt32Instance(false), 
-                                                                   &TypeImpl::GetUInt32Instance(false) };
-        const FunctionType& trueNearDoublesQueueReceiveWord = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), 
-                                                                                               trueNearDoublesQueueReceiveWordArray,
-                                                                                               countof(trueNearDoublesQueueReceiveWordArray));
+        const TypeImpl *trueNearDoublesQueueReceiveWordArray[] = {&TypeImpl::GetWordInstance(true),
+                                                                  &TypeImpl::GetUInt32Instance(false),
+                                                                  &TypeImpl::GetUInt32Instance(false)};
+        const FunctionType &trueNearDoublesQueueReceiveWord = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(),
+                                                                                                trueNearDoublesQueueReceiveWordArray,
+                                                                                                countof(trueNearDoublesQueueReceiveWordArray));
         trueNearDoubleQueueMembers.push_back(ObjectType::ObjectMember("ReceiveWord", trueNearDoublesQueueReceiveWord));
     }
 
@@ -362,38 +333,38 @@ NamedTypeManager::NamedTypeManager() : TypeManager(NULL)
     std::vector<ObjectType::ObjectMember> boundedQueueMembers;
 
     {
-        const FunctionType& boundedQueueClear = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
+        const FunctionType &boundedQueueClear = NamedTypeManager::GetFunctionType(TypeImpl::GetVoidInstance(), NULL, 0);
         boundedQueueMembers.push_back(ObjectType::ObjectMember("Clear", boundedQueueClear));
     }
 
     {
-        const FunctionType& boundedQueueEmpty = NamedTypeManager::GetFunctionType(TypeImpl::GetBoolInstance(true), NULL, 0);
+        const FunctionType &boundedQueueEmpty = NamedTypeManager::GetFunctionType(TypeImpl::GetBoolInstance(true), NULL, 0);
         boundedQueueMembers.push_back(ObjectType::ObjectMember("Empty", boundedQueueEmpty));
     }
 
     {
-        const FunctionType& boundedQueueFull = NamedTypeManager::GetFunctionType(TypeImpl::GetBoolInstance(true), NULL, 0);
+        const FunctionType &boundedQueueFull = NamedTypeManager::GetFunctionType(TypeImpl::GetBoolInstance(true), NULL, 0);
         boundedQueueMembers.push_back(ObjectType::ObjectMember("Full", boundedQueueFull));
     }
 
     {
-        const TypeImpl* boundedQueueGetParamArray[] = { &TypeImpl::GetUInt32Instance(true) };
-        const FunctionType& boundedQueueGet = NamedTypeManager::GetFunctionType(TypeImpl::GetIntInstance(true), boundedQueueGetParamArray, 1);
+        const TypeImpl *boundedQueueGetParamArray[] = {&TypeImpl::GetUInt32Instance(true)};
+        const FunctionType &boundedQueueGet = NamedTypeManager::GetFunctionType(TypeImpl::GetIntInstance(true), boundedQueueGetParamArray, 1);
         boundedQueueMembers.push_back(ObjectType::ObjectMember("Get", boundedQueueGet));
     }
 
     {
-        const FunctionType& boundedQueuePop = NamedTypeManager::GetFunctionType(TypeImpl::GetIntInstance(true), NULL, 0);
+        const FunctionType &boundedQueuePop = NamedTypeManager::GetFunctionType(TypeImpl::GetIntInstance(true), NULL, 0);
         boundedQueueMembers.push_back(ObjectType::ObjectMember("Pop", boundedQueuePop));
     }
 
     {
-        const FunctionType& boundedQueuePush = NamedTypeManager::GetFunctionType(TypeImpl::GetIntInstance(true), NULL, 0);
+        const FunctionType &boundedQueuePush = NamedTypeManager::GetFunctionType(TypeImpl::GetIntInstance(true), NULL, 0);
         boundedQueueMembers.push_back(ObjectType::ObjectMember("Push", boundedQueuePush));
     }
 
     {
-        const FunctionType& boundedQueueSize = NamedTypeManager::GetFunctionType(TypeImpl::GetUInt32Instance(true), NULL, 0);
+        const FunctionType &boundedQueueSize = NamedTypeManager::GetFunctionType(TypeImpl::GetUInt32Instance(true), NULL, 0);
         boundedQueueMembers.push_back(ObjectType::ObjectMember("Size", boundedQueueSize));
     }
 
@@ -401,17 +372,14 @@ NamedTypeManager::NamedTypeManager() : TypeManager(NULL)
     NamedTypeManager::GetObjectType("BoundedQueue", "FreeForm2::RuntimeLibrary::BoundedQueue<41>", boundedQueueMembers, false);
 }
 
-
-NamedTypeManager::NamedTypeManager(const TypeManager& p_parent) : TypeManager(&p_parent)
+NamedTypeManager::NamedTypeManager(const TypeManager &p_parent) : TypeManager(&p_parent)
 {
 }
 
-
-const TypeImpl*
-NamedTypeManager::GetTypeInfo(const std::string& p_name) const
+const TypeImpl *
+NamedTypeManager::GetTypeInfo(const std::string &p_name) const
 {
-    std::map<std::string, boost::shared_ptr<const TypeImpl>>::const_iterator info
-        = m_typeMap.find(p_name);
+    std::map<std::string, boost::shared_ptr<const TypeImpl> >::const_iterator info = m_typeMap.find(p_name);
 
     if (info != m_typeMap.end())
     {
@@ -427,23 +395,21 @@ NamedTypeManager::GetTypeInfo(const std::string& p_name) const
     }
 }
 
-
 boost::shared_ptr<const ArrayType>
-TypeManager::CreateArrayType(const TypeImpl& p_child,
+TypeManager::CreateArrayType(const TypeImpl &p_child,
                              bool p_isConst,
                              unsigned int p_dimensions,
                              const unsigned int p_elementCounts[],
                              unsigned int p_maxElements)
 {
-    const size_t structSize = sizeof(ArrayType) + sizeof(unsigned int) 
-        * (p_dimensions > 0 ? p_dimensions - 1 : 0);
-    
-    char* mem = NULL;
-    try 
+    const size_t structSize = sizeof(ArrayType) + sizeof(unsigned int) * (p_dimensions > 0 ? p_dimensions - 1 : 0);
+
+    char *mem = NULL;
+    try
     {
         mem = new char[structSize];
         return boost::shared_ptr<const ArrayType>(
-            new (mem) ArrayType(p_child, p_isConst, p_dimensions, p_elementCounts, p_maxElements, *this), 
+            new (mem) ArrayType(p_child, p_isConst, p_dimensions, p_elementCounts, p_maxElements, *this),
             ByteArrayDeleter<ArrayType>);
     }
     catch (...)
@@ -453,9 +419,8 @@ TypeManager::CreateArrayType(const TypeImpl& p_child,
     }
 }
 
-
 boost::shared_ptr<const ArrayType>
-TypeManager::CreateArrayType(const TypeImpl& p_child,
+TypeManager::CreateArrayType(const TypeImpl &p_child,
                              bool p_isConst,
                              unsigned int p_dimensions,
                              unsigned int p_maxElements)
@@ -464,47 +429,43 @@ TypeManager::CreateArrayType(const TypeImpl& p_child,
         new ArrayType(p_child, p_isConst, p_dimensions, p_maxElements, boost::ref(*this)));
 }
 
-
 boost::shared_ptr<const StructType>
-    TypeManager::CreateStructType(const std::string& p_name,
-    const std::string& p_externName,
-    const std::vector<StructType::MemberInfo>& p_members,
-    bool p_isConst)
+TypeManager::CreateStructType(const std::string &p_name,
+                              const std::string &p_externName,
+                              const std::vector<StructType::MemberInfo> &p_members,
+                              bool p_isConst)
 {
     return boost::shared_ptr<const StructType>(
         new StructType(p_name, p_externName, p_members, p_isConst, boost::ref(*this)));
 }
 
-
 boost::shared_ptr<const ObjectType>
-TypeManager::CreateObjectType(const std::string& p_name,
-                              const std::string& p_externName,
-                              const std::vector<ObjectType::ObjectMember>& p_members,
+TypeManager::CreateObjectType(const std::string &p_name,
+                              const std::string &p_externName,
+                              const std::vector<ObjectType::ObjectMember> &p_members,
                               bool p_isConst)
 {
     return boost::shared_ptr<const ObjectType>(
         new ObjectType(p_name, p_externName, p_members, p_isConst, boost::ref(*this)));
 }
 
-
 boost::shared_ptr<const StateMachineType>
-TypeManager::CreateStateMachineType(const std::string& p_name,
-                                    const CompoundType::Member* p_members,
+TypeManager::CreateStateMachineType(const std::string &p_name,
+                                    const CompoundType::Member *p_members,
                                     size_t p_numMembers,
                                     boost::weak_ptr<const StateMachineExpression> p_expr)
 {
-    const size_t memSize = sizeof(StateMachineType) 
-        + sizeof(CompoundType::Member) * (std::max(p_numMembers, (size_t) 1ULL) - 1);
-    char* mem = NULL;
+    const size_t memSize = sizeof(StateMachineType) + sizeof(CompoundType::Member) * (std::max(p_numMembers, (size_t)1ULL) - 1);
+    char *mem = NULL;
 
     try
     {
         mem = new char[memSize];
         return boost::shared_ptr<StateMachineType>(new (mem) StateMachineType(*this,
-                                                                              p_name, 
+                                                                              p_name,
                                                                               p_members,
                                                                               p_numMembers,
-                                                                              p_expr), 
+                                                                              p_expr),
                                                    ByteArrayDeleter<StateMachineType>);
     }
     catch (...)
@@ -514,15 +475,13 @@ TypeManager::CreateStateMachineType(const std::string& p_name,
     }
 }
 
-
 boost::shared_ptr<const FunctionType>
-TypeManager::CreateFunctionType(const TypeImpl& p_returnType,
-                                const TypeImpl* const* p_params,
+TypeManager::CreateFunctionType(const TypeImpl &p_returnType,
+                                const TypeImpl *const *p_params,
                                 size_t p_numParams)
 {
-    const size_t memSize = sizeof(FunctionType) 
-        + sizeof(TypeImpl) * (std::max(p_numParams, (size_t) 1ULL) - 1);
-    char* mem = NULL;
+    const size_t memSize = sizeof(FunctionType) + sizeof(TypeImpl) * (std::max(p_numParams, (size_t)1ULL) - 1);
+    char *mem = NULL;
 
     try
     {
@@ -530,7 +489,7 @@ TypeManager::CreateFunctionType(const TypeImpl& p_returnType,
         return boost::shared_ptr<FunctionType>(new (mem) FunctionType(*this,
                                                                       p_returnType,
                                                                       p_params,
-                                                                      p_numParams), 
+                                                                      p_numParams),
                                                ByteArrayDeleter<FunctionType>);
     }
     catch (...)
@@ -540,173 +499,163 @@ TypeManager::CreateFunctionType(const TypeImpl& p_returnType,
     }
 }
 
-
-const TypeImpl&
-TypeManager::GetChildType(const TypeImpl& p_type)
+const TypeImpl &
+TypeManager::GetChildType(const TypeImpl &p_type)
 {
-    const TypeImpl* childType = &p_type;
+    const TypeImpl *childType = &p_type;
     switch (childType->Primitive())
     {
-        case Type::Struct:
-        {
-            childType = &GetStructType(static_cast<const StructType&>(*childType));
-            break;
-        }
+    case Type::Struct:
+    {
+        childType = &GetStructType(static_cast<const StructType &>(*childType));
+        break;
+    }
 
-        case Type::Array:
-        {
-            childType = &GetArrayType(static_cast<const ArrayType&>(*childType));
-            break;
-        }
+    case Type::Array:
+    {
+        childType = &GetArrayType(static_cast<const ArrayType &>(*childType));
+        break;
+    }
 
-        case Type::Object:
-        {
-            childType = &GetObjectType(static_cast<const ObjectType&>(*childType));
-            break;
-        }
+    case Type::Object:
+    {
+        childType = &GetObjectType(static_cast<const ObjectType &>(*childType));
+        break;
+    }
 
-        case Type::StateMachine:
-        {
-            childType = &GetStateMachineType(static_cast<const StateMachineType&>(*childType));
-            break;
-        }
+    case Type::StateMachine:
+    {
+        childType = &GetStateMachineType(static_cast<const StateMachineType &>(*childType));
+        break;
+    }
 
-        default:
-        {
-            FF2_ASSERT(childType == &TypeImpl::GetCommonType(childType->Primitive(), childType->IsConst()));
-            break;
-        }
+    default:
+    {
+        FF2_ASSERT(childType == &TypeImpl::GetCommonType(childType->Primitive(), childType->IsConst()));
+        break;
+    }
     }
     return *childType;
 }
 
-
 boost::shared_ptr<const ArrayType>
-TypeManager::CopyArrayType(const ArrayType& p_arrayType)
+TypeManager::CopyArrayType(const ArrayType &p_arrayType)
 {
-    const TypeImpl& childType = GetChildType(p_arrayType.GetChildType());
+    const TypeImpl &childType = GetChildType(p_arrayType.GetChildType());
 
     if (p_arrayType.IsFixedSize())
     {
-        return CreateArrayType(childType, 
-                               p_arrayType.IsConst(), 
-                               p_arrayType.GetDimensionCount(), 
-                               p_arrayType.GetDimensions(), 
+        return CreateArrayType(childType,
+                               p_arrayType.IsConst(),
+                               p_arrayType.GetDimensionCount(),
+                               p_arrayType.GetDimensions(),
                                p_arrayType.GetMaxElements());
     }
     else
     {
-        return CreateArrayType(childType, 
-                               p_arrayType.IsConst(), 
+        return CreateArrayType(childType,
+                               p_arrayType.IsConst(),
                                p_arrayType.GetDimensionCount(),
                                p_arrayType.GetMaxElements());
     }
 }
 
-
 boost::shared_ptr<const StructType>
-TypeManager::CopyStructType(const StructType& p_structType)
+TypeManager::CopyStructType(const StructType &p_structType)
 {
     std::vector<StructType::MemberInfo> members(p_structType.GetMembers());
 
-    BOOST_FOREACH(StructType::MemberInfo& info, members)
+    BOOST_FOREACH (StructType::MemberInfo &info, members)
     {
         FF2_ASSERT(info.m_type != NULL);
         info.m_type = &GetChildType(*info.m_type);
     }
 
-    return CreateStructType(p_structType.GetName(), 
-                            p_structType.GetExternName(), 
-                            members, 
+    return CreateStructType(p_structType.GetName(),
+                            p_structType.GetExternName(),
+                            members,
                             p_structType.IsConst());
 }
 
-
 boost::shared_ptr<const ObjectType>
-TypeManager::CopyObjectType(const ObjectType& p_objectType)
+TypeManager::CopyObjectType(const ObjectType &p_objectType)
 {
     std::vector<ObjectType::ObjectMember> members;
     for (std::map<std::string, ObjectType::ObjectMember>::const_iterator memberIterator = p_objectType.m_members.begin();
-         memberIterator !=  p_objectType.m_members.end();
+         memberIterator != p_objectType.m_members.end();
          ++memberIterator)
     {
         members.push_back(memberIterator->second);
     }
 
-    return CreateObjectType(p_objectType.GetName(), 
-                            p_objectType.GetExternName(), 
-                            members, 
+    return CreateObjectType(p_objectType.GetName(),
+                            p_objectType.GetExternName(),
+                            members,
                             p_objectType.IsConst());
 }
 
-
 boost::shared_ptr<const StateMachineType>
-TypeManager::CopyStateMachineType(const StateMachineType& p_type)
+TypeManager::CopyStateMachineType(const StateMachineType &p_type)
 {
     std::vector<CompoundType::Member> members(p_type.BeginMembers(), p_type.EndMembers());
 
-    BOOST_FOREACH(CompoundType::Member& member, members)
+    BOOST_FOREACH (CompoundType::Member &member, members)
     {
         member.m_type = &GetChildType(*member.m_type);
     }
 
-    return CreateStateMachineType(p_type.GetName(), 
-                                  &members[0], 
+    return CreateStateMachineType(p_type.GetName(),
+                                  &members[0],
                                   members.size(),
                                   p_type.GetDefinition());
 }
 
-
 boost::shared_ptr<const FunctionType>
-TypeManager::CopyFunctionType(const FunctionType& p_type)
+TypeManager::CopyFunctionType(const FunctionType &p_type)
 {
-    std::vector<const TypeImpl*> params;
+    std::vector<const TypeImpl *> params;
 
     for (UInt32 i = 0; i < p_type.GetParameterCount(); i++)
     {
-        const TypeImpl& param = *p_type.BeginParameters()[i];
+        const TypeImpl &param = *p_type.BeginParameters()[i];
         params.push_back(&GetChildType(param));
     }
 
-    return CreateFunctionType(GetChildType(p_type.GetReturnType()), 
+    return CreateFunctionType(GetChildType(p_type.GetReturnType()),
                               params.size() > 0 ? &params[0] : nullptr,
                               params.size());
 }
 
-
-const TypeManager*
+const TypeManager *
 TypeManager::GetParent() const
 {
     return m_parent;
 }
 
-        
-const ArrayType&
-NamedTypeManager::GetArrayType(const TypeImpl& p_child, 
+const ArrayType &
+NamedTypeManager::GetArrayType(const TypeImpl &p_child,
                                bool p_isConst,
-                               unsigned int p_dimensions, 
+                               unsigned int p_dimensions,
                                unsigned int p_maxElements)
 {
     return GetArrayType(p_child, p_isConst, p_dimensions, NULL, p_maxElements);
 }
 
-
-const ArrayType&
-NamedTypeManager::GetArrayType(const TypeImpl& p_child,
+const ArrayType &
+NamedTypeManager::GetArrayType(const TypeImpl &p_child,
                                bool p_isConst,
                                unsigned int p_dimensions,
                                const unsigned int p_elementCounts[],
                                unsigned int p_maxElements)
 {
-    std::string signature 
-        = ArrayType::GetName(p_child, p_isConst, p_dimensions, p_elementCounts, p_maxElements);
+    std::string signature = ArrayType::GetName(p_child, p_isConst, p_dimensions, p_elementCounts, p_maxElements);
 
-    const TypeImpl* type = GetTypeInfo(signature);
+    const TypeImpl *type = GetTypeInfo(signature);
     if (type != NULL)
     {
         FF2_ASSERT(type->IsConst() == p_isConst);
         FF2_ASSERT(type->Primitive() == Type::Array);
-        const ArrayType& arrayType = static_cast<const ArrayType&>(*type);
+        const ArrayType &arrayType = static_cast<const ArrayType &>(*type);
         return arrayType;
     }
     else
@@ -723,15 +672,14 @@ NamedTypeManager::GetArrayType(const TypeImpl& p_child,
     }
 }
 
-
-const ArrayType&
-NamedTypeManager::GetArrayType(const ArrayType& p_type)
+const ArrayType &
+NamedTypeManager::GetArrayType(const ArrayType &p_type)
 {
-    const TypeImpl* type = GetTypeInfo(p_type.GetName());
+    const TypeImpl *type = GetTypeInfo(p_type.GetName());
     if (type != NULL)
     {
         FF2_ASSERT(type->Primitive() == Type::Array);
-        return static_cast<const ArrayType&>(*type);
+        return static_cast<const ArrayType &>(*type);
     }
     else
     {
@@ -739,11 +687,10 @@ NamedTypeManager::GetArrayType(const ArrayType& p_type)
     }
 }
 
-
-const StructType&
-NamedTypeManager::GetStructType(const std::string& p_name,
-                                const std::string& p_externName,
-                                const std::vector<StructType::MemberInfo>& p_members,
+const StructType &
+NamedTypeManager::GetStructType(const std::string &p_name,
+                                const std::string &p_externName,
+                                const std::vector<StructType::MemberInfo> &p_members,
                                 bool p_isConst)
 {
     FF2_ASSERT(p_name.find(' ') == std::string::npos);
@@ -756,12 +703,12 @@ NamedTypeManager::GetStructType(const std::string& p_name,
     }
     name.append(p_name);
 
-    const TypeImpl* type = GetTypeInfo(name);
+    const TypeImpl *type = GetTypeInfo(name);
     if (type != NULL)
     {
         FF2_ASSERT(type->IsConst() == p_isConst);
         FF2_ASSERT(type->Primitive() == Type::Struct);
-        const StructType& structType = static_cast<const StructType&>(*type);
+        const StructType &structType = static_cast<const StructType &>(*type);
         FF2_ASSERT(structType.GetExternName() == p_externName);
         return structType;
     }
@@ -771,9 +718,8 @@ NamedTypeManager::GetStructType(const std::string& p_name,
     }
 }
 
-
-const StructType&
-NamedTypeManager::GetStructType(const StructType& p_type)
+const StructType &
+NamedTypeManager::GetStructType(const StructType &p_type)
 {
     FF2_ASSERT(p_type.GetName().find(' ') == std::string::npos);
 
@@ -785,11 +731,11 @@ NamedTypeManager::GetStructType(const StructType& p_type)
     }
     name.append(p_type.GetName());
 
-    const TypeImpl* type = GetTypeInfo(name);
+    const TypeImpl *type = GetTypeInfo(name);
     if (type != NULL)
     {
         FF2_ASSERT(type->Primitive() == Type::Struct);
-        return static_cast<const StructType&>(*type);
+        return static_cast<const StructType &>(*type);
     }
     else
     {
@@ -797,21 +743,20 @@ NamedTypeManager::GetStructType(const StructType& p_type)
     }
 }
 
-
-const ObjectType&
-NamedTypeManager::GetObjectType(const std::string& p_name,
-                                const std::string& p_externName,
-                                const std::vector<ObjectType::ObjectMember>& p_members,
+const ObjectType &
+NamedTypeManager::GetObjectType(const std::string &p_name,
+                                const std::string &p_externName,
+                                const std::vector<ObjectType::ObjectMember> &p_members,
                                 bool p_isConst)
 {
     FF2_ASSERT(p_name.find(' ') == std::string::npos);
 
-    const TypeImpl* type = GetTypeInfo(p_name);
+    const TypeImpl *type = GetTypeInfo(p_name);
     if (type != NULL)
     {
         FF2_ASSERT(type->IsConst() == p_isConst);
         FF2_ASSERT(type->Primitive() == Type::Object);
-        const ObjectType& structType = static_cast<const ObjectType&>(*type);
+        const ObjectType &structType = static_cast<const ObjectType &>(*type);
         FF2_ASSERT(structType.GetExternName() == p_externName);
         return structType;
     }
@@ -821,18 +766,17 @@ NamedTypeManager::GetObjectType(const std::string& p_name,
     }
 }
 
-
-const ObjectType&
-NamedTypeManager::GetObjectType(const ObjectType& p_type)
+const ObjectType &
+NamedTypeManager::GetObjectType(const ObjectType &p_type)
 {
     FF2_ASSERT(p_type.GetName().find(' ') == std::string::npos);
 
     std::string name = p_type.GetName();
-    const TypeImpl* type = GetTypeInfo(name);
+    const TypeImpl *type = GetTypeInfo(name);
     if (type != NULL)
     {
         FF2_ASSERT(type->Primitive() == Type::Object);
-        return static_cast<const ObjectType&>(*type);
+        return static_cast<const ObjectType &>(*type);
     }
     else
     {
@@ -840,25 +784,23 @@ NamedTypeManager::GetObjectType(const ObjectType& p_type)
     }
 }
 
-
-const StateMachineType&
-NamedTypeManager::GetStateMachineType(const std::string& p_name,
-                                      const CompoundType::Member* p_members,
+const StateMachineType &
+NamedTypeManager::GetStateMachineType(const std::string &p_name,
+                                      const CompoundType::Member *p_members,
                                       size_t p_numMembers,
                                       boost::weak_ptr<const StateMachineExpression> p_expr)
 {
-    const TypeImpl* type = GetTypeInfo(p_name);
+    const TypeImpl *type = GetTypeInfo(p_name);
     if (type != NULL)
     {
         FF2_ASSERT(type->Primitive() == Type::StateMachine);
-        const StateMachineType& machineType = static_cast<const StateMachineType&>(*type);
+        const StateMachineType &machineType = static_cast<const StateMachineType &>(*type);
         FF2_ASSERT(machineType.GetName() == p_name);
         FF2_ASSERT(machineType.GetMemberCount() == p_numMembers);
-        const CompoundType::Member* members = machineType.BeginMembers();
+        const CompoundType::Member *members = machineType.BeginMembers();
         for (size_t i = 0; i < p_numMembers; i++)
         {
-            FF2_ASSERT(members[i].m_name == p_members[i].m_name
-                && *members[i].m_type == *p_members[i].m_type);
+            FF2_ASSERT(members[i].m_name == p_members[i].m_name && *members[i].m_type == *p_members[i].m_type);
         }
         return machineType;
     }
@@ -868,15 +810,14 @@ NamedTypeManager::GetStateMachineType(const std::string& p_name,
     }
 }
 
-
-const StateMachineType&
-NamedTypeManager::GetStateMachineType(const StateMachineType& p_type)
+const StateMachineType &
+NamedTypeManager::GetStateMachineType(const StateMachineType &p_type)
 {
-    const TypeImpl* type = GetTypeInfo(p_type.GetName());
+    const TypeImpl *type = GetTypeInfo(p_type.GetName());
     if (type != NULL)
     {
         FF2_ASSERT(*type == p_type);
-        const StateMachineType& machineType = static_cast<const StateMachineType&>(*type);
+        const StateMachineType &machineType = static_cast<const StateMachineType &>(*type);
         return machineType;
     }
     else
@@ -885,19 +826,17 @@ NamedTypeManager::GetStateMachineType(const StateMachineType& p_type)
     }
 }
 
-
-const FunctionType&
-NamedTypeManager::GetFunctionType(const TypeImpl& p_returnType,
-                                  const TypeImpl* const* p_params,
+const FunctionType &
+NamedTypeManager::GetFunctionType(const TypeImpl &p_returnType,
+                                  const TypeImpl *const *p_params,
                                   size_t p_numParams)
 {
-    std::string name
-        = FunctionType::GetName(p_returnType, p_params, p_numParams);
-    const TypeImpl* type = GetTypeInfo(name);
+    std::string name = FunctionType::GetName(p_returnType, p_params, p_numParams);
+    const TypeImpl *type = GetTypeInfo(name);
     if (type != NULL)
     {
         FF2_ASSERT(type->Primitive() == Type::Function);
-        const FunctionType& functionType = static_cast<const FunctionType&>(*type);
+        const FunctionType &functionType = static_cast<const FunctionType &>(*type);
         FF2_ASSERT(functionType.GetReturnType() == p_returnType);
         FF2_ASSERT(functionType.GetParameterCount() == p_numParams);
 
@@ -913,15 +852,14 @@ NamedTypeManager::GetFunctionType(const TypeImpl& p_returnType,
     }
 }
 
-
-const FunctionType&
-NamedTypeManager::GetFunctionType(const FunctionType& p_type)
+const FunctionType &
+NamedTypeManager::GetFunctionType(const FunctionType &p_type)
 {
-    const TypeImpl* type = GetTypeInfo(p_type.GetName());
+    const TypeImpl *type = GetTypeInfo(p_type.GetName());
     if (type != NULL)
     {
         FF2_ASSERT(*type == p_type);
-        const FunctionType& functionType = static_cast<const FunctionType&>(*type);
+        const FunctionType &functionType = static_cast<const FunctionType &>(*type);
         return functionType;
     }
     else
@@ -930,8 +868,7 @@ NamedTypeManager::GetFunctionType(const FunctionType& p_type)
     }
 }
 
-
-const FreeForm2::TypeManager&
+const FreeForm2::TypeManager &
 FreeForm2::TypeManager::GetGlobalTypeManager()
 {
     static const NamedTypeManager s_instance;
@@ -939,43 +876,37 @@ FreeForm2::TypeManager::GetGlobalTypeManager()
     return s_instance;
 }
 
-
-std::auto_ptr<FreeForm2::TypeManager> 
+std::auto_ptr<FreeForm2::TypeManager>
 FreeForm2::TypeManager::CreateTypeManager()
 {
     return std::auto_ptr<TypeManager>(new NamedTypeManager(TypeManager::GetGlobalTypeManager()));
 }
 
-
-std::auto_ptr<FreeForm2::TypeManager> 
-FreeForm2::TypeManager::CreateTypeManager(const TypeManager& p_parent)
+std::auto_ptr<FreeForm2::TypeManager>
+FreeForm2::TypeManager::CreateTypeManager(const TypeManager &p_parent)
 {
     return std::auto_ptr<TypeManager>(new NamedTypeManager(p_parent));
 }
 
-
-std::auto_ptr<FreeForm2::TypeManager> 
-FreeForm2::TypeManager::CreateTypeManager(const ExternalDataManager& p_parent)
+std::auto_ptr<FreeForm2::TypeManager>
+FreeForm2::TypeManager::CreateTypeManager(const ExternalDataManager &p_parent)
 {
     return std::auto_ptr<TypeManager>(new NamedTypeManager(p_parent.m_typeFactory->GetTypeManager()));
 }
-
 
 AnonymousTypeManager::AnonymousTypeManager()
     : TypeManager(NULL)
 {
 }
 
-
-const TypeImpl*
-AnonymousTypeManager::GetTypeInfo(const std::string& p_name) const
+const TypeImpl *
+AnonymousTypeManager::GetTypeInfo(const std::string &p_name) const
 {
     return NULL;
 }
 
-
-const ArrayType&
-AnonymousTypeManager::GetArrayType(const TypeImpl& p_child,
+const ArrayType &
+AnonymousTypeManager::GetArrayType(const TypeImpl &p_child,
                                    bool p_isConst,
                                    unsigned int p_dimensions,
                                    const unsigned int p_elementCounts[],
@@ -987,9 +918,8 @@ AnonymousTypeManager::GetArrayType(const TypeImpl& p_child,
     return *type;
 }
 
-
-const ArrayType&
-AnonymousTypeManager::GetArrayType(const TypeImpl& p_child,
+const ArrayType &
+AnonymousTypeManager::GetArrayType(const TypeImpl &p_child,
                                    bool p_isConst,
                                    unsigned int p_dimensions,
                                    unsigned int p_maxElements)
@@ -1000,20 +930,18 @@ AnonymousTypeManager::GetArrayType(const TypeImpl& p_child,
     return *type;
 }
 
-
-const ArrayType&
-AnonymousTypeManager::GetArrayType(const ArrayType& p_arrayType)
+const ArrayType &
+AnonymousTypeManager::GetArrayType(const ArrayType &p_arrayType)
 {
     boost::shared_ptr<const ArrayType> type(CopyArrayType(p_arrayType));
     m_types.push_back(boost::static_pointer_cast<const TypeImpl>(type));
     return *type;
 }
 
-
-const StructType&
-AnonymousTypeManager::GetStructType(const std::string& p_name,
-                                    const std::string& p_externName,
-                                    const std::vector<StructType::MemberInfo>& p_members,
+const StructType &
+AnonymousTypeManager::GetStructType(const std::string &p_name,
+                                    const std::string &p_externName,
+                                    const std::vector<StructType::MemberInfo> &p_members,
                                     bool p_isConst)
 {
     boost::shared_ptr<const StructType> type(
@@ -1022,20 +950,18 @@ AnonymousTypeManager::GetStructType(const std::string& p_name,
     return *type;
 }
 
-
-const StructType&
-AnonymousTypeManager::GetStructType(const StructType& p_type)
+const StructType &
+AnonymousTypeManager::GetStructType(const StructType &p_type)
 {
     boost::shared_ptr<const StructType> type(CopyStructType(p_type));
     m_types.push_back(boost::static_pointer_cast<const TypeImpl>(type));
     return *type;
 }
 
-
-const ObjectType&
-AnonymousTypeManager::GetObjectType(const std::string& p_name,
-                                    const std::string& p_externName,
-                                    const std::vector<ObjectType::ObjectMember>& p_members,
+const ObjectType &
+AnonymousTypeManager::GetObjectType(const std::string &p_name,
+                                    const std::string &p_externName,
+                                    const std::vector<ObjectType::ObjectMember> &p_members,
                                     bool p_isConst)
 {
     boost::shared_ptr<const ObjectType> type(
@@ -1044,19 +970,17 @@ AnonymousTypeManager::GetObjectType(const std::string& p_name,
     return *type;
 }
 
-
-const ObjectType&
-AnonymousTypeManager::GetObjectType(const ObjectType& p_type)
+const ObjectType &
+AnonymousTypeManager::GetObjectType(const ObjectType &p_type)
 {
     boost::shared_ptr<const ObjectType> type(CopyObjectType(p_type));
     m_types.push_back(boost::static_pointer_cast<const TypeImpl>(type));
     return *type;
 }
 
-
-const StateMachineType&
-AnonymousTypeManager::GetStateMachineType(const std::string& p_name,
-                                          const CompoundType::Member* p_members,
+const StateMachineType &
+AnonymousTypeManager::GetStateMachineType(const std::string &p_name,
+                                          const CompoundType::Member *p_members,
                                           size_t p_numMembers,
                                           boost::weak_ptr<const StateMachineExpression> p_expr)
 {
@@ -1066,19 +990,17 @@ AnonymousTypeManager::GetStateMachineType(const std::string& p_name,
     return *type;
 }
 
-
-const StateMachineType&
-AnonymousTypeManager::GetStateMachineType(const StateMachineType& p_type)
+const StateMachineType &
+AnonymousTypeManager::GetStateMachineType(const StateMachineType &p_type)
 {
     boost::shared_ptr<const StateMachineType> type(CopyStateMachineType(p_type));
     m_types.push_back(boost::static_pointer_cast<const TypeImpl>(type));
     return *type;
 }
 
-
-const FunctionType&
-AnonymousTypeManager::GetFunctionType(const TypeImpl& p_returnType,
-                                      const TypeImpl* const* p_parameters,
+const FunctionType &
+AnonymousTypeManager::GetFunctionType(const TypeImpl &p_returnType,
+                                      const TypeImpl *const *p_parameters,
                                       size_t p_numParameters)
 {
     boost::shared_ptr<const FunctionType> type(
@@ -1087,9 +1009,8 @@ AnonymousTypeManager::GetFunctionType(const TypeImpl& p_returnType,
     return *type;
 }
 
-
-const FunctionType&
-AnonymousTypeManager::GetFunctionType(const FunctionType& p_type)
+const FunctionType &
+AnonymousTypeManager::GetFunctionType(const FunctionType &p_type)
 {
     boost::shared_ptr<const FunctionType> type(CopyFunctionType(p_type));
     m_types.push_back(boost::static_pointer_cast<const TypeImpl>(type));

@@ -1,268 +1,269 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for
+ * license information.
+ */
 #pragma once
 
 #ifndef FREEFORM2_FEATURE_SPEC_H
 #define FREEFORM2_FEATURE_SPEC_H
 
-#include "Expression.h"
-#include "FreeForm2Features.h"
 #include <boost/operators.hpp>
 #include <boost/shared_ptr.hpp>
-#include "SymbolTable.h"
+#include <map>
 #include <utility>
 #include <vector>
-#include <map>
 
-namespace FreeForm2
-{
-    class TypeManager;
+#include "Expression.h"
+#include "FreeForm2Features.h"
+#include "SymbolTable.h"
 
-    // This class encapsulates a function-like expression (either a feature 
-    // specification or an actual function). If features are published within 
-    // this spec, the Type should be Void, otherwise, the type is the same as 
-    // the returned value.
-    class FeatureSpecExpression : public Expression
-    {
-    public:
-        // A class containing information about a feature name, including
-        // parameterization.
-        class FeatureName : boost::partially_ordered<FeatureName>
-        {
-        public:
-            typedef std::map<std::string, std::string> ParameterMap;
-            typedef ParameterMap::value_type Parameter;
+namespace FreeForm2 {
+class TypeManager;
 
-            // Construct an empty feature name.
-            FeatureName();
+// This class encapsulates a function-like expression (either a feature
+// specification or an actual function). If features are published within
+// this spec, the Type should be Void, otherwise, the type is the same as
+// the returned value.
+class FeatureSpecExpression : public Expression {
+ public:
+  // A class containing information about a feature name, including
+  // parameterization.
+  class FeatureName : boost::partially_ordered<FeatureName> {
+   public:
+    typedef std::map<std::string, std::string> ParameterMap;
+    typedef ParameterMap::value_type Parameter;
 
-            // Construct a feature name without a parameterization.
-            explicit FeatureName(const std::string& p_name);
+    // Construct an empty feature name.
+    FeatureName();
 
-            // Construct a FeatureName was a base name and parameterization.
-            FeatureName(const std::string& p_name,
-                        const ParameterMap& p_parameters);
+    // Construct a feature name without a parameterization.
+    explicit FeatureName(const std::string &p_name);
 
-            // Parse a feature name from a base name and a parameterization
-            // string. The parameterization string may be empty, even if the
-            // parameterization flag is true - this yields a parameterized 
-            // feature with no parameters, which implies a single feature
-            // value exists for the parameter.
-            static FeatureName Parse(const std::string& p_name,
-                                     bool p_isParameterized,
-                                     const std::string& p_parameterization,
-                                     const SourceLocation& p_location);
+    // Construct a FeatureName was a base name and parameterization.
+    FeatureName(const std::string &p_name, const ParameterMap &p_parameters);
 
-            // Accessor methods.
-            const std::string& GetName() const;
-            bool IsParameterized() const;
-            const ParameterMap& GetParameters() const;
-            SymbolTable::Symbol GetSymbol() const;
+    // Parse a feature name from a base name and a parameterization
+    // string. The parameterization string may be empty, even if the
+    // parameterization flag is true - this yields a parameterized
+    // feature with no parameters, which implies a single feature
+    // value exists for the parameter.
+    static FeatureName Parse(const std::string &p_name, bool p_isParameterized,
+                             const std::string &p_parameterization,
+                             const SourceLocation &p_location);
 
-            // Operators
-            bool operator==(const FeatureName& p_other) const;
-            bool operator<(const FeatureName& p_other) const;
+    // Accessor methods.
+    const std::string &GetName() const;
+    bool IsParameterized() const;
+    const ParameterMap &GetParameters() const;
+    SymbolTable::Symbol GetSymbol() const;
 
-        private:
-            // The name of the feature being imported.
-            std::string m_name;
+    // Operators
+    bool operator==(const FeatureName &p_other) const;
+    bool operator<(const FeatureName &p_other) const;
 
-            // The (optional) parameter of the feature being imported.
-            ParameterMap m_params;
+   private:
+    // The name of the feature being imported.
+    std::string m_name;
 
-            // The parameter string for creating a symbol.
-            mutable std::string m_paramStr;
+    // The (optional) parameter of the feature being imported.
+    ParameterMap m_params;
 
-            // Whether this feature is parameterized.
-            bool m_isParameterized;
-        };
+    // The parameter string for creating a symbol.
+    mutable std::string m_paramStr;
 
-        // This structure is a simple functor used to compare feature names,
-        // ignoring parameterization. It is useful for publishing features, 
-        // when the names themselves must be unique.
-        struct IgnoreParameterLess
-        {
-            bool operator()(const FeatureName& p_left, const FeatureName& p_right) const;
-        };
-        
-        // Mapping of the names of the features being published to their types.
-        typedef std::map<FeatureName, const TypeImpl&, IgnoreParameterLess> PublishFeatureMap;
+    // Whether this feature is parameterized.
+    bool m_isParameterized;
+  };
 
-        // The type of the feature specification. These names are against the
-        // coding guidelines only to temporarily limit amount of code touched
-        // by this CL. To be fixed in TFS ID 472156.
-        typedef FeatureInformation::FeatureType FeatureSpecType;
-        static const FeatureSpecType MetaStreamFeature = FeatureInformation::MetaStreamFeature;
-        static const FeatureSpecType DerivedFeature = FeatureInformation::DerivedFeature;
-        static const FeatureSpecType AggregatedDerivedFeature = FeatureInformation::AggregatedDerivedFeature;
-        static const FeatureSpecType AbInitioFeature = FeatureInformation::AbInitioFeature;
+  // This structure is a simple functor used to compare feature names,
+  // ignoring parameterization. It is useful for publishing features,
+  // when the names themselves must be unique.
+  struct IgnoreParameterLess {
+    bool operator()(const FeatureName &p_left,
+                    const FeatureName &p_right) const;
+  };
 
-        // Construct a feature specification.
-        FeatureSpecExpression(const Annotations& p_annotations,
-                              boost::shared_ptr<PublishFeatureMap> p_publishFeatureMap,
-                              const Expression& p_body,
-                              FeatureSpecType p_featureSpecType,
-                              bool p_returnsValue);
+  // Mapping of the names of the features being published to their types.
+  typedef std::map<FeatureName, const TypeImpl &, IgnoreParameterLess>
+      PublishFeatureMap;
 
-        // Methods inherited from Expression
-        virtual void Accept(Visitor&) const override;
-        virtual const TypeImpl& GetType() const override;
-        virtual size_t GetNumChildren() const override;
+  // The type of the feature specification. These names are against the
+  // coding guidelines only to temporarily limit amount of code touched
+  // by this CL. To be fixed in TFS ID 472156.
+  typedef FeatureInformation::FeatureType FeatureSpecType;
+  static const FeatureSpecType MetaStreamFeature =
+      FeatureInformation::MetaStreamFeature;
+  static const FeatureSpecType DerivedFeature =
+      FeatureInformation::DerivedFeature;
+  static const FeatureSpecType AggregatedDerivedFeature =
+      FeatureInformation::AggregatedDerivedFeature;
+  static const FeatureSpecType AbInitioFeature =
+      FeatureInformation::AbInitioFeature;
 
-        // Accessor methods
-        const Expression& GetBody() const;
-        bool IsDerived() const;
-        FeatureSpecType GetFeatureSpecType() const;
-        boost::shared_ptr<PublishFeatureMap> GetPublishFeatureMap() const;
+  // Construct a feature specification.
+  FeatureSpecExpression(
+      const Annotations &p_annotations,
+      boost::shared_ptr<PublishFeatureMap> p_publishFeatureMap,
+      const Expression &p_body, FeatureSpecType p_featureSpecType,
+      bool p_returnsValue);
 
-    private:
-        // A mapping of feature name to type of the features being published.
-        boost::shared_ptr<PublishFeatureMap> m_publishFeatureMap;
+  // Methods inherited from Expression
+  virtual void Accept(Visitor &) const override;
+  virtual const TypeImpl &GetType() const override;
+  virtual size_t GetNumChildren() const override;
 
-        // Body of the feature.
-        const Expression& m_body;
+  // Accessor methods
+  const Expression &GetBody() const;
+  bool IsDerived() const;
+  FeatureSpecType GetFeatureSpecType() const;
+  boost::shared_ptr<PublishFeatureMap> GetPublishFeatureMap() const;
 
-        // The type of feature specification.
-        FeatureSpecType m_featureSpecType;
+ private:
+  // A mapping of feature name to type of the features being published.
+  boost::shared_ptr<PublishFeatureMap> m_publishFeatureMap;
 
-        // Whether this FeatureSpec returns a value (versus publishing feature 
-        // names). This is a temporary parameter that will be removed when a 
-        // Function type is added to this class. This will be addressed with 
-        // TFS 321891.
-        bool m_returnsValue;
-    };
+  // Body of the feature.
+  const Expression &m_body;
 
-    // This class imports a feature values as a declaration. This class is
-    // distinct from FeatureRefExpression in that it imports features which
-    // are dependent on the current metastream; it is more efficient to 
-    // determine these values at runtime than to have a FeatureRef for each
-    // stream and array dimensions.
-    class ImportFeatureExpression : public Expression
-    {
-    public:
-        // Import an array of parameterized feature values.
-        ImportFeatureExpression(const Annotations& p_annotations,
-                                const FeatureSpecExpression::FeatureName& p_featureName,
-                                const std::vector<UInt32>& p_dimensions,
-                                VariableID p_id,
-                                TypeManager& p_typeManager);
+  // The type of feature specification.
+  FeatureSpecType m_featureSpecType;
 
-        // Import a single per-stream feature value.
-        ImportFeatureExpression(const Annotations& p_annotations,
-                                const FeatureSpecExpression::FeatureName& p_featureName,
-                                VariableID p_id);
+  // Whether this FeatureSpec returns a value (versus publishing feature
+  // names). This is a temporary parameter that will be removed when a
+  // Function type is added to this class. This will be addressed with
+  // TFS 321891.
+  bool m_returnsValue;
+};
 
-        // Methods inherited from Expression.
-        virtual void Accept(Visitor&) const override;
-        virtual const TypeImpl& GetType() const override;
-        virtual size_t GetNumChildren() const override;
+// This class imports a feature values as a declaration. This class is
+// distinct from FeatureRefExpression in that it imports features which
+// are dependent on the current metastream; it is more efficient to
+// determine these values at runtime than to have a FeatureRef for each
+// stream and array dimensions.
+class ImportFeatureExpression : public Expression {
+ public:
+  // Import an array of parameterized feature values.
+  ImportFeatureExpression(
+      const Annotations &p_annotations,
+      const FeatureSpecExpression::FeatureName &p_featureName,
+      const std::vector<UInt32> &p_dimensions, VariableID p_id,
+      TypeManager &p_typeManager);
 
-        // Accessor methods.
-        VariableID GetId() const;
-        const FeatureSpecExpression::FeatureName& GetFeatureName() const;
+  // Import a single per-stream feature value.
+  ImportFeatureExpression(
+      const Annotations &p_annotations,
+      const FeatureSpecExpression::FeatureName &p_featureName, VariableID p_id);
 
-    private:
-        // A struct containing feature name information.
-        const FeatureSpecExpression::FeatureName m_featureName;
+  // Methods inherited from Expression.
+  virtual void Accept(Visitor &) const override;
+  virtual const TypeImpl &GetType() const override;
+  virtual size_t GetNumChildren() const override;
 
-        // The type of the feature. Most importantly, this holds the array
-        // dimensions for the feature.
-        const TypeImpl& m_type;
+  // Accessor methods.
+  VariableID GetId() const;
+  const FeatureSpecExpression::FeatureName &GetFeatureName() const;
 
-        // Allocation ID for the value.
-        VariableID m_id;
-    };
+ private:
+  // A struct containing feature name information.
+  const FeatureSpecExpression::FeatureName m_featureName;
 
-    // This class wraps several feature specifications into a feature group.
-    // This is needed to be able to emit code that is compatible with the current
-    // implementation of features in the IFM.
-    class FeatureGroupSpecExpression : public Expression
-    {
-    public:
-        FeatureGroupSpecExpression(const Annotations& p_annotations,
-                                   const std::string& p_name,
-                                   const std::vector<const FeatureSpecExpression*>& p_featureSpecs,
-                                   bool p_isExtendedExperimental,
-                                   bool p_isSmallExperimental,
-                                   bool p_isBlockLevelFeature,
-                                   bool p_isBodyBlockFeature,
-                                   bool p_isForwardIndexFeature,
-                                   const std::string& p_metaStreamName);
+  // The type of the feature. Most importantly, this holds the array
+  // dimensions for the feature.
+  const TypeImpl &m_type;
 
-        // Methods inherited from Expression.
-        virtual void Accept(Visitor&) const override;
-        virtual const TypeImpl& GetType() const override;
-        virtual size_t GetNumChildren() const override;
+  // Allocation ID for the value.
+  VariableID m_id;
+};
 
-        // Gets the type of all the feature specifications.
-        FeatureSpecExpression::FeatureSpecType GetFeatureSpecType() const;
+// This class wraps several feature specifications into a feature group.
+// This is needed to be able to emit code that is compatible with the current
+// implementation of features in the IFM.
+class FeatureGroupSpecExpression : public Expression {
+ public:
+  FeatureGroupSpecExpression(
+      const Annotations &p_annotations, const std::string &p_name,
+      const std::vector<const FeatureSpecExpression *> &p_featureSpecs,
+      bool p_isExtendedExperimental, bool p_isSmallExperimental,
+      bool p_isBlockLevelFeature, bool p_isBodyBlockFeature,
+      bool p_isForwardIndexFeature, const std::string &p_metaStreamName);
 
-        // Accessor methods.
-        const std::string& GetName() const;
-        const std::vector<const FeatureSpecExpression*>& GetFeatureSpecs() const;
-        bool IsExtendedExperimental() const;
-        bool IsSmallExperimental() const;
-        bool IsBlockLevelFeature() const;
-        bool IsBodyBlockFeature() const;
-        bool IsForwardIndexFeature() const;
-        const std::string& GetMetaStreamName() const;
+  // Methods inherited from Expression.
+  virtual void Accept(Visitor &) const override;
+  virtual const TypeImpl &GetType() const override;
+  virtual size_t GetNumChildren() const override;
 
-        // Returns true if the features in this FeatureGroup are per-stream features.
-        bool IsPerStream() const;
+  // Gets the type of all the feature specifications.
+  FeatureSpecExpression::FeatureSpecType GetFeatureSpecType() const;
 
-    private:
-        // The name of the feature group.
-        const std::string m_name;
+  // Accessor methods.
+  const std::string &GetName() const;
+  const std::vector<const FeatureSpecExpression *> &GetFeatureSpecs() const;
+  bool IsExtendedExperimental() const;
+  bool IsSmallExperimental() const;
+  bool IsBlockLevelFeature() const;
+  bool IsBodyBlockFeature() const;
+  bool IsForwardIndexFeature() const;
+  const std::string &GetMetaStreamName() const;
 
-        // The child feature specs.
-        const std::vector<const FeatureSpecExpression*> m_featureSpecs;
+  // Returns true if the features in this FeatureGroup are per-stream features.
+  bool IsPerStream() const;
 
-        // Whether this feature group is extended experimental.
-        bool m_isExtendedExperimental;
+ private:
+  // The name of the feature group.
+  const std::string m_name;
 
-        // Whether this feature group is small experimental.
-        bool m_isSmallExperimental;
+  // The child feature specs.
+  const std::vector<const FeatureSpecExpression *> m_featureSpecs;
 
-        // Whether this feature group is block level.
-        bool m_isBlockLevelFeature;
+  // Whether this feature group is extended experimental.
+  bool m_isExtendedExperimental;
 
-        // Whether this feature group is body block.
-        bool m_isBodyBlockFeature;
+  // Whether this feature group is small experimental.
+  bool m_isSmallExperimental;
 
-        // Whether this feature group uses the forward index.
-        bool m_isForwardIndexFeature;
+  // Whether this feature group is block level.
+  bool m_isBlockLevelFeature;
 
-        // The stream over which this metastream feature is supposed to operate over.
-        const std::string m_metaStreamName;
+  // Whether this feature group is body block.
+  bool m_isBodyBlockFeature;
 
-        // The type of all the feature specifications. All the feature spec types must
-        // be the same.
-        FeatureSpecExpression::FeatureSpecType m_featureSpecType;
-    };
+  // Whether this feature group uses the forward index.
+  bool m_isForwardIndexFeature;
 
-    // This expression denotes the beggining of an aggregate block. This 
-    // expression type is only allowed inside aggregate features and will be
-    // run exactly once per stream on which this feature is being evaluated.
-    class AggregateContextExpression : public Expression
-    {
-    public:
-        // Create an aggregate context containing a body expression.
-        AggregateContextExpression(const Annotations& p_annotations,
-                                   const Expression& p_body);
+  // The stream over which this metastream feature is supposed to operate over.
+  const std::string m_metaStreamName;
 
-        // Methods inherited from Expression.
-        virtual void Accept(Visitor&) const override;
-        virtual const TypeImpl& GetType() const override;
-        virtual size_t GetNumChildren() const override;
+  // The type of all the feature specifications. All the feature spec types must
+  // be the same.
+  FeatureSpecExpression::FeatureSpecType m_featureSpecType;
+};
 
-        // Get the body of the aggregate context.
-        const Expression& GetBody() const;
+// This expression denotes the beggining of an aggregate block. This
+// expression type is only allowed inside aggregate features and will be
+// run exactly once per stream on which this feature is being evaluated.
+class AggregateContextExpression : public Expression {
+ public:
+  // Create an aggregate context containing a body expression.
+  AggregateContextExpression(const Annotations &p_annotations,
+                             const Expression &p_body);
 
-    private:
-        // The body of the aggregator loop.
-        const Expression& m_body;
-    };
-}
+  // Methods inherited from Expression.
+  virtual void Accept(Visitor &) const override;
+  virtual const TypeImpl &GetType() const override;
+  virtual size_t GetNumChildren() const override;
 
-std::ostream& operator<<(std::ostream& p_out, 
-                         const FreeForm2::FeatureSpecExpression::FeatureName& p_name);
+  // Get the body of the aggregate context.
+  const Expression &GetBody() const;
+
+ private:
+  // The body of the aggregator loop.
+  const Expression &m_body;
+};
+}  // namespace FreeForm2
+
+std::ostream &operator<<(
+    std::ostream &p_out,
+    const FreeForm2::FeatureSpecExpression::FeatureName &p_name);
 
 #endif
