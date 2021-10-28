@@ -16,7 +16,7 @@ Submitted with the following comment:
 > This submission contains {lightgbm} 3.3.1.
 > Per CRAN's policies, I am submitting on it on behalf of the project's maintainer (Yu Shi), with his permission (https://github.com/microsoft/LightGBM/pull/4715#issuecomment-952537783).
 
-> {lightgbm} was removed from CRAN on October 25, 2021 due to issues detected in the gcc-ASAN and cran-ASAN checks. To the best of our knowledge, we believe this release fixes those issues. We have introduced automated testing that we believe faithfully reproduces CRAN's tests with sanitizers (https://github.com/microsoft/LightGBM/pull/4678).
+> {lightgbm} was removed from CRAN on October 25, 2021 due to issues detected in the gcc-ASAN and clang-ASAN checks. To the best of our knowledge, we believe this release fixes those issues. We have introduced automated testing that we believe faithfully reproduces CRAN's tests with sanitizers (https://github.com/microsoft/LightGBM/pull/4678).
 
 > Thank you very much for your time and consideration.
 
