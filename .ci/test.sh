@@ -80,7 +80,10 @@ if [[ $TASK == "lint" ]]; then
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
-    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package ./swig ./tests || exit -1
+    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --exclude=./src/transform --recursive ./src ./include ./R-package ./swig ./tests|| exit -1
+    # Make a separate lint C++ check for transform codes, because they use non-const references, which is allowed by Google C++ Style Guide now.
+    # See https://github.com/cpplint/cpplint/issues/148.
+    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length,-runtime/references --recursive ./src/transform || exit -1
     cmake_files=$(find . -name CMakeLists.txt -o -path "*/cmake/*.cmake")
     cmakelint --linelength=120 ${cmake_files} || true
     exit 0
