@@ -29,8 +29,7 @@ inline void OMP_SET_NUM_THREADS(int num_threads) {
   static const int default_omp_num_threads = OMP_NUM_THREADS();
   if (num_threads > 0) {
     omp_set_num_threads(num_threads);
-  }
-  else {
+  } else {
     omp_set_num_threads(default_omp_num_threads);
   }
 }
