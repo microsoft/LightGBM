@@ -133,7 +133,7 @@ if [[ $TASK == "sdist" ]]; then
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --python-tag py3 || exit -1
-        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_14_x86_64.macosx_10_15_x86_64.macosx_11_0_x86_64.whl
+        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_11_5_x86_64.macosx_11_6_x86_64.macosx_12_0_x86_64.whl
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
