@@ -9,7 +9,8 @@
 
 namespace LightGBM {
 
-CUDATree::CUDATree(int max_leaves, bool track_branch_features, bool is_linear, const int gpu_device_id):
+CUDATree::CUDATree(int max_leaves, bool track_branch_features, bool is_linear,
+  const int gpu_device_id, const bool has_categorical_feature):
 Tree(max_leaves, track_branch_features, is_linear),
 num_threads_per_block_add_prediction_to_score_(1024) {
   is_cuda_tree_ = true;
@@ -17,6 +18,10 @@ num_threads_per_block_add_prediction_to_score_(1024) {
     CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
   } else {
     CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
+  }
+  if (has_categorical_feature) {
+    cuda_cat_boundaries_.Resize(max_leaves);
+    cuda_cat_boundaries_inner_.Resize(max_leaves);
   }
   InitCUDAMemory();
 }
@@ -210,6 +215,25 @@ int CUDATree::Split(const int leaf_index,
   return num_leaves_ - 1;
 }
 
+int CUDATree::SplitCategorical(const int leaf_index,
+           const int real_feature_index,
+           const double real_threshold,
+           const MissingType missing_type,
+           const CUDASplitInfo* cuda_split_info,
+           uint32_t* cuda_bitset,
+           size_t cuda_bitset_len,
+           uint32_t* cuda_bitset_inner,
+           size_t cuda_bitset_inner_len) {
+  LaunchSplitCategoricalKernel(leaf_index, real_feature_index,
+    real_threshold, missing_type, cuda_split_info,
+    cuda_bitset_len, cuda_bitset_inner_len);
+  cuda_bitset_.PushBack(cuda_bitset, cuda_bitset_len);
+  cuda_bitset_inner_.PushBack(cuda_bitset_inner, cuda_bitset_inner_len);
+  ++num_leaves_;
+  ++num_cat_;
+  return num_leaves_ - 1;
+}
+
 inline void CUDATree::Shrinkage(double rate) {
   Tree::Shrinkage(rate);
   LaunchShrinkageKernel(rate);
@@ -255,6 +279,16 @@ void CUDATree::ToHost() {
   CopyFromCUDADeviceToHost<double>(internal_weight_.data(), cuda_internal_weight_, num_leaves_size - 1, __FILE__, __LINE__);
   CopyFromCUDADeviceToHost<data_size_t>(internal_count_.data(), cuda_internal_count_, num_leaves_size - 1, __FILE__, __LINE__);
   CopyFromCUDADeviceToHost<int>(leaf_depth_.data(), cuda_leaf_depth_, num_leaves_size, __FILE__, __LINE__);
+
+  if (num_cat_ > 0) {
+    cuda_cat_boundaries_inner_.Resize(num_cat_);
+    cuda_cat_boundaries_.Resize(num_cat_);
+    cat_boundaries_ = cuda_cat_boundaries_.ToHost();
+    cat_boundaries_inner_ = cuda_cat_boundaries_inner_.ToHost();
+    cat_threshold_ = cuda_bitset_.ToHost();
+    cat_threshold_inner_ = cuda_bitset_inner_.ToHost();
+  }
+
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 

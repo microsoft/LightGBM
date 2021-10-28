@@ -30,6 +30,21 @@ CUDADataPartition::CUDADataPartition(
   cur_num_leaves_ = 1;
   cuda_column_data_ = train_data->cuda_column_data();
 
+  is_categorical_feature_.resize(train_data->num_features(), false);
+  is_single_feature_in_group_.resize(train_data->num_features(), false);
+  int feature_group_index = train_data->Feature2Group(0);
+  for (int feature_index = 0; feature_index < train_data->num_features(); ++feature_index) {
+    if (train_data->FeatureBinMapper(feature_index)->bin_type() == BinType::CategoricalBin) {
+      is_categorical_feature_[feature_index] = true;
+    }
+    const int feature_group_index = train_data->Feature2Group(feature_index);
+    if (!train_data->IsMultiGroup(feature_group_index) &&
+        (feature_index == 0 || train_data->Feature2Group(feature_index - 1) != feature_group_index) &&
+        (feature_index == train_data->num_features() - 1 || train_data->Feature2Group(feature_index + 1) != feature_group_index)) {
+      is_single_feature_in_group_[feature_index] = true;
+    }
+  }
+
   cuda_data_indices_ = nullptr;
   cuda_leaf_data_start_ = nullptr;
   cuda_leaf_data_end_ = nullptr;

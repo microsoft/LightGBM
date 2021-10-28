@@ -6,6 +6,8 @@
 
 #ifdef USE_CUDA
 
+#include <LightGBM/cuda/cuda_algorithms.hpp>
+
 #include "cuda_single_gpu_tree_learner.hpp"
 
 namespace LightGBM {
@@ -113,11 +115,76 @@ void CUDASingleGPUTreeLearner::LaunchReduceLeafStatKernel(
     config_->lambda_l1, use_l1, config_->lambda_l2, shrinkage_rate, config_->refit_decay_rate, cuda_leaf_value);
 }
 
+template <typename T, bool IS_INNER>
+__global__ void CalcBitsetLenKernel(const CUDASplitInfo* best_split_info, size_t* out_len_buffer) {
+  __shared__ size_t shared_mem_buffer[32];
+  const T* vals = nullptr;
+  if (IS_INNER) {
+    vals = reinterpret_cast<const T*>(best_split_info->cat_threshold);
+  } else {
+    vals = reinterpret_cast<const T*>(best_split_info->cat_threshold_real);
+  }
+  const int i = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
+  size_t len = 0;
+  if (i < best_split_info->num_cat_threshold) {
+    const T val = vals[i];
+    len = (val / 32) + 1;
+  }
+  const size_t block_max_len = ShuffleReduceMax<size_t>(len, shared_mem_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    out_len_buffer[blockIdx.x] = block_max_len;
+  }
+}
 
+__global__ void ReduceBlockMaxLen(size_t* out_len_buffer, const int num_blocks) {
+  __shared__ size_t shared_mem_buffer[32];
+  size_t max_len = 0;
+  for (int i = static_cast<int>(threadIdx.x); i < num_blocks; i += static_cast<int>(blockDim.x)) {
+    max_len = max(out_len_buffer[i], max_len);
+  }
+  const size_t all_max_len = ShuffleReduceMax<size_t>(max_len, shared_mem_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    out_len_buffer[0] = max_len;
+  }
+}
+
+template <typename T, bool IS_INNER>
+__global__ void CUDAConstructBitsetKernel(const CUDASplitInfo* best_split_info, uint32_t* out) {
+  const T* vals = nullptr;
+  if (IS_INNER) {
+    vals = reinterpret_cast<const T*>(best_split_info->cat_threshold);
+  } else {
+    vals = reinterpret_cast<const T*>(best_split_info->cat_threshold_real);
+  }
+  const int i = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
+  if (i < best_split_info->num_cat_threshold) {
+    const T val = vals[i];
+    out[val / 32] |= (0x1 << (val % 32));
+  }
+}
+
+template <typename T, bool IS_INNER>
+void CUDAConstructBitset(const CUDASplitInfo* best_split_info, const int num_cat_threshold, uint32_t* out) {
+  const int num_blocks = (num_cat_threshold + CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE - 1) / CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE;
+  CUDAConstructBitsetKernel<T, IS_INNER><<<num_blocks, CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE>>>(best_split_info, out);
+}
+
+template <typename T, bool IS_INNER>
+size_t CUDABitsetLen(const CUDASplitInfo* best_split_info, const int num_cat_threshold, size_t* out_len_buffer) {
+  const int num_blocks = (num_cat_threshold + CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE - 1) / CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE;
+  CalcBitsetLenKernel<T, IS_INNER><<<num_blocks, CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE>>>(best_split_info, out_len_buffer);
+  ReduceBlockMaxLen<<<1, CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE>>>(out_len_buffer, num_blocks);
+  size_t host_max_len = 0;
+  CopyFromCUDADeviceToHost<size_t>(&host_max_len, out_len_buffer, 1, __FILE__, __LINE__);
+  return host_max_len;
+}
 
 void CUDASingleGPUTreeLearner::LaunchConstructBitsetForCategoricalSplitKernel(
-  const CUDASplitInfo* best_split_info) const {
-  
+  const CUDASplitInfo* best_split_info) {
+  cuda_bitset_inner_len_ = CUDABitsetLen<uint32_t, true>(best_split_info, num_cat_threshold_, cuda_block_bitset_len_buffer_);
+  CUDAConstructBitset<uint32_t, true>(best_split_info, num_cat_threshold_, cuda_bitset_inner_);
+  cuda_bitset_len_ = CUDABitsetLen<int, false>(best_split_info, num_cat_threshold_, cuda_block_bitset_len_buffer_);
+  CUDAConstructBitset<int, false>(best_split_info, num_cat_threshold_, cuda_bitset_);
 }
 
 }  // namespace LightGBM

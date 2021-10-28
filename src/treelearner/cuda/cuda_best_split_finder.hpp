@@ -62,7 +62,8 @@ class CUDABestSplitFinder {
     int* larger_leaf_best_split_feature,
     uint32_t* larger_leaf_best_split_threshold,
     uint8_t* larger_leaf_best_split_default_left,
-    int* best_leaf_index);
+    int* best_leaf_index,
+    int* num_cat_threshold);
 
   void ResetTrainingData(
     const hist_t* cuda_hist,
@@ -97,7 +98,8 @@ class CUDABestSplitFinder {
     int* larger_leaf_best_split_feature,
     uint32_t* larger_leaf_best_split_threshold,
     uint8_t* larger_leaf_best_split_default_left,
-    int* best_leaf_index);
+    int* best_leaf_index,
+    data_size_t* num_cat_threshold);
 
   void AllocateCatVectors(CUDASplitInfo* cuda_split_infos, size_t len) const;
 

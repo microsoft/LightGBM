@@ -65,6 +65,7 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
 
   AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  AllocateBitset();
 
   cuda_leaf_gradient_stat_buffer_ = nullptr;
   cuda_leaf_hessian_stat_buffer_ = nullptr;
@@ -108,7 +109,8 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
   BeforeTrain();
   global_timer.Stop("CUDASingleGPUTreeLearner::BeforeTrain");
   const bool track_branch_features = !(config_->interaction_constraints_vector.empty());
-  std::unique_ptr<CUDATree> tree(new CUDATree(config_->num_leaves, track_branch_features, config_->linear_tree, config_->gpu_device_id));
+  std::unique_ptr<CUDATree> tree(new CUDATree(config_->num_leaves, track_branch_features,
+    config_->linear_tree, config_->gpu_device_id, has_categorical_feature_));
   for (int i = 0; i < config_->num_leaves - 1; ++i) {
     global_timer.Start("CUDASingleGPUTreeLearner::ConstructHistogramForLeaf");
     const data_size_t num_data_in_smaller_leaf = leaf_num_data_[smaller_leaf_index_];
@@ -144,7 +146,8 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
         &leaf_best_split_feature_[larger_leaf_index_],
         &leaf_best_split_threshold_[larger_leaf_index_],
         &leaf_best_split_default_left_[larger_leaf_index_],
-        &best_leaf_index_);
+        &best_leaf_index_,
+        &num_cat_threshold_);
     } else {
       best_split_info = cuda_best_split_finder_->FindBestFromAllSplits(
         tree->num_leaves(),
@@ -156,7 +159,8 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
         nullptr,
         nullptr,
         nullptr,
-        &best_leaf_index_);
+        &best_leaf_index_,
+        &num_cat_threshold_);
     }
     global_timer.Stop("CUDASingleGPUTreeLearner::FindBestFromAllSplits");
 
@@ -166,6 +170,10 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
     }
 
     global_timer.Start("CUDASingleGPUTreeLearner::Split");
+    if (num_cat_threshold_ > 0) {
+      ConstructBitsetForCategoricalSplit(best_split_info);
+    }
+
     int right_leaf_index = tree->Split(best_leaf_index_,
                                        train_data_->RealFeatureIndex(leaf_best_split_feature_[best_leaf_index_]),
                                        train_data_->RealThreshold(leaf_best_split_feature_[best_leaf_index_],
@@ -325,8 +333,36 @@ void CUDASingleGPUTreeLearner::ReduceLeafStat(
 }
 
 void CUDASingleGPUTreeLearner::ConstructBitsetForCategoricalSplit(
-  const CUDASplitInfo* best_split_info) const {
+  const CUDASplitInfo* best_split_info) {
   LaunchConstructBitsetForCategoricalSplitKernel(best_split_info);
+}
+
+void CUDASingleGPUTreeLearner::AllocateBitset() {
+  has_categorical_feature_ = false;
+  for (int i = 0; i < train_data_->num_features(); ++i) {
+    if (train_data_->FeatureBinMapper(i)->bin_type() == BinType::CategoricalBin) {
+      has_categorical_feature_ = true;
+      break;
+    }
+  }
+  if (has_categorical_feature_) {
+    int max_cat_value = 0;
+    int max_cat_num_bin = 0;
+    for (int i = 0; i < train_data_->num_features(); ++i) {
+      max_cat_value = std::max(train_data_->FeatureBinMapper(i)->MaxCatValue(), max_cat_value);
+      max_cat_num_bin = std::max(train_data_->FeatureBinMapper(i)->num_bin(), max_cat_num_bin);
+    }
+    AllocateCUDAMemory<uint32_t>(&cuda_bitset_, static_cast<size_t>(max_cat_value / 32), __FILE__, __LINE__);
+    AllocateCUDAMemory<uint32_t>(&cuda_bitset_inner_, static_cast<size_t>(max_cat_num_bin / 32), __FILE__, __LINE__);
+    const int max_cat_in_split = std::min(config_->max_cat_threshold, max_cat_num_bin / 2);
+    const int num_blocks = (max_cat_in_split + CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE - 1) / CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE;
+    AllocateCUDAMemory<size_t>(&cuda_block_bitset_len_buffer_, num_blocks, __FILE__, __LINE__);
+  } else {
+    cuda_bitset_ = nullptr;
+    cuda_bitset_inner_ = nullptr;
+  }
+  cuda_bitset_len_ = 0;
+  cuda_bitset_inner_len_ = 0;
 }
 
 }  // namespace LightGBM

@@ -12,6 +12,8 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 
+#include <vector>
+
 #include <LightGBM/utils/log.h>
 
 namespace LightGBM {
@@ -93,6 +95,61 @@ void DeallocateCUDAMemory(T** ptr, const char* file, const int line) {
     *ptr = nullptr;
   }
 }
+
+template <typename T>
+class CUDAVector {
+ public:
+  CUDAVector() {
+    size_ = 0;
+    data_ = nullptr;
+  }
+
+  CUDAVector(size_t size) {
+    size_ = size;
+    AllocateCUDAMemory<T>(&data_, size_, __FILE__, __LINE__);
+  }
+
+  void Resize(size_t size) {
+    CHECK_GT(size, 0);
+    T* new_data = nullptr;
+    AllocateCUDAMemory<T>(&new_data, size, __FILE__, __LINE__);
+    CopyFromCUDADeviceToCUDADevice<T>(new_data, data_, size, __FILE__, __LINE__);
+    DeallocateCUDAMemory<T>(&data_, __FILE__, __LINE__);
+    data_ = new_data;
+  }
+
+  void PushBack(const T* values, size_t len) {
+    T* new_data = nullptr;
+    AllocateCUDAMemory<T>(&new_data, size_ + len, __FILE__, __LINE__);
+    CopyFromCUDADeviceToCUDADevice<T>(new_data, data_, size_, __FILE__, __LINE__);
+    CopyFromCUDADeviceToCUDADevice<T>(new_data + size_, values, len, __FILE__, __LINE__);
+    DeallocateCUDAMemory<T>(&data_, __FILE__, __LINE__);
+    size_ += len;
+    data_ = new_data;
+  }
+
+  size_t Size() {
+    return size_;
+  }
+
+  ~CUDAVector() {
+    DeallocateCUDAMemory<T>(&data_, __FILE__, __LINE__);
+  }
+
+  std::vector<T> ToHost() {
+    std::vector<T> host_vector(size_);
+    CopyFromCUDADeviceToCUDADevice(host_vector.data(), data_, size_, __FILE__, __LINE__);
+    return host_vector;
+  }
+
+  T* RawData() {
+    return data_;
+  }
+
+ private:
+  T* data_;
+  size_t size_;
+};
 
 }  // namespace LightGBM
 

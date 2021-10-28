@@ -101,7 +101,7 @@ void CUDABestSplitFinder::Init() {
   cuda_streams_.resize(2);
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[0]));
   CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_streams_[1]));
-  AllocateCUDAMemory<int>(&cuda_best_split_info_buffer_, 7, __FILE__, __LINE__);
+  AllocateCUDAMemory<int>(&cuda_best_split_info_buffer_, 8, __FILE__, __LINE__);
   if (use_global_memory_) {
     AllocateCUDAMemory<hist_t>(&cuda_feature_hist_grad_buffer_, static_cast<size_t>(num_total_bin_), __FILE__, __LINE__);
     AllocateCUDAMemory<hist_t>(&cuda_feature_hist_hess_buffer_, static_cast<size_t>(num_total_bin_), __FILE__, __LINE__);
@@ -294,7 +294,8 @@ const CUDASplitInfo* CUDABestSplitFinder::FindBestFromAllSplits(
     int* larger_leaf_best_split_feature,
     uint32_t* larger_leaf_best_split_threshold,
     uint8_t* larger_leaf_best_split_default_left,
-    int* best_leaf_index) {
+    int* best_leaf_index,
+    int* num_cat_threshold) {
   LaunchFindBestFromAllSplitsKernel(
     cur_num_leaves,
     smaller_leaf_index,
@@ -305,7 +306,8 @@ const CUDASplitInfo* CUDABestSplitFinder::FindBestFromAllSplits(
     larger_leaf_best_split_feature,
     larger_leaf_best_split_threshold,
     larger_leaf_best_split_default_left,
-    best_leaf_index);
+    best_leaf_index,
+    num_cat_threshold);
   SynchronizeCUDADevice(__FILE__, __LINE__);
   return cuda_leaf_best_split_info_ + (*best_leaf_index);
 }

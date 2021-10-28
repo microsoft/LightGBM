@@ -150,6 +150,16 @@ class CUDADataPartition {
     const int left_leaf_index,
     const int right_leaf_index);
 
+  void LaunchGenDataToLeftBitVectorCategoricalKernel(
+    const data_size_t num_data_in_leaf,
+    const int split_feature_index,
+    const uint32_t* bitset,
+    const int bitset_len,
+    const uint8_t split_default_left,
+    const data_size_t leaf_data_start,
+    const int left_leaf_index,
+    const int right_leaf_index);
+
   template <typename BIN_TYPE>
   void LaunchGenDataToLeftBitVectorKernelMaxIsMinInner(
     const bool missing_is_zero,
@@ -239,6 +249,10 @@ class CUDADataPartition {
   mutable std::vector<double> add_train_score_;
   /*! \brief data indices used in this iteration */
   const data_size_t* used_indices_;
+  /*! \brief marks whether a feature is a categorical feature */
+  std::vector<bool> is_categorical_feature_;
+  /*! \brief marks whether a feature is the only feature in its group */
+  std::vector<bool> is_single_feature_in_group_;
 
   // config information
   /*! \brief maximum number of leaves in a tree */

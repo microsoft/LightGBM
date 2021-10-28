@@ -57,9 +57,11 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   void LaunchReduceLeafStatKernel(const score_t* gradients, const score_t* hessians,
     const int num_leaves, const data_size_t num_data, double* cuda_leaf_value, const double shrinkage_rate) const;
 
-  void ConstructBitsetForCategoricalSplit(const CUDASplitInfo* best_split_info) const;
+  void ConstructBitsetForCategoricalSplit(const CUDASplitInfo* best_split_info);
 
-  void LaunchConstructBitsetForCategoricalSplitKernel(const CUDASplitInfo* best_split_info) const;
+  void LaunchConstructBitsetForCategoricalSplitKernel(const CUDASplitInfo* best_split_info);
+
+  void AllocateBitset();
 
   // GPU device ID
   int gpu_device_id_;
@@ -87,11 +89,18 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   int smaller_leaf_index_;
   int larger_leaf_index_;
   int best_leaf_index_;
+  int num_cat_threshold_;
+  bool has_categorical_feature_;
 
   mutable double* cuda_leaf_gradient_stat_buffer_;
   mutable double* cuda_leaf_hessian_stat_buffer_;
   mutable data_size_t leaf_stat_buffer_size_;
   mutable data_size_t refit_num_data_;
+  uint32_t* cuda_bitset_;
+  size_t cuda_bitset_len_;
+  uint32_t* cuda_bitset_inner_;
+  size_t cuda_bitset_inner_len_;
+  size_t* cuda_block_bitset_len_buffer_;
 
   /*! \brief gradients on CUDA */
   score_t* cuda_gradients_;

@@ -33,17 +33,29 @@ class CUDATree : public Tree {
   * \param track_branch_features Whether to keep track of ancestors of leaf nodes
   * \param is_linear Whether the tree has linear models at each leaf
   */
-  explicit CUDATree(int max_leaves, bool track_branch_features, bool is_linear, const int gpu_device_id);
+  explicit CUDATree(int max_leaves, bool track_branch_features, bool is_linear,
+    const int gpu_device_id, const bool has_categorical_feature);
 
   explicit CUDATree(const Tree* host_tree);
 
   ~CUDATree() noexcept;
 
   int Split(const int leaf_index,
-             const int real_feature_index,
-             const double real_threshold,
-             const MissingType missing_type,
-             const CUDASplitInfo* cuda_split_info);
+            const int real_feature_index,
+            const double real_threshold,
+            const MissingType missing_type,
+            const CUDASplitInfo* cuda_split_info);
+
+  int SplitCategorical(
+    const int leaf_index,
+    const int real_feature_index,
+    const double real_threshold,
+    const MissingType missing_type,
+    const CUDASplitInfo* cuda_split_info,
+    uint32_t* cuda_bitset,
+    size_t cuda_bitset_len,
+    uint32_t* cuda_bitset_inner,
+    size_t cuda_bitset_inner_len);
 
   const int* cuda_left_child() const { return cuda_left_child_; }
 
@@ -84,6 +96,15 @@ class CUDATree : public Tree {
                          const MissingType missing_type,
                          const CUDASplitInfo* cuda_split_info);
 
+  void LaunchSplitCategoricalKernel(
+    const int leaf_index,
+    const int real_feature_index,
+    const double real_threshold,
+    const MissingType missing_type,
+    const CUDASplitInfo* cuda_split_info,
+    size_t cuda_bitset_len,
+    size_t cuda_bitset_inner_len);
+
   void LaunchShrinkageKernel(const double rate);
 
   void LaunchAddBiasKernel(const double val);
@@ -104,6 +125,10 @@ class CUDATree : public Tree {
   double* cuda_leaf_weight_;
   data_size_t* cuda_internal_count_;
   float* cuda_split_gain_;
+  CUDAVector<uint32_t> cuda_bitset_;
+  CUDAVector<uint32_t> cuda_bitset_inner_;
+  CUDAVector<int> cuda_cat_boundaries_;
+  CUDAVector<int> cuda_cat_boundaries_inner_;
 
   cudaStream_t cuda_stream_;
 
