@@ -837,7 +837,7 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
     int label_idx = -1;
     if (Common::AtoiAndCheck(config_.label_column.c_str(), &label_idx)) {
       if (dataset->label_idx_ != label_idx) {
-        Log::Fatal("Dataset was constructed with parameter label index %d. It cannot be changed to %d when loading from binary file.",
+        Log::Fatal("Dataset was constructed with label index %d. It cannot be changed to %d when loading from binary file.",
                    dataset->label_idx_, label_idx);
       }
     } else {
