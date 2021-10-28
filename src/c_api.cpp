@@ -113,11 +113,7 @@ class Booster {
           const char* parameters) {
     auto param = Config::Str2Map(parameters);
     config_.Set(param);
-    if (config_.num_threads > 0) {
-      omp_set_num_threads(config_.num_threads);
-    } else {
-      omp_reset_num_threads();
-    }
+    OMP_SET_NUM_THREADS(config_.num_threads);
     // create boosting
     if (config_.input_model.size() > 0) {
       Log::Warning("Continued train from model is not supported for c_api,\n"
@@ -316,11 +312,7 @@ class Booster {
 
     config_.Set(param);
 
-    if (config_.num_threads > 0) {
-      omp_set_num_threads(config_.num_threads);
-    } else {
-      omp_reset_num_threads();
-    }
+    OMP_SET_NUM_THREADS(config_.num_threads);
 
     if (param.count("objective")) {
       // create objective function
@@ -955,11 +947,7 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   DatasetLoader loader(config, nullptr, 1, filename);
   if (reference == nullptr) {
     if (Network::num_machines() == 1) {
@@ -987,11 +975,7 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   DatasetLoader loader(config, nullptr, 1, nullptr);
   *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
                                         num_sample_row,
@@ -1104,11 +1088,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   std::unique_ptr<Dataset> ret;
   int32_t total_nrow = 0;
   for (int j = 0; j < nmat; ++j) {
@@ -1198,11 +1178,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
@@ -1268,11 +1244,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   std::unique_ptr<Dataset> ret;
   int32_t nrow = num_rows;
   if (reference == nullptr) {
@@ -1342,11 +1314,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   std::unique_ptr<Dataset> ret;
   int32_t nrow = static_cast<int32_t>(num_row);
   if (reference == nullptr) {
@@ -1425,11 +1393,7 @@ int LGBM_DatasetGetSubset(
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   auto full_dataset = reinterpret_cast<const Dataset*>(handle);
   CHECK_GT(num_used_row_indices, 0);
   const int32_t lower = 0;
@@ -1834,11 +1798,7 @@ int LGBM_BoosterPredictForFile(BoosterHandle handle,
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->Predict(start_iteration, num_iteration, predict_type, data_filename, data_has_header,
                        config, result_filename);
@@ -1914,11 +1874,7 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int nrow = static_cast<int>(nindptr - 1);
@@ -1950,11 +1906,7 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   if (matrix_type == C_API_MATRIX_TYPE_CSR) {
     if (num_col_or_row <= 0) {
       Log::Fatal("The number of columns should be greater than zero.");
@@ -2039,11 +1991,7 @@ int LGBM_BoosterPredictForCSRSingleRow(BoosterHandle handle,
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   ref_booster->SetSingleRowPredictor(start_iteration, num_iteration, predict_type, config);
@@ -2073,11 +2021,7 @@ int LGBM_BoosterPredictForCSRSingleRowFastInit(BoosterHandle handle,
     data_type,
     static_cast<int32_t>(num_col)));
 
-  if (fastConfig_ptr->config.num_threads > 0) {
-    omp_set_num_threads(fastConfig_ptr->config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(fastConfig_ptr->config.num_threads);
 
   fastConfig_ptr->booster->SetSingleRowPredictor(start_iteration, num_iteration, predict_type, fastConfig_ptr->config);
 
@@ -2123,11 +2067,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   int num_threads = OMP_NUM_THREADS();
   int ncol = static_cast<int>(ncol_ptr - 1);
   std::vector<std::vector<CSC_RowIterator>> iterators(num_threads, std::vector<CSC_RowIterator>());
@@ -2170,11 +2110,7 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
   ref_booster->Predict(start_iteration, num_iteration, predict_type, nrow, ncol, get_row_fun,
@@ -2197,11 +2133,7 @@ int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, 1, ncol, data_type, is_row_major);
   ref_booster->SetSingleRowPredictor(start_iteration, num_iteration, predict_type, config);
@@ -2225,11 +2157,7 @@ int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
     data_type,
     ncol));
 
-  if (fastConfig_ptr->config.num_threads > 0) {
-    omp_set_num_threads(fastConfig_ptr->config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(fastConfig_ptr->config.num_threads);
 
   fastConfig_ptr->booster->SetSingleRowPredictor(start_iteration, num_iteration, predict_type, fastConfig_ptr->config);
 
@@ -2267,11 +2195,7 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
-  if (config.num_threads > 0) {
-    omp_set_num_threads(config.num_threads);
-  } else {
-    omp_reset_num_threads();
-  }
+  OMP_SET_NUM_THREADS(config.num_threads);
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseRows(data, ncol, data_type);
   ref_booster->Predict(start_iteration, num_iteration, predict_type, nrow, ncol, get_row_fun, config, out_result, out_len);

@@ -25,10 +25,14 @@ inline int OMP_NUM_THREADS() {
   return ret;
 }
 
-static const int default_omp_num_threads = omp_get_max_threads();
-
-inline void omp_reset_num_threads() {
-  omp_set_num_threads(default_omp_num_threads);
+inline void OMP_SET_NUM_THREADS(int num_threads) {
+  static const int default_omp_num_threads = OMP_NUM_THREADS();
+  if (num_threads > 0) {
+    omp_set_num_threads(num_threads);
+  }
+  else {
+    omp_set_num_threads(default_omp_num_threads);
+  }
 }
 
 class ThreadExceptionHelper {
@@ -100,7 +104,7 @@ class ThreadExceptionHelper {
       simulate a single thread running.
       All #pragma omp should be ignored by the compiler **/
   inline void omp_set_num_threads(int) __GOMP_NOTHROW {}  // NOLINT (no cast done here)
-  inline void omp_reset_num_threads() __GOMP_NOTHROW {}
+  inline void OMP_SET_NUM_THREADS(int) __GOMP_NOTHROW {}
   inline int omp_get_num_threads() __GOMP_NOTHROW {return 1;}
   inline int omp_get_max_threads() __GOMP_NOTHROW {return 1;}
   inline int omp_get_thread_num() __GOMP_NOTHROW {return 0;}
