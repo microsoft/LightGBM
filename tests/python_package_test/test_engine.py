@@ -2912,6 +2912,8 @@ def test_force_split_with_feature_fraction():
     }
 
     gbm = lgb.train(params, lgb_train)
-    ret = mean_absolute_error(y_test, gbm.predict(X_test))
+    treesDf = gbm.trees_to_dataframe()
+    assert np.all(treesDf[treesDf.node_depth == 1]['split_feature'] == 'Column_0')
 
+    ret = mean_absolute_error(y_test, gbm.predict(X_test))
     assert ret < 2.0

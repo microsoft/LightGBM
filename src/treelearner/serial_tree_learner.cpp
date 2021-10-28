@@ -328,7 +328,7 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree) {
 
 void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::set<int>* force_features) {
   std::vector<int8_t> is_feature_used(num_features_, 0);
-#pragma omp parallel for schedule(static, 256) if (num_features_ >= 512)
+  #pragma omp parallel for schedule(static, 256) if (num_features_ >= 512)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!col_sampler_.is_feature_used_bytree()[feature_index] && (force_features == nullptr || force_features->find(feature_index) == force_features->end())) continue;
     if (parent_leaf_histogram_array_ != nullptr
