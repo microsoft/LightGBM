@@ -839,22 +839,22 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
     }
 
     if (config_.label_column != "") {
-      Log::Warning("Config label_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+      Log::Warning("Parameter label_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
     }
     if (config_.weight_column != "") {
-      Log::Warning("Config weight_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+      Log::Warning("Parameter weight_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
     }
     if (config_.group_column != "") {
-      Log::Warning("Config group_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+      Log::Warning("Parameter group_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
     }
     if (config_.ignore_column != "") {
-      Log::Warning("Config ignore_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+      Log::Warning("Parameter ignore_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
     }
     if (config_.two_round) {
-      Log::Warning("Config two_round works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+      Log::Warning("Parameter two_round works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
     }
     if (config_.header) {
-      Log::Warning("Config header works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+      Log::Warning("Parameter header works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
     }
   }
 }
