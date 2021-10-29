@@ -819,7 +819,7 @@ Parser* CategoryEncodingProvider::FinishProcess(const int num_machines, Config* 
       for (int fid = max_bin_by_feature_size; fid < num_original_features_; ++fid) {
         max_bin_by_feature.emplace_back(config_.max_bin);
       }
-    } else {
+    } else if (max_bin_by_feature_size > num_original_features_) {
       Log::Warning("Size of max_bin_by_feature is larger than the number of features.");
       Log::Warning("Ignoring the extra max_bin_by_feature values.");
       max_bin_by_feature.resize(num_original_features_);

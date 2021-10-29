@@ -1259,6 +1259,8 @@ Category Encoder Parameters
 
    -  Use get_feature_name() of python Booster or feature_name() of python Dataset after training to get the actual feature names used when category_encoders is set.
 
+   -  Note that non-default category_encoders cannot be used with method lightgbm.Dataset.add_features_from
+
 -  ``num_target_encoding_folds`` :raw-html:`<a id="num_target_encoding_folds" title="Permalink to this parameter" href="#num_target_encoding_folds">&#x1F517;&#xFE0E;</a>`, default = ``4``, type = int
 
    -  number of folds that training data is divided into, to calculate target encoding values

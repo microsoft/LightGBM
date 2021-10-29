@@ -1039,6 +1039,7 @@ struct Config {
   // desc = 2. for the encoder `target:<prior>` (with user specified prior), it will be named as `NAME_target_encoding_<prior>`
   // desc = 3. for the encoder `count`, it will be named as `NAME_count_encoding`
   // desc = Use get_feature_name() of python Booster or feature_name() of python Dataset after training to get the actual feature names used when category_encoders is set.
+  // desc = Note that non-default category_encoders cannot be used with method lightgbm.Dataset.add_features_from
   std::string category_encoders = std::string("raw");
 
   // desc = number of folds that training data is divided into, to calculate target encoding values
