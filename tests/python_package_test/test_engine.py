@@ -2890,7 +2890,7 @@ def test_dump_model_hook():
     assert "LV" in dumped_model_str
 
 
-def test_force_split_with_feature_fraction():
+def test_force_split_with_feature_fraction(tmp_path):
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
@@ -2900,7 +2900,8 @@ def test_force_split_with_feature_fraction():
         "threshold": 0.5
     }
 
-    with open("forced_split.json", "w") as f:
+    tmp_split_file = tmp_path / "forced_split.json"
+    with open(tmp_split_file, "w") as f:
         f.write(json.dumps(forced_split))
 
     params = {
@@ -2908,7 +2909,7 @@ def test_force_split_with_feature_fraction():
         "feature_fraction": 0.6,
         "force_col_wise": True,
         "feature_fraction_seed": 1,
-        "forcedsplits_filename": "forced_split.json"
+        "forcedsplits_filename": tmp_split_file
     }
 
     gbm = lgb.train(params, lgb_train)
