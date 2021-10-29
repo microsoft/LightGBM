@@ -188,6 +188,60 @@ test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
   }
 })
 
+test_that("lightgbm() accepts nrounds as either a top-level argument or parameter", {
+  nrounds <- 15L
+
+  set.seed(708L)
+  top_level_bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = nrounds
+    , params = list(
+      objective = "regression"
+      , metric = "l2"
+      , num_leaves = 5L
+    )
+    , save_name = tempfile(fileext = ".model")
+  )
+
+  set.seed(708L)
+  param_bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , params = list(
+      objective = "regression"
+      , metric = "l2"
+      , num_leaves = 5L
+      , nrounds = nrounds
+    )
+    , save_name = tempfile(fileext = ".model")
+  )
+
+  set.seed(708L)
+  both_customized <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 20L
+    , params = list(
+      objective = "regression"
+      , metric = "l2"
+      , num_leaves = 5L
+      , nrounds = nrounds
+    )
+    , save_name = tempfile(fileext = ".model")
+  )
+
+  expect_equal(param_bst$current_iter(), top_level_bst$current_iter())
+  expect_equal(param_bst$best_score
+               , top_level_bst$best_score
+               , tolerance = TOLERANCE)
+
+  expect_equal(param_bst$current_iter(), both_customized$current_iter())
+  expect_equal(param_bst$best_score
+               , both_customized$best_score
+               , tolerance = TOLERANCE)
+})
+
 test_that("lightgbm() performs evaluation on validation sets if they are provided", {
   set.seed(708L)
   dvalid1 <- lgb.Dataset(
