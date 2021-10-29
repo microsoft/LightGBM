@@ -36,7 +36,7 @@ DatasetLoader::~DatasetLoader() {
 void DatasetLoader::SetHeader(const char* filename) {
   std::unordered_map<std::string, int> name2idx;
   std::string name_prefix("name:");
-  if (filename != nullptr) {
+  if (filename != nullptr && Parser::CheckCanLoadFromBin(filename) == "") {
     TextReader<data_size_t> text_reader(filename, config_.header);
 
     // get column names
@@ -890,33 +890,58 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
 
   if (is_load_from_binary) {
     if (dataset->max_bin_ != config_.max_bin) {
-      Log::Fatal("Dataset max_bin %d != config %d", dataset->max_bin_, config_.max_bin);
+      Log::Fatal("Dataset was constructed with parameter max_bin=%d. It cannot be changed to %d when loading from binary file.",
+                 dataset->max_bin_, config_.max_bin);
     }
     if (dataset->min_data_in_bin_ != config_.min_data_in_bin) {
-      Log::Fatal("Dataset min_data_in_bin %d != config %d", dataset->min_data_in_bin_, config_.min_data_in_bin);
+      Log::Fatal("Dataset was constructed with parameter min_data_in_bin=%d. It cannot be changed to %d when loading from binary file.",
+                 dataset->min_data_in_bin_, config_.min_data_in_bin);
     }
     if (dataset->use_missing_ != config_.use_missing) {
-      Log::Fatal("Dataset use_missing %d != config %d", dataset->use_missing_, config_.use_missing);
+      Log::Fatal("Dataset was constructed with parameter use_missing=%d. It cannot be changed to %d when loading from binary file.",
+                 dataset->use_missing_, config_.use_missing);
     }
     if (dataset->zero_as_missing_ != config_.zero_as_missing) {
-      Log::Fatal("Dataset zero_as_missing %d != config %d", dataset->zero_as_missing_, config_.zero_as_missing);
+      Log::Fatal("Dataset was constructed with parameter zero_as_missing=%d. It cannot be changed to %d when loading from binary file.",
+                 dataset->zero_as_missing_, config_.zero_as_missing);
     }
     if (dataset->bin_construct_sample_cnt_ != config_.bin_construct_sample_cnt) {
-      Log::Fatal("Dataset bin_construct_sample_cnt %d != config %d", dataset->bin_construct_sample_cnt_, config_.bin_construct_sample_cnt);
+      Log::Fatal("Dataset was constructed with parameter bin_construct_sample_cnt=%d. It cannot be changed to %d when loading from binary file.",
+                 dataset->bin_construct_sample_cnt_, config_.bin_construct_sample_cnt);
     }
     if ((dataset->max_bin_by_feature_.size() != config_.max_bin_by_feature.size()) ||
         !std::equal(dataset->max_bin_by_feature_.begin(), dataset->max_bin_by_feature_.end(),
             config_.max_bin_by_feature.begin())) {
-      Log::Fatal("Dataset max_bin_by_feature does not match with config");
+      Log::Fatal("Parameter max_bin_by_feature cannot be changed when loading from binary file.");
     }
 
     int label_idx = -1;
     if (Common::AtoiAndCheck(config_.label_column.c_str(), &label_idx)) {
       if (dataset->label_idx_ != label_idx) {
-        Log::Fatal("Dataset label_idx %d != config %d", dataset->label_idx_, label_idx);
+        Log::Fatal("Dataset was constructed with label index %d. It cannot be changed to %d when loading from binary file.",
+                   dataset->label_idx_, label_idx);
       }
     } else {
-      Log::Info("Recommend use integer for label index when loading data from binary for sanity check.");
+      Log::Info("It is recommended to use integer for label index when loading from binary file for sanity check.");
+    }
+
+    if (config_.label_column != "") {
+      Log::Warning("Parameter label_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.weight_column != "") {
+      Log::Warning("Parameter weight_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.group_column != "") {
+      Log::Warning("Parameter group_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.ignore_column != "") {
+      Log::Warning("Parameter ignore_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.two_round) {
+      Log::Warning("Parameter two_round works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.header) {
+      Log::Warning("Parameter header works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
     }
   }
 }
@@ -1332,7 +1357,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
   double tmp_label = 0.0f;
   auto& ref_text_data = *text_data;
   std::vector<float> feature_row(dataset->num_features_);
-  if (predict_fun_ == nullptr) {
+  if (!predict_fun_) {
     OMP_INIT_EX();
     // if doesn't need to prediction with initial model
     #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label, feature_row)
@@ -1451,7 +1476,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
 void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* parser,
                                             const std::vector<data_size_t>& used_data_indices, Dataset* dataset) {
   std::vector<double> init_score;
-  if (predict_fun_ != nullptr) {
+  if (predict_fun_) {
     init_score = std::vector<double>(dataset->num_data_ * num_class_);
   }
   std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =

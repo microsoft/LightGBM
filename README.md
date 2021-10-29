@@ -44,6 +44,7 @@ Next you may want to read:
 - [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
 - [**FLAML**](https://www.microsoft.com/en-us/research/project/fast-and-lightweight-automl-for-large-scale-data/articles/flaml-a-fast-and-lightweight-automl-library/) provides automated tuning for LightGBM ([code examples](https://github.com/microsoft/FLAML/blob/main/notebook/flaml_lightgbm.ipynb)).
 - [**Optuna Hyperparameter Tuner**](https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258) provides automated tuning for LightGBM hyperparameters ([code examples](https://github.com/optuna/optuna/tree/master/examples/lightgbm)).
+- [**Understanding LightGBM Parameters (and How to Tune Them using Neptune)**](https://neptune.ai/blog/lightgbm-parameters-guide).
 
 Documentation for contributors:
 
@@ -70,11 +71,13 @@ JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
 
 Treelite (model compiler for efficient deployment): https://github.com/dmlc/treelite
 
+lleaves (LLVM-based model compiler for efficient inference): https://github.com/siboehm/lleaves
+
 Hummingbird (model compiler into tensor computations): https://github.com/microsoft/hummingbird
 
 cuML Forest Inference Library (GPU-accelerated inference): https://github.com/rapidsai/cuml
 
-daal4py (Intel CPU-accelerated inference): https://github.com/IntelPython/daal4py
+daal4py (Intel CPU-accelerated inference): https://github.com/intel/scikit-learn-intelex/tree/master/daal4py
 
 m2cgen (model appliers for various languages): https://github.com/BayesWitnesses/m2cgen
 
@@ -84,19 +87,25 @@ ONNXMLTools (ONNX converter): https://github.com/onnx/onnxmltools
 
 SHAP (model output explainer): https://github.com/slundberg/shap
 
+Shapash (model visualization and interpretation): https://github.com/MAIF/shapash
+
 dtreeviz (decision tree visualization and model interpretation): https://github.com/parrt/dtreeviz
 
-MMLSpark (LightGBM on Spark): https://github.com/Azure/mmlspark
+SynapseML (LightGBM on Spark): https://github.com/microsoft/SynapseML
 
 Kubeflow Fairing (LightGBM on Kubernetes): https://github.com/kubeflow/fairing
 
 Kubeflow Operator (LightGBM on Kubernetes): https://github.com/kubeflow/xgboost-operator
 
+lightgbm_ray (LightGBM on Ray): https://github.com/ray-project/lightgbm_ray
+
+Mars (LightGBM on Mars): https://github.com/mars-project/mars
+
 ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
 LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 
-Ruby gem: https://github.com/ankane/lightgbm
+Ruby gem: https://github.com/ankane/lightgbm-ruby
 
 LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
 
@@ -106,7 +115,7 @@ MLflow (experiment tracking, model monitoring framework): https://github.com/mlf
 
 `{treesnip}` (R `{parsnip}`-compliant interface): https://github.com/curso-r/treesnip
 
-`{mlr3learners.lightgbm}` (R `{mlr3}`-compliant interface): https://github.com/mlr3learners/mlr3learners.lightgbm
+`{mlr3extralearners}` (R `{mlr3}`-compliant interface): https://github.com/mlr-org/mlr3extralearners
 
 Support
 -------

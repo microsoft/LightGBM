@@ -226,8 +226,10 @@ class TextReader {
         [&filter_fun, &out_used_data_indices, this]
     (INDEX_T line_idx , const char* buffer, size_t size) {
       bool is_used = filter_fun(line_idx, buffer, size);
-      if (is_used) { out_used_data_indices->push_back(line_idx); }
-      if (is_used) { lines_.emplace_back(buffer, size); }
+      if (is_used) {
+        out_used_data_indices->push_back(line_idx);
+        lines_.emplace_back(buffer, size);
+      }
     });
     return total_cnt;
   }
@@ -246,8 +248,8 @@ class TextReader {
       if (GET_SAMPLED_INDICES) {
         sampled_indices->clear();
       }
-      if (is_used) { out_used_data_indices->push_back(line_idx); }
       if (is_used) {
+        out_used_data_indices->push_back(line_idx);
         if (cur_sample_cnt < sample_cnt) {
           out_sampled_data->emplace_back(buffer, size);
           if (GET_SAMPLED_INDICES) {

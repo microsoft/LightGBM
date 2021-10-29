@@ -11,9 +11,8 @@ Predictor <- R6::R6Class(
     finalize = function() {
 
       # Check the need for freeing handle
-      if (private$need_free_handle && !lgb.is.null.handle(x = private$handle)) {
+      if (private$need_free_handle) {
 
-        # Freeing up handle
         .Call(
           LGBM_BoosterFree_R
           , private$handle
@@ -27,18 +26,16 @@ Predictor <- R6::R6Class(
     },
 
     # Initialize will create a starter model
-    initialize = function(modelfile, ...) {
-      params <- list(...)
+    initialize = function(modelfile, params = list()) {
       private$params <- lgb.params2str(params = params)
       handle <- NULL
 
-      # Check if handle is a character
       if (is.character(modelfile)) {
 
         # Create handle on it
         handle <- .Call(
           LGBM_BoosterCreateFromModelfile_R
-          , modelfile
+          , path.expand(modelfile)
         )
         private$need_free_handle <- TRUE
 
@@ -98,6 +95,8 @@ Predictor <- R6::R6Class(
 
       # Check if data is a file name and not a matrix
       if (identical(class(data), "character") && length(data) == 1L) {
+
+        data <- path.expand(data)
 
         # Data is a filename, create a temporary file with a "lightgbm_" pattern in it
         tmp_filename <- tempfile(pattern = "lightgbm_")

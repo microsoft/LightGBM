@@ -15,9 +15,16 @@
 
 #include <LightGBM/export.h>
 
+#ifdef __cplusplus
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#else
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+#endif
 
 
 typedef void* DatasetHandle;  /*!< \brief Handle of dataset. */
@@ -53,7 +60,33 @@ LIGHTGBM_C_EXPORT const char* LGBM_GetLastError();
  */
 LIGHTGBM_C_EXPORT int LGBM_RegisterLogCallback(void (*callback)(const char*));
 
-// --- start Dataset interface
+/*!
+ * \brief Get number of samples based on parameters and total number of rows of data.
+ * \param num_total_row Number of total rows
+ * \param parameters Additional parameters, namely, ``bin_construct_sample_cnt`` is used to calculate returned value
+ * \param[out] out Number of samples. This value is used to pre-allocate memory to hold sample indices when calling ``LGBM_SampleIndices``
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_GetSampleCount(int32_t num_total_row,
+                                          const char* parameters,
+                                          int* out);
+
+/*!
+ * \brief Create sample indices for total number of rows.
+ * \note
+ * You should pre-allocate memory for ``out``, you can get its length by ``LGBM_GetSampleCount``.
+ * \param num_total_row Number of total rows
+ * \param parameters Additional parameters, namely, ``bin_construct_sample_cnt`` and ``data_random_seed`` are used to produce the output
+ * \param[out] out Created indices, type is int32_t
+ * \param[out] out_len Number of indices
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t num_total_row,
+                                         const char* parameters,
+                                         void* out,
+                                         int32_t* out_len);
+
+/* --- start Dataset interface */
 
 /*!
  * \brief Load dataset from file (like LightGBM CLI version does).
@@ -415,7 +448,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumOriginalFeature(DatasetHandle handle,
 LIGHTGBM_C_EXPORT int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
                                                   DatasetHandle source);
 
-// --- start Booster interfaces
+/* --- start Booster interfaces */
 
 /*!
 * \brief Get boolean representing whether booster is fitting linear trees.
@@ -1312,10 +1345,26 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines,
                                                     void* reduce_scatter_ext_fun,
                                                     void* allgather_ext_fun);
 
-#if defined(_MSC_VER)
-#define THREAD_LOCAL __declspec(thread)  /*!< \brief Thread local specifier. */
+#if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 199901L))
+/*! \brief Inline specifier no-op in C using standards before C99. */
+#define INLINE_FUNCTION
 #else
-#define THREAD_LOCAL thread_local  /*!< \brief Thread local specifier. */
+/*! \brief Inline specifier. */
+#define INLINE_FUNCTION inline
+#endif
+
+#if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 201112L))
+/*! \brief Thread local specifier no-op in C using standards before C11. */
+#define THREAD_LOCAL
+#elif !defined(__cplusplus)
+/*! \brief Thread local specifier. */
+#define THREAD_LOCAL _Thread_local
+#elif defined(_MSC_VER)
+/*! \brief Thread local specifier. */
+#define THREAD_LOCAL __declspec(thread)
+#else
+/*! \brief Thread local specifier. */
+#define THREAD_LOCAL thread_local
 #endif
 
 /*!
@@ -1331,9 +1380,9 @@ static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everythin
  * \brief Set string message of the last error.
  * \param msg Error message
  */
-inline void LGBM_SetLastError(const char* msg) {
+INLINE_FUNCTION void LGBM_SetLastError(const char* msg) {
   const int err_buf_len = 512;
   snprintf(LastErrorMsg(), err_buf_len, "%s", msg);
 }
 
-#endif  // LIGHTGBM_C_API_H_
+#endif  /* LIGHTGBM_C_API_H_ */

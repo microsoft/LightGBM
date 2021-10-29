@@ -4,7 +4,7 @@
 # [description] List of respected parameter aliases specific to lgb.Dataset. Wrapped in a function to
 #               take advantage of lazy evaluation (so it doesn't matter what order
 #               R sources files during installation).
-# [return] A named list, where each key is a parameter relevant to lgb.DataSet and each value is a character
+# [return] A named list, where each key is a parameter relevant to lgb.Dataset and each value is a character
 #          vector of corresponding aliases.
 .DATASET_PARAMETERS <- function() {
     return(
@@ -18,6 +18,7 @@
                 , "cat_feature"
                 , "categorical_column"
                 , "cat_column"
+                , "categorical_features"
             )
             , "data_random_seed" = c(
                 "data_random_seed"
@@ -57,13 +58,21 @@
                 "label_column"
                 , "label"
             )
-            , "max_bin" = "max_bin"
+            , "linear_tree" = c(
+                "linear_tree"
+                , "linear_trees"
+            )
+            , "max_bin" = c(
+                "max_bin"
+                , "max_bins"
+            )
             , "max_bin_by_feature" = "max_bin_by_feature"
             , "min_data_in_bin" = "min_data_in_bin"
             , "pre_partition" = c(
                 "pre_partition"
                 , "is_pre_partition"
             )
+            , "precise_float_parser" = "precise_float_parser"
             , "two_round" = c(
                 "two_round"
                 , "two_round_loading"
@@ -107,6 +116,7 @@
             , "num_rounds"
             , "num_boost_round"
             , "n_estimators"
+            , "max_iter"
         )
     )
     return(c(learning_params, .DATASET_PARAMETERS()))

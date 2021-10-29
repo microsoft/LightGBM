@@ -7,7 +7,7 @@ on:
 jobs:
   test-r-valgrind:
     name: r-package (ubuntu-latest, R-devel, valgrind)
-    timeout-minutes: 120
+    timeout-minutes: 180
     runs-on: ubuntu-latest
     container: wch1/r-debug
     env:
@@ -35,12 +35,6 @@ jobs:
           $GITHUB_WORKSPACE/.ci/append_comment.sh \
             "${{ github.event.client_payload.comment_number }}" \
             "Workflow **${{ github.workflow }}** has been triggered! 🚀\r\n${GITHUB_SERVER_URL}/microsoft/LightGBM/actions/runs/${GITHUB_RUN_ID}"
-      - name: Install packages
-        shell: bash
-        run: |
-          RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
-          sh build-cran-package.sh
-          RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz || exit -1
       - name: Run tests with valgrind
         shell: bash
         run: ./.ci/test_r_package_valgrind.sh

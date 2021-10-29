@@ -5,9 +5,12 @@
 # find compiler and flags #
 ###########################
 
-R_SCRIPT="${R_HOME}/bin${R_ARCH_BIN}/Rscript"
 R_EXE="${R_HOME}/bin${R_ARCH_BIN}/R"
-CC=`"${R_EXE}" CMD config CC`
+CXX11=`"${R_EXE}" CMD config CXX11`
+CXX11STD=`"${R_EXE}" CMD config CXX11STD`
+CXX="${CXX11} ${CXX11STD}"
+CXXFLAGS=`"${R_EXE}" CMD config CXX11FLAGS`
+CPPFLAGS=`"${R_EXE}" CMD config CPPFLAGS`
 
 # LightGBM-specific flags
 LGB_CPPFLAGS=""
@@ -24,7 +27,7 @@ LGB_CPPFLAGS="${LGB_CPPFLAGS} -DEIGEN_MPL2_ONLY"
 
 ac_mm_prefetch="no"
 
-cat > conftest.c <<EOL
+cat > conftest.cpp <<EOL
 #include <xmmintrin.h>
 int main() {
   int a = 0;
@@ -33,7 +36,7 @@ int main() {
 }
 EOL
 
-${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mm_prefetch="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_prefetch="yes"
 echo "checking whether MM_PREFETCH works...${ac_mm_prefetch}"
 
 if test "${ac_mm_prefetch}" = "yes";
@@ -46,7 +49,7 @@ fi
 ############
 ac_mm_malloc="no"
 
-cat > conftest.c <<EOL
+cat > conftest.cpp <<EOL
 #include <mm_malloc.h>
 int main() {
     char *a = (char*)_mm_malloc(8, 16);
@@ -55,7 +58,7 @@ int main() {
 }
 EOL
 
-${CC} -o conftest conftest.c 2>/dev/null && ./conftest && ac_mm_malloc="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_malloc="yes"
 echo "checking whether MM_MALLOC works...${ac_mm_malloc}"
 
 if test "${ac_mm_malloc}" = "yes";

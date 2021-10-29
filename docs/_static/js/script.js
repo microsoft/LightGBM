@@ -2,12 +2,32 @@ $(function() {
     /* Use wider container for the page content */
     $('.wy-nav-content').each(function() { this.style.setProperty('max-width', 'none', 'important'); });
 
+    /* Point to the same version of R API as the current docs version */
+    var current_version_elems = $('.rst-current-version');
+    if(current_version_elems.length !== 0) {
+        var current_version = $(current_version_elems[0]).contents().filter(function() {
+            return this.nodeType == 3;
+        }).text().trim().split(' ').pop();
+        if(current_version !== 'latest') {
+            $('a.reference.external[href$="/latest/R/reference/"]').each(function() {
+                $(this).attr('href', function (_, val) { return val.replace('/latest/', '/' + current_version + '/'); });
+            });
+        }
+    }
+
     /* Collapse specified sections in the installation guide */
     if(window.location.pathname.toLocaleLowerCase().indexOf('installation-guide') != -1) {
         $('<style>.closed, .opened {cursor: pointer;} .closed:before, .opened:before {font-family: FontAwesome; display: inline-block; padding-right: 6px;} .closed:before {content: "\\f078";} .opened:before {content: "\\f077";}</style>').appendTo('body');
-        var collapsable = ['#build-threadless-version-not-recommended', '#build-mpi-version', '#build-gpu-version',
-                           '#build-cuda-version-experimental', '#build-hdfs-version', '#build-java-wrapper'];
-        $.each(collapsable, function(i, val) {
+        var collapsable = [
+            '#build-threadless-version-not-recommended',
+            '#build-mpi-version',
+            '#build-gpu-version',
+            '#build-cuda-version-experimental',
+            '#build-hdfs-version',
+            '#build-java-wrapper',
+            '#build-c-unit-tests'
+        ];
+        $.each(collapsable, function(_, val) {
             var header = val + ' > :header:first';
             var content = val + ' :not(:header:first)';
             $(header).addClass('closed');
@@ -19,7 +39,7 @@ $(function() {
         });
         /* Uncollapse parent sections when nested section is specified in the URL or before navigate to it from navbar */
         function uncollapse(section) {
-            section.parents().each((i, val) => { $(val).children('.closed').click(); });
+            section.parents().each((_, val) => { $(val).children('.closed').click(); });
         }
         uncollapse($(window.location.hash));
         $('.wy-menu.wy-menu-vertical li a.reference.internal').click(function() {

@@ -1,7 +1,7 @@
 # coding: utf-8
 import itertools
 import math
-import os
+from pathlib import Path
 
 import joblib
 import numpy as np
@@ -32,8 +32,16 @@ else:
 decreasing_generator = itertools.count(0, -1)
 
 
+class UnpicklableCallback:
+    def __reduce__(self):
+        raise Exception("This class in not picklable")
+
+    def __call__(self, env):
+        env.model.set_attr(attr_set_inside_callback=str(env.iteration * 10))
+
+
 def custom_asymmetric_obj(y_true, y_pred):
-    residual = (y_true - y_pred).astype("float")
+    residual = (y_true - y_pred).astype(np.float64)
     grad = np.where(residual < 0, -2 * 10.0 * residual, -2 * residual)
     hess = np.where(residual < 0, 2 * 10.0, 2.0)
     return grad, hess
@@ -113,14 +121,11 @@ def test_multiclass():
 
 
 def test_lambdarank():
-    X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                       '../../examples/lambdarank/rank.train'))
-    X_test, y_test = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                     '../../examples/lambdarank/rank.test'))
-    q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                      '../../examples/lambdarank/rank.train.query'))
-    q_test = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                     '../../examples/lambdarank/rank.test.query'))
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    X_test, y_test = load_svmlight_file(str(rank_example_dir / 'rank.test'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
+    q_test = np.loadtxt(str(rank_example_dir / 'rank.test.query'))
     gbm = lgb.LGBMRanker(n_estimators=50)
     gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
             eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
@@ -131,11 +136,11 @@ def test_lambdarank():
 
 
 def test_xendcg():
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    X_train, y_train = load_svmlight_file(os.path.join(dir_path, '../../examples/xendcg/rank.train'))
-    X_test, y_test = load_svmlight_file(os.path.join(dir_path, '../../examples/xendcg/rank.test'))
-    q_train = np.loadtxt(os.path.join(dir_path, '../../examples/xendcg/rank.train.query'))
-    q_test = np.loadtxt(os.path.join(dir_path, '../../examples/xendcg/rank.test.query'))
+    xendcg_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'xendcg'
+    X_train, y_train = load_svmlight_file(str(xendcg_example_dir / 'rank.train'))
+    X_test, y_test = load_svmlight_file(str(xendcg_example_dir / 'rank.test'))
+    q_train = np.loadtxt(str(xendcg_example_dir / 'rank.train.query'))
+    q_test = np.loadtxt(str(xendcg_example_dir / 'rank.test.query'))
     gbm = lgb.LGBMRanker(n_estimators=50, objective='rank_xendcg', random_state=5, n_jobs=1)
     gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
             eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=10, verbose=False,
@@ -144,6 +149,19 @@ def test_xendcg():
     assert gbm.best_iteration_ <= 24
     assert gbm.best_score_['valid_0']['ndcg@1'] > 0.6211
     assert gbm.best_score_['valid_0']['ndcg@3'] > 0.6253
+
+
+def test_eval_at_aliases():
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    X_test, y_test = load_svmlight_file(str(rank_example_dir / 'rank.test'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
+    q_test = np.loadtxt(str(rank_example_dir / 'rank.test.query'))
+    for alias in ('eval_at', 'ndcg_eval_at', 'ndcg_at', 'map_eval_at', 'map_at'):
+        gbm = lgb.LGBMRanker(n_estimators=5, **{alias: [1, 2, 3, 9]})
+        with pytest.warns(UserWarning, match=f"Found '{alias}' in params. Will use it instead of 'eval_at' argument"):
+            gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)], eval_group=[q_test])
+        assert list(gbm.evals_result_['valid_0'].keys()) == ['ndcg@1', 'ndcg@2', 'ndcg@3', 'ndcg@9']
 
 
 def test_regression_with_custom_objective():
@@ -415,6 +433,18 @@ def test_joblib():
     pred_origin = gbm.predict(X_test)
     pred_pickle = gbm_pickle.predict(X_test)
     np.testing.assert_allclose(pred_origin, pred_pickle)
+
+
+def test_non_serializable_objects_in_callbacks(tmp_path):
+    unpicklable_callback = UnpicklableCallback()
+
+    with pytest.raises(Exception, match="This class in not picklable"):
+        joblib.dump(unpicklable_callback, tmp_path / 'tmp.joblib')
+
+    X, y = load_boston(return_X_y=True)
+    gbm = lgb.LGBMRegressor(n_estimators=5)
+    gbm.fit(X, y, callbacks=[unpicklable_callback])
+    assert gbm.booster_.attr('attr_set_inside_callback') == '40'
 
 
 def test_random_state_object():

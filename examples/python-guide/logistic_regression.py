@@ -57,9 +57,9 @@ def experiment(objective, label_type, data):
 
     Parameters
     ----------
-    objective : string 'binary' or 'xentropy'
+    objective : {'binary', 'xentropy'}
         Objective function.
-    label_type : string 'binary' or 'probability'
+    label_type : {'binary', 'probability'}
         Type of the label.
     data : dict
         Data for training.
@@ -71,7 +71,7 @@ def experiment(objective, label_type, data):
     """
     np.random.seed(0)
     nrounds = 5
-    lgb_data = data['lgb_with_' + label_type + '_labels']
+    lgb_data = data[f"lgb_with_{label_type}_labels"]
     params = {
         'objective': objective,
         'feature_fraction': 1,
@@ -81,7 +81,7 @@ def experiment(objective, label_type, data):
     time_zero = time.time()
     gbm = lgb.train(params, lgb_data, num_boost_round=nrounds)
     y_fitted = gbm.predict(data['X'])
-    y_true = data[label_type + '_labels']
+    y_true = data[f"{label_type}_labels"]
     duration = time.time() - time_zero
     return {
         'time': duration,
@@ -113,5 +113,5 @@ A = [experiment('binary', label_type='binary', data=DATA)['time']
      for k in range(K)]
 B = [experiment('xentropy', label_type='binary', data=DATA)['time']
      for k in range(K)]
-print('Best `binary` time: ' + str(min(A)))
-print('Best `xentropy` time: ' + str(min(B)))
+print(f"Best `binary` time: {min(A)}")
+print(f"Best `xentropy` time: {min(B)}")

@@ -37,15 +37,7 @@ jobs:
             "Workflow **${{ github.workflow }}** has been triggered! 🚀\r\n${GITHUB_SERVER_URL}/microsoft/LightGBM/actions/runs/${GITHUB_RUN_ID}"
       - name: Run tests on Solaris
         shell: bash
-        run: |
-          sh build-cran-package.sh || exit -1
-          apt-get install --no-install-recommends -y \
-              libcurl4-openssl-dev \
-              libxml2-dev \
-              libssl-dev
-          log_file="$GITHUB_WORKSPACE/rhub_logs.txt"
-          Rscript -e "install.packages('rhub', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
-          Rscript $GITHUB_WORKSPACE/.ci/run_rhub_solaris_checks.R $(pwd)/lightgbm_*.tar.gz $log_file || exit -1
+        run: ./.ci/test_r_package_solaris.sh
       - name: Send final status
         if: ${{ always() }}
         run: |
@@ -56,7 +48,7 @@ jobs:
               url=${line#*@}
               body="${body}**${platform}**: ${url}\r\n"
           done < "$GITHUB_WORKSPACE/rhub_logs.txt" || true
-          body="${body}Reports also have been sent to LightGBM public e-mail: http://www.yopmail.com/lightgbm_rhub_checks\r\n"
+          body="${body}Reports also have been sent to LightGBM public e-mail: https://yopmail.com?lightgbm_rhub_checks\r\n"
           body="${body}Status: ${{ job.status }}."
           $GITHUB_WORKSPACE/.ci/append_comment.sh \
             "${{ github.event.client_payload.comment_number }}" \

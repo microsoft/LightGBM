@@ -2,6 +2,7 @@
 """Plotting library."""
 from copy import deepcopy
 from io import BytesIO
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -10,24 +11,36 @@ from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
 from .sklearn import LGBMModel
 
 
-def _check_not_tuple_of_2_elements(obj, obj_name='obj'):
+def _check_not_tuple_of_2_elements(obj: Any, obj_name: str = 'obj') -> None:
     """Check object is not tuple or does not have 2 elements."""
     if not isinstance(obj, tuple) or len(obj) != 2:
         raise TypeError(f"{obj_name} must be a tuple of 2 elements.")
 
 
-def _float2str(value, precision=None):
+def _float2str(value: float, precision: Optional[int] = None) -> str:
     return (f"{value:.{precision}f}"
             if precision is not None and not isinstance(value, str)
             else str(value))
 
 
-def plot_importance(booster, ax=None, height=0.2,
-                    xlim=None, ylim=None, title='Feature importance',
-                    xlabel='Feature importance', ylabel='Features',
-                    importance_type='split', max_num_features=None,
-                    ignore_zero=True, figsize=None, dpi=None, grid=True,
-                    precision=3, **kwargs):
+def plot_importance(
+    booster: Union[Booster, LGBMModel],
+    ax=None,
+    height: float = 0.2,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None,
+    title: Optional[str] = 'Feature importance',
+    xlabel: Optional[str] = 'Feature importance',
+    ylabel: Optional[str] = 'Features',
+    importance_type: str = 'auto',
+    max_num_features: Optional[int] = None,
+    ignore_zero: bool = True,
+    figsize: Optional[Tuple[float, float]] = None,
+    dpi: Optional[int] = None,
+    grid: bool = True,
+    precision: Optional[int] = 3,
+    **kwargs: Any
+) -> Any:
     """Plot model's feature importances.
 
     Parameters
@@ -43,17 +56,19 @@ def plot_importance(booster, ax=None, height=0.2,
         Tuple passed to ``ax.xlim()``.
     ylim : tuple of 2 elements or None, optional (default=None)
         Tuple passed to ``ax.ylim()``.
-    title : string or None, optional (default="Feature importance")
+    title : str or None, optional (default="Feature importance")
         Axes title.
         If None, title is disabled.
-    xlabel : string or None, optional (default="Feature importance")
+    xlabel : str or None, optional (default="Feature importance")
         X-axis title label.
         If None, title is disabled.
-    ylabel : string or None, optional (default="Features")
+        @importance_type@ placeholder can be used, and it will be replaced with the value of ``importance_type`` parameter.
+    ylabel : str or None, optional (default="Features")
         Y-axis title label.
         If None, title is disabled.
-    importance_type : string, optional (default="split")
+    importance_type : str, optional (default="auto")
         How the importance is calculated.
+        If "auto", if ``booster`` parameter is LGBMModel, ``booster.importance_type`` attribute is used; "split" otherwise.
         If "split", result contains numbers of times the feature is used in a model.
         If "gain", result contains total gains of splits which use the feature.
     max_num_features : int or None, optional (default=None)
@@ -83,8 +98,13 @@ def plot_importance(booster, ax=None, height=0.2,
         raise ImportError('You must install matplotlib and restart your session to plot importance.')
 
     if isinstance(booster, LGBMModel):
+        if importance_type == "auto":
+            importance_type = booster.importance_type
         booster = booster.booster_
-    elif not isinstance(booster, Booster):
+    elif isinstance(booster, Booster):
+        if importance_type == "auto":
+            importance_type = "split"
+    else:
         raise TypeError('booster must be Booster or LGBMModel.')
 
     importance = booster.feature_importance(importance_type=importance_type)
@@ -131,6 +151,7 @@ def plot_importance(booster, ax=None, height=0.2,
     if title is not None:
         ax.set_title(title)
     if xlabel is not None:
+        xlabel = xlabel.replace('@importance_type@', importance_type)
         ax.set_xlabel(xlabel)
     if ylabel is not None:
         ax.set_ylabel(ylabel)
@@ -138,25 +159,36 @@ def plot_importance(booster, ax=None, height=0.2,
     return ax
 
 
-def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=0.8,
-                               xlim=None, ylim=None,
-                               title='Split value histogram for feature with @index/name@ @feature@',
-                               xlabel='Feature split value', ylabel='Count',
-                               figsize=None, dpi=None, grid=True, **kwargs):
+def plot_split_value_histogram(
+    booster: Union[Booster, LGBMModel],
+    feature: Union[int, str],
+    bins: Union[int, str, None] = None,
+    ax=None,
+    width_coef: float = 0.8,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None,
+    title: Optional[str] = 'Split value histogram for feature with @index/name@ @feature@',
+    xlabel: Optional[str] = 'Feature split value',
+    ylabel: Optional[str] = 'Count',
+    figsize: Optional[Tuple[float, float]] = None,
+    dpi: Optional[int] = None,
+    grid: bool = True,
+    **kwargs: Any
+) -> Any:
     """Plot split value histogram for the specified feature of the model.
 
     Parameters
     ----------
     booster : Booster or LGBMModel
         Booster or LGBMModel instance of which feature split value histogram should be plotted.
-    feature : int or string
+    feature : int or str
         The feature name or index the histogram is plotted for.
         If int, interpreted as index.
-        If string, interpreted as name.
-    bins : int, string or None, optional (default=None)
+        If str, interpreted as name.
+    bins : int, str or None, optional (default=None)
         The maximum number of bins.
         If None, the number of bins equals number of unique split values.
-        If string, it should be one from the list of the supported values by ``numpy.histogram()`` function.
+        If str, it should be one from the list of the supported values by ``numpy.histogram()`` function.
     ax : matplotlib.axes.Axes or None, optional (default=None)
         Target axes instance.
         If None, new figure and axes will be created.
@@ -166,17 +198,17 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
         Tuple passed to ``ax.xlim()``.
     ylim : tuple of 2 elements or None, optional (default=None)
         Tuple passed to ``ax.ylim()``.
-    title : string or None, optional (default="Split value histogram for feature with @index/name@ @feature@")
+    title : str or None, optional (default="Split value histogram for feature with @index/name@ @feature@")
         Axes title.
         If None, title is disabled.
         @feature@ placeholder can be used, and it will be replaced with the value of ``feature`` parameter.
         @index/name@ placeholder can be used,
         and it will be replaced with ``index`` word in case of ``int`` type ``feature`` parameter
-        or ``name`` word in case of ``string`` type ``feature`` parameter.
-    xlabel : string or None, optional (default="Feature split value")
+        or ``name`` word in case of ``str`` type ``feature`` parameter.
+    xlabel : str or None, optional (default="Feature split value")
         X-axis title label.
         If None, title is disabled.
-    ylabel : string or None, optional (default="Count")
+    ylabel : str or None, optional (default="Count")
         Y-axis title label.
         If None, title is disabled.
     figsize : tuple of 2 elements or None, optional (default=None)
@@ -244,22 +276,31 @@ def plot_split_value_histogram(booster, feature, bins=None, ax=None, width_coef=
     return ax
 
 
-def plot_metric(booster, metric=None, dataset_names=None,
-                ax=None, xlim=None, ylim=None,
-                title='Metric during training',
-                xlabel='Iterations', ylabel='auto',
-                figsize=None, dpi=None, grid=True):
+def plot_metric(
+    booster: Union[Dict, LGBMModel],
+    metric: Optional[str] = None,
+    dataset_names: Optional[List[str]] = None,
+    ax=None,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None,
+    title: Optional[str] = 'Metric during training',
+    xlabel: Optional[str] = 'Iterations',
+    ylabel: Optional[str] = '@metric@',
+    figsize: Optional[Tuple[float, float]] = None,
+    dpi: Optional[int] = None,
+    grid: bool = True
+) -> Any:
     """Plot one metric during training.
 
     Parameters
     ----------
     booster : dict or LGBMModel
         Dictionary returned from ``lightgbm.train()`` or LGBMModel instance.
-    metric : string or None, optional (default=None)
+    metric : str or None, optional (default=None)
         The metric name to plot.
         Only one metric supported because different metrics have various scales.
         If None, first metric picked from dictionary (according to hashcode).
-    dataset_names : list of strings or None, optional (default=None)
+    dataset_names : list of str, or None, optional (default=None)
         List of the dataset names which are used to calculate metric to plot.
         If None, all datasets are used.
     ax : matplotlib.axes.Axes or None, optional (default=None)
@@ -269,16 +310,17 @@ def plot_metric(booster, metric=None, dataset_names=None,
         Tuple passed to ``ax.xlim()``.
     ylim : tuple of 2 elements or None, optional (default=None)
         Tuple passed to ``ax.ylim()``.
-    title : string or None, optional (default="Metric during training")
+    title : str or None, optional (default="Metric during training")
         Axes title.
         If None, title is disabled.
-    xlabel : string or None, optional (default="Iterations")
+    xlabel : str or None, optional (default="Iterations")
         X-axis title label.
         If None, title is disabled.
-    ylabel : string or None, optional (default="auto")
+    ylabel : str or None, optional (default="@metric@")
         Y-axis title label.
         If 'auto', metric name is used.
         If None, title is disabled.
+        @metric@ placeholder can be used, and it will be replaced with metric name.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
     dpi : int or None, optional (default=None)
@@ -300,6 +342,8 @@ def plot_metric(booster, metric=None, dataset_names=None,
         eval_results = deepcopy(booster.evals_result_)
     elif isinstance(booster, dict):
         eval_results = deepcopy(booster)
+    elif isinstance(booster, Booster):
+        raise TypeError("booster must be dict or LGBMModel. To use plot_metric with Booster type, first record the metrics using record_evaluation callback then pass that to plot_metric as argument `booster`")
     else:
         raise TypeError('booster must be dict or LGBMModel.')
 
@@ -331,14 +375,17 @@ def plot_metric(booster, metric=None, dataset_names=None,
         if metric not in metrics_for_one:
             raise KeyError('No given metric in eval results.')
         results = metrics_for_one[metric]
-    num_iteration, max_result, min_result = len(results), max(results), min(results)
+    num_iteration = len(results)
+    max_result = max(results)
+    min_result = min(results)
     x_ = range(num_iteration)
     ax.plot(x_, results, label=name)
 
     for name in dataset_names:
         metrics_for_one = eval_results[name]
         results = metrics_for_one[metric]
-        max_result, min_result = max(max(results), max_result), min(min(results), min_result)
+        max_result = max(max(results), max_result)
+        min_result = min(min(results), min_result)
         ax.plot(x_, results, label=name)
 
     ax.legend(loc='best')
@@ -357,20 +404,30 @@ def plot_metric(booster, metric=None, dataset_names=None,
     ax.set_ylim(ylim)
 
     if ylabel == 'auto':
-        ylabel = metric
+        _log_warning("'auto' value of 'ylabel' argument is deprecated and will be removed in a future release of LightGBM. "
+                     "Use '@metric@' placeholder instead.")
+        ylabel = '@metric@'
 
     if title is not None:
         ax.set_title(title)
     if xlabel is not None:
         ax.set_xlabel(xlabel)
     if ylabel is not None:
+        ylabel = ylabel.replace('@metric@', metric)
         ax.set_ylabel(ylabel)
     ax.grid(grid)
     return ax
 
 
-def _to_graphviz(tree_info, show_info, feature_names, precision=3,
-                 orientation='horizontal', constraints=None, **kwargs):
+def _to_graphviz(
+    tree_info: Dict[str, Any],
+    show_info: List[str],
+    feature_names: Union[List[str], None],
+    precision: Optional[int] = 3,
+    orientation: str = 'horizontal',
+    constraints: Optional[List[int]] = None,
+    **kwargs: Any
+) -> Any:
     """Convert specified tree to graphviz instance.
 
     See:
@@ -465,8 +522,14 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=3,
     return graph
 
 
-def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
-                        orientation='horizontal', **kwargs):
+def create_tree_digraph(
+    booster: Union[Booster, LGBMModel],
+    tree_index: int = 0,
+    show_info: Optional[List[str]] = None,
+    precision: Optional[int] = 3,
+    orientation: str = 'horizontal',
+    **kwargs: Any
+) -> Any:
     """Create a digraph representation of specified tree.
 
     Each node in the graph represents a node in the tree.
@@ -490,7 +553,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
         Booster or LGBMModel instance to be converted.
     tree_index : int, optional (default=0)
         The index of a target tree to convert.
-    show_info : list of strings or None, optional (default=None)
+    show_info : list of str, or None, optional (default=None)
         What information should be shown in nodes.
 
             - ``'split_gain'`` : gain from adding this split to the model
@@ -502,7 +565,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
             - ``'data_percentage'`` : percentage of training data that fall into this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
-    orientation : string, optional (default='horizontal')
+    orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
     **kwargs
@@ -542,8 +605,17 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=3,
     return graph
 
 
-def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
-              show_info=None, precision=3, orientation='horizontal', **kwargs):
+def plot_tree(
+    booster: Union[Booster, LGBMModel],
+    ax=None,
+    tree_index: int = 0,
+    figsize: Optional[Tuple[float, float]] = None,
+    dpi: Optional[int] = None,
+    show_info: Optional[List[str]] = None,
+    precision: Optional[int] = 3,
+    orientation: str = 'horizontal',
+    **kwargs: Any
+) -> Any:
     """Plot specified tree.
 
     Each node in the graph represents a node in the tree.
@@ -574,7 +646,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
         Figure size.
     dpi : int or None, optional (default=None)
         Resolution of the figure.
-    show_info : list of strings or None, optional (default=None)
+    show_info : list of str, or None, optional (default=None)
         What information should be shown in nodes.
 
             - ``'split_gain'`` : gain from adding this split to the model
@@ -586,7 +658,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None, dpi=None,
             - ``'data_percentage'`` : percentage of training data that fall into this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
-    orientation : string, optional (default='horizontal')
+    orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
     **kwargs

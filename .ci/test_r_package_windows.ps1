@@ -39,12 +39,24 @@ function Remove-From-Path {
 # remove some details that exist in the GitHub Actions images which might
 # cause conflicts with R and other components installed by this script
 $env:RTOOLS40_HOME = ""
+Remove-From-Path ".*Amazon.*"
+Remove-From-Path ".*Anaconda.*"
+Remove-From-Path ".*android.*"
+Remove-From-Path ".*Android.*"
 Remove-From-Path ".*chocolatey.*"
 Remove-From-Path ".*Chocolatey.*"
-Remove-From-Path ".*Git.*mingw64.*"
+Remove-From-Path ".*\\Git\\.*"
+Remove-From-Path "(?!.*pandoc.*).*hostedtoolcache.*"
+Remove-From-Path ".*Microsoft SDKs.*"
+Remove-From-Path ".*mingw.*"
 Remove-From-Path ".*msys64.*"
+Remove-From-Path ".*PostgreSQL.*"
+Remove-From-Path ".*\\R\\.*"
+Remove-From-Path ".*R Client.*"
 Remove-From-Path ".*rtools40.*"
+Remove-From-Path ".*shells.*"
 Remove-From-Path ".*Strawberry.*"
+Remove-From-Path ".*tools.*"
 
 Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
 
@@ -65,8 +77,8 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $RTOOLS_INSTALL_PATH = "C:\rtools40"
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw64\bin"
-  $env:RTOOLS_EXE_FILE = "rtools40-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.0.5"
+  $env:RTOOLS_EXE_FILE = "rtools40v2-x86_64.exe"
+  $env:R_WINDOWS_VERSION = "4.1.1"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -78,6 +90,7 @@ $env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/b
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
+$env:MIKTEX_EXCEPTION_PATH = "$env:TEMP\miktex"
 
 # don't fail builds for long-running examples unless they're very long.
 # See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
@@ -216,6 +229,45 @@ if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Trying to build with.*$env:TOOLCHAIN"
   if ($checks.Matches.length -eq 0) {
     Write-Output "The wrong toolchain was used. Check the build logs."
+    Check-Output $False
+  }
+}
+
+# Checking that MM_PREFETCH preprocessor definition is actually used in CI builds.
+if ($env:R_BUILD_TYPE -eq "cran") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "checking whether MM_PREFETCH work.*yes"
+  $checks_cnt = $checks.Matches.length
+} elseif ($env:TOOLCHAIN -ne "MSVC") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern ".*Performing Test MM_PREFETCH - Success"
+  $checks_cnt = $checks.Matches.length
+} else {
+  $checks_cnt = 1
+}
+if ($checks_cnt -eq 0) {
+  Write-Output "MM_PREFETCH preprocessor definition wasn't used. Check the build logs."
+  Check-Output $False
+}
+
+# Checking that MM_MALLOC preprocessor definition is actually used in CI builds.
+if ($env:R_BUILD_TYPE -eq "cran") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "checking whether MM_MALLOC work.*yes"
+  $checks_cnt = $checks.Matches.length
+} elseif ($env:TOOLCHAIN -ne "MSVC") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern ".*Performing Test MM_MALLOC - Success"
+  $checks_cnt = $checks.Matches.length
+} else {
+  $checks_cnt = 1
+}
+if ($checks_cnt -eq 0) {
+  Write-Output "MM_MALLOC preprocessor definition wasn't used. Check the build logs."
+  Check-Output $False
+}
+
+# Checking that OpenMP is actually used in CMake builds.
+if ($env:R_BUILD_TYPE -eq "cmake") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern ".*Found OpenMP: TRUE.*"
+  if ($checks.Matches.length -eq 0) {
+    Write-Output "OpenMP wasn't found. Check the build logs."
     Check-Output $False
   }
 }

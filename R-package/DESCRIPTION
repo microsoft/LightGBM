@@ -4,7 +4,8 @@ Title: Light Gradient Boosting Machine
 Version: ~~VERSION~~
 Date: ~~DATE~~
 Authors@R: c(
-    person("Guolin", "Ke", email = "guolin.ke@microsoft.com", role = c("aut", "cre")),
+    person("Yu", "Shi", email = "yushi2@microsoft.com", role = c("aut", "cre")),
+    person("Guolin", "Ke", email = "guolin.ke@outlook.com", role = c("aut")),
     person("Damien", "Soukhavong", email = "damien.soukhavong@skema.edu", role = c("aut")),
     person("James", "Lamb", email="jaylamb20@gmail.com", role = c("aut")),
     person("Qi", "Meng", role = c("aut")),
@@ -14,6 +15,7 @@ Authors@R: c(
     person("Weidong", "Ma", role = c("aut")),
     person("Qiwei", "Ye", role = c("aut")),
     person("Tie-Yan", "Liu", role = c("aut")),
+    person("Nikita", "Titov", role = c("aut")),
     person("Yachen", "Yan", role = c("ctb")),
     person("Microsoft Corporation", role = c("cph")),
     person("Dropbox, Inc.", role = c("cph")),
@@ -23,7 +25,8 @@ Authors@R: c(
     person("Alberto", "Ferreira", role = c("ctb")),
     person("Daniel", "Lemire", role = c("ctb")),
     person("Victor", "Zverovich", role = c("cph")),
-    person("IBM Corporation", role = c("ctb"))
+    person("IBM Corporation", role = c("ctb")),
+    person("David", "Cortes", role = c("ctb"))
     )
 Description: Tree based algorithms can be improved by introducing boosting frameworks. 
     'LightGBM' is one such framework, based on Ke, Guolin et al. (2017) <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision>.
@@ -57,4 +60,4 @@ Imports:
     utils
 SystemRequirements:
     C++11
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
