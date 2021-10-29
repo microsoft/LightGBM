@@ -14,12 +14,14 @@ except ImportError:
     class pd_Series:  # type: ignore
         """Dummy class for pandas.Series."""
 
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
 
     class pd_DataFrame:  # type: ignore
         """Dummy class for pandas.DataFrame."""
 
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
 
     concat = None
     is_dtype_sparse = None
@@ -52,7 +54,8 @@ except ImportError:
     class dt_DataTable:  # type: ignore
         """Dummy class for datatable.DataTable."""
 
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
 
 
 """sklearn"""
@@ -98,17 +101,20 @@ except ImportError:
     class _LGBMModelBase:  # type: ignore
         """Dummy class for sklearn.base.BaseEstimator."""
 
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
 
     class _LGBMClassifierBase:  # type: ignore
         """Dummy class for sklearn.base.ClassifierMixin."""
 
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
 
     class _LGBMRegressorBase:  # type: ignore
         """Dummy class for sklearn.base.RegressorMixin."""
 
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
 
     _LGBMLabelEncoder = None
     LGBMNotFittedError = ValueError
@@ -143,19 +149,23 @@ except ImportError:
     class Client:  # type: ignore
         """Dummy class for dask.distributed.Client."""
 
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
 
     class dask_Array:  # type: ignore
         """Dummy class for dask.array.Array."""
 
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
 
     class dask_DataFrame:  # type: ignore
         """Dummy class for dask.dataframe.DataFrame."""
 
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
 
     class dask_Series:  # type: ignore
         """Dummy class for dask.dataframe.Series."""
 
-        pass
+        def __init__(self, *args, **kwargs):
+            pass
