@@ -834,16 +834,6 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
       Log::Fatal("Parameter max_bin_by_feature cannot be changed when loading from binary file.");
     }
 
-    int label_idx = -1;
-    if (Common::AtoiAndCheck(config_.label_column.c_str(), &label_idx)) {
-      if (dataset->label_idx_ != label_idx) {
-        Log::Fatal("Dataset was constructed with label index %d. It cannot be changed to %d when loading from binary file.",
-                   dataset->label_idx_, label_idx);
-      }
-    } else {
-      Log::Info("It is recommended to use integer for label index when loading from binary file for sanity check.");
-    }
-
     if (config_.label_column != "") {
       Log::Warning("Parameter label_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
     }
