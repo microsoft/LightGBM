@@ -232,20 +232,21 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
   )
   
   top_level_l2 <- top_level_bst$eval_train()[[1L]][["value"]]
-  param_l2    <- param_bst$eval_train()[[1L]][["value"]]
+  params_l2    <- param_bst$eval_train()[[1L]][["value"]]
   both_l2      <- both_customized$eval_train()[[1L]][["value"]]
 
   # check type just to be sure the subsetting didn't return a NULL
   expect_true(is.numeric(top_level_l2))
-  expect_true(is.numeric(param_l2))
+  expect_true(is.numeric(params_l2))
   expect_true(is.numeric(both_l2))
   
   # check that model produces identical performance
-  expect_identical(top_level_l2, param_l2)
-  expect_identical(both_l2, param_l2)
+  expect_identical(top_level_l2, params_l2)
+  expect_identical(both_l2, params_l2)
 
   expect_identical(param_bst$current_iter(), top_level_bst$current_iter())
   expect_identical(param_bst$current_iter(), both_customized$current_iter())
+  expect_identical(param_bst$current_iter(), nrounds)
 
 })
 
@@ -593,6 +594,7 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
   
   expect_identical(param_bst$current_iter(), top_level_bst$current_iter())
   expect_identical(param_bst$current_iter(), both_customized$current_iter())
+  expect_identical(param_bst$current_iter(), nrounds)
   
 })
 
