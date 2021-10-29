@@ -1,8 +1,0 @@
-/home/shiyu/LightGBM/python-package/CMakeFiles/install/strip.dir
-/home/shiyu/LightGBM/python-package/CMakeFiles/install/local.dir
-/home/shiyu/LightGBM/python-package/CMakeFiles/lightgbm.dir
-/home/shiyu/LightGBM/python-package/CMakeFiles/_lightgbm.dir
-/home/shiyu/LightGBM/python-package/CMakeFiles/edit_cache.dir
-/home/shiyu/LightGBM/python-package/CMakeFiles/rebuild_cache.dir
-/home/shiyu/LightGBM/python-package/CMakeFiles/list_install_components.dir
-/home/shiyu/LightGBM/python-package/CMakeFiles/install.dir
