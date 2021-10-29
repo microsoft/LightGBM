@@ -101,20 +101,17 @@ except ImportError:
     class _LGBMModelBase:  # type: ignore
         """Dummy class for sklearn.base.BaseEstimator."""
 
-        def __init__(self, *args, **kwargs):
-            pass
+        pass
 
     class _LGBMClassifierBase:  # type: ignore
         """Dummy class for sklearn.base.ClassifierMixin."""
 
-        def __init__(self, *args, **kwargs):
-            pass
+        pass
 
     class _LGBMRegressorBase:  # type: ignore
         """Dummy class for sklearn.base.RegressorMixin."""
 
-        def __init__(self, *args, **kwargs):
-            pass
+        pass
 
     _LGBMLabelEncoder = None
     LGBMNotFittedError = ValueError
