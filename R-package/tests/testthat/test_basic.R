@@ -230,16 +230,23 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
     )
     , save_name = tempfile(fileext = ".model")
   )
+  
+  top_level_l2 <- top_level_bst$eval_train()[[1L]][["value"]]
+  param_l2    <- param_bst$eval_train()[[1L]][["value"]]
+  both_l2      <- both_customized$eval_train()[[1L]][["value"]]
 
-  expect_equal(param_bst$current_iter(), top_level_bst$current_iter())
-  expect_equal(param_bst$best_score
-               , top_level_bst$best_score
-               , tolerance = TOLERANCE)
+  # check type just to be sure the subsetting didn't return a NULL
+  expect_true(is.numeric(top_level_l2))
+  expect_true(is.numeric(param_l2))
+  expect_true(is.numeric(both_l2))
+  
+  # check that model produces identical performance
+  expect_identical(top_level_l2, param_l2)
+  expect_identical(both_l2, param_l2)
 
-  expect_equal(param_bst$current_iter(), both_customized$current_iter())
-  expect_equal(param_bst$best_score
-               , both_customized$best_score
-               , tolerance = TOLERANCE)
+  expect_identical(param_bst$current_iter(), top_level_bst$current_iter())
+  expect_identical(param_bst$current_iter(), both_customized$current_iter())
+
 })
 
 test_that("lightgbm() performs evaluation on validation sets if they are provided", {
@@ -520,6 +527,75 @@ test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
     }, "nrounds should be greater than zero")
   }
 })
+
+
+test_that("lgb.train() accepts nrounds as either a top-level argument or parameter", {
+  nrounds <- 15L
+  
+  set.seed(708L)
+  top_level_bst <- lgb.train(
+    data = lgb.Dataset(
+      train$data
+      , label = train$label
+    )
+    , nrounds = nrounds
+    , params = list(
+      objective = "regression"
+      , metric = "l2"
+      , num_leaves = 5L
+      , save_name = tempfile(fileext = ".model")
+    )
+  )
+  
+  set.seed(708L)
+  param_bst <- lgb.train(
+    data = lgb.Dataset(
+      train$data
+      , label = train$label
+    )
+    , params = list(
+      objective = "regression"
+      , metric = "l2"
+      , num_leaves = 5L
+      , nrounds = nrounds
+      , save_name = tempfile(fileext = ".model")
+    )
+  )
+  
+  set.seed(708L)
+  both_customized <- lgb.train(
+    data = lgb.Dataset(
+      train$data
+      , label = train$label
+    )
+    , nrounds = 20L
+    , params = list(
+      objective = "regression"
+      , metric = "l2"
+      , num_leaves = 5L
+      , nrounds = nrounds
+      , save_name = tempfile(fileext = ".model")
+    )
+  )
+  
+  top_level_l2 <- top_level_bst$eval_train()[[1L]][["value"]]
+  params_l2    <- param_bst$eval_train()[[1L]][["value"]]
+  both_l2      <- both_customized$eval_train()[[1L]][["value"]]
+  
+  # check type just to be sure the subsetting didn't return a NULL
+  expect_true(is.numeric(top_level_l2))
+  expect_true(is.numeric(params_l2))
+  expect_true(is.numeric(both_l2))
+  
+  # check that model produces identical performance
+  expect_identical(top_level_l2, params_l2)
+  expect_identical(both_l2, params_l2)
+  
+  expect_identical(param_bst$current_iter(), top_level_bst$current_iter())
+  expect_identical(param_bst$current_iter(), both_customized$current_iter())
+  
+})
+
 
 test_that("lgb.train() throws an informative error if 'data' is not an lgb.Dataset", {
   bad_values <- list(
