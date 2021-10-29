@@ -533,8 +533,6 @@ def test_category_encoding(tmp_path):
         pred_contrib_4 = booster_4.predict(X_test, pred_contrib=True)
         np.testing.assert_allclose(pred_1, pred_4)
         np.testing.assert_equal(eval_1, eval_4)
-        # expected eval_1 = [('valid_data', 'auc', 0.9686609686609686, True)]
-        # expected eval_valid = [('valid_data', 'auc', 0.9686609686609686, True), ('valid_data_added', 'auc', 0.9686609686609686, True)]
         np.testing.assert_equal(eval_1[0][2], eval_valid[1][2])
         np.testing.assert_allclose(pred_contrib_1, pred_contrib_4)
 
