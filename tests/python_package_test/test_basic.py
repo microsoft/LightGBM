@@ -588,7 +588,7 @@ def test_category_encoding(tmp_path):
         "metric": "auc",
         "min_data": 10,
         "num_leaves": 15,
-        "verbose": 1,
+        "verbose": -1,
         "max_bin": 255,
         "max_cat_to_onehot": 1
     }
@@ -602,9 +602,9 @@ def test_category_encoding(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {
         'objective': 'multiclass',
-        'metric': 'multi_logloss',
+        'metric': 'multi_error',
         'num_class': 3,
-        'verbose': 1
+        'verbose': -1
     }
 
     test_category_encoding_inner(tmp_path, X_train, X_test, y_train, y_test, params, "multiclass")
