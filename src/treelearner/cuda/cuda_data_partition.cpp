@@ -32,7 +32,6 @@ CUDADataPartition::CUDADataPartition(
 
   is_categorical_feature_.resize(train_data->num_features(), false);
   is_single_feature_in_group_.resize(train_data->num_features(), false);
-  int feature_group_index = train_data->Feature2Group(0);
   for (int feature_index = 0; feature_index < train_data->num_features(); ++feature_index) {
     if (train_data->FeatureBinMapper(feature_index)->bin_type() == BinType::CategoricalBin) {
       is_categorical_feature_[feature_index] = true;
@@ -145,6 +144,8 @@ void CUDADataPartition::Split(
   const int right_leaf_index,
   const int leaf_best_split_feature,
   const uint32_t leaf_best_split_threshold,
+  const uint32_t* categorical_bitset,
+  const int categorical_bitset_len,
   const uint8_t leaf_best_split_default_left,
   const data_size_t num_data_in_leaf,
   const data_size_t leaf_data_start,
@@ -163,6 +164,8 @@ void CUDADataPartition::Split(
   GenDataToLeftBitVector(num_data_in_leaf,
                          leaf_best_split_feature,
                          leaf_best_split_threshold,
+                         categorical_bitset,
+                         categorical_bitset_len,
                          leaf_best_split_default_left,
                          leaf_data_start,
                          left_leaf_index,
@@ -189,17 +192,31 @@ void CUDADataPartition::GenDataToLeftBitVector(
     const data_size_t num_data_in_leaf,
     const int split_feature_index,
     const uint32_t split_threshold,
+    const uint32_t* categorical_bitset,
+    const int categorical_bitset_len,
     const uint8_t split_default_left,
     const data_size_t leaf_data_start,
     const int left_leaf_index,
     const int right_leaf_index) {
-  LaunchGenDataToLeftBitVectorKernel(num_data_in_leaf,
+  if (is_categorical_feature_[split_feature_index]) {
+    LaunchGenDataToLeftBitVectorCategoricalKernel(
+      num_data_in_leaf,
+      split_feature_index,
+      categorical_bitset,
+      categorical_bitset_len,
+      split_default_left,
+      leaf_data_start,
+      left_leaf_index,
+      right_leaf_index);
+  } else {
+    LaunchGenDataToLeftBitVectorKernel(num_data_in_leaf,
                                      split_feature_index,
                                      split_threshold,
                                      split_default_left,
                                      leaf_data_start,
                                      left_leaf_index,
                                      right_leaf_index);
+  }
 }
 
 void CUDADataPartition::SplitInner(

@@ -150,7 +150,6 @@ void CUDATree::LaunchSplitKernel(const int leaf_index,
 __global__ void SplitCategoricalKernel(  // split information
   const int leaf_index,
   const int real_feature_index,
-  const double real_threshold,
   const MissingType missing_type,
   const CUDASplitInfo* cuda_split_info,
   // tree structure
@@ -243,7 +242,6 @@ __global__ void SplitCategoricalKernel(  // split information
 
 void CUDATree::LaunchSplitCategoricalKernel(const int leaf_index,
   const int real_feature_index,
-  const double real_threshold,
   const MissingType missing_type,
   const CUDASplitInfo* cuda_split_info,
   size_t cuda_bitset_len,
@@ -252,7 +250,6 @@ void CUDATree::LaunchSplitCategoricalKernel(const int leaf_index,
     // split information
     leaf_index,
     real_feature_index,
-    real_threshold,
     missing_type,
     cuda_split_info,
     // tree structure

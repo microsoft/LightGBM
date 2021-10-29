@@ -217,7 +217,6 @@ int CUDATree::Split(const int leaf_index,
 
 int CUDATree::SplitCategorical(const int leaf_index,
            const int real_feature_index,
-           const double real_threshold,
            const MissingType missing_type,
            const CUDASplitInfo* cuda_split_info,
            uint32_t* cuda_bitset,
@@ -225,7 +224,7 @@ int CUDATree::SplitCategorical(const int leaf_index,
            uint32_t* cuda_bitset_inner,
            size_t cuda_bitset_inner_len) {
   LaunchSplitCategoricalKernel(leaf_index, real_feature_index,
-    real_threshold, missing_type, cuda_split_info,
+    missing_type, cuda_split_info,
     cuda_bitset_len, cuda_bitset_inner_len);
   cuda_bitset_.PushBack(cuda_bitset, cuda_bitset_len);
   cuda_bitset_inner_.PushBack(cuda_bitset_inner, cuda_bitset_inner_len);
@@ -281,8 +280,8 @@ void CUDATree::ToHost() {
   CopyFromCUDADeviceToHost<int>(leaf_depth_.data(), cuda_leaf_depth_, num_leaves_size, __FILE__, __LINE__);
 
   if (num_cat_ > 0) {
-    cuda_cat_boundaries_inner_.Resize(num_cat_);
-    cuda_cat_boundaries_.Resize(num_cat_);
+    cuda_cat_boundaries_inner_.Resize(num_cat_ + 1);
+    cuda_cat_boundaries_.Resize(num_cat_ + 1);
     cat_boundaries_ = cuda_cat_boundaries_.ToHost();
     cat_boundaries_inner_ = cuda_cat_boundaries_inner_.ToHost();
     cat_threshold_ = cuda_bitset_.ToHost();

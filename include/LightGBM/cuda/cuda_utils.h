@@ -113,9 +113,12 @@ class CUDAVector {
     CHECK_GT(size, 0);
     T* new_data = nullptr;
     AllocateCUDAMemory<T>(&new_data, size, __FILE__, __LINE__);
-    CopyFromCUDADeviceToCUDADevice<T>(new_data, data_, size, __FILE__, __LINE__);
+    if (size_ > 0 && data_ != nullptr) {
+      CopyFromCUDADeviceToCUDADevice<T>(new_data, data_, size, __FILE__, __LINE__);
+    }
     DeallocateCUDAMemory<T>(&data_, __FILE__, __LINE__);
     data_ = new_data;
+    size_ = size;
   }
 
   void PushBack(const T* values, size_t len) {
@@ -138,7 +141,9 @@ class CUDAVector {
 
   std::vector<T> ToHost() {
     std::vector<T> host_vector(size_);
-    CopyFromCUDADeviceToCUDADevice(host_vector.data(), data_, size_, __FILE__, __LINE__);
+    if (size_ > 0 && data_ != nullptr) {
+      CopyFromCUDADeviceToHost(host_vector.data(), data_, size_, __FILE__, __LINE__);
+    }
     return host_vector;
   }
 

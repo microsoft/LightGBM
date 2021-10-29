@@ -510,7 +510,9 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
 
   // update validation score
   for (auto& score_updater : valid_score_updater_) {
+  Log::Warning("before add prediciton to score for valid");
     score_updater->AddScore(tree, cur_tree_id);
+  Log::Warning("before add prediciton to score for valid");
   }
 }
 

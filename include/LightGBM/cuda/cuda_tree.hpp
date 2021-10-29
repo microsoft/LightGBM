@@ -49,7 +49,6 @@ class CUDATree : public Tree {
   int SplitCategorical(
     const int leaf_index,
     const int real_feature_index,
-    const double real_threshold,
     const MissingType missing_type,
     const CUDASplitInfo* cuda_split_info,
     uint32_t* cuda_bitset,
@@ -99,7 +98,6 @@ class CUDATree : public Tree {
   void LaunchSplitCategoricalKernel(
     const int leaf_index,
     const int real_feature_index,
-    const double real_threshold,
     const MissingType missing_type,
     const CUDASplitInfo* cuda_split_info,
     size_t cuda_bitset_len,

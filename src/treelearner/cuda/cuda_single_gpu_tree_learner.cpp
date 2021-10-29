@@ -174,18 +174,32 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
       ConstructBitsetForCategoricalSplit(best_split_info);
     }
 
-    int right_leaf_index = tree->Split(best_leaf_index_,
+    int right_leaf_index = 0;
+    if (train_data_->FeatureBinMapper(leaf_best_split_feature_[best_leaf_index_])->bin_type() == BinType::CategoricalBin) {
+      right_leaf_index = tree->SplitCategorical(best_leaf_index_,
+                                       train_data_->RealFeatureIndex(leaf_best_split_feature_[best_leaf_index_]),
+                                       train_data_->FeatureBinMapper(leaf_best_split_feature_[best_leaf_index_])->missing_type(),
+                                       best_split_info,
+                                       cuda_bitset_,
+                                       cuda_bitset_len_,
+                                       cuda_bitset_inner_,
+                                       cuda_bitset_inner_len_);
+    } else {
+      right_leaf_index = tree->Split(best_leaf_index_,
                                        train_data_->RealFeatureIndex(leaf_best_split_feature_[best_leaf_index_]),
                                        train_data_->RealThreshold(leaf_best_split_feature_[best_leaf_index_],
                                         leaf_best_split_threshold_[best_leaf_index_]),
                                        train_data_->FeatureBinMapper(leaf_best_split_feature_[best_leaf_index_])->missing_type(),
                                        best_split_info);
+    }
 
     cuda_data_partition_->Split(best_split_info,
                                 best_leaf_index_,
                                 right_leaf_index,
                                 leaf_best_split_feature_[best_leaf_index_],
                                 leaf_best_split_threshold_[best_leaf_index_],
+                                cuda_bitset_inner_,
+                                static_cast<int>(cuda_bitset_inner_len_),
                                 leaf_best_split_default_left_[best_leaf_index_],
                                 leaf_num_data_[best_leaf_index_],
                                 leaf_data_start_[best_leaf_index_],
