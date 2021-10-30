@@ -800,14 +800,8 @@ class LGBMModel(_LGBMModelBase):
             raise ValueError("Number of features of the model must "
                              f"match the input. Model n_features_ is {self._n_features} and "
                              f"input n_features is {n_features}")
-        # retrive original params that possibly can be used in both training and prediction
-        # and then overwrite them (considering aliases) with params that were passed directly in prediction
-        predict_params = self.get_params()
-        for alias in _ConfigAliases.get_by_alias(*kwargs.keys()):
-            predict_params.pop(alias, None)
-        predict_params.update(kwargs)
         return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
-                                     pred_leaf=pred_leaf, pred_contrib=pred_contrib, **predict_params)
+                                     pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
