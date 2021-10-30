@@ -37,6 +37,8 @@ int main() {
 EOL
 
 ${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_prefetch="yes"
+rm -f ./conftest
+rm -f ./conftest.cpp
 echo "checking whether MM_PREFETCH works...${ac_mm_prefetch}"
 
 if test "${ac_mm_prefetch}" = "yes";
@@ -59,6 +61,8 @@ int main() {
 EOL
 
 ${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_malloc="yes"
+rm -f ./conftest
+rm -f ./conftest.cpp
 echo "checking whether MM_MALLOC works...${ac_mm_malloc}"
 
 if test "${ac_mm_malloc}" = "yes";
