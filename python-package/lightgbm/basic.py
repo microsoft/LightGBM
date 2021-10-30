@@ -422,6 +422,16 @@ class _ConfigAliases:
             ret |= cls.aliases.get(i, {i})
         return ret
 
+    @classmethod
+    def get_by_alias(cls, *args):
+        ret = set()
+        for i in args:
+            for main_name, aliases in cls.aliases.items():
+                if i in aliases or i == main_name:
+                    ret |= aliases | {main_name}
+                    break
+        return ret
+
 
 def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_value: Any) -> Dict[str, Any]:
     """Get a single parameter value, accounting for aliases.
