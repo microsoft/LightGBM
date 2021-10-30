@@ -1158,6 +1158,17 @@ def test_continue_training_with_model():
     assert gbm.evals_result_['valid_0']['multi_logloss'][-1] < init_gbm.evals_result_['valid_0']['multi_logloss'][-1]
 
 
+def test_actual_number_of_trees():
+    X = [[1, 2, 3], [1, 2, 3]]
+    y = [1, 1]
+    n_estimators = 5
+    gbm = lgb.LGBMRegressor(n_estimators=n_estimators).fit(X, y)
+    assert gbm.n_estimators == n_estimators
+    assert gbm.n_estimators_ == 1
+    assert gbm.n_iter_ == 1
+    np.testing.assert_array_equal(gbm.predict(np.array(X) * 10), y)
+
+
 # sklearn < 0.22 requires passing "attributes" argument
 @pytest.mark.skipif(sk_version < parse_version('0.22'), reason='scikit-learn version is less than 0.22')
 def test_check_is_fitted():
