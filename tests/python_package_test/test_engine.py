@@ -2029,6 +2029,27 @@ def test_multiple_feval_cv():
     assert 'decreasing_metric-stdv' in cv_results
 
 
+def test_default_objective_and_metric():
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    train_dataset = lgb.Dataset(data=X_train, label=y_train)
+    validation_dataset = lgb.Dataset(data=X_test, label=y_test, reference=train_dataset)
+    evals_result = {}
+    params = {'verbose': -1}
+    lgb.train(
+        params=params,
+        train_set=train_dataset,
+        valid_sets=validation_dataset,
+        num_boost_round=5,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
+
+    assert 'valid_0' in evals_result
+    assert len(evals_result['valid_0']) == 1
+    assert 'l2' in evals_result['valid_0']
+    assert len(evals_result['valid_0']['l2']) == 5
+
+
 @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason='not enough RAM')
 def test_model_size():
     X, y = load_boston(return_X_y=True)
@@ -2846,3 +2867,23 @@ def test_dump_model():
     assert "leaf_const" in dumped_model_str
     assert "leaf_value" in dumped_model_str
     assert "leaf_count" in dumped_model_str
+
+
+def test_dump_model_hook():
+
+    def hook(obj):
+        if 'leaf_value' in obj:
+            obj['LV'] = obj['leaf_value']
+            del obj['leaf_value']
+        return obj
+
+    X, y = load_breast_cancer(return_X_y=True)
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "binary",
+        "verbose": -1
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model_str = str(bst.dump_model(5, 0, object_hook=hook))
+    assert "leaf_value" not in dumped_model_str
+    assert "LV" in dumped_model_str

@@ -139,7 +139,7 @@ def parse_check(
 
     Parameters
     ----------
-    check : string
+    check : str
         String representation of the constraint.
     reverse : bool, optional (default=False)
         Whether to reverse the sign of the constraint.
@@ -171,16 +171,16 @@ def set_one_var_from_string(
 
     Parameters
     ----------
-    name : string
+    name : str
         Name of the parameter.
-    param_type : string
+    param_type : str
         Type of the parameter.
     checks : list
         Constraints of the parameter.
 
     Returns
     -------
-    ret : string
+    ret : str
         Lines of auto config file with getting and checks of one parameter value.
     """
     ret = ""

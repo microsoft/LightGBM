@@ -14,13 +14,15 @@
   predcontrib = FALSE,
   header = FALSE,
   reshape = FALSE,
+  params = list(),
   ...
 )
 }
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
-\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
+\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or
+a character representing a path to a text file (CSV, TSV, or LibSVM)}
 
 \item{start_iteration}{int or None, optional (default=None)
 Start index of the iteration to predict.
@@ -45,8 +47,12 @@ for logistic regression would result in predictions for log-odds instead of prob
 \item{reshape}{whether to reshape the vector of predictions to a matrix form when there are several
 prediction outputs per case.}
 
-\item{...}{Additional named arguments passed to the \code{predict()} method of
-the \code{lgb.Booster} object passed to \code{object}.}
+\item{params}{a list of additional named parameters. See
+\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
+the "Predict Parameters" section of the documentation} for a list of parameters and
+valid values.}
+
+\item{...}{Additional prediction parameters. NOTE: deprecated as of v3.3.0. Use \code{params} instead.}
 }
 \value{
 For regression or binary classification, it returns a vector of length \code{nrows(data)}.
@@ -68,16 +74,28 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-params <- list(objective = "regression", metric = "l2")
+params <- list(
+  objective = "regression"
+  , metric = "l2"
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 valids <- list(test = dtest)
 model <- lgb.train(
   params = params
   , data = dtrain
   , nrounds = 5L
   , valids = valids
-  , min_data = 1L
-  , learning_rate = 1.0
 )
 preds <- predict(model, test$data)
+
+# pass other prediction parameters
+preds <- predict(
+    model,
+    test$data,
+    params = list(
+        predict_disable_shape_check = TRUE
+   )
+)
 }
 }

@@ -12,7 +12,7 @@ from os import SEEK_END
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import scipy.sparse
@@ -34,17 +34,17 @@ def _get_sample_count(total_nrow: int, params: str):
 
 
 class _DummyLogger:
-    def info(self, msg):
+    def info(self, msg: str) -> None:
         print(msg)
 
-    def warning(self, msg):
+    def warning(self, msg: str) -> None:
         warnings.warn(msg, stacklevel=3)
 
 
-_LOGGER = _DummyLogger()
+_LOGGER: Union[_DummyLogger, Logger] = _DummyLogger()
 
 
-def register_logger(logger):
+def register_logger(logger: Logger) -> None:
     """Register custom logger.
 
     Parameters
@@ -58,12 +58,12 @@ def register_logger(logger):
     _LOGGER = logger
 
 
-def _normalize_native_string(func):
+def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], None]:
     """Join log messages from native library which come by chunks."""
-    msg_normalized = []
+    msg_normalized: List[str] = []
 
     @wraps(func)
-    def wrapper(msg):
+    def wrapper(msg: str) -> None:
         nonlocal msg_normalized
         if msg.strip() == '':
             msg = ''.join(msg_normalized)
@@ -75,20 +75,20 @@ def _normalize_native_string(func):
     return wrapper
 
 
-def _log_info(msg):
+def _log_info(msg: str) -> None:
     _LOGGER.info(msg)
 
 
-def _log_warning(msg):
+def _log_warning(msg: str) -> None:
     _LOGGER.warning(msg)
 
 
 @_normalize_native_string
-def _log_native(msg):
+def _log_native(msg: str) -> None:
     _LOGGER.info(msg)
 
 
-def _log_callback(msg):
+def _log_callback(msg: bytes) -> None:
     """Redirect logs from native library into Python."""
     _log_native(str(msg.decode('utf-8')))
 
@@ -113,7 +113,7 @@ _LIB = _load_lib()
 NUMERIC_TYPES = (int, float, bool)
 
 
-def _safe_call(ret):
+def _safe_call(ret: int) -> None:
     """Check the return value from C API call.
 
     Parameters
@@ -149,8 +149,8 @@ def is_numpy_column_array(data):
     return len(shape) == 2 and shape[1] == 1
 
 
-def cast_numpy_1d_array_to_dtype(array, dtype):
-    """Cast numpy 1d array to given dtype."""
+def cast_numpy_array_to_dtype(array, dtype):
+    """Cast numpy array to given dtype."""
     if array.dtype == dtype:
         return array
     return array.astype(dtype=dtype, copy=False)
@@ -161,14 +161,24 @@ def is_1d_list(data):
     return isinstance(data, list) and (not data or is_numeric(data[0]))
 
 
+def _is_1d_collection(data: Any) -> bool:
+    """Check whether data is a 1-D collection."""
+    return (
+        is_numpy_1d_array(data)
+        or is_numpy_column_array(data)
+        or is_1d_list(data)
+        or isinstance(data, pd_Series)
+    )
+
+
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
     if is_numpy_1d_array(data):
-        return cast_numpy_1d_array_to_dtype(data, dtype)
+        return cast_numpy_array_to_dtype(data, dtype)
     elif is_numpy_column_array(data):
         _log_warning('Converting column-vector to 1d array')
         array = data.ravel()
-        return cast_numpy_1d_array_to_dtype(array, dtype)
+        return cast_numpy_array_to_dtype(array, dtype)
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, pd_Series):
@@ -178,6 +188,39 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     else:
         raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
                         "It should be list, numpy 1-D array or pandas Series")
+
+
+def _is_numpy_2d_array(data: Any) -> bool:
+    """Check whether data is a numpy 2-D array."""
+    return isinstance(data, np.ndarray) and len(data.shape) == 2 and data.shape[1] > 1
+
+
+def _is_2d_list(data: Any) -> bool:
+    """Check whether data is a 2-D list."""
+    return isinstance(data, list) and len(data) > 0 and is_1d_list(data[0])
+
+
+def _is_2d_collection(data: Any) -> bool:
+    """Check whether data is a 2-D collection."""
+    return (
+        _is_numpy_2d_array(data)
+        or _is_2d_list(data)
+        or isinstance(data, pd_DataFrame)
+    )
+
+
+def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -> np.ndarray:
+    """Convert data to numpy 2-D array."""
+    if _is_numpy_2d_array(data):
+        return cast_numpy_array_to_dtype(data, dtype)
+    if _is_2d_list(data):
+        return np.array(data, dtype=dtype)
+    if isinstance(data, pd_DataFrame):
+        if _get_bad_pandas_dtypes(data.dtypes):
+            raise ValueError('DataFrame.dtypes must be int, float or bool')
+        return cast_numpy_array_to_dtype(data.values, dtype)
+    raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
+                    "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
 
 def cfloat32_array_to_numpy(cptr, length):
@@ -288,7 +331,8 @@ class _ConfigAliases:
                "categorical_feature": {"categorical_feature",
                                        "cat_feature",
                                        "categorical_column",
-                                       "cat_column"},
+                                       "cat_column",
+                                       "categorical_features"},
                "data_random_seed": {"data_random_seed",
                                     "data_seed"},
                "early_stopping_round": {"early_stopping_round",
@@ -328,6 +372,8 @@ class _ConfigAliases:
                "machines": {"machines",
                             "workers",
                             "nodes"},
+               "max_bin": {"max_bin",
+                           "max_bins"},
                "metric": {"metric",
                           "metrics",
                           "metric_types"},
@@ -341,7 +387,8 @@ class _ConfigAliases:
                                   "num_round",
                                   "num_rounds",
                                   "num_boost_round",
-                                  "n_estimators"},
+                                  "n_estimators",
+                                  "max_iter"},
                "num_machines": {"num_machines",
                                 "num_machine"},
                "num_threads": {"num_threads",
@@ -352,7 +399,8 @@ class _ConfigAliases:
                "objective": {"objective",
                              "objective_type",
                              "app",
-                             "application"},
+                             "application",
+                             "loss"},
                "pre_partition": {"pre_partition",
                                  "is_pre_partition"},
                "tree_learner": {"tree_learner",
@@ -684,7 +732,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        model_file : string, pathlib.Path or None, optional (default=None)
+        model_file : str, pathlib.Path or None, optional (default=None)
             Path to the model file.
         booster_handle : object or None, optional (default=None)
             Handle of Booster.
@@ -742,9 +790,9 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
-            When data type is string or pathlib.Path, it represents the path of txt file.
+            If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
         num_iteration : int, optional (default=-1)
@@ -1123,16 +1171,16 @@ class Dataset:
     """Dataset in LightGBM."""
 
     def __init__(self, data, label=None, reference=None,
-                 weight=None, group=None, init_score=None, silent=False,
+                 weight=None, group=None, init_score=None, silent='warn',
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
         """Initialize Dataset.
 
         Parameters
         ----------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source of Dataset.
-            If string or pathlib.Path, it represents the path to txt file.
+            If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         reference : Dataset or None, optional (default=None)
@@ -1145,17 +1193,17 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
-        feature_name : list of strings or 'auto', optional (default="auto")
+        feature_name : list of str, or 'auto', optional (default="auto")
             Feature names.
             If 'auto' and data is pandas DataFrame, data columns names are used.
-        categorical_feature : list of strings or int, or 'auto', optional (default="auto")
+        categorical_feature : list of str or int, or 'auto', optional (default="auto")
             Categorical features.
             If list of int, interpreted as indices.
-            If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
+            If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
             All values in categorical features should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
@@ -1260,9 +1308,9 @@ class Dataset:
 
         Parameters
         ----------
-        sample_data : list of numpy arrays
+        sample_data : list of numpy array
             Sample data for each column.
-        sample_indices : list of numpy arrays
+        sample_indices : list of numpy array
             Sample data row index for each column.
         sample_cnt : int
             Number of samples.
@@ -1394,7 +1442,7 @@ class Dataset:
             if used_indices is not None:
                 assert not self.need_slice
                 if isinstance(data, (str, Path)):
-                    sub_init_score = np.empty(num_data * predictor.num_class, dtype=np.float32)
+                    sub_init_score = np.empty(num_data * predictor.num_class, dtype=np.float64)
                     assert num_data == len(used_indices)
                     for i in range(len(used_indices)):
                         for j in range(predictor.num_class):
@@ -1402,13 +1450,13 @@ class Dataset:
                     init_score = sub_init_score
             if predictor.num_class > 1:
                 # need to regroup init_score
-                new_init_score = np.empty(init_score.size, dtype=np.float32)
+                new_init_score = np.empty(init_score.size, dtype=np.float64)
                 for i in range(num_data):
                     for j in range(predictor.num_class):
                         new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
                 init_score = new_init_score
         elif self.init_score is not None:
-            init_score = np.zeros(self.init_score.shape, dtype=np.float32)
+            init_score = np.zeros(self.init_score.shape, dtype=np.float64)
         else:
             return self
         self.set_init_score(init_score)
@@ -1439,6 +1487,11 @@ class Dataset:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
                              f'Please use {key} argument of the Dataset constructor to pass this parameter.')
         # user can set verbose with params, it has higher priority
+        if silent != "warn":
+            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
+                         "Pass 'verbose' parameter via 'params' instead.")
+        else:
+            silent = False
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
         # get categorical features
@@ -1769,14 +1822,14 @@ class Dataset:
         return self
 
     def create_valid(self, data, label=None, weight=None, group=None,
-                     init_score=None, silent=False, params=None):
+                     init_score=None, silent='warn', params=None):
         """Create validation data align with current Dataset.
 
         Parameters
         ----------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source of Dataset.
-            If string or pathlib.Path, it represents the path to txt file.
+            If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
@@ -1787,7 +1840,7 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
@@ -1841,7 +1894,7 @@ class Dataset:
 
         Parameters
         ----------
-        filename : string or pathlib.Path
+        filename : str or pathlib.Path
             Name of the output file.
 
         Returns
@@ -1892,10 +1945,10 @@ class Dataset:
 
         Parameters
         ----------
-        field_name : string
+        field_name : str
             The field name of the information.
-        data : list, numpy 1-D array, pandas Series or None
-            The array of data to be set.
+        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
+            The data to be set.
 
         Returns
         -------
@@ -1913,12 +1966,22 @@ class Dataset:
                 ctypes.c_int(0),
                 ctypes.c_int(FIELD_TYPE_MAPPER[field_name])))
             return self
-        dtype = np.float32
-        if field_name == 'group':
-            dtype = np.int32
-        elif field_name == 'init_score':
+        if field_name == 'init_score':
             dtype = np.float64
-        data = list_to_1d_numpy(data, dtype, name=field_name)
+            if _is_1d_collection(data):
+                data = list_to_1d_numpy(data, dtype, name=field_name)
+            elif _is_2d_collection(data):
+                data = _data_to_2d_numpy(data, dtype, name=field_name)
+                data = data.ravel(order='F')
+            else:
+                raise TypeError(
+                    'init_score must be list, numpy 1-D array or pandas Series.\n'
+                    'In multiclass classification init_score can also be a list of lists, numpy 2-D array or pandas DataFrame.'
+                )
+        else:
+            dtype = np.int32 if field_name == 'group' else np.float32
+            data = list_to_1d_numpy(data, dtype, name=field_name)
+
         if data.dtype == np.float32 or data.dtype == np.float64:
             ptr_data, type_data, _ = c_float_array(data)
         elif data.dtype == np.int32:
@@ -1941,7 +2004,7 @@ class Dataset:
 
         Parameters
         ----------
-        field_name : string
+        field_name : str
             The field name of the information.
 
         Returns
@@ -1965,20 +2028,26 @@ class Dataset:
         if tmp_out_len.value == 0:
             return None
         if out_type.value == C_API_DTYPE_INT32:
-            return cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
+            arr = cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT32:
-            return cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
+            arr = cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT64:
-            return cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
+            arr = cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
         else:
             raise TypeError("Unknown type")
+        if field_name == 'init_score':
+            num_data = self.num_data()
+            num_classes = arr.size // num_data
+            if num_classes > 1:
+                arr = arr.reshape((num_data, num_classes), order='F')
+        return arr
 
     def set_categorical_feature(self, categorical_feature):
         """Set categorical features.
 
         Parameters
         ----------
-        categorical_feature : list of int or strings
+        categorical_feature : list of int or str
             Names or indices of categorical features.
 
         Returns
@@ -2056,7 +2125,7 @@ class Dataset:
 
         Parameters
         ----------
-        feature_name : list of strings
+        feature_name : list of str
             Feature names.
 
         Returns
@@ -2123,7 +2192,7 @@ class Dataset:
 
         Parameters
         ----------
-        init_score : list, numpy 1-D array, pandas Series or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
             Init score for Booster.
 
         Returns
@@ -2133,7 +2202,6 @@ class Dataset:
         """
         self.init_score = init_score
         if self.handle is not None and init_score is not None:
-            init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
             self.set_field('init_score', init_score)
             self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
         return self
@@ -2241,7 +2309,7 @@ class Dataset:
 
         Returns
         -------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequences or list of numpy arrays or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array or None
             Raw data used in the Dataset construction.
         """
         if self.handle is None:
@@ -2445,7 +2513,7 @@ class Dataset:
 
         Parameters
         ----------
-        filename : string or pathlib.Path
+        filename : str or pathlib.Path
             Name of the output file.
 
         Returns
@@ -2462,7 +2530,7 @@ class Dataset:
 class Booster:
     """Booster in LightGBM."""
 
-    def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent=False):
+    def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent='warn'):
         """Initialize the Booster.
 
         Parameters
@@ -2471,9 +2539,9 @@ class Booster:
             Parameters for Booster.
         train_set : Dataset or None, optional (default=None)
             Training dataset.
-        model_file : string, pathlib.Path or None, optional (default=None)
+        model_file : str, pathlib.Path or None, optional (default=None)
             Path to the model file.
-        model_str : string or None, optional (default=None)
+        model_str : str or None, optional (default=None)
             Model will be loaded from this string.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
@@ -2488,6 +2556,11 @@ class Booster:
         self.best_score = {}
         params = {} if params is None else deepcopy(params)
         # user can set verbose with params, it has higher priority
+        if silent != 'warn':
+            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
+                         "Pass 'verbose' parameter via 'params' instead.")
+        else:
+            silent = False
         if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
             params["verbose"] = -1
         if train_set is not None:
@@ -2574,7 +2647,7 @@ class Booster:
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
         elif model_str is not None:
-            self.model_from_string(model_str, not silent)
+            self.model_from_string(model_str, verbose="_silent_false")
         else:
             raise TypeError('Need at least one training dataset or model file or model string '
                             'to create Booster instance')
@@ -2650,7 +2723,7 @@ class Booster:
 
         Parameters
         ----------
-        machines : list, set or string
+        machines : list, set or str
             Names of machines.
         local_listen_port : int, optional (default=12400)
             TCP listen port for local machines.
@@ -2692,18 +2765,18 @@ class Booster:
 
             - ``tree_index`` : int64, which tree a node belongs to. 0-based, so a value of ``6``, for example, means "this node is in the 7th tree".
             - ``node_depth`` : int64, how far a node is from the root of the tree. The root node has a value of ``1``, its direct children are ``2``, etc.
-            - ``node_index`` : string, unique identifier for a node.
-            - ``left_child`` : string, ``node_index`` of the child node to the left of a split. ``None`` for leaf nodes.
-            - ``right_child`` : string, ``node_index`` of the child node to the right of a split. ``None`` for leaf nodes.
-            - ``parent_index`` : string, ``node_index`` of this node's parent. ``None`` for the root node.
-            - ``split_feature`` : string, name of the feature used for splitting. ``None`` for leaf nodes.
+            - ``node_index`` : str, unique identifier for a node.
+            - ``left_child`` : str, ``node_index`` of the child node to the left of a split. ``None`` for leaf nodes.
+            - ``right_child`` : str, ``node_index`` of the child node to the right of a split. ``None`` for leaf nodes.
+            - ``parent_index`` : str, ``node_index`` of this node's parent. ``None`` for the root node.
+            - ``split_feature`` : str, name of the feature used for splitting. ``None`` for leaf nodes.
             - ``split_gain`` : float64, gain from adding this split to the tree. ``NaN`` for leaf nodes.
             - ``threshold`` : float64, value of the feature used to decide which side of the split a record will go down. ``NaN`` for leaf nodes.
-            - ``decision_type`` : string, logical operator describing how to compare a value to ``threshold``.
+            - ``decision_type`` : str, logical operator describing how to compare a value to ``threshold``.
               For example, ``split_feature = "Column_10", threshold = 15, decision_type = "<="`` means that
               records where ``Column_10 <= 15`` follow the left side of the split, otherwise follows the right side of the split. ``None`` for leaf nodes.
-            - ``missing_direction`` : string, split direction that missing values should go to. ``None`` for leaf nodes.
-            - ``missing_type`` : string, describes what types of values are treated as missing.
+            - ``missing_direction`` : str, split direction that missing values should go to. ``None`` for leaf nodes.
+            - ``missing_type`` : str, describes what types of values are treated as missing.
             - ``value`` : float64, predicted value for this leaf node, multiplied by the learning rate.
             - ``weight`` : float64 or int64, sum of hessian (second-order derivative of objective), summed over observations that fall in this node.
             - ``count`` : int64, number of records in the training data that fall into this node.
@@ -2826,7 +2899,7 @@ class Booster:
 
         Parameters
         ----------
-        name : string
+        name : str
             Name for the training Dataset.
 
         Returns
@@ -2844,7 +2917,7 @@ class Booster:
         ----------
         data : Dataset
             Validation data.
-        name : string
+        name : str
             Name of validation data.
 
         Returns
@@ -3086,7 +3159,7 @@ class Booster:
         ----------
         data : Dataset
             Data for the evaluating.
-        name : string
+        name : str
             Name of the data.
         feval : callable or None, optional (default=None)
             Customized evaluation function.
@@ -3099,7 +3172,7 @@ class Booster:
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The evaluation dataset.
-                eval_name : string
+                eval_name : str
                     The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
@@ -3147,7 +3220,7 @@ class Booster:
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 train_data : Dataset
                     The training dataset.
-                eval_name : string
+                eval_name : str
                     The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
@@ -3180,7 +3253,7 @@ class Booster:
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 valid_data : Dataset
                     The validation dataset.
-                eval_name : string
+                eval_name : str
                     The name of evaluation function (without whitespace).
                 eval_result : float
                     The eval result.
@@ -3203,7 +3276,7 @@ class Booster:
 
         Parameters
         ----------
-        filename : string or pathlib.Path
+        filename : str or pathlib.Path
             Filename to save Booster.
         num_iteration : int or None, optional (default=None)
             Index of the iteration that should be saved.
@@ -3211,7 +3284,7 @@ class Booster:
             If <= 0, all iterations are saved.
         start_iteration : int, optional (default=0)
             Start index of the iteration that should be saved.
-        importance_type : string, optional (default="split")
+        importance_type : str, optional (default="split")
             What type of feature importance should be saved.
             If "split", result contains numbers of times the feature is used in a model.
             If "gain", result contains total gains of splits which use the feature.
@@ -3255,12 +3328,12 @@ class Booster:
             ctypes.c_int(end_iteration)))
         return self
 
-    def model_from_string(self, model_str, verbose=True):
+    def model_from_string(self, model_str, verbose='warn'):
         """Load Booster from a string.
 
         Parameters
         ----------
-        model_str : string
+        model_str : str
             Model will be loaded from this string.
         verbose : bool, optional (default=True)
             Whether to print messages while loading model.
@@ -3283,6 +3356,10 @@ class Booster:
         _safe_call(_LIB.LGBM_BoosterGetNumClasses(
             self.handle,
             ctypes.byref(out_num_class)))
+        if verbose in {'warn', '_silent_false'}:
+            verbose = verbose == 'warn'
+        else:
+            _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM.")
         if verbose:
             _log_info(f'Finished loading model, total used {int(out_num_iterations.value)} iterations')
         self.__num_class = out_num_class.value
@@ -3300,14 +3377,14 @@ class Booster:
             If <= 0, all iterations are saved.
         start_iteration : int, optional (default=0)
             Start index of the iteration that should be saved.
-        importance_type : string, optional (default="split")
+        importance_type : str, optional (default="split")
             What type of feature importance should be saved.
             If "split", result contains numbers of times the feature is used in a model.
             If "gain", result contains total gains of splits which use the feature.
 
         Returns
         -------
-        str_repr : string
+        str_repr : str
             String representation of Booster.
         """
         if num_iteration is None:
@@ -3342,7 +3419,7 @@ class Booster:
         ret += _dump_pandas_categorical(self.pandas_categorical)
         return ret
 
-    def dump_model(self, num_iteration=None, start_iteration=0, importance_type='split'):
+    def dump_model(self, num_iteration=None, start_iteration=0, importance_type='split', object_hook=None):
         """Dump Booster to JSON format.
 
         Parameters
@@ -3353,10 +3430,19 @@ class Booster:
             If <= 0, all iterations are dumped.
         start_iteration : int, optional (default=0)
             Start index of the iteration that should be dumped.
-        importance_type : string, optional (default="split")
+        importance_type : str, optional (default="split")
             What type of feature importance should be dumped.
             If "split", result contains numbers of times the feature is used in a model.
             If "gain", result contains total gains of splits which use the feature.
+        object_hook : callable or None, optional (default=None)
+            If not None, ``object_hook`` is a function called while parsing the json
+            string returned by the C API. It may be used to alter the json, to store
+            specific values while building the json structure. It avoids
+            walking through the structure again. It saves a significant amount
+            of time if the number of trees is huge.
+            Signature is ``def object_hook(node: dict) -> dict``.
+            None is equivalent to ``lambda node: node``.
+            See documentation of ``json.loads()`` for further details.
 
         Returns
         -------
@@ -3391,7 +3477,7 @@ class Booster:
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
-        ret = json.loads(string_buffer.value.decode('utf-8'))
+        ret = json.loads(string_buffer.value.decode('utf-8'), object_hook=object_hook)
         ret['pandas_categorical'] = json.loads(json.dumps(self.pandas_categorical,
                                                           default=json_default_with_numpy))
         return ret
@@ -3403,9 +3489,9 @@ class Booster:
 
         Parameters
         ----------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
-            If string or pathlib.Path, it represents the path to txt file.
+            If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
             Start index of the iteration to predict.
             If <= 0, starts from the first iteration.
@@ -3431,7 +3517,7 @@ class Booster:
 
         data_has_header : bool, optional (default=False)
             Whether the data has header.
-            Used only if data is string.
+            Used only if data is str.
         is_reshape : bool, optional (default=True)
             If True, result is reshaped to [nrow, ncol].
         **kwargs
@@ -3458,9 +3544,9 @@ class Booster:
 
         Parameters
         ----------
-        data : string, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
             Data source for refit.
-            If string or pathlib.Path, it represents the path to txt file.
+            If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array or pandas Series / one-column DataFrame
             Label for refit.
         decay_rate : float, optional (default=0.9)
@@ -3594,7 +3680,7 @@ class Booster:
 
         Parameters
         ----------
-        importance_type : string, optional (default="split")
+        importance_type : str, optional (default="split")
             How the importance is calculated.
             If "split", result contains numbers of times the feature is used in a model.
             If "gain", result contains total gains of splits which use the feature.
@@ -3627,20 +3713,20 @@ class Booster:
 
         Parameters
         ----------
-        feature : int or string
+        feature : int or str
             The feature name or index the histogram is calculated for.
             If int, interpreted as index.
-            If string, interpreted as name.
+            If str, interpreted as name.
 
             .. warning::
 
                 Categorical features are not supported.
 
-        bins : int, string or None, optional (default=None)
+        bins : int, str or None, optional (default=None)
             The maximum number of bins.
             If None, or int and > number of unique split values and ``xgboost_style=True``,
             the number of bins equals number of unique split values.
-            If string, it should be one from the list of the supported values by ``numpy.histogram()`` function.
+            If str, it should be one from the list of the supported values by ``numpy.histogram()`` function.
         xgboost_style : bool, optional (default=False)
             Whether the returned result should be in the same form as it is in XGBoost.
             If False, the returned value is tuple of 2 numpy arrays as it is in ``numpy.histogram()`` function.
@@ -3807,12 +3893,12 @@ class Booster:
 
         Parameters
         ----------
-        key : string
+        key : str
             The name of the attribute.
 
         Returns
         -------
-        value : string or None
+        value : str or None
             The attribute value.
             Returns None if attribute does not exist.
         """
