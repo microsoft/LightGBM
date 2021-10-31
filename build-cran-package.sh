@@ -4,31 +4,52 @@
 #     Prepare a source distribution of the R package
 #     to be submitted to CRAN.
 #
-# [arguments]
+# [arguments] 
 #
-#   --no-build-vignettes  Pass this flag to skip creating vignettes.
-#                         You might want to do this to avoid installing
-#                         vignette-only dependencies, or to avoid
-#                         portability issues.
+#     --r-executable Customize the R executable used by `R CMD build`.
+#                    Useful if building the R package in an environment with
+#                    non-standard builds of R, such as those provided in
+#                    https://github.com/wch/r-debug.
+#
+#     --no-build-vignettes Pass this flag to skip creating vignettes.
+#                          You might want to do this to avoid installing
+#                          vignette-only dependencies, or to avoid
+#                          portability issues.
 #
 # [usage]
+#
+#     # default usage
 #     sh build-cran-package.sh
+#
+#     # custom R build
+#     sh build-cran-package.sh --r-executable=RDvalgrind
+#
+#     # skip vignette building
+#     sh build-cran-package.sh --no-build-vignettes
 
 set -e
 
 # Default values of arguments
 BUILD_VIGNETTES=true
+LGB_R_EXECUTABLE=R
 
-# Loop through arguments and process them
-for arg in "$@"
-do
-    case $arg in
-        --no-build-vignettes)
-        BUILD_VIGNETTES=false
-        shift
-        ;;
-    esac
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --r-executable=*)
+      LGB_R_EXECUTABLE="${1#*=}"
+      ;;
+    --no-build-vignettes=*)
+      BUILD_VIGNETTES=false
+      ;;
+    *)
+      echo "invalid argument '${1}'"
+      exit -1
+      ;;
+  esac
+  shift
 done
+
+echo "Building lightgbm with R executable: ${LGB_R_EXECUTABLE}"
 
 ORIG_WD="$(pwd)"
 TEMP_R_DIR="$(pwd)/lightgbm_r"
@@ -168,7 +189,7 @@ cd "${TEMP_R_DIR}"
 cd "${ORIG_WD}"
 
 if ${BUILD_VIGNETTES} ; then
-    R CMD build \
+    "${LGB_R_EXECUTABLE}" CMD build \
         --keep-empty-dirs \
         lightgbm_r
 
@@ -202,7 +223,7 @@ if ${BUILD_VIGNETTES} ; then
 
     rm -rf ./_tmp
 else
-    R CMD build \
+    "${LGB_R_EXECUTABLE}" CMD build \
         --keep-empty-dirs \
         --no-build-vignettes \
         lightgbm_r
