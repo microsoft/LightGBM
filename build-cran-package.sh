@@ -19,10 +19,6 @@ set -e
 # Default values of arguments
 BUILD_VIGNETTES=true
 
-# This option exists primarily so that certain CI jobs
-# can use alternative builds of R
-LGB_R_EXECUTABLE=${LGB_R_EXECUTABLE:-R}
-
 # Loop through arguments and process them
 for arg in "$@"
 do
@@ -172,7 +168,7 @@ cd "${TEMP_R_DIR}"
 cd "${ORIG_WD}"
 
 if ${BUILD_VIGNETTES} ; then
-    "${LGB_R_EXECUTABLE}" CMD build \
+    R CMD build \
         --keep-empty-dirs \
         lightgbm_r
 
@@ -206,7 +202,7 @@ if ${BUILD_VIGNETTES} ; then
 
     rm -rf ./_tmp
 else
-    "${LGB_R_EXECUTABLE}" CMD build \
+    R CMD build \
         --keep-empty-dirs \
         --no-build-vignettes \
         lightgbm_r
