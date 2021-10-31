@@ -21,13 +21,13 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Welcome to the world of [LightGBM](https://lightgbm.readthedocs.io/en/latest/), a highly efficient gradient boosting implementation (Ke et al. 2017). 
+Welcome to the world of [LightGBM](https://lightgbm.readthedocs.io/en/latest/), a highly efficient gradient boosting implementation (Ke et al. 2017).
 
 ```{r setup}
 library(lightgbm)
 ```
 
-This vignette will guide you through its basic usage. It will show how to build a simple binary classification model based on a subset of the `bank` dataset (Moro, Cortez, and Rita 2014). You will use the two input features "age" and "balance" to predict whether a client has subscribed a term deposit. 
+This vignette will guide you through its basic usage. It will show how to build a simple binary classification model based on a subset of the `bank` dataset (Moro, Cortez, and Rita 2014). You will use the two input features "age" and "balance" to predict whether a client has subscribed a term deposit.
 
 ## The dataset
 
@@ -48,7 +48,6 @@ The R package of LightGBM offers two functions to train a model:
 
 - `lgb.train()`: This is the main training logic. It offers full flexibility but requires a `Dataset` object created by the `lgb.Dataset()` function.
 - `lightgbm()`: Simpler, but less flexible. Data can be passed without having to bother with `lgb.Dataset()`.
-
 
 ### Using the `lightgbm()` function
 
