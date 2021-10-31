@@ -54,8 +54,6 @@ echo "Building lightgbm with R executable: ${LGB_R_EXECUTABLE}"
 ORIG_WD="$(pwd)"
 TEMP_R_DIR="$(pwd)/lightgbm_r"
 
-echo "Building R package (build vignettes: ${BUILD_VIGNETTES})"
-
 if test -d "${TEMP_R_DIR}"; then
     rm -r "${TEMP_R_DIR}"
 fi
