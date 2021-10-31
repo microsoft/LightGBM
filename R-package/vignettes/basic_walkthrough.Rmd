@@ -10,7 +10,6 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE
@@ -22,7 +21,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Welcome to the world of [LightGBM](https://lightgbm.readthedocs.io/en/latest/), a hightly efficient gradient boosting implementation (Ke et al. 2017). 
+Welcome to the world of [LightGBM](https://lightgbm.readthedocs.io/en/latest/), a highly efficient gradient boosting implementation (Ke et al. 2017). 
 
 ```{r setup}
 library(lightgbm)
