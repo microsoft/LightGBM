@@ -186,10 +186,10 @@ def test_objective_aliases(custom_objective):
         evals.append(gbm.evals_result_['valid_0'][metric_name])
     evals_t = np.array(evals).T
     for i in range(evals_t.shape[0]):
-        np.testing.assert_array_equal(evals_t[i], evals_t[i][0])
+        np.testing.assert_allclose(evals_t[i], evals_t[i][0])
     # check that really dummy objective was used and estimator didn't learn anything
     if custom_objective:
-        np.testing.assert_array_equal(evals_t, evals_t[0][0])
+        np.testing.assert_allclose(evals_t, evals_t[0][0])
 
 
 def test_regression_with_custom_objective():
