@@ -32,6 +32,14 @@ else:
 decreasing_generator = itertools.count(0, -1)
 
 
+class UnpicklableCallback:
+    def __reduce__(self):
+        raise Exception("This class in not picklable")
+
+    def __call__(self, env):
+        env.model.set_attr(attr_set_inside_callback=str(env.iteration * 10))
+
+
 def custom_asymmetric_obj(y_true, y_pred):
     residual = (y_true - y_pred).astype(np.float64)
     grad = np.where(residual < 0, -2 * 10.0 * residual, -2 * residual)
@@ -425,6 +433,18 @@ def test_joblib():
     pred_origin = gbm.predict(X_test)
     pred_pickle = gbm_pickle.predict(X_test)
     np.testing.assert_allclose(pred_origin, pred_pickle)
+
+
+def test_non_serializable_objects_in_callbacks(tmp_path):
+    unpicklable_callback = UnpicklableCallback()
+
+    with pytest.raises(Exception, match="This class in not picklable"):
+        joblib.dump(unpicklable_callback, tmp_path / 'tmp.joblib')
+
+    X, y = load_boston(return_X_y=True)
+    gbm = lgb.LGBMRegressor(n_estimators=5)
+    gbm.fit(X, y, callbacks=[unpicklable_callback])
+    assert gbm.booster_.attr('attr_set_inside_callback') == '40'
 
 
 def test_random_state_object():

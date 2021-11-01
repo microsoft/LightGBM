@@ -1,5 +1,6 @@
 context("Booster")
 
+ON_WINDOWS <- .Platform$OS.type == "windows"
 TOLERANCE <- 1e-6
 
 test_that("Booster$finalize() should not fail", {
@@ -466,7 +467,12 @@ test_that("Booster$eval() should work on a Dataset stored in a binary file", {
     )
 
     expect_true(abs(eval_in_mem[[1L]][["value"]] - 0.1744423) < TOLERANCE)
-    expect_identical(eval_in_mem, eval_from_file)
+    # refer to https://github.com/microsoft/LightGBM/issues/4680
+    if (isTRUE(ON_WINDOWS)) {
+      expect_equal(eval_in_mem, eval_from_file)
+    } else {
+      expect_identical(eval_in_mem, eval_from_file)
+    }
 })
 
 test_that("Booster$rollback_one_iter() should work as expected", {
