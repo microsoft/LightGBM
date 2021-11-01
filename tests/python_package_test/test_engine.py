@@ -2908,7 +2908,7 @@ def test_force_split_with_feature_fraction(tmp_path):
         "objective": "regression",
         "feature_fraction": 0.6,
         "force_col_wise": True,
-        "feature_fraction_seed": 1,
+        "feature_fraction_seed": 10,
         "forcedsplits_filename": tmp_split_file
     }
 
@@ -2916,7 +2916,8 @@ def test_force_split_with_feature_fraction(tmp_path):
     ret = mean_absolute_error(y_test, gbm.predict(X_test))
     assert ret < 2.0
 
-    dumped_model = gbm.dump_model()["tree_info"]
-    for tree in dumped_model:
+    tree_info = gbm.dump_model()["tree_info"]
+    assert len(tree_info) > 1
+    for tree in tree_info:
         tree_structure = tree["tree_structure"]
         assert tree_structure['split_feature'] == 0

@@ -332,13 +332,12 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::set<int>* fo
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!col_sampler_.is_feature_used_bytree()[feature_index] && (force_features == nullptr || force_features->find(feature_index) == force_features->end())) continue;
     if (parent_leaf_histogram_array_ != nullptr
-      && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
+        && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
       smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
       continue;
     }
     is_feature_used[feature_index] = 1;
   }
-
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
 
 #ifdef USE_CUDA
@@ -350,7 +349,6 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::set<int>* fo
 #else
   ConstructHistograms(is_feature_used, use_subtract);
 #endif
-
   FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
 }
 
