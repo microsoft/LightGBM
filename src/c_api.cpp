@@ -978,9 +978,11 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
+  if (config.category_encoders != std::string("raw") and config.category_encoders != std::string("")) {
+    Log::Warning("category_encoders is ignored when LGBM_DatasetCreateFromSampledColumn is used to construct dataset.");
+  }
   OMP_SET_NUM_THREADS(config.num_threads);
   DatasetLoader loader(&config, nullptr, 1, nullptr);
-  // TODO(shiyu1994): in this case do we need category encoding provider ? it seems that therea are no labels available.
   *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
                                         num_sample_row,
                                         static_cast<data_size_t>(num_total_row), nullptr);
@@ -1271,7 +1273,6 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   API_END();
 }
 
-// TODO(shiyu1994): This is called in mmlspark, supporting category encoding mode with this function requires modifying mmlspark.
 int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
                                   int num_rows,
                                   int64_t num_col,
@@ -1288,6 +1289,9 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
+  if (config.category_encoders != std::string("raw") and config.category_encoders != std::string("")) {
+    Log::Warning("category_encoders is ignored when LGBM_DatasetCreateFromCSRFunc is used to construct dataset.");
+  }
   OMP_SET_NUM_THREADS(config.num_threads);
   std::unique_ptr<Dataset> ret;
   int32_t nrow = num_rows;
