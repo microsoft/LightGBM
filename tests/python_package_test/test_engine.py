@@ -2891,6 +2891,11 @@ def test_dump_model_hook():
 
 
 def test_force_split_with_feature_fraction(tmp_path):
+    def check_force_splits(dumped_model):
+        for tree in dumped_model:
+            tree_structure = tree["tree_structure"]
+            assert tree_structure['split_feature'] == 0
+
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
@@ -2913,8 +2918,7 @@ def test_force_split_with_feature_fraction(tmp_path):
     }
 
     gbm = lgb.train(params, lgb_train)
-    treesDf = gbm.trees_to_dataframe()
-    assert np.all(treesDf[treesDf.node_depth == 1]['split_feature'] == 'Column_0')
-
     ret = mean_absolute_error(y_test, gbm.predict(X_test))
     assert ret < 2.0
+
+    check_force_splits(gbm.dump_model()["tree_info"])
