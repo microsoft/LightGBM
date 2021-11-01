@@ -50,12 +50,6 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
                 const std::vector<const Metric*>& training_metrics) {
   CHECK_NOTNULL(train_data);
   train_data_ = train_data;
-  if (!config->monotone_constraints.empty()) {
-    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->monotone_constraints.size());
-  }
-  if (!config->feature_contri.empty()) {
-    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->feature_contri.size());
-  }
   iter_ = 0;
   num_iteration_for_pred_ = 0;
   max_feature_idx_ = 0;
@@ -64,10 +58,6 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   early_stopping_round_ = config_->early_stopping_round;
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
-
-  if (train_data_->category_encoding_provider() != nullptr) {
-    category_encoding_provider_.reset(CategoryEncodingProvider::RecoverFromModelString(train_data_->category_encoding_provider()->DumpToString()));
-  }
 
   if (config_->device_type == std::string("cuda")) {
     LGBM_config_::current_learner = use_cuda_learner;
@@ -80,6 +70,19 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
     buffer << forced_splits_file.rdbuf();
     std::string err;
     forced_splits_json_ = Json::parse(buffer.str(), &err);
+  }
+
+  if (train_data_->category_encoding_provider() != nullptr) {
+    category_encoding_provider_.reset(CategoryEncodingProvider::RecoverFromModelString(train_data_->category_encoding_provider()->DumpToString()));
+    category_encoding_provider_->CheckForcedSplitsForCategoryEncoding(&forced_splits_json_);
+    category_encoding_provider_->ExtendPerFeatureSetting(config_.get());
+  }
+
+  if (!config_->monotone_constraints.empty()) {
+    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config_->monotone_constraints.size());
+  }
+  if (!config_->feature_contri.empty()) {
+    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config_->feature_contri.size());
   }
 
   objective_function_ = objective_function;
@@ -123,7 +126,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   // get feature names
   feature_names_ = train_data_->feature_names();
   feature_infos_ = train_data_->feature_infos();
-  monotone_constraints_ = config->monotone_constraints;
+  monotone_constraints_ = config_->monotone_constraints;
 
   // if need bagging, create buffer
   ResetBaggingConfig(config_.get(), true);

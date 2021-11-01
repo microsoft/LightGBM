@@ -2887,3 +2887,119 @@ def test_dump_model_hook():
     dumped_model_str = str(bst.dump_model(5, 0, object_hook=hook))
     assert "leaf_value" not in dumped_model_str
     assert "LV" in dumped_model_str
+
+def test_category_encoding_with_set_feature_name():
+    X, y = load_breast_cancer(return_X_y=True)
+    category_encoders_str = "count,target:0.5,raw"
+    categorical_feature = [fidx for fidx in range(X.shape[1] // 2)]
+    lgb_data = lgb.Dataset(X, label=y, category_encoders=category_encoders_str,
+        categorical_feature=categorical_feature)
+
+    is_categorical_feature = np.zeros(X.shape[1], dtype=np.bool)
+    is_categorical_feature[categorical_feature] = True
+    lgb_data.set_feature_name(["feature_{}".format(i) for i in range(X.shape[1])])
+    lgb_data.construct()
+    feature_names = lgb_data.get_feature_name()
+    assert len(feature_names) == X.shape[1] + 2 * len(categorical_feature)
+    feature_names_set = set(feature_names)
+    for feature_index in range(X.shape[1]):
+        assert "feature_{}".format(feature_index) in feature_names_set
+        if is_categorical_feature[feature_index]:
+            assert "feature_{}_target_encoding_{}".format(feature_index, 0.5) in feature_names_set
+            assert "feature_{}_count_encoding".format(feature_index) in feature_names_set
+
+def test_category_encoding_with_monotone_constraints():
+    X = np.array([[0, 0, 2] for _ in range(100)] + [[0, 0, 3] for _ in range(100)] + [[0, 0, 0] for _ in range(100)])
+    y = np.array([2 for _ in range(100)] + [-1 for _ in range(100)] + [5 for _ in range(100)])
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "regression",
+        "categorical_feature": [2],
+        "category_encoders": "target",
+        "num_leaves": 2,
+        "num_trees": 5
+    }
+    booster = lgb.train(train_set=train_data, params=params)
+    pred_no_feature_constri = booster.predict(X)
+    rmse_no_feature_constri = np.sqrt(np.mean((pred_no_feature_constri - y) ** 2))
+
+    params["monotone_constraints"] = [0, 0, -1]
+    booster = lgb.train(train_set=train_data, params=params)
+    pred_feature_constri = booster.predict(X)
+    rmse_feature_constri = np.sqrt(np.mean((pred_feature_constri - y) ** 2))
+
+    assert rmse_feature_constri > rmse_no_feature_constri
+
+def test_category_encoding_with_feature_contri():
+    X = np.array([[0, 0, 2] for _ in range(100)] + [[0, 0, 3] for _ in range(100)] + [[0, 0, 0] for _ in range(100)])
+    y = np.array([2 for _ in range(100)] + [-1 for _ in range(100)] + [5 for _ in range(100)])
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "regression",
+        "categorical_feature": [2],
+        "category_encoders": "target",
+        "num_leaves": 2,
+        "num_trees": 5
+    }
+    booster = lgb.train(train_set=train_data, params=params)
+    pred_no_feature_contr = booster.predict(X)
+    rmse_no_feature_contr = np.sqrt(np.mean((pred_no_feature_contr - y) ** 2))
+
+    params["feature_contri"] = [1.0, 1.0, 0.0]
+    booster = lgb.train(train_set=train_data, params=params)
+    pred_feature_contr = booster.predict(X)
+    rmse_feature_contr = np.sqrt(np.mean((pred_feature_contr - y) ** 2))
+
+    assert rmse_feature_contr > rmse_no_feature_contr
+
+def test_category_encoding_with_cegb():
+    X = np.array([[0, 0, 2] for _ in range(100)] + [[0, 10, 3] for _ in range(100)] + [[0, 0, 0] for _ in range(100)])
+    y = np.array([2 for _ in range(100)] + [-1 for _ in range(100)] + [5 for _ in range(100)])
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "regression",
+        "categorical_feature": [2],
+        "category_encoders": "target",
+        "num_leaves": 2,
+        "num_trees": 5
+    }
+    booster = lgb.train(train_set=train_data, params=params)
+    pred = booster.predict(X)
+    rmse = np.sqrt(np.mean((pred - y) ** 2))
+
+    params["cegb_penalty_feature_lazy"] = [0.0, 0.0, 1e9]
+    booster = lgb.train(train_set=train_data, params=params)
+    pred_feature_cegb_lazy = booster.predict(X)
+    rmse_feature_cegb_lazy = np.sqrt(np.mean((pred_feature_cegb_lazy - y) ** 2))
+
+    assert rmse_feature_cegb_lazy > rmse
+
+    params["cegb_penalty_feature_coupled"] = [0.0, 0.0, 1e9]
+    booster = lgb.train(train_set=train_data, params=params)
+    pred_feature_cegb_coupled = booster.predict(X)
+    rmse_feature_cegb_coupled = np.sqrt(np.mean((pred_feature_cegb_coupled - y) ** 2))
+
+    assert rmse_feature_cegb_coupled > rmse
+
+def test_category_encoding_with_feature_interaction_constraints():
+    X = np.array([[0, 0, 0] for _ in range(100)] + [[0, 0, 1] for _ in range(100)] +
+        [[0, 1, 0] for _ in range(100)] + [[0, 1, 1] for _ in range(200)])
+    y = np.array(X[:, 1] + X[:, 2])
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "regression",
+        "categorical_feature": [2],
+        "category_encoders": "target,target:0.5",
+        "num_leaves": 4,
+        "num_trees": 5
+    }
+    booster = lgb.train(train_set=train_data, params=params)
+    pred = booster.predict(X)
+    rmse = np.sqrt(np.mean((pred - y) ** 2))
+
+    params["interaction_constraints"] = [[0, 1], [2]]
+    booster = lgb.train(train_set=train_data, params=params)
+    pred_feature_cegb_lazy = booster.predict(X)
+    rmse_feature_cegb_lazy = np.sqrt(np.mean((pred_feature_cegb_lazy - y) ** 2))
+
+    assert rmse_feature_cegb_lazy > rmse

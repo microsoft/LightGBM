@@ -5,6 +5,7 @@
 
 #include <LightGBM/category_encoding_provider.hpp>
 
+#include <queue>
 #include <set>
 
 namespace LightGBM {
@@ -1166,6 +1167,154 @@ void CategoryEncodingProvider::ExpandNumFeatureWhileAccumulate(const int new_lar
       is_categorical_feature_[fid] = true;
       count_info_[fid].resize(config_.num_target_encoding_folds + 1);
       label_info_[fid].resize(config_.num_target_encoding_folds + 1);
+    }
+  }
+}
+
+bool CategoryEncodingProvider::CheckForcedSplitsForCategoryEncoding(const Json* forced_split_json) const {
+  // start at root leaf
+  if (forced_split_json != nullptr && !forced_split_json->is_null()) {
+    std::queue<Json> q;
+    Json left = *forced_split_json;
+    Json right;
+    q.push(left);
+    bool categorical_found_in_forced_splits = false;
+    while (!q.empty()) {
+      Json node = q.front();
+      q.pop();
+      const int real_feature_index = node["feature"].int_value();
+      if (real_feature_index < num_original_features_) {
+        Log::Fatal("feature_index %d found in forcedsplits_filename, which is larger than the total number of features %d.",
+                   real_feature_index, num_original_features_);
+      }
+      if (is_categorical_feature_[real_feature_index]) {
+        categorical_found_in_forced_splits = true;
+      }
+      if (node.object_items().count("left") > 0) {
+        q.push(node["left"]);
+      }
+      if (node.object_items().count("right") > 0) {
+        q.push(node["right"]);
+      }
+    }
+    if (categorical_found_in_forced_splits && !keep_raw_cat_method_) {
+      Log::Fatal("When using category_encoders with forcedsplit_filename, `raw` must be included in category_encoders.");
+    }
+  }
+}
+
+void CategoryEncodingProvider::ExtendPerFeatureSetting(Config* config) const {
+  const bool is_monotone_constraints_used = !config->monotone_constraints.empty();
+  auto& monotone_contraints = config->monotone_constraints;
+  if (is_monotone_constraints_used) {
+    const int monotone_constraint_size = static_cast<int>(monotone_contraints.size());
+    if (monotone_constraint_size < num_original_features_) {
+      Log::Warning("Size of monotone_constraints is smaller than the number of features.");
+      Log::Warning("Padding the unspecified max_bin_by_feature by 0");
+      for (int fid = monotone_constraint_size; fid < num_original_features_; ++fid) {
+        monotone_contraints.emplace_back(0);
+      }
+    } else if (monotone_constraint_size > num_original_features_) {
+      Log::Warning("Size of monotone_constraints is larger than the number of features.");
+      Log::Warning("Ignoring the extra monotone_constraints values.");
+      monotone_contraints.resize(num_original_features_);
+      monotone_contraints.shrink_to_fit();
+    }
+    monotone_contraints.resize(num_total_features_);
+  }
+
+  const bool is_feature_contri_used = !config->feature_contri.empty();
+  auto& feature_contri = config->feature_contri;
+  if (is_feature_contri_used) {
+    const int feature_contri_size = static_cast<int>(feature_contri.size());
+    if (feature_contri_size < num_original_features_) {
+      Log::Warning("Size of feature_contri is smaller than the number of features.");
+      Log::Warning("Padding the unspecified max_bin_by_feature by 1.0");
+      for (int fid = feature_contri_size; fid < num_original_features_; ++fid) {
+        feature_contri.emplace_back(1.0f);
+      }
+    } else if (feature_contri_size > num_original_features_) {
+      Log::Warning("Size of monotone_constraints is larger than the number of features.");
+      Log::Warning("Ignoring the extra monotone_constraints values.");
+      feature_contri.resize(num_original_features_);
+      feature_contri.shrink_to_fit();
+    }
+    feature_contri.resize(num_total_features_);
+  }
+
+  const bool is_cegb_penalty_feature_lazy_used = !config->cegb_penalty_feature_lazy.empty();
+  auto &cegb_penalty_feature_lazy = config->cegb_penalty_feature_lazy;
+  if (is_cegb_penalty_feature_lazy_used) {
+    const int cegb_penalty_feature_lazy_size = static_cast<int>(cegb_penalty_feature_lazy.size());
+    if (cegb_penalty_feature_lazy_size < num_original_features_) {
+      Log::Warning("Size of cegb_penalty_feature_lazy is smaller than the number of features.");
+      Log::Warning("Padding the unspecified cegb_penalty_feature_lazy by 0.0");
+      for (int fid = cegb_penalty_feature_lazy_size; fid < num_original_features_; ++fid) {
+        cegb_penalty_feature_lazy.emplace_back(1.0f);
+      }
+    } else if (cegb_penalty_feature_lazy_size > num_original_features_) {
+      Log::Warning("Size of monotone_constraints is larger than the number of features.");
+      Log::Warning("Ignoring the extra monotone_constraints values.");
+      cegb_penalty_feature_lazy.resize(num_original_features_);
+      cegb_penalty_feature_lazy.shrink_to_fit();
+    }
+    cegb_penalty_feature_lazy.resize(num_total_features_);
+  }
+
+  const bool is_cegb_penalty_feature_coupled_used = !config->cegb_penalty_feature_coupled.empty();
+  auto &cegb_penalty_feature_coupled = config->cegb_penalty_feature_coupled;
+  if (is_cegb_penalty_feature_coupled_used) {
+    const int cegb_penalty_feature_coupled_size = static_cast<int>(cegb_penalty_feature_coupled.size());
+    if (cegb_penalty_feature_coupled_size < num_original_features_) {
+      Log::Warning("Size of cegb_penalty_feature_coupled is smaller than the number of features.");
+      Log::Warning("Padding the unspecified cegb_penalty_feature_coupled by 0.0");
+      for (int fid = cegb_penalty_feature_coupled_size; fid < num_original_features_; ++fid) {
+        cegb_penalty_feature_coupled.emplace_back(1.0f);
+      }
+    } else if (cegb_penalty_feature_coupled_size > num_original_features_) {
+      Log::Warning("Size of monotone_constraints is larger than the number of features.");
+      Log::Warning("Ignoring the extra monotone_constraints values.");
+      cegb_penalty_feature_coupled.resize(num_original_features_);
+      cegb_penalty_feature_coupled.shrink_to_fit();
+    }
+    cegb_penalty_feature_coupled.resize(num_total_features_);
+  }
+
+  const bool is_interaction_constraints_used = !config->interaction_constraints_vector.empty();
+  std::unordered_map<int, std::vector<int>> encode_fid_sets;
+  const size_t append_from = keep_raw_cat_method_ ? 0 : 1;
+  for (size_t i = append_from; i < category_encoders_.size(); ++i) {
+    auto& cat_converter = category_encoders_[i];
+    for (const int& fid : categorical_features_) {
+      const int convert_fid = cat_converter->GetConvertFid(fid);
+      if (is_monotone_constraints_used) {
+        Log::Warning("push monotone contraints");
+        monotone_contraints[convert_fid] = (monotone_contraints[fid]);
+      }
+      if (is_feature_contri_used) {
+        feature_contri[convert_fid] = (feature_contri[fid]);
+      }
+      if (is_cegb_penalty_feature_lazy_used) {
+        cegb_penalty_feature_lazy[convert_fid] = (cegb_penalty_feature_lazy[fid]);
+      }
+      if (is_cegb_penalty_feature_coupled_used) {
+        cegb_penalty_feature_coupled[convert_fid] = (cegb_penalty_feature_coupled[fid]);
+      }
+      if (is_interaction_constraints_used) {
+        encode_fid_sets[fid].push_back(convert_fid);
+      }
+    }
+  }
+
+  if (is_interaction_constraints_used) {
+    for (auto& constraints : config->interaction_constraints_vector) {
+      for (const int fid : constraints) {
+        if (is_categorical_feature_[fid]) {
+          for (const int new_fid : encode_fid_sets[fid]) {
+            constraints.push_back(new_fid);
+          }
+        }
+      }
     }
   }
 }

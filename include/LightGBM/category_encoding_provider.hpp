@@ -23,6 +23,8 @@
 
 namespace LightGBM {
 
+using json11::Json;
+
 // transform categorical features to encoded numerical values before the bin construction process
 class CategoryEncodingProvider {
  public:
@@ -518,6 +520,19 @@ class CategoryEncodingProvider {
     std::unordered_set<int>* categorical_features_from_loader);
 
   void AccumulateOneLineStat(const char* buffer, const size_t size, const data_size_t row_idx);
+
+  /*!
+  * \brief Checks that when forced splits contain categorical features, `raw` should be included in category_encoders
+  * \param forced_split_json Json object points to forced split definitions
+  * \return Whether the forced_split_json is compatible with category_encoders
+  */
+  bool CheckForcedSplitsForCategoryEncoding(const Json* forced_split_json) const;
+
+  /*!
+  * \brief Extends the settings per feature to include the category encoding features
+  * \param config Config from boosting object
+  */
+  void ExtendPerFeatureSetting(Config* config) const;
 
  private:
   void SetConfig(const Config* config);
