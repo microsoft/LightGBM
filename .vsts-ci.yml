@@ -19,7 +19,7 @@ resources:
     image: 'ubuntu:latest'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
   - container: rbase
-    image: rocker/r-base
+    image: wch1/r-debug
 jobs:
 ###########################################
 - job: Linux
