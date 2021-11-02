@@ -2908,7 +2908,7 @@ def test_force_split_with_feature_fraction(tmp_path):
         "objective": "regression",
         "feature_fraction": 0.6,
         "force_col_wise": True,
-        "feature_fraction_seed": 10,
+        "feature_fraction_seed": 1,
         "forcedsplits_filename": tmp_split_file
     }
 
