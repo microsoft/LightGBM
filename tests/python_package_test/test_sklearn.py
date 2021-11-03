@@ -178,7 +178,7 @@ def test_objective_aliases(custom_objective):
     for alias in lgb.basic._ConfigAliases.get('objective'):
         gbm = lgb.LGBMRegressor(n_estimators=5, **{alias: obj})
         if alias != 'objective':
-            with pytest.warns(UserWarning, match=f"Found `{alias}` in params. Will use it instead of argument"):
+            with pytest.warns(UserWarning, match=f"Found '{alias}' in params. Will use it instead of 'objective' argument"):
                 gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)])
         else:
             gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)])

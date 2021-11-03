@@ -584,7 +584,7 @@ class LGBMModel(_LGBMModelBase):
         for alias in _ConfigAliases.get('objective'):
             if alias in params:
                 self._objective = params.pop(alias)
-                _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
+                _log_warning(f"Found '{alias}' in params. Will use it instead of 'objective' argument")
         if self._objective is None:
             if isinstance(self, LGBMRegressor):
                 self._objective = "regression"
