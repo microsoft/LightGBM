@@ -19,7 +19,6 @@ jobs:
           apt-get update
           apt-get install --no-install-recommends -y \
             curl \
-            git \
             jq
       - name: Checkout repository
         uses: actions/checkout@v2.3.4
