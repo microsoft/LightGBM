@@ -638,9 +638,11 @@ class LGBMModel(_LGBMModelBase):
         eval_metric_list = copy.deepcopy(eval_metric)
         if not isinstance(eval_metric_list, list):
             eval_metric_list = [eval_metric_list]
+
         # Separate built-in from callable evaluation metrics
         eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
         eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, str)]
+
         # register default metric for consistency with callable eval_metric case
         original_metric = self._objective if isinstance(self._objective, str) else None
         if original_metric is None:
@@ -651,8 +653,10 @@ class LGBMModel(_LGBMModelBase):
                 original_metric = "multi_logloss" if self._n_classes > 2 else "binary_logloss"
             elif isinstance(self, LGBMRanker):
                 original_metric = "ndcg"
+
         # overwrite default metric by explicitly set metric
         params = _choose_param_value("metric", params, original_metric)
+
         # concatenate metric from params (or default if not provided in params) and eval_metric
         params['metric'] = [params['metric']] if isinstance(params['metric'], (str, type(None))) else params['metric']
         params['metric'] = [e for e in eval_metrics_builtin if e not in params['metric']] + params['metric']
