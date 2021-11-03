@@ -30,7 +30,7 @@ jobs:
           - task: check-docs
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.4.0
         with:
           fetch-depth: 5
           submodules: false
@@ -50,7 +50,7 @@ jobs:
     container: rocker/verse
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.4.0
         with:
           fetch-depth: 5
           submodules: true
