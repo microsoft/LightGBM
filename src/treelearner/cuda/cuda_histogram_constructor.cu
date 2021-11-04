@@ -28,7 +28,7 @@ __global__ void CUDAConstructHistogramDenseKernel(
   const data_size_t num_data_in_smaller_leaf = smaller_leaf_splits->num_data_in_leaf;
   const data_size_t num_data_per_thread = (num_data_in_smaller_leaf + dim_y - 1) / dim_y;
   const data_size_t* data_indices_ref = smaller_leaf_splits->data_indices_in_leaf;
-  __shared__ float shared_hist[SHRAE_HIST_SIZE];
+  __shared__ double shared_hist[SHRAE_HIST_SIZE];
   const unsigned int num_threads_per_block = blockDim.x * blockDim.y;
   const int partition_column_start = feature_partition_column_index_offsets[blockIdx.x];
   const int partition_column_end = feature_partition_column_index_offsets[blockIdx.x + 1];
@@ -53,14 +53,14 @@ __global__ void CUDAConstructHistogramDenseKernel(
   data_size_t inner_data_index = static_cast<data_size_t>(threadIdx_y);
   const int column_index = static_cast<int>(threadIdx.x) + partition_column_start;
   if (threadIdx.x < static_cast<unsigned int>(num_columns_in_partition)) {
-    float* shared_hist_ptr = shared_hist + (column_hist_offsets[column_index] << 1);
+    double* shared_hist_ptr = shared_hist + (column_hist_offsets[column_index] << 1);
     for (data_size_t i = 0; i < num_iteration_this; ++i) {
       const data_size_t data_index = data_indices_ref_this_block[inner_data_index];
       const score_t grad = cuda_gradients[data_index];
       const score_t hess = cuda_hessians[data_index];
       const uint32_t bin = static_cast<uint32_t>(data_ptr[data_index * num_columns_in_partition + threadIdx.x]);
       const uint32_t pos = bin << 1;
-      float* pos_ptr = shared_hist_ptr + pos;
+      double* pos_ptr = shared_hist_ptr + pos;
       atomicAdd_block(pos_ptr, grad);
       atomicAdd_block(pos_ptr + 1, hess);
       inner_data_index += blockDim.y;
@@ -87,7 +87,7 @@ __global__ void CUDAConstructHistogramSparseKernel(
   const data_size_t num_data_in_smaller_leaf = smaller_leaf_splits->num_data_in_leaf;
   const data_size_t num_data_per_thread = (num_data_in_smaller_leaf + dim_y - 1) / dim_y;
   const data_size_t* data_indices_ref = smaller_leaf_splits->data_indices_in_leaf;
-  __shared__ float shared_hist[SHRAE_HIST_SIZE];
+  __shared__ double shared_hist[SHRAE_HIST_SIZE];
   const unsigned int num_threads_per_block = blockDim.x * blockDim.y;
   const DATA_PTR_TYPE* block_row_ptr = row_ptr + blockIdx.x * (num_data + 1);
   const BIN_TYPE* data_ptr = data + partition_ptr[blockIdx.x];
@@ -118,7 +118,7 @@ __global__ void CUDAConstructHistogramSparseKernel(
       const score_t hess = cuda_hessians[data_index];
       const uint32_t bin = static_cast<uint32_t>(data_ptr[row_start + threadIdx.x]);
       const uint32_t pos = bin << 1;
-      float* pos_ptr = shared_hist + pos;
+      double* pos_ptr = shared_hist + pos;
       atomicAdd_block(pos_ptr, grad);
       atomicAdd_block(pos_ptr + 1, hess);
     }
@@ -567,13 +567,15 @@ void CUDAHistogramConstructor::LaunchSubtractHistogramKernel(
   const int num_subtract_threads = 2 * num_total_bin_;
   const int num_subtract_blocks = (num_subtract_threads + SUBTRACT_BLOCK_SIZE - 1) / SUBTRACT_BLOCK_SIZE;
   global_timer.Start("CUDAHistogramConstructor::FixHistogramKernel");
-  FixHistogramKernel<<<need_fix_histogram_features_.size(), FIX_HISTOGRAM_BLOCK_SIZE, 0, cuda_stream_>>>(
-    cuda_feature_num_bins_,
-    cuda_feature_hist_offsets_,
-    cuda_feature_most_freq_bins_,
-    cuda_need_fix_histogram_features_,
-    cuda_need_fix_histogram_features_num_bin_aligned_,
-    cuda_smaller_leaf_splits);
+  if (need_fix_histogram_features_.size() > 0) {
+    FixHistogramKernel<<<need_fix_histogram_features_.size(), FIX_HISTOGRAM_BLOCK_SIZE, 0, cuda_stream_>>>(
+      cuda_feature_num_bins_,
+      cuda_feature_hist_offsets_,
+      cuda_feature_most_freq_bins_,
+      cuda_need_fix_histogram_features_,
+      cuda_need_fix_histogram_features_num_bin_aligned_,
+      cuda_smaller_leaf_splits);
+  }
   global_timer.Stop("CUDAHistogramConstructor::FixHistogramKernel");
   global_timer.Start("CUDAHistogramConstructor::SubtractHistogramKernel");
   SubtractHistogramKernel<<<num_subtract_blocks, SUBTRACT_BLOCK_SIZE, 0, cuda_stream_>>>(

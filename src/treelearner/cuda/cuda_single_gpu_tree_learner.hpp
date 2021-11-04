@@ -63,6 +63,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
   void AllocateBitset();
 
+  void CheckSplitValid(const int left_leaf, const int right_leaf, const double sum_left_gradients, const double sum_right_gradients);
+
   // GPU device ID
   int gpu_device_id_;
   // number of threads on CPU
@@ -92,6 +94,9 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   int num_cat_threshold_;
   bool has_categorical_feature_;
 
+  std::vector<int> categorical_bin_to_value_;
+  std::vector<int> categorical_bin_offsets_;
+
   mutable double* cuda_leaf_gradient_stat_buffer_;
   mutable double* cuda_leaf_hessian_stat_buffer_;
   mutable data_size_t leaf_stat_buffer_size_;
@@ -101,6 +106,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   uint32_t* cuda_bitset_inner_;
   size_t cuda_bitset_inner_len_;
   size_t* cuda_block_bitset_len_buffer_;
+  int* cuda_categorical_bin_to_value_;
+  int* cuda_categorical_bin_offsets_;
 
   /*! \brief gradients on CUDA */
   score_t* cuda_gradients_;

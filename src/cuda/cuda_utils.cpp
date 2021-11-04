@@ -13,6 +13,11 @@ void SynchronizeCUDADevice(const char* file, const int line) {
   gpuAssert(cudaDeviceSynchronize(), file, line);
 }
 
+void PrintLastCUDAError() {
+  const char* error_name = cudaGetErrorName(cudaGetLastError());
+  Log::Warning(error_name); 
+}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

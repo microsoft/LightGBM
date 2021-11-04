@@ -13,7 +13,7 @@
 
 namespace LightGBM {
 
-struct CUDASplitInfo {
+class CUDASplitInfo {
  public:
   bool is_valid;
   int leaf_index;
@@ -38,7 +38,16 @@ struct CUDASplitInfo {
   uint32_t* cat_threshold = nullptr;
   int* cat_threshold_real = nullptr;
 
+  __device__ CUDASplitInfo() {
+    printf("default constructor is called\n");
+    num_cat_threshold = 0;
+    cat_threshold = nullptr;
+    cat_threshold_real = nullptr;
+    printf("default constructor is called, num_cat_threshold = %d\n", num_cat_threshold);
+  }
+
   __device__ ~CUDASplitInfo() {
+    printf("default destructor is called\n");
     if (num_cat_threshold > 0) {
       if (cat_threshold != nullptr) {
         cudaFree(cat_threshold);
@@ -47,6 +56,48 @@ struct CUDASplitInfo {
         cudaFree(cat_threshold_real);
       }
     }
+  }
+
+  __device__ CUDASplitInfo& operator=(const CUDASplitInfo& other) {
+    is_valid = other.is_valid;
+    leaf_index = other.leaf_index;
+    gain = other.gain;
+    inner_feature_index = other.inner_feature_index;
+    threshold = other.threshold;
+    default_left = other.default_left;
+
+    left_sum_gradients = other.left_sum_gradients;
+    left_sum_hessians = other.left_sum_hessians;
+    left_count = other.left_count;
+    left_gain = other.left_gain;
+    left_value = other.left_value;
+
+    right_sum_gradients = other.right_sum_gradients;
+    right_sum_hessians = other.right_sum_hessians;
+    right_count = other.right_count;
+    right_gain = other.right_gain;
+    right_value = other.right_value;
+
+    num_cat_threshold = other.num_cat_threshold;
+    if (num_cat_threshold > 0 && cat_threshold == nullptr) {
+      cat_threshold = new uint32_t[num_cat_threshold];
+    }
+    if (num_cat_threshold > 0 && cat_threshold_real == nullptr) {
+      cat_threshold_real = new int[num_cat_threshold];
+    }
+    if (num_cat_threshold > 0) {
+      if (other.cat_threshold != nullptr) {
+        for (int i = 0; i < num_cat_threshold; ++i) {
+          cat_threshold[i] = other.cat_threshold[i];
+        }
+      }
+      if (other.cat_threshold_real != nullptr) {
+        for (int i = 0; i < num_cat_threshold; ++i) {
+          cat_threshold_real[i] = other.cat_threshold_real[i];
+        }
+      }
+    }
+    return *this;
   }
 };
 

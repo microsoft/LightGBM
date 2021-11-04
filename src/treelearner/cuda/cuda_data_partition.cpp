@@ -100,7 +100,7 @@ void CUDADataPartition::Init() {
   AllocateCUDAMemory<hist_t*>(&cuda_hist_pool_, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
   CopyFromHostToCUDADevice<hist_t*>(cuda_hist_pool_, &cuda_hist_, 1, __FILE__, __LINE__);
 
-  AllocateCUDAMemory<int>(&cuda_split_info_buffer_, 12, __FILE__, __LINE__);
+  AllocateCUDAMemory<int>(&cuda_split_info_buffer_, 16, __FILE__, __LINE__);
 
   AllocateCUDAMemory<double>(&cuda_leaf_output_, static_cast<size_t>(num_leaves_), __FILE__, __LINE__);
 
@@ -112,7 +112,6 @@ void CUDADataPartition::Init() {
 
   InitCUDAMemoryFromHostMemory<data_size_t>(&cuda_num_data_, &num_data_, 1, __FILE__, __LINE__);
   add_train_score_.resize(num_data_, 0.0f);
-  Log::Warning("cuda_add_train_score_ size = %d", num_data_);
   AllocateCUDAMemory<double>(&cuda_add_train_score_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   use_bagging_ = false;
   used_indices_ = nullptr;
@@ -158,7 +157,9 @@ void CUDADataPartition::Split(
   data_size_t* left_leaf_start,
   data_size_t* right_leaf_start,
   double* left_leaf_sum_of_hessians,
-  double* right_leaf_sum_of_hessians) {
+  double* right_leaf_sum_of_hessians,
+  double* left_leaf_sum_of_gradients,
+  double* right_leaf_sum_of_gradients) {
   CalcBlockDim(num_data_in_leaf);
   global_timer.Start("GenDataToLeftBitVector");
   GenDataToLeftBitVector(num_data_in_leaf,
@@ -184,7 +185,9 @@ void CUDADataPartition::Split(
              left_leaf_start,
              right_leaf_start,
              left_leaf_sum_of_hessians,
-             right_leaf_sum_of_hessians);
+             right_leaf_sum_of_hessians,
+             left_leaf_sum_of_gradients,
+             right_leaf_sum_of_gradients);
   global_timer.Stop("SplitInner");
 }
 
@@ -232,7 +235,9 @@ void CUDADataPartition::SplitInner(
   data_size_t* left_leaf_start,
   data_size_t* right_leaf_start,
   double* left_leaf_sum_of_hessians,
-  double* right_leaf_sum_of_hessians) {
+  double* right_leaf_sum_of_hessians,
+  double* left_leaf_sum_of_gradients,
+  double* right_leaf_sum_of_gradients) {
   LaunchSplitInnerKernel(
     num_data_in_leaf,
     best_split_info,
@@ -245,7 +250,9 @@ void CUDADataPartition::SplitInner(
     left_leaf_start,
     right_leaf_start,
     left_leaf_sum_of_hessians,
-    right_leaf_sum_of_hessians);
+    right_leaf_sum_of_hessians,
+    left_leaf_sum_of_gradients,
+    right_leaf_sum_of_gradients);
   ++cur_num_leaves_;
 }
 

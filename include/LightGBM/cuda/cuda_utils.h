@@ -96,6 +96,8 @@ void DeallocateCUDAMemory(T** ptr, const char* file, const int line) {
   }
 }
 
+void PrintLastCUDAError();
+
 template <typename T>
 class CUDAVector {
  public:
@@ -124,7 +126,9 @@ class CUDAVector {
   void PushBack(const T* values, size_t len) {
     T* new_data = nullptr;
     AllocateCUDAMemory<T>(&new_data, size_ + len, __FILE__, __LINE__);
-    CopyFromCUDADeviceToCUDADevice<T>(new_data, data_, size_, __FILE__, __LINE__);
+    if (size_ > 0 && data_ != nullptr) {
+      CopyFromCUDADeviceToCUDADevice<T>(new_data, data_, size_, __FILE__, __LINE__);
+    }
     CopyFromCUDADeviceToCUDADevice<T>(new_data + size_, values, len, __FILE__, __LINE__);
     DeallocateCUDAMemory<T>(&data_, __FILE__, __LINE__);
     size_ += len;

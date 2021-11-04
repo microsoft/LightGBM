@@ -18,7 +18,7 @@
 
 #include "../train_share_states.h"
 
-#define SHRAE_HIST_SIZE (6144 * 2)
+#define SHRAE_HIST_SIZE (6144)
 #define COPY_SUBROW_BLOCK_SIZE_ROW_DATA (1024)
 
 namespace LightGBM {

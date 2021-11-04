@@ -17,7 +17,7 @@
 
 #include "cuda_leaf_splits.hpp"
 
-#define SHRAE_HIST_SIZE (6144 * 2)
+#define SHRAE_HIST_SIZE (6144)
 #define NUM_DATA_PER_THREAD (400)
 #define NUM_THRADS_PER_BLOCK (504)
 #define NUM_FEATURE_PER_THREAD_GROUP (28)

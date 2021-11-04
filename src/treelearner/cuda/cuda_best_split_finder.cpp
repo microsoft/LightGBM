@@ -24,8 +24,12 @@ CUDABestSplitFinder::CUDABestSplitFinder(
   min_data_in_leaf_(config->min_data_in_leaf),
   min_sum_hessian_in_leaf_(config->min_sum_hessian_in_leaf),
   min_gain_to_split_(config->min_gain_to_split),
+  cat_smooth_(config->cat_smooth),
+  cat_l2_(config->cat_l2),
   max_cat_threshold_(config->max_cat_threshold),
-  num_total_bin_(feature_hist_offsets.back()),
+  min_data_per_group_(config->min_data_per_group),
+  max_cat_to_onehot_(config->max_cat_to_onehot),
+  num_total_bin_(feature_hist_offsets.empty() ? 0 : static_cast<int>(feature_hist_offsets.back())),
   cuda_hist_(cuda_hist) {
   InitFeatureMetaInfo(train_data);
   cuda_leaf_best_split_info_ = nullptr;
@@ -71,10 +75,12 @@ void CUDABestSplitFinder::InitFeatureMetaInfo(const Dataset* train_data) {
   max_num_bin_in_feature_ = 0;
   has_categorical_feature_ = false;
   max_num_categorical_bin_ = 0;
+  is_categorical_.resize(train_data->num_features(), 0);
   for (int inner_feature_index = 0; inner_feature_index < num_features_; ++inner_feature_index) {
     const BinMapper* bin_mapper = train_data->FeatureBinMapper(inner_feature_index);
     if (bin_mapper->bin_type() == BinType::CategoricalBin) {
       has_categorical_feature_ = true;
+      is_categorical_[inner_feature_index] = 1;
       if (bin_mapper->num_bin() > max_num_categorical_bin_) {
         max_num_categorical_bin_ = bin_mapper->num_bin();
       }
@@ -105,7 +111,12 @@ void CUDABestSplitFinder::Init() {
   if (use_global_memory_) {
     AllocateCUDAMemory<hist_t>(&cuda_feature_hist_grad_buffer_, static_cast<size_t>(num_total_bin_), __FILE__, __LINE__);
     AllocateCUDAMemory<hist_t>(&cuda_feature_hist_hess_buffer_, static_cast<size_t>(num_total_bin_), __FILE__, __LINE__);
+    if (has_categorical_feature_) {
+      AllocateCUDAMemory<hist_t>(&cuda_feature_hist_stat_buffer_, static_cast<size_t>(num_total_bin_), __FILE__, __LINE__);
+      AllocateCUDAMemory<data_size_t>(&cuda_feature_hist_index_buffer_, static_cast<size_t>(num_total_bin_), __FILE__, __LINE__);
+    }
   }
+  InitCUDAMemoryFromHostMemory<int8_t>(&cuda_is_categorical_, is_categorical_.data(), is_categorical_.size(), __FILE__, __LINE__);
 }
 
 void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
@@ -134,7 +145,7 @@ void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
   for (int inner_feature_index = 0; inner_feature_index < num_features_; ++inner_feature_index) {
     const uint32_t num_bin = feature_num_bins_[inner_feature_index];
     const uint8_t missing_type = feature_missing_type_[inner_feature_index];
-    if (num_bin > 2 && missing_type != MissingType::None) {
+    if (num_bin > 2 && missing_type != MissingType::None && !is_categorical_[inner_feature_index]) {
       if (missing_type == MissingType::Zero) {
         host_task_reverse_.emplace_back(0);
         host_task_reverse_.emplace_back(1);
@@ -161,7 +172,11 @@ void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
         num_tasks_ += 2;
       }
     } else {
-      host_task_reverse_.emplace_back(1);
+      if (is_categorical_[inner_feature_index]) {
+        host_task_reverse_.emplace_back(0);
+      } else {
+        host_task_reverse_.emplace_back(1);
+      }
       host_task_skip_default_bin_.emplace_back(0);
       host_task_na_as_missing_.emplace_back(0);
       host_task_feature_index_.emplace_back(inner_feature_index);
@@ -209,10 +224,8 @@ void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
 
   const size_t output_buffer_size = 2 * static_cast<size_t>(num_tasks_);
   AllocateCUDAMemory<CUDASplitInfo>(&cuda_best_split_info_, output_buffer_size, __FILE__, __LINE__);
-  if (has_categorical_feature_) {
-    AllocateCatVectors(cuda_leaf_best_split_info_, cuda_best_leaf_split_info_buffer_size);
-    AllocateCatVectors(cuda_best_split_info_, output_buffer_size);
-  }
+  AllocateCatVectors(cuda_leaf_best_split_info_, cuda_best_leaf_split_info_buffer_size);
+  AllocateCatVectors(cuda_best_split_info_, output_buffer_size);
 }
 
 void CUDABestSplitFinder::ResetTrainingData(
@@ -252,9 +265,7 @@ void CUDABestSplitFinder::ResetConfig(const Config* config) {
                                     cuda_best_leaf_split_info_buffer_size,
                                     __FILE__,
                                     __LINE__);
-  if (has_categorical_feature_) {
-    AllocateCatVectors(cuda_leaf_best_split_info_, cuda_best_leaf_split_info_buffer_size);
-  }
+  AllocateCatVectors(cuda_leaf_best_split_info_, cuda_best_leaf_split_info_buffer_size);
 }
 
 void CUDABestSplitFinder::BeforeTrain(const std::vector<int8_t>& is_feature_used_bytree) {

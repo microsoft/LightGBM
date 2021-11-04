@@ -62,7 +62,9 @@ class CUDADataPartition {
     data_size_t* left_leaf_start,
     data_size_t* right_leaf_start,
     double* left_leaf_sum_of_hessians,
-    double* right_leaf_sum_of_hessians);
+    double* right_leaf_sum_of_hessians,
+    double* left_leaf_sum_of_gradients,
+    double* right_leaf_sum_of_gradients);
 
   void UpdateTrainScore(const Tree* tree, double* cuda_scores);
 
@@ -123,7 +125,9 @@ class CUDADataPartition {
     data_size_t* left_leaf_start,
     data_size_t* right_leaf_start,
     double* left_leaf_sum_of_hessians,
-    double* right_leaf_sum_of_hessians);
+    double* right_leaf_sum_of_hessians,
+    double* left_leaf_sum_of_gradients,
+    double* right_leaf_sum_of_gradients);
 
   // kernel launch functions
   void LaunchFillDataIndicesBeforeTrain();
@@ -143,7 +147,9 @@ class CUDADataPartition {
     data_size_t* left_leaf_start,
     data_size_t* right_leaf_start,
     double* left_leaf_sum_of_hessians,
-    double* right_leaf_sum_of_hessians);
+    double* right_leaf_sum_of_hessians,
+    double* left_leaf_sum_of_gradients,
+    double* right_leaf_sum_of_gradients);
 
   void LaunchGenDataToLeftBitVectorKernel(
     const data_size_t num_data_in_leaf,

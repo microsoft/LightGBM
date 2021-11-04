@@ -657,9 +657,9 @@ __global__ void UpdateDataIndexToLeafIndexKernel_Categorical(
     } else if (!USE_MIN_BIN && bin == 0) {
       cuda_data_index_to_leaf_index[global_data_index] = default_leaf_index;
     } else if (CUDAFindInBitset(bitset, bitset_len, bin - min_bin + mfb_offset)) {
-      cuda_data_index_to_leaf_index[global_data_index] = right_leaf_index;
-    } else {
       cuda_data_index_to_leaf_index[global_data_index] = left_leaf_index;
+    } else {
+      cuda_data_index_to_leaf_index[global_data_index] = right_leaf_index;
     }
   }
 }
@@ -696,10 +696,6 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorCategoricalKernel(
   const int8_t mfb_offset = static_cast<int8_t>(most_freq_bin == 0);
   std::vector<uint32_t> host_bitset(bitset_len, 0);
   CopyFromCUDADeviceToHost<uint32_t>(host_bitset.data(), bitset, bitset_len, __FILE__, __LINE__);
-  uint32_t t_zero_bin = min_bin + default_bin;
-  if (most_freq_bin == 0) {
-    --t_zero_bin;
-  }
   uint8_t split_default_to_left = 0;
   int default_leaf_index = right_leaf_index;
   const int is_single_feature_in_group = is_single_feature_in_group_[split_feature_index];
@@ -1088,8 +1084,10 @@ __global__ void SplitTreeStructureKernel(const int left_leaf_index,
     cuda_split_info_buffer[5] = cuda_leaf_data_start[right_leaf_index];
   } else if (global_thread_index == 8) {
     cuda_split_info_buffer_for_hessians[0] = best_split_info->left_sum_hessians;
+    cuda_split_info_buffer_for_hessians[2] = best_split_info->left_sum_gradients;
   } else if (global_thread_index == 9) {
     cuda_split_info_buffer_for_hessians[1] = best_split_info->right_sum_hessians;
+    cuda_split_info_buffer_for_hessians[3] = best_split_info->right_sum_gradients;
   }
 
   if (cuda_leaf_num_data[left_leaf_index] < cuda_leaf_num_data[right_leaf_index]) {
@@ -1226,7 +1224,9 @@ void CUDADataPartition::LaunchSplitInnerKernel(
   data_size_t* left_leaf_start_ref,
   data_size_t* right_leaf_start_ref,
   double* left_leaf_sum_of_hessians_ref,
-  double* right_leaf_sum_of_hessians_ref) {
+  double* right_leaf_sum_of_hessians_ref,
+  double* left_leaf_sum_of_gradients_ref,
+  double* right_leaf_sum_of_gradients_ref) {
   int num_blocks_final_ref = grid_dim_ - 1;
   int num_blocks_final_aligned = 1;
   while (num_blocks_final_ref > 0) {
@@ -1275,10 +1275,10 @@ void CUDADataPartition::LaunchSplitInnerKernel(
     cuda_hist_pool_,
     cuda_leaf_output_, cuda_split_info_buffer_);
   global_timer.Stop("CUDADataPartition::SplitTreeStructureKernel");
-  std::vector<int> cpu_split_info_buffer(12);
+  std::vector<int> cpu_split_info_buffer(16);
   const double* cpu_sum_hessians_info = reinterpret_cast<const double*>(cpu_split_info_buffer.data() + 8);
   global_timer.Start("CUDADataPartition::CopyFromCUDADeviceToHostAsync");
-  CopyFromCUDADeviceToHostAsync<int>(cpu_split_info_buffer.data(), cuda_split_info_buffer_, 12, cuda_streams_[0], __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostAsync<int>(cpu_split_info_buffer.data(), cuda_split_info_buffer_, 16, cuda_streams_[0], __FILE__, __LINE__);
   SynchronizeCUDADevice(__FILE__, __LINE__);
   global_timer.Stop("CUDADataPartition::CopyFromCUDADeviceToHostAsync");
   const data_size_t left_leaf_num_data = cpu_split_info_buffer[1];
@@ -1295,6 +1295,8 @@ void CUDADataPartition::LaunchSplitInnerKernel(
   *right_leaf_start_ref = right_leaf_data_start;
   *left_leaf_sum_of_hessians_ref = cpu_sum_hessians_info[0];
   *right_leaf_sum_of_hessians_ref = cpu_sum_hessians_info[1];
+  *left_leaf_sum_of_gradients_ref = cpu_sum_hessians_info[2];
+  *right_leaf_sum_of_gradients_ref = cpu_sum_hessians_info[3];
 }
 
 template <bool USE_BAGGING>

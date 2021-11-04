@@ -70,6 +70,7 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
   cuda_leaf_gradient_stat_buffer_ = nullptr;
   cuda_leaf_hessian_stat_buffer_ = nullptr;
   leaf_stat_buffer_size_ = 0;
+  num_cat_threshold_ = 0;
 }
 
 void CUDASingleGPUTreeLearner::BeforeTrain() {
@@ -193,6 +194,8 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
                                        best_split_info);
     }
 
+    double sum_left_gradients = 0.0f;
+    double sum_right_gradients = 0.0f;
     cuda_data_partition_->Split(best_split_info,
                                 best_leaf_index_,
                                 right_leaf_index,
@@ -210,7 +213,10 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
                                 &leaf_data_start_[best_leaf_index_],
                                 &leaf_data_start_[right_leaf_index],
                                 &leaf_sum_hessians_[best_leaf_index_],
-                                &leaf_sum_hessians_[right_leaf_index]);
+                                &leaf_sum_hessians_[right_leaf_index],
+                                &sum_left_gradients,
+                                &sum_right_gradients);
+    //CheckSplitValid(best_leaf_index_, right_leaf_index, sum_left_gradients, sum_right_gradients);
     smaller_leaf_index_ = (leaf_num_data_[best_leaf_index_] < leaf_num_data_[right_leaf_index] ? best_leaf_index_ : right_leaf_index);
     larger_leaf_index_ = (smaller_leaf_index_ == best_leaf_index_ ? right_leaf_index : best_leaf_index_);
     global_timer.Stop("CUDASingleGPUTreeLearner::Split");
@@ -353,8 +359,12 @@ void CUDASingleGPUTreeLearner::ConstructBitsetForCategoricalSplit(
 
 void CUDASingleGPUTreeLearner::AllocateBitset() {
   has_categorical_feature_ = false;
+  categorical_bin_offsets_.clear();
+  categorical_bin_offsets_.push_back(0);
+  categorical_bin_to_value_.clear();
   for (int i = 0; i < train_data_->num_features(); ++i) {
-    if (train_data_->FeatureBinMapper(i)->bin_type() == BinType::CategoricalBin) {
+    const BinMapper* bin_mapper = train_data_->FeatureBinMapper(i);
+    if (bin_mapper->bin_type() == BinType::CategoricalBin) {
       has_categorical_feature_ = true;
       break;
     }
@@ -363,20 +373,85 @@ void CUDASingleGPUTreeLearner::AllocateBitset() {
     int max_cat_value = 0;
     int max_cat_num_bin = 0;
     for (int i = 0; i < train_data_->num_features(); ++i) {
-      max_cat_value = std::max(train_data_->FeatureBinMapper(i)->MaxCatValue(), max_cat_value);
-      max_cat_num_bin = std::max(train_data_->FeatureBinMapper(i)->num_bin(), max_cat_num_bin);
+      const BinMapper* bin_mapper = train_data_->FeatureBinMapper(i);
+      if (bin_mapper->bin_type() == BinType::CategoricalBin) {
+        max_cat_value = std::max(bin_mapper->MaxCatValue(), max_cat_value);
+        max_cat_num_bin = std::max(bin_mapper->num_bin(), max_cat_num_bin);
+      }
     }
-    AllocateCUDAMemory<uint32_t>(&cuda_bitset_, static_cast<size_t>(max_cat_value / 32), __FILE__, __LINE__);
-    AllocateCUDAMemory<uint32_t>(&cuda_bitset_inner_, static_cast<size_t>(max_cat_num_bin / 32), __FILE__, __LINE__);
+    // std::max(..., 1UL) to avoid error in the case when there are NaN's in the categorical values 
+    const size_t cuda_bitset_max_size = std::max(static_cast<size_t>((max_cat_value + 31) / 32), 1UL);
+    const size_t cuda_bitset_inner_max_size = std::max(static_cast<size_t>((max_cat_num_bin + 31) / 32), 1UL);
+    AllocateCUDAMemory<uint32_t>(&cuda_bitset_, cuda_bitset_max_size, __FILE__, __LINE__);
+    AllocateCUDAMemory<uint32_t>(&cuda_bitset_inner_, cuda_bitset_inner_max_size, __FILE__, __LINE__);
     const int max_cat_in_split = std::min(config_->max_cat_threshold, max_cat_num_bin / 2);
     const int num_blocks = (max_cat_in_split + CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE - 1) / CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE;
     AllocateCUDAMemory<size_t>(&cuda_block_bitset_len_buffer_, num_blocks, __FILE__, __LINE__);
+
+    for (int i = 0; i < train_data_->num_features(); ++i) {
+      const BinMapper* bin_mapper = train_data_->FeatureBinMapper(i);
+      if (bin_mapper->bin_type() == BinType::CategoricalBin) {
+        categorical_bin_offsets_.push_back(bin_mapper->num_bin());
+      } else {
+        categorical_bin_offsets_.push_back(0);
+      }
+    }
+    for (size_t i = 1; i < categorical_bin_offsets_.size(); ++i) {
+      categorical_bin_offsets_[i] += categorical_bin_offsets_[i - 1];
+    }
+    categorical_bin_to_value_.resize(categorical_bin_offsets_.back(), 0);
+    for (int i = 0; i < train_data_->num_features(); ++i) {
+      const BinMapper* bin_mapper = train_data_->FeatureBinMapper(i);
+      if (bin_mapper->bin_type() == BinType::CategoricalBin) {
+        const int offset = categorical_bin_offsets_[i];
+        for (int bin = 0; bin < bin_mapper->num_bin(); ++bin) {
+          categorical_bin_to_value_[offset + bin] = bin_mapper->BinToValue(bin);
+        }
+      }
+    }
+    InitCUDAMemoryFromHostMemory<int>(&cuda_categorical_bin_offsets_, categorical_bin_offsets_.data(), categorical_bin_offsets_.size(), __FILE__, __LINE__);
+    InitCUDAMemoryFromHostMemory<int>(&cuda_categorical_bin_to_value_, categorical_bin_to_value_.data(), categorical_bin_to_value_.size(), __FILE__, __LINE__);
   } else {
     cuda_bitset_ = nullptr;
     cuda_bitset_inner_ = nullptr;
   }
   cuda_bitset_len_ = 0;
   cuda_bitset_inner_len_ = 0;
+}
+
+void CUDASingleGPUTreeLearner::CheckSplitValid(
+  const int left_leaf,
+  const int right_leaf,
+  const double split_sum_left_gradients,
+  const double split_sum_right_gradients) {
+  std::vector<data_size_t> left_data_indices(leaf_num_data_[left_leaf]);
+  std::vector<data_size_t> right_data_indices(leaf_num_data_[right_leaf]);
+  CopyFromCUDADeviceToHost<data_size_t>(left_data_indices.data(),
+    cuda_data_partition_->cuda_data_indices() + leaf_data_start_[left_leaf],
+    leaf_num_data_[left_leaf], __FILE__, __LINE__);
+  CopyFromCUDADeviceToHost<data_size_t>(right_data_indices.data(),
+    cuda_data_partition_->cuda_data_indices() + leaf_data_start_[right_leaf],
+    leaf_num_data_[right_leaf], __FILE__, __LINE__);
+  double sum_left_gradients = 0.0f, sum_left_hessians = 0.0f;
+  double sum_right_gradients = 0.0f, sum_right_hessians = 0.0f;
+  for (size_t i = 0; i < left_data_indices.size(); ++i) {
+    const data_size_t index = left_data_indices[i];
+    sum_left_gradients += gradients_[index];
+    sum_left_hessians += hessians_[index];
+  }
+  for (size_t i = 0; i < right_data_indices.size(); ++i) {
+    const data_size_t index = right_data_indices[i];
+    sum_right_gradients += gradients_[index];
+    sum_right_hessians += hessians_[index];
+  }
+  Log::Warning("sum_left_gradients = %f, split_sum_left_gradients = %f", sum_left_gradients, split_sum_left_gradients);
+  Log::Warning("sum_left_hessians = %f, leaf_sum_hessians_[%d] = %f", sum_left_hessians, left_leaf, leaf_sum_hessians_[left_leaf]);
+  Log::Warning("sum_right_gradients = %f, split_sum_right_gradients = %f", sum_right_gradients, split_sum_right_gradients);
+  Log::Warning("sum_right_hessians = %f, leaf_sum_hessians_[%d] = %f", sum_right_hessians, right_leaf, leaf_sum_hessians_[right_leaf]);
+  CHECK_LE(std::fabs(sum_left_gradients - split_sum_left_gradients), 1e-6f);
+  CHECK_LE(std::fabs(sum_left_hessians - leaf_sum_hessians_[left_leaf]), 1e-6f);
+  CHECK_LE(std::fabs(sum_right_gradients - split_sum_right_gradients), 1e-6f);
+  CHECK_LE(std::fabs(sum_right_hessians - leaf_sum_hessians_[right_leaf]), 1e-6f);
 }
 
 }  // namespace LightGBM

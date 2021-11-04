@@ -18,7 +18,7 @@
 
 #include "cuda_leaf_splits.hpp"
 
-#define NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER (1024)
+#define NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER (256)
 #define NUM_THREADS_FIND_BEST_LEAF (256)
 #define NUM_TASKS_PER_SYNC_BLOCK (1024)
 
@@ -119,7 +119,11 @@ class CUDABestSplitFinder {
   data_size_t min_data_in_leaf_;
   double min_sum_hessian_in_leaf_;
   double min_gain_to_split_;
+  double cat_smooth_;
+  double cat_l2_;
   int max_cat_threshold_;
+  int min_data_per_group_;
+  int max_cat_to_onehot_;
   std::vector<cudaStream_t> cuda_streams_;
   // for best split find tasks
   std::vector<int> host_task_feature_index_;
@@ -127,6 +131,7 @@ class CUDABestSplitFinder {
   std::vector<uint8_t> host_task_skip_default_bin_;
   std::vector<uint8_t> host_task_na_as_missing_;
   std::vector<uint8_t> host_task_out_default_left_;
+  std::vector<uint8_t> host_task_one_hot_;
   int num_tasks_;
   // use global memory
   bool use_global_memory_;
@@ -136,6 +141,8 @@ class CUDABestSplitFinder {
   bool has_categorical_feature_;
   // maximum number of bins of categorical features
   int max_num_categorical_bin_;
+  // marks whether a feature is categorical
+  std::vector<int8_t> is_categorical_;
 
   // CUDA memory, held by this object
   // for per leaf best split information
@@ -159,6 +166,9 @@ class CUDABestSplitFinder {
   // used when finding best split with global memory
   hist_t* cuda_feature_hist_grad_buffer_;
   hist_t* cuda_feature_hist_hess_buffer_;
+  hist_t* cuda_feature_hist_stat_buffer_;
+  data_size_t* cuda_feature_hist_index_buffer_;
+  int8_t* cuda_is_categorical_;
 
   // CUDA memory, held by other object
   const hist_t* cuda_hist_;
