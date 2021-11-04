@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - master
+    - fix_dask
   tags:
     include:
     - v*
