@@ -848,15 +848,23 @@ class LGBMModel(_LGBMModelBase):
         return self._objective
 
     @property
-    def n_estimators_(self):
-        """:obj:`int`: The concrete number of boosted trees this model contains after fitting."""
+    def n_estimators_(self) -> int:
+        """:obj:`int`: True number of boosting iterations performed.
+
+        This might be less than parameter ``n_estimators`` if early stopping was enabled or
+        if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
+        """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_estimators found. Need to call fit beforehand.')
         return self._Booster.current_iteration()
 
     @property
-    def n_iter_(self):
-        """:obj:`int`: Number of iterations of the boosting process."""
+    def n_iter_(self) -> int:
+        """:obj:`int`: True number of boosting iterations performed.
+
+        This might be less than parameter ``n_estimators`` if early stopping was enabled or
+        if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
+        """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_iter found. Need to call fit beforehand.')
         return self._Booster.current_iteration()
