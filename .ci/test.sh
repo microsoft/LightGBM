@@ -114,11 +114,11 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-# temporary fix for https://github.com/microsoft/LightGBM/issues/4285
+# temporary fix for https://github.com/microsoft/LightGBM/issues/4769
 if [[ $PYTHON_VERSION == "3.6" ]]; then
     DASK_DEPENDENCIES="dask distributed"
 else
-    DASK_DEPENDENCIES="dask=2021.9.1" "distributed=2021.9.1"
+    DASK_DEPENDENCIES="dask=2021.9.1 distributed=2021.9.1"
 fi
 
 conda install -q -y -n $CONDA_ENV cloudpickle ${DASK_DEPENDENCIES} joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
