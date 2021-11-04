@@ -43,8 +43,6 @@ def test_register_logger(tmp_path):
     lgb.plot_metric(eval_records)
 
     expected_log = r"""
-WARNING | categorical_feature in Dataset is overridden.
-New categorical_feature is [1]
 INFO | [LightGBM] [Warning] There are no meaningful features, as all feature values are constant.
 INFO | [LightGBM] [Info] Number of positive: 2, number of negative: 2
 INFO | [LightGBM] [Info] Total Bins 0
