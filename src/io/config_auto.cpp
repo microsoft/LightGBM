@@ -312,6 +312,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "gpu_device_id",
   "gpu_use_dp",
   "num_gpu",
+  "data_sample_strategy"
   });
   return params;
 }
