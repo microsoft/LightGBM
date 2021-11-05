@@ -1320,6 +1320,7 @@ def test_errors(cluster):
                 model_factory=lgb.LGBMClassifier
             )
             assert 'foo' in str(info.value)
+        client.restart()
 
 
 @pytest.mark.parametrize('task', tasks)
