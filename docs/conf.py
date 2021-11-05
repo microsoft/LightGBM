@@ -268,6 +268,7 @@ def generate_r_docs(app: Sphinx) -> None:
         -q \
         -y \
         -c conda-forge \
+        --override-channels \
         -n r_env \
             r-base=4.1.0=hb67fd72_2 \
             r-data.table=1.14.0=r41hcfec24a_0 \
