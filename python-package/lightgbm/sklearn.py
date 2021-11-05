@@ -434,7 +434,7 @@ class LGBMModel(_LGBMModelBase):
             If RandomState object (numpy), a random integer is picked based on its state to seed the C++ code.
             If None, default seeds in C++ code are used.
         n_jobs : int, optional (default=-1)
-            Number of parallel threads.
+            Number of parallel threads to use for training (can be changed at prediction time).
         silent : bool, optional (default=True)
             Whether to print messages while running boosting.
         importance_type : str, optional (default='split')
