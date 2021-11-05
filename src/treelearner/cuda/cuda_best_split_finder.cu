@@ -176,6 +176,7 @@ __device__ double GetSplitGains(double sum_left_gradients,
                      l1, use_l1, l2);
 }
 
+template <bool REVERSE>
 __device__ void FindBestSplitsForLeafKernelInner(
   // input feature information
   const hist_t* feature_hist_ptr,
@@ -195,7 +196,6 @@ __device__ void FindBestSplitsForLeafKernelInner(
   const double sum_hessians,
   const data_size_t num_data,
   // input task information
-  const bool reverse,
   const bool skip_default_bin,
   const bool na_as_missing,
   const uint8_t assume_out_default_left,
@@ -218,11 +218,11 @@ __device__ void FindBestSplitsForLeafKernelInner(
   __shared__ bool shared_found_buffer[32];
   __shared__ uint32_t shared_thread_index_buffer[32];
   const unsigned int threadIdx_x = threadIdx.x;
-  const bool skip_sum = reverse ?
+  const bool skip_sum = REVERSE ?
     (skip_default_bin && (feature_num_bin - 1 - threadIdx_x) == static_cast<int>(feature_default_bin)) :
     (skip_default_bin && (threadIdx_x + feature_mfb_offset) == static_cast<int>(feature_default_bin));
   const uint32_t feature_num_bin_minus_offset = feature_num_bin - feature_mfb_offset;
-  if (!reverse) {
+  if (!REVERSE) {
     if (threadIdx_x < feature_num_bin_minus_offset && !skip_sum) {
       const unsigned int bin_offset = threadIdx_x << 1;
       local_grad_hist = feature_hist_ptr[bin_offset];
@@ -245,7 +245,7 @@ __device__ void FindBestSplitsForLeafKernelInner(
   local_grad_hist = ShufflePrefixSum(local_grad_hist, shared_mem_buffer);
   __syncthreads();
   local_hess_hist = ShufflePrefixSum(local_hess_hist, shared_mem_buffer);
-  if (reverse) {
+  if (REVERSE) {
     if (threadIdx_x >= static_cast<unsigned int>(na_as_missing) && threadIdx_x <= feature_num_bin - 2 && !skip_sum) {
       const double sum_right_gradient = local_grad_hist;
       const double sum_right_hessian = local_hess_hist;
@@ -301,7 +301,7 @@ __device__ void FindBestSplitsForLeafKernelInner(
     cuda_best_split_info->threshold = threshold_value;
     cuda_best_split_info->gain = local_gain;
     cuda_best_split_info->default_left = assume_out_default_left;
-    if (reverse) {
+    if (REVERSE) {
       const double sum_right_gradient = local_grad_hist;
       const double sum_right_hessian = local_hess_hist - kEpsilon;
       const data_size_t right_count = static_cast<data_size_t>(__double2int_rn(sum_right_hessian * cnt_factor));
@@ -691,31 +691,57 @@ __global__ void FindBestSplitsForLeafKernel(
       const bool skip_default_bin = static_cast<bool>(task_skip_default_bin[task_index]);
       const bool na_as_missing = static_cast<bool>(task_na_as_missing[task_index]);
       const bool assume_out_default_left = task_out_default_left[task_index];
-      FindBestSplitsForLeafKernelInner(
-        // input feature information
-        hist_ptr,
-        feature_num_bins[inner_feature_index],
-        feature_mfb_offsets[inner_feature_index],
-        feature_default_bins[inner_feature_index],
-        inner_feature_index,
-        // input config parameter values
-        lambda_l1,
-        lambda_l2,
-        min_data_in_leaf,
-        min_sum_hessian_in_leaf,
-        min_gain_to_split,
-        // input parent node information
-        parent_gain,
-        sum_gradients,
-        sum_hessians,
-        num_data,
-        // input task information
-        reverse,
-        skip_default_bin,
-        na_as_missing,
-        assume_out_default_left,
-        // output parameters
-        out);
+      if (reverse) {
+        FindBestSplitsForLeafKernelInner<true>(
+          // input feature information
+          hist_ptr,
+          feature_num_bins[inner_feature_index],
+          feature_mfb_offsets[inner_feature_index],
+          feature_default_bins[inner_feature_index],
+          inner_feature_index,
+          // input config parameter values
+          lambda_l1,
+          lambda_l2,
+          min_data_in_leaf,
+          min_sum_hessian_in_leaf,
+          min_gain_to_split,
+          // input parent node information
+          parent_gain,
+          sum_gradients,
+          sum_hessians,
+          num_data,
+          // input task information
+          skip_default_bin,
+          na_as_missing,
+          assume_out_default_left,
+          // output parameters
+          out);
+      } else {
+        FindBestSplitsForLeafKernelInner<false>(
+          // input feature information
+          hist_ptr,
+          feature_num_bins[inner_feature_index],
+          feature_mfb_offsets[inner_feature_index],
+          feature_default_bins[inner_feature_index],
+          inner_feature_index,
+          // input config parameter values
+          lambda_l1,
+          lambda_l2,
+          min_data_in_leaf,
+          min_sum_hessian_in_leaf,
+          min_gain_to_split,
+          // input parent node information
+          parent_gain,
+          sum_gradients,
+          sum_hessians,
+          num_data,
+          // input task information
+          skip_default_bin,
+          na_as_missing,
+          assume_out_default_left,
+          // output parameters
+          out);
+      }
     }
   } else {
     out->is_valid = false;

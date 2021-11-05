@@ -170,71 +170,103 @@ class CUDADataPartition {
     const int left_leaf_index,
     const int right_leaf_index);
 
-  template <typename BIN_TYPE>
-  void LaunchGenDataToLeftBitVectorKernelMaxIsMinInner(
-    const bool missing_is_zero,
-    const bool missing_is_na,
-    const bool mfb_is_zero,
-    const bool mfb_is_na,
-    const bool max_bin_to_left,
-    const int column_index,
-    const int split_feature_index,
-    const data_size_t leaf_data_start,
-    const data_size_t num_data_in_leaf,
-    const uint32_t th,
-    const uint32_t t_zero_bin,
-    const uint32_t most_freq_bin,
-    const uint32_t max_bin,
-    const uint32_t min_bin,
-    const uint8_t split_default_to_left,
-    const uint8_t split_missing_default_to_left,
-    const int left_leaf_index,
-    const int right_leaf_index,
-    const int default_leaf_index,
-    const int missing_default_leaf_index);
+#define GenDataToLeftBitVectorKernel_PARMS \
+  const BIN_TYPE* column_data, \
+  const data_size_t num_data_in_leaf, \
+  const data_size_t* data_indices_in_leaf, \
+  const uint32_t th, \
+  const uint32_t t_zero_bin, \
+  const uint32_t max_bin, \
+  const uint32_t min_bin, \
+  const uint8_t split_default_to_left, \
+  const uint8_t split_missing_default_to_left
 
   template <typename BIN_TYPE>
-  void LaunchGenDataToLeftBitVectorKernelMaxIsNotMinInner(
+  void LaunchGenDataToLeftBitVectorKernelInner(
+    GenDataToLeftBitVectorKernel_PARMS,
     const bool missing_is_zero,
     const bool missing_is_na,
     const bool mfb_is_zero,
     const bool mfb_is_na,
-    const int column_index,
-    const int split_feature_index,
-    const data_size_t leaf_data_start,
-    const data_size_t num_data_in_leaf,
-    const uint32_t th,
-    const uint32_t t_zero_bin,
-    const uint32_t most_freq_bin,
-    const uint32_t max_bin,
-    const uint32_t min_bin,
-    const uint8_t split_default_to_left,
-    const uint8_t split_missing_default_to_left,
-    const int left_leaf_index,
-    const int right_leaf_index,
-    const int default_leaf_index,
-    const int missing_default_leaf_index);
+    const bool max_bin_to_left);
+
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, typename BIN_TYPE>
+  void LaunchGenDataToLeftBitVectorKernelInner0(
+    GenDataToLeftBitVectorKernel_PARMS,
+    const bool missing_is_na,
+    const bool mfb_is_zero,
+    const bool mfb_is_na,
+    const bool max_bin_to_left);
+
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, typename BIN_TYPE>
+  void LaunchGenDataToLeftBitVectorKernelInner1(
+    GenDataToLeftBitVectorKernel_PARMS,
+    const bool mfb_is_zero,
+    const bool mfb_is_na,
+    const bool max_bin_to_left);
+
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, typename BIN_TYPE>
+  void LaunchGenDataToLeftBitVectorKernelInner2(
+    GenDataToLeftBitVectorKernel_PARMS,
+    const bool mfb_is_na,
+    const bool max_bin_to_left);
+
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
+  void LaunchGenDataToLeftBitVectorKernelInner3(
+    GenDataToLeftBitVectorKernel_PARMS,
+    const bool max_bin_to_left);
+
+#undef GenDataToLeftBitVectorKernel_PARMS
+
+#define UpdateDataIndexToLeafIndexKernel_PARAMS \
+  const BIN_TYPE* column_data, \
+  const data_size_t num_data_in_leaf, \
+  const data_size_t* data_indices_in_leaf, \
+  const uint32_t th, \
+  const uint32_t t_zero_bin, \
+  const uint32_t max_bin_ref, \
+  const uint32_t min_bin_ref, \
+  const int left_leaf_index, \
+  const int right_leaf_index, \
+  const int default_leaf_index, \
+  const int missing_default_leaf_index
 
   template <typename BIN_TYPE>
   void LaunchUpdateDataIndexToLeafIndexKernel(
-    const data_size_t num_data_in_leaf,
-    const data_size_t* data_indices_in_leaf,
-    const uint32_t th,
-    const BIN_TYPE* column_data,
-    // values from feature
-    const uint32_t t_zero_bin,
-    const uint32_t max_bin_ref,
-    const uint32_t min_bin_ref,
-    int* cuda_data_index_to_leaf_index,
-    const int left_leaf_index,
-    const int right_leaf_index,
-    const int default_leaf_index,
-    const int missing_default_leaf_index,
+    UpdateDataIndexToLeafIndexKernel_PARAMS,
     const bool missing_is_zero,
     const bool missing_is_na,
     const bool mfb_is_zero,
     const bool mfb_is_na,
     const bool max_to_left);
+
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, typename BIN_TYPE>
+  void LaunchUpdateDataIndexToLeafIndexKernel_Inner0(
+    UpdateDataIndexToLeafIndexKernel_PARAMS,
+    const bool missing_is_na,
+    const bool mfb_is_zero,
+    const bool mfb_is_na,
+    const bool max_to_left);
+
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, typename BIN_TYPE>
+  void LaunchUpdateDataIndexToLeafIndexKernel_Inner1(
+    UpdateDataIndexToLeafIndexKernel_PARAMS,
+    const bool mfb_is_zero,
+    const bool mfb_is_na,
+    const bool max_to_left);
+
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, typename BIN_TYPE>
+  void LaunchUpdateDataIndexToLeafIndexKernel_Inner2(
+    UpdateDataIndexToLeafIndexKernel_PARAMS,
+    const bool mfb_is_na,
+    const bool max_to_left);
+
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
+  void LaunchUpdateDataIndexToLeafIndexKernel_Inner3(
+    UpdateDataIndexToLeafIndexKernel_PARAMS,
+    const bool max_to_left);
+
+#undef UpdateDataIndexToLeafIndexKernel_PARAMS
 
   void LaunchAddPredictionToScoreKernel(const double* leaf_value, double* cuda_scores);
 
