@@ -186,12 +186,6 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
                                        cuda_bitset_inner_,
                                        cuda_bitset_inner_len_);
     } else {
-      if (train_data_->RealFeatureIndex(leaf_best_split_feature_[best_leaf_index_]) == 7) {
-        Log::Warning("inner_feature_index = %d, leaf_best_split_threshold_[best_leaf_index_] = %d",
-          leaf_best_split_feature_[best_leaf_index_], leaf_best_split_threshold_[best_leaf_index_]);
-        Log::Warning("real threshold = %f", train_data_->RealThreshold(leaf_best_split_feature_[best_leaf_index_],
-                                        leaf_best_split_threshold_[best_leaf_index_]));
-      }
       right_leaf_index = tree->Split(best_leaf_index_,
                                        train_data_->RealFeatureIndex(leaf_best_split_feature_[best_leaf_index_]),
                                        train_data_->RealThreshold(leaf_best_split_feature_[best_leaf_index_],

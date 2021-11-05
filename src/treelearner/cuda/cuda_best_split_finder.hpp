@@ -14,6 +14,7 @@
 
 #include <vector>
 
+#include <LightGBM/cuda/cuda_random.hpp>
 #include <LightGBM/cuda/cuda_split_info.hpp>
 
 #include "cuda_leaf_splits.hpp"
@@ -23,6 +24,22 @@
 #define NUM_TASKS_PER_SYNC_BLOCK (1024)
 
 namespace LightGBM {
+
+struct SplitFindTask {
+  int inner_feature_index;
+  bool reverse;
+  bool skip_default_bin;
+  bool na_as_missing;
+  bool assume_out_default_left;
+  bool is_categorical;
+  bool is_one_hot;
+  uint32_t hist_offset;
+  uint8_t mfb_offset;
+  uint32_t num_bin;
+  uint32_t default_bin;
+  CUDARandom* cuda_random;
+  int rand_threshold;
+};
 
 class CUDABestSplitFinder {
  public:
@@ -105,6 +122,8 @@ class CUDABestSplitFinder {
 
   void LaunchAllocateCatVectorsKernel(CUDASplitInfo* cuda_split_infos, size_t len) const;
 
+  void LaunchInitCUDARandomKernel();
+
   // Host memory
   int num_features_;
   int num_leaves_;
@@ -124,14 +143,11 @@ class CUDABestSplitFinder {
   int max_cat_threshold_;
   int min_data_per_group_;
   int max_cat_to_onehot_;
+  bool extra_trees_;
+  int extra_seed_;
   std::vector<cudaStream_t> cuda_streams_;
   // for best split find tasks
-  std::vector<int> host_task_feature_index_;
-  std::vector<uint8_t> host_task_reverse_;
-  std::vector<uint8_t> host_task_skip_default_bin_;
-  std::vector<uint8_t> host_task_na_as_missing_;
-  std::vector<uint8_t> host_task_out_default_left_;
-  std::vector<uint8_t> host_task_one_hot_;
+  std::vector<SplitFindTask> split_find_tasks_;
   int num_tasks_;
   // use global memory
   bool use_global_memory_;
@@ -149,26 +165,18 @@ class CUDABestSplitFinder {
   CUDASplitInfo* cuda_leaf_best_split_info_;
   // for best split information when finding best split
   CUDASplitInfo* cuda_best_split_info_;
-  // feature information
-  uint32_t* cuda_feature_hist_offsets_;
-  uint8_t* cuda_feature_mfb_offsets_;
-  uint32_t* cuda_feature_default_bins_;
-  uint32_t* cuda_feature_num_bins_;
   // best split information buffer, to be copied to host
   int* cuda_best_split_info_buffer_;
   // find best split task information
-  int* cuda_task_feature_index_;
-  uint8_t* cuda_task_reverse_;
-  uint8_t* cuda_task_skip_default_bin_;
-  uint8_t* cuda_task_na_as_missing_;
-  uint8_t* cuda_task_out_default_left_;
+  CUDAVector<SplitFindTask> cuda_split_find_tasks_;
   int8_t* cuda_is_feature_used_bytree_;
   // used when finding best split with global memory
   hist_t* cuda_feature_hist_grad_buffer_;
   hist_t* cuda_feature_hist_hess_buffer_;
   hist_t* cuda_feature_hist_stat_buffer_;
   data_size_t* cuda_feature_hist_index_buffer_;
-  int8_t* cuda_is_categorical_;
+  // used for extremely randomized trees
+  CUDAVector<CUDARandom> cuda_randoms_;
 
   // CUDA memory, held by other object
   const hist_t* cuda_hist_;

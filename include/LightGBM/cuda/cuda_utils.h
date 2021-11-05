@@ -123,6 +123,13 @@ class CUDAVector {
     size_ = size;
   }
 
+  void Clear() {
+    if (size_ > 0 && data_ != nullptr) {
+      DeallocateCUDAMemory<T>(&data_, __FILE__, __LINE__);
+    }
+    size_ = 0;
+  }
+
   void PushBack(const T* values, size_t len) {
     T* new_data = nullptr;
     AllocateCUDAMemory<T>(&new_data, size_ + len, __FILE__, __LINE__);
