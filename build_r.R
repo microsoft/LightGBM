@@ -21,9 +21,12 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
   out_list <- list(
     "flags" = character(0L)
     , "keyword_args" = character(0L)
+    , "make_args" = character(0L)
   )
   for (arg in args) {
-    if (any(grepl("=", arg))) {
+    if (any(grepl("^\\-j[0-9]+", arg))) {
+        out_list[["make_args"]] <- arg
+    } else if (any(grepl("=", arg))) {
       split_arg <- strsplit(arg, "=")[[1L]]
       arg_name <- split_arg[[1L]]
       arg_value <- split_arg[[2L]]
