@@ -199,7 +199,7 @@ if ${BUILD_VIGNETTES} ; then
 
     echo "untarring ${TARBALL_NAME}"
     cd _tmp
-        tar -xvf "${TARBALL_NAME}"
+        tar -xvf "${TARBALL_NAME}" > /dev/null 2>&1
         rm -rf "${TARBALL_NAME}"
     cd ..
     echo "done untarring ${TARBALL_NAME}"
@@ -216,7 +216,8 @@ if ${BUILD_VIGNETTES} ; then
         --exclude=**/conftest.c \
         --exclude=**/conftest.exe \
         -f "${TARBALL_NAME}" \
-        lightgbm
+        lightgbm \
+    > /dev/null 2>&1
     echo "Done creating ${TARBALL_NAME}"
 
     rm -rf ./_tmp
