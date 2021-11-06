@@ -129,6 +129,8 @@ On Linux LightGBM can be built using **CMake** and **gcc** or **Clang**.
 
 **Note**: glibc >= 2.14 is required.
 
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+
 Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 macOS
@@ -437,6 +439,8 @@ On Linux an MPI version of LightGBM can be built using **Open MPI**, **CMake** a
 
 **Note**: glibc >= 2.14 is required.
 
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+
 macOS
 ^^^^^
 
@@ -544,6 +548,10 @@ To build LightGBM GPU version, run the following commands:
   # cmake -DUSE_GPU=1 -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/ ..
   make -j4
 
+**Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+
 Windows
 ^^^^^^^
 
@@ -626,6 +634,10 @@ To build LightGBM CUDA version, run the following commands:
   cmake -DUSE_CUDA=1 ..
   make -j4
 
+**Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
 
@@ -654,6 +666,10 @@ On Linux a HDFS version of LightGBM can be built using **CMake** and **gcc**.
      #   -DHDFS_INCLUDE_DIR="/opt/cloudera/parcels/CDH-5.14.4-1.cdh5.14.4.p0.3/include/" \
      #   ..
      make -j4
+
+**Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 Build Java Wrapper
 ~~~~~~~~~~~~~~~~~~
@@ -729,6 +745,10 @@ On Linux a Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMa
      cd build
      cmake -DUSE_SWIG=ON ..
      make -j4
+
+**Note**: glibc >= 2.14 is required.
+
+**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 macOS
 ^^^^^
@@ -910,7 +930,7 @@ gcc
 
 .. _VS Build Tools: https://visualstudio.microsoft.com/downloads/
 
-.. _MinGW-w64: https://mingw-w64.org/doku.php/download
+.. _MinGW-w64: https://www.mingw-w64.org/downloads/
 
 .. _MPI: https://en.wikipedia.org/wiki/Message_Passing_Interface
 

@@ -9,7 +9,7 @@ jobs:
     name: solaris-cran
     timeout-minutes: 120
     runs-on: ubuntu-latest
-    container: rocker/r-base
+    container: wch1/r-debug
     env:
       SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
     steps:
@@ -19,10 +19,9 @@ jobs:
           apt-get update
           apt-get install --no-install-recommends -y \
             curl \
-            git \
             jq
       - name: Checkout repository
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.4.0
         with:
           fetch-depth: 5
           submodules: true
@@ -48,7 +47,7 @@ jobs:
               url=${line#*@}
               body="${body}**${platform}**: ${url}\r\n"
           done < "$GITHUB_WORKSPACE/rhub_logs.txt" || true
-          body="${body}Reports also have been sent to LightGBM public e-mail: http://www.yopmail.com/lightgbm_rhub_checks\r\n"
+          body="${body}Reports also have been sent to LightGBM public e-mail: https://yopmail.com?lightgbm_rhub_checks\r\n"
           body="${body}Status: ${{ job.status }}."
           $GITHUB_WORKSPACE/.ci/append_comment.sh \
             "${{ github.event.client_payload.comment_number }}" \

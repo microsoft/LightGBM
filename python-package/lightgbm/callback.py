@@ -50,19 +50,37 @@ def _format_eval_result(value: list, show_stdv: bool = True) -> str:
 
 
 def print_evaluation(period: int = 1, show_stdv: bool = True) -> Callable:
-    """Create a callback that prints the evaluation results.
+    """Create a callback that logs the evaluation results.
+
+    Deprecated, use ``log_evaluation()`` instead.
+    """
+    _log_warning("'print_evaluation()' callback is deprecated and will be removed in a future release of LightGBM. "
+                 "Use 'log_evaluation()' callback instead.")
+    return log_evaluation(period=period, show_stdv=show_stdv)
+
+
+def log_evaluation(period: int = 1, show_stdv: bool = True) -> Callable:
+    """Create a callback that logs the evaluation results.
+
+    By default, standard output resource is used.
+    Use ``register_logger()`` function to register a custom logger.
+
+    Note
+    ----
+    Requires at least one validation data.
 
     Parameters
     ----------
     period : int, optional (default=1)
-        The period to print the evaluation results.
+        The period to log the evaluation results.
+        The last boosting stage or the boosting stage found by using ``early_stopping`` callback is also logged.
     show_stdv : bool, optional (default=True)
-        Whether to show stdv (if provided).
+        Whether to log stdv (if provided).
 
     Returns
     -------
-    callback : function
-        The callback that prints the evaluation results every ``period`` iteration(s).
+    callback : callable
+        The callback that logs the evaluation results every ``period`` boosting iteration(s).
     """
     def _callback(env: CallbackEnv) -> None:
         if period > 0 and env.evaluation_result_list and (env.iteration + 1) % period == 0:
@@ -78,11 +96,31 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
     Parameters
     ----------
     eval_result : dict
-       A dictionary to store the evaluation results.
+        Dictionary used to store all evaluation results of all validation sets.
+        This should be initialized outside of your call to ``record_evaluation()`` and should be empty.
+        Any initial contents of the dictionary will be deleted.
+
+        .. rubric:: Example
+
+        With two validation sets named 'eval' and 'train', and one evaluation metric named 'logloss'
+        this dictionary after finishing a model training process will have the following structure:
+
+        .. code-block::
+
+            {
+             'train':
+                 {
+                  'logloss': [0.48253, 0.35953, ...]
+                 },
+             'eval':
+                 {
+                  'logloss': [0.480385, 0.357756, ...]
+                 }
+            }
 
     Returns
     -------
-    callback : function
+    callback : callable
         The callback that records the evaluation history into the passed dictionary.
     """
     if not isinstance(eval_result, dict):
@@ -112,16 +150,16 @@ def reset_parameter(**kwargs: Union[list, Callable]) -> Callable:
 
     Parameters
     ----------
-    **kwargs : value should be list or function
+    **kwargs : value should be list or callable
         List of parameters for each boosting round
-        or a customized function that calculates the parameter in terms of
+        or a callable that calculates the parameter in terms of
         current number of round (e.g. yields learning rate decay).
         If list lst, parameter = lst[current_round].
-        If function func, parameter = func(current_round).
+        If callable func, parameter = func(current_round).
 
     Returns
     -------
-    callback : function
+    callback : callable
         The callback that resets the parameter after the first iteration.
     """
     def _callback(env: CallbackEnv) -> None:
@@ -148,24 +186,27 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
 
     Activates early stopping.
     The model will train until the validation score stops improving.
-    Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
+    Validation score needs to improve at least every ``stopping_rounds`` round(s)
     to continue training.
     Requires at least one validation data and one metric.
     If there's more than one, will check all of them. But the training data is ignored anyway.
     To check only the first metric set ``first_metric_only`` to True.
+    The index of iteration that has the best performance will be saved in the ``best_iteration`` attribute of a model.
 
     Parameters
     ----------
     stopping_rounds : int
-       The possible number of rounds without the trend occurrence.
+        The possible number of rounds without the trend occurrence.
     first_metric_only : bool, optional (default=False)
-       Whether to use only the first metric for early stopping.
+        Whether to use only the first metric for early stopping.
     verbose : bool, optional (default=True)
-        Whether to print message with early stopping information.
+        Whether to log message with early stopping information.
+        By default, standard output resource is used.
+        Use ``register_logger()`` function to register a custom logger.
 
     Returns
     -------
-    callback : function
+    callback : callable
         The callback that activates early stopping.
     """
     best_score = []

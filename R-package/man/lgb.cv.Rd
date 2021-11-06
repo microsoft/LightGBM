@@ -128,7 +128,8 @@ into a predictor model which frees up memory and the original datasets}
                  the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
                  not the number of threads (most CPU using hyper-threading to generate 2 threads
                  per CPU core).}
-}}
+}
+NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
 }
 \value{
 a trained model \code{lgb.CVBooster}.
@@ -158,14 +159,17 @@ Cross validation logic used by LightGBM
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
-params <- list(objective = "regression", metric = "l2")
+params <- list(
+  objective = "regression"
+  , metric = "l2"
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 model <- lgb.cv(
   params = params
   , data = dtrain
   , nrounds = 5L
   , nfold = 3L
-  , min_data = 1L
-  , learning_rate = 1.0
 )
 }
 }

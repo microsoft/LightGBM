@@ -21,7 +21,11 @@
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' setinfo(dtrain, "init_score", rep(Logit(mean(train$label)), length(train$label)))
+#' set_field(
+#'   dataset = dtrain
+#'   , field_name = "init_score"
+#'   , data = rep(Logit(mean(train$label)), length(train$label))
+#' )
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #'
@@ -205,10 +209,8 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
 
   }
 
-  # Check for numbe rof classes larger than 1
   if (num_class == 1L) {
 
-    # First interpretation element
     tree_interpretation_dt <- tree_interpretation[[1L]]
 
   } else {

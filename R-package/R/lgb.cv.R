@@ -12,7 +12,9 @@ CVBooster <- R6::R6Class(
       return(invisible(NULL))
     },
     reset_parameter = function(new_params) {
-      for (x in boosters) { x$reset_parameter(new_params) }
+      for (x in boosters) {
+        x$reset_parameter(params = new_params)
+      }
       return(invisible(self))
     }
   )
@@ -52,6 +54,7 @@ CVBooster <- R6::R6Class(
 #'                             not the number of threads (most CPU using hyper-threading to generate 2 threads
 #'                             per CPU core).}
 #'            }
+#'            NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained model \code{lgb.CVBooster}.
 #'
@@ -60,14 +63,17 @@ CVBooster <- R6::R6Class(
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' model <- lgb.cv(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , nfold = 3L
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #' )
 #' }
 #' @importFrom data.table data.table setorderv
@@ -108,12 +114,22 @@ lgb.cv <- function(params = list()
   }
 
   # Setup temporary variables
-  params <- append(params, list(...))
+  additional_params <- list(...)
+  params <- append(params, additional_params)
   params$verbose <- verbose
   params <- lgb.check.obj(params = params, obj = obj)
   params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
   eval_functions <- list(NULL)
+
+  if (length(additional_params) > 0L) {
+    warning(paste0(
+      "lgb.cv: Found the following passed through '...': "
+      , paste(names(additional_params), collapse = ", ")
+      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
+      , "Add these to 'params' instead. See ?lgb.cv for documentation on how to call this function."
+    ))
+  }
 
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.
@@ -190,7 +206,7 @@ lgb.cv <- function(params = list()
   )
 
   if (!is.null(weight)) {
-    data$setinfo(name = "weight", info = weight)
+    data$set_field(field_name = "weight", data = weight)
   }
 
   # Update parameters with parsed parameters
@@ -229,8 +245,8 @@ lgb.cv <- function(params = list()
       nfold = nfold
       , nrows = nrow(data)
       , stratified = stratified
-      , label = getinfo(dataset = data, name = "label")
-      , group = getinfo(dataset = data, name = "group")
+      , label = get_field(dataset = data, field_name = "label")
+      , group = get_field(dataset = data, field_name = "group")
       , params = params
     )
 
@@ -304,8 +320,8 @@ lgb.cv <- function(params = list()
       if (folds_have_group) {
         test_indices <- folds[[k]]$fold
         test_group_indices <- folds[[k]]$group
-        test_groups <- getinfo(dataset = data, name = "group")[test_group_indices]
-        train_groups <- getinfo(dataset = data, name = "group")[-test_group_indices]
+        test_groups <- get_field(dataset = data, field_name = "group")[test_group_indices]
+        train_groups <- get_field(dataset = data, field_name = "group")[-test_group_indices]
       } else {
         test_indices <- folds[[k]]
       }
@@ -314,28 +330,28 @@ lgb.cv <- function(params = list()
       # set up test set
       indexDT <- data.table::data.table(
         indices = test_indices
-        , weight = getinfo(dataset = data, name = "weight")[test_indices]
-        , init_score = getinfo(dataset = data, name = "init_score")[test_indices]
+        , weight = get_field(dataset = data, field_name = "weight")[test_indices]
+        , init_score = get_field(dataset = data, field_name = "init_score")[test_indices]
       )
       data.table::setorderv(x = indexDT, cols = "indices", order = 1L)
       dtest <- slice(data, indexDT$indices)
-      setinfo(dataset = dtest, name = "weight", info = indexDT$weight)
-      setinfo(dataset = dtest, name = "init_score", info = indexDT$init_score)
+      set_field(dataset = dtest, field_name = "weight", data = indexDT$weight)
+      set_field(dataset = dtest, field_name = "init_score", data = indexDT$init_score)
 
       # set up training set
       indexDT <- data.table::data.table(
         indices = train_indices
-        , weight = getinfo(dataset = data, name = "weight")[train_indices]
-        , init_score = getinfo(dataset = data, name = "init_score")[train_indices]
+        , weight = get_field(dataset = data, field_name = "weight")[train_indices]
+        , init_score = get_field(dataset = data, field_name = "init_score")[train_indices]
       )
       data.table::setorderv(x = indexDT, cols = "indices", order = 1L)
       dtrain <- slice(data, indexDT$indices)
-      setinfo(dataset = dtrain, name = "weight", info = indexDT$weight)
-      setinfo(dataset = dtrain, name = "init_score", info = indexDT$init_score)
+      set_field(dataset = dtrain, field_name = "weight", data = indexDT$weight)
+      set_field(dataset = dtrain, field_name = "init_score", data = indexDT$init_score)
 
       if (folds_have_group) {
-        setinfo(dataset = dtest, name = "group", info = test_groups)
-        setinfo(dataset = dtrain, name = "group", info = train_groups)
+        set_field(dataset = dtest, field_name = "group", data = test_groups)
+        set_field(dataset = dtrain, field_name = "group", data = train_groups)
       }
 
       booster <- Booster$new(params = params, train_set = dtrain)

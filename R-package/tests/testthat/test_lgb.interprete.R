@@ -11,10 +11,10 @@ test_that("lgb.intereprete works as expected for binary classification", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)
-    setinfo(
+    set_field(
         dataset = dtrain
-        , "init_score"
-        , rep(
+        , field_name = "init_score"
+        , data = rep(
             .logit(mean(train$label))
             , length(train$label)
         )

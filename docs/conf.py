@@ -24,12 +24,14 @@ from pathlib import Path
 from re import compile
 from shutil import copytree
 from subprocess import PIPE, Popen
+from typing import Any, List
 from unittest.mock import Mock
 
 import sphinx
 from docutils.nodes import reference
 from docutils.parsers.rst import Directive
 from docutils.transforms import Transform
+from sphinx.application import Sphinx
 from sphinx.errors import VersionRequirementError
 
 CURR_PATH = Path(__file__).absolute().parent
@@ -39,8 +41,18 @@ sys.path.insert(0, str(LIB_PATH))
 INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#)")
 
 # -- mock out modules
-MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
-                'sklearn', 'matplotlib', 'pandas', 'graphviz', 'dask', 'dask.distributed']
+MOCK_MODULES = [
+    'dask',
+    'dask.distributed',
+    'datatable',
+    'graphviz',
+    'matplotlib',
+    'numpy',
+    'pandas',
+    'scipy',
+    'scipy.sparse',
+    'sklearn'
+]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
@@ -51,7 +63,7 @@ class InternalRefTransform(Transform):
     default_priority = 210
     """Numerical priority of this transform, 0 through 999."""
 
-    def apply(self, **kwargs):
+    def apply(self, **kwargs: Any) -> None:
         """Apply the transform to the document tree."""
         for section in self.document.traverse(reference):
             if section.get("refuri") is not None:
@@ -63,7 +75,7 @@ class IgnoredDirective(Directive):
 
     has_content = True
 
-    def run(self):
+    def run(self) -> List:
         """Do nothing."""
         return []
 
@@ -197,12 +209,12 @@ htmlhelp_basename = 'LightGBMdoc'
 latex_logo = str(CURR_PATH / 'logo' / 'LightGBM_logo_black_text_small.png')
 
 
-def generate_doxygen_xml(app):
+def generate_doxygen_xml(app: Sphinx) -> None:
     """Generate XML documentation for C API by Doxygen.
 
     Parameters
     ----------
-    app : object
+    app : sphinx.application.Sphinx
         The application object representing the Sphinx process.
     """
     doxygen_args = [
@@ -219,6 +231,7 @@ def generate_doxygen_xml(app):
         "MACRO_EXPANSION=YES",
         "EXPAND_ONLY_PREDEF=NO",
         "SKIP_FUNCTION_MACROS=NO",
+        "PREDEFINED=__cplusplus",
         "SORT_BRIEF_DOCS=YES",
         "WARN_AS_ERROR=YES",
     ]
@@ -242,12 +255,12 @@ def generate_doxygen_xml(app):
         raise Exception(f"An error has occurred while executing Doxygen\n{e}")
 
 
-def generate_r_docs(app):
+def generate_r_docs(app: Sphinx) -> None:
     """Generate documentation for R-package.
 
     Parameters
     ----------
-    app : object
+    app : sphinx.application.Sphinx
         The application object representing the Sphinx process.
     """
     commands = f"""
@@ -255,6 +268,7 @@ def generate_r_docs(app):
         -q \
         -y \
         -c conda-forge \
+        --override-channels \
         -n r_env \
             r-base=4.1.0=hb67fd72_2 \
             r-data.table=1.14.0=r41hcfec24a_0 \
@@ -304,12 +318,12 @@ def generate_r_docs(app):
         raise Exception(f"An error has occurred while generating documentation for R-package\n{e}")
 
 
-def setup(app):
+def setup(app: Sphinx) -> None:
     """Add new elements at Sphinx initialization time.
 
     Parameters
     ----------
-    app : object
+    app : sphinx.application.Sphinx
         The application object representing the Sphinx process.
     """
     first_run = not (CURR_PATH / '_FIRST_RUN.flag').exists()
