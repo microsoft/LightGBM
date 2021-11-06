@@ -434,7 +434,7 @@ class LGBMModel(_LGBMModelBase):
             If RandomState object (numpy), a random integer is picked based on its state to seed the C++ code.
             If None, default seeds in C++ code are used.
         n_jobs : int, optional (default=-1)
-            Number of parallel threads.
+            Number of parallel threads to use for training (can be changed at prediction time).
         silent : bool, optional (default=True)
             Whether to print messages while running boosting.
         importance_type : str, optional (default='split')
@@ -730,7 +730,7 @@ class LGBMModel(_LGBMModelBase):
         if callbacks is None:
             callbacks = []
         else:
-            callbacks = copy.deepcopy(callbacks)
+            callbacks = copy.copy(callbacks)  # don't use deepcopy here to allow non-serializable objects
 
         if verbose != 'warn':
             _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM. "
@@ -846,6 +846,28 @@ class LGBMModel(_LGBMModelBase):
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No objective found. Need to call fit beforehand.')
         return self._objective
+
+    @property
+    def n_estimators_(self) -> int:
+        """:obj:`int`: True number of boosting iterations performed.
+
+        This might be less than parameter ``n_estimators`` if early stopping was enabled or
+        if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
+        """
+        if not self.__sklearn_is_fitted__():
+            raise LGBMNotFittedError('No n_estimators found. Need to call fit beforehand.')
+        return self._Booster.current_iteration()
+
+    @property
+    def n_iter_(self) -> int:
+        """:obj:`int`: True number of boosting iterations performed.
+
+        This might be less than parameter ``n_estimators`` if early stopping was enabled or
+        if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
+        """
+        if not self.__sklearn_is_fitted__():
+            raise LGBMNotFittedError('No n_iter found. Need to call fit beforehand.')
+        return self._Booster.current_iteration()
 
     @property
     def booster_(self):
