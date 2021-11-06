@@ -36,6 +36,7 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 }
 parsed_args <- .parse_args(args)
 
+SKIP_VIGNETTES <- "--no-build-vignettes" %in% parsed_args[["flags"]]
 USING_GPU <- "--use-gpu" %in% parsed_args[["flags"]]
 USING_MINGW <- "--use-mingw" %in% parsed_args[["flags"]]
 USING_MSYS2 <- "--use-msys2" %in% parsed_args[["flags"]]
@@ -51,7 +52,8 @@ ARGS_TO_DEFINES <- c(
 )
 
 recognized_args <- c(
-  "--skip-install"
+  "--no-build-vignettes"
+  , "--skip-install"
   , "--use-gpu"
   , "--use-mingw"
   , "--use-msys2"
@@ -407,7 +409,11 @@ writeLines(namespace_contents, NAMESPACE_FILE)
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
 #       on demand
-.run_shell_command("R", c("CMD", "build", TEMP_R_DIR, "--keep-empty-dirs"))
+r_build_args <- c("CMD", "build", TEMP_R_DIR, "--keep-empty-dirs")
+if (isTRUE(SKIP_VIGNETTES)) {
+  r_build_args <- c(r_build_args, "--no-build-vignettes")
+}
+.run_shell_command("R", r_build_args)
 
 # Install the package
 version <- gsub(

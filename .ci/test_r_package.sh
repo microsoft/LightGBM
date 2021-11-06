@@ -92,13 +92,13 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
 fi
 
-# Manually install Depends and Imports libraries + 'testthat'
+# Manually install Depends and Imports libraries + 'knitr', 'rmarkdown', 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 # NOTE: testthat is not required when running rchk
 if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'Matrix', 'R6')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'rmarkdown')"
 else
-    packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'rmarkdown', 'testthat')"
 fi
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
