@@ -122,7 +122,7 @@ Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+$packages = "c('data.table', 'jsonlite', 'knitr', 'Matrix', 'processx', 'R6', 'rmarkdown', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 
 # MiKTeX and pandoc can be skipped on non-MinGW builds, since we don't
@@ -165,7 +165,16 @@ if ($env:COMPILER -ne "MSVC") {
     }
     Run-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
+    # NOTE: gzip and tar are needed to create a CRAN package on Windows, but
+    # some flavors of tar.exe can fail in some settings on Windows.
+    # Putting the msys64 utilities at the beginning of PATH temporarily to be
+    # sure they're used for that purpose.
+    # $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
+    if ($env:R_MAJOR_VERSION -eq "3") {
+        $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
+    }
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
+    Remove-From-Path ".*msys64.*"
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths

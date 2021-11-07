@@ -152,6 +152,7 @@ Rscript build_r.R
 
 The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script. That script supports the following command-line options:
 
+- `--no-build-vignettes`: Skip building vignettes.
 - `--skip-install`: Build the package tarball, but do not install it.
 - `--use-gpu`: Build a GPU-enabled version of the library.
 - `--use-mingw`: Force the use of MinGW toolchain, regardless of R version.
@@ -265,6 +266,11 @@ sh build-cran-package.sh
 ```
 
 This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
+
+That script supports the following command-line options:
+
+- `--no-build-vignettes`: Skip building vignettes.
+- `--r-executable=[path-to-executable]`: use an alternative build of R
 
 Also, CRAN package is generated with every commit to any repo's branch and can be found in "Artifacts" section of the associated Azure Pipelines run.
 
