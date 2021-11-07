@@ -1,10 +1,30 @@
 # CRAN Submission History
 
-## v3.3.1 - Submission 1 - (TBD)
+## v3.3.1 - Submission 1 - (October 27, 2021)
 
 ### CRAN response
 
+Accepted to CRAN on October 30, 2021.
+
+CRAN completed its checks and preparation of binaries on November 6, 2021.
+
 ### Maintainer Notes
+
+Submitted v3.3.1 to CRAN, with the following fixes for the issues that caused CRAN to reject v3.3.0 and archive the package:
+
+* https://github.com/microsoft/LightGBM/pull/4673
+* https://github.com/microsoft/LightGBM/pull/4714
+
+Submitted with the following comment:
+
+> This submission contains {lightgbm} 3.3.1.
+> Per CRAN's policies, I am submitting on it on behalf of the project's maintainer (Yu Shi), with his permission (https://github.com/microsoft/LightGBM/pull/4715#issuecomment-952537783).
+
+> {lightgbm} was removed from CRAN on October 25, 2021 due to issues detected in the gcc-ASAN and clang-ASAN checks. To the best of our knowledge, we believe this release fixes those issues. We have introduced automated testing that we believe faithfully reproduces CRAN's tests with sanitizers (https://github.com/microsoft/LightGBM/pull/4678).
+
+> Thank you very much for your time and consideration.
+
+Progress on the submission was tracked in https://github.com/microsoft/LightGBM/issues/4713.
 
 ## v3.3.0 - Submission 1 - (October 8, 2021)
 
