@@ -153,10 +153,10 @@ if ($env:COMPILER -ne "MSVC") {
   if ($env:R_BUILD_TYPE -eq "cmake") {
     if ($env:TOOLCHAIN -eq "MINGW") {
       Write-Output "Telling R to use MinGW"
-      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-mingw', '-j2')"
+      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-mingw', '-j4')"
     } elseif ($env:TOOLCHAIN -eq "MSYS") {
       Write-Output "Telling R to use MSYS"
-      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-msys2', '-j2')"
+      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-msys2', '-j4')"
     } elseif ($env:TOOLCHAIN -eq "MSVC") {
       $env:BUILD_R_FLAGS = "'--skip-install'"
     } else {
