@@ -112,6 +112,20 @@ if (length(keyword_args) > 0L) {
   )
 }
 
+# if provided, set '-j' in 'make' commands in install.libs.R
+if (length(parsed_args[["make_args"]]) > 0L) {
+  install_libs_content <- gsub(
+    pattern = "make_args_from_build_script <- character(0L)"
+    , replacement = paste0(
+      "make_args_from_build_script <- c(\""
+      , paste0(parsed_args[["make_args"]], collapse = "\", \"")
+      , "\")"
+    )
+    , x = install_libs_content
+    , fixed = TRUE
+  )
+}
+
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
 .handle_result <- function(res) {
