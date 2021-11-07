@@ -1213,12 +1213,12 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
         Other parameters passed through to ``LGBMClassifier.fit()``.
 
-    {_lgbmmodel_doc_custom_eval_note}
-
     Returns
     -------
     self : lightgbm.DaskLGBMClassifier
         Returns self.
+
+    {_lgbmmodel_doc_custom_eval_note}
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
@@ -1398,12 +1398,12 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
         Other parameters passed through to ``LGBMRegressor.fit()``.
 
-    {_lgbmmodel_doc_custom_eval_note}
-
     Returns
     -------
     self : lightgbm.DaskLGBMRegressor
         Returns self.
+
+    {_lgbmmodel_doc_custom_eval_note}
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
@@ -1566,12 +1566,12 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
         Other parameters passed through to ``LGBMRanker.fit()``.
 
-    {_lgbmmodel_doc_custom_eval_note}
-
     Returns
     -------
     self : lightgbm.DaskLGBMRanker
         Returns self.
+
+    {_lgbmmodel_doc_custom_eval_note}
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
