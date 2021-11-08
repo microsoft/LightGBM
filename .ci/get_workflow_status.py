@@ -22,7 +22,7 @@ def get_runs(trigger_phrase):
 
     Parameters
     ----------
-    trigger_phrase : string
+    trigger_phrase : str
         Code phrase that triggers workflow.
 
     Returns
@@ -55,7 +55,7 @@ def get_status(runs):
 
     Returns
     -------
-    status : string
+    status : str
         The most recent status of workflow.
         Can be 'success', 'failure' or 'in-progress'.
     """

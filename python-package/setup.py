@@ -61,10 +61,10 @@ def copy_files(integrated_opencl: bool = False, use_gpu: bool = False) -> None:
         copy_files_helper('include')
         copy_files_helper('src')
         for submodule in (CURRENT_DIR.parent / 'external_libs').iterdir():
-            submodule = submodule.stem
-            if submodule == 'compute' and not use_gpu:
+            submodule_stem = submodule.stem
+            if submodule_stem == 'compute' and not use_gpu:
                 continue
-            copy_files_helper(Path('external_libs') / submodule)
+            copy_files_helper(Path('external_libs') / submodule_stem)
         (CURRENT_DIR / "compile" / "windows").mkdir(parents=True, exist_ok=True)
         copyfile(CURRENT_DIR.parent / "windows" / "LightGBM.sln",
                  CURRENT_DIR / "compile" / "windows" / "LightGBM.sln")
@@ -218,21 +218,21 @@ class CustomInstall(install):
 
     def initialize_options(self) -> None:
         install.initialize_options(self)
-        self.mingw = 0
-        self.integrated_opencl = 0
-        self.gpu = 0
-        self.cuda = 0
+        self.mingw = False
+        self.integrated_opencl = False
+        self.gpu = False
+        self.cuda = False
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
         self.boost_librarydir = None
         self.opencl_include_dir = None
         self.opencl_library = None
-        self.mpi = 0
-        self.hdfs = 0
-        self.precompile = 0
-        self.nomp = 0
-        self.bit32 = 0
+        self.mpi = False
+        self.hdfs = False
+        self.precompile = False
+        self.nomp = False
+        self.bit32 = False
 
     def run(self) -> None:
         if (8 * struct.calcsize("P")) != 64:
@@ -261,21 +261,21 @@ class CustomBdistWheel(bdist_wheel):
 
     def initialize_options(self) -> None:
         bdist_wheel.initialize_options(self)
-        self.mingw = 0
-        self.integrated_opencl = 0
-        self.gpu = 0
-        self.cuda = 0
+        self.mingw = False
+        self.integrated_opencl = False
+        self.gpu = False
+        self.cuda = False
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
         self.boost_librarydir = None
         self.opencl_include_dir = None
         self.opencl_library = None
-        self.mpi = 0
-        self.hdfs = 0
-        self.precompile = 0
-        self.nomp = 0
-        self.bit32 = 0
+        self.mpi = False
+        self.hdfs = False
+        self.precompile = False
+        self.nomp = False
+        self.bit32 = False
 
     def finalize_options(self) -> None:
         bdist_wheel.finalize_options(self)
@@ -349,8 +349,8 @@ if __name__ == "__main__":
                   'pandas',
               ],
           },
-          maintainer='Guolin Ke',
-          maintainer_email='guolin.ke@microsoft.com',
+          maintainer='Yu Shi',
+          maintainer_email='yushi2@microsoft.com',
           zip_safe=False,
           cmdclass={
               'install': CustomInstall,
