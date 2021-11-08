@@ -468,7 +468,7 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
   std::unordered_map<int, SplitInfo> forceSplitMap;
   q.push(std::make_pair(left, *left_leaf));
 
-  // Histogram construction require parent features. 
+  // Histogram construction require parent features.
   std::set<int> force_split_features = FindAllForceFeatures(*forced_split_json_);
   while (!q.empty()) {
     if (BeforeFindBestSplit(tree, *left_leaf, *right_leaf)) {
