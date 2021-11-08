@@ -467,8 +467,13 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
   bool left_smaller = true;
   std::unordered_map<int, SplitInfo> forceSplitMap;
   q.push(std::make_pair(left, *left_leaf));
+
+  // Histogram construction require parent features. 
+  std::set<int> force_split_features = FindAllForceFeatures(*forced_split_json_);
   while (!q.empty()) {
-    FindBestSplitsForForceSplitLeaf(tree, left_leaf, right_leaf, left, right);
+    if (BeforeFindBestSplit(tree, *left_leaf, *right_leaf)) {
+      FindBestSplits(tree, &force_split_features);
+    }
 
     // then, compute own splits
     SplitInfo left_split;
@@ -563,26 +568,30 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
   return result_count;
 }
 
-void SerialTreeLearner::FindBestSplitsForForceSplitLeaf(Tree* tree, int* left_leaf, int* right_leaf, Json left_force_split_leaf_setting, Json right_force_split_leaf_setting) {
-  // before processing next node from queue, store info for current left/right leaf
-  // store "best split" for left and right, even if they might be overwritten by forced split
-  if (BeforeFindBestSplit(tree, *left_leaf, *right_leaf)) {
-    std::set<int> force_features;
+std::set<int> SerialTreeLearner::FindAllForceFeatures(Json force_split_leaf_setting) {
+  std::set<int> force_features;
+  std::queue<Json> force_split_leafs;
 
-    if (!left_force_split_leaf_setting.is_null()) {
-      const int left_feature = left_force_split_leaf_setting["feature"].int_value();
-      const int left_inner_feature_index = train_data_->InnerFeatureIndex(left_feature);
-      force_features.insert(left_inner_feature_index);
+  force_split_leafs.push(force_split_leaf_setting);
+
+  while (!force_split_leafs.empty()) {
+    Json split_leaf = force_split_leafs.front();
+    force_split_leafs.pop();
+
+    const int feature_index = split_leaf["feature"].int_value();
+    const int feature_inner_index = train_data_->InnerFeatureIndex(feature_index);
+    force_features.insert(feature_inner_index);
+
+    if (split_leaf.object_items().count("left") > 0) {
+      force_split_leafs.push(split_leaf["left"]);
     }
 
-    if (!right_force_split_leaf_setting.is_null()) {
-      const int right_feature = right_force_split_leaf_setting["feature"].int_value();
-      const int right_inner_feature_index = train_data_->InnerFeatureIndex(right_feature);
-      force_features.insert(right_inner_feature_index);
+    if (split_leaf.object_items().count("right") > 0) {
+      force_split_leafs.push(split_leaf["right"]);
     }
-
-    FindBestSplits(tree, &force_features);
   }
+
+  return force_features;
 }
 
 void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,

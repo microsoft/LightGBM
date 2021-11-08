@@ -2897,7 +2897,11 @@ def test_force_split_with_feature_fraction(tmp_path):
 
     forced_split = {
         "feature": 0,
-        "threshold": 0.5
+        "threshold": 0.5,
+        "right": {
+            "feature": 2,
+            "threshold": 10.0
+        }
     }
 
     tmp_split_file = tmp_path / "forced_split.json"

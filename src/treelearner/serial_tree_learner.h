@@ -168,7 +168,7 @@ class SerialTreeLearner: public TreeLearner {
   int32_t ForceSplits(Tree* tree, int* left_leaf, int* right_leaf,
                       int* cur_depth);
 
-  void FindBestSplitsForForceSplitLeaf(LightGBM::Tree* tree, int* left_leaf, int* right_leaf, Json left, Json right);
+  std::set<int> SerialTreeLearner::FindAllForceFeatures(Json force_split_leaf_setting);
 
   /*!
   * \brief Get the number of data in a leaf
