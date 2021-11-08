@@ -215,9 +215,6 @@ __device__ void FindBestSplitsForLeafKernelInner(
     (task->skip_default_bin && (task->num_bin - 1 - threadIdx_x) == static_cast<int>(task->default_bin)) :
     (task->skip_default_bin && (threadIdx_x + task->mfb_offset) == static_cast<int>(task->default_bin));
   const uint32_t feature_num_bin_minus_offset = task->num_bin - task->mfb_offset;
-  if (threadIdx.x == 0) {
-    printf("task->na_as_missing = %d\n", static_cast<int>(task->na_as_missing));
-  }
   if (!REVERSE) {
     if (threadIdx_x < feature_num_bin_minus_offset && !skip_sum) {
       const unsigned int bin_offset = threadIdx_x << 1;
@@ -248,8 +245,6 @@ __device__ void FindBestSplitsForLeafKernelInner(
       const data_size_t right_count = static_cast<data_size_t>(__double2int_rn(sum_right_hessian * cnt_factor));
       const double sum_left_gradient = sum_gradients - sum_right_gradient;
       const double sum_left_hessian = sum_hessians - sum_right_hessian;
-      printf("reverse = %d, threadIdx.x = %d, sum_left_gradient = %f, sum_left_hessian = %f, sum_right_gradient = %f, sum_right_hessian = %f\n",
-        static_cast<int>(REVERSE), threadIdx.x, sum_left_gradient, sum_left_hessian, sum_right_gradient, sum_right_hessian);
       const data_size_t left_count = num_data - right_count;
       if (sum_left_hessian >= min_sum_hessian_in_leaf && left_count >= min_data_in_leaf &&
         sum_right_hessian >= min_sum_hessian_in_leaf && right_count >= min_data_in_leaf) {
@@ -633,9 +628,6 @@ __global__ void FindBestSplitsForLeafKernel(
   CUDASplitInfo* cuda_best_split_info) {
   const unsigned int task_index = blockIdx.x % num_tasks;
   const SplitFindTask* task = tasks + task_index;
-  if (threadIdx.x == 0) {
-    printf("task %d, task->na_as_missing = %d\n", task_index, static_cast<int>(task->na_as_missing));
-  }
   const bool is_larger = static_cast<bool>(blockIdx.x >= num_tasks || LARGER_ONLY);
   const int inner_feature_index = task->inner_feature_index;
   const double parent_gain = is_larger ? larger_leaf_splits->gain : smaller_leaf_splits->gain;

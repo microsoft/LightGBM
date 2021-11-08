@@ -216,7 +216,7 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
                                 &leaf_sum_hessians_[right_leaf_index],
                                 &sum_left_gradients,
                                 &sum_right_gradients);
-    //CheckSplitValid(best_leaf_index_, right_leaf_index, sum_left_gradients, sum_right_gradients);
+    CheckSplitValid(best_leaf_index_, right_leaf_index, sum_left_gradients, sum_right_gradients);
     smaller_leaf_index_ = (leaf_num_data_[best_leaf_index_] < leaf_num_data_[right_leaf_index] ? best_leaf_index_ : right_leaf_index);
     larger_leaf_index_ = (smaller_leaf_index_ == best_leaf_index_ ? right_leaf_index : best_leaf_index_);
     global_timer.Stop("CUDASingleGPUTreeLearner::Split");
