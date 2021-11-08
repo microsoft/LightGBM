@@ -5,7 +5,6 @@ from inspect import signature
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import scipy.sparse as ss
 
 from .basic import Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _log_warning
 from .callback import log_evaluation, record_evaluation
@@ -21,11 +20,11 @@ _EvalResultType = Tuple[str, float, bool]
 _LGBM_ScikitCustomObjectiveFunction = Union[
     Callable[
         [_ArrayLike, np.ndarray],
-        Tuple[np.ndarray, np.ndarray]
+        Tuple[_ArrayLike, _ArrayLike]
     ],
     Callable[
         [_ArrayLike, np.ndarray, np.ndarray],
-        Tuple[np.ndarray, np.ndarray]
+        Tuple[_ArrayLike, _ArrayLike]
     ],
 ]
 _LGBM_ScikitCustomEvalFunction = Union[
