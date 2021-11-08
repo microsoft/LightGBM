@@ -15,31 +15,30 @@ from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite
                      pd_DataFrame, pd_Series)
 from .engine import train
 
-_ArrayLike = Union[np.ndarray, ss.spmatrix, pd_Series]
+_ArrayLike = Union[List, np.ndarray, pd_Series]
 _EvalResultType = Tuple[str, float, bool]
-_GroupType = Union[_ArrayLike, List[int]]
 
 _LGBM_ScikitCustomObjectiveFunction = Union[
     Callable[
-        [_ArrayLike, _ArrayLike],
+        [_ArrayLike, np.ndarray],
         Tuple[np.ndarray, np.ndarray]
     ],
     Callable[
-        [_ArrayLike, _ArrayLike, _GroupType],
+        [_ArrayLike, np.ndarray, np.ndarray],
         Tuple[np.ndarray, np.ndarray]
     ],
 ]
 _LGBM_ScikitCustomEvalFunction = Union[
     Callable[
-        [_ArrayLike, _ArrayLike],
+        [_ArrayLike, np.ndarray],
         Union[_EvalResultType, List[_EvalResultType]]
     ],
     Callable[
-        [_ArrayLike, _ArrayLike, _ArrayLike],
+        [_ArrayLike, np.ndarray, np.ndarray],
         Union[_EvalResultType, List[_EvalResultType]]
     ],
     Callable[
-        [_ArrayLike, _ArrayLike, _ArrayLike, _GroupType],
+        [_ArrayLike, np.ndarray, np.ndarray, np.ndarray],
         Union[_EvalResultType, List[_EvalResultType]]
     ],
 ]
