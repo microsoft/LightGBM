@@ -52,9 +52,10 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
  protected:
   void BeforeTrain() override;
 
-  void ReduceLeafStat(CUDATree* old_tree, const score_t* gradients, const score_t* hessians) const;
+  void ReduceLeafStat(CUDATree* old_tree, const score_t* gradients, const score_t* hessians, const data_size_t* num_data_in_leaf) const;
 
-  void LaunchReduceLeafStatKernel(const score_t* gradients, const score_t* hessians,
+  void LaunchReduceLeafStatKernel(const score_t* gradients, const score_t* hessians, const data_size_t* num_data_in_leaf,
+    const int* leaf_parent, const int* left_child, const int* right_child,
     const int num_leaves, const data_size_t num_data, double* cuda_leaf_value, const double shrinkage_rate) const;
 
   void ConstructBitsetForCategoricalSplit(const CUDASplitInfo* best_split_info);

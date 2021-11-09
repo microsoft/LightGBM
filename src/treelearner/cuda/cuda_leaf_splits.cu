@@ -34,6 +34,8 @@ __global__ void CUDAInitValuesKernel1(const score_t* cuda_gradients, const score
 }
 
 __global__ void CUDAInitValuesKernel2(
+  const double lambda_l1,
+  const double lambda_l2,
   const int num_blocks_to_reduce,
   double* cuda_sum_of_gradients,
   double* cuda_sum_of_hessians,
@@ -57,8 +59,23 @@ __global__ void CUDAInitValuesKernel2(
     cuda_struct->sum_of_gradients = sum_of_gradients;
     cuda_struct->sum_of_hessians = sum_of_hessians;
     cuda_struct->num_data_in_leaf = num_data;
-    cuda_struct->gain = 0.0f;
-    cuda_struct->leaf_value = 0.0f;
+    const bool use_l1 = lambda_l1 > 0.0f;
+    if (!use_l1) {
+      // no smoothing on root node
+      cuda_struct->gain = CUDALeafSplits::GetLeafGain<false, false>(sum_of_gradients, sum_of_hessians, lambda_l1, lambda_l2, 0.0f, 0, 0.0f);
+    } else {
+      // no smoothing on root node
+      cuda_struct->gain = CUDALeafSplits::GetLeafGain<true, false>(sum_of_gradients, sum_of_hessians, lambda_l1, lambda_l2, 0.0f, 0, 0.0f);
+    }
+    if (!use_l1) {
+      // no smoothing on root node
+      cuda_struct->leaf_value =
+        CUDALeafSplits::CalculateSplittedLeafOutput<false, false>(sum_of_gradients, sum_of_hessians, lambda_l1, lambda_l2, 0.0f, 0, 0.0f);
+    } else {
+      // no smoothing on root node
+      cuda_struct->leaf_value =
+        CUDALeafSplits::CalculateSplittedLeafOutput<true, false>(sum_of_gradients, sum_of_hessians, lambda_l1, lambda_l2, 0.0f, 0, 0.0f);
+    }
     cuda_struct->data_indices_in_leaf = cuda_data_indices_in_leaf;
     cuda_struct->hist_in_leaf = cuda_hist_in_leaf;
   }
@@ -80,6 +97,7 @@ void CUDALeafSplits::LaunchInitValuesEmptyKernel() {
 }
 
 void CUDALeafSplits::LaunchInitValuesKernal(
+  const double lambda_l1, const double lambda_l2,
   const data_size_t* cuda_bagging_data_indices,
   const data_size_t* cuda_data_indices_in_leaf,
   const data_size_t num_used_indices,
@@ -95,6 +113,7 @@ void CUDALeafSplits::LaunchInitValuesKernal(
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
   CUDAInitValuesKernel2<<<1, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+    lambda_l1, lambda_l2,
     num_blocks_init_from_gradients_,
     cuda_sum_of_gradients_buffer_,
     cuda_sum_of_hessians_buffer_,

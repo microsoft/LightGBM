@@ -31,6 +31,8 @@ CUDABestSplitFinder::CUDABestSplitFinder(
   max_cat_to_onehot_(config->max_cat_to_onehot),
   extra_trees_(config->extra_trees),
   extra_seed_(config->extra_seed),
+  use_smoothing_(config->path_smooth > 0),
+  path_smooth_(config->path_smooth),
   num_total_bin_(feature_hist_offsets.empty() ? 0 : static_cast<int>(feature_hist_offsets.back())),
   cuda_hist_(cuda_hist) {
   InitFeatureMetaInfo(train_data);
@@ -138,7 +140,6 @@ void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
         new_task->mfb_offset = feature_mfb_offsets_[inner_feature_index];
         new_task->default_bin = feature_default_bins_[inner_feature_index];
         new_task->num_bin = num_bin;
-        new_task->cuda_random = nullptr;
         ++cur_task_index;
 
         new_task = &split_find_tasks_[cur_task_index];
@@ -154,7 +155,6 @@ void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
         new_task->default_bin = feature_default_bins_[inner_feature_index];
         new_task->mfb_offset = feature_mfb_offsets_[inner_feature_index];
         new_task->num_bin = num_bin;
-        new_task->cuda_random = nullptr;
         ++cur_task_index;
       } else {
         SplitFindTask* new_task = &split_find_tasks_[cur_task_index];
@@ -170,7 +170,6 @@ void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
         new_task->mfb_offset = feature_mfb_offsets_[inner_feature_index];
         new_task->default_bin = feature_default_bins_[inner_feature_index];
         new_task->num_bin = num_bin;
-        new_task->cuda_random = nullptr;
         ++cur_task_index;
 
         new_task = &split_find_tasks_[cur_task_index];
@@ -186,7 +185,6 @@ void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
         new_task->mfb_offset = feature_mfb_offsets_[inner_feature_index];
         new_task->default_bin = feature_default_bins_[inner_feature_index];
         new_task->num_bin = num_bin;
-        new_task->cuda_random = nullptr;
         ++cur_task_index;
       }
     } else {
@@ -213,19 +211,14 @@ void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
       new_task.mfb_offset = feature_mfb_offsets_[inner_feature_index];
       new_task.default_bin = feature_default_bins_[inner_feature_index];
       new_task.num_bin = num_bin;
-      new_task.cuda_random = nullptr;
       ++cur_task_index;
     }
   }
   CHECK_EQ(cur_task_index, static_cast<int>(split_find_tasks_.size()));
 
   if (extra_trees_) {
-    cuda_randoms_.Resize(num_tasks_);
+    cuda_randoms_.Resize(num_tasks_ * 2);
     LaunchInitCUDARandomKernel();
-    for (int task_index = 0; task_index < num_tasks_; ++task_index) {
-      split_find_tasks_[task_index].cuda_random = cuda_randoms_.RawData() + task_index;
-      split_find_tasks_[task_index].rand_threshold = 0;
-    }
   }
 
   const int num_task_blocks = (num_tasks_ + NUM_TASKS_PER_SYNC_BLOCK - 1) / NUM_TASKS_PER_SYNC_BLOCK;
@@ -281,8 +274,8 @@ void CUDABestSplitFinder::ResetConfig(const Config* config) {
 
 void CUDABestSplitFinder::BeforeTrain(const std::vector<int8_t>& is_feature_used_bytree) {
   CopyFromHostToCUDADevice<int8_t>(cuda_is_feature_used_bytree_,
-                                        is_feature_used_bytree.data(),
-                                        is_feature_used_bytree.size(), __FILE__, __LINE__);
+                                   is_feature_used_bytree.data(),
+                                   is_feature_used_bytree.size(), __FILE__, __LINE__);
 }
 
 void CUDABestSplitFinder::FindBestSplitsForLeaf(

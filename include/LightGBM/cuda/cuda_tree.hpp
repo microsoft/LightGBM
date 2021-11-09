@@ -56,6 +56,8 @@ class CUDATree : public Tree {
     uint32_t* cuda_bitset_inner,
     size_t cuda_bitset_inner_len);
 
+  const int* cuda_leaf_parent() const { return cuda_leaf_parent_; }
+
   const int* cuda_left_child() const { return cuda_left_child_; }
 
   const int* cuda_right_child() const { return cuda_right_child_; }

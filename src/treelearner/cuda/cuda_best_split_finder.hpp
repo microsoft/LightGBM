@@ -37,7 +37,7 @@ struct SplitFindTask {
   uint8_t mfb_offset;
   uint32_t num_bin;
   uint32_t default_bin;
-  CUDARandom* cuda_random;
+  //CUDARandom* cuda_random;
   int rand_threshold;
 };
 
@@ -89,15 +89,28 @@ class CUDABestSplitFinder {
 
   void ResetConfig(const Config* config);
 
-  __device__ static double CalculateSplittedLeafOutput(
-    double sum_gradients,
-    double sum_hessians, double l1, const bool use_l1,
-    double l2);
-
  private:
-  void LaunchFindBestSplitsForLeafKernel(const CUDALeafSplitsStruct* smaller_leaf_splits,
-    const CUDALeafSplitsStruct* larger_leaf_splits, const int smaller_leaf_index, const int larger_leaf_index,
-    const bool is_smaller_leaf_valid, const bool is_larger_leaf_valid);
+
+  #define LaunchFindBestSplitsForLeafKernel_PARAMS \
+    const CUDALeafSplitsStruct* smaller_leaf_splits, \
+    const CUDALeafSplitsStruct* larger_leaf_splits, \
+    const int smaller_leaf_index, \
+    const int larger_leaf_index, \
+    const bool is_smaller_leaf_valid, \
+    const bool is_larger_leaf_valid
+
+  void LaunchFindBestSplitsForLeafKernel(LaunchFindBestSplitsForLeafKernel_PARAMS);
+
+  template <bool USE_RAND>
+  void LaunchFindBestSplitsForLeafKernelInner0(LaunchFindBestSplitsForLeafKernel_PARAMS);
+
+  template <bool USE_RAND, bool USE_L1>
+  void LaunchFindBestSplitsForLeafKernelInner1(LaunchFindBestSplitsForLeafKernel_PARAMS);
+
+  template <bool USE_RAND, bool USE_L1, bool USE_SMOOTHING>
+  void LaunchFindBestSplitsForLeafKernelInner2(LaunchFindBestSplitsForLeafKernel_PARAMS);
+
+  #undef LaunchFindBestSplitsForLeafKernel_PARAMS
 
   void LaunchSyncBestSplitForLeafKernel(
     const int host_smaller_leaf_index,
@@ -145,6 +158,8 @@ class CUDABestSplitFinder {
   int max_cat_to_onehot_;
   bool extra_trees_;
   int extra_seed_;
+  bool use_smoothing_;
+  double path_smooth_;
   std::vector<cudaStream_t> cuda_streams_;
   // for best split find tasks
   std::vector<SplitFindTask> split_find_tasks_;
