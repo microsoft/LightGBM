@@ -103,13 +103,13 @@ void CUDATree::InitCUDAMemory() {
                                   __FILE__,
                                   __LINE__);
   AllocateCUDAMemory<double>(&cuda_leaf_weight_,
+                             static_cast<size_t>(max_leaves_),
+                             __FILE__,
+                             __LINE__);
+  AllocateCUDAMemory<data_size_t>(&cuda_leaf_count_,
                                   static_cast<size_t>(max_leaves_),
                                   __FILE__,
                                   __LINE__);
-  AllocateCUDAMemory<data_size_t>(&cuda_leaf_count_,
-                                       static_cast<size_t>(max_leaves_),
-                                       __FILE__,
-                                       __LINE__);
   AllocateCUDAMemory<data_size_t>(&cuda_internal_count_,
                                        static_cast<size_t>(max_leaves_),
                                        __FILE__,
@@ -179,6 +179,11 @@ void CUDATree::InitCUDA() {
   InitCUDAMemoryFromHostMemory<data_size_t>(&cuda_internal_count_,
                                        internal_count_.data(),
                                        internal_count_.size(),
+                                       __FILE__,
+                                       __LINE__);
+  InitCUDAMemoryFromHostMemory<data_size_t>(&cuda_leaf_count_,
+                                       leaf_count_.data(),
+                                       leaf_count_.size(),
                                        __FILE__,
                                        __LINE__);
   InitCUDAMemoryFromHostMemory<float>(&cuda_split_gain_,
