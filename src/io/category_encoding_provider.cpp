@@ -1309,6 +1309,10 @@ void CategoryEncodingProvider::ExtendPerFeatureSetting(Config* config) const {
   if (is_interaction_constraints_used) {
     for (auto& constraints : config->interaction_constraints_vector) {
       for (const int fid : constraints) {
+        if (fid >= num_original_features_) {
+          Log::Fatal("feature index %d found in interaction constraints, but only %d features are found in data\n",
+            fid, num_original_features_);
+        }
         if (is_categorical_feature_[fid]) {
           for (const int new_fid : encode_fid_sets[fid]) {
             constraints.push_back(new_fid);

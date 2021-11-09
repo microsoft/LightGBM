@@ -75,7 +75,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   if (train_data_->category_encoding_provider() != nullptr) {
     category_encoding_provider_.reset(CategoryEncodingProvider::RecoverFromModelString(train_data_->category_encoding_provider()->DumpToString()));
     category_encoding_provider_->CheckForcedSplitsForCategoryEncoding(&forced_splits_json_);
-    category_encoding_provider_->ExtendPerFeatureSetting(config_.get());
+    //category_encoding_provider_->ExtendPerFeatureSetting(config_.get());
   }
 
   if (!config_->monotone_constraints.empty()) {
