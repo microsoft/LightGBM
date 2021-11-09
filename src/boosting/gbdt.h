@@ -11,6 +11,7 @@
 #include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/threading.h>
+#include <LightGBM/sample_strategy.h>
 
 #include <string>
 #include <algorithm>
@@ -534,6 +535,7 @@ class GBDT : public GBDTBase {
   ParallelPartitionRunner<data_size_t, false> bagging_runner_;
   Json forced_splits_json_;
   bool linear_tree_;
+  std::unique_ptr<SampleStrategy> data_sample_strategy_;
 };
 
 }  // namespace LightGBM
