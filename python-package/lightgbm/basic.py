@@ -1583,7 +1583,9 @@ class Dataset:
             if categorical_indices:
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     if cat_alias in params:
-                        _log_warning(f'{cat_alias} in param dict is overridden.')
+                        # If the params[cat_alias] is equal to categorical_indices, do not report the warning.
+                        if not(isinstance(params[cat_alias], list) and set(params[cat_alias]) == categorical_indices):
+                            _log_warning(f'{cat_alias} in param dict is overridden.')
                         params.pop(cat_alias, None)
                 params['categorical_column'] = sorted(categorical_indices)
         if self.category_encoders is not None:
@@ -1852,6 +1854,33 @@ class Dataset:
             ctypes.byref(self.handle)))
         return self
 
+    @staticmethod
+    def _compare_params_for_warning(params, other_params):
+        """Compare params.
+
+        It is only for the warning purpose. Thus some keys are ignored.
+
+        Returns
+        -------
+        compare_result: bool
+          If they are equal, return True; Otherwise, return False.
+        """
+        ignore_keys = _ConfigAliases.get("categorical_feature")
+        ignore_keys.add("category_encoders")
+        if params is None:
+            params = {}
+        if other_params is None:
+            other_params = {}
+        for k in other_params:
+            if k not in ignore_keys:
+                if k not in params or params[k] != other_params[k]:
+                    return False
+        for k in params:
+            if k not in ignore_keys:
+                if k not in other_params or params[k] != other_params[k]:
+                    return False
+        return True
+
     def construct(self):
         """Lazy init.
 
@@ -1863,12 +1892,10 @@ class Dataset:
         if self.handle is None:
             if self.reference is not None:
                 reference_params = self.reference.get_params()
-                reference_params.pop("category_encoders", None)
-                for cat_alias in _ConfigAliases.get("categorical_feature"):
-                    reference_params.pop(cat_alias, None)
-                self._extract_categorical_info_from_params(self.params)
-                if self.get_params() != reference_params:
-                    _log_warning('Overriding the parameters from Reference Dataset.')
+                params = self.get_params()
+                if params != reference_params:
+                    if self._compare_params_for_warning(params, reference_params) is False:
+                        _log_warning('Overriding the parameters from Reference Dataset.')
                     self._update_params(reference_params)
                 if self.used_indices is None:
                     # create valid
@@ -2159,11 +2186,11 @@ class Dataset:
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
             elif categorical_feature == 'auto':
-                _log_warning('Using categorical_feature in Dataset.')
                 return self
             else:
-                _log_warning('categorical_feature in Dataset is overridden.\n'
-                             f'New categorical_feature is {sorted(list(categorical_feature))}')
+                if self.categorical_feature != 'auto':
+                    _log_warning('categorical_feature in Dataset is overridden.\n'
+                                 f'New categorical_feature is {sorted(list(categorical_feature))}')
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
         else:

@@ -394,7 +394,7 @@ RDscript${R_CUSTOMIZATION} \
   -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
 
 # install lightgbm
-sh build-cran-package.sh
+sh build-cran-package.sh --r-executable=RD${R_CUSTOMIZATION}
 RD${R_CUSTOMIZATION} \
   CMD INSTALL lightgbm_*.tar.gz
 
@@ -423,7 +423,8 @@ docker run \
 
 RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
-sh build-cran-package.sh
+sh build-cran-package.sh \
+    --r-executable=RDvalgrind
 
 RDvalgrind CMD INSTALL \
     --preclean \

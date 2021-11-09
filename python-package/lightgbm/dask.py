@@ -1213,6 +1213,11 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
         Other parameters passed through to ``LGBMClassifier.fit()``.
 
+    Returns
+    -------
+    self : lightgbm.DaskLGBMClassifier
+        Returns self.
+
     {_lgbmmodel_doc_custom_eval_note}
         """
 
@@ -1393,6 +1398,11 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
         Other parameters passed through to ``LGBMRegressor.fit()``.
 
+    Returns
+    -------
+    self : lightgbm.DaskLGBMRegressor
+        Returns self.
+
     {_lgbmmodel_doc_custom_eval_note}
         """
 
@@ -1555,6 +1565,11 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     # DaskLGBMRanker support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
         Other parameters passed through to ``LGBMRanker.fit()``.
+
+    Returns
+    -------
+    self : lightgbm.DaskLGBMRanker
+        Returns self.
 
     {_lgbmmodel_doc_custom_eval_note}
         """
