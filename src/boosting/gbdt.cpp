@@ -50,6 +50,12 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
                 const std::vector<const Metric*>& training_metrics) {
   CHECK_NOTNULL(train_data);
   train_data_ = train_data;
+  if (!config->monotone_constraints.empty()) {
+    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->monotone_constraints.size());
+  }
+  if (!config->feature_contri.empty()) {
+    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config->feature_contri.size());
+  }
   iter_ = 0;
   num_iteration_for_pred_ = 0;
   max_feature_idx_ = 0;
@@ -74,17 +80,6 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   if (train_data_->category_encoding_provider() != nullptr) {
     category_encoding_provider_.reset(CategoryEncodingProvider::RecoverFromModelString(train_data_->category_encoding_provider()->DumpToString()));
-    /*if (!config->forcedsplits_filename.empty()) {
-      category_encoding_provider_->CheckForcedSplitsForCategoryEncoding(&forced_splits_json_);
-    }*/
-    //category_encoding_provider_->ExtendPerFeatureSetting(config_.get());
-  }
-
-  if (!config_->monotone_constraints.empty()) {
-    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config_->monotone_constraints.size());
-  }
-  if (!config_->feature_contri.empty()) {
-    CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config_->feature_contri.size());
   }
 
   objective_function_ = objective_function;
