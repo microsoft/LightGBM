@@ -1288,7 +1288,6 @@ void CategoryEncodingProvider::ExtendPerFeatureSetting(Config* config) const {
     for (const int& fid : categorical_features_) {
       const int convert_fid = cat_converter->GetConvertFid(fid);
       if (is_monotone_constraints_used) {
-        Log::Warning("push monotone contraints");
         monotone_contraints[convert_fid] = (monotone_contraints[fid]);
       }
       if (is_feature_contri_used) {
