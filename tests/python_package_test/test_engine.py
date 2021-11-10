@@ -2888,7 +2888,7 @@ def test_dump_model_hook():
     assert "leaf_value" not in dumped_model_str
     assert "LV" in dumped_model_str
 
-"""
+
 def test_category_encoding_with_set_feature_name():
     X, y = load_breast_cancer(return_X_y=True)
     category_encoders_str = "count,target:0.5,raw"
@@ -3004,4 +3004,3 @@ def test_category_encoding_with_feature_interaction_constraints():
     rmse_feature_cegb_lazy = np.sqrt(np.mean((pred_feature_cegb_lazy - y) ** 2))
 
     assert rmse_feature_cegb_lazy > rmse
-"""

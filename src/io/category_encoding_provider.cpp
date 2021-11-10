@@ -1171,7 +1171,7 @@ void CategoryEncodingProvider::ExpandNumFeatureWhileAccumulate(const int new_lar
   }
 }
 
-bool CategoryEncodingProvider::CheckForcedSplitsForCategoryEncoding(const Json* forced_split_json) const {
+void CategoryEncodingProvider::CheckForcedSplitsForCategoryEncoding(const Json* forced_split_json) const {
   // start at root leaf
   if (forced_split_json != nullptr && !forced_split_json->is_null()) {
     std::queue<Json> q;
