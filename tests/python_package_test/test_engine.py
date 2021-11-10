@@ -2932,7 +2932,7 @@ def test_category_encoding_with_set_feature_name():
     category_encoders_str = "count,target:0.5,raw"
     categorical_feature = [fidx for fidx in range(X.shape[1] // 2)]
     lgb_data = lgb.Dataset(X, label=y, category_encoders=category_encoders_str,
-        categorical_feature=categorical_feature)
+                           categorical_feature=categorical_feature)
 
     is_categorical_feature = np.zeros(X.shape[1], dtype=np.bool)
     is_categorical_feature[categorical_feature] = True
@@ -3025,8 +3025,8 @@ def test_category_encoding_with_cegb():
 
 
 def test_category_encoding_with_feature_interaction_constraints():
-    X = np.array([[0, 0, 0] for _ in range(100)] + [[0, 0, 1] for _ in range(100)] +
-        [[0, 1, 0] for _ in range(100)] + [[0, 1, 1] for _ in range(200)])
+    X = np.array([[0, 0, 0] for _ in range(100)] + [[0, 0, 1] for _ in range(100)]
+                 + [[0, 1, 0] for _ in range(100)] + [[0, 1, 1] for _ in range(200)])
     y = np.array(X[:, 1] + X[:, 2])
     train_data = lgb.Dataset(X, label=y)
     params = {
