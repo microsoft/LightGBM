@@ -1,6 +1,7 @@
 # coding: utf-8
 import copy
 import itertools
+import json
 import math
 import pickle
 import platform
@@ -2889,6 +2890,43 @@ def test_dump_model_hook():
     assert "LV" in dumped_model_str
 
 
+def test_force_split_with_feature_fraction(tmp_path):
+    X, y = load_boston(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+
+    forced_split = {
+        "feature": 0,
+        "threshold": 0.5,
+        "right": {
+            "feature": 2,
+            "threshold": 10.0
+        }
+    }
+
+    tmp_split_file = tmp_path / "forced_split.json"
+    with open(tmp_split_file, "w") as f:
+        f.write(json.dumps(forced_split))
+
+    params = {
+        "objective": "regression",
+        "feature_fraction": 0.6,
+        "force_col_wise": True,
+        "feature_fraction_seed": 1,
+        "forcedsplits_filename": tmp_split_file
+    }
+
+    gbm = lgb.train(params, lgb_train)
+    ret = mean_absolute_error(y_test, gbm.predict(X_test))
+    assert ret < 2.0
+
+    tree_info = gbm.dump_model()["tree_info"]
+    assert len(tree_info) > 1
+    for tree in tree_info:
+        tree_structure = tree["tree_structure"]
+        assert tree_structure['split_feature'] == 0
+
+
 def test_category_encoding_with_set_feature_name():
     X, y = load_breast_cancer(return_X_y=True)
     category_encoders_str = "count,target:0.5,raw"
@@ -2908,6 +2946,7 @@ def test_category_encoding_with_set_feature_name():
         if is_categorical_feature[feature_index]:
             assert "feature_{}_target_encoding_{}".format(feature_index, 0.5) in feature_names_set
             assert "feature_{}_count_encoding".format(feature_index) in feature_names_set
+
 
 def test_category_encoding_with_monotone_constraints():
     X = np.array([[0, 0, 2] for _ in range(100)] + [[0, 0, 3] for _ in range(100)] + [[0, 0, 0] for _ in range(100)])
@@ -2931,6 +2970,7 @@ def test_category_encoding_with_monotone_constraints():
 
     assert rmse_feature_constri > rmse_no_feature_constri
 
+
 def test_category_encoding_with_feature_contri():
     X = np.array([[0, 0, 2] for _ in range(100)] + [[0, 0, 3] for _ in range(100)] + [[0, 0, 0] for _ in range(100)])
     y = np.array([2 for _ in range(100)] + [-1 for _ in range(100)] + [5 for _ in range(100)])
@@ -2952,6 +2992,7 @@ def test_category_encoding_with_feature_contri():
     rmse_feature_contr = np.sqrt(np.mean((pred_feature_contr - y) ** 2))
 
     assert rmse_feature_contr > rmse_no_feature_contr
+
 
 def test_category_encoding_with_cegb():
     X = np.array([[0, 0, 2] for _ in range(100)] + [[0, 10, 3] for _ in range(100)] + [[0, 0, 0] for _ in range(100)])
@@ -2981,6 +3022,7 @@ def test_category_encoding_with_cegb():
     rmse_feature_cegb_coupled = np.sqrt(np.mean((pred_feature_cegb_coupled - y) ** 2))
 
     assert rmse_feature_cegb_coupled > rmse
+
 
 def test_category_encoding_with_feature_interaction_constraints():
     X = np.array([[0, 0, 0] for _ in range(100)] + [[0, 0, 1] for _ in range(100)] +

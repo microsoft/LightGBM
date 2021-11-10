@@ -978,7 +978,7 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
-  if (config.category_encoders != std::string("raw") and config.category_encoders != std::string("")) {
+  if (config.category_encoders != std::string("raw") && config.category_encoders != std::string("")) {
     Log::Warning("category_encoders is ignored when LGBM_DatasetCreateFromSampledColumn is used to construct dataset.");
   }
   OMP_SET_NUM_THREADS(config.num_threads);
@@ -1289,7 +1289,7 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
-  if (config.category_encoders != std::string("raw") and config.category_encoders != std::string("")) {
+  if (config.category_encoders != std::string("raw") && config.category_encoders != std::string("")) {
     Log::Warning("category_encoders is ignored when LGBM_DatasetCreateFromCSRFunc is used to construct dataset.");
   }
   OMP_SET_NUM_THREADS(config.num_threads);
