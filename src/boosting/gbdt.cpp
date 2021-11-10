@@ -79,7 +79,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
     }
     category_encoding_provider_->ExtendPerFeatureSetting(config_.get());
   }
-  
+
   if (!config_->monotone_constraints.empty()) {
     CHECK_EQ(static_cast<size_t>(train_data_->num_total_features()), config_->monotone_constraints.size());
   }
