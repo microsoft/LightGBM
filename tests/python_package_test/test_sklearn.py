@@ -157,11 +157,39 @@ def test_eval_at_aliases():
     X_test, y_test = load_svmlight_file(str(rank_example_dir / 'rank.test'))
     q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
     q_test = np.loadtxt(str(rank_example_dir / 'rank.test.query'))
-    for alias in ('eval_at', 'ndcg_eval_at', 'ndcg_at', 'map_eval_at', 'map_at'):
+    for alias in lgb.basic._ConfigAliases.get('eval_at'):
         gbm = lgb.LGBMRanker(n_estimators=5, **{alias: [1, 2, 3, 9]})
         with pytest.warns(UserWarning, match=f"Found '{alias}' in params. Will use it instead of 'eval_at' argument"):
             gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)], eval_group=[q_test])
         assert list(gbm.evals_result_['valid_0'].keys()) == ['ndcg@1', 'ndcg@2', 'ndcg@3', 'ndcg@9']
+
+
+@pytest.mark.parametrize("custom_objective", [True, False])
+def test_objective_aliases(custom_objective):
+    X, y = load_boston(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    if custom_objective:
+        obj = custom_dummy_obj
+        metric_name = 'l2'  # default one
+    else:
+        obj = 'mape'
+        metric_name = 'mape'
+    evals = []
+    for alias in lgb.basic._ConfigAliases.get('objective'):
+        gbm = lgb.LGBMRegressor(n_estimators=5, **{alias: obj})
+        if alias != 'objective':
+            with pytest.warns(UserWarning, match=f"Found '{alias}' in params. Will use it instead of 'objective' argument"):
+                gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)])
+        else:
+            gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)])
+        assert list(gbm.evals_result_['valid_0'].keys()) == [metric_name]
+        evals.append(gbm.evals_result_['valid_0'][metric_name])
+    evals_t = np.array(evals).T
+    for i in range(evals_t.shape[0]):
+        np.testing.assert_allclose(evals_t[i], evals_t[i][0])
+    # check that really dummy objective was used and estimator didn't learn anything
+    if custom_objective:
+        np.testing.assert_allclose(evals_t, evals_t[0][0])
 
 
 def test_regression_with_custom_objective():
@@ -910,10 +938,8 @@ def test_metrics():
     assert 'multi_logloss' in gbm.evals_result_['training']
     assert 'multi_error' in gbm.evals_result_['training']
 
-    # invalid objective is replaced with default multiclass one
-    # and invalid binary metric is replaced with multiclass alternative
-    gbm = lgb.LGBMClassifier(objective='invalid_obj',
-                             **params).fit(eval_metric='binary_error', **params_fit)
+    # invalid binary metric is replaced with multiclass alternative
+    gbm = lgb.LGBMClassifier(**params).fit(eval_metric='binary_error', **params_fit)
     assert gbm.objective_ == 'multiclass'
     assert len(gbm.evals_result_['training']) == 2
     assert 'multi_logloss' in gbm.evals_result_['training']
@@ -1156,6 +1182,17 @@ def test_continue_training_with_model():
     assert len(init_gbm.evals_result_['valid_0']['multi_logloss']) == len(gbm.evals_result_['valid_0']['multi_logloss'])
     assert len(init_gbm.evals_result_['valid_0']['multi_logloss']) == 5
     assert gbm.evals_result_['valid_0']['multi_logloss'][-1] < init_gbm.evals_result_['valid_0']['multi_logloss'][-1]
+
+
+def test_actual_number_of_trees():
+    X = [[1, 2, 3], [1, 2, 3]]
+    y = [1, 1]
+    n_estimators = 5
+    gbm = lgb.LGBMRegressor(n_estimators=n_estimators).fit(X, y)
+    assert gbm.n_estimators == n_estimators
+    assert gbm.n_estimators_ == 1
+    assert gbm.n_iter_ == 1
+    np.testing.assert_array_equal(gbm.predict(np.array(X) * 10), y)
 
 
 # sklearn < 0.22 requires passing "attributes" argument
