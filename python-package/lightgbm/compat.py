@@ -6,8 +6,11 @@ try:
     from pandas import DataFrame as pd_DataFrame
     from pandas import Series as pd_Series
     from pandas import concat
-    from pandas.api.types import CategoricalDtype as pd_CategoricalDtype
     from pandas.api.types import is_sparse as is_dtype_sparse
+    try:
+        from pandas import CategoricalDtype as pd_CategoricalDtype
+    except ImportError:
+        from pandas.api.types import CategoricalDtype as pd_CategoricalDtype
     PANDAS_INSTALLED = True
 except ImportError:
     PANDAS_INSTALLED = False
