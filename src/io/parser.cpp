@@ -248,6 +248,7 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
     output_label_index = GetLabelIdxForTSV(lines[0], num_features, label_idx);
     ret.reset(new TSVParser(output_label_index, num_col, atof));
   } else if (type == DataType::CSV) {
+    // preprocess 
     output_label_index = GetLabelIdxForCSV(lines[0], num_features, label_idx);
     ret.reset(new CSVParser(output_label_index, num_col, atof));
   }
