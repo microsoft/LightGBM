@@ -23,7 +23,7 @@ class SampleStrategy {
           std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& hessians) = 0;
   bool is_use_subset() {return is_use_subset_;}
   data_size_t bag_data_cnt() {return bag_data_cnt_;}
-  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices() {return bag_data_indices_;}
+  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices() {return bag_data_indices_;}
 
  protected:
   const Config* config_;

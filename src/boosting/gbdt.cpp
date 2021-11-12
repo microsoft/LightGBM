@@ -399,9 +399,9 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   }
   // bagging logic
   data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
-  bag_data_indices_ = data_sample_strategy_->bag_data_indices();
-  bag_data_cnt_ = data_sample_strategy_->bag_data_cnt();
-  is_use_subset_ = data_sample_strategy_->is_use_subset();
+  const bool is_use_subset = data_sample_strategy_->is_use_subset();
+  const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
+  const std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices = data_sample_strategy_->bag_data_indices();
 
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
@@ -411,10 +411,10 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto grad = gradients + offset;
       auto hess = hessians + offset;
       // need to copy gradients for bagging subset.
-      if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-        for (int i = 0; i < bag_data_cnt_; ++i) {
-          gradients_[offset + i] = grad[bag_data_indices_[i]];
-          hessians_[offset + i] = hess[bag_data_indices_[i]];
+      if (is_use_subset && bag_data_cnt < num_data_) {
+        for (int i = 0; i < bag_data_cnt; ++i) {
+          gradients_[offset + i] = grad[bag_data_indices[i]];
+          hessians_[offset + i] = hess[bag_data_indices[i]];
         }
         grad = gradients_.data() + offset;
         hess = hessians_.data() + offset;
@@ -513,12 +513,13 @@ bool GBDT::EvalAndCheckEarlyStopping() {
 void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
   Common::FunctionTimer fun_timer("GBDT::UpdateScore", global_timer);
   // update training score
-  if (!is_use_subset_) {
+  if (!data_sample_strategy_->is_use_subset()) {
     train_score_updater_->AddScore(tree_learner_.get(), tree, cur_tree_id);
 
+    const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
     // we need to predict out-of-bag scores of data for boosting
-    if (num_data_ - bag_data_cnt_ > 0) {
-      train_score_updater_->AddScore(tree, bag_data_indices_.data() + bag_data_cnt_, num_data_ - bag_data_cnt_, cur_tree_id);
+    if (num_data_ - bag_data_cnt > 0) {
+      train_score_updater_->AddScore(tree, data_sample_strategy_->bag_data_indices().data() + bag_data_cnt, num_data_ - bag_data_cnt, cur_tree_id);
     }
 
   } else {
