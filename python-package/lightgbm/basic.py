@@ -17,7 +17,8 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Un
 import numpy as np
 import scipy.sparse
 
-from .compat import PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, pd_DataFrame, pd_Series
+from .compat import (PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, pd_CategoricalDtype, pd_DataFrame,
+                     pd_Series)
 from .libpath import find_lib_path
 
 ZERO_THRESHOLD = 1e-35
@@ -567,7 +568,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
             data = data.rename(columns=str)
-        cat_cols = list(data.select_dtypes(include=['category']).columns)
+        cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
             pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
