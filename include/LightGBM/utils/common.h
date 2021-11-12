@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <map>
 
 #if (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
 #define FMT_HEADER_ONLY
