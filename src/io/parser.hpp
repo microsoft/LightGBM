@@ -136,6 +136,7 @@ const char* Atof_and_map(const char* p, double* out, int idx) {
       p += cnt;
     }
   }
+  return p;
 }
 
 class CSVParser: public Parser {
