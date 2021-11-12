@@ -7,16 +7,16 @@
 
 namespace LightGBM {
 
-class GOSS1 : public SampleStrategy {
+class GOSS : public SampleStrategy {
  public:
-  GOSS1(const Config* config, const Dataset* train_data, int num_tree_per_iteration) {
+  GOSS(const Config* config, const Dataset* train_data, int num_tree_per_iteration) {
     config_ = config;
     train_data_ = train_data;
     num_tree_per_iteration_ = num_tree_per_iteration;
     num_data_ = train_data->num_data();
   }
   
-  ~GOSS1() {
+  ~GOSS() {
   }
 
   void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) override {
