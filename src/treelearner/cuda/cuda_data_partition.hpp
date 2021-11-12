@@ -294,7 +294,7 @@ class CUDADataPartition {
   /*! \brief marks whether a feature is a categorical feature */
   std::vector<bool> is_categorical_feature_;
   /*! \brief marks whether a feature is the only feature in its group */
-  std::vector<bool> is_single_feature_in_group_;
+  std::vector<bool> is_single_feature_in_column_;
 
   // config information
   /*! \brief maximum number of leaves in a tree */

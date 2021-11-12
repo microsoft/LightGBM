@@ -615,7 +615,7 @@ __global__ void FindBestSplitsForLeafKernel(
   const unsigned int output_offset = IS_LARGER ? (task_index + num_tasks) : task_index;
   CUDASplitInfo* out = cuda_best_split_info + output_offset;
   CUDARandom* cuda_random = USE_RAND ?
-    (IS_LARGER ? cuda_randoms + task_index * 2 + 1: cuda_randoms + task_index * 2) : nullptr;
+    (IS_LARGER ? cuda_randoms + task_index * 2 + 1 : cuda_randoms + task_index * 2) : nullptr;
   if (is_feature_used_bytree[inner_feature_index]) {
     const hist_t* hist_ptr = (IS_LARGER ? larger_leaf_splits->hist_in_leaf : smaller_leaf_splits->hist_in_leaf) + task->hist_offset * 2;
     if (task->is_categorical) {
@@ -1505,21 +1505,7 @@ __global__ void SyncBestSplitForLeafKernelAllBlocks(
         if ((other_split_info->is_valid && smaller_leaf_split_info->is_valid &&
           other_split_info->gain > smaller_leaf_split_info->gain) ||
             (!smaller_leaf_split_info->is_valid && other_split_info->is_valid)) {
-            smaller_leaf_split_info->is_valid = other_split_info->is_valid;
-            smaller_leaf_split_info->inner_feature_index = other_split_info->inner_feature_index;
-            smaller_leaf_split_info->default_left = other_split_info->default_left;
-            smaller_leaf_split_info->threshold = other_split_info->threshold;
-            smaller_leaf_split_info->gain = other_split_info->gain;
-            smaller_leaf_split_info->left_sum_gradients = other_split_info->left_sum_gradients;
-            smaller_leaf_split_info->left_sum_hessians = other_split_info->left_sum_hessians;
-            smaller_leaf_split_info->left_count = other_split_info->left_count;
-            smaller_leaf_split_info->left_gain = other_split_info->left_gain;
-            smaller_leaf_split_info->left_value = other_split_info->left_value;
-            smaller_leaf_split_info->right_sum_gradients = other_split_info->right_sum_gradients;
-            smaller_leaf_split_info->right_sum_hessians = other_split_info->right_sum_hessians;
-            smaller_leaf_split_info->right_count = other_split_info->right_count;
-            smaller_leaf_split_info->right_gain = other_split_info->right_gain;
-            smaller_leaf_split_info->right_value = other_split_info->right_value;
+          *smaller_leaf_split_info = *other_split_info;
         }
       }
     }
@@ -1533,21 +1519,7 @@ __global__ void SyncBestSplitForLeafKernelAllBlocks(
         if ((other_split_info->is_valid && larger_leaf_split_info->is_valid &&
           other_split_info->gain > larger_leaf_split_info->gain) ||
             (!larger_leaf_split_info->is_valid && other_split_info->is_valid)) {
-            larger_leaf_split_info->is_valid = other_split_info->is_valid;
-            larger_leaf_split_info->inner_feature_index = other_split_info->inner_feature_index;
-            larger_leaf_split_info->default_left = other_split_info->default_left;
-            larger_leaf_split_info->threshold = other_split_info->threshold;
-            larger_leaf_split_info->gain = other_split_info->gain;
-            larger_leaf_split_info->left_sum_gradients = other_split_info->left_sum_gradients;
-            larger_leaf_split_info->left_sum_hessians = other_split_info->left_sum_hessians;
-            larger_leaf_split_info->left_count = other_split_info->left_count;
-            larger_leaf_split_info->left_gain = other_split_info->left_gain;
-            larger_leaf_split_info->left_value = other_split_info->left_value;
-            larger_leaf_split_info->right_sum_gradients = other_split_info->right_sum_gradients;
-            larger_leaf_split_info->right_sum_hessians = other_split_info->right_sum_hessians;
-            larger_leaf_split_info->right_count = other_split_info->right_count;
-            larger_leaf_split_info->right_gain = other_split_info->right_gain;
-            larger_leaf_split_info->right_value = other_split_info->right_value;
+            *larger_leaf_split_info = *other_split_info;
         }
       }
     }
@@ -1741,12 +1713,14 @@ void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(
 __global__ void AllocateCatVectorsKernel(
   CUDASplitInfo* cuda_split_infos, size_t len,
   const int max_num_categories_in_split,
-  const bool has_categorical_feature) {
+  const bool has_categorical_feature,
+  uint32_t* cat_threshold_vec,
+  int* cat_threshold_real_vec) {
   const size_t i = threadIdx.x + blockIdx.x * blockDim.x;
   if (i < len) {
     if (has_categorical_feature) {
-      cuda_split_infos[i].cat_threshold = new uint32_t[max_num_categories_in_split];
-      cuda_split_infos[i].cat_threshold_real = new int[max_num_categories_in_split];
+      cuda_split_infos[i].cat_threshold = cat_threshold_vec + i * max_num_categories_in_split;
+      cuda_split_infos[i].cat_threshold_real = cat_threshold_real_vec + i * max_num_categories_in_split;
       cuda_split_infos[i].num_cat_threshold = 0;
     } else {
       cuda_split_infos[i].cat_threshold = nullptr;
@@ -1756,11 +1730,11 @@ __global__ void AllocateCatVectorsKernel(
   }
 }
 
-void CUDABestSplitFinder::LaunchAllocateCatVectorsKernel(CUDASplitInfo* cuda_split_infos, size_t len) const {
-  const int max_num_categories_in_split = min(max_cat_threshold_ / 2, max_num_categorical_bin_);
+void CUDABestSplitFinder::LaunchAllocateCatVectorsKernel(
+  CUDASplitInfo* cuda_split_infos, uint32_t* cat_threshold_vec, int* cat_threshold_real_vec, size_t len) {
   const int num_blocks = (static_cast<int>(len) + NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER - 1) / NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER;
   AllocateCatVectorsKernel<<<num_blocks, NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER>>>(
-    cuda_split_infos, len, max_num_categories_in_split, has_categorical_feature_);
+    cuda_split_infos, len, max_num_categories_in_split_, has_categorical_feature_, cat_threshold_vec, cat_threshold_real_vec);
 }
 
 __global__ void InitCUDARandomKernel(

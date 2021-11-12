@@ -131,9 +131,9 @@ class CUDABestSplitFinder {
     int* best_leaf_index,
     data_size_t* num_cat_threshold);
 
-  void AllocateCatVectors(CUDASplitInfo* cuda_split_infos, size_t len) const;
+  void AllocateCatVectors(CUDASplitInfo* cuda_split_infos, uint32_t* cat_threshold_vec, int* cat_threshold_real_vec, size_t len);
 
-  void LaunchAllocateCatVectorsKernel(CUDASplitInfo* cuda_split_infos, size_t len) const;
+  void LaunchAllocateCatVectorsKernel(CUDASplitInfo* cuda_split_infos, uint32_t* cat_threshold_vec, int* cat_threshold_real_vec, size_t len);
 
   void LaunchInitCUDARandomKernel();
 
@@ -190,6 +190,11 @@ class CUDABestSplitFinder {
   hist_t* cuda_feature_hist_hess_buffer_;
   hist_t* cuda_feature_hist_stat_buffer_;
   data_size_t* cuda_feature_hist_index_buffer_;
+  uint32_t* cuda_cat_threshold_leaf_;
+  int* cuda_cat_threshold_real_leaf_;
+  uint32_t* cuda_cat_threshold_feature_;
+  int* cuda_cat_threshold_real_feature_;
+  int max_num_categories_in_split_;
   // used for extremely randomized trees
   CUDAVector<CUDARandom> cuda_randoms_;
 

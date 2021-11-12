@@ -581,7 +581,8 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorCategoricalKernel(
   const data_size_t* data_indices_in_leaf = cuda_data_indices_ + leaf_data_start;
   const int column_index = cuda_column_data_->feature_to_column(split_feature_index);
   const uint8_t bit_type = cuda_column_data_->column_bit_type(column_index);
-  const uint32_t min_bin = cuda_column_data_->feature_min_bin(split_feature_index);
+  const bool is_single_feature_in_column = is_single_feature_in_column_[split_feature_index];
+  const uint32_t min_bin = is_single_feature_in_column ? 1 : cuda_column_data_->feature_min_bin(split_feature_index);
   const uint32_t max_bin = cuda_column_data_->feature_max_bin(split_feature_index);
   const uint32_t most_freq_bin = cuda_column_data_->feature_most_freq_bin(split_feature_index);
   const uint32_t default_bin = cuda_column_data_->feature_default_bin(split_feature_index);
@@ -591,14 +592,13 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorCategoricalKernel(
   CopyFromCUDADeviceToHost<uint32_t>(host_bitset.data(), bitset, bitset_len, __FILE__, __LINE__);
   uint8_t split_default_to_left = 0;
   int default_leaf_index = right_leaf_index;
-  const int is_single_feature_in_group = is_single_feature_in_group_[split_feature_index];
-  if (Common::FindInBitset(host_bitset.data(), bitset_len, most_freq_bin)) {
+  if (most_freq_bin > 0 && Common::FindInBitset(host_bitset.data(), bitset_len, most_freq_bin)) {
     split_default_to_left = 1;
     default_leaf_index = left_leaf_index;
   }
   if (bit_type == 8) {
     const uint8_t* column_data = reinterpret_cast<const uint8_t*>(column_data_pointer);
-    if (is_single_feature_in_group) {
+    if (is_single_feature_in_column) {
       GenDataToLeftBitVectorKernel_Categorical<uint8_t, false><<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
       UpdateDataIndexToLeafIndexKernel_Categorical<uint8_t, false><<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(UpdateDataIndexToLeafIndex_Categorical_ARGS);
     } else {
@@ -607,7 +607,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorCategoricalKernel(
     }
   } else if (bit_type == 16) {
     const uint16_t* column_data = reinterpret_cast<const uint16_t*>(column_data_pointer);
-    if (is_single_feature_in_group) {
+    if (is_single_feature_in_column) {
       GenDataToLeftBitVectorKernel_Categorical<uint16_t, false><<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
       UpdateDataIndexToLeafIndexKernel_Categorical<uint16_t, false><<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(UpdateDataIndexToLeafIndex_Categorical_ARGS);
     } else {
@@ -616,7 +616,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorCategoricalKernel(
     }
   } else if (bit_type == 32) {
     const uint32_t* column_data = reinterpret_cast<const uint32_t*>(column_data_pointer);
-    if (is_single_feature_in_group) {
+    if (is_single_feature_in_column) {
       GenDataToLeftBitVectorKernel_Categorical<uint32_t, false><<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
       UpdateDataIndexToLeafIndexKernel_Categorical<uint32_t, false><<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(UpdateDataIndexToLeafIndex_Categorical_ARGS);
     } else {

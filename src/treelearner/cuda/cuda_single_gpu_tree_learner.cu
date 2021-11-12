@@ -198,10 +198,6 @@ __global__ void ReduceBlockMaxLen(size_t* out_len_buffer, const int num_blocks) 
 template <typename T, bool IS_INNER>
 __global__ void CUDAConstructBitsetKernel(const CUDASplitInfo* best_split_info, uint32_t* out, size_t cuda_bitset_len) {
   const T* vals = nullptr;
-  for (size_t i = threadIdx.x + blockIdx.x * blockDim.x; i < cuda_bitset_len; i += blockDim.x) {
-    out[i] = 0;
-  }
-  __syncthreads();
   if (IS_INNER) {
     vals = reinterpret_cast<const T*>(best_split_info->cat_threshold);
   } else {
@@ -223,14 +219,17 @@ __global__ void SetRealThresholdKernel(
   const int* categorical_bin_to_value_ptr = categorical_bin_to_value + categorical_bin_offsets[best_split_info->inner_feature_index];
   int* cat_threshold_real = best_split_info->cat_threshold_real;
   const uint32_t* cat_threshold = best_split_info->cat_threshold;
-  for (int i = 0; i < num_cat_threshold; ++i) {
-    cat_threshold_real[i] = categorical_bin_to_value_ptr[cat_threshold[i]];
+  const int index = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
+  if (index < num_cat_threshold) {
+    cat_threshold_real[index] = categorical_bin_to_value_ptr[cat_threshold[index]];
   }
 }
 
 template <typename T, bool IS_INNER>
 void CUDAConstructBitset(const CUDASplitInfo* best_split_info, const int num_cat_threshold, uint32_t* out, size_t bitset_len) {
   const int num_blocks = (num_cat_threshold + CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE - 1) / CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE;
+  // clear the bitset vector first
+  SetCUDAMemory<uint32_t>(out, 0, bitset_len, __FILE__, __LINE__);
   CUDAConstructBitsetKernel<T, IS_INNER><<<num_blocks, CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE>>>(best_split_info, out, bitset_len);
 }
 
@@ -246,7 +245,9 @@ size_t CUDABitsetLen(const CUDASplitInfo* best_split_info, const int num_cat_thr
 
 void CUDASingleGPUTreeLearner::LaunchConstructBitsetForCategoricalSplitKernel(
   const CUDASplitInfo* best_split_info) {
-  SetRealThresholdKernel<<<1, 1>>>(best_split_info, cuda_categorical_bin_to_value_, cuda_categorical_bin_offsets_);
+  const int num_blocks = (num_cat_threshold_ + CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE - 1) / CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE;
+  SetRealThresholdKernel<<<num_blocks, CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE>>>
+    (best_split_info, cuda_categorical_bin_to_value_, cuda_categorical_bin_offsets_);
   cuda_bitset_inner_len_ = CUDABitsetLen<uint32_t, true>(best_split_info, num_cat_threshold_, cuda_block_bitset_len_buffer_);
   CUDAConstructBitset<uint32_t, true>(best_split_info, num_cat_threshold_, cuda_bitset_inner_, cuda_bitset_inner_len_);
   cuda_bitset_len_ = CUDABitsetLen<int, false>(best_split_info, num_cat_threshold_, cuda_block_bitset_len_buffer_);

@@ -218,7 +218,7 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
                                 &leaf_sum_hessians_[right_leaf_index],
                                 &sum_left_gradients,
                                 &sum_right_gradients);
-    CheckSplitValid(best_leaf_index_, right_leaf_index, sum_left_gradients, sum_right_gradients);
+    CheckSplitValid(leaf_best_split_feature_[best_leaf_index_], best_leaf_index_, right_leaf_index, sum_left_gradients, sum_right_gradients);
     smaller_leaf_index_ = (leaf_num_data_[best_leaf_index_] < leaf_num_data_[right_leaf_index] ? best_leaf_index_ : right_leaf_index);
     larger_leaf_index_ = (smaller_leaf_index_ == best_leaf_index_ ? right_leaf_index : best_leaf_index_);
     global_timer.Stop("CUDASingleGPUTreeLearner::Split");
@@ -409,7 +409,7 @@ void CUDASingleGPUTreeLearner::AllocateBitset() {
       if (bin_mapper->bin_type() == BinType::CategoricalBin) {
         const int offset = categorical_bin_offsets_[i];
         for (int bin = 0; bin < bin_mapper->num_bin(); ++bin) {
-          categorical_bin_to_value_[offset + bin] = bin_mapper->BinToValue(bin);
+          categorical_bin_to_value_[offset + bin] = static_cast<int>(bin_mapper->BinToValue(bin));
         }
       }
     }
@@ -424,6 +424,7 @@ void CUDASingleGPUTreeLearner::AllocateBitset() {
 }
 
 void CUDASingleGPUTreeLearner::CheckSplitValid(
+  const int inner_split_feature,
   const int left_leaf,
   const int right_leaf,
   const double split_sum_left_gradients,
@@ -448,10 +449,64 @@ void CUDASingleGPUTreeLearner::CheckSplitValid(
     sum_right_gradients += gradients_[index];
     sum_right_hessians += hessians_[index];
   }
+  Log::Warning("inner_split_feature = %d", inner_split_feature);
   Log::Warning("sum_left_gradients = %f, split_sum_left_gradients = %f", sum_left_gradients, split_sum_left_gradients);
   Log::Warning("sum_left_hessians = %f, leaf_sum_hessians_[%d] = %f", sum_left_hessians, left_leaf, leaf_sum_hessians_[left_leaf]);
   Log::Warning("sum_right_gradients = %f, split_sum_right_gradients = %f", sum_right_gradients, split_sum_right_gradients);
   Log::Warning("sum_right_hessians = %f, leaf_sum_hessians_[%d] = %f", sum_right_hessians, right_leaf, leaf_sum_hessians_[right_leaf]);
+
+  /*if (train_data_->FeatureBinMapper(inner_split_feature)->bin_type() == BinType::CategoricalBin) {
+    std::vector<uint32_t> host_bitset_inner(cuda_bitset_inner_len_);
+    CopyFromCUDADeviceToHost<uint32_t>(host_bitset_inner.data(), cuda_bitset_inner_, cuda_bitset_inner_len_, __FILE__, __LINE__);
+    std::vector<data_size_t> host_left_data_indices(leaf_num_data_[left_leaf]);
+    std::vector<data_size_t> host_right_data_indices(leaf_num_data_[right_leaf]);
+    CopyFromCUDADeviceToHost<data_size_t>(host_left_data_indices.data(), cuda_data_partition_->cuda_data_indices() + leaf_data_start_[left_leaf],
+      static_cast<size_t>(leaf_num_data_[left_leaf]), __FILE__, __LINE__);
+    CopyFromCUDADeviceToHost<data_size_t>(host_right_data_indices.data(), cuda_data_partition_->cuda_data_indices() + leaf_data_start_[right_leaf],
+      static_cast<size_t>(leaf_num_data_[right_leaf]), __FILE__, __LINE__);
+    BinIterator* iter = train_data_->FeatureIterator(inner_split_feature);
+    for (size_t i = 0; i < host_left_data_indices.size(); ++i) {
+      const data_size_t data_index = host_left_data_indices[i];
+      const uint32_t bin = iter->RawGet(data_index);
+      const bool to_left = Common::FindInBitset(host_bitset_inner.data(), cuda_bitset_inner_len_, bin);
+      if (!to_left) {
+        Log::Warning("error !!! bin = %d found in left");
+      }
+    }
+    for (size_t i = 0; i < host_right_data_indices.size(); ++i) {
+      const data_size_t data_index = host_right_data_indices[i];
+      const uint32_t bin = iter->RawGet(data_index);
+      const bool to_right = (bin == 0 || !Common::FindInBitset(host_bitset_inner.data(), cuda_bitset_inner_len_, bin));
+      if (!to_right) {
+        Log::Warning("error !!! bin = %d found in right");
+      }
+    }
+
+    // construct histogram manually
+    std::vector<hist_t> hist(500, 0.0f);
+    for (size_t i = 0; i < host_left_data_indices.size(); ++i) {
+      const data_size_t data_index = host_left_data_indices[i];
+      const uint32_t bin = iter->RawGet(data_index);
+      const score_t gradient = gradients_[data_index];
+      const score_t hessian = hessians_[data_index];
+      hist[2 * bin] += gradient;
+      hist[2 * bin + 1] += hessian;
+    }
+    for (size_t i = 0; i < host_right_data_indices.size(); ++i) {
+      const data_size_t data_index = host_right_data_indices[i];
+      const uint32_t bin = iter->RawGet(data_index);
+      const score_t gradient = gradients_[data_index];
+      const score_t hessian = hessians_[data_index];
+      hist[2 * bin] += gradient;
+      hist[2 * bin + 1] += hessian;
+    }
+
+    Log::Warning("==================== manual histogram for leaf %d (====================", left_leaf);
+    for (size_t i = 0; i < 100; ++i) {
+      Log::Warning("bin %d, grad %f, hess %f", i, hist[2 * i], hist[2 * i + 1]);
+    }
+  }*/
+
   CHECK_LE(std::fabs(sum_left_gradients - split_sum_left_gradients), 1e-6f);
   CHECK_LE(std::fabs(sum_left_hessians - leaf_sum_hessians_[left_leaf]), 1e-6f);
   CHECK_LE(std::fabs(sum_right_gradients - split_sum_right_gradients), 1e-6f);
