@@ -35,10 +35,7 @@ GBDT::GBDT()
       num_class_(1),
       num_iteration_for_pred_(0),
       shrinkage_rate_(0.1f),
-      num_init_iteration_(0),
-      need_re_bagging_(false),
-      balanced_bagging_(false),
-      bagging_runner_(0, bagging_rand_block_) {
+      num_init_iteration_(0) {
   average_output_ = false;
   tree_learner_ = nullptr;
   linear_tree_ = false;
@@ -127,7 +124,6 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   monotone_constraints_ = config->monotone_constraints;
 
   // if need bagging, create buffer
-  // ResetBaggingConfig(config_.get(), true);
   data_sample_strategy_.reset(SampleStrategy::CreateSampleStrategy(config_.get(), train_data_, objective_function_, num_tree_per_iteration_));
   data_sample_strategy_->ResetConfig(config_.get(), true, gradients_, hessians_);
   data_sample_strategy_->Reset();
@@ -184,89 +180,6 @@ void GBDT::Boosting() {
   int64_t num_score = 0;
   objective_function_->
     GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
-}
-
-data_size_t GBDT::BaggingHelper(data_size_t start, data_size_t cnt, data_size_t* buffer) {
-  if (cnt <= 0) {
-    return 0;
-  }
-  data_size_t cur_left_cnt = 0;
-  data_size_t cur_right_pos = cnt;
-  // random bagging, minimal unit is one record
-  for (data_size_t i = 0; i < cnt; ++i) {
-    auto cur_idx = start + i;
-    if (bagging_rands_[cur_idx / bagging_rand_block_].NextFloat() < config_->bagging_fraction) {
-      buffer[cur_left_cnt++] = cur_idx;
-    } else {
-      buffer[--cur_right_pos] = cur_idx;
-    }
-  }
-  return cur_left_cnt;
-}
-
-data_size_t GBDT::BalancedBaggingHelper(data_size_t start, data_size_t cnt,
-                                        data_size_t* buffer) {
-  if (cnt <= 0) {
-    return 0;
-  }
-  auto label_ptr = train_data_->metadata().label();
-  data_size_t cur_left_cnt = 0;
-  data_size_t cur_right_pos = cnt;
-  // random bagging, minimal unit is one record
-  for (data_size_t i = 0; i < cnt; ++i) {
-    auto cur_idx = start + i;
-    bool is_pos = label_ptr[start + i] > 0;
-    bool is_in_bag = false;
-    if (is_pos) {
-      is_in_bag = bagging_rands_[cur_idx / bagging_rand_block_].NextFloat() <
-                  config_->pos_bagging_fraction;
-    } else {
-      is_in_bag = bagging_rands_[cur_idx / bagging_rand_block_].NextFloat() <
-                  config_->neg_bagging_fraction;
-    }
-    if (is_in_bag) {
-      buffer[cur_left_cnt++] = cur_idx;
-    } else {
-      buffer[--cur_right_pos] = cur_idx;
-    }
-  }
-  return cur_left_cnt;
-}
-
-void GBDT::Bagging(int iter) {
-  Common::FunctionTimer fun_timer("GBDT::Bagging", global_timer);
-  // if need bagging
-  if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0) ||
-      need_re_bagging_) {
-    need_re_bagging_ = false;
-    auto left_cnt = bagging_runner_.Run<true>(
-        num_data_,
-        [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t* left,
-            data_size_t*) {
-          data_size_t cur_left_count = 0;
-          if (balanced_bagging_) {
-            cur_left_count =
-                BalancedBaggingHelper(cur_start, cur_cnt, left);
-          } else {
-            cur_left_count = BaggingHelper(cur_start, cur_cnt, left);
-          }
-          return cur_left_count;
-        },
-        bag_data_indices_.data());
-    bag_data_cnt_ = left_cnt;
-    Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
-    // set bagging data to tree learner
-    if (!is_use_subset_) {
-      tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
-    } else {
-      // get subset
-      tmp_subset_->ReSize(bag_data_cnt_);
-      tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
-                              bag_data_cnt_, false);
-      tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
-                                    bag_data_cnt_);
-    }
-  }
 }
 
 void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
@@ -428,7 +341,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto score_ptr = train_score_updater_->score() + offset;
       auto residual_getter = [score_ptr](const label_t* label, int i) {return static_cast<double>(label[i]) - score_ptr[i]; };
       tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, residual_getter,
-                                     num_data_, bag_data_indices_.data(), bag_data_cnt_);
+                                     num_data_, bag_data_indices.data(), bag_data_cnt);
       // shrinkage by learning rate
       new_tree->Shrinkage(shrinkage_rate_);
       // update score
@@ -755,7 +668,6 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
     feature_infos_ = train_data_->feature_infos();
 
     tree_learner_->ResetTrainingData(train_data, is_constant_hessian_);
-    // ResetBaggingConfig(config_.get(), true);
     data_sample_strategy_->ResetConfig(config_.get(), true, gradients_, hessians_);
   } else {
     tree_learner_->ResetIsConstantHessian(is_constant_hessian_);
@@ -780,7 +692,6 @@ void GBDT::ResetConfig(const Config* config) {
     tree_learner_->ResetConfig(new_config.get());
   }
   if (train_data_ != nullptr) {
-    // ResetBaggingConfig(new_config.get(), false);
     data_sample_strategy_->ResetConfig(new_config.get(), false, gradients_, hessians_);
   }
   if (config_.get() != nullptr && config_->forcedsplits_filename != new_config->forcedsplits_filename) {
@@ -800,66 +711,6 @@ void GBDT::ResetConfig(const Config* config) {
   }
   config_.reset(new_config.release());
   data_sample_strategy_->Reset();
-}
-
-void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
-  // if need bagging, create buffer
-  data_size_t num_pos_data = 0;
-  if (objective_function_ != nullptr) {
-    num_pos_data = objective_function_->NumPositiveData();
-  }
-  bool balance_bagging_cond = (config->pos_bagging_fraction < 1.0 || config->neg_bagging_fraction < 1.0) && (num_pos_data > 0);
-  if ((config->bagging_fraction < 1.0 || balance_bagging_cond) && config->bagging_freq > 0) {
-    need_re_bagging_ = false;
-    if (!is_change_dataset &&
-      config_.get() != nullptr && config_->bagging_fraction == config->bagging_fraction && config_->bagging_freq == config->bagging_freq
-      && config_->pos_bagging_fraction == config->pos_bagging_fraction && config_->neg_bagging_fraction == config->neg_bagging_fraction) {
-      return;
-    }
-    if (balance_bagging_cond) {
-      balanced_bagging_ = true;
-      bag_data_cnt_ = static_cast<data_size_t>(num_pos_data * config->pos_bagging_fraction)
-                      + static_cast<data_size_t>((num_data_ - num_pos_data) * config->neg_bagging_fraction);
-    } else {
-      bag_data_cnt_ = static_cast<data_size_t>(config->bagging_fraction * num_data_);
-    }
-    bag_data_indices_.resize(num_data_);
-    bagging_runner_.ReSize(num_data_);
-    bagging_rands_.clear();
-    for (int i = 0;
-         i < (num_data_ + bagging_rand_block_ - 1) / bagging_rand_block_; ++i) {
-      bagging_rands_.emplace_back(config_->bagging_seed + i);
-    }
-
-    double average_bag_rate =
-        (static_cast<double>(bag_data_cnt_) / num_data_) / config->bagging_freq;
-    is_use_subset_ = false;
-    const int group_threshold_usesubset = 100;
-    if (average_bag_rate <= 0.5
-        && (train_data_->num_feature_groups() < group_threshold_usesubset)) {
-      if (tmp_subset_ == nullptr || is_change_dataset) {
-        tmp_subset_.reset(new Dataset(bag_data_cnt_));
-        tmp_subset_->CopyFeatureMapperFrom(train_data_);
-      }
-      is_use_subset_ = true;
-      Log::Debug("Use subset for bagging");
-    }
-
-    need_re_bagging_ = true;
-
-    if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-      if (objective_function_ == nullptr) {
-        size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-        gradients_.resize(total_size);
-        hessians_.resize(total_size);
-      }
-    }
-  } else {
-    bag_data_cnt_ = num_data_;
-    bag_data_indices_.clear();
-    bagging_runner_.ReSize(0);
-    is_use_subset_ = false;
-  }
 }
 
 }  // namespace LightGBM

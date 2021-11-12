@@ -414,18 +414,6 @@ class GBDT : public GBDTBase {
   void ResetBaggingConfig(const Config* config, bool is_change_dataset);
 
   /*!
-  * \brief Implement bagging logic
-  * \param iter Current interation
-  */
-  virtual void Bagging(int iter);
-
-  virtual data_size_t BaggingHelper(data_size_t start, data_size_t cnt,
-                                    data_size_t* buffer);
-
-  data_size_t BalancedBaggingHelper(data_size_t start, data_size_t cnt,
-                                    data_size_t* buffer);
-
-  /*!
   * \brief calculate the object function
   */
   virtual void Boosting();
@@ -497,10 +485,6 @@ class GBDT : public GBDTBase {
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> hessians_;
 #endif
 
-  /*! \brief Store the indices of in-bag data */
-  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices_;
-  /*! \brief Number of in-bag data */
-  data_size_t bag_data_cnt_;
   /*! \brief Number of training data */
   data_size_t num_data_;
   /*! \brief Number of trees per iterations */
@@ -520,8 +504,6 @@ class GBDT : public GBDTBase {
   /*! \brief Feature names */
   std::vector<std::string> feature_names_;
   std::vector<std::string> feature_infos_;
-  std::unique_ptr<Dataset> tmp_subset_;
-  bool is_use_subset_;
   std::vector<bool> class_need_train_;
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
@@ -530,9 +512,6 @@ class GBDT : public GBDTBase {
   bool balanced_bagging_;
   std::string loaded_parameter_;
   std::vector<int8_t> monotone_constraints_;
-  const int bagging_rand_block_ = 1024;
-  std::vector<Random> bagging_rands_;
-  ParallelPartitionRunner<data_size_t, false> bagging_runner_;
   Json forced_splits_json_;
   bool linear_tree_;
   std::unique_ptr<SampleStrategy> data_sample_strategy_;
