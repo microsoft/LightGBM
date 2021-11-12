@@ -88,10 +88,6 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
     }
   }
 
-  CHECK(!(config_->bagging_freq > 0));  // can not use normal bagging in this version
-  data_sample_strategy_.reset(SampleStrategy::CreateSampleStrategy(config_.get(), train_data_, num_tree_per_iteration_));
-  data_sample_strategy_->Reset();
-
   is_constant_hessian_ = GetIsConstHessian(objective_function);
 
   tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type,
@@ -131,7 +127,10 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   monotone_constraints_ = config->monotone_constraints;
 
   // if need bagging, create buffer
-  ResetBaggingConfig(config_.get(), true);
+  // ResetBaggingConfig(config_.get(), true);
+  data_sample_strategy_.reset(SampleStrategy::CreateSampleStrategy(config_.get(), train_data_, objective_function_, num_tree_per_iteration_));
+  data_sample_strategy_->ResetConfig(config_.get(), true, gradients_, hessians_);
+  data_sample_strategy_->Reset();
 
   class_need_train_ = std::vector<bool>(num_tree_per_iteration_, true);
   if (objective_function_ != nullptr && objective_function_->SkipEmptyClass()) {
@@ -399,7 +398,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     }
   }
   // bagging logic
-  data_sample_strategy_->Bagging(iter_, gradients_.data(), hessians_.data(), tree_learner_.get());
+  data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
   bag_data_indices_ = data_sample_strategy_->bag_data_indices();
   bag_data_cnt_ = data_sample_strategy_->bag_data_cnt();
   is_use_subset_ = data_sample_strategy_->is_use_subset();
@@ -755,11 +754,12 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
     feature_infos_ = train_data_->feature_infos();
 
     tree_learner_->ResetTrainingData(train_data, is_constant_hessian_);
-    ResetBaggingConfig(config_.get(), true);
-    data_sample_strategy_->Reset();
+    // ResetBaggingConfig(config_.get(), true);
+    data_sample_strategy_->ResetConfig(config_.get(), true, gradients_, hessians_);
   } else {
     tree_learner_->ResetIsConstantHessian(is_constant_hessian_);
   }
+  data_sample_strategy_->Reset();
 }
 
 void GBDT::ResetConfig(const Config* config) {
@@ -779,9 +779,9 @@ void GBDT::ResetConfig(const Config* config) {
     tree_learner_->ResetConfig(new_config.get());
   }
   if (train_data_ != nullptr) {
-    ResetBaggingConfig(new_config.get(), false);
+    // ResetBaggingConfig(new_config.get(), false);
+    data_sample_strategy_->ResetConfig(new_config.get(), false, gradients_, hessians_);
   }
-  data_sample_strategy_->Reset();
   if (config_.get() != nullptr && config_->forcedsplits_filename != new_config->forcedsplits_filename) {
     // load forced_splits file
     if (!new_config->forcedsplits_filename.empty()) {
@@ -798,6 +798,7 @@ void GBDT::ResetConfig(const Config* config) {
     }
   }
   config_.reset(new_config.release());
+  data_sample_strategy_->Reset();
 }
 
 void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {

@@ -7,6 +7,7 @@
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/tree_learner.h>
+#include <LightGBM/objective_function.h>
 
 namespace LightGBM {
 
@@ -14,18 +15,20 @@ class SampleStrategy {
  public:
   SampleStrategy() : balanced_bagging_(false), bagging_runner_(0, bagging_rand_block_) {};
   virtual ~SampleStrategy() {};
-  static SampleStrategy* CreateSampleStrategy(const Config* config, const Dataset* train_data, int num_tree_per_iteration);
-  virtual void Bagging(int iter, score_t* gradients, score_t* hessians, TreeLearner* tree_learner) = 0;
+  static SampleStrategy* CreateSampleStrategy(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration);
+  virtual void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) = 0;
   virtual void Reset() = 0;
+  virtual void ResetConfig(const Config* config, bool is_change_dataset, 
+          std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& gradients, 
+          std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& hessians) = 0;
   bool is_use_subset() {return is_use_subset_;}
   data_size_t bag_data_cnt() {return bag_data_cnt_;}
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices() {return bag_data_indices_;}
 
  protected:
-  virtual data_size_t Helper(data_size_t start, data_size_t cnt, data_size_t* buffer, score_t* gradients, score_t* hessians) = 0;
-  
   const Config* config_;
   const Dataset* train_data_;
+  const ObjectiveFunction* objective_function_;
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices_;
   data_size_t bag_data_cnt_;
   data_size_t num_data_;

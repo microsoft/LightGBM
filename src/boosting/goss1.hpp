@@ -19,7 +19,7 @@ class GOSS1 : public SampleStrategy {
   ~GOSS1() {
   }
 
-  void Bagging(int iter, score_t* gradients, score_t* hessians, TreeLearner* tree_learner) override {
+  void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) override {
     bag_data_cnt_ = num_data_;
     // not subsample for first iterations
     if (iter < static_cast<int>(1.0f / config_->learning_rate)) { return; }
@@ -73,8 +73,12 @@ class GOSS1 : public SampleStrategy {
     bag_data_cnt_ = num_data_; 
   }
 
+  void ResetConfig(const Config* config, bool is_change_dataset, 
+          std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& gradients, 
+          std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& hessians) override {}
+
  protected:
-  data_size_t Helper(data_size_t start, data_size_t cnt, data_size_t* buffer, score_t* gradients, score_t* hessians) override {
+  data_size_t Helper(data_size_t start, data_size_t cnt, data_size_t* buffer, score_t* gradients, score_t* hessians) {
     if (cnt <= 0) {
       return 0;
     }
