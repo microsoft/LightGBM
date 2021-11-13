@@ -31,7 +31,13 @@ if(NOT OpenCL-ICD-Loader_POPULATED)
   message(STATUS "Populated OpenCL ICD Loader")
 endif()
 list(APPEND INTEGRATED_OPENCL_INCLUDES ${OPENCL_ICD_LOADER_HEADERS_DIR})
-list(APPEND INTEGRATED_OPENCL_LIBRARIES ${opencl-icd-loader_BINARY_DIR}/Release/OpenCL.lib cfgmgr32.lib runtimeobject.lib)
+list(
+  APPEND
+  INTEGRATED_OPENCL_LIBRARIES
+    ${opencl-icd-loader_BINARY_DIR}/Release/OpenCL.lib
+    cfgmgr32.lib
+    runtimeobject.lib
+)
 list(APPEND INTEGRATED_OPENCL_DEFINITIONS CL_TARGET_OPENCL_VERSION=120)
 
 # Build Independent Boost libraries
@@ -42,7 +48,60 @@ set(BOOST_BASE "${PROJECT_BINARY_DIR}/Boost")
 set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.bat")
 set(BOOST_BUILD "${BOOST_BASE}/source/b2.exe")
 set(BOOST_FLAGS "")
-list(APPEND BOOST_SUBMODULES "libs/algorithm" "libs/align" "libs/any" "libs/array" "libs/assert" "libs/bind" "libs/chrono" "libs/compute" "libs/concept_check" "libs/config" "libs/container" "libs/container_hash" "libs/core" "libs/detail" "libs/filesystem" "libs/foreach" "libs/format" "libs/function" "libs/function_types" "libs/fusion" "libs/headers" "libs/integer" "libs/io" "libs/iterator" "libs/lexical_cast" "libs/math" "libs/move" "libs/mpl" "libs/multi_index" "libs/numeric/conversion" "libs/optional" "libs/predef" "libs/preprocessor" "libs/property_tree" "libs/range" "libs/ratio" "libs/serialization" "libs/smart_ptr" "libs/static_assert" "libs/system" "libs/throw_exception" "libs/tuple" "libs/typeof" "libs/type_index" "libs/type_traits" "libs/utility" "libs/uuid" "libs/winapi" "tools/boost_install" "tools/build")
+list(
+  APPEND
+  BOOST_SUBMODULES
+    "libs/algorithm"
+    "libs/align"
+    "libs/any"
+    "libs/array"
+    "libs/assert"
+    "libs/bind"
+    "libs/chrono"
+    "libs/compute"
+    "libs/concept_check"
+    "libs/config"
+    "libs/container"
+    "libs/container_hash"
+    "libs/core"
+    "libs/detail"
+    "libs/filesystem"
+    "libs/foreach"
+    "libs/format"
+    "libs/function"
+    "libs/function_types"
+    "libs/fusion"
+    "libs/headers"
+    "libs/integer"
+    "libs/io"
+    "libs/iterator"
+    "libs/lexical_cast"
+    "libs/math"
+    "libs/move"
+    "libs/mpl"
+    "libs/multi_index"
+    "libs/numeric/conversion"
+    "libs/optional"
+    "libs/predef"
+    "libs/preprocessor"
+    "libs/property_tree"
+    "libs/range"
+    "libs/ratio"
+    "libs/serialization"
+    "libs/smart_ptr"
+    "libs/static_assert"
+    "libs/system"
+    "libs/throw_exception"
+    "libs/tuple"
+    "libs/typeof"
+    "libs/type_index"
+    "libs/type_traits"
+    "libs/utility"
+    "libs/uuid"
+    "libs/winapi"
+    "tools/boost_install"
+    "tools/build"
+)
 ExternalProject_Add(
   Boost
   TMP_DIR "${BOOST_BASE}/tmp"
@@ -58,7 +117,21 @@ ExternalProject_Add(
   UPDATE_COMMAND ""
   PATCH_COMMAND ""
   CONFIGURE_COMMAND ${BOOST_BOOTSTRAP}
-  BUILD_COMMAND ${BOOST_BUILD} -sBOOST_ROOT=${BOOST_BASE}/source -a -q -j ${J} --with-headers --with-chrono --with-filesystem --with-system link=static runtime-link=shared variant=release threading=multi cxxflags="${BOOST_FLAGS}"
+  BUILD_COMMAND
+    ${BOOST_BUILD}
+    -sBOOST_ROOT=${BOOST_BASE}/source
+    -a
+    -q
+    -j ${J}
+    --with-headers
+    --with-chrono
+    --with-filesystem
+    --with-system
+    link=static
+    runtime-link=shared
+    variant=release
+    threading=multi
+    cxxflags="${BOOST_FLAGS}"
   INSTALL_COMMAND ""
 )
 set(BOOST_INCLUDE "${BOOST_BASE}/source" CACHE PATH "")
@@ -76,9 +149,21 @@ if(MSVC)
   else()
     message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
   endif()
-  list(APPEND INTEGRATED_OPENCL_LIBRARIES ${BOOST_LIBRARY}/libboost_filesystem-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib)
-  list(APPEND INTEGRATED_OPENCL_LIBRARIES ${BOOST_LIBRARY}/libboost_system-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib)
-  list(APPEND INTEGRATED_OPENCL_LIBRARIES ${BOOST_LIBRARY}/libboost_chrono-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib)
+  list(
+    APPEND
+    INTEGRATED_OPENCL_LIBRARIES
+    ${BOOST_LIBRARY}/libboost_filesystem-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
+  )
+  list(
+    APPEND
+    INTEGRATED_OPENCL_LIBRARIES
+    ${BOOST_LIBRARY}/libboost_system-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
+  )
+  list(
+    APPEND
+    INTEGRATED_OPENCL_LIBRARIES
+    ${BOOST_LIBRARY}/libboost_chrono-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
+  )
 else()
   message(FATAL_ERROR "Integrated OpenCL build is not yet available for MinGW")
 endif()
