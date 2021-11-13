@@ -44,8 +44,7 @@ function(create_rlib_for_msvc)
   find_program(DLLTOOL_EXE dlltool)
 
   if(NOT DLLTOOL_EXE)
-    message(FATAL_ERROR "dlltool.exe not found!\
-      \nDo you have Rtools installed with its MinGW's bin/ in PATH?")
+    message(FATAL_ERROR "dlltool.exe not found!\nDo you have Rtools installed with its MinGW's bin/ in PATH?")
   endif()
 
   set(LIBR_MSVC_CORE_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/R.lib" CACHE PATH "R.lib filepath")
@@ -62,7 +61,8 @@ function(create_rlib_for_msvc)
     "${CMAKE_CURRENT_BINARY_DIR}/make-r-def.R"
     "${LIBR_CORE_LIBRARY}" "${CMAKE_CURRENT_BINARY_DIR}/R.def"
   )
-  execute_process(COMMAND ${DLLTOOL_EXE}
+  execute_process(
+    COMMAND ${DLLTOOL_EXE}
     "--input-def" "${CMAKE_CURRENT_BINARY_DIR}/R.def"
     "--output-lib" "${LIBR_MSVC_CORE_LIBRARY}"
   )
@@ -149,8 +149,11 @@ if(NOT LIBR_EXECUTABLE)
     endif()
 
     if(NOT LIBR_HOME)
-      message(FATAL_ERROR "Unable to locate R executable.\
-        \nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable")
+      message(
+        FATAL_ERROR
+        "Unable to locate R executable.\
+        \nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable"
+      )
     endif()
 
     # set exe location based on R_ARCH
@@ -159,8 +162,11 @@ if(NOT LIBR_EXECUTABLE)
   endif()
 
   if(NOT LIBR_EXECUTABLE)
-    message(FATAL_ERROR "Unable to locate R executable.\
-      \nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable")
+    message(
+      FATAL_ERROR
+      "Unable to locate R executable.\
+      \nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable"
+    )
   endif()
 
 endif()
@@ -216,7 +222,8 @@ endif()
 include(FindPackageHandleStandardArgs)
 
 if(WIN32 AND MSVC)
-  find_package_handle_standard_args(LibR DEFAULT_MSG
+  find_package_handle_standard_args(
+    LibR DEFAULT_MSG
     LIBR_HOME
     LIBR_EXECUTABLE
     LIBR_INCLUDE_DIRS
@@ -224,7 +231,8 @@ if(WIN32 AND MSVC)
     LIBR_MSVC_CORE_LIBRARY
   )
 else()
-  find_package_handle_standard_args(LibR DEFAULT_MSG
+  find_package_handle_standard_args(
+    LibR DEFAULT_MSG
     LIBR_HOME
     LIBR_EXECUTABLE
     LIBR_INCLUDE_DIRS
