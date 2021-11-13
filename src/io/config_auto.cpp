@@ -33,6 +33,7 @@ const std::unordered_map<std::string, std::string>& Config::alias_table() {
   {"num_trees", "num_iterations"},
   {"num_round", "num_iterations"},
   {"num_rounds", "num_iterations"},
+  {"nrounds", "num_iterations"},
   {"num_boost_round", "num_iterations"},
   {"n_estimators", "num_iterations"},
   {"max_iter", "num_iterations"},
