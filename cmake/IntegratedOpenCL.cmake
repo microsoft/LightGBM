@@ -43,7 +43,8 @@ set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.bat")
 set(BOOST_BUILD "${BOOST_BASE}/source/b2.exe")
 set(BOOST_FLAGS "")
 list(APPEND BOOST_SUBMODULES "libs/algorithm" "libs/align" "libs/any" "libs/array" "libs/assert" "libs/bind" "libs/chrono" "libs/compute" "libs/concept_check" "libs/config" "libs/container" "libs/container_hash" "libs/core" "libs/detail" "libs/filesystem" "libs/foreach" "libs/format" "libs/function" "libs/function_types" "libs/fusion" "libs/headers" "libs/integer" "libs/io" "libs/iterator" "libs/lexical_cast" "libs/math" "libs/move" "libs/mpl" "libs/multi_index" "libs/numeric/conversion" "libs/optional" "libs/predef" "libs/preprocessor" "libs/property_tree" "libs/range" "libs/ratio" "libs/serialization" "libs/smart_ptr" "libs/static_assert" "libs/system" "libs/throw_exception" "libs/tuple" "libs/typeof" "libs/type_index" "libs/type_traits" "libs/utility" "libs/uuid" "libs/winapi" "tools/boost_install" "tools/build")
-ExternalProject_Add(Boost
+ExternalProject_Add(
+  Boost
   TMP_DIR "${BOOST_BASE}/tmp"
   STAMP_DIR "${BOOST_BASE}/stamp"
   DOWNLOAD_DIR "${BOOST_BASE}/download"
