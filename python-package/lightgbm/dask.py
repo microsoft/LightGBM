@@ -1108,7 +1108,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = "warn",
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1134,7 +1133,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             reg_lambda=reg_lambda,
             random_state=random_state,
             n_jobs=n_jobs,
-            silent=silent,
             importance_type=importance_type,
             **kwargs
         )
@@ -1293,7 +1291,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = "warn",
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1319,7 +1316,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             reg_lambda=reg_lambda,
             random_state=random_state,
             n_jobs=n_jobs,
-            silent=silent,
             importance_type=importance_type,
             **kwargs
         )
@@ -1458,7 +1454,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = "warn",
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1484,7 +1479,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             reg_lambda=reg_lambda,
             random_state=random_state,
             n_jobs=n_jobs,
-            silent=silent,
             importance_type=importance_type,
             **kwargs
         )
