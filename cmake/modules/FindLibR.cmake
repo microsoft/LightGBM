@@ -66,7 +66,7 @@ function(create_rlib_for_msvc)
     "--input-def" "${CMAKE_CURRENT_BINARY_DIR}/R.def"
     "--output-lib" "${LIBR_MSVC_CORE_LIBRARY}"
   )
-endfunction(create_rlib_for_msvc)
+endfunction()
 
 # R version information is used to search for R's libraries in
 # the registry on Windows. Since this code is orchestrated by
