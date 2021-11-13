@@ -68,7 +68,10 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   cmake_minimum_required(VERSION 3.16)
 elseif(MSVC)
   if(MSVC_VERSION LESS 1900)
-    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} doesn't support required C++11 features. Please use a newer MSVC.")
+    message(
+      FATAL_ERROR
+      "The compiler ${CMAKE_CXX_COMPILER} doesn't support required C++11 features. Please use a newer MSVC."
+    )
   endif()
   cmake_minimum_required(VERSION 3.8)
 endif()
@@ -287,21 +290,24 @@ if(${MM_MALLOC})
 endif()
 
 if(UNIX OR MINGW OR CYGWIN)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type")
-    if(USE_DEBUG)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
-    else()
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-    endif()
-    if(USE_SWIG)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
-    endif()
-    if(NOT USE_OPENMP)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-unused-private-field")
-    endif()
-    if(__BUILD_FOR_R AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-function-type")
-    endif()
+  SET(
+    CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
+  )
+  if(USE_DEBUG)
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
+  else()
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+  endif()
+  if(USE_SWIG)
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
+  endif()
+  if(NOT USE_OPENMP)
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-unused-private-field")
+  endif()
+  if(__BUILD_FOR_R AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-function-type")
+  endif()
 endif()
 
 if(WIN32 AND MINGW)
@@ -387,7 +393,7 @@ if(BUILD_STATIC_LIB)
 else()
   add_library(_lightgbm SHARED)
 endif(BUILD_STATIC_LIB)
-# LightGBM headers include openmp, cuda, R etc. headers, 
+# LightGBM headers include openmp, cuda, R etc. headers,
 # thus PUBLIC is required for building _lightgbm_swig target.
 target_link_libraries(_lightgbm PUBLIC lightgbm_capi_objs lightgbm_objs)
 
@@ -411,8 +417,18 @@ if(USE_SWIG)
             TARGET _lightgbm_swig
             POST_BUILD
             COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${PROJECT_SOURCE_DIR}/lib_lightgbm.dll" com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.dll" com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND
+              "${CMAKE_COMMAND}"
+              -E
+              copy_if_different
+              "${PROJECT_SOURCE_DIR}/lib_lightgbm.dll"
+              com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND
+              "${CMAKE_COMMAND}"
+              -E
+              copy_if_different
+              "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.dll"
+              com/microsoft/ml/lightgbm/windows/x86_64
             COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
         )
     else()
@@ -430,7 +446,10 @@ if(USE_SWIG)
         POST_BUILD
         COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
         COMMAND cp "${PROJECT_SOURCE_DIR}/*.dylib" com/microsoft/ml/lightgbm/osx/x86_64
-        COMMAND cp "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib" com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
+        COMMAND
+          cp
+          "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib"
+          com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
     )
   else()
