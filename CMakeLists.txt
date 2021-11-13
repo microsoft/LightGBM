@@ -188,7 +188,6 @@ if(USE_CUDA)
     else()
       SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -lineinfo")
     endif()
-    string(REPLACE ";" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
     message(STATUS "CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
 
     ADD_DEFINITIONS(-DUSE_CUDA)
