@@ -498,12 +498,12 @@ if(BUILD_CPP_TEST)
   if(NOT GTEST_FOUND)
     message(STATUS "Did not find Google Test in the system root. Fetching Google Test now...")
     include(FetchContent)
-    FetchContent_Declare(  # NOLINT
+    FetchContent_Declare(
       googletest
       GIT_REPOSITORY https://github.com/google/googletest.git
       GIT_TAG        release-1.11.0
     )
-    FetchContent_MakeAvailable(googletest)  # NOLINT
+    FetchContent_MakeAvailable(googletest)
     add_library(GTest::GTest ALIAS gtest)
   endif()
   file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
