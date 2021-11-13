@@ -477,7 +477,7 @@ See `the mars documentation`_ for usage examples.
 
 .. _SynapseML: https://aka.ms/spark
 
-.. _this SynapseML example: https://github.com/microsoft/SynapseML/blob/master/notebooks/LightGBM%20-%20Overview.ipynb
+.. _this SynapseML example: https://github.com/microsoft/SynapseML/blob/master/notebooks/features/lightgbm/LightGBM%20-%20Overview.ipynb
 
 .. _the Dask Array documentation: https://docs.dask.org/en/latest/array.html
 
