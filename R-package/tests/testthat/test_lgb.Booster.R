@@ -1041,3 +1041,116 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
     preds2 <- predict(bst2, X)
     expect_identical(preds, preds2)
 })
+
+test_that("Booster's print, show, and summary work correctly", {
+    .have_same_handle <- function(model, other_model) {
+       expect_equal(
+         model$.__enclos_env__$private$handle
+         , other_model$.__enclos_env__$private$handle
+       )
+    }
+
+    .check_methods_work <- function(model) {
+
+        # should work for fitted models
+        ret <- print(model)
+        .have_same_handle(ret, model)
+        ret <- show(model)
+        expect_null(ret)
+        ret <- summary(model)
+        .have_same_handle(ret, model)
+
+        # should not fail for finalized models
+        model$finalize()
+        ret <- print(model)
+        .have_same_handle(ret, model)
+        ret <- show(model)
+        expect_null(ret)
+        ret <- summary(model)
+        .have_same_handle(ret, model)
+    }
+
+    data("mtcars")
+    model <- lgb.train(
+        params = list(objective = "regression")
+        , data = lgb.Dataset(
+            as.matrix(mtcars[, -1L])
+            , label = mtcars$mpg)
+        , verbose = 0L
+        , nrounds = 5L
+    )
+    .check_methods_work(model)
+
+    data("iris")
+    model <- lgb.train(
+        params = list(objective = "multiclass", num_class = 3L)
+        , data = lgb.Dataset(
+            as.matrix(iris[, -5L])
+            , label = as.numeric(factor(iris$Species)) - 1.0
+        )
+        , verbose = 0L
+        , nrounds = 5L
+    )
+    .check_methods_work(model)
+
+
+    # with custom objective
+    .logregobj <- function(preds, dtrain) {
+        labels <- get_field(dtrain, "label")
+        preds <- 1.0 / (1.0 + exp(-preds))
+        grad <- preds - labels
+        hess <- preds * (1.0 - preds)
+        return(list(grad = grad, hess = hess))
+    }
+
+    .evalerror <- function(preds, dtrain) {
+        labels <- get_field(dtrain, "label")
+        preds <- 1.0 / (1.0 + exp(-preds))
+        err <- as.numeric(sum(labels != (preds > 0.5))) / length(labels)
+        return(list(
+            name = "error"
+            , value = err
+            , higher_better = FALSE
+        ))
+    }
+
+    model <- lgb.train(
+        data = lgb.Dataset(
+            as.matrix(iris[, -5L])
+            , label = as.numeric(iris$Species == "virginica")
+        )
+        , obj = .logregobj
+        , eval = .evalerror
+        , verbose = 0L
+        , nrounds = 5L
+    )
+
+    .check_methods_work(model)
+})
+
+test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
+    data("mtcars")
+    model <- lgb.train(
+        params = list(objective = "regression")
+        , data = lgb.Dataset(
+            as.matrix(mtcars[, -1L])
+            , label = mtcars$mpg)
+        , verbose = 0L
+        , nrounds = 5L
+    )
+    ncols <- .Call(LGBM_BoosterGetNumFeature_R, model$.__enclos_env__$private$handle)
+    expect_equal(ncols, ncol(mtcars) - 1L)
+
+    data("iris")
+    model <- lgb.train(
+        params = list(objective = "multiclass", num_class = 3L)
+        , data = lgb.Dataset(
+            as.matrix(iris[, -5L])
+            , label = as.numeric(factor(iris$Species)) - 1.0
+        )
+        , verbose = 0L
+        , nrounds = 5L
+    )
+    ncols <- .Call(LGBM_BoosterGetNumFeature_R, model$.__enclos_env__$private$handle)
+    expect_equal(ncols, ncol(iris) - 1L)
+})
