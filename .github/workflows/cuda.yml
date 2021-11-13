@@ -3,7 +3,7 @@ name: CUDA Version
 on:
   push:
     branches:
-    - master
+    - cmake_cuda_flags
   pull_request:
     branches:
     - master
