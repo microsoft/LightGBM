@@ -5,7 +5,7 @@ name: Static Analysis
 on:
   push:
     branches:
-    - master
+    - cmakelint_2
   pull_request:
     branches:
     - master
