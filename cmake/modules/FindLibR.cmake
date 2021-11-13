@@ -152,7 +152,7 @@ if(NOT LIBR_EXECUTABLE)
       message(
         FATAL_ERROR
         "Unable to locate R executable.\
-        \nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable"
+\nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable"
       )
     endif()
 
@@ -165,7 +165,7 @@ if(NOT LIBR_EXECUTABLE)
     message(
       FATAL_ERROR
       "Unable to locate R executable.\
-      \nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable"
+\nEither add its location to PATH or provide it through the LIBR_EXECUTABLE CMake variable"
     )
   endif()
 
