@@ -2651,7 +2651,7 @@ class Booster:
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
         elif model_str is not None:
-            self.model_from_string(model_str)
+            self.model_from_string(model_str, verbose="_silent_false")
         else:
             raise TypeError('Need at least one training dataset or model file or model string '
                             'to create Booster instance')
@@ -3332,13 +3332,15 @@ class Booster:
             ctypes.c_int(end_iteration)))
         return self
 
-    def model_from_string(self, model_str):
+    def model_from_string(self, model_str, verbose='warn'):
         """Load Booster from a string.
 
         Parameters
         ----------
         model_str : str
             Model will be loaded from this string.
+        verbose : bool, optional (default=True)
+            Whether to print messages while loading model.
 
         Returns
         -------
