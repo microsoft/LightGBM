@@ -7,9 +7,14 @@ option(USE_TIMETAG "Set to ON to output time costs" OFF)
 option(USE_CUDA "Enable CUDA-accelerated training (EXPERIMENTAL)" OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
 option(USE_SANITIZER "Use santizer flags" OFF)
-set(ENABLED_SANITIZERS "address" "leak" "undefined" CACHE STRING
-  "Semicolon separated list of sanitizer names. E.g 'address;leak'. Supported sanitizers are
-address, leak, undefined and thread.")
+set(
+  ENABLED_SANITIZERS
+  "address" "leak" "undefined"
+  CACHE
+  STRING
+  "Semicolon separated list of sanitizer names, e.g., 'address;leak'. \
+Supported sanitizers are address, leak, undefined and thread."
+)
 option(BUILD_CPP_TEST "Build C++ tests with Google Test" OFF)
 option(BUILD_STATIC_LIB "Build static library" OFF)
 option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
@@ -63,7 +68,10 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   cmake_minimum_required(VERSION 3.16)
 elseif(MSVC)
   if(MSVC_VERSION LESS 1900)
-    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} doesn't support required C++11 features. Please use a newer MSVC.")
+    message(
+      FATAL_ERROR
+      "The compiler ${CMAKE_CXX_COMPILER} doesn't support required C++11 features. Please use a newer MSVC."
+    )
   endif()
   cmake_minimum_required(VERSION 3.8)
 endif()
@@ -166,7 +174,7 @@ endif()
 if(USE_CUDA)
     find_package(CUDA 9.0 REQUIRED)
     include_directories(${CUDA_INCLUDE_DIRS})
-    list(APPEND CMAKE_CUDA_FLAGS -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
 
     set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0")
     if(CUDA_VERSION VERSION_GREATER_EQUAL "10.0")
@@ -181,14 +189,14 @@ if(USE_CUDA)
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
     list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
     cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS ${CUDA_ARCHS})
+    string(REPLACE ";" " " CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}")
 
-    list(APPEND CMAKE_CUDA_FLAGS ${CUDA_ARCH_FLAGS})
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
     if(USE_DEBUG)
       set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
     else()
       set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -lineinfo")
     endif()
-    string(REPLACE ";" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
     message(STATUS "CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
 
     add_definitions(-DUSE_CUDA)
@@ -197,17 +205,20 @@ if(USE_CUDA)
       set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     endif()
 
-    set(BASE_DEFINES
-     -DPOWER_FEATURE_WORKGROUPS=12
-     -DUSE_CONSTANT_BUF=0
+    set(
+      BASE_DEFINES
+      -DPOWER_FEATURE_WORKGROUPS=12
+      -DUSE_CONSTANT_BUF=0
     )
-    set(ALLFEATS_DEFINES
-     ${BASE_DEFINES}
-     -DENABLE_ALL_FEATURES
+    set(
+      ALLFEATS_DEFINES
+      ${BASE_DEFINES}
+      -DENABLE_ALL_FEATURES
     )
-    set(FULLDATA_DEFINES
-     ${ALLFEATS_DEFINES}
-     -DIGNORE_INDICES
+    set(
+      FULLDATA_DEFINES
+      ${ALLFEATS_DEFINES}
+      -DIGNORE_INDICES
     )
 
     message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
@@ -222,7 +233,8 @@ if(USE_CUDA)
         set(histograms ${histograms} PARENT_SCOPE)
       endif()
       target_compile_definitions(
-        histo${hsize}${hname} PRIVATE
+        histo${hsize}${hname}
+        PRIVATE
         -DCONST_HESSIAN=${hconst}
         ${hdir}
       )
@@ -278,21 +290,24 @@ if(${MM_MALLOC})
 endif()
 
 if(UNIX OR MINGW OR CYGWIN)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type")
-    if(USE_DEBUG)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
-    else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-    endif()
-    if(USE_SWIG)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
-    endif()
-    if(NOT USE_OPENMP)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-unused-private-field")
-    endif()
-    if(__BUILD_FOR_R AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-function-type")
-    endif()
+  set(
+    CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
+  )
+  if(USE_DEBUG)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
+  else()
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+  endif()
+  if(USE_SWIG)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
+  endif()
+  if(NOT USE_OPENMP)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-unused-private-field")
+  endif()
+  if(__BUILD_FOR_R AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-function-type")
+  endif()
 endif()
 
 if(WIN32 AND MINGW)
@@ -300,7 +315,8 @@ if(WIN32 AND MINGW)
 endif()
 
 if(MSVC)
-    set(variables
+    set(
+      variables
         CMAKE_C_FLAGS_DEBUG
         CMAKE_C_FLAGS_MINSIZEREL
         CMAKE_C_FLAGS_RELEASE
@@ -344,15 +360,17 @@ if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif()
 
-file(GLOB SOURCES
-    src/boosting/*.cpp
-    src/io/*.cpp
-    src/metric/*.cpp
-    src/objective/*.cpp
-    src/network/*.cpp
-    src/treelearner/*.cpp
+file(
+    GLOB
+    SOURCES
+      src/boosting/*.cpp
+      src/io/*.cpp
+      src/metric/*.cpp
+      src/objective/*.cpp
+      src/network/*.cpp
+      src/treelearner/*.cpp
 if(USE_CUDA)
-    src/treelearner/*.cu
+      src/treelearner/*.cu
 endif()
 )
 
@@ -375,7 +393,7 @@ if(BUILD_STATIC_LIB)
 else()
   add_library(_lightgbm SHARED)
 endif()
-# LightGBM headers include openmp, cuda, R etc. headers, 
+# LightGBM headers include openmp, cuda, R etc. headers,
 # thus PUBLIC is required for building _lightgbm_swig target.
 target_link_libraries(_lightgbm PUBLIC lightgbm_capi_objs lightgbm_objs)
 
@@ -395,28 +413,53 @@ if(USE_SWIG)
   set_target_properties(_lightgbm_swig PROPERTIES OUTPUT_NAME "lib_lightgbm_swig")
   if(WIN32)
     if(MINGW OR CYGWIN)
-        add_custom_command(TARGET _lightgbm_swig POST_BUILD
+        add_custom_command(
+            TARGET _lightgbm_swig
+            POST_BUILD
             COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${PROJECT_SOURCE_DIR}/lib_lightgbm.dll" com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.dll" com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
+            COMMAND
+              "${CMAKE_COMMAND}"
+              -E
+              copy_if_different
+              "${PROJECT_SOURCE_DIR}/lib_lightgbm.dll"
+              com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND
+              "${CMAKE_COMMAND}"
+              -E
+              copy_if_different
+              "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.dll"
+              com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
+        )
     else()
-        add_custom_command(TARGET _lightgbm_swig POST_BUILD
+        add_custom_command(
+            TARGET _lightgbm_swig
+            POST_BUILD
             COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
             COMMAND cp "${PROJECT_SOURCE_DIR}/Release/*.dll" com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
+            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
+        )
     endif()
   elseif(APPLE)
-    add_custom_command(TARGET _lightgbm_swig POST_BUILD
-            COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND cp "${PROJECT_SOURCE_DIR}/*.dylib" com/microsoft/ml/lightgbm/osx/x86_64
-            COMMAND cp "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib" com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
-            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
+    add_custom_command(
+        TARGET _lightgbm_swig
+        POST_BUILD
+        COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+        COMMAND cp "${PROJECT_SOURCE_DIR}/*.dylib" com/microsoft/ml/lightgbm/osx/x86_64
+        COMMAND
+          cp
+          "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib"
+          com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
+        COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
+    )
   else()
-    add_custom_command(TARGET _lightgbm_swig POST_BUILD
-      COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-      COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
-      COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
+    add_custom_command(
+        TARGET _lightgbm_swig
+        POST_BUILD
+        COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+        COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
+        COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
+    )
   endif()
 endif()
 
@@ -525,9 +568,11 @@ if(BUILD_CPP_TEST)
   target_link_libraries(testlightgbm PRIVATE lightgbm_objs GTest::GTest)
 endif()
 
-install(TARGETS lightgbm _lightgbm
-        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-        LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(
+  TARGETS lightgbm _lightgbm
+  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
 
 install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
