@@ -412,8 +412,6 @@ class _ConfigAliases:
                "two_round": {"two_round",
                              "two_round_loading",
                              "use_two_round_loading"},
-               "verbosity": {"verbosity",
-                             "verbose"},
                "weight_column": {"weight_column",
                                  "weight"}}
 
@@ -3334,15 +3332,13 @@ class Booster:
             ctypes.c_int(end_iteration)))
         return self
 
-    def model_from_string(self, model_str, verbose='warn'):
+    def model_from_string(self, model_str):
         """Load Booster from a string.
 
         Parameters
         ----------
         model_str : str
             Model will be loaded from this string.
-        verbose : bool, optional (default=True)
-            Whether to print messages while loading model.
 
         Returns
         -------
@@ -3362,12 +3358,6 @@ class Booster:
         _safe_call(_LIB.LGBM_BoosterGetNumClasses(
             self.handle,
             ctypes.byref(out_num_class)))
-        if verbose in {'warn', '_silent_false'}:
-            verbose = verbose == 'warn'
-        else:
-            _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM.")
-        if verbose:
-            _log_info(f'Finished loading model, total used {int(out_num_iterations.value)} iterations')
         self.__num_class = out_num_class.value
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
