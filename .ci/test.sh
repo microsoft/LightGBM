@@ -82,7 +82,7 @@ if [[ $TASK == "lint" ]]; then
     echo "Linting C++ code"
     cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package ./swig ./tests || exit -1
     cmake_files=$(find . -name CMakeLists.txt -o -path "*/cmake/*.cmake")
-    cmakelint --linelength=120 --filter=-convention/filename,-readability/wonkycase ${cmake_files} || true
+    cmakelint --linelength=120 --filter=-convention/filename,-package/stdargs,-readability/wonkycase ${cmake_files} || true
     exit 0
 fi
 
