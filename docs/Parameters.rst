@@ -153,7 +153,7 @@ Core Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``num_iterations`` :raw-html:`<a id="num_iterations" title="Permalink to this parameter" href="#num_iterations">&#x1F517;&#xFE0E;</a>`, default = ``100``, type = int, aliases: ``num_iteration``, ``n_iter``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``, ``n_estimators``, ``max_iter``, constraints: ``num_iterations >= 0``
+-  ``num_iterations`` :raw-html:`<a id="num_iterations" title="Permalink to this parameter" href="#num_iterations">&#x1F517;&#xFE0E;</a>`, default = ``100``, type = int, aliases: ``num_iteration``, ``n_iter``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``nrounds``, ``num_boost_round``, ``n_estimators``, ``max_iter``, constraints: ``num_iterations >= 0``
 
    -  number of boosting iterations
 

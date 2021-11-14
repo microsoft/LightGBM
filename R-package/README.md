@@ -152,6 +152,9 @@ Rscript build_r.R
 
 The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script. That script supports the following command-line options:
 
+- `-j[jobs]`: number of threads to use when compiling LightGBM. E.g., `-j4` will try to compile 4 objects at a time.
+    - by default, this script uses single-thread compilation
+    - for best results, set `-j` to the number of physical CPUs
 - `--skip-install`: Build the package tarball, but do not install it.
 - `--use-gpu`: Build a GPU-enabled version of the library.
 - `--use-mingw`: Force the use of MinGW toolchain, regardless of R version.
