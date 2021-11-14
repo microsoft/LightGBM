@@ -3,7 +3,7 @@ name: R-package
 on:
   push:
     branches:
-    - cmakelint
+    - master
   pull_request:
     branches:
     - master
