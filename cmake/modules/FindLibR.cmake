@@ -231,21 +231,13 @@ endif()
 # define find requirements
 include(FindPackageHandleStandardArgs)
 
+find_package_handle_standard_args(
+  LibR DEFAULT_MSG
+  LIBR_HOME
+  LIBR_EXECUTABLE
+  LIBR_INCLUDE_DIRS
+  LIBR_CORE_LIBRARY
 if(WIN32 AND MSVC)
-  find_package_handle_standard_args(
-    LibR DEFAULT_MSG
-    LIBR_HOME
-    LIBR_EXECUTABLE
-    LIBR_INCLUDE_DIRS
-    LIBR_CORE_LIBRARY
-    LIBR_MSVC_CORE_LIBRARY
-  )
-else()
-  find_package_handle_standard_args(
-    LibR DEFAULT_MSG
-    LIBR_HOME
-    LIBR_EXECUTABLE
-    LIBR_INCLUDE_DIRS
-    LIBR_CORE_LIBRARY
-  )
+  LIBR_MSVC_CORE_LIBRARY
 endif()
+)
