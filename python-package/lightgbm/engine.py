@@ -604,7 +604,7 @@ def cv(params, train_set, num_boost_round=100,
         params['objective'] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
-            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
+            _log_warning(f"Found '{alias}' in params. Will use it instead of 'num_boost_round' argument")
             num_boost_round = params.pop(alias)
     params["num_iterations"] = num_boost_round
     if early_stopping_rounds is not None and early_stopping_rounds > 0:

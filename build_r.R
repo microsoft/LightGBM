@@ -21,9 +21,12 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
   out_list <- list(
     "flags" = character(0L)
     , "keyword_args" = character(0L)
+    , "make_args" = character(0L)
   )
   for (arg in args) {
-    if (any(grepl("=", arg))) {
+    if (any(grepl("^\\-j[0-9]+", arg))) {
+        out_list[["make_args"]] <- arg
+    } else if (any(grepl("=", arg))) {
       split_arg <- strsplit(arg, "=")[[1L]]
       arg_name <- split_arg[[1L]]
       arg_value <- split_arg[[2L]]
@@ -106,6 +109,20 @@ if (length(keyword_args) > 0L) {
       , "\")"
     )
     , x = install_libs_content
+  )
+}
+
+# if provided, set '-j' in 'make' commands in install.libs.R
+if (length(parsed_args[["make_args"]]) > 0L) {
+  install_libs_content <- gsub(
+    pattern = "make_args_from_build_script <- character(0L)"
+    , replacement = paste0(
+      "make_args_from_build_script <- c(\""
+      , paste0(parsed_args[["make_args"]], collapse = "\", \"")
+      , "\")"
+    )
+    , x = install_libs_content
+    , fixed = TRUE
   )
 }
 

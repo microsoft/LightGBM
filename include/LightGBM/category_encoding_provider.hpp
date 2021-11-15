@@ -526,7 +526,7 @@ class CategoryEncodingProvider {
   * \param forced_split_json Json object points to forced split definitions
   * \return Whether the forced_split_json is compatible with category_encoders
   */
-  bool CheckForcedSplitsForCategoryEncoding(const Json* forced_split_json) const;
+  void CheckForcedSplitsForCategoryEncoding(const Json* forced_split_json) const;
 
   /*!
   * \brief Extends the settings per feature to include the category encoding features

@@ -192,6 +192,7 @@ struct Config {
   std::string tree_learner = "serial";
 
   // alias = num_thread, nthread, nthreads, n_jobs
+  // desc = used only in ``train``, ``prediction`` and ``refit`` tasks or in correspondent functions of language-specific packages
   // desc = number of threads for LightGBM
   // desc = ``0`` means default number of threads in OpenMP
   // desc = for the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPUs use `hyper-threading <https://en.wikipedia.org/wiki/Hyper-threading>`__ to generate 2 threads per CPU core)

@@ -1171,7 +1171,7 @@ void CategoryEncodingProvider::ExpandNumFeatureWhileAccumulate(const int new_lar
   }
 }
 
-bool CategoryEncodingProvider::CheckForcedSplitsForCategoryEncoding(const Json* forced_split_json) const {
+void CategoryEncodingProvider::CheckForcedSplitsForCategoryEncoding(const Json* forced_split_json) const {
   // start at root leaf
   if (forced_split_json != nullptr && !forced_split_json->is_null()) {
     std::queue<Json> q;
@@ -1288,7 +1288,6 @@ void CategoryEncodingProvider::ExtendPerFeatureSetting(Config* config) const {
     for (const int& fid : categorical_features_) {
       const int convert_fid = cat_converter->GetConvertFid(fid);
       if (is_monotone_constraints_used) {
-        Log::Warning("push monotone contraints");
         monotone_contraints[convert_fid] = (monotone_contraints[fid]);
       }
       if (is_feature_contri_used) {
@@ -1309,6 +1308,10 @@ void CategoryEncodingProvider::ExtendPerFeatureSetting(Config* config) const {
   if (is_interaction_constraints_used) {
     for (auto& constraints : config->interaction_constraints_vector) {
       for (const int fid : constraints) {
+        if (fid >= num_original_features_) {
+          Log::Fatal("feature index %d found in interaction constraints, but only %d features are found in data\n",
+            fid, num_original_features_);
+        }
         if (is_categorical_feature_[fid]) {
           for (const int new_fid : encode_fid_sets[fid]) {
             constraints.push_back(new_fid);

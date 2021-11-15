@@ -183,6 +183,8 @@ Core Parameters
 
 -  ``num_threads`` :raw-html:`<a id="num_threads" title="Permalink to this parameter" href="#num_threads">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``num_thread``, ``nthread``, ``nthreads``, ``n_jobs``
 
+   -  used only in ``train``, ``prediction`` and ``refit`` tasks or in correspondent functions of language-specific packages
+
    -  number of threads for LightGBM
 
    -  ``0`` means default number of threads in OpenMP
