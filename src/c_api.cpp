@@ -1124,15 +1124,15 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
 }
 
 int LGBM_DatasetCreateFromMatsWithLabel(int32_t nmat,
-                               const void** data,
-                               const void* label,
-                               int data_type,
-                               int32_t* nrow,
-                               int32_t ncol,
-                               int is_row_major,
-                               const char* parameters,
-                               const DatasetHandle reference,
-                               DatasetHandle* out) {
+                                        const void** data,
+                                        const void* label,
+                                        int data_type,
+                                        int32_t* nrow,
+                                        int32_t ncol,
+                                        int is_row_major,
+                                        const char* parameters,
+                                        const DatasetHandle reference,
+                                        DatasetHandle* out) {
   API_BEGIN();
   auto param = Config::Str2Map(parameters);
   Config config;

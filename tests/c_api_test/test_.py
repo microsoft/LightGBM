@@ -93,7 +93,6 @@ def load_from_csr(filename, reference):
         ctypes.c_int(dtype_int32),
         csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
         csr.data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        label.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)),
         ctypes.c_int(dtype_float64),
         ctypes.c_int64(len(csr.indptr)),
         ctypes.c_int64(len(csr.data)),
@@ -129,7 +128,6 @@ def load_from_csc(filename, reference):
         ctypes.c_int(dtype_int32),
         csc.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
         csc.data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        label.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)),
         ctypes.c_int(dtype_float64),
         ctypes.c_int64(len(csc.indptr)),
         ctypes.c_int64(len(csc.data)),
@@ -163,40 +161,6 @@ def load_from_mat(filename, reference):
 
     LIB.LGBM_DatasetCreateFromMat(
         data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        ctypes.c_int(dtype_float64),
-        ctypes.c_int32(mat.shape[0]),
-        ctypes.c_int32(mat.shape[1]),
-        ctypes.c_int(1),
-        c_str('max_bin=15'),
-        ref,
-        ctypes.byref(handle))
-    num_data = ctypes.c_int(0)
-    LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data))
-    num_feature = ctypes.c_int(0)
-    LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature))
-    LIB.LGBM_DatasetSetField(
-        handle,
-        c_str('label'),
-        label.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-        ctypes.c_int(len(label)),
-        ctypes.c_int(dtype_float32))
-    print(f'#data: {num_data.value} #feature: {num_feature.value}')
-    return handle
-
-
-def load_from_mat_with_label(filename, reference):
-    mat = np.loadtxt(str(filename), dtype=np.float64)
-    label = mat[:, 0].astype(np.float32)
-    mat = mat[:, 1:]
-    data = np.array(mat.reshape(mat.size), dtype=np.float64, copy=False)
-    handle = ctypes.c_void_p()
-    ref = None
-    if reference is not None:
-        ref = reference
-
-    LIB.LGBM_DatasetCreateFromMatWithLabel(
-        data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        label.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)),
         ctypes.c_int(dtype_float64),
         ctypes.c_int32(mat.shape[0]),
         ctypes.c_int32(mat.shape[1]),
