@@ -644,10 +644,17 @@ void CategoryEncodingProvider::SyncEncodingStat(std::vector<std::unordered_map<i
   auto& fold_label_sum = *fold_label_sum_ptr;
   auto& fold_total_count = *fold_total_count_ptr;
   if (num_machines > 1) {
+
+    #if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
+    using CommonLegacy::UnorderedMapToString;  // Slower & unsafe regarding locale.
+    #else
+    using CommonC::UnorderedMapToString;
+    #endif
+
     std::string target_encoding_stat_string;
     for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
-      target_encoding_stat_string += CommonC::UnorderedMapToString(fold_label_sum[fold_id], ':', ' ') + "@";
-      target_encoding_stat_string += CommonC::UnorderedMapToString(fold_total_count[fold_id], ':', ' ') + "@";
+      target_encoding_stat_string += UnorderedMapToString(fold_label_sum[fold_id], ':', ' ') + "@";
+      target_encoding_stat_string += UnorderedMapToString(fold_total_count[fold_id], ':', ' ') + "@";
     }
     const size_t max_target_encoding_values_string_size = Network::GlobalSyncUpByMax(target_encoding_stat_string.size()) + 1;
     std::vector<char> input_buffer(max_target_encoding_values_string_size), output_buffer(max_target_encoding_values_string_size * num_machines);

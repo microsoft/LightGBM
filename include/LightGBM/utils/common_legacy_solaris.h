@@ -153,6 +153,48 @@ ArrayToString(const std::vector<T>& arr, size_t n) {
     return _ArrayToString(arr, n);
 }
 
+
+template<typename KEY_T, typename VALUE_T>
+inline static std::string _UnorderedMapToStringFast(const std::unordered_map<KEY_T, VALUE_T>& map,
+  const char pair_sep, const char delimiter) {
+  if (map.empty()) {
+    return std::string("");
+  }
+  __TToStringHelperFast<KEY_T, std::is_floating_point<KEY_T>::value, std::is_unsigned<KEY_T>::value> key_helper;
+  __TToStringHelperFast<VALUE_T, std::is_floating_point<VALUE_T>::value, std::is_unsigned<VALUE_T>::value> value_helper;
+  const size_t key_buf_len = 16;
+  const size_t value_buf_len = 16;
+  std::vector<char> key_buffer(key_buf_len);
+  std::vector<char> value_buffer(value_buf_len);
+  std::stringstream str_buf;
+  Common::C_stringstream(str_buf);
+  auto iter = map.begin();
+  key_helper(iter->first, key_buffer.data(), key_buf_len);
+  str_buf << key_buffer.data();
+  str_buf << pair_sep;
+  value_helper(iter->second, value_buffer.data(), value_buf_len);
+  str_buf << value_buffer.data();
+
+  ++iter;
+  for (; iter != map.end(); ++iter) {
+    str_buf << delimiter;
+    key_helper(iter->first, key_buffer.data(), key_buf_len);
+    str_buf << key_buffer.data();
+    str_buf << pair_sep;
+    value_helper(iter->second, value_buffer.data(), value_buf_len);
+    str_buf << value_buffer.data();
+  }
+  return str_buf.str();
+}
+
+template<bool key_high_precision_output = false, bool value_high_precision_output = false,
+  typename KEY_T, typename VALUE_T>
+inline static typename std::enable_if<key_high_precision_output == false && value_high_precision_output == false, std::string>::type
+UnorderedMapToString(const std::unordered_map<KEY_T, VALUE_T>& map,
+  const char pair_sep, const char delimiter) {
+  _UnorderedMapToStringFast(map, pair_sep, delimiter);
+}
+
 }  // namespace CommonLegacy
 
 }  // namespace LightGBM
