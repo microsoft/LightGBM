@@ -150,6 +150,7 @@ def load_from_csc(filename, reference):
     print(f'#data: {num_data.value} #feature: {num_feature.value}')
     return handle
 
+
 def load_from_mat(filename, reference):
     mat = np.loadtxt(str(filename), dtype=np.float64)
     label = mat[:, 0].astype(np.float32)
@@ -181,6 +182,7 @@ def load_from_mat(filename, reference):
         ctypes.c_int(dtype_float32))
     print(f'#data: {num_data.value} #feature: {num_feature.value}')
     return handle
+
 
 def load_from_mat_with_label(filename, reference):
     mat = np.loadtxt(str(filename), dtype=np.float64)
