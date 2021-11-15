@@ -1734,7 +1734,7 @@ class Dataset:
 
         ptr_data, type_ptr_data, _ = c_float_array(data)
         ptr_label, _ = c_float_label(label)
-        _safe_call(_LIB.LGBM_DatasetCreateFromMat(
+        _safe_call(_LIB.LGBM_DatasetCreateFromMatWithLabel(
             ptr_data,
             ptr_label,
             ctypes.c_int(type_ptr_data),
@@ -1782,7 +1782,7 @@ class Dataset:
         ptr_label, _ = c_float_label(label)
 
         self.handle = ctypes.c_void_p()
-        _safe_call(_LIB.LGBM_DatasetCreateFromMats(
+        _safe_call(_LIB.LGBM_DatasetCreateFromMatsWithLabel(
             ctypes.c_int32(len(mats)),
             ctypes.cast(ptr_data, ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
             ptr_label,
@@ -1808,7 +1808,7 @@ class Dataset:
         assert csr.shape[1] <= MAX_INT32
         csr_indices = csr.indices.astype(np.int32, copy=False)
 
-        _safe_call(_LIB.LGBM_DatasetCreateFromCSR(
+        _safe_call(_LIB.LGBM_DatasetCreateFromCSRWithLabel(
             ptr_indptr,
             ctypes.c_int(type_ptr_indptr),
             csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
@@ -1837,7 +1837,7 @@ class Dataset:
         assert csc.shape[0] <= MAX_INT32
         csc_indices = csc.indices.astype(np.int32, copy=False)
 
-        _safe_call(_LIB.LGBM_DatasetCreateFromCSC(
+        _safe_call(_LIB.LGBM_DatasetCreateFromCSCWithLabel(
             ptr_indptr,
             ctypes.c_int(type_ptr_indptr),
             csc_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),

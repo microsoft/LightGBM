@@ -42,7 +42,7 @@ Categorical Feature Support
    -  ``count`` to indicate count encoding in method 2.
 
    Note that the aforementioned methods can be used simultaneously. Different methods are separated by commas.
-   For example ``category_encoders=target:0.5,target:count,raw`` will enable using splits with method 1, and in addition, convert each categorical feature into 3 numerical features. The first one uses target encoding with prior ``0.5``. The second one uses target encoding with default prior, which is the mean of labels of the training data. The third one uses count encoding.
+   For example ``category_encoders=target:0.5,target,count,raw`` will enable using splits with method 1, and in addition, convert each categorical feature into 3 numerical features. The first one uses target encoding with prior ``0.5``. The second one uses target encoding with default prior, which is the mean of labels of the training data. The third one uses count encoding.
    When ``category_encoders`` is empty, ``raw`` will be used by default. The numbers and names of features will be changed when ``category_encoders`` is not ``raw``.
    Suppose the original name of a feature is ``NAME``, the naming rules of its target and count encoding features are:
 

@@ -162,7 +162,7 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   if (!Rf_isNull(reference)) {
     ref = R_ExternalPtrAddr(reference);
   }
-  CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
+  CHECK_CALL(LGBM_DatasetCreateFromCSCWithLabel(p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, float_p_label, C_API_DTYPE_FLOAT64, nindptr, ndata,
     nrow, parameters_ptr, ref, &handle));
   R_SetExternalPtrAddr(ret, handle);
@@ -200,7 +200,7 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
   if (!Rf_isNull(reference)) {
     ref = R_ExternalPtrAddr(reference);
   }
-  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, float_p_label, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
+  CHECK_CALL(LGBM_DatasetCreateFromMatWithLabel(p_mat, float_p_label, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
     parameters_ptr, ref, &handle));
   R_SetExternalPtrAddr(ret, handle);
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);

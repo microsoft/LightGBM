@@ -390,7 +390,7 @@ class Booster {
   void PredictSingleRow(int predict_type, int ncol,
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                const Config& config,
-               double* out_result, int64_t* out_len) {
+               double* out_result, int64_t* out_len) const {
     if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n"\
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
@@ -1063,7 +1063,6 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
 }
 
 int LGBM_DatasetCreateFromMat(const void* data,
-                              const void* label,
                               int data_type,
                               int32_t nrow,
                               int32_t ncol,
@@ -1073,7 +1072,6 @@ int LGBM_DatasetCreateFromMat(const void* data,
                               DatasetHandle* out) {
   return LGBM_DatasetCreateFromMats(1,
                                     &data,
-                                    label,
                                     data_type,
                                     &nrow,
                                     ncol,
@@ -1083,7 +1081,49 @@ int LGBM_DatasetCreateFromMat(const void* data,
                                     out);
 }
 
+int LGBM_DatasetCreateFromMatWithLabel(const void* data,
+                                       const void* label,
+                                       int data_type,
+                                       int32_t nrow,
+                                       int32_t ncol,
+                                       int is_row_major,
+                                       const char* parameters,
+                                       const DatasetHandle reference,
+                                       DatasetHandle* out) {
+  return LGBM_DatasetCreateFromMatsWithLabel(1,
+                                             &data,
+                                             label,
+                                             data_type,
+                                             &nrow,
+                                             ncol,
+                                             is_row_major,
+                                             parameters,
+                                             reference,
+                                             out);
+}
+
 int LGBM_DatasetCreateFromMats(int32_t nmat,
+                               const void** data,
+                               int data_type,
+                               int32_t* nrow,
+                               int32_t ncol,
+                               int is_row_major,
+                               const char* parameters,
+                               const DatasetHandle reference,
+                               DatasetHandle* out) {
+  return LGBM_DatasetCreateFromMatsWithLabel(nmat,
+                                             data,
+                                             nullptr,
+                                             data_type,
+                                             nrow,
+                                             ncol,
+                                             is_row_major,
+                                             parameters,
+                                             reference,
+                                             out);
+}
+
+int LGBM_DatasetCreateFromMatsWithLabel(int32_t nmat,
                                const void** data,
                                const void* label,
                                int data_type,
@@ -1116,10 +1156,12 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     if (category_encoding_provider_ptr != nullptr) {
       category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpToString())));
     }
-  } else {
+  } else if (label != nullptr) {
     std::function<label_t(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
     category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(
       &config, get_row_fun, get_label_fun, nmat, nrow, ncol));
+  } else {
+    category_encoding_provider.reset(nullptr);
   }
   if (category_encoding_provider != nullptr) {
     category_encoding_provider->WrapRowFunctions(&get_row_fun, &ncol, is_valid);
@@ -1130,7 +1172,6 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     int sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol);
     std::vector<std::vector<int>> sample_idx(ncol);
-    DatasetLoader loader(&config, nullptr, 1, nullptr);
     int offset = 0;
     int j = 0;
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -1147,6 +1188,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
         }
       }
     }
+    DatasetLoader loader(&config, nullptr, 1, nullptr);
     ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              ncol,
@@ -1187,7 +1229,6 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                               int indptr_type,
                               const int32_t* indices,
                               const void* data,
-                              const void* label,
                               int data_type,
                               int64_t nindptr,
                               int64_t nelem,
@@ -1195,6 +1236,32 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                               const char* parameters,
                               const DatasetHandle reference,
                               DatasetHandle* out) {
+  LGBM_DatasetCreateFromCSRWithLabel(indptr,
+                                     indptr_type,
+                                     indices,
+                                     data,
+                                     nullptr,
+                                     data_type,
+                                     nindptr,
+                                     nelem,
+                                     num_col,
+                                     parameters,
+                                     reference,
+                                     out);
+}
+
+int LGBM_DatasetCreateFromCSRWithLabel(const void* indptr,
+                                       int indptr_type,
+                                       const int32_t* indices,
+                                       const void* data,
+                                       const void* label,
+                                       int data_type,
+                                       int64_t nindptr,
+                                       int64_t nelem,
+                                       int64_t num_col,
+                                       const char* parameters,
+                                       const DatasetHandle reference,
+                                       DatasetHandle* out) {
   API_BEGIN();
   if (num_col <= 0) {
     Log::Fatal("The number of columns should be greater than zero.");
@@ -1214,10 +1281,12 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
     if (category_encoding_provider_ptr != nullptr) {
       category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpToString())));
     }
-  } else {
+  } else if (label != nullptr) {
     std::function<label_t(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
     category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(
       &config, get_row_fun, get_label_fun, nindptr - 1, num_col));
+  } else {
+    category_encoding_provider.reset(nullptr);
   }
   if (category_encoding_provider != nullptr) {
     category_encoding_provider->WrapRowFunction(&get_row_fun, &num_col, is_valid);
@@ -1353,7 +1422,6 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                               int col_ptr_type,
                               const int32_t* indices,
                               const void* data,
-                              const void* label,
                               int data_type,
                               int64_t ncol_ptr,
                               int64_t nelem,
@@ -1361,6 +1429,32 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                               const char* parameters,
                               const DatasetHandle reference,
                               DatasetHandle* out) {
+  LGBM_DatasetCreateFromCSCWithLabel(col_ptr,
+                                     col_ptr_type,
+                                     indices,
+                                     data,
+                                     nullptr,
+                                     data_type,
+                                     ncol_ptr,
+                                     nelem,
+                                     num_row,
+                                     parameters,
+                                     reference,
+                                     out);
+}
+
+int LGBM_DatasetCreateFromCSCWithLabel(const void* col_ptr,
+                                       int col_ptr_type,
+                                       const int32_t* indices,
+                                       const void* data,
+                                       const void* label,
+                                       int data_type,
+                                       int64_t ncol_ptr,
+                                       int64_t nelem,
+                                       int64_t num_row,
+                                       const char* parameters,
+                                       const DatasetHandle reference,
+                                       DatasetHandle* out) {
   API_BEGIN();
   auto param = Config::Str2Map(parameters);
   Config config;
@@ -1389,10 +1483,12 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     if (category_encoding_provider_ptr != nullptr) {
       category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpToString())));
     }
-  } else {
+  } else if (label != nullptr) {
     std::function<label_t(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
     category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(
       &config, csc_iterators, get_label_fun, num_row, ncol_ptr - 1));
+  } else {
+    category_encoding_provider.reset(nullptr);
   }
   if (category_encoding_provider != nullptr) {
     category_encoding_provider->WrapColIters(&csc_iterators, &ncol_ptr, is_valid, num_row);

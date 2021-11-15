@@ -191,11 +191,38 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSRWithLabel(const void* indptr,
+                                                         int indptr_type,
+                                                         const int32_t* indices,
+                                                         const void* data,
+                                                         const void* label,
+                                                         int data_type,
+                                                         int64_t nindptr,
+                                                         int64_t nelem,
+                                                         int64_t num_col,
+                                                         const char* parameters,
+                                                         const DatasetHandle reference,
+                                                         DatasetHandle* out);
+
+/*!
+ * \brief Create a dataset from CSR format.
+ * \param indptr Pointer to row headers
+ * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param indices Pointer to column indices
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nindptr Number of rows in the matrix + 1
+ * \param nelem Number of nonzero elements in the matrix
+ * \param num_col Number of columns
+ * \param parameters Additional parameters
+ * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
+ * \param[out] out Created dataset
+ * \return 0 when succeed, -1 when failure happens
+ */
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
                                                 int indptr_type,
                                                 const int32_t* indices,
                                                 const void* data,
-                                                const void* label,
                                                 int data_type,
                                                 int64_t nindptr,
                                                 int64_t nelem,
@@ -238,11 +265,38 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSCWithLabel(const void* col_ptr,
+                                                         int col_ptr_type,
+                                                         const int32_t* indices,
+                                                         const void* data,
+                                                         const void* label,
+                                                         int data_type,
+                                                         int64_t ncol_ptr,
+                                                         int64_t nelem,
+                                                         int64_t num_row,
+                                                         const char* parameters,
+                                                         const DatasetHandle reference,
+                                                         DatasetHandle* out);
+
+/*!
+ * \brief Create a dataset from CSC format.
+ * \param col_ptr Pointer to column headers
+ * \param col_ptr_type Type of ``col_ptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param indices Pointer to row indices
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param ncol_ptr Number of columns in the matrix + 1
+ * \param nelem Number of nonzero elements in the matrix
+ * \param num_row Number of rows
+ * \param parameters Additional parameters
+ * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
+ * \param[out] out Created dataset
+ * \return 0 when succeed, -1 when failure happens
+ */
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                                 int col_ptr_type,
                                                 const int32_t* indices,
                                                 const void* data,
-                                                const void* label,
                                                 int data_type,
                                                 int64_t ncol_ptr,
                                                 int64_t nelem,
@@ -264,8 +318,29 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMatWithLabel(const void* data,
+                                                         const void* label,
+                                                         int data_type,
+                                                         int32_t nrow,
+                                                         int32_t ncol,
+                                                         int is_row_major,
+                                                         const char* parameters,
+                                                         const DatasetHandle reference,
+                                                         DatasetHandle* out);
+
+/*!
+ * \brief Create dataset from dense matrix.
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nrow Number of rows
+ * \param ncol Number of columns
+ * \param is_row_major 1 for row-major, 0 for column-major
+ * \param parameters Additional parameters
+ * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
+ * \param[out] out Created dataset
+ * \return 0 when succeed, -1 when failure happens
+ */
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
-                                                const void* label,
                                                 int data_type,
                                                 int32_t nrow,
                                                 int32_t ncol,
@@ -288,9 +363,32 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMatsWithLabel(int32_t nmat,
+                                                         const void** data,
+                                                         const void* label,
+                                                         int data_type,
+                                                         int32_t* nrow,
+                                                         int32_t ncol,
+                                                         int is_row_major,
+                                                         const char* parameters,
+                                                         const DatasetHandle reference,
+                                                         DatasetHandle* out);
+
+/*!
+ * \brief Create dataset from array of dense matrices.
+ * \param nmat Number of dense matrices
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nrow Number of rows
+ * \param ncol Number of columns
+ * \param is_row_major 1 for row-major, 0 for column-major
+ * \param parameters Additional parameters
+ * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
+ * \param[out] out Created dataset
+ * \return 0 when succeed, -1 when failure happens
+ */
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
                                                  const void** data,
-                                                 const void* label,
                                                  int data_type,
                                                  int32_t* nrow,
                                                  int32_t ncol,
