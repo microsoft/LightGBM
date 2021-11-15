@@ -169,9 +169,8 @@ if ($env:COMPILER -ne "MSVC") {
     # some flavors of tar.exe can fail in some settings on Windows.
     # Putting the msys64 utilities at the beginning of PATH temporarily to be
     # sure they're used for that purpose.
-    # $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
     if ($env:R_MAJOR_VERSION -eq "3") {
-        $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
+      $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
     }
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
     Remove-From-Path ".*msys64.*"
