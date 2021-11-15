@@ -168,7 +168,6 @@ inline static std::string _UnorderedMapToStringFast(const std::unordered_map<KEY
   std::vector<char> key_buffer(key_buf_len);
   std::vector<char> value_buffer(value_buf_len);
   std::stringstream str_buf;
-  Common::C_stringstream(str_buf);
   auto iter = map.begin();
   key_helper(iter->first, key_buffer.data(), key_buf_len);
   str_buf << key_buffer.data();

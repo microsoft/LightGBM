@@ -168,7 +168,11 @@ class CategoryEncodingProvider {
       str_stream << "type=target_encoder\n";
       str_stream << "prior=" << prior_ << "\n";
       str_stream << "categorical_feature_index_to_encoded_feature_index=" <<
+        #if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
+        CommonLegacy::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
+        #else
         CommonC::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
+        #endif // ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
       return str_stream.str();
     }
 
@@ -218,7 +222,11 @@ class CategoryEncodingProvider {
       Common::C_stringstream(str_stream);
       str_stream << "type=count_encoder\n";
       str_stream << "categorical_feature_index_to_encoded_feature_index=" <<
+        #if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
+        CommonLegacy::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
+        #else
         CommonC::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
+        #endif // ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
       return str_stream.str();
     }
   };
@@ -281,7 +289,11 @@ class CategoryEncodingProvider {
       str_stream << "type=target_encoder_label_mean\n";
       str_stream << "prior=" << prior_ << "\n";
       str_stream << "categorical_feature_index_to_encoded_feature_index=" <<
+        #if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
+        CommonLegacy::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
+        #else
         CommonC::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
+        #endif // ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
       return str_stream.str();
     }
 
