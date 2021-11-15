@@ -652,7 +652,7 @@ void CategoryEncodingProvider::SyncEncodingStat(std::vector<std::unordered_map<i
       #else
       target_encoding_stat_string += CommonC::UnorderedMapToString(fold_label_sum[fold_id], ':', ' ') + "@";
       target_encoding_stat_string += CommonC::UnorderedMapToString(fold_total_count[fold_id], ':', ' ') + "@";
-      #endif // ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
+      #endif  // ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
     }
     const size_t max_target_encoding_values_string_size = Network::GlobalSyncUpByMax(target_encoding_stat_string.size()) + 1;
     std::vector<char> input_buffer(max_target_encoding_values_string_size), output_buffer(max_target_encoding_values_string_size * num_machines);

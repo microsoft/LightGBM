@@ -172,7 +172,7 @@ class CategoryEncodingProvider {
         CommonLegacy::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
         #else
         CommonC::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
-        #endif // ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
+        #endif  // ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
       return str_stream.str();
     }
 
@@ -226,7 +226,7 @@ class CategoryEncodingProvider {
         CommonLegacy::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
         #else
         CommonC::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
-        #endif // ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
+        #endif  // ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
       return str_stream.str();
     }
   };
@@ -293,7 +293,7 @@ class CategoryEncodingProvider {
         CommonLegacy::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
         #else
         CommonC::UnorderedMapToString<false, false, int, int>(cat_fid_to_convert_fid_, ':', ' ') << "\n";
-        #endif // ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
+        #endif  // ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
       return str_stream.str();
     }
 
