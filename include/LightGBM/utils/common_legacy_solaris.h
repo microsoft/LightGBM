@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <sstream>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 #include <string>
 
