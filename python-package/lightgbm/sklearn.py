@@ -19,25 +19,25 @@ _EvalResultType = Tuple[str, float, bool]
 
 _LGBM_ScikitCustomObjectiveFunction = Union[
     Callable[
-        [_ArrayLike, np.ndarray],
+        [np.ndarray, np.ndarray],
         Tuple[_ArrayLike, _ArrayLike]
     ],
     Callable[
-        [_ArrayLike, np.ndarray, np.ndarray],
+        [np.ndarray, np.ndarray, np.ndarray],
         Tuple[_ArrayLike, _ArrayLike]
     ],
 ]
 _LGBM_ScikitCustomEvalFunction = Union[
     Callable[
-        [_ArrayLike, np.ndarray],
+        [np.ndarray, np.ndarray],
         Union[_EvalResultType, List[_EvalResultType]]
     ],
     Callable[
-        [_ArrayLike, np.ndarray, np.ndarray],
+        [np.ndarray, np.ndarray, np.ndarray],
         Union[_EvalResultType, List[_EvalResultType]]
     ],
     Callable[
-        [_ArrayLike, np.ndarray, np.ndarray, np.ndarray],
+        [np.ndarray, np.ndarray, np.ndarray, np.ndarray],
         Union[_EvalResultType, List[_EvalResultType]]
     ],
 ]
