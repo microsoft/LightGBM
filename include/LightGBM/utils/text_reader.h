@@ -86,12 +86,12 @@ class TextReader {
   inline std::vector<std::string>& Lines() { return lines_; }
   /*!
   * \brief Get joined text data that read from file
-  * \return Text data, store in std::string, joined all lines by delimiter "\n"
+  * \return Text data, store in std::string, joined all lines by delimiter
   */
-  inline std::string JoinedLines() {
+  inline std::string JoinedLines(std::string delimiter = "\n") {
     std::stringstream ss;
     for (auto line : lines_) {
-      ss << line << "\n";
+      ss << line << delimiter;
     }
     return ss.str();
   }
