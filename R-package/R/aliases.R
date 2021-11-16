@@ -114,6 +114,7 @@
             , "num_trees"
             , "num_round"
             , "num_rounds"
+            , "nrounds"
             , "num_boost_round"
             , "n_estimators"
             , "max_iter"

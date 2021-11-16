@@ -23,7 +23,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
 #endif
 
 
@@ -549,12 +548,12 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
 /* --- start Booster interfaces */
 
 /*!
-* \brief Get boolean representing whether booster is fitting linear trees.
+* \brief Get int representing whether booster is fitting linear trees.
 * \param handle Handle of booster
 * \param[out] out The address to hold linear trees indicator
 * \return 0 when succeed, -1 when failure happens
 */
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetLinear(BoosterHandle handle, bool* out);
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetLinear(BoosterHandle handle, int* out);
 
 /*!
  * \brief Create a new boosting learner.
@@ -1476,11 +1475,17 @@ static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everythin
 #endif
 /*!
  * \brief Set string message of the last error.
+ * \note
+ * This will call unsafe ``sprintf`` when compiled using C standards before C99.
  * \param msg Error message
  */
 INLINE_FUNCTION void LGBM_SetLastError(const char* msg) {
+#if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 199901L))
+  sprintf(LastErrorMsg(), "%s", msg);  /* NOLINT(runtime/printf) */
+#else
   const int err_buf_len = 512;
   snprintf(LastErrorMsg(), err_buf_len, "%s", msg);
+#endif
 }
 
 #endif  /* LIGHTGBM_C_API_H_ */
