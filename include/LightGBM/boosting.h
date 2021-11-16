@@ -318,6 +318,8 @@ class LIGHTGBM_EXPORT Boosting {
   virtual const CategoryEncodingProvider* category_encoding_provider() const { return nullptr; }
 
   virtual bool IsLinear() const { return false; }
+
+  virtual std::string ParserConfigStr() const = 0;
 };
 
 class GBDTBase : public Boosting {

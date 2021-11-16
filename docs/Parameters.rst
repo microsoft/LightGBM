@@ -850,6 +850,14 @@ Dataset Parameters
 
    -  **Note**: setting this to ``true`` may lead to much slower text parsing
 
+-  ``parser_config_file`` :raw-html:`<a id="parser_config_file" title="Permalink to this parameter" href="#parser_config_file">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+
+   -  path to a ``.json`` file that specifies customized parser initialized configuration
+
+   -  see `lightgbm-transform <https://github.com/microsoft/lightgbm-transform>`__ for usage examples
+
+   -  **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/microsoft/lightgbm-transform/issues>`__
+
 Predict Parameters
 ~~~~~~~~~~~~~~~~~~
 

@@ -5,6 +5,8 @@
 #ifndef LIGHTGBM_PARSER_BASE_H_
 #define LIGHTGBM_PARSER_BASE_H_
 
+#include <functional>
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -14,6 +16,14 @@ namespace LightGBM {
 class Parser {
  public:
   typedef const char* (*AtofFunc)(const char* p, double* out);
+
+  /*! \brief Default constructor */
+  Parser() {}
+
+  /*!
+  * \brief Constructor for customized parser. The constructor accepts content not path because need to save/load the config along with model string
+  */
+  explicit Parser(std::string) {}
 
   /*! \brief virtual destructor */
   virtual ~Parser() {}
@@ -42,11 +52,56 @@ class Parser {
   */
   static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser);
 
+  /*!
+  * \brief Create an object of parser, could use customized parser, or auto choose the format depend on file
+  * \param filename One Filename of data
+  * \param header whether input file contains header
+  * \param num_features Pass num_features of this data file if you know, <=0 means don't know
+  * \param label_idx index of label column
+  * \param precise_float_parser using precise floating point number parsing if true
+  * \param parser_config_str Customized parser config content
+  * \return Object of parser
+  */
+  static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser,
+                              std::string parser_config_str);
+
+  /*!
+  * \brief Generate parser config str used for custom parser initialization, may save values of label id and header
+  * \param filename One Filename of data
+  * \param parser_config_filename One Filename of parser config
+  * \param header whether input file contains header
+  * \param label_idx index of label column
+  * \return Parser config str
+  */
+  static std::string GenerateParserConfigStr(const char* filename, const char* parser_config_filename, bool header, int label_idx);
+
   /*! \brief Binary file token */
   static const char* binary_file_token;
 
   /*! \brief Check can load from binary file */
   static std::string CheckCanLoadFromBin(const char* filename);
+};
+
+/*! \brief Interface for parser factory, used by customized parser */
+class ParserFactory {
+ private:
+  ParserFactory() {}
+  std::map<std::string, std::function<Parser*(std::string)>> object_map_;
+
+ public:
+  ~ParserFactory() {}
+  static ParserFactory& getInstance();
+  void Register(std::string class_name, std::function<Parser*(std::string)> objc);
+  Parser* getObject(std::string class_name, std::string config_str);
+};
+
+/*! \brief Interface for parser reflector, used by customized parser */
+class ParserReflector {
+ public:
+  ParserReflector(std::string class_name, std::function<Parser*(std::string)> objc) {
+    ParserFactory::getInstance().Register(class_name, objc);
+  }
+  virtual ~ParserReflector() {}
 };
 
 // Row iterator of one column for CSC matrix

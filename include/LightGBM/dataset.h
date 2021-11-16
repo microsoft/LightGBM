@@ -16,6 +16,7 @@
 
 #include <string>
 #include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <unordered_set>
@@ -577,6 +578,9 @@ class Dataset {
   /*! \brief Get names of current data set */
   inline const std::vector<std::string>& feature_names() const { return feature_names_; }
 
+  /*! \brief Get content of parser config file */
+  inline const std::string parser_config_str() const { return parser_config_str_; }
+
   inline void set_feature_names(const std::vector<std::string>& feature_names) {
     if (feature_names.size() != static_cast<size_t>(num_total_features_) && !(
       category_encoding_provider_.get() != nullptr &&
@@ -707,6 +711,7 @@ class Dataset {
   /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */
   std::vector<int> numeric_feature_map_;
   int num_numeric_features_;
+  std::string parser_config_str_;
 };
 
 }  // namespace LightGBM

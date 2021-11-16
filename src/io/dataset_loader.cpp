@@ -43,6 +43,18 @@ void DatasetLoader::SetHeader(const char* filename) {
     if (config_.header) {
       std::string first_line = text_reader.first_line();
       feature_names_ = Common::Split(first_line.c_str(), "\t,");
+    } else if (!config_.parser_config_file.empty()) {
+      // support to get header from parser config, so could utilize following label name to id mapping logic.
+      TextReader<data_size_t> parser_config_reader(config_.parser_config_file.c_str(), false);
+      parser_config_reader.ReadAllLines();
+      std::string parser_config_str = parser_config_reader.JoinedLines();
+      if (!parser_config_str.empty()) {
+        std::string header_in_parser_config = Common::GetFromParserConfig(parser_config_str, "header");
+        if (!header_in_parser_config.empty()) {
+          Log::Info("Get raw column names from parser config.");
+          feature_names_ = Common::Split(header_in_parser_config.c_str(), "\t,");
+        }
+      }
     }
 
     // load label idx first
@@ -69,6 +81,15 @@ void DatasetLoader::SetHeader(const char* filename) {
                      "please add the prefix \"name:\" to the column name");
         }
         Log::Info("Using column number %d as label", label_idx_);
+      }
+    }
+
+    if (!config_.parser_config_file.empty()) {
+      // if parser config file exists, feature names may be changed after customized parser applied.
+      // clear here so could use default filled feature names during dataset construction.
+      // may improve by saving real feature names defined in parser in the future.
+      if (!feature_names_.empty()) {
+        feature_names_.clear();
       }
     }
 
@@ -200,8 +221,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   bool is_load_from_binary = false;
 
   if (bin_filename.size() == 0) {
+    dataset->parser_config_str_ = Parser::GenerateParserConfigStr(filename, config_.parser_config_file.c_str(), config_.header, label_idx_);
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_,
-                                                               config_.precise_float_parser));
+                                                               config_.precise_float_parser, dataset->parser_config_str_));
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
@@ -303,8 +325,6 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   return dataset.release();
 }
 
-
-
 Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data) {
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
@@ -316,7 +336,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   }
   if (bin_filename.size() == 0) {
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_,
-                                                               config_.precise_float_parser));
+                                                               config_.precise_float_parser, dataset->parser_config_str_));
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
@@ -1208,7 +1228,11 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
                                                                                     categorical_features_);
 
   // check the range of label_idx, weight_idx and group_idx
-  CHECK(label_idx_ >= 0 && label_idx_ <= dataset->num_total_features_);
+  // skip label check if user input parser config file,
+  // because label id is got from raw features while dataset features are consistent with customized parser.
+  if (dataset->parser_config_str_.empty()) {
+    CHECK(label_idx_ >= 0 && label_idx_ <= dataset->num_total_features_);
+  }
   CHECK(weight_idx_ < 0 || weight_idx_ < dataset->num_total_features_);
   CHECK(group_idx_ < 0 || group_idx_ < dataset->num_total_features_);
 
@@ -1543,7 +1567,6 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
   }
   dataset->FinishLoad();
 }
-
 
 std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced_bins_path, int num_total_features,
                                                               const std::unordered_set<int>& categorical_features) {

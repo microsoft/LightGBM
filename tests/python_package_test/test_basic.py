@@ -701,3 +701,15 @@ def test_init_score_for_multiclass_classification(init_score_type):
     ds = lgb.Dataset(data, init_score=init_score).construct()
     np.testing.assert_equal(ds.get_field('init_score'), init_score)
     np.testing.assert_equal(ds.init_score, init_score)
+
+
+def test_smoke_custom_parser(tmp_path):
+    data_path = Path(__file__).absolute().parents[2] / 'examples' / 'binary_classification' / 'binary.train'
+    parser_config_file = tmp_path / 'parser.ini'
+    with open(parser_config_file, 'w') as fout:
+        fout.write('{"className": "dummy", "id": "1"}')
+
+    data = lgb.Dataset(data_path, params={"parser_config_file": parser_config_file})
+    with pytest.raises(lgb.basic.LightGBMError,
+                       match="Cannot find parser class 'dummy', please register first or check config format"):
+        data.construct()

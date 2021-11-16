@@ -129,6 +129,8 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   feature_names_ = train_data_->feature_names();
   feature_infos_ = train_data_->feature_infos();
   monotone_constraints_ = config_->monotone_constraints;
+  // get parser config file content
+  parser_config_str_ = train_data_->parser_config_str();
 
   // if need bagging, create buffer
   ResetBaggingConfig(config_.get(), true);
@@ -739,6 +741,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
     label_idx_ = train_data_->label_idx();
     feature_names_ = train_data_->feature_names();
     feature_infos_ = train_data_->feature_infos();
+    parser_config_str_ = train_data_->parser_config_str();
 
     tree_learner_->ResetTrainingData(train_data, is_constant_hessian_);
     ResetBaggingConfig(config_.get(), true);
