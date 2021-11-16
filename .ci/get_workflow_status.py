@@ -32,9 +32,9 @@ def get_runs(trigger_phrase):
     """
     pr_runs = []
     if environ.get("GITHUB_EVENT_NAME", "") == "pull_request":
+        pr_number = int(environ.get("GITHUB_REF").split('/')[-2])
+        page = 1
         while True:
-            pr_number = int(environ.get("GITHUB_REF").split('/')[-2])
-            page = 1
             req = request.Request(
                 url="{}/repos/microsoft/LightGBM/issues/{}/comments?page={}&per_page=100".format(
                     environ.get("GITHUB_API_URL"),
