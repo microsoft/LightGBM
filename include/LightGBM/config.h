@@ -723,7 +723,7 @@ struct Config {
 
   // desc = path to a ``.json`` file that specifies customized parser initialized configuration
   // desc = see `lightgbm-transform <https://github.com/microsoft/lightgbm-transform>`__ for usage examples
-  // desc = **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issue page <https://github.com/microsoft/lightgbm-transform/issues>`__
+  // desc = **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/microsoft/lightgbm-transform/issues>`__
   std::string parser_config_file = "";
 
   #pragma endregion

@@ -856,7 +856,7 @@ Dataset Parameters
 
    -  see `lightgbm-transform <https://github.com/microsoft/lightgbm-transform>`__ for usage examples
 
-   -  **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issue page <https://github.com/microsoft/lightgbm-transform/issues>`__
+   -  **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/microsoft/lightgbm-transform/issues>`__
 
 Predict Parameters
 ~~~~~~~~~~~~~~~~~~
