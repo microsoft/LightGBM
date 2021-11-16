@@ -857,7 +857,6 @@ using LightGBM::Log;
 using LightGBM::Network;
 using LightGBM::Random;
 using LightGBM::ReduceScatterFunction;
-using LightGBM::label_t;
 
 // some help functions used to convert data
 
@@ -875,7 +874,7 @@ std::function<std::vector<std::pair<int, double>>(T idx)>
 RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices,
                    const void* data, int data_type, int64_t nindptr, int64_t nelem);
 
-std::function<label_t(int row_idx)>
+std::function<LightGBM::label_t(int row_idx)>
 LabelFunctionFromArray(const void* label);
 
 // start of c_api functions
@@ -1157,7 +1156,7 @@ int LGBM_DatasetCreateFromMatsWithLabel(int32_t nmat,
       category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpToString())));
     }
   } else if (label != nullptr) {
-    std::function<label_t(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
+    std::function<LightGBM::label_t(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
     category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(
       &config, get_row_fun, get_label_fun, nmat, nrow, ncol));
   } else {
@@ -1282,7 +1281,7 @@ int LGBM_DatasetCreateFromCSRWithLabel(const void* indptr,
       category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpToString())));
     }
   } else if (label != nullptr) {
-    std::function<label_t(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
+    std::function<LightGBM::label_t(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
     category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(
       &config, get_row_fun, get_label_fun, nindptr - 1, num_col));
   } else {
@@ -1484,7 +1483,7 @@ int LGBM_DatasetCreateFromCSCWithLabel(const void* col_ptr,
       category_encoding_provider.reset(CategoryEncodingProvider::RecoverFromModelString((category_encoding_provider_ptr->DumpToString())));
     }
   } else if (label != nullptr) {
-    std::function<label_t(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
+    std::function<LightGBM::label_t(int row_idx)> get_label_fun = LabelFunctionFromArray(label);
     category_encoding_provider.reset(CategoryEncodingProvider::CreateCategoryEncodingProvider(
       &config, csc_iterators, get_label_fun, num_row, ncol_ptr - 1));
   } else {
@@ -2631,7 +2630,7 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
 }
 
 // label is array of pointer to individual labels
-std::function<label_t(int row_idx)>
+std::function<LightGBM::label_t(int row_idx)>
 LabelFunctionFromArray(const void* label) {
   if (label != nullptr) {
     const float* label_ptr = reinterpret_cast<const float*>(label);
