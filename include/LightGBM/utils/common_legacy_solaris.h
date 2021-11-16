@@ -192,7 +192,7 @@ template<bool key_high_precision_output = false, bool value_high_precision_outpu
 inline static typename std::enable_if<key_high_precision_output == false && value_high_precision_output == false, std::string>::type
 UnorderedMapToString(const std::unordered_map<KEY_T, VALUE_T>& map,
   const char pair_sep, const char delimiter) {
-  _UnorderedMapToStringFast(map, pair_sep, delimiter);
+  return _UnorderedMapToStringFast(map, pair_sep, delimiter);
 }
 
 }  // namespace CommonLegacy
