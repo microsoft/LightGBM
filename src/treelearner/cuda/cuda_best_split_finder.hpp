@@ -87,7 +87,7 @@ class CUDABestSplitFinder {
     const Dataset* train_data,
     const std::vector<uint32_t>& feature_hist_offsets);
 
-  void ResetConfig(const Config* config);
+  void ResetConfig(const Config* config, const hist_t* cuda_hist);
 
  private:
 

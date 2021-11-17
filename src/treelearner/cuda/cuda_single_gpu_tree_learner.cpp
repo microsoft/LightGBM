@@ -33,7 +33,7 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
   num_threads_ = OMP_NUM_THREADS();
   // use the first gpu by default
   gpu_device_id_ = config_->gpu_device_id >= 0 ? config_->gpu_device_id : 0;
-  CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id_));
+  SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
 
   cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_));
   cuda_smaller_leaf_splits_->Init();
@@ -218,7 +218,9 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
                                 &leaf_sum_hessians_[right_leaf_index],
                                 &sum_left_gradients,
                                 &sum_right_gradients);
-    CheckSplitValid(leaf_best_split_feature_[best_leaf_index_], best_leaf_index_, right_leaf_index, sum_left_gradients, sum_right_gradients);
+    CheckSplitValid(leaf_best_split_feature_[best_leaf_index_], leaf_best_split_threshold_[best_leaf_index_],
+      best_leaf_index_, right_leaf_index, sum_left_gradients, sum_right_gradients,
+      leaf_num_data_[best_leaf_index_], leaf_num_data_[right_leaf_index]);
     smaller_leaf_index_ = (leaf_num_data_[best_leaf_index_] < leaf_num_data_[right_leaf_index] ? best_leaf_index_ : right_leaf_index);
     larger_leaf_index_ = (smaller_leaf_index_ == best_leaf_index_ ? right_leaf_index : best_leaf_index_);
     global_timer.Stop("CUDASingleGPUTreeLearner::Split");
@@ -266,8 +268,8 @@ void CUDASingleGPUTreeLearner::ResetConfig(const Config* config) {
     leaf_sum_hessians_.resize(config_->num_leaves, 0.0f);
   }
   cuda_histogram_constructor_->ResetConfig(config);
-  cuda_best_split_finder_->ResetConfig(config);
-  cuda_data_partition_->ResetConfig(config);
+  cuda_best_split_finder_->ResetConfig(config, cuda_histogram_constructor_->cuda_hist());
+  cuda_data_partition_->ResetConfig(config, cuda_histogram_constructor_->cuda_hist_pointer());
 }
 
 void CUDASingleGPUTreeLearner::SetBaggingData(const Dataset* /*subset*/,
@@ -425,10 +427,12 @@ void CUDASingleGPUTreeLearner::AllocateBitset() {
 
 void CUDASingleGPUTreeLearner::CheckSplitValid(
   const int inner_split_feature,
+  const uint32_t inner_threshold,
   const int left_leaf,
   const int right_leaf,
   const double split_sum_left_gradients,
-  const double split_sum_right_gradients) {
+  const double split_sum_right_gradients,
+  const data_size_t left_count, const data_size_t right_count) {
   std::vector<data_size_t> left_data_indices(leaf_num_data_[left_leaf]);
   std::vector<data_size_t> right_data_indices(leaf_num_data_[right_leaf]);
   CopyFromCUDADeviceToHost<data_size_t>(left_data_indices.data(),

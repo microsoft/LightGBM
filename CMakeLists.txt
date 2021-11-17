@@ -358,7 +358,7 @@ if(USE_CUDA)
     src/io/cuda/*.cpp
     src/cuda/*.cpp
     src/cuda/*.cu
-endif(USE_CUDA)
+endif()
 )
 
 add_executable(lightgbm src/main.cpp src/application/application.cpp ${SOURCES})

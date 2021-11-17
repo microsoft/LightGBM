@@ -18,6 +18,14 @@ void PrintLastCUDAError() {
   Log::Warning(error_name); 
 }
 
+void SetCUDADevice(int gpu_device_id, const char* file, int line) {
+  int cur_gpu_device_id = 0;
+  CUDASUCCESS_OR_FATAL_OUTER(cudaGetDevice(&cur_gpu_device_id));
+  if (cur_gpu_device_id != gpu_device_id) {
+    CUDASUCCESS_OR_FATAL_OUTER(cudaSetDevice(gpu_device_id));
+  }
+}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

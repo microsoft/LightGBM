@@ -42,19 +42,14 @@ __global__ void CUDAConstructHistogramDenseKernel(
     shared_hist[i] = 0.0f;
   }
   __syncthreads();
-  const unsigned int threadIdx_y = threadIdx.y;
   const unsigned int blockIdx_y = blockIdx.y;
   const data_size_t block_start = (blockIdx_y * blockDim.y) * num_data_per_thread;
   const data_size_t* data_indices_ref_this_block = data_indices_ref + block_start;
   data_size_t block_num_data = max(0, min(num_data_in_smaller_leaf - block_start, num_data_per_thread * static_cast<data_size_t>(blockDim.y)));
-  const data_size_t num_iteration_total = (block_num_data + blockDim.y - 1) / blockDim.y;
-  const data_size_t remainder = block_num_data % blockDim.y;
-  const data_size_t num_iteration_this = remainder == 0 ? num_iteration_total : num_iteration_total - static_cast<data_size_t>(threadIdx_y >= remainder);
-  data_size_t inner_data_index = static_cast<data_size_t>(threadIdx_y);
   const int column_index = static_cast<int>(threadIdx.x) + partition_column_start;
   if (threadIdx.x < static_cast<unsigned int>(num_columns_in_partition)) {
     double* shared_hist_ptr = shared_hist + (column_hist_offsets[column_index] << 1);
-    for (data_size_t i = 0; i < num_iteration_this; ++i) {
+    for (data_size_t inner_data_index = static_cast<data_size_t>(threadIdx.y); inner_data_index < block_num_data; inner_data_index += blockDim.y) {
       const data_size_t data_index = data_indices_ref_this_block[inner_data_index];
       const score_t grad = cuda_gradients[data_index];
       const score_t hess = cuda_hessians[data_index];
@@ -63,7 +58,6 @@ __global__ void CUDAConstructHistogramDenseKernel(
       double* pos_ptr = shared_hist_ptr + pos;
       atomicAdd_block(pos_ptr, grad);
       atomicAdd_block(pos_ptr + 1, hess);
-      inner_data_index += blockDim.y;
     }
   }
   __syncthreads();
@@ -522,8 +516,8 @@ __global__ void SubtractHistogramKernel(
   const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
   const CUDALeafSplitsStruct* cuda_larger_leaf_splits) {
   const unsigned int global_thread_index = threadIdx.x + blockIdx.x * blockDim.x;
-  const int cuda_larger_leaf_index_ref = cuda_larger_leaf_splits->leaf_index;
-  if (cuda_larger_leaf_index_ref >= 0) {
+  const int cuda_larger_leaf_index = cuda_larger_leaf_splits->leaf_index;
+  if (cuda_larger_leaf_index >= 0) {
     const hist_t* smaller_leaf_hist = cuda_smaller_leaf_splits->hist_in_leaf;
     hist_t* larger_leaf_hist = cuda_larger_leaf_splits->hist_in_leaf;
     if (global_thread_index < 2 * num_total_bin) {

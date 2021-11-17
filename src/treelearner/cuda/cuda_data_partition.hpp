@@ -74,7 +74,7 @@ class CUDADataPartition {
 
   void ResetTrainingData(const Dataset* train_data, const int num_total_bin, hist_t* cuda_hist);
 
-  void ResetConfig(const Config* config);
+  void ResetConfig(const Config* config, hist_t* cuda_hist);
 
   void ResetByLeafPred(const std::vector<int>& leaf_pred, int num_leaves);
 

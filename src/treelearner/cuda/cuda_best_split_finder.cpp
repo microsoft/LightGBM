@@ -261,7 +261,7 @@ void CUDABestSplitFinder::ResetTrainingData(
   InitCUDAFeatureMetaInfo();
 }
 
-void CUDABestSplitFinder::ResetConfig(const Config* config) {
+void CUDABestSplitFinder::ResetConfig(const Config* config, const hist_t* cuda_hist) {
   num_leaves_ = config->num_leaves;
   lambda_l1_ = config->lambda_l1;
   lambda_l2_ = config->lambda_l2;
@@ -277,6 +277,7 @@ void CUDABestSplitFinder::ResetConfig(const Config* config) {
   extra_seed_ = config->extra_seed;
   use_smoothing_ = (config->path_smooth > 0.0f);
   path_smooth_ = config->path_smooth;
+  cuda_hist_ = cuda_hist;
 
   const int num_task_blocks = (num_tasks_ + NUM_TASKS_PER_SYNC_BLOCK - 1) / NUM_TASKS_PER_SYNC_BLOCK;
   size_t cuda_best_leaf_split_info_buffer_size = static_cast<size_t>(num_task_blocks) * static_cast<size_t>(num_leaves_);

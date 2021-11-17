@@ -13,9 +13,9 @@ CUDAColumnData::CUDAColumnData(const data_size_t num_data, const int gpu_device_
   num_threads_ = OMP_NUM_THREADS();
   num_data_ = num_data;
   if (gpu_device_id >= 0) {
-    CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
+    SetCUDADevice(gpu_device_id, __FILE__, __LINE__);
   } else {
-    CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
+    SetCUDADevice(0, __FILE__, __LINE__);
   }
   cuda_used_indices_ = nullptr;
   cuda_data_by_column_ = nullptr;

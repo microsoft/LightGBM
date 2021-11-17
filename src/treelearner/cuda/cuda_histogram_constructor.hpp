@@ -59,8 +59,6 @@ class CUDAHistogramConstructor {
 
   const hist_t* cuda_hist() const { return cuda_hist_; }
 
-  hist_t* cuda_hist_pointer() const { return cuda_hist_; }
-
   hist_t* cuda_hist_pointer() { return cuda_hist_; }
 
  private:

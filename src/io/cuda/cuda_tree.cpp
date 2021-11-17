@@ -15,9 +15,9 @@ Tree(max_leaves, track_branch_features, is_linear),
 num_threads_per_block_add_prediction_to_score_(1024) {
   is_cuda_tree_ = true;
   if (gpu_device_id >= 0) {
-    CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
+    SetCUDADevice(gpu_device_id, __FILE__, __LINE__);
   } else {
-    CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
+    SetCUDADevice(0, __FILE__, __LINE__);
   }
   if (has_categorical_feature) {
     cuda_cat_boundaries_.Resize(max_leaves);

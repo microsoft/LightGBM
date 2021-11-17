@@ -23,9 +23,9 @@ CUDARowData::CUDARowData(const Dataset* train_data,
   num_feature_group_ = train_data->num_feature_groups();
   num_feature_ = train_data->num_features();
   if (gpu_device_id >= 0) {
-    CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
+    SetCUDADevice(gpu_device_id, __FILE__, __LINE__);
   } else {
-    CUDASUCCESS_OR_FATAL(cudaSetDevice(0));
+    SetCUDADevice(0, __FILE__, __LINE__);
   }
   cuda_data_uint8_t_ = nullptr;
   cuda_data_uint16_t_ = nullptr;

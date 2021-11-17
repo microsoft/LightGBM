@@ -28,6 +28,8 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 
 #define CUDASUCCESS_OR_FATAL_OUTER(ans) { gpuAssert((ans), file, line); }
 
+void SetCUDADevice(int gpu_device_id, const char* file, int line);
+
 template <typename T>
 void AllocateCUDAMemory(T** out_ptr, size_t size, const char* file, const int line) {
   void* tmp_ptr = nullptr;
@@ -86,6 +88,7 @@ void SynchronizeCUDADevice(const char* file, const int line);
 template <typename T>
 void SetCUDAMemory(T* dst_ptr, int value, size_t size, const char* file, const int line) {
   CUDASUCCESS_OR_FATAL_OUTER(cudaMemset(reinterpret_cast<void*>(dst_ptr), value, size * sizeof(T)));
+  SynchronizeCUDADevice(file, line);
 }
 
 template <typename T>
