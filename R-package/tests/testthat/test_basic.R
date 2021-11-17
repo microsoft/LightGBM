@@ -2079,8 +2079,7 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
-    # indices in categorical feature start from 1L, so here should be 2L
-    , categorical_feature = 2L
+    , categorical_feature = 1L
   )
 
   dtrain <- .new_dataset()
@@ -2208,7 +2207,7 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
 
 })
 
-test_that(paste0("Category encoding for R package works"), {
+test_that("Category encoding for R package works", {
   # test category_encoders
   set.seed(1L)
   dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -2226,10 +2225,18 @@ test_that(paste0("Category encoding for R package works"), {
   pred1 <- bst$predict(test$data)
 
   # treat the first 4 features as categorical features
-  dtrain <- lgb.Dataset(train$data, label = train$label,
-    categorical_feature = cat_fid, category_encoders = "raw")
-  dtest <- lgb.Dataset(test$data, label = test$label,
-    categorical_feature = cat_fid, reference = dtrain)
+  dtrain <- lgb.Dataset(
+    train$data
+    , label = train$label
+    , categorical_feature = cat_fid
+    , category_encoders = "raw"
+  )
+  dtest <- lgb.Dataset(
+    test$data
+    , label = test$label
+    , categorical_feature = cat_fid
+    , reference = dtrain
+  )
   params <- list(objective = "binary")
   bst <- lightgbm(
     data = dtrain
@@ -2241,10 +2248,17 @@ test_that(paste0("Category encoding for R package works"), {
   pred2 <- bst$predict(test$data)
   expect_equal(pred1, pred2)
 
-  dtrain <- lgb.Dataset(train$data, label = train$label,
-    categorical_feature = cat_fid)
-  dtest <- lgb.Dataset(test$data, label = test$label,
-    categorical_feature = cat_fid, reference = dtrain)
+  dtrain <- lgb.Dataset(
+    train$data
+    , label = train$label
+    , categorical_feature = cat_fid
+  )
+  dtest <- lgb.Dataset(
+    test$data
+    , label = test$label
+    , categorical_feature = cat_fid
+    , reference = dtrain
+  )
   params <- list(objective = "binary", category_encoders = "target,count,raw")
   bst <- lightgbm(
     data = dtrain
@@ -2254,7 +2268,9 @@ test_that(paste0("Category encoding for R package works"), {
     , valids = list("valid1" = dtest)
   )
   pred3 <- bst$predict(test$data)
-  expect_equal(dim(dtrain), c(6513L, 134L))
+  # one new "count" and "target" feature is added per categorical feature
+  num_new_cat_features <- length(cat_fid) * 2L
+  expect_equal(dim(dtrain), c(nrow(train$data), ncol(train$data) + num_new_cat_features))
 
   # test gbdt model with category_encoders
   model_file <- tempfile(fileext = ".model")

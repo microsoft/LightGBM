@@ -19,9 +19,9 @@ Categorical Feature Support
 
    -  Method 1: Applies `Fisher (1958) <https://www.tandfonline.com/doi/abs/10.1080/01621459.1958.10501479>`__ to find the optimal split over categories as `described here <./Features.rst#optimal-split-for-categorical-features>`__.
 
-   -  Method 2: Encoding categorical features into numerical values. We provide two encoding options:
+   -  Method 2: Encoding categorical features into numerical values. LightGBM provides two encoding options:
 
-      -  **Target encoding**: encode the categorical feature value by the mean of labels of data with the same feature value in the training set. It is easy to overfit the training data if the encoded value of a training data point uses the label of that training data point itself. So we would randomly divide the training data into folds, and when calculating the target encoding for data in one fold, we only consider data in other folds.
+      -  **Target encoding**: encode the categorical feature value by the mean of labels of data with the same feature value in the training set. It is easy to overfit the training data if the encoded value of a training data point uses the label of that training data point itself. So LightGBM randomly divides the training data into folds, and when calculating the target encoding for data in one fold, only considers data in other folds.
 
       -  **Count encoding**: encode the categorical feature value by the total number of data with the same feature value in the training set.
    
@@ -33,7 +33,7 @@ Categorical Feature Support
 -  Categorical features must be encoded as non-negative integers (``int``) less than ``Int32.MaxValue`` (2147483647).
    It is best to use a contiguous range of integers started from zero.
 
--  Use ``category_encoders`` to specify the methods used to deal with categorical features. We use
+-  Use ``category_encoders`` to specify the methods used to deal with categorical features. Use
 
    -  ``raw`` to indicate method 1.
 
