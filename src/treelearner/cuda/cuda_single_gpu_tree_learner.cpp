@@ -426,7 +426,7 @@ void CUDASingleGPUTreeLearner::AllocateBitset() {
 }
 
 void CUDASingleGPUTreeLearner::CheckSplitValid(
-  const int inner_split_feature,
+  const int /*inner_split_feature*/,
   const uint32_t /*inner_threshold*/,
   const int left_leaf,
   const int right_leaf,
