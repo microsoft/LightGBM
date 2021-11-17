@@ -1259,6 +1259,8 @@ The initial score file corresponds with data file line by line, and has per scor
 And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and placed in the same folder as the data file.
 In this case, LightGBM will auto load initial score file if it exists.
 
+If binary data files exist for raw data file ``train.txt``, for example in the name ``train.txt.bin``, then the initial score file should be named as ``train.txt.bin.init``.
+
 Weight Data
 ~~~~~~~~~~~
 

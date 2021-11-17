@@ -26,7 +26,7 @@ void Metadata::Init(const char* data_filename) {
   LoadQueryBoundaries();
   LoadWeights();
   LoadQueryWeights();
-  LoadInitialScore();
+  LoadInitialScore(data_filename_);
 }
 
 Metadata::~Metadata() {
@@ -390,10 +390,10 @@ void Metadata::LoadWeights() {
   weight_load_from_file_ = true;
 }
 
-void Metadata::LoadInitialScore() {
+void Metadata::LoadInitialScore(const std::string& data_filename) {
   num_init_score_ = 0;
-  std::string init_score_filename(data_filename_);
-  init_score_filename = std::string(data_filename_);
+  std::string init_score_filename(data_filename);
+  init_score_filename = std::string(data_filename);
   // default init_score file name
   init_score_filename.append(".init");
   TextReader<size_t> reader(init_score_filename.c_str(), false);

@@ -270,6 +270,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     is_load_from_binary = true;
     Log::Info("Load from binary file %s", bin_filename.c_str());
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), rank, num_machines, &num_global_data, &used_data_indices));
+    // checks whether there's a initial score file when loaded from binary data files
+    // the intial score file should with suffix ".bin.init"
+    dataset->metadata_.LoadInitialScore(bin_filename);
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
@@ -326,6 +329,9 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   } else {
     // load data from binary file
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), 0, 1, &num_global_data, &used_data_indices));
+    // checks whether there's a initial score file when loaded from binary data files
+    // the intial score file should with suffix ".bin.init"
+    dataset->metadata_.LoadInitialScore(bin_filename);
   }
   // not need to check validation data
   // check meta data
