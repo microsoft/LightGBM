@@ -85,7 +85,7 @@ void GetObjectiveType(const std::unordered_map<std::string, std::string>& params
   }
 }
 
-void GetMetricType(const std::unordered_map<std::string, std::string>& params, std::vector<std::string>* metric) {
+void GetMetricType(const std::unordered_map<std::string, std::string>& params, const std::string& objective, std::vector<std::string>* metric) {
   std::string value;
   if (Config::GetString(params, "metric", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
@@ -93,10 +93,7 @@ void GetMetricType(const std::unordered_map<std::string, std::string>& params, s
   }
   // add names of objective function if not providing metric
   if (metric->empty() && value.size() == 0) {
-    if (Config::GetString(params, "objective", &value)) {
-      std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-      ParseMetrics(value, metric);
-    }
+    ParseMetrics(objective, metric);
   }
 }
 
@@ -208,8 +205,8 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
 
   GetTaskType(params, &task);
   GetBoostingType(params, &boosting);
-  GetMetricType(params, &metric);
   GetObjectiveType(params, &objective);
+  GetMetricType(params, objective, &metric);
   GetDeviceType(params, &device_type);
   if (device_type == std::string("cuda")) {
     LGBM_config_::current_device = lgbm_device_cuda;

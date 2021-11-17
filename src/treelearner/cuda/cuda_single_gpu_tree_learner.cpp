@@ -427,12 +427,12 @@ void CUDASingleGPUTreeLearner::AllocateBitset() {
 
 void CUDASingleGPUTreeLearner::CheckSplitValid(
   const int inner_split_feature,
-  const uint32_t inner_threshold,
+  const uint32_t /*inner_threshold*/,
   const int left_leaf,
   const int right_leaf,
   const double split_sum_left_gradients,
   const double split_sum_right_gradients,
-  const data_size_t left_count, const data_size_t right_count) {
+  const data_size_t /*left_count*/, const data_size_t /*right_count*/) {
   std::vector<data_size_t> left_data_indices(leaf_num_data_[left_leaf]);
   std::vector<data_size_t> right_data_indices(leaf_num_data_[right_leaf]);
   CopyFromCUDADeviceToHost<data_size_t>(left_data_indices.data(),
@@ -453,11 +453,11 @@ void CUDASingleGPUTreeLearner::CheckSplitValid(
     sum_right_gradients += gradients_[index];
     sum_right_hessians += hessians_[index];
   }
-  Log::Warning("inner_split_feature = %d", inner_split_feature);
+  /*Log::Warning("inner_split_feature = %d", inner_split_feature);
   Log::Warning("sum_left_gradients = %f, split_sum_left_gradients = %f", sum_left_gradients, split_sum_left_gradients);
   Log::Warning("sum_left_hessians = %f, leaf_sum_hessians_[%d] = %f", sum_left_hessians, left_leaf, leaf_sum_hessians_[left_leaf]);
   Log::Warning("sum_right_gradients = %f, split_sum_right_gradients = %f", sum_right_gradients, split_sum_right_gradients);
-  Log::Warning("sum_right_hessians = %f, leaf_sum_hessians_[%d] = %f", sum_right_hessians, right_leaf, leaf_sum_hessians_[right_leaf]);
+  Log::Warning("sum_right_hessians = %f, leaf_sum_hessians_[%d] = %f", sum_right_hessians, right_leaf, leaf_sum_hessians_[right_leaf]);*/
 
   /*if (train_data_->FeatureBinMapper(inner_split_feature)->bin_type() == BinType::CategoricalBin) {
     std::vector<uint32_t> host_bitset_inner(cuda_bitset_inner_len_);

@@ -61,10 +61,10 @@ def copy_files(integrated_opencl: bool = False, use_gpu: bool = False) -> None:
         copy_files_helper('include')
         copy_files_helper('src')
         for submodule in (CURRENT_DIR.parent / 'external_libs').iterdir():
-            submodule = submodule.stem
-            if submodule == 'compute' and not use_gpu:
+            submodule_stem = submodule.stem
+            if submodule_stem == 'compute' and not use_gpu:
                 continue
-            copy_files_helper(Path('external_libs') / submodule)
+            copy_files_helper(Path('external_libs') / submodule_stem)
         (CURRENT_DIR / "compile" / "windows").mkdir(parents=True, exist_ok=True)
         copyfile(CURRENT_DIR.parent / "windows" / "LightGBM.sln",
                  CURRENT_DIR / "compile" / "windows" / "LightGBM.sln")
@@ -349,8 +349,8 @@ if __name__ == "__main__":
                   'pandas',
               ],
           },
-          maintainer='Guolin Ke',
-          maintainer_email='guolin.ke@microsoft.com',
+          maintainer='Yu Shi',
+          maintainer_email='yushi2@microsoft.com',
           zip_safe=False,
           cmdclass={
               'install': CustomInstall,

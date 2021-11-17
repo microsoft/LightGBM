@@ -188,12 +188,11 @@ def train(
 
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
+    predictor: Optional[_InnerPredictor] = None
     if isinstance(init_model, (str, Path)):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))
-    else:
-        predictor = None
     init_iteration = predictor.num_total_iteration if predictor is not None else 0
     # check dataset
     if not isinstance(train_set, Dataset):
@@ -571,7 +570,7 @@ def cv(params, train_set, num_boost_round=100,
         params['objective'] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
-            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
+            _log_warning(f"Found '{alias}' in params. Will use it instead of 'num_boost_round' argument")
             num_boost_round = params.pop(alias)
     params["num_iterations"] = num_boost_round
     if early_stopping_rounds is not None and early_stopping_rounds > 0:

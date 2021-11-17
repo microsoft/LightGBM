@@ -15,6 +15,7 @@
 
 #include <string>
 #include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <unordered_set>
@@ -268,6 +269,14 @@ class Parser {
  public:
   typedef const char* (*AtofFunc)(const char* p, double* out);
 
+  /*! \brief Default constructor */
+  Parser() {}
+
+  /*!
+  * \brief Constructor for customized parser. The constructor accepts content not path because need to save/load the config along with model string
+  */
+  explicit Parser(std::string) {}
+
   /*! \brief virtual destructor */
   virtual ~Parser() {}
 
@@ -285,12 +294,58 @@ class Parser {
   /*!
   * \brief Create an object of parser, will auto choose the format depend on file
   * \param filename One Filename of data
+  * \param header whether input file contains header
   * \param num_features Pass num_features of this data file if you know, <=0 means don't know
   * \param label_idx index of label column
   * \param precise_float_parser using precise floating point number parsing if true
   * \return Object of parser
   */
   static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser);
+
+  /*!
+  * \brief Create an object of parser, could use customized parser, or auto choose the format depend on file
+  * \param filename One Filename of data
+  * \param header whether input file contains header
+  * \param num_features Pass num_features of this data file if you know, <=0 means don't know
+  * \param label_idx index of label column
+  * \param precise_float_parser using precise floating point number parsing if true
+  * \param parser_config_str Customized parser config content
+  * \return Object of parser
+  */
+  static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser,
+                              std::string parser_config_str);
+
+  /*!
+  * \brief Generate parser config str used for custom parser initialization, may save values of label id and header
+  * \param filename One Filename of data
+  * \param parser_config_filename One Filename of parser config
+  * \param header whether input file contains header
+  * \param label_idx index of label column
+  * \return Parser config str
+  */
+  static std::string GenerateParserConfigStr(const char* filename, const char* parser_config_filename, bool header, int label_idx);
+};
+
+/*! \brief Interface for parser factory, used by customized parser */
+class ParserFactory {
+ private:
+  ParserFactory() {}
+  std::map<std::string, std::function<Parser*(std::string)>> object_map_;
+
+ public:
+  ~ParserFactory() {}
+  static ParserFactory& getInstance();
+  void Register(std::string class_name, std::function<Parser*(std::string)> objc);
+  Parser* getObject(std::string class_name, std::string config_str);
+};
+
+/*! \brief Interface for parser reflector, used by customized parser */
+class ParserReflector {
+ public:
+  ParserReflector(std::string class_name, std::function<Parser*(std::string)> objc) {
+    ParserFactory::getInstance().Register(class_name, objc);
+  }
+  virtual ~ParserReflector() {}
 };
 
 /*! \brief The main class of data set,
@@ -640,6 +695,9 @@ class Dataset {
   /*! \brief Get names of current data set */
   inline const std::vector<std::string>& feature_names() const { return feature_names_; }
 
+  /*! \brief Get content of parser config file */
+  inline const std::string parser_config_str() const { return parser_config_str_; }
+
   inline void set_feature_names(const std::vector<std::string>& feature_names) {
     if (feature_names.size() != static_cast<size_t>(num_total_features_)) {
       Log::Fatal("Size of feature_names error, should equal with total number of features");
@@ -783,10 +841,10 @@ class Dataset {
   int gpu_device_id_;
 
   #ifdef USE_CUDA
-
   std::unique_ptr<CUDAColumnData> cuda_column_data_;
-
   #endif  // USE_CUDA
+
+  std::string parser_config_str_;
 };
 
 }  // namespace LightGBM

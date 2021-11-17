@@ -18,6 +18,7 @@
                 , "cat_feature"
                 , "categorical_column"
                 , "cat_column"
+                , "categorical_features"
             )
             , "data_random_seed" = c(
                 "data_random_seed"
@@ -61,7 +62,10 @@
                 "linear_tree"
                 , "linear_trees"
             )
-            , "max_bin" = "max_bin"
+            , "max_bin" = c(
+                "max_bin"
+                , "max_bins"
+            )
             , "max_bin_by_feature" = "max_bin_by_feature"
             , "min_data_in_bin" = "min_data_in_bin"
             , "pre_partition" = c(
@@ -109,8 +113,10 @@
             , "num_trees"
             , "num_round"
             , "num_rounds"
+            , "nrounds"
             , "num_boost_round"
             , "n_estimators"
+            , "max_iter"
         )
     )
     return(c(learning_params, .DATASET_PARAMETERS()))

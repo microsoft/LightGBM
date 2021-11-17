@@ -172,7 +172,6 @@ def test_create_tree_digraph(breast_cancer_split):
     graph.render(view=False)
     assert isinstance(graph, graphviz.Digraph)
     assert graph.name == 'Tree4'
-    assert graph.filename == 'Tree4.gv'
     assert len(graph.node_attr) == 1
     assert graph.node_attr['color'] == 'red'
     assert len(graph.graph_attr) == 0

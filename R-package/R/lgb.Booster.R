@@ -76,6 +76,8 @@ Booster <- R6::R6Class(
             stop("lgb.Booster: Can only use a string as model file path")
           }
 
+          modelfile <- path.expand(modelfile)
+
           # Create booster from model
           handle <- .Call(
             LGBM_BoosterCreateFromModelfile_R
@@ -424,6 +426,8 @@ Booster <- R6::R6Class(
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
       }
+
+      filename <- path.expand(filename)
 
       .Call(
         LGBM_BoosterSaveModel_R
@@ -810,6 +814,65 @@ predict.lgb.Booster <- function(object,
   )
 }
 
+#' @name print.lgb.Booster
+#' @title Print method for LightGBM model
+#' @description Show summary information about a LightGBM model object (same as \code{summary}).
+#' @param x Object of class \code{lgb.Booster}
+#' @param ... Not used
+#' @return The same input `x`, returned as invisible.
+#' @export
+print.lgb.Booster <- function(x, ...) {
+  # nolint start
+  handle <- x$.__enclos_env__$private$handle
+  handle_is_null <- lgb.is.null.handle(handle)
+
+  if (!handle_is_null) {
+    ntrees <- x$current_iter()
+    if (ntrees == 1L) {
+      cat("LightGBM Model (1 tree)\n")
+    } else {
+      cat(sprintf("LightGBM Model (%d trees)\n", ntrees))
+    }
+  } else {
+    cat("LightGBM Model\n")
+  }
+
+  if (!handle_is_null) {
+    obj <- x$params$objective
+    if (obj == "none") {
+      obj <- "custom"
+    }
+    if (x$.__enclos_env__$private$num_class == 1L) {
+      cat(sprintf("Objective: %s\n", obj))
+    } else {
+      cat(sprintf("Objective: %s (%d classes)\n"
+          , obj
+          , x$.__enclos_env__$private$num_class))
+    }
+  } else {
+    cat("(Booster handle is invalid)\n")
+  }
+
+  if (!handle_is_null) {
+    ncols <- .Call(LGBM_BoosterGetNumFeature_R, handle)
+    cat(sprintf("Fitted to dataset with %d columns\n", ncols))
+  }
+  # nolint end
+
+  return(invisible(x))
+}
+
+#' @name summary.lgb.Booster
+#' @title Summary method for LightGBM model
+#' @description Show summary information about a LightGBM model object (same as \code{print}).
+#' @param object Object of class \code{lgb.Booster}
+#' @param ... Not used
+#' @return The same input `object`, returned as invisible.
+#' @export
+summary.lgb.Booster <- function(object, ...) {
+  print(object)
+}
+
 #' @name lgb.load
 #' @title Load LightGBM model
 #' @description Load LightGBM takes in either a file path or model string.
@@ -857,6 +920,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
     if (!is.character(filename)) {
       stop("lgb.load: filename should be character")
     }
+    filename <- path.expand(filename)
     if (!file.exists(filename)) {
       stop(sprintf("lgb.load: file '%s' passed to filename does not exist", filename))
     }
@@ -917,6 +981,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
   if (!(is.character(filename) && length(filename) == 1L)) {
     stop("lgb.save: filename should be a string")
   }
+  filename <- path.expand(filename)
 
   # Store booster
   return(
