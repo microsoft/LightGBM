@@ -52,7 +52,7 @@ Suggests:
     rmarkdown,
     testthat
 Depends:
-    R (>= 3.6)
+    R (>= 3.5)
 Imports:
     R6 (>= 2.0),
     data.table (>= 1.9.6),
