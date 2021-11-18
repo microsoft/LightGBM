@@ -107,7 +107,7 @@ __device__ bool CUDAFindInBitset(const uint32_t* bits, int n, T pos) {
   default_leaf_index, \
   missing_default_leaf_index
 
-template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, bool USE_MIN_BIN, typename BIN_TYPE>
 __global__ void UpdateDataIndexToLeafIndexKernel(
   UpdateDataIndexToLeafIndexKernel_PARAMS,
   int* cuda_data_index_to_leaf_index) {
@@ -119,7 +119,8 @@ __global__ void UpdateDataIndexToLeafIndexKernel(
       if ((MISSING_IS_ZERO && !MFB_IS_ZERO && bin == t_zero_bin) ||
         (MISSING_IS_NA && !MFB_IS_NA && bin == max_bin)) {
         cuda_data_index_to_leaf_index[global_data_index] = missing_default_leaf_index;
-      } else if (bin < min_bin || bin > max_bin) {
+      } else if ((USE_MIN_BIN && (bin < min_bin || bin > max_bin)) ||
+                 (!USE_MIN_BIN && bin == 0)) {
         if ((MISSING_IS_NA && MFB_IS_NA) || (MISSING_IS_ZERO && MFB_IS_ZERO)) {
           cuda_data_index_to_leaf_index[global_data_index] = missing_default_leaf_index;
         } else {
@@ -161,22 +162,23 @@ void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel(
   const bool missing_is_na,
   const bool mfb_is_zero,
   const bool mfb_is_na,
-  const bool max_to_left) {
+  const bool max_to_left,
+  const bool is_single_feature_in_column) {
   if (min_bin < max_bin) {
     if (!missing_is_zero) {
       LaunchUpdateDataIndexToLeafIndexKernel_Inner0<false, false, BIN_TYPE>
-        (UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left);
+        (UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left, is_single_feature_in_column);
     } else {
       LaunchUpdateDataIndexToLeafIndexKernel_Inner0<false, true, BIN_TYPE>
-        (UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left);
+        (UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left, is_single_feature_in_column);
     }
   } else {
     if (!missing_is_zero) {
       LaunchUpdateDataIndexToLeafIndexKernel_Inner0<true, false, BIN_TYPE>
-        (UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left);
+        (UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left, is_single_feature_in_column);
     } else {
       LaunchUpdateDataIndexToLeafIndexKernel_Inner0<true, true, BIN_TYPE>
-        (UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left);
+        (UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left, is_single_feature_in_column);
     }
   }
 }
@@ -187,13 +189,14 @@ void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner0(
   const bool missing_is_na,
   const bool mfb_is_zero,
   const bool mfb_is_na,
-  const bool max_to_left) {
+  const bool max_to_left,
+  const bool is_single_feature_in_column) {
   if (!missing_is_na) {
     LaunchUpdateDataIndexToLeafIndexKernel_Inner1<MIN_IS_MAX, MISSING_IS_ZERO, false, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, mfb_is_zero, mfb_is_na, max_to_left);
+      (UpdateDataIndexToLeafIndex_ARGS, mfb_is_zero, mfb_is_na, max_to_left, is_single_feature_in_column);
   } else {
     LaunchUpdateDataIndexToLeafIndexKernel_Inner1<MIN_IS_MAX, MISSING_IS_ZERO, true, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, mfb_is_zero, mfb_is_na, max_to_left);
+      (UpdateDataIndexToLeafIndex_ARGS, mfb_is_zero, mfb_is_na, max_to_left, is_single_feature_in_column);
   }
 }
 
@@ -202,13 +205,14 @@ void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner1(
   UpdateDataIndexToLeafIndexKernel_PARAMS,
   const bool mfb_is_zero,
   const bool mfb_is_na,
-  const bool max_to_left) {
+  const bool max_to_left,
+  const bool is_single_feature_in_column) {
   if (!mfb_is_zero) {
     LaunchUpdateDataIndexToLeafIndexKernel_Inner2<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, false, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, mfb_is_na, max_to_left);
+      (UpdateDataIndexToLeafIndex_ARGS, mfb_is_na, max_to_left, is_single_feature_in_column);
   } else {
     LaunchUpdateDataIndexToLeafIndexKernel_Inner2<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, true, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, mfb_is_na, max_to_left);
+      (UpdateDataIndexToLeafIndex_ARGS, mfb_is_na, max_to_left, is_single_feature_in_column);
   }
 }
 
@@ -216,27 +220,42 @@ template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS
 void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner2(
   UpdateDataIndexToLeafIndexKernel_PARAMS,
   const bool mfb_is_na,
-  const bool max_to_left) {
+  const bool max_to_left,
+  const bool is_single_feature_in_column) {
   if (!mfb_is_na) {
     LaunchUpdateDataIndexToLeafIndexKernel_Inner3<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, false, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, max_to_left);
+      (UpdateDataIndexToLeafIndex_ARGS, max_to_left, is_single_feature_in_column);
   } else {
     LaunchUpdateDataIndexToLeafIndexKernel_Inner3<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, true, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, max_to_left);
+      (UpdateDataIndexToLeafIndex_ARGS, max_to_left, is_single_feature_in_column);
   }
 }
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
 void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner3(
   UpdateDataIndexToLeafIndexKernel_PARAMS,
-  const bool max_to_left) {
+  const bool max_to_left,
+  const bool is_single_feature_in_column) {
   if (!max_to_left) {
-    UpdateDataIndexToLeafIndexKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, false, BIN_TYPE>
+    LaunchUpdateDataIndexToLeafIndexKernel_Inner4<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, false, BIN_TYPE>
+      (UpdateDataIndexToLeafIndex_ARGS, is_single_feature_in_column);
+  } else {
+    LaunchUpdateDataIndexToLeafIndexKernel_Inner4<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, true, BIN_TYPE>
+      (UpdateDataIndexToLeafIndex_ARGS, is_single_feature_in_column);
+  }
+}
+
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
+void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner4(
+  UpdateDataIndexToLeafIndexKernel_PARAMS,
+  const bool is_single_feature_in_column) {
+  if (!is_single_feature_in_column) {
+    UpdateDataIndexToLeafIndexKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, false, BIN_TYPE>
       <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(
         UpdateDataIndexToLeafIndex_ARGS,
         cuda_data_index_to_leaf_index_);
   } else {
-    UpdateDataIndexToLeafIndexKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, true, BIN_TYPE>
+    UpdateDataIndexToLeafIndexKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, true, BIN_TYPE>
       <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(
         UpdateDataIndexToLeafIndex_ARGS,
         cuda_data_index_to_leaf_index_);
@@ -265,7 +284,7 @@ void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner3(
   split_default_to_left,  \
   split_missing_default_to_left
 
-template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, bool USE_MIN_BIN, typename BIN_TYPE>
 __global__ void GenDataToLeftBitVectorKernel(
   GenDataToLeftBitVectorKernel_PARMS,
   uint16_t* block_to_left_offset,
@@ -281,7 +300,8 @@ __global__ void GenDataToLeftBitVectorKernel(
       if ((MISSING_IS_ZERO && !MFB_IS_ZERO && bin == t_zero_bin) ||
         (MISSING_IS_NA && !MFB_IS_NA && bin == max_bin)) {
         thread_to_left_offset_cnt = split_missing_default_to_left;
-      } else if ((bin < min_bin || bin > max_bin)) {
+      } else if ((USE_MIN_BIN && (bin < min_bin || bin > max_bin)) ||
+                 (!USE_MIN_BIN && bin == 0)) {
         if ((MISSING_IS_NA && MFB_IS_NA) || (MISSING_IS_ZERO || MFB_IS_ZERO)) {
           thread_to_left_offset_cnt = split_missing_default_to_left;
         } else {
@@ -320,22 +340,23 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner(
   const bool missing_is_na,
   const bool mfb_is_zero,
   const bool mfb_is_na,
-  const bool max_bin_to_left) {
+  const bool max_bin_to_left,
+  const bool is_single_feature_in_column) {
   if (min_bin < max_bin) {
     if (!missing_is_zero) {
       LaunchGenDataToLeftBitVectorKernelInner0<false, false, BIN_TYPE>
-        (GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left);
+        (GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
     } else {
       LaunchGenDataToLeftBitVectorKernelInner0<false, true, BIN_TYPE>
-        (GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left);
+        (GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
     }
   } else {
     if (!missing_is_zero) {
       LaunchGenDataToLeftBitVectorKernelInner0<true, false, BIN_TYPE>
-        (GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left);
+        (GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
     } else {
       LaunchGenDataToLeftBitVectorKernelInner0<true, true, BIN_TYPE>
-        (GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left);
+        (GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
     }
   }
 }
@@ -346,13 +367,14 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner0(
   const bool missing_is_na,
   const bool mfb_is_zero,
   const bool mfb_is_na,
-  const bool max_bin_to_left) {
+  const bool max_bin_to_left,
+  const bool is_single_feature_in_column) {
   if (!missing_is_na) {
     LaunchGenDataToLeftBitVectorKernelInner1<MIN_IS_MAX, MISSING_IS_ZERO, false, BIN_TYPE>
-      (GenBitVector_ARGS, mfb_is_zero, mfb_is_na, max_bin_to_left);
+      (GenBitVector_ARGS, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
   } else {
     LaunchGenDataToLeftBitVectorKernelInner1<MIN_IS_MAX, MISSING_IS_ZERO, true, BIN_TYPE>
-      (GenBitVector_ARGS, mfb_is_zero, mfb_is_na, max_bin_to_left);
+      (GenBitVector_ARGS, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
   }
 }
 
@@ -361,13 +383,14 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner1(
   GenDataToLeftBitVectorKernel_PARMS,
   const bool mfb_is_zero,
   const bool mfb_is_na,
-  const bool max_bin_to_left) {
+  const bool max_bin_to_left,
+  const bool is_single_feature_in_column) {
   if (!mfb_is_zero) {
     LaunchGenDataToLeftBitVectorKernelInner2<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, false, BIN_TYPE>
-      (GenBitVector_ARGS, mfb_is_na, max_bin_to_left);
+      (GenBitVector_ARGS, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
   } else {
     LaunchGenDataToLeftBitVectorKernelInner2<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, true, BIN_TYPE>
-      (GenBitVector_ARGS, mfb_is_na, max_bin_to_left);
+      (GenBitVector_ARGS, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
   }
 }
 
@@ -375,30 +398,48 @@ template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner2(
   GenDataToLeftBitVectorKernel_PARMS,
   const bool mfb_is_na,
-  const bool max_bin_to_left) {
+  const bool max_bin_to_left,
+  const bool is_single_feature_in_column) {
   if (!mfb_is_na) {
     LaunchGenDataToLeftBitVectorKernelInner3
       <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, false, BIN_TYPE>
-      (GenBitVector_ARGS, max_bin_to_left);
+      (GenBitVector_ARGS, max_bin_to_left, is_single_feature_in_column);
   } else {
     LaunchGenDataToLeftBitVectorKernelInner3
       <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, true, BIN_TYPE>
-      (GenBitVector_ARGS, max_bin_to_left);
+      (GenBitVector_ARGS, max_bin_to_left, is_single_feature_in_column);
   }
 }
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner3(
   GenDataToLeftBitVectorKernel_PARMS,
-  const bool max_bin_to_left) {
+  const bool max_bin_to_left,
+  const bool is_single_feature_in_column) {
   if (!max_bin_to_left) {
-    GenDataToLeftBitVectorKernel
+    LaunchGenDataToLeftBitVectorKernelInner4
       <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, false, BIN_TYPE>
+      (GenBitVector_ARGS, is_single_feature_in_column);
+  } else {
+    LaunchGenDataToLeftBitVectorKernelInner4
+      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, true, BIN_TYPE>
+      (GenBitVector_ARGS, is_single_feature_in_column);
+  }
+}
+
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
+void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner4(
+  GenDataToLeftBitVectorKernel_PARMS,
+  const bool is_single_feature_in_column) {
+  Log::Warning("is_single_feature_in_column = %d", static_cast<int>(is_single_feature_in_column));
+  if (!is_single_feature_in_column) {
+    GenDataToLeftBitVectorKernel
+      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, false, BIN_TYPE>
       <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_ARGS,
         cuda_block_to_left_offset_, cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_);
   } else {
     GenDataToLeftBitVectorKernel
-      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, true, BIN_TYPE>
+      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, true, BIN_TYPE>
       <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_ARGS,
         cuda_block_to_left_offset_, cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_);
   }
@@ -416,6 +457,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(
   const bool missing_is_na = static_cast<bool>(cuda_column_data_->feature_missing_is_na(split_feature_index));
   const bool mfb_is_zero = static_cast<bool>(cuda_column_data_->feature_mfb_is_zero(split_feature_index));
   const bool mfb_is_na = static_cast<bool>(cuda_column_data_->feature_mfb_is_na(split_feature_index));
+  const bool is_single_feature_in_column = is_single_feature_in_column_[split_feature_index];
   const uint32_t default_bin = cuda_column_data_->feature_default_bin(split_feature_index);
   const uint32_t most_freq_bin = cuda_column_data_->feature_most_freq_bin(split_feature_index);
   const uint32_t min_bin = cuda_column_data_->feature_min_bin(split_feature_index);
@@ -456,14 +498,16 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(
       missing_is_na,
       mfb_is_zero,
       mfb_is_na,
-      max_bin_to_left);
+      max_bin_to_left,
+      is_single_feature_in_column);
     LaunchUpdateDataIndexToLeafIndexKernel<uint8_t>(
       UpdateDataIndexToLeafIndex_ARGS,
       missing_is_zero,
       missing_is_na,
       mfb_is_zero,
       mfb_is_na,
-      max_bin_to_left);
+      max_bin_to_left,
+      is_single_feature_in_column);
   } else if (bit_type == 16) {
     const uint16_t* column_data = reinterpret_cast<const uint16_t*>(column_data_pointer);
     LaunchGenDataToLeftBitVectorKernelInner<uint16_t>(
@@ -472,14 +516,16 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(
       missing_is_na,
       mfb_is_zero,
       mfb_is_na,
-      max_bin_to_left);
+      max_bin_to_left,
+      is_single_feature_in_column);
     LaunchUpdateDataIndexToLeafIndexKernel<uint16_t>(
       UpdateDataIndexToLeafIndex_ARGS,
       missing_is_zero,
       missing_is_na,
       mfb_is_zero,
       mfb_is_na,
-      max_bin_to_left);
+      max_bin_to_left,
+      is_single_feature_in_column);
   } else if (bit_type == 32) {
     const uint32_t* column_data = reinterpret_cast<const uint32_t*>(column_data_pointer);
     LaunchGenDataToLeftBitVectorKernelInner<uint32_t>(
@@ -488,14 +534,16 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(
       missing_is_na,
       mfb_is_zero,
       mfb_is_na,
-      max_bin_to_left);
+      max_bin_to_left,
+      is_single_feature_in_column);
     LaunchUpdateDataIndexToLeafIndexKernel<uint32_t>(
       UpdateDataIndexToLeafIndex_ARGS,
       missing_is_zero,
       missing_is_na,
       mfb_is_zero,
       mfb_is_na,
-      max_bin_to_left);
+      max_bin_to_left,
+      is_single_feature_in_column);
   }
 }
 

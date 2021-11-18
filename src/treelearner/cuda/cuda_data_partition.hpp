@@ -188,7 +188,8 @@ class CUDADataPartition {
     const bool missing_is_na,
     const bool mfb_is_zero,
     const bool mfb_is_na,
-    const bool max_bin_to_left);
+    const bool max_bin_to_left,
+    const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, typename BIN_TYPE>
   void LaunchGenDataToLeftBitVectorKernelInner0(
@@ -196,25 +197,34 @@ class CUDADataPartition {
     const bool missing_is_na,
     const bool mfb_is_zero,
     const bool mfb_is_na,
-    const bool max_bin_to_left);
+    const bool max_bin_to_left,
+    const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, typename BIN_TYPE>
   void LaunchGenDataToLeftBitVectorKernelInner1(
     GenDataToLeftBitVectorKernel_PARMS,
     const bool mfb_is_zero,
     const bool mfb_is_na,
-    const bool max_bin_to_left);
+    const bool max_bin_to_left,
+    const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, typename BIN_TYPE>
   void LaunchGenDataToLeftBitVectorKernelInner2(
     GenDataToLeftBitVectorKernel_PARMS,
     const bool mfb_is_na,
-    const bool max_bin_to_left);
+    const bool max_bin_to_left,
+    const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
   void LaunchGenDataToLeftBitVectorKernelInner3(
     GenDataToLeftBitVectorKernel_PARMS,
-    const bool max_bin_to_left);
+    const bool max_bin_to_left,
+    const bool is_single_feature_in_column);
+
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
+  void LaunchGenDataToLeftBitVectorKernelInner4(
+    GenDataToLeftBitVectorKernel_PARMS,
+    const bool is_single_feature_in_column);
 
 #undef GenDataToLeftBitVectorKernel_PARMS
 
@@ -238,7 +248,8 @@ class CUDADataPartition {
     const bool missing_is_na,
     const bool mfb_is_zero,
     const bool mfb_is_na,
-    const bool max_to_left);
+    const bool max_to_left,
+    const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, typename BIN_TYPE>
   void LaunchUpdateDataIndexToLeafIndexKernel_Inner0(
@@ -246,25 +257,34 @@ class CUDADataPartition {
     const bool missing_is_na,
     const bool mfb_is_zero,
     const bool mfb_is_na,
-    const bool max_to_left);
+    const bool max_to_left,
+    const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, typename BIN_TYPE>
   void LaunchUpdateDataIndexToLeafIndexKernel_Inner1(
     UpdateDataIndexToLeafIndexKernel_PARAMS,
     const bool mfb_is_zero,
     const bool mfb_is_na,
-    const bool max_to_left);
+    const bool max_to_left,
+    const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, typename BIN_TYPE>
   void LaunchUpdateDataIndexToLeafIndexKernel_Inner2(
     UpdateDataIndexToLeafIndexKernel_PARAMS,
     const bool mfb_is_na,
-    const bool max_to_left);
+    const bool max_to_left,
+    const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
   void LaunchUpdateDataIndexToLeafIndexKernel_Inner3(
     UpdateDataIndexToLeafIndexKernel_PARAMS,
-    const bool max_to_left);
+    const bool max_to_left,
+    const bool is_single_feature_in_column);
+
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
+  void LaunchUpdateDataIndexToLeafIndexKernel_Inner4(
+    UpdateDataIndexToLeafIndexKernel_PARAMS,
+    const bool is_single_feature_in_column);
 
 #undef UpdateDataIndexToLeafIndexKernel_PARAMS
 
