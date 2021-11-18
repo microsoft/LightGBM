@@ -91,7 +91,7 @@ Parameter docs shared by \code{lgb.train}, \code{lgb.cv}, and \code{lightgbm}
 \section{Model serialization}{
 
 
-         LightGBM models objects can be serialized and de-serialized through functions such as \code{save}
+         LightGBM model objects can be serialized and de-serialized through functions such as \code{save}
          or \code{saveRDS}, but similarly to libraries such as 'xgboost', serialization works a bit differently
          from typical R objects. In order to make models serializable in R, a copy of the underlying C++ object
          as serialized raw bytes is produced and stored in the R model object, and when this R object is
