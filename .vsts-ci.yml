@@ -293,7 +293,7 @@ jobs:
 ###########################################
 - job: R_artifact
 ###########################################
-#  condition: not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
+  condition: not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
   pool:
     vmImage: 'ubuntu-latest'
   container: rbase
