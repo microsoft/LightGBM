@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - master
+    - fix_r_artifact
   tags:
     include:
     - v*
@@ -293,14 +293,14 @@ jobs:
 ###########################################
 - job: R_artifact
 ###########################################
-  condition: not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
+#  condition: not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
   pool:
     vmImage: 'ubuntu-latest'
   container: rbase
   steps:
   - script: |
       LGB_VER=$(head -n 1 VERSION.txt | sed "s/rc/-/g")
-      Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown'), dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
+      Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown'),  lib = '~/Rlib', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
       sh build-cran-package.sh || exit -1
       mv lightgbm_${LGB_VER}.tar.gz $(Build.ArtifactStagingDirectory)/lightgbm-${LGB_VER}-r-cran.tar.gz
     displayName: 'Build CRAN R-package'
