@@ -1570,12 +1570,27 @@ void Dataset::CreateCUDAColumnData() {
         if (feature_bin_mapper->missing_type() == MissingType::Zero) {
           feature_missing_is_zero[feature_index] = 1;
           feature_missing_is_na[feature_index] = 0;
+          if (feature_default_bin[feature_index] == feature_most_freq_bins[feature_index]) {
+            feature_mfb_is_zero[feature_index] = 1;
+          } else {
+            feature_mfb_is_zero[feature_index] = 0;
+          }
+          feature_mfb_is_na[feature_index] = 0;
         } else if (feature_bin_mapper->missing_type() == MissingType::NaN) {
           feature_missing_is_zero[feature_index] = 0;
           feature_missing_is_na[feature_index] = 1;
+          feature_mfb_is_zero[feature_index] = 0;
+          if (feature_most_freq_bins[feature_index] + feature_min_bins[feature_index] == feature_max_bins[feature_index] &&
+              feature_most_freq_bins[feature_index] > 0) {
+            feature_mfb_is_na[feature_index] = 1;
+          } else {
+            feature_mfb_is_na[feature_index] = 0;
+          }
         } else {
           feature_missing_is_zero[feature_index] = 0;
           feature_missing_is_na[feature_index] = 0;
+          feature_mfb_is_zero[feature_index] = 0;
+          feature_mfb_is_na[feature_index] = 0;
         }
         ++feature_index;
       }
@@ -1601,15 +1616,30 @@ void Dataset::CreateCUDAColumnData() {
         feature_most_freq_bins[feature_index] = most_freq_bin;
         feature_default_bin[feature_index] = feature_bin_mapper->GetDefaultBin();
         if (feature_bin_mapper->missing_type() == MissingType::Zero) {
-            feature_missing_is_zero[feature_index] = 1;
-            feature_missing_is_na[feature_index] = 0;
-          } else if (feature_bin_mapper->missing_type() == MissingType::NaN) {
-            feature_missing_is_zero[feature_index] = 0;
-            feature_missing_is_na[feature_index] = 1;
+          feature_missing_is_zero[feature_index] = 1;
+          feature_missing_is_na[feature_index] = 0;
+          if (feature_default_bin[feature_index] == feature_most_freq_bins[feature_index]) {
+            feature_mfb_is_zero[feature_index] = 1;
           } else {
-            feature_missing_is_zero[feature_index] = 0;
-            feature_missing_is_na[feature_index] = 0;
+            feature_mfb_is_zero[feature_index] = 0;
           }
+          feature_mfb_is_na[feature_index] = 0;
+        } else if (feature_bin_mapper->missing_type() == MissingType::NaN) {
+          feature_missing_is_zero[feature_index] = 0;
+          feature_missing_is_na[feature_index] = 1;
+          feature_mfb_is_zero[feature_index] = 0;
+          if (feature_most_freq_bins[feature_index] + feature_min_bins[feature_index] == feature_max_bins[feature_index] &&
+              feature_most_freq_bins[feature_index] > 0) {
+            feature_mfb_is_na[feature_index] = 1;
+          } else {
+            feature_mfb_is_na[feature_index] = 0;
+          }
+        } else {
+          feature_missing_is_zero[feature_index] = 0;
+          feature_missing_is_na[feature_index] = 0;
+          feature_mfb_is_zero[feature_index] = 0;
+          feature_mfb_is_na[feature_index] = 0;
+        }
         ++feature_index;
       }
       ++num_columns;

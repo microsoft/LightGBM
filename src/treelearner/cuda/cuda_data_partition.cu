@@ -250,12 +250,12 @@ void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner4(
   UpdateDataIndexToLeafIndexKernel_PARAMS,
   const bool is_single_feature_in_column) {
   if (!is_single_feature_in_column) {
-    UpdateDataIndexToLeafIndexKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, false, BIN_TYPE>
+    UpdateDataIndexToLeafIndexKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, true, BIN_TYPE>
       <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(
         UpdateDataIndexToLeafIndex_ARGS,
         cuda_data_index_to_leaf_index_);
   } else {
-    UpdateDataIndexToLeafIndexKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, true, BIN_TYPE>
+    UpdateDataIndexToLeafIndexKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, false, BIN_TYPE>
       <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(
         UpdateDataIndexToLeafIndex_ARGS,
         cuda_data_index_to_leaf_index_);
@@ -434,12 +434,12 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner4(
   Log::Warning("is_single_feature_in_column = %d", static_cast<int>(is_single_feature_in_column));
   if (!is_single_feature_in_column) {
     GenDataToLeftBitVectorKernel
-      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, false, BIN_TYPE>
+      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, true, BIN_TYPE>
       <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_ARGS,
         cuda_block_to_left_offset_, cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_);
   } else {
     GenDataToLeftBitVectorKernel
-      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, true, BIN_TYPE>
+      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, false, BIN_TYPE>
       <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_ARGS,
         cuda_block_to_left_offset_, cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_);
   }
@@ -460,7 +460,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(
   const bool is_single_feature_in_column = is_single_feature_in_column_[split_feature_index];
   const uint32_t default_bin = cuda_column_data_->feature_default_bin(split_feature_index);
   const uint32_t most_freq_bin = cuda_column_data_->feature_most_freq_bin(split_feature_index);
-  const uint32_t min_bin = cuda_column_data_->feature_min_bin(split_feature_index);
+  const uint32_t min_bin = is_single_feature_in_column ? 1 : cuda_column_data_->feature_min_bin(split_feature_index);
   const uint32_t max_bin = cuda_column_data_->feature_max_bin(split_feature_index);
   uint32_t th = split_threshold + min_bin;
   uint32_t t_zero_bin = min_bin + default_bin;
