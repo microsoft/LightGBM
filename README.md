@@ -105,7 +105,7 @@ ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
 LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 
-Ruby gem: https://github.com/ankane/lightgbm
+Ruby gem: https://github.com/ankane/lightgbm-ruby
 
 LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
 
@@ -116,6 +116,8 @@ MLflow (experiment tracking, model monitoring framework): https://github.com/mlf
 `{treesnip}` (R `{parsnip}`-compliant interface): https://github.com/curso-r/treesnip
 
 `{mlr3extralearners}` (R `{mlr3}`-compliant interface): https://github.com/mlr-org/mlr3extralearners
+
+lightgbm-transform (feature transformation binding): https://github.com/microsoft/lightgbm-transform
 
 Support
 -------

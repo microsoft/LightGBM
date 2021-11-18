@@ -41,8 +41,18 @@ sys.path.insert(0, str(LIB_PATH))
 INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#)")
 
 # -- mock out modules
-MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
-                'sklearn', 'matplotlib', 'pandas', 'graphviz', 'dask', 'dask.distributed']
+MOCK_MODULES = [
+    'dask',
+    'dask.distributed',
+    'datatable',
+    'graphviz',
+    'matplotlib',
+    'numpy',
+    'pandas',
+    'scipy',
+    'scipy.sparse',
+    'sklearn'
+]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
@@ -221,6 +231,7 @@ def generate_doxygen_xml(app: Sphinx) -> None:
         "MACRO_EXPANSION=YES",
         "EXPAND_ONLY_PREDEF=NO",
         "SKIP_FUNCTION_MACROS=NO",
+        "PREDEFINED=__cplusplus",
         "SORT_BRIEF_DOCS=YES",
         "WARN_AS_ERROR=YES",
     ]
@@ -257,12 +268,15 @@ def generate_r_docs(app: Sphinx) -> None:
         -q \
         -y \
         -c conda-forge \
+        --override-channels \
         -n r_env \
             r-base=4.1.0=hb67fd72_2 \
             r-data.table=1.14.0=r41hcfec24a_0 \
             r-jsonlite=1.7.2=r41hcfec24a_0 \
+            r-knitr=1.35=r41hc72bb7e_0 \
             r-matrix=1.3_4=r41he454529_0 \
             r-pkgdown=1.6.1=r41hc72bb7e_0 \
+            r-rmarkdown=2.11=r41hc72bb7e_0 \
             r-roxygen2=7.1.1=r41h03ef668_0
     source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar

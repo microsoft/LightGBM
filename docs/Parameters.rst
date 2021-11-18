@@ -153,7 +153,7 @@ Core Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``num_iterations`` :raw-html:`<a id="num_iterations" title="Permalink to this parameter" href="#num_iterations">&#x1F517;&#xFE0E;</a>`, default = ``100``, type = int, aliases: ``num_iteration``, ``n_iter``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``, ``n_estimators``, ``max_iter``, constraints: ``num_iterations >= 0``
+-  ``num_iterations`` :raw-html:`<a id="num_iterations" title="Permalink to this parameter" href="#num_iterations">&#x1F517;&#xFE0E;</a>`, default = ``100``, type = int, aliases: ``num_iteration``, ``n_iter``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``nrounds``, ``num_boost_round``, ``n_estimators``, ``max_iter``, constraints: ``num_iterations >= 0``
 
    -  number of boosting iterations
 
@@ -182,6 +182,8 @@ Core Parameters
    -  refer to `Distributed Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
 
 -  ``num_threads`` :raw-html:`<a id="num_threads" title="Permalink to this parameter" href="#num_threads">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``num_thread``, ``nthread``, ``nthreads``, ``n_jobs``
+
+   -  used only in ``train``, ``prediction`` and ``refit`` tasks or in correspondent functions of language-specific packages
 
    -  number of threads for LightGBM
 
@@ -746,13 +748,13 @@ Dataset Parameters
 
    -  by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed, but may cause run out of memory error when the data file is very big
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: works only in case of loading data directly from text file
 
 -  ``header`` :raw-html:`<a id="header" title="Permalink to this parameter" href="#header">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``has_header``
 
    -  set this to ``true`` if input data has header
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: works only in case of loading data directly from text file
 
 -  ``label_column`` :raw-html:`<a id="label_column" title="Permalink to this parameter" href="#label_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``label``
 
@@ -764,7 +766,7 @@ Dataset Parameters
 
    -  if omitted, the first column in the training data is used as the label
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: works only in case of loading data directly from text file
 
 -  ``weight_column`` :raw-html:`<a id="weight_column" title="Permalink to this parameter" href="#weight_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``weight``
 
@@ -774,7 +776,7 @@ Dataset Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``weight=name:weight``
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: works only in case of loading data directly from text file
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0, and weight is column\_1, the correct parameter is ``weight=0``
 
@@ -786,7 +788,7 @@ Dataset Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``query=name:query_id``
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: works only in case of loading data directly from text file
 
    -  **Note**: data should be grouped by query\_id, for more information, see `Query Data <#query-data>`__
 
@@ -800,7 +802,7 @@ Dataset Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``ignore_column=name:c1,c2,c3`` means c1, c2 and c3 will be ignored
 
-   -  **Note**: works only in case of loading data directly from file
+   -  **Note**: works only in case of loading data directly from text file
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
 
@@ -847,6 +849,14 @@ Dataset Parameters
    -  use precise floating point number parsing for text parser (e.g. CSV, TSV, LibSVM input)
 
    -  **Note**: setting this to ``true`` may lead to much slower text parsing
+
+-  ``parser_config_file`` :raw-html:`<a id="parser_config_file" title="Permalink to this parameter" href="#parser_config_file">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+
+   -  path to a ``.json`` file that specifies customized parser initialized configuration
+
+   -  see `lightgbm-transform <https://github.com/microsoft/lightgbm-transform>`__ for usage examples
+
+   -  **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/microsoft/lightgbm-transform/issues>`__
 
 Predict Parameters
 ~~~~~~~~~~~~~~~~~~

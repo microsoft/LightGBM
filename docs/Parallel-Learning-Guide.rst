@@ -49,7 +49,7 @@ Apache Spark
 
 Apache Spark users can use `SynapseML`_ for machine learning workflows with LightGBM. This project is not maintained by LightGBM's maintainers.
 
-See `this SynapseML example`_ and `the SynapseML documentation`_ for additional information on using LightGBM on Spark.
+See `this SynapseML example`_ for additional information on using LightGBM on Spark.
 
 .. note::
 
@@ -477,7 +477,7 @@ See `the mars documentation`_ for usage examples.
 
 .. _SynapseML: https://aka.ms/spark
 
-.. _this SynapseML example: https://github.com/microsoft/SynapseML/blob/master/notebooks/LightGBM%20-%20Overview.ipynb
+.. _this SynapseML example: https://github.com/microsoft/SynapseML/blob/master/notebooks/features/lightgbm/LightGBM%20-%20Overview.ipynb
 
 .. _the Dask Array documentation: https://docs.dask.org/en/latest/array.html
 
@@ -488,8 +488,6 @@ See `the mars documentation`_ for usage examples.
 .. _the Dask worker documentation: https://distributed.dask.org/en/latest/worker.html#memory-management
 
 .. _the metrics functions from dask-ml: https://ml.dask.org/modules/api.html#dask-ml-metrics-metrics
-
-.. _the SynapseML Documentation: https://github.com/microsoft/SynapseML/blob/master/docs/lightgbm.md
 
 .. _these Dask examples: https://github.com/microsoft/lightgbm/tree/master/examples/python-guide/dask
 
