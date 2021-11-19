@@ -6,15 +6,14 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _log_warning
+from .basic import Dataset, LightGBMError, _ArrayLike, _choose_param_value, _ConfigAliases, _log_warning
 from .callback import log_evaluation, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
-                     pd_DataFrame, pd_Series)
+                     pd_DataFrame)
 from .engine import train
 
-_ArrayLike = Union[List, np.ndarray, pd_Series]
 _EvalResultType = Tuple[str, float, bool]
 
 _LGBM_ScikitCustomObjectiveFunction = Union[
