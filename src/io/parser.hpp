@@ -45,8 +45,22 @@ const char* Atof_and_map(const char* p, double* out, int idx) {
     ++p;
   }
 
+  size_t flag = 0;
+  size_t count = 0;
+  while(*(p + count) != '\0' && *(p + count) != ' '
+           && *(p + count) != '\t' && *(p + count) != ','
+           && *(p + count) != '\n' && *(p + count) != '\r'
+           && *(p + count) != ':'){
+             flag = 1;
+             if(*(p+count) >= '0' && *(p+count) <= '9')
+              flag = 0;
+
+              count++;
+           }
+
+
   // is a number
-  if ((*p >= '0' && *p <= '9') || *p == '.' || *p == 'e' || *p == 'E') {
+  if (!flag && ( (*p >= '0' && *p <= '9') || *p == '.' || *p == 'e' || *p == 'E' )  ) {
     // Get digits before decimal point or exponent, if any.
     for (value = 0.0; *p >= '0' && *p <= '9'; ++p) {
       value = value * 10.0 + (*p - '0');
