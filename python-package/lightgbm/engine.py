@@ -9,15 +9,15 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor, _log_warning
+from .basic import Booster, Dataset, LightGBMError, _ArrayLike, _ConfigAliases, _InnerPredictor, _log_warning
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomObjectiveFunction = Callable[
-    [Union[List, np.ndarray], Dataset],
-    Tuple[Union[List, np.ndarray], Union[List, np.ndarray]]
+    [np.ndarray, Dataset],
+    Tuple[_ArrayLike, _ArrayLike]
 ]
 _LGBM_CustomMetricFunction = Callable[
-    [Union[List, np.ndarray], Dataset],
+    [np.ndarray, Dataset],
     Tuple[str, float, bool]
 ]
 
