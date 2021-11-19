@@ -431,7 +431,6 @@ template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner4(
   GenDataToLeftBitVectorKernel_PARMS,
   const bool is_single_feature_in_column) {
-  Log::Warning("is_single_feature_in_column = %d", static_cast<int>(is_single_feature_in_column));
   if (!is_single_feature_in_column) {
     GenDataToLeftBitVectorKernel
       <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, true, BIN_TYPE>
