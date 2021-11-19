@@ -91,7 +91,7 @@ class GOSS: public GBDT {
     is_use_subset_ = false;
     if (config_->top_rate + config_->other_rate <= 0.5) {
       auto bag_data_cnt = static_cast<data_size_t>((config_->top_rate + config_->other_rate) * num_data_);
-      bag_data_cnt = std::max(1, bag_data_cnt);
+      bag_data_cnt = std::max<data_size_t>(1, bag_data_cnt);
       tmp_subset_.reset(new Dataset(bag_data_cnt));
       tmp_subset_->CopyFeatureMapperFrom(train_data_);
       is_use_subset_ = true;
@@ -113,7 +113,7 @@ class GOSS: public GBDT {
     }
     data_size_t top_k = static_cast<data_size_t>(cnt * config_->top_rate);
     data_size_t other_k = static_cast<data_size_t>(cnt * config_->other_rate);
-    top_k = std::max(1, top_k);
+    top_k = std::max<data_size_t>(1, top_k);
     ArrayArgs<score_t>::ArgMaxAtK(&tmp_gradients, 0, static_cast<int>(tmp_gradients.size()), top_k - 1);
     score_t threshold = tmp_gradients[top_k - 1];
 

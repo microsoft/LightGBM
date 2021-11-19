@@ -149,7 +149,7 @@ class MultiValDenseBin : public MultiValBin {
     if (SUBROW) {
       CHECK_EQ(num_data_, num_used_indices);
     }
-    int n_block = 1;
+    data_size_t n_block = 1;
     data_size_t block_size = num_data_;
     Threading::BlockInfo<data_size_t>(num_data_, 1024, &n_block,
                                       &block_size);

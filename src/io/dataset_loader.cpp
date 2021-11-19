@@ -334,7 +334,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
 }
 
 Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* bin_filename,
-                                        int rank, int num_machines, int* num_global_data,
+                                        int rank, int num_machines, data_size_t* num_global_data,
                                         std::vector<data_size_t>* used_data_indices) {
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
   auto reader = VirtualFileReader::Make(bin_filename);
@@ -876,7 +876,7 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
 }
 
 std::vector<std::string> DatasetLoader::LoadTextDataToMemory(const char* filename, const Metadata& metadata,
-                                                             int rank, int num_machines, int* num_global_data,
+                                                             int rank, int num_machines, data_size_t* num_global_data,
                                                              std::vector<data_size_t>* used_data_indices) {
   TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
   used_data_indices->clear();
@@ -938,7 +938,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromMemory(const std::vect
 }
 
 std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filename, const Metadata& metadata,
-                                                               int rank, int num_machines, int* num_global_data,
+                                                               int rank, int num_machines, data_size_t* num_global_data,
                                                                std::vector<data_size_t>* used_data_indices) {
   const data_size_t sample_cnt = static_cast<data_size_t>(config_.bin_construct_sample_cnt);
   TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);

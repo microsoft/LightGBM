@@ -75,7 +75,7 @@ double DCGCalculator::CalMaxDCGAtK(data_size_t k, const label_t* label, data_siz
   return ret;
 }
 
-void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
+void DCGCalculator::CalMaxDCG(const std::vector<int>& ks,
                               const label_t* label,
                               data_size_t num_data,
                               std::vector<double>* out) {
@@ -106,7 +106,7 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
   }
 }
 
-void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const label_t* label,
+void DCGCalculator::CalDCG(const std::vector<int>& ks, const label_t* label,
                            const double * score, data_size_t num_data, std::vector<double>* out) {
   // get sorted indices by score
   std::vector<data_size_t> sorted_idx(num_data);

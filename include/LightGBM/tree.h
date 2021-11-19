@@ -84,7 +84,7 @@ class Tree {
   */
   int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
                        const uint32_t* threshold, int num_threshold, double left_value, double right_value,
-                       int left_cnt, int right_cnt, double left_weight, double right_weight, float gain, MissingType missing_type);
+                       data_size_t left_cnt, data_size_t right_cnt, double left_weight, double right_weight, float gain, MissingType missing_type);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }

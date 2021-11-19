@@ -485,13 +485,13 @@ class Dataset {
 
   LIGHTGBM_EXPORT bool SetDoubleField(const char* field_name, const double* field_data, data_size_t num_element);
 
-  LIGHTGBM_EXPORT bool SetIntField(const char* field_name, const int* field_data, data_size_t num_element);
+  LIGHTGBM_EXPORT bool SetIntField(const char* field_name, const data_size_t* field_data, data_size_t num_element);
 
   LIGHTGBM_EXPORT bool GetFloatField(const char* field_name, data_size_t* out_len, const float** out_ptr);
 
   LIGHTGBM_EXPORT bool GetDoubleField(const char* field_name, data_size_t* out_len, const double** out_ptr);
 
-  LIGHTGBM_EXPORT bool GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr);
+  LIGHTGBM_EXPORT bool GetIntField(const char* field_name, data_size_t* out_len, const data_size_t** out_ptr);
 
   /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"
