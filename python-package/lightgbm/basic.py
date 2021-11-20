@@ -112,6 +112,7 @@ _LIB = _load_lib()
 
 
 NUMERIC_TYPES = (int, float, bool)
+_ArrayLike = Union[List, np.ndarray, pd_Series]
 
 
 def _safe_call(ret: int) -> None:
@@ -707,7 +708,7 @@ class Sequence(abc.ABC):
 
         Returns
         -------
-        result : numpy 1-D array, numpy 2-D array
+        result : numpy 1-D array or numpy 2-D array
             1-D array if idx is int, 2-D array if idx is slice or list.
         """
         raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __getitem__()")
@@ -2266,7 +2267,7 @@ class Dataset:
 
         Returns
         -------
-        feature_names : list
+        feature_names : list of str
             The names of columns (features) in the Dataset.
         """
         if self.handle is None:
@@ -3006,16 +3007,16 @@ class Booster:
             Should accept two parameters: preds, train_data,
             and return (grad, hess).
 
-                preds : list or numpy 1-D array
+                preds : numpy 1-D array
                     The predicted values.
                     Predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task.
                 train_data : Dataset
                     The training dataset.
-                grad : list or numpy 1-D array
+                grad : list, numpy 1-D array or pandas Series
                     The value of the first order derivative (gradient) of the loss
                     with respect to the elements of preds for each sample point.
-                hess : list or numpy 1-D array
+                hess : list, numpy 1-D array or pandas Series
                     The value of the second order derivative (Hessian) of the loss
                     with respect to the elements of preds for each sample point.
 
@@ -3074,10 +3075,10 @@ class Booster:
 
         Parameters
         ----------
-        grad : list or numpy 1-D array
+        grad : list, numpy 1-D array or pandas Series
             The value of the first order derivative (gradient) of the loss
             with respect to the elements of score for each sample point.
-        hess : list or numpy 1-D array
+        hess : list, numpy 1-D array or pandas Series
             The value of the second order derivative (Hessian) of the loss
             with respect to the elements of score for each sample point.
 
@@ -3198,7 +3199,7 @@ class Booster:
             Should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : list or numpy 1-D array
+                preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3246,7 +3247,7 @@ class Booster:
             Should accept two parameters: preds, train_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : list or numpy 1-D array
+                preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3279,7 +3280,7 @@ class Booster:
             Should accept two parameters: preds, valid_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : list or numpy 1-D array
+                preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3674,7 +3675,7 @@ class Booster:
 
         Returns
         -------
-        result : list
+        result : list of str
             List with names of features.
         """
         num_feature = self.num_feature()
