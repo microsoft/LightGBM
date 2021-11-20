@@ -117,6 +117,8 @@ MLflow (experiment tracking, model monitoring framework): https://github.com/mlf
 
 `{mlr3extralearners}` (R `{mlr3}`-compliant interface): https://github.com/mlr-org/mlr3extralearners
 
+lightgbm-transform (feature transformation binding): https://github.com/microsoft/lightgbm-transform
+
 Support
 -------
 

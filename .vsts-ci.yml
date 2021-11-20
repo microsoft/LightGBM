@@ -19,7 +19,7 @@ resources:
     image: 'ubuntu:latest'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
   - container: rbase
-    image: rocker/r-base
+    image: wch1/r-debug
 jobs:
 ###########################################
 - job: Linux
@@ -300,7 +300,11 @@ jobs:
   steps:
   - script: |
       LGB_VER=$(head -n 1 VERSION.txt | sed "s/rc/-/g")
-      sh build-cran-package.sh || exit -1
+      R_LIB_PATH=~/Rlib
+      export R_LIBS=${R_LIB_PATH}
+      mkdir -p ${R_LIB_PATH}
+      RDscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown'),  lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
+      sh build-cran-package.sh --r-executable=RD || exit -1
       mv lightgbm_${LGB_VER}.tar.gz $(Build.ArtifactStagingDirectory)/lightgbm-${LGB_VER}-r-cran.tar.gz
     displayName: 'Build CRAN R-package'
   - task: PublishBuildArtifacts@1

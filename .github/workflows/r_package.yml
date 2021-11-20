@@ -194,7 +194,7 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
           RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit -1
       - name: Run tests with sanitizers
@@ -225,7 +225,7 @@ jobs:
         shell: bash
         run: |
           export PATH=/opt/R-devel/bin/:${PATH}
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
           R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
           if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
