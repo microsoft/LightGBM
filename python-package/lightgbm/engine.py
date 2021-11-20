@@ -59,16 +59,16 @@ def train(
         Should accept two parameters: preds, train_data,
         and return (grad, hess).
 
-            preds : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            preds : numpy 1-D array
                 The predicted values.
                 Predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task.
             train_data : Dataset
                 The training dataset.
-            grad : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            grad : list, numpy 1-D array or pandas Series
                 The value of the first order derivative (gradient) of the loss
                 with respect to the elements of preds for each sample point.
-            hess : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            hess : list, numpy 1-D array or pandas Series
                 The value of the second order derivative (Hessian) of the loss
                 with respect to the elements of preds for each sample point.
 
@@ -81,7 +81,7 @@ def train(
         Each evaluation function should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-            preds : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            preds : numpy 1-D array
                 The predicted values.
                 If ``fobj`` is specified, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -469,16 +469,16 @@ def cv(params, train_set, num_boost_round=100,
         Should accept two parameters: preds, train_data,
         and return (grad, hess).
 
-            preds : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            preds : numpy 1-D array
                 The predicted values.
                 Predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task.
             train_data : Dataset
                 The training dataset.
-            grad : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            grad : list, numpy 1-D array or pandas Series
                 The value of the first order derivative (gradient) of the loss
                 with respect to the elements of preds for each sample point.
-            hess : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            hess : list, numpy 1-D array or pandas Series
                 The value of the second order derivative (Hessian) of the loss
                 with respect to the elements of preds for each sample point.
 
@@ -491,7 +491,7 @@ def cv(params, train_set, num_boost_round=100,
         Each evaluation function should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-            preds : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            preds : numpy 1-D array
                 The predicted values.
                 If ``fobj`` is specified, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
