@@ -2,7 +2,7 @@
 """Scikit-learn wrapper interface for LightGBM."""
 import copy
 from inspect import signature
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -594,38 +594,49 @@ class LGBMModel(_LGBMModelBase):
             self._other_params[key] = value
         return self
 
-    def fit(self, X, y,
-            sample_weight=None, init_score=None, group=None,
-            eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_class_weight=None, eval_init_score=None, eval_group=None,
-            eval_metric=None, early_stopping_rounds=None, verbose='warn',
-            feature_name='auto', categorical_feature='auto',
-            callbacks=None, init_model=None):
-        """Docstring is set after definition, using a template."""
+    def _process_params(self, stage: str) -> Dict[str, Any]:
+        """Process the parameters of this estimator based on its type, parameter aliases, etc.
+
+        Parameters
+        ----------
+        stage : str
+            Name of the stage (can be ``fit`` or ``predict``) this method is called from.
+
+        Returns
+        -------
+        self : dict
+            Processed parameter names mapped to their values.
+        """
+        assert stage in {"fit", "predict"}
         params = self.get_params()
 
         params.pop('objective', None)
         for alias in _ConfigAliases.get('objective'):
             if alias in params:
-                self._objective = params.pop(alias)
+                obj = params.pop(alias)
                 _log_warning(f"Found '{alias}' in params. Will use it instead of 'objective' argument")
-        if self._objective is None:
-            if isinstance(self, LGBMRegressor):
-                self._objective = "regression"
-            elif isinstance(self, LGBMClassifier):
-                if self._n_classes > 2:
-                    self._objective = "multiclass"
+                if stage == "fit":
+                    self._objective = obj
+        if stage == "fit":
+            if self._objective is None:
+                if isinstance(self, LGBMRegressor):
+                    self._objective = "regression"
+                elif isinstance(self, LGBMClassifier):
+                    if self._n_classes > 2:
+                        self._objective = "multiclass"
+                    else:
+                        self._objective = "binary"
+                elif isinstance(self, LGBMRanker):
+                    self._objective = "lambdarank"
                 else:
-                    self._objective = "binary"
-            elif isinstance(self, LGBMRanker):
-                self._objective = "lambdarank"
-            else:
-                raise ValueError("Unknown LGBMModel type.")
+                    raise ValueError("Unknown LGBMModel type.")
         if callable(self._objective):
-            self._fobj = _ObjectiveFunctionWrapper(self._objective)
+            if stage == "fit":
+                self._fobj = _ObjectiveFunctionWrapper(self._objective)
             params['objective'] = 'None'  # objective = nullptr for unknown objective
         else:
-            self._fobj = None
+            if stage == "fit":
+                self._fobj = None
             params['objective'] = self._objective
 
         params.pop('importance_type', None)
@@ -646,16 +657,6 @@ class LGBMModel(_LGBMModelBase):
                     eval_at = params.pop(alias)
             params['eval_at'] = eval_at
 
-        # Do not modify original args in fit function
-        # Refer to https://github.com/microsoft/LightGBM/pull/2619
-        eval_metric_list = copy.deepcopy(eval_metric)
-        if not isinstance(eval_metric_list, list):
-            eval_metric_list = [eval_metric_list]
-
-        # Separate built-in from callable evaluation metrics
-        eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
-        eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, str)]
-
         # register default metric for consistency with callable eval_metric case
         original_metric = self._objective if isinstance(self._objective, str) else None
         if original_metric is None:
@@ -669,6 +670,28 @@ class LGBMModel(_LGBMModelBase):
 
         # overwrite default metric by explicitly set metric
         params = _choose_param_value("metric", params, original_metric)
+
+        return params
+
+    def fit(self, X, y,
+            sample_weight=None, init_score=None, group=None,
+            eval_set=None, eval_names=None, eval_sample_weight=None,
+            eval_class_weight=None, eval_init_score=None, eval_group=None,
+            eval_metric=None, early_stopping_rounds=None, verbose='warn',
+            feature_name='auto', categorical_feature='auto',
+            callbacks=None, init_model=None):
+        """Docstring is set after definition, using a template."""
+        params = self._process_params(stage="fit")
+
+        # Do not modify original args in fit function
+        # Refer to https://github.com/microsoft/LightGBM/pull/2619
+        eval_metric_list = copy.deepcopy(eval_metric)
+        if not isinstance(eval_metric_list, list):
+            eval_metric_list = [eval_metric_list]
+
+        # Separate built-in from callable evaluation metrics
+        eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
+        eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, str)]
 
         # concatenate metric from params (or default if not provided in params) and eval_metric
         params['metric'] = [params['metric']] if isinstance(params['metric'], (str, type(None))) else params['metric']
@@ -823,7 +846,7 @@ class LGBMModel(_LGBMModelBase):
                              f"input n_features is {n_features}")
         # retrive original params that possibly can be used in both training and prediction
         # and then overwrite them (considering aliases) with params that were passed directly in prediction
-        predict_params = self.get_params()
+        predict_params = self._process_params(stage="predict")
         for alias in _ConfigAliases.get_by_alias(*kwargs.keys()):
             predict_params.pop(alias, None)
         predict_params.update(kwargs)
