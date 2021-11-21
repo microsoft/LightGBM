@@ -11,7 +11,7 @@ from collections import defaultdict, namedtuple
 from copy import deepcopy
 from enum import Enum, auto
 from functools import partial
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 from urllib.parse import urlparse
 
 import numpy as np
@@ -21,8 +21,8 @@ from .basic import _LIB, LightGBMError, _choose_param_value, _ConfigAliases, _lo
 from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
                      dask_Array, dask_array_from_delayed, dask_bag_from_delayed, dask_DataFrame, dask_Series,
                      default_client, delayed, pd_DataFrame, pd_Series, wait)
-from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _lgbmmodel_doc_custom_eval_note,
-                      _lgbmmodel_doc_fit, _lgbmmodel_doc_predict)
+from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _LGBM_ScikitCustomEvalFunction,
+                      _lgbmmodel_doc_custom_eval_note, _lgbmmodel_doc_fit, _lgbmmodel_doc_predict)
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
@@ -400,7 +400,7 @@ def _train(
     eval_class_weight: Optional[List[Union[dict, str]]] = None,
     eval_init_score: Optional[List[_DaskCollection]] = None,
     eval_group: Optional[List[_DaskVectorLike]] = None,
-    eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+    eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
     eval_at: Optional[Iterable[int]] = None,
     **kwargs: Any
 ) -> LGBMModel:
@@ -1029,7 +1029,7 @@ class _DaskLGBMModel:
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskVectorLike]] = None,
-        eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+        eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
         eval_at: Optional[Iterable[int]] = None,
         early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
@@ -1096,7 +1096,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         learning_rate: float = 0.1,
         n_estimators: int = 100,
         subsample_for_bin: int = 200000,
-        objective: Optional[Union[Callable, str]] = None,
+        objective: Optional[str] = None,
         class_weight: Optional[Union[dict, str]] = None,
         min_split_gain: float = 0.,
         min_child_weight: float = 1e-3,
@@ -1108,7 +1108,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = "warn",
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1134,7 +1133,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             reg_lambda=reg_lambda,
             random_state=random_state,
             n_jobs=n_jobs,
-            silent=silent,
             importance_type=importance_type,
             **kwargs
         )
@@ -1165,7 +1163,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
-        eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+        eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
         early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
@@ -1281,7 +1279,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         learning_rate: float = 0.1,
         n_estimators: int = 100,
         subsample_for_bin: int = 200000,
-        objective: Optional[Union[Callable, str]] = None,
+        objective: Optional[str] = None,
         class_weight: Optional[Union[dict, str]] = None,
         min_split_gain: float = 0.,
         min_child_weight: float = 1e-3,
@@ -1293,7 +1291,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = "warn",
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1319,7 +1316,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             reg_lambda=reg_lambda,
             random_state=random_state,
             n_jobs=n_jobs,
-            silent=silent,
             importance_type=importance_type,
             **kwargs
         )
@@ -1348,7 +1344,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
-        eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+        eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
         early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
@@ -1446,7 +1442,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         learning_rate: float = 0.1,
         n_estimators: int = 100,
         subsample_for_bin: int = 200000,
-        objective: Optional[Union[Callable, str]] = None,
+        objective: Optional[str] = None,
         class_weight: Optional[Union[dict, str]] = None,
         min_split_gain: float = 0.,
         min_child_weight: float = 1e-3,
@@ -1458,7 +1454,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = "warn",
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1484,7 +1479,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             reg_lambda=reg_lambda,
             random_state=random_state,
             n_jobs=n_jobs,
-            silent=silent,
             importance_type=importance_type,
             **kwargs
         )
@@ -1516,7 +1510,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_group: Optional[List[_DaskVectorLike]] = None,
-        eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+        eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
         eval_at: Iterable[int] = (1, 2, 3, 4, 5),
         early_stopping_rounds: Optional[int] = None,
         **kwargs: Any

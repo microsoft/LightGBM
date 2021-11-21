@@ -7,6 +7,10 @@ try:
     from pandas import Series as pd_Series
     from pandas import concat
     from pandas.api.types import is_sparse as is_dtype_sparse
+    try:
+        from pandas import CategoricalDtype as pd_CategoricalDtype
+    except ImportError:
+        from pandas.api.types import CategoricalDtype as pd_CategoricalDtype
     PANDAS_INSTALLED = True
 except ImportError:
     PANDAS_INSTALLED = False
@@ -19,6 +23,12 @@ except ImportError:
 
     class pd_DataFrame:  # type: ignore
         """Dummy class for pandas.DataFrame."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class pd_CategoricalDtype:
+        """Dummy class for pandas.CategoricalDtype."""
 
         def __init__(self, *args, **kwargs):
             pass

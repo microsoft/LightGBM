@@ -17,7 +17,8 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Un
 import numpy as np
 import scipy.sparse
 
-from .compat import PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, pd_DataFrame, pd_Series
+from .compat import (PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, pd_CategoricalDtype, pd_DataFrame,
+                     pd_Series)
 from .libpath import find_lib_path
 
 ZERO_THRESHOLD = 1e-35
@@ -386,6 +387,7 @@ class _ConfigAliases:
                                   "num_trees",
                                   "num_round",
                                   "num_rounds",
+                                  "nrounds",
                                   "num_boost_round",
                                   "n_estimators",
                                   "max_iter"},
@@ -410,8 +412,6 @@ class _ConfigAliases:
                "two_round": {"two_round",
                              "two_round_loading",
                              "use_two_round_loading"},
-               "verbosity": {"verbosity",
-                             "verbose"},
                "weight_column": {"weight_column",
                                  "weight"}}
 
@@ -576,7 +576,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
             data = data.rename(columns=str)
-        cat_cols = list(data.select_dtypes(include=['category']).columns)
+        cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
             pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
@@ -1181,7 +1181,7 @@ class Dataset:
     """Dataset in LightGBM."""
 
     def __init__(self, data, label=None, reference=None,
-                 weight=None, group=None, init_score=None, silent='warn',
+                 weight=None, group=None, init_score=None,
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
         """Initialize Dataset.
@@ -1205,8 +1205,6 @@ class Dataset:
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for Dataset.
-        silent : bool, optional (default=False)
-            Whether to print messages during construction.
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names.
             If 'auto' and data is pandas DataFrame, data columns names are used.
@@ -1231,7 +1229,6 @@ class Dataset:
         self.weight = weight
         self.group = group
         self.init_score = init_score
-        self.silent = silent
         self.feature_name = feature_name
         self.categorical_feature = categorical_feature
         self.params = deepcopy(params)
@@ -1473,8 +1470,7 @@ class Dataset:
 
     def _lazy_init(self, data, label=None, reference=None,
                    weight=None, group=None, init_score=None, predictor=None,
-                   silent=False, feature_name='auto',
-                   categorical_feature='auto', params=None):
+                   feature_name='auto', categorical_feature='auto', params=None):
         if data is None:
             self.handle = None
             return self
@@ -1496,14 +1492,6 @@ class Dataset:
             if key in args_names:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
                              f'Please use {key} argument of the Dataset constructor to pass this parameter.')
-        # user can set verbose with params, it has higher priority
-        if silent != "warn":
-            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
-                         "Pass 'verbose' parameter via 'params' instead.")
-        else:
-            silent = False
-        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
-            params["verbose"] = -1
         # get categorical features
         if categorical_feature is not None:
             categorical_indices = set()
@@ -1824,7 +1812,7 @@ class Dataset:
                     self._lazy_init(self.data, label=self.label, reference=self.reference,
                                     weight=self.weight, group=self.group,
                                     init_score=self.init_score, predictor=self._predictor,
-                                    silent=self.silent, feature_name=self.feature_name, params=self.params)
+                                    feature_name=self.feature_name, params=self.params)
                 else:
                     # construct subset
                     used_indices = list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
@@ -1855,14 +1843,12 @@ class Dataset:
                 self._lazy_init(self.data, label=self.label,
                                 weight=self.weight, group=self.group,
                                 init_score=self.init_score, predictor=self._predictor,
-                                silent=self.silent, feature_name=self.feature_name,
-                                categorical_feature=self.categorical_feature, params=self.params)
+                                feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params)
             if self.free_raw_data:
                 self.data = None
         return self
 
-    def create_valid(self, data, label=None, weight=None, group=None,
-                     init_score=None, silent='warn', params=None):
+    def create_valid(self, data, label=None, weight=None, group=None, init_score=None, params=None):
         """Create validation data align with current Dataset.
 
         Parameters
@@ -1882,8 +1868,6 @@ class Dataset:
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for Dataset.
-        silent : bool, optional (default=False)
-            Whether to print messages during construction.
         params : dict or None, optional (default=None)
             Other parameters for validation Dataset.
 
@@ -1894,7 +1878,7 @@ class Dataset:
         """
         ret = Dataset(data, label=label, reference=self,
                       weight=weight, group=group, init_score=init_score,
-                      silent=silent, params=params, free_raw_data=self.free_raw_data)
+                      params=params, free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
         ret.pandas_categorical = self.pandas_categorical
         return ret
@@ -2570,7 +2554,7 @@ class Dataset:
 class Booster:
     """Booster in LightGBM."""
 
-    def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent='warn'):
+    def __init__(self, params=None, train_set=None, model_file=None, model_str=None):
         """Initialize the Booster.
 
         Parameters
@@ -2583,8 +2567,6 @@ class Booster:
             Path to the model file.
         model_str : str or None, optional (default=None)
             Model will be loaded from this string.
-        silent : bool, optional (default=False)
-            Whether to print messages during construction.
         """
         self.handle = None
         self.network = False
@@ -2595,14 +2577,6 @@ class Booster:
         self.best_iteration = -1
         self.best_score = {}
         params = {} if params is None else deepcopy(params)
-        # user can set verbose with params, it has higher priority
-        if silent != 'warn':
-            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
-                         "Pass 'verbose' parameter via 'params' instead.")
-        else:
-            silent = False
-        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
-            params["verbose"] = -1
         if train_set is not None:
             # Training task
             if not isinstance(train_set, Dataset):
@@ -3396,12 +3370,6 @@ class Booster:
         _safe_call(_LIB.LGBM_BoosterGetNumClasses(
             self.handle,
             ctypes.byref(out_num_class)))
-        if verbose in {'warn', '_silent_false'}:
-            verbose = verbose == 'warn'
-        else:
-            _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM.")
-        if verbose:
-            _log_info(f'Finished loading model, total used {int(out_num_iterations.value)} iterations')
         self.__num_class = out_num_class.value
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
@@ -3606,7 +3574,7 @@ class Booster:
         predictor = self._to_predictor(deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
-        out_is_linear = ctypes.c_bool(False)
+        out_is_linear = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
             self.handle,
             ctypes.byref(out_is_linear)))
@@ -3615,8 +3583,8 @@ class Booster:
             params=self.params,
             default_value=None
         )
-        new_params["linear_tree"] = out_is_linear.value
-        train_set = Dataset(data, label, silent=True, params=new_params)
+        new_params["linear_tree"] = bool(out_is_linear.value)
+        train_set = Dataset(data, label, params=new_params)
         new_params['refit_decay_rate'] = decay_rate
         new_booster = Booster(new_params, train_set)
         # Copy models

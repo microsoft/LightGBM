@@ -161,7 +161,7 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::vector<std::string> valid;
 
-  // alias = num_iteration, n_iter, num_tree, num_trees, num_round, num_rounds, num_boost_round, n_estimators, max_iter
+  // alias = num_iteration, n_iter, num_tree, num_trees, num_round, num_rounds, nrounds, num_boost_round, n_estimators, max_iter
   // check = >=0
   // desc = number of boosting iterations
   // desc = **Note**: internally, LightGBM constructs ``num_class * num_iterations`` trees for multi-class classification problems
@@ -720,6 +720,11 @@ struct Config {
   // desc = use precise floating point number parsing for text parser (e.g. CSV, TSV, LibSVM input)
   // desc = **Note**: setting this to ``true`` may lead to much slower text parsing
   bool precise_float_parser = false;
+
+  // desc = path to a ``.json`` file that specifies customized parser initialized configuration
+  // desc = see `lightgbm-transform <https://github.com/microsoft/lightgbm-transform>`__ for usage examples
+  // desc = **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/microsoft/lightgbm-transform/issues>`__
+  std::string parser_config_file = "";
 
   #pragma endregion
 
