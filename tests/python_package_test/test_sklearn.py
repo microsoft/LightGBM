@@ -614,8 +614,8 @@ def test_pandas_sparse():
 def test_predict():
     # With default params
     iris = load_iris(return_X_y=False)
-    X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target,
-                                                        test_size=0.2, random_state=42)
+    X_train, X_test, y_train, _ = train_test_split(iris.data, iris.target,
+                                                   test_size=0.2, random_state=42)
 
     gbm = lgb.train({'objective': 'multiclass',
                      'num_class': 3,
@@ -689,6 +689,41 @@ def test_predict():
                                            pred_early_stop_margin=1.0, start_iteration=10)
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(res_engine, res_sklearn_params)
+
+
+def test_predict_with_params_from_init():
+    X, y = load_iris(return_X_y=True)
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    predict_params = {
+        'pred_early_stop': True,
+        'pred_early_stop_margin': 1.0
+    }
+
+    y_preds_no_params = lgb.LGBMClassifier(verbose=-1).fit(X_train, y_train).predict(
+        X_test, raw_score=True)
+
+    y_preds_params_in_predict = lgb.LGBMClassifier(verbose=-1).fit(X_train, y_train).predict(
+        X_test, raw_score=True, **predict_params)
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(y_preds_no_params, y_preds_params_in_predict)
+
+    y_preds_params_in_set_params_before_fit = lgb.LGBMClassifier(verbose=-1).set_params(
+        **predict_params).fit(X_train, y_train).predict(X_test, raw_score=True)
+    np.testing.assert_allclose(y_preds_params_in_predict, y_preds_params_in_set_params_before_fit)
+
+    y_preds_params_in_set_params_after_fit = lgb.LGBMClassifier(verbose=-1).fit(X_train, y_train).set_params(
+        **predict_params).predict(X_test, raw_score=True)
+    np.testing.assert_allclose(y_preds_params_in_predict, y_preds_params_in_set_params_after_fit)
+
+    y_preds_params_in_init = lgb.LGBMClassifier(verbose=-1, **predict_params).fit(X_train, y_train).predict(
+        X_test, raw_score=True)
+    np.testing.assert_allclose(y_preds_params_in_predict, y_preds_params_in_init)
+
+    # test that params passed in predict have higher priority
+    y_preds_params_overwritten = lgb.LGBMClassifier(verbose=-1, **predict_params).fit(X_train, y_train).predict(
+        X_test, raw_score=True, pred_early_stop=False)
+    np.testing.assert_allclose(y_preds_no_params, y_preds_params_overwritten)
 
 
 def test_evaluate_train_set():
