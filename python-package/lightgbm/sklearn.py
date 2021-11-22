@@ -604,7 +604,7 @@ class LGBMModel(_LGBMModelBase):
 
         Returns
         -------
-        self : dict
+        processed_params : dict
             Processed parameter names mapped to their values.
         """
         assert stage in {"fit", "predict"}
