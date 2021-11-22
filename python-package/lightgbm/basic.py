@@ -424,7 +424,7 @@ class _ConfigAliases:
 
     @classmethod
     def get_by_alias(cls, *args):
-        ret = set()
+        ret = set(args)
         for i in args:
             for main_name, aliases in cls.aliases.items():
                 if i in aliases or i == main_name:
