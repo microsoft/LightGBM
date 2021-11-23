@@ -398,7 +398,6 @@ class LGBMModel(_LGBMModelBase):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: Union[bool, str] = 'warn',
         importance_type: str = 'split',
         **kwargs
     ):
@@ -463,8 +462,6 @@ class LGBMModel(_LGBMModelBase):
             If None, default seeds in C++ code are used.
         n_jobs : int, optional (default=-1)
             Number of parallel threads to use for training (can be changed at prediction time).
-        silent : bool, optional (default=True)
-            Whether to print messages while running boosting.
         importance_type : str, optional (default='split')
             The type of feature importance to be filled into ``feature_importances_``.
             If 'split', result contains numbers of times the feature is used in a model.
@@ -528,7 +525,6 @@ class LGBMModel(_LGBMModelBase):
         self.reg_lambda = reg_lambda
         self.random_state = random_state
         self.n_jobs = n_jobs
-        self.silent = silent
         self.importance_type = importance_type
         self._Booster = None
         self._evals_result = None
@@ -631,17 +627,6 @@ class LGBMModel(_LGBMModelBase):
         else:
             self._fobj = None
             params['objective'] = self._objective
-
-        # user can set verbose with kwargs, it has higher priority
-        if self.silent != "warn":
-            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
-                         "Pass 'verbose' parameter via keyword arguments instead.")
-            silent = self.silent
-        else:
-            silent = True
-        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
-            params['verbose'] = -1
-        params.pop('silent', None)
 
         params.pop('importance_type', None)
         params.pop('n_estimators', None)
