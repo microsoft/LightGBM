@@ -3079,10 +3079,12 @@ class Booster:
         assert grad.flags.c_contiguous
         assert hess.flags.c_contiguous
         if len(grad) != len(hess):
-            raise ValueError(f"Lengths of gradient({len(grad)}) and hessian({len(hess)}) don't match")
+            raise ValueError(f"Lengths of gradient ({len(grad)}) and hessian ({len(hess)}) don't match")
         num_train_data = self.train_set.num_data()
-        if len(grad) != self.train_set.num_data():
-            raise ValueError(f"Lengths of gradient({len(grad)}) and hessian({len(hess)}) don't match training data length({num_train_data})")
+        num_models = self.num_model_per_iteration()
+        if len(grad) != (num_train_data * num_models):
+            raise ValueError(f"Lengths of gradient ({len(grad)}) and hessian ({len(hess)}) " +\
+                f"don't match training data length ({num_train_data}) * number of models ({num_models})")
         is_finished = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterUpdateOneIterCustom(
             self.handle,
