@@ -1756,17 +1756,29 @@ class Dataset:
         return self
 
     @staticmethod
-    def _compare_params_for_warning(params, other_params):
-        """Compare params.
+    def _compare_params_for_warning(
+        params: Optional[Dict[str, Any]],
+        other_params: Optional[Dict[str, Any]],
+        ignore_keys: Set[str]
+    ) -> bool:
+        """Compare two dictionaries with params ignoring some keys.
 
-        It is only for the warning purpose. Thus some keys are ignored.
+        It is only for the warning purpose.
+
+        Parameters
+        ----------
+        params : dict or None
+            One dictionary with parameters to compare.
+        other_params : dict or None
+            Another dictionary with parameters to compare.
+        ignore_keys : set
+            Keys that should be ignored during comparing two dictionaries.
 
         Returns
         -------
-        compare_result: bool
-          If they are equal, return True; Otherwise, return False.
+        compare_result : bool
+          Returns whether two dictionaries with params are equal.
         """
-        ignore_keys = _ConfigAliases.get("categorical_feature")
         if params is None:
             params = {}
         if other_params is None:
@@ -1794,7 +1806,11 @@ class Dataset:
                 reference_params = self.reference.get_params()
                 params = self.get_params()
                 if params != reference_params:
-                    if self._compare_params_for_warning(params, reference_params) is False:
+                    if not self._compare_params_for_warning(
+                        params=params,
+                        other_params=reference_params,
+                        ignore_keys=_ConfigAliases.get("categorical_feature")
+                    ):
                         _log_warning('Overriding the parameters from Reference Dataset.')
                     self._update_params(reference_params)
                 if self.used_indices is None:
