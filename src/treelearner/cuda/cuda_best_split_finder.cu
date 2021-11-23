@@ -350,7 +350,7 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner(
   __shared__ uint32_t best_thread_index;
   const double cnt_factor = num_data / sum_hessians;
   const double min_gain_shift = parent_gain + min_gain_to_split;
-  const double l2 = lambda_l2 + cat_l2;
+  double l2 = lambda_l2;
 
   double local_gain = min_gain_shift;
   bool threshold_found = false;
@@ -437,6 +437,7 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner(
     __shared__ uint16_t shared_mem_buffer_uint16[32];
     __shared__ double shared_mem_buffer_double[32];
     __shared__ int used_bin;
+    l2 += cat_l2;
     uint16_t is_valid_bin = 0;
     int best_dir = 0;
     double best_sum_left_gradient = 0.0f;
@@ -621,7 +622,6 @@ __global__ void FindBestSplitsForLeafKernel(
   const double cat_l2,
   const int max_cat_threshold,
   const int min_data_per_group,
-  const int max_cat_to_onehot,
   // output
   CUDASplitInfo* cuda_best_split_info) {
   const unsigned int task_index = blockIdx.x;
@@ -976,7 +976,7 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner_GlobalMemory(
   __shared__ uint32_t best_thread_index;
   const double cnt_factor = num_data / sum_hessians;
   const double min_gain_shift = parent_gain + min_gain_to_split;
-  const double l2 = lambda_l2 + cat_l2;
+  double l2 = lambda_l2;
 
   double local_gain = kMinScore;
   bool threshold_found = false;
@@ -1061,6 +1061,7 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner_GlobalMemory(
   } else {
     __shared__ uint16_t shared_mem_buffer_uint16[32];
     __shared__ int used_bin;
+    l2 += cat_l2;
     uint16_t is_valid_bin = 0;
     int best_dir = 0;
     double best_sum_left_gradient = 0.0f;
@@ -1246,7 +1247,6 @@ __global__ void FindBestSplitsForLeafKernel_GlobalMemory(
   const double cat_l2,
   const int max_cat_threshold,
   const int min_data_per_group,
-  const int max_cat_to_onehot,
   // output
   CUDASplitInfo* cuda_best_split_info,
   // buffer
@@ -1394,7 +1394,6 @@ __global__ void FindBestSplitsForLeafKernel_GlobalMemory(
     cat_l2_, \
     max_cat_threshold_, \
     min_data_per_group_, \
-    max_cat_to_onehot_, \
     cuda_best_split_info_
 
 #define GlobalMemory_Buffer_ARGS \
