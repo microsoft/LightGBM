@@ -91,7 +91,7 @@ def multi_logloss(y_true, y_pred):
 def test_binary():
     X, y = load_breast_cancer(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
+    gbm = lgb.LGBMClassifier(n_estimators=50, verbose=-1)
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
     ret = log_loss(y_test, gbm.predict_proba(X_test))
     assert ret < 0.12
@@ -101,7 +101,7 @@ def test_binary():
 def test_regression():
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    gbm = lgb.LGBMRegressor(n_estimators=50, silent=True)
+    gbm = lgb.LGBMRegressor(n_estimators=50, verbose=-1)
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     assert ret < 7
@@ -111,7 +111,7 @@ def test_regression():
 def test_multiclass():
     X, y = load_digits(n_class=10, return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
+    gbm = lgb.LGBMClassifier(n_estimators=50, verbose=-1)
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
     ret = multi_error(y_test, gbm.predict(X_test))
     assert ret < 0.05
@@ -195,7 +195,7 @@ def test_objective_aliases(custom_objective):
 def test_regression_with_custom_objective():
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    gbm = lgb.LGBMRegressor(n_estimators=50, silent=True, objective=objective_ls)
+    gbm = lgb.LGBMRegressor(n_estimators=50, verbose=-1, objective=objective_ls)
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     assert ret < 7.0
@@ -205,7 +205,7 @@ def test_regression_with_custom_objective():
 def test_binary_classification_with_custom_objective():
     X, y = load_digits(n_class=2, return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    gbm = lgb.LGBMClassifier(n_estimators=50, silent=True, objective=logregobj)
+    gbm = lgb.LGBMClassifier(n_estimators=50, verbose=-1, objective=logregobj)
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
     # prediction result is actually not transformed (is raw) due to custom objective
     y_pred_raw = gbm.predict_proba(X_test)
@@ -421,7 +421,7 @@ def test_regressor_chain():
 
 def test_clone_and_property():
     X, y = load_boston(return_X_y=True)
-    gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
+    gbm = lgb.LGBMRegressor(n_estimators=10, verbose=-1)
     gbm.fit(X, y, verbose=False)
 
     gbm_clone = clone(gbm)
@@ -429,7 +429,7 @@ def test_clone_and_property():
     assert isinstance(gbm.feature_importances_, np.ndarray)
 
     X, y = load_digits(n_class=2, return_X_y=True)
-    clf = lgb.LGBMClassifier(n_estimators=10, silent=True)
+    clf = lgb.LGBMClassifier(n_estimators=10, verbose=-1)
     clf.fit(X, y, verbose=False)
     assert sorted(clf.classes_) == [0, 1]
     assert clf.n_classes_ == 2
@@ -441,7 +441,7 @@ def test_joblib():
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj,
-                            silent=True, importance_type='split')
+                            verbose=-1, importance_type='split')
     gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)],
             eval_metric=mse, early_stopping_rounds=5, verbose=False,
             callbacks=[lgb.reset_parameter(learning_rate=list(np.arange(1, 0, -0.1)))])
@@ -694,7 +694,7 @@ def test_predict():
 def test_evaluate_train_set():
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
+    gbm = lgb.LGBMRegressor(n_estimators=10, verbose=-1)
     gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)], verbose=False)
     assert len(gbm.evals_result_) == 2
     assert 'training' in gbm.evals_result_
@@ -1142,7 +1142,7 @@ def test_class_weight():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     y_train_str = y_train.astype('str')
     y_test_str = y_test.astype('str')
-    gbm = lgb.LGBMClassifier(n_estimators=10, class_weight='balanced', silent=True)
+    gbm = lgb.LGBMClassifier(n_estimators=10, class_weight='balanced', verbose=-1)
     gbm.fit(X_train, y_train,
             eval_set=[(X_train, y_train), (X_test, y_test), (X_test, y_test),
                       (X_test, y_test), (X_test, y_test)],
@@ -1154,7 +1154,7 @@ def test_class_weight():
                                      np.testing.assert_allclose,
                                      gbm.evals_result_[eval_set1][metric],
                                      gbm.evals_result_[eval_set2][metric])
-    gbm_str = lgb.LGBMClassifier(n_estimators=10, class_weight='balanced', silent=True)
+    gbm_str = lgb.LGBMClassifier(n_estimators=10, class_weight='balanced', verbose=-1)
     gbm_str.fit(X_train, y_train_str,
                 eval_set=[(X_train, y_train_str), (X_test, y_test_str),
                           (X_test, y_test_str), (X_test, y_test_str), (X_test, y_test_str)],
