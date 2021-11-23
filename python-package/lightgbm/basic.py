@@ -425,10 +425,10 @@ class _ConfigAliases:
     @classmethod
     def get_by_alias(cls, *args):
         ret = set(args)
-        for i in args:
-            for main_name, aliases in cls.aliases.items():
-                if i in aliases or i == main_name:
-                    ret |= aliases | {main_name}
+        for arg in args:
+            for aliases in cls.aliases.values():
+                if arg in aliases:
+                    ret |= aliases
                     break
         return ret
 
