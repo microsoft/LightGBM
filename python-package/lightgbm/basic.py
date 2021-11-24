@@ -324,96 +324,27 @@ class LGBMDeprecationWarning(UserWarning):
 
 
 class _ConfigAliases:
-    aliases = {"bin_construct_sample_cnt": {"bin_construct_sample_cnt",
-                                            "subsample_for_bin"},
-               "boosting": {"boosting",
-                            "boosting_type",
-                            "boost"},
-               "categorical_feature": {"categorical_feature",
-                                       "cat_feature",
-                                       "categorical_column",
-                                       "cat_column",
-                                       "categorical_features"},
-               "data_random_seed": {"data_random_seed",
-                                    "data_seed"},
-               "early_stopping_round": {"early_stopping_round",
-                                        "early_stopping_rounds",
-                                        "early_stopping",
-                                        "n_iter_no_change"},
-               "enable_bundle": {"enable_bundle",
-                                 "is_enable_bundle",
-                                 "bundle"},
-               "eval_at": {"eval_at",
-                           "ndcg_eval_at",
-                           "ndcg_at",
-                           "map_eval_at",
-                           "map_at"},
-               "group_column": {"group_column",
-                                "group",
-                                "group_id",
-                                "query_column",
-                                "query",
-                                "query_id"},
-               "header": {"header",
-                          "has_header"},
-               "ignore_column": {"ignore_column",
-                                 "ignore_feature",
-                                 "blacklist"},
-               "is_enable_sparse": {"is_enable_sparse",
-                                    "is_sparse",
-                                    "enable_sparse",
-                                    "sparse"},
-               "label_column": {"label_column",
-                                "label"},
-               "linear_tree": {"linear_tree",
-                               "linear_trees"},
-               "local_listen_port": {"local_listen_port",
-                                     "local_port",
-                                     "port"},
-               "machines": {"machines",
-                            "workers",
-                            "nodes"},
-               "max_bin": {"max_bin",
-                           "max_bins"},
-               "metric": {"metric",
-                          "metrics",
-                          "metric_types"},
-               "num_class": {"num_class",
-                             "num_classes"},
-               "num_iterations": {"num_iterations",
-                                  "num_iteration",
-                                  "n_iter",
-                                  "num_tree",
-                                  "num_trees",
-                                  "num_round",
-                                  "num_rounds",
-                                  "nrounds",
-                                  "num_boost_round",
-                                  "n_estimators",
-                                  "max_iter"},
-               "num_machines": {"num_machines",
-                                "num_machine"},
-               "num_threads": {"num_threads",
-                               "num_thread",
-                               "nthread",
-                               "nthreads",
-                               "n_jobs"},
-               "objective": {"objective",
-                             "objective_type",
-                             "app",
-                             "application",
-                             "loss"},
-               "pre_partition": {"pre_partition",
-                                 "is_pre_partition"},
-               "tree_learner": {"tree_learner",
-                                "tree",
-                                "tree_type",
-                                "tree_learner_type"},
-               "two_round": {"two_round",
-                             "two_round_loading",
-                             "use_two_round_loading"},
-               "weight_column": {"weight_column",
-                                 "weight"}}
+    buffer_len = 1 << 20
+    tmp_out_len = ctypes.c_int64(0)
+    string_buffer = ctypes.create_string_buffer(buffer_len)
+    ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+    _safe_call(_LIB.LGBM_DumpParamAliases(
+        ctypes.c_int64(buffer_len),
+        ctypes.byref(tmp_out_len),
+        ptr_string_buffer))
+    actual_len = tmp_out_len.value
+    # if buffer length is not long enough, re-allocate a buffer
+    if actual_len > buffer_len:
+        string_buffer = ctypes.create_string_buffer(actual_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_DumpParamAliases(
+            ctypes.c_int64(actual_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+    aliases = json.loads(
+        string_buffer.value.decode('utf-8'),
+        object_hook=lambda obj: {k: set(v) | {k} for k, v in obj.items()}
+    )
 
     @classmethod
     def get(cls, *args):

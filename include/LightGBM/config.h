@@ -1040,6 +1040,7 @@ struct Config {
   static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
   std::vector<std::vector<int>> interaction_constraints_vector;
+  static std::string DumpAliases();
 
  private:
   void CheckParamConflict();
