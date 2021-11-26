@@ -578,5 +578,4 @@ def test_param_aliases():
     assert all(isinstance(i, set) for i in aliases.values())
     assert all(len(i) >= 1 for i in aliases.values())
     assert all(k in v for k, v in aliases.items())
-    assert aliases['config'] == {'config', 'config_file'}
-    assert aliases['task'] == {'task', 'task_type'}
+    assert lgb.basic._ConfigAliases.get('config', 'task') == {'config', 'config_file', 'task', 'task_type'}

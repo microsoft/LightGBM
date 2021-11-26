@@ -3,7 +3,7 @@ name: R-package
 on:
   push:
     branches:
-    - param_aliases
+    - master
   pull_request:
     branches:
     - master
