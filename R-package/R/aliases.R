@@ -44,7 +44,8 @@
         )
     )
     for (alias in names(aliases)) {
-        aliases[[alias]] <- c(aliases[[alias]], alias)
+        aliases_with_main_name <- if (!length(aliases[[alias]])) alias else c(aliases[[alias]], alias)
+        aliases[[alias]] <- aliases_with_main_name
     }
     return(aliases)
 }
