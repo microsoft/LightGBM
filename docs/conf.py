@@ -25,6 +25,7 @@ from re import compile
 from shutil import copytree
 from subprocess import PIPE, Popen
 from typing import Any, List
+from unittest.mock import Mock
 
 import sphinx
 from docutils.nodes import reference
@@ -38,6 +39,22 @@ LIB_PATH = CURR_PATH.parent / 'python-package'
 sys.path.insert(0, str(LIB_PATH))
 
 INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#)")
+
+# -- mock out modules
+MOCK_MODULES = [
+    'dask',
+    'dask.distributed',
+    'datatable',
+    'graphviz',
+    'matplotlib',
+    'numpy',
+    'pandas',
+    'scipy',
+    'scipy.sparse',
+    'sklearn'
+]
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = Mock()
 
 
 class InternalRefTransform(Transform):
@@ -92,18 +109,7 @@ autodoc_default_options = {
     "inherited-members": True,
     "show-inheritance": True,
 }
-autodoc_mock_imports = [
-    'dask',
-    'dask.distributed',
-    'datatable',
-    'graphviz',
-    'matplotlib',
-    'numpy',
-    'pandas',
-    'scipy',
-    'scipy.sparse',
-    'sklearn',
-]
+
 # hide type hints in API docs
 autodoc_typehints = "none"
 
