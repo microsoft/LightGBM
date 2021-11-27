@@ -6,15 +6,14 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _log_warning
+from .basic import Dataset, LightGBMError, _ArrayLike, _choose_param_value, _ConfigAliases, _log_warning
 from .callback import log_evaluation, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
-                     pd_DataFrame, pd_Series)
+                     pd_DataFrame)
 from .engine import train
 
-_ArrayLike = Union[List, np.ndarray, pd_Series]
 _EvalResultType = Tuple[str, float, bool]
 
 _LGBM_ScikitCustomObjectiveFunction = Union[
@@ -58,22 +57,22 @@ class _ObjectiveFunctionWrapper:
             Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group)``
             and returns (grad, hess):
 
-                y_true : array-like of shape = [n_samples]
+                y_true : numpy 1-D array of shape = [n_samples]
                     The target values.
-                y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The predicted values.
                     Predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task.
-                group : array-like
+                group : numpy 1-D array
                     Group/query data.
                     Only used in the learning-to-rank task.
                     sum(group) = n_samples.
                     For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                     where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-                grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                grad : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The value of the first order derivative (gradient) of the loss
                     with respect to the elements of y_pred for each sample point.
-                hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                hess : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The value of the second order derivative (Hessian) of the loss
                     with respect to the elements of y_pred for each sample point.
 
@@ -90,17 +89,17 @@ class _ObjectiveFunctionWrapper:
 
         Parameters
         ----------
-        preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        preds : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
             The predicted values.
         dataset : Dataset
             The training dataset.
 
         Returns
         -------
-        grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        grad : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
             The value of the first order derivative (gradient) of the loss
             with respect to the elements of preds for each sample point.
-        hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        hess : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
             The value of the second order derivative (Hessian) of the loss
             with respect to the elements of preds for each sample point.
         """
@@ -151,15 +150,15 @@ class _EvalFunctionWrapper:
             and returns (eval_name, eval_result, is_higher_better) or
             list of (eval_name, eval_result, is_higher_better):
 
-                y_true : array-like of shape = [n_samples]
+                y_true : numpy 1-D array of shape = [n_samples]
                     The target values.
-                y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The predicted values.
                     In case of custom ``objective``, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
-                weight : array-like of shape = [n_samples]
+                weight : numpy 1-D array of shape = [n_samples]
                     The weight of samples.
-                group : array-like
+                group : numpy 1-D array
                     Group/query data.
                     Only used in the learning-to-rank task.
                     sum(group) = n_samples.
@@ -184,7 +183,7 @@ class _EvalFunctionWrapper:
 
         Parameters
         ----------
-        preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        preds : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
             The predicted values.
         dataset : Dataset
             The training dataset.
@@ -304,15 +303,15 @@ _lgbmmodel_doc_custom_eval_note = """
     and returns (eval_name, eval_result, is_higher_better) or
     list of (eval_name, eval_result, is_higher_better):
 
-        y_true : array-like of shape = [n_samples]
+        y_true : numpy 1-D array of shape = [n_samples]
             The target values.
-        y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
             The predicted values.
             In case of custom ``objective``, predicted values are returned before any transformation,
             e.g. they are raw margin instead of probability of positive class for binary task in this case.
-        weight : array-like of shape = [n_samples]
+        weight : numpy 1-D array of shape = [n_samples]
             The weight of samples.
-        group : array-like
+        group : numpy 1-D array
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -481,22 +480,22 @@ class LGBMModel(_LGBMModelBase):
         ``objective(y_true, y_pred) -> grad, hess`` or
         ``objective(y_true, y_pred, group) -> grad, hess``:
 
-            y_true : array-like of shape = [n_samples]
+            y_true : numpy 1-D array of shape = [n_samples]
                 The target values.
-            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The predicted values.
                 Predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task.
-            group : array-like
+            group : numpy 1-D array
                 Group/query data.
                 Only used in the learning-to-rank task.
                 sum(group) = n_samples.
                 For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                 where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-            grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            grad : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The value of the first order derivative (gradient) of the loss
                 with respect to the elements of y_pred for each sample point.
-            hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            hess : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The value of the second order derivative (Hessian) of the loss
                 with respect to the elements of y_pred for each sample point.
 

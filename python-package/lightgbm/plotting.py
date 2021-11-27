@@ -403,11 +403,6 @@ def plot_metric(
         ylim = (min_result - range_result * 0.2, max_result + range_result * 0.2)
     ax.set_ylim(ylim)
 
-    if ylabel == 'auto':
-        _log_warning("'auto' value of 'ylabel' argument is deprecated and will be removed in a future release of LightGBM. "
-                     "Use '@metric@' placeholder instead.")
-        ylabel = '@metric@'
-
     if title is not None:
         ax.set_title(title)
     if xlabel is not None:
