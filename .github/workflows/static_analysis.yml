@@ -5,7 +5,7 @@ name: Static Analysis
 on:
   push:
     branches:
-    - dev
+    - master
   pull_request:
     branches:
     - master
