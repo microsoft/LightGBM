@@ -324,6 +324,10 @@ class LGBMDeprecationWarning(UserWarning):
 
 
 class _ConfigAliases:
+    # lazy evaluation to allow import without dynamic library, e.g., for docs generation
+    aliases = None
+
+    @staticmethod
     def _get_all_param_aliases():
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
@@ -348,10 +352,10 @@ class _ConfigAliases:
         )
         return aliases
 
-    aliases = _get_all_param_aliases()
-
     @classmethod
     def get(cls, *args):
+        if cls.aliases is None:
+            cls.aliases = cls._get_all_param_aliases()
         ret = set()
         for i in args:
             ret |= cls.aliases.get(i, {i})
