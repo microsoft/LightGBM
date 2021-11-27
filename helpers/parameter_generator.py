@@ -357,7 +357,7 @@ def gen_parameter_code(
     str_to_write += "  return str_buf.str();\n"
     str_to_write += "}\n\n"
 
-    str_to_write += "std::string Config::DumpAliases() const {\n"
+    str_to_write += "std::string Config::DumpAliases() {\n"
     str_to_write += "  std::stringstream str_buf;\n"
     str_to_write += '  str_buf << "{";\n'
     for idx, name in enumerate(names):
