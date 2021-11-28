@@ -303,15 +303,15 @@ _lgbmmodel_doc_custom_eval_note = """
     and returns (eval_name, eval_result, is_higher_better) or
     list of (eval_name, eval_result, is_higher_better):
 
-        y_true : numpy 1-D array of shape = [n_samples]
+        y_true : {y_true_shape}
             The target values.
-        y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        y_pred : {y_pred_shape}
             The predicted values.
             In case of custom ``objective``, predicted values are returned before any transformation,
             e.g. they are raw margin instead of probability of positive class for binary task in this case.
-        weight : numpy 1-D array of shape = [n_samples]
+        weight : {weight_shape}
             The weight of samples.
-        group : numpy 1-D array
+        group : {group_shape}
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -806,7 +806,12 @@ class LGBMModel(_LGBMModelBase):
         eval_sample_weight_shape="list of array, or None, optional (default=None)",
         eval_init_score_shape="list of array, or None, optional (default=None)",
         eval_group_shape="list of array, or None, optional (default=None)"
-    ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
+    ) + "\n\n" + _lgbmmodel_doc_custom_eval_note.format(
+        y_true_shape="numpy 1-D array of shape = [n_samples]",
+        y_pred_shape="numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)",
+        weight_shape="numpy 1-D array of shape = [n_samples]",
+        group_shape="numpy 1-D array"
+    )
 
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
                 pred_leaf=False, pred_contrib=False, **kwargs):
