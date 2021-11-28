@@ -143,7 +143,7 @@ def test_plot_split_value_histogram(params, breast_cancer_split, train_data):
 def test_plot_tree(breast_cancer_split):
     X_train, _, y_train, _ = breast_cancer_split
     gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1)
-    gbm.fit(X_train, y_train, verbose=False)
+    gbm.fit(X_train, y_train)
 
     with pytest.raises(IndexError):
         lgb.plot_tree(gbm, tree_index=83)
@@ -161,7 +161,7 @@ def test_create_tree_digraph(breast_cancer_split):
 
     constraints = [-1, 1] * int(X_train.shape[1] / 2)
     gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1, monotone_constraints=constraints)
-    gbm.fit(X_train, y_train, verbose=False)
+    gbm.fit(X_train, y_train)
 
     with pytest.raises(IndexError):
         lgb.create_tree_digraph(gbm, tree_index=83)
@@ -265,7 +265,7 @@ def test_plot_metrics(params, breast_cancer_split, train_data):
         lgb.plot_metric(evals_result1)
 
     gbm2 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1)
-    gbm2.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+    gbm2.fit(X_train, y_train, eval_set=[(X_test, y_test)])
     ax4 = lgb.plot_metric(gbm2, title=None, xlabel=None, ylabel=None)
     assert isinstance(ax4, matplotlib.axes.Axes)
     assert ax4.get_title() == ''
