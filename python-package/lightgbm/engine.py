@@ -36,7 +36,6 @@ def train(
     early_stopping_rounds: Optional[int] = None,
     evals_result: Optional[Dict[str, Any]] = None,
     verbose_eval: Union[bool, int, str] = 'warn',
-    learning_rates: Optional[Union[List[float], Callable[[int], float]]] = None,
     keep_training_booster: bool = False,
     callbacks: Optional[List[Callable]] = None
 ) -> Booster:
@@ -145,10 +144,6 @@ def train(
         With ``verbose_eval`` = 4 and at least one item in ``valid_sets``,
         an evaluation metric is printed every 4 (instead of 1) boosting stages.
 
-    learning_rates : list, callable or None, optional (default=None)
-        List of learning rates for each boosting round
-        or a callable that calculates ``learning_rate``
-        in terms of current number of round (e.g. yields learning rate decay).
     keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
         If False, the returned value will be converted into _InnerPredictor before returning.
@@ -250,11 +245,6 @@ def train(
 
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
-
-    if learning_rates is not None:
-        _log_warning("'learning_rates' argument is deprecated and will be removed in a future release of LightGBM. "
-                     "Pass 'reset_parameter()' callback via 'callbacks' argument instead.")
-        callbacks.add(callback.reset_parameter(learning_rate=learning_rates))
 
     if evals_result is not None:
         _log_warning("'evals_result' argument is deprecated and will be removed in a future release of LightGBM. "
