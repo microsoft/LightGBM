@@ -3079,7 +3079,7 @@ class Booster:
         assert grad.flags.c_contiguous
         assert hess.flags.c_contiguous
         if len(grad) != len(hess):
-            raise ValueError(f"Lengths of gradient ({len(grad)}) and hessian ({len(hess)}) don't match")
+            raise ValueError(f"Lengths of gradient ({len(grad)}) and Hessian ({len(hess)}) don't match")
         num_train_data = self.train_set.num_data()
         num_models = self.num_model_per_iteration()
         if len(grad) != (num_train_data * num_models):
