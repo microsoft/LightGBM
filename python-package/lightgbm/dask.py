@@ -1216,12 +1216,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     self : lightgbm.DaskLGBMClassifier
         Returns self.
 
-    {_lgbmmodel_doc_custom_eval_note.format(
-        y_true_shape="Dask Array of shape = [n_samples]",
-        y_pred_shape="Dask Array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)",
-        weight_shape="Dask Array of shape = [n_samples]",
-        group_shape="Dask Array"
-    )}
+    {_lgbmmodel_doc_custom_eval_note}
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
@@ -1404,12 +1399,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     self : lightgbm.DaskLGBMRegressor
         Returns self.
 
-    {_lgbmmodel_doc_custom_eval_note.format(
-        y_true_shape="Dask Array of shape = [n_samples]",
-        y_pred_shape="Dask Array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)",
-        weight_shape="Dask Array of shape = [n_samples]",
-        group_shape="Dask Array"
-    )}
+    {_lgbmmodel_doc_custom_eval_note}
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs) -> dask_Array:
@@ -1575,12 +1565,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     self : lightgbm.DaskLGBMRanker
         Returns self.
 
-    {_lgbmmodel_doc_custom_eval_note.format(
-        y_true_shape="Dask Array of shape = [n_samples]",
-        y_pred_shape="Dask Array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)",
-        weight_shape="Dask Array of shape = [n_samples]",
-        group_shape="Dask Array"
-    )}
+    {_lgbmmodel_doc_custom_eval_note}
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
