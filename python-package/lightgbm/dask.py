@@ -1205,7 +1205,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
                  + _base_doc[_base_doc.find('eval_metric :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
-                 + _base_doc[_base_doc.find('verbose :'):])
+                 + _base_doc[_base_doc.find('feature_name :'):])
 
     # DaskLGBMClassifier support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
@@ -1393,7 +1393,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
                  + _base_doc[_base_doc.find('eval_metric :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
-                 + _base_doc[_base_doc.find('verbose :'):])
+                 + _base_doc[_base_doc.find('feature_name :'):])
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
@@ -1564,7 +1564,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
                  + "eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))\n"
                  + f"{' ':8}The evaluation positions of the specified metric.\n"
-                 + f"{' ':4}{_base_doc[_base_doc.find('verbose :'):]}")
+                 + f"{' ':4}{_base_doc[_base_doc.find('feature_name :'):]}")
 
     # DaskLGBMRanker support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
