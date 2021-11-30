@@ -2,7 +2,7 @@
 """Callbacks library."""
 import collections
 from functools import partial
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 from .basic import _ConfigAliases, _log_info, _log_warning
 
@@ -18,15 +18,15 @@ def _lt_delta(curr_score: float, best_score: float, delta: float) -> bool:
 class EarlyStopException(Exception):
     """Exception of early stopping."""
 
-    def __init__(self, best_iteration: int, best_score: float) -> None:
+    def __init__(self, best_iteration: int, best_score: List[Tuple[str, str, float, bool]]) -> None:
         """Create early stopping exception.
 
         Parameters
         ----------
         best_iteration : int
             The best iteration stopped.
-        best_score : float
-            The score of the best iteration.
+        best_score : list of (eval_name, metric_name, eval_result, is_higher_better) tuples
+            Scores for each metric, on each validation set, as of the best iteration.
         """
         super().__init__()
         self.best_iteration = best_iteration

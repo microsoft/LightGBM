@@ -223,38 +223,38 @@ def train(
                 name_valid_sets.append(f'valid_{i}')
     # process callbacks
     if callbacks is None:
-        callbacks = set()
+        callbacks_set = set()
     else:
         for i, cb in enumerate(callbacks):
             cb.__dict__.setdefault('order', i - len(callbacks))
-        callbacks = set(callbacks)
+        callbacks_set = set(callbacks)
 
     # Most of legacy advanced options becomes callbacks
     if verbose_eval != "warn":
         _log_warning("'verbose_eval' argument is deprecated and will be removed in a future release of LightGBM. "
                      "Pass 'log_evaluation()' callback via 'callbacks' argument instead.")
     else:
-        if callbacks:  # assume user has already specified log_evaluation callback
+        if callbacks_set:  # assume user has already specified log_evaluation callback
             verbose_eval = False
         else:
             verbose_eval = True
     if verbose_eval is True:
-        callbacks.add(callback.log_evaluation())
+        callbacks_set.add(callback.log_evaluation())
     elif isinstance(verbose_eval, int):
-        callbacks.add(callback.log_evaluation(verbose_eval))
+        callbacks_set.add(callback.log_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
+        callbacks_set.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
 
     if evals_result is not None:
         _log_warning("'evals_result' argument is deprecated and will be removed in a future release of LightGBM. "
                      "Pass 'record_evaluation()' callback via 'callbacks' argument instead.")
-        callbacks.add(callback.record_evaluation(evals_result))
+        callbacks_set.add(callback.record_evaluation(evals_result))
 
-    callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
-    callbacks_after_iter = callbacks - callbacks_before_iter
-    callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
-    callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
+    callbacks_before_iter_set = {cb for cb in callbacks_set if getattr(cb, 'before_iteration', False)}
+    callbacks_after_iter_set = callbacks_set - callbacks_before_iter_set
+    callbacks_before_iter = sorted(callbacks_before_iter_set, key=attrgetter('order'))
+    callbacks_after_iter = sorted(callbacks_after_iter_set, key=attrgetter('order'))
 
     # construct booster
     try:
