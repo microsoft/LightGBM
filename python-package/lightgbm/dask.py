@@ -957,10 +957,12 @@ def _predict(
             # Concatenate them to return a list of Dask Arrays.
             out_arrays: List[dask_Array] = []
             for i in range(num_classes):
-                out_arrays[i] = dask_array_from_delayed(
-                    value=delayed(concat_fn)(out[i]),
-                    shape=(data.shape[0], num_cols),
-                    meta=pred_meta
+                out_arrays.append(
+                    dask_array_from_delayed(
+                        value=delayed(concat_fn)(out[i]),
+                        shape=(data.shape[0], num_cols),
+                        meta=pred_meta
+                    )
                 )
 
             return out_arrays
