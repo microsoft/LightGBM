@@ -930,7 +930,7 @@ def _predict(
             num_cols = model.n_features_ + 1
 
             nrows_per_chunk = data.chunks[0]
-            out: List[dask_Array] = [[] for _ in range(num_classes)]
+            out: List[List[dask_Array]] = [[] for _ in range(num_classes)]
 
             # need to tell Dask the expected type and shape of individual preds
             pred_meta = data._meta
