@@ -6,15 +6,14 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _log_warning
+from .basic import Dataset, LightGBMError, _ArrayLike, _choose_param_value, _ConfigAliases, _log_warning
 from .callback import log_evaluation, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
-                     pd_DataFrame, pd_Series)
+                     pd_DataFrame)
 from .engine import train
 
-_ArrayLike = Union[List, np.ndarray, pd_Series]
 _EvalResultType = Tuple[str, float, bool]
 
 _LGBM_ScikitCustomObjectiveFunction = Union[
@@ -58,22 +57,22 @@ class _ObjectiveFunctionWrapper:
             Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group)``
             and returns (grad, hess):
 
-                y_true : array-like of shape = [n_samples]
+                y_true : numpy 1-D array of shape = [n_samples]
                     The target values.
-                y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The predicted values.
                     Predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task.
-                group : array-like
+                group : numpy 1-D array
                     Group/query data.
                     Only used in the learning-to-rank task.
                     sum(group) = n_samples.
                     For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                     where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-                grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                grad : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The value of the first order derivative (gradient) of the loss
                     with respect to the elements of y_pred for each sample point.
-                hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                hess : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The value of the second order derivative (Hessian) of the loss
                     with respect to the elements of y_pred for each sample point.
 
@@ -90,17 +89,17 @@ class _ObjectiveFunctionWrapper:
 
         Parameters
         ----------
-        preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        preds : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
             The predicted values.
         dataset : Dataset
             The training dataset.
 
         Returns
         -------
-        grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        grad : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
             The value of the first order derivative (gradient) of the loss
             with respect to the elements of preds for each sample point.
-        hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        hess : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
             The value of the second order derivative (Hessian) of the loss
             with respect to the elements of preds for each sample point.
         """
@@ -151,15 +150,15 @@ class _EvalFunctionWrapper:
             and returns (eval_name, eval_result, is_higher_better) or
             list of (eval_name, eval_result, is_higher_better):
 
-                y_true : array-like of shape = [n_samples]
+                y_true : numpy 1-D array of shape = [n_samples]
                     The target values.
-                y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                     The predicted values.
                     In case of custom ``objective``, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
-                weight : array-like of shape = [n_samples]
+                weight : numpy 1-D array of shape = [n_samples]
                     The weight of samples.
-                group : array-like
+                group : numpy 1-D array
                     Group/query data.
                     Only used in the learning-to-rank task.
                     sum(group) = n_samples.
@@ -184,7 +183,7 @@ class _EvalFunctionWrapper:
 
         Parameters
         ----------
-        preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        preds : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
             The predicted values.
         dataset : Dataset
             The training dataset.
@@ -259,17 +258,6 @@ _lgbmmodel_doc_fit = (
         If there's more than one, will check all of them. But the training data is ignored anyway.
         To check only the first metric, set the ``first_metric_only`` parameter to ``True``
         in additional parameters ``**kwargs`` of the model constructor.
-    verbose : bool or int, optional (default=True)
-        Requires at least one evaluation data.
-        If True, the eval metric on the eval set is printed at each boosting stage.
-        If int, the eval metric on the eval set is printed at every ``verbose`` boosting stage.
-        The last boosting stage or the boosting stage found by using ``early_stopping_rounds`` is also printed.
-
-        .. rubric:: Example
-
-        With ``verbose`` = 4 and at least one item in ``eval_set``,
-        an evaluation metric is printed every 4 (instead of 1) boosting stages.
-
     feature_name : list of str, or 'auto', optional (default='auto')
         Feature names.
         If 'auto' and data is pandas DataFrame, data columns names are used.
@@ -304,15 +292,15 @@ _lgbmmodel_doc_custom_eval_note = """
     and returns (eval_name, eval_result, is_higher_better) or
     list of (eval_name, eval_result, is_higher_better):
 
-        y_true : array-like of shape = [n_samples]
+        y_true : numpy 1-D array of shape = [n_samples]
             The target values.
-        y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
             The predicted values.
             In case of custom ``objective``, predicted values are returned before any transformation,
             e.g. they are raw margin instead of probability of positive class for binary task in this case.
-        weight : array-like of shape = [n_samples]
+        weight : numpy 1-D array of shape = [n_samples]
             The weight of samples.
-        group : array-like
+        group : numpy 1-D array
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -481,22 +469,22 @@ class LGBMModel(_LGBMModelBase):
         ``objective(y_true, y_pred) -> grad, hess`` or
         ``objective(y_true, y_pred, group) -> grad, hess``:
 
-            y_true : array-like of shape = [n_samples]
+            y_true : numpy 1-D array of shape = [n_samples]
                 The target values.
-            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The predicted values.
                 Predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task.
-            group : array-like
+            group : numpy 1-D array
                 Group/query data.
                 Only used in the learning-to-rank task.
                 sum(group) = n_samples.
                 For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                 where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-            grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            grad : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The value of the first order derivative (gradient) of the loss
                 with respect to the elements of y_pred for each sample point.
-            hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            hess : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The value of the second order derivative (Hessian) of the loss
                 with respect to the elements of y_pred for each sample point.
 
@@ -677,7 +665,7 @@ class LGBMModel(_LGBMModelBase):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_group=None,
-            eval_metric=None, early_stopping_rounds=None, verbose='warn',
+            eval_metric=None, early_stopping_rounds=None,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is set after definition, using a template."""
@@ -775,16 +763,6 @@ class LGBMModel(_LGBMModelBase):
             callbacks = []
         else:
             callbacks = copy.copy(callbacks)  # don't use deepcopy here to allow non-serializable objects
-
-        if verbose != 'warn':
-            _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM. "
-                         "Pass 'log_evaluation()' callback via 'callbacks' argument instead.")
-        else:
-            if callbacks:  # assume user has already specified log_evaluation callback
-                verbose = False
-            else:
-                verbose = True
-        callbacks.append(log_evaluation(int(verbose)))
 
         evals_result = {}
         callbacks.append(record_evaluation(evals_result))
@@ -970,13 +948,13 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_metric=None, early_stopping_rounds=None,
-            verbose='warn', feature_name='auto', categorical_feature='auto',
+            feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
         super().fit(X, y, sample_weight=sample_weight, init_score=init_score,
                     eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_init_score=eval_init_score, eval_metric=eval_metric,
-                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    early_stopping_rounds=early_stopping_rounds, feature_name=feature_name,
                     categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
@@ -996,7 +974,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_metric=None,
-            early_stopping_rounds=None, verbose='warn',
+            early_stopping_rounds=None,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
@@ -1043,7 +1021,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                     eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_class_weight=eval_class_weight, eval_init_score=eval_init_score,
                     eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds,
-                    verbose=verbose, feature_name=feature_name, categorical_feature=categorical_feature,
+                    feature_name=feature_name, categorical_feature=categorical_feature,
                     callbacks=callbacks, init_model=init_model)
         return self
 
@@ -1118,7 +1096,7 @@ class LGBMRanker(LGBMModel):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric=None,
-            eval_at=(1, 2, 3, 4, 5), early_stopping_rounds=None, verbose='warn',
+            eval_at=(1, 2, 3, 4, 5), early_stopping_rounds=None,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
@@ -1142,7 +1120,7 @@ class LGBMRanker(LGBMModel):
         super().fit(X, y, sample_weight=sample_weight, init_score=init_score, group=group,
                     eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_init_score=eval_init_score, eval_group=eval_group, eval_metric=eval_metric,
-                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    early_stopping_rounds=early_stopping_rounds, feature_name=feature_name,
                     categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 

@@ -9,15 +9,15 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _ConfigAliases, _InnerPredictor, _log_warning
+from .basic import Booster, Dataset, LightGBMError, _ArrayLike, _ConfigAliases, _InnerPredictor, _log_warning
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomObjectiveFunction = Callable[
-    [Union[List, np.ndarray], Dataset],
-    Tuple[Union[List, np.ndarray], Union[List, np.ndarray]]
+    [np.ndarray, Dataset],
+    Tuple[_ArrayLike, _ArrayLike]
 ]
 _LGBM_CustomMetricFunction = Callable[
-    [Union[List, np.ndarray], Dataset],
+    [np.ndarray, Dataset],
     Tuple[str, float, bool]
 ]
 
@@ -36,7 +36,6 @@ def train(
     early_stopping_rounds: Optional[int] = None,
     evals_result: Optional[Dict[str, Any]] = None,
     verbose_eval: Union[bool, int, str] = 'warn',
-    learning_rates: Optional[Union[List[float], Callable[[int], float]]] = None,
     keep_training_booster: bool = False,
     callbacks: Optional[List[Callable]] = None
 ) -> Booster:
@@ -59,16 +58,16 @@ def train(
         Should accept two parameters: preds, train_data,
         and return (grad, hess).
 
-            preds : list or numpy 1-D array
+            preds : numpy 1-D array
                 The predicted values.
                 Predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task.
             train_data : Dataset
                 The training dataset.
-            grad : list or numpy 1-D array
+            grad : list, numpy 1-D array or pandas Series
                 The value of the first order derivative (gradient) of the loss
                 with respect to the elements of preds for each sample point.
-            hess : list or numpy 1-D array
+            hess : list, numpy 1-D array or pandas Series
                 The value of the second order derivative (Hessian) of the loss
                 with respect to the elements of preds for each sample point.
 
@@ -81,7 +80,7 @@ def train(
         Each evaluation function should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-            preds : list or numpy 1-D array
+            preds : numpy 1-D array
                 The predicted values.
                 If ``fobj`` is specified, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -145,10 +144,6 @@ def train(
         With ``verbose_eval`` = 4 and at least one item in ``valid_sets``,
         an evaluation metric is printed every 4 (instead of 1) boosting stages.
 
-    learning_rates : list, callable or None, optional (default=None)
-        List of learning rates for each boosting round
-        or a callable that calculates ``learning_rate``
-        in terms of current number of round (e.g. yields learning rate decay).
     keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
         If False, the returned value will be converted into _InnerPredictor before returning.
@@ -250,11 +245,6 @@ def train(
 
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
-
-    if learning_rates is not None:
-        _log_warning("'learning_rates' argument is deprecated and will be removed in a future release of LightGBM. "
-                     "Pass 'reset_parameter()' callback via 'callbacks' argument instead.")
-        callbacks.add(callback.reset_parameter(learning_rate=learning_rates))
 
     if evals_result is not None:
         _log_warning("'evals_result' argument is deprecated and will be removed in a future release of LightGBM. "
@@ -469,16 +459,16 @@ def cv(params, train_set, num_boost_round=100,
         Should accept two parameters: preds, train_data,
         and return (grad, hess).
 
-            preds : list or numpy 1-D array
+            preds : numpy 1-D array
                 The predicted values.
                 Predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task.
             train_data : Dataset
                 The training dataset.
-            grad : list or numpy 1-D array
+            grad : list, numpy 1-D array or pandas Series
                 The value of the first order derivative (gradient) of the loss
                 with respect to the elements of preds for each sample point.
-            hess : list or numpy 1-D array
+            hess : list, numpy 1-D array or pandas Series
                 The value of the second order derivative (Hessian) of the loss
                 with respect to the elements of preds for each sample point.
 
@@ -491,7 +481,7 @@ def cv(params, train_set, num_boost_round=100,
         Each evaluation function should accept two parameters: preds, train_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-            preds : list or numpy 1-D array
+            preds : numpy 1-D array
                 The predicted values.
                 If ``fobj`` is specified, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
