@@ -6,6 +6,8 @@
 
 #ifdef USE_CUDA
 
+#include <algorithm>
+
 #include <LightGBM/cuda/cuda_algorithms.hpp>
 #include "cuda_best_split_finder.hpp"
 
@@ -797,7 +799,7 @@ __device__ void FindBestSplitsForLeafKernelInner_GlobalMemory(
     }
   } else {
     for (unsigned int bin = threadIdx_x; bin < feature_num_bin_minus_offset; bin += blockDim.x) {
-      const bool skip_sum = bin >= static_cast<unsigned int>(task->na_as_missing) && 
+      const bool skip_sum = bin >= static_cast<unsigned int>(task->na_as_missing) &&
         (task->skip_default_bin && (task->num_bin - 1 - bin) == static_cast<int>(task->default_bin));
       if (!skip_sum) {
         const unsigned int read_index = feature_num_bin_minus_offset - 1 - bin;

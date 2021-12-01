@@ -14,6 +14,7 @@
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 
+#include <algorithm>
 #include <memory>
 
 namespace LightGBM {
@@ -385,7 +386,7 @@ void CUDASingleGPUTreeLearner::AllocateBitset() {
         max_cat_num_bin = std::max(bin_mapper->num_bin(), max_cat_num_bin);
       }
     }
-    // std::max(..., 1UL) to avoid error in the case when there are NaN's in the categorical values 
+    // std::max(..., 1UL) to avoid error in the case when there are NaN's in the categorical values
     const size_t cuda_bitset_max_size = std::max(static_cast<size_t>((max_cat_value + 31) / 32), 1UL);
     const size_t cuda_bitset_inner_max_size = std::max(static_cast<size_t>((max_cat_num_bin + 31) / 32), 1UL);
     AllocateCUDAMemory<uint32_t>(&cuda_bitset_, cuda_bitset_max_size, __FILE__, __LINE__);

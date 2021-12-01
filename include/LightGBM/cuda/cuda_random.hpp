@@ -69,6 +69,6 @@ class CUDARandom {
 
 }  // namespace LightGBM
 
-#endif // USE_CUDA
+#endif  // USE_CUDA
 
-#endif   // LIGHTGBM_CUDA_CUDA_RANDOM_HPP_
+#endif  // LIGHTGBM_CUDA_CUDA_RANDOM_HPP_

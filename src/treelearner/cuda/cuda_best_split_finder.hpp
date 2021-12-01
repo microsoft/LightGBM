@@ -37,7 +37,6 @@ struct SplitFindTask {
   uint8_t mfb_offset;
   uint32_t num_bin;
   uint32_t default_bin;
-  //CUDARandom* cuda_random;
   int rand_threshold;
 };
 
@@ -90,7 +89,6 @@ class CUDABestSplitFinder {
   void ResetConfig(const Config* config, const hist_t* cuda_hist);
 
  private:
-
   #define LaunchFindBestSplitsForLeafKernel_PARAMS \
     const CUDALeafSplitsStruct* smaller_leaf_splits, \
     const CUDALeafSplitsStruct* larger_leaf_splits, \

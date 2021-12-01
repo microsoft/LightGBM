@@ -15,7 +15,7 @@ void SynchronizeCUDADevice(const char* file, const int line) {
 
 void PrintLastCUDAError() {
   const char* error_name = cudaGetErrorName(cudaGetLastError());
-  Log::Warning(error_name); 
+  Log::Warning(error_name);
 }
 
 void SetCUDADevice(int gpu_device_id, const char* file, int line) {

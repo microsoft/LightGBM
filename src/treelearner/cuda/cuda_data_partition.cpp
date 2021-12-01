@@ -7,6 +7,7 @@
 #ifdef USE_CUDA
 
 #include <algorithm>
+#include <memory>
 
 #include "cuda_data_partition.hpp"
 

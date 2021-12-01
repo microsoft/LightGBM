@@ -12,9 +12,9 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 
-#include <vector>
-
 #include <LightGBM/utils/log.h>
+
+#include <vector>
 
 namespace LightGBM {
 
@@ -109,7 +109,7 @@ class CUDAVector {
     data_ = nullptr;
   }
 
-  CUDAVector(size_t size) {
+  explicit CUDAVector(size_t size) {
     size_ = size;
     AllocateCUDAMemory<T>(&data_, size_, __FILE__, __LINE__);
   }
