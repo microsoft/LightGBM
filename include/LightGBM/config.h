@@ -210,7 +210,7 @@ struct Config {
   // desc = **Note**: it is recommended to use the smaller ``max_bin`` (e.g. 63) to get the better speed up
   // desc = **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training
   // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
-  std::string device_type = "cpu";
+  std::string device_type = "cuda";
 
   // [doc-only]
   // alias = random_seed, random_state
@@ -1020,7 +1020,7 @@ struct Config {
 
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
   // desc = **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is currently supported
-  bool gpu_use_dp = false;
+  bool gpu_use_dp = true;
 
   // check = >0
   // desc = number of GPUs
