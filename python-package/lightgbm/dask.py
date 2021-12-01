@@ -930,7 +930,7 @@ def _predict(
             num_cols = model.n_features_ + 1
 
             nrows_per_chunk = data.chunks[0]
-            out = [[] for _ in range(num_classes)]
+            out: List[List[dask_Array]] = [[] for _ in range(num_classes)]
 
             # need to tell Dask the expected type and shape of individual preds
             pred_meta = data._meta
@@ -955,14 +955,17 @@ def _predict(
 
             # At this point, `out` is a list of lists of delayeds (each of which points to a matrix).
             # Concatenate them to return a list of Dask Arrays.
+            out_arrays: List[dask_Array] = []
             for i in range(num_classes):
-                out[i] = dask_array_from_delayed(
-                    value=delayed(concat_fn)(out[i]),
-                    shape=(data.shape[0], num_cols),
-                    meta=pred_meta
+                out_arrays.append(
+                    dask_array_from_delayed(
+                        value=delayed(concat_fn)(out[i]),
+                        shape=(data.shape[0], num_cols),
+                        meta=pred_meta
+                    )
                 )
 
-            return out
+            return out_arrays
 
         data_row = client.compute(data[[0]]).result()
         predict_fn = partial(
