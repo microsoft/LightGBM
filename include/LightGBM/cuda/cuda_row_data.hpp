@@ -18,15 +18,25 @@
 
 #include "../train_share_states.h"
 
-#define SHRAE_HIST_SIZE (6144)
 #define COPY_SUBROW_BLOCK_SIZE_ROW_DATA (1024)
+
+#ifndef CUDART_VERSION
+#error CUDART_VERSION Undefined!
+#elif CUDART_VERSION == 10000
+#define DP_SHARED_HIST_SIZE (5560)
+#else
+#define DP_SHARED_HIST_SIZE (6144)
+#endif
+#define SP_SHARED_HIST_SIZE (DP_SHARED_HIST_SIZE * 2)
 
 namespace LightGBM {
 
 class CUDARowData {
  public:
   CUDARowData(const Dataset* train_data,
-              const TrainingShareStates* train_share_state, const int gpu_device_id);
+              const TrainingShareStates* train_share_state,
+              const int gpu_device_id,
+              const bool gpu_use_dp);
 
   ~CUDARowData();
 
@@ -75,6 +85,8 @@ class CUDARowData {
   const uint32_t* cuda_column_hist_offsets() const { return cuda_column_hist_offsets_; }
 
   const uint32_t* cuda_partition_hist_offsets() const { return cuda_partition_hist_offsets_; }
+
+  int shared_hist_size() const { return shared_hist_size_; }
 
  private:
   void DivideCUDAFeatureGroups(const Dataset* train_data, TrainingShareStates* share_state);
@@ -134,6 +146,10 @@ class CUDARowData {
   std::vector<int> large_bin_partitions_;
   /*! \brief index of partitions with small bins */
   std::vector<int> small_bin_partitions_;
+  /*! \brief shared memory size used by histogram */
+  int shared_hist_size_;
+  /*! \brief whether to use double precision in histograms per block */
+  bool gpu_use_dp_;
 
   // CUDA memory
 

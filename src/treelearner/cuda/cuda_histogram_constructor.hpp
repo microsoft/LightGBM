@@ -17,7 +17,6 @@
 
 #include "cuda_leaf_splits.hpp"
 
-#define SHRAE_HIST_SIZE (6144)
 #define NUM_DATA_PER_THREAD (400)
 #define NUM_THRADS_PER_BLOCK (504)
 #define NUM_FEATURE_PER_THREAD_GROUP (28)
@@ -37,7 +36,8 @@ class CUDAHistogramConstructor {
     const std::vector<uint32_t>& feature_hist_offsets,
     const int min_data_in_leaf,
     const double min_sum_hessian_in_leaf,
-    const int gpu_device_id);
+    const int gpu_device_id,
+    const bool gpu_use_dp);
 
   ~CUDAHistogramConstructor();
 
@@ -71,14 +71,14 @@ class CUDAHistogramConstructor {
     int* block_dim_y,
     const data_size_t num_data_in_smaller_leaf);
 
-  void LaunchConstructHistogramKernel(
+  template <typename HIST_TYPE, size_t SHARED_HIST_SIZE>
+  void LaunchConstructHistogramKernelInner(
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
     const data_size_t num_data_in_smaller_leaf);
 
-  void LaunchSparseConstructHistogramKernel(
-    const dim3 grid_dim,
-    const dim3 block_dim,
-    const CUDALeafSplitsStruct* cuda_smaller_leaf_splits);
+  void LaunchConstructHistogramKernel(
+    const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
+    const data_size_t num_data_in_smaller_leaf);
 
   void LaunchSubtractHistogramKernel(
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
@@ -142,7 +142,10 @@ class CUDAHistogramConstructor {
   /*! \brief hessians on CUDA */
   const score_t* cuda_hessians_;
 
+  /*! \brief GPU device index */
   const int gpu_device_id_;
+  /*! \brief use double precision histogram per block */
+  const bool gpu_use_dp_;
 };
 
 }  // namespace LightGBM

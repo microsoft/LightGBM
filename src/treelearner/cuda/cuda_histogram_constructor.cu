@@ -14,7 +14,7 @@
 
 namespace LightGBM {
 
-template <typename BIN_TYPE>
+template <typename BIN_TYPE, typename HIST_TYPE, size_t SHARED_HIST_SIZE>
 __global__ void CUDAConstructHistogramDenseKernel(
   const CUDALeafSplitsStruct* smaller_leaf_splits,
   const score_t* cuda_gradients,
@@ -28,7 +28,7 @@ __global__ void CUDAConstructHistogramDenseKernel(
   const data_size_t num_data_in_smaller_leaf = smaller_leaf_splits->num_data_in_leaf;
   const data_size_t num_data_per_thread = (num_data_in_smaller_leaf + dim_y - 1) / dim_y;
   const data_size_t* data_indices_ref = smaller_leaf_splits->data_indices_in_leaf;
-  __shared__ double shared_hist[SHRAE_HIST_SIZE];
+  __shared__ HIST_TYPE shared_hist[SHARED_HIST_SIZE];
   const unsigned int num_threads_per_block = blockDim.x * blockDim.y;
   const int partition_column_start = feature_partition_column_index_offsets[blockIdx.x];
   const int partition_column_end = feature_partition_column_index_offsets[blockIdx.x + 1];
@@ -48,14 +48,14 @@ __global__ void CUDAConstructHistogramDenseKernel(
   data_size_t block_num_data = max(0, min(num_data_in_smaller_leaf - block_start, num_data_per_thread * static_cast<data_size_t>(blockDim.y)));
   const int column_index = static_cast<int>(threadIdx.x) + partition_column_start;
   if (threadIdx.x < static_cast<unsigned int>(num_columns_in_partition)) {
-    double* shared_hist_ptr = shared_hist + (column_hist_offsets[column_index] << 1);
+    HIST_TYPE* shared_hist_ptr = shared_hist + (column_hist_offsets[column_index] << 1);
     for (data_size_t inner_data_index = static_cast<data_size_t>(threadIdx.y); inner_data_index < block_num_data; inner_data_index += blockDim.y) {
       const data_size_t data_index = data_indices_ref_this_block[inner_data_index];
       const score_t grad = cuda_gradients[data_index];
       const score_t hess = cuda_hessians[data_index];
       const uint32_t bin = static_cast<uint32_t>(data_ptr[data_index * num_columns_in_partition + threadIdx.x]);
       const uint32_t pos = bin << 1;
-      double* pos_ptr = shared_hist_ptr + pos;
+      HIST_TYPE* pos_ptr = shared_hist_ptr + pos;
       atomicAdd_block(pos_ptr, grad);
       atomicAdd_block(pos_ptr + 1, hess);
     }
@@ -67,7 +67,7 @@ __global__ void CUDAConstructHistogramDenseKernel(
   }
 }
 
-template <typename BIN_TYPE, typename DATA_PTR_TYPE>
+template <typename BIN_TYPE, typename DATA_PTR_TYPE, typename HIST_TYPE, size_t SHARED_HIST_SIZE>
 __global__ void CUDAConstructHistogramSparseKernel(
   const CUDALeafSplitsStruct* smaller_leaf_splits,
   const score_t* cuda_gradients,
@@ -81,7 +81,7 @@ __global__ void CUDAConstructHistogramSparseKernel(
   const data_size_t num_data_in_smaller_leaf = smaller_leaf_splits->num_data_in_leaf;
   const data_size_t num_data_per_thread = (num_data_in_smaller_leaf + dim_y - 1) / dim_y;
   const data_size_t* data_indices_ref = smaller_leaf_splits->data_indices_in_leaf;
-  __shared__ double shared_hist[SHRAE_HIST_SIZE];
+  __shared__ HIST_TYPE shared_hist[SHARED_HIST_SIZE];
   const unsigned int num_threads_per_block = blockDim.x * blockDim.y;
   const DATA_PTR_TYPE* block_row_ptr = row_ptr + blockIdx.x * (num_data + 1);
   const BIN_TYPE* data_ptr = data + partition_ptr[blockIdx.x];
@@ -112,7 +112,7 @@ __global__ void CUDAConstructHistogramSparseKernel(
       const score_t hess = cuda_hessians[data_index];
       const uint32_t bin = static_cast<uint32_t>(data_ptr[row_start + threadIdx.x]);
       const uint32_t pos = bin << 1;
-      double* pos_ptr = shared_hist + pos;
+      HIST_TYPE* pos_ptr = shared_hist + pos;
       atomicAdd_block(pos_ptr, grad);
       atomicAdd_block(pos_ptr + 1, hess);
     }
@@ -249,6 +249,19 @@ __global__ void CUDAConstructHistogramSparseKernel_GlobalMemory(
 void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
   const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
   const data_size_t num_data_in_smaller_leaf) {
+  if (cuda_row_data_->shared_hist_size() == DP_SHARED_HIST_SIZE && gpu_use_dp_) {
+    LaunchConstructHistogramKernelInner<double, DP_SHARED_HIST_SIZE>(cuda_smaller_leaf_splits, num_data_in_smaller_leaf);
+  } else if (cuda_row_data_->shared_hist_size() == SP_SHARED_HIST_SIZE && !gpu_use_dp_) {
+    LaunchConstructHistogramKernelInner<float, SP_SHARED_HIST_SIZE>(cuda_smaller_leaf_splits, num_data_in_smaller_leaf);
+  } else {
+    Log::Fatal("Unknown shared histogram size %d", cuda_row_data_->shared_hist_size());
+  }
+}
+
+template <typename HIST_TYPE, size_t SHARED_HIST_SIZE>
+void CUDAHistogramConstructor::LaunchConstructHistogramKernelInner(
+  const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
+  const data_size_t num_data_in_smaller_leaf) {
   int grid_dim_x = 0;
   int grid_dim_y = 0;
   int block_dim_x = 0;
@@ -260,7 +273,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
     if (cuda_row_data_->is_sparse()) {
       if (cuda_row_data_->bit_type() == 8) {
         if (cuda_row_data_->row_ptr_bit_type() == 16) {
-          CUDAConstructHistogramSparseKernel<uint8_t, uint16_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+          CUDAConstructHistogramSparseKernel<uint8_t, uint16_t, HIST_TYPE, SHARED_HIST_SIZE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
             cuda_smaller_leaf_splits,
             cuda_gradients_, cuda_hessians_,
             cuda_row_data_->cuda_data_uint8(),
@@ -269,7 +282,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
             cuda_row_data_->cuda_partition_hist_offsets(),
             num_data_);
         } else if (cuda_row_data_->row_ptr_bit_type() == 32) {
-          CUDAConstructHistogramSparseKernel<uint8_t, uint32_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+          CUDAConstructHistogramSparseKernel<uint8_t, uint32_t, HIST_TYPE, SHARED_HIST_SIZE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
             cuda_smaller_leaf_splits,
             cuda_gradients_, cuda_hessians_,
             cuda_row_data_->cuda_data_uint8(),
@@ -278,7 +291,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
             cuda_row_data_->cuda_partition_hist_offsets(),
             num_data_);
         } else if (cuda_row_data_->row_ptr_bit_type() == 64) {
-          CUDAConstructHistogramSparseKernel<uint8_t, uint64_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+          CUDAConstructHistogramSparseKernel<uint8_t, uint64_t, HIST_TYPE, SHARED_HIST_SIZE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
             cuda_smaller_leaf_splits,
             cuda_gradients_, cuda_hessians_,
             cuda_row_data_->cuda_data_uint8(),
@@ -289,7 +302,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
         }
       } else if (cuda_row_data_->bit_type() == 16) {
         if (cuda_row_data_->row_ptr_bit_type() == 16) {
-          CUDAConstructHistogramSparseKernel<uint16_t, uint16_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+          CUDAConstructHistogramSparseKernel<uint16_t, uint16_t, HIST_TYPE, SHARED_HIST_SIZE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
             cuda_smaller_leaf_splits,
             cuda_gradients_, cuda_hessians_,
             cuda_row_data_->cuda_data_uint16(),
@@ -298,7 +311,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
             cuda_row_data_->cuda_partition_hist_offsets(),
             num_data_);
         } else if (cuda_row_data_->row_ptr_bit_type() == 32) {
-          CUDAConstructHistogramSparseKernel<uint16_t, uint32_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+          CUDAConstructHistogramSparseKernel<uint16_t, uint32_t, HIST_TYPE, SHARED_HIST_SIZE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
             cuda_smaller_leaf_splits,
             cuda_gradients_, cuda_hessians_,
             cuda_row_data_->cuda_data_uint16(),
@@ -307,7 +320,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
             cuda_row_data_->cuda_partition_hist_offsets(),
             num_data_);
         } else if (cuda_row_data_->row_ptr_bit_type() == 64) {
-          CUDAConstructHistogramSparseKernel<uint16_t, uint64_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+          CUDAConstructHistogramSparseKernel<uint16_t, uint64_t, HIST_TYPE, SHARED_HIST_SIZE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
             cuda_smaller_leaf_splits,
             cuda_gradients_, cuda_hessians_,
             cuda_row_data_->cuda_data_uint16(),
@@ -318,7 +331,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
         }
       } else if (cuda_row_data_->bit_type() == 32) {
         if (cuda_row_data_->row_ptr_bit_type() == 16) {
-          CUDAConstructHistogramSparseKernel<uint32_t, uint16_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+          CUDAConstructHistogramSparseKernel<uint32_t, uint16_t, HIST_TYPE, SHARED_HIST_SIZE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
             cuda_smaller_leaf_splits,
             cuda_gradients_, cuda_hessians_,
             cuda_row_data_->cuda_data_uint32(),
@@ -327,7 +340,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
             cuda_row_data_->cuda_partition_hist_offsets(),
             num_data_);
         } else if (cuda_row_data_->row_ptr_bit_type() == 32) {
-          CUDAConstructHistogramSparseKernel<uint32_t, uint32_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+          CUDAConstructHistogramSparseKernel<uint32_t, uint32_t, HIST_TYPE, SHARED_HIST_SIZE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
             cuda_smaller_leaf_splits,
             cuda_gradients_, cuda_hessians_,
             cuda_row_data_->cuda_data_uint32(),
@@ -336,7 +349,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
             cuda_row_data_->cuda_partition_hist_offsets(),
             num_data_);
         } else if (cuda_row_data_->row_ptr_bit_type() == 64) {
-          CUDAConstructHistogramSparseKernel<uint32_t, uint64_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+          CUDAConstructHistogramSparseKernel<uint32_t, uint64_t, HIST_TYPE, SHARED_HIST_SIZE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
             cuda_smaller_leaf_splits,
             cuda_gradients_, cuda_hessians_,
             cuda_row_data_->cuda_data_uint32(),
@@ -348,7 +361,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
       }
     } else {
       if (cuda_row_data_->bit_type() == 8) {
-        CUDAConstructHistogramDenseKernel<uint8_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+        CUDAConstructHistogramDenseKernel<uint8_t, HIST_TYPE, SHARED_HIST_SIZE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
           cuda_row_data_->cuda_data_uint8(),
@@ -357,7 +370,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
           cuda_row_data_->cuda_feature_partition_column_index_offsets(),
           num_data_);
       } else if (cuda_row_data_->bit_type() == 16) {
-        CUDAConstructHistogramDenseKernel<uint16_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+        CUDAConstructHistogramDenseKernel<uint16_t, HIST_TYPE, SHARED_HIST_SIZE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
           cuda_row_data_->cuda_data_uint16(),
@@ -366,7 +379,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
           cuda_row_data_->cuda_feature_partition_column_index_offsets(),
           num_data_);
       } else if (cuda_row_data_->bit_type() == 32) {
-        CUDAConstructHistogramDenseKernel<uint32_t><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+        CUDAConstructHistogramDenseKernel<uint32_t, HIST_TYPE, SHARED_HIST_SIZE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
           cuda_row_data_->cuda_data_uint32(),

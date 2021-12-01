@@ -11,10 +11,18 @@ namespace LightGBM {
 
 CUDARowData::CUDARowData(const Dataset* train_data,
                          const TrainingShareStates* train_share_state,
-                         const int gpu_device_id): gpu_device_id_(gpu_device_id) {
+                         const int gpu_device_id,
+                         const bool gpu_use_dp):
+gpu_device_id_(gpu_device_id),
+gpu_use_dp_(gpu_use_dp) {
   num_threads_ = OMP_NUM_THREADS();
   num_data_ = train_data->num_data();
   const auto& feature_hist_offsets = train_share_state->feature_hist_offsets();
+  if (gpu_use_dp_) {
+    shared_hist_size_ = DP_SHARED_HIST_SIZE;
+  } else {
+    shared_hist_size_ = SP_SHARED_HIST_SIZE;
+  }
   if (feature_hist_offsets.empty()) {
     num_total_bin_ = 0;
   } else {
@@ -169,7 +177,7 @@ void CUDARowData::Init(const Dataset* train_data, TrainingShareStates* train_sha
 }
 
 void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingShareStates* share_state) {
-  const uint32_t max_num_bin_per_partition = SHRAE_HIST_SIZE / 2;
+  const uint32_t max_num_bin_per_partition = shared_hist_size_ / 2;
   const std::vector<uint32_t>& column_hist_offsets = share_state->column_hist_offsets();
   std::vector<int> feature_group_num_feature_offsets;
   int offsets = 0;
