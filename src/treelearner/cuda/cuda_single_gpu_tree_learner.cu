@@ -10,6 +10,8 @@
 
 #include "cuda_single_gpu_tree_learner.hpp"
 
+#include <algorithm>
+
 namespace LightGBM {
 
 __global__ void ReduceLeafStatKernel_SharedMemory(

@@ -267,8 +267,6 @@ class MulticlassOVA: public ObjectiveFunction {
   }
 
  private:
-  MulticlassOVA() {}
-
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of classes */
