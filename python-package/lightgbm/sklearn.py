@@ -258,17 +258,6 @@ _lgbmmodel_doc_fit = (
         If there's more than one, will check all of them. But the training data is ignored anyway.
         To check only the first metric, set the ``first_metric_only`` parameter to ``True``
         in additional parameters ``**kwargs`` of the model constructor.
-    verbose : bool or int, optional (default=True)
-        Requires at least one evaluation data.
-        If True, the eval metric on the eval set is printed at each boosting stage.
-        If int, the eval metric on the eval set is printed at every ``verbose`` boosting stage.
-        The last boosting stage or the boosting stage found by using ``early_stopping_rounds`` is also printed.
-
-        .. rubric:: Example
-
-        With ``verbose`` = 4 and at least one item in ``eval_set``,
-        an evaluation metric is printed every 4 (instead of 1) boosting stages.
-
     feature_name : list of str, or 'auto', optional (default='auto')
         Feature names.
         If 'auto' and data is pandas DataFrame, data columns names are used.
@@ -597,7 +586,7 @@ class LGBMModel(_LGBMModelBase):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_group=None,
-            eval_metric=None, early_stopping_rounds=None, verbose='warn',
+            eval_metric=None, early_stopping_rounds=None,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is set after definition, using a template."""
@@ -751,16 +740,6 @@ class LGBMModel(_LGBMModelBase):
             callbacks = []
         else:
             callbacks = copy.copy(callbacks)  # don't use deepcopy here to allow non-serializable objects
-
-        if verbose != 'warn':
-            _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM. "
-                         "Pass 'log_evaluation()' callback via 'callbacks' argument instead.")
-        else:
-            if callbacks:  # assume user has already specified log_evaluation callback
-                verbose = False
-            else:
-                verbose = True
-        callbacks.append(log_evaluation(int(verbose)))
 
         evals_result = {}
         callbacks.append(record_evaluation(evals_result))
@@ -931,13 +910,13 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_metric=None, early_stopping_rounds=None,
-            verbose='warn', feature_name='auto', categorical_feature='auto',
+            feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
         super().fit(X, y, sample_weight=sample_weight, init_score=init_score,
                     eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_init_score=eval_init_score, eval_metric=eval_metric,
-                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    early_stopping_rounds=early_stopping_rounds, feature_name=feature_name,
                     categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
@@ -957,7 +936,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_metric=None,
-            early_stopping_rounds=None, verbose='warn',
+            early_stopping_rounds=None,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
@@ -1004,7 +983,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                     eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_class_weight=eval_class_weight, eval_init_score=eval_init_score,
                     eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds,
-                    verbose=verbose, feature_name=feature_name, categorical_feature=categorical_feature,
+                    feature_name=feature_name, categorical_feature=categorical_feature,
                     callbacks=callbacks, init_model=init_model)
         return self
 
@@ -1079,7 +1058,7 @@ class LGBMRanker(LGBMModel):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric=None,
-            eval_at=(1, 2, 3, 4, 5), early_stopping_rounds=None, verbose='warn',
+            eval_at=(1, 2, 3, 4, 5), early_stopping_rounds=None,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
@@ -1103,7 +1082,7 @@ class LGBMRanker(LGBMModel):
         super().fit(X, y, sample_weight=sample_weight, init_score=init_score, group=group,
                     eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_init_score=eval_init_score, eval_group=eval_group, eval_metric=eval_metric,
-                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    early_stopping_rounds=early_stopping_rounds, feature_name=feature_name,
                     categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
