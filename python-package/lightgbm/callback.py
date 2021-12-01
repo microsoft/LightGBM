@@ -25,7 +25,7 @@ class EarlyStopException(Exception):
         ----------
         best_iteration : int
             The best iteration stopped.
-        best_score : list of (eval_name, metric_name, eval_result, is_higher_better) tuples
+        best_score : list of (eval_name, metric_name, eval_result, is_higher_better) tuple
             Scores for each metric, on each validation set, as of the best iteration.
         """
         super().__init__()
