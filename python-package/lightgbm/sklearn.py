@@ -853,9 +853,9 @@ class LGBMModel(_LGBMModelBase):
         This might be less than parameter ``n_estimators`` if early stopping was enabled or
         if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
         """
-        if not self.__sklearn_is_fitted__() or self._Booster is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_estimators found. Need to call fit beforehand.')
-        return self._Booster.current_iteration()
+        return self._Booster.current_iteration()  # type: ignore
 
     @property
     def n_iter_(self) -> int:
@@ -864,9 +864,9 @@ class LGBMModel(_LGBMModelBase):
         This might be less than parameter ``n_estimators`` if early stopping was enabled or
         if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
         """
-        if not self.__sklearn_is_fitted__() or self._Booster is None:
+        if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_iter found. Need to call fit beforehand.')
-        return self._Booster.current_iteration()
+        return self._Booster.current_iteration()  # type: ignore
 
     @property
     def booster_(self):
