@@ -229,7 +229,7 @@ def _accuracy_score(dy_true, dy_pred):
     return da.average(dy_true == dy_pred).compute()
 
 
-def _constant_metric(dy_true, dy_pred):
+def _constant_metric(y_true, y_pred):
     metric_name = 'constant_metric'
     value = 0.708
     is_higher_better = False
@@ -900,8 +900,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
             'eval_names': eval_names,
             'eval_sample_weight': eval_sample_weight,
             'eval_init_score': eval_init_score,
-            'eval_metric': eval_metrics,
-            'verbose': True
+            'eval_metric': eval_metrics
         }
         if task == 'ranking':
             fit_params.update(
