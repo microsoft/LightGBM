@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - master
+    - bump_macos
   tags:
     include:
     - v*
@@ -217,7 +217,7 @@ jobs:
     OS_NAME: 'macos'
     PRODUCES_ARTIFACTS: 'true'
   pool:
-    vmImage: 'macOS-10.14'
+    vmImage: 'macOS-10.15'
   strategy:
     matrix:
       regular:
