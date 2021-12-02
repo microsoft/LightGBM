@@ -2,11 +2,11 @@
 """Scikit-learn wrapper interface for LightGBM."""
 import copy
 from inspect import signature
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import Dataset, LightGBMError, _ArrayLike, _choose_param_value, _ConfigAliases, _log_warning
+from .basic import Booster, Dataset, LightGBMError, _ArrayLike, _choose_param_value, _ConfigAliases, _log_warning
 from .callback import log_evaluation, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
@@ -258,17 +258,6 @@ _lgbmmodel_doc_fit = (
         If there's more than one, will check all of them. But the training data is ignored anyway.
         To check only the first metric, set the ``first_metric_only`` parameter to ``True``
         in additional parameters ``**kwargs`` of the model constructor.
-    verbose : bool or int, optional (default=True)
-        Requires at least one evaluation data.
-        If True, the eval metric on the eval set is printed at each boosting stage.
-        If int, the eval metric on the eval set is printed at every ``verbose`` boosting stage.
-        The last boosting stage or the boosting stage found by using ``early_stopping_rounds`` is also printed.
-
-        .. rubric:: Example
-
-        With ``verbose`` = 4 and at least one item in ``eval_set``,
-        an evaluation metric is printed every 4 (instead of 1) boosting stages.
-
     feature_name : list of str, or 'auto', optional (default='auto')
         Feature names.
         If 'auto' and data is pandas DataFrame, data columns names are used.
@@ -525,11 +514,11 @@ class LGBMModel(_LGBMModelBase):
         self.random_state = random_state
         self.n_jobs = n_jobs
         self.importance_type = importance_type
-        self._Booster = None
+        self._Booster: Optional[Booster] = None
         self._evals_result = None
         self._best_score = None
         self._best_iteration = None
-        self._other_params = {}
+        self._other_params: Dict[str, Any] = {}
         self._objective = objective
         self.class_weight = class_weight
         self._class_weight = None
@@ -593,38 +582,49 @@ class LGBMModel(_LGBMModelBase):
             self._other_params[key] = value
         return self
 
-    def fit(self, X, y,
-            sample_weight=None, init_score=None, group=None,
-            eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_class_weight=None, eval_init_score=None, eval_group=None,
-            eval_metric=None, early_stopping_rounds=None, verbose='warn',
-            feature_name='auto', categorical_feature='auto',
-            callbacks=None, init_model=None):
-        """Docstring is set after definition, using a template."""
+    def _process_params(self, stage: str) -> Dict[str, Any]:
+        """Process the parameters of this estimator based on its type, parameter aliases, etc.
+
+        Parameters
+        ----------
+        stage : str
+            Name of the stage (can be ``fit`` or ``predict``) this method is called from.
+
+        Returns
+        -------
+        processed_params : dict
+            Processed parameter names mapped to their values.
+        """
+        assert stage in {"fit", "predict"}
         params = self.get_params()
 
         params.pop('objective', None)
         for alias in _ConfigAliases.get('objective'):
             if alias in params:
-                self._objective = params.pop(alias)
+                obj = params.pop(alias)
                 _log_warning(f"Found '{alias}' in params. Will use it instead of 'objective' argument")
-        if self._objective is None:
-            if isinstance(self, LGBMRegressor):
-                self._objective = "regression"
-            elif isinstance(self, LGBMClassifier):
-                if self._n_classes > 2:
-                    self._objective = "multiclass"
+                if stage == "fit":
+                    self._objective = obj
+        if stage == "fit":
+            if self._objective is None:
+                if isinstance(self, LGBMRegressor):
+                    self._objective = "regression"
+                elif isinstance(self, LGBMClassifier):
+                    if self._n_classes > 2:
+                        self._objective = "multiclass"
+                    else:
+                        self._objective = "binary"
+                elif isinstance(self, LGBMRanker):
+                    self._objective = "lambdarank"
                 else:
-                    self._objective = "binary"
-            elif isinstance(self, LGBMRanker):
-                self._objective = "lambdarank"
-            else:
-                raise ValueError("Unknown LGBMModel type.")
+                    raise ValueError("Unknown LGBMModel type.")
         if callable(self._objective):
-            self._fobj = _ObjectiveFunctionWrapper(self._objective)
+            if stage == "fit":
+                self._fobj = _ObjectiveFunctionWrapper(self._objective)
             params['objective'] = 'None'  # objective = nullptr for unknown objective
         else:
-            self._fobj = None
+            if stage == "fit":
+                self._fobj = None
             params['objective'] = self._objective
 
         params.pop('importance_type', None)
@@ -645,16 +645,6 @@ class LGBMModel(_LGBMModelBase):
                     eval_at = params.pop(alias)
             params['eval_at'] = eval_at
 
-        # Do not modify original args in fit function
-        # Refer to https://github.com/microsoft/LightGBM/pull/2619
-        eval_metric_list = copy.deepcopy(eval_metric)
-        if not isinstance(eval_metric_list, list):
-            eval_metric_list = [eval_metric_list]
-
-        # Separate built-in from callable evaluation metrics
-        eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
-        eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, str)]
-
         # register default metric for consistency with callable eval_metric case
         original_metric = self._objective if isinstance(self._objective, str) else None
         if original_metric is None:
@@ -668,6 +658,28 @@ class LGBMModel(_LGBMModelBase):
 
         # overwrite default metric by explicitly set metric
         params = _choose_param_value("metric", params, original_metric)
+
+        return params
+
+    def fit(self, X, y,
+            sample_weight=None, init_score=None, group=None,
+            eval_set=None, eval_names=None, eval_sample_weight=None,
+            eval_class_weight=None, eval_init_score=None, eval_group=None,
+            eval_metric=None, early_stopping_rounds=None,
+            feature_name='auto', categorical_feature='auto',
+            callbacks=None, init_model=None):
+        """Docstring is set after definition, using a template."""
+        params = self._process_params(stage="fit")
+
+        # Do not modify original args in fit function
+        # Refer to https://github.com/microsoft/LightGBM/pull/2619
+        eval_metric_list = copy.deepcopy(eval_metric)
+        if not isinstance(eval_metric_list, list):
+            eval_metric_list = [eval_metric_list]
+
+        # Separate built-in from callable evaluation metrics
+        eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
+        eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, str)]
 
         # concatenate metric from params (or default if not provided in params) and eval_metric
         params['metric'] = [params['metric']] if isinstance(params['metric'], (str, type(None))) else params['metric']
@@ -752,16 +764,6 @@ class LGBMModel(_LGBMModelBase):
         else:
             callbacks = copy.copy(callbacks)  # don't use deepcopy here to allow non-serializable objects
 
-        if verbose != 'warn':
-            _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM. "
-                         "Pass 'log_evaluation()' callback via 'callbacks' argument instead.")
-        else:
-            if callbacks:  # assume user has already specified log_evaluation callback
-                verbose = False
-            else:
-                verbose = True
-        callbacks.append(log_evaluation(int(verbose)))
-
         evals_result = {}
         callbacks.append(record_evaluation(evals_result))
 
@@ -820,8 +822,23 @@ class LGBMModel(_LGBMModelBase):
             raise ValueError("Number of features of the model must "
                              f"match the input. Model n_features_ is {self._n_features} and "
                              f"input n_features is {n_features}")
+        # retrive original params that possibly can be used in both training and prediction
+        # and then overwrite them (considering aliases) with params that were passed directly in prediction
+        predict_params = self._process_params(stage="predict")
+        for alias in _ConfigAliases.get_by_alias(
+            "data",
+            "X",
+            "raw_score",
+            "start_iteration",
+            "num_iteration",
+            "pred_leaf",
+            "pred_contrib",
+            *kwargs.keys()
+        ):
+            predict_params.pop(alias, None)
+        predict_params.update(kwargs)
         return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
-                                     pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
+                                     pred_leaf=pred_leaf, pred_contrib=pred_contrib, **predict_params)
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
@@ -876,7 +893,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_estimators found. Need to call fit beforehand.')
-        return self._Booster.current_iteration()
+        return self._Booster.current_iteration()  # type: ignore
 
     @property
     def n_iter_(self) -> int:
@@ -887,7 +904,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_iter found. Need to call fit beforehand.')
-        return self._Booster.current_iteration()
+        return self._Booster.current_iteration()  # type: ignore
 
     @property
     def booster_(self):
@@ -931,17 +948,17 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_metric=None, early_stopping_rounds=None,
-            verbose='warn', feature_name='auto', categorical_feature='auto',
+            feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
         super().fit(X, y, sample_weight=sample_weight, init_score=init_score,
                     eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_init_score=eval_init_score, eval_metric=eval_metric,
-                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    early_stopping_rounds=early_stopping_rounds, feature_name=feature_name,
                     categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
-    _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRegressor")
+    _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRegressor")  # type: ignore
     _base_doc = (_base_doc[:_base_doc.find('group :')]  # type: ignore
                  + _base_doc[_base_doc.find('eval_set :'):])  # type: ignore
     _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
@@ -957,7 +974,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_metric=None,
-            early_stopping_rounds=None, verbose='warn',
+            early_stopping_rounds=None,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
@@ -1004,11 +1021,11 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                     eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_class_weight=eval_class_weight, eval_init_score=eval_init_score,
                     eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds,
-                    verbose=verbose, feature_name=feature_name, categorical_feature=categorical_feature,
+                    feature_name=feature_name, categorical_feature=categorical_feature,
                     callbacks=callbacks, init_model=init_model)
         return self
 
-    _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMClassifier")
+    _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMClassifier")  # type: ignore
     _base_doc = (_base_doc[:_base_doc.find('group :')]  # type: ignore
                  + _base_doc[_base_doc.find('eval_set :'):])  # type: ignore
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
@@ -1079,7 +1096,7 @@ class LGBMRanker(LGBMModel):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric=None,
-            eval_at=(1, 2, 3, 4, 5), early_stopping_rounds=None, verbose='warn',
+            eval_at=(1, 2, 3, 4, 5), early_stopping_rounds=None,
             feature_name='auto', categorical_feature='auto',
             callbacks=None, init_model=None):
         """Docstring is inherited from the LGBMModel."""
@@ -1103,11 +1120,11 @@ class LGBMRanker(LGBMModel):
         super().fit(X, y, sample_weight=sample_weight, init_score=init_score, group=group,
                     eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
                     eval_init_score=eval_init_score, eval_group=eval_group, eval_metric=eval_metric,
-                    early_stopping_rounds=early_stopping_rounds, verbose=verbose, feature_name=feature_name,
+                    early_stopping_rounds=early_stopping_rounds, feature_name=feature_name,
                     categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
-    _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRanker")
+    _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRanker")  # type: ignore
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_class_weight :')]  # type: ignore
                    + _base_doc[_base_doc.find('eval_init_score :'):])  # type: ignore
     _base_doc = fit.__doc__
