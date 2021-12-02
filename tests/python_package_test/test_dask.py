@@ -229,7 +229,7 @@ def _accuracy_score(dy_true, dy_pred):
     return da.average(dy_true == dy_pred).compute()
 
 
-def _constant_metric(dy_true, dy_pred):
+def _constant_metric(y_true, y_pred):
     metric_name = 'constant_metric'
     value = 0.708
     is_higher_better = False
