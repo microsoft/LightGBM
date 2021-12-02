@@ -756,7 +756,7 @@ std::string Config::SaveMembersToString() const {
   return str_buf.str();
 }
 
-std::string Config::DumpAliases() {
+const std::string Config::DumpAliases() {
   std::stringstream str_buf;
   str_buf << "{";
   str_buf << "\"config\": [\"config_file\"], ";
