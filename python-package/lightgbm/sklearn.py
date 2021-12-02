@@ -250,14 +250,6 @@ _lgbmmodel_doc_fit = (
         If list, it can be a list of built-in metrics, a list of custom evaluation metrics, or a mix of both.
         In either case, the ``metric`` from the model parameters will be evaluated and used as well.
         Default: 'l2' for LGBMRegressor, 'logloss' for LGBMClassifier, 'ndcg' for LGBMRanker.
-    early_stopping_rounds : int or None, optional (default=None)
-        Activates early stopping. The model will train until the validation score stops improving.
-        Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
-        to continue training.
-        Requires at least one validation data and one metric.
-        If there's more than one, will check all of them. But the training data is ignored anyway.
-        To check only the first metric, set the ``first_metric_only`` parameter to ``True``
-        in additional parameters ``**kwargs`` of the model constructor.
     feature_name : list of str, or 'auto', optional (default='auto')
         Feature names.
         If 'auto' and data is pandas DataFrame, data columns names are used.
@@ -661,13 +653,25 @@ class LGBMModel(_LGBMModelBase):
 
         return params
 
-    def fit(self, X, y,
-            sample_weight=None, init_score=None, group=None,
-            eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_class_weight=None, eval_init_score=None, eval_group=None,
-            eval_metric=None, early_stopping_rounds=None,
-            feature_name='auto', categorical_feature='auto',
-            callbacks=None, init_model=None):
+    def fit(
+        self,
+        X,
+        y,
+        sample_weight=None,
+        init_score=None,
+        group=None,
+        eval_set=None,
+        eval_names=None,
+        eval_sample_weight=None,
+        eval_class_weight=None,
+        eval_init_score=None,
+        eval_group=None,
+        eval_metric=None,
+        feature_name='auto',
+        categorical_feature='auto',
+        callbacks=None,
+        init_model=None
+    ):
         """Docstring is set after definition, using a template."""
         params = self._process_params(stage="fit")
 
@@ -753,11 +757,6 @@ class LGBMModel(_LGBMModelBase):
 
         if isinstance(init_model, LGBMModel):
             init_model = init_model.booster_
-
-        if early_stopping_rounds is not None and early_stopping_rounds > 0:
-            _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in a future release of LightGBM. "
-                         "Pass 'early_stopping()' callback via 'callbacks' argument instead.")
-            params['early_stopping_rounds'] = early_stopping_rounds
 
         if callbacks is None:
             callbacks = []
@@ -944,18 +943,38 @@ class LGBMModel(_LGBMModelBase):
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
 
-    def fit(self, X, y,
-            sample_weight=None, init_score=None,
-            eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_init_score=None, eval_metric=None, early_stopping_rounds=None,
-            feature_name='auto', categorical_feature='auto',
-            callbacks=None, init_model=None):
+    def fit(
+        self,
+        X,
+        y,
+        sample_weight=None,
+        init_score=None,
+        eval_set=None,
+        eval_names=None,
+        eval_sample_weight=None,
+        eval_init_score=None,
+        eval_metric=None,
+        feature_name='auto',
+        categorical_feature='auto',
+        callbacks=None,
+        init_model=None
+    ):
         """Docstring is inherited from the LGBMModel."""
-        super().fit(X, y, sample_weight=sample_weight, init_score=init_score,
-                    eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
-                    eval_init_score=eval_init_score, eval_metric=eval_metric,
-                    early_stopping_rounds=early_stopping_rounds, feature_name=feature_name,
-                    categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
+        super().fit(
+            X,
+            y,
+            sample_weight=sample_weight,
+            init_score=init_score,
+            eval_set=eval_set,
+            eval_names=eval_names,
+            eval_sample_weight=eval_sample_weight,
+            eval_init_score=eval_init_score,
+            eval_metric=eval_metric,
+            feature_name=feature_name,
+            categorical_feature=categorical_feature,
+            callbacks=callbacks,
+            init_model=init_model
+        )
         return self
 
     _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRegressor")  # type: ignore
@@ -970,13 +989,23 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     """LightGBM classifier."""
 
-    def fit(self, X, y,
-            sample_weight=None, init_score=None,
-            eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_class_weight=None, eval_init_score=None, eval_metric=None,
-            early_stopping_rounds=None,
-            feature_name='auto', categorical_feature='auto',
-            callbacks=None, init_model=None):
+    def fit(
+        self,
+        X,
+        y,
+        sample_weight=None,
+        init_score=None,
+        eval_set=None,
+        eval_names=None,
+        eval_sample_weight=None,
+        eval_class_weight=None,
+        eval_init_score=None,
+        eval_metric=None,
+        feature_name='auto',
+        categorical_feature='auto',
+        callbacks=None,
+        init_model=None
+    ):
         """Docstring is inherited from the LGBMModel."""
         _LGBMAssertAllFinite(y)
         _LGBMCheckClassificationTargets(y)
@@ -1017,12 +1046,22 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                 else:
                     valid_sets[i] = (valid_x, self._le.transform(valid_y))
 
-        super().fit(X, _y, sample_weight=sample_weight, init_score=init_score, eval_set=valid_sets,
-                    eval_names=eval_names, eval_sample_weight=eval_sample_weight,
-                    eval_class_weight=eval_class_weight, eval_init_score=eval_init_score,
-                    eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds,
-                    feature_name=feature_name, categorical_feature=categorical_feature,
-                    callbacks=callbacks, init_model=init_model)
+        super().fit(
+            X,
+            _y,
+            sample_weight=sample_weight,
+            init_score=init_score,
+            eval_set=valid_sets,
+            eval_names=eval_names,
+            eval_sample_weight=eval_sample_weight,
+            eval_class_weight=eval_class_weight,
+            eval_init_score=eval_init_score,
+            eval_metric=eval_metric,
+            feature_name=feature_name,
+            categorical_feature=categorical_feature,
+            callbacks=callbacks,
+            init_model=init_model
+        )
         return self
 
     _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMClassifier")  # type: ignore
@@ -1092,13 +1131,25 @@ class LGBMRanker(LGBMModel):
         Please use this class mainly for training and applying ranking models in common sklearnish way.
     """
 
-    def fit(self, X, y,
-            sample_weight=None, init_score=None, group=None,
-            eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_init_score=None, eval_group=None, eval_metric=None,
-            eval_at=(1, 2, 3, 4, 5), early_stopping_rounds=None,
-            feature_name='auto', categorical_feature='auto',
-            callbacks=None, init_model=None):
+    def fit(
+        self,
+        X,
+        y,
+        sample_weight=None,
+        init_score=None,
+        group=None,
+        eval_set=None,
+        eval_names=None,
+        eval_sample_weight=None,
+        eval_init_score=None,
+        eval_group=None,
+        eval_metric=None,
+        eval_at=(1, 2, 3, 4, 5),
+        feature_name='auto',
+        categorical_feature='auto',
+        callbacks=None,
+        init_model=None
+    ):
         """Docstring is inherited from the LGBMModel."""
         # check group data
         if group is None:
@@ -1117,18 +1168,30 @@ class LGBMRanker(LGBMModel):
                                  "if you use dict, the index should start from 0")
 
         self._eval_at = eval_at
-        super().fit(X, y, sample_weight=sample_weight, init_score=init_score, group=group,
-                    eval_set=eval_set, eval_names=eval_names, eval_sample_weight=eval_sample_weight,
-                    eval_init_score=eval_init_score, eval_group=eval_group, eval_metric=eval_metric,
-                    early_stopping_rounds=early_stopping_rounds, feature_name=feature_name,
-                    categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
+        super().fit(
+            X,
+            y,
+            sample_weight=sample_weight,
+            init_score=init_score,
+            group=group,
+            eval_set=eval_set,
+            eval_names=eval_names,
+            eval_sample_weight=eval_sample_weight,
+            eval_init_score=eval_init_score,
+            eval_group=eval_group,
+            eval_metric=eval_metric,
+            feature_name=feature_name,
+            categorical_feature=categorical_feature,
+            callbacks=callbacks,
+            init_model=init_model
+        )
         return self
 
     _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRanker")  # type: ignore
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_class_weight :')]  # type: ignore
                    + _base_doc[_base_doc.find('eval_init_score :'):])  # type: ignore
     _base_doc = fit.__doc__
-    _before_early_stop, _early_stop, _after_early_stop = _base_doc.partition('early_stopping_rounds :')
-    fit.__doc__ = f"""{_before_early_stop}eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))
+    _before_feature_name, _feature_name, _after_feature_name = _base_doc.partition('feature_name :')
+    fit.__doc__ = f"""{_before_feature_name}eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))
         The evaluation positions of the specified metric.
-    {_early_stop}{_after_early_stop}"""
+    {_feature_name}{_after_feature_name}"""

@@ -1034,14 +1034,10 @@ class _DaskLGBMModel:
         eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
         eval_at: Optional[Iterable[int]] = None,
-        early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
             raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
-
-        if early_stopping_rounds is not None:
-            raise RuntimeError('early_stopping_rounds is not currently supported in lightgbm.dask')
 
         params = self.get_params(True)
         params.pop("client", None)
@@ -1167,13 +1163,9 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
-        early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
-        if early_stopping_rounds is not None:
-            raise RuntimeError('early_stopping_rounds is not currently supported in lightgbm.dask')
-
         return self._lgb_dask_fit(
             model_factory=LGBMClassifier,
             X=X,
@@ -1200,15 +1192,12 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         eval_group_shape="list of Dask Array or Dask Series, or None, optional (default=None)"
     )
 
-    # DaskLGBMClassifier does not support group, eval_group, early_stopping_rounds.
+    # DaskLGBMClassifier does not support group, eval_group.
     _base_doc = (_base_doc[:_base_doc.find('group :')]
                  + _base_doc[_base_doc.find('eval_set :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('eval_group :')]
                  + _base_doc[_base_doc.find('eval_metric :'):])
-
-    _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
-                 + _base_doc[_base_doc.find('feature_name :'):])
 
     # DaskLGBMClassifier support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
@@ -1348,13 +1337,9 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
-        early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        if early_stopping_rounds is not None:
-            raise RuntimeError('early_stopping_rounds is not currently supported in lightgbm.dask')
-
         return self._lgb_dask_fit(
             model_factory=LGBMRegressor,
             X=X,
@@ -1380,7 +1365,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         eval_group_shape="list of Dask Array or Dask Series, or None, optional (default=None)"
     )
 
-    # DaskLGBMRegressor does not support group, eval_class_weight, eval_group, early_stopping_rounds.
+    # DaskLGBMRegressor does not support group, eval_class_weight, eval_group.
     _base_doc = (_base_doc[:_base_doc.find('group :')]
                  + _base_doc[_base_doc.find('eval_set :'):])
 
@@ -1389,9 +1374,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
     _base_doc = (_base_doc[:_base_doc.find('eval_group :')]
                  + _base_doc[_base_doc.find('eval_metric :'):])
-
-    _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
-                 + _base_doc[_base_doc.find('feature_name :'):])
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
@@ -1515,13 +1497,9 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
         eval_at: Iterable[int] = (1, 2, 3, 4, 5),
-        early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
-        if early_stopping_rounds is not None:
-            raise RuntimeError('early_stopping_rounds is not currently supported in lightgbm.dask')
-
         return self._lgb_dask_fit(
             model_factory=LGBMRanker,
             X=X,
@@ -1554,7 +1532,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
                  + _base_doc[_base_doc.find('eval_init_score :'):])
 
-    _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
+    _base_doc = (_base_doc[:_base_doc.find('feature_name :')]
                  + "eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))\n"
                  + f"{' ':8}The evaluation positions of the specified metric.\n"
                  + f"{' ':4}{_base_doc[_base_doc.find('feature_name :'):]}")
