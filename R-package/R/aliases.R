@@ -38,16 +38,16 @@
 # [return] A named list, where each key is a main LightGBM parameter and each value is a character
 #          vector of corresponding aliases.
 .PARAMETER_ALIASES <- function() {
-    aliases <- jsonlite::fromJSON(
+    params_to_aliases <- jsonlite::fromJSON(
         .Call(
             LGBM_DumpParamAliases_R
         )
     )
-    for (alias in names(aliases)) {
-        aliases_with_main_name <- if (!length(aliases[[alias]])) alias else c(aliases[[alias]], alias)
-        aliases[[alias]] <- aliases_with_main_name
+    for (main_name in names(params_to_aliases)) {
+        aliases_with_main_name <- c(main_name, unlist(params_to_aliases[[main_name]]))
+        params_to_aliases[[main_name]] <- aliases_with_main_name
     }
-    return(aliases)
+    return(params_to_aliases)
 }
 
 # [description]

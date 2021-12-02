@@ -329,7 +329,7 @@ class _ConfigAliases:
     aliases = None
 
     @staticmethod
-    def _get_all_param_aliases():
+    def _get_all_param_aliases() -> Dict[str, Set[str]]:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
@@ -354,7 +354,7 @@ class _ConfigAliases:
         return aliases
 
     @classmethod
-    def get(cls, *args):
+    def get(cls, *args) -> Set[str]:
         if cls.aliases is None:
             cls.aliases = cls._get_all_param_aliases()
         ret = set()
@@ -363,7 +363,9 @@ class _ConfigAliases:
         return ret
 
     @classmethod
-    def get_by_alias(cls, *args):
+    def get_by_alias(cls, *args) -> Set[str]:
+        if cls.aliases is None:
+            cls.aliases = cls._get_all_param_aliases()
         ret = set(args)
         for arg in args:
             for aliases in cls.aliases.values():
