@@ -6,7 +6,6 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 
 from .basic import _ConfigAliases, _log_info, _log_warning
 
-
 _EvalResultTuple = Union[
     List[Tuple[str, str, float, bool]],
     List[Tuple[str, str, float, bool, float]]
