@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import Dataset, LightGBMError, _ArrayLike, _choose_param_value, _ConfigAliases, _log_warning
+from .basic import Booster, Dataset, LightGBMError, _ArrayLike, _choose_param_value, _ConfigAliases, _log_warning
 from .callback import log_evaluation, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
@@ -514,11 +514,11 @@ class LGBMModel(_LGBMModelBase):
         self.random_state = random_state
         self.n_jobs = n_jobs
         self.importance_type = importance_type
-        self._Booster = None
+        self._Booster: Optional[Booster] = None
         self._evals_result = None
         self._best_score = None
         self._best_iteration = None
-        self._other_params = {}
+        self._other_params: Dict[str, Any] = {}
         self._objective = objective
         self.class_weight = class_weight
         self._class_weight = None
@@ -893,7 +893,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_estimators found. Need to call fit beforehand.')
-        return self._Booster.current_iteration()
+        return self._Booster.current_iteration()  # type: ignore
 
     @property
     def n_iter_(self) -> int:
@@ -904,7 +904,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_iter found. Need to call fit beforehand.')
-        return self._Booster.current_iteration()
+        return self._Booster.current_iteration()  # type: ignore
 
     @property
     def booster_(self):
@@ -958,7 +958,7 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
                     categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
-    _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRegressor")
+    _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRegressor")  # type: ignore
     _base_doc = (_base_doc[:_base_doc.find('group :')]  # type: ignore
                  + _base_doc[_base_doc.find('eval_set :'):])  # type: ignore
     _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
@@ -1025,7 +1025,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                     callbacks=callbacks, init_model=init_model)
         return self
 
-    _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMClassifier")
+    _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMClassifier")  # type: ignore
     _base_doc = (_base_doc[:_base_doc.find('group :')]  # type: ignore
                  + _base_doc[_base_doc.find('eval_set :'):])  # type: ignore
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
@@ -1124,7 +1124,7 @@ class LGBMRanker(LGBMModel):
                     categorical_feature=categorical_feature, callbacks=callbacks, init_model=init_model)
         return self
 
-    _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRanker")
+    _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRanker")  # type: ignore
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_class_weight :')]  # type: ignore
                    + _base_doc[_base_doc.find('eval_init_score :'):])  # type: ignore
     _base_doc = fit.__doc__
