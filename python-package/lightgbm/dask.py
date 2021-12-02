@@ -1141,7 +1141,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         )
 
     _base_doc = LGBMClassifier.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')  # type: ignore
     _base_doc = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
         {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
@@ -1324,7 +1324,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         )
 
     _base_doc = LGBMRegressor.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')  # type: ignore
     _base_doc = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
         {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
@@ -1487,7 +1487,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         )
 
     _base_doc = LGBMRanker.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')  # type: ignore
     _base_doc = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
         {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
