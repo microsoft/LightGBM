@@ -569,3 +569,13 @@ def test_smoke_custom_parser(tmp_path):
     with pytest.raises(lgb.basic.LightGBMError,
                        match="Cannot find parser class 'dummy', please register first or check config format"):
         data.construct()
+
+
+def test_param_aliases():
+    aliases = lgb.basic._ConfigAliases.aliases
+    assert isinstance(aliases, dict)
+    assert len(aliases) > 100
+    assert all(isinstance(i, set) for i in aliases.values())
+    assert all(len(i) >= 1 for i in aliases.values())
+    assert all(k in v for k, v in aliases.items())
+    assert lgb.basic._ConfigAliases.get('config', 'task') == {'config', 'config_file', 'task', 'task_type'}
