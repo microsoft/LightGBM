@@ -728,8 +728,15 @@ class Booster {
 
   std::string SaveModelToString(int start_iteration, int num_iteration,
                                 int feature_importance_type) const {
+    std::vector< std::string > maps = train_data_->get_mapping();
+    
+    std::string str;
+    for(int i=0; i < maps.size(); i++){
+      str += maps[i]; 
+    }
+
     return boosting_->SaveModelToString(start_iteration,
-                                        num_iteration, feature_importance_type);
+                                        num_iteration, feature_importance_type) + str;
   }
 
   std::string DumpModel(int start_iteration, int num_iteration,
