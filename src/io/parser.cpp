@@ -12,6 +12,8 @@
 
 namespace LightGBM {
 
+std::vector<Str2Num> maps;
+
 void GetStatistic(const char* str, int* comma_cnt, int* tab_cnt, int* colon_cnt) {
   *comma_cnt = 0;
   *tab_cnt = 0;

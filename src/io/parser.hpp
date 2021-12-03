@@ -26,7 +26,7 @@ public:
   std::map<std::string, double> Str2NumMap;
   double current;
 };
-std::vector<Str2Num> maps;
+extern std::vector<Str2Num> maps;
 
 const char* Atof_and_map(const char* p, double* out, int idx) {
   int frac;

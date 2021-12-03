@@ -13,6 +13,8 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
 
+#include <LightGBM/src/io/parser.hpp>
+
 #include <string>
 #include <functional>
 #include <map>
@@ -739,6 +741,30 @@ class Dataset {
     return raw_data_[numeric_feature_map_[feat_ind]].data();
   }
 
+  inline void store_mapping(std::vector<Str2Num> maps){
+    // store maps to mapping 
+    for(int i=0; i < maps.size(); i++){
+      std::string name = feature_names_[i];
+      name = name + '\n';
+      std::map<std::string, double>::iterator iter;
+      iter = maps[i].Str2NumMap.begin();
+      while(iter != maps[i].Str2NumMap.end()){
+        name = name + iter->first + "=" + std::to_string(iter->second) + '\n'; 
+      }
+      name += '\n';
+      mapping.push_back(name);
+    }
+  }
+
+  inline std::vector< std::map<std::string, double> > load_mapping(){
+    std::vector< std::map<std::string, double> > result;
+    
+  }
+
+  inline std::vector< std::string > get_mapping(){
+    return mapping;
+  }
+
  private:
   std::string data_filename_;
   /*! \brief Store used features */
@@ -781,6 +807,7 @@ class Dataset {
   std::vector<int> numeric_feature_map_;
   int num_numeric_features_;
   std::string parser_config_str_;
+  std::vector< std::string > mapping;
 };
 
 }  // namespace LightGBM
