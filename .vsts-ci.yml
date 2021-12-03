@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - bump_macos
+    - master
   tags:
     include:
     - v*
