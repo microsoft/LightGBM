@@ -3,6 +3,9 @@
 \name{lgb.drop_serialized}
 \alias{lgb.drop_serialized}
 \title{Drop serialized raw bytes in a LightGBM model object}
+\usage{
+lgb.drop_serialized(model)
+}
 \arguments{
 \item{model}{\code{lgb.Booster} object which was produced with `serializable=TRUE`.}
 }

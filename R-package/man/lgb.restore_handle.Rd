@@ -3,6 +3,9 @@
 \name{lgb.restore_handle}
 \alias{lgb.restore_handle}
 \title{Restore the C++ component of a de-serialized LightGBM model}
+\usage{
+lgb.restore_handle(model)
+}
 \arguments{
 \item{model}{\code{lgb.Booster} object which was de-serialized and whose underlying C++ object and R handle
 need to be restored.}

@@ -16,6 +16,7 @@ lightgbm(
   save_name = "lightgbm.model",
   init_model = NULL,
   callbacks = list(),
+  serializable = TRUE,
   ...
 )
 }
@@ -49,6 +50,9 @@ If passing `NULL`, will not save the trained model to disk.}
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
 \item{callbacks}{List of callback functions that are applied at each iteration.}
+
+\item{serializable}{whether to make the resulting objects serializable through functions such as
+\code{save} or \code{saveRDS} (see section "Model serialization").}
 
 \item{...}{Additional arguments passed to \code{\link{lgb.train}}. For example
 \itemize{
