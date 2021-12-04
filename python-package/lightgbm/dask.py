@@ -95,6 +95,8 @@ def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, _HostWo
     host_to_workers: Dict[str, _HostWorkers] = {}
     for address in worker_addresses:
         hostname = urlparse(address).hostname
+        if not hostname:
+            raise ValueError(f"Could not parse host name from worker address '{address}'")
         if hostname not in host_to_workers:
             host_to_workers[hostname] = _HostWorkers(default=address, all=[address])
         else:
@@ -380,6 +382,8 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
     out = {}
     for address in worker_addresses:
         worker_host = urlparse(address).hostname
+        if not worker_host:
+            raise ValueError(f"Could not parse host name from worker address '{address}'")
         out[address] = machine_to_port[worker_host].pop()
 
     return out
