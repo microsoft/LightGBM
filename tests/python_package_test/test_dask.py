@@ -15,8 +15,8 @@ import pytest
 
 import lightgbm as lgb
 
-#if not platform.startswith('linux'):
-#    pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
+if not platform.startswith('linux'):
+    pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if machine() != 'x86_64':
     pytest.skip('lightgbm.dask tests are currently skipped on some architectures like arm64', allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
