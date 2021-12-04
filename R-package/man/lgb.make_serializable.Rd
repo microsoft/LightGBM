@@ -3,9 +3,6 @@
 \name{lgb.make_serializable}
 \alias{lgb.make_serializable}
 \title{Make a LightGBM object serializable by keeping raw bytes}
-\usage{
-lgb.make_serializable(model)
-}
 \arguments{
 \item{model}{\code{lgb.Booster} object which was produced with `serializable=FALSE`.}
 }

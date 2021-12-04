@@ -227,13 +227,7 @@ Run ``lgb.unloader(wipe = TRUE)`` in the R console, and recreate the LightGBM da
 Due to the pointers, choosing to not wipe variables will not fix the error.
 This is a known issue: `Microsoft/LightGBM#698 <https://github.com/microsoft/LightGBM/issues/698>`__.
 
-2. I used ``setinfo()``, tried to print my ``lgb.Dataset``, and now the R console froze!
-----------------------------------------------------------------------------------------
-
-Avoid printing the ``lgb.Dataset`` after using ``setinfo``.
-This is a known bug: `Microsoft/LightGBM#539 <https://github.com/microsoft/LightGBM/issues/539>`__.
-
-3. ``error in data.table::data.table()...argument 2 is NULL``
+2. ``error in data.table::data.table()...argument 2 is NULL``
 -------------------------------------------------------------
 
 If you are experiencing this error when running ``lightgbm``, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_ and later in `#2989 <https://github.com/microsoft/LightGBM/pull/2989#issuecomment-614374151>`_. We have seen that some in some situations, using ``data.table`` 1.11.x results in this error. To get around this, you can upgrade your version of ``data.table`` to at least version 1.12.0.

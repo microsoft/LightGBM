@@ -529,19 +529,6 @@ Dataset <- R6::R6Class(
 
     },
 
-    setinfo = function(name, info) {
-      warning(paste0(
-        "Dataset$setinfo() is deprecated and will be removed in a future release. "
-        , "Use Dataset$set_field() instead."
-      ))
-      return(
-        self$set_field(
-          field_name = name
-          , data = info
-        )
-      )
-    },
-
     set_field = function(field_name, data) {
 
       # Check if attribute key is in the known attribute list
@@ -1234,69 +1221,6 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 
 }
 
-#' @name setinfo
-#' @title Set information of an \code{lgb.Dataset} object
-#' @description Set one attribute of a \code{lgb.Dataset}
-#' @param dataset Object of class \code{lgb.Dataset}
-#' @param name the name of the field to get
-#' @param info the specific field of information to set
-#' @param ... other parameters (ignored)
-#' @return the dataset you passed in
-#'
-#' @details
-#' The \code{name} field can be one of the following:
-#'
-#' \itemize{
-#'     \item{\code{label}: vector of labels to use as the target variable}
-#'     \item{\code{weight}: to do a weight rescale}
-#'     \item{\code{init_score}: initial score is the base prediction lightgbm will boost from}
-#'     \item{\code{group}: used for learning-to-rank tasks. An integer vector describing how to
-#'         group rows together as ordered results from the same set of candidate results to be ranked.
-#'         For example, if you have a 100-document dataset with \code{group = c(10, 20, 40, 10, 10, 10)},
-#'         that means that you have 6 groups, where the first 10 records are in the first group,
-#'         records 11-30 are in the second group, etc.}
-#' }
-#'
-#' @examples
-#' \donttest{
-#' data(agaricus.train, package = "lightgbm")
-#' train <- agaricus.train
-#' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' lgb.Dataset.construct(dtrain)
-#'
-#' labels <- lightgbm::getinfo(dtrain, "label")
-#' lightgbm::setinfo(dtrain, "label", 1 - labels)
-#'
-#' labels2 <- lightgbm::getinfo(dtrain, "label")
-#' stopifnot(all.equal(labels2, 1 - labels))
-#' }
-#' @export
-setinfo <- function(dataset, ...) {
-  UseMethod("setinfo")
-}
-
-#' @rdname setinfo
-#' @export
-setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
-
-  warning("Calling setinfo() on a lgb.Dataset is deprecated. Use set_field() instead.")
-
-  additional_args <- list(...)
-  if (length(additional_args) > 0L) {
-    warning(paste0(
-      "setinfo.lgb.Dataset: Found the following passed through '...': "
-      , paste(names(additional_args), collapse = ", ")
-      , ". These are ignored. In future releases of lightgbm, this warning will become an error. "
-      , "See ?setinfo.lgb.Dataset for documentation on how to call this function."
-    ))
-  }
-
-  if (!lgb.is.Dataset(x = dataset)) {
-    stop("setinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
-  }
-
-  return(invisible(dataset$set_field(field_name = name, data = info)))
-}
 
 #' @name get_field
 #' @title Get one attribute of a \code{lgb.Dataset}
