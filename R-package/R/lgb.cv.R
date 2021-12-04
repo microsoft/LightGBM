@@ -98,6 +98,7 @@ lgb.cv <- function(params = list()
                    , early_stopping_rounds = NULL
                    , callbacks = list()
                    , reset_data = FALSE
+                   , serializable = TRUE
                    , ...
                    ) {
 
@@ -454,6 +455,10 @@ lgb.cv <- function(params = list()
       fd$booster$best_score <- booster_old$best_score
       fd$booster$record_evals <- booster_old$record_evals
     })
+  }
+
+  if (serializable) {
+    lapply(cv_booster$boosters, function(model) model$booster$save_raw())
   }
 
   return(cv_booster)

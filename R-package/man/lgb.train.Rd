@@ -20,6 +20,7 @@ lgb.train(
   early_stopping_rounds = NULL,
   callbacks = list(),
   reset_data = FALSE,
+  serializable = TRUE,
   ...
 )
 }
@@ -98,6 +99,9 @@ set to the iteration number of the best iteration.}
 \item{reset_data}{Boolean, setting it to TRUE (not the default value) will transform the
 booster model into a predictor model which frees up memory and the
 original datasets}
+
+\item{serializable}{whether to make the resulting objects serializable through functions such as
+\code{save} or \code{saveRDS} (see section "Model serialization").}
 
 \item{...}{other parameters, see \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 the "Parameters" section of the documentation} for more information. A few key parameters:
