@@ -930,7 +930,7 @@ def _predict(
             num_cols = model.n_features_ + 1
 
             nrows_per_chunk = data.chunks[0]
-            out = [[] for _ in range(num_classes)]
+            out: List[List[dask_Array]] = [[] for _ in range(num_classes)]
 
             # need to tell Dask the expected type and shape of individual preds
             pred_meta = data._meta
@@ -955,14 +955,17 @@ def _predict(
 
             # At this point, `out` is a list of lists of delayeds (each of which points to a matrix).
             # Concatenate them to return a list of Dask Arrays.
+            out_arrays: List[dask_Array] = []
             for i in range(num_classes):
-                out[i] = dask_array_from_delayed(
-                    value=delayed(concat_fn)(out[i]),
-                    shape=(data.shape[0], num_cols),
-                    meta=pred_meta
+                out_arrays.append(
+                    dask_array_from_delayed(
+                        value=delayed(concat_fn)(out[i]),
+                        shape=(data.shape[0], num_cols),
+                        meta=pred_meta
+                    )
                 )
 
-            return out
+            return out_arrays
 
         data_row = client.compute(data[[0]]).result()
         predict_fn = partial(
@@ -1108,7 +1111,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = "warn",
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1134,13 +1136,12 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             reg_lambda=reg_lambda,
             random_state=random_state,
             n_jobs=n_jobs,
-            silent=silent,
             importance_type=importance_type,
             **kwargs
         )
 
     _base_doc = LGBMClassifier.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')  # type: ignore
     _base_doc = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
         {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
@@ -1207,7 +1208,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
                  + _base_doc[_base_doc.find('eval_metric :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
-                 + _base_doc[_base_doc.find('verbose :'):])
+                 + _base_doc[_base_doc.find('feature_name :'):])
 
     # DaskLGBMClassifier support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
@@ -1293,7 +1294,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = "warn",
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1319,13 +1319,12 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             reg_lambda=reg_lambda,
             random_state=random_state,
             n_jobs=n_jobs,
-            silent=silent,
             importance_type=importance_type,
             **kwargs
         )
 
     _base_doc = LGBMRegressor.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')  # type: ignore
     _base_doc = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
         {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
@@ -1392,7 +1391,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
                  + _base_doc[_base_doc.find('eval_metric :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
-                 + _base_doc[_base_doc.find('verbose :'):])
+                 + _base_doc[_base_doc.find('feature_name :'):])
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
@@ -1458,7 +1457,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = "warn",
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1484,13 +1482,12 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             reg_lambda=reg_lambda,
             random_state=random_state,
             n_jobs=n_jobs,
-            silent=silent,
             importance_type=importance_type,
             **kwargs
         )
 
     _base_doc = LGBMRanker.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')  # type: ignore
     _base_doc = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
         {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
@@ -1560,7 +1557,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
                  + "eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))\n"
                  + f"{' ':8}The evaluation positions of the specified metric.\n"
-                 + f"{' ':4}{_base_doc[_base_doc.find('verbose :'):]}")
+                 + f"{' ':4}{_base_doc[_base_doc.find('feature_name :'):]}")
 
     # DaskLGBMRanker support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs

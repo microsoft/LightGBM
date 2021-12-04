@@ -6,6 +6,7 @@ with list of all parameters, aliases table and other routines
 along with parameters description in LightGBM/docs/Parameters.rst file
 from the information in LightGBM/include/LightGBM/config.h file.
 """
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -291,6 +292,7 @@ def gen_parameter_code(
     keys, infos = get_parameter_infos(config_hpp)
     names = get_names(infos)
     alias = get_alias(infos)
+    names_with_aliases = defaultdict(list)
     str_to_write = r"""/*!
  * Copyright (c) 2018 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
@@ -306,6 +308,7 @@ def gen_parameter_code(
 
     for pair in alias:
         str_to_write += f'  {{"{pair[0]}", "{pair[1]}"}},\n'
+        names_with_aliases[pair[1]].append(pair[0])
     str_to_write += "  });\n"
     str_to_write += "  return aliases;\n"
     str_to_write += "}\n\n"
@@ -353,6 +356,21 @@ def gen_parameter_code(
     # tails
     str_to_write += "  return str_buf.str();\n"
     str_to_write += "}\n\n"
+
+    str_to_write += "const std::string Config::DumpAliases() {\n"
+    str_to_write += "  std::stringstream str_buf;\n"
+    str_to_write += '  str_buf << "{";\n'
+    for idx, name in enumerate(names):
+        if idx > 0:
+            str_to_write += ', ";\n'
+        aliases = '\\", \\"'.join([alias for alias in names_with_aliases[name]])
+        aliases = f'[\\"{aliases}\\"]' if aliases else '[]'
+        str_to_write += f'  str_buf << "\\"{name}\\": {aliases}'
+    str_to_write += '";\n'
+    str_to_write += '  str_buf << "}";\n'
+    str_to_write += "  return str_buf.str();\n"
+    str_to_write += "}\n\n"
+
     str_to_write += "}  // namespace LightGBM\n"
     with open(config_out_cpp, "w") as config_out_cpp_file:
         config_out_cpp_file.write(str_to_write)

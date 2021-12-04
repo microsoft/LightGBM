@@ -27,7 +27,7 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             pass
 
-    class pd_CategoricalDtype:
+    class pd_CategoricalDtype:  # type: ignore
         """Dummy class for pandas.CategoricalDtype."""
 
         def __init__(self, *args, **kwargs):
