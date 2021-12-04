@@ -15,8 +15,8 @@ import pytest
 
 import lightgbm as lgb
 
-if not platform.startswith('linux'):
-    pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
+#if not platform.startswith('linux'):
+#    pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if machine() != 'x86_64':
     pytest.skip('lightgbm.dask tests are currently skipped on some architectures like arm64', allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
@@ -467,6 +467,19 @@ def test_group_workers_by_host():
     }
     host_to_workers = lgb.dask._group_workers_by_host(workers)
     assert host_to_workers == expected
+
+
+def test_group_workers_by_host_unparseable_host_names():
+    workers_without_protocol = ['0.0.0.1:80', '0.0.0.2:80']
+    with pytest.raises(ValueError, match="Could not parse host name from worker address '0.0.0.1:80'"):
+        lgb.dask._group_workers_by_host(workers_without_protocol)
+
+
+def test_machines_to_worker_map_unparseable_host_names():
+    workers = {'0.0.0.1:80': {}, '0.0.0.2:80': {}}
+    machines = "0.0.0.1:80,0.0.0.2:80"
+    with pytest.raises(ValueError, match="Could not parse host name from worker address '0.0.0.1:80'"):
+        lgb.dask._machines_to_worker_map(machines=machines, worker_addresses=workers.keys())
 
 
 def test_assign_open_ports_to_workers(cluster):
