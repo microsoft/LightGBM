@@ -476,13 +476,30 @@ SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename) {
 SEXP LGBM_BoosterLoadModelFromString_R(SEXP model_str) {
   R_API_BEGIN();
   SEXP ret = PROTECT(R_MakeExternalPtr(nullptr, R_NilValue, R_NilValue));
+  SEXP temp = NULL;
+  int n_protected = 1;
   int out_num_iterations = 0;
-  const char* model_str_ptr = reinterpret_cast<char*>(RAW(model_str));
+  const char* model_str_ptr = nullptr;
+  switch (TYPEOF(model_str)) {
+    case RAWSXP: {
+      model_str_ptr = reinterpret_cast<const char*>(RAW(model_str));
+      break;
+    }
+    case CHARSXP: {
+      model_str_ptr = reinterpret_cast<const char*>(CHAR(model_str));
+      break;
+    }
+    case STRSXP: {
+      temp = PROTECT(STRING_ELT(model_str, 0));
+      n_protected++;
+      model_str_ptr = reinterpret_cast<const char*>(CHAR(temp));
+    }
+  }
   BoosterHandle handle = nullptr;
   CHECK_CALL(LGBM_BoosterLoadModelFromString(model_str_ptr, &out_num_iterations, &handle));
   R_SetExternalPtrAddr(ret, handle);
   R_RegisterCFinalizerEx(ret, _BoosterFinalizer, TRUE);
-  UNPROTECT(1);
+  UNPROTECT(n_protected);
   return ret;
   R_API_END();
 }

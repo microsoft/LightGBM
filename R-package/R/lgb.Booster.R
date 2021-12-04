@@ -87,10 +87,7 @@ Booster <- R6::R6Class(
         } else if (!is.null(model_str)) {
 
           # Do we have a model_str as character/raw?
-          if (is.character(model_str)) {
-            model_str <- charToRaw(model_str)
-          }
-          if (!is.raw(model_str)) {
+          if (!is.raw(model_str) && !is.character(model_str)) {
             stop("lgb.Booster: Can only use a character/raw vector as model_str")
           }
 
@@ -976,11 +973,8 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
     return(invisible(Booster$new(modelfile = filename)))
   }
 
-  if (is.character(model_str)) {
-    model_str <- charToRaw(model_str)
-  }
   if (model_str_provided) {
-    if (!is.raw(model_str)) {
+    if (!is.raw(model_str) && !is.character(model_str)) {
       stop("lgb.load: model_str should be a character/raw vector")
     }
     return(invisible(Booster$new(model_str = model_str)))
