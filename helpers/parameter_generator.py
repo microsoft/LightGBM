@@ -8,7 +8,7 @@ from the information in LightGBM/include/LightGBM/config.h file.
 """
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 
 def get_parameter_infos(
