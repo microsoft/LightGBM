@@ -622,6 +622,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
   }
 
   objective_function_ = objective_function;
+  data_sample_strategy_->UpdateObjectiveFunction(objective_function);
   if (objective_function_ != nullptr) {
     CHECK_EQ(num_tree_per_iteration_, objective_function_->NumModelPerIteration());
     if (objective_function_->IsRenewTreeOutput() && !config_->monotone_constraints.empty()) {
@@ -639,6 +640,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
 
   if (train_data != train_data_) {
     train_data_ = train_data;
+    data_sample_strategy_->UpdateTrainingData(train_data);
     // not same training data, need reset score and others
     // create score tracker
     train_score_updater_.reset(new ScoreUpdater(train_data_, num_tree_per_iteration_));

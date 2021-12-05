@@ -75,7 +75,13 @@ class GOSS : public SampleStrategy {
 
   void ResetBaggingConfig(const Config* config, bool is_change_dataset, 
           std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& gradients, 
-          std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& hessians) override {}
+          std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& hessians) override {
+    // Cannot use bagging in GOSS
+    bag_data_cnt_ = num_data_;
+    bag_data_indices_.clear();
+    bagging_runner_.ReSize(0);
+    is_use_subset_ = false;   
+  } 
 
  protected:
   data_size_t Helper(data_size_t start, data_size_t cnt, data_size_t* buffer, score_t* gradients, score_t* hessians) {
