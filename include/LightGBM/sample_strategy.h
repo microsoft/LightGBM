@@ -17,8 +17,8 @@ class SampleStrategy {
   virtual ~SampleStrategy() {};
   static SampleStrategy* CreateSampleStrategy(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration);
   virtual void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) = 0;
-  virtual void Reset() = 0;
-  virtual void ResetConfig(const Config* config, bool is_change_dataset, 
+  virtual void ResetGOSS() = 0;
+  virtual void ResetBaggingConfig(const Config* config, bool is_change_dataset, 
           std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& gradients, 
           std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& hessians) = 0;
   bool is_use_subset() {return is_use_subset_;}

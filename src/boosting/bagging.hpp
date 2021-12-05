@@ -51,9 +51,9 @@ class BAGGING : public SampleStrategy {
     }
   }
 
-  void Reset() override {} 
+  void ResetGOSS() override {} 
 
-  void ResetConfig(const Config* config, bool is_change_dataset, 
+  void ResetBaggingConfig(const Config* config, bool is_change_dataset, 
           std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& gradients, 
           std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& hessians) override {
     // if need bagging, create buffer

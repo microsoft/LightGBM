@@ -46,7 +46,7 @@ class GOSS : public SampleStrategy {
     }
   }
 
-  void Reset() override {
+  void ResetGOSS() override {
     CHECK_LE(config_->top_rate + config_->other_rate, 1.0f);
     CHECK(config_->top_rate > 0.0f && config_->other_rate > 0.0f);
     if (config_->bagging_freq > 0 && config_->bagging_fraction != 1.0f) {
@@ -73,7 +73,7 @@ class GOSS : public SampleStrategy {
     bag_data_cnt_ = num_data_; 
   }
 
-  void ResetConfig(const Config* config, bool is_change_dataset, 
+  void ResetBaggingConfig(const Config* config, bool is_change_dataset, 
           std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& gradients, 
           std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& hessians) override {}
 
