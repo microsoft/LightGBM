@@ -177,23 +177,12 @@ Booster <- R6::R6Class(
 
     },
 
-    reset_parameter = function(params, ...) {
-
-      additional_params <- list(...)
-      if (length(additional_params) > 0L) {
-        warning(paste0(
-          "Booster$reset_parameter(): Found the following passed through '...': "
-          , paste(names(additional_params), collapse = ", ")
-          , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-          , "Add these to 'params' instead."
-        ))
-      }
+    reset_parameter = function(params) {
 
       if (methods::is(self$params, "list")) {
         params <- utils::modifyList(self$params, params)
       }
 
-      params <- utils::modifyList(params, additional_params)
       params_str <- lgb.params2str(params = params)
 
       self$restore_handle()
