@@ -764,6 +764,7 @@ Booster <- R6::R6Class(
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 #'               the "Predict Parameters" section of the documentation} for a list of parameters and
 #'               valid values.
+#' @param ... ignored
 #' @return For regression or binary classification, it returns a vector of length \code{nrows(data)}.
 #'         For multiclass classification, either a \code{num_class * nrows(data)} vector or
 #'         a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
@@ -815,10 +816,20 @@ predict.lgb.Booster <- function(object,
                                 predcontrib = FALSE,
                                 header = FALSE,
                                 reshape = FALSE,
-                                params = list()) {
+                                params = list(),
+                                ...) {
 
   if (!lgb.is.Booster(x = object)) {
     stop("predict.lgb.Booster: object should be an ", sQuote("lgb.Booster"))
+  }
+
+  additional_params <- list(...)
+  if (length(additional_params) > 0L) {
+    warning(paste0(
+      "predict.lgb.Booster: Found the following passed through '...': "
+      , paste(names(additional_params), collapse = ", ")
+      , ". These are ignored. Use argument 'params' instead."
+    ))
   }
 
   return(
