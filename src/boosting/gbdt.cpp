@@ -301,8 +301,6 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   } else if (gradients != nullptr) {
     // use customized objective function
     CHECK(hessians != nullptr && objective_function_ == nullptr);
-    // and will be only used for GOSS (No? But copying gradients will not have effect when bagging)
-    // CHECK(config_->boosting==std::string("goss") || config_->data_sample_strategy==std::string("goss"));
     int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
     #pragma omp parallel for schedule(static)
     for (int64_t i = 0; i < total_size; ++i) {

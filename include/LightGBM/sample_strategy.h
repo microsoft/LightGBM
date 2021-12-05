@@ -13,16 +13,25 @@ namespace LightGBM {
 
 class SampleStrategy {
  public:
+
   SampleStrategy() : balanced_bagging_(false), bagging_runner_(0, bagging_rand_block_) {};
+ 
   virtual ~SampleStrategy() {};
+ 
   static SampleStrategy* CreateSampleStrategy(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration);
+ 
   virtual void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) = 0;
+ 
   virtual void ResetGOSS() = 0;
+ 
   virtual void ResetBaggingConfig(const Config* config, bool is_change_dataset, 
           std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& gradients, 
           std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& hessians) = 0;
-  bool is_use_subset() {return is_use_subset_;}
-  data_size_t bag_data_cnt() {return bag_data_cnt_;}
+ 
+  bool is_use_subset() const { return is_use_subset_; }
+ 
+  data_size_t bag_data_cnt() const { return bag_data_cnt_; }
+ 
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices() {return bag_data_indices_;}
 
  protected:
