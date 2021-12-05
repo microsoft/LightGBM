@@ -79,22 +79,13 @@ Predictor <- R6::R6Class(
 
     # Predict from data
     predict = function(data,
-                       start_iteration = NULL,
-                       num_iteration = NULL,
+                       start_iteration = 0L,
+                       num_iteration = -1L,
                        rawscore = FALSE,
                        predleaf = FALSE,
                        predcontrib = FALSE,
                        header = FALSE,
                        reshape = FALSE) {
-
-      # Check if number of iterations is existing - if not, then set it to -1 (use all)
-      if (is.null(num_iteration)) {
-        num_iteration <- -1L
-      }
-      # Check if start iterations is existing - if not, then set it to 0 (start from the first iteration)
-      if (is.null(start_iteration)) {
-        start_iteration <- 0L
-      }
 
       num_row <- 0L
 

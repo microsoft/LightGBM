@@ -497,7 +497,7 @@ Booster <- R6::R6Class(
 
     # Predict on new data
     predict = function(data,
-                       start_iteration = NULL,
+                       start_iteration = 0L,
                        num_iteration = NULL,
                        rawscore = FALSE,
                        predleaf = FALSE,
@@ -521,10 +521,6 @@ Booster <- R6::R6Class(
 
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
-      }
-
-      if (is.null(start_iteration)) {
-        start_iteration <- 0L
       }
 
       # Predict on new data
