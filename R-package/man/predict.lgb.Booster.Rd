@@ -14,8 +14,7 @@
   predcontrib = FALSE,
   header = FALSE,
   reshape = FALSE,
-  params = list(),
-  ...
+  params = list()
 )
 }
 \arguments{
@@ -51,8 +50,6 @@ prediction outputs per case.}
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 the "Predict Parameters" section of the documentation} for a list of parameters and
 valid values.}
-
-\item{...}{Additional prediction parameters. NOTE: deprecated as of v3.3.0. Use \code{params} instead.}
 }
 \value{
 For regression or binary classification, it returns a vector of length \code{nrows(data)}.
