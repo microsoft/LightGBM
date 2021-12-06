@@ -25,8 +25,7 @@ lgb.cv(
   early_stopping_rounds = NULL,
   callbacks = list(),
   reset_data = FALSE,
-  serializable = TRUE,
-  ...
+  serializable = TRUE
 )
 }
 \arguments{
@@ -121,19 +120,6 @@ into a predictor model which frees up memory and the original datasets}
 
 \item{serializable}{whether to make the resulting objects serializable through functions such as
 \code{save} or \code{saveRDS} (see section "Model serialization").}
-
-\item{...}{other parameters, see Parameters.rst for more information. A few key parameters:
-\itemize{
-    \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
-    \item{\code{num_leaves}: Maximum number of leaves in one tree.}
-    \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
-                     overfit when #data is small. Tree still grow by leaf-wise.}
-    \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-                 the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
-                 not the number of threads (most CPU using hyper-threading to generate 2 threads
-                 per CPU core).}
-}
-NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
 }
 \value{
 a trained model \code{lgb.CVBooster}.

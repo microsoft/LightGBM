@@ -347,14 +347,17 @@ context("lgb.cv()")
 
 test_that("cv works", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(objective = "regression", metric = "l2,l1")
+  params <- list(
+    objective = "regression"
+    , metric = "l2,l1"
+    , min_data = 1L
+    , learning_rate = 1.0
+  )
   bst <- lgb.cv(
     params
     , dtrain
     , 10L
     , nfold = 5L
-    , min_data = 1L
-    , learning_rate = 1.0
     , early_stopping_rounds = 10L
   )
   expect_false(is.null(bst$record_evals))
@@ -362,7 +365,11 @@ test_that("cv works", {
 
 test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(objective = "regression", metric = "l2,l1")
+  params <- list(
+    objective = "regression"
+    , metric = "l2,l1"
+    , min_data = 1L
+  )
   for (nround_value in c(-10L, 0L)) {
     expect_error({
       bst <- lgb.cv(
@@ -370,7 +377,6 @@ test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
         , dtrain
         , nround_value
         , nfold = 5L
-        , min_data = 1L
       )
     }, "nrounds should be greater than zero")
   }
@@ -388,11 +394,14 @@ test_that("lgb.cv() throws an informative error is 'data' is not an lgb.Dataset 
   for (val in bad_values) {
     expect_error({
       bst <- lgb.cv(
-        params = list(objective = "regression", metric = "l2,l1")
+        params = list(
+            objective = "regression"
+            , metric = "l2,l1"
+            , min_data = 1L
+        )
         , data = val
         , 10L
         , nfold = 5L
-        , min_data = 1L
       )
     }, regexp = "'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'", fixed = TRUE)
   }
@@ -409,11 +418,11 @@ test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric
     data = dtrain
     , nfold = 5L
     , nrounds = nrounds
-    , num_leaves = 5L
     , params = list(
       objective = "binary"
       , metric = "auc,binary_error"
       , learning_rate = 1.5
+      , num_leaves = 5L
     )
   )
   expect_is(cv_bst, "lgb.CVBooster")
@@ -470,7 +479,11 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
 
 test_that("lgb.cv() respects showsd argument", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(objective = "regression", metric = "l2")
+  params <- list(
+    objective = "regression"
+    , metric = "l2"
+    , min_data = 1L
+  )
   nrounds <- 5L
   set.seed(708L)
   bst_showsd <- lgb.cv(
@@ -478,7 +491,6 @@ test_that("lgb.cv() respects showsd argument", {
     , data = dtrain
     , nrounds = nrounds
     , nfold = 3L
-    , min_data = 1L
     , showsd = TRUE
   )
   evals_showsd <- bst_showsd$record_evals[["valid"]][["l2"]]
@@ -488,7 +500,6 @@ test_that("lgb.cv() respects showsd argument", {
     , data = dtrain
     , nrounds = nrounds
     , nfold = 3L
-    , min_data = 1L
     , showsd = FALSE
   )
   evals_no_showsd <- bst_no_showsd$record_evals[["valid"]][["l2"]]
