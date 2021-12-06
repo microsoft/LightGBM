@@ -785,11 +785,7 @@ class LGBMModel(_LGBMModelBase):
         else:  # reset after previous call to fit()
             self._evals_result = None
 
-        if self._Booster.best_iteration != 0:
-            self._best_iteration = self._Booster.best_iteration
-        else:  # reset after previous call to fit()
-            self._best_iteration = None
-
+        self._best_iteration = self._Booster.best_iteration
         self._best_score = self._Booster.best_score
 
         self.fitted_ = True
@@ -872,7 +868,7 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def best_iteration_(self):
-        """:obj:`int` or :obj:`None`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
+        """:obj:`int`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No best_iteration found. Need to call fit with early_stopping callback beforehand.')
         return self._best_iteration

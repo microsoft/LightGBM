@@ -351,7 +351,7 @@ def _split_to_parts(data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
     return parts
 
 
-def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[str, int]:
+def _machines_to_worker_map(machines: str, worker_addresses: Iterable[str]) -> Dict[str, int]:
     """Create a worker_map from machines list.
 
     Given ``machines`` and a list of Dask worker addresses, return a mapping where the keys are
@@ -362,7 +362,7 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
     machines : str
         A comma-delimited list of workers, of the form ``ip1:port,ip2:port``.
     worker_addresses : list of str
-        A list of Dask worker addresses, of the form ``{protocol}{hostname}:{port}``, where ``port`` is the port Dask's scheduler uses to talk to that worker.
+        An iterable of Dask worker addresses, of the form ``{protocol}{hostname}:{port}``, where ``port`` is the port Dask's scheduler uses to talk to that worker.
 
     Returns
     -------
