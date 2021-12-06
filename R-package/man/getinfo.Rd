@@ -44,7 +44,7 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 lgb.Dataset.construct(dtrain)
 
 labels <- lightgbm::getinfo(dtrain, "label")
-lightgbm::setinfo(dtrain, "label", 1 - labels)
+lightgbm::set_field(dtrain, "label", 1 - labels)
 
 labels2 <- lightgbm::getinfo(dtrain, "label")
 stopifnot(all(labels2 == 1 - labels))

@@ -27,11 +27,11 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
   expect_equal(get_field(dtest1, "label"), get_field(dtest3, "label"))
 })
 
-test_that("lgb.Dataset: getinfo & setinfo", {
+test_that("lgb.Dataset: getinfo", {
   dtest <- lgb.Dataset(test_data)
   dtest$construct()
 
-  setinfo(dtest, "label", test_label)
+  set_field(dtest, "label", test_label)
   labels <- getinfo(dtest, "label")
   expect_equal(test_label, getinfo(dtest, "label"))
 
@@ -39,7 +39,7 @@ test_that("lgb.Dataset: getinfo & setinfo", {
   expect_true(length(getinfo(dtest, "init_score")) == 0L)
 
   # any other label should error
-  expect_error(setinfo(dtest, "asdf", test_label))
+  expect_error(set_field(dtest, "asdf", test_label))
 })
 
 test_that("lgb.Dataset: get_field & set_field", {
@@ -257,19 +257,6 @@ test_that("cpp errors should be raised as proper R errors", {
   expect_error({
     dtrain$construct()
   }, regexp = "Initial score size doesn't match data size")
-})
-
-test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {
-  ds <- lgb.Dataset(
-    data = matrix(rnorm(100L), nrow = 50L, ncol = 2L)
-    , label = sample(c(0L, 1L), size = 50L, replace = TRUE)
-  )
-  ds$construct()
-  current_group <- ds$getinfo("group")
-  expect_null(current_group)
-  group_as_numeric <- rep(25.0, 2L)
-  ds$setinfo("group", group_as_numeric)
-  expect_identical(ds$getinfo("group"), as.integer(group_as_numeric))
 })
 
 test_that("lgb.Dataset$set_field() should convert 'group' to integer", {
