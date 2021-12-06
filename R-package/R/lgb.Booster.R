@@ -493,20 +493,9 @@ Booster <- R6::R6Class(
                        predcontrib = FALSE,
                        header = FALSE,
                        reshape = FALSE,
-                       params = list(),
-                       ...) {
+                       params = list()) {
 
       self$restore_handle()
-
-      additional_params <- list(...)
-      if (length(additional_params) > 0L) {
-        warning(paste0(
-          "Booster$predict(): Found the following passed through '...': "
-          , paste(names(additional_params), collapse = ", ")
-          , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-          , "Add these to 'params' instead. See ?predict.lgb.Booster for documentation on how to call this function."
-        ))
-      }
 
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
@@ -517,7 +506,6 @@ Booster <- R6::R6Class(
       }
 
       # Predict on new data
-      params <- utils::modifyList(params, additional_params)
       predictor <- Predictor$new(
         modelfile = private$handle
         , params = params
@@ -765,7 +753,7 @@ Booster <- R6::R6Class(
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 #'               the "Predict Parameters" section of the documentation} for a list of parameters and
 #'               valid values.
-#' @param ... Additional prediction parameters. NOTE: deprecated as of v3.3.0. Use \code{params} instead.
+#' @param ... ignored
 #' @return For regression or binary classification, it returns a vector of length \code{nrows(data)}.
 #'         For multiclass classification, either a \code{num_class * nrows(data)} vector or
 #'         a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
@@ -829,8 +817,7 @@ predict.lgb.Booster <- function(object,
     warning(paste0(
       "predict.lgb.Booster: Found the following passed through '...': "
       , paste(names(additional_params), collapse = ", ")
-      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-      , "Add these to 'params' instead. See ?predict.lgb.Booster for documentation on how to call this function."
+      , ". These are ignored. Use argument 'params' instead."
     ))
   }
 
@@ -844,7 +831,7 @@ predict.lgb.Booster <- function(object,
       , predcontrib =  predcontrib
       , header = header
       , reshape = reshape
-      , params = utils::modifyList(params, additional_params)
+      , params = params
     )
   )
 }
