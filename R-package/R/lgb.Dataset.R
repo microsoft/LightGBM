@@ -10,9 +10,6 @@
 #'              \code{group = c(10, 20, 40, 10, 10, 10)}, that means that you have 6 groups,
 #'              where the first 10 records are in the first group, records 11-30 are in the
 #'              second group, etc.
-#' @param info a list of information of the \code{lgb.Dataset} object. NOTE: use of \code{info}
-#'             is deprecated as of v3.3.0. Use keyword arguments (e.g. \code{init_score = init_score})
-#'             directly.
 #' @keywords internal
 NULL
 
@@ -52,7 +49,6 @@ Dataset <- R6::R6Class(
                           predictor = NULL,
                           free_raw_data = TRUE,
                           used_indices = NULL,
-                          info = list(),
                           label = NULL,
                           weight = NULL,
                           group = NULL,
@@ -66,14 +62,7 @@ Dataset <- R6::R6Class(
           stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
       }
 
-      if (length(info) > 0L) {
-        warning(paste0(
-          "lgb.Dataset: found fields passed through 'info'. "
-          , "As of v3.3.0, this behavior is deprecated, and support for it will be removed in a future release. "
-          , "To suppress this warning, use keyword arguments 'label', 'weight', 'group', or 'init_score' directly"
-        ))
-      }
-
+      info <- list()
       if (!is.null(label)) {
         info[["label"]] <- label
       }
@@ -113,7 +102,6 @@ Dataset <- R6::R6Class(
     },
 
     create_valid = function(data,
-                            info = list(),
                             label = NULL,
                             weight = NULL,
                             group = NULL,
@@ -148,7 +136,6 @@ Dataset <- R6::R6Class(
         , predictor = private$predictor
         , free_raw_data = private$free_raw_data
         , used_indices = NULL
-        , info = info
         , label = label
         , weight = weight
         , group = group
@@ -611,7 +598,6 @@ Dataset <- R6::R6Class(
           , predictor = private$predictor
           , free_raw_data = private$free_raw_data
           , used_indices = sort(idxset, decreasing = FALSE)
-          , info = NULL
           , group = group
           , init_score = init_score
           , label = label
@@ -838,7 +824,6 @@ lgb.Dataset <- function(data,
                         colnames = NULL,
                         categorical_feature = NULL,
                         free_raw_data = TRUE,
-                        info = list(),
                         label = NULL,
                         weight = NULL,
                         group = NULL,
@@ -868,7 +853,6 @@ lgb.Dataset <- function(data,
       , predictor = NULL
       , free_raw_data = free_raw_data
       , used_indices = NULL
-      , info = info
       , label = label
       , weight = weight
       , group = group
@@ -944,7 +928,6 @@ lgb.Dataset <- function(data,
 #' @export
 lgb.Dataset.create.valid <- function(dataset,
                                      data,
-                                     info = list(),
                                      label = NULL,
                                      weight = NULL,
                                      group = NULL,
@@ -970,7 +953,6 @@ lgb.Dataset.create.valid <- function(dataset,
   return(invisible(
     dataset$create_valid(
       data = data
-      , info = info
       , label = label
       , weight = weight
       , group = group
