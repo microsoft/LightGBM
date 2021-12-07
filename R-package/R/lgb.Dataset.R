@@ -923,7 +923,6 @@ lgb.Dataset <- function(data,
 #' )
 #' dvalid$construct()
 #' }
-#' @importFrom utils modifyList
 #' @export
 lgb.Dataset.create.valid <- function(dataset,
                                      data,
