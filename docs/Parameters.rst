@@ -923,6 +923,8 @@ Predict Parameters
 
    -  used only in ``classification`` and ``ranking`` applications
 
+   -  used only for predicting normal or raw scores
+
    -  if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
 
    -  **Note**: cannot be used with ``rf`` boosting type or custom objective function

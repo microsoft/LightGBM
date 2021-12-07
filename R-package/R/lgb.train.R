@@ -67,6 +67,7 @@ lgb.train <- function(params = list(),
                       early_stopping_rounds = NULL,
                       callbacks = list(),
                       reset_data = FALSE,
+                      serializable = TRUE,
                       ...) {
 
   # validate inputs early to avoid unnecessary computation
@@ -393,6 +394,10 @@ lgb.train <- function(params = list(),
     booster$best_score <- booster_old$best_score
     booster$record_evals <- booster_old$record_evals
 
+  }
+
+  if (serializable) {
+    booster$save_raw()
   }
 
   return(booster)

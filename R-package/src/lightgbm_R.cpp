@@ -22,6 +22,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 #define COL_MAJOR (0)
 
@@ -60,6 +61,10 @@ SEXP wrapped_R_string(void *len) {
   return Rf_allocVector(STRSXP, *(reinterpret_cast<R_xlen_t*>(len)));
 }
 
+SEXP wrapped_R_raw(void *len) {
+  return Rf_allocVector(RAWSXP, *(reinterpret_cast<R_xlen_t*>(len)));
+}
+
 SEXP wrapped_Rf_mkChar(void *txt) {
   return Rf_mkChar(reinterpret_cast<char*>(txt));
 }
@@ -73,6 +78,10 @@ void throw_R_memerr(void *ptr_cont_token, Rboolean jump) {
 
 SEXP safe_R_string(R_xlen_t len, SEXP *cont_token) {
   return R_UnwindProtect(wrapped_R_string, reinterpret_cast<void*>(&len), throw_R_memerr, cont_token, *cont_token);
+}
+
+SEXP safe_R_raw(R_xlen_t len, SEXP *cont_token) {
+  return R_UnwindProtect(wrapped_R_raw, reinterpret_cast<void*>(&len), throw_R_memerr, cont_token, *cont_token);
 }
 
 SEXP safe_R_mkChar(char *txt, SEXP *cont_token) {
@@ -90,12 +99,17 @@ void _DatasetFinalizer(SEXP handle) {
   LGBM_DatasetFree_R(handle);
 }
 
+SEXP LGBM_NullBoosterHandleError_R() {
+  Rf_error(
+      "Attempting to use a Booster which no longer exists and/or cannot be restored. "
+      "This can happen if you have called Booster$finalize() "
+      "or if this Booster was saved through saveRDS() using 'serializable=FALSE'.");
+  return R_NilValue;
+}
+
 void _AssertBoosterHandleNotNull(SEXP handle) {
   if (Rf_isNull(handle) || !R_ExternalPtrAddr(handle)) {
-    Rf_error(
-      "Attempting to use a Booster which no longer exists. "
-      "This can happen if you have called Booster$finalize() or if this Booster was saved with saveRDS(). "
-      "To avoid this error in the future, use saveRDS.lgb.Booster() or Booster$save_model() to save lightgbm Boosters.");
+    LGBM_NullBoosterHandleError_R();
   }
 }
 
@@ -486,13 +500,30 @@ SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename) {
 SEXP LGBM_BoosterLoadModelFromString_R(SEXP model_str) {
   R_API_BEGIN();
   SEXP ret = PROTECT(R_MakeExternalPtr(nullptr, R_NilValue, R_NilValue));
+  SEXP temp = NULL;
+  int n_protected = 1;
   int out_num_iterations = 0;
-  const char* model_str_ptr = CHAR(PROTECT(Rf_asChar(model_str)));
+  const char* model_str_ptr = nullptr;
+  switch (TYPEOF(model_str)) {
+    case RAWSXP: {
+      model_str_ptr = reinterpret_cast<const char*>(RAW(model_str));
+      break;
+    }
+    case CHARSXP: {
+      model_str_ptr = reinterpret_cast<const char*>(CHAR(model_str));
+      break;
+    }
+    case STRSXP: {
+      temp = PROTECT(STRING_ELT(model_str, 0));
+      n_protected++;
+      model_str_ptr = reinterpret_cast<const char*>(CHAR(temp));
+    }
+  }
   BoosterHandle handle = nullptr;
   CHECK_CALL(LGBM_BoosterLoadModelFromString(model_str_ptr, &out_num_iterations, &handle));
   R_SetExternalPtrAddr(ret, handle);
   R_RegisterCFinalizerEx(ret, _BoosterFinalizer, TRUE);
-  UNPROTECT(2);
+  UNPROTECT(n_protected);
   return ret;
   R_API_END();
 }
@@ -852,20 +883,19 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   SEXP cont_token = PROTECT(R_MakeUnwindCont());
   R_API_BEGIN();
   _AssertBoosterHandleNotNull(handle);
-  SEXP model_str;
   int64_t out_len = 0;
   int64_t buf_len = 1024 * 1024;
   int num_iter = Rf_asInteger(num_iteration);
   int importance_type = Rf_asInteger(feature_importance_type);
   std::vector<char> inner_char_buf(buf_len);
   CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, buf_len, &out_len, inner_char_buf.data()));
-  // if the model string was larger than the initial buffer, allocate a bigger buffer and try again
+  SEXP model_str = PROTECT(safe_R_raw(out_len, &cont_token));
+  // if the model string was larger than the initial buffer, call the function again, writing directly to the R object
   if (out_len > buf_len) {
-    inner_char_buf.resize(out_len);
-    CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, inner_char_buf.data()));
+    CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, reinterpret_cast<char*>(RAW(model_str))));
+  } else {
+    std::copy(inner_char_buf.begin(), inner_char_buf.begin() + out_len, reinterpret_cast<char*>(RAW(model_str)));
   }
-  model_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
-  SET_STRING_ELT(model_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
   UNPROTECT(2);
   return model_str;
   R_API_END();
@@ -893,6 +923,26 @@ SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   SET_STRING_ELT(model_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
   UNPROTECT(2);
   return model_str;
+  R_API_END();
+}
+
+SEXP LGBM_DumpParamAliases_R() {
+  SEXP cont_token = PROTECT(R_MakeUnwindCont());
+  R_API_BEGIN();
+  SEXP aliases_str;
+  int64_t out_len = 0;
+  int64_t buf_len = 1024 * 1024;
+  std::vector<char> inner_char_buf(buf_len);
+  CHECK_CALL(LGBM_DumpParamAliases(buf_len, &out_len, inner_char_buf.data()));
+  // if aliases string was larger than the initial buffer, allocate a bigger buffer and try again
+  if (out_len > buf_len) {
+    inner_char_buf.resize(out_len);
+    CHECK_CALL(LGBM_DumpParamAliases(out_len, &out_len, inner_char_buf.data()));
+  }
+  aliases_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
+  SET_STRING_ELT(aliases_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
+  UNPROTECT(2);
+  return aliases_str;
   R_API_END();
 }
 
@@ -940,6 +990,8 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterSaveModel_R"          , (DL_FUNC) &LGBM_BoosterSaveModel_R          , 4},
   {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 3},
   {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 3},
+  {"LGBM_NullBoosterHandleError_R"    , (DL_FUNC) &LGBM_NullBoosterHandleError_R    , 0},
+  {"LGBM_DumpParamAliases_R"          , (DL_FUNC) &LGBM_DumpParamAliases_R          , 0},
   {NULL, NULL, 0}
 };
 
