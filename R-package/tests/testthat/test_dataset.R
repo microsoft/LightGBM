@@ -13,7 +13,6 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
   dtest1 <- lgb.Dataset(test_data, label = test_label)
   # from dense matrix
   dtest2 <- lgb.Dataset(as.matrix(test_data), label = test_label)
-  expect_equal(getinfo(dtest1, "label"), getinfo(dtest2, "label"))
   expect_equal(get_field(dtest1, "label"), get_field(dtest2, "label"))
 
   # save to a local file
@@ -23,23 +22,7 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
   dtest3 <- lgb.Dataset(tmp_file)
   lgb.Dataset.construct(dtest3)
   unlink(tmp_file)
-  expect_equal(getinfo(dtest1, "label"), getinfo(dtest3, "label"))
   expect_equal(get_field(dtest1, "label"), get_field(dtest3, "label"))
-})
-
-test_that("lgb.Dataset: getinfo", {
-  dtest <- lgb.Dataset(test_data)
-  dtest$construct()
-
-  set_field(dtest, "label", test_label)
-  labels <- getinfo(dtest, "label")
-  expect_equal(test_label, getinfo(dtest, "label"))
-
-  expect_true(length(getinfo(dtest, "weight")) == 0L)
-  expect_true(length(getinfo(dtest, "init_score")) == 0L)
-
-  # any other label should error
-  expect_error(set_field(dtest, "asdf", test_label))
 })
 
 test_that("lgb.Dataset: get_field & set_field", {
@@ -91,8 +74,8 @@ test_that("Dataset$slice() supports passing Dataset attributes through '...'", {
     , init_score = init_score
   )
   dsub1$construct()
-  expect_null(dtest$getinfo("init_score"), NULL)
-  expect_identical(dsub1$getinfo("init_score"), init_score)
+  expect_null(dtest$get_field("init_score"), NULL)
+  expect_identical(dsub1$get_field("init_score"), init_score)
 })
 
 test_that("Dataset$set_reference() on a constructed Dataset fails if raw data has been freed", {
