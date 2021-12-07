@@ -644,6 +644,7 @@ void CategoryEncodingProvider::SyncEncodingStat(std::vector<std::unordered_map<i
   auto& fold_label_sum = *fold_label_sum_ptr;
   auto& fold_total_count = *fold_total_count_ptr;
   if (num_machines > 1) {
+    // dump label sum and count information of each category value into a string
     std::string target_encoding_stat_string;
     for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
       #if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
@@ -659,12 +660,14 @@ void CategoryEncodingProvider::SyncEncodingStat(std::vector<std::unordered_map<i
     std::memcpy(input_buffer.data(), target_encoding_stat_string.c_str(), target_encoding_stat_string.size() * sizeof(char));
     input_buffer[target_encoding_stat_string.size()] = '\0';
 
+    // gather strings from all machines
     Network::Allgather(input_buffer.data(), sizeof(char) * max_target_encoding_values_string_size, output_buffer.data());
 
     int feature_value = 0;
     int count_value = 0;
     double label_sum = 0;
 
+    // prepare per fold statistic buffer
     for (int fold_id = 0; fold_id < config_.num_target_encoding_folds; ++fold_id) {
       fold_label_sum[fold_id].clear();
       fold_total_count[fold_id].clear();
@@ -672,6 +675,7 @@ void CategoryEncodingProvider::SyncEncodingStat(std::vector<std::unordered_map<i
 
     size_t cur_str_pos = 0;
     int check_num_machines = 0;
+    // sum up the statistics from each string
     while (cur_str_pos < output_buffer.size()) {
       std::string all_target_encoding_stat_string(output_buffer.data() + cur_str_pos);
       cur_str_pos += max_target_encoding_values_string_size;
