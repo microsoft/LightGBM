@@ -902,7 +902,10 @@ const std::string Config::DumpAliases() {
   str_buf << "\"gpu_platform_id\": [], ";
   str_buf << "\"gpu_device_id\": [], ";
   str_buf << "\"gpu_use_dp\": [], ";
-  str_buf << "\"num_gpu\": []";
+  str_buf << "\"num_gpu\": [], ";
+  str_buf << "\"category_encoders\": [], ";
+  str_buf << "\"num_target_encoding_folds\": [], ";
+  str_buf << "\"prior_weight\": []";
   str_buf << "}";
   return str_buf.str();
 }

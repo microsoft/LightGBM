@@ -1890,13 +1890,7 @@ class Dataset:
                 self._lazy_init(self.data, label=self.label,
                                 weight=self.weight, group=self.group,
                                 init_score=self.init_score, predictor=self._predictor,
-<<<<<<< HEAD
-                                silent=self.silent, feature_name=self.feature_name,
-                                categorical_feature=self.categorical_feature,
-                                params=self.params)
-=======
                                 feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params)
->>>>>>> LightGBM/master
             if self.free_raw_data:
                 self.data = None
         return self
