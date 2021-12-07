@@ -80,7 +80,12 @@ class GOSS : public SampleStrategy {
     bag_data_cnt_ = num_data_;
     bag_data_indices_.clear();
     bagging_runner_.ReSize(0);
-    is_use_subset_ = false;   
+    is_use_subset_ = false;
+    // avoid warnings
+    std::ignore = config;
+    std::ignore = is_change_dataset;
+    std::ignore = gradients;
+    std::ignore = hessians;
   } 
 
  protected:

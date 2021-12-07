@@ -49,6 +49,9 @@ class BAGGING : public SampleStrategy {
                                       bag_data_cnt_);
       }
     }
+    // avoid warnings
+    std::ignore = gradients;
+    std::ignore = hessians;
   }
 
   void ResetGOSS() override {} 
