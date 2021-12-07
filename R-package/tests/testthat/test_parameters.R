@@ -17,12 +17,14 @@ test_that("Feature penalties work properly", {
     lightgbm(
       data = train$data
       , label = train$label
-      , num_leaves = 5L
-      , learning_rate = 0.05
+      , params = list(
+        num_leaves = 5L
+        , learning_rate = 0.05
+        , objective = "binary"
+        , feature_penalty = paste0(feature_penalties, collapse = ",")
+        , metric = "binary_error"
+      )
       , nrounds = 5L
-      , objective = "binary"
-      , feature_penalty = paste0(feature_penalties, collapse = ",")
-      , metric = "binary_error"
       , verbose = -1L
       , save_name = tempfile(fileext = ".model")
     )
@@ -64,20 +66,20 @@ test_that(".PARAMETER_ALIASES() returns a named list of character vectors, where
 
 test_that("training should warn if you use 'dart' boosting, specified with 'boosting' or aliases", {
   for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]) {
+    params <- list(
+        num_leaves = 5L
+        , learning_rate = 0.05
+        , objective = "binary"
+        , metric = "binary_error"
+    )
+    params[[boosting_param]] <- "dart"
     expect_warning({
       result <- lightgbm(
         data = train$data
         , label = train$label
-        , num_leaves = 5L
-        , learning_rate = 0.05
+        , params = params
         , nrounds = 5L
-        , objective = "binary"
-        , metric = "binary_error"
         , verbose = -1L
-        , params = stats::setNames(
-          object = "dart"
-          , nm = boosting_param
-        )
         , save_name = tempfile(fileext = ".model")
       )
     }, regexp = "Early stopping is not available in 'dart' mode")
