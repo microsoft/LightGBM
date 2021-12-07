@@ -63,7 +63,7 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
         params = list(
             objective = "regression"
             , metric = "l2"
-            , min_dataa = 1L
+            , min_data = 1L
             , learning_rate = 1.0
         )
         , data = dtrain

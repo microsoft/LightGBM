@@ -64,7 +64,7 @@ fit <- lightgbm(
   , label = y
   , params = list(
     num_leaves = 4L
-    , learning_ratte = 1.0
+    , learning_rate = 1.0
     , objective = "binary"
   )
   , nrounds = 10L
