@@ -20,7 +20,8 @@ lgb.train(
   early_stopping_rounds = NULL,
   callbacks = list(),
   reset_data = FALSE,
-  serializable = TRUE
+  serializable = TRUE,
+  ...
 )
 }
 \arguments{
