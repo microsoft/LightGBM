@@ -68,14 +68,6 @@ If passing `NULL`, will not save the trained model to disk.}
                        say "the first and tenth columns").}
    \item{\code{reset_data}: Boolean, setting it to TRUE (not the default value) will transform the booster model
                      into a predictor model which frees up memory and the original datasets}
-    \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
-    \item{\code{num_leaves}: Maximum number of leaves in one tree.}
-    \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
-                     overfit when #data is small. Tree still grow by leaf-wise.}
-     \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-                        the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
-                        not the number of threads (most CPU using hyper-threading to generate 2 threads
-                        per CPU core).}
 }}
 }
 \value{
