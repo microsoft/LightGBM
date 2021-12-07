@@ -11,8 +11,7 @@ lgb.Dataset.create.valid(
   weight = NULL,
   group = NULL,
   init_score = NULL,
-  params = list(),
-  ...
+  params = list()
 )
 }
 \arguments{
@@ -40,9 +39,6 @@ second group, etc.}
 The "Dataset Parameters" section of the documentation} for a list of parameters
 and valid values. If this is an empty list (the default), the validation Dataset
 will have the same parameters as the Dataset passed to argument \code{dataset}.}
-
-\item{...}{additional \code{lgb.Dataset} parameters.
-NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
 }
 \value{
 constructed dataset

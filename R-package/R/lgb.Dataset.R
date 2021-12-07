@@ -106,22 +106,7 @@ Dataset <- R6::R6Class(
                             weight = NULL,
                             group = NULL,
                             init_score = NULL,
-                            params = list(),
-                            ...) {
-
-      additional_params <- list(...)
-      if (length(additional_params) > 0L) {
-        warning(paste0(
-          "Dataset$create_valid(): Found the following passed through '...': "
-          , paste(names(additional_params), collapse = ", ")
-          , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-          , "Add these to 'params' instead. "
-          , "See ?lgb.Dataset.create.valid for documentation on how to call this function."
-        ))
-      }
-
-      # anything passed into '...' should be overwritten by things passed to 'params'
-      params <- modifyList(additional_params, params)
+                            params = list()) {
 
       # the Dataset's existing parameters should be overwritten by any passed in to this call
       params <- modifyList(self$get_params(), params)
@@ -863,8 +848,6 @@ lgb.Dataset <- function(data,
 #'               The "Dataset Parameters" section of the documentation} for a list of parameters
 #'               and valid values. If this is an empty list (the default), the validation Dataset
 #'               will have the same parameters as the Dataset passed to argument \code{dataset}.
-#' @param ... additional \code{lgb.Dataset} parameters.
-#'            NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.
 #'
 #' @return constructed dataset
 #'
@@ -912,7 +895,6 @@ lgb.Dataset <- function(data,
 #' )
 #' dvalid$construct()
 #' }
-#' @importFrom utils modifyList
 #' @export
 lgb.Dataset.create.valid <- function(dataset,
                                      data,
@@ -920,21 +902,10 @@ lgb.Dataset.create.valid <- function(dataset,
                                      weight = NULL,
                                      group = NULL,
                                      init_score = NULL,
-                                     params = list(),
-                                     ...) {
+                                     params = list()) {
 
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.create.valid: input data should be an lgb.Dataset object")
-  }
-
-  additional_params <- list(...)
-  if (length(additional_params) > 0L) {
-    warning(paste0(
-      "lgb.Dataset.create.valid: Found the following passed through '...': "
-      , paste(names(additional_params), collapse = ", ")
-      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-      , "Add these to 'params' instead. See ?lgb.Dataset.create.valid for documentation on how to call this function."
-    ))
   }
 
   # Create validation dataset
@@ -945,7 +916,7 @@ lgb.Dataset.create.valid <- function(dataset,
       , weight = weight
       , group = group
       , init_score = init_score
-      , params = utils::modifyList(params, additional_params)
+      , params = params
     )
   ))
 
