@@ -13,7 +13,7 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
 
-#include <LightGBM/src/io/parser.hpp>
+// #include "../../src/io/parser.hpp"
 
 #include <string>
 #include <functional>
@@ -25,6 +25,17 @@
 #include <vector>
 
 namespace LightGBM {
+
+class Str2Num {
+public:
+
+  Str2Num(){
+    current = 0;
+  }
+
+  std::map<std::string, double> Str2NumMap;
+  double current;
+};
 
 /*! \brief forward declaration */
 class DatasetLoader;
@@ -756,10 +767,10 @@ class Dataset {
     }
   }
 
-  inline std::vector< std::map<std::string, double> >  load_mapping() const {
-    std::vector< std::map<std::string, double> > result;
+  // inline std::vector< std::map<std::string, double> >  load_mapping() const {
+  //   std::vector< std::map<std::string, double> > result;
     
-  }
+  // }
 
   inline std::vector< std::string >  get_mapping() const {
     return mapping;
