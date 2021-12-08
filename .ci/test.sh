@@ -179,7 +179,7 @@ if [[ $TASK == "gpu" ]]; then
     elif [[ $METHOD == "source" ]]; then
         cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
     fi
-elif [[ $TASK == "cuda" ] || [ $TASK == "cuda_exp" ]]; then
+elif [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
     if [[ $TASK == "cuda" ]]; then
         sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
         grep -q 'std::string device_type = "cuda"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done

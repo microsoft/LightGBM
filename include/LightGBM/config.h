@@ -204,12 +204,14 @@ struct Config {
 
   // [doc-only]
   // type = enum
-  // options = cpu, gpu, cuda
+  // options = cpu, gpu, cuda, cuda_exp
   // alias = device
   // desc = device for the tree learning, you can use GPU to achieve the faster learning
   // desc = **Note**: it is recommended to use the smaller ``max_bin`` (e.g. 63) to get the better speed up
   // desc = **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training
   // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
+  // desc = **Note**: ``cuda_exp`` is an experimental CUDA version, the installation guide for ``cuda_exp`` is identical with ``cuda``
+  // desc = **Note**: ``cuda_exp`` is faster than ``cuda`` and will replace ``cuda`` in the future
   std::string device_type = "cpu";
 
   // [doc-only]
