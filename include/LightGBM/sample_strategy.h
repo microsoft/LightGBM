@@ -29,9 +29,7 @@ class SampleStrategy {
 
   virtual void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) = 0;
 
-  virtual void ResetGOSS() = 0;
-
-  virtual void ResetBaggingConfig(const Config* config, bool is_change_dataset) = 0;
+  virtual void ResetSampleConfig(const Config* config, bool is_change_dataset) = 0;
 
   bool is_use_subset() const { return is_use_subset_; }
 

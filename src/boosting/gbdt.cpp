@@ -124,8 +124,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   parser_config_str_ = train_data_->parser_config_str();
 
   // if need bagging, create buffer
-  data_sample_strategy_->ResetBaggingConfig(config_.get(), true);
-  data_sample_strategy_->ResetGOSS();
+  data_sample_strategy_->ResetSampleConfig(config_.get(), true);
   if (data_sample_strategy_->NeedResizeGradients()) {
     // resize gradient vectors to copy the customized gradients for goss or bagging with subset
     const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
@@ -679,7 +678,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
     parser_config_str_ = train_data_->parser_config_str();
 
     tree_learner_->ResetTrainingData(train_data, is_constant_hessian_);
-    data_sample_strategy_->ResetBaggingConfig(config_.get(), true);
+    data_sample_strategy_->ResetSampleConfig(config_.get(), true);
     if (data_sample_strategy_->NeedResizeGradients()) {
       // resize gradient vectors to copy the customized gradients for goss or bagging with subset
       const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
@@ -689,7 +688,6 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
   } else {
     tree_learner_->ResetIsConstantHessian(is_constant_hessian_);
   }
-  data_sample_strategy_->ResetGOSS();
 }
 
 void GBDT::ResetConfig(const Config* config) {
@@ -709,7 +707,7 @@ void GBDT::ResetConfig(const Config* config) {
     tree_learner_->ResetConfig(new_config.get());
   }
   if (train_data_ != nullptr) {
-    data_sample_strategy_->ResetBaggingConfig(new_config.get(), false);
+    data_sample_strategy_->ResetSampleConfig(new_config.get(), false);
     if (data_sample_strategy_->NeedResizeGradients()) {
       // resize gradient vectors to copy the customized gradients for goss or bagging with subset
       const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
@@ -733,7 +731,6 @@ void GBDT::ResetConfig(const Config* config) {
     }
   }
   config_.reset(new_config.release());
-  data_sample_strategy_->ResetGOSS();
 }
 
 }  // namespace LightGBM

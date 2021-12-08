@@ -53,7 +53,15 @@ class GOSS : public SampleStrategy {
     }
   }
 
-  void ResetGOSS() override {
+  void ResetSampleConfig(const Config* config, bool /*is_change_dataset*/) override {
+    // Cannot use bagging in GOSS
+    config_ = config;
+    need_resize_gradients_ = false;
+    if (objective_function_ == nullptr) {
+      // resize gradient vectors to copy the customized gradients for goss
+      need_resize_gradients_ = true;
+    }
+
     CHECK_LE(config_->top_rate + config_->other_rate, 1.0f);
     CHECK(config_->top_rate > 0.0f && config_->other_rate > 0.0f);
     if (config_->bagging_freq > 0 && config_->bagging_fraction != 1.0f) {
@@ -78,22 +86,6 @@ class GOSS : public SampleStrategy {
     }
     // flag to not bagging first
     bag_data_cnt_ = num_data_;
-  }
-
-  void ResetBaggingConfig(const Config* config, bool is_change_dataset) override {
-    // Cannot use bagging in GOSS
-    bag_data_cnt_ = num_data_;
-    bag_data_indices_.clear();
-    bagging_runner_.ReSize(0);
-    is_use_subset_ = false;
-    need_resize_gradients_ = false;
-    if (objective_function_ == nullptr) {
-      // resize gradient vectors to copy the customized gradients for goss
-      need_resize_gradients_ = true;
-    }
-    // avoid warnings
-    std::ignore = config;
-    std::ignore = is_change_dataset;
   }
 
   bool IsHessianChange() const override {

@@ -63,9 +63,7 @@ class BAGGING : public SampleStrategy {
     std::ignore = hessians;
   }
 
-  void ResetGOSS() override {}
-
-  void ResetBaggingConfig(const Config* config, bool is_change_dataset) override {
+  void ResetSampleConfig(const Config* config, bool is_change_dataset) override {
     need_resize_gradients_ = false;
     // if need bagging, create buffer
     data_size_t num_pos_data = 0;
@@ -80,6 +78,7 @@ class BAGGING : public SampleStrategy {
         && config_->pos_bagging_fraction == config->pos_bagging_fraction && config_->neg_bagging_fraction == config->neg_bagging_fraction) {
         return;
       }
+      config_ = config;
       if (balance_bagging_cond) {
         balanced_bagging_ = true;
         bag_data_cnt_ = static_cast<data_size_t>(num_pos_data * config->pos_bagging_fraction)
