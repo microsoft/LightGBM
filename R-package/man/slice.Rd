@@ -12,7 +12,9 @@ slice(dataset, ...)
 \arguments{
 \item{dataset}{Object of class \code{lgb.Dataset}}
 
-\item{...}{other parameters (currently not used)}
+\item{...}{ignored. To change the parameters of a \code{lgb.Dataset} produced by this function,
+use \code{Dataset$set_params()}. To modify fields like "init_score",
+use \code{Dataset$set_field()} or \code{set_field()}.}
 
 \item{idxset}{an integer vector of indices of rows needed}
 }
