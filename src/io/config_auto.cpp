@@ -185,6 +185,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "task",
   "objective",
   "boosting",
+  "data_sample_strategy",
   "data",
   "valid",
   "num_iterations",
@@ -312,7 +313,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "gpu_device_id",
   "gpu_use_dp",
   "num_gpu",
-  "data_sample_strategy"
   });
   return params;
 }
