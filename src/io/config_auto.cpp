@@ -764,6 +764,7 @@ const std::string Config::DumpAliases() {
   str_buf << "\"task\": [\"task_type\"], ";
   str_buf << "\"objective\": [\"objective_type\", \"app\", \"application\", \"loss\"], ";
   str_buf << "\"boosting\": [\"boosting_type\", \"boost\"], ";
+  str_buf << "\"data_sample_strategy\": [], ";
   str_buf << "\"data\": [\"train\", \"train_data\", \"train_data_file\", \"data_filename\"], ";
   str_buf << "\"valid\": [\"test\", \"valid_data\", \"valid_data_file\", \"test_data\", \"test_data_file\", \"valid_filenames\"], ";
   str_buf << "\"num_iterations\": [\"num_iteration\", \"n_iter\", \"num_tree\", \"num_trees\", \"num_round\", \"num_rounds\", \"nrounds\", \"num_boost_round\", \"n_estimators\", \"max_iter\"], ";
