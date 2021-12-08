@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
+
 #ifndef LIGHTGBM_SAMPLE_STRATEGY_BAGGING_HPP_
 #define LIGHTGBM_SAMPLE_STRATEGY_BAGGING_HPP_
 
@@ -5,7 +10,7 @@ namespace LightGBM {
 
 class BAGGING : public SampleStrategy {
  public:
-  BAGGING(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration) 
+  BAGGING(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration)
     : need_re_bagging_(false) {
     config_ = config;
     train_data_ = train_data;
@@ -172,6 +177,6 @@ class BAGGING : public SampleStrategy {
   bool need_re_bagging_;
 };
 
-} // namespace LightGBM
+}  // namespace LightGBM
 
 #endif  // LIGHTGBM_SAMPLE_STRATEGY_BAGGING_HPP_

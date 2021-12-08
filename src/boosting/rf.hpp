@@ -106,7 +106,7 @@ class RF : public GBDT {
     const bool is_use_subset = data_sample_strategy_->is_use_subset();
     const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
     const std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices = data_sample_strategy_->bag_data_indices();
-    
+
     CHECK_EQ(gradients, nullptr);
     CHECK_EQ(hessians, nullptr);
 

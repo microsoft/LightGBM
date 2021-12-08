@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
+
 #include <LightGBM/sample_strategy.h>
 #include "goss.hpp"
 #include "bagging.hpp"
@@ -20,4 +25,4 @@ SampleStrategy* SampleStrategy::CreateSampleStrategy(const Config* config, const
   }
 }
 
-} // namespace LightGBM
+}  // namespace LightGBM

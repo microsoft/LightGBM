@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
+
 #ifndef LIGHTGBM_SAMPLE_STRATEGY_H_
 #define LIGHTGBM_SAMPLE_STRATEGY_H_
 
@@ -9,26 +14,29 @@
 #include <LightGBM/tree_learner.h>
 #include <LightGBM/objective_function.h>
 
+#include <memory>
+#include <vector>
+
 namespace LightGBM {
 
 class SampleStrategy {
  public:
-  SampleStrategy() : balanced_bagging_(false), bagging_runner_(0, bagging_rand_block_), need_resize_gradients_(false) {};
- 
-  virtual ~SampleStrategy() {};
- 
+  SampleStrategy() : balanced_bagging_(false), bagging_runner_(0, bagging_rand_block_), need_resize_gradients_(false) {}
+
+  virtual ~SampleStrategy() {}
+
   static SampleStrategy* CreateSampleStrategy(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration);
- 
+
   virtual void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) = 0;
- 
+
   virtual void ResetGOSS() = 0;
 
   virtual void ResetBaggingConfig(const Config* config, bool is_change_dataset) = 0;
- 
+
   bool is_use_subset() const { return is_use_subset_; }
- 
+
   data_size_t bag_data_cnt() const { return bag_data_cnt_; }
- 
+
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices() {return bag_data_indices_;}
 
   void UpdateObjectiveFunction(const ObjectiveFunction* objective_function) {
@@ -61,5 +69,6 @@ class SampleStrategy {
   bool need_resize_gradients_;
 };
 
-} // namespace LightGBM
-#endif // LIGHTGBM_SAMPLE_STRATEGY_H_
+}  // namespace LightGBM
+
+#endif  // LIGHTGBM_SAMPLE_STRATEGY_H_

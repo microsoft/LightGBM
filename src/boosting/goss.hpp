@@ -1,9 +1,16 @@
+/*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
+
 #ifndef LIGHTGBM_SAMPLE_STRATEGY_GOSS_HPP_
 #define LIGHTGBM_SAMPLE_STRATEGY_GOSS_HPP_
 
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/sample_strategy.h>
 
+#include <algorithm>
+#include <vector>
 
 namespace LightGBM {
 
@@ -25,7 +32,7 @@ class GOSS : public SampleStrategy {
     if (iter < static_cast<int>(1.0f / config_->learning_rate)) { return; }
     auto left_cnt = bagging_runner_.Run<true>(
         num_data_,
-        [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t* left, 
+        [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t* left,
             data_size_t*) {
           data_size_t cur_left_count = 0;
           cur_left_count = Helper(cur_start, cur_cnt, left, gradients, hessians);
@@ -70,7 +77,7 @@ class GOSS : public SampleStrategy {
       is_use_subset_ = true;
     }
     // flag to not bagging first
-    bag_data_cnt_ = num_data_; 
+    bag_data_cnt_ = num_data_;
   }
 
   void ResetBaggingConfig(const Config* config, bool is_change_dataset) override {
@@ -144,9 +151,9 @@ class GOSS : public SampleStrategy {
     }
     return cur_left_cnt;
   }
-  
+
 };
 
-} // namespace LightGBM
+}  // namespace LightGBM
 
-#endif // LIGHTGBM_SAMPLE_STRATEGY_GOSS_HPP_
+#endif  // LIGHTGBM_SAMPLE_STRATEGY_GOSS_HPP_
