@@ -129,6 +129,9 @@
     <ClInclude Include="..\include\LightGBM\prediction_early_stop.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\LightGBM\sample_strategy.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\LightGBM\tree.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
@@ -309,6 +312,9 @@
       <Filter>src\boosting</Filter>
     </ClCompile>
     <ClCompile Include="..\src\boosting\gbdt_model_text.cpp">
+      <Filter>src\boosting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\boosting\sample_strategy.cpp">
       <Filter>src\boosting</Filter>
     </ClCompile>
     <ClCompile Include="..\src\io\file_io.cpp">

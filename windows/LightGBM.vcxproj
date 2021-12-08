@@ -253,6 +253,7 @@
     <ClInclude Include="..\include\LightGBM\network.h" />
     <ClInclude Include="..\include\LightGBM\objective_function.h" />
     <ClInclude Include="..\include\LightGBM\prediction_early_stop.h" />
+    <ClInclude Include="..\include\LightGBM\sample_strategy.h" />
     <ClInclude Include="..\include\LightGBM\tree.h" />
     <ClInclude Include="..\include\LightGBM\tree_learner.h" />
     <ClInclude Include="..\include\LightGBM\utils\yamc\alternate_shared_mutex.hpp" />
@@ -311,6 +312,7 @@
     <ClCompile Include="..\src\boosting\gbdt_model_text.cpp" />
     <ClCompile Include="..\src\boosting\gbdt_prediction.cpp" />
     <ClCompile Include="..\src\boosting\prediction_early_stop.cpp" />
+    <ClCompile Include="..\src\boosting\sample_strategy.cpp" />
     <ClCompile Include="..\src\c_api.cpp" />
     <ClCompile Include="..\src\io\bin.cpp" />
     <ClCompile Include="..\src\io\config.cpp" />
