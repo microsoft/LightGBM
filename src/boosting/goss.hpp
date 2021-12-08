@@ -89,7 +89,7 @@ class GOSS : public SampleStrategy {
     std::ignore = is_change_dataset;
   }
 
-  bool IsHessianChange() const {
+  bool IsHessianChange() const override {
     return true;
   }
 

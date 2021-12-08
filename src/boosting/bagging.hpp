@@ -117,7 +117,7 @@ class BAGGING : public SampleStrategy {
     }
   }
 
-  bool IsHessianChange() const {
+  bool IsHessianChange() const override {
     return false;
   }
 
