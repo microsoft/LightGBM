@@ -76,12 +76,12 @@ test_that("lgb.plot.interepretation works as expected for multiclass classificat
         , metric = "multi_logloss"
         , num_class = 3L
         , learning_rate = 0.00001
+        , min_data = 1L
     )
     model <- lgb.train(
         params = params
         , data = dtrain
         , nrounds = 3L
-        , min_data = 1L
     )
     num_trees <- 5L
     tree_interpretation <- lgb.interprete(

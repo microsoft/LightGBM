@@ -229,7 +229,7 @@ def _accuracy_score(dy_true, dy_pred):
     return da.average(dy_true == dy_pred).compute()
 
 
-def _constant_metric(dy_true, dy_pred):
+def _constant_metric(y_true, y_pred):
     metric_name = 'constant_metric'
     value = 0.708
     is_higher_better = False
@@ -467,6 +467,19 @@ def test_group_workers_by_host():
     }
     host_to_workers = lgb.dask._group_workers_by_host(workers)
     assert host_to_workers == expected
+
+
+def test_group_workers_by_host_unparseable_host_names():
+    workers_without_protocol = ['0.0.0.1:80', '0.0.0.2:80']
+    with pytest.raises(ValueError, match="Could not parse host name from worker address '0.0.0.1:80'"):
+        lgb.dask._group_workers_by_host(workers_without_protocol)
+
+
+def test_machines_to_worker_map_unparseable_host_names():
+    workers = {'0.0.0.1:80': {}, '0.0.0.2:80': {}}
+    machines = "0.0.0.1:80,0.0.0.2:80"
+    with pytest.raises(ValueError, match="Could not parse host name from worker address '0.0.0.1:80'"):
+        lgb.dask._machines_to_worker_map(machines=machines, worker_addresses=workers.keys())
 
 
 def test_assign_open_ports_to_workers(cluster):
@@ -900,8 +913,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
             'eval_names': eval_names,
             'eval_sample_weight': eval_sample_weight,
             'eval_init_score': eval_init_score,
-            'eval_metric': eval_metrics,
-            'verbose': True
+            'eval_metric': eval_metrics
         }
         if task == 'ranking':
             fit_params.update(
@@ -926,7 +938,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
 
             # check that early stopping was not applied.
             assert dask_model.booster_.num_trees() == model_trees
-            assert dask_model.best_iteration_ is None
+            assert dask_model.best_iteration_ == 0
 
             # checks that evals_result_ and best_score_ contain expected data and eval_set names.
             evals_result = dask_model.evals_result_

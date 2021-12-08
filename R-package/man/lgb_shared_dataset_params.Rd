@@ -16,10 +16,6 @@ to be ranked. For example, if you have a 100-document dataset with
 \code{group = c(10, 20, 40, 10, 10, 10)}, that means that you have 6 groups,
 where the first 10 records are in the first group, records 11-30 are in the
 second group, etc.}
-
-\item{info}{a list of information of the \code{lgb.Dataset} object. NOTE: use of \code{info}
-is deprecated as of v3.3.0. Use keyword arguments (e.g. \code{init_score = init_score})
-directly.}
 }
 \description{
 Parameter docs for fields used in \code{lgb.Dataset} construction

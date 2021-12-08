@@ -86,9 +86,9 @@ Booster <- R6::R6Class(
 
         } else if (!is.null(model_str)) {
 
-          # Do we have a model_str as character?
-          if (!is.character(model_str)) {
-            stop("lgb.Booster: Can only use a string as model_str")
+          # Do we have a model_str as character/raw?
+          if (!is.raw(model_str) && !is.character(model_str)) {
+            stop("lgb.Booster: Can only use a character/raw vector as model_str")
           }
 
           # Create booster from model
@@ -177,24 +177,15 @@ Booster <- R6::R6Class(
 
     },
 
-    reset_parameter = function(params, ...) {
-
-      additional_params <- list(...)
-      if (length(additional_params) > 0L) {
-        warning(paste0(
-          "Booster$reset_parameter(): Found the following passed through '...': "
-          , paste(names(additional_params), collapse = ", ")
-          , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-          , "Add these to 'params' instead."
-        ))
-      }
+    reset_parameter = function(params) {
 
       if (methods::is(self$params, "list")) {
         params <- utils::modifyList(self$params, params)
       }
 
-      params <- utils::modifyList(params, additional_params)
       params_str <- lgb.params2str(params = params)
+
+      self$restore_handle()
 
       .Call(
         LGBM_BoosterResetParameter_R
@@ -289,6 +280,8 @@ Booster <- R6::R6Class(
     # Return one iteration behind
     rollback_one_iter = function() {
 
+      self$restore_handle()
+
       .Call(
         LGBM_BoosterRollbackOneIter_R
         , private$handle
@@ -306,6 +299,8 @@ Booster <- R6::R6Class(
     # Get current iteration
     current_iter = function() {
 
+      self$restore_handle()
+
       cur_iter <- 0L
       .Call(
         LGBM_BoosterGetCurrentIteration_R
@@ -319,6 +314,8 @@ Booster <- R6::R6Class(
     # Get upper bound
     upper_bound = function() {
 
+      self$restore_handle()
+
       upper_bound <- 0.0
       .Call(
         LGBM_BoosterGetUpperBoundValue_R
@@ -331,6 +328,8 @@ Booster <- R6::R6Class(
 
     # Get lower bound
     lower_bound = function() {
+
+      self$restore_handle()
 
       lower_bound <- 0.0
       .Call(
@@ -423,6 +422,8 @@ Booster <- R6::R6Class(
     # Save model
     save_model = function(filename, num_iteration = NULL, feature_importance_type = 0L) {
 
+      self$restore_handle()
+
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
       }
@@ -440,7 +441,9 @@ Booster <- R6::R6Class(
       return(invisible(self))
     },
 
-    save_model_to_string = function(num_iteration = NULL, feature_importance_type = 0L) {
+    save_model_to_string = function(num_iteration = NULL, feature_importance_type = 0L, as_char = TRUE) {
+
+      self$restore_handle()
 
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
@@ -453,12 +456,18 @@ Booster <- R6::R6Class(
           , as.integer(feature_importance_type)
       )
 
+      if (as_char) {
+        model_str <- rawToChar(model_str)
+      }
+
       return(model_str)
 
     },
 
     # Dump model in memory
     dump_model = function(num_iteration = NULL, feature_importance_type = 0L) {
+
+      self$restore_handle()
 
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
@@ -484,18 +493,9 @@ Booster <- R6::R6Class(
                        predcontrib = FALSE,
                        header = FALSE,
                        reshape = FALSE,
-                       params = list(),
-                       ...) {
+                       params = list()) {
 
-      additional_params <- list(...)
-      if (length(additional_params) > 0L) {
-        warning(paste0(
-          "Booster$predict(): Found the following passed through '...': "
-          , paste(names(additional_params), collapse = ", ")
-          , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-          , "Add these to 'params' instead. See ?predict.lgb.Booster for documentation on how to call this function."
-        ))
-      }
+      self$restore_handle()
 
       if (is.null(num_iteration)) {
         num_iteration <- self$best_iter
@@ -506,7 +506,6 @@ Booster <- R6::R6Class(
       }
 
       # Predict on new data
-      params <- utils::modifyList(params, additional_params)
       predictor <- Predictor$new(
         modelfile = private$handle
         , params = params
@@ -531,17 +530,39 @@ Booster <- R6::R6Class(
       return(Predictor$new(modelfile = private$handle))
     },
 
-    # Used for save
-    raw = NA,
+    # Used for serialization
+    raw = NULL,
 
-    # Save model to temporary file for in-memory saving
-    save = function() {
-
-      # Overwrite model in object
-      self$raw <- self$save_model_to_string(NULL)
-
+    # Store serialized raw bytes in model object
+    save_raw = function() {
+      if (is.null(self$raw)) {
+        self$raw <- self$save_model_to_string(NULL, as_char = FALSE)
+      }
       return(invisible(NULL))
 
+    },
+
+    drop_raw = function() {
+      self$raw <- NULL
+      return(invisible(NULL))
+    },
+
+    check_null_handle = function() {
+      return(lgb.is.null.handle(private$handle))
+    },
+
+    restore_handle = function() {
+      if (self$check_null_handle()) {
+        if (is.null(self$raw)) {
+          .Call(LGBM_NullBoosterHandleError_R)
+        }
+        private$handle <- .Call(LGBM_BoosterLoadModelFromString_R, self$raw)
+      }
+      return(invisible(NULL))
+    },
+
+    get_handle = function() {
+      return(private$handle)
     }
 
   ),
@@ -640,6 +661,8 @@ Booster <- R6::R6Class(
         stop("data_idx should not be greater than num_dataset")
       }
 
+      self$restore_handle()
+
       private$get_eval_info()
 
       ret <- list()
@@ -730,7 +753,7 @@ Booster <- R6::R6Class(
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 #'               the "Predict Parameters" section of the documentation} for a list of parameters and
 #'               valid values.
-#' @param ... Additional prediction parameters. NOTE: deprecated as of v3.3.0. Use \code{params} instead.
+#' @param ... ignored
 #' @return For regression or binary classification, it returns a vector of length \code{nrows(data)}.
 #'         For multiclass classification, either a \code{num_class * nrows(data)} vector or
 #'         a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
@@ -794,8 +817,7 @@ predict.lgb.Booster <- function(object,
     warning(paste0(
       "predict.lgb.Booster: Found the following passed through '...': "
       , paste(names(additional_params), collapse = ", ")
-      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-      , "Add these to 'params' instead. See ?predict.lgb.Booster for documentation on how to call this function."
+      , ". These are ignored. Use argument 'params' instead."
     ))
   }
 
@@ -809,7 +831,7 @@ predict.lgb.Booster <- function(object,
       , predcontrib =  predcontrib
       , header = header
       , reshape = reshape
-      , params = utils::modifyList(params, additional_params)
+      , params = params
     )
   )
 }
@@ -878,7 +900,7 @@ summary.lgb.Booster <- function(object, ...) {
 #' @description Load LightGBM takes in either a file path or model string.
 #'              If both are provided, Load will default to loading from file
 #' @param filename path of model file
-#' @param model_str a str containing the model
+#' @param model_str a str containing the model (as a `character` or `raw` vector)
 #'
 #' @return lgb.Booster
 #'
@@ -928,8 +950,8 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
   }
 
   if (model_str_provided) {
-    if (!is.character(model_str)) {
-      stop("lgb.load: model_str should be character")
+    if (!is.raw(model_str) && !is.character(model_str)) {
+      stop("lgb.load: model_str should be a character/raw vector")
     }
     return(invisible(Booster$new(model_str = model_str)))
   }
