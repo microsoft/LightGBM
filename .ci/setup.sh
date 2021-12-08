@@ -82,7 +82,7 @@ else  # Linux
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
     ARCH=$(uname -m)
-    if [[ $TASK == "cuda" ]]; then
+    if [[ $TASK == "cuda" ] || [ $TASK == "cuda_exp" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
         apt-get install --no-install-recommends -y \

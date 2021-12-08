@@ -41,17 +41,23 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
     }
   } else if (device_type == std::string("cuda")) {
     if (learner_type == std::string("serial")) {
-      if (config->num_gpu == 1) {
-        return new CUDASingleGPUTreeLearner(config);
-      } else {
-        return new CUDATreeLearner(config);
-      }
+      return new CUDATreeLearner(config);
     } else if (learner_type == std::string("feature")) {
       return new FeatureParallelTreeLearner<CUDATreeLearner>(config);
     } else if (learner_type == std::string("data")) {
       return new DataParallelTreeLearner<CUDATreeLearner>(config);
     } else if (learner_type == std::string("voting")) {
       return new VotingParallelTreeLearner<CUDATreeLearner>(config);
+    }
+  } else if (device_type == std::string("cuda_exp")) {
+    if (learner_type == std::string("serial")) {
+      if (config->num_gpu == 1) {
+        return new CUDASingleGPUTreeLearner(config);
+      } else {
+        Log::Fatal("cuda_exp only supports training on a single GPU.");
+      }
+    } else {
+      Log::Fatal("cuda_exp only supports training on a single machine.");
     }
   }
   return nullptr;

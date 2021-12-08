@@ -65,7 +65,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
-  if (config_->device_type == std::string("cuda")) {
+  if (config_->device_type == std::string("cuda") || config_->device_type == std::string("cuda_exp")) {
     LGBM_config_::current_learner = use_cuda_learner;
   }
 
@@ -816,7 +816,7 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     double average_bag_rate =
         (static_cast<double>(bag_data_cnt_) / num_data_) / config->bagging_freq;
     is_use_subset_ = false;
-    if (config_->device_type != std::string("cuda")) {
+    if (config_->device_type != std::string("cuda") && config_->device_type != std::string("cuda_exp")) {
       const int group_threshold_usesubset = 100;
       if (average_bag_rate <= 0.5
           && (train_data_->num_feature_groups() < group_threshold_usesubset)) {

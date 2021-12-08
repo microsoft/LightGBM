@@ -273,7 +273,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     #ifdef USE_CUDA
     dataset->device_type_ = config_.device_type;
     dataset->gpu_device_id_ = config_.gpu_device_id;
-    if (config_.device_type == std::string("cuda")) {
+    if (config_.device_type == std::string("cuda_exp")) {
       dataset->CreateCUDAColumnData();
       dataset->metadata_.CreateCUDAMetadata(dataset->gpu_device_id_);
     } else {

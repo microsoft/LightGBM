@@ -349,7 +349,8 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
 
   std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
   if (io_config.enable_bundle && !used_features.empty()) {
-    bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda");
+    bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda")
+      || io_config.device_type == std::string("cuda_exp");
     features_in_group = FastFeatureBundling(
         *bin_mappers, sample_non_zero_indices, sample_values, num_per_col,
         num_sample_col, static_cast<data_size_t>(total_sample_cnt),
@@ -439,7 +440,7 @@ void Dataset::FinishLoad() {
     }
   }
   #ifdef USE_CUDA
-  if (device_type_ == std::string("cuda")) {
+  if (device_type_ == std::string("cuda_exp")) {
     CreateCUDAColumnData();
     metadata_.CreateCUDAMetadata(gpu_device_id_);
   } else {
@@ -849,7 +850,7 @@ void Dataset::CopySubrow(const Dataset* fullset,
   gpu_device_id_ = fullset->gpu_device_id_;
 
   #ifdef USE_CUDA
-  if (device_type_ == std::string("cuda")) {
+  if (device_type_ == std::string("cuda_exp")) {
     global_timer.Start("prepare subset cuda column data");
     if (cuda_column_data_ == nullptr) {
       cuda_column_data_.reset(new CUDAColumnData(fullset->num_data(), gpu_device_id_));
@@ -1499,7 +1500,7 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
     }
   }
   #ifdef USE_CUDA
-  if (device_type_ == std::string("cuda")) {
+  if (device_type_ == std::string("cuda_exp")) {
     CreateCUDAColumnData();
   } else {
     cuda_column_data_ = nullptr;

@@ -128,6 +128,8 @@ void GetDeviceType(const std::unordered_map<std::string, std::string>& params, s
       *device_type = "gpu";
     } else if (value == std::string("cuda")) {
       *device_type = "cuda";
+    } else if (value == std::string("cuda_exp")) {
+      *device_type = "cuda_exp";
     } else {
       Log::Fatal("Unknown device type %s", value.c_str());
     }
@@ -208,7 +210,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetObjectiveType(params, &objective);
   GetMetricType(params, objective, &metric);
   GetDeviceType(params, &device_type);
-  if (device_type == std::string("cuda")) {
+  if (device_type == std::string("cuda") || device_type == std::string("cuda_exp")) {
     LGBM_config_::current_device = lgbm_device_cuda;
   }
   GetTreeLearnerType(params, &tree_learner);
@@ -331,22 +333,20 @@ void Config::CheckParamConflict() {
       num_leaves = static_cast<int>(full_num_leaves);
     }
   }
-  // force col-wise for gpu, and non-single GPU CUDA version
-  if (device_type == std::string("gpu") ||
-    (device_type == std::string("cuda") && (num_gpu > 1 || tree_learner != std::string("serial")))) {
+  if (device_type == std::string("gpu") || device_type == std::string("cuda")) {
+    // force col-wise for gpu, and cuda version
     force_col_wise = true;
     force_row_wise = false;
     if (deterministic) {
       Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
     }
-  } else if (device_type == std::string("cuda")) {
-    // force row-wise for single GPU CUDA version
+  } else if (device_type == std::string("cuda_exp")) {
+    // force row-wise for cuda_exp version
     force_col_wise = false;
     force_row_wise = true;
   }
   // force gpu_use_dp for non-single GPU CUDA version
-  if (device_type == std::string("cuda") &&
-    (num_gpu > 1 || tree_learner != std::string("serial")) && !gpu_use_dp) {
+  if (device_type == std::string("cuda")) {
     Log::Warning("CUDA currently requires double precision calculations.");
     gpu_use_dp = true;
   }
