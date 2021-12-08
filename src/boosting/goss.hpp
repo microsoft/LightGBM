@@ -151,7 +151,6 @@ class GOSS : public SampleStrategy {
     }
     return cur_left_cnt;
   }
-
 };
 
 }  // namespace LightGBM
