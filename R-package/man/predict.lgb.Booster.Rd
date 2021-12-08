@@ -52,7 +52,7 @@ prediction outputs per case.}
 the "Predict Parameters" section of the documentation} for a list of parameters and
 valid values.}
 
-\item{...}{Additional prediction parameters. NOTE: deprecated as of v3.3.0. Use \code{params} instead.}
+\item{...}{ignored}
 }
 \value{
 For regression or binary classification, it returns a vector of length \code{nrows(data)}.

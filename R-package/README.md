@@ -152,6 +152,10 @@ Rscript build_r.R
 
 The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script. That script supports the following command-line options:
 
+- `--no-build-vignettes`: Skip building vignettes.
+- `-j[jobs]`: Number of threads to use when compiling LightGBM. E.g., `-j4` will try to compile 4 objects at a time.
+    - by default, this script uses single-thread compilation
+    - for best results, set `-j` to the number of physical CPUs
 - `--skip-install`: Build the package tarball, but do not install it.
 - `--use-gpu`: Build a GPU-enabled version of the library.
 - `--use-mingw`: Force the use of MinGW toolchain, regardless of R version.
@@ -265,6 +269,11 @@ sh build-cran-package.sh
 ```
 
 This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
+
+That script supports the following command-line options:
+
+- `--no-build-vignettes`: Skip building vignettes.
+- `--r-executable=[path-to-executable]`: Use an alternative build of R.
 
 Also, CRAN package is generated with every commit to any repo's branch and can be found in "Artifacts" section of the associated Azure Pipelines run.
 
@@ -394,7 +403,7 @@ RDscript${R_CUSTOMIZATION} \
   -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
 
 # install lightgbm
-sh build-cran-package.sh
+sh build-cran-package.sh --r-executable=RD${R_CUSTOMIZATION}
 RD${R_CUSTOMIZATION} \
   CMD INSTALL lightgbm_*.tar.gz
 
@@ -423,7 +432,8 @@ docker run \
 
 RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
-sh build-cran-package.sh
+sh build-cran-package.sh \
+    --r-executable=RDvalgrind
 
 RDvalgrind CMD INSTALL \
     --preclean \

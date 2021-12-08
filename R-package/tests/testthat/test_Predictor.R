@@ -6,7 +6,9 @@ test_that("Predictor$finalize() should not fail", {
     dtrain <- lgb.Dataset(X, label = y)
     bst <- lgb.train(
         data = dtrain
-        , objective = "regression"
+        , params = list(
+            objective = "regression"
+        )
         , verbose = -1L
         , nrounds = 3L
     )
@@ -32,7 +34,9 @@ test_that("predictions do not fail for integer input", {
     dtrain <- lgb.Dataset(X, label = y)
     fit <- lgb.train(
         data = dtrain
-        , objective = "regression"
+        , params = list(
+            objective = "regression"
+        )
         , verbose = -1L
         , nrounds = 3L
     )
@@ -62,10 +66,12 @@ test_that("start_iteration works correctly", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , num_leaves = 4L
-        , learning_rate = 0.6
+        , params = list(
+            num_leaves = 4L
+            , learning_rate = 0.6
+            , objective = "binary"
+        )
         , nrounds = 50L
-        , objective = "binary"
         , valids = list("test" = dtest)
         , early_stopping_rounds = 2L
     )

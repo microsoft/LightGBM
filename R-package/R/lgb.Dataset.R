@@ -10,9 +10,6 @@
 #'              \code{group = c(10, 20, 40, 10, 10, 10)}, that means that you have 6 groups,
 #'              where the first 10 records are in the first group, records 11-30 are in the
 #'              second group, etc.
-#' @param info a list of information of the \code{lgb.Dataset} object. NOTE: use of \code{info}
-#'             is deprecated as of v3.3.0. Use keyword arguments (e.g. \code{init_score = init_score})
-#'             directly.
 #' @keywords internal
 NULL
 
@@ -52,7 +49,6 @@ Dataset <- R6::R6Class(
                           predictor = NULL,
                           free_raw_data = TRUE,
                           used_indices = NULL,
-                          info = list(),
                           label = NULL,
                           weight = NULL,
                           group = NULL,
@@ -66,14 +62,7 @@ Dataset <- R6::R6Class(
           stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
       }
 
-      if (length(info) > 0L) {
-        warning(paste0(
-          "lgb.Dataset: found fields passed through 'info'. "
-          , "As of v3.3.0, this behavior is deprecated, and support for it will be removed in a future release. "
-          , "To suppress this warning, use keyword arguments 'label', 'weight', 'group', or 'init_score' directly"
-        ))
-      }
-
+      info <- list()
       if (!is.null(label)) {
         info[["label"]] <- label
       }
@@ -113,27 +102,11 @@ Dataset <- R6::R6Class(
     },
 
     create_valid = function(data,
-                            info = list(),
                             label = NULL,
                             weight = NULL,
                             group = NULL,
                             init_score = NULL,
-                            params = list(),
-                            ...) {
-
-      additional_params <- list(...)
-      if (length(additional_params) > 0L) {
-        warning(paste0(
-          "Dataset$create_valid(): Found the following passed through '...': "
-          , paste(names(additional_params), collapse = ", ")
-          , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-          , "Add these to 'params' instead. "
-          , "See ?lgb.Dataset.create.valid for documentation on how to call this function."
-        ))
-      }
-
-      # anything passed into '...' should be overwritten by things passed to 'params'
-      params <- modifyList(additional_params, params)
+                            params = list()) {
 
       # the Dataset's existing parameters should be overwritten by any passed in to this call
       params <- modifyList(self$get_params(), params)
@@ -148,7 +121,6 @@ Dataset <- R6::R6Class(
         , predictor = private$predictor
         , free_raw_data = private$free_raw_data
         , used_indices = NULL
-        , info = info
         , label = label
         , weight = weight
         , group = group
@@ -464,18 +436,6 @@ Dataset <- R6::R6Class(
 
     },
 
-    getinfo = function(name) {
-      warning(paste0(
-        "Dataset$getinfo() is deprecated and will be removed in a future release. "
-        , "Use Dataset$get_field() instead."
-      ))
-      return(
-        self$get_field(
-          field_name = name
-        )
-      )
-    },
-
     get_field = function(field_name) {
 
       # Check if attribute key is in the known attribute list
@@ -527,19 +487,6 @@ Dataset <- R6::R6Class(
 
       return(private$info[[field_name]])
 
-    },
-
-    setinfo = function(name, info) {
-      warning(paste0(
-        "Dataset$setinfo() is deprecated and will be removed in a future release. "
-        , "Use Dataset$set_field() instead."
-      ))
-      return(
-        self$set_field(
-          field_name = name
-          , data = info
-        )
-      )
     },
 
     set_field = function(field_name, data) {
@@ -624,7 +571,6 @@ Dataset <- R6::R6Class(
           , predictor = private$predictor
           , free_raw_data = private$free_raw_data
           , used_indices = sort(idxset, decreasing = FALSE)
-          , info = NULL
           , group = group
           , init_score = init_score
           , label = label
@@ -851,7 +797,6 @@ lgb.Dataset <- function(data,
                         colnames = NULL,
                         categorical_feature = NULL,
                         free_raw_data = TRUE,
-                        info = list(),
                         label = NULL,
                         weight = NULL,
                         group = NULL,
@@ -881,7 +826,6 @@ lgb.Dataset <- function(data,
       , predictor = NULL
       , free_raw_data = free_raw_data
       , used_indices = NULL
-      , info = info
       , label = label
       , weight = weight
       , group = group
@@ -904,8 +848,6 @@ lgb.Dataset <- function(data,
 #'               The "Dataset Parameters" section of the documentation} for a list of parameters
 #'               and valid values. If this is an empty list (the default), the validation Dataset
 #'               will have the same parameters as the Dataset passed to argument \code{dataset}.
-#' @param ... additional \code{lgb.Dataset} parameters.
-#'            NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.
 #'
 #' @return constructed dataset
 #'
@@ -953,42 +895,28 @@ lgb.Dataset <- function(data,
 #' )
 #' dvalid$construct()
 #' }
-#' @importFrom utils modifyList
 #' @export
 lgb.Dataset.create.valid <- function(dataset,
                                      data,
-                                     info = list(),
                                      label = NULL,
                                      weight = NULL,
                                      group = NULL,
                                      init_score = NULL,
-                                     params = list(),
-                                     ...) {
+                                     params = list()) {
 
   if (!lgb.is.Dataset(x = dataset)) {
     stop("lgb.Dataset.create.valid: input data should be an lgb.Dataset object")
-  }
-
-  additional_params <- list(...)
-  if (length(additional_params) > 0L) {
-    warning(paste0(
-      "lgb.Dataset.create.valid: Found the following passed through '...': "
-      , paste(names(additional_params), collapse = ", ")
-      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-      , "Add these to 'params' instead. See ?lgb.Dataset.create.valid for documentation on how to call this function."
-    ))
   }
 
   # Create validation dataset
   return(invisible(
     dataset$create_valid(
       data = data
-      , info = info
       , label = label
       , weight = weight
       , group = group
       , init_score = init_score
-      , params = utils::modifyList(params, additional_params)
+      , params = params
     )
   ))
 
@@ -1168,134 +1096,6 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 
   return(invisible(dataset$slice(idxset = idxset, ...)))
 
-}
-
-#' @name getinfo
-#' @title Get information of an \code{lgb.Dataset} object
-#' @description Get one attribute of a \code{lgb.Dataset}
-#' @param dataset Object of class \code{lgb.Dataset}
-#' @param name the name of the information field to get (see details)
-#' @param ... other parameters (ignored)
-#' @return info data
-#'
-#' @details
-#' The \code{name} field can be one of the following:
-#'
-#' \itemize{
-#'     \item \code{label}: label lightgbm learn from ;
-#'     \item \code{weight}: to do a weight rescale ;
-#'     \item{\code{group}: used for learning-to-rank tasks. An integer vector describing how to
-#'         group rows together as ordered results from the same set of candidate results to be ranked.
-#'         For example, if you have a 100-document dataset with \code{group = c(10, 20, 40, 10, 10, 10)},
-#'         that means that you have 6 groups, where the first 10 records are in the first group,
-#'         records 11-30 are in the second group, etc.}
-#'     \item \code{init_score}: initial score is the base prediction lightgbm will boost from.
-#' }
-#'
-#' @examples
-#' \donttest{
-#' data(agaricus.train, package = "lightgbm")
-#' train <- agaricus.train
-#' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' lgb.Dataset.construct(dtrain)
-#'
-#' labels <- lightgbm::getinfo(dtrain, "label")
-#' lightgbm::setinfo(dtrain, "label", 1 - labels)
-#'
-#' labels2 <- lightgbm::getinfo(dtrain, "label")
-#' stopifnot(all(labels2 == 1 - labels))
-#' }
-#' @export
-getinfo <- function(dataset, ...) {
-  UseMethod("getinfo")
-}
-
-#' @rdname getinfo
-#' @export
-getinfo.lgb.Dataset <- function(dataset, name, ...) {
-
-  warning("Calling getinfo() on a lgb.Dataset is deprecated. Use get_field() instead.")
-
-  additional_args <- list(...)
-  if (length(additional_args) > 0L) {
-    warning(paste0(
-      "getinfo.lgb.Dataset: Found the following passed through '...': "
-      , paste(names(additional_args), collapse = ", ")
-      , ". These are ignored. In future releases of lightgbm, this warning will become an error. "
-      , "See ?getinfo.lgb.Dataset for documentation on how to call this function."
-    ))
-  }
-
-  if (!lgb.is.Dataset(x = dataset)) {
-    stop("getinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
-  }
-
-  return(dataset$get_field(field_name = name))
-
-}
-
-#' @name setinfo
-#' @title Set information of an \code{lgb.Dataset} object
-#' @description Set one attribute of a \code{lgb.Dataset}
-#' @param dataset Object of class \code{lgb.Dataset}
-#' @param name the name of the field to get
-#' @param info the specific field of information to set
-#' @param ... other parameters (ignored)
-#' @return the dataset you passed in
-#'
-#' @details
-#' The \code{name} field can be one of the following:
-#'
-#' \itemize{
-#'     \item{\code{label}: vector of labels to use as the target variable}
-#'     \item{\code{weight}: to do a weight rescale}
-#'     \item{\code{init_score}: initial score is the base prediction lightgbm will boost from}
-#'     \item{\code{group}: used for learning-to-rank tasks. An integer vector describing how to
-#'         group rows together as ordered results from the same set of candidate results to be ranked.
-#'         For example, if you have a 100-document dataset with \code{group = c(10, 20, 40, 10, 10, 10)},
-#'         that means that you have 6 groups, where the first 10 records are in the first group,
-#'         records 11-30 are in the second group, etc.}
-#' }
-#'
-#' @examples
-#' \donttest{
-#' data(agaricus.train, package = "lightgbm")
-#' train <- agaricus.train
-#' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' lgb.Dataset.construct(dtrain)
-#'
-#' labels <- lightgbm::getinfo(dtrain, "label")
-#' lightgbm::setinfo(dtrain, "label", 1 - labels)
-#'
-#' labels2 <- lightgbm::getinfo(dtrain, "label")
-#' stopifnot(all.equal(labels2, 1 - labels))
-#' }
-#' @export
-setinfo <- function(dataset, ...) {
-  UseMethod("setinfo")
-}
-
-#' @rdname setinfo
-#' @export
-setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
-
-  warning("Calling setinfo() on a lgb.Dataset is deprecated. Use set_field() instead.")
-
-  additional_args <- list(...)
-  if (length(additional_args) > 0L) {
-    warning(paste0(
-      "setinfo.lgb.Dataset: Found the following passed through '...': "
-      , paste(names(additional_args), collapse = ", ")
-      , ". These are ignored. In future releases of lightgbm, this warning will become an error. "
-      , "See ?setinfo.lgb.Dataset for documentation on how to call this function."
-    ))
-  }
-
-  if (!lgb.is.Dataset(x = dataset)) {
-    stop("setinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
-  }
-
-  return(invisible(dataset$set_field(field_name = name, data = info)))
 }
 
 #' @name get_field

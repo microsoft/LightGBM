@@ -1,6 +1,7 @@
 # coding: utf-8
 import copy
 import itertools
+import json
 import math
 import pickle
 import platform
@@ -640,6 +641,81 @@ def test_early_stopping():
     assert gbm.best_iteration <= 39
     assert valid_set_name in gbm.best_score
     assert 'binary_logloss' in gbm.best_score[valid_set_name]
+
+
+@pytest.mark.parametrize('first_only', [True, False])
+@pytest.mark.parametrize('single_metric', [True, False])
+@pytest.mark.parametrize('greater_is_better', [True, False])
+def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
+    if single_metric and not first_only:
+        pytest.skip("first_metric_only doesn't affect single metric.")
+    metric2min_delta = {
+        'auc': 0.001,
+        'binary_logloss': 0.01,
+        'average_precision': 0.001,
+        'mape': 0.01,
+    }
+    if single_metric:
+        if greater_is_better:
+            metric = 'auc'
+        else:
+            metric = 'binary_logloss'
+    else:
+        if first_only:
+            if greater_is_better:
+                metric = ['auc', 'binary_logloss']
+            else:
+                metric = ['binary_logloss', 'auc']
+        else:
+            if greater_is_better:
+                metric = ['auc', 'average_precision']
+            else:
+                metric = ['binary_logloss', 'mape']
+
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
+    train_ds = lgb.Dataset(X_train, y_train)
+    valid_ds = lgb.Dataset(X_valid, y_valid, reference=train_ds)
+
+    params = {'objective': 'binary', 'metric': metric, 'verbose': -1}
+    if isinstance(metric, str):
+        min_delta = metric2min_delta[metric]
+    elif first_only:
+        min_delta = metric2min_delta[metric[0]]
+    else:
+        min_delta = [metric2min_delta[m] for m in metric]
+    train_kwargs = dict(
+        params=params,
+        train_set=train_ds,
+        num_boost_round=50,
+        valid_sets=[train_ds, valid_ds],
+        valid_names=['training', 'valid'],
+    )
+
+    # regular early stopping
+    train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0)]
+    evals_result = {}
+    bst = lgb.train(evals_result=evals_result, **train_kwargs)
+    scores = np.vstack(list(evals_result['valid'].values())).T
+
+    # positive min_delta
+    train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0, min_delta=min_delta)]
+    delta_result = {}
+    delta_bst = lgb.train(evals_result=delta_result, **train_kwargs)
+    delta_scores = np.vstack(list(delta_result['valid'].values())).T
+
+    if first_only:
+        scores = scores[:, 0]
+        delta_scores = delta_scores[:, 0]
+
+    assert delta_bst.num_trees() < bst.num_trees()
+    np.testing.assert_allclose(scores[:len(delta_scores)], delta_scores)
+    last_score = delta_scores[-1]
+    best_score = delta_scores[delta_bst.num_trees() - 1]
+    if greater_is_better:
+        assert np.less_equal(last_score, best_score + min_delta).any()
+    else:
+        assert np.greater_equal(last_score, best_score - min_delta).any()
 
 
 def test_continue_train():
@@ -1610,8 +1686,8 @@ def test_fpreproc():
 def test_metrics():
     X, y = load_digits(n_class=2, return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    lgb_train = lgb.Dataset(X_train, y_train, silent=True)
-    lgb_valid = lgb.Dataset(X_test, y_test, reference=lgb_train, silent=True)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_valid = lgb.Dataset(X_test, y_test, reference=lgb_train)
 
     evals_result = {}
     params_verbose = {'verbose': -1}
@@ -1915,7 +1991,7 @@ def test_metrics():
     assert 'error' in evals_result['valid_0']
 
     X, y = load_digits(n_class=3, return_X_y=True)
-    lgb_train = lgb.Dataset(X, y, silent=True)
+    lgb_train = lgb.Dataset(X, y)
 
     obj_multi_aliases = ['multiclass', 'softmax', 'multiclassova', 'multiclass_ova', 'ova', 'ovr']
     for obj_multi_alias in obj_multi_aliases:
@@ -1989,8 +2065,8 @@ def test_multiple_feval_train():
 
     X_train, X_validation, y_train, y_validation = train_test_split(X, y, test_size=0.2)
 
-    train_dataset = lgb.Dataset(data=X_train, label=y_train, silent=True)
-    validation_dataset = lgb.Dataset(data=X_validation, label=y_validation, reference=train_dataset, silent=True)
+    train_dataset = lgb.Dataset(data=X_train, label=y_train)
+    validation_dataset = lgb.Dataset(data=X_validation, label=y_validation, reference=train_dataset)
     evals_result = {}
     lgb.train(
         params=params,
@@ -2011,7 +2087,7 @@ def test_multiple_feval_cv():
 
     params = {'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
 
-    train_dataset = lgb.Dataset(data=X, label=y, silent=True)
+    train_dataset = lgb.Dataset(data=X, label=y)
 
     cv_results = lgb.cv(
         params=params,
@@ -2887,3 +2963,40 @@ def test_dump_model_hook():
     dumped_model_str = str(bst.dump_model(5, 0, object_hook=hook))
     assert "leaf_value" not in dumped_model_str
     assert "LV" in dumped_model_str
+
+
+def test_force_split_with_feature_fraction(tmp_path):
+    X, y = load_boston(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+
+    forced_split = {
+        "feature": 0,
+        "threshold": 0.5,
+        "right": {
+            "feature": 2,
+            "threshold": 10.0
+        }
+    }
+
+    tmp_split_file = tmp_path / "forced_split.json"
+    with open(tmp_split_file, "w") as f:
+        f.write(json.dumps(forced_split))
+
+    params = {
+        "objective": "regression",
+        "feature_fraction": 0.6,
+        "force_col_wise": True,
+        "feature_fraction_seed": 1,
+        "forcedsplits_filename": tmp_split_file
+    }
+
+    gbm = lgb.train(params, lgb_train)
+    ret = mean_absolute_error(y_test, gbm.predict(X_test))
+    assert ret < 2.0
+
+    tree_info = gbm.dump_model()["tree_info"]
+    assert len(tree_info) > 1
+    for tree in tree_info:
+        tree_structure = tree["tree_structure"]
+        assert tree_structure['split_feature'] == 0
