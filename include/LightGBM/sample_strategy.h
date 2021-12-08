@@ -37,7 +37,7 @@ class SampleStrategy {
 
   data_size_t bag_data_cnt() const { return bag_data_cnt_; }
 
-  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices() {return bag_data_indices_;}
+  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices() { return bag_data_indices_; }
 
   void UpdateObjectiveFunction(const ObjectiveFunction* objective_function) {
     objective_function_ = objective_function;
