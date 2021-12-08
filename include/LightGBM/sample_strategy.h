@@ -45,6 +45,7 @@ class SampleStrategy {
 
   void UpdateTrainingData(const Dataset* train_data) {
     train_data_ = train_data;
+    num_data_ = train_data->num_data();
   }
 
   virtual bool IsHessianChange() const = 0;

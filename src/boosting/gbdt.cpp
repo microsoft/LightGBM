@@ -307,12 +307,15 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     // use customized objective function
     CHECK(hessians != nullptr && objective_function_ == nullptr);
     if (config_->boosting == std::string("goss") || config_->data_sample_strategy == std::string("goss")) {
+      // need to copy customized gradients when using GOSS
       int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
       #pragma omp parallel for schedule(static)
       for (int64_t i = 0; i < total_size; ++i) {
         gradients_[i] = gradients[i];
         hessians_[i] = hessians[i];
       }
+      gradients = gradients_.data();
+      hessians = hessians_.data();
     }
   }
   // bagging logic
