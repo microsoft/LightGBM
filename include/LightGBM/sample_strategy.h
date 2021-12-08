@@ -13,8 +13,7 @@ namespace LightGBM {
 
 class SampleStrategy {
  public:
-
-  SampleStrategy() : balanced_bagging_(false), bagging_runner_(0, bagging_rand_block_) {};
+  SampleStrategy() : balanced_bagging_(false), bagging_runner_(0, bagging_rand_block_), need_resize_gradients_(false) {};
  
   virtual ~SampleStrategy() {};
  
@@ -23,10 +22,8 @@ class SampleStrategy {
   virtual void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) = 0;
  
   virtual void ResetGOSS() = 0;
- 
-  virtual void ResetBaggingConfig(const Config* config, bool is_change_dataset, 
-          std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& gradients, 
-          std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& hessians) = 0;
+
+  virtual void ResetBaggingConfig(const Config* config, bool is_change_dataset) = 0;
  
   bool is_use_subset() const { return is_use_subset_; }
  
@@ -42,6 +39,10 @@ class SampleStrategy {
     train_data_ = train_data;
   }
 
+  virtual bool IsHessianChange() const = 0;
+
+  bool NeedResizeGradients() const { return need_resize_gradients_; }
+
  protected:
   const Config* config_;
   const Dataset* train_data_;
@@ -56,6 +57,8 @@ class SampleStrategy {
   const int bagging_rand_block_ = 1024;
   std::vector<Random> bagging_rands_;
   ParallelPartitionRunner<data_size_t, false> bagging_runner_;
+  /*! \brief whether need to resize the gradient vectors */
+  bool need_resize_gradients_;
 };
 
 } // namespace LightGBM

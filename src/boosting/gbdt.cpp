@@ -39,6 +39,7 @@ GBDT::GBDT()
   average_output_ = false;
   tree_learner_ = nullptr;
   linear_tree_ = false;
+  data_sample_strategy_.reset(nullptr);
 }
 
 GBDT::~GBDT() {
@@ -85,7 +86,8 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
     }
   }
 
-  is_constant_hessian_ = GetIsConstHessian(objective_function);
+  data_sample_strategy_.reset(SampleStrategy::CreateSampleStrategy(config_.get(), train_data_, objective_function_, num_tree_per_iteration_));
+  is_constant_hessian_ = GetIsConstHessian(objective_function) && !data_sample_strategy_->IsHessianChange();
 
   tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type,
                                                                               config_.get()));
@@ -105,14 +107,10 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   num_data_ = train_data_->num_data();
   // create buffer for gradients and Hessians
-  size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
   if (objective_function_ != nullptr) {
+    const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
     gradients_.resize(total_size);
     hessians_.resize(total_size);
-  } else {
-    // use customized objective function, only for GOSS
-    gradients_.resize(total_size, 0.0f);
-    hessians_.resize(total_size, 0.0f);
   }
   // get max feature index
   max_feature_idx_ = train_data_->num_total_features() - 1;
@@ -124,9 +122,14 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   monotone_constraints_ = config->monotone_constraints;
 
   // if need bagging, create buffer
-  data_sample_strategy_.reset(SampleStrategy::CreateSampleStrategy(config_.get(), train_data_, objective_function_, num_tree_per_iteration_));
-  data_sample_strategy_->ResetBaggingConfig(config_.get(), true, gradients_, hessians_);
+  data_sample_strategy_->ResetBaggingConfig(config_.get(), true);
   data_sample_strategy_->ResetGOSS();
+  if (data_sample_strategy_->NeedResizeGradients()) {
+    // resize gradient vectors to copy the customized gradients for goss or bagging with subset
+    const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+    gradients_.resize(total_size, 0.0f);
+    hessians_.resize(total_size, 0.0f);
+  }
 
   class_need_train_ = std::vector<bool>(num_tree_per_iteration_, true);
   if (objective_function_ != nullptr && objective_function_->SkipEmptyClass()) {
@@ -301,11 +304,13 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   } else if (gradients != nullptr) {
     // use customized objective function
     CHECK(hessians != nullptr && objective_function_ == nullptr);
-    int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
-    #pragma omp parallel for schedule(static)
-    for (int64_t i = 0; i < total_size; ++i) {
-      gradients_[i] = gradients[i];
-      hessians_[i] = hessians[i];
+    if (config_->boosting == std::string("goss") || config_->data_sample_strategy == std::string("goss")) {
+      int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
+      #pragma omp parallel for schedule(static)
+      for (int64_t i = 0; i < total_size; ++i) {
+        gradients_[i] = gradients[i];
+        hessians_[i] = hessians[i];
+      }
     }
   }
   // bagging logic
@@ -629,7 +634,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
       Log::Fatal("Cannot use ``monotone_constraints`` in %s objective, please disable it.", objective_function_->GetName());
     }
   }
-  is_constant_hessian_ = GetIsConstHessian(objective_function);
+  is_constant_hessian_ = GetIsConstHessian(objective_function) && !data_sample_strategy_->IsHessianChange();
 
   // push training metrics
   training_metrics_.clear();
@@ -668,7 +673,13 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
     feature_infos_ = train_data_->feature_infos();
 
     tree_learner_->ResetTrainingData(train_data, is_constant_hessian_);
-    data_sample_strategy_->ResetBaggingConfig(config_.get(), true, gradients_, hessians_);
+    data_sample_strategy_->ResetBaggingConfig(config_.get(), true);
+    if (data_sample_strategy_->NeedResizeGradients()) {
+      // resize gradient vectors to copy the customized gradients for goss or bagging with subset
+      const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+      gradients_.resize(total_size, 0.0f);
+      hessians_.resize(total_size, 0.0f);
+    }
   } else {
     tree_learner_->ResetIsConstantHessian(is_constant_hessian_);
   }
@@ -692,7 +703,13 @@ void GBDT::ResetConfig(const Config* config) {
     tree_learner_->ResetConfig(new_config.get());
   }
   if (train_data_ != nullptr) {
-    data_sample_strategy_->ResetBaggingConfig(new_config.get(), false, gradients_, hessians_);
+    data_sample_strategy_->ResetBaggingConfig(new_config.get(), false);
+    if (data_sample_strategy_->NeedResizeGradients()) {
+      // resize gradient vectors to copy the customized gradients for goss or bagging with subset
+      const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+      gradients_.resize(total_size, 0.0f);
+      hessians_.resize(total_size, 0.0f);
+    }
   }
   if (config_.get() != nullptr && config_->forcedsplits_filename != new_config->forcedsplits_filename) {
     // load forced_splits file

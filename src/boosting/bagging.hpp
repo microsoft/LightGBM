@@ -13,6 +13,7 @@ class BAGGING : public SampleStrategy {
     objective_function_ = objective_function;
     num_tree_per_iteration_ = num_tree_per_iteration;
   }
+
   ~BAGGING() {}
 
   void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) override {
@@ -54,11 +55,10 @@ class BAGGING : public SampleStrategy {
     std::ignore = hessians;
   }
 
-  void ResetGOSS() override {} 
+  void ResetGOSS() override {}
 
-  void ResetBaggingConfig(const Config* config, bool is_change_dataset, 
-          std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& gradients, 
-          std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& hessians) override {
+  void ResetBaggingConfig(const Config* config, bool is_change_dataset) override {
+    need_resize_gradients_ = false;
     // if need bagging, create buffer
     data_size_t num_pos_data = 0;
     if (objective_function_ != nullptr) {
@@ -105,9 +105,8 @@ class BAGGING : public SampleStrategy {
 
       if (is_use_subset_ && bag_data_cnt_ < num_data_) {
         if (objective_function_ == nullptr) {
-          size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-          gradients.resize(total_size);
-          hessians.resize(total_size); 
+          // resize gradient vectors to copy the customized gradients for using subset data
+          need_resize_gradients_ = true;
         }
       }
     } else {
@@ -118,6 +117,11 @@ class BAGGING : public SampleStrategy {
     }
   }
 
+  bool IsHessianChange() const {
+    return false;
+  }
+
+ private:
   data_size_t BaggingHelper(data_size_t start, data_size_t cnt, data_size_t* buffer) {
     if (cnt <= 0) {
       return 0;
@@ -164,6 +168,7 @@ class BAGGING : public SampleStrategy {
     return cur_left_cnt;
   }
 
+  /*! \brief whether need restart bagging in continued training */
   bool need_re_bagging_;
 };
 

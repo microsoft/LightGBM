@@ -15,7 +15,7 @@ class GOSS : public SampleStrategy {
     num_tree_per_iteration_ = num_tree_per_iteration;
     num_data_ = train_data->num_data();
   }
-  
+
   ~GOSS() {
   }
 
@@ -73,22 +73,27 @@ class GOSS : public SampleStrategy {
     bag_data_cnt_ = num_data_; 
   }
 
-  void ResetBaggingConfig(const Config* config, bool is_change_dataset, 
-          std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& gradients, 
-          std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>>& hessians) override {
+  void ResetBaggingConfig(const Config* config, bool is_change_dataset) override {
     // Cannot use bagging in GOSS
     bag_data_cnt_ = num_data_;
     bag_data_indices_.clear();
     bagging_runner_.ReSize(0);
     is_use_subset_ = false;
+    need_resize_gradients_ = false;
+    if (objective_function_ == nullptr) {
+      // resize gradient vectors to copy the customized gradients for goss
+      need_resize_gradients_ = true;
+    }
     // avoid warnings
     std::ignore = config;
     std::ignore = is_change_dataset;
-    std::ignore = gradients;
-    std::ignore = hessians;
-  } 
+  }
 
- protected:
+  bool IsHessianChange() const {
+    return true;
+  }
+
+ private:
   data_size_t Helper(data_size_t start, data_size_t cnt, data_size_t* buffer, score_t* gradients, score_t* hessians) {
     if (cnt <= 0) {
       return 0;
@@ -143,4 +148,5 @@ class GOSS : public SampleStrategy {
 };
 
 } // namespace LightGBM
+
 #endif // LIGHTGBM_SAMPLE_STRATEGY_GOSS_HPP_
