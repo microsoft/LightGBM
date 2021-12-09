@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{Object of class \code{lgb.Dataset}}
 
-\item{...}{other parameters (ignored)}
+\item{...}{ignored}
 }
 \value{
 a vector of numbers of rows and of columns

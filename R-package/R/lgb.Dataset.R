@@ -949,7 +949,7 @@ lgb.Dataset.construct <- function(dataset) {
 #' @title Dimensions of an \code{lgb.Dataset}
 #' @description Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
 #' @param x Object of class \code{lgb.Dataset}
-#' @param ... other parameters (ignored)
+#' @param ... ignored
 #'
 #' @return a vector of numbers of rows and of columns
 #'
@@ -970,16 +970,6 @@ lgb.Dataset.construct <- function(dataset) {
 #' @rdname dim
 #' @export
 dim.lgb.Dataset <- function(x, ...) {
-
-  additional_args <- list(...)
-  if (length(additional_args) > 0L) {
-    warning(paste0(
-      "dim.lgb.Dataset: Found the following passed through '...': "
-      , paste(names(additional_args), collapse = ", ")
-      , ". These are ignored. In future releases of lightgbm, this warning will become an error. "
-      , "See ?dim.lgb.Dataset for documentation on how to call this function."
-    ))
-  }
 
   if (!lgb.is.Dataset(x = x)) {
     stop("dim.lgb.Dataset: input data should be an lgb.Dataset object")
