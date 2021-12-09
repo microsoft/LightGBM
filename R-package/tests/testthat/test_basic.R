@@ -2075,7 +2075,9 @@ test_that("lgb.train() works with linear learners and data where a feature has o
     return(lgb.Dataset(
       data = X
       , label = 2L * X[, 1L] + runif(nrow(X), 0L, 0.1)
-      , feature_pre_filter = FALSE
+      , params = list(
+        feature_pre_filter = FALSE
+      )
     ))
   }
 
