@@ -1069,6 +1069,8 @@ int LGBM_DatasetCreateFromMat(const void* data,
                               int32_t ncol,
                               int is_row_major,
                               const char* parameters,
+                              const char** mapping,
+                              int32_t len_mapping,
                               const DatasetHandle reference,
                               DatasetHandle* out) {
   return LGBM_DatasetCreateFromMats(1,
@@ -1078,6 +1080,8 @@ int LGBM_DatasetCreateFromMat(const void* data,
                                     ncol,
                                     is_row_major,
                                     parameters,
+                                    mapping,
+                                    len_mapping,
                                     reference,
                                     out);
 }
@@ -1089,6 +1093,8 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                int32_t ncol,
                                int is_row_major,
                                const char* parameters,
+                               const char** mapping,
+                               int32_t len_mapping,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
   API_BEGIN();
@@ -1106,6 +1112,12 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   for (int j = 0; j < nmat; ++j) {
     get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
   }
+
+  std::vector<std::string> mapping_str;
+  for (int i = 0; i < len_mapping; ++i) {
+    mapping_str.emplace_back(mapping[i]);
+  }
+  ret->mapping = mapping_str
 
   if (reference == nullptr) {
     // sample data first
@@ -1164,6 +1176,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   *out = ret.release();
   API_END();
 }
+
 
 int LGBM_DatasetCreateFromCSR(const void* indptr,
                               int indptr_type,
