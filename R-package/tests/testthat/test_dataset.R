@@ -50,38 +50,6 @@ test_that("lgb.Dataset: slice, dim", {
   expect_equal(ncol(dsub1), ncol(test_data))
 })
 
-test_that("Dataset$slice() warns when passing params '...'", {
-  dtest <- lgb.Dataset(test_data, label = test_label)
-  dtest$construct()
-  expect_warning({
-      dsub1 <- slice(
-        dataset = dtest
-        , idxset = seq_len(42L)
-        , feature_pre_filter = FALSE
-      )
-  }, regexp = "Use method Dataset$set_params()", fixed = TRUE)
-  dsub1$construct()
-  expect_identical(dtest$get_params(), list())
-  expect_identical(dsub1$get_params(), list())
-})
-
-test_that("Dataset$slice() warns when passing Dataset attributes through '...'", {
-  dtest <- lgb.Dataset(test_data, label = test_label)
-  dtest$construct()
-  num_subset_rows <- 51L
-  init_score <- rnorm(n = num_subset_rows)
-  expect_warning({
-      dsub1 <- slice(
-        dataset = dtest
-        , idxset = seq_len(num_subset_rows)
-        , init_score = init_score
-      )
-  }, regexp = "method Dataset$set_field() to modify fields", fixed = TRUE)
-  dsub1$construct()
-  expect_null(dtest$get_field("init_score"), NULL)
-  expect_identical(dsub1$get_field("init_score"), NULL)
-})
-
 test_that("Dataset$set_reference() on a constructed Dataset fails if raw data has been freed", {
   dtrain <- lgb.Dataset(train_data, label = train_label)
   dtrain$construct()

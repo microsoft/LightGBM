@@ -7,7 +7,7 @@
 \usage{
 slice(dataset, ...)
 
-\method{slice}{lgb.Dataset}(dataset, idxset, ...)
+\method{slice}{lgb.Dataset}(dataset, idxset)
 }
 \arguments{
 \item{dataset}{Object of class \code{lgb.Dataset}}

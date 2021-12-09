@@ -1060,20 +1060,10 @@ slice <- function(dataset, ...) {
 
 #' @rdname slice
 #' @export
-slice.lgb.Dataset <- function(dataset, idxset, ...) {
+slice.lgb.Dataset <- function(dataset, idxset) {
 
   if (!lgb.is.Dataset(x = dataset)) {
     stop("slice.lgb.Dataset: input dataset should be an lgb.Dataset object")
-  }
-
-  additional_args <- list(...)
-  if (length(additional_args) > 0L) {
-    warning(paste0(
-      "slice.lgb.Dataset: Found the following passed through '...': "
-      , paste(names(additional_args), collapse = ", ")
-      , ". These are ignored. Use method Dataset$set_params() to change parameters "
-      , "or method Dataset$set_field() to modify fields like 'init_score'."
-    ))
   }
 
   return(invisible(dataset$slice(idxset = idxset)))
