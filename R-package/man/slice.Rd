@@ -5,16 +5,12 @@
 \alias{slice.lgb.Dataset}
 \title{Slice a dataset}
 \usage{
-slice(dataset, ...)
+slice(dataset, idxset)
 
 \method{slice}{lgb.Dataset}(dataset, idxset)
 }
 \arguments{
 \item{dataset}{Object of class \code{lgb.Dataset}}
-
-\item{...}{ignored. To change the parameters of a \code{lgb.Dataset} produced by this function,
-use \code{Dataset$set_params()}. To modify fields like "init_score",
-use \code{Dataset$set_field()} or \code{set_field()}.}
 
 \item{idxset}{an integer vector of indices of rows needed}
 }

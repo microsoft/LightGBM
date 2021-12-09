@@ -1038,9 +1038,6 @@ dimnames.lgb.Dataset <- function(x) {
 #'              original \code{lgb.Dataset} object
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param idxset an integer vector of indices of rows needed
-#' @param ... ignored. To change the parameters of a \code{lgb.Dataset} produced by this function,
-#'            use \code{Dataset$set_params()}. To modify fields like "init_score",
-#'            use \code{Dataset$set_field()} or \code{set_field()}.
 #' @return constructed sub dataset
 #'
 #' @examples
@@ -1054,7 +1051,7 @@ dimnames.lgb.Dataset <- function(x) {
 #' labels <- lightgbm::get_field(dsub, "label")
 #' }
 #' @export
-slice <- function(dataset, ...) {
+slice <- function(dataset, idxset) {
   UseMethod("slice")
 }
 
