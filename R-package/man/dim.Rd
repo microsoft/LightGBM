@@ -4,12 +4,10 @@
 \alias{dim.lgb.Dataset}
 \title{Dimensions of an \code{lgb.Dataset}}
 \usage{
-\method{dim}{lgb.Dataset}(x, ...)
+\method{dim}{lgb.Dataset}(x)
 }
 \arguments{
 \item{x}{Object of class \code{lgb.Dataset}}
-
-\item{...}{ignored}
 }
 \value{
 a vector of numbers of rows and of columns

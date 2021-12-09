@@ -949,7 +949,6 @@ lgb.Dataset.construct <- function(dataset) {
 #' @title Dimensions of an \code{lgb.Dataset}
 #' @description Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
 #' @param x Object of class \code{lgb.Dataset}
-#' @param ... ignored
 #'
 #' @return a vector of numbers of rows and of columns
 #'
@@ -969,7 +968,7 @@ lgb.Dataset.construct <- function(dataset) {
 #' }
 #' @rdname dim
 #' @export
-dim.lgb.Dataset <- function(x, ...) {
+dim.lgb.Dataset <- function(x) {
 
   if (!lgb.is.Dataset(x = x)) {
     stop("dim.lgb.Dataset: input data should be an lgb.Dataset object")
