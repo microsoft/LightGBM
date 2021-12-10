@@ -779,10 +779,6 @@ class Dataset {
     }
   }
 
-  // inline std::vector< std::map<std::string, double> >  load_mapping() const {
-  //   std::vector< std::map<std::string, double> > result;
-    
-  // }
 
   inline std::vector< std::string >  get_mapping() const {
     return mapping;

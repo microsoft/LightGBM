@@ -7,6 +7,7 @@
 #include <LightGBM/objective_function.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/common.h>
+#include <LightGBM/dataset.h>
 
 #include <string>
 #include <sstream>
@@ -15,6 +16,8 @@
 #include "gbdt.h"
 
 namespace LightGBM {
+
+extern std::vector<Str2Num> maps;
 
 const char* kModelVersion = "v4";
 
@@ -634,6 +637,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   ss.str("");
 
   int index = -1;
+  Str2Num tmp =  Str2Num();
   while (p < end) {
     auto line_len = Common::GetLine(p);
     if (line_len > 0) {
@@ -646,22 +650,19 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
         break;
       } else if(cur_line == std::string("map")){
         index++;
-        if(index != 0){
-          // construct the maps
-          mapping_[index-1] = ss.str();
-          ss.clear();
-          ss.str("");
-        }
+        tmp.Str2NumMap.clear();
       }
        else if (is_inmaps) {
-        ss << cur_line << "\n";
+         std::vector< std::string > key_value;
+         key_value = Common::Split(cur_line.c_str(), "=");
+         
+         tmp.Str2NumMap.insert(std::pair < std::string , double > (key_value[0], std::stod(key_value[1]) ) );
+         maps.push_back(tmp);
       }
     }
     p += line_len;
     p = Common::SkipNewLine(p);
   }
-  ss.clear();
-  ss.str("");
 
   return true;
 }

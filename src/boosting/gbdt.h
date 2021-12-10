@@ -523,7 +523,6 @@ class GBDT : public GBDTBase {
   /*! \brief Feature names */
   std::vector<std::string> feature_names_;
   std::vector<std::string> feature_infos_;
-  std::vector< std::string > mapping_;
   std::unique_ptr<Dataset> tmp_subset_;
   bool is_use_subset_;
   std::vector<bool> class_need_train_;
