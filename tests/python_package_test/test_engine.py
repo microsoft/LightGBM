@@ -1023,7 +1023,7 @@ def test_pandas_categorical():
     gbm4 = lgb.Booster(model_file='categorical.model')
     pred4 = gbm4.predict(X_test)
     model_str = gbm4.model_to_string()
-    gbm4.model_from_string(model_str, False)
+    gbm4.model_from_string(model_str)
     pred5 = gbm4.predict(X_test)
     gbm5 = lgb.Booster(model_str=model_str)
     pred6 = gbm5.predict(X_test)
@@ -2146,7 +2146,7 @@ def test_model_size():
         num_end_spaces = 2**31 - one_tree_size * total_trees
         new_model_str = f"{before_tree_sizes}\n\n{trees}{more_trees}{after_trees}{'':{num_end_spaces}}"
         assert len(new_model_str) > 2**31
-        bst.model_from_string(new_model_str, verbose=False)
+        bst.model_from_string(new_model_str)
         assert bst.num_trees() == total_trees
         y_pred_new = bst.predict(X, num_iteration=2)
         np.testing.assert_allclose(y_pred, y_pred_new)
