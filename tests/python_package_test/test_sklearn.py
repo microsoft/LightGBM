@@ -287,7 +287,7 @@ def test_grid_search():
                        reg_alpha=[0.01, 0.005])
     fit_params = dict(eval_set=[(X_val, y_val)],
                       eval_metric=constant_metric,
-                      early_stopping_rounds=2)
+                      callbacks=[lgb.early_stopping(2)])
     grid = GridSearchCV(estimator=lgb.LGBMClassifier(**params), param_grid=grid_params,
                         cv=2)
     grid.fit(X_train, y_train, **fit_params)
