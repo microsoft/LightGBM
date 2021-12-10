@@ -1295,7 +1295,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
     // metadata_ will manage space of init_score
     dataset->metadata_.SetInitScore(init_score.data(), dataset->num_data_ * num_class_);
   }
-   
+  dataset->store_mapping();
   dataset->FinishLoad();
   // text data can be free after loaded feature values
   text_data->clear();
@@ -1381,6 +1381,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
   if (!init_score.empty()) {
     dataset->metadata_.SetInitScore(init_score.data(), dataset->num_data_ * num_class_);
   }
+  dataset->store_mapping();
   dataset->FinishLoad();
 }
 
