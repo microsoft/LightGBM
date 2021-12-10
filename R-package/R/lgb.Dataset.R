@@ -776,7 +776,6 @@ Dataset <- R6::R6Class(
 #'                      This reduces LightGBM's memory consumption, but it means that the Dataset object
 #'                      cannot be changed after it has been constructed. If you'd prefer to be able to
 #'                      change the Dataset object after construction, set \code{free_raw_data = FALSE}.
-#' @param ... other parameters passed to \code{params}
 #'
 #' @return constructed dataset
 #'
@@ -800,22 +799,8 @@ lgb.Dataset <- function(data,
                         label = NULL,
                         weight = NULL,
                         group = NULL,
-                        init_score = NULL,
-                        ...) {
+                        init_score = NULL) {
 
-  additional_params <- list(...)
-  params <- modifyList(params, additional_params)
-
-  if (length(additional_params) > 0L) {
-    warning(paste0(
-      "lgb.Dataset: Found the following passed through '...': "
-      , paste(names(additional_params), collapse = ", ")
-      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-      , "Add these to 'params' instead. See ?lgb.Dataset for documentation on how to call this function."
-    ))
-  }
-
-  # Create new dataset
   return(
     invisible(Dataset$new(
       data = data
