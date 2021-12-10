@@ -3000,3 +3000,136 @@ def test_force_split_with_feature_fraction(tmp_path):
     for tree in tree_info:
         tree_structure = tree["tree_structure"]
         assert tree_structure['split_feature'] == 0
+
+
+def test_goss_boosting_and_strategy_equivalent():
+    X, y = load_boston(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+    params1 = {
+        'boosting': 'goss',
+        'metric': 'l2',
+        'verbose': -1
+    }
+    evals_result1 = {}
+    gbm = lgb.train(params1, lgb_train,
+                    num_boost_round=50,
+                    valid_sets=lgb_eval,
+                    verbose_eval=False,
+                    evals_result=evals_result1)
+    params2 = {
+        'data_sample_strategy': 'goss',
+        'metric': 'l2',
+        'verbose': -1
+    }
+    evals_result2 = {}
+    gbm = lgb.train(params2, lgb_train,
+                    num_boost_round=50,
+                    valid_sets=lgb_eval,
+                    verbose_eval=False,
+                    evals_result=evals_result2)
+    np.testing.assert_allclose(evals_result1['valid_0']['l2'], evals_result2['valid_0']['l2'])
+
+
+def test_sample_strategy_with_boosting():
+    X, y = load_boston(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+    
+    params = {
+        'boosting': 'dart',
+        'data_sample_strategy': 'goss',
+        'metric': 'l2',
+        'verbose': -1
+    }
+    evals_result = {}
+    gbm = lgb.train(params, lgb_train,
+                    num_boost_round=50,
+                    valid_sets=lgb_eval,
+                    verbose_eval=False,
+                    evals_result=evals_result)
+    ret = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret < 14
+    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
+    
+    params = {
+        'boosting': 'gbdt',
+        'data_sample_strategy': 'goss',
+        'metric': 'l2',
+        'verbose': -1
+    }
+    evals_result = {}
+    gbm = lgb.train(params, lgb_train,
+                    num_boost_round=50,
+                    valid_sets=lgb_eval,
+                    verbose_eval=False,
+                    evals_result=evals_result)
+    ret = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret < 12
+    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
+
+    params = {
+        'boosting': 'goss',
+        'data_sample_strategy': 'goss',
+        'metric': 'l2',
+        'verbose': -1
+    }
+    evals_result = {}
+    gbm = lgb.train(params, lgb_train,
+                    num_boost_round=50,
+                    valid_sets=lgb_eval,
+                    verbose_eval=False,
+                    evals_result=evals_result)
+    ret = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret < 12
+    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
+
+    params = {
+        'boosting': 'dart',
+        'data_sample_strategy': 'bagging',
+        'metric': 'l2',
+        'verbose': -1
+    }
+    evals_result = {}
+    gbm = lgb.train(params, lgb_train,
+                    num_boost_round=50,
+                    valid_sets=lgb_eval,
+                    verbose_eval=False,
+                    evals_result=evals_result)
+    ret = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret < 12
+    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
+    
+    params = {
+        'boosting': 'gbdt',
+        'data_sample_strategy': 'bagging',
+        'metric': 'l2',
+        'verbose': -1
+    }
+    evals_result = {}
+    gbm = lgb.train(params, lgb_train,
+                    num_boost_round=50,
+                    valid_sets=lgb_eval,
+                    verbose_eval=False,
+                    evals_result=evals_result)
+    ret = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret < 7
+    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
+
+    params = {
+        'boosting': 'goss',
+        'data_sample_strategy': 'bagging',
+        'metric': 'l2',
+        'verbose': -1
+    }
+    evals_result = {}
+    gbm = lgb.train(params, lgb_train,
+                    num_boost_round=50,
+                    valid_sets=lgb_eval,
+                    verbose_eval=False,
+                    evals_result=evals_result)
+    ret = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret < 12
+    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
