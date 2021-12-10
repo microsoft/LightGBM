@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from .basic import Booster, Dataset, LightGBMError, _ArrayLike, _choose_param_value, _ConfigAliases, _log_warning
-from .callback import log_evaluation, record_evaluation
+from .callback import record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
@@ -784,11 +784,7 @@ class LGBMModel(_LGBMModelBase):
         else:  # reset after previous call to fit()
             self._evals_result = None
 
-        if self._Booster.best_iteration != 0:
-            self._best_iteration = self._Booster.best_iteration
-        else:  # reset after previous call to fit()
-            self._best_iteration = None
-
+        self._best_iteration = self._Booster.best_iteration
         self._best_score = self._Booster.best_score
 
         self.fitted_ = True
@@ -871,7 +867,7 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def best_iteration_(self):
-        """:obj:`int` or :obj:`None`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
+        """:obj:`int`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No best_iteration found. Need to call fit with early_stopping callback beforehand.')
         return self._best_iteration

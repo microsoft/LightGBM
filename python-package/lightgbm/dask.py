@@ -95,6 +95,8 @@ def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, _HostWo
     host_to_workers: Dict[str, _HostWorkers] = {}
     for address in worker_addresses:
         hostname = urlparse(address).hostname
+        if not hostname:
+            raise ValueError(f"Could not parse host name from worker address '{address}'")
         if hostname not in host_to_workers:
             host_to_workers[hostname] = _HostWorkers(default=address, all=[address])
         else:
@@ -349,7 +351,7 @@ def _split_to_parts(data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
     return parts
 
 
-def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[str, int]:
+def _machines_to_worker_map(machines: str, worker_addresses: Iterable[str]) -> Dict[str, int]:
     """Create a worker_map from machines list.
 
     Given ``machines`` and a list of Dask worker addresses, return a mapping where the keys are
@@ -360,7 +362,7 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
     machines : str
         A comma-delimited list of workers, of the form ``ip1:port,ip2:port``.
     worker_addresses : list of str
-        A list of Dask worker addresses, of the form ``{protocol}{hostname}:{port}``, where ``port`` is the port Dask's scheduler uses to talk to that worker.
+        An iterable of Dask worker addresses, of the form ``{protocol}{hostname}:{port}``, where ``port`` is the port Dask's scheduler uses to talk to that worker.
 
     Returns
     -------
@@ -380,6 +382,8 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
     out = {}
     for address in worker_addresses:
         worker_host = urlparse(address).hostname
+        if not worker_host:
+            raise ValueError(f"Could not parse host name from worker address '{address}'")
         out[address] = machine_to_port[worker_host].pop()
 
     return out
@@ -1137,7 +1141,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         )
 
     _base_doc = LGBMClassifier.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')  # type: ignore
     _base_doc = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
         {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
@@ -1313,7 +1317,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         )
 
     _base_doc = LGBMRegressor.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')  # type: ignore
     _base_doc = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
         {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
@@ -1469,7 +1473,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         )
 
     _base_doc = LGBMRanker.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')  # type: ignore
     _base_doc = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
         {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
