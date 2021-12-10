@@ -532,49 +532,19 @@ Dataset <- R6::R6Class(
     },
 
     # Slice dataset
-    slice = function(idxset, ...) {
-
-      additional_keyword_args <- list(...)
-
-      if (length(additional_keyword_args) > 0L) {
-        warning(paste0(
-          "Dataset$slice(): Found the following passed through '...': "
-          , paste(names(additional_keyword_args), collapse = ", ")
-          , ". These are ignored and should be removed. "
-          , "To change the parameters of a Dataset produced by Dataset$slice(), use Dataset$set_params(). "
-          , "To modify attributes like 'init_score', use Dataset$set_field(). "
-          , "In future releases of lightgbm, this warning will become an error."
-        ))
-      }
-
-      # extract Dataset attributes passed through '...'
-      #
-      # NOTE: takes advantage of the fact that list[["non-existent-key"]] returns NULL
-      group <- additional_keyword_args[["group"]]
-      init_score <- additional_keyword_args[["init_score"]]
-      label <- additional_keyword_args[["label"]]
-      weight <- additional_keyword_args[["weight"]]
-
-      # remove attributes from '...', so only params are left
-      for (info_key in .INFO_KEYS()) {
-        additional_keyword_args[[info_key]] <- NULL
-      }
+    slice = function(idxset) {
 
       # Perform slicing
       return(
         Dataset$new(
           data = NULL
-          , params = utils::modifyList(self$get_params(), additional_keyword_args)
+          , params = self$get_params()
           , reference = self
           , colnames = private$colnames
           , categorical_feature = private$categorical_feature
           , predictor = private$predictor
           , free_raw_data = private$free_raw_data
           , used_indices = sort(idxset, decreasing = FALSE)
-          , group = group
-          , init_score = init_score
-          , label = label
-          , weight = weight
         )
       )
 
@@ -1042,7 +1012,6 @@ dimnames.lgb.Dataset <- function(x) {
 #'              original \code{lgb.Dataset} object
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param idxset an integer vector of indices of rows needed
-#' @param ... other parameters (currently not used)
 #' @return constructed sub dataset
 #'
 #' @examples
@@ -1056,19 +1025,19 @@ dimnames.lgb.Dataset <- function(x) {
 #' labels <- lightgbm::get_field(dsub, "label")
 #' }
 #' @export
-slice <- function(dataset, ...) {
+slice <- function(dataset, idxset) {
   UseMethod("slice")
 }
 
 #' @rdname slice
 #' @export
-slice.lgb.Dataset <- function(dataset, idxset, ...) {
+slice.lgb.Dataset <- function(dataset, idxset) {
 
   if (!lgb.is.Dataset(x = dataset)) {
     stop("slice.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  return(invisible(dataset$slice(idxset = idxset, ...)))
+  return(invisible(dataset$slice(idxset = idxset)))
 
 }
 
