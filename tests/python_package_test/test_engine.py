@@ -3037,7 +3037,7 @@ def test_sample_strategy_with_boosting():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-    
+
     params = {
         'boosting': 'dart',
         'data_sample_strategy': 'goss',
@@ -3053,7 +3053,7 @@ def test_sample_strategy_with_boosting():
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     assert ret < 14
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
-    
+
     params = {
         'boosting': 'gbdt',
         'data_sample_strategy': 'goss',
@@ -3101,7 +3101,7 @@ def test_sample_strategy_with_boosting():
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     assert ret < 12
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
-    
+
     params = {
         'boosting': 'gbdt',
         'data_sample_strategy': 'bagging',
