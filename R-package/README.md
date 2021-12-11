@@ -238,7 +238,7 @@ The R package's unit tests are run automatically on every commit, via integratio
 
 ### Running the Tests
 
-While developing the R package, the following code provides the simplest, lightest-weight way to run the package's unit tests.
+While developing the R package, run the code below to run the unit tests.
 
 ```shell
 sh build-cran-package.sh \
