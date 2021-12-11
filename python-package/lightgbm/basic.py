@@ -41,20 +41,26 @@ class _DummyLogger:
     def warning(self, msg: str) -> None:
         warnings.warn(msg, stacklevel=3)
 
+    def error(self, msg: str) -> None:
+        warnings.warn(msg, stacklevel=3)
 
-_LOGGER: Union[_DummyLogger, Logger] = _DummyLogger()
+
+_LOGGER: Any = _DummyLogger()
 
 
-def register_logger(logger: Logger) -> None:
+def register_logger(logger: Any) -> None:
     """Register custom logger.
 
     Parameters
     ----------
-    logger : logging.Logger
+    logger : Any
         Custom logger.
     """
-    if not isinstance(logger, Logger):
-        raise TypeError("Logger should inherit logging.Logger class")
+    def _has_method(method_name):
+        return callable(getattr(logger, method_name, None))
+
+    if not _has_method("info") or not _has_method("warning") or not _has_method("error"):
+        raise TypeError("Logger must provide 'info', 'warning' and 'error' method")
     global _LOGGER
     _LOGGER = logger
 
@@ -82,6 +88,9 @@ def _log_info(msg: str) -> None:
 
 def _log_warning(msg: str) -> None:
     _LOGGER.warning(msg)
+
+def _log_error(msg: str) -> None:
+    _LOGGER.error(msg)
 
 
 @_normalize_native_string
