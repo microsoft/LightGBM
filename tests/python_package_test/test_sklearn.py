@@ -784,7 +784,7 @@ def test_metrics():
 
     # no metric
     gbm = lgb.LGBMRegressor(metric='None', **params).fit(**params_fit)
-    assert gbm.evals_result_ is None
+    assert gbm.evals_result_ == {}
 
     # non-default metric in eval_metric
     gbm = lgb.LGBMRegressor(**params).fit(eval_metric='mape', **params_fit)
@@ -833,7 +833,7 @@ def test_metrics():
     # no metric
     gbm = lgb.LGBMRegressor(objective='regression_l1', metric='None',
                             **params).fit(**params_fit)
-    assert gbm.evals_result_ is None
+    assert gbm.evals_result_ == {}
 
     # non-default metric in eval_metric for non-default objective
     gbm = lgb.LGBMRegressor(objective='regression_l1',
@@ -878,7 +878,7 @@ def test_metrics():
     # no metric
     gbm = lgb.LGBMRegressor(objective=custom_dummy_obj, metric='None',
                             **params).fit(**params_fit)
-    assert gbm.evals_result_ is None
+    assert gbm.evals_result_ == {}
 
     # default regression metric with non-default metric in eval_metric for custom objective
     gbm = lgb.LGBMRegressor(objective=custom_dummy_obj,
