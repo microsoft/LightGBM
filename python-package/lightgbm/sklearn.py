@@ -906,7 +906,7 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def evals_result_(self):
-        """:obj:`dict` or :obj:`None`: The evaluation results if validation sets have been specified."""
+        """:obj:`dict`: The evaluation results if validation sets have been specified."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No results found. Need to call fit with eval_set beforehand.')
         return self._evals_result
