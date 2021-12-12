@@ -34,7 +34,6 @@ def train(
     feature_name: Union[List[str], str] = 'auto',
     categorical_feature: Union[List[str], List[int], str] = 'auto',
     early_stopping_rounds: Optional[int] = None,
-    evals_result: Optional[Dict[str, Any]] = None,
     keep_training_booster: bool = False,
     callbacks: Optional[List[Callable]] = None
 ) -> Booster:
@@ -119,19 +118,6 @@ def train(
         To check only the first metric, set the ``first_metric_only`` parameter to ``True`` in ``params``.
         The index of iteration that has the best performance will be saved in the ``best_iteration`` field
         if early stopping logic is enabled by setting ``early_stopping_rounds``.
-    evals_result : dict or None, optional (default=None)
-        Dictionary used to store all evaluation results of all the items in ``valid_sets``.
-        This should be initialized outside of your call to ``train()`` and should be empty.
-        Any initial contents of the dictionary will be deleted.
-
-        .. rubric:: Example
-
-        With a ``valid_sets`` = [valid_set, train_set],
-        ``valid_names`` = ['eval', 'train']
-        and a ``params`` = {'metric': 'logloss'}
-        returns {'train': {'logloss': ['0.48253', '0.35953', ...]},
-        'eval': {'logloss': ['0.480385', '0.357756', ...]}}.
-
     keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
         If False, the returned value will be converted into _InnerPredictor before returning.
@@ -220,11 +206,6 @@ def train(
     # Most of legacy advanced options becomes callbacks
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
         callbacks_set.add(callback.early_stopping(early_stopping_rounds, first_metric_only))
-
-    if evals_result is not None:
-        _log_warning("'evals_result' argument is deprecated and will be removed in a future release of LightGBM. "
-                     "Pass 'record_evaluation()' callback via 'callbacks' argument instead.")
-        callbacks_set.add(callback.record_evaluation(evals_result))
 
     callbacks_before_iter_set = {cb for cb in callbacks_set if getattr(cb, 'before_iteration', False)}
     callbacks_after_iter_set = callbacks_set - callbacks_before_iter_set
