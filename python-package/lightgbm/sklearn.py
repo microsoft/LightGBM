@@ -779,11 +779,7 @@ class LGBMModel(_LGBMModelBase):
             callbacks=callbacks
         )
 
-        if evals_result:
-            self._evals_result = evals_result
-        else:  # reset after previous call to fit()
-            self._evals_result = None
-
+        self._evals_result = evals_result
         self._best_iteration = self._Booster.best_iteration
         self._best_score = self._Booster.best_score
 
