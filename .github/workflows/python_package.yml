@@ -3,7 +3,7 @@ name: Python-package
 on:
   push:
     branches:
-    - master
+    - record_callback
   pull_request:
     branches:
     - master
