@@ -579,3 +579,30 @@ def test_param_aliases():
     assert all(len(i) >= 1 for i in aliases.values())
     assert all(k in v for k, v in aliases.items())
     assert lgb.basic._ConfigAliases.get('config', 'task') == {'config', 'config_file', 'task', 'task_type'}
+
+
+def _bad_gradients(labels, preds):
+    return np.random.randn(len(labels) + 1), np.random.rand(len(labels) + 1)
+
+
+def _good_gradients(labels, preds):
+    return np.random.randn(len(labels)), np.random.rand(len(labels))
+
+
+def test_custom_objective_safety():
+    X = np.random.randn(100, 5)
+    y_binary = np.random.choice([0, 1], 100)
+    classes = [0, 1, 2]
+    y_multiclass = np.random.choice(classes, 100)
+    ds_binary = lgb.Dataset(X, y_binary).construct()
+    ds_multiclass = lgb.Dataset(X, y_multiclass).construct()
+    bad_bst_binary = lgb.Booster({'objective': "none"}, ds_binary)
+    good_bst_binary = lgb.Booster({'objective': "none"}, ds_binary)
+    bad_bst_multi = lgb.Booster({'objective': "none", "num_class": len(classes)}, ds_multiclass)
+    good_bst_multi = lgb.Booster({'objective': "none", "num_class": len(classes)}, ds_multiclass)
+    good_bst_binary.update(fobj=_good_gradients)
+    with pytest.raises(ValueError):
+        bad_bst_binary.update(fobj=_bad_gradients)
+    good_bst_multi.update(fobj=_good_gradients)
+    with pytest.raises(ValueError):
+        bad_bst_multi.update(fobj=_bad_gradients)
