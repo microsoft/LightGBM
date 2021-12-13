@@ -65,7 +65,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
 # try to generate Visual Studio build files
 .generate_vs_makefiles <- function(cmake_args) {
   vs_versions <- c(
-    , "Visual Studio 17 2022"
+    "Visual Studio 17 2022"
     , "Visual Studio 16 2019"
     , "Visual Studio 15 2017"
     , "Visual Studio 14 2015"
