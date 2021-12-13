@@ -3033,11 +3033,12 @@ class Booster:
         if len(grad) != len(hess):
             raise ValueError(f"Lengths of gradient ({len(grad)}) and Hessian ({len(hess)}) don't match")
         num_train_data = self.train_set.num_data()
-        num_models = self.num_model_per_iteration()
+        num_models = self.__num_class
         if len(grad) != num_train_data * num_models:
             raise ValueError(
                 f"Lengths of gradient ({len(grad)}) and Hessian ({len(hess)}) "
-                f"don't match training data length ({num_train_data}) * number of models per one iteration ({num_models})"
+                f"don't match training data length ({num_train_data}) * "
+                f"number of models per one iteration ({num_models})"
             )
         is_finished = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterUpdateOneIterCustom(
