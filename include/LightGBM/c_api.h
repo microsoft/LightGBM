@@ -572,6 +572,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle,
 /*!
  * \brief Update the model by specifying gradient and Hessian directly
  *        (this can be used to support customized loss functions).
+ * \note
+ * The length of the arrays referenced by ``grad`` and ``hess`` must be equal to
+ * ``num_class*num_train_data``, this is not verified by the library, the caller must ensure this.
  * \param handle Handle of booster
  * \param grad The first order derivative (gradient) statistics
  * \param hess The second order derivative (Hessian) statistics
