@@ -46,23 +46,44 @@ class _DummyLogger:
 
 
 _LOGGER: Any = _DummyLogger()
+_INFO_METHOD_NAME = "info"
+_WARNING_METHOD_NAME = "warning"
+_ERROR_METHOD_NAME = "error"
 
 
-def register_logger(logger: Any) -> None:
+def register_logger(logger: Any,
+                    info_method_name: str = "info",
+                    warning_method_name: str = "warning",
+                    error_method_name: str = "error") -> None:
     """Register custom logger.
 
     Parameters
     ----------
     logger : Any
         Custom logger.
+    info_method_name: str, optional (default="info")
+        Method used to log info messages.
+    warning_method_name: str, optional (default="warning")
+        Method used to log warning messages.
+    error_method_name: str, optional (default="error")
+        Method used to log error messages.
     """
-    def _has_method(method_name):
+    def _has_method(logger: Any, method_name: str) -> bool:
         return callable(getattr(logger, method_name, None))
 
-    if not _has_method("info") or not _has_method("warning") or not _has_method("error"):
-        raise TypeError("Logger must provide 'info', 'warning' and 'error' method")
-    global _LOGGER
+    if (
+        not _has_method(logger, info_method_name)
+        or not _has_method(logger, warning_method_name)
+        or not _has_method(logger, error_method_name)
+    ):
+        raise TypeError(f"Logger must provide '{info_method_name}', '{warning_method_name}'"
+                        f" and '{error_method_name}' method")
+
+    global _LOGGER, _INFO_METHOD_NAME, _WARNING_METHOD_NAME, _ERROR_METHOD_NAME
     _LOGGER = logger
+    _INFO_METHOD_NAME = info_method_name
+    _WARNING_METHOD_NAME = warning_method_name
+    _ERROR_METHOD_NAME = error_method_name
 
 
 def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], None]:
@@ -83,14 +104,15 @@ def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], Non
 
 
 def _log_info(msg: str) -> None:
-    _LOGGER.info(msg)
+    getattr(_LOGGER, _INFO_METHOD_NAME)(msg)
 
 
 def _log_warning(msg: str) -> None:
-    _LOGGER.warning(msg)
+    getattr(_LOGGER, _WARNING_METHOD_NAME)(msg)
+
 
 def _log_error(msg: str) -> None:
-    _LOGGER.error(msg)
+    getattr(_LOGGER, _ERROR_METHOD_NAME)(msg)
 
 
 @_normalize_native_string

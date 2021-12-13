@@ -2,6 +2,7 @@
 import logging
 
 import numpy as np
+import pytest
 
 import lightgbm as lgb
 
@@ -97,3 +98,83 @@ WARNING | More than one metric available, picking one to plot.
                 actual_log_wo_gpu_stuff.append(line)
 
     assert "\n".join(actual_log_wo_gpu_stuff) == expected_log
+
+
+def test_register_invalid_logger():
+    class LoggerWithoutInfoMethod:
+        def warning(self, msg: str) -> None:
+            print(msg)
+
+        def error(self, msg: str) -> None:
+            print(msg)
+
+    class LoggerWithoutWarningMethod:
+        def info(self, msg: str) -> None:
+            print(msg)
+
+        def error(self, msg: str) -> None:
+            print(msg)
+
+    class LoggerWithoutErrorMethod:
+        def info(self, msg: str) -> None:
+            print(msg)
+
+        def warning(self, msg: str) -> None:
+            print(msg)
+
+    class LoggerWithAttributeNotCallable:
+        def __init__(self):
+            self.info = 1
+            self.warning = 2
+            self.error = 3
+
+    expected_error_message = "Logger must provide 'info', 'warning' and 'error' method"
+
+    with pytest.raises(TypeError, match=expected_error_message):
+        lgb.register_logger(LoggerWithoutInfoMethod())
+
+    with pytest.raises(TypeError, match=expected_error_message):
+        lgb.register_logger(LoggerWithoutWarningMethod())
+
+    with pytest.raises(TypeError, match=expected_error_message):
+        lgb.register_logger(LoggerWithoutErrorMethod())
+
+    with pytest.raises(TypeError, match=expected_error_message):
+        lgb.register_logger(LoggerWithAttributeNotCallable())
+
+
+def test_register_custom_logger(tmp_path):
+    log_filename = tmp_path / "LightGBM_test_custom_logger.log"
+
+    class CustomLogger:
+        def __init__(self, log_filename):
+            self.writer = open(log_filename, "w")
+
+        def custom_info(self, msg: str) -> None:
+            self.writer.write(msg + "\n")
+            self.writer.flush()
+
+        def custom_warning(self, msg: str) -> None:
+            self.writer.write(msg + "\n")
+            self.writer.flush()
+
+        def custom_error(self, msg: str) -> None:
+            self.writer.write(msg + "\n")
+            self.writer.flush()
+
+    custom_logger = CustomLogger(log_filename)
+    lgb.register_logger(custom_logger, info_method_name="custom_info",
+                        warning_method_name="custom_warning",
+                        error_method_name="custom_error")
+
+    lgb._log_info("info message")
+    lgb._log_warning("warning message")
+    lgb._log_error("error message")
+
+    expected_log = r"""
+info message
+warning message
+error message
+""".strip()
+    logged_message = open(log_filename, "r").read().strip()
+    assert logged_message == expected_log
