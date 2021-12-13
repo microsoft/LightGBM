@@ -43,18 +43,6 @@ CVBooster <- R6::R6Class(
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets
-#' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
-#'            \itemize{
-#'                \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
-#'                \item{\code{num_leaves}: Maximum number of leaves in one tree.}
-#'                \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
-#'                                 overfit when #data is small. Tree still grow by leaf-wise.}
-#'                \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-#'                             the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
-#'                             not the number of threads (most CPU using hyper-threading to generate 2 threads
-#'                             per CPU core).}
-#'            }
-#'            NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained model \code{lgb.CVBooster}.
 #'
@@ -98,7 +86,7 @@ lgb.cv <- function(params = list()
                    , early_stopping_rounds = NULL
                    , callbacks = list()
                    , reset_data = FALSE
-                   , ...
+                   , serializable = TRUE
                    ) {
 
   if (nrounds <= 0L) {
@@ -114,22 +102,11 @@ lgb.cv <- function(params = list()
   }
 
   # Setup temporary variables
-  additional_params <- list(...)
-  params <- append(params, additional_params)
   params$verbose <- verbose
   params <- lgb.check.obj(params = params, obj = obj)
   params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
   eval_functions <- list(NULL)
-
-  if (length(additional_params) > 0L) {
-    warning(paste0(
-      "lgb.cv: Found the following passed through '...': "
-      , paste(names(additional_params), collapse = ", ")
-      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-      , "Add these to 'params' instead. See ?lgb.cv for documentation on how to call this function."
-    ))
-  }
 
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.
@@ -454,6 +431,10 @@ lgb.cv <- function(params = list()
       fd$booster$best_score <- booster_old$best_score
       fd$booster$record_evals <- booster_old$record_evals
     })
+  }
+
+  if (serializable) {
+    lapply(cv_booster$boosters, function(model) model$booster$save_raw())
   }
 
   return(cv_booster)

@@ -2,9 +2,14 @@
 """Callbacks library."""
 import collections
 from functools import partial
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 from .basic import _ConfigAliases, _log_info, _log_warning
+
+_EvalResultTuple = Union[
+    List[Tuple[str, str, float, bool]],
+    List[Tuple[str, str, float, bool, float]]
+]
 
 
 def _gt_delta(curr_score: float, best_score: float, delta: float) -> bool:
@@ -18,15 +23,15 @@ def _lt_delta(curr_score: float, best_score: float, delta: float) -> bool:
 class EarlyStopException(Exception):
     """Exception of early stopping."""
 
-    def __init__(self, best_iteration: int, best_score: float) -> None:
+    def __init__(self, best_iteration: int, best_score: _EvalResultTuple) -> None:
         """Create early stopping exception.
 
         Parameters
         ----------
         best_iteration : int
             The best iteration stopped.
-        best_score : float
-            The score of the best iteration.
+        best_score : list of (eval_name, metric_name, eval_result, is_higher_better) tuple or (eval_name, metric_name, eval_result, is_higher_better, stdv) tuple
+            Scores for each metric, on each validation set, as of the best iteration.
         """
         super().__init__()
         self.best_iteration = best_iteration
@@ -44,7 +49,7 @@ CallbackEnv = collections.namedtuple(
      "evaluation_result_list"])
 
 
-def _format_eval_result(value: list, show_stdv: bool = True) -> str:
+def _format_eval_result(value: _EvalResultTuple, show_stdv: bool = True) -> str:
     """Format metric string."""
     if len(value) == 4:
         return f"{value[0]}'s {value[1]}: {value[2]:g}"
@@ -55,16 +60,6 @@ def _format_eval_result(value: list, show_stdv: bool = True) -> str:
             return f"{value[0]}'s {value[1]}: {value[2]:g}"
     else:
         raise ValueError("Wrong metric value")
-
-
-def print_evaluation(period: int = 1, show_stdv: bool = True) -> Callable:
-    """Create a callback that logs the evaluation results.
-
-    Deprecated, use ``log_evaluation()`` instead.
-    """
-    _log_warning("'print_evaluation()' callback is deprecated and will be removed in a future release of LightGBM. "
-                 "Use 'log_evaluation()' callback instead.")
-    return log_evaluation(period=period, show_stdv=show_stdv)
 
 
 def log_evaluation(period: int = 1, show_stdv: bool = True) -> Callable:
@@ -225,13 +220,21 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
     best_iter = []
     best_score_list: list = []
     cmp_op = []
-    enabled = [True]
-    first_metric = ['']
+    enabled = True
+    inited = False
+    first_metric = ''
 
     def _init(env: CallbackEnv) -> None:
-        enabled[0] = not any(env.params.get(boost_alias, "") == 'dart' for boost_alias
-                             in _ConfigAliases.get("boosting"))
-        if not enabled[0]:
+        nonlocal best_score
+        nonlocal best_iter
+        nonlocal best_score_list
+        nonlocal cmp_op
+        nonlocal enabled
+        nonlocal inited
+        nonlocal first_metric
+        enabled = not any(env.params.get(boost_alias, "") == 'dart' for boost_alias
+                          in _ConfigAliases.get("boosting"))
+        if not enabled:
             _log_warning('Early stopping is not available in dart mode')
             return
         if not env.evaluation_result_list:
@@ -240,6 +243,14 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
 
         if verbose:
             _log_info(f"Training until validation scores don't improve for {stopping_rounds} rounds")
+
+        # reset storages
+        best_score = []
+        best_iter = []
+        best_score_list = []
+        cmp_op = []
+        inited = True
+        first_metric = ''
 
         n_metrics = len(set(m[1] for m in env.evaluation_result_list))
         n_datasets = len(env.evaluation_result_list) // n_metrics
@@ -268,7 +279,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
             deltas = [min_delta] * n_datasets * n_metrics
 
         # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
-        first_metric[0] = env.evaluation_result_list[0][1].split(" ")[-1]
+        first_metric = env.evaluation_result_list[0][1].split(" ")[-1]
         for eval_ret, delta in zip(env.evaluation_result_list, deltas):
             best_iter.append(0)
             best_score_list.append(None)
@@ -280,6 +291,9 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
                 cmp_op.append(partial(_lt_delta, delta=delta))
 
     def _final_iteration_check(env: CallbackEnv, eval_name_splitted: List[str], i: int) -> None:
+        nonlocal best_iter
+        nonlocal best_score_list
+        nonlocal inited
         if env.iteration == env.end_iteration - 1:
             if verbose:
                 best_score_str = '\t'.join([_format_eval_result(x) for x in best_score_list[i]])
@@ -287,12 +301,20 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
                           f'Best iteration is:\n[{best_iter[i] + 1}]\t{best_score_str}')
                 if first_metric_only:
                     _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
+            inited = False
             raise EarlyStopException(best_iter[i], best_score_list[i])
 
     def _callback(env: CallbackEnv) -> None:
-        if not cmp_op:
+        nonlocal best_score
+        nonlocal best_iter
+        nonlocal best_score_list
+        nonlocal cmp_op
+        nonlocal enabled
+        nonlocal inited
+        nonlocal first_metric
+        if not inited:
             _init(env)
-        if not enabled[0]:
+        if not enabled:
             return
         for i in range(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2]
@@ -302,7 +324,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
                 best_score_list[i] = env.evaluation_result_list
             # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
             eval_name_splitted = env.evaluation_result_list[i][1].split(" ")
-            if first_metric_only and first_metric[0] != eval_name_splitted[-1]:
+            if first_metric_only and first_metric != eval_name_splitted[-1]:
                 continue  # use only the first metric for early stopping
             if ((env.evaluation_result_list[i][0] == "cv_agg" and eval_name_splitted[0] == "train"
                  or env.evaluation_result_list[i][0] == env.model._train_data_name)):
@@ -314,6 +336,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
                     _log_info(f"Early stopping, best iteration is:\n[{best_iter[i] + 1}]\t{eval_result_str}")
                     if first_metric_only:
                         _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
+                inited = False
                 raise EarlyStopException(best_iter[i], best_score_list[i])
             _final_iteration_check(env, eval_name_splitted, i)
     _callback.order = 30  # type: ignore
