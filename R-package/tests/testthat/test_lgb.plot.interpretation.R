@@ -87,7 +87,7 @@ test_that("lgb.plot.interepretation works as expected for multiclass classificat
         params = params
         , data = dtrain
         , nrounds = 3L
-        , verbosity = VERBOSITY
+        , verbose = VERBOSITY
     )
     num_trees <- 5L
     tree_interpretation <- lgb.interprete(
