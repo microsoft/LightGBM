@@ -778,6 +778,7 @@ struct Config {
   // [no-save]
   // desc = used only in ``prediction`` task
   // desc = used only in ``classification`` and ``ranking`` applications
+  // desc = used only for predicting normal or raw scores
   // desc = if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
   // desc = **Note**: cannot be used with ``rf`` boosting type or custom objective function
   bool pred_early_stop = false;
@@ -1042,6 +1043,7 @@ struct Config {
   static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
   std::vector<std::vector<int>> interaction_constraints_vector;
+  static const std::string DumpAliases();
 
  private:
   void CheckParamConflict();

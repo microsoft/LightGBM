@@ -112,6 +112,7 @@ _LIB = _load_lib()
 
 
 NUMERIC_TYPES = (int, float, bool)
+_ArrayLike = Union[List, np.ndarray, pd_Series]
 
 
 def _safe_call(ret: int) -> None:
@@ -324,102 +325,53 @@ class LGBMDeprecationWarning(UserWarning):
 
 
 class _ConfigAliases:
-    aliases = {"bin_construct_sample_cnt": {"bin_construct_sample_cnt",
-                                            "subsample_for_bin"},
-               "boosting": {"boosting",
-                            "boosting_type",
-                            "boost"},
-               "categorical_feature": {"categorical_feature",
-                                       "cat_feature",
-                                       "categorical_column",
-                                       "cat_column",
-                                       "categorical_features"},
-               "data_random_seed": {"data_random_seed",
-                                    "data_seed"},
-               "early_stopping_round": {"early_stopping_round",
-                                        "early_stopping_rounds",
-                                        "early_stopping",
-                                        "n_iter_no_change"},
-               "enable_bundle": {"enable_bundle",
-                                 "is_enable_bundle",
-                                 "bundle"},
-               "eval_at": {"eval_at",
-                           "ndcg_eval_at",
-                           "ndcg_at",
-                           "map_eval_at",
-                           "map_at"},
-               "group_column": {"group_column",
-                                "group",
-                                "group_id",
-                                "query_column",
-                                "query",
-                                "query_id"},
-               "header": {"header",
-                          "has_header"},
-               "ignore_column": {"ignore_column",
-                                 "ignore_feature",
-                                 "blacklist"},
-               "is_enable_sparse": {"is_enable_sparse",
-                                    "is_sparse",
-                                    "enable_sparse",
-                                    "sparse"},
-               "label_column": {"label_column",
-                                "label"},
-               "linear_tree": {"linear_tree",
-                               "linear_trees"},
-               "local_listen_port": {"local_listen_port",
-                                     "local_port",
-                                     "port"},
-               "machines": {"machines",
-                            "workers",
-                            "nodes"},
-               "max_bin": {"max_bin",
-                           "max_bins"},
-               "metric": {"metric",
-                          "metrics",
-                          "metric_types"},
-               "num_class": {"num_class",
-                             "num_classes"},
-               "num_iterations": {"num_iterations",
-                                  "num_iteration",
-                                  "n_iter",
-                                  "num_tree",
-                                  "num_trees",
-                                  "num_round",
-                                  "num_rounds",
-                                  "nrounds",
-                                  "num_boost_round",
-                                  "n_estimators",
-                                  "max_iter"},
-               "num_machines": {"num_machines",
-                                "num_machine"},
-               "num_threads": {"num_threads",
-                               "num_thread",
-                               "nthread",
-                               "nthreads",
-                               "n_jobs"},
-               "objective": {"objective",
-                             "objective_type",
-                             "app",
-                             "application",
-                             "loss"},
-               "pre_partition": {"pre_partition",
-                                 "is_pre_partition"},
-               "tree_learner": {"tree_learner",
-                                "tree",
-                                "tree_type",
-                                "tree_learner_type"},
-               "two_round": {"two_round",
-                             "two_round_loading",
-                             "use_two_round_loading"},
-               "weight_column": {"weight_column",
-                                 "weight"}}
+    # lazy evaluation to allow import without dynamic library, e.g., for docs generation
+    aliases = None
+
+    @staticmethod
+    def _get_all_param_aliases() -> Dict[str, Set[str]]:
+        buffer_len = 1 << 20
+        tmp_out_len = ctypes.c_int64(0)
+        string_buffer = ctypes.create_string_buffer(buffer_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_DumpParamAliases(
+            ctypes.c_int64(buffer_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+        actual_len = tmp_out_len.value
+        # if buffer length is not long enough, re-allocate a buffer
+        if actual_len > buffer_len:
+            string_buffer = ctypes.create_string_buffer(actual_len)
+            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            _safe_call(_LIB.LGBM_DumpParamAliases(
+                ctypes.c_int64(actual_len),
+                ctypes.byref(tmp_out_len),
+                ptr_string_buffer))
+        aliases = json.loads(
+            string_buffer.value.decode('utf-8'),
+            object_hook=lambda obj: {k: set(v) | {k} for k, v in obj.items()}
+        )
+        return aliases
 
     @classmethod
-    def get(cls, *args):
+    def get(cls, *args) -> Set[str]:
+        if cls.aliases is None:
+            cls.aliases = cls._get_all_param_aliases()
         ret = set()
         for i in args:
             ret |= cls.aliases.get(i, {i})
+        return ret
+
+    @classmethod
+    def get_by_alias(cls, *args) -> Set[str]:
+        if cls.aliases is None:
+            cls.aliases = cls._get_all_param_aliases()
+        ret = set(args)
+        for arg in args:
+            for aliases in cls.aliases.values():
+                if arg in aliases:
+                    ret |= aliases
+                    break
         return ret
 
 
@@ -705,7 +657,7 @@ class Sequence(abc.ABC):
 
         Returns
         -------
-        result : numpy 1-D array, numpy 2-D array
+        result : numpy 1-D array or numpy 2-D array
             1-D array if idx is int, 2-D array if idx is slice or list.
         """
         raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __getitem__()")
@@ -1756,17 +1708,29 @@ class Dataset:
         return self
 
     @staticmethod
-    def _compare_params_for_warning(params, other_params):
-        """Compare params.
+    def _compare_params_for_warning(
+        params: Optional[Dict[str, Any]],
+        other_params: Optional[Dict[str, Any]],
+        ignore_keys: Set[str]
+    ) -> bool:
+        """Compare two dictionaries with params ignoring some keys.
 
-        It is only for the warning purpose. Thus some keys are ignored.
+        It is only for the warning purpose.
+
+        Parameters
+        ----------
+        params : dict or None
+            One dictionary with parameters to compare.
+        other_params : dict or None
+            Another dictionary with parameters to compare.
+        ignore_keys : set
+            Keys that should be ignored during comparing two dictionaries.
 
         Returns
         -------
-        compare_result: bool
-          If they are equal, return True; Otherwise, return False.
+        compare_result : bool
+          Returns whether two dictionaries with params are equal.
         """
-        ignore_keys = _ConfigAliases.get("categorical_feature")
         if params is None:
             params = {}
         if other_params is None:
@@ -1794,7 +1758,11 @@ class Dataset:
                 reference_params = self.reference.get_params()
                 params = self.get_params()
                 if params != reference_params:
-                    if self._compare_params_for_warning(params, reference_params) is False:
+                    if not self._compare_params_for_warning(
+                        params=params,
+                        other_params=reference_params,
+                        ignore_keys=_ConfigAliases.get("categorical_feature")
+                    ):
                         _log_warning('Overriding the parameters from Reference Dataset.')
                     self._update_params(reference_params)
                 if self.used_indices is None:
@@ -2248,7 +2216,7 @@ class Dataset:
 
         Returns
         -------
-        feature_names : list
+        feature_names : list of str
             The names of columns (features) in the Dataset.
         """
         if self.handle is None:
@@ -2651,7 +2619,7 @@ class Booster:
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
         elif model_str is not None:
-            self.model_from_string(model_str, verbose="_silent_false")
+            self.model_from_string(model_str)
         else:
             raise TypeError('Need at least one training dataset or model file or model string '
                             'to create Booster instance')
@@ -2978,16 +2946,16 @@ class Booster:
             Should accept two parameters: preds, train_data,
             and return (grad, hess).
 
-                preds : list or numpy 1-D array
+                preds : numpy 1-D array
                     The predicted values.
                     Predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task.
                 train_data : Dataset
                     The training dataset.
-                grad : list or numpy 1-D array
+                grad : list, numpy 1-D array or pandas Series
                     The value of the first order derivative (gradient) of the loss
                     with respect to the elements of preds for each sample point.
-                hess : list or numpy 1-D array
+                hess : list, numpy 1-D array or pandas Series
                     The value of the second order derivative (Hessian) of the loss
                     with respect to the elements of preds for each sample point.
 
@@ -3046,10 +3014,10 @@ class Booster:
 
         Parameters
         ----------
-        grad : list or numpy 1-D array
+        grad : list, numpy 1-D array or pandas Series
             The value of the first order derivative (gradient) of the loss
             with respect to the elements of score for each sample point.
-        hess : list or numpy 1-D array
+        hess : list, numpy 1-D array or pandas Series
             The value of the second order derivative (Hessian) of the loss
             with respect to the elements of score for each sample point.
 
@@ -3170,7 +3138,7 @@ class Booster:
             Should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : list or numpy 1-D array
+                preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3218,7 +3186,7 @@ class Booster:
             Should accept two parameters: preds, train_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : list or numpy 1-D array
+                preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3251,7 +3219,7 @@ class Booster:
             Should accept two parameters: preds, valid_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : list or numpy 1-D array
+                preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3332,15 +3300,13 @@ class Booster:
             ctypes.c_int(end_iteration)))
         return self
 
-    def model_from_string(self, model_str, verbose='warn'):
+    def model_from_string(self, model_str):
         """Load Booster from a string.
 
         Parameters
         ----------
         model_str : str
             Model will be loaded from this string.
-        verbose : bool, optional (default=True)
-            Whether to print messages while loading model.
 
         Returns
         -------
@@ -3640,7 +3606,7 @@ class Booster:
 
         Returns
         -------
-        result : list
+        result : list of str
             List with names of features.
         """
         num_feature = self.num_feature()

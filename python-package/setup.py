@@ -40,7 +40,7 @@ def find_lib() -> List[str]:
     libpath = {'__file__': libpath_py}
     exec(compile(libpath_py.read_bytes(), libpath_py, 'exec'), libpath, libpath)
 
-    LIB_PATH = libpath['find_lib_path']()
+    LIB_PATH = libpath['find_lib_path']()  # type: ignore
     logger.info(f"Installing lib_lightgbm from: {LIB_PATH}")
     return LIB_PATH
 

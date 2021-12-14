@@ -13,7 +13,6 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
   dtest1 <- lgb.Dataset(test_data, label = test_label)
   # from dense matrix
   dtest2 <- lgb.Dataset(as.matrix(test_data), label = test_label)
-  expect_equal(getinfo(dtest1, "label"), getinfo(dtest2, "label"))
   expect_equal(get_field(dtest1, "label"), get_field(dtest2, "label"))
 
   # save to a local file
@@ -23,23 +22,7 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
   dtest3 <- lgb.Dataset(tmp_file)
   lgb.Dataset.construct(dtest3)
   unlink(tmp_file)
-  expect_equal(getinfo(dtest1, "label"), getinfo(dtest3, "label"))
   expect_equal(get_field(dtest1, "label"), get_field(dtest3, "label"))
-})
-
-test_that("lgb.Dataset: getinfo & setinfo", {
-  dtest <- lgb.Dataset(test_data)
-  dtest$construct()
-
-  setinfo(dtest, "label", test_label)
-  labels <- getinfo(dtest, "label")
-  expect_equal(test_label, getinfo(dtest, "label"))
-
-  expect_true(length(getinfo(dtest, "weight")) == 0L)
-  expect_true(length(getinfo(dtest, "init_score")) == 0L)
-
-  # any other label should error
-  expect_error(setinfo(dtest, "asdf", test_label))
 })
 
 test_that("lgb.Dataset: get_field & set_field", {
@@ -65,34 +48,6 @@ test_that("lgb.Dataset: slice, dim", {
   lgb.Dataset.construct(dsub1)
   expect_equal(nrow(dsub1), 42L)
   expect_equal(ncol(dsub1), ncol(test_data))
-})
-
-test_that("Dataset$slice() supports passing additional parameters through '...'", {
-  dtest <- lgb.Dataset(test_data, label = test_label)
-  dtest$construct()
-  dsub1 <- slice(
-    dataset = dtest
-    , idxset = seq_len(42L)
-    , feature_pre_filter = FALSE
-  )
-  dsub1$construct()
-  expect_identical(dtest$get_params(), list())
-  expect_identical(dsub1$get_params(), list(feature_pre_filter = FALSE))
-})
-
-test_that("Dataset$slice() supports passing Dataset attributes through '...'", {
-  dtest <- lgb.Dataset(test_data, label = test_label)
-  dtest$construct()
-  num_subset_rows <- 51L
-  init_score <- rnorm(n = num_subset_rows)
-  dsub1 <- slice(
-    dataset = dtest
-    , idxset = seq_len(num_subset_rows)
-    , init_score = init_score
-  )
-  dsub1$construct()
-  expect_null(dtest$getinfo("init_score"), NULL)
-  expect_identical(dsub1$getinfo("init_score"), init_score)
 })
 
 test_that("Dataset$set_reference() on a constructed Dataset fails if raw data has been freed", {
@@ -257,19 +212,6 @@ test_that("cpp errors should be raised as proper R errors", {
   expect_error({
     dtrain$construct()
   }, regexp = "Initial score size doesn't match data size")
-})
-
-test_that("lgb.Dataset$setinfo() should convert 'group' to integer", {
-  ds <- lgb.Dataset(
-    data = matrix(rnorm(100L), nrow = 50L, ncol = 2L)
-    , label = sample(c(0L, 1L), size = 50L, replace = TRUE)
-  )
-  ds$construct()
-  current_group <- ds$getinfo("group")
-  expect_null(current_group)
-  group_as_numeric <- rep(25.0, 2L)
-  ds$setinfo("group", group_as_numeric)
-  expect_identical(ds$getinfo("group"), as.integer(group_as_numeric))
 })
 
 test_that("lgb.Dataset$set_field() should convert 'group' to integer", {
