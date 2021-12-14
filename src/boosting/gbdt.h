@@ -488,7 +488,7 @@ class GBDT : public GBDTBase {
   /*! \brief Parser config file content */
   std::string parser_config_str_ = "";
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_CUDA_EXP)
   /*! \brief First order derivative of training data */
   std::vector<score_t, CHAllocator<score_t>> gradients_;
   /*! \brief Second order derivative of training data */

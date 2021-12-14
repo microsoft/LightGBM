@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #ifndef LIGHTGBM_CUDA_META_DATA_HPP_
 #define LIGHTGBM_CUDA_META_DATA_HPP_
@@ -49,4 +49,4 @@ class CUDAMetadata {
 
 #endif  // LIGHTGBM_CUDA_META_DATA_HPP_
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP

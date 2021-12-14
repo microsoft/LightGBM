@@ -206,12 +206,12 @@ class SerialTreeLearner: public TreeLearner {
   std::unique_ptr<LeafSplits> smaller_leaf_splits_;
   /*! \brief stores best thresholds for all feature for larger leaf */
   std::unique_ptr<LeafSplits> larger_leaf_splits_;
-#ifdef USE_GPU
+#if defined(USE_GPU)
   /*! \brief gradients of current iteration, ordered for cache optimized, aligned to 4K page */
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized, aligned to 4K page */
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
-#elif USE_CUDA
+#elif defined(USE_CUDA) || defined(USE_CUDA_EXP)
   /*! \brief gradients of current iteration, ordered for cache optimized */
   std::vector<score_t, CHAllocator<score_t>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */

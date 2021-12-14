@@ -5,7 +5,7 @@
 
 #include <LightGBM/cuda/cuda_utils.h>
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 namespace LightGBM {
 
@@ -28,4 +28,4 @@ void SetCUDADevice(int gpu_device_id, const char* file, int line) {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP

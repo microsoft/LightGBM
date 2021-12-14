@@ -1,23 +1,30 @@
 /*!
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ */
+
+/*!
  * Copyright (c) 2020 IBM Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA
-
 #ifndef LIGHTGBM_CUDA_CUDA_UTILS_H_
 #define LIGHTGBM_CUDA_CUDA_UTILS_H_
 
+#if defined(USE_CUDA) || defined(USE_CUDA_EXP)
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <stdio.h>
-
 #include <LightGBM/utils/log.h>
+#endif  // USE_CUDA || USE_CUDA_EXP
 
+#ifdef USE_CUDA_EXP
 #include <vector>
+#endif  // USE_CUDA_EXP
 
 namespace LightGBM {
 
+#if defined(USE_CUDA) || defined(USE_CUDA_EXP)
 #define CUDASUCCESS_OR_FATAL(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort = true) {
   if (code != cudaSuccess) {
@@ -25,7 +32,9 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
     if (abort) exit(code);
   }
 }
+#endif  // USE_CUDA || USE_CUDA_EXP
 
+#ifdef USE_CUDA_EXP
 #define CUDASUCCESS_OR_FATAL_OUTER(ans) { gpuAssert((ans), file, line); }
 
 void SetCUDADevice(int gpu_device_id, const char* file, int line);
@@ -172,8 +181,8 @@ class CUDAVector {
   size_t size_;
 };
 
+#endif  // USE_CUDA_EXP
+
 }  // namespace LightGBM
 
 #endif  // LIGHTGBM_CUDA_CUDA_UTILS_H_
-
-#endif  // USE_CUDA

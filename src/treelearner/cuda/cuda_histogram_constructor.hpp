@@ -6,7 +6,7 @@
 #ifndef LIGHTGBM_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_
 #define LIGHTGBM_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #include <LightGBM/cuda/cuda_row_data.hpp>
 #include <LightGBM/feature_group.h>
@@ -150,5 +150,5 @@ class CUDAHistogramConstructor {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP
 #endif  // LIGHTGBM_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_

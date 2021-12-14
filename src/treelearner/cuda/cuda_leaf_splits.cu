@@ -5,7 +5,7 @@
  */
 
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #include "cuda_leaf_splits.hpp"
 #include <LightGBM/cuda/cuda_algorithms.hpp>
@@ -126,4 +126,4 @@ void CUDALeafSplits::LaunchInitValuesKernal(
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP

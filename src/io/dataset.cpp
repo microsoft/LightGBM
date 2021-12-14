@@ -439,14 +439,14 @@ void Dataset::FinishLoad() {
       feature_groups_[i]->FinishLoad();
     }
   }
-  #ifdef USE_CUDA
+  #ifdef USE_CUDA_EXP
   if (device_type_ == std::string("cuda_exp")) {
     CreateCUDAColumnData();
     metadata_.CreateCUDAMetadata(gpu_device_id_);
   } else {
     cuda_column_data_.reset(nullptr);
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA_EXP
   is_finish_load_ = true;
 }
 
@@ -849,7 +849,7 @@ void Dataset::CopySubrow(const Dataset* fullset,
   device_type_ = fullset->device_type_;
   gpu_device_id_ = fullset->gpu_device_id_;
 
-  #ifdef USE_CUDA
+  #ifdef USE_CUDA_EXP
   if (device_type_ == std::string("cuda_exp")) {
     global_timer.Start("prepare subset cuda column data");
     if (cuda_column_data_ == nullptr) {
@@ -861,7 +861,7 @@ void Dataset::CopySubrow(const Dataset* fullset,
     global_timer.Stop("copy subset cuda column data");
     global_timer.Stop("prepare subset cuda column data");
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA_EXP
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data,
@@ -1499,13 +1499,13 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
       raw_data_.push_back(other->raw_data_[i]);
     }
   }
-  #ifdef USE_CUDA
+  #ifdef USE_CUDA_EXP
   if (device_type_ == std::string("cuda_exp")) {
     CreateCUDAColumnData();
   } else {
     cuda_column_data_ = nullptr;
   }
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA_EXP
 }
 
 const void* Dataset::GetColWiseData(
@@ -1527,7 +1527,7 @@ const void* Dataset::GetColWiseData(
   return feature_groups_[feature_group_index]->GetColWiseData(sub_feature_index, bit_type, is_sparse, bin_iterator);
 }
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 void Dataset::CreateCUDAColumnData() {
   cuda_column_data_.reset(new CUDAColumnData(num_data_, gpu_device_id_));
   int num_columns = 0;
@@ -1662,6 +1662,6 @@ void Dataset::CreateCUDAColumnData() {
                           feature_to_column);
 }
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP
 
 }  // namespace LightGBM

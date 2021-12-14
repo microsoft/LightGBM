@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_SPLIT_INFO_HPP_
 #define LIGHTGBM_TREELEARNER_CUDA_CUDA_SPLIT_INFO_HPP_
@@ -105,4 +105,4 @@ class CUDASplitInfo {
 
 #endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_SPLIT_INFO_HPP_
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP

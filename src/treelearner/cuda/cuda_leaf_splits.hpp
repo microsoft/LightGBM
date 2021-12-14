@@ -6,7 +6,7 @@
 #ifndef LIGHTGBM_CUDA_LEAF_SPLITS_HPP_
 #define LIGHTGBM_CUDA_LEAF_SPLITS_HPP_
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/bin.h>
@@ -156,5 +156,5 @@ class CUDALeafSplits {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP
 #endif  // LIGHTGBM_CUDA_LEAF_SPLITS_HPP_

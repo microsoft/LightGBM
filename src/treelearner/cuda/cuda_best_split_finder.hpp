@@ -7,7 +7,7 @@
 #ifndef LIGHTGBM_CUDA_BEST_SPLIT_FINDER_HPP_
 #define LIGHTGBM_CUDA_BEST_SPLIT_FINDER_HPP_
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #include <LightGBM/bin.h>
 #include <LightGBM/dataset.h>
@@ -202,5 +202,5 @@ class CUDABestSplitFinder {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP
 #endif  // LIGHTGBM_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_

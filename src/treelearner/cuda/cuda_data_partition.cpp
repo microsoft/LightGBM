@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #include <algorithm>
 #include <memory>
@@ -399,4 +399,4 @@ void CUDADataPartition::ResetByLeafPred(const std::vector<int>& leaf_pred, int n
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP

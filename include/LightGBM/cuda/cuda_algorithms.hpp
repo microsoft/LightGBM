@@ -6,7 +6,7 @@
 #ifndef LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_
 #define LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -388,5 +388,5 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP
 #endif  // LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_

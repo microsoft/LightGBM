@@ -6,7 +6,7 @@
 #ifndef LIGHTGBM_CUDA_DATA_SPLITTER_HPP_
 #define LIGHTGBM_CUDA_DATA_SPLITTER_HPP_
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #include <LightGBM/meta.h>
 #include <LightGBM/tree.h>
@@ -390,5 +390,5 @@ class CUDADataPartition {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP
 #endif  // LIGHTGBM_CUDA_DATA_SPLITTER_HPP_

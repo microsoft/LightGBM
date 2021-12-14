@@ -4,7 +4,7 @@
  */
 
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #include <LightGBM/cuda/cuda_tree.hpp>
 
@@ -305,4 +305,4 @@ void CUDATree::LaunchAddBiasKernel(const double val) {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP

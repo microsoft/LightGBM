@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #include <algorithm>
 
@@ -366,4 +366,4 @@ void CUDABestSplitFinder::AllocateCatVectors(CUDASplitInfo* cuda_split_infos, ui
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP

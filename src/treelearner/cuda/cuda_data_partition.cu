@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #include "cuda_data_partition.hpp"
 
@@ -1071,4 +1071,4 @@ void CUDADataPartition::LaunchAddPredictionToScoreKernel(const double* leaf_valu
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP

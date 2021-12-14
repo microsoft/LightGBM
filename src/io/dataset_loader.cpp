@@ -270,7 +270,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     is_load_from_binary = true;
     Log::Info("Load from binary file %s", bin_filename.c_str());
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), rank, num_machines, &num_global_data, &used_data_indices));
-    #ifdef USE_CUDA
+    #ifdef USE_CUDA_EXP
     dataset->device_type_ = config_.device_type;
     dataset->gpu_device_id_ = config_.gpu_device_id;
     if (config_.device_type == std::string("cuda_exp")) {
@@ -279,7 +279,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     } else {
       dataset->cuda_column_data_ = nullptr;
     }
-    #endif  // USE_CUDA
+    #endif  // USE_CUDA_EXP
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);

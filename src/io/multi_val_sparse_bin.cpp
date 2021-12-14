@@ -7,7 +7,7 @@
 
 namespace LightGBM {
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 template <>
 const void* MultiValSparseBin<uint16_t, uint8_t>::GetRowWiseData(
@@ -153,6 +153,6 @@ const void* MultiValSparseBin<uint64_t, uint32_t>::GetRowWiseData(
   return to_return;
 }
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP
 
 }  // namespace LightGBM

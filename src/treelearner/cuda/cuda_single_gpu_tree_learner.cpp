@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #include "cuda_single_gpu_tree_learner.hpp"
 
@@ -520,4 +520,4 @@ void CUDASingleGPUTreeLearner::CheckSplitValid(
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP

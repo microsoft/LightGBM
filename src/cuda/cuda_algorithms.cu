@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA
+#ifdef USE_CUDA_EXP
 
 #include <LightGBM/cuda/cuda_algorithms.hpp>
 
@@ -79,4 +79,4 @@ void ShufflePrefixSumGlobal(uint64_t* values, size_t len, uint64_t* block_prefix
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
+#endif  // USE_CUDA_EXP

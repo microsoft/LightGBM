@@ -395,9 +395,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto grad = gradients + offset;
       auto hess = hessians + offset;
       // need to copy gradients for bagging subset.
-      if (is_use_subset_ && bag_data_cnt_ < num_data_ &&
-        !(LGBM_config_::current_learner == use_cuda_learner && config_->num_gpu == 1 &&
-          (config_->tree_learner == std::string("serial") || Network::num_machines() == 1))) {
+      if (is_use_subset_ && bag_data_cnt_ < num_data_ && config_->device_type != std::string("cuda_exp")) {
         for (int i = 0; i < bag_data_cnt_; ++i) {
           gradients_[offset + i] = grad[bag_data_indices_[i]];
           hessians_[offset + i] = hess[bag_data_indices_[i]];
