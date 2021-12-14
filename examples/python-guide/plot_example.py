@@ -43,7 +43,7 @@ gbm = lgb.train(params,
                 feature_name=[f'f{i + 1}' for i in range(X_train.shape[-1])],
                 categorical_feature=[21],
                 evals_result=evals_result,
-                verbose_eval=10)
+                callbacks=[lgb.log_evaluation(10)])
 
 print('Plotting metrics recorded during training...')
 ax = lgb.plot_metric(evals_result, metric='l1')

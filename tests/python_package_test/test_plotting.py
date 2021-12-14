@@ -198,8 +198,7 @@ def test_plot_metrics(params, breast_cancer_split, train_data):
               valid_sets=[train_data, test_data],
               valid_names=['v1', 'v2'],
               num_boost_round=10,
-              evals_result=evals_result0,
-              verbose_eval=False)
+              evals_result=evals_result0)
     with pytest.warns(UserWarning, match="More than one metric available, picking one to plot."):
         ax0 = lgb.plot_metric(evals_result0)
     assert isinstance(ax0, matplotlib.axes.Axes)
@@ -259,8 +258,7 @@ def test_plot_metrics(params, breast_cancer_split, train_data):
     evals_result1 = {}
     lgb.train(params, train_data,
               num_boost_round=10,
-              evals_result=evals_result1,
-              verbose_eval=False)
+              evals_result=evals_result1)
     with pytest.raises(ValueError, match="eval results cannot be empty."):
         lgb.plot_metric(evals_result1)
 
