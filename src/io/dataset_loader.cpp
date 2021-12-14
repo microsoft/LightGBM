@@ -234,8 +234,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       auto sample_data = SampleTextDataFromMemory(text_data);
       CheckSampleSize(sample_data.size(),
                       static_cast<size_t>(dataset->num_data_));
-      // construct feature bin mappers
+      // construct feature bin mappers & clear sample data
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
+      std::vector<std::string>().swap(sample_data);
       if (dataset->has_raw()) {
         dataset->ResizeRaw(dataset->num_data_);
       }
@@ -254,8 +255,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       }
       CheckSampleSize(sample_data.size(),
                       static_cast<size_t>(dataset->num_data_));
-      // construct feature bin mappers
+      // construct feature bin mappers & clear sample data
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
+      std::vector<std::string>().swap(sample_data);
       if (dataset->has_raw()) {
         dataset->ResizeRaw(dataset->num_data_);
       }
