@@ -98,6 +98,13 @@ jobs:
             toolchain: MSVC
             r_version: 4.0
             build_type: cmake
+          # Visual Studio 2022
+          - os: windows-2022
+            task: r-package
+            compiler: MSVC
+            toolchain: MSVC
+            r_version: 4.0
+            build_type: cmake
           ###############
           # CRAN builds #
           ###############
