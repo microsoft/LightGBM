@@ -1117,7 +1117,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   for (int i = 0; i < len_mapping; ++i) {
     mapping_str.emplace_back(mapping[i]);
   }
-  ret->mapping = mapping_str
+  ret->load_mapping(mapping_str);
 
   if (reference == nullptr) {
     // sample data first
