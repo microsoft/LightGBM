@@ -10,7 +10,6 @@ from functools import wraps
 from logging import Logger
 from os import SEEK_END
 from os.path import getsize
-from os.path import exists
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
@@ -113,6 +112,7 @@ _LIB = _load_lib()
 
 
 NUMERIC_TYPES = (int, float, bool)
+_ArrayLike = Union[List, np.ndarray, pd_Series]
 
 
 def _safe_call(ret: int) -> None:
@@ -161,12 +161,6 @@ def cast_numpy_array_to_dtype(array, dtype):
 def is_1d_list(data):
     """Check whether data is a 1-D list."""
     return isinstance(data, list) and (not data or is_numeric(data[0]))
-
-def is_1d_string(data):
-    """Check whether data is a 1-D string list."""
-    if is_numpy_column_array(data):
-        data = data.T
-    return data.size and (not is_numeric(data[0]))
 
 
 def _is_1d_collection(data: Any) -> bool:
@@ -331,104 +325,53 @@ class LGBMDeprecationWarning(UserWarning):
 
 
 class _ConfigAliases:
-    aliases = {"bin_construct_sample_cnt": {"bin_construct_sample_cnt",
-                                            "subsample_for_bin"},
-               "boosting": {"boosting",
-                            "boosting_type",
-                            "boost"},
-               "categorical_feature": {"categorical_feature",
-                                       "cat_feature",
-                                       "categorical_column",
-                                       "cat_column",
-                                       "categorical_features"},
-               "data_random_seed": {"data_random_seed",
-                                    "data_seed"},
-               "early_stopping_round": {"early_stopping_round",
-                                        "early_stopping_rounds",
-                                        "early_stopping",
-                                        "n_iter_no_change"},
-               "enable_bundle": {"enable_bundle",
-                                 "is_enable_bundle",
-                                 "bundle"},
-               "eval_at": {"eval_at",
-                           "ndcg_eval_at",
-                           "ndcg_at",
-                           "map_eval_at",
-                           "map_at"},
-               "group_column": {"group_column",
-                                "group",
-                                "group_id",
-                                "query_column",
-                                "query",
-                                "query_id"},
-               "header": {"header",
-                          "has_header"},
-               "ignore_column": {"ignore_column",
-                                 "ignore_feature",
-                                 "blacklist"},
-               "is_enable_sparse": {"is_enable_sparse",
-                                    "is_sparse",
-                                    "enable_sparse",
-                                    "sparse"},
-               "label_column": {"label_column",
-                                "label"},
-               "linear_tree": {"linear_tree",
-                               "linear_trees"},
-               "local_listen_port": {"local_listen_port",
-                                     "local_port",
-                                     "port"},
-               "machines": {"machines",
-                            "workers",
-                            "nodes"},
-               "max_bin": {"max_bin",
-                           "max_bins"},
-               "metric": {"metric",
-                          "metrics",
-                          "metric_types"},
-               "num_class": {"num_class",
-                             "num_classes"},
-               "num_iterations": {"num_iterations",
-                                  "num_iteration",
-                                  "n_iter",
-                                  "num_tree",
-                                  "num_trees",
-                                  "num_round",
-                                  "num_rounds",
-                                  "nrounds",
-                                  "num_boost_round",
-                                  "n_estimators",
-                                  "max_iter"},
-               "num_machines": {"num_machines",
-                                "num_machine"},
-               "num_threads": {"num_threads",
-                               "num_thread",
-                               "nthread",
-                               "nthreads",
-                               "n_jobs"},
-               "objective": {"objective",
-                             "objective_type",
-                             "app",
-                             "application",
-                             "loss"},
-               "pre_partition": {"pre_partition",
-                                 "is_pre_partition"},
-               "tree_learner": {"tree_learner",
-                                "tree",
-                                "tree_type",
-                                "tree_learner_type"},
-               "two_round": {"two_round",
-                             "two_round_loading",
-                             "use_two_round_loading"},
-               "verbosity": {"verbosity",
-                             "verbose"},
-               "weight_column": {"weight_column",
-                                 "weight"}}
+    # lazy evaluation to allow import without dynamic library, e.g., for docs generation
+    aliases = None
+
+    @staticmethod
+    def _get_all_param_aliases() -> Dict[str, Set[str]]:
+        buffer_len = 1 << 20
+        tmp_out_len = ctypes.c_int64(0)
+        string_buffer = ctypes.create_string_buffer(buffer_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_DumpParamAliases(
+            ctypes.c_int64(buffer_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+        actual_len = tmp_out_len.value
+        # if buffer length is not long enough, re-allocate a buffer
+        if actual_len > buffer_len:
+            string_buffer = ctypes.create_string_buffer(actual_len)
+            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            _safe_call(_LIB.LGBM_DumpParamAliases(
+                ctypes.c_int64(actual_len),
+                ctypes.byref(tmp_out_len),
+                ptr_string_buffer))
+        aliases = json.loads(
+            string_buffer.value.decode('utf-8'),
+            object_hook=lambda obj: {k: set(v) | {k} for k, v in obj.items()}
+        )
+        return aliases
 
     @classmethod
-    def get(cls, *args):
+    def get(cls, *args) -> Set[str]:
+        if cls.aliases is None:
+            cls.aliases = cls._get_all_param_aliases()
         ret = set()
         for i in args:
             ret |= cls.aliases.get(i, {i})
+        return ret
+
+    @classmethod
+    def get_by_alias(cls, *args) -> Set[str]:
+        if cls.aliases is None:
+            cls.aliases = cls._get_all_param_aliases()
+        ret = set(args)
+        for arg in args:
+            for aliases in cls.aliases.values():
+                if arg in aliases:
+                    ret |= aliases
+                    break
         return ret
 
 
@@ -575,7 +518,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
             data = data.rename(columns=str)
-        cat_cols = list(data.select_dtypes(include=['category']).columns)
+        cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
             pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
@@ -597,19 +540,15 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                 categorical_feature = list(categorical_feature)
         if feature_name == 'auto':
             feature_name = list(data.columns)
-        # bad_indices = _get_bad_pandas_dtypes(data.dtypes)
-        # if bad_indices:
-        #     bad_index_cols_str = ', '.join(data.columns[bad_indices])
-        #     raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
-        #                      "Did not expect the data types in the following fields: "
-        #                      f"{bad_index_cols_str}")
-
+        bad_indices = _get_bad_pandas_dtypes(data.dtypes)
+        if bad_indices:
+            bad_index_cols_str = ', '.join(data.columns[bad_indices])
+            raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
+                             "Did not expect the data types in the following fields: "
+                             f"{bad_index_cols_str}")
         data = data.values
         if data.dtype != np.float32 and data.dtype != np.float64:
-            try:
-                data = data.astype(np.float32)
-            except ValueError:
-                pass
+            data = data.astype(np.float32)
     else:
         if feature_name == 'auto':
             feature_name = None
@@ -662,22 +601,6 @@ def _load_pandas_categorical(file_name=None, model_str=None):
     else:
         return None
 
-def _string_column_mapping(column_data):
-    values = list(set(column_data))
-    keys = range(len(values))
-    mapping = dict(zip(keys, values))
-    def map_str_to_num(x):
-        return values.index(x)
-    mapped_data = np.array(list(map(map_str_to_num, column_data)))
-    return mapping, mapped_data
-
-def save_mapping_file(mappings, filename='mapping.json'):
-    json.dump(mappings, open(filename, 'w+'))
-
-
-def read_mapping_file(filename='mapping.json'):
-    mappings = json.load(open(filename, 'r'))
-    return mappings
 
 class Sequence(abc.ABC):
     """
@@ -734,7 +657,7 @@ class Sequence(abc.ABC):
 
         Returns
         -------
-        result : numpy 1-D array, numpy 2-D array
+        result : numpy 1-D array or numpy 2-D array
             1-D array if idx is int, 2-D array if idx is slice or list.
         """
         raise NotImplementedError("Sub-classes of lightgbm.Sequence must implement __getitem__()")
@@ -796,38 +719,6 @@ class _InnerPredictor:
             self.pandas_categorical = None
         else:
             raise TypeError('Need model_file or booster_handle to create a predictor')
-        # feature names are needed to load string mapping for prediction
-        out_num_feature = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterGetNumFeature(
-            self.handle,
-            ctypes.byref(out_num_feature)))
-        self.num_feature = out_num_feature.value
-
-        tmp_out_len = ctypes.c_int(0)
-        reserved_string_buffer_size = 255
-        required_string_buffer_size = ctypes.c_size_t(0)
-        string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for _ in range(self.num_feature)]
-        ptr_string_buffers = (ctypes.c_char_p * self.num_feature)(*map(ctypes.addressof, string_buffers))
-        _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
-            self.handle,
-            ctypes.c_int(self.num_feature),
-            ctypes.byref(tmp_out_len),
-            ctypes.c_size_t(reserved_string_buffer_size),
-            ctypes.byref(required_string_buffer_size),
-            ptr_string_buffers))
-        actual_string_buffer_size = required_string_buffer_size.value
-        # if buffer length is not long enough, reallocate buffers
-        if reserved_string_buffer_size < actual_string_buffer_size:
-            string_buffers = [ctypes.create_string_buffer(actual_string_buffer_size) for _ in range(self.num_feature)]
-            ptr_string_buffers = (ctypes.c_char_p * self.num_feature)(*map(ctypes.addressof, string_buffers))
-            _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
-                self.handle,
-                ctypes.c_int(self.num_feature),
-                ctypes.byref(tmp_out_len),
-                ctypes.c_size_t(actual_string_buffer_size),
-                ctypes.byref(required_string_buffer_size),
-                ptr_string_buffers))
-        self.feature_name = [string_buffers[i].value.decode('utf-8') for i in range(self.num_feature)]
 
         pred_parameter = {} if pred_parameter is None else pred_parameter
         self.pred_parameter = param_dict_to_str(pred_parameter)
@@ -958,28 +849,7 @@ class _InnerPredictor:
             if mat.dtype == np.float32 or mat.dtype == np.float64:
                 data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
             else:  # change non-float data to float data, need to copy
-                try:
-                    data = np.array(mat.reshape(mat.size), dtype=np.float32)
-                except ValueError:
-                    # load mapping and map string to int
-
-                    # if exists('mapping.json'):
-                    #     mappings = read_mapping_file()
-                    data = mat.copy().T
-                    for j, col in enumerate(data):
-                        if is_1d_string(col):
-                            if self.feature_name[j] not in mappings.keys():
-                                mapping, mapped_col = _string_column_mapping(col)
-                                mappings[self.feature_name[j]] = mapping
-                                data[j] = mapped_col
-                            else:
-                                def get_mapped_num(x):
-                                    return list(mappings[self.feature_name[j]].values()).index(x)
-                                data[j] = np.array(list(map(get_mapped_num, col)))
-                    data = data.T
-                    data = np.array(data.reshape(data.size), dtype=np.float32, copy=False)
-
-                    
+                data = np.array(mat.reshape(mat.size), dtype=np.float32)
             ptr_data, type_ptr_data, _ = c_float_array(data)
             n_preds = self.__get_num_preds(start_iteration, num_iteration, mat.shape[0], predict_type)
             if preds is None:
@@ -1253,7 +1123,7 @@ class Dataset:
     """Dataset in LightGBM."""
 
     def __init__(self, data, label=None, reference=None,
-                 weight=None, group=None, init_score=None, silent='warn',
+                 weight=None, group=None, init_score=None,
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
         """Initialize Dataset.
@@ -1277,8 +1147,6 @@ class Dataset:
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for Dataset.
-        silent : bool, optional (default=False)
-            Whether to print messages during construction.
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names.
             If 'auto' and data is pandas DataFrame, data columns names are used.
@@ -1303,7 +1171,6 @@ class Dataset:
         self.weight = weight
         self.group = group
         self.init_score = init_score
-        self.silent = silent
         self.feature_name = feature_name
         self.categorical_feature = categorical_feature
         self.params = deepcopy(params)
@@ -1317,7 +1184,6 @@ class Dataset:
         self.monotone_constraints = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
-        self.mappings = {} # Used when input string categorial features
 
     def __del__(self):
         try:
@@ -1546,8 +1412,7 @@ class Dataset:
 
     def _lazy_init(self, data, label=None, reference=None,
                    weight=None, group=None, init_score=None, predictor=None,
-                   silent=False, feature_name='auto',
-                   categorical_feature='auto', params=None, mappings={}):
+                   feature_name='auto', categorical_feature='auto', params=None):
         if data is None:
             self.handle = None
             return self
@@ -1569,14 +1434,6 @@ class Dataset:
             if key in args_names:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
                              f'Please use {key} argument of the Dataset constructor to pass this parameter.')
-        # user can set verbose with params, it has higher priority
-        if silent != "warn":
-            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
-                         "Pass 'verbose' parameter via 'params' instead.")
-        else:
-            silent = False
-        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
-            params["verbose"] = -1
         # get categorical features
         if categorical_feature is not None:
             categorical_indices = set()
@@ -1601,8 +1458,6 @@ class Dataset:
 
         params_str = param_dict_to_str(params)
         self.params = params
-        self.mappings = mappings
-        self.set_feature_name(feature_name)
         # process for reference dataset
         ref_dataset = None
         if isinstance(reference, Dataset):
@@ -1656,8 +1511,6 @@ class Dataset:
             self.set_init_score(init_score)
         elif predictor is not None:
             raise TypeError(f'Wrong predictor type {type(predictor).__name__}')
-        if self.mappings != {}:
-            # save_mapping_file(self.mappings)
         # set feature names
         return self.set_feature_name(feature_name)
 
@@ -1742,36 +1595,8 @@ class Dataset:
         if mat.dtype == np.float32 or mat.dtype == np.float64:
             data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
         else:  # change non-float data to float data, need to copy
-            try:
-                data = np.array(mat.reshape(mat.size), dtype=np.float32)
-            except ValueError:
-                _log_info('Detected string input, converting string to int automatically, saving mapping file to "mapping.json".')
-                data = mat.copy().T
-                if self.feature_name == None or self.feature_name == 'auto':
-                    feature_name = [f"Column_{i}" for i in range(data.shape[0])]
-                else:
-                    feature_name = self.feature_name
-                for j, col in enumerate(data):
-                    if is_1d_string(col):
-                        if feature_name[j] not in self.mappings.keys():
-                            mapping, mapped_col = _string_column_mapping(col)
-                            self.mappings[feature_name[j]] = mapping
-                            data[j] = mapped_col
-                        else:
-                            def get_mapped_num(x):
-                                return self.mappings[feature_name[j]].values().index(x)
-                            data[j] = np.array(list(map(get_mapped_num, col)))
-                data = data.T
-                data = np.array(data.reshape(data.size), dtype=np.float32, copy=False)
+            data = np.array(mat.reshape(mat.size), dtype=np.float32)
 
-        mapping_string = []
-        for feature_name_, feature_map in self.mappings.items():
-            tmp = feature_name_ + '\n'
-            for key, value in feature_map.items():
-                tmp += f'{key}={value}\n'
-            mapping_string.append(tmp + '\n')
-        
-        c_mapping_string = [c_str(s) for s in mapping_string]
         ptr_data, type_ptr_data, _ = c_float_array(data)
         _safe_call(_LIB.LGBM_DatasetCreateFromMat(
             ptr_data,
@@ -1780,8 +1605,6 @@ class Dataset:
             ctypes.c_int32(mat.shape[1]),
             ctypes.c_int(C_API_IS_ROW_MAJOR),
             c_str(params_str),
-            c_mapping_string,
-            len(mapping_string),
             ref_dataset,
             ctypes.byref(self.handle)))
         return self
@@ -1810,28 +1633,7 @@ class Dataset:
             if mat.dtype == np.float32 or mat.dtype == np.float64:
                 mats[i] = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
             else:  # change non-float data to float data, need to copy
-                try:
-                    mats[i] = np.array(mat.reshape(mat.size), dtype=np.float32)
-                except ValueError:
-                    _log_info('Detected string input, converting string to int automatically, saving mapping file to "mapping.json".')
-                    data = mats[i].copy().T
-                    if self.feature_name == None or self.feature_name == 'auto':
-                        feature_name = [f"Column_{i}" for i in range(data.shape[0])]
-                    else:
-                        feature_name = self.feature_name
-                    for j, col in enumerate(data):
-                        if is_1d_string(col):
-                            if feature_name[j] not in self.mappings.keys():
-                                mapping, mapped_col = _string_column_mapping(col)
-                                self.mappings[feature_name[j]] = mapping
-                                data[j] = mapped_col
-                            else:
-                                def get_mapped_num(x):
-                                    return self.mappings[feature_name[j]].values().index(x)
-                                data[j] = np.array(list(map(get_mapped_num, col)))
-                    data = data.T
-                    mats[i] = np.array(data.reshape(data.size), dtype=np.float32, copy=False)
-
+                mats[i] = np.array(mat.reshape(mat.size), dtype=np.float32)
 
             chunk_ptr_data, chunk_type_ptr_data, holder = c_float_array(mats[i])
             if type_ptr_data is not None and chunk_type_ptr_data != type_ptr_data:
@@ -1839,15 +1641,6 @@ class Dataset:
             ptr_data[i] = chunk_ptr_data
             type_ptr_data = chunk_type_ptr_data
             holders.append(holder)
-
-        mapping_string = []
-        for feature_name_, feature_map in self.mappings.items():
-            tmp = feature_name_ + '\n'
-            for key, value in feature_map.items():
-                tmp += f'{key}={value}\n'
-            mapping_string.append(tmp + '\n')
-        
-        c_mapping_string = [c_str(s) for s in mapping_string]
 
         self.handle = ctypes.c_void_p()
         _safe_call(_LIB.LGBM_DatasetCreateFromMats(
@@ -1858,8 +1651,6 @@ class Dataset:
             ctypes.c_int32(ncol),
             ctypes.c_int(C_API_IS_ROW_MAJOR),
             c_str(params_str),
-            c_mapping_string,
-            len(mapping_string),
             ref_dataset,
             ctypes.byref(self.handle)))
         return self
@@ -1917,17 +1708,29 @@ class Dataset:
         return self
 
     @staticmethod
-    def _compare_params_for_warning(params, other_params):
-        """Compare params.
+    def _compare_params_for_warning(
+        params: Optional[Dict[str, Any]],
+        other_params: Optional[Dict[str, Any]],
+        ignore_keys: Set[str]
+    ) -> bool:
+        """Compare two dictionaries with params ignoring some keys.
 
-        It is only for the warning purpose. Thus some keys are ignored.
+        It is only for the warning purpose.
+
+        Parameters
+        ----------
+        params : dict or None
+            One dictionary with parameters to compare.
+        other_params : dict or None
+            Another dictionary with parameters to compare.
+        ignore_keys : set
+            Keys that should be ignored during comparing two dictionaries.
 
         Returns
         -------
-        compare_result: bool
-          If they are equal, return True; Otherwise, return False.
+        compare_result : bool
+          Returns whether two dictionaries with params are equal.
         """
-        ignore_keys = _ConfigAliases.get("categorical_feature")
         if params is None:
             params = {}
         if other_params is None:
@@ -1955,7 +1758,11 @@ class Dataset:
                 reference_params = self.reference.get_params()
                 params = self.get_params()
                 if params != reference_params:
-                    if self._compare_params_for_warning(params, reference_params) is False:
+                    if not self._compare_params_for_warning(
+                        params=params,
+                        other_params=reference_params,
+                        ignore_keys=_ConfigAliases.get("categorical_feature")
+                    ):
                         _log_warning('Overriding the parameters from Reference Dataset.')
                     self._update_params(reference_params)
                 if self.used_indices is None:
@@ -1963,7 +1770,7 @@ class Dataset:
                     self._lazy_init(self.data, label=self.label, reference=self.reference,
                                     weight=self.weight, group=self.group,
                                     init_score=self.init_score, predictor=self._predictor,
-                                    silent=self.silent, feature_name=self.feature_name, params=self.params, mappings=self.mappings)
+                                    feature_name=self.feature_name, params=self.params)
                 else:
                     # construct subset
                     used_indices = list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
@@ -1994,14 +1801,12 @@ class Dataset:
                 self._lazy_init(self.data, label=self.label,
                                 weight=self.weight, group=self.group,
                                 init_score=self.init_score, predictor=self._predictor,
-                                silent=self.silent, feature_name=self.feature_name,
-                                categorical_feature=self.categorical_feature, params=self.params, mappings=self.mappings)
+                                feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params)
             if self.free_raw_data:
                 self.data = None
         return self
 
-    def create_valid(self, data, label=None, weight=None, group=None,
-                     init_score=None, silent='warn', params=None):
+    def create_valid(self, data, label=None, weight=None, group=None, init_score=None, params=None):
         """Create validation data align with current Dataset.
 
         Parameters
@@ -2021,8 +1826,6 @@ class Dataset:
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for Dataset.
-        silent : bool, optional (default=False)
-            Whether to print messages during construction.
         params : dict or None, optional (default=None)
             Other parameters for validation Dataset.
 
@@ -2033,7 +1836,7 @@ class Dataset:
         """
         ret = Dataset(data, label=label, reference=self,
                       weight=weight, group=group, init_score=init_score,
-                      silent=silent, params=params, free_raw_data=self.free_raw_data, feature_name=self.feature_name)
+                      params=params, free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
         ret.pandas_categorical = self.pandas_categorical
         return ret
@@ -2339,10 +2142,6 @@ class Dataset:
         """
         self.label = label
         if self.handle is not None:
-            if is_1d_string(label):
-                _log_info('Detected string input, converting string to int automatically, saving mapping file to "mapping.json".')
-                mapping, label = _string_column_mapping(label)
-                self.mappings['label'] = mapping
             label = list_to_1d_numpy(_label_from_pandas(label), name='label')
             self.set_field('label', label)
             self.label = self.get_field('label')  # original values can be modified at cpp side
@@ -2417,7 +2216,7 @@ class Dataset:
 
         Returns
         -------
-        feature_names : list
+        feature_names : list of str
             The names of columns (features) in the Dataset.
         """
         if self.handle is None:
@@ -2713,7 +2512,7 @@ class Dataset:
 class Booster:
     """Booster in LightGBM."""
 
-    def __init__(self, params=None, train_set=None, model_file=None, model_str=None, silent='warn'):
+    def __init__(self, params=None, train_set=None, model_file=None, model_str=None):
         """Initialize the Booster.
 
         Parameters
@@ -2726,8 +2525,6 @@ class Booster:
             Path to the model file.
         model_str : str or None, optional (default=None)
             Model will be loaded from this string.
-        silent : bool, optional (default=False)
-            Whether to print messages during construction.
         """
         self.handle = None
         self.network = False
@@ -2738,14 +2535,6 @@ class Booster:
         self.best_iteration = -1
         self.best_score = {}
         params = {} if params is None else deepcopy(params)
-        # user can set verbose with params, it has higher priority
-        if silent != 'warn':
-            _log_warning("'silent' argument is deprecated and will be removed in a future release of LightGBM. "
-                         "Pass 'verbose' parameter via 'params' instead.")
-        else:
-            silent = False
-        if not any(verbose_alias in params for verbose_alias in _ConfigAliases.get("verbosity")) and silent:
-            params["verbose"] = -1
         if train_set is not None:
             # Training task
             if not isinstance(train_set, Dataset):
@@ -3157,16 +2946,16 @@ class Booster:
             Should accept two parameters: preds, train_data,
             and return (grad, hess).
 
-                preds : list or numpy 1-D array
+                preds : numpy 1-D array
                     The predicted values.
                     Predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task.
                 train_data : Dataset
                     The training dataset.
-                grad : list or numpy 1-D array
+                grad : list, numpy 1-D array or pandas Series
                     The value of the first order derivative (gradient) of the loss
                     with respect to the elements of preds for each sample point.
-                hess : list or numpy 1-D array
+                hess : list, numpy 1-D array or pandas Series
                     The value of the second order derivative (Hessian) of the loss
                     with respect to the elements of preds for each sample point.
 
@@ -3225,10 +3014,10 @@ class Booster:
 
         Parameters
         ----------
-        grad : list or numpy 1-D array
+        grad : list, numpy 1-D array or pandas Series
             The value of the first order derivative (gradient) of the loss
             with respect to the elements of score for each sample point.
-        hess : list or numpy 1-D array
+        hess : list, numpy 1-D array or pandas Series
             The value of the second order derivative (Hessian) of the loss
             with respect to the elements of score for each sample point.
 
@@ -3349,7 +3138,7 @@ class Booster:
             Should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : list or numpy 1-D array
+                preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3397,7 +3186,7 @@ class Booster:
             Should accept two parameters: preds, train_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : list or numpy 1-D array
+                preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3430,7 +3219,7 @@ class Booster:
             Should accept two parameters: preds, valid_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : list or numpy 1-D array
+                preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3539,12 +3328,6 @@ class Booster:
         _safe_call(_LIB.LGBM_BoosterGetNumClasses(
             self.handle,
             ctypes.byref(out_num_class)))
-        if verbose in {'warn', '_silent_false'}:
-            verbose = verbose == 'warn'
-        else:
-            _log_warning("'verbose' argument is deprecated and will be removed in a future release of LightGBM.")
-        if verbose:
-            _log_info(f'Finished loading model, total used {int(out_num_iterations.value)} iterations')
         self.__num_class = out_num_class.value
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
@@ -3749,7 +3532,7 @@ class Booster:
         predictor = self._to_predictor(deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
-        out_is_linear = ctypes.c_bool(False)
+        out_is_linear = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
             self.handle,
             ctypes.byref(out_is_linear)))
@@ -3758,8 +3541,8 @@ class Booster:
             params=self.params,
             default_value=None
         )
-        new_params["linear_tree"] = out_is_linear.value
-        train_set = Dataset(data, label, silent=True, params=new_params)
+        new_params["linear_tree"] = bool(out_is_linear.value)
+        train_set = Dataset(data, label, params=new_params)
         new_params['refit_decay_rate'] = decay_rate
         new_booster = Booster(new_params, train_set)
         # Copy models
@@ -3825,7 +3608,7 @@ class Booster:
 
         Returns
         -------
-        result : list
+        result : list of str
             List with names of features.
         """
         num_feature = self.num_feature()
