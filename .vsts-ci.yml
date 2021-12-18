@@ -87,6 +87,7 @@ jobs:
     matrix:
       regular:
         TASK: regular
+        PYTHON_VERSION: 3.9
       sdist:
         TASK: sdist
       bdist:
@@ -100,7 +101,7 @@ jobs:
       mpi_pip:
         TASK: mpi
         METHOD: pip
-        PYTHON_VERSION: 3.8
+        PYTHON_VERSION: 3.9
       mpi_wheel:
         TASK: mpi
         METHOD: wheel
@@ -108,9 +109,11 @@ jobs:
       gpu_source:
         TASK: gpu
         METHOD: source
+        PYTHON_VERSION: 3.9
       gpu_pip:
         TASK: gpu
         METHOD: pip
+        PYTHON_VERSION: 3.8
       gpu_wheel:
         TASK: gpu
         METHOD: wheel
