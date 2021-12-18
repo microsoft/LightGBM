@@ -1,3 +1,7 @@
+VERBOSITY <- as.integer(
+    Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
+
 context("lgb.interpete")
 
 .sigmoid <- function(x) {
@@ -28,6 +32,7 @@ test_that("lgb.intereprete works as expected for binary classification", {
         , max_depth = -1L
         , min_data_in_leaf = 1L
         , min_sum_hessian_in_leaf = 1.0
+        , verbose = VERBOSITY
     )
     model <- lgb.train(
         params = params
@@ -79,6 +84,7 @@ test_that("lgb.intereprete works as expected for multiclass classification", {
         , num_class = 3L
         , learning_rate = 0.00001
         , min_data = 1L
+        , verbose = VERBOSITY
     )
     model <- lgb.train(
         params = params

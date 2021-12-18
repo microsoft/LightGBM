@@ -294,20 +294,23 @@ def test_stacking_regressor():
 def test_grid_search():
     X, y = load_iris(return_X_y=True)
     y = y.astype(str)  # utilize label encoder at it's max power
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
-                                                        random_state=42)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1,
-                                                      random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=42)
     params = dict(subsample=0.8,
                   subsample_freq=1)
     grid_params = dict(boosting_type=['rf', 'gbdt'],
                        n_estimators=[4, 6],
                        reg_alpha=[0.01, 0.005])
-    fit_params = dict(eval_set=[(X_val, y_val)],
-                      eval_metric=constant_metric,
-                      callbacks=[lgb.early_stopping(2)])
-    grid = GridSearchCV(estimator=lgb.LGBMClassifier(**params), param_grid=grid_params,
-                        cv=2)
+    evals_result = {}
+    fit_params = dict(
+        eval_set=[(X_val, y_val)],
+        eval_metric=constant_metric,
+        callbacks=[
+            lgb.early_stopping(2),
+            lgb.record_evaluation(evals_result)
+        ]
+    )
+    grid = GridSearchCV(estimator=lgb.LGBMClassifier(**params), param_grid=grid_params, cv=2)
     grid.fit(X_train, y_train, **fit_params)
     score = grid.score(X_test, y_test)  # utilizes GridSearchCV default refit=True
     assert grid.best_params_['boosting_type'] in ['rf', 'gbdt']
@@ -319,6 +322,7 @@ def test_grid_search():
     assert grid.best_estimator_.best_score_['valid_0']['error'] == 0
     assert score >= 0.2
     assert score <= 1.
+    assert evals_result == grid.best_estimator_.evals_result_
 
 
 def test_random_search():
@@ -784,7 +788,7 @@ def test_metrics():
 
     # no metric
     gbm = lgb.LGBMRegressor(metric='None', **params).fit(**params_fit)
-    assert gbm.evals_result_ is None
+    assert gbm.evals_result_ == {}
 
     # non-default metric in eval_metric
     gbm = lgb.LGBMRegressor(**params).fit(eval_metric='mape', **params_fit)
@@ -833,7 +837,7 @@ def test_metrics():
     # no metric
     gbm = lgb.LGBMRegressor(objective='regression_l1', metric='None',
                             **params).fit(**params_fit)
-    assert gbm.evals_result_ is None
+    assert gbm.evals_result_ == {}
 
     # non-default metric in eval_metric for non-default objective
     gbm = lgb.LGBMRegressor(objective='regression_l1',
@@ -878,7 +882,7 @@ def test_metrics():
     # no metric
     gbm = lgb.LGBMRegressor(objective=custom_dummy_obj, metric='None',
                             **params).fit(**params_fit)
-    assert gbm.evals_result_ is None
+    assert gbm.evals_result_ == {}
 
     # default regression metric with non-default metric in eval_metric for custom objective
     gbm = lgb.LGBMRegressor(objective=custom_dummy_obj,
