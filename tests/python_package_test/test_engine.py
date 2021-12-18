@@ -22,7 +22,6 @@ from .utils import load_boston, load_breast_cancer, load_digits, load_iris
 
 decreasing_generator = itertools.count(0, -1)
 
-
 def dummy_obj(preds, train_data):
     return np.ones(preds.shape), np.ones(preds.shape)
 
@@ -48,6 +47,24 @@ def decreasing_metric(preds, train_data):
 
 def categorize(continuous_x):
     return np.digitize(continuous_x, bins=np.arange(0, 1, 0.01))
+
+
+@pytest.fixture
+def artifacts_for_refit_kwargs():
+    X = np.array([1, 2, 2]).reshape((3, 1))
+    label = np.array([1, 2, 3])
+    data = lgb.basic.Dataset(X, label)
+    booster = lgb.engine.train(
+        {
+            "min_data_in_bin": 1,
+            "min_data_in_leaf": 1,
+            "learning_rate": 1,
+            "boost_from_average": False,
+        },
+        data,
+        num_boost_round=2,
+    )
+    return (X, label, booster)
 
 
 def test_binary():
@@ -1543,6 +1560,39 @@ def test_refit():
     new_gbm = gbm.refit(X_test, y_test)
     new_err_pred = log_loss(y_test, new_gbm.predict(X_test))
     assert err_pred > new_err_pred
+
+
+def test_refit_kwargs_for_predict(artifacts_for_refit_kwargs):
+    # check refit accepts kwargs_for_predict
+    X, label, booster = artifacts_for_refit_kwargs
+    kwargs_for_dataset = {
+        "weight": [1.0, 0.0, 1.0],
+        "reference": None,
+        "group": None,
+        "init_score": None,
+        "feature_name": "auto",
+        "categorical_feature": "auto",
+        "free_raw_data": True
+    }
+    booster_refit = booster.refit(
+        X, label, kwargs_for_dataset=kwargs_for_dataset
+    )
+    pred = booster_refit.predict(X)
+    assert pred.shape == (3, )
+
+
+def test_refit_kwargs_for_dataset(artifacts_for_refit_kwargs):
+    # check refit accepts kwargs_for_dataset
+    X, label, booster = artifacts_for_refit_kwargs
+    kwargs_for_predict = {
+        "num_iteration": 0,
+        "raw_score": False,
+    }
+    booster_refit = booster.refit(
+        X, label, kwargs_for_predict=kwargs_for_predict
+    )
+    pred = booster_refit.predict(X)
+    assert pred.shape == (3, )
 
 
 def test_mape_rf():
