@@ -779,11 +779,7 @@ class LGBMModel(_LGBMModelBase):
             callbacks=callbacks
         )
 
-        if evals_result:
-            self._evals_result = evals_result
-        else:  # reset after previous call to fit()
-            self._evals_result = None
-
+        self._evals_result = evals_result
         self._best_iteration = self._Booster.best_iteration
         self._best_score = self._Booster.best_score
 
@@ -910,7 +906,7 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def evals_result_(self):
-        """:obj:`dict` or :obj:`None`: The evaluation results if validation sets have been specified."""
+        """:obj:`dict`: The evaluation results if validation sets have been specified."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No results found. Need to call fit with eval_set beforehand.')
         return self._evals_result
