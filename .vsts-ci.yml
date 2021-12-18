@@ -9,7 +9,7 @@ pr:
 - master
 variables:
   AZURE: 'true'
-  PYTHON_VERSION: 3.9
+  PYTHON_VERSION: 3.10
   CONDA_ENV: test-env
 resources:
   containers:
@@ -260,6 +260,7 @@ jobs:
     matrix:
       regular:
         TASK: regular
+        PYTHON_VERSION: 3.9
       sdist:
         TASK: sdist
         PYTHON_VERSION: 3.8
