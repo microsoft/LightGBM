@@ -22,6 +22,7 @@ from .utils import load_boston, load_breast_cancer, load_digits, load_iris
 
 decreasing_generator = itertools.count(0, -1)
 
+
 def dummy_obj(preds, train_data):
     return np.ones(preds.shape), np.ones(preds.shape)
 
