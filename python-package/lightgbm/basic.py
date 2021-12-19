@@ -3519,7 +3519,8 @@ class Booster:
         kwargs_for_predict: dict, optional (default=None)
             parameters passed to ``predict`` method.
         kwargs_for_dataset: dict, optional (default=None)
-            additional parameters passed to ``Dataset`` class. The keys data, label and params should not be contained.
+            additional parameters passed to ``Dataset`` class. If the parameters ``data, label, params`` are contained, they
+            are removed.
 
         Returns
         -------
@@ -3543,6 +3544,8 @@ class Booster:
             default_value=None
         )
         new_params["linear_tree"] = bool(out_is_linear.value)
+        for arg in ['data', 'label', 'params']:
+            kwargs_for_dataset.pop(arg, None)
         train_set = Dataset(data, label, params=new_params, **kwargs_for_dataset)
         new_params['refit_decay_rate'] = decay_rate
         new_booster = Booster(new_params, train_set)
