@@ -18,7 +18,7 @@ from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking
+from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking, make_synthetic_regression
 
 sk_version = parse_version(sk_version)
 if sk_version < parse_version("0.23"):
@@ -184,7 +184,7 @@ def test_eval_at_aliases():
 
 @pytest.mark.parametrize("custom_objective", [True, False])
 def test_objective_aliases(custom_objective):
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     if custom_objective:
         obj = custom_dummy_obj
@@ -440,7 +440,7 @@ def test_regressor_chain():
 
 
 def test_clone_and_property():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     gbm = lgb.LGBMRegressor(n_estimators=10, verbose=-1)
     gbm.fit(X, y)
 
@@ -458,7 +458,7 @@ def test_clone_and_property():
 
 
 def test_joblib():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj,
                             verbose=-1, importance_type='split')
@@ -499,7 +499,7 @@ def test_non_serializable_objects_in_callbacks(tmp_path):
     with pytest.raises(Exception, match="This class in not picklable"):
         joblib.dump(unpicklable_callback, tmp_path / 'tmp.joblib')
 
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     gbm = lgb.LGBMRegressor(n_estimators=5)
     gbm.fit(X, y, callbacks=[unpicklable_callback])
     assert gbm.booster_.attr('attr_set_inside_callback') == '40'
@@ -757,7 +757,7 @@ def test_predict_with_params_from_init():
 
 
 def test_evaluate_train_set():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=10, verbose=-1)
     gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)])
@@ -1332,7 +1332,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
         X, y = load_iris(return_X_y=True)
         model_factory = lgb.LGBMClassifier
     elif task == 'regression':
-        X, y = load_boston(return_X_y=True)
+        X, y = make_synthetic_regression()
         model_factory = lgb.LGBMRegressor
     X = pd.DataFrame(X)
     y_col_array = y.reshape(-1, 1)
