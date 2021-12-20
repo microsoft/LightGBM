@@ -16,6 +16,8 @@
     - [Installing from a Pre-compiled lib_lightgbm](#lib_lightgbm)
 * [Examples](#examples)
 * [Testing](#testing)
+    - [Running the Tests](#running-the-tests)
+    - [Code Coverage](#code-coverage)
 * [Preparing a CRAN Package](#preparing-a-cran-package)
 * [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
@@ -113,7 +115,7 @@ By default, the package will be built with [Visual Studio Build Tools](https://v
 
 **MinGW (R 3.x)**
 
-If you are using R 3.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MinGW](http://mingw-w64.org/doku.php) bundled with `Rtools`.
+If you are using R 3.x and installation fails with Visual Studio, `LightGBM` will fall back to using [MinGW](https://www.mingw-w64.org/) bundled with `Rtools`.
 
 If you want to force `LightGBM` to use MinGW (for any R version), pass `--use-mingw` to the installation script.
 
@@ -152,6 +154,10 @@ Rscript build_r.R
 
 The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script. That script supports the following command-line options:
 
+- `--no-build-vignettes`: Skip building vignettes.
+- `-j[jobs]`: Number of threads to use when compiling LightGBM. E.g., `-j4` will try to compile 4 objects at a time.
+    - by default, this script uses single-thread compilation
+    - for best results, set `-j` to the number of physical CPUs
 - `--skip-install`: Build the package tarball, but do not install it.
 - `--use-gpu`: Build a GPU-enabled version of the library.
 - `--use-mingw`: Force the use of MinGW toolchain, regardless of R version.
@@ -230,6 +236,29 @@ Testing
 
 The R package's unit tests are run automatically on every commit, via integrations like [GitHub Actions](https://github.com/microsoft/LightGBM/actions). Adding new tests in `R-package/tests/testthat` is a valuable way to improve the reliability of the R package.
 
+### Running the Tests
+
+While developing the R package, run the code below to run the unit tests.
+
+```shell
+sh build-cran-package.sh \
+    --no-build-vignettes
+
+R CMD INSTALL --with-keep.source lightgbm*.tar.gz
+cd R-package/tests
+Rscript testthat.R
+```
+
+To run the tests with more verbose logs, set environment variable `LIGHTGBM_TEST_VERBOSITY` to a valid value for parameter [`verbosity`](https://lightgbm.readthedocs.io/en/latest/Parameters.html#verbosity).
+
+```shell
+export LIGHTGBM_TEST_VERBOSITY=1
+cd R-package/tests
+Rscript testthat.R
+```
+
+### Code Coverage
+
 When adding tests, you may want to use test coverage to identify untested areas and to check if the tests you've added are covering all branches of the intended code.
 
 The example below shows how to generate code coverage for the R package on a macOS or Linux setup. To adjust for your environment, refer to [the customization step described above](#custom-installation-linux-mac).
@@ -265,6 +294,11 @@ sh build-cran-package.sh
 ```
 
 This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
+
+That script supports the following command-line options:
+
+- `--no-build-vignettes`: Skip building vignettes.
+- `--r-executable=[path-to-executable]`: Use an alternative build of R.
 
 Also, CRAN package is generated with every commit to any repo's branch and can be found in "Artifacts" section of the associated Azure Pipelines run.
 
@@ -361,26 +395,51 @@ Alternatively, GitHub Actions can run code above for you. On a pull request, cre
 
 **NOTE:** Please do this only once you see that other R tests on a pull request are passing. R Hub is a free resource with limited capacity, and we want to be respectful community members.
 
-#### UBSAN
+#### <a id="UBSAN"></a>ASAN and UBSAN
 
-All packages uploaded to CRAN must pass a build using `gcc` instrumented with two sanitizers: the Address Sanitizer (ASAN) and the Undefined Behavior Sanitizer (UBSAN). For more background, see [this blog post](http://dirk.eddelbuettel.com/code/sanitizers.html).
+All packages uploaded to CRAN must pass builds using `gcc` and `clang`, instrumented with two sanitizers: the Address Sanitizer (ASAN) and the Undefined Behavior Sanitizer (UBSAN).
+
+For more background, see
+
+* [this blog post](https://dirk.eddelbuettel.com/code/sanitizers.html)
+* [top-level CRAN documentation on these checks](https://cran.r-project.org/web/checks/check_issue_kinds.html)
+* [CRAN's configuration of these checks](https://www.stats.ox.ac.uk/pub/bdr/memtests/README.txt)
 
 You can replicate these checks locally using Docker.
+For more information on the image used for testing, see https://github.com/wch/r-debug.
+
+In the code below, environment variable `R_CUSTOMIZATION` should be set to one of two values.
+
+* `"san"` = replicates CRAN's `gcc-ASAN` and `gcc-UBSAN` checks
+* `"csan"` = replicates CRAN's `clang-ASAN` and `clang-UBSAN` checks
 
 ```shell
 docker run \
-    -v $(pwd):/opt/LightGBM \
-    -w /opt/LightGBM \
-    -it rhub/rocker-gcc-san \
-    /bin/bash
+  --rm \
+  -it \
+  -v $(pwd):/opt/LightGBM \
+  -w /opt/LightGBM \
+  --env R_CUSTOMIZATION=san \
+  wch1/r-debug:latest \
+  /bin/bash
 
-Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+# install dependencies
+RDscript${R_CUSTOMIZATION} \
+  -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
 
-sh build-cran-package.sh
+# install lightgbm
+sh build-cran-package.sh --r-executable=RD${R_CUSTOMIZATION}
+RD${R_CUSTOMIZATION} \
+  CMD INSTALL lightgbm_*.tar.gz
 
-Rdevel CMD install lightgbm_*.tar.gz
+# run tests
 cd R-package/tests
-Rscriptdevel testthat.R
+rm -f ./tests.log
+RDscript${R_CUSTOMIZATION} testthat.R >> tests.log 2>&1
+
+# check that tests passed
+echo "test exit code: $?"
+tail -300 ./tests.log
 ```
 
 #### Valgrind
@@ -398,7 +457,8 @@ docker run \
 
 RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
-sh build-cran-package.sh
+sh build-cran-package.sh \
+    --r-executable=RDvalgrind
 
 RDvalgrind CMD INSTALL \
     --preclean \

@@ -30,7 +30,7 @@ For **Linux** users, **glibc** >= 2.14 is required. Also, in some rare cases, wh
 
 For **macOS** (we provide wheels for 3 newest macOS versions) users:
 
-- Starting from version 2.2.1, the library file in distribution wheels is built by the **Apple Clang** (Xcode_8.3.3 for versions 2.2.1 - 2.3.1, and Xcode_9.4.1 from version 2.3.2) compiler. This means that you don't need to install the **gcc** compiler anymore. Instead of that you need to install the **OpenMP** library, which is required for running LightGBM on the system with the **Apple Clang** compiler. You can install the **OpenMP** library by the following command: ``brew install libomp``.
+- Starting from version 2.2.1, the library file in distribution wheels is built by the **Apple Clang** (Xcode_8.3.3 for versions 2.2.1 - 2.3.1, Xcode_9.4.1 for versions 2.3.2 - 3.3.1 and Xcode_10.3 from version 4.0.0) compiler. This means that you don't need to install the **gcc** compiler anymore. Instead of that you need to install the **OpenMP** library, which is required for running LightGBM on the system with the **Apple Clang** compiler. You can install the **OpenMP** library by the following command: ``brew install libomp``.
 
 - For version smaller than 2.2.1 and not smaller than 2.1.2, **gcc-8** with **OpenMP** support must be installed first. Refer to `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__ for installation of **gcc-8** with **OpenMP** support.
 
@@ -143,7 +143,7 @@ Build with MinGW-w64 on Windows
 
     pip install lightgbm --install-option=--mingw
 
-`CMake`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
+`CMake`_ and `MinGW-w64 <https://www.mingw-w64.org/>`_ should be installed first.
 
 It is recommended to use **Visual Studio** for its better multithreading efficiency in **Windows** for many-core systems
 (see `Question 4 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#4-i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#8-cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).

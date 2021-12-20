@@ -40,7 +40,7 @@ def find_lib() -> List[str]:
     libpath = {'__file__': libpath_py}
     exec(compile(libpath_py.read_bytes(), libpath_py, 'exec'), libpath, libpath)
 
-    LIB_PATH = libpath['find_lib_path']()
+    LIB_PATH = libpath['find_lib_path']()  # type: ignore
     logger.info(f"Installing lib_lightgbm from: {LIB_PATH}")
     return LIB_PATH
 
@@ -61,10 +61,10 @@ def copy_files(integrated_opencl: bool = False, use_gpu: bool = False) -> None:
         copy_files_helper('include')
         copy_files_helper('src')
         for submodule in (CURRENT_DIR.parent / 'external_libs').iterdir():
-            submodule = submodule.stem
-            if submodule == 'compute' and not use_gpu:
+            submodule_stem = submodule.stem
+            if submodule_stem == 'compute' and not use_gpu:
                 continue
-            copy_files_helper(Path('external_libs') / submodule)
+            copy_files_helper(Path('external_libs') / submodule_stem)
         (CURRENT_DIR / "compile" / "windows").mkdir(parents=True, exist_ok=True)
         copyfile(CURRENT_DIR.parent / "windows" / "LightGBM.sln",
                  CURRENT_DIR / "compile" / "windows" / "LightGBM.sln")
@@ -165,7 +165,7 @@ def compile_cpp(
             lib_path = CURRENT_DIR / "compile" / "windows" / "x64" / "DLL" / "lib_lightgbm.dll"
             if not any((use_gpu, use_cuda, use_mpi, use_hdfs, nomp, bit32, integrated_opencl)):
                 logger.info("Starting to compile with MSBuild from existing solution file.")
-                platform_toolsets = ("v142", "v141", "v140")
+                platform_toolsets = ("v143", "v142", "v141", "v140")
                 for pt in platform_toolsets:
                     status = silent_call(["MSBuild",
                                           str(CURRENT_DIR / "compile" / "windows" / "LightGBM.sln"),
@@ -180,7 +180,12 @@ def compile_cpp(
                     logger.warning("Compilation with MSBuild from existing solution file failed.")
             if status != 0 or not lib_path.is_file():
                 arch = "Win32" if bit32 else "x64"
-                vs_versions = ("Visual Studio 16 2019", "Visual Studio 15 2017", "Visual Studio 14 2015")
+                vs_versions = (
+                    "Visual Studio 17 2022",
+                    "Visual Studio 16 2019",
+                    "Visual Studio 15 2017",
+                    "Visual Studio 14 2015"
+                )
                 for vs in vs_versions:
                     logger.info(f"Starting to compile with {vs} ({arch}).")
                     status = silent_call(cmake_cmd + ["-G", vs, "-A", arch])
@@ -218,21 +223,21 @@ class CustomInstall(install):
 
     def initialize_options(self) -> None:
         install.initialize_options(self)
-        self.mingw = 0
-        self.integrated_opencl = 0
-        self.gpu = 0
-        self.cuda = 0
+        self.mingw = False
+        self.integrated_opencl = False
+        self.gpu = False
+        self.cuda = False
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
         self.boost_librarydir = None
         self.opencl_include_dir = None
         self.opencl_library = None
-        self.mpi = 0
-        self.hdfs = 0
-        self.precompile = 0
-        self.nomp = 0
-        self.bit32 = 0
+        self.mpi = False
+        self.hdfs = False
+        self.precompile = False
+        self.nomp = False
+        self.bit32 = False
 
     def run(self) -> None:
         if (8 * struct.calcsize("P")) != 64:
@@ -261,21 +266,21 @@ class CustomBdistWheel(bdist_wheel):
 
     def initialize_options(self) -> None:
         bdist_wheel.initialize_options(self)
-        self.mingw = 0
-        self.integrated_opencl = 0
-        self.gpu = 0
-        self.cuda = 0
+        self.mingw = False
+        self.integrated_opencl = False
+        self.gpu = False
+        self.cuda = False
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
         self.boost_librarydir = None
         self.opencl_include_dir = None
         self.opencl_library = None
-        self.mpi = 0
-        self.hdfs = 0
-        self.precompile = 0
-        self.nomp = 0
-        self.bit32 = 0
+        self.mpi = False
+        self.hdfs = False
+        self.precompile = False
+        self.nomp = False
+        self.bit32 = False
 
     def finalize_options(self) -> None:
         bdist_wheel.finalize_options(self)
@@ -349,8 +354,8 @@ if __name__ == "__main__":
                   'pandas',
               ],
           },
-          maintainer='Guolin Ke',
-          maintainer_email='guolin.ke@microsoft.com',
+          maintainer='Yu Shi',
+          maintainer_email='yushi2@microsoft.com',
           zip_safe=False,
           cmdclass={
               'install': CustomInstall,
@@ -371,7 +376,6 @@ if __name__ == "__main__":
                        'Operating System :: POSIX',
                        'Operating System :: Unix',
                        'Programming Language :: Python :: 3',
-                       'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',
                        'Programming Language :: Python :: 3.8',
                        'Programming Language :: Python :: 3.9',

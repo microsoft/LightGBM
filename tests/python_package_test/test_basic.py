@@ -10,7 +10,7 @@ from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
-from lightgbm.compat import PANDAS_INSTALLED, pd_Series
+from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import load_breast_cancer
 
@@ -510,19 +510,23 @@ def test_choose_param_value():
     assert original_params == expected_params
 
 
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
-@pytest.mark.parametrize(
-    'y',
-    [
-        np.random.rand(10),
-        np.random.rand(10, 1),
-        pd_Series(np.random.rand(10)),
-        pd_Series(['a', 'b']),
-        [1] * 10,
-        [[1], [2]]
-    ])
+@pytest.mark.parametrize('collection', ['1d_np', '2d_np', 'pd_float', 'pd_str', '1d_list', '2d_list'])
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
-def test_list_to_1d_numpy(y, dtype):
+def test_list_to_1d_numpy(collection, dtype):
+    collection2y = {
+        '1d_np': np.random.rand(10),
+        '2d_np': np.random.rand(10, 1),
+        'pd_float': np.random.rand(10),
+        'pd_str': ['a', 'b'],
+        '1d_list': [1] * 10,
+        '2d_list': [[1], [2]],
+    }
+    y = collection2y[collection]
+    if collection.startswith('pd'):
+        if not PANDAS_INSTALLED:
+            pytest.skip('pandas is not installed')
+        else:
+            y = pd_Series(y)
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match='column-vector'):
             lgb.basic.list_to_1d_numpy(y)
@@ -538,3 +542,40 @@ def test_list_to_1d_numpy(y, dtype):
     result = lgb.basic.list_to_1d_numpy(y, dtype=dtype)
     assert result.size == 10
     assert result.dtype == dtype
+
+
+@pytest.mark.parametrize('init_score_type', ['array', 'dataframe', 'list'])
+def test_init_score_for_multiclass_classification(init_score_type):
+    init_score = [[i * 10 + j for j in range(3)] for i in range(10)]
+    if init_score_type == 'array':
+        init_score = np.array(init_score)
+    elif init_score_type == 'dataframe':
+        if not PANDAS_INSTALLED:
+            pytest.skip('Pandas is not installed.')
+        init_score = pd_DataFrame(init_score)
+    data = np.random.rand(10, 2)
+    ds = lgb.Dataset(data, init_score=init_score).construct()
+    np.testing.assert_equal(ds.get_field('init_score'), init_score)
+    np.testing.assert_equal(ds.init_score, init_score)
+
+
+def test_smoke_custom_parser(tmp_path):
+    data_path = Path(__file__).absolute().parents[2] / 'examples' / 'binary_classification' / 'binary.train'
+    parser_config_file = tmp_path / 'parser.ini'
+    with open(parser_config_file, 'w') as fout:
+        fout.write('{"className": "dummy", "id": "1"}')
+
+    data = lgb.Dataset(data_path, params={"parser_config_file": parser_config_file})
+    with pytest.raises(lgb.basic.LightGBMError,
+                       match="Cannot find parser class 'dummy', please register first or check config format"):
+        data.construct()
+
+
+def test_param_aliases():
+    aliases = lgb.basic._ConfigAliases.aliases
+    assert isinstance(aliases, dict)
+    assert len(aliases) > 100
+    assert all(isinstance(i, set) for i in aliases.values())
+    assert all(len(i) >= 1 for i in aliases.values())
+    assert all(k in v for k, v in aliases.items())
+    assert lgb.basic._ConfigAliases.get('config', 'task') == {'config', 'config_file', 'task', 'task_type'}

@@ -20,8 +20,8 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.1.0
-    export R_LINUX_VERSION="4.1.0-1.2004.0"
+    export R_MAC_VERSION=4.1.1
+    export R_LINUX_VERSION="4.1.1-1.2004.0"
     export R_APT_REPO="focal-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
@@ -92,13 +92,13 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
 fi
 
-# Manually install Depends and Imports libraries + 'testthat'
+# Manually install Depends and Imports libraries + 'knitr', 'rmarkdown', 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 # NOTE: testthat is not required when running rchk
 if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'Matrix', 'R6')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'rmarkdown')"
 else
-    packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'rmarkdown', 'testthat')"
 fi
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
@@ -112,7 +112,7 @@ cd ${BUILD_DIRECTORY}
 PKG_TARBALL="lightgbm_*.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
-    Rscript build_r.R --skip-install || exit -1
+    Rscript build_r.R -j4 --skip-install || exit -1
 elif [[ $R_BUILD_TYPE == "cran" ]]; then
 
     # on Linux, we recreate configure in CI to test if
@@ -200,17 +200,59 @@ if grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME"; then
     exit -1
 fi
 
-# this check makes sure that CI builds of the CRAN package on Mac
-# actually use OpenMP
+# this check makes sure that CI builds of the package actually use OpenMP
 if [[ $OS_NAME == "macos" ]] && [[ $R_BUILD_TYPE == "cran" ]]; then
     omp_working=$(
         cat $BUILD_LOG_FILE \
         | grep --count -E "checking whether OpenMP will work .*yes"
     )
-    if [[ $omp_working -ne 1 ]]; then
-        echo "OpenMP was not found, and should be when testing the CRAN package on macOS"
-        exit -1
-    fi
+elif [[ $R_BUILD_TYPE == "cmake" ]]; then
+    omp_working=$(
+        cat $BUILD_LOG_FILE \
+        | grep --count -E ".*Found OpenMP: TRUE.*"
+    )
+else
+    omp_working=1
+fi
+if [[ $omp_working -ne 1 ]]; then
+    echo "OpenMP was not found"
+    exit -1
+fi
+
+# this check makes sure that CI builds of the package
+# actually use MM_PREFETCH preprocessor definition
+if [[ $R_BUILD_TYPE == "cran" ]]; then
+    mm_prefetch_working=$(
+        cat $BUILD_LOG_FILE \
+        | grep --count -E "checking whether MM_PREFETCH work.*yes"
+    )
+else
+    mm_prefetch_working=$(
+        cat $BUILD_LOG_FILE \
+        | grep --count -E ".*Performing Test MM_PREFETCH - Success"
+    )
+fi
+if [[ $mm_prefetch_working -ne 1 ]]; then
+    echo "MM_PREFETCH test was not passed"
+    exit -1
+fi
+
+# this check makes sure that CI builds of the package
+# actually use MM_MALLOC preprocessor definition
+if [[ $R_BUILD_TYPE == "cran" ]]; then
+    mm_malloc_working=$(
+        cat $BUILD_LOG_FILE \
+        | grep --count -E "checking whether MM_MALLOC work.*yes"
+    )
+else
+    mm_malloc_working=$(
+        cat $BUILD_LOG_FILE \
+        | grep --count -E ".*Performing Test MM_MALLOC - Success"
+    )
+fi
+if [[ $mm_malloc_working -ne 1 ]]; then
+    echo "MM_MALLOC test was not passed"
+    exit -1
 fi
 
 # this check makes sure that no "warning: unknown pragma ignored" logs

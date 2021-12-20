@@ -7,7 +7,9 @@ import random
 import socket
 from itertools import groupby
 from os import getenv
+from platform import machine
 from sys import platform
+from urllib.parse import urlparse
 
 import pytest
 
@@ -15,6 +17,8 @@ import lightgbm as lgb
 
 if not platform.startswith('linux'):
     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
+if machine() != 'x86_64':
+    pytest.skip('lightgbm.dask tests are currently skipped on some architectures like arm64', allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
     pytest.skip('Dask is not installed', allow_module_level=True)
 
@@ -82,6 +86,11 @@ def listen_port():
 
 
 listen_port.port = 13000
+
+
+def _get_workers_hostname(cluster: LocalCluster) -> str:
+    one_worker_address = next(iter(cluster.scheduler_info['workers']))
+    return urlparse(one_worker_address).hostname
 
 
 def _create_ranking_data(n_samples=100, output='array', chunk_size=50, **kwargs):
@@ -220,7 +229,7 @@ def _accuracy_score(dy_true, dy_pred):
     return da.average(dy_true == dy_pred).compute()
 
 
-def _constant_metric(dy_true, dy_pred):
+def _constant_metric(y_true, y_pred):
     metric_name = 'constant_metric'
     value = 0.708
     is_higher_better = False
@@ -460,6 +469,19 @@ def test_group_workers_by_host():
     assert host_to_workers == expected
 
 
+def test_group_workers_by_host_unparseable_host_names():
+    workers_without_protocol = ['0.0.0.1:80', '0.0.0.2:80']
+    with pytest.raises(ValueError, match="Could not parse host name from worker address '0.0.0.1:80'"):
+        lgb.dask._group_workers_by_host(workers_without_protocol)
+
+
+def test_machines_to_worker_map_unparseable_host_names():
+    workers = {'0.0.0.1:80': {}, '0.0.0.2:80': {}}
+    machines = "0.0.0.1:80,0.0.0.2:80"
+    with pytest.raises(ValueError, match="Could not parse host name from worker address '0.0.0.1:80'"):
+        lgb.dask._machines_to_worker_map(machines=machines, worker_addresses=workers.keys())
+
+
 def test_assign_open_ports_to_workers(cluster):
     with Client(cluster) as client:
         workers = client.scheduler_info()['workers'].keys()
@@ -482,8 +504,9 @@ def test_training_does_not_fail_on_port_conflicts(cluster):
         _, _, _, _, dX, dy, dw, _ = _create_data('binary-classification', output='array')
 
         lightgbm_default_port = 12400
+        workers_hostname = _get_workers_hostname(cluster)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('127.0.0.1', lightgbm_default_port))
+            s.bind((workers_hostname, lightgbm_default_port))
             dask_classifier = lgb.DaskLGBMClassifier(
                 client=client,
                 time_out=5,
@@ -890,8 +913,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
             'eval_names': eval_names,
             'eval_sample_weight': eval_sample_weight,
             'eval_init_score': eval_init_score,
-            'eval_metric': eval_metrics,
-            'verbose': True
+            'eval_metric': eval_metrics
         }
         if task == 'ranking':
             fit_params.update(
@@ -916,7 +938,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
 
             # check that early stopping was not applied.
             assert dask_model.booster_.num_trees() == model_trees
-            assert dask_model.best_iteration_ is None
+            assert dask_model.best_iteration_ == 0
 
             # checks that evals_result_ and best_score_ contain expected data and eval_set names.
             evals_result = dask_model.evals_result_
@@ -1392,13 +1414,14 @@ def test_network_params_not_required_but_respected_if_given(task, listen_port, c
         assert 'machines' not in params
 
         # model 2 - machines given
+        workers_hostname = _get_workers_hostname(cluster)
         n_workers = len(client.scheduler_info()['workers'])
         open_ports = lgb.dask._find_n_open_ports(n_workers)
         dask_model2 = dask_model_factory(
             n_estimators=5,
             num_leaves=5,
             machines=",".join([
-                f"127.0.0.1:{port}"
+                f"{workers_hostname}:{port}"
                 for port in open_ports
             ]),
         )
@@ -1439,12 +1462,13 @@ def test_machines_should_be_used_if_provided(task, cluster):
 
         n_workers = len(client.scheduler_info()['workers'])
         assert n_workers > 1
+        workers_hostname = _get_workers_hostname(cluster)
         open_ports = lgb.dask._find_n_open_ports(n_workers)
         dask_model = dask_model_factory(
             n_estimators=5,
             num_leaves=5,
             machines=",".join([
-                f"127.0.0.1:{port}"
+                f"{workers_hostname}:{port}"
                 for port in open_ports
             ]),
         )
@@ -1454,7 +1478,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
         error_msg = f"Binding port {open_ports[0]} failed"
         with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('127.0.0.1', open_ports[0]))
+                s.bind((workers_hostname, open_ports[0]))
                 dask_model.fit(dX, dy, group=dg)
 
         # The above error leaves a worker waiting
@@ -1570,17 +1594,14 @@ def test_init_score(task, output, cluster):
             'time_out': 5
         }
         init_score = random.random()
-        # init_scores must be a 1D array, even for multiclass classification
-        # where you need to provide 1 score per class for each row in X
-        # https://github.com/microsoft/LightGBM/issues/4046
         size_factor = 1
         if task == 'multiclass-classification':
             size_factor = 3  # number of classes
 
         if output.startswith('dataframe'):
-            init_scores = dy.map_partitions(lambda x: pd.Series([init_score] * x.size * size_factor))
+            init_scores = dy.map_partitions(lambda x: pd.DataFrame([[init_score] * size_factor] * x.size))
         else:
-            init_scores = dy.map_blocks(lambda x: np.repeat(init_score, x.size * size_factor))
+            init_scores = dy.map_blocks(lambda x: np.full((x.size, size_factor), init_score))
         model = model_factory(client=client, **params)
         model.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
         # value of the root node is 0 when init_score is set

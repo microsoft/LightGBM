@@ -20,7 +20,7 @@ lgb.train(
   early_stopping_rounds = NULL,
   callbacks = list(),
   reset_data = FALSE,
-  ...
+  serializable = TRUE
 )
 }
 \arguments{
@@ -99,19 +99,8 @@ set to the iteration number of the best iteration.}
 booster model into a predictor model which frees up memory and the
 original datasets}
 
-\item{...}{other parameters, see \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
-the "Parameters" section of the documentation} for more information. A few key parameters:
-\itemize{
-    \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
-    \item{\code{num_leaves}: Maximum number of leaves in one tree.}
-    \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
-                     overfitting. Tree still grow by leaf-wise.}
-    \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-                 the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
-                 not the number of threads (most CPU using hyper-threading to generate 2 threads
-                 per CPU core).}
-}
-NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
+\item{serializable}{whether to make the resulting objects serializable through functions such as
+\code{save} or \code{saveRDS} (see section "Model serialization").}
 }
 \value{
 a trained booster model \code{lgb.Booster}.
@@ -144,15 +133,18 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-params <- list(objective = "regression", metric = "l2")
+params <- list(
+  objective = "regression"
+  , metric = "l2"
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 valids <- list(test = dtest)
 model <- lgb.train(
   params = params
   , data = dtrain
   , nrounds = 5L
   , valids = valids
-  , min_data = 1L
-  , learning_rate = 1.0
   , early_stopping_rounds = 3L
 )
 }

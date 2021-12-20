@@ -1,3 +1,7 @@
+VERBOSITY <- as.integer(
+    Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
+
 context("lgb.plot.interpretation")
 
 .sigmoid <- function(x) {
@@ -11,10 +15,10 @@ test_that("lgb.plot.interepretation works as expected for binary classification"
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)
-    setinfo(
+    set_field(
         dataset = dtrain
-        , "init_score"
-        , rep(
+        , field_name = "init_score"
+        , data = rep(
             .logit(mean(train$label))
             , length(train$label)
         )
@@ -28,6 +32,7 @@ test_that("lgb.plot.interepretation works as expected for binary classification"
         , max_depth = -1L
         , min_data_in_leaf = 1L
         , min_sum_hessian_in_leaf = 1.0
+        , verbosity = VERBOSITY
     )
     model <- lgb.train(
         params = params
@@ -76,12 +81,13 @@ test_that("lgb.plot.interepretation works as expected for multiclass classificat
         , metric = "multi_logloss"
         , num_class = 3L
         , learning_rate = 0.00001
+        , min_data = 1L
     )
     model <- lgb.train(
         params = params
         , data = dtrain
         , nrounds = 3L
-        , min_data = 1L
+        , verbose = VERBOSITY
     )
     num_trees <- 5L
     tree_interpretation <- lgb.interprete(

@@ -12,6 +12,14 @@ test <- agaricus.test
 class(train$label)
 class(train$data)
 
+# Set parameters for model training
+train_params <- list(
+    num_leaves = 4L
+    , learning_rate = 1.0
+    , objective = "binary"
+    , nthread = 2L
+)
+
 #--------------------Basic Training using lightgbm----------------
 # This is the basic usage of lightgbm you can put matrix in data field
 # Note: we are putting in sparse matrix here, lightgbm naturally handles sparse input
@@ -19,22 +27,18 @@ class(train$data)
 print("Training lightgbm with sparseMatrix")
 bst <- lightgbm(
     data = train$data
+    , params = train_params
     , label = train$label
-    , num_leaves = 4L
-    , learning_rate = 1.0
     , nrounds = 2L
-    , objective = "binary"
 )
 
 # Alternatively, you can put in dense matrix, i.e. basic R-matrix
 print("Training lightgbm with Matrix")
 bst <- lightgbm(
     data = as.matrix(train$data)
+    , params = train_params
     , label = train$label
-    , num_leaves = 4L
-    , learning_rate = 1.0
     , nrounds = 2L
-    , objective = "binary"
 )
 
 # You can also put in lgb.Dataset object, which stores label, data and other meta datas needed for advanced features
@@ -45,42 +49,32 @@ dtrain <- lgb.Dataset(
 )
 bst <- lightgbm(
     data = dtrain
-    , num_leaves = 4L
-    , learning_rate = 1.0
+    , params = train_params
     , nrounds = 2L
-    , objective = "binary"
 )
 
 # Verbose = 0,1,2
 print("Train lightgbm with verbose 0, no message")
 bst <- lightgbm(
     data = dtrain
-    , num_leaves = 4L
-    , learning_rate = 1.0
+    , params = train_params
     , nrounds = 2L
-    , objective = "binary"
     , verbose = 0L
 )
 
 print("Train lightgbm with verbose 1, print evaluation metric")
 bst <- lightgbm(
     data = dtrain
-    , num_leaves = 4L
-    , learning_rate = 1.0
+    , params = train_params
     , nrounds = 2L
-    , nthread = 2L
-    , objective = "binary"
     , verbose = 1L
 )
 
 print("Train lightgbm with verbose 2, also print information about tree")
 bst <- lightgbm(
     data = dtrain
-    , num_leaves = 4L
-    , learning_rate = 1.0
+    , params = train_params
     , nrounds = 2L
-    , nthread = 2L
-    , objective = "binary"
     , verbose = 2L
 )
 
@@ -126,25 +120,19 @@ valids <- list(train = dtrain, test = dtest)
 print("Train lightgbm using lgb.train with valids")
 bst <- lgb.train(
     data = dtrain
-    , num_leaves = 4L
-    , learning_rate = 1.0
+    , params = train_params
     , nrounds = 2L
     , valids = valids
-    , nthread = 2L
-    , objective = "binary"
 )
 
 # We can change evaluation metrics, or use multiple evaluation metrics
 print("Train lightgbm using lgb.train with valids, watch logloss and error")
 bst <- lgb.train(
     data = dtrain
-    , num_leaves = 4L
-    , learning_rate = 1.0
+    , params = train_params
     , nrounds = 2L
     , valids = valids
     , eval = c("binary_error", "binary_logloss")
-    , nthread = 2L
-    , objective = "binary"
 )
 
 # lgb.Dataset can also be saved using lgb.Dataset.save
@@ -154,16 +142,13 @@ lgb.Dataset.save(dtrain, "dtrain.buffer")
 dtrain2 <- lgb.Dataset("dtrain.buffer")
 bst <- lgb.train(
     data = dtrain2
-    , num_leaves = 4L
-    , learning_rate = 1.0
+    , params = train_params
     , nrounds = 2L
     , valids = valids
-    , nthread = 2L
-    , objective = "binary"
 )
 
-# information can be extracted from lgb.Dataset using getinfo
-label <- getinfo(dtest, "label")
+# information can be extracted from lgb.Dataset using get_field()
+label <- get_field(dtest, "label")
 pred <- predict(bst, test$data)
 err <- as.numeric(sum(as.integer(pred > 0.5) != label)) / length(label)
 print(paste("test-error=", err))

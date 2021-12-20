@@ -78,7 +78,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw64\bin"
   $env:RTOOLS_EXE_FILE = "rtools40v2-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.1.0"
+  $env:R_WINDOWS_VERSION = "4.1.1"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -90,6 +90,7 @@ $env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/b
 $env:CRAN_MIRROR = "https://cloud.r-project.org/"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
+$env:MIKTEX_EXCEPTION_PATH = "$env:TEMP\miktex"
 
 # don't fail builds for long-running examples unless they're very long.
 # See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
@@ -121,7 +122,7 @@ Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+$packages = "c('data.table', 'jsonlite', 'knitr', 'Matrix', 'processx', 'R6', 'rmarkdown', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 
 # MiKTeX and pandoc can be skipped on non-MinGW builds, since we don't
@@ -152,10 +153,10 @@ if ($env:COMPILER -ne "MSVC") {
   if ($env:R_BUILD_TYPE -eq "cmake") {
     if ($env:TOOLCHAIN -eq "MINGW") {
       Write-Output "Telling R to use MinGW"
-      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-mingw')"
+      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-mingw', '-j4')"
     } elseif ($env:TOOLCHAIN -eq "MSYS") {
       Write-Output "Telling R to use MSYS"
-      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-msys2')"
+      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-msys2', '-j4')"
     } elseif ($env:TOOLCHAIN -eq "MSVC") {
       $env:BUILD_R_FLAGS = "'--skip-install'"
     } else {
@@ -164,7 +165,15 @@ if ($env:COMPILER -ne "MSVC") {
     }
     Run-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
+    # NOTE: gzip and tar are needed to create a CRAN package on Windows, but
+    # some flavors of tar.exe can fail in some settings on Windows.
+    # Putting the msys64 utilities at the beginning of PATH temporarily to be
+    # sure they're used for that purpose.
+    if ($env:R_MAJOR_VERSION -eq "3") {
+      $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
+    }
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
+    Remove-From-Path ".*msys64.*"
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths
@@ -228,6 +237,45 @@ if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Trying to build with.*$env:TOOLCHAIN"
   if ($checks.Matches.length -eq 0) {
     Write-Output "The wrong toolchain was used. Check the build logs."
+    Check-Output $False
+  }
+}
+
+# Checking that MM_PREFETCH preprocessor definition is actually used in CI builds.
+if ($env:R_BUILD_TYPE -eq "cran") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "checking whether MM_PREFETCH work.*yes"
+  $checks_cnt = $checks.Matches.length
+} elseif ($env:TOOLCHAIN -ne "MSVC") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern ".*Performing Test MM_PREFETCH - Success"
+  $checks_cnt = $checks.Matches.length
+} else {
+  $checks_cnt = 1
+}
+if ($checks_cnt -eq 0) {
+  Write-Output "MM_PREFETCH preprocessor definition wasn't used. Check the build logs."
+  Check-Output $False
+}
+
+# Checking that MM_MALLOC preprocessor definition is actually used in CI builds.
+if ($env:R_BUILD_TYPE -eq "cran") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "checking whether MM_MALLOC work.*yes"
+  $checks_cnt = $checks.Matches.length
+} elseif ($env:TOOLCHAIN -ne "MSVC") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern ".*Performing Test MM_MALLOC - Success"
+  $checks_cnt = $checks.Matches.length
+} else {
+  $checks_cnt = 1
+}
+if ($checks_cnt -eq 0) {
+  Write-Output "MM_MALLOC preprocessor definition wasn't used. Check the build logs."
+  Check-Output $False
+}
+
+# Checking that OpenMP is actually used in CMake builds.
+if ($env:R_BUILD_TYPE -eq "cmake") {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern ".*Found OpenMP: TRUE.*"
+  if ($checks.Matches.length -eq 0) {
+    Write-Output "OpenMP wasn't found. Check the build logs."
     Check-Output $False
   }
 }

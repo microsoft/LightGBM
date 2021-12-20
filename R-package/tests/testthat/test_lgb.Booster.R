@@ -1,12 +1,17 @@
 context("Booster")
 
+ON_WINDOWS <- .Platform$OS.type == "windows"
+TOLERANCE <- 1e-6
+
 test_that("Booster$finalize() should not fail", {
     X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
     y <- iris[["Sepal.Length"]]
     dtrain <- lgb.Dataset(X, label = y)
     bst <- lgb.train(
         data = dtrain
-        , objective = "regression"
+        , params = list(
+            objective = "regression"
+        )
         , verbose = -1L
         , nrounds = 3L
     )
@@ -58,6 +63,8 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
         params = list(
             objective = "regression"
             , metric = "l2"
+            , min_data = 1L
+            , learning_rate = 1.0
         )
         , data = dtrain
         , nrounds = 5L
@@ -68,8 +75,6 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
                 , label = agaricus.test$label
             )
         )
-        , min_data = 1L
-        , learning_rate = 1.0
     )
     expect_error({
         eval_results <- lgb.get.eval.result(
@@ -91,6 +96,8 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
         params = list(
             objective = "regression"
             , metric = "l2"
+            , min_data = 1L
+            , learning_rate = 1.0
         )
         , data = dtrain
         , nrounds = 5L
@@ -101,8 +108,6 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
                 , label = agaricus.test$label
             )
         )
-        , min_data = 1L
-        , learning_rate = 1.0
     )
     expect_error({
         eval_results <- lgb.get.eval.result(
@@ -124,10 +129,12 @@ test_that("lgb.load() gives the expected error messages given different incorrec
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , num_leaves = 4L
-        , learning_rate = 1.0
+        , params = list(
+            objective = "binary"
+            , num_leaves = 4L
+            , learning_rate = 1.0
+        )
         , nrounds = 2L
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
     )
 
@@ -155,7 +162,7 @@ test_that("lgb.load() gives the expected error messages given different incorrec
     # if given, model_str should be a string
     expect_error({
         lgb.load(model_str = c(4.0, 5.0, 6.0))
-    }, regexp = "model_str should be character")
+    }, regexp = "lgb.load: model_str should be a character/raw vector")
 
 })
 
@@ -168,10 +175,12 @@ test_that("Loading a Booster from a text file works", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , num_leaves = 4L
-        , learning_rate = 1.0
+        , params = list(
+            num_leaves = 4L
+            , learning_rate = 1.0
+            , objective = "binary"
+        )
         , nrounds = 2L
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
@@ -241,10 +250,12 @@ test_that("Loading a Booster from a string works", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , num_leaves = 4L
-        , learning_rate = 1.0
+        , params = list(
+            num_leaves = 4L
+            , learning_rate = 1.0
+            , objective = "binary"
+        )
         , nrounds = 2L
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
@@ -271,10 +282,12 @@ test_that("Saving a large model to string should work", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , num_leaves = 100L
-        , learning_rate = 0.01
+        , params = list(
+            num_leaves = 100L
+            , learning_rate = 0.01
+            , objective = "binary"
+        )
         , nrounds = 500L
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
         , verbose = -1L
     )
@@ -313,10 +326,12 @@ test_that("Saving a large model to JSON should work", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , num_leaves = 100L
-        , learning_rate = 0.01
+        , params = list(
+            num_leaves = 100L
+            , learning_rate = 0.01
+            , objective = "binary"
+        )
         , nrounds = 200L
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
         , verbose = -1L
     )
@@ -341,10 +356,12 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , num_leaves = 4L
-        , learning_rate = 1.0
+        , params = list(
+            num_leaves = 4L
+            , learning_rate = 1.0
+            , objective = "binary"
+        )
         , nrounds = 2L
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
@@ -395,10 +412,12 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
     bst <- lightgbm(
         data = as.matrix(agaricus.train$data)
         , label = agaricus.train$label
-        , num_leaves = 4L
-        , learning_rate = 1.0
+        , params = list(
+            num_leaves = 4L
+            , learning_rate = 1.0
+            , objective = "binary"
+        )
         , nrounds = nrounds
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
     )
     data(agaricus.test, package = "lightgbm")
@@ -413,10 +432,63 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
     expect_true(lgb.is.Booster(bst))
     expect_equal(bst$current_iter(), nrounds)
     expect_equal(bst$eval_train()[[1L]][["value"]], 0.1115352)
+    expect_true(lgb.is.Booster(bst_from_ds))
     expect_equal(bst_from_ds$current_iter(), nrounds)
+    expect_equal(bst_from_ds$eval_train()[[1L]][["value"]], 5.65704892)
     dumped_model <- jsonlite::fromJSON(bst$dump_model())
-    expect_identical(bst_from_ds$eval_train(), list())
-    expect_equal(bst_from_ds$current_iter(), nrounds)
+})
+
+test_that("Booster$eval() should work on a Dataset stored in a binary file", {
+    set.seed(708L)
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    dtrain <- lgb.Dataset(train$data, label = train$label)
+
+    bst <- lgb.train(
+        params = list(
+            objective = "regression"
+            , metric = "l2"
+            , num_leaves = 4L
+        )
+        , data = dtrain
+        , nrounds = 2L
+    )
+
+    data(agaricus.test, package = "lightgbm")
+    test <- agaricus.test
+    dtest <- lgb.Dataset.create.valid(
+        dataset = dtrain
+        , data = test$data
+        , label = test$label
+    )
+    dtest$construct()
+
+    eval_in_mem <- bst$eval(
+        data = dtest
+        , name = "test"
+    )
+
+    test_file <- tempfile(pattern = "lgb.Dataset_")
+    lgb.Dataset.save(
+        dataset = dtest
+        , fname = test_file
+    )
+    rm(dtest)
+
+    eval_from_file <- bst$eval(
+        data = lgb.Dataset(
+            data = test_file
+        )$construct()
+        , name = "test"
+    )
+
+    expect_true(abs(eval_in_mem[[1L]][["value"]] - 0.1744423) < TOLERANCE)
+    # refer to https://github.com/microsoft/LightGBM/issues/4680
+    if (isTRUE(ON_WINDOWS)) {
+      expect_equal(eval_in_mem, eval_from_file)
+    } else {
+      expect_identical(eval_in_mem, eval_from_file)
+    }
 })
 
 test_that("Booster$rollback_one_iter() should work as expected", {
@@ -429,10 +501,12 @@ test_that("Booster$rollback_one_iter() should work as expected", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , num_leaves = 4L
-        , learning_rate = 1.0
+        , params = list(
+            num_leaves = 4L
+            , learning_rate = 1.0
+            , objective = "binary"
+        )
         , nrounds = nrounds
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
     )
     expect_equal(bst$current_iter(), nrounds)
@@ -461,10 +535,12 @@ test_that("Booster$update() passing a train_set works as expected", {
     bst <- lightgbm(
         data = as.matrix(agaricus.train$data)
         , label = agaricus.train$label
-        , num_leaves = 4L
-        , learning_rate = 1.0
+        , params = list(
+            num_leaves = 4L
+            , learning_rate = 1.0
+            , objective = "binary"
+        )
         , nrounds = nrounds
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
@@ -482,10 +558,12 @@ test_that("Booster$update() passing a train_set works as expected", {
     bst2 <- lightgbm(
         data = as.matrix(agaricus.train$data)
         , label = agaricus.train$label
-        , num_leaves = 4L
-        , learning_rate = 1.0
+        , params = list(
+            num_leaves = 4L
+            , learning_rate = 1.0
+            , objective = "binary"
+        )
         , nrounds = nrounds +  1L
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst2))
@@ -505,10 +583,12 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
     bst <- lightgbm(
         data = as.matrix(agaricus.train$data)
         , label = agaricus.train$label
-        , num_leaves = 4L
-        , learning_rate = 1.0
+        , params = list(
+            num_leaves = 4L
+            , learning_rate = 1.0
+            , objective = "binary"
+        )
         , nrounds = nrounds
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
     )
     expect_error({
@@ -596,10 +676,12 @@ test_that("Saving a model with different feature importance types works", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , num_leaves = 4L
-        , learning_rate = 1.0
+        , params = list(
+            num_leaves = 4L
+            , learning_rate = 1.0
+            , objective = "binary"
+        )
         , nrounds = 2L
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
@@ -643,17 +725,18 @@ test_that("Saving a model with different feature importance types works", {
 })
 
 test_that("Saving a model with unknown importance type fails", {
-    testthat::skip("Skipping this test because it causes issues for valgrind")
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , num_leaves = 4L
-        , learning_rate = 1.0
+        , params = list(
+            num_leaves = 4L
+            , learning_rate = 1.0
+            , objective = "binary"
+        )
         , nrounds = 2L
-        , objective = "binary"
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
@@ -770,6 +853,94 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
 
 })
 
+test_that("Booster: method calls Booster with a null handle should raise an informative error and not segfault", {
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    dtrain <- lgb.Dataset(train$data, label = train$label)
+    bst <- lgb.train(
+        params = list(
+            objective = "regression"
+            , metric = "l2"
+            , num_leaves = 8L
+        )
+        , data = dtrain
+        , verbose = -1L
+        , nrounds = 5L
+        , valids = list(
+            train = dtrain
+        )
+        , serializable = FALSE
+    )
+    tmp_file <- tempfile(fileext = ".rds")
+    saveRDS(bst, tmp_file)
+    rm(bst)
+    bst <- readRDS(tmp_file)
+    .expect_booster_error <- function(object) {
+        error_regexp <- "Attempting to use a Booster which no longer exists"
+        expect_error(object, regexp = error_regexp)
+    }
+    .expect_booster_error({
+        bst$current_iter()
+    })
+    .expect_booster_error({
+        bst$dump_model()
+    })
+    .expect_booster_error({
+        bst$eval(data = dtrain, name = "valid")
+    })
+    .expect_booster_error({
+        bst$eval_train()
+    })
+    .expect_booster_error({
+        bst$lower_bound()
+    })
+    .expect_booster_error({
+        bst$predict(data = train$data[seq_len(5L), ])
+    })
+    .expect_booster_error({
+        bst$reset_parameter(params = list(learning_rate = 0.123))
+    })
+    .expect_booster_error({
+        bst$rollback_one_iter()
+    })
+    .expect_booster_error({
+        bst$save_raw()
+    })
+    .expect_booster_error({
+        bst$save_model(filename = tempfile(fileext = ".model"))
+    })
+    .expect_booster_error({
+        bst$save_model_to_string()
+    })
+    .expect_booster_error({
+        bst$update()
+    })
+    .expect_booster_error({
+        bst$upper_bound()
+    })
+    predictor <- bst$to_predictor()
+    .expect_booster_error({
+        predictor$current_iter()
+    })
+    .expect_booster_error({
+        predictor$predict(data = train$data[seq_len(5L), ])
+    })
+})
+
+test_that("Booster$new() using a Dataset with a null handle should raise an informative error and not segfault", {
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    dtrain <- lgb.Dataset(train$data, label = train$label)
+    dtrain$construct()
+    tmp_file <- tempfile(fileext = ".bin")
+    saveRDS(dtrain, tmp_file)
+    rm(dtrain)
+    dtrain <- readRDS(tmp_file)
+    expect_error({
+        bst <- Booster$new(train_set = dtrain)
+    }, regexp = "lgb.Booster: cannot create Booster handle")
+})
+
 # this is almost identical to the test above it, but for lgb.cv(). A lot of code
 # is duplicated between lgb.train() and lgb.cv(), and this will catch cases where
 # one is updated and the other isn't
@@ -849,9 +1020,9 @@ test_that("params (including dataset params) should be stored in .rds file for B
         , train_set = dtrain
     )
     bst_file <- tempfile(fileext = ".rds")
-    saveRDS.lgb.Booster(bst, file = bst_file)
+    expect_warning(saveRDS.lgb.Booster(bst, file = bst_file))
 
-    bst_from_file <- readRDS.lgb.Booster(file = bst_file)
+    expect_warning(bst_from_file <- readRDS.lgb.Booster(file = bst_file))
     expect_identical(
         bst_from_file$params
         , list(
@@ -861,6 +1032,91 @@ test_that("params (including dataset params) should be stored in .rds file for B
             , max_bin = 17L
         )
     )
+})
+
+context("saveRDS and readRDS work on Booster")
+
+test_that("params (including dataset params) should be stored in .rds file for Booster", {
+    data(agaricus.train, package = "lightgbm")
+    dtrain <- lgb.Dataset(
+        agaricus.train$data
+        , label = agaricus.train$label
+        , params = list(
+            max_bin = 17L
+        )
+    )
+    params <- list(
+        objective = "binary"
+        , max_depth = 4L
+        , bagging_fraction = 0.8
+    )
+    bst <- Booster$new(
+        params = params
+        , train_set = dtrain
+    )
+    bst_file <- tempfile(fileext = ".rds")
+    saveRDS(bst, file = bst_file)
+
+    bst_from_file <- readRDS(file = bst_file)
+    expect_identical(
+        bst_from_file$params
+        , list(
+            objective = "binary"
+            , max_depth = 4L
+            , bagging_fraction = 0.8
+            , max_bin = 17L
+        )
+    )
+})
+
+test_that("Handle is automatically restored when calling predict", {
+    data(agaricus.train, package = "lightgbm")
+    bst <- lightgbm(agaricus.train$data, agaricus.train$label, nrounds = 5L, obj = "binary")
+    bst_file <- tempfile(fileext = ".rds")
+    saveRDS(bst, file = bst_file)
+
+    bst_from_file <- readRDS(file = bst_file)
+
+    pred_before <- predict(bst, agaricus.train$data)
+    pred_after <- predict(bst_from_file, agaricus.train$data)
+    expect_equal(pred_before, pred_after)
+})
+
+test_that("boosters with linear models at leaves work with saveRDS.lgb.Booster and readRDS.lgb.Booster", {
+    X <- matrix(rnorm(100L), ncol = 1L)
+    labels <- 2L * X + runif(nrow(X), 0L, 0.1)
+    dtrain <- lgb.Dataset(
+        data = X
+        , label = labels
+    )
+
+    params <- list(
+        objective = "regression"
+        , verbose = -1L
+        , metric = "mse"
+        , seed = 0L
+        , num_leaves = 2L
+    )
+
+    bst <- lgb.train(
+        data = dtrain
+        , nrounds = 10L
+        , params = params
+    )
+    expect_true(lgb.is.Booster(bst))
+
+    # save predictions, then write the model to a file and destroy it in R
+    preds <- predict(bst, X)
+    model_file <- tempfile(fileext = ".rds")
+    expect_warning(saveRDS.lgb.Booster(bst, file = model_file))
+    bst$finalize()
+    expect_null(bst$.__enclos_env__$private$handle)
+    rm(bst)
+
+    # load the booster and make predictions...should be the same
+    expect_warning({bst2 <- readRDS.lgb.Booster(file = model_file)})
+    preds2 <- predict(bst2, X)
+    expect_identical(preds, preds2)
 })
 
 test_that("boosters with linear models at leaves can be written to RDS and re-loaded successfully", {
@@ -889,13 +1145,126 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
     # save predictions, then write the model to a file and destroy it in R
     preds <- predict(bst, X)
     model_file <- tempfile(fileext = ".rds")
-    saveRDS.lgb.Booster(bst, file = model_file)
+    saveRDS(bst, file = model_file)
     bst$finalize()
     expect_null(bst$.__enclos_env__$private$handle)
     rm(bst)
 
     # load the booster and make predictions...should be the same
-    bst2 <- readRDS.lgb.Booster(file = model_file)
+    bst2 <- readRDS(file = model_file)
     preds2 <- predict(bst2, X)
     expect_identical(preds, preds2)
+})
+
+test_that("Booster's print, show, and summary work correctly", {
+    .have_same_handle <- function(model, other_model) {
+       expect_equal(
+         model$.__enclos_env__$private$handle
+         , other_model$.__enclos_env__$private$handle
+       )
+    }
+
+    .check_methods_work <- function(model) {
+
+        # should work for fitted models
+        ret <- print(model)
+        .have_same_handle(ret, model)
+        ret <- show(model)
+        expect_null(ret)
+        ret <- summary(model)
+        .have_same_handle(ret, model)
+
+        # should not fail for finalized models
+        model$finalize()
+        ret <- print(model)
+        .have_same_handle(ret, model)
+        ret <- show(model)
+        expect_null(ret)
+        ret <- summary(model)
+        .have_same_handle(ret, model)
+    }
+
+    data("mtcars")
+    model <- lgb.train(
+        params = list(objective = "regression")
+        , data = lgb.Dataset(
+            as.matrix(mtcars[, -1L])
+            , label = mtcars$mpg)
+        , verbose = 0L
+        , nrounds = 5L
+    )
+    .check_methods_work(model)
+
+    data("iris")
+    model <- lgb.train(
+        params = list(objective = "multiclass", num_class = 3L)
+        , data = lgb.Dataset(
+            as.matrix(iris[, -5L])
+            , label = as.numeric(factor(iris$Species)) - 1.0
+        )
+        , verbose = 0L
+        , nrounds = 5L
+    )
+    .check_methods_work(model)
+
+
+    # with custom objective
+    .logregobj <- function(preds, dtrain) {
+        labels <- get_field(dtrain, "label")
+        preds <- 1.0 / (1.0 + exp(-preds))
+        grad <- preds - labels
+        hess <- preds * (1.0 - preds)
+        return(list(grad = grad, hess = hess))
+    }
+
+    .evalerror <- function(preds, dtrain) {
+        labels <- get_field(dtrain, "label")
+        preds <- 1.0 / (1.0 + exp(-preds))
+        err <- as.numeric(sum(labels != (preds > 0.5))) / length(labels)
+        return(list(
+            name = "error"
+            , value = err
+            , higher_better = FALSE
+        ))
+    }
+
+    model <- lgb.train(
+        data = lgb.Dataset(
+            as.matrix(iris[, -5L])
+            , label = as.numeric(iris$Species == "virginica")
+        )
+        , obj = .logregobj
+        , eval = .evalerror
+        , verbose = 0L
+        , nrounds = 5L
+    )
+
+    .check_methods_work(model)
+})
+
+test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
+    data("mtcars")
+    model <- lgb.train(
+        params = list(objective = "regression")
+        , data = lgb.Dataset(
+            as.matrix(mtcars[, -1L])
+            , label = mtcars$mpg)
+        , verbose = 0L
+        , nrounds = 5L
+    )
+    ncols <- .Call(LGBM_BoosterGetNumFeature_R, model$.__enclos_env__$private$handle)
+    expect_equal(ncols, ncol(mtcars) - 1L)
+
+    data("iris")
+    model <- lgb.train(
+        params = list(objective = "multiclass", num_class = 3L)
+        , data = lgb.Dataset(
+            as.matrix(iris[, -5L])
+            , label = as.numeric(factor(iris$Species)) - 1.0
+        )
+        , verbose = 0L
+        , nrounds = 5L
+    )
+    ncols <- .Call(LGBM_BoosterGetNumFeature_R, model$.__enclos_env__$private$handle)
+    expect_equal(ncols, ncol(iris) - 1L)
 })

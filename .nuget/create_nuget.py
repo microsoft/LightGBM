@@ -28,7 +28,7 @@ if __name__ == "__main__":
         <version>{version}</version>
         <authors>Guolin Ke</authors>
         <owners>Guolin Ke</owners>
-        <licenseUrl>https://github.com/microsoft/LightGBM/blob/master/LICENSE</licenseUrl>
+        <license type="expression">MIT</license>
         <projectUrl>https://github.com/microsoft/LightGBM</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A fast, distributed, high performance gradient boosting framework</description>

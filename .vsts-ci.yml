@@ -19,7 +19,7 @@ resources:
     image: 'ubuntu:latest'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
   - container: rbase
-    image: rocker/r-base
+    image: wch1/r-debug
 jobs:
 ###########################################
 - job: Linux
@@ -87,7 +87,6 @@ jobs:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: 3.6
       sdist:
         TASK: sdist
       bdist:
@@ -112,7 +111,6 @@ jobs:
       gpu_pip:
         TASK: gpu
         METHOD: pip
-        PYTHON_VERSION: 3.6
       gpu_wheel:
         TASK: gpu
         METHOD: wheel
@@ -190,12 +188,17 @@ jobs:
       $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
       $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
       EOF
+      IMAGE_URI="quay.io/pypa/manylinux2014_${ARCH}"
+      docker pull "${IMAGE_URI}" || exit -1
+      PLATFORM=$(docker inspect --format='{{.Os}}/{{.Architecture}}' "${IMAGE_URI}") || exit -1
+      echo "detected image platform: ${PLATFORM}"
       docker run \
+        --platform "${PLATFORM}" \
         --rm \
         --env-file docker.env \
         -v "$(Build.SourcesDirectory)":"$ROOT_DOCKER_FOLDER" \
         -v "$(Build.ArtifactStagingDirectory)":"$(Build.ArtifactStagingDirectory)" \
-        "quay.io/pypa/manylinux2014_$ARCH" \
+        "${IMAGE_URI}" \
         /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
     displayName: 'Setup and run tests'
   - task: PublishBuildArtifacts@1
@@ -212,7 +215,7 @@ jobs:
     OS_NAME: 'macos'
     PRODUCES_ARTIFACTS: 'true'
   pool:
-    vmImage: 'macOS-10.14'
+    vmImage: 'macOS-10.15'
   strategy:
     matrix:
       regular:
@@ -257,7 +260,6 @@ jobs:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: 3.6
       sdist:
         TASK: sdist
         PYTHON_VERSION: 3.8
@@ -295,7 +297,11 @@ jobs:
   steps:
   - script: |
       LGB_VER=$(head -n 1 VERSION.txt | sed "s/rc/-/g")
-      sh build-cran-package.sh || exit -1
+      R_LIB_PATH=~/Rlib
+      export R_LIBS=${R_LIB_PATH}
+      mkdir -p ${R_LIB_PATH}
+      RDscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown'),  lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
+      sh build-cran-package.sh --r-executable=RD || exit -1
       mv lightgbm_${LGB_VER}.tar.gz $(Build.ArtifactStagingDirectory)/lightgbm-${LGB_VER}-r-cran.tar.gz
     displayName: 'Build CRAN R-package'
   - task: PublishBuildArtifacts@1

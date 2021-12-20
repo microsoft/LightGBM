@@ -11,18 +11,18 @@
 
 # other catch-alls that will get matched if specific rules below are not matched
 *.R    @Laurae2 @jameslamb
-*.py    @StrikerRUS @chivee @wxchan @henry0312 @shiyu1994
-*.cpp    @guolinke @chivee @btrotta @shiyu1994
-*.h    @guolinke @chivee @btrotta @shiyu1994
+*.py    @StrikerRUS @chivee @wxchan @henry0312 @shiyu1994 @hzy46 @tongwu-msft
+*.cpp    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
+*.h    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
 
 # main C++ code
-include/    @guolinke @chivee @btrotta @shiyu1994
-src/    @guolinke @chivee @btrotta @shiyu1994
-CMakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12 @btrotta @shiyu1994
-tests/c_api_test/    @guolinke @chivee @btrotta @shiyu1994
-tests/cpp_tests/    @guolinke @chivee @btrotta @shiyu1994
-tests/data/    @guolinke @chivee @btrotta @shiyu1994
-windows/    @guolinke @chivee @btrotta @StrikerRUS @shiyu1994
+include/    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
+src/    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
+CMakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12 @btrotta @shiyu1994 @hzy46 @tongwu-msft
+tests/c_api_test/    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
+tests/cpp_tests/    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
+tests/data/    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
+windows/    @guolinke @chivee @btrotta @StrikerRUS @shiyu1994 @hzy46 @tongwu-msft
 
 # R code
 build_r.R    @jameslamb @StrikerRUS
@@ -30,11 +30,11 @@ build-cran-package.sh    @jameslamb @StrikerRUS
 R-package/    @Laurae2 @jameslamb
 
 # Python code
-python-package/    @StrikerRUS @chivee @wxchan @henry0312 @shiyu1994 @jameslamb
+python-package/    @StrikerRUS @chivee @wxchan @henry0312 @shiyu1994 @jameslamb @hzy46 @tongwu-msft
 
 # Dask integration
-python-package/lightgbm/dask.py    @jameslamb
-tests/python_package_test/test_dask.py    @jameslamb
+python-package/lightgbm/dask.py    @jameslamb @jmoralez
+tests/python_package_test/test_dask.py    @jameslamb @jmoralez
 
 # helpers
 helpers/    @StrikerRUS @guolinke

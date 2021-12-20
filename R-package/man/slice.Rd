@@ -5,14 +5,12 @@
 \alias{slice.lgb.Dataset}
 \title{Slice a dataset}
 \usage{
-slice(dataset, ...)
+slice(dataset, idxset)
 
-\method{slice}{lgb.Dataset}(dataset, idxset, ...)
+\method{slice}{lgb.Dataset}(dataset, idxset)
 }
 \arguments{
 \item{dataset}{Object of class \code{lgb.Dataset}}
-
-\item{...}{other parameters (currently not used)}
 
 \item{idxset}{an integer vector of indices of rows needed}
 }
@@ -31,6 +29,6 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 
 dsub <- lightgbm::slice(dtrain, seq_len(42L))
 lgb.Dataset.construct(dsub)
-labels <- lightgbm::getinfo(dsub, "label")
+labels <- lightgbm::get_field(dsub, "label")
 }
 }

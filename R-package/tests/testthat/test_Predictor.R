@@ -1,3 +1,7 @@
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
+
 context("Predictor")
 
 test_that("Predictor$finalize() should not fail", {
@@ -6,8 +10,10 @@ test_that("Predictor$finalize() should not fail", {
     dtrain <- lgb.Dataset(X, label = y)
     bst <- lgb.train(
         data = dtrain
-        , objective = "regression"
-        , verbose = -1L
+        , params = list(
+            objective = "regression"
+        )
+        , verbose = VERBOSITY
         , nrounds = 3L
     )
     model_file <- tempfile(fileext = ".model")
@@ -32,8 +38,10 @@ test_that("predictions do not fail for integer input", {
     dtrain <- lgb.Dataset(X, label = y)
     fit <- lgb.train(
         data = dtrain
-        , objective = "regression"
-        , verbose = -1L
+        , params = list(
+            objective = "regression"
+        )
+        , verbose = VERBOSITY
         , nrounds = 3L
     )
     X_double <- X[c(1L, 51L, 101L), , drop = FALSE]
@@ -62,10 +70,13 @@ test_that("start_iteration works correctly", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , num_leaves = 4L
-        , learning_rate = 0.6
+        , params = list(
+            num_leaves = 4L
+            , learning_rate = 0.6
+            , objective = "binary"
+            , verbosity = VERBOSITY
+        )
         , nrounds = 50L
-        , objective = "binary"
         , valids = list("test" = dtest)
         , early_stopping_rounds = 2L
     )

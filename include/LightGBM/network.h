@@ -100,9 +100,9 @@ class Network {
   /*! \brief Free this static class */
   static void Dispose();
   /*! \brief Get rank of this machine */
-  static inline int rank();
+  static int rank();
   /*! \brief Get total number of machines */
-  static inline int num_machines();
+  static int num_machines();
 
   /*!
   * \brief Perform all_reduce. if data size is small,
@@ -311,14 +311,6 @@ class Network {
   static THREAD_LOCAL ReduceScatterFunction reduce_scatter_ext_fun_;
   static THREAD_LOCAL AllgatherFunction allgather_ext_fun_;
 };
-
-inline int Network::rank() {
-  return rank_;
-}
-
-inline int Network::num_machines() {
-  return num_machines_;
-}
 
 }  // namespace LightGBM
 

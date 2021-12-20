@@ -1,6 +1,7 @@
 # coding: utf-8
 import copy
 import itertools
+import json
 import math
 import pickle
 import platform
@@ -17,7 +18,7 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 
 import lightgbm as lgb
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris
+from .utils import load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -64,7 +65,6 @@ def test_binary():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=20,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     ret = log_loss(y_test, gbm.predict(X_test))
     assert ret < 0.14
@@ -91,7 +91,6 @@ def test_rf():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=50,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     ret = log_loss(y_test, gbm.predict(X_test))
     assert ret < 0.19
@@ -111,7 +110,6 @@ def test_regression():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=50,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     assert ret < 7
@@ -137,7 +135,6 @@ def test_missing_value_handle():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=20,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     ret = mean_squared_error(y_train, gbm.predict(X_train))
     assert ret < 0.005
@@ -163,7 +160,6 @@ def test_missing_value_handle_more_na():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=20,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     ret = mean_squared_error(y_train, gbm.predict(X_train))
     assert ret < 0.005
@@ -194,7 +190,6 @@ def test_missing_value_handle_na():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=1,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     pred = gbm.predict(X_train)
     np.testing.assert_allclose(pred, y)
@@ -227,7 +222,6 @@ def test_missing_value_handle_zero():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=1,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     pred = gbm.predict(X_train)
     np.testing.assert_allclose(pred, y)
@@ -260,7 +254,6 @@ def test_missing_value_handle_none():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=1,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     pred = gbm.predict(X_train)
     assert pred[0] == pytest.approx(pred[1])
@@ -299,7 +292,6 @@ def test_categorical_handle():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=1,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     pred = gbm.predict(X_train)
     np.testing.assert_allclose(pred, y)
@@ -337,7 +329,6 @@ def test_categorical_handle_na():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=1,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     pred = gbm.predict(X_train)
     np.testing.assert_allclose(pred, y)
@@ -375,7 +366,6 @@ def test_categorical_non_zero_inputs():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=1,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     pred = gbm.predict(X_train)
     np.testing.assert_allclose(pred, y)
@@ -399,7 +389,6 @@ def test_multiclass():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=50,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     ret = multi_logloss(y_test, gbm.predict(X_test))
     assert ret < 0.16
@@ -428,7 +417,6 @@ def test_multiclass_rf():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=50,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     ret = multi_logloss(y_test, gbm.predict(X_test))
     assert ret < 0.23
@@ -469,7 +457,7 @@ def test_multi_class_error():
     predict_default = est.predict(X)
     results = {}
     est = lgb.train(dict(params, multi_error_top_k=1), lgb_data, num_boost_round=10,
-                    valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
+                    valid_sets=[lgb_data], evals_result=results)
     predict_1 = est.predict(X)
     # check that default gives same result as k = 1
     np.testing.assert_allclose(predict_1, predict_default)
@@ -479,14 +467,14 @@ def test_multi_class_error():
     # check against independent calculation for k = 2
     results = {}
     est = lgb.train(dict(params, multi_error_top_k=2), lgb_data, num_boost_round=10,
-                    valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
+                    valid_sets=[lgb_data], evals_result=results)
     predict_2 = est.predict(X)
     err = top_k_error(y, predict_2, 2)
     assert results['training']['multi_error@2'][-1] == pytest.approx(err)
     # check against independent calculation for k = 10
     results = {}
     est = lgb.train(dict(params, multi_error_top_k=10), lgb_data, num_boost_round=10,
-                    valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
+                    valid_sets=[lgb_data], evals_result=results)
     predict_3 = est.predict(X)
     err = top_k_error(y, predict_3, 10)
     assert results['training']['multi_error@10'][-1] == pytest.approx(err)
@@ -497,11 +485,11 @@ def test_multi_class_error():
     params['num_classes'] = 2
     results = {}
     lgb.train(params, lgb_data, num_boost_round=10,
-              valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
+              valid_sets=[lgb_data], evals_result=results)
     assert results['training']['multi_error'][-1] == pytest.approx(1)
     results = {}
     lgb.train(dict(params, multi_error_top_k=2), lgb_data, num_boost_round=10,
-              valid_sets=[lgb_data], evals_result=results, verbose_eval=False)
+              valid_sets=[lgb_data], evals_result=results)
     assert results['training']['multi_error@2'][-1] == pytest.approx(0)
 
 
@@ -625,7 +613,6 @@ def test_early_stopping():
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     valid_names=valid_set_name,
-                    verbose_eval=False,
                     early_stopping_rounds=5)
     assert gbm.best_iteration == 10
     assert valid_set_name in gbm.best_score
@@ -635,11 +622,85 @@ def test_early_stopping():
                     num_boost_round=40,
                     valid_sets=lgb_eval,
                     valid_names=valid_set_name,
-                    verbose_eval=False,
                     early_stopping_rounds=5)
     assert gbm.best_iteration <= 39
     assert valid_set_name in gbm.best_score
     assert 'binary_logloss' in gbm.best_score[valid_set_name]
+
+
+@pytest.mark.parametrize('first_only', [True, False])
+@pytest.mark.parametrize('single_metric', [True, False])
+@pytest.mark.parametrize('greater_is_better', [True, False])
+def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
+    if single_metric and not first_only:
+        pytest.skip("first_metric_only doesn't affect single metric.")
+    metric2min_delta = {
+        'auc': 0.001,
+        'binary_logloss': 0.01,
+        'average_precision': 0.001,
+        'mape': 0.01,
+    }
+    if single_metric:
+        if greater_is_better:
+            metric = 'auc'
+        else:
+            metric = 'binary_logloss'
+    else:
+        if first_only:
+            if greater_is_better:
+                metric = ['auc', 'binary_logloss']
+            else:
+                metric = ['binary_logloss', 'auc']
+        else:
+            if greater_is_better:
+                metric = ['auc', 'average_precision']
+            else:
+                metric = ['binary_logloss', 'mape']
+
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
+    train_ds = lgb.Dataset(X_train, y_train)
+    valid_ds = lgb.Dataset(X_valid, y_valid, reference=train_ds)
+
+    params = {'objective': 'binary', 'metric': metric, 'verbose': -1}
+    if isinstance(metric, str):
+        min_delta = metric2min_delta[metric]
+    elif first_only:
+        min_delta = metric2min_delta[metric[0]]
+    else:
+        min_delta = [metric2min_delta[m] for m in metric]
+    train_kwargs = dict(
+        params=params,
+        train_set=train_ds,
+        num_boost_round=50,
+        valid_sets=[train_ds, valid_ds],
+        valid_names=['training', 'valid'],
+    )
+
+    # regular early stopping
+    train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0)]
+    evals_result = {}
+    bst = lgb.train(evals_result=evals_result, **train_kwargs)
+    scores = np.vstack(list(evals_result['valid'].values())).T
+
+    # positive min_delta
+    train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0, min_delta=min_delta)]
+    delta_result = {}
+    delta_bst = lgb.train(evals_result=delta_result, **train_kwargs)
+    delta_scores = np.vstack(list(delta_result['valid'].values())).T
+
+    if first_only:
+        scores = scores[:, 0]
+        delta_scores = delta_scores[:, 0]
+
+    assert delta_bst.num_trees() < bst.num_trees()
+    np.testing.assert_allclose(scores[:len(delta_scores)], delta_scores)
+    last_score = delta_scores[-1]
+    best_score = delta_scores[delta_bst.num_trees() - 1]
+    if greater_is_better:
+        assert np.less_equal(last_score, best_score + min_delta).any()
+    else:
+        assert np.greater_equal(last_score, best_score - min_delta).any()
 
 
 def test_continue_train():
@@ -659,7 +720,6 @@ def test_continue_train():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=30,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     # test custom eval metrics
                     feval=(lambda p, d: ('custom_mae', mean_absolute_error(p, d.get_label()), False)),
                     evals_result=evals_result,
@@ -671,7 +731,7 @@ def test_continue_train():
 
 
 def test_continue_train_reused_dataset():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     params = {
         'objective': 'regression',
         'verbose': -1
@@ -700,7 +760,6 @@ def test_continue_train_dart():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=50,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result,
                     init_model=init_gbm)
     ret = mean_absolute_error(y_test, gbm.predict(X_test))
@@ -724,7 +783,6 @@ def test_continue_train_multiclass():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=30,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result,
                     init_model=init_gbm)
     ret = multi_logloss(y_test, gbm.predict(X_test))
@@ -733,27 +791,26 @@ def test_continue_train_multiclass():
 
 
 def test_cv():
-    X_train, y_train = load_boston(return_X_y=True)
+    X_train, y_train = make_synthetic_regression()
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
     # shuffle = False, override metric in params
     params_with_metric = {'metric': 'l2', 'verbose': -1}
     cv_res = lgb.cv(params_with_metric, lgb_train, num_boost_round=10,
-                    nfold=3, stratified=False, shuffle=False,
-                    metrics='l1', verbose_eval=False)
+                    nfold=3, stratified=False, shuffle=False, metrics='l1')
     assert 'l1-mean' in cv_res
     assert 'l2-mean' not in cv_res
     assert len(cv_res['l1-mean']) == 10
     # shuffle = True, callbacks
-    cv_res = lgb.cv(params, lgb_train, num_boost_round=10, nfold=3, stratified=False, shuffle=True,
-                    metrics='l1', verbose_eval=False,
+    cv_res = lgb.cv(params, lgb_train, num_boost_round=10, nfold=3,
+                    stratified=False, shuffle=True, metrics='l1',
                     callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
     assert 'l1-mean' in cv_res
     assert len(cv_res['l1-mean']) == 10
     # enable display training loss
     cv_res = lgb.cv(params_with_metric, lgb_train, num_boost_round=10,
                     nfold=3, stratified=False, shuffle=False,
-                    metrics='l1', verbose_eval=False, eval_train_metric=True)
+                    metrics='l1', eval_train_metric=True)
     assert 'train l1-mean' in cv_res
     assert 'valid l1-mean' in cv_res
     assert 'train l2-mean' not in cv_res
@@ -763,10 +820,8 @@ def test_cv():
     # self defined folds
     tss = TimeSeriesSplit(3)
     folds = tss.split(X_train)
-    cv_res_gen = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=folds,
-                        verbose_eval=False)
-    cv_res_obj = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=tss,
-                        verbose_eval=False)
+    cv_res_gen = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=folds)
+    cv_res_obj = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=tss)
     np.testing.assert_allclose(cv_res_gen['l2-mean'], cv_res_obj['l2-mean'])
     # LambdaRank
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
@@ -775,19 +830,16 @@ def test_cv():
     params_lambdarank = {'objective': 'lambdarank', 'verbose': -1, 'eval_at': 3}
     lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
     # ... with l2 metric
-    cv_res_lambda = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3,
-                           metrics='l2', verbose_eval=False)
+    cv_res_lambda = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3, metrics='l2')
     assert len(cv_res_lambda) == 2
     assert not np.isnan(cv_res_lambda['l2-mean']).any()
     # ... with NDCG (default) metric
-    cv_res_lambda = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3,
-                           verbose_eval=False)
+    cv_res_lambda = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3)
     assert len(cv_res_lambda) == 2
     assert not np.isnan(cv_res_lambda['ndcg@3-mean']).any()
     # self defined folds with lambdarank
     cv_res_lambda_obj = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10,
-                               folds=GroupKFold(n_splits=3),
-                               verbose_eval=False)
+                               folds=GroupKFold(n_splits=3))
     np.testing.assert_allclose(cv_res_lambda['ndcg@3-mean'], cv_res_lambda_obj['ndcg@3-mean'])
 
 
@@ -804,7 +856,6 @@ def test_cvbooster():
     cv_res = lgb.cv(params, lgb_train,
                     num_boost_round=25,
                     early_stopping_rounds=5,
-                    verbose_eval=False,
                     nfold=3,
                     return_cvbooster=True)
     assert 'cvbooster' in cv_res
@@ -825,7 +876,6 @@ def test_cvbooster():
     # without early stopping
     cv_res = lgb.cv(params, lgb_train,
                     num_boost_round=20,
-                    verbose_eval=False,
                     nfold=3,
                     return_cvbooster=True)
     cvb = cv_res['cvbooster']
@@ -837,7 +887,7 @@ def test_cvbooster():
 
 
 def test_feature_name():
-    X_train, y_train = load_boston(return_X_y=True)
+    X_train, y_train = make_synthetic_regression()
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
     feature_names = [f'f_{i}' for i in range(X_train.shape[-1])]
@@ -867,7 +917,7 @@ def test_feature_name_with_non_ascii():
 
 def test_save_load_copy_pickle():
     def train_and_predict(init_model=None, return_model=False):
-        X, y = load_boston(return_X_y=True)
+        X, y = make_synthetic_regression()
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'regression',
@@ -947,7 +997,7 @@ def test_pandas_categorical():
     gbm4 = lgb.Booster(model_file='categorical.model')
     pred4 = gbm4.predict(X_test)
     model_str = gbm4.model_to_string()
-    gbm4.model_from_string(model_str, False)
+    gbm4.model_from_string(model_str)
     pred5 = gbm4.predict(X_test)
     gbm5 = lgb.Booster(model_str=model_str)
     pred6 = gbm5.predict(X_test)
@@ -1023,7 +1073,7 @@ def test_reference_chain():
     evals_result = {}
     lgb.train(params, tmp_dat_train, num_boost_round=20,
               valid_sets=[tmp_dat_train, tmp_dat_val],
-              verbose_eval=False, evals_result=evals_result)
+              evals_result=evals_result)
     assert len(evals_result['training']['rmse']) == 20
     assert len(evals_result['valid_1']['rmse']) == 20
 
@@ -1610,8 +1660,8 @@ def test_fpreproc():
 def test_metrics():
     X, y = load_digits(n_class=2, return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    lgb_train = lgb.Dataset(X_train, y_train, silent=True)
-    lgb_valid = lgb.Dataset(X_test, y_test, reference=lgb_train, silent=True)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_valid = lgb.Dataset(X_test, y_test, reference=lgb_train)
 
     evals_result = {}
     params_verbose = {'verbose': -1}
@@ -1630,14 +1680,14 @@ def test_metrics():
     params_metric_none_verbose = {'metric': 'None', 'verbose': -1}
 
     def get_cv_result(params=params_obj_verbose, **kwargs):
-        return lgb.cv(params, lgb_train, num_boost_round=2, verbose_eval=False, **kwargs)
+        return lgb.cv(params, lgb_train, num_boost_round=2, **kwargs)
 
     def train_booster(params=params_obj_verbose, **kwargs):
         lgb.train(params, lgb_train,
                   num_boost_round=2,
                   valid_sets=[lgb_valid],
                   evals_result=evals_result,
-                  verbose_eval=False, **kwargs)
+                  **kwargs)
 
     # no fobj, no feval
     # default metric
@@ -1915,7 +1965,7 @@ def test_metrics():
     assert 'error' in evals_result['valid_0']
 
     X, y = load_digits(n_class=3, return_X_y=True)
-    lgb_train = lgb.Dataset(X, y, silent=True)
+    lgb_train = lgb.Dataset(X, y)
 
     obj_multi_aliases = ['multiclass', 'softmax', 'multiclassova', 'multiclass_ova', 'ova', 'ovr']
     for obj_multi_alias in obj_multi_aliases:
@@ -1989,8 +2039,8 @@ def test_multiple_feval_train():
 
     X_train, X_validation, y_train, y_validation = train_test_split(X, y, test_size=0.2)
 
-    train_dataset = lgb.Dataset(data=X_train, label=y_train, silent=True)
-    validation_dataset = lgb.Dataset(data=X_validation, label=y_validation, reference=train_dataset, silent=True)
+    train_dataset = lgb.Dataset(data=X_train, label=y_train)
+    validation_dataset = lgb.Dataset(data=X_validation, label=y_validation, reference=train_dataset)
     evals_result = {}
     lgb.train(
         params=params,
@@ -2011,7 +2061,7 @@ def test_multiple_feval_cv():
 
     params = {'verbose': -1, 'objective': 'binary', 'metric': 'binary_logloss'}
 
-    train_dataset = lgb.Dataset(data=X, label=y, silent=True)
+    train_dataset = lgb.Dataset(data=X, label=y)
 
     cv_results = lgb.cv(
         params=params,
@@ -2029,9 +2079,30 @@ def test_multiple_feval_cv():
     assert 'decreasing_metric-stdv' in cv_results
 
 
+def test_default_objective_and_metric():
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    train_dataset = lgb.Dataset(data=X_train, label=y_train)
+    validation_dataset = lgb.Dataset(data=X_test, label=y_test, reference=train_dataset)
+    evals_result = {}
+    params = {'verbose': -1}
+    lgb.train(
+        params=params,
+        train_set=train_dataset,
+        valid_sets=validation_dataset,
+        num_boost_round=5,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
+
+    assert 'valid_0' in evals_result
+    assert len(evals_result['valid_0']) == 1
+    assert 'l2' in evals_result['valid_0']
+    assert len(evals_result['valid_0']['l2']) == 5
+
+
 @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason='not enough RAM')
 def test_model_size():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     data = lgb.Dataset(X, y)
     bst = lgb.train({'verbose': -1}, data, num_boost_round=2)
     y_pred = bst.predict(X)
@@ -2049,7 +2120,7 @@ def test_model_size():
         num_end_spaces = 2**31 - one_tree_size * total_trees
         new_model_str = f"{before_tree_sizes}\n\n{trees}{more_trees}{after_trees}{'':{num_end_spaces}}"
         assert len(new_model_str) > 2**31
-        bst.model_from_string(new_model_str, verbose=False)
+        bst.model_from_string(new_model_str)
         assert bst.num_trees() == total_trees
         y_pred_new = bst.predict(X, num_iteration=2)
         np.testing.assert_allclose(y_pred, y_pred_new)
@@ -2151,7 +2222,7 @@ def test_early_stopping_for_only_first_metric():
         }
         gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train,
                         num_boost_round=25, valid_sets=valid_sets, feval=feval,
-                        early_stopping_rounds=5, verbose_eval=False)
+                        early_stopping_rounds=5)
         assert assumed_iteration == gbm.best_iteration
 
     def metrics_combination_cv_regression(metric_list, assumed_iteration,
@@ -2168,7 +2239,7 @@ def test_early_stopping_for_only_first_metric():
         ret = lgb.cv(dict(params, first_metric_only=first_metric_only),
                      train_set=lgb_train, num_boost_round=25,
                      stratified=False, feval=feval,
-                     early_stopping_rounds=5, verbose_eval=False,
+                     early_stopping_rounds=5,
                      eval_train_metric=eval_train_metric)
         assert assumed_iteration == len(ret[list(ret.keys())[0]])
 
@@ -2266,7 +2337,6 @@ def test_node_level_subcol():
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=25,
                     valid_sets=lgb_eval,
-                    verbose_eval=False,
                     evals_result=evals_result)
     ret = log_loss(y_test, gbm.predict(X_test))
     assert ret < 0.14
@@ -2445,7 +2515,7 @@ def test_dataset_params_with_reference():
 
 def test_extra_trees():
     # check extra trees increases regularization
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     lgb_x = lgb.Dataset(X, label=y)
     params = {'objective': 'regression',
               'num_leaves': 32,
@@ -2464,7 +2534,7 @@ def test_extra_trees():
 
 def test_path_smoothing():
     # check path smoothing increases regularization
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     lgb_x = lgb.Dataset(X, label=y)
     params = {'objective': 'regression',
               'num_leaves': 32,
@@ -2734,7 +2804,7 @@ def test_predict_with_start_iteration():
         np.testing.assert_allclose(pred4, pred6)
 
     # test for regression
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     params = {
         'objective': 'regression',
         'verbose': -1,
@@ -2846,3 +2916,60 @@ def test_dump_model():
     assert "leaf_const" in dumped_model_str
     assert "leaf_value" in dumped_model_str
     assert "leaf_count" in dumped_model_str
+
+
+def test_dump_model_hook():
+
+    def hook(obj):
+        if 'leaf_value' in obj:
+            obj['LV'] = obj['leaf_value']
+            del obj['leaf_value']
+        return obj
+
+    X, y = load_breast_cancer(return_X_y=True)
+    train_data = lgb.Dataset(X, label=y)
+    params = {
+        "objective": "binary",
+        "verbose": -1
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model_str = str(bst.dump_model(5, 0, object_hook=hook))
+    assert "leaf_value" not in dumped_model_str
+    assert "LV" in dumped_model_str
+
+
+def test_force_split_with_feature_fraction(tmp_path):
+    X, y = load_boston(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+
+    forced_split = {
+        "feature": 0,
+        "threshold": 0.5,
+        "right": {
+            "feature": 2,
+            "threshold": 10.0
+        }
+    }
+
+    tmp_split_file = tmp_path / "forced_split.json"
+    with open(tmp_split_file, "w") as f:
+        f.write(json.dumps(forced_split))
+
+    params = {
+        "objective": "regression",
+        "feature_fraction": 0.6,
+        "force_col_wise": True,
+        "feature_fraction_seed": 1,
+        "forcedsplits_filename": tmp_split_file
+    }
+
+    gbm = lgb.train(params, lgb_train)
+    ret = mean_absolute_error(y_test, gbm.predict(X_test))
+    assert ret < 2.0
+
+    tree_info = gbm.dump_model()["tree_info"]
+    assert len(tree_info) > 1
+    for tree in tree_info:
+        tree_structure = tree["tree_structure"]
+        assert tree_structure['split_feature'] == 0

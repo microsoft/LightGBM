@@ -26,10 +26,13 @@ You may also ping a member of the core team according to the relevant area of ex
 -  `@btrotta <https://github.com/btrotta>`__ **Belinda Trotta** (C++ code)
 -  `@Laurae2 <https://github.com/Laurae2>`__ **Damien Soukhavong** (R-package)
 -  `@jameslamb <https://github.com/jameslamb>`__ **James Lamb** (R-package / Dask-package)
+-  `@jmoralez <https://github.com/jmoralez>`__ **José Morales** (Dask-package)
 -  `@wxchan <https://github.com/wxchan>`__ **Wenxuan Chen** (Python-package)
 -  `@henry0312 <https://github.com/henry0312>`__ **Tsukasa Omoto** (Python-package)
 -  `@StrikerRUS <https://github.com/StrikerRUS>`__ **Nikita Titov** (Python-package)
 -  `@huanzhang12 <https://github.com/huanzhang12>`__ **Huan Zhang** (GPU support)
+-  `@tongwu-msft <https://github.com/tongwu-msft>`__ **Tong Wu** (C++ code / Python-package)
+-  `@hzy46 <https://github.com/hzy46>`__ **Zhiyuan He** (C++ code / Python-package)
 
 Please include as much of the following information as possible when submitting a critical issue:
 
@@ -227,8 +230,11 @@ This is a known issue: `Microsoft/LightGBM#698 <https://github.com/microsoft/Lig
 2. I used ``setinfo()``, tried to print my ``lgb.Dataset``, and now the R console froze!
 ----------------------------------------------------------------------------------------
 
-Avoid printing the ``lgb.Dataset`` after using ``setinfo``.
-This is a known bug: `Microsoft/LightGBM#539 <https://github.com/microsoft/LightGBM/issues/539>`__.
+As of at least LightGBM v3.3.0, this issue has been resolved and printing a ``Dataset`` object does not cause the console to freeze.
+
+In older versions, avoid printing the ``Dataset`` after calling ``setinfo()``.
+
+As of LightGBM v4.0.0, ``setinfo()`` has been replaced by a new method, ``set_field()``.
 
 3. ``error in data.table::data.table()...argument 2 is NULL``
 -------------------------------------------------------------

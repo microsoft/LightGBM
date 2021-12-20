@@ -9,7 +9,7 @@ lgb.load(filename = NULL, model_str = NULL)
 \arguments{
 \item{filename}{path of model file}
 
-\item{model_str}{a str containing the model}
+\item{model_str}{a str containing the model (as a `character` or `raw` vector)}
 }
 \value{
 lgb.Booster
@@ -26,15 +26,18 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-params <- list(objective = "regression", metric = "l2")
+params <- list(
+  objective = "regression"
+  , metric = "l2"
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 valids <- list(test = dtest)
 model <- lgb.train(
   params = params
   , data = dtrain
   , nrounds = 5L
   , valids = valids
-  , min_data = 1L
-  , learning_rate = 1.0
   , early_stopping_rounds = 3L
 )
 model_file <- tempfile(fileext = ".txt")

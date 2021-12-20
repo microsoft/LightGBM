@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
-    export CXX=g++-10
-    export CC=gcc-10
+    export CXX=g++-11
+    export CC=gcc-11
 elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CXX=clang++
     export CC=clang
@@ -71,7 +71,7 @@ if [[ $TASK == "lint" ]]; then
             libxml2 \
             "r-xfun>=0.19" \
             "r-lintr>=2.0"
-    pip install --user cpplint isort mypy
+    pip install --user cmakelint cpplint isort mypy
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
@@ -81,6 +81,8 @@ if [[ $TASK == "lint" ]]; then
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
     cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package ./swig ./tests || exit -1
+    cmake_files=$(find . -name CMakeLists.txt -o -path "*/cmake/*.cmake")
+    cmakelint --linelength=120 --filter=-convention/filename,-package/stdargs,-readability/wonkycase ${cmake_files} || exit -1
     exit 0
 fi
 
@@ -112,7 +114,7 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV cloudpickle dask distributed joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
+conda install -q -y -n $CONDA_ENV cloudpickle "dask=2021.9.1" "distributed=2021.9.1" joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
 pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
@@ -131,7 +133,7 @@ if [[ $TASK == "sdist" ]]; then
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --python-tag py3 || exit -1
-        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_14_x86_64.macosx_10_15_x86_64.macosx_11_0_x86_64.whl
+        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_0_x86_64.whl
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
