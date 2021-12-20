@@ -966,7 +966,7 @@ test_that("Booster$new() using a Dataset with a null handle should raise an info
     expect_error({
         bst <- Booster$new(
             train_set = dtrain
-            , params = list (
+            , params = list(
                 verbose = VERBOSITY
             )
         )
