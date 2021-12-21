@@ -236,7 +236,7 @@ Dataset <- R6::R6Class(
           if (length(private$raw_data@p) > 2147483647L) {
             stop("Cannot support large CSC matrix")
           }
-          # Are we using a dgCMatrix (sparsed matrix column compressed)
+          # Are we using a dgCMatrix (sparse matrix column compressed)
           handle <- .Call(
             LGBM_DatasetCreateFromCSC_R
             , private$raw_data@p
@@ -462,15 +462,14 @@ Dataset <- R6::R6Class(
           , info_len
         )
 
-        # Check if info is not empty
         if (info_len > 0L) {
 
           # Get back fields
           ret <- NULL
           ret <- if (field_name == "group") {
-            integer(info_len) # Integer
+            integer(info_len)
           } else {
-            numeric(info_len) # Numeric
+            numeric(info_len)
           }
 
           .Call(
@@ -501,9 +500,9 @@ Dataset <- R6::R6Class(
 
       # Check for type of information
       data <- if (field_name == "group") {
-        as.integer(data) # Integer
+        as.integer(data)
       } else {
-        as.numeric(data) # Numeric
+        as.numeric(data)
       }
 
       # Store information privately
@@ -531,10 +530,8 @@ Dataset <- R6::R6Class(
 
     },
 
-    # Slice dataset
     slice = function(idxset) {
 
-      # Perform slicing
       return(
         Dataset$new(
           data = NULL
@@ -617,7 +614,6 @@ Dataset <- R6::R6Class(
 
     },
 
-    # Set reference
     set_reference = function(reference) {
 
       # setting reference to this same Dataset object doesn't require any changes
@@ -677,7 +673,6 @@ Dataset <- R6::R6Class(
     info = NULL,
     version = 0L,
 
-    # Get handle
     get_handle = function() {
 
       # Get handle and construct if needed
@@ -688,7 +683,6 @@ Dataset <- R6::R6Class(
 
     },
 
-    # Set predictor
     set_predictor = function(predictor) {
 
       if (identical(private$predictor, predictor)) {
