@@ -41,9 +41,6 @@ Booster <- R6::R6Class(
           train_set_handle <- train_set$.__enclos_env__$private$get_handle()
           params <- utils::modifyList(params, train_set$get_params())
           params_str <- lgb.params2str(params = params)
-          print("Booster.new() - params")
-          print(params)
-          print(params_str)
           # Store booster handle
           handle <- .Call(
             LGBM_BoosterCreate_R
@@ -59,7 +56,7 @@ Booster <- R6::R6Class(
 
           # Check if predictor is existing
           if (!is.null(private$init_predictor)) {
-            print("Booster.new() - calling LGBM_BoosterMerge_R")
+
             # Merge booster
             .Call(
               LGBM_BoosterMerge_R
@@ -181,12 +178,7 @@ Booster <- R6::R6Class(
     },
 
     reset_parameter = function(params) {
-      print("--------")
-      print("Booster$reset_parameter()")
-      print("self$params:")
-      print(self$params)
-      print("passed-in params:")
-      print(params)
+
       if (methods::is(self$params, "list")) {
         params <- utils::modifyList(self$params, params)
       }
@@ -201,8 +193,6 @@ Booster <- R6::R6Class(
         , params_str
       )
       self$params <- params
-      print("new self$params:")
-      print(self$params)
 
       return(invisible(self))
 
@@ -211,7 +201,6 @@ Booster <- R6::R6Class(
     # Perform boosting update iteration
     update = function(train_set = NULL, fobj = NULL) {
 
-      print("Booster.update()")
       if (is.null(train_set)) {
         if (private$train_set$.__enclos_env__$private$version != private$train_set_version) {
           train_set <- private$train_set
@@ -219,7 +208,7 @@ Booster <- R6::R6Class(
       }
 
       if (!is.null(train_set)) {
-        print("Booster.update() - train_set is not null")
+
         if (!lgb.is.Dataset(train_set)) {
           stop("lgb.Booster.update: Only can use lgb.Dataset as training data")
         }
@@ -237,13 +226,10 @@ Booster <- R6::R6Class(
         private$train_set <- train_set
         private$train_set_version <- train_set$.__enclos_env__$private$version
 
-      } else {
-        print("Booster.update() - train_set is null")
       }
 
       # Check if objective is empty
       if (is.null(fobj)) {
-        print("Booster.update() - fobj is null")
         if (private$set_objective_to_none) {
           stop("lgb.Booster.update: cannot update due to null objective function")
         }
@@ -254,7 +240,7 @@ Booster <- R6::R6Class(
         )
 
       } else {
-        print("Booster.update() - fobj is not null")
+
         if (!is.function(fobj)) {
           stop("lgb.Booster.update: fobj should be a function")
         }

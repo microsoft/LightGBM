@@ -268,7 +268,7 @@ lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_v
     return(params)
   }
 
-  # if the main parameter wasn't provided, prefer the first alias
+  # if the main parameter wasn't proovided, prefer the first alias
   if (length(aliases_provided) > 0L) {
     first_param <- aliases_provided[1L]
     params[[main_param_name]] <- params[[first_param]]

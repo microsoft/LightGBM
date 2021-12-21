@@ -102,6 +102,7 @@ lgb.cv <- function(params = list()
   }
 
   # Setup temporary variables
+  params$verbose <- verbose
   params <- lgb.check.obj(params = params, obj = obj)
   params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
@@ -111,11 +112,6 @@ lgb.cv <- function(params = list()
   # in `params`.
   # this ensures that the model stored with Booster$save() correctly represents
   # what was passed in
-  params <- lgb.check.wrapper_param(
-    main_param_name = "verbosity"
-    , params = params
-    , alternative_kwarg_value = verbose
-  )
   params <- lgb.check.wrapper_param(
     main_param_name = "num_iterations"
     , params = params
@@ -290,7 +286,7 @@ lgb.cv <- function(params = list()
   # someDT$some_column returns NULL is 'some_column' does not exist in the data.table
   bst_folds <- lapply(
     X = seq_along(folds)
-    , FUN = function(k, params) {
+    , FUN = function(k) {
 
       # For learning-to-rank, each fold is a named list with two elements:
       #   * `fold` = an integer vector of row indices
@@ -336,15 +332,12 @@ lgb.cv <- function(params = list()
       }
 
       booster <- Booster$new(params = params, train_set = dtrain)
-      print(sprintf("params for fold %i", k))
-      print(params)
       booster$add_valid(data = dtest, name = "valid")
       booster$reset_parameter(params)
       return(
         list(booster = booster)
       )
     }
-    , params = params
   )
 
   # Create new booster
