@@ -380,6 +380,30 @@ test_that("cv works", {
   expect_false(is.null(bst$record_evals))
 })
 
+test_that("CVBooster$reset_parameter() works as expected", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  cv_bst <- lgb.cv(
+    params = list(
+      objective = "regression"
+      , min_data = 1L
+      , num_leaves = 7L
+      , verbose = VERBOSITY
+    )
+    , data = dtrain
+    , nrounds = 2L
+    , nfold = 2L
+  )
+  expect_is(cv_bst, "lgb.CVBooster")
+  expect_length(cv_bst$boosters, 2L)
+  for (bst in cv_bst$boosters) {
+    expect_equal(bst[["booster"]]$params[["num_leaves"]], 7L)
+  }
+  cv_bst$reset_parameter(list(num_leaves = 11L))
+  for (bst in cv_bst$boosters) {
+    expect_equal(bst[["booster"]]$params[["num_leaves"]], 11L)
+  }
+})
+
 test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(
