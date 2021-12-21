@@ -1917,8 +1917,8 @@ test_that("lgb.cv() respects changes to logging verbosity", {
       , verbose = 1L
     )
   })
-  expect_true(any(grepl("\\[Info\\]", lgb_cv_logs)))
-  expect_true(any(grepl("\\[Warning\\]", lgb_cv_logs)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
 
   # (verbose = 0) should be WARNING level logs only
   lgb_cv_logs <- capture.output({
@@ -1931,8 +1931,8 @@ test_that("lgb.cv() respects changes to logging verbosity", {
       , verbose = 0L
     )
   })
-  expect_false(any(grepl("\\[Info\\]", lgb_cv_logs)))
-  expect_true(any(grepl("\\[Warning\\]", lgb_cv_logs)))
+  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
 
   # (verbose = -1) no logs
   lgb_cv_logs <- capture.output({
@@ -1947,8 +1947,8 @@ test_that("lgb.cv() respects changes to logging verbosity", {
   })
   # NOTE: this is not length(lgb_cv_logs) == 0 because lightgbm's
   #       dependencies might print other messages
-  expect_false(any(grepl("\\[Info\\]", lgb_cv_logs)))
-  expect_false(any(grepl("\\[Warning\\]", lgb_cv_logs)))
+  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
+  expect_false(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
 })
 
 context("linear learner")
