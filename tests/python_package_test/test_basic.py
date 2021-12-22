@@ -601,8 +601,8 @@ def test_custom_objective_safety():
     bad_bst_multi = lgb.Booster({'objective': "none", "num_class": len(classes)}, ds_multiclass)
     good_bst_multi = lgb.Booster({'objective': "none", "num_class": len(classes)}, ds_multiclass)
     good_bst_binary.update(fobj=_good_gradients)
-    with pytest.raises(ValueError, match="number of models per one iteration (1)"):
+    with pytest.raises(ValueError, match="number of models per one iteration \(1\)"):
         bad_bst_binary.update(fobj=_bad_gradients)
     good_bst_multi.update(fobj=_good_gradients)
-    with pytest.raises(ValueError, match=f"number of models per one iteration ({len(classes)})"):
+    with pytest.raises(ValueError, match=f"number of models per one iteration \({len(classes)}\)"):
         bad_bst_multi.update(fobj=_bad_gradients)
