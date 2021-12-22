@@ -18,7 +18,7 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 
 import lightgbm as lgb
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris
+from .utils import load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -868,7 +868,7 @@ def test_continue_train():
 
 
 def test_continue_train_reused_dataset():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     params = {
         'objective': 'regression',
         'verbose': -1
@@ -934,7 +934,7 @@ def test_continue_train_multiclass():
 
 
 def test_cv():
-    X_train, y_train = load_boston(return_X_y=True)
+    X_train, y_train = make_synthetic_regression()
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
     # shuffle = False, override metric in params
@@ -1030,7 +1030,7 @@ def test_cvbooster():
 
 
 def test_feature_name():
-    X_train, y_train = load_boston(return_X_y=True)
+    X_train, y_train = make_synthetic_regression()
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
     feature_names = [f'f_{i}' for i in range(X_train.shape[-1])]
@@ -1060,7 +1060,7 @@ def test_feature_name_with_non_ascii():
 
 def test_save_load_copy_pickle():
     def train_and_predict(init_model=None, return_model=False):
-        X, y = load_boston(return_X_y=True)
+        X, y = make_synthetic_regression()
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'regression',
@@ -2253,7 +2253,7 @@ def test_default_objective_and_metric():
 
 @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason='not enough RAM')
 def test_model_size():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     data = lgb.Dataset(X, y)
     bst = lgb.train({'verbose': -1}, data, num_boost_round=2)
     y_pred = bst.predict(X)
@@ -2669,7 +2669,7 @@ def test_dataset_params_with_reference():
 
 def test_extra_trees():
     # check extra trees increases regularization
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     lgb_x = lgb.Dataset(X, label=y)
     params = {'objective': 'regression',
               'num_leaves': 32,
@@ -2688,7 +2688,7 @@ def test_extra_trees():
 
 def test_path_smoothing():
     # check path smoothing increases regularization
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     lgb_x = lgb.Dataset(X, label=y)
     params = {'objective': 'regression',
               'num_leaves': 32,
@@ -2998,7 +2998,7 @@ def test_predict_with_start_iteration():
         np.testing.assert_allclose(pred4, pred6)
 
     # test for regression
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     params = {
         'objective': 'regression',
         'verbose': -1,

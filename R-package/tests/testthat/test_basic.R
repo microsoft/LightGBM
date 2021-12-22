@@ -1,3 +1,7 @@
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
+
 context("lightgbm()")
 
 ON_WINDOWS <- .Platform$OS.type == "windows"
@@ -337,6 +341,7 @@ test_that("training continuation works", {
     , metric = "binary_logloss"
     , num_leaves = 5L
     , learning_rate = 1.0
+    , verbose = VERBOSITY
   )
 
   # train for 10 consecutive iterations
@@ -538,6 +543,7 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
       objective = "binary"
       , metric = metrics
       , learning_rate = 1.0
+      , verbose = VERBOSITY
     )
     , valids = list(
       "train" = lgb.Dataset(
@@ -557,7 +563,11 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
 
 test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(objective = "regression", metric = "l2,l1")
+  params <- list(
+    objective = "regression"
+    , metric = "l2,l1"
+    , verbose = VERBOSITY
+  )
   for (nround_value in c(-10L, 0L)) {
     expect_error({
       bst <- lgb.train(
@@ -585,6 +595,7 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
       , metric = "l2"
       , num_leaves = 5L
       , save_name = tempfile(fileext = ".model")
+      , verbose = VERBOSITY
     )
   )
 
@@ -600,6 +611,7 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
       , num_leaves = 5L
       , nrounds = nrounds
       , save_name = tempfile(fileext = ".model")
+      , verbose = VERBOSITY
     )
   )
 
@@ -616,6 +628,7 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
       , num_leaves = 5L
       , nrounds = nrounds
       , save_name = tempfile(fileext = ".model")
+      , verbose = VERBOSITY
     )
   )
 
@@ -651,7 +664,11 @@ test_that("lgb.train() throws an informative error if 'data' is not an lgb.Datas
   for (val in bad_values) {
     expect_error({
       bst <- lgb.train(
-        params = list(objective = "regression", metric = "l2,l1")
+        params = list(
+            objective = "regression"
+            , metric = "l2,l1"
+            , verbose = VERBOSITY
+        )
         , data = val
         , 10L
       )
@@ -666,7 +683,11 @@ test_that("lgb.train() throws an informative error if 'valids' is not a list of 
   )
   expect_error({
     bst <- lgb.train(
-      params = list(objective = "regression", metric = "l2,l1")
+      params = list(
+        objective = "regression"
+        , metric = "l2,l1"
+        , verbose = VERBOSITY
+      )
       , data = lgb.Dataset(train$data, label = train$label)
       , 10L
       , valids = valids
@@ -681,7 +702,11 @@ test_that("lgb.train() errors if 'valids' is a list of lgb.Dataset objects but s
   )
   expect_error({
     bst <- lgb.train(
-      params = list(objective = "regression", metric = "l2,l1")
+      params = list(
+        objective = "regression"
+        , metric = "l2,l1"
+        , verbose = VERBOSITY
+      )
       , data = lgb.Dataset(train$data, label = train$label)
       , 10L
       , valids = valids
@@ -696,7 +721,11 @@ test_that("lgb.train() throws an informative error if 'valids' contains lgb.Data
   )
   expect_error({
     bst <- lgb.train(
-      params = list(objective = "regression", metric = "l2,l1")
+      params = list(
+        objective = "regression"
+        , metric = "l2,l1"
+        , verbose = VERBOSITY
+    )
       , data = lgb.Dataset(train$data, label = train$label)
       , 10L
       , valids = valids
@@ -715,6 +744,7 @@ test_that("lgb.train() works with force_col_wise and force_row_wise", {
     objective = "binary"
     , metric = "binary_error"
     , force_col_wise = TRUE
+    , verbose = VERBOSITY
   )
   bst_col_wise <- lgb.train(
     params = params
@@ -726,6 +756,7 @@ test_that("lgb.train() works with force_col_wise and force_row_wise", {
     objective = "binary"
     , metric = "binary_error"
     , force_row_wise = TRUE
+    , verbose = VERBOSITY
   )
   bst_row_wise <- lgb.train(
     params = params
@@ -764,6 +795,7 @@ test_that("lgb.train() works as expected with sparse features", {
       objective = "binary"
       , min_data = 1L
       , min_data_in_bin = 1L
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -804,6 +836,7 @@ test_that("lgb.train() works with early stopping for classification", {
     params = list(
       objective = "binary"
       , metric = "binary_error"
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -827,6 +860,7 @@ test_that("lgb.train() works with early stopping for classification", {
       objective = "binary"
       , metric = "binary_error"
       , early_stopping_rounds = early_stopping_rounds
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -875,6 +909,7 @@ test_that("lgb.train() treats early_stopping_rounds<=0 as disabling early stoppi
       params = list(
         objective = "binary"
         , metric = "binary_error"
+        , verbose = VERBOSITY
       )
       , data = dtrain
       , nrounds = nrounds
@@ -898,6 +933,7 @@ test_that("lgb.train() treats early_stopping_rounds<=0 as disabling early stoppi
         objective = "binary"
         , metric = "binary_error"
         , n_iter_no_change = value
+        , verbose = VERBOSITY
       )
       , data = dtrain
       , nrounds = nrounds
@@ -937,6 +973,7 @@ test_that("lgb.train() works with early stopping for classification with a metri
       , metric = "auc"
       , max_depth = 3L
       , early_stopping_rounds = early_stopping_rounds
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -950,6 +987,7 @@ test_that("lgb.train() works with early stopping for classification with a metri
       , metric = "binary_error"
       , max_depth = 3L
       , early_stopping_rounds = early_stopping_rounds
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1008,6 +1046,7 @@ test_that("lgb.train() works with early stopping for regression", {
     params = list(
       objective = "regression"
       , metric = "rmse"
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1031,6 +1070,7 @@ test_that("lgb.train() works with early stopping for regression", {
       objective = "regression"
       , metric = "rmse"
       , early_stopping_rounds = early_stopping_rounds
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1065,6 +1105,7 @@ test_that("lgb.train() does not stop early if early_stopping_rounds is not given
     params = list(
       objective = "regression"
       , metric = "None"
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nrounds = nrounds
@@ -1108,12 +1149,14 @@ test_that("If first_metric_only is not given or is FALSE, lgb.train() decides to
       objective = "regression"
       , metric = "None"
       , early_stopping_rounds = early_stopping_rounds
+      , verbose = VERBOSITY
     )
     , list(
       objective = "regression"
       , metric = "None"
       , early_stopping_rounds = early_stopping_rounds
       , first_metric_only = FALSE
+      , verbose = VERBOSITY
     )
   )
 
@@ -1176,6 +1219,7 @@ test_that("If first_metric_only is TRUE, lgb.train() decides to stop early based
       , metric = "None"
       , early_stopping_rounds = early_stopping_rounds
       , first_metric_only = TRUE
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nrounds = nrounds
@@ -1221,6 +1265,7 @@ test_that("lgb.train() works when a mixture of functions and strings are passed 
     params = list(
       objective = "regression"
       , metric = "None"
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nrounds = nrounds
@@ -1276,6 +1321,7 @@ test_that("lgb.train() works when a list of strings or a character vector is pas
       params = list(
         objective = "binary"
         , metric = "None"
+        , verbose = VERBOSITY
       )
       , data = DTRAIN_RANDOM_CLASSIFICATION
       , nrounds = nrounds
@@ -1312,6 +1358,7 @@ test_that("lgb.train() works when you specify both 'metric' and 'eval' with stri
     params = list(
       objective = "binary"
       , metric = "binary_error"
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_CLASSIFICATION
     , nrounds = nrounds
@@ -1343,6 +1390,7 @@ test_that("lgb.train() works when you give a function for eval", {
     params = list(
       objective = "binary"
       , metric = "None"
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_CLASSIFICATION
     , nrounds = nrounds
@@ -1391,6 +1439,7 @@ test_that("lgb.train() works with early stopping for regression with a metric th
       )
       , min_data_in_bin = 5L
       , early_stopping_rounds = early_stopping_rounds
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1430,6 +1479,7 @@ test_that("lgb.train() supports non-ASCII feature names", {
     , obj = "regression"
     , params = list(
       metric = "rmse"
+      , verbose = VERBOSITY
     )
     , colnames = feature_names
   )
@@ -1512,6 +1562,7 @@ test_that("when early stopping is not activated, best_iter and best_score come f
     , metric = "rmse"
     , learning_rate = 1.5
     , num_leaves = 5L
+    , verbose = VERBOSITY
   )
 
   # example 1: two valids, neither are the training data
@@ -1671,6 +1722,7 @@ test_that("lightgbm.train() gives the correct best_score and best_iter for a met
       , metric = "auc"
       , learning_rate = 1.5
       , num_leaves = 5L
+      , verbose = VERBOSITY
     )
   )
   # note that "something-random-we-would-not-hardcode" was recognized as the training
@@ -1915,7 +1967,7 @@ test_that("lgb.train() fit on linearly-relatead data improves when using linear 
 
   params <- list(
     objective = "regression"
-    , verbose = -1L
+    , verbose = VERBOSITY
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
@@ -1949,7 +2001,7 @@ test_that("lgb.train() w/ linear learner fails already-constructed dataset with 
   set.seed(708L)
   params <- list(
     objective = "regression"
-    , verbose = -1L
+    , verbose = VERBOSITY
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
@@ -1986,7 +2038,7 @@ test_that("lgb.train() works with linear learners even if Dataset has missing va
 
   params <- list(
     objective = "regression"
-    , verbose = -1L
+    , verbose = VERBOSITY
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
@@ -2032,7 +2084,7 @@ test_that("lgb.train() works with linear learners, bagging, and a Dataset that h
 
   params <- list(
     objective = "regression"
-    , verbose = -1L
+    , verbose = VERBOSITY
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
