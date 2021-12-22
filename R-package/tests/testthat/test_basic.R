@@ -382,6 +382,7 @@ test_that("cv works", {
 
 test_that("CVBooster$reset_parameter() works as expected", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
+  n_folds <- 2L
   cv_bst <- lgb.cv(
     params = list(
       objective = "regression"
@@ -390,11 +391,11 @@ test_that("CVBooster$reset_parameter() works as expected", {
       , verbose = VERBOSITY
     )
     , data = dtrain
-    , nrounds = 2L
-    , nfold = 2L
+    , nrounds = 3L
+    , nfold = n_folds
   )
   expect_is(cv_bst, "lgb.CVBooster")
-  expect_length(cv_bst$boosters, 2L)
+  expect_length(cv_bst$boosters, n_folds)
   for (bst in cv_bst$boosters) {
     expect_equal(bst[["booster"]]$params[["num_leaves"]], 7L)
   }
