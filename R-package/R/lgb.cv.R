@@ -12,8 +12,8 @@ CVBooster <- R6::R6Class(
       return(invisible(NULL))
     },
     reset_parameter = function(new_params) {
-      for (x in boosters) {
-        x$reset_parameter(params = new_params)
+      for (x in self$boosters) {
+        x[["booster"]]$reset_parameter(params = new_params)
       }
       return(invisible(self))
     }
@@ -554,7 +554,7 @@ lgb.stratified.folds <- function(y, k) {
 
       ## Create a vector of integers from 1:k as many times as possible without
       ## going over the number of samples in the class. Note that if the number
-      ## of samples in a class is less than k, nothing is producd here.
+      ## of samples in a class is less than k, nothing is produced here.
       seqVector <- rep(seq_len(k), numInClass[i] %/% k)
 
       ## Add enough random integers to get length(seqVector) == numInClass[i]
