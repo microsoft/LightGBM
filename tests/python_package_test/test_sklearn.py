@@ -18,7 +18,8 @@ from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking
+from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking,
+                    make_synthetic_regression)
 
 sk_version = parse_version(sk_version)
 if sk_version < parse_version("0.23"):
@@ -184,7 +185,7 @@ def test_eval_at_aliases():
 
 @pytest.mark.parametrize("custom_objective", [True, False])
 def test_objective_aliases(custom_objective):
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     if custom_objective:
         obj = custom_dummy_obj
@@ -294,20 +295,23 @@ def test_stacking_regressor():
 def test_grid_search():
     X, y = load_iris(return_X_y=True)
     y = y.astype(str)  # utilize label encoder at it's max power
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
-                                                        random_state=42)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1,
-                                                      random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=42)
     params = dict(subsample=0.8,
                   subsample_freq=1)
     grid_params = dict(boosting_type=['rf', 'gbdt'],
                        n_estimators=[4, 6],
                        reg_alpha=[0.01, 0.005])
-    fit_params = dict(eval_set=[(X_val, y_val)],
-                      eval_metric=constant_metric,
-                      callbacks=[lgb.early_stopping(2)])
-    grid = GridSearchCV(estimator=lgb.LGBMClassifier(**params), param_grid=grid_params,
-                        cv=2)
+    evals_result = {}
+    fit_params = dict(
+        eval_set=[(X_val, y_val)],
+        eval_metric=constant_metric,
+        callbacks=[
+            lgb.early_stopping(2),
+            lgb.record_evaluation(evals_result)
+        ]
+    )
+    grid = GridSearchCV(estimator=lgb.LGBMClassifier(**params), param_grid=grid_params, cv=2)
     grid.fit(X_train, y_train, **fit_params)
     score = grid.score(X_test, y_test)  # utilizes GridSearchCV default refit=True
     assert grid.best_params_['boosting_type'] in ['rf', 'gbdt']
@@ -319,6 +323,7 @@ def test_grid_search():
     assert grid.best_estimator_.best_score_['valid_0']['error'] == 0
     assert score >= 0.2
     assert score <= 1.
+    assert evals_result == grid.best_estimator_.evals_result_
 
 
 def test_random_search():
@@ -436,7 +441,7 @@ def test_regressor_chain():
 
 
 def test_clone_and_property():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     gbm = lgb.LGBMRegressor(n_estimators=10, verbose=-1)
     gbm.fit(X, y)
 
@@ -454,7 +459,7 @@ def test_clone_and_property():
 
 
 def test_joblib():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj,
                             verbose=-1, importance_type='split')
@@ -495,7 +500,7 @@ def test_non_serializable_objects_in_callbacks(tmp_path):
     with pytest.raises(Exception, match="This class in not picklable"):
         joblib.dump(unpicklable_callback, tmp_path / 'tmp.joblib')
 
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     gbm = lgb.LGBMRegressor(n_estimators=5)
     gbm.fit(X, y, callbacks=[unpicklable_callback])
     assert gbm.booster_.attr('attr_set_inside_callback') == '40'
@@ -753,7 +758,7 @@ def test_predict_with_params_from_init():
 
 
 def test_evaluate_train_set():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=10, verbose=-1)
     gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)])
@@ -784,7 +789,7 @@ def test_metrics():
 
     # no metric
     gbm = lgb.LGBMRegressor(metric='None', **params).fit(**params_fit)
-    assert gbm.evals_result_ is None
+    assert gbm.evals_result_ == {}
 
     # non-default metric in eval_metric
     gbm = lgb.LGBMRegressor(**params).fit(eval_metric='mape', **params_fit)
@@ -833,7 +838,7 @@ def test_metrics():
     # no metric
     gbm = lgb.LGBMRegressor(objective='regression_l1', metric='None',
                             **params).fit(**params_fit)
-    assert gbm.evals_result_ is None
+    assert gbm.evals_result_ == {}
 
     # non-default metric in eval_metric for non-default objective
     gbm = lgb.LGBMRegressor(objective='regression_l1',
@@ -878,7 +883,7 @@ def test_metrics():
     # no metric
     gbm = lgb.LGBMRegressor(objective=custom_dummy_obj, metric='None',
                             **params).fit(**params_fit)
-    assert gbm.evals_result_ is None
+    assert gbm.evals_result_ == {}
 
     # default regression metric with non-default metric in eval_metric for custom objective
     gbm = lgb.LGBMRegressor(objective=custom_dummy_obj,
@@ -1328,7 +1333,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
         X, y = load_iris(return_X_y=True)
         model_factory = lgb.LGBMClassifier
     elif task == 'regression':
-        X, y = load_boston(return_X_y=True)
+        X, y = make_synthetic_regression()
         model_factory = lgb.LGBMRegressor
     X = pd.DataFrame(X)
     y_col_array = y.reshape(-1, 1)
