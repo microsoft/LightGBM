@@ -2,6 +2,7 @@
 import filecmp
 import numbers
 from pathlib import Path
+import re
 
 import numpy as np
 import pytest
@@ -590,19 +591,21 @@ def _good_gradients(labels, preds):
 
 
 def test_custom_objective_safety():
-    X = np.random.randn(100, 5)
-    y_binary = np.random.choice([0, 1], 100)
+    nrows = 100
+    X = np.random.randn(nrows, 5)
+    y_binary = np.arange(nrows) % 2
     classes = [0, 1, 2]
-    y_multiclass = np.random.choice(classes, 100)
+    nclass = len(classes)
+    y_multiclass = np.arange(nrows) % nclass
     ds_binary = lgb.Dataset(X, y_binary).construct()
     ds_multiclass = lgb.Dataset(X, y_multiclass).construct()
     bad_bst_binary = lgb.Booster({'objective': "none"}, ds_binary)
     good_bst_binary = lgb.Booster({'objective': "none"}, ds_binary)
-    bad_bst_multi = lgb.Booster({'objective': "none", "num_class": len(classes)}, ds_multiclass)
-    good_bst_multi = lgb.Booster({'objective': "none", "num_class": len(classes)}, ds_multiclass)
+    bad_bst_multi = lgb.Booster({'objective': "none", "num_class": nclass}, ds_multiclass)
+    good_bst_multi = lgb.Booster({'objective': "none", "num_class": nclass}, ds_multiclass)
     good_bst_binary.update(fobj=_good_gradients)
-    with pytest.raises(ValueError, match="number of models per one iteration \(1\)"):
+    with pytest.raises(ValueError, match=re.escape("number of models per one iteration (1)")):
         bad_bst_binary.update(fobj=_bad_gradients)
     good_bst_multi.update(fobj=_good_gradients)
-    with pytest.raises(ValueError, match=f"number of models per one iteration \({len(classes)}\)"):
+    with pytest.raises(ValueError, match=re.escape(f"number of models per one iteration ({nclass})")):
         bad_bst_multi.update(fobj=_bad_gradients)
