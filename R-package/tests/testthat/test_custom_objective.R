@@ -1,3 +1,7 @@
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
+
 context("Test models with custom objective")
 
 data(agaricus.train, package = "lightgbm")
@@ -36,6 +40,7 @@ param <- list(
   , learning_rate = 1.0
   , objective = logregobj
   , metric = "auc"
+  , verbose = VERBOSITY
 )
 num_round <- 10L
 
@@ -50,6 +55,7 @@ test_that("using a custom objective, custom eval, and no other metrics works", {
     params = list(
       num_leaves = 8L
       , learning_rate = 1.0
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = 4L
