@@ -619,13 +619,6 @@ def _string_column_mapping(column_data):
     mapped_data = np.array(list(map(map_str_to_num, column_data)))
     return mapping, mapped_data
 
-def save_mapping_file(mappings, filename='mapping.json'):
-    json.dump(mappings, open(filename, 'w+'))
-
-
-def read_mapping_file(filename='mapping.json'):
-    mappings = json.load(open(filename, 'r'))
-    return mappings
 
 class Sequence(abc.ABC):
     """
@@ -704,7 +697,7 @@ class _InnerPredictor:
         Can be converted from Booster, but cannot be converted to Booster.
     """
 
-    def __init__(self, model_file=None, booster_handle=None, pred_parameter=None):
+    def __init__(self, model_file=None, booster_handle=None, pred_parameter=None, mappings=None):
         """Initialize the _InnerPredictor.
 
         Parameters
@@ -717,6 +710,7 @@ class _InnerPredictor:
             Other parameters for the prediction.
         """
         self.handle = ctypes.c_void_p()
+        self.mappings = mappings
         self.__is_manage_handle = True
         if model_file is not None:
             """Prediction task"""
@@ -776,8 +770,7 @@ class _InnerPredictor:
                 ctypes.c_size_t(actual_string_buffer_size),
                 ctypes.byref(required_string_buffer_size),
                 ptr_string_buffers))
-        self.feature_name = [string_buffers[i].value.decode('utf-8') for i in range(self.num_feature)]
-
+        self.feature_name = [string_buffers[i].value.decode('utf-8') for i in range(self.num_feature)]  
         pred_parameter = {} if pred_parameter is None else pred_parameter
         self.pred_parameter = param_dict_to_str(pred_parameter)
 
@@ -911,19 +904,19 @@ class _InnerPredictor:
                     data = np.array(mat.reshape(mat.size), dtype=np.float32)
                 except ValueError:
                     # load mapping and map string to int
-
-                    # if exists('mapping.json'):
-                    #     mappings = read_mapping_file()
                     data = mat.copy().T
                     for j, col in enumerate(data):
                         if is_1d_string(col):
-                            if self.feature_name[j] not in mappings.keys():
-                                mapping, mapped_col = _string_column_mapping(col)
-                                mappings[self.feature_name[j]] = mapping
-                                data[j] = mapped_col
+                            if self.feature_name[j] not in self.mappings.keys():
+                                raise ValueError(f'Feature {self.feature_name[j]} is not in training set, please check your valid dataset.')
                             else:
                                 def get_mapped_num(x):
-                                    return list(mappings[self.feature_name[j]].values()).index(x)
+                                    try:
+                                        return list(self.mappings[self.feature_name[j]].values()).index(x)
+                                    except:
+                                        # x not in mapping dict, return a new number
+                                        # _log_warning(f"{x} is not in training set")
+                                        return len(list(self.mappings[self.feature_name[j]].values()))
                                 data[j] = np.array(list(map(get_mapped_num, col)))
                     data = data.T
                     data = np.array(data.reshape(data.size), dtype=np.float32, copy=False)
@@ -1703,7 +1696,7 @@ class Dataset:
         for feature_name_, feature_map in self.mappings.items():
             tmp = feature_name_ + '\n'
             for key, value in feature_map.items():
-                tmp += f'{key}={value}\n'
+                tmp += f'{value}={key}\n'
             mapping_string.append(tmp + '\n')
         
         c_mapping_string = [c_str(s) for s in mapping_string]
@@ -1780,7 +1773,7 @@ class Dataset:
         for feature_name_, feature_map in self.mappings.items():
             tmp = feature_name_ + '\n'
             for key, value in feature_map.items():
-                tmp += f'{key}={value}\n'
+                tmp += f'{value}={key}\n'
             mapping_string.append(tmp + '\n')
         
         c_mapping_string = [c_str(s) for s in mapping_string]
@@ -2769,7 +2762,49 @@ class Booster:
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
-            # TODO: add mapping
+            # add mapping
+            out_num_mapping = ctypes.c_int(0)
+            _safe_call(_LIB.LGBM_BoosterGetNumFeature(
+                self.handle,
+                ctypes.byref(out_num_mapping)))
+            num_mapping = out_num_mapping.value
+
+            tmp_out_len = ctypes.c_int(0)
+            reserved_string_buffer_size = 255
+            required_string_buffer_size = ctypes.c_size_t(0)
+            string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for _ in range(num_mapping)]
+            ptr_string_buffers = (ctypes.c_char_p * num_mapping)(*map(ctypes.addressof, string_buffers))
+            _safe_call(_LIB.LGBM_BoosterGetMapping(
+                self.handle,
+                ctypes.c_int(num_mapping),
+                ctypes.byref(tmp_out_len),
+                ctypes.c_size_t(reserved_string_buffer_size),
+                ctypes.byref(required_string_buffer_size),
+                ptr_string_buffers))
+            if num_mapping != tmp_out_len.value:
+                raise ValueError("Length of mapping doesn't equal with num_mapping")
+            actual_string_buffer_size = required_string_buffer_size.value
+            # if buffer length is not long enough, reallocate buffers
+            if reserved_string_buffer_size < actual_string_buffer_size:
+                string_buffers = [ctypes.create_string_buffer(actual_string_buffer_size) for _ in range(num_mapping)]
+                ptr_string_buffers = (ctypes.c_char_p * num_mapping)(*map(ctypes.addressof, string_buffers))
+                _safe_call(_LIB.LGBM_BoosterGetMapping(
+                    self.handle,
+                    ctypes.c_int(num_mapping),
+                    ctypes.byref(tmp_out_len),
+                    ctypes.c_size_t(actual_string_buffer_size),
+                    ctypes.byref(required_string_buffer_size),
+                    ptr_string_buffers))
+            mappings_string = [string_buffers[i].value.decode('utf-8').split() for i in range(num_mapping)]
+            self.mappings = {}
+            for feature_map in mappings_string:
+                feature_name = feature_map[0]
+                self.mappings[feature_name] = {}
+                for maps in feature_map[1:]:
+                    key, value = maps.split('=')
+                    value = int(value)
+                    self.mappings[feature_name][value] = key
+            
         elif model_str is not None:
             self.model_from_string(model_str, verbose="_silent_false")
         else:
@@ -3737,7 +3772,7 @@ class Booster:
 
     def _to_predictor(self, pred_parameter=None):
         """Convert to predictor."""
-        predictor = _InnerPredictor(booster_handle=self.handle, pred_parameter=pred_parameter)
+        predictor = _InnerPredictor(booster_handle=self.handle, pred_parameter=pred_parameter, mappings=self.mappings)
         predictor.pandas_categorical = self.pandas_categorical
         return predictor
 

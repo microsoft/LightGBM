@@ -357,6 +357,18 @@ class GBDT : public GBDTBase {
   */
   inline int NumberOfClasses() const override { return num_class_; }
 
+  /*!
+  * \brief Get mapping info
+  * \return mapping info
+  */
+  inline std::vector< std::string >  GetMapping() const { return mapping; }
+
+  /*!
+  * \brief Get number of mapping
+  * \return number of mapping
+  */
+  inline std::vector< std::string >  GetNumMapping() const { return num_mapping; }
+
   inline void InitPredict(int start_iteration, int num_iteration, bool is_pred_contrib) override {
     num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
     start_iteration = std::max(start_iteration, 0);
@@ -487,6 +499,10 @@ class GBDT : public GBDTBase {
   int max_feature_idx_;
   /*! \brief Parser config file content */
   std::string parser_config_str_ = "";
+  /*! \brief mapping info */
+  std::vector< std::string > mapping;
+  /*! \brief num mapping */
+  std::vector< std::string > num_mapping;
 
 #ifdef USE_CUDA
   /*! \brief First order derivative of training data */

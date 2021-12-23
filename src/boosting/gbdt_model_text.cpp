@@ -408,8 +408,8 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
     ss << "end of parser" << '\n';
   }
 
-  std::vector< std::string > maps = train_data_->get_mapping();
-    
+  std::vector< std::string > maps = mapping;
+  
   std::string str;
   for(int i=0; i < maps.size(); i++){
     str += "map";

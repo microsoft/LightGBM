@@ -809,6 +809,21 @@ class Booster {
     return idx;
   }
 
+  int GetMapping(char** out_strs, const int len, const size_t buffer_len, size_t *out_buffer_len) const {
+    SHARED_LOCK(mutex_)
+    *out_buffer_len = 0;
+    int idx = 0;
+    for (const auto& name : boosting_->GetMapping()) {
+      if (idx < len) {
+        std::memcpy(out_strs[idx], name.c_str(), std::min(name.size() + 1, buffer_len));
+        out_strs[idx][buffer_len - 1] = '\0';
+      }
+      *out_buffer_len = std::max(name.size() + 1, *out_buffer_len);
+      ++idx;
+    }
+    return idx;
+  }
+
   const Boosting* GetBoosting() const { return boosting_.get(); }
 
  private:
@@ -1123,7 +1138,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   for (int i = 0; i < len_mapping; ++i) {
     mapping_str.emplace_back(mapping[i]);
   }
-  ret->load_mapping(mapping_str);
+  ret->mapping = mapping_str;
 
   if (reference == nullptr) {
     // sample data first
@@ -1760,6 +1775,25 @@ int LGBM_BoosterGetEvalNames(BoosterHandle handle,
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetEvalNames(out_strs, len, buffer_len, out_buffer_len);
+  API_END();
+}
+
+int LGBM_BoosterGetMapping(BoosterHandle handle, 
+                                const int len,
+                                int* out_len,
+                                const size_t buffer_len,
+                                size_t* out_buffer_len,
+                                char** out_strs) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = ref_booster->GetMapping(out_strs, len, buffer_len, out_buffer_len);
+  API_END();
+}
+
+int LGBM_BoosterGetNumMapping(BoosterHandle handle, int* out_len) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = ref_booster->GetNumMapping();
   API_END();
 }
 
