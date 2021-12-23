@@ -1,3 +1,7 @@
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
+
 context("Learning to rank")
 
 # numerical tolerance to use when checking metric values
@@ -25,6 +29,7 @@ test_that("learning-to-rank with lgb.train() works as expected", {
         , ndcg_at = ndcg_at
         , lambdarank_truncation_level = 3L
         , learning_rate = 0.001
+        , verbose = VERBOSITY
     )
     model <- lgb.train(
         params = params

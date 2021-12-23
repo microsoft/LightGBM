@@ -34,8 +34,6 @@ def train(
     feature_name: Union[List[str], str] = 'auto',
     categorical_feature: Union[List[str], List[int], str] = 'auto',
     early_stopping_rounds: Optional[int] = None,
-    evals_result: Optional[Dict[str, Any]] = None,
-    verbose_eval: Union[bool, int, str] = 'warn',
     keep_training_booster: bool = False,
     callbacks: Optional[List[Callable]] = None
 ) -> Booster:
@@ -120,30 +118,6 @@ def train(
         To check only the first metric, set the ``first_metric_only`` parameter to ``True`` in ``params``.
         The index of iteration that has the best performance will be saved in the ``best_iteration`` field
         if early stopping logic is enabled by setting ``early_stopping_rounds``.
-    evals_result : dict or None, optional (default=None)
-        Dictionary used to store all evaluation results of all the items in ``valid_sets``.
-        This should be initialized outside of your call to ``train()`` and should be empty.
-        Any initial contents of the dictionary will be deleted.
-
-        .. rubric:: Example
-
-        With a ``valid_sets`` = [valid_set, train_set],
-        ``valid_names`` = ['eval', 'train']
-        and a ``params`` = {'metric': 'logloss'}
-        returns {'train': {'logloss': ['0.48253', '0.35953', ...]},
-        'eval': {'logloss': ['0.480385', '0.357756', ...]}}.
-
-    verbose_eval : bool or int, optional (default=True)
-        Requires at least one validation data.
-        If True, the eval metric on the valid set is printed at each boosting stage.
-        If int, the eval metric on the valid set is printed at every ``verbose_eval`` boosting stage.
-        The last boosting stage or the boosting stage found by using ``early_stopping_rounds`` is also printed.
-
-        .. rubric:: Example
-
-        With ``verbose_eval`` = 4 and at least one item in ``valid_sets``,
-        an evaluation metric is printed every 4 (instead of 1) boosting stages.
-
     keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
         If False, the returned value will be converted into _InnerPredictor before returning.
@@ -230,26 +204,8 @@ def train(
         callbacks_set = set(callbacks)
 
     # Most of legacy advanced options becomes callbacks
-    if verbose_eval != "warn":
-        _log_warning("'verbose_eval' argument is deprecated and will be removed in a future release of LightGBM. "
-                     "Pass 'log_evaluation()' callback via 'callbacks' argument instead.")
-    else:
-        if callbacks_set:  # assume user has already specified log_evaluation callback
-            verbose_eval = False
-        else:
-            verbose_eval = True
-    if verbose_eval is True:
-        callbacks_set.add(callback.log_evaluation())
-    elif isinstance(verbose_eval, int):
-        callbacks_set.add(callback.log_evaluation(verbose_eval))
-
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        callbacks_set.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=bool(verbose_eval)))
-
-    if evals_result is not None:
-        _log_warning("'evals_result' argument is deprecated and will be removed in a future release of LightGBM. "
-                     "Pass 'record_evaluation()' callback via 'callbacks' argument instead.")
-        callbacks_set.add(callback.record_evaluation(evals_result))
+        callbacks_set.add(callback.early_stopping(early_stopping_rounds, first_metric_only))
 
     callbacks_before_iter_set = {cb for cb in callbacks_set if getattr(cb, 'before_iteration', False)}
     callbacks_after_iter_set = callbacks_set - callbacks_before_iter_set
@@ -303,7 +259,7 @@ def train(
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
-        booster.model_from_string(booster.model_to_string(), verbose='_silent_false').free_dataset()
+        booster.model_from_string(booster.model_to_string()).free_dataset()
     return booster
 
 
@@ -426,8 +382,7 @@ def cv(params, train_set, num_boost_round=100,
        metrics=None, fobj=None, feval=None, init_model=None,
        feature_name='auto', categorical_feature='auto',
        early_stopping_rounds=None, fpreproc=None,
-       verbose_eval=None, show_stdv=True, seed=0,
-       callbacks=None, eval_train_metric=False,
+       seed=0, callbacks=None, eval_train_metric=False,
        return_cvbooster=False):
     """Perform the cross-validation with given parameters.
 
@@ -522,13 +477,6 @@ def cv(params, train_set, num_boost_round=100,
     fpreproc : callable or None, optional (default=None)
         Preprocessing function that takes (dtrain, dtest, params)
         and returns transformed versions of those.
-    verbose_eval : bool, int, or None, optional (default=None)
-        Whether to display the progress.
-        If True, progress will be displayed at every boosting stage.
-        If int, progress will be displayed at every given ``verbose_eval`` boosting stage.
-    show_stdv : bool, optional (default=True)
-        Whether to display the standard deviation in progress.
-        Results are not affected by this parameter, and always contain std.
     seed : int, optional (default=0)
         Seed used to generate the folds (passed to numpy.random.seed).
     callbacks : list of callable, or None, optional (default=None)
@@ -606,13 +554,6 @@ def cv(params, train_set, num_boost_round=100,
         callbacks = set(callbacks)
     if early_stopping_rounds is not None and early_stopping_rounds > 0:
         callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
-    if verbose_eval is not None:
-        _log_warning("'verbose_eval' argument is deprecated and will be removed in a future release of LightGBM. "
-                     "Pass 'log_evaluation()' callback via 'callbacks' argument instead.")
-    if verbose_eval is True:
-        callbacks.add(callback.log_evaluation(show_stdv=show_stdv))
-    elif isinstance(verbose_eval, int):
-        callbacks.add(callback.log_evaluation(verbose_eval, show_stdv=show_stdv))
 
     callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
     callbacks_after_iter = callbacks - callbacks_before_iter
