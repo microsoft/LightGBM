@@ -74,7 +74,6 @@ lgb.train <- function(params = list(),
   }
 
   # Setup temporary variables
-  params$verbose <- verbose
   params <- lgb.check.obj(params = params, obj = obj)
   params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
@@ -84,6 +83,11 @@ lgb.train <- function(params = list(),
   # in `params`.
   # this ensures that the model stored with Booster$save() correctly represents
   # what was passed in
+  params <- lgb.check.wrapper_param(
+    main_param_name = "verbosity"
+    , params = params
+    , alternative_kwarg_value = verbose
+  )
   params <- lgb.check.wrapper_param(
     main_param_name = "num_iterations"
     , params = params
