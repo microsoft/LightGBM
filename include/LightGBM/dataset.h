@@ -13,7 +13,7 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
 
-#include <LightGBM/src/io/parser.hpp>
+// #include "../../src/io/parser.hpp"
 
 #include <string>
 #include <functional>
@@ -25,6 +25,19 @@
 #include <vector>
 
 namespace LightGBM {
+
+class Str2Num {
+public:
+
+  Str2Num(){
+    current = 0;
+  }
+
+  std::map<std::string, double> Str2NumMap;
+  double current;
+};
+
+extern std::vector<Str2Num> maps;
 
 /*! \brief forward declaration */
 class DatasetLoader;
@@ -741,25 +754,31 @@ class Dataset {
     return raw_data_[numeric_feature_map_[feat_ind]].data();
   }
 
-  inline void store_mapping(std::vector<Str2Num> maps){
-    // store maps to mapping 
-    for(int i=0; i < maps.size(); i++){
-      std::string name = feature_names_[i];
+  inline void store_mapping()  {
+    // store maps to mapping
+    int offset = 0;
+    for(int i=0; i < maps.size(); i++){    
+      std::string name;
+      
+      if(i == label_idx_){
+        name = "label";
+        offset--;
+      }else{ 
+        name = feature_names_[i + offset];
+        }
+        
       name = name + '\n';
       std::map<std::string, double>::iterator iter;
       iter = maps[i].Str2NumMap.begin();
       while(iter != maps[i].Str2NumMap.end()){
         name = name + iter->first + "=" + std::to_string(iter->second) + '\n'; 
+        iter++;
       }
       name += '\n';
       mapping.push_back(name);
     }
   }
 
-  inline std::vector< std::map<std::string, double> >  load_mapping() const {
-    std::vector< std::map<std::string, double> > result;
-    
-  }
 
   inline std::vector< std::string >  get_mapping() const {
     return mapping;

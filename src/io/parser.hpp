@@ -16,16 +16,7 @@
 namespace LightGBM {
 
 // define a str2num map class
-class Str2Num {
-public:
 
-  Str2Num(){
-    current = 0;
-  }
-
-  std::map<std::string, double> Str2NumMap;
-  double current;
-};
 extern std::vector<Str2Num> maps;
 
 const char* Atof_and_map(const char* p, double* out, int idx) {

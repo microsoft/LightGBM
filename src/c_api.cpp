@@ -728,15 +728,9 @@ class Booster {
 
   std::string SaveModelToString(int start_iteration, int num_iteration,
                                 int feature_importance_type) const {
-    std::vector< std::string > maps = train_data_->get_mapping();
-    
-    std::string str;
-    for(int i=0; i < maps.size(); i++){
-      str += maps[i]; 
-    }
 
     return boosting_->SaveModelToString(start_iteration,
-                                        num_iteration, feature_importance_type) + str;
+                                        num_iteration, feature_importance_type);
   }
 
   std::string DumpModel(int start_iteration, int num_iteration,
@@ -893,6 +887,18 @@ class CSC_RowIterator {
 
 const char* LGBM_GetLastError() {
   return LastErrorMsg();
+}
+
+int LGBM_DumpParamAliases(int64_t buffer_len,
+                          int64_t* out_len,
+                          char* out_str) {
+  API_BEGIN();
+  std::string aliases = Config::DumpAliases();
+  *out_len = static_cast<int64_t>(aliases.size()) + 1;
+  if (*out_len <= buffer_len) {
+    std::memcpy(out_str, aliases.c_str(), *out_len);
+  }
+  API_END();
 }
 
 int LGBM_RegisterLogCallback(void (*callback)(const char*)) {
