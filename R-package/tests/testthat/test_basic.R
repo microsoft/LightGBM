@@ -2147,6 +2147,7 @@ test_that("lgb.cv() updates params based on keyword arguments", {
     expect_equal(bst_params[["num_iterations"]], 2L)
     expect_false("num_boost_round" %in% bst_params)
   }
+
 })
 
 context("linear learner")
