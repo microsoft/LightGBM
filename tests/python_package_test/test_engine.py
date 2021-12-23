@@ -1558,17 +1558,16 @@ def test_refit_dataset_params():
     }
     gbm = lgb.train(params, lgb_train, num_boost_round=20)
     non_weight_err_pred = log_loss(y_test, gbm.predict(X_test))
-    dataset_params = {
-        "weight": np.abs(np.random.normal(size=y_train.shape)),
-        "reference": None,
-        "group": None,
-        "init_score": None,
-        "feature_name": "auto",
-        "categorical_feature": "auto",
-        "free_raw_data": True
-    }
     new_gbm = gbm.refit(
-        X_train, y_train, dataset_params=dataset_params
+        data=X_train,
+        label=y_train,
+        weight=np.abs(np.random.normal(size=y_train.shape)),
+        reference=None,
+        group=None,
+        init_score=None,
+        feature_name="auto",
+        categorical_feature="auto",
+        free_raw_data=True
     )
     weight_err_pred = log_loss(y_test, new_gbm.predict(X_test))
     assert weight_err_pred != non_weight_err_pred

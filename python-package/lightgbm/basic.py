@@ -3503,7 +3503,20 @@ class Booster:
                                  raw_score, pred_leaf, pred_contrib,
                                  data_has_header, is_reshape)
 
-    def refit(self, data, label, decay_rate=0.9, dataset_params=None, **kwargs):
+    def refit(
+        self,
+        data,
+        label,
+        decay_rate=0.9,
+        reference=None,
+        weight=None,
+        group=None,
+        init_score=None,
+        feature_name='auto',
+        categorical_feature='auto',
+        free_raw_data=True,
+        **kwargs
+    ):
         """Refit the existing Booster by new data.
 
         Parameters
@@ -3516,9 +3529,29 @@ class Booster:
         decay_rate : float, optional (default=0.9)
             Decay rate of refit,
             will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
-        dataset_params: dict, optional (default=None)
-            additional parameters passed to ``Dataset`` class. If the parameters ``data, label, params`` are contained, they
-            are removed.
+        reference : Dataset or None, optional (default=None)
+            reference for ``data``.
+            If this is Dataset for validation, training data should be used as reference.
+        weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
+            Weight for each ``data`` instance.
+        group : list, numpy 1-D array, pandas Series or None, optional (default=None)
+            Group/query size for ``data``.
+        init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
+            Init score for ``data``.
+        feature_name : list of strings or 'auto', optional (default="auto")
+            Feature names for ``data``.
+            If 'auto' and data is pandas DataFrame, data columns names are used.
+        categorical_feature : list of strings or int, or 'auto', optional (default="auto")
+            Categorical features for ``data``.
+            If list of int, interpreted as indices.
+            If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
+            If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
+            All values in categorical features should be less than int32 max value (2147483647).
+            Large values could be memory consuming. Consider using consecutive integers starting from zero.
+            All negative values in categorical features will be treated as missing values.
+            The output cannot be monotonically constrained with respect to a categorical feature.
+         free_raw_data : bool, optional (default=True)
+            If True, raw data is freed after constructing inner Dataset for ``data``.
         **kwargs
             Other parameters for refit.
             These parameters will be passed to ``predict`` method.
@@ -3530,7 +3563,6 @@ class Booster:
         """
         if self.__set_objective_to_none:
             raise LightGBMError('Cannot refit due to null objective function.')
-        dataset_params = {} if dataset_params is None else dataset_params
         predictor = self._to_predictor(deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
@@ -3544,9 +3576,18 @@ class Booster:
             default_value=None
         )
         new_params["linear_tree"] = bool(out_is_linear.value)
-        for arg in ['data', 'label', 'params']:
-            dataset_params.pop(arg, None)
-        train_set = Dataset(data, label, params=new_params, **dataset_params)
+        train_set = Dataset(
+            data=data,
+            label=label,
+            reference=reference,
+            weight=weight,
+            group=group,
+            init_score=init_score,
+            feature_name=feature_name,
+            categorical_feature=categorical_feature,
+            params=new_params,
+            free_raw_data=free_raw_data,
+        )
         new_params['refit_decay_rate'] = decay_rate
         new_booster = Booster(new_params, train_set)
         # Copy models
