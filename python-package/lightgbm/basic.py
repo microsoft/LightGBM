@@ -3503,7 +3503,7 @@ class Booster:
                                  raw_score, pred_leaf, pred_contrib,
                                  data_has_header, is_reshape)
 
-    def refit(self, data, label, decay_rate=0.9, kwargs_for_predict=None, kwargs_for_dataset=None):
+    def refit(self, data, label, decay_rate=0.9, dataset_params=None, **kwargs):
         """Refit the existing Booster by new data.
 
         Parameters
@@ -3516,11 +3516,12 @@ class Booster:
         decay_rate : float, optional (default=0.9)
             Decay rate of refit,
             will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
-        kwargs_for_predict: dict, optional (default=None)
-            parameters passed to ``predict`` method.
-        kwargs_for_dataset: dict, optional (default=None)
+        dataset_params: dict, optional (default=None)
             additional parameters passed to ``Dataset`` class. If the parameters ``data, label, params`` are contained, they
             are removed.
+        **kwargs
+            Other parameters for refit.
+            These parameters will be passed to ``predict`` method.
 
         Returns
         -------
@@ -3529,9 +3530,8 @@ class Booster:
         """
         if self.__set_objective_to_none:
             raise LightGBMError('Cannot refit due to null objective function.')
-        kwargs_for_predict = {} if kwargs_for_predict is None else kwargs_for_predict
-        kwargs_for_dataset = {} if kwargs_for_dataset is None else kwargs_for_dataset
-        predictor = self._to_predictor(deepcopy(kwargs_for_predict))
+        dataset_params = {} if dataset_params is None else dataset_params
+        predictor = self._to_predictor(deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_int(0)
@@ -3545,8 +3545,8 @@ class Booster:
         )
         new_params["linear_tree"] = bool(out_is_linear.value)
         for arg in ['data', 'label', 'params']:
-            kwargs_for_dataset.pop(arg, None)
-        train_set = Dataset(data, label, params=new_params, **kwargs_for_dataset)
+            dataset_params.pop(arg, None)
+        train_set = Dataset(data, label, params=new_params, **dataset_params)
         new_params['refit_decay_rate'] = decay_rate
         new_booster = Booster(new_params, train_set)
         # Copy models

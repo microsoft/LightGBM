@@ -50,24 +50,6 @@ def categorize(continuous_x):
     return np.digitize(continuous_x, bins=np.arange(0, 1, 0.01))
 
 
-@pytest.fixture
-def artifacts_for_refit_kwargs():
-    X = np.array([1, 2, 2]).reshape((3, 1))
-    label = np.array([1, 2, 3])
-    data = lgb.basic.Dataset(X, label)
-    booster = lgb.engine.train(
-        {
-            "min_data_in_bin": 1,
-            "min_data_in_leaf": 1,
-            "learning_rate": 1,
-            "boost_from_average": False,
-        },
-        data,
-        num_boost_round=2,
-    )
-    return (X, label, booster)
-
-
 def test_binary():
     X, y = load_breast_cancer(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -1563,11 +1545,21 @@ def test_refit():
     assert err_pred > new_err_pred
 
 
-def test_refit_kwargs_for_predict(artifacts_for_refit_kwargs):
-    # check refit accepts kwargs_for_predict
-    X, label, booster = artifacts_for_refit_kwargs
-    kwargs_for_dataset = {
-        "weight": [1.0, 0.0, 1.0],
+def test_refit_dataset_params():
+    # check refit accepts dataset_params
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    params = {
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'verbose': -1,
+        'min_data': 10
+    }
+    gbm = lgb.train(params, lgb_train, num_boost_round=20)
+    non_weight_err_pred = log_loss(y_test, gbm.predict(X_test))
+    dataset_params = {
+        "weight": np.abs(np.random.normal(size=y_train.shape)),
         "reference": None,
         "group": None,
         "init_score": None,
@@ -1575,25 +1567,11 @@ def test_refit_kwargs_for_predict(artifacts_for_refit_kwargs):
         "categorical_feature": "auto",
         "free_raw_data": True
     }
-    booster_refit = booster.refit(
-        X, label, kwargs_for_dataset=kwargs_for_dataset
+    new_gbm = gbm.refit(
+        X_train, y_train, dataset_params=dataset_params
     )
-    pred = booster_refit.predict(X)
-    assert pred.shape == (3, )
-
-
-def test_refit_kwargs_for_dataset(artifacts_for_refit_kwargs):
-    # check refit accepts kwargs_for_dataset
-    X, label, booster = artifacts_for_refit_kwargs
-    kwargs_for_predict = {
-        "num_iteration": 0,
-        "raw_score": False,
-    }
-    booster_refit = booster.refit(
-        X, label, kwargs_for_predict=kwargs_for_predict
-    )
-    pred = booster_refit.predict(X)
-    assert pred.shape == (3, )
+    weight_err_pred = log_loss(y_test, new_gbm.predict(X_test))
+    assert weight_err_pred != non_weight_err_pred
 
 
 def test_mape_rf():
