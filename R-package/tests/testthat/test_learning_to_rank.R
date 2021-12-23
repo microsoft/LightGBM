@@ -78,6 +78,8 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         , ndcg_at = ndcg_at
         , lambdarank_truncation_level = 3L
         , label_gain = "0,1,3"
+        , min_data = 1L
+        , learning_rate = 0.01
     )
     nfold <- 4L
     nrounds <- 10L
@@ -86,8 +88,6 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         , data = dtrain
         , nrounds = nrounds
         , nfold = nfold
-        , min_data = 1L
-        , learning_rate = 0.01
     )
     expect_is(cv_bst, "lgb.CVBooster")
     expect_equal(length(cv_bst$boosters), nfold)

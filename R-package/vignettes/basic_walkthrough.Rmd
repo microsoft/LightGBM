@@ -62,10 +62,12 @@ X <- data.matrix(bank[, c("age", "balance")])
 fit <- lightgbm(
   data = X
   , label = y
-  , num_leaves = 4L
-  , learning_rate = 1.0
+  , params = list(
+    num_leaves = 4L
+    , learning_rate = 1.0
+    , objective = "binary"
+  )
   , nrounds = 10L
-  , objective = "binary"
   , verbose = -1L
 )
 

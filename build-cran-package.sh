@@ -38,7 +38,7 @@ while [ $# -gt 0 ]; do
     --r-executable=*)
       LGB_R_EXECUTABLE="${1#*=}"
       ;;
-    --no-build-vignettes=*)
+    --no-build-vignettes*)
       BUILD_VIGNETTES=false
       ;;
     *)

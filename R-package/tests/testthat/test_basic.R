@@ -72,10 +72,12 @@ test_that("train and predict binary classification", {
   bst <- lightgbm(
     data = train$data
     , label = train$label
-    , num_leaves = 5L
+    , params = list(
+        num_leaves = 5L
+        , objective = "binary"
+        , metric = "binary_error"
+    )
     , nrounds = nrounds
-    , objective = "binary"
-    , metric = "binary_error"
     , save_name = tempfile(fileext = ".model")
   )
   expect_false(is.null(bst$record_evals))
@@ -100,14 +102,16 @@ test_that("train and predict softmax", {
   bst <- lightgbm(
     data = as.matrix(iris[, -5L])
     , label = lb
-    , num_leaves = 4L
-    , learning_rate = 0.05
+    , params = list(
+        num_leaves = 4L
+        , learning_rate = 0.05
+        , min_data = 20L
+        , min_hessian = 10.0
+        , objective = "multiclass"
+        , metric = "multi_error"
+        , num_class = 3L
+    )
     , nrounds = 20L
-    , min_data = 20L
-    , min_hessian = 10.0
-    , objective = "multiclass"
-    , metric = "multi_error"
-    , num_class = 3L
     , save_name = tempfile(fileext = ".model")
   )
 
@@ -125,11 +129,13 @@ test_that("use of multiple eval metrics works", {
   bst <- lightgbm(
     data = train$data
     , label = train$label
-    , num_leaves = 4L
-    , learning_rate = 1.0
+    , params = list(
+        num_leaves = 4L
+        , learning_rate = 1.0
+        , objective = "binary"
+        , metric = metrics
+    )
     , nrounds = 10L
-    , objective = "binary"
-    , metric = metrics
     , save_name = tempfile(fileext = ".model")
   )
   expect_false(is.null(bst$record_evals))
@@ -147,10 +153,12 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
   bst <- lightgbm(
     data = train$data
     , label = train$label
-    , num_leaves = 5L
+    , params = list(
+        num_leaves = 5L
+        , objective = "binary"
+        , metric = "binary_error"
+    )
     , nrounds = nrounds
-    , objective = "binary"
-    , metric = "binary_error"
     , save_name = tempfile(fileext = ".model")
   )
   expect_true(abs(bst$lower_bound() - -1.590853) < TOLERANCE)
@@ -163,10 +171,12 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
   bst <- lightgbm(
     data = train$data
     , label = train$label
-    , num_leaves = 5L
+    , params = list(
+        num_leaves = 5L
+        , objective = "regression"
+        , metric = "l2"
+    )
     , nrounds = nrounds
-    , objective = "regression"
-    , metric = "l2"
     , save_name = tempfile(fileext = ".model")
   )
   expect_true(abs(bst$lower_bound() - 0.1513859) < TOLERANCE)
@@ -264,13 +274,15 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
   bst <- lightgbm(
     data = train$data
     , label = train$label
-    , num_leaves = 5L
-    , nrounds = nrounds
-    , objective = "binary"
-    , metric = c(
-      "binary_error"
-      , "auc"
+    , params = list(
+        num_leaves = 5L
+        , objective = "binary"
+        , metric = c(
+            "binary_error"
+            , "auc"
+        )
     )
+    , nrounds = nrounds
     , valids = list(
       "valid1" = dvalid1
       , "valid2" = dvalid2
@@ -291,6 +303,23 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
   expect_true(abs(bst$record_evals[["train"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
   expect_true(abs(bst$record_evals[["valid1"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
   expect_true(abs(bst$record_evals[["valid2"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
+})
+
+test_that("lightgbm() does not write model to disk if save_name=NULL", {
+  files_before <- list.files(getwd())
+
+  model <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , params = list(objective = "binary")
+    , verbose = 0L
+    , save_name = NULL
+  )
+
+  files_after <- list.files(getwd())
+
+  expect_equal(files_before, files_after)
 })
 
 
@@ -330,14 +359,17 @@ context("lgb.cv()")
 
 test_that("cv works", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(objective = "regression", metric = "l2,l1")
+  params <- list(
+    objective = "regression"
+    , metric = "l2,l1"
+    , min_data = 1L
+    , learning_rate = 1.0
+  )
   bst <- lgb.cv(
     params
     , dtrain
     , 10L
     , nfold = 5L
-    , min_data = 1L
-    , learning_rate = 1.0
     , early_stopping_rounds = 10L
   )
   expect_false(is.null(bst$record_evals))
@@ -345,7 +377,11 @@ test_that("cv works", {
 
 test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(objective = "regression", metric = "l2,l1")
+  params <- list(
+    objective = "regression"
+    , metric = "l2,l1"
+    , min_data = 1L
+  )
   for (nround_value in c(-10L, 0L)) {
     expect_error({
       bst <- lgb.cv(
@@ -353,7 +389,6 @@ test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
         , dtrain
         , nround_value
         , nfold = 5L
-        , min_data = 1L
       )
     }, "nrounds should be greater than zero")
   }
@@ -371,11 +406,14 @@ test_that("lgb.cv() throws an informative error is 'data' is not an lgb.Dataset 
   for (val in bad_values) {
     expect_error({
       bst <- lgb.cv(
-        params = list(objective = "regression", metric = "l2,l1")
+        params = list(
+            objective = "regression"
+            , metric = "l2,l1"
+            , min_data = 1L
+        )
         , data = val
         , 10L
         , nfold = 5L
-        , min_data = 1L
       )
     }, regexp = "'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'", fixed = TRUE)
   }
@@ -392,11 +430,11 @@ test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric
     data = dtrain
     , nfold = 5L
     , nrounds = nrounds
-    , num_leaves = 5L
     , params = list(
       objective = "binary"
       , metric = "auc,binary_error"
       , learning_rate = 1.5
+      , num_leaves = 5L
     )
   )
   expect_is(cv_bst, "lgb.CVBooster")
@@ -453,7 +491,11 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
 
 test_that("lgb.cv() respects showsd argument", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(objective = "regression", metric = "l2")
+  params <- list(
+    objective = "regression"
+    , metric = "l2"
+    , min_data = 1L
+  )
   nrounds <- 5L
   set.seed(708L)
   bst_showsd <- lgb.cv(
@@ -461,7 +503,6 @@ test_that("lgb.cv() respects showsd argument", {
     , data = dtrain
     , nrounds = nrounds
     , nfold = 3L
-    , min_data = 1L
     , showsd = TRUE
   )
   evals_showsd <- bst_showsd$record_evals[["valid"]][["l2"]]
@@ -471,7 +512,6 @@ test_that("lgb.cv() respects showsd argument", {
     , data = dtrain
     , nrounds = nrounds
     , nfold = 3L
-    , min_data = 1L
     , showsd = FALSE
   )
   evals_no_showsd <- bst_no_showsd$record_evals[["valid"]][["l2"]]
@@ -493,11 +533,11 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
       train$data
       , label = train$label
     )
-    , learning_rate = 1.0
     , nrounds = 10L
     , params = list(
       objective = "binary"
       , metric = metrics
+      , learning_rate = 1.0
     )
     , valids = list(
       "train" = lgb.Dataset(
@@ -1471,13 +1511,13 @@ test_that("when early stopping is not activated, best_iter and best_score come f
     objective = "regression"
     , metric = "rmse"
     , learning_rate = 1.5
+    , num_leaves = 5L
   )
 
   # example 1: two valids, neither are the training data
   bst <- lgb.train(
     data = dtrain
     , nrounds = nrounds
-    , num_leaves = 5L
     , valids = list(
       "valid1" = dvalid1
       , "valid2" = dvalid2
@@ -1499,7 +1539,6 @@ test_that("when early stopping is not activated, best_iter and best_score come f
   bst <- lgb.train(
     data = dtrain
     , nrounds = nrounds
-    , num_leaves = 5L
     , valids = list(
       "train" = dtrain
       , "valid1" = dvalid1
@@ -1522,7 +1561,6 @@ test_that("when early stopping is not activated, best_iter and best_score come f
   bst <- lgb.train(
     data = dtrain
     , nrounds = nrounds
-    , num_leaves = 5L
     , valids = list(
       "valid1" = dvalid1
       , "train" = dtrain
@@ -1546,7 +1584,6 @@ test_that("when early stopping is not activated, best_iter and best_score come f
   bst <- lgb.train(
     data = dtrain
     , nrounds = nrounds
-    , num_leaves = 5L
     , valids = list(
       "valid1" = dvalid1
       , "valid2" = dvalid2
@@ -1570,7 +1607,6 @@ test_that("when early stopping is not activated, best_iter and best_score come f
   bst <- lgb.train(
     data = dtrain
     , nrounds = nrounds
-    , num_leaves = 5L
     , valids = list(
       "valid1" = dvalid1
       , "something-random-we-would-not-hardcode" = dtrain
@@ -1595,7 +1631,6 @@ test_that("when early stopping is not activated, best_iter and best_score come f
   bst <- lgb.train(
     data = dtrain
     , nrounds = nrounds
-    , num_leaves = 5L
     , valids = list(
       "train" = dtrain
     )
@@ -1627,7 +1662,6 @@ test_that("lightgbm.train() gives the correct best_score and best_iter for a met
   bst <- lgb.train(
     data = dtrain
     , nrounds = nrounds
-    , num_leaves = 5L
     , valids = list(
       "valid1" = dvalid1
       , "something-random-we-would-not-hardcode" = dtrain
@@ -1636,6 +1670,7 @@ test_that("lightgbm.train() gives the correct best_score and best_iter for a met
       objective = "binary"
       , metric = "auc"
       , learning_rate = 1.5
+      , num_leaves = 5L
     )
   )
   # note that "something-random-we-would-not-hardcode" was recognized as the training
@@ -1680,7 +1715,6 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
   bst <- lightgbm(
     data = dtrain
     , nrounds = nrounds
-    , num_leaves = 5L
     , valids = list(
       "valid1" = dvalid1
       , "something-random-we-would-not-hardcode" = dtrain
@@ -1690,6 +1724,7 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
       objective = "binary"
       , metric = "auc"
       , learning_rate = 1.5
+      , num_leaves = 5L
     )
     , verbose = -7L
     , save_name = tempfile(fileext = ".model")

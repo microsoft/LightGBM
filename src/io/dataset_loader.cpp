@@ -3,6 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include <LightGBM/dataset_loader.h>
+#include <LightGBM/dataset.h>
 
 #include <LightGBM/network.h>
 #include <LightGBM/utils/array_args.h>
@@ -16,6 +17,8 @@
 namespace LightGBM {
 
 using json11::Json;
+
+extern std::vector<Str2Num> maps;
 
 DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename)
   :config_(io_config), random_(config_.data_random_seed), predict_fun_(predict_fun), num_class_(num_class) {
@@ -1170,7 +1173,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   if (dataset->has_raw()) {
     dataset->ResizeRaw(static_cast<int>(sample_data.size()));
   }
-
+   
   auto t2 = std::chrono::high_resolution_clock::now();
   Log::Info("Construct bin mappers from text data time %.2f seconds",
             std::chrono::duration<double, std::milli>(t2 - t1) * 1e-3);
@@ -1292,6 +1295,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
     // metadata_ will manage space of init_score
     dataset->metadata_.SetInitScore(init_score.data(), dataset->num_data_ * num_class_);
   }
+  dataset->store_mapping();
   dataset->FinishLoad();
   // text data can be free after loaded feature values
   text_data->clear();
@@ -1362,6 +1366,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
+     
   };
   TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
   if (!used_data_indices.empty()) {
@@ -1376,6 +1381,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
   if (!init_score.empty()) {
     dataset->metadata_.SetInitScore(init_score.data(), dataset->num_data_ * num_class_);
   }
+  dataset->store_mapping();
   dataset->FinishLoad();
 }
 
