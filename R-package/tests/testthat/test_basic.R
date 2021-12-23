@@ -1559,6 +1559,60 @@ test_that("lgb.train() works with integer, double, and numeric data", {
   }
 })
 
+test_that("lgb.train() updates params based on keyword arguments", {
+  dtrain <- lgb.Dataset(
+    data = matrix(rnorm(400L), ncol =  4L)
+    , label = rnorm(100L)
+  )
+
+  # defaults from keyword arguments should be used if not specified in params
+  invisible(
+    capture.output({
+      bst <- lgb.train(
+        data = dtrain
+        , obj = "regression"
+        , params = list()
+      )
+    })
+  )
+  expect_equal(bst$params[["verbosity"]], 1L)
+  expect_equal(bst$params[["num_iterations"]], 100L)
+
+  # main param names should be preferred to keyword arguments
+  invisible(
+    capture.output({
+      bst <- lgb.train(
+        data = dtrain
+        , obj = "regression"
+        , params = list(
+          "verbosity" = 5L
+          , "num_iterations" = 2L
+        )
+      )
+    })
+  )
+  expect_equal(bst$params[["verbosity"]], 5L)
+  expect_equal(bst$params[["num_iterations"]], 2L)
+
+  # aliases should be preferred to keyword arguments, and converted to main parameter name
+  invisible(
+    capture.output({
+      bst <- lgb.train(
+        data = dtrain
+        , obj = "regression"
+        , params = list(
+          "verbose" = 5L
+          , "num_boost_round" = 2L
+        )
+      )
+    })
+  )
+  expect_equal(bst$params[["verbosity"]], 5L)
+  expect_false("verbose" %in% bst$params)
+  expect_equal(bst$params[["num_iterations"]], 2L)
+  expect_false("num_boost_round" %in% bst$params)
+})
+
 test_that("when early stopping is not activated, best_iter and best_score come from valids and not training data", {
   set.seed(708L)
   trainDF <- data.frame(
@@ -1976,6 +2030,74 @@ test_that("early stopping works with lgb.cv()", {
     length(bst$record_evals[["valid"]][["increasing_metric"]][["eval"]])
     , early_stopping_rounds + 1L
   )
+})
+
+test_that("lgb.cv() updates params based on keyword arguments", {
+  dtrain <- lgb.Dataset(
+    data = matrix(rnorm(400L), ncol =  4L)
+    , label = rnorm(100L)
+  )
+
+  # defaults from keyword arguments should be used if not specified in params
+  invisible(
+    capture.output({
+      cv_bst <- lgb.cv(
+        data = dtrain
+        , obj = "regression"
+        , params = list()
+        , nfold = 2L
+      )
+    })
+  )
+
+  for (bst in cv_bst$boosters) {
+    bst_params <- bst[["booster"]]$params
+    expect_equal(bst_params[["verbosity"]], 1L)
+    expect_equal(bst_params[["num_iterations"]], 100L)
+  }
+
+  # main param names should be preferred to keyword arguments
+  invisible(
+    capture.output({
+      cv_bst <- lgb.cv(
+        data = dtrain
+        , obj = "regression"
+        , params = list(
+          "verbosity" = 5L
+          , "num_iterations" = 2L
+        )
+        , nfold = 2L
+      )
+    })
+  )
+  for (bst in cv_bst$boosters) {
+    bst_params <- bst[["booster"]]$params
+    expect_equal(bst_params[["verbosity"]], 5L)
+    expect_equal(bst_params[["num_iterations"]], 2L)
+  }
+
+  # aliases should be preferred to keyword arguments, and converted to main parameter name
+  invisible(
+    capture.output({
+      cv_bst <- lgb.cv(
+        data = dtrain
+        , obj = "regression"
+        , params = list(
+          "verbose" = 5L
+          , "num_boost_round" = 2L
+        )
+        , nfold = 2L
+      )
+    })
+  )
+  for (bst in cv_bst$boosters) {
+    bst_params <- bst[["booster"]]$params
+    expect_equal(bst_params[["verbosity"]], 5L)
+    expect_false("verbose" %in% bst_params)
+    expect_equal(bst_params[["num_iterations"]], 2L)
+    expect_false("num_boost_round" %in% bst_params)
+  }
+
 })
 
 context("linear learner")
