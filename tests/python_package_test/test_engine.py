@@ -62,10 +62,13 @@ def test_binary():
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=20,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=20,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     ret = log_loss(y_test, gbm.predict(X_test))
     assert ret < 0.14
     assert len(evals_result['valid_0']['binary_logloss']) == 50
@@ -88,10 +91,13 @@ def test_rf():
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=50,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=50,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     ret = log_loss(y_test, gbm.predict(X_test))
     assert ret < 0.19
     assert evals_result['valid_0']['binary_logloss'][-1] == pytest.approx(ret)
@@ -107,10 +113,13 @@ def test_regression():
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=50,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=50,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     assert ret < 7
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
@@ -132,10 +141,13 @@ def test_missing_value_handle():
         'boost_from_average': False
     }
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=20,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=20,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     ret = mean_squared_error(y_train, gbm.predict(X_train))
     assert ret < 0.005
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
@@ -157,10 +169,13 @@ def test_missing_value_handle_more_na():
         'boost_from_average': False
     }
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=20,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=20,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     ret = mean_squared_error(y_train, gbm.predict(X_train))
     assert ret < 0.005
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
@@ -187,10 +202,13 @@ def test_missing_value_handle_na():
         'zero_as_missing': False
     }
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=1,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=1,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     pred = gbm.predict(X_train)
     np.testing.assert_allclose(pred, y)
     ret = roc_auc_score(y_train, pred)
@@ -219,10 +237,13 @@ def test_missing_value_handle_zero():
         'zero_as_missing': True
     }
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=1,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=1,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     pred = gbm.predict(X_train)
     np.testing.assert_allclose(pred, y)
     ret = roc_auc_score(y_train, pred)
@@ -251,10 +272,13 @@ def test_missing_value_handle_none():
         'use_missing': False
     }
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=1,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=1,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     pred = gbm.predict(X_train)
     assert pred[0] == pytest.approx(pred[1])
     assert pred[-1] == pytest.approx(pred[0])
@@ -289,10 +313,13 @@ def test_categorical_handle():
         'categorical_column': 0
     }
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=1,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=1,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     pred = gbm.predict(X_train)
     np.testing.assert_allclose(pred, y)
     ret = roc_auc_score(y_train, pred)
@@ -326,10 +353,13 @@ def test_categorical_handle_na():
         'categorical_column': 0
     }
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=1,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=1,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     pred = gbm.predict(X_train)
     np.testing.assert_allclose(pred, y)
     ret = roc_auc_score(y_train, pred)
@@ -363,10 +393,13 @@ def test_categorical_non_zero_inputs():
         'categorical_column': 0
     }
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=1,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=1,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     pred = gbm.predict(X_train)
     np.testing.assert_allclose(pred, y)
     ret = roc_auc_score(y_train, pred)
@@ -386,10 +419,13 @@ def test_multiclass():
     lgb_train = lgb.Dataset(X_train, y_train, params=params)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, params=params)
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=50,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=50,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     ret = multi_logloss(y_test, gbm.predict(X_test))
     assert ret < 0.16
     assert evals_result['valid_0']['multi_logloss'][-1] == pytest.approx(ret)
@@ -414,10 +450,13 @@ def test_multiclass_rf():
     lgb_train = lgb.Dataset(X_train, y_train, params=params)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, params=params)
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=50,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=50,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     ret = multi_logloss(y_test, gbm.predict(X_test))
     assert ret < 0.23
     assert evals_result['valid_0']['multi_logloss'][-1] == pytest.approx(ret)
@@ -456,8 +495,16 @@ def test_multi_class_error():
     est = lgb.train(params, lgb_data, num_boost_round=10)
     predict_default = est.predict(X)
     results = {}
-    est = lgb.train(dict(params, multi_error_top_k=1), lgb_data, num_boost_round=10,
-                    valid_sets=[lgb_data], evals_result=results)
+    est = lgb.train(
+        dict(
+            params,
+            multi_error_top_k=1
+        ),
+        lgb_data,
+        num_boost_round=10,
+        valid_sets=[lgb_data],
+        callbacks=[lgb.record_evaluation(results)]
+    )
     predict_1 = est.predict(X)
     # check that default gives same result as k = 1
     np.testing.assert_allclose(predict_1, predict_default)
@@ -466,15 +513,31 @@ def test_multi_class_error():
     assert results['training']['multi_error'][-1] == pytest.approx(err)
     # check against independent calculation for k = 2
     results = {}
-    est = lgb.train(dict(params, multi_error_top_k=2), lgb_data, num_boost_round=10,
-                    valid_sets=[lgb_data], evals_result=results)
+    est = lgb.train(
+        dict(
+            params,
+            multi_error_top_k=2
+        ),
+        lgb_data,
+        num_boost_round=10,
+        valid_sets=[lgb_data],
+        callbacks=[lgb.record_evaluation(results)]
+    )
     predict_2 = est.predict(X)
     err = top_k_error(y, predict_2, 2)
     assert results['training']['multi_error@2'][-1] == pytest.approx(err)
     # check against independent calculation for k = 10
     results = {}
-    est = lgb.train(dict(params, multi_error_top_k=10), lgb_data, num_boost_round=10,
-                    valid_sets=[lgb_data], evals_result=results)
+    est = lgb.train(
+        dict(
+            params,
+            multi_error_top_k=10
+        ),
+        lgb_data,
+        num_boost_round=10,
+        valid_sets=[lgb_data],
+        callbacks=[lgb.record_evaluation(results)]
+    )
     predict_3 = est.predict(X)
     err = top_k_error(y, predict_3, 10)
     assert results['training']['multi_error@10'][-1] == pytest.approx(err)
@@ -484,12 +547,25 @@ def test_multi_class_error():
     lgb_data = lgb.Dataset(X, label=y)
     params['num_classes'] = 2
     results = {}
-    lgb.train(params, lgb_data, num_boost_round=10,
-              valid_sets=[lgb_data], evals_result=results)
+    lgb.train(
+        params,
+        lgb_data,
+        num_boost_round=10,
+        valid_sets=[lgb_data],
+        callbacks=[lgb.record_evaluation(results)]
+    )
     assert results['training']['multi_error'][-1] == pytest.approx(1)
     results = {}
-    lgb.train(dict(params, multi_error_top_k=2), lgb_data, num_boost_round=10,
-              valid_sets=[lgb_data], evals_result=results)
+    lgb.train(
+        dict(
+            params,
+            multi_error_top_k=2
+        ),
+        lgb_data,
+        num_boost_round=10,
+        valid_sets=[lgb_data],
+        callbacks=[lgb.record_evaluation(results)]
+    )
     assert results['training']['multi_error@2'][-1] == pytest.approx(0)
 
 
@@ -505,13 +581,25 @@ def test_auc_mu():
               'num_classes': 2,
               'seed': 0}
     results_auc_mu = {}
-    lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc_mu)
+    lgb.train(
+        params,
+        lgb_X,
+        num_boost_round=10,
+        valid_sets=[lgb_X],
+        callbacks=[lgb.record_evaluation(results_auc_mu)]
+    )
     params = {'objective': 'binary',
               'metric': 'auc',
               'verbose': -1,
               'seed': 0}
     results_auc = {}
-    lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc)
+    lgb.train(
+        params,
+        lgb_X,
+        num_boost_round=10,
+        valid_sets=[lgb_X],
+        callbacks=[lgb.record_evaluation(results_auc)]
+    )
     np.testing.assert_allclose(results_auc_mu['training']['auc_mu'], results_auc['training']['auc'])
     # test the case where all predictions are equal
     lgb_X = lgb.Dataset(X[:10], label=y_new[:10])
@@ -522,7 +610,13 @@ def test_auc_mu():
               'min_data_in_leaf': 20,
               'seed': 0}
     results_auc_mu = {}
-    lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_auc_mu)
+    lgb.train(
+        params,
+        lgb_X,
+        num_boost_round=10,
+        valid_sets=[lgb_X],
+        callbacks=[lgb.record_evaluation(results_auc_mu)]
+    )
     assert results_auc_mu['training']['auc_mu'][-1] == pytest.approx(0.5)
     # test that weighted data gives different auc_mu
     lgb_X = lgb.Dataset(X, label=y)
@@ -530,15 +624,31 @@ def test_auc_mu():
     results_unweighted = {}
     results_weighted = {}
     params = dict(params, num_classes=10, num_leaves=5)
-    lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=results_unweighted)
-    lgb.train(params, lgb_X_weighted, num_boost_round=10, valid_sets=[lgb_X_weighted],
-              evals_result=results_weighted)
+    lgb.train(
+        params,
+        lgb_X,
+        num_boost_round=10,
+        valid_sets=[lgb_X],
+        callbacks=[lgb.record_evaluation(results_unweighted)]
+    )
+    lgb.train(
+        params,
+        lgb_X_weighted,
+        num_boost_round=10,
+        valid_sets=[lgb_X_weighted],
+        callbacks=[lgb.record_evaluation(results_weighted)]
+    )
     assert results_weighted['training']['auc_mu'][-1] < 1
     assert results_unweighted['training']['auc_mu'][-1] != results_weighted['training']['auc_mu'][-1]
     # test that equal data weights give same auc_mu as unweighted data
     lgb_X_weighted = lgb.Dataset(X, label=y, weight=np.ones(y.shape) * 0.5)
-    lgb.train(params, lgb_X_weighted, num_boost_round=10, valid_sets=[lgb_X_weighted],
-              evals_result=results_weighted)
+    lgb.train(
+        params,
+        lgb_X_weighted,
+        num_boost_round=10,
+        valid_sets=[lgb_X_weighted],
+        callbacks=[lgb.record_evaluation(results_weighted)]
+    )
     assert results_unweighted['training']['auc_mu'][-1] == pytest.approx(
         results_weighted['training']['auc_mu'][-1], abs=1e-5)
     # should give 1 when accuracy = 1
@@ -551,7 +661,13 @@ def test_auc_mu():
               'min_data_in_leaf': 1,
               'verbose': -1}
     results = {}
-    lgb.train(params, lgb_X, num_boost_round=100, valid_sets=[lgb_X], evals_result=results)
+    lgb.train(
+        params,
+        lgb_X,
+        num_boost_round=100,
+        valid_sets=[lgb_X],
+        callbacks=[lgb.record_evaluation(results)]
+    )
     assert results['training']['auc_mu'][-1] == pytest.approx(1)
     # test loading class weights
     Xy = np.loadtxt(
@@ -567,10 +683,22 @@ def test_auc_mu():
               'verbose': -1,
               'seed': 0}
     results_weight = {}
-    lgb.train(params, lgb_X, num_boost_round=5, valid_sets=[lgb_X], evals_result=results_weight)
+    lgb.train(
+        params,
+        lgb_X,
+        num_boost_round=5,
+        valid_sets=[lgb_X],
+        callbacks=[lgb.record_evaluation(results_weight)]
+    )
     params['auc_mu_weights'] = []
     results_no_weight = {}
-    lgb.train(params, lgb_X, num_boost_round=5, valid_sets=[lgb_X], evals_result=results_no_weight)
+    lgb.train(
+        params,
+        lgb_X,
+        num_boost_round=5,
+        valid_sets=[lgb_X],
+        callbacks=[lgb.record_evaluation(results_no_weight)]
+    )
     assert results_weight['training']['auc_mu'][-1] != results_no_weight['training']['auc_mu'][-1]
 
 
@@ -678,15 +806,21 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
     )
 
     # regular early stopping
-    train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0)]
     evals_result = {}
-    bst = lgb.train(evals_result=evals_result, **train_kwargs)
+    train_kwargs['callbacks'] = [
+        lgb.callback.early_stopping(10, first_only, verbose=0),
+        lgb.record_evaluation(evals_result)
+    ]
+    bst = lgb.train(**train_kwargs)
     scores = np.vstack(list(evals_result['valid'].values())).T
 
     # positive min_delta
-    train_kwargs['callbacks'] = [lgb.callback.early_stopping(10, first_only, verbose=0, min_delta=min_delta)]
     delta_result = {}
-    delta_bst = lgb.train(evals_result=delta_result, **train_kwargs)
+    train_kwargs['callbacks'] = [
+        lgb.callback.early_stopping(10, first_only, verbose=0, min_delta=min_delta),
+        lgb.record_evaluation(delta_result)
+    ]
+    delta_bst = lgb.train(**train_kwargs)
     delta_scores = np.vstack(list(delta_result['valid'].values())).T
 
     if first_only:
@@ -717,13 +851,16 @@ def test_continue_train():
     model_name = 'model.txt'
     init_gbm.save_model(model_name)
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=30,
-                    valid_sets=lgb_eval,
-                    # test custom eval metrics
-                    feval=(lambda p, d: ('custom_mae', mean_absolute_error(p, d.get_label()), False)),
-                    evals_result=evals_result,
-                    init_model='model.txt')
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=30,
+        valid_sets=lgb_eval,
+        # test custom eval metrics
+        feval=(lambda p, d: ('custom_mae', mean_absolute_error(p, d.get_label()), False)),
+        callbacks=[lgb.record_evaluation(evals_result)],
+        init_model='model.txt'
+    )
     ret = mean_absolute_error(y_test, gbm.predict(X_test))
     assert ret < 2.0
     assert evals_result['valid_0']['l1'][-1] == pytest.approx(ret)
@@ -757,11 +894,14 @@ def test_continue_train_dart():
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, free_raw_data=False)
     init_gbm = lgb.train(params, lgb_train, num_boost_round=50)
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=50,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result,
-                    init_model=init_gbm)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=50,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)],
+        init_model=init_gbm
+    )
     ret = mean_absolute_error(y_test, gbm.predict(X_test))
     assert ret < 2.0
     assert evals_result['valid_0']['l1'][-1] == pytest.approx(ret)
@@ -780,11 +920,14 @@ def test_continue_train_multiclass():
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, params=params, free_raw_data=False)
     init_gbm = lgb.train(params, lgb_train, num_boost_round=20)
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=30,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result,
-                    init_model=init_gbm)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=30,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)],
+        init_model=init_gbm
+    )
     ret = multi_logloss(y_test, gbm.predict(X_test))
     assert ret < 0.1
     assert evals_result['valid_0']['multi_logloss'][-1] == pytest.approx(ret)
@@ -1071,9 +1214,13 @@ def test_reference_chain():
     tmp_dat_val = tmp_dat.subset(np.arange(80, 100)).subset(np.arange(18))
     params = {'objective': 'regression_l2', 'metric': 'rmse'}
     evals_result = {}
-    lgb.train(params, tmp_dat_train, num_boost_round=20,
-              valid_sets=[tmp_dat_train, tmp_dat_val],
-              evals_result=evals_result)
+    lgb.train(
+        params,
+        tmp_dat_train,
+        num_boost_round=20,
+        valid_sets=[tmp_dat_train, tmp_dat_val],
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     assert len(evals_result['training']['rmse']) == 20
     assert len(evals_result['valid_1']['rmse']) == 20
 
@@ -1683,11 +1830,14 @@ def test_metrics():
         return lgb.cv(params, lgb_train, num_boost_round=2, **kwargs)
 
     def train_booster(params=params_obj_verbose, **kwargs):
-        lgb.train(params, lgb_train,
-                  num_boost_round=2,
-                  valid_sets=[lgb_valid],
-                  evals_result=evals_result,
-                  **kwargs)
+        lgb.train(
+            params,
+            lgb_train,
+            num_boost_round=2,
+            valid_sets=[lgb_valid],
+            callbacks=[lgb.record_evaluation(evals_result)],
+            **kwargs
+        )
 
     # no fobj, no feval
     # default metric
@@ -2048,7 +2198,8 @@ def test_multiple_feval_train():
         valid_sets=validation_dataset,
         num_boost_round=5,
         feval=[constant_metric, decreasing_metric],
-        evals_result=evals_result)
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
 
     assert len(evals_result['valid_0']) == 3
     assert 'binary_logloss' in evals_result['valid_0']
@@ -2334,10 +2485,13 @@ def test_node_level_subcol():
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=25,
-                    valid_sets=lgb_eval,
-                    evals_result=evals_result)
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=25,
+        valid_sets=lgb_eval,
+        callbacks=[lgb.record_evaluation(evals_result)]
+    )
     ret = log_loss(y_test, gbm.predict(X_test))
     assert ret < 0.14
     assert evals_result['valid_0']['binary_logloss'][-1] == pytest.approx(ret)
@@ -2650,8 +2804,17 @@ def test_linear_trees(tmp_path):
     pred1 = est.predict(x)
     lgb_train = lgb.Dataset(x, label=y)
     res = {}
-    est = lgb.train(dict(params, linear_tree=True), lgb_train, num_boost_round=10, evals_result=res,
-                    valid_sets=[lgb_train], valid_names=['train'])
+    est = lgb.train(
+        dict(
+            params,
+            linear_tree=True
+        ),
+        lgb_train,
+        num_boost_round=10,
+        valid_sets=[lgb_train],
+        valid_names=['train'],
+        callbacks=[lgb.record_evaluation(res)]
+    )
     pred2 = est.predict(x)
     assert res['train']['l2'][-1] == pytest.approx(mean_squared_error(y, pred2), abs=1e-1)
     assert mean_squared_error(y, pred2) < mean_squared_error(y, pred1)
@@ -2662,15 +2825,35 @@ def test_linear_trees(tmp_path):
     pred1 = est.predict(x)
     lgb_train = lgb.Dataset(x, label=y)
     res = {}
-    est = lgb.train(dict(params, linear_tree=True), lgb_train, num_boost_round=10, evals_result=res,
-                    valid_sets=[lgb_train], valid_names=['train'])
+    est = lgb.train(
+        dict(
+            params,
+            linear_tree=True
+        ),
+        lgb_train,
+        num_boost_round=10,
+        valid_sets=[lgb_train],
+        valid_names=['train'],
+        callbacks=[lgb.record_evaluation(res)]
+    )
     pred2 = est.predict(x)
     assert res['train']['l2'][-1] == pytest.approx(mean_squared_error(y, pred2), abs=1e-1)
     assert mean_squared_error(y, pred2) < mean_squared_error(y, pred1)
     # test again with bagging
     res = {}
-    est = lgb.train(dict(params, linear_tree=True, subsample=0.8, bagging_freq=1), lgb_train,
-                    num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
+    est = lgb.train(
+        dict(
+            params,
+            linear_tree=True,
+            subsample=0.8,
+            bagging_freq=1
+        ),
+        lgb_train,
+        num_boost_round=10,
+        valid_sets=[lgb_train],
+        valid_names=['train'],
+        callbacks=[lgb.record_evaluation(res)]
+    )
     pred = est.predict(x)
     assert res['train']['l2'][-1] == pytest.approx(mean_squared_error(y, pred), abs=1e-1)
     # test with a feature that has only one non-nan value
@@ -2679,8 +2862,19 @@ def test_linear_trees(tmp_path):
     y[500:] += 10
     lgb_train = lgb.Dataset(x, label=y)
     res = {}
-    est = lgb.train(dict(params, linear_tree=True, subsample=0.8, bagging_freq=1), lgb_train,
-                    num_boost_round=10, evals_result=res, valid_sets=[lgb_train], valid_names=['train'])
+    est = lgb.train(
+        dict(
+            params,
+            linear_tree=True,
+            subsample=0.8,
+            bagging_freq=1
+        ),
+        lgb_train,
+        num_boost_round=10,
+        valid_sets=[lgb_train],
+        valid_names=['train'],
+        callbacks=[lgb.record_evaluation(res)]
+    )
     pred = est.predict(x)
     assert res['train']['l2'][-1] == pytest.approx(mean_squared_error(y, pred), abs=1e-1)
     # test with a categorical feature
@@ -2852,7 +3046,13 @@ def test_average_precision_metric():
     }
     res = {}
     lgb_X = lgb.Dataset(X, label=y)
-    est = lgb.train(params, lgb_X, num_boost_round=10, valid_sets=[lgb_X], evals_result=res)
+    est = lgb.train(
+        params,
+        lgb_X,
+        num_boost_round=10,
+        valid_sets=[lgb_X],
+        callbacks=[lgb.record_evaluation(res)]
+    )
     ap = res['training']['average_precision'][-1]
     pred = est.predict(X)
     sklearn_ap = average_precision_score(y, pred)
@@ -2861,7 +3061,13 @@ def test_average_precision_metric():
     y = y.copy()
     y[:] = 1
     lgb_X = lgb.Dataset(X, label=y)
-    lgb.train(params, lgb_X, num_boost_round=1, valid_sets=[lgb_X], evals_result=res)
+    lgb.train(
+        params,
+        lgb_X,
+        num_boost_round=1,
+        valid_sets=[lgb_X],
+        callbacks=[lgb.record_evaluation(res)]
+    )
     assert res['training']['average_precision'][-1] == pytest.approx(1)
 
 
