@@ -599,7 +599,7 @@ def test_predict_with_dataframe_checks_features():
     # try to predict with a different feature
     df2 = df.rename(columns={'x1': 'z'})
     with pytest.raises(ValueError, match="The following features are missing: {'x1'}"):
-        bst.predict(df2)
+        bst.predict(df2[['z', 'x2', 'x3']])
 
     # predict with the features out of order
     preds_sorted_features = bst.predict(df[features])
