@@ -603,5 +603,5 @@ def test_predict_with_dataframe_checks_features():
 
     # predict with the features out of order
     preds_sorted_features = bst.predict(df[features])
-    preds_reversed_features = bst.predict(df[features[::-1]])
-    np.testing.assert_equal(preds_sorted_features, preds_reversed_features)
+    preds_out_of_order_features = bst.predict(df[['x3', 'x1', 'x2']])
+    np.testing.assert_equal(preds_sorted_features, preds_out_of_order_features)
