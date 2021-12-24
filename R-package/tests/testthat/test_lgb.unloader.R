@@ -1,3 +1,7 @@
+VERBOSITY <- as.integer(
+    Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
+
 context("lgb.unloader")
 
 test_that("lgb.unloader works as expected", {
@@ -10,6 +14,7 @@ test_that("lgb.unloader works as expected", {
             , metric = "l2"
             , min_data = 1L
             , learning_rate = 1.0
+            , verbosity = VERBOSITY
         )
         , data = dtrain
         , nrounds = 1L
@@ -30,6 +35,7 @@ test_that("lgb.unloader finds all boosters and removes them", {
             , metric = "l2"
             , min_data = 1L
             , learning_rate = 1.0
+            , verbosity = VERBOSITY
         )
         , data = dtrain
         , nrounds = 1L
@@ -40,6 +46,7 @@ test_that("lgb.unloader finds all boosters and removes them", {
             , metric = "l2"
             , min_data = 1L
             , learning_rate = 1.0
+            , verbosity = VERBOSITY
         )
         , data = dtrain
         , nrounds = 1L

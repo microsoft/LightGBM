@@ -1,3 +1,7 @@
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
+
 context("testing lgb.Dataset functionality")
 
 data(agaricus.train, package = "lightgbm")
@@ -368,6 +372,7 @@ test_that("lgb.Dataset: should be able to run lgb.train() immediately after usin
     , metric = "binary_logloss"
     , num_leaves = 5L
     , learning_rate = 1.0
+    , verbose = VERBOSITY
   )
 
   # should be able to train right away
