@@ -3530,7 +3530,7 @@ class Booster:
         predictor = self._to_predictor(deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
-        out_is_linear = ctypes.c_bool(False)
+        out_is_linear = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
             self.handle,
             ctypes.byref(out_is_linear)))
