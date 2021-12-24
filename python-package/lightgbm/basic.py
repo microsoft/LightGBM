@@ -519,10 +519,12 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         if feature_name == 'auto' or feature_name is None:
             data = data.rename(columns=str)
         elif isinstance(feature_name, list) and is_predict:
-            missing_features = set(feature_name) - set(data.columns.astype(str))
+            features_df = data.columns.astype(str).tolist()
+            missing_features = set(feature_name) - set(features_df)
             if missing_features:
                 raise ValueError(f'The following features are missing: {missing_features}')
-            data = data[feature_name]  # ensure column order
+            sort_idxs = [features_df.index(feature) for feature in feature_name]
+            data = data.iloc[:, sort_idxs]  # ensure column order
         cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
