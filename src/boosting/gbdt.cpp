@@ -255,14 +255,10 @@ void GBDT::Bagging(int iter) {
     } else {
       // get subset
       tmp_subset_->ReSize(bag_data_cnt_);
-      global_timer.Start("GBDT::CopySubrow");
       tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                               bag_data_cnt_, false);
-      global_timer.Stop("GBDT::CopySubrow");
-      global_timer.Start("GBDT::SetBaggingData");
       tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
                                     bag_data_cnt_);
-      global_timer.Stop("GBDT::SetBaggingData");
     }
   }
 }

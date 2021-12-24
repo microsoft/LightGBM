@@ -851,15 +851,11 @@ void Dataset::CopySubrow(const Dataset* fullset,
 
   #ifdef USE_CUDA_EXP
   if (device_type_ == std::string("cuda_exp")) {
-    global_timer.Start("prepare subset cuda column data");
     if (cuda_column_data_ == nullptr) {
       cuda_column_data_.reset(new CUDAColumnData(fullset->num_data(), gpu_device_id_));
       metadata_.CreateCUDAMetadata(gpu_device_id_);
     }
-    global_timer.Start("copy subset cuda column data");
     cuda_column_data_->CopySubrow(fullset->cuda_column_data(), used_indices, num_used_indices);
-    global_timer.Stop("copy subset cuda column data");
-    global_timer.Stop("prepare subset cuda column data");
   }
   #endif  // USE_CUDA_EXP
 }

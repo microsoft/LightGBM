@@ -183,7 +183,9 @@ struct TrainingShareStates {
 
   const std::vector<uint32_t>& feature_hist_offsets() const { return feature_hist_offsets_; }
 
+  #ifdef USE_CUDA_EXP
   const std::vector<uint32_t>& column_hist_offsets() const { return column_hist_offsets_; }
+  #endif  // USE_CUDA_EXP
 
   bool IsSparseRowwise() {
     return (multi_val_bin_wrapper_ != nullptr && multi_val_bin_wrapper_->IsSparse());
@@ -252,7 +254,9 @@ struct TrainingShareStates {
 
  private:
   std::vector<uint32_t> feature_hist_offsets_;
+  #ifdef USE_CUDA_EXP
   std::vector<uint32_t> column_hist_offsets_;
+  #endif  // USE_CUDA_EXP
   int num_hist_total_bin_ = 0;
   std::unique_ptr<MultiValBinWrapper> multi_val_bin_wrapper_;
   std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>> hist_buf_;

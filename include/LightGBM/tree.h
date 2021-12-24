@@ -319,7 +319,9 @@ class Tree {
 
   inline bool is_linear() const { return is_linear_; }
 
+  #ifdef USE_CUDA_EXP
   inline bool is_cuda_tree() const { return is_cuda_tree_; }
+  #endif  // USE_CUDA_EXP
 
   inline void SetIsLinear(bool is_linear) {
     is_linear_ = is_linear;
@@ -530,8 +532,10 @@ class Tree {
   std::vector<std::vector<int>> leaf_features_;
   /* \brief features used in leaf linear models; indexing is relative to used_features_ */
   std::vector<std::vector<int>> leaf_features_inner_;
+  #ifdef USE_CUDA_EXP
   /*! \brief Marks whether this tree is a CUDATree */
   bool is_cuda_tree_;
+  #endif  // USE_CUDA_EXP
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,
