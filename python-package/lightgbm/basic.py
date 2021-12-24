@@ -512,12 +512,17 @@ def _get_bad_pandas_dtypes(dtypes):
     return bad_indices
 
 
-def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
+def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical, is_predict=False):
     if isinstance(data, pd_DataFrame):
         if len(data.shape) != 2 or data.shape[0] < 1:
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
             data = data.rename(columns=str)
+        elif isinstance(feature_name, list) and is_predict:
+            missing_features = set(feature_name) - set(data.columns.astype(str))
+            if missing_features:
+                raise ValueError(f'The following features are missing: {missing_features}')
+            data = data[feature_name]  # ensure column order
         cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
@@ -767,9 +772,6 @@ class _InnerPredictor:
             Prediction result.
             Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
         """
-        if isinstance(data, Dataset):
-            raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
-        data = _data_from_pandas(data, None, None, self.pandas_categorical)[0]
         predict_type = C_API_PREDICT_NORMAL
         if raw_score:
             predict_type = C_API_PREDICT_RAW_SCORE
@@ -3493,6 +3495,9 @@ class Booster:
             Prediction result.
             Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
         """
+        if isinstance(data, Dataset):
+            raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
+        data = _data_from_pandas(data, self.feature_name(), None, self.pandas_categorical, is_predict=True)[0]
         predictor = self._to_predictor(deepcopy(kwargs))
         if num_iteration is None:
             if start_iteration <= 0:

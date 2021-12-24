@@ -579,3 +579,29 @@ def test_param_aliases():
     assert all(len(i) >= 1 for i in aliases.values())
     assert all(k in v for k, v in aliases.items())
     assert lgb.basic._ConfigAliases.get('config', 'task') == {'config', 'config_file', 'task', 'task_type'}
+
+
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
+def test_predict_with_dataframe_checks_features():
+    df = pd_DataFrame(
+        {
+            'x1': np.random.rand(100),
+            'x2': np.random.rand(100),
+            'x3': np.random.rand(100),
+            'y': np.random.rand(100),
+        }
+    )
+    features = ['x1', 'x2', 'x3']
+    ds = lgb.Dataset(df[features], df['y'])
+    bst = lgb.train({'num_leaves': 15, 'verbose': -1}, ds, num_boost_round=10)
+    assert bst.feature_name() == features
+
+    # try to predict with a different feature
+    df2 = df.rename(columns={'x1': 'z'})
+    with pytest.raises(ValueError, match="The following features are missing: {'x1'}"):
+        bst.predict(df2)
+
+    # predict with the features out of order
+    preds_sorted_features = bst.predict(df[features])
+    preds_reversed_features = bst.predict(df[features[::-1]])
+    np.testing.assert_equal(preds_sorted_features, preds_reversed_features)
