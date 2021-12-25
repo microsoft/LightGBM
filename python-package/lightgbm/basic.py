@@ -3514,6 +3514,7 @@ class Booster:
         init_score=None,
         feature_name='auto',
         categorical_feature='auto',
+        dataset_params=None,
         free_raw_data=True,
         **kwargs
     ):
@@ -3550,7 +3551,9 @@ class Booster:
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
             The output cannot be monotonically constrained with respect to a categorical feature.
-         free_raw_data : bool, optional (default=True)
+        dataset_params : dict or None, optional (default=None)
+            Other parameters for Dataset ``data``.
+        free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset for ``data``.
         **kwargs
             Other parameters for refit.
@@ -3563,6 +3566,8 @@ class Booster:
         """
         if self.__set_objective_to_none:
             raise LightGBMError('Cannot refit due to null objective function.')
+        if dataset_params is None:
+            dataset_params = {}
         predictor = self._to_predictor(deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
@@ -3576,6 +3581,7 @@ class Booster:
             default_value=None
         )
         new_params["linear_tree"] = bool(out_is_linear.value)
+        new_params.update(dataset_params)
         train_set = Dataset(
             data=data,
             label=label,
