@@ -582,12 +582,12 @@ def test_param_aliases():
     assert lgb.basic._ConfigAliases.get('config', 'task') == {'config', 'config_file', 'task', 'task_type'}
 
 
-def _bad_gradients(labels, preds):
-    return np.random.randn(len(labels) + 1), np.random.rand(len(labels) + 1)
+def _bad_gradients(preds, _):
+    return np.random.randn(len(preds) + 1), np.random.rand(len(preds) + 1)
 
 
-def _good_gradients(labels, preds):
-    return np.random.randn(len(labels)), np.random.rand(len(labels))
+def _good_gradients(preds, _):
+    return np.random.randn(len(preds)), np.random.rand(len(preds))
 
 
 def test_custom_objective_safety():
