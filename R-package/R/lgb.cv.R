@@ -101,12 +101,6 @@ lgb.cv <- function(params = list()
     data <- lgb.Dataset(data = data, label = label)
   }
 
-  # Setup temporary variables
-  params <- lgb.check.obj(params = params, obj = obj)
-  params <- lgb.check.eval(params = params, eval = eval)
-  fobj <- NULL
-  eval_functions <- list(NULL)
-
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.
   # this ensures that the model stored with Booster$save() correctly represents
@@ -122,13 +116,26 @@ lgb.cv <- function(params = list()
     , alternative_kwarg_value = nrounds
   )
   params <- lgb.check.wrapper_param(
+    main_param_name = "metric"
+    , params = params
+    , alternative_kwarg_value = NULL
+  )
+  params <- lgb.check.wrapper_param(
+    main_param_name = "objective"
+    , params = params
+    , alternative_kwarg_value = NULL
+  )
+  params <- lgb.check.wrapper_param(
     main_param_name = "early_stopping_round"
     , params = params
     , alternative_kwarg_value = early_stopping_rounds
   )
   early_stopping_rounds <- params[["early_stopping_round"]]
 
-  # Check for objective (function or not)
+  # extract any function objects passed for objective or metric
+  params <- lgb.check.obj(params = params, obj = obj)
+  params <- lgb.check.eval(params = params, eval = eval)
+  fobj <- NULL
   if (is.function(params$objective)) {
     fobj <- params$objective
     params$objective <- "NONE"
@@ -138,6 +145,7 @@ lgb.cv <- function(params = list()
   # (for backwards compatibility). If it is a list of functions, store
   # all of them. This makes it possible to pass any mix of strings like "auc"
   # and custom functions to eval
+  eval_functions <- list(NULL)
   if (is.function(eval)) {
     eval_functions <- list(eval)
   }
