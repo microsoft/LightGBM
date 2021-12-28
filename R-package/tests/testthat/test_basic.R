@@ -127,6 +127,7 @@ test_that("train and predict softmax", {
   expect_equal(length(pred), nrow(iris) * 3L)
 })
 
+
 test_that("use of multiple eval metrics works", {
   metrics <- list("binary_error", "auc", "binary_logloss")
   bst <- lightgbm(
