@@ -31,7 +31,7 @@ CVBooster <- R6::R6Class(
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation.
 #'               This parameter defaults to \code{TRUE}. Setting it to \code{FALSE} can lead to a
 #'               slight speedup by avoiding unnecessary computation.
-#' @param eval_train_metric \code{boolean}, whether to add the cross validation results on the 
+#' @param eval_train_metric \code{boolean}, whether to add the cross validation results on the
 #'               training data. This parameter defaults to \code{FALSE}. Setting it to \code{TRUE}
 #'               will increase run time.
 #' @param stratified a \code{boolean} indicating whether sampling of folds should be stratified
@@ -341,7 +341,7 @@ lgb.cv <- function(params = list()
 
       booster <- Booster$new(params = params, train_set = dtrain)
       if (isTRUE(eval_train_metric)) {
-        booster$add_valid(data = dtrain, name = "train")  
+        booster$add_valid(data = dtrain, name = "train")
       }
       booster$add_valid(data = dtest, name = "valid")
       return(
