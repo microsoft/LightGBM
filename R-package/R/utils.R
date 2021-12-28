@@ -25,6 +25,7 @@ lgb.params2str <- function(params) {
     stop("params must be a list")
   }
 
+  names(params) <- gsub("\\.", "_", names(params))
   param_names <- names(params)
   ret <- list()
 
