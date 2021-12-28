@@ -25,20 +25,18 @@ lgb.params2str <- function(params) {
     stop("params must be a list")
   }
 
-  # Split parameter names
-  names(params) <- gsub("\\.", "_", names(params))
-
+  param_names <- names(params)
   ret <- list()
 
   # Perform key value join
-  for (key in names(params)) {
+  for (i in seq_along(params)) {
 
     # If a parameter has multiple values, join those values together with commas.
     # trimws() is necessary because format() will pad to make strings the same width
     val <- paste0(
       trimws(
         format(
-          x = params[[key]]
+          x = unname(params[[i]])
           , scientific = FALSE
         )
       )
@@ -47,7 +45,7 @@ lgb.params2str <- function(params) {
     if (nchar(val) <= 0L) next # Skip join
 
     # Join key value
-    pair <- paste0(c(key, val), collapse = "=")
+    pair <- paste0(c(param_names[[i]], val), collapse = "=")
     ret <- c(ret, pair)
 
   }

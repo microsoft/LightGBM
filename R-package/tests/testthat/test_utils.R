@@ -26,6 +26,17 @@ test_that("lgb.params2str() works as expected for a key in params with multiple 
     )
 })
 
+test_that("lgb.params2str() passes through duplicated params", {
+    out_str <- lgb.params2str(
+        params = list(
+            objective = "regression"
+            , bagging_fraction = 0.8
+            , bagging_fraction = 0.5
+        )
+    )
+    expect_equal(out_str, "objective=regression bagging_fraction=0.8 bagging_fraction=0.5")
+})
+
 context("lgb.check.eval")
 
 test_that("lgb.check.eval works as expected with no metric", {
