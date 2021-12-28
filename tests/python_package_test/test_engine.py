@@ -1552,13 +1552,12 @@ def test_refit_dataset_params():
     lgb_train = lgb.Dataset(X_train, y_train)
     train_params = {
         'objective': 'binary',
-        'metric': 'binary_logloss',
         'verbose': -1,
-        'min_data': 10,
         'seed': 123
     }
-    gbm = lgb.train(train_params, lgb_train, num_boost_round=20)
+    gbm = lgb.train(train_params, lgb_train, num_boost_round=10)
     non_weight_err_pred = log_loss(y_test, gbm.predict(X_test))
+    refit_weight = np.random.rand(y_train.shape[0])
     dataset_params = {
         'max_bin': 260,
         'min_data_in_bin': 5,
@@ -1567,11 +1566,17 @@ def test_refit_dataset_params():
     new_gbm = gbm.refit(
         data=X_train,
         label=y_train,
-        weight=np.random.rand(y_train.shape[0]),
+        weight=refit_weight,
         dataset_params=dataset_params,
     )
     weight_err_pred = log_loss(y_test, new_gbm.predict(X_test))
+    train_set_params = new_gbm.train_set.get_params()
+    stored_weights = new_gbm.train_set.get_weight()
     assert weight_err_pred != non_weight_err_pred
+    assert train_set_params["max_bin"] == 260
+    assert train_set_params["min_data_in_bin"] == 5
+    assert train_set_params["data_random_seed"] == 123
+    np.testing.assert_allclose(stored_weights, refit_weight, verbose=True)
 
 
 def test_mape_rf():
