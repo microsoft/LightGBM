@@ -379,21 +379,20 @@ lgb.cv <- function(params = list()
       }
       return(out)
     })
-    
+
     # Prepare collection of evaluation results
     merged_msg <- lgb.merge.cv.result(
       msg = msg
       , showsd = showsd
     )
-    
+
     # Write evaluation result in environment
     env$eval_list <- merged_msg$eval_list
-    
+
     # Check for standard deviation requirement
     if (showsd) {
       env$eval_err_list <- merged_msg$eval_err_list
-    } 
-    
+    }
 
     # Loop through env
     for (f in cb$post_iter) {
