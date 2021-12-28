@@ -106,7 +106,6 @@ lgb.train <- function(params = list(),
 
   # extract any function objects passed for objective or metric
   params <- lgb.check.obj(params = params, obj = obj)
-  params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
   if (is.function(params$objective)) {
     fobj <- params$objective
@@ -117,6 +116,7 @@ lgb.train <- function(params = list(),
   # (for backwards compatibility). If it is a list of functions, store
   # all of them. This makes it possible to pass any mix of strings like "auc"
   # and custom functions to eval
+  params <- lgb.check.eval(params = params, eval = eval)
   eval_functions <- list(NULL)
   if (is.function(eval)) {
     eval_functions <- list(eval)
