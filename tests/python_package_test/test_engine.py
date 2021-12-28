@@ -1554,45 +1554,21 @@ def test_refit_dataset_params():
         'objective': 'binary',
         'metric': 'binary_logloss',
         'verbose': -1,
-        'min_data': 10
+        'min_data': 10,
+        'seed': 123
     }
     gbm = lgb.train(train_params, lgb_train, num_boost_round=20)
     non_weight_err_pred = log_loss(y_test, gbm.predict(X_test))
     dataset_params = {
-        'linear_tree': False,
-        'max_bin': 255,
-        'max_bin_by_feature': None,
-        'min_data_in_bin': 3,
-        'bin_construct_sample_cnt': 200000,
-        'data_random_seed': 1,
-        'is_enable_sparse': True,
-        'enable_bundle': True,
-        'use_missing': True,
-        'zero_as_missing': False,
-        'feature_pre_filter': True,
-        'pre_partition': False,
-        'two_round': False,
-        'header': False,
-        'label_column': "",
-        'weight_column': "",
-        'group_column': "",
-        'ignore_column': "",
-        'forcedbins_filename': "",
-        'save_binary': False,
-        'precise_float_parser': False,
-        'parser_config_file': "",
+        'max_bin': 260,
+        'min_data_in_bin': 5,
+        'data_random_seed': 123,
     }
     new_gbm = gbm.refit(
         data=X_train,
         label=y_train,
         weight=np.random.rand(y_train.shape[0]),
-        reference=None,
-        group=None,
-        init_score=None,
-        feature_name="auto",
-        categorical_feature="auto",
         dataset_params=dataset_params,
-        free_raw_data=True
     )
     weight_err_pred = log_loss(y_test, new_gbm.predict(X_test))
     assert weight_err_pred != non_weight_err_pred

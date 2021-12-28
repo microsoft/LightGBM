@@ -3532,9 +3532,9 @@ class Booster:
             will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
         reference : Dataset or None, optional (default=None)
             reference for ``data``.
-            If this is Dataset for validation, training data should be used as reference.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Weight for each ``data`` instance.
+            Weight for each ``data`` instance. Weight should be non-negative values because the Hessian
+            value multiplied by weight is supposed to be non-negative.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query size for ``data``.
         init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
