@@ -31,6 +31,9 @@ CVBooster <- R6::R6Class(
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation.
 #'               This parameter defaults to \code{TRUE}. Setting it to \code{FALSE} can lead to a
 #'               slight speedup by avoiding unnecessary computation.
+#' @param eval_train_metric \code{boolean}, whether to add the cross validation results on the 
+#'               training data. This parameter defaults to \code{FALSE}. Setting it to \code{TRUE}
+#'               will increase run time.
 #' @param stratified a \code{boolean} indicating whether sampling of folds should be stratified
 #'                   by the values of outcome labels.
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
@@ -78,6 +81,7 @@ lgb.cv <- function(params = list()
                    , record = TRUE
                    , eval_freq = 1L
                    , showsd = TRUE
+                   , eval_train_metric = FALSE
                    , stratified = TRUE
                    , folds = NULL
                    , init_model = NULL
@@ -336,6 +340,9 @@ lgb.cv <- function(params = list()
       }
 
       booster <- Booster$new(params = params, train_set = dtrain)
+      if (isTRUE(eval_train_metric)) {
+        booster$add_valid(data = dtrain, name = "train")  
+      }
       booster$add_valid(data = dtest, name = "valid")
       return(
         list(booster = booster)
@@ -372,20 +379,21 @@ lgb.cv <- function(params = list()
       }
       return(out)
     })
-
+    
     # Prepare collection of evaluation results
     merged_msg <- lgb.merge.cv.result(
       msg = msg
       , showsd = showsd
     )
-
+    
     # Write evaluation result in environment
     env$eval_list <- merged_msg$eval_list
-
+    
     # Check for standard deviation requirement
     if (showsd) {
       env$eval_err_list <- merged_msg$eval_err_list
-    }
+    } 
+    
 
     # Loop through env
     for (f in cb$post_iter) {
