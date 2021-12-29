@@ -554,6 +554,45 @@ test_that("lgb.cv() respects showsd argument", {
   expect_identical(evals_no_showsd[["eval_err"]], list())
 })
 
+test_that("lgb.cv() respects eval_train_metric argument", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(
+    objective = "regression"
+    , metric = "l2"
+    , min_data = 1L
+  )
+  nrounds <- 5L
+  set.seed(708L)
+  bst_train <- lgb.cv(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , nfold = 3L
+    , showsd = FALSE
+    , eval_train_metric = TRUE
+  )
+  set.seed(708L)
+  bst_no_train <- lgb.cv(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , nfold = 3L
+    , showsd = FALSE
+    , eval_train_metric = FALSE
+  )
+  expect_equal(
+    bst_train$record_evals[["valid"]][["l2"]]
+    , bst_no_train$record_evals[["valid"]][["l2"]]
+  )
+  expect_true("train" %in% names(bst_train$record_evals))
+  expect_false("train" %in% names(bst_no_train$record_evals))
+  expect_true(methods::is(bst_train$record_evals[["train"]][["l2"]][["eval"]], "list"))
+  expect_equal(
+    length(bst_train$record_evals[["train"]][["l2"]][["eval"]])
+    , nrounds
+  )
+})
+
 context("lgb.train()")
 
 test_that("lgb.train() works as expected with multiple eval metrics", {
