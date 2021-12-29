@@ -262,6 +262,12 @@ def _unpickle(filepath, serializer):
         raise ValueError(f'Unrecognized serializer type: {serializer}')
 
 
+def _objective_least_squares(y_true, y_pred):
+    grad = (y_pred - y_true)
+    hess = np.ones(len(y_true))
+    return grad, hess
+
+
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
 @pytest.mark.parametrize('boosting_type', boosting_types)
@@ -698,6 +704,55 @@ def test_regressor_quantile(output, alpha, cluster):
             node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
             assert node_uses_cat_col.sum() > 0
             assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
+
+
+@pytest.mark.parametrize('output', data_output)
+def test_regressor_custom_objective(output, cluster):
+    with Client(cluster) as client:
+        X, y, w, _, dX, dy, dw, _ = _create_data(
+            objective='regression',
+            output=output
+        )
+
+        params = {
+            "n_estimators": 10,
+            "num_leaves": 10,
+            "objective": _objective_least_squares
+        }
+
+        dask_regressor = lgb.DaskLGBMRegressor(
+            client=client,
+            time_out=5,
+            tree_learner='data',
+            **params
+        )
+        dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw)
+        dask_regressor_local = dask_regressor.to_local()
+        p1 = dask_regressor.predict(dX)
+        p1_local = dask_regressor_local.predict(X)
+        s1_local = dask_regressor_local.score(X, y)
+        s1 = _r2_score(dy, p1)
+        p1 = p1.compute()
+
+        local_regressor = lgb.LGBMRegressor(**params)
+        local_regressor.fit(X, y, sample_weight=w)
+        p2 = local_regressor.predict(X)
+        s2 = local_regressor.score(X, y)
+
+        # function should have been preserved
+        assert callable(dask_regressor.objective)
+        assert callable(dask_regressor_local.objective)
+
+        # Scores should be the same
+        assert_eq(s1, s2, atol=0.01)
+        assert_eq(s1, s1_local)
+
+        # local and Dask predictions should be the same
+        assert_eq(p1, p1_local)
+
+        # predictions should be better than random
+        assert_eq(p1, y, rtol=0.5, atol=50.)
+        assert_eq(p2, y, rtol=0.5, atol=50.)
 
 
 @pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])

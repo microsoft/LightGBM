@@ -21,7 +21,7 @@ from .basic import _LIB, LightGBMError, _choose_param_value, _ConfigAliases, _lo
 from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
                      dask_Array, dask_array_from_delayed, dask_bag_from_delayed, dask_DataFrame, dask_Series,
                      default_client, delayed, pd_DataFrame, pd_Series, wait)
-from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _LGBM_ScikitCustomEvalFunction,
+from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _LGBM_ScikitCustomEvalFunction, _LGBM_ScikitCustomObjectiveFunction,
                       _lgbmmodel_doc_custom_eval_note, _lgbmmodel_doc_fit, _lgbmmodel_doc_predict)
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
@@ -1099,7 +1099,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         learning_rate: float = 0.1,
         n_estimators: int = 100,
         subsample_for_bin: int = 200000,
-        objective: Optional[str] = None,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
         class_weight: Optional[Union[dict, str]] = None,
         min_split_gain: float = 0.,
         min_child_weight: float = 1e-3,
@@ -1275,7 +1275,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         learning_rate: float = 0.1,
         n_estimators: int = 100,
         subsample_for_bin: int = 200000,
-        objective: Optional[str] = None,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
         class_weight: Optional[Union[dict, str]] = None,
         min_split_gain: float = 0.,
         min_child_weight: float = 1e-3,
@@ -1431,7 +1431,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         learning_rate: float = 0.1,
         n_estimators: int = 100,
         subsample_for_bin: int = 200000,
-        objective: Optional[str] = None,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
         class_weight: Optional[Union[dict, str]] = None,
         min_split_gain: float = 0.,
         min_child_weight: float = 1e-3,
