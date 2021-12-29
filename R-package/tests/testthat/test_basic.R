@@ -394,7 +394,7 @@ test_that("CVBooster$reset_parameter() works as expected", {
     , nrounds = 3L
     , nfold = n_folds
   )
-  expect_is(cv_bst, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst, "lgb.CVBooster"))
   expect_length(cv_bst$boosters, n_folds)
   for (bst in cv_bst$boosters) {
     expect_equal(bst[["booster"]]$params[["num_leaves"]], 7L)
@@ -467,7 +467,7 @@ test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric
       , num_leaves = 5L
     )
   )
-  expect_is(cv_bst, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst, "lgb.CVBooster"))
   expect_named(
     cv_bst$record_evals
     , c("start_iter", "valid")
@@ -505,7 +505,7 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
     , params = params
     , nfold = 5L
   )
-  expect_is(cv_bst, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst, "lgb.CVBooster"))
 
   dtrain <- .new_dataset()
   cv_bst_linear <- lgb.cv(
@@ -514,7 +514,7 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
     , params = utils::modifyList(params, list(linear_tree = TRUE))
     , nfold = 5L
   )
-  expect_is(cv_bst_linear, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst_linear, "lgb.CVBooster"))
 
   expect_true(cv_bst_linear$best_score < cv_bst$best_score)
 })
@@ -549,7 +549,7 @@ test_that("lgb.cv() respects showsd argument", {
     evals_showsd[["eval"]]
     , evals_no_showsd[["eval"]]
   )
-  expect_is(evals_showsd[["eval_err"]], "list")
+  expect_true(methods::is(evals_showsd[["eval_err"]], "list"))
   expect_equal(length(evals_showsd[["eval_err"]]), nrounds)
   expect_identical(evals_no_showsd[["eval_err"]], list())
 })
@@ -598,6 +598,45 @@ test_that("lgb.cv() respects parameter aliases for metric", {
   expect_length(cv_bst$record_evals[["valid"]][["binary_logloss"]][["eval"]], nrounds)
   expect_length(cv_bst$record_evals[["valid"]][["auc"]][["eval"]], nrounds)
   expect_length(cv_bst$boosters, nfold)
+})
+
+test_that("lgb.cv() respects eval_train_metric argument", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(
+    objective = "regression"
+    , metric = "l2"
+    , min_data = 1L
+  )
+  nrounds <- 5L
+  set.seed(708L)
+  bst_train <- lgb.cv(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , nfold = 3L
+    , showsd = FALSE
+    , eval_train_metric = TRUE
+  )
+  set.seed(708L)
+  bst_no_train <- lgb.cv(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , nfold = 3L
+    , showsd = FALSE
+    , eval_train_metric = FALSE
+  )
+  expect_equal(
+    bst_train$record_evals[["valid"]][["l2"]]
+    , bst_no_train$record_evals[["valid"]][["l2"]]
+  )
+  expect_true("train" %in% names(bst_train$record_evals))
+  expect_false("train" %in% names(bst_no_train$record_evals))
+  expect_true(methods::is(bst_train$record_evals[["train"]][["l2"]][["eval"]], "list"))
+  expect_equal(
+    length(bst_train$record_evals[["train"]][["l2"]][["eval"]])
+    , nrounds
+  )
 })
 
 context("lgb.train()")

@@ -43,6 +43,9 @@ CVBooster <- R6::R6Class(
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets
+#' @param eval_train_metric \code{boolean}, whether to add the cross validation results on the
+#'               training data. This parameter defaults to \code{FALSE}. Setting it to \code{TRUE}
+#'               will increase run time.
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained model \code{lgb.CVBooster}.
 #'
@@ -87,6 +90,7 @@ lgb.cv <- function(params = list()
                    , callbacks = list()
                    , reset_data = FALSE
                    , serializable = TRUE
+                   , eval_train_metric = FALSE
                    ) {
 
   if (nrounds <= 0L) {
@@ -344,6 +348,9 @@ lgb.cv <- function(params = list()
       }
 
       booster <- Booster$new(params = params, train_set = dtrain)
+      if (isTRUE(eval_train_metric)) {
+        booster$add_valid(data = dtrain, name = "train")
+      }
       booster$add_valid(data = dtest, name = "valid")
       return(
         list(booster = booster)
