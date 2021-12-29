@@ -586,7 +586,7 @@ test_that("lgb.cv() respects eval_train_metric argument", {
   )
   expect_true("train" %in% names(bst_train$record_evals))
   expect_false("train" %in% names(bst_no_train$record_evals))
-  expect_is(bst_train$record_evals[["train"]][["l2"]][["eval"]], "list")
+  expect_true(methods::is(bst_train$record_evals[["train"]][["l2"]][["eval"]], "list"))
   expect_equal(
     length(bst_train$record_evals[["train"]][["l2"]][["eval"]])
     , nrounds
