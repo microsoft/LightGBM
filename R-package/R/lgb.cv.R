@@ -31,9 +31,6 @@ CVBooster <- R6::R6Class(
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation.
 #'               This parameter defaults to \code{TRUE}. Setting it to \code{FALSE} can lead to a
 #'               slight speedup by avoiding unnecessary computation.
-#' @param eval_train_metric \code{boolean}, whether to add the cross validation results on the
-#'               training data. This parameter defaults to \code{FALSE}. Setting it to \code{TRUE}
-#'               will increase run time.
 #' @param stratified a \code{boolean} indicating whether sampling of folds should be stratified
 #'                   by the values of outcome labels.
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
@@ -46,6 +43,9 @@ CVBooster <- R6::R6Class(
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets
+#' @param eval_train_metric \code{boolean}, whether to add the cross validation results on the
+#'               training data. This parameter defaults to \code{FALSE}. Setting it to \code{TRUE}
+#'               will increase run time.
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained model \code{lgb.CVBooster}.
 #'
@@ -81,7 +81,6 @@ lgb.cv <- function(params = list()
                    , record = TRUE
                    , eval_freq = 1L
                    , showsd = TRUE
-                   , eval_train_metric = FALSE
                    , stratified = TRUE
                    , folds = NULL
                    , init_model = NULL
@@ -91,6 +90,7 @@ lgb.cv <- function(params = list()
                    , callbacks = list()
                    , reset_data = FALSE
                    , serializable = TRUE
+                   , eval_train_metric = FALSE
                    ) {
 
   if (nrounds <= 0L) {
