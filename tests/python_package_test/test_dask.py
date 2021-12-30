@@ -263,7 +263,7 @@ def _unpickle(filepath, serializer):
 
 
 def _objective_least_squares(y_true, y_pred):
-    grad = (y_pred - y_true)
+    grad = y_pred - y_true
     hess = np.ones(len(y_true))
     return grad, hess
 
