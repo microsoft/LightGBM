@@ -81,7 +81,8 @@ print('Loading model to predict...')
 # load model to predict
 bst = lgb.Booster(model_file='model.txt')
 # can only predict with the best iteration (or the saving iteration)
-y_pred = bst.predict(X_test)
+# disable validating feature names since we know they're correct
+y_pred = bst.predict(X_test, validate_features=False)
 # eval with loaded model
 rmse_loaded_model = mean_squared_error(y_test, y_pred) ** 0.5
 print(f"The RMSE of loaded model's prediction is: {rmse_loaded_model}")
@@ -94,7 +95,7 @@ with open('model.pkl', 'wb') as fout:
 with open('model.pkl', 'rb') as fin:
     pkl_bst = pickle.load(fin)
 # can predict with any iteration when loaded in pickle way
-y_pred = pkl_bst.predict(X_test, num_iteration=7)
+y_pred = pkl_bst.predict(X_test, num_iteration=7, validate_features=False)
 # eval with loaded model
 rmse_pickled_model = mean_squared_error(y_test, y_pred) ** 0.5
 print(f"The RMSE of pickled model's prediction is: {rmse_pickled_model}")

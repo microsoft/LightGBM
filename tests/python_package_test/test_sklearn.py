@@ -17,6 +17,7 @@ from sklearn.utils.estimator_checks import check_parameters_default_constructibl
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
+from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
 from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking,
                     make_synthetic_regression)
@@ -31,6 +32,24 @@ else:
     from sklearn.utils.estimator_checks import parametrize_with_checks
 
 decreasing_generator = itertools.count(0, -1)
+task_to_model_factory = {
+    'ranking': lgb.LGBMRanker,
+    'classification': lgb.LGBMClassifier,
+    'regression': lgb.LGBMRegressor,
+}
+
+
+def _create_data(task):
+    if task == 'ranking':
+        X, y, g = make_ranking(n_features=4)
+        g = np.bincount(g)
+    elif task == 'classification':
+        X, y = load_iris(return_X_y=True)
+        g = None
+    elif task == 'regression':
+        X, y = make_synthetic_regression()
+        g = None
+    return X, y, g
 
 
 class UnpicklableCallback:
@@ -1325,16 +1344,7 @@ def test_parameters_default_constructible(estimator):
 @pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task):
     pd = pytest.importorskip("pandas")
-    if task == 'ranking':
-        X, y, g = make_ranking()
-        g = np.bincount(g)
-        model_factory = lgb.LGBMRanker
-    elif task == 'classification':
-        X, y = load_iris(return_X_y=True)
-        model_factory = lgb.LGBMClassifier
-    elif task == 'regression':
-        X, y = make_synthetic_regression()
-        model_factory = lgb.LGBMRegressor
+    X, y, g = _create_data(task)
     X = pd.DataFrame(X)
     y_col_array = y.reshape(-1, 1)
     params = {
@@ -1342,6 +1352,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
         'num_leaves': 3,
         'random_state': 0
     }
+    model_factory = task_to_model_factory[task]
     with pytest.warns(UserWarning, match='column-vector'):
         if task == 'ranking':
             model_1d = model_factory(**params).fit(X, y, group=g)
@@ -1353,3 +1364,35 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
     preds_1d = model_1d.predict(X)
     preds_2d = model_2d.predict(X)
     np.testing.assert_array_equal(preds_1d, preds_2d)
+
+
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
+@pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
+def test_validate_features(task):
+    X, y, g = _create_data(task)
+    features = ['x1', 'x2', 'x3', 'x4']
+    df = pd_DataFrame(X, columns=features)
+    model = task_to_model_factory[task](n_estimators=10, num_leaves=15, verbose=-1)
+    if task == 'ranking':
+        model.fit(df, y, group=g)
+    else:
+        model.fit(df, y)
+    assert model.booster_.feature_name() == features
+
+    # try to predict with a different feature
+    df2 = df.rename(columns={'x1': 'z'})
+    with pytest.raises(ValueError, match="The following features are missing: {'x1'}"):
+        model.predict(df2)
+
+    # check that disabling the check doesn't raise the error
+    model.predict(df2, validate_features=False)
+
+    # predict with the features out of order
+    preds_sorted_features = model.predict(df[features])
+    scrambled_features = ['x3', 'x1', 'x4', 'x2']
+    preds_scrambled_features = model.predict(df[scrambled_features])
+    np.testing.assert_equal(preds_sorted_features, preds_scrambled_features)
+
+    # check that disabling the check doesn't raise an error and produces incorrect predictions
+    preds_scrambled_features_no_check = model.predict(df[scrambled_features], validate_features=False)
+    assert any(preds_sorted_features != preds_scrambled_features_no_check)

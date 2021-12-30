@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import load_breast_cancer
+from .utils import load_breast_cancer, make_synthetic_regression
 
 
 def test_basic(tmp_path):
@@ -583,25 +583,27 @@ def test_param_aliases():
 
 @pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
 def test_predict_with_dataframe_checks_features():
-    df = pd_DataFrame(
-        {
-            'x1': np.random.rand(100),
-            'x2': np.random.rand(100),
-            'x3': np.random.rand(100),
-            'y': np.random.rand(100),
-        }
-    )
-    features = ['x1', 'x2', 'x3']
-    ds = lgb.Dataset(df[features], df['y'])
+    X, y = make_synthetic_regression()
+    features = ['x1', 'x2', 'x3', 'x4']
+    df = pd_DataFrame(X, columns=features)
+    ds = lgb.Dataset(df, y)
     bst = lgb.train({'num_leaves': 15, 'verbose': -1}, ds, num_boost_round=10)
     assert bst.feature_name() == features
 
     # try to predict with a different feature
     df2 = df.rename(columns={'x1': 'z'})
     with pytest.raises(ValueError, match="The following features are missing: {'x1'}"):
-        bst.predict(df2[['z', 'x2', 'x3']])
+        bst.predict(df2)
+
+    # check that disabling the check doesn't raise the error
+    bst.predict(df2, validate_features=False)
 
     # predict with the features out of order
     preds_sorted_features = bst.predict(df[features])
-    preds_out_of_order_features = bst.predict(df[['x3', 'x1', 'x2']])
-    np.testing.assert_equal(preds_sorted_features, preds_out_of_order_features)
+    scrambled_features = ['x3', 'x1', 'x4', 'x2']
+    preds_scrambled_features = bst.predict(df[scrambled_features])
+    np.testing.assert_equal(preds_sorted_features, preds_scrambled_features)
+
+    # check that disabling the check doesn't raise an error and produces incorrect predictions
+    preds_scrambled_features_no_check = bst.predict(df[scrambled_features], validate_features=False)
+    assert any(preds_sorted_features != preds_scrambled_features_no_check)
