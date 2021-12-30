@@ -3531,21 +3531,25 @@ class Booster:
             Decay rate of refit,
             will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
         reference : Dataset or None, optional (default=None)
-            reference for ``data``.
+            Reference for ``data``.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Weight for each ``data`` instance. Weight should be non-negative values because the Hessian
             value multiplied by weight is supposed to be non-negative.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query size for ``data``.
-        init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
+            Only used in the learning-to-rank task.
+            sum(group) = n_samples.
+            For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
+            where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for ``data``.
-        feature_name : list of strings or 'auto', optional (default="auto")
+        feature_name : list of str or 'auto', optional (default="auto")
             Feature names for ``data``.
             If 'auto' and data is pandas DataFrame, data columns names are used.
-        categorical_feature : list of strings or int, or 'auto', optional (default="auto")
+        categorical_feature : list of str or int, or 'auto', optional (default="auto")
             Categorical features for ``data``.
             If list of int, interpreted as indices.
-            If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
+            If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
             All values in categorical features should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.

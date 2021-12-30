@@ -1576,7 +1576,7 @@ def test_refit_dataset_params():
     assert train_set_params["max_bin"] == 260
     assert train_set_params["min_data_in_bin"] == 5
     assert train_set_params["data_random_seed"] == 123
-    np.testing.assert_allclose(stored_weights, refit_weight, verbose=True)
+    np.testing.assert_allclose(stored_weights, refit_weight)
 
 
 def test_mape_rf():
