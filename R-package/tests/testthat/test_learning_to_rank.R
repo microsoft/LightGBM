@@ -92,7 +92,7 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         , nrounds = nrounds
         , nfold = nfold
     )
-    expect_is(cv_bst, "lgb.CVBooster")
+    expect_true(methods::is(cv_bst, "lgb.CVBooster"))
     expect_equal(length(cv_bst$boosters), nfold)
 
     # "valid" should contain results for each metric

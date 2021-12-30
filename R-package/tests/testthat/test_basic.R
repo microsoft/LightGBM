@@ -387,7 +387,7 @@ test_that("CVBooster$reset_parameter() works as expected", {
     , nrounds = 3L
     , nfold = n_folds
   )
-  expect_is(cv_bst, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst, "lgb.CVBooster"))
   expect_length(cv_bst$boosters, n_folds)
   for (bst in cv_bst$boosters) {
     expect_equal(bst[["booster"]]$params[["num_leaves"]], 7L)
@@ -460,7 +460,7 @@ test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric
       , num_leaves = 5L
     )
   )
-  expect_is(cv_bst, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst, "lgb.CVBooster"))
   expect_named(
     cv_bst$record_evals
     , c("start_iter", "valid")
@@ -498,7 +498,7 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
     , params = params
     , nfold = 5L
   )
-  expect_is(cv_bst, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst, "lgb.CVBooster"))
 
   dtrain <- .new_dataset()
   cv_bst_linear <- lgb.cv(
@@ -507,7 +507,7 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
     , params = utils::modifyList(params, list(linear_tree = TRUE))
     , nfold = 5L
   )
-  expect_is(cv_bst_linear, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst_linear, "lgb.CVBooster"))
 
   expect_true(cv_bst_linear$best_score < cv_bst$best_score)
 })
@@ -542,7 +542,7 @@ test_that("lgb.cv() respects showsd argument", {
     evals_showsd[["eval"]]
     , evals_no_showsd[["eval"]]
   )
-  expect_is(evals_showsd[["eval_err"]], "list")
+  expect_true(methods::is(evals_showsd[["eval_err"]], "list"))
   expect_equal(length(evals_showsd[["eval_err"]]), nrounds)
   expect_identical(evals_no_showsd[["eval_err"]], list())
 })

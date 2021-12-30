@@ -35,7 +35,7 @@ test_that("lgb.convert_with_rules() should work correctly for a dataset with onl
         expect_identical(converted_dataset[["col2"]], c(1L, 1L, 2L))
         # rules should be returned and correct
         rules <- conversion_result$rules
-        expect_is(rules, "list")
+        expect_true(methods::is(rules, "list"))
         expect_length(rules, ncol(input_data))
         expect_identical(rules[["col1"]], c("a" = 1L, "b" = 2L, "c" = 3L))
         expect_identical(rules[["col2"]], c("green" = 1L, "red" = 2L))
@@ -60,7 +60,7 @@ test_that("lgb.convert_with_rules() should work correctly for a dataset with onl
         expect_identical(converted_dataset[["col2"]], c(1L, 1L, 2L))
         # rules should be returned and correct
         rules <- conversion_result$rules
-        expect_is(rules, "list")
+        expect_true(methods::is(rules, "list"))
         expect_length(rules, ncol(input_data))
         expect_identical(rules[["col1"]], c("a" = 1L, "b" = 2L, "c" = 3L))
         expect_identical(rules[["col2"]], c("green" = 1L, "red" = 2L))
@@ -104,7 +104,7 @@ test_that("lgb.convert_with_rules() should work correctly for a dataset with num
         expect_identical(converted_dataset[["factor_col"]], c(1L, 1L, 2L))
         # rules should be returned and correct
         rules <- conversion_result$rules
-        expect_is(rules, "list")
+        expect_true(methods::is(rules, "list"))
         expect_length(rules, 2L)
         expect_identical(rules[["character_col"]], c("a" = 1L, "b" = 2L, "c" = 3L))
         expect_identical(rules[["factor_col"]], c("n" = 1L, "y" = 2L))
@@ -162,7 +162,7 @@ test_that("lgb.convert_with_rules() should convert missing values to the expecte
 
         # rules should be returned and correct
         rules <- conversion_result$rules
-        expect_is(rules, "list")
+        expect_true(methods::is(rules, "list"))
         expect_length(rules, 3L)
         expect_identical(rules[["character_col"]], c("a" = 1L, "c" = 2L))
         expect_identical(rules[["factor_col"]], c("n" = 1L, "y" = 2L))

@@ -146,7 +146,10 @@ test_that("Dataset$set_reference() updates categorical_feature, colnames, and pr
   dtest$set_reference(dtrain)
 
   # after setting reference to dtrain, those attributes should have dtrain's values
-  expect_is(dtest$.__enclos_env__$private$predictor, "lgb.Predictor")
+  expect_true(methods::is(
+    dtest$.__enclos_env__$private$predictor
+    , "lgb.Predictor"
+  ))
   expect_identical(
     dtest$.__enclos_env__$private$predictor$.__enclos_env__$private$handle
     , dtrain$.__enclos_env__$private$predictor$.__enclos_env__$private$handle
@@ -197,7 +200,7 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
     , lightgbm:::lgb.params2str(params = list())
     , ref_handle
   )
-  expect_is(handle, "externalptr")
+  expect_true(methods::is(handle, "externalptr"))
   expect_false(is.null(handle))
   .Call(LGBM_DatasetFree_R, handle)
   handle <- NULL
@@ -409,7 +412,7 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
     , data = dtest_read_in
   )
 
-  expect_is(bst, "lgb.CVBooster")
+  expect_true(methods::is(bst, "lgb.CVBooster"))
 })
 
 test_that("lgb.Dataset: should be able to use and retrieve long feature names", {
