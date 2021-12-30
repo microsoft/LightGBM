@@ -2,8 +2,6 @@ VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
-context("lightgbm()")
-
 ON_WINDOWS <- .Platform$OS.type == "windows"
 
 UTF8_LOCALE <- all(grepl(
@@ -326,9 +324,6 @@ test_that("lightgbm() does not write model to disk if save_name=NULL", {
   expect_equal(files_before, files_after)
 })
 
-
-context("training continuation")
-
 test_that("training continuation works", {
   dtrain <- lgb.Dataset(
     train$data
@@ -359,8 +354,6 @@ test_that("training continuation works", {
   # iterations and the one trained in 5-then-5.
   expect_lt(abs(err_bst - err_bst2), 0.01)
 })
-
-context("lgb.cv()")
 
 test_that("cv works", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -638,8 +631,6 @@ test_that("lgb.cv() respects eval_train_metric argument", {
     , nrounds
   )
 })
-
-context("lgb.train()")
 
 test_that("lgb.train() works as expected with multiple eval metrics", {
   metrics <- c("binary_error", "auc", "binary_logloss")
@@ -2231,8 +2222,6 @@ test_that("lgb.cv() updates params based on keyword arguments", {
 
 })
 
-context("linear learner")
-
 test_that("lgb.train() fit on linearly-relatead data improves when using linear learners", {
   set.seed(708L)
   .new_dataset <- function() {
@@ -2472,8 +2461,6 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
   expect_true(bst_lin_last_mse <  bst_last_mse)
 })
 
-context("interaction constraints")
-
 test_that("lgb.train() throws an informative error if interaction_constraints is not a list", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", interaction_constraints = "[1,2],[3]")
@@ -2573,8 +2560,6 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   expect_equal(pred1, pred2)
 
 })
-
-context("monotone constraints")
 
 .generate_trainset_for_monotone_constraints_tests <- function(x3_to_categorical) {
   n_samples <- 3000L
