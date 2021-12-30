@@ -267,6 +267,12 @@ def _objective_least_squares(y_true, y_pred):
     hess = np.ones(len(y_true))
     return grad, hess
 
+def _objective_logistic_regression(y_true, y_pred):
+    y_pred = 1.0 / (1.0 + np.exp(-y_pred))
+    grad = y_pred - y_true
+    hess = y_pred * (1.0 - y_pred)
+    return grad, hess
+
 
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
@@ -459,6 +465,65 @@ def test_classifier_pred_contrib(output, task, cluster):
             for i in range(num_classes):
                 base_value_col = num_features * (i + 1) + i
                 assert len(np.unique(preds_with_contrib[:, base_value_col]) == 1)
+
+
+@pytest.mark.parametrize('output', data_output)
+def test_classifier_binary_classification_custom_objective(output, cluster):
+    with Client(cluster) as client:
+        X, y, w, _, dX, dy, dw, _ = _create_data(
+            objective='binary-classification',
+            output=output
+        )
+
+        params = {
+            "n_estimators": 50,
+            "num_leaves": 31,
+            "min_data": 1,
+            "verbose": -1,
+            "objective": _objective_logistic_regression
+        }
+
+        dask_classifier = lgb.DaskLGBMClassifier(
+            client=client,
+            time_out=5,
+            tree_learner='data',
+            **params
+        )
+        dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
+        dask_classifier_local = dask_classifier.to_local()
+        p1 = dask_classifier.predict(dX)
+        p1_proba = dask_classifier.predict_proba(dX).compute()
+        p1_local = dask_classifier_local.predict(X)
+        # with a custom objective, predictiion result is a raw score instead of predicted class
+        p1_class = (1.0 / (1.0 + np.exp(-p1_proba))) > 0.5
+        p1_class = p1_class.astype('int64')
+        p1_proba_local = dask_classifier_local.predict_proba(X)
+        p1_class_local = (1.0 / (1.0 + np.exp(-p1_proba_local))) > 0.5
+        p1_class_local = p1_class_local.astype('int64')
+        p1 = p1.compute()
+
+        local_classifier = lgb.LGBMClassifier(**params)
+        local_classifier.fit(X, y, sample_weight=w)
+        p2 = local_classifier.predict(X)
+        p2_proba = local_classifier.predict_proba(X)
+        p2_class = (1.0 / (1.0 + np.exp(-p1_proba))) > 0.5
+        p2_class = p2_class.astype('int64')
+
+        # function should have been preserved
+        assert callable(dask_classifier.objective)
+        assert callable(dask_classifier_local.objective)
+
+        # should correctly classify every sample
+        assert_eq(p1, p2)
+        assert_eq(p1_class, y)
+        assert_eq(p2_class, y)
+
+        # probability estimates should be similar
+        assert_eq(p1_proba, p2_proba, atol=0.03)
+
+        # predictions from to_local() model should be identical to those from LGBMClassifier
+        assert_eq(p1_local, p2)
+        assert_eq(p1_class_local, y)
 
 
 def test_group_workers_by_host():
