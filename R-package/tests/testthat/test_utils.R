@@ -1,5 +1,3 @@
-context("lgb.params2str")
-
 test_that("lgb.params2str() works as expected for empty lists", {
     out_str <- lgb.params2str(
         params = list()
@@ -36,8 +34,6 @@ test_that("lgb.params2str() passes through duplicated params", {
     )
     expect_equal(out_str, "objective=regression bagging_fraction=0.8 bagging_fraction=0.5")
 })
-
-context("lgb.check.eval")
 
 test_that("lgb.check.eval works as expected with no metric", {
     params <- lgb.check.eval(
@@ -83,8 +79,6 @@ test_that("lgb.check.eval drops duplicate metrics and preserves order", {
     expect_named(params, "metric")
     expect_identical(params[["metric"]], list("l1", "l2", "rmse"))
 })
-
-context("lgb.check.wrapper_param")
 
 test_that("lgb.check.wrapper_param() uses passed-in keyword arg if no alias found in params", {
     kwarg_val <- sample(seq_len(100L), size = 1L)

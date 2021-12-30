@@ -2,8 +2,6 @@ VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
-context("testing lgb.Dataset functionality")
-
 data(agaricus.train, package = "lightgbm")
 train_data <- agaricus.train$data[seq_len(1000L), ]
 train_label <- agaricus.train$label[seq_len(1000L)]
