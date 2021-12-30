@@ -496,8 +496,8 @@ def test_classifier_custom_objective(output, task, cluster):
         )
 
         params = {
-            "n_estimators": 10,
-            "num_leaves": 10,
+            "n_estimators": 50,
+            "num_leaves": 31,
             "min_data": 1,
             "verbose": -1,
             "learning_rate": 0.01,
