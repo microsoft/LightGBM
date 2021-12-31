@@ -632,8 +632,8 @@ def test_validate_features():
     preds_sorted_features = bst.predict(df[features])
     scrambled_features = ['x3', 'x1', 'x4', 'x2']
     preds_scrambled_features = bst.predict(df[scrambled_features])
-    np.testing.assert_equal(preds_sorted_features, preds_scrambled_features)
+    np.testing.assert_allclose(preds_sorted_features, preds_scrambled_features)
 
     # check that disabling the check doesn't raise an error and produces incorrect predictions
     preds_scrambled_features_no_check = bst.predict(df[scrambled_features], validate_features=False)
-    assert any(preds_sorted_features != preds_scrambled_features_no_check)
+    np.testing.assert_raises(AssertionError, np.testing.assert_allclose, preds_sorted_features, preds_scrambled_features_no_check)
