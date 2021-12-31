@@ -2,7 +2,13 @@ VERBOSITY <- as.integer(
     Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
+CALCULATING_TEST_COVERAGE <- Sys.getenv("LIGHTGBM_TEST_COVERAGE") == "true"
+
 test_that("lgb.unloader works as expected", {
+    testthat::skip_if(
+        condition = CALCULATING_TEST_COVERAGE
+        , message = "lgb.unloader() tests are skipped when calculating test coverage"
+    )
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -24,6 +30,10 @@ test_that("lgb.unloader works as expected", {
 })
 
 test_that("lgb.unloader finds all boosters and removes them", {
+    testthat::skip_if(
+        condition = CALCULATING_TEST_COVERAGE
+        , message = "lgb.unloader() tests are skipped when calculating test coverage"
+    )
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)
