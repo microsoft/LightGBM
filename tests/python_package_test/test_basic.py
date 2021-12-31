@@ -1,6 +1,7 @@
 # coding: utf-8
 import filecmp
 import numbers
+import re
 from pathlib import Path
 
 import numpy as np
@@ -581,8 +582,37 @@ def test_param_aliases():
     assert lgb.basic._ConfigAliases.get('config', 'task') == {'config', 'config_file', 'task', 'task_type'}
 
 
+def _bad_gradients(preds, _):
+    return np.random.randn(len(preds) + 1), np.random.rand(len(preds) + 1)
+
+
+def _good_gradients(preds, _):
+    return np.random.randn(len(preds)), np.random.rand(len(preds))
+
+
+def test_custom_objective_safety():
+    nrows = 100
+    X = np.random.randn(nrows, 5)
+    y_binary = np.arange(nrows) % 2
+    classes = [0, 1, 2]
+    nclass = len(classes)
+    y_multiclass = np.arange(nrows) % nclass
+    ds_binary = lgb.Dataset(X, y_binary).construct()
+    ds_multiclass = lgb.Dataset(X, y_multiclass).construct()
+    bad_bst_binary = lgb.Booster({'objective': "none"}, ds_binary)
+    good_bst_binary = lgb.Booster({'objective': "none"}, ds_binary)
+    bad_bst_multi = lgb.Booster({'objective': "none", "num_class": nclass}, ds_multiclass)
+    good_bst_multi = lgb.Booster({'objective': "none", "num_class": nclass}, ds_multiclass)
+    good_bst_binary.update(fobj=_good_gradients)
+    with pytest.raises(ValueError, match=re.escape("number of models per one iteration (1)")):
+        bad_bst_binary.update(fobj=_bad_gradients)
+    good_bst_multi.update(fobj=_good_gradients)
+    with pytest.raises(ValueError, match=re.escape(f"number of models per one iteration ({nclass})")):
+        bad_bst_multi.update(fobj=_bad_gradients)
+
+
 @pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
-def test_predict_with_dataframe_checks_features():
+def test_validate_features():
     X, y = make_synthetic_regression()
     features = ['x1', 'x2', 'x3', 'x4']
     df = pd_DataFrame(X, columns=features)

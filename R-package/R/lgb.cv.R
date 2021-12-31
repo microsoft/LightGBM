@@ -12,8 +12,8 @@ CVBooster <- R6::R6Class(
       return(invisible(NULL))
     },
     reset_parameter = function(new_params) {
-      for (x in boosters) {
-        x$reset_parameter(params = new_params)
+      for (x in self$boosters) {
+        x[["booster"]]$reset_parameter(params = new_params)
       }
       return(invisible(self))
     }
@@ -43,6 +43,9 @@ CVBooster <- R6::R6Class(
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets
+#' @param eval_train_metric \code{boolean}, whether to add the cross validation results on the
+#'               training data. This parameter defaults to \code{FALSE}. Setting it to \code{TRUE}
+#'               will increase run time.
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained model \code{lgb.CVBooster}.
 #'
@@ -87,6 +90,7 @@ lgb.cv <- function(params = list()
                    , callbacks = list()
                    , reset_data = FALSE
                    , serializable = TRUE
+                   , eval_train_metric = FALSE
                    ) {
 
   if (nrounds <= 0L) {
@@ -102,7 +106,6 @@ lgb.cv <- function(params = list()
   }
 
   # Setup temporary variables
-  params$verbose <- verbose
   params <- lgb.check.obj(params = params, obj = obj)
   params <- lgb.check.eval(params = params, eval = eval)
   fobj <- NULL
@@ -112,6 +115,11 @@ lgb.cv <- function(params = list()
   # in `params`.
   # this ensures that the model stored with Booster$save() correctly represents
   # what was passed in
+  params <- lgb.check.wrapper_param(
+    main_param_name = "verbosity"
+    , params = params
+    , alternative_kwarg_value = verbose
+  )
   params <- lgb.check.wrapper_param(
     main_param_name = "num_iterations"
     , params = params
@@ -332,6 +340,9 @@ lgb.cv <- function(params = list()
       }
 
       booster <- Booster$new(params = params, train_set = dtrain)
+      if (isTRUE(eval_train_metric)) {
+        booster$add_valid(data = dtrain, name = "train")
+      }
       booster$add_valid(data = dtest, name = "valid")
       return(
         list(booster = booster)

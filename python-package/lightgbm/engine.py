@@ -9,7 +9,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _ArrayLike, _ConfigAliases, _InnerPredictor, _log_warning
+from .basic import (Booster, Dataset, LightGBMError, _ArrayLike, _choose_param_value, _ConfigAliases, _InnerPredictor,
+                    _log_warning)
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomObjectiveFunction = Callable[
@@ -33,8 +34,6 @@ def train(
     init_model: Optional[Union[str, Path, Booster]] = None,
     feature_name: Union[List[str], str] = 'auto',
     categorical_feature: Union[List[str], List[int], str] = 'auto',
-    early_stopping_rounds: Optional[int] = None,
-    evals_result: Optional[Dict[str, Any]] = None,
     keep_training_booster: bool = False,
     callbacks: Optional[List[Callable]] = None
 ) -> Booster:
@@ -110,28 +109,6 @@ def train(
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
         The output cannot be monotonically constrained with respect to a categorical feature.
-    early_stopping_rounds : int or None, optional (default=None)
-        Activates early stopping. The model will train until the validation score stops improving.
-        Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
-        to continue training.
-        Requires at least one validation data and one metric.
-        If there's more than one, will check all of them. But the training data is ignored anyway.
-        To check only the first metric, set the ``first_metric_only`` parameter to ``True`` in ``params``.
-        The index of iteration that has the best performance will be saved in the ``best_iteration`` field
-        if early stopping logic is enabled by setting ``early_stopping_rounds``.
-    evals_result : dict or None, optional (default=None)
-        Dictionary used to store all evaluation results of all the items in ``valid_sets``.
-        This should be initialized outside of your call to ``train()`` and should be empty.
-        Any initial contents of the dictionary will be deleted.
-
-        .. rubric:: Example
-
-        With a ``valid_sets`` = [valid_set, train_set],
-        ``valid_names`` = ['eval', 'train']
-        and a ``params`` = {'metric': 'logloss'}
-        returns {'train': {'logloss': ['0.48253', '0.35953', ...]},
-        'eval': {'logloss': ['0.480385', '0.357756', ...]}}.
-
     keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
         If False, the returned value will be converted into _InnerPredictor before returning.
@@ -159,14 +136,14 @@ def train(
             num_boost_round = params.pop(alias)
             _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
     params["num_iterations"] = num_boost_round
-    # show deprecation warning only for early stop argument, setting early stop via global params should still be possible
-    if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in a future release of LightGBM. "
-                     "Pass 'early_stopping()' callback via 'callbacks' argument instead.")
-    for alias in _ConfigAliases.get("early_stopping_round"):
-        if alias in params:
-            early_stopping_rounds = params.pop(alias)
-    params["early_stopping_round"] = early_stopping_rounds
+    # setting early stopping via global params should be possible
+    params = _choose_param_value(
+        main_param_name="early_stopping_round",
+        params=params,
+        default_value=None
+    )
+    if params["early_stopping_round"] is None:
+        params.pop("early_stopping_round")
     first_metric_only = params.get('first_metric_only', False)
 
     if num_boost_round <= 0:
@@ -217,14 +194,18 @@ def train(
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks_set = set(callbacks)
 
-    # Most of legacy advanced options becomes callbacks
-    if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        callbacks_set.add(callback.early_stopping(early_stopping_rounds, first_metric_only))
-
-    if evals_result is not None:
-        _log_warning("'evals_result' argument is deprecated and will be removed in a future release of LightGBM. "
-                     "Pass 'record_evaluation()' callback via 'callbacks' argument instead.")
-        callbacks_set.add(callback.record_evaluation(evals_result))
+    if "early_stopping_round" in params:
+        callbacks_set.add(
+            callback.early_stopping(
+                stopping_rounds=params["early_stopping_round"],
+                first_metric_only=first_metric_only,
+                verbose=_choose_param_value(
+                    main_param_name="verbosity",
+                    params=params,
+                    default_value=1
+                ).pop("verbosity") > 0
+            )
+        )
 
     callbacks_before_iter_set = {cb for cb in callbacks_set if getattr(cb, 'before_iteration', False)}
     callbacks_after_iter_set = callbacks_set - callbacks_before_iter_set
@@ -400,8 +381,7 @@ def cv(params, train_set, num_boost_round=100,
        folds=None, nfold=5, stratified=True, shuffle=True,
        metrics=None, fobj=None, feval=None, init_model=None,
        feature_name='auto', categorical_feature='auto',
-       early_stopping_rounds=None, fpreproc=None,
-       seed=0, callbacks=None, eval_train_metric=False,
+       fpreproc=None, seed=0, callbacks=None, eval_train_metric=False,
        return_cvbooster=False):
     """Perform the cross-validation with given parameters.
 
@@ -486,13 +466,6 @@ def cv(params, train_set, num_boost_round=100,
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
         The output cannot be monotonically constrained with respect to a categorical feature.
-    early_stopping_rounds : int or None, optional (default=None)
-        Activates early stopping.
-        CV score needs to improve at least every ``early_stopping_rounds`` round(s)
-        to continue.
-        Requires at least one metric. If there's more than one, will check all of them.
-        To check only the first metric, set the ``first_metric_only`` parameter to ``True`` in ``params``.
-        Last entry in evaluation history is the one from the best iteration.
     fpreproc : callable or None, optional (default=None)
         Preprocessing function that takes (dtrain, dtest, params)
         and returns transformed versions of those.
@@ -530,13 +503,14 @@ def cv(params, train_set, num_boost_round=100,
             _log_warning(f"Found '{alias}' in params. Will use it instead of 'num_boost_round' argument")
             num_boost_round = params.pop(alias)
     params["num_iterations"] = num_boost_round
-    if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        _log_warning("'early_stopping_rounds' argument is deprecated and will be removed in a future release of LightGBM. "
-                     "Pass 'early_stopping()' callback via 'callbacks' argument instead.")
-    for alias in _ConfigAliases.get("early_stopping_round"):
-        if alias in params:
-            early_stopping_rounds = params.pop(alias)
-    params["early_stopping_round"] = early_stopping_rounds
+    # setting early stopping via global params should be possible
+    params = _choose_param_value(
+        main_param_name="early_stopping_round",
+        params=params,
+        default_value=None
+    )
+    if params["early_stopping_round"] is None:
+        params.pop("early_stopping_round")
     first_metric_only = params.get('first_metric_only', False)
 
     if num_boost_round <= 0:
@@ -571,8 +545,19 @@ def cv(params, train_set, num_boost_round=100,
         for i, cb in enumerate(callbacks):
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
-    if early_stopping_rounds is not None and early_stopping_rounds > 0:
-        callbacks.add(callback.early_stopping(early_stopping_rounds, first_metric_only, verbose=False))
+
+    if "early_stopping_round" in params:
+        callbacks.add(
+            callback.early_stopping(
+                stopping_rounds=params["early_stopping_round"],
+                first_metric_only=first_metric_only,
+                verbose=_choose_param_value(
+                    main_param_name="verbosity",
+                    params=params,
+                    default_value=1
+                ).pop("verbosity") > 0
+            )
+        )
 
     callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
     callbacks_after_iter = callbacks - callbacks_before_iter
