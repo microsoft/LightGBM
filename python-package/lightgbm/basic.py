@@ -3493,6 +3493,9 @@ class Booster:
             Used only if data is str.
         is_reshape : bool, optional (default=True)
             If True, result is reshaped to [nrow, ncol].
+        validate_features : bool, optional (default=True)
+            If True, ensure that the features used to predict match the ones used to train.
+            Used only if data is pandas DataFrame.
         **kwargs
             Other parameters for the prediction.
 

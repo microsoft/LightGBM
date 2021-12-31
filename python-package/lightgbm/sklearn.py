@@ -340,6 +340,9 @@ _lgbmmodel_doc_predict = (
             Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
             column, where the last column is the expected value.
 
+    validate_features : bool, optional (default=True)
+        If True, ensure that the features used to predict match the ones used to train.
+        Used only if data is pandas DataFrame.
     **kwargs
         Other parameters for the prediction.
 
