@@ -279,14 +279,15 @@ def _objective_logloss(y_true, y_pred):
     num_rows = len(y_true)
     num_class = len(np.unique(y_true))
     # operate on preds as [num_data, num_classes] matrix
-    y_pred = y_pred.T.reshape(-1, num_class)
+    y_pred = y_pred.reshape(-1, num_class, order='F')
     row_wise_max = np.max(y_pred, axis=1).reshape(num_rows, 1)
     preds = y_pred - row_wise_max
     prob = np.exp(preds) / np.sum(np.exp(preds), axis=1).reshape(num_rows, 1)
     grad_update = np.zeros_like(preds)
     grad_update[np.arange(num_rows), y_true.astype('int')] = -1.0
     grad = prob + grad_update
-    hess = 2.0 * prob * (1.0 - prob)
+    factor = num_class / (num_class - 1)
+    hess = factor * prob * (1 - prob)
     # reshape back to 1-D array, grouped by class id and then row id
     grad = grad.T.reshape(-1)
     hess = hess.T.reshape(-1)
