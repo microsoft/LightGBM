@@ -21,6 +21,7 @@ LIGHTGBM_OPTIONS = [
     ('integrated-opencl', None, 'Compile integrated OpenCL version'),
     ('gpu', 'g', 'Compile GPU version'),
     ('cuda', None, 'Compile CUDA version'),
+    ('cuda-exp', None, 'Compile CUDA Experimental version'),
     ('mpi', None, 'Compile MPI version'),
     ('nomp', None, 'Compile version without OpenMP support'),
     ('hdfs', 'h', 'Compile HDFS version'),
@@ -274,6 +275,7 @@ class CustomBdistWheel(bdist_wheel):
         self.integrated_opencl = False
         self.gpu = False
         self.cuda = False
+        self.cuda_exp = False
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
@@ -295,6 +297,7 @@ class CustomBdistWheel(bdist_wheel):
         install.integrated_opencl = self.integrated_opencl
         install.gpu = self.gpu
         install.cuda = self.cuda
+        install.cuda_exp = self.cuda_exp
         install.boost_root = self.boost_root
         install.boost_dir = self.boost_dir
         install.boost_include_dir = self.boost_include_dir

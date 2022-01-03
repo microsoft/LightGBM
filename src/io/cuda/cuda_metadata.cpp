@@ -74,7 +74,6 @@ void CUDAMetadata::SetWeights(const label_t* weights, data_size_t len) {
 }
 
 void CUDAMetadata::SetQuery(const data_size_t* query_boundaries, const label_t* query_weights, data_size_t num_queries) {
-  Log::Warning("error !!! setting query!!!");
   DeallocateCUDAMemory<data_size_t>(&cuda_query_boundaries_, __FILE__, __LINE__);
   InitCUDAMemoryFromHostMemory<data_size_t>(&cuda_query_boundaries_, query_boundaries, static_cast<size_t>(num_queries) + 1, __FILE__, __LINE__);
   if (query_weights != nullptr) {

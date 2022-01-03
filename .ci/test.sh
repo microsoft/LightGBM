@@ -184,11 +184,19 @@ elif [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
     fi
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
+        if [[ $TASK == "cuda" ]]; then
+            pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
+        else
+            pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda-exp || exit -1
+        fi
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda || exit -1
+        if [[ $TASK == "cuda" ]]; then
+            cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda || exit -1
+        else
+            cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda-exp || exit -1
+        fi
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
         pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0
