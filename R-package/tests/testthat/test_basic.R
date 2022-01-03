@@ -2,8 +2,6 @@ VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
-context("lightgbm()")
-
 ON_WINDOWS <- .Platform$OS.type == "windows"
 
 UTF8_LOCALE <- all(grepl(
@@ -326,9 +324,6 @@ test_that("lightgbm() does not write model to disk if save_name=NULL", {
   expect_equal(files_before, files_after)
 })
 
-
-context("training continuation")
-
 test_that("training continuation works", {
   dtrain <- lgb.Dataset(
     train$data
@@ -359,8 +354,6 @@ test_that("training continuation works", {
   # iterations and the one trained in 5-then-5.
   expect_lt(abs(err_bst - err_bst2), 0.01)
 })
-
-context("lgb.cv()")
 
 test_that("cv works", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -394,7 +387,7 @@ test_that("CVBooster$reset_parameter() works as expected", {
     , nrounds = 3L
     , nfold = n_folds
   )
-  expect_is(cv_bst, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst, "lgb.CVBooster"))
   expect_length(cv_bst$boosters, n_folds)
   for (bst in cv_bst$boosters) {
     expect_equal(bst[["booster"]]$params[["num_leaves"]], 7L)
@@ -467,7 +460,7 @@ test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric
       , num_leaves = 5L
     )
   )
-  expect_is(cv_bst, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst, "lgb.CVBooster"))
   expect_named(
     cv_bst$record_evals
     , c("start_iter", "valid")
@@ -505,7 +498,7 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
     , params = params
     , nfold = 5L
   )
-  expect_is(cv_bst, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst, "lgb.CVBooster"))
 
   dtrain <- .new_dataset()
   cv_bst_linear <- lgb.cv(
@@ -514,7 +507,7 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
     , params = utils::modifyList(params, list(linear_tree = TRUE))
     , nfold = 5L
   )
-  expect_is(cv_bst_linear, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst_linear, "lgb.CVBooster"))
 
   expect_true(cv_bst_linear$best_score < cv_bst$best_score)
 })
@@ -549,12 +542,49 @@ test_that("lgb.cv() respects showsd argument", {
     evals_showsd[["eval"]]
     , evals_no_showsd[["eval"]]
   )
-  expect_is(evals_showsd[["eval_err"]], "list")
+  expect_true(methods::is(evals_showsd[["eval_err"]], "list"))
   expect_equal(length(evals_showsd[["eval_err"]]), nrounds)
   expect_identical(evals_no_showsd[["eval_err"]], list())
 })
 
-context("lgb.train()")
+test_that("lgb.cv() respects eval_train_metric argument", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(
+    objective = "regression"
+    , metric = "l2"
+    , min_data = 1L
+  )
+  nrounds <- 5L
+  set.seed(708L)
+  bst_train <- lgb.cv(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , nfold = 3L
+    , showsd = FALSE
+    , eval_train_metric = TRUE
+  )
+  set.seed(708L)
+  bst_no_train <- lgb.cv(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , nfold = 3L
+    , showsd = FALSE
+    , eval_train_metric = FALSE
+  )
+  expect_equal(
+    bst_train$record_evals[["valid"]][["l2"]]
+    , bst_no_train$record_evals[["valid"]][["l2"]]
+  )
+  expect_true("train" %in% names(bst_train$record_evals))
+  expect_false("train" %in% names(bst_no_train$record_evals))
+  expect_true(methods::is(bst_train$record_evals[["train"]][["l2"]][["eval"]], "list"))
+  expect_equal(
+    length(bst_train$record_evals[["train"]][["l2"]][["eval"]])
+    , nrounds
+  )
+})
 
 test_that("lgb.train() works as expected with multiple eval metrics", {
   metrics <- c("binary_error", "auc", "binary_logloss")
@@ -2150,8 +2180,6 @@ test_that("lgb.cv() updates params based on keyword arguments", {
 
 })
 
-context("linear learner")
-
 test_that("lgb.train() fit on linearly-relatead data improves when using linear learners", {
   set.seed(708L)
   .new_dataset <- function() {
@@ -2391,8 +2419,6 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
   expect_true(bst_lin_last_mse <  bst_last_mse)
 })
 
-context("interaction constraints")
-
 test_that("lgb.train() throws an informative error if interaction_constraints is not a list", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", interaction_constraints = "[1,2],[3]")
@@ -2492,8 +2518,6 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   expect_equal(pred1, pred2)
 
 })
-
-context("monotone constraints")
 
 .generate_trainset_for_monotone_constraints_tests <- function(x3_to_categorical) {
   n_samples <- 3000L

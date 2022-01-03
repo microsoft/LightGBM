@@ -2,8 +2,6 @@ VERBOSITY <- as.integer(
     Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
-context("lgb.interpete")
-
 .sigmoid <- function(x) {
     1.0 / (1.0 + exp(-x))
 }
