@@ -109,7 +109,7 @@ Dataset <- R6::R6Class(
                             params = list()) {
 
       # the Dataset's existing parameters should be overwritten by any passed in to this call
-      params <- modifyList(self$get_params(), params)
+      params <- modifyList(private$params, params)
 
       # Create new dataset
       ret <- Dataset$new(
@@ -535,7 +535,7 @@ Dataset <- R6::R6Class(
       return(
         Dataset$new(
           data = NULL
-          , params = self$get_params()
+          , params = private$params
           , reference = self
           , colnames = private$colnames
           , categorical_feature = private$categorical_feature
@@ -554,15 +554,17 @@ Dataset <- R6::R6Class(
       if (length(params) == 0L) {
         return(invisible(self))
       }
+      new_params <- utils::modifyList(private$params, params)
       if (lgb.is.null.handle(x = private$handle)) {
-        private$params <- utils::modifyList(private$params, params)
+        private$params <- new_params
       } else {
         tryCatch({
           .Call(
             LGBM_DatasetUpdateParamChecking_R
             , lgb.params2str(params = private$params)
-            , lgb.params2str(params = params)
+            , lgb.params2str(params = new_params)
           )
+          private$params <- new_params
         }, error = function(e) {
           # If updating failed but raw data is not available, raise an error because
           # achieving what the user asked for is not possible
@@ -572,7 +574,7 @@ Dataset <- R6::R6Class(
 
           # If updating failed but raw data is available, modify the params
           # on the R side and re-set ("deconstruct") the Dataset
-          private$params <- utils::modifyList(private$params, params)
+          private$params <- new_params
           self$finalize()
         })
       }
@@ -580,6 +582,11 @@ Dataset <- R6::R6Class(
 
     },
 
+    # [description] get only Dataset-specific parameters. This is primarily used by
+    #               Booster to update its parameters based on the characteristics of
+    #               a Dataset. It should not be used by other methods in this class,
+    #               since "verbose" is not a Dataset parameter and needs to be passed
+    #               through to avoid globally re-setting verbosity.
     get_params = function() {
       dataset_params <- unname(unlist(.DATASET_PARAMETERS()))
       ret <- list()

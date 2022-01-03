@@ -344,7 +344,6 @@ lgb.cv <- function(params = list()
         booster$add_valid(data = dtrain, name = "train")
       }
       booster$add_valid(data = dtest, name = "valid")
-      booster$reset_parameter(params)
       return(
         list(booster = booster)
       )
