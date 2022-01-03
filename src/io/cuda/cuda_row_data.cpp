@@ -186,6 +186,7 @@ void CUDARowData::DivideCUDAFeatureGroups(const Dataset* train_data, TrainingSha
     const int feature_group_index = train_data->Feature2Group(feature_index);
     if (prev_group_index == -1 || feature_group_index != prev_group_index) {
       feature_group_num_feature_offsets.emplace_back(offsets);
+      prev_group_index = feature_group_index;
     }
     ++offsets;
   }

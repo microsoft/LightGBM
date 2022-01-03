@@ -25,8 +25,15 @@ class CUDAMetadata {
             const std::vector<label_t>& weight,
             const std::vector<data_size_t>& query_boundaries,
             const std::vector<label_t>& query_weights,
-            const std::vector<double>& init_score,
-            const std::vector<data_size_t>& queries);
+            const std::vector<double>& init_score);
+
+  void SetLabel(const label_t* label, data_size_t len);
+
+  void SetWeights(const label_t* weights, data_size_t len);
+
+  void SetQuery(const data_size_t* query, const label_t* query_weights, data_size_t num_queries);
+
+  void SetInitScore(const double* init_score, data_size_t len);
 
   const label_t* cuda_label() const { return cuda_label_; }
 
@@ -42,7 +49,6 @@ class CUDAMetadata {
   data_size_t* cuda_query_boundaries_;
   label_t* cuda_query_weights_;
   double* cuda_init_score_;
-  data_size_t* cuda_queries_;
 };
 
 }  // namespace LightGBM
