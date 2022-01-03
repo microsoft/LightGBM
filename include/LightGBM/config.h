@@ -212,7 +212,7 @@ struct Config {
   // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
   // desc = **Note**: ``cuda_exp`` is an experimental CUDA version, the installation guide for ``cuda_exp`` is identical with ``cuda``
   // desc = **Note**: ``cuda_exp`` is faster than ``cuda`` and will replace ``cuda`` in the future
-  std::string device_type = "cuda_exp";
+  std::string device_type = "cpu";
 
   // [doc-only]
   // alias = random_seed, random_state
@@ -1023,7 +1023,7 @@ struct Config {
 
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
   // desc = **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is currently supported
-  bool gpu_use_dp = true;
+  bool gpu_use_dp = false;
 
   // check = >0
   // desc = number of GPUs
