@@ -9,9 +9,9 @@ import random
 from pathlib import Path
 
 import numpy as np
-from os import getenv
 import psutil
 import pytest
+from os import getenv
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
 from sklearn.datasets import load_svmlight_file, make_multilabel_classification
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score

@@ -4,8 +4,8 @@ import numbers
 from pathlib import Path
 
 import numpy as np
-from os import getenv
 import pytest
+from os import getenv
 from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split

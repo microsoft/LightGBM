@@ -5,8 +5,8 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-from os import getenv
 import pytest
+from os import getenv
 from pkg_resources import parse_version
 from sklearn import __version__ as sk_version
 from sklearn.base import clone
