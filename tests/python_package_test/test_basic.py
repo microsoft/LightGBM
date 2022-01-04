@@ -1,8 +1,8 @@
 # coding: utf-8
 import filecmp
 import numbers
-from os import getenv
 import re
+from os import getenv
 from pathlib import Path
 
 import numpy as np
