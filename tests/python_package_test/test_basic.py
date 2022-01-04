@@ -1,11 +1,11 @@
 # coding: utf-8
 import filecmp
 import numbers
+from os import getenv
 from pathlib import Path
 
 import numpy as np
 import pytest
-from os import getenv
 from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split

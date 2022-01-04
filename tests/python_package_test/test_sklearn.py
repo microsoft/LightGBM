@@ -1,12 +1,12 @@
 # coding: utf-8
 import itertools
 import math
+from os import getenv
 from pathlib import Path
 
 import joblib
 import numpy as np
 import pytest
-from os import getenv
 from pkg_resources import parse_version
 from sklearn import __version__ as sk_version
 from sklearn.base import clone
