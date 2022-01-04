@@ -4,6 +4,7 @@ import numbers
 from pathlib import Path
 
 import numpy as np
+from os import getenv
 import pytest
 from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file
@@ -14,7 +15,7 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import load_breast_cancer
 
-
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
 def test_basic(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
                                                         test_size=0.1, random_state=2)
