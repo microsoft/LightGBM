@@ -681,6 +681,7 @@ test_that("lgb.train() respects parameter aliases for objective", {
   )
   expect_named(bst$record_evals[["the_training_data"]], "binary_logloss")
   expect_length(bst$record_evals[["the_training_data"]][["binary_logloss"]][["eval"]], nrounds)
+  expect_equal(bst$params[["objective"]], "binary")
 })
 
 test_that("lgb.train() respects parameter aliases for metric", {
