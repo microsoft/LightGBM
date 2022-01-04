@@ -269,7 +269,6 @@ sh build-cran-package.sh \
     --no-build-vignettes
 
 # Get coverage
-LIGHTGBM_TEST_COVERAGE="true" \
 Rscript -e " \
     library(covr);
     coverage  <- covr::package_coverage('./lightgbm_r', type = 'tests', quiet = FALSE);
