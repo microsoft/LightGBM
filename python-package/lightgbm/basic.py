@@ -2998,7 +2998,15 @@ class Booster:
         else:
             if not self.__set_objective_to_none:
                 self.reset_parameter({"objective": "none"}).__set_objective_to_none = True
-            grad, hess = fobj(self.__inner_predict(0), self.train_set)
+            preds = self.__inner_predict(0)
+            num_data = self.train_set.num_data()
+            num_class = self._Booster__num_class
+            if num_class > 1:
+                preds = preds.reshape(num_data, num_class, order='F')
+            grad, hess = fobj(preds, self.train_set)
+            if num_class > 1:
+                grad = grad.ravel(order='F')
+                hess = hess.ravel(order='F')
             return self.__boost(grad, hess)
 
     def __boost(self, grad, hess):

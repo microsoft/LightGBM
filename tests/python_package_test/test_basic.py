@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from scipy import sparse
-from sklearn.datasets import dump_svmlight_file, load_svmlight_file
+from sklearn.datasets import dump_svmlight_file, load_svmlight_file, make_blobs
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
@@ -587,7 +587,7 @@ def _bad_gradients(preds, _):
 
 
 def _good_gradients(preds, _):
-    return np.random.randn(len(preds)), np.random.rand(len(preds))
+    return np.random.randn(*preds.shape), np.random.rand(*preds.shape)
 
 
 def test_custom_objective_safety():
@@ -609,3 +609,35 @@ def test_custom_objective_safety():
     good_bst_multi.update(fobj=_good_gradients)
     with pytest.raises(ValueError, match=re.escape(f"number of models per one iteration ({nclass})")):
         bad_bst_multi.update(fobj=_bad_gradients)
+
+
+def test_multiclass_custom_objective():
+    def softmax(x):
+        row_wise_max = np.max(x, axis=1).reshape(-1, 1)
+        x = x - row_wise_max
+        return np.exp(x) / np.sum(np.exp(x), axis=1).reshape(-1, 1)
+
+
+    def custom_obj(y_pred, ds):
+        y_true = ds.get_label()
+        num_rows, num_class = y_pred.shape
+        prob = softmax(y_pred)
+        grad_update = np.zeros_like(prob)
+        grad_update[np.arange(num_rows), y_true.astype('int')] = -1.0
+        grad = prob + grad_update
+        factor = num_class / (num_class - 1)
+        hess = factor * prob * (1 - prob)
+        return grad, hess
+
+
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    ds = lgb.Dataset(X, y)
+    params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
+    builtin_obj_bst = lgb.train(params, ds, num_boost_round=10)
+    builtin_obj_preds = builtin_obj_bst.predict(X)
+
+    custom_obj_bst = lgb.train(params, ds, num_boost_round=10, fobj=custom_obj)
+    custom_obj_preds = softmax(custom_obj_bst.predict(X))
+
+    np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
