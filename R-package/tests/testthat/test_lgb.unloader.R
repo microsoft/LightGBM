@@ -2,7 +2,7 @@ VERBOSITY <- as.integer(
     Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
-CALCULATING_TEST_COVERAGE <- Sys.getenv("R_COVR") == "true"
+CALCULATING_TEST_COVERAGE <- Sys.getenv("R_COVR", unset = "unset") != "unset"
 
 test_that("lgb.unloader works as expected", {
     testthat::skip_if(
