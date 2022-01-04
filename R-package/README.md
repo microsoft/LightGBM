@@ -271,7 +271,7 @@ sh build-cran-package.sh \
 # Get coverage
 Rscript -e " \
     library(covr);
-    coverage  <- covr::package_coverage('./lightgbm_r', type = 'tests', quiet = FALSE);
+    coverage <- covr::package_coverage('./lightgbm_r', type = 'tests', quiet = FALSE);
     print(coverage);
     covr::report(coverage, file = file.path(getwd(), 'coverage.html'), browse = TRUE);
     "
