@@ -609,3 +609,42 @@ def test_custom_objective_safety():
     good_bst_multi.update(fobj=_good_gradients)
     with pytest.raises(ValueError, match=re.escape(f"number of models per one iteration ({nclass})")):
         bad_bst_multi.update(fobj=_bad_gradients)
+
+
+def test_training_with_pandas_nullable_dtypes():
+    pd = pytest.importorskip('pandas')
+    rand_ints = np.random.randint(0, 2, size=100)
+    unif_rands = np.random.rand(100)
+    df = pd.DataFrame(
+        {
+            'x1': rand_ints,
+            'x2': unif_rands,
+            'x3': unif_rands < 0.5,
+            'x4': pd.arrays.SparseArray(rand_ints),
+        }
+    )
+    # introduce some missing values
+    df.loc[1, 'x1'] = np.nan
+    df.loc[2, 'x2'] = np.nan
+    df.loc[3, 'x3'] = np.nan
+    y = np.random.rand(100)
+
+    # train with regular dtypes
+    params = {'num_leaves': 15}
+    ds = lgb.Dataset(df, y)
+    bst = lgb.train(params, ds, num_boost_round=5)
+
+    # convert to nullable dtypes
+    df2 = df.copy()
+    df2['x1'] = df2['x1'].astype('Int32')
+    df2['x2'] = df2['x2'].astype('Float64')
+    df2['x3'] = df2['x3'].astype('boolean')
+
+    # test training succeeds
+    ds_nullable_dtypes = lgb.Dataset(df2, y)
+    bst_nullable_dtypes = lgb.train(params, ds_nullable_dtypes, num_boost_round=5)
+
+    # test equal predictions
+    preds = bst.predict(df)
+    preds_nullable_dtypes = bst_nullable_dtypes.predict(df2)
+    np.testing.assert_allclose(preds, preds_nullable_dtypes)
