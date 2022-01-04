@@ -3,10 +3,12 @@ VERBOSITY <- as.integer(
 )
 
 test_that("lgb.unloader works as expected", {
-    testthat::skip_if(
-        condition = covr::in_covr()
-        , message = "lgb.unloader() tests are skipped when calculating test coverage"
-    )
+    if (require(covr)) {  # nolint
+        testthat::skip_if(
+            condition = covr::in_covr()
+            , message = "lgb.unloader() tests are skipped when calculating test coverage"
+        )
+    }
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -28,10 +30,12 @@ test_that("lgb.unloader works as expected", {
 })
 
 test_that("lgb.unloader finds all boosters and removes them", {
-    testthat::skip_if(
-        condition = covr::in_covr()
-        , message = "lgb.unloader() tests are skipped when calculating test coverage"
-    )
+    if (require(covr)) {  # nolint
+        testthat::skip_if(
+            condition = covr::in_covr()
+            , message = "lgb.unloader() tests are skipped when calculating test coverage"
+        )
+    }
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)
