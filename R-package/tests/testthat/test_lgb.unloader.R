@@ -2,8 +2,6 @@ VERBOSITY <- as.integer(
     Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
-context("lgb.unloader")
-
 test_that("lgb.unloader works as expected", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train

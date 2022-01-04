@@ -743,7 +743,7 @@ def test_early_stopping():
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     valid_names=valid_set_name,
-                    early_stopping_rounds=5)
+                    callbacks=[lgb.early_stopping(stopping_rounds=5)])
     assert gbm.best_iteration == 10
     assert valid_set_name in gbm.best_score
     assert 'binary_logloss' in gbm.best_score[valid_set_name]
@@ -752,10 +752,40 @@ def test_early_stopping():
                     num_boost_round=40,
                     valid_sets=lgb_eval,
                     valid_names=valid_set_name,
-                    early_stopping_rounds=5)
+                    callbacks=[lgb.early_stopping(stopping_rounds=5)])
     assert gbm.best_iteration <= 39
     assert valid_set_name in gbm.best_score
     assert 'binary_logloss' in gbm.best_score[valid_set_name]
+
+
+@pytest.mark.parametrize('first_metric_only', [True, False])
+def test_early_stopping_via_global_params(first_metric_only):
+    X, y = load_breast_cancer(return_X_y=True)
+    num_trees = 5
+    params = {
+        'num_trees': num_trees,
+        'objective': 'binary',
+        'metric': 'None',
+        'verbose': -1,
+        'early_stopping_round': 2,
+        'first_metric_only': first_metric_only
+    }
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+    valid_set_name = 'valid_set'
+    gbm = lgb.train(params,
+                    lgb_train,
+                    feval=[decreasing_metric, constant_metric],
+                    valid_sets=lgb_eval,
+                    valid_names=valid_set_name)
+    if first_metric_only:
+        assert gbm.best_iteration == num_trees
+    else:
+        assert gbm.best_iteration == 1
+    assert valid_set_name in gbm.best_score
+    assert 'decreasing_metric' in gbm.best_score[valid_set_name]
+    assert 'error' in gbm.best_score[valid_set_name]
 
 
 @pytest.mark.parametrize('first_only', [True, False])
@@ -810,7 +840,7 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
     # regular early stopping
     evals_result = {}
     train_kwargs['callbacks'] = [
-        lgb.callback.early_stopping(10, first_only, verbose=0),
+        lgb.callback.early_stopping(10, first_only, verbose=False),
         lgb.record_evaluation(evals_result)
     ]
     bst = lgb.train(**train_kwargs)
@@ -819,7 +849,7 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
     # positive min_delta
     delta_result = {}
     train_kwargs['callbacks'] = [
-        lgb.callback.early_stopping(10, first_only, verbose=0, min_delta=min_delta),
+        lgb.callback.early_stopping(10, first_only, verbose=False, min_delta=min_delta),
         lgb.record_evaluation(delta_result)
     ]
     delta_bst = lgb.train(**train_kwargs)
@@ -1000,8 +1030,8 @@ def test_cvbooster():
     # with early stopping
     cv_res = lgb.cv(params, lgb_train,
                     num_boost_round=25,
-                    early_stopping_rounds=5,
                     nfold=3,
+                    callbacks=[lgb.early_stopping(stopping_rounds=5)],
                     return_cvbooster=True)
     assert 'cvbooster' in cv_res
     cvb = cv_res['cvbooster']
@@ -2378,9 +2408,14 @@ def test_early_stopping_for_only_first_metric():
             'verbose': -1,
             'seed': 123
         }
-        gbm = lgb.train(dict(params, first_metric_only=first_metric_only), lgb_train,
-                        num_boost_round=25, valid_sets=valid_sets, feval=feval,
-                        early_stopping_rounds=5)
+        gbm = lgb.train(
+            params,
+            lgb_train,
+            num_boost_round=25,
+            valid_sets=valid_sets,
+            feval=feval,
+            callbacks=[lgb.early_stopping(stopping_rounds=5, first_metric_only=first_metric_only)]
+        )
         assert assumed_iteration == gbm.best_iteration
 
     def metrics_combination_cv_regression(metric_list, assumed_iteration,
@@ -2394,11 +2429,15 @@ def test_early_stopping_for_only_first_metric():
             'seed': 123,
             'gpu_use_dp': True
         }
-        ret = lgb.cv(dict(params, first_metric_only=first_metric_only),
-                     train_set=lgb_train, num_boost_round=25,
-                     stratified=False, feval=feval,
-                     early_stopping_rounds=5,
-                     eval_train_metric=eval_train_metric)
+        ret = lgb.cv(
+            params,
+            train_set=lgb_train,
+            num_boost_round=25,
+            stratified=False,
+            feval=feval,
+            callbacks=[lgb.early_stopping(stopping_rounds=5, first_metric_only=first_metric_only)],
+            eval_train_metric=eval_train_metric
+        )
         assert assumed_iteration == len(ret[list(ret.keys())[0]])
 
     X, y = load_boston(return_X_y=True)
@@ -2964,8 +3003,14 @@ def test_predict_with_start_iteration():
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         train_data = lgb.Dataset(X_train, label=y_train)
         valid_data = lgb.Dataset(X_test, label=y_test)
-        booster = lgb.train(params, train_data, num_boost_round=50, early_stopping_rounds=early_stopping_rounds,
-                            valid_sets=[valid_data])
+        callbacks = [lgb.early_stopping(early_stopping_rounds)] if early_stopping_rounds is not None else []
+        booster = lgb.train(
+            params,
+            train_data,
+            num_boost_round=50,
+            valid_sets=[valid_data],
+            callbacks=callbacks
+        )
 
         # test that the predict once with all iterations equals summed results with start_iteration and num_iteration
         all_pred = booster.predict(X, raw_score=True)

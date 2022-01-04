@@ -2,8 +2,6 @@ VERBOSITY <- as.integer(
     Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
-context("lgb.plot.importance()")
-
 test_that("lgb.plot.importance() should run without error for well-formed inputs", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
