@@ -48,7 +48,6 @@ NeedsCompilation: yes
 Biarch: true
 VignetteBuilder: knitr
 Suggests:
-    covr,
     knitr,
     processx,
     rmarkdown,
