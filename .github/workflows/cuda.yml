@@ -49,7 +49,7 @@ jobs:
             tree_learner: cuda_exp
           - method: wheel
             compiler: gcc
-            python_version: 3.7
+            python_version: 3.9
             cuda_version: "11.4.2"
             tree_learner: cuda_exp
     steps:
