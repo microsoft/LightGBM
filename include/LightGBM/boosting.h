@@ -279,6 +279,18 @@ class LIGHTGBM_EXPORT Boosting {
   */
   virtual int NumberOfClasses() const = 0;
 
+  /*!
+* \brief Get mapping info
+* \return mapping info
+*/
+  virtual std::vector< std::string >  GetMapping() const = 0;
+
+  /*!
+  * \brief Get number of mapping
+  * \return number of mapping
+  */
+  virtual int  GetNumMapping() const = 0;
+
   /*! \brief The prediction should be accurate or not. True will disable early stopping for prediction. */
   virtual bool NeedAccuratePrediction() const = 0;
 

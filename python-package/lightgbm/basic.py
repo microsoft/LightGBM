@@ -1673,7 +1673,7 @@ class Dataset:
             try:
                 data = np.array(mat.reshape(mat.size), dtype=np.float32)
             except ValueError:
-                _log_info('Detected string input, converting string to int automatically, saving mapping file to "mapping.json".')
+                _log_info('Detected string input, converting string to int automatically.')
                 data = mat.copy().T
                 if self.feature_name == None or self.feature_name == 'auto':
                     feature_name = [f"Column_{i}" for i in range(data.shape[0])]
@@ -1709,8 +1709,8 @@ class Dataset:
             ctypes.c_int32(mat.shape[1]),
             ctypes.c_int(C_API_IS_ROW_MAJOR),
             c_str(params_str),
-            c_mapping_string,
-            len(mapping_string),
+            c_array(ctypes.c_char_p, c_mapping_string),
+            ctypes.c_int(len(mapping_string)),
             ref_dataset,
             ctypes.byref(self.handle)))
         return self
@@ -1742,7 +1742,7 @@ class Dataset:
                 try:
                     mats[i] = np.array(mat.reshape(mat.size), dtype=np.float32)
                 except ValueError:
-                    _log_info('Detected string input, converting string to int automatically, saving mapping file to "mapping.json".')
+                    _log_info('Detected string input, converting string to int automatically.')
                     data = mats[i].copy().T
                     if self.feature_name == None or self.feature_name == 'auto':
                         feature_name = [f"Column_{i}" for i in range(data.shape[0])]
@@ -1787,8 +1787,8 @@ class Dataset:
             ctypes.c_int32(ncol),
             ctypes.c_int(C_API_IS_ROW_MAJOR),
             c_str(params_str),
-            c_mapping_string,
-            len(mapping_string),
+            c_array(ctypes.c_char_p, c_mapping_string),
+            ctypes.c_int(len(mapping_string)),
             ref_dataset,
             ctypes.byref(self.handle)))
         return self
@@ -2282,7 +2282,7 @@ class Dataset:
         self.label = label
         if self.handle is not None:
             if is_1d_string(label):
-                _log_info('Detected string input, converting string to int automatically, saving mapping file to "mapping.json".')
+                _log_info('Detected string input, converting string to int automatically.')
                 mapping, label = _string_column_mapping(label)
                 self.mappings['label'] = mapping
             label = list_to_1d_numpy(_label_from_pandas(label), name='label')

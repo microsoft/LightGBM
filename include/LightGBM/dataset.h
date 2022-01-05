@@ -754,6 +754,11 @@ class Dataset {
     return raw_data_[numeric_feature_map_[feat_ind]].data();
   }
 
+  inline void set_mapping(std::vector< std::string > mapping_) {
+    // set mapping using string vector
+    mapping = mapping_;
+  }
+
   inline void store_mapping()  {
     // store maps to mapping
     int offset = 0;

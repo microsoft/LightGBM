@@ -367,7 +367,7 @@ class GBDT : public GBDTBase {
   * \brief Get number of mapping
   * \return number of mapping
   */
-  inline std::vector< std::string >  GetNumMapping() const { return num_mapping; }
+  inline int  GetNumMapping() const { return num_mapping; }
 
   inline void InitPredict(int start_iteration, int num_iteration, bool is_pred_contrib) override {
     num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
@@ -502,7 +502,7 @@ class GBDT : public GBDTBase {
   /*! \brief mapping info */
   std::vector< std::string > mapping;
   /*! \brief num mapping */
-  std::vector< std::string > num_mapping;
+  int num_mapping;
 
 #ifdef USE_CUDA
   /*! \brief First order derivative of training data */

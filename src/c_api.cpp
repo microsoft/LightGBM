@@ -1091,7 +1091,7 @@ int LGBM_DatasetCreateFromMat(const void* data,
                               int is_row_major,
                               const char* parameters,
                               const char** mapping,
-                              int32_t len_mapping,
+                              int len_mapping,
                               const DatasetHandle reference,
                               DatasetHandle* out) {
   return LGBM_DatasetCreateFromMats(1,
@@ -1115,15 +1115,17 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                int is_row_major,
                                const char* parameters,
                                const char** mapping,
-                               int32_t len_mapping,
+                               int len_mapping,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
   API_BEGIN();
+  Log::Info("LGBM_DatasetCreateFromMats");
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
   std::unique_ptr<Dataset> ret;
+  Log::Info("Created Dataset pointer");
   int32_t total_nrow = 0;
   for (int j = 0; j < nmat; ++j) {
     total_nrow += nrow[j];
@@ -1133,12 +1135,14 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   for (int j = 0; j < nmat; ++j) {
     get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
   }
-
+  Log::Info("creating mapping_str");
+  std::cout << "len_mapping: " << len_mapping << std::endl;
   std::vector<std::string> mapping_str;
   for (int i = 0; i < len_mapping; ++i) {
+    std::cout << mapping[i] << std::endl;
     mapping_str.emplace_back(mapping[i]);
   }
-  ret->mapping = mapping_str;
+  ret->set_mapping(mapping_str);
 
   if (reference == nullptr) {
     // sample data first
@@ -1793,7 +1797,7 @@ int LGBM_BoosterGetMapping(BoosterHandle handle,
 int LGBM_BoosterGetNumMapping(BoosterHandle handle, int* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = ref_booster->GetNumMapping();
+  *out_len = ref_booster->GetBoosting()->GetNumMapping();
   API_END();
 }
 

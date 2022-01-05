@@ -275,6 +275,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
                                                 int32_t ncol,
                                                 int is_row_major,
                                                 const char* parameters,
+                                                const char** mapping,
+                                                int32_t len_mapping,
                                                 const DatasetHandle reference,
                                                 DatasetHandle* out);
 
@@ -298,6 +300,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
                                                  int32_t ncol,
                                                  int is_row_major,
                                                  const char* parameters,
+                                                 const char** mapping,
+                                                 int32_t len_mapping,
                                                  const DatasetHandle reference,
                                                  DatasetHandle* out);
 
