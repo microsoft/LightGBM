@@ -582,7 +582,7 @@ Dataset <- R6::R6Class(
 
     },
 
-    # [description] get only Dataset-specific parameters. This is primarily used by
+    # [description] Get only Dataset-specific parameters. This is primarily used by
     #               Booster to update its parameters based on the characteristics of
     #               a Dataset. It should not be used by other methods in this class,
     #               since "verbose" is not a Dataset parameter and needs to be passed
