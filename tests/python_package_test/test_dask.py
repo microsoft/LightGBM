@@ -284,7 +284,7 @@ def _objective_logloss(y_true, y_pred):
     preds = y_pred - row_wise_max
     prob = np.exp(preds) / np.sum(np.exp(preds), axis=1).reshape(num_rows, 1)
     grad_update = np.zeros_like(preds)
-    grad_update[np.arange(num_rows), y_true.astype('int')] = -1.0
+    grad_update[np.arange(num_rows), y_true.astype(np.int32)] = -1.0
     grad = prob + grad_update
     factor = num_class / (num_class - 1)
     hess = factor * prob * (1 - prob)
@@ -525,17 +525,17 @@ def test_classifier_custom_objective(output, task, cluster):
         p1_proba = dask_classifier.predict_proba(dX).compute()
         p1_proba_local = dask_classifier_local.predict_proba(X)
 
-        # with a custom objective, predictiion result is a raw score instead of predicted class
+        # with a custom objective, prediction result is a raw score instead of predicted class
         p1_class = (1.0 / (1.0 + np.exp(-p1_proba))) > 0.5
-        p1_class = p1_class.astype('int64')
+        p1_class = p1_class.astype(np.int64)
         p1_class_local = (1.0 / (1.0 + np.exp(-p1_proba_local))) > 0.5
-        p1_class_local = p1_class_local.astype('int64')
+        p1_class_local = p1_class_local.astype(np.int64)
 
         local_classifier = lgb.LGBMClassifier(**params)
         local_classifier.fit(X, y, sample_weight=w)
         p2_proba = local_classifier.predict_proba(X)
         p2_class = (1.0 / (1.0 + np.exp(-p1_proba))) > 0.5
-        p2_class = p2_class.astype('int64')
+        p2_class = p2_class.astype(np.int64)
 
         if task == 'multiclass-classification':
             p1_class = p1_class.argmax(axis=1)
@@ -543,8 +543,8 @@ def test_classifier_custom_objective(output, task, cluster):
             p2_class = p2_class.argmax(axis=1)
 
         # function should have been preserved
-        assert callable(dask_classifier.objective)
-        assert callable(dask_classifier_local.objective)
+        assert callable(dask_classifier.objective_)
+        assert callable(dask_classifier_local.objective_)
 
         # should correctly classify every sample
         assert_eq(p1_class, y)
@@ -834,8 +834,8 @@ def test_regressor_custom_objective(output, cluster):
         s2 = local_regressor.score(X, y)
 
         # function should have been preserved
-        assert callable(dask_regressor.objective)
-        assert callable(dask_regressor_local.objective)
+        assert callable(dask_regressor.objective_)
+        assert callable(dask_regressor_local.objective_)
 
         # Scores should be the same
         assert_eq(s1, s2, atol=0.01)
@@ -1015,8 +1015,8 @@ def test_ranker_custom_objective(output, cluster):
         assert_eq(rnkvec_dask, rnkvec_dask_local)
 
         # function should have been preserved
-        assert callable(dask_ranker.objective)
-        assert callable(dask_ranker_local.objective)
+        assert callable(dask_ranker.objective_)
+        assert callable(dask_ranker_local.objective_)
 
 
 @pytest.mark.parametrize('task', tasks)
