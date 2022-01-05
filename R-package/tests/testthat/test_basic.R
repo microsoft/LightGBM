@@ -547,6 +547,52 @@ test_that("lgb.cv() respects showsd argument", {
   expect_identical(evals_no_showsd[["eval_err"]], list())
 })
 
+test_that("lgb.cv() respects parameter aliases for objective", {
+  nrounds <- 3L
+  nfold <- 4L
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  cv_bst <- lgb.cv(
+    data = dtrain
+    , params = list(
+      num_leaves = 5L
+      , application = "binary"
+      , num_iterations = nrounds
+    )
+    , nfold = nfold
+  )
+  expect_equal(cv_bst$best_iter, nrounds)
+  expect_named(cv_bst$record_evals[["valid"]], "binary_logloss")
+  expect_length(cv_bst$record_evals[["valid"]][["binary_logloss"]][["eval"]], nrounds)
+  expect_length(cv_bst$boosters, nfold)
+})
+
+test_that("lgb.cv() respects parameter aliases for metric", {
+  nrounds <- 3L
+  nfold <- 4L
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  cv_bst <- lgb.cv(
+    data = dtrain
+    , params = list(
+      num_leaves = 5L
+      , objective = "binary"
+      , num_iterations = nrounds
+      , metric_types = c("auc", "binary_logloss")
+    )
+    , nfold = nfold
+  )
+  expect_equal(cv_bst$best_iter, nrounds)
+  expect_named(cv_bst$record_evals[["valid"]], c("auc", "binary_logloss"))
+  expect_length(cv_bst$record_evals[["valid"]][["binary_logloss"]][["eval"]], nrounds)
+  expect_length(cv_bst$record_evals[["valid"]][["auc"]][["eval"]], nrounds)
+  expect_length(cv_bst$boosters, nfold)
+})
+
 test_that("lgb.cv() respects eval_train_metric argument", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(
@@ -614,6 +660,53 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
     , ignore.order = FALSE
     , ignore.case = FALSE
   )
+})
+
+test_that("lgb.train() respects parameter aliases for objective", {
+  nrounds <- 3L
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  bst <- lgb.train(
+    data = dtrain
+    , params = list(
+      num_leaves = 5L
+      , application = "binary"
+      , num_iterations = nrounds
+    )
+    , valids = list(
+      "the_training_data" = dtrain
+    )
+  )
+  expect_named(bst$record_evals[["the_training_data"]], "binary_logloss")
+  expect_length(bst$record_evals[["the_training_data"]][["binary_logloss"]][["eval"]], nrounds)
+  expect_equal(bst$params[["objective"]], "binary")
+})
+
+test_that("lgb.train() respects parameter aliases for metric", {
+  nrounds <- 3L
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  bst <- lgb.train(
+    data = dtrain
+    , params = list(
+      num_leaves = 5L
+      , objective = "binary"
+      , num_iterations = nrounds
+      , metric_types = c("auc", "binary_logloss")
+    )
+    , valids = list(
+      "train" = dtrain
+    )
+  )
+  record_results <- bst$record_evals[["train"]]
+  expect_equal(sort(names(record_results)), c("auc", "binary_logloss"))
+  expect_length(record_results[["auc"]][["eval"]], nrounds)
+  expect_length(record_results[["binary_logloss"]][["eval"]], nrounds)
+  expect_equal(bst$params[["metric"]], list("auc", "binary_logloss"))
 })
 
 test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
