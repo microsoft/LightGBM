@@ -11,7 +11,6 @@ on:
 env:
   github_actions: 'true'
   os_name: linux
-  task: cuda
   conda_env: test-env
 
 jobs:
@@ -27,14 +26,32 @@ jobs:
             compiler: gcc
             python_version: 3.7
             cuda_version: "11.4.2"
+            tree_learner: cuda
           - method: pip
             compiler: clang
             python_version: 3.8
             cuda_version: "10.0"
+            tree_learner: cuda
           - method: wheel
             compiler: gcc
             python_version: 3.9
             cuda_version: "9.0"
+            tree_learner: cuda
+          - method: source
+            compiler: gcc
+            python_version: 3.7
+            cuda_version: "11.4.2"
+            tree_learner: cuda_exp
+          - method: pip
+            compiler: clang
+            python_version: 3.8
+            cuda_version: "10.0"
+            tree_learner: cuda_exp
+          - method: wheel
+            compiler: gcc
+            python_version: 3.7
+            cuda_version: "11.4.2"
+            tree_learner: cuda_exp
     steps:
       - name: Setup or update software on host machine
         run: |
@@ -73,7 +90,7 @@ jobs:
             GITHUB_ACTIONS=${{ env.github_actions }}
             OS_NAME=${{ env.os_name }}
             COMPILER=${{ matrix.compiler }}
-            TASK=${{ env.task }}
+            TASK=${{ matrix.tree_learner }}
             METHOD=${{ matrix.method }}
             CONDA_ENV=${{ env.conda_env }}
             PYTHON_VERSION=${{ matrix.python_version }}
