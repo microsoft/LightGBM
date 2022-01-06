@@ -2155,6 +2155,56 @@ test_that("early stopping works with lgb.cv()", {
   )
 })
 
+test_that("lgb.cv() respects changes to logging verbosity", {
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  # (verbose = 1) should be INFO and WARNING level logs
+  lgb_cv_logs <- capture.output({
+    cv_bst <- lgb.cv(
+      params = list()
+      , nfold = 2L
+      , nrounds = 5L
+      , data = dtrain
+      , obj = "binary"
+      , verbose = 1L
+    )
+  })
+  expect_true(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
+
+  # (verbose = 0) should be WARNING level logs only
+  lgb_cv_logs <- capture.output({
+    cv_bst <- lgb.cv(
+      params = list()
+      , nfold = 2L
+      , nrounds = 5L
+      , data = dtrain
+      , obj = "binary"
+      , verbose = 0L
+    )
+  })
+  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
+
+  # (verbose = -1) no logs
+  lgb_cv_logs <- capture.output({
+    cv_bst <- lgb.cv(
+      params = list()
+      , nfold = 2L
+      , nrounds = 5L
+      , data = dtrain
+      , obj = "binary"
+      , verbose = -1L
+    )
+  })
+  # NOTE: this is not length(lgb_cv_logs) == 0 because lightgbm's
+  #       dependencies might print other messages
+  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
+  expect_false(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
+})
+
 test_that("lgb.cv() updates params based on keyword arguments", {
   dtrain <- lgb.Dataset(
     data = matrix(rnorm(400L), ncol =  4L)
