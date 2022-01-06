@@ -416,7 +416,7 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
   }
   ss << "\nMaps:\n\n";
   ss << str;
-  ss << "end of Maps";
+  ss << "end of Maps\n";
   return ss.str();
 }
 
