@@ -1,5 +1,117 @@
 # CRAN Submission History
 
+## v3.3.2 - Submission 1 - (TBD)
+
+### CRAN response
+
+### Maintainer Notes
+
+In this submission, we subbmitted a patch that CRAN stuff provided us via e-mail. The full text of the email from CRAN:
+
+> Dear maintainers,
+
+> This concerns the CRAN packages
+
+> Cairo cepreader gpboost httpuv ipaddress lightgbm proj4 prophet
+RcppCWB RcppParallel RDieHarder re2 redux rgeolocate RGtk2 tth
+udunits2 unrtf
+
+> maintained by one of you:
+
+> Andreas Blaette andreas.blaette@uni-due.de: RcppCWB
+> David Hall david.hall.physics@gmail.com: ipaddress
+> Dirk Eddelbuettel edd@debian.org: RDieHarder
+> Fabio Sigrist fabiosigrist@gmail.com: gpboost
+> Friedrich Leisch Friedrich.Leisch@R-project.org: tth
+> Girish Palya girishji@gmail.com: re2
+> James Hiebert hiebert@uvic.ca: udunits2
+> Jari Oksanen jhoksane@gmail.com: cepreader
+> Kevin Ushey kevin@rstudio.com: RcppParallel
+> ORPHANED: RGtk2
+> Os Keyes ironholds@gmail.com: rgeolocate
+> Rich FitzJohn rich.fitzjohn@gmail.com: redux
+> Sean Taylor sjtz@pm.me: prophet
+> Simon Urbanek simon.urbanek@r-project.org: proj4
+> Simon Urbanek Simon.Urbanek@r-project.org: Cairo
+> Winston Chang winston@rstudio.com: httpuv
+> Yu Shi yushi2@microsoft.com: lightgbm
+
+> your packages need to be updated for R-devel/R 4.2 to work on Windows,
+following the recent switch to UCRT and Rtools42.
+
+> Sorry for the group message, please feel free to respond individually
+regarding your package or ask specifically about what needs to be fixed.
+
+> I've created patches for you, so please review them and fix your packages:
+
+> https://nam06.safelinks.protection.outlook.com/?url=https%3A%2F%2Fsvn.r-project.org%2FR-dev-web%2Ftrunk%2FWindowsBuilds%2Fwinutf8%2Fucrt3%2Fr_packages%2Fpatches%2FCRAN%2F&amp;data=04%7C01%7Cyushi2%40microsoft.com%7C8e6c353d1a8842c81eeb08d9bef5d835%7C72f988bf86f141af91ab2d7cd011db47%7C1%7C0%7C637750786169848244%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C3000&amp;sdata=rFGf7Y4Dvo6g1kzV%2BeAJDLGm1TUtzQsLsavElTw6H1U%3D&amp;reserved=0
+
+> You can apply them as follows
+
+> tar xfz package_1.0.0.tar.gz
+
+> wget https://nam06.safelinks.protection.outlook.com/?url=https%3A%2F%2Fsvn.r-project.org%2FR-dev-web%2Ftrunk%2FWindowsBuilds%2Fwinutf8%2Fucrt3%2Fr_packages%2Fpatches%2FCRAN%2Fpackage.diff&amp;data=04%7C01%7Cyushi2%40microsoft.com%7C8e6c353d1a8842c81eeb08d9bef5d835%7C72f988bf86f141af91ab2d7cd011db47%7C1%7C0%7C637750786169848244%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C3000&amp;sdata=iyTjhoqvzj3IbQ8HGCZeh1IQl34FAGpIdVyZWkzNvO0%3D&amp;reserved=0
+
+> patch --binary < package.diff
+
+> These patches are currently automatically applied by R-devel on Windows
+at installation time, which makes most of your packages pass their
+checks (as OK or NOTE), but please check your results carefully and
+carefully review the patches. Usually these changes were because of
+newer GCC or newer MinGW in the toolchain, but some for other reasons,
+and some of them will definitely have to be improved so that the package
+keeps building also for older versions of R using Rtools40. We have only
+been testing the patches with UCRT (and Rtools42) on Windows.
+
+> For more information, please see
+
+> https://nam06.safelinks.protection.outlook.com/?url=https%3A%2F%2Fdeveloper.r-project.org%2FBlog%2Fpublic%2F2021%2F12%2F07%2Fupcoming-changes-in-r-4.2-on-windows%2F&amp;data=04%7C01%7Cyushi2%40microsoft.com%7C8e6c353d1a8842c81eeb08d9bef5d835%7C72f988bf86f141af91ab2d7cd011db47%7C1%7C0%7C637750786169848244%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C3000&amp;sdata=SY77zgtbDbHvTxTgPLOoe%2Fw5OZDhXvJoxpVOoEaKoYo%3D&amp;reserved=0
+> https://nam06.safelinks.protection.outlook.com/?url=https%3A%2F%2Fdeveloper.r-project.org%2FWindowsBuilds%2Fwinutf8%2Fucrt3%2Fhowto.html&amp;data=04%7C01%7Cyushi2%40microsoft.com%7C8e6c353d1a8842c81eeb08d9bef5d835%7C72f988bf86f141af91ab2d7cd011db47%7C1%7C0%7C637750786169848244%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C3000&amp;sdata=dlVJ4nhQlmDPd56bHoVsWZuRfrUUorvOWxoUTmVDM%2Bg%3D&amp;reserved=0
+
+> Once you add your patches/fix the issues, your package will probably
+show a warning during R CMD check (as patching would be attempted to be
+applied again). That's ok, at that point please let me know and I will
+remove my patch from the repository of automatically applied patches.
+
+> If you end up just applying the patch as is, there is probably no need
+testing on your end, but you can do so using Winbuilder, r-hub, github
+actions (e.g. https://nam06.safelinks.protection.outlook.com/?url=https%3A%2F%2Fgithub.com%2Fkalibera%2Fucrt3&amp;data=04%7C01%7Cyushi2%40microsoft.com%7C8e6c353d1a8842c81eeb08d9bef5d835%7C72f988bf86f141af91ab2d7cd011db47%7C1%7C0%7C637750786169848244%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C3000&amp;sdata=msqoPzqDStlAUn%2Bb6gGevwFPD%2FaNL5dTxiNud2Sqzy8%3D&amp;reserved=0).
+
+> If you wanted to test locally on your Windows machine and do not have a
+UCRT version of R-devel yet, please uninstall your old version of
+R-devel, delete the old library used with that, install a new UCRT
+version of R-devel , and install Rtools42. You can keep Rtools40
+installed if you need it with R 4.1 or earlier.
+
+> Currently, the new R-devel can be downloaded from
+https://nam06.safelinks.protection.outlook.com/?url=https%3A%2F%2Fwww.r-project.org%2Fnosvn%2Fwinutf8%2Fucrt3%2Fweb%2Frdevel.html&amp;data=04%7C01%7Cyushi2%40microsoft.com%7C8e6c353d1a8842c81eeb08d9bef5d835%7C72f988bf86f141af91ab2d7cd011db47%7C1%7C0%7C637750786169848244%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C3000&amp;sdata=0hCwONzLmcW0GIXNqiOZQEIuhNA%2BjHhQvXsofs8J98o%3D&amp;reserved=0
+
+> And Rtools42 from
+https://nam06.safelinks.protection.outlook.com/?url=https%3A%2F%2Fwww.r-project.org%2Fnosvn%2Fwinutf8%2Fucrt3%2Fweb%2Frtools.html&amp;data=04%7C01%7Cyushi2%40microsoft.com%7C8e6c353d1a8842c81eeb08d9bef5d835%7C72f988bf86f141af91ab2d7cd011db47%7C1%7C0%7C637750786169848244%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C3000&amp;sdata=WLWLbOyQKbaYz8gkfKz2sqoGknjIOtl1aGAhUF%2Bpylg%3D&amp;reserved=0
+
+> If you end up testing locally, you can use R_INSTALL_TIME_PATCHES
+environment variable to disable the automated patching, see the "howto"
+document above. That way you could also see what the original issue was
+causing.
+
+> If you wanted to find libraries to link for yourself, e.g. in a newer
+version of your package, please look for "Using findLinkingOrder with
+Rtools42 (tiff package example)" in the "howto" document above. I
+created the patches for you manually before we finished this script, so
+you may be able to create a shorter version using it, but - it's
+probably not worth the effort.
+
+> If you wanted to try in a virtual machine, but did not have a license,
+you can use also an automated setup of a free trial VM from
+https://nam06.safelinks.protection.outlook.com/?url=https%3A%2F%2Fdeveloper.r-project.org%2FBlog%2Fpublic%2F2021%2F03%2F18%2Fvirtual-windows-machine-for-checking-r-packages&amp;data=04%7C01%7Cyushi2%40microsoft.com%7C8e6c353d1a8842c81eeb08d9bef5d835%7C72f988bf86f141af91ab2d7cd011db47%7C1%7C0%7C637750786169848244%7CUnknown%7CTWFpbGZsb3d8eyJWIjoiMC4wLjAwMDAiLCJQIjoiV2luMzIiLCJBTiI6Ik1haWwiLCJXVCI6Mn0%3D%7C3000&amp;sdata=aFFQYuC9CoBwBiLgZHi8N3yUnSiHu5Xtdqb2YBiMIHQ%3D&amp;reserved=0
+
+> (but that needs a very good and un-metered network connection to install)
+
+> Please let us know if you have any questions.
+
+> Thanks,
+Tomas & Uwe
+
 ## v3.3.1 - Submission 1 - (October 27, 2021)
 
 ### CRAN response
