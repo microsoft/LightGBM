@@ -17,37 +17,48 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 # import scipy.sparse
 import pandas as pd
 
-def test_basic(tmp_path):
-    # X_train, X_test, y_train, y_test = train_test_split(
-    #     *load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2)
+use_num = False
 
-    # X_train_copy = np.array([np.array(['x' for i in range(15)] + ['y' for i in range(15)], dtype=object) for i in range (512)])
-    # # X_test_copy = np.array([np.array(['x' for i in range(15)] + ['y' for i in range(15)], dtype=object) for i in range (57)])
-    # y_train_copy = np.array(['x' for i in range(256)] + ['y' for i in range(256)])
-    # feature_names = [f"Column_{i}" for i in range(X_train.shape[1])]
-    import os
-    print(os.getcwd())
-    X_train = pd.read_csv(r'tests\data\train.csv')
-    y_train = X_train.pop('buys')
-    X_test = pd.read_csv(r'tests\data\test.csv')
-    y_test = X_test.pop('buys')
+def test_basic(tmp_path):
+
+    if use_num:
+        X_train = pd.read_csv(r'tests\data\train_drug_num.csv')
+        X_test = pd.read_csv(r'tests\data\test_drug_num.csv')
+    else:
+        X_train = pd.read_csv(r'tests\data\train_drug.csv')
+        X_test = pd.read_csv(r'tests\data\test_drug.csv')
+    
+    y_train = X_train.pop('Drug')
+    y_test = X_test.pop('Drug')
 
     train_data = lgb.Dataset(X_train, label=y_train)
     valid_data = train_data.create_valid(X_test, label=y_test)
 
-    # train_data = lgb.Dataset(r'D:\Documents\MSRA\OneDrive - Microsoft\LightGBM\train_normal.csv')
-    # valid_data = train_data.create_valid(
-    #     r'D:\Documents\MSRA\OneDrive - Microsoft\LightGBM\test_normal.csv')
-
     params = {
         "objective": "binary",
-        "metric": "auc",
+        "metric": ["binary_logloss", "auc"],
+        "metric_freq": 1,
+        "is_training_metric": True,
         "min_data": 10,
-        "num_leaves": 15,
+        "num_leaves": 63,
         "verbose": -1,
         "num_threads": 1,
         "max_bin": 255,
-        "gpu_use_dp": True
+        "learning_rate": 0.1,
+        "gpu_use_dp": True,
+        "feature_fraction": 0.8,
+        "categorical_feature": [1, 2, 3],
+        "bagging_freq": 5,
+        "bagging_fraction": 0.8,
+        "min_data_in_leaf": 50,
+        "min_sum_hessian_in_leaf": 5.0,
+        "is_enable_sparse": True,
+        "use_two_round_loading": False,
+        "is_save_binary_file": False,
+        "tree_learner": "serial",
+        "num_trees": 100,
+        "boosting_type": "gbdt",
+        
     }
     bst = lgb.Booster(params, train_data)
     bst.add_valid(valid_data, "valid_1")
@@ -61,26 +72,13 @@ def test_basic(tmp_path):
     # feature_names = [f"Column_{i}" for i in range(X_train.shape[1])]
     assert train_data.get_feature_name() == feature_names
 
-    # assert bst.current_iteration() == 20
-    # assert bst.num_trees() == 20
-    # assert bst.num_model_per_iteration() == 1
-    # assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
-    # assert bst.upper_bound() == pytest.approx(3.3182142872462883)
-
-    tname = tmp_path / "svm_light.dat"
-    # mapping_file = tmp_path / "mapping.json"
-    model_file = tmp_path / "model.txt"
+    if use_num:
+        model_file = tmp_path / "model_num.txt"
+    else:
+        model_file = tmp_path / "model.txt"
 
     bst.save_model(model_file)
     pred_from_matr = bst.predict(X_test)
-
-
-
-    # with open(tname, "w+b") as f:
-    #     dump_svmlight_file(X_test, y_test, f)
-
-    # pred_from_file = bst.predict(tname)
-    # np.testing.assert_allclose(pred_from_matr, pred_from_file)
 
     # check saved model persistence
     bst = lgb.Booster(params, model_file=model_file)
@@ -99,27 +97,6 @@ def test_basic(tmp_path):
     # scores likely to be different, but prediction should still be the same
     np.testing.assert_array_equal(np.sign(pred_from_matr),
                                   np.sign(pred_early_stopping))
-
-    # test that shape is checked during prediction
-    # bad_X_test = X_test[:, 1:]
-    # bad_shape_error_msg = "The number of features in data*"
-    # np.testing.assert_raises_regex(lgb.basic.LightGBMError,
-    #                                bad_shape_error_msg, bst.predict,
-    #                                bad_X_test)
-    # np.testing.assert_raises_regex(lgb.basic.LightGBMError,
-    #                                bad_shape_error_msg, bst.predict,
-    #                                sparse.csr_matrix(bad_X_test))
-    # np.testing.assert_raises_regex(lgb.basic.LightGBMError,
-    #                                bad_shape_error_msg, bst.predict,
-    #                                sparse.csc_matrix(bad_X_test))
-    # with open(tname, "w+b") as f:
-    #     dump_svmlight_file(bad_X_test, y_test, f)
-    # np.testing.assert_raises_regex(lgb.basic.LightGBMError,
-    #                                bad_shape_error_msg, bst.predict, tname)
-    # with open(tname, "w+b") as f:
-    #     dump_svmlight_file(X_test, y_test, f, zero_based=False)
-    # np.testing.assert_raises_regex(lgb.basic.LightGBMError,
-    #                                bad_shape_error_msg, bst.predict, tname)
 
 
 test_basic(Path(r'tests\python_package_test\test_string'))

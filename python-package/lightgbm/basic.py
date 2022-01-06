@@ -166,7 +166,7 @@ def is_1d_string(data):
     """Check whether data is a 1-D string list."""
     if is_numpy_column_array(data):
         data = data.T
-    return data.size and (not is_numeric(data[0]))
+    return data.size and (not is_numeric(data[0])) and (not is_numeric(data[len(data)-1]))
 
 
 def _is_1d_collection(data: Any) -> bool:
@@ -611,11 +611,11 @@ def _load_pandas_categorical(file_name=None, model_str=None):
         return None
 
 def _string_column_mapping(column_data):
-    values = list(set(column_data))
-    keys = range(len(values))
+    keys = list(set(column_data))
+    values = range(len(keys))
     mapping = dict(zip(keys, values))
     def map_str_to_num(x):
-        return values.index(x)
+        return mapping[x]
     mapped_data = np.array(list(map(map_str_to_num, column_data)))
     return mapping, mapped_data
 
@@ -911,12 +911,7 @@ class _InnerPredictor:
                                 raise ValueError(f'Feature {self.feature_name[j]} is not in training set, please check your valid dataset.')
                             else:
                                 def get_mapped_num(x):
-                                    try:
-                                        return list(self.mappings[self.feature_name[j]].values()).index(x)
-                                    except:
-                                        # x not in mapping dict, return a new number
-                                        # _log_warning(f"{x} is not in training set")
-                                        return len(list(self.mappings[self.feature_name[j]].values()))
+                                    return self.mappings[self.feature_name[j]][x]
                                 data[j] = np.array(list(map(get_mapped_num, col)))
                     data = data.T
                     data = np.array(data.reshape(data.size), dtype=np.float32, copy=False)
@@ -1691,7 +1686,7 @@ class Dataset:
                             data[j] = mapped_col
                         else:
                             def get_mapped_num(x):
-                                return self.mappings[feature_name[j]].values().index(x)
+                                return self.mappings[feature_name[j]][x]
                             data[j] = np.array(list(map(get_mapped_num, col)))
                 data = data.T
                 data = np.array(data.reshape(data.size), dtype=np.float32, copy=False)
@@ -1700,7 +1695,7 @@ class Dataset:
         for feature_name_, feature_map in self.mappings.items():
             tmp = feature_name_ + '\n'
             for key, value in feature_map.items():
-                tmp += f'{value}={key}\n'
+                tmp += f'{key}={value}\n'
             mapping_string.append(tmp + '\n')
         c_mapping_string = [c_str(s) for s in mapping_string]
 
@@ -1759,7 +1754,7 @@ class Dataset:
                                 data[j] = mapped_col
                             else:
                                 def get_mapped_num(x):
-                                    return self.mappings[feature_name[j]].values().index(x)
+                                    return self.mappings[feature_name[j]][x]
                                 data[j] = np.array(list(map(get_mapped_num, col)))
                     data = data.T
                     mats[i] = np.array(data.reshape(data.size), dtype=np.float32, copy=False)
@@ -1776,7 +1771,7 @@ class Dataset:
         for feature_name_, feature_map in self.mappings.items():
             tmp = feature_name_ + '\n'
             for key, value in feature_map.items():
-                tmp += f'{value}={key}\n'
+                tmp += f'{key}={value}\n'
             mapping_string.append(tmp + '\n')
         
         c_mapping_string = [c_str(s) for s in mapping_string]
@@ -2801,12 +2796,13 @@ class Booster:
             mappings_string = [string_buffers[i].value.decode('utf-8').split() for i in range(num_mapping)]
             self.mappings = {}
             for feature_map in mappings_string:
-                feature_name = feature_map[0]
-                self.mappings[feature_name] = {}
-                for maps in feature_map[1:]:
-                    key, value = maps.split('=')
-                    value = int(value)
-                    self.mappings[feature_name][value] = key
+                if len(feature_map) > 0:
+                    feature_name = feature_map[0]
+                    self.mappings[feature_name] = {}
+                    for maps in feature_map[1:]:
+                        key, value = maps.split('=')
+                        value = int(value)
+                        self.mappings[feature_name][key] = value
             
             
         elif model_str is not None:

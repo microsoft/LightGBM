@@ -6,8 +6,8 @@ label_index=0
 max_feature_idx=4
 objective=binary sigmoid:1
 feature_names=Age Sex BP Cholesterol Na_to_K
-feature_infos=[15:74] -1:1:0 -1:1:2:0 -1:1:0 [6.2690000000000001:38.247]
-tree_sizes=346 340 339 339 340 340 340 340 343 339 341 341 340 341 339 341 340 344 341 344 340 365 341
+feature_infos=[15:74] [0:1] [0:2] [0:1] [6.2690000000000001:38.247]
+tree_sizes=346 340 339 339 340 340 340 340 343 339 341 341 340 341 339 341 340 344 341 344
 
 Tree=0
 num_leaves=2
@@ -389,71 +389,11 @@ is_linear=0
 shrinkage=0.1
 
 
-Tree=20
-num_leaves=2
-num_cat=0
-split_feature=4
-split_gain=14.1837
-threshold=14.227500000000001
-decision_type=2
-left_child=-1
-right_child=-2
-leaf_value=0.10905066536512933 -0.10890823003588553
-leaf_weight=5.924847811460495 6.0185324847698212
-leaf_count=78 64
-internal_value=0
-internal_weight=0
-internal_count=142
-is_linear=0
-shrinkage=0.1
-
-
-Tree=21
-num_leaves=2
-num_cat=1
-split_feature=3
-split_gain=0.0486224
-threshold=0
-decision_type=1
-left_child=-1
-right_child=-2
-leaf_value=-0.0070435556047713944 0.0062916150785902172
-leaf_weight=5.7793052718043327 5.1894420012831688
-leaf_count=75 67
-internal_value=0
-internal_weight=0
-internal_count=142
-cat_boundaries=0 1
-cat_threshold=2
-is_linear=0
-shrinkage=0.1
-
-
-Tree=22
-num_leaves=2
-num_cat=0
-split_feature=4
-split_gain=12.6274
-threshold=14.227500000000001
-decision_type=2
-left_child=-1
-right_child=-2
-leaf_value=0.10812371928951842 -0.10646861394215537
-leaf_weight=5.4091749787330627 5.5613573715090752
-leaf_count=78 64
-internal_value=0
-internal_weight=0
-internal_count=142
-is_linear=0
-shrinkage=0.1
-
-
 end of trees
 
 feature_importances:
-Na_to_K=19
+Na_to_K=17
 Age=3
-Cholesterol=1
 
 parameters:
 [boosting: gbdt]
@@ -461,12 +401,12 @@ parameters:
 [metric: binary_logloss,auc]
 [tree_learner: serial]
 [device_type: cpu]
-[data: ..\tests\data\train_drug_num.csv]
-[valid: ..\tests\data\test_drug_num.csv]
+[data: ]
+[valid: ]
 [num_iterations: 100]
 [learning_rate: 0.1]
 [num_leaves: 63]
-[num_threads: 0]
+[num_threads: 1]
 [deterministic: 0]
 [force_col_wise: 0]
 [force_row_wise: 0]
@@ -517,7 +457,7 @@ parameters:
 [cegb_penalty_feature_coupled: ]
 [path_smooth: 0]
 [interaction_constraints: ]
-[verbosity: 1]
+[verbosity: -1]
 [saved_feature_importance_type: 0]
 [linear_tree: 0]
 [max_bin: 255]
@@ -532,8 +472,8 @@ parameters:
 [feature_pre_filter: 1]
 [pre_partition: 0]
 [two_round: 0]
-[header: 1]
-[label_column: 0]
+[header: 0]
+[label_column: ]
 [weight_column: ]
 [group_column: ]
 [ignore_column: ]
@@ -565,7 +505,7 @@ parameters:
 [machines: ]
 [gpu_platform_id: -1]
 [gpu_device_id: -1]
-[gpu_use_dp: 0]
+[gpu_use_dp: 1]
 [num_gpu: 1]
 
 end of parameters
@@ -575,16 +515,5 @@ end of parser
 
 Maps:
 
-map: label
-
-map: Age
-
-map: Sex
-
-map: BP
-
-map: Cholesterol
-
-map: Na_to_K
-
 end of Maps
+pandas_categorical:[]
