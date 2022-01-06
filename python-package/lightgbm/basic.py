@@ -1540,6 +1540,10 @@ class Dataset:
         elif reference is not None:
             raise TypeError('Reference dataset should be None or dataset instance')
         # start construct data
+        if label is not None:
+            self.set_label(label)
+        if self.get_label() is None:
+            raise ValueError("Label should not be None")
         if isinstance(data, (str, Path)):
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_DatasetCreateFromFile(
@@ -1570,8 +1574,8 @@ class Dataset:
                 self.__init_from_csr(csr, params_str, ref_dataset)
             except BaseException:
                 raise TypeError(f'Cannot initialize Dataset from {type(data).__name__}')
-        if label is not None:
-            self.set_label(label)
+        if self.label is not None:
+            self.set_label(self.label)
         if self.get_label() is None:
             raise ValueError("Label should not be None")
         if weight is not None:
@@ -1698,7 +1702,6 @@ class Dataset:
             for key, value in feature_map.items():
                 tmp += f'{value}={key}\n'
             mapping_string.append(tmp + '\n')
-        
         c_mapping_string = [c_str(s) for s in mapping_string]
 
         ptr_data, type_ptr_data, _ = c_float_array(data)
@@ -2279,13 +2282,14 @@ class Dataset:
         self : Dataset
             Dataset with set label.
         """
+        label = _label_from_pandas(label)
+        if is_1d_string(label):
+            _log_info('Detected string input, converting string to int automatically.')
+            mapping, label = _string_column_mapping(label)
+            self.mappings['label'] = mapping
         self.label = label
         if self.handle is not None:
-            if is_1d_string(label):
-                _log_info('Detected string input, converting string to int automatically.')
-                mapping, label = _string_column_mapping(label)
-                self.mappings['label'] = mapping
-            label = list_to_1d_numpy(_label_from_pandas(label), name='label')
+            label = list_to_1d_numpy(label, name='label')
             self.set_field('label', label)
             self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
