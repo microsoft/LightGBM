@@ -245,7 +245,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   }
   // allocate memory for all features (FIXME: 4 GB barrier on some devices, need to split to multiple buffers)
   device_features_.reset();
-  device_features_ = std::unique_ptr<boost::compute::vector<Feature4>>(new boost::compute::vector<Feature4>(num_dense_feature4_ * num_data_, ctx_));
+  device_features_ = std::unique_ptr<boost::compute::vector<Feature4>>(new boost::compute::vector<Feature4>((uint64_t)num_dense_feature4_ * num_data_, ctx_));
   // unpin old buffer if necessary before destructing them
   if (ptr_pinned_gradients_) {
     queue_.enqueue_unmap_buffer(pinned_gradients_, ptr_pinned_gradients_);
