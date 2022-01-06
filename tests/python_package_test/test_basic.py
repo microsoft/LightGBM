@@ -627,6 +627,8 @@ def test_training_with_pandas_nullable_dtypes():
     df.loc[1, 'x1'] = np.nan
     df.loc[2, 'x2'] = np.nan
     df.loc[3, 'x3'] = np.nan
+    # the previous line turns x3 into object dtype in recent versions of pandas
+    df['x3'] = df['x3'].astype(np.float64)
     y = np.random.rand(100)
 
     # train with regular dtypes
