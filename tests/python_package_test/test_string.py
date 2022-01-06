@@ -122,4 +122,4 @@ def test_basic(tmp_path):
     #                                bad_shape_error_msg, bst.predict, tname)
 
 
-test_basic(Path('test_string'))
+test_basic(Path(r'tests\python_package_test\test_string'))

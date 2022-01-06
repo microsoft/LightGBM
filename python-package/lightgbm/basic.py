@@ -2764,11 +2764,11 @@ class Booster:
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
             # add mapping
             out_num_mapping = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterGetNumFeature(
+            _safe_call(_LIB.LGBM_BoosterGetNumMapping(
                 self.handle,
                 ctypes.byref(out_num_mapping)))
             num_mapping = out_num_mapping.value
-
+            print(num_mapping)
             tmp_out_len = ctypes.c_int(0)
             reserved_string_buffer_size = 255
             required_string_buffer_size = ctypes.c_size_t(0)
@@ -2781,6 +2781,7 @@ class Booster:
                 ctypes.c_size_t(reserved_string_buffer_size),
                 ctypes.byref(required_string_buffer_size),
                 ptr_string_buffers))
+            print(tmp_out_len.value)
             if num_mapping != tmp_out_len.value:
                 raise ValueError("Length of mapping doesn't equal with num_mapping")
             actual_string_buffer_size = required_string_buffer_size.value

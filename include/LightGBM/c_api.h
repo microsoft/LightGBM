@@ -719,7 +719,34 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetPredict(BoosterHandle handle,
                                              int data_idx,
                                              int64_t* out_len,
                                              double* out_result);
+/*!
+ * \brief Get mapping.
+ * \param handle Handle of booster
+ * \param len Number of ``char*`` pointers stored at ``out_strs``.
+ *            If smaller than the max size, only this many strings are copied
+ * \param[out] out_len Total number of features
+ * \param buffer_len Size of pre-allocated strings.
+ *                   Content is copied up to ``buffer_len - 1`` and null-terminated
+ * \param[out] out_buffer_len String sizes required to do the full string copies
+ * \param[out] out_strs Names of features, should pre-allocate memory
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetMapping(BoosterHandle handle,
+  const int len,
+  int* out_len,
+  const size_t buffer_len,
+  size_t* out_buffer_len,
+  char** out_strs);
 
+/*!
+ * \brief Get number of mapping for training data and validation data
+ *        (this can be used to support customized evaluation functions).
+ * \param handle Handle of booster
+ * \param data_idx Index of data, 0: training data, 1: 1st validation data, 2: 2nd validation data and so on
+ * \param[out] out_len Number of predictions
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumMapping(BoosterHandle handle, int* out_len);
 /*!
  * \brief Make prediction for file.
  * \param handle Handle of booster

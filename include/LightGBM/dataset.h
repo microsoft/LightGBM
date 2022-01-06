@@ -754,10 +754,26 @@ class Dataset {
     return raw_data_[numeric_feature_map_[feat_ind]].data();
   }
 
-  inline void set_mapping(std::vector< std::string > mapping_) {
+  inline void set_mapping(const std::vector< std::string > &mapping_) {
     // set mapping using string vector
-    mapping = mapping_;
+    Log::Info("in function set_mapping");
+    std::cout << mapping_.size() << std::endl;
+    Log::Info("before for loop");
+    for (int i = 0; i < mapping_.size(); ++i) {
+      Log::Info("in for loop");
+      std::cout << mapping.size() << std::endl;
+      mapping.push_back(mapping_[i]);
+    }
+    Log::Info("finishing function set_mapping");
   }
+  
+  //inline void set_mapping() {
+  //  // set mapping using string vector
+  //  Log::Info("in function set_mapping");
+  //  Log::Info("before for loop");
+  //  std::cout << mapping.size() << std::endl;
+  //  Log::Info("finishing function set_mapping");
+  //}
 
   inline void store_mapping()  {
     // store maps to mapping
