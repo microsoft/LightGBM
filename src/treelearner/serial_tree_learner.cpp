@@ -346,9 +346,9 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::set<int>* fo
   } else {
     ConstructHistograms(is_feature_used, use_subtract);
   }
-#else  // USE_CUDA
+#else
   ConstructHistograms(is_feature_used, use_subtract);
-#endif  // USE_CUDA
+#endif
   FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
 }
 
