@@ -108,9 +108,9 @@ Use Early Stopping
 
 If early stopping is enabled, after each boosting round the model's training accuracy is evaluated against a validation set that contains data not available to the training process. That accuracy is then compared to the accuracy as of the previous boosting round. If the model's accuracy fails to improve for some number of consecutive rounds, LightGBM stops the training process.
 
-That "number of consecutive rounds" is controlled by the parameter ``early_stopping_rounds``. For example, ``early_stopping_rounds=1`` says "the first time accuracy on the validation set does not improve, stop training".
+That "number of consecutive rounds" is controlled by the parameter ``early_stopping_round``. For example, ``early_stopping_round=1`` says "the first time accuracy on the validation set does not improve, stop training".
 
-Set ``early_stopping_rounds`` and provide a validation set to possibly reduce training time.
+Set ``early_stopping_round`` and provide a validation set to possibly reduce training time.
 
 Consider Fewer Splits
 '''''''''''''''''''''
