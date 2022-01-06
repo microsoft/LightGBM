@@ -147,14 +147,17 @@ parameters:
 
 end of parameters
 
+parser:
+end of parser
+
 Maps:
 
-maplabel
+map: label
 buys=0.000000
 no=1.000000
 yes=2.000000
 
-mapColumn_0
+map: Column_0
 1s12df=1.000000
 <25=4.000000
 >35=5.000000
@@ -162,18 +165,18 @@ age=0.000000
 q25=3.000000
 q2535=2.000000
 
-mapColumn_1
+map: Column_1
 high=3.000000
 income=0.000000
 low=1.000000
 medium=2.000000
 
-mapColumn_2
+map: Column_2
 female=1.000000
 gender=0.000000
 male=2.000000
 
-mapColumn_3
+map: Column_3
 m_status=0.000000
 married=2.000000
 single=1.000000

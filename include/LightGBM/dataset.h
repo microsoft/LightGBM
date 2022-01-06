@@ -756,15 +756,9 @@ class Dataset {
 
   inline void set_mapping(const std::vector< std::string > &mapping_) {
     // set mapping using string vector
-    Log::Info("in function set_mapping");
-    std::cout << mapping_.size() << std::endl;
-    Log::Info("before for loop");
     for (int i = 0; i < mapping_.size(); ++i) {
-      Log::Info("in for loop");
-      std::cout << mapping.size() << std::endl;
       mapping.push_back(mapping_[i]);
     }
-    Log::Info("finishing function set_mapping");
   }
   
   //inline void set_mapping() {

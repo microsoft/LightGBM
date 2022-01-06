@@ -810,28 +810,17 @@ class Booster {
   }
 
   int GetMapping(char** out_strs, const int len, const size_t buffer_len, size_t *out_buffer_len) const {
-    Log::Info("Booster->GetMapping");
     SHARED_LOCK(mutex_)
     *out_buffer_len = 0;
     int idx = 0;
-    auto tmp_map = boosting_->GetMapping();
-    int tmp_num_map = boosting_->GetNumMapping();
-    std::cout << tmp_map.size() << std::endl;
-    std::cout << tmp_num_map << std::endl;
-    //std::cout << tmp_map.size() << std::endl;
     for (const auto& name : boosting_->GetMapping()) {
-      Log::Info("in for loop");
-      std::cout << len << std::endl;
-      std::cout << name << std::endl;
       if (idx < len) {
         std::memcpy(out_strs[idx], name.c_str(), std::min(name.size() + 1, buffer_len));
         out_strs[idx][buffer_len - 1] = '\0';
       }
       *out_buffer_len = std::max(name.size() + 1, *out_buffer_len);
       ++idx;
-      std::cout << idx << std::endl;
     }
-    
     return idx;
   }
 
@@ -1130,13 +1119,11 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
   API_BEGIN();
-  Log::Info("LGBM_DatasetCreateFromMats");
   auto param = Config::Str2Map(parameters);
   Config config;
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
   std::unique_ptr<Dataset> ret;
-  Log::Info("Created Dataset pointer");
   int32_t total_nrow = 0;
   for (int j = 0; j < nmat; ++j) {
     total_nrow += nrow[j];
@@ -1146,15 +1133,10 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   for (int j = 0; j < nmat; ++j) {
     get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
   }
-  Log::Info("creating mapping_str");
-  std::cout << "len_mapping: " << len_mapping << std::endl;
   std::vector<std::string> mapping_str;
   for (int i = 0; i < len_mapping; ++i) {
-    std::cout << mapping[i] << std::endl;
     mapping_str.emplace_back(mapping[i]);
   }
-  Log::Info("finish creating mapping_str");
-  std::cout << mapping_str[0] << std::endl;
 
   if (reference == nullptr) {
     // sample data first
@@ -1210,8 +1192,6 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     start_row += nrow[j];
   }
   ret->set_mapping(mapping_str);
-  //ret->set_mapping();
-  Log::Info("finish set mapping");
   ret->FinishLoad();
   *out = ret.release();
   API_END();
@@ -1805,7 +1785,6 @@ int LGBM_BoosterGetMapping(BoosterHandle handle,
                                 char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  Log::Info("LGBM_BoosterGetMapping");
   *out_len = ref_booster->GetMapping(out_strs, len, buffer_len, out_buffer_len);
   API_END();
 }

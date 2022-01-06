@@ -2768,7 +2768,6 @@ class Booster:
                 self.handle,
                 ctypes.byref(out_num_mapping)))
             num_mapping = out_num_mapping.value
-            print(num_mapping)
             tmp_out_len = ctypes.c_int(0)
             reserved_string_buffer_size = 255
             required_string_buffer_size = ctypes.c_size_t(0)
@@ -2781,7 +2780,6 @@ class Booster:
                 ctypes.c_size_t(reserved_string_buffer_size),
                 ctypes.byref(required_string_buffer_size),
                 ptr_string_buffers))
-            print(tmp_out_len.value)
             if num_mapping != tmp_out_len.value:
                 raise ValueError("Length of mapping doesn't equal with num_mapping")
             actual_string_buffer_size = required_string_buffer_size.value
@@ -2805,6 +2803,7 @@ class Booster:
                     key, value = maps.split('=')
                     value = int(value)
                     self.mappings[feature_name][value] = key
+            
             
         elif model_str is not None:
             self.model_from_string(model_str)
