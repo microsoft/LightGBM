@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import load_breast_cancer
+from .utils import load_breast_cancer, sklearn_multiclass_custom_objective, softmax
 
 
 def test_basic(tmp_path):
@@ -612,23 +612,9 @@ def test_custom_objective_safety():
 
 
 def test_multiclass_custom_objective():
-    def softmax(x):
-        row_wise_max = np.max(x, axis=1).reshape(-1, 1)
-        x = x - row_wise_max
-        return np.exp(x) / np.sum(np.exp(x), axis=1).reshape(-1, 1)
-
-
     def custom_obj(y_pred, ds):
         y_true = ds.get_label()
-        num_rows, num_class = y_pred.shape
-        prob = softmax(y_pred)
-        grad_update = np.zeros_like(prob)
-        grad_update[np.arange(num_rows), y_true.astype('int')] = -1.0
-        grad = prob + grad_update
-        factor = num_class / (num_class - 1)
-        hess = factor * prob * (1 - prob)
-        return grad, hess
-
+        return sklearn_multiclass_custom_objective(y_true, y_pred)
 
     centers = [[-4, -4], [4, 4], [-4, 4]]
     X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)

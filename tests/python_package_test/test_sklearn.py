@@ -9,7 +9,7 @@ import pytest
 from pkg_resources import parse_version
 from sklearn import __version__ as sk_version
 from sklearn.base import clone
-from sklearn.datasets import load_svmlight_file, make_multilabel_classification
+from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
@@ -19,7 +19,7 @@ from sklearn.utils.validation import check_is_fitted
 import lightgbm as lgb
 
 from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking,
-                    make_synthetic_regression)
+                    make_synthetic_regression, sklearn_multiclass_custom_objective, softmax)
 
 sk_version = parse_version(sk_version)
 if sk_version < parse_version("0.23"):
@@ -1353,3 +1353,20 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
     preds_1d = model_1d.predict(X)
     preds_2d = model_2d.predict(X)
     np.testing.assert_array_equal(preds_1d, preds_2d)
+
+
+def test_multiclass_custom_objective():
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    params = {'n_estimators': 10, 'num_leaves': 7}
+    builtin_obj_model = lgb.LGBMClassifier(**params)
+    builtin_obj_model.fit(X, y)
+    builtin_obj_preds = builtin_obj_model.predict_proba(X)
+
+    custom_obj_model = lgb.LGBMClassifier(objective=sklearn_multiclass_custom_objective, **params)
+    custom_obj_model.fit(X, y)
+    custom_obj_preds = softmax(custom_obj_model.predict(X, raw_score=True))
+
+    np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
+    assert not callable(builtin_obj_model.objective_)
+    assert callable(custom_obj_model.objective_)

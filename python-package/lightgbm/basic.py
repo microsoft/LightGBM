@@ -2946,22 +2946,18 @@ class Booster:
             Should accept two parameters: preds, train_data,
             and return (grad, hess).
 
-                preds : numpy 1-D array
+                preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     Predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task.
                 train_data : Dataset
                     The training dataset.
-                grad : list, numpy 1-D array or pandas Series
+                grad : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The value of the first order derivative (gradient) of the loss
                     with respect to the elements of preds for each sample point.
-                hess : list, numpy 1-D array or pandas Series
+                hess : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The value of the second order derivative (Hessian) of the loss
                     with respect to the elements of preds for each sample point.
-
-            For multi-class task, the preds is group by class_id first, then group by row_id.
-            If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
-            and you should group grad and hess in this way as well.
 
         Returns
         -------
@@ -3022,10 +3018,10 @@ class Booster:
 
         Parameters
         ----------
-        grad : list, numpy 1-D array or pandas Series
+        grad : numpy 1-D array or numpy 2-D array (for multi-class task)
             The value of the first order derivative (gradient) of the loss
             with respect to the elements of score for each sample point.
-        hess : list, numpy 1-D array or pandas Series
+        hess : numpy 1-D array or numpy 2-D array (for multi-class task)
             The value of the second order derivative (Hessian) of the loss
             with respect to the elements of score for each sample point.
 

@@ -69,10 +69,10 @@ class _ObjectiveFunctionWrapper:
                     sum(group) = n_samples.
                     For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                     where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-                grad : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                grad : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape [n_samples, n_classes] (for multi-class task)
                     The value of the first order derivative (gradient) of the loss
                     with respect to the elements of y_pred for each sample point.
-                hess : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                hess : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape [n_samples, n_classes] (for multi-class task)
                     The value of the second order derivative (Hessian) of the loss
                     with respect to the elements of y_pred for each sample point.
 
@@ -96,10 +96,10 @@ class _ObjectiveFunctionWrapper:
 
         Returns
         -------
-        grad : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        grad : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape [n_samples, n_classes] (for multi-class task)
             The value of the first order derivative (gradient) of the loss
             with respect to the elements of preds for each sample point.
-        hess : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        hess : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape [n_samples, n_classes] (for multi-class task)
             The value of the second order derivative (Hessian) of the loss
             with respect to the elements of preds for each sample point.
         """
@@ -463,7 +463,7 @@ class LGBMModel(_LGBMModelBase):
 
             y_true : numpy 1-D array of shape = [n_samples]
                 The target values.
-            y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            y_pred : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape = [n_samples, n_classes] (for multi-class task)
                 The predicted values.
                 Predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task.
@@ -473,16 +473,12 @@ class LGBMModel(_LGBMModelBase):
                 sum(group) = n_samples.
                 For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
                 where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-            grad : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            grad : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape = [n_samples, n_classes] (for multi-class task)
                 The value of the first order derivative (gradient) of the loss
                 with respect to the elements of y_pred for each sample point.
-            hess : list, numpy 1-D array or pandas Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            hess : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape = [n_samples, n_classes] (for multi-class task)
                 The value of the second order derivative (Hessian) of the loss
                 with respect to the elements of y_pred for each sample point.
-
-        For multi-class task, the y_pred is group by class_id first, then group by row_id.
-        If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
-        and you should group grad and hess in this way as well.
         """
         if not SKLEARN_INSTALLED:
             raise LightGBMError('scikit-learn is required for lightgbm.sklearn. '

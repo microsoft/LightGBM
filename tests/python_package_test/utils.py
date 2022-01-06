@@ -114,3 +114,20 @@ def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
 @lru_cache(maxsize=None)
 def make_synthetic_regression(n_samples=100):
     return sklearn.datasets.make_regression(n_samples, n_features=4, n_informative=2, random_state=42)
+
+
+def softmax(x):
+    row_wise_max = np.max(x, axis=1).reshape(-1, 1)
+    x = x - row_wise_max
+    return np.exp(x) / np.sum(np.exp(x), axis=1).reshape(-1, 1)
+
+
+def sklearn_multiclass_custom_objective(y_true, y_pred):
+    num_rows, num_class = y_pred.shape
+    prob = softmax(y_pred)
+    grad_update = np.zeros_like(prob)
+    grad_update[np.arange(num_rows), y_true.astype(np.int32)] = -1.0
+    grad = prob + grad_update
+    factor = num_class / (num_class - 1)
+    hess = factor * prob * (1 - prob)
+    return grad, hess
