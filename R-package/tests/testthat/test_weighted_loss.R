@@ -2,8 +2,6 @@ VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
-context("Case weights are respected")
-
 test_that("Gamma regression reacts on 'weight'", {
   n <- 100L
   set.seed(87L)

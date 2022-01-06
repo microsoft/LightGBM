@@ -2,8 +2,6 @@ VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
-context("Booster")
-
 ON_WINDOWS <- .Platform$OS.type == "windows"
 TOLERANCE <- 1e-6
 
@@ -30,8 +28,6 @@ test_that("Booster$finalize() should not fail", {
     bst$finalize()
     expect_true(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
 })
-
-context("lgb.get.eval.result")
 
 test_that("lgb.get.eval.result() should throw an informative error if booster is not an lgb.Booster", {
     bad_inputs <- list(
@@ -123,8 +119,6 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
         )
     }, regexp = "Only the following eval_names exist for dataset.*\\: \\[l2\\]", fixed = FALSE)
 })
-
-context("lgb.load()")
 
 test_that("lgb.load() gives the expected error messages given different incorrect inputs", {
     set.seed(708L)
@@ -393,8 +387,6 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
     pred2 <- predict(bst2, test$data)
     expect_identical(pred, pred2)
 })
-
-context("Booster")
 
 test_that("Creating a Booster from a Dataset should work", {
     set.seed(708L)
@@ -691,8 +683,6 @@ test_that("Booster$params should include dataset params, before and after Booste
     expect_identical(ret_bst$params, expected_params)
     expect_identical(bst$params, expected_params)
 })
-
-context("save_model")
 
 test_that("Saving a model with different feature importance types works", {
     set.seed(708L)
@@ -1032,8 +1022,6 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
 
 })
 
-context("saveRDS.lgb.Booster() and readRDS.lgb.Booster()")
-
 test_that("params (including dataset params) should be stored in .rds file for Booster", {
     data(agaricus.train, package = "lightgbm")
     dtrain <- lgb.Dataset(
@@ -1068,8 +1056,6 @@ test_that("params (including dataset params) should be stored in .rds file for B
         )
     )
 })
-
-context("saveRDS and readRDS work on Booster")
 
 test_that("params (including dataset params) should be stored in .rds file for Booster", {
     data(agaricus.train, package = "lightgbm")
