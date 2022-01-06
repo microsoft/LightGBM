@@ -26,9 +26,10 @@ Authors@R: c(
     person("Daniel", "Lemire", role = c("ctb")),
     person("Victor", "Zverovich", role = c("cph")),
     person("IBM Corporation", role = c("ctb")),
-    person("David", "Cortes", role = c("ctb"))
+    person("David", "Cortes", role = c("ctb")),
+    person("Michael", "Mayer", role = c("ctb"))
     )
-Description: Tree based algorithms can be improved by introducing boosting frameworks. 
+Description: Tree based algorithms can be improved by introducing boosting frameworks.
     'LightGBM' is one such framework, based on Ke, Guolin et al. (2017) <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision>.
     This package offers an R interface to work with it.
     It is designed to be distributed and efficient with the following advantages:
@@ -45,13 +46,16 @@ URL: https://github.com/Microsoft/LightGBM
 BugReports: https://github.com/Microsoft/LightGBM/issues
 NeedsCompilation: yes
 Biarch: true
+VignetteBuilder: knitr
 Suggests:
+    knitr,
     processx,
+    rmarkdown,
     testthat
 Depends:
-    R (>= 3.5),
-    R6 (>= 2.0)
+    R (>= 3.5)
 Imports:
+    R6 (>= 2.0),
     data.table (>= 1.9.6),
     graphics,
     jsonlite (>= 1.0),

@@ -92,13 +92,13 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
 fi
 
-# Manually install Depends and Imports libraries + 'testthat'
+# Manually install Depends and Imports libraries + 'knitr', 'rmarkdown', 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 # NOTE: testthat is not required when running rchk
 if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'Matrix', 'R6')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'rmarkdown')"
 else
-    packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'rmarkdown', 'testthat')"
 fi
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
@@ -112,7 +112,7 @@ cd ${BUILD_DIRECTORY}
 PKG_TARBALL="lightgbm_*.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
-    Rscript build_r.R --skip-install || exit -1
+    Rscript build_r.R -j4 --skip-install || exit -1
 elif [[ $R_BUILD_TYPE == "cran" ]]; then
 
     # on Linux, we recreate configure in CI to test if

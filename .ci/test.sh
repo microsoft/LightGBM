@@ -82,7 +82,7 @@ if [[ $TASK == "lint" ]]; then
     echo "Linting C++ code"
     cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package ./swig ./tests || exit -1
     cmake_files=$(find . -name CMakeLists.txt -o -path "*/cmake/*.cmake")
-    cmakelint --linelength=120 ${cmake_files} || true
+    cmakelint --linelength=120 --filter=-convention/filename,-package/stdargs,-readability/wonkycase ${cmake_files} || exit -1
     exit 0
 fi
 
@@ -114,7 +114,7 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV cloudpickle dask distributed joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
+conda install -q -y -n $CONDA_ENV cloudpickle "dask=2021.9.1" "distributed=2021.9.1" joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
 pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
@@ -133,7 +133,7 @@ if [[ $TASK == "sdist" ]]; then
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --python-tag py3 || exit -1
-        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_14_x86_64.macosx_10_15_x86_64.macosx_11_0_x86_64.whl
+        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_0_x86_64.whl
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi

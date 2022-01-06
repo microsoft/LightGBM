@@ -4,6 +4,10 @@
 
 ### CRAN response
 
+Accepted to CRAN on October 30, 2021.
+
+CRAN completed its checks and preparation of binaries on November 6, 2021.
+
 ### Maintainer Notes
 
 In this submission, we subbmitted a patch that CRAN stuff provided us via e-mail. The full text of the email from CRAN:

@@ -161,7 +161,7 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::vector<std::string> valid;
 
-  // alias = num_iteration, n_iter, num_tree, num_trees, num_round, num_rounds, num_boost_round, n_estimators, max_iter
+  // alias = num_iteration, n_iter, num_tree, num_trees, num_round, num_rounds, nrounds, num_boost_round, n_estimators, max_iter
   // check = >=0
   // desc = number of boosting iterations
   // desc = **Note**: internally, LightGBM constructs ``num_class * num_iterations`` trees for multi-class classification problems
@@ -192,6 +192,7 @@ struct Config {
   std::string tree_learner = "serial";
 
   // alias = num_thread, nthread, nthreads, n_jobs
+  // desc = used only in ``train``, ``prediction`` and ``refit`` tasks or in correspondent functions of language-specific packages
   // desc = number of threads for LightGBM
   // desc = ``0`` means default number of threads in OpenMP
   // desc = for the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPUs use `hyper-threading <https://en.wikipedia.org/wiki/Hyper-threading>`__ to generate 2 threads per CPU core)
@@ -720,6 +721,11 @@ struct Config {
   // desc = **Note**: setting this to ``true`` may lead to much slower text parsing
   bool precise_float_parser = false;
 
+  // desc = path to a ``.json`` file that specifies customized parser initialized configuration
+  // desc = see `lightgbm-transform <https://github.com/microsoft/lightgbm-transform>`__ for usage examples
+  // desc = **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/microsoft/lightgbm-transform/issues>`__
+  std::string parser_config_file = "";
+
   #pragma endregion
 
   #pragma region Predict Parameters
@@ -770,6 +776,7 @@ struct Config {
   // [no-save]
   // desc = used only in ``prediction`` task
   // desc = used only in ``classification`` and ``ranking`` applications
+  // desc = used only for predicting normal or raw scores
   // desc = if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
   // desc = **Note**: cannot be used with ``rf`` boosting type or custom objective function
   bool pred_early_stop = false;
@@ -1034,6 +1041,7 @@ struct Config {
   static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
   std::vector<std::vector<int>> interaction_constraints_vector;
+  static const std::string DumpAliases();
 
  private:
   void CheckParamConflict();

@@ -109,3 +109,8 @@ def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
         X[:, j] = bias + coef * y_vec
 
     return X, y_vec, group_id_vec
+
+
+@lru_cache(maxsize=None)
+def make_synthetic_regression(n_samples=100):
+    return sklearn.datasets.make_regression(n_samples, n_features=4, n_informative=2, random_state=42)

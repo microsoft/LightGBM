@@ -11,12 +11,10 @@ lgb.Dataset(
   colnames = NULL,
   categorical_feature = NULL,
   free_raw_data = TRUE,
-  info = list(),
   label = NULL,
   weight = NULL,
   group = NULL,
-  init_score = NULL,
-  ...
+  init_score = NULL
 )
 }
 \arguments{
@@ -45,10 +43,6 @@ This reduces LightGBM's memory consumption, but it means that the Dataset object
 cannot be changed after it has been constructed. If you'd prefer to be able to
 change the Dataset object after construction, set \code{free_raw_data = FALSE}.}
 
-\item{info}{a list of information of the \code{lgb.Dataset} object. NOTE: use of \code{info}
-is deprecated as of v3.3.0. Use keyword arguments (e.g. \code{init_score = init_score})
-directly.}
-
 \item{label}{vector of labels to use as the target variable}
 
 \item{weight}{numeric vector of sample weights}
@@ -61,8 +55,6 @@ where the first 10 records are in the first group, records 11-30 are in the
 second group, etc.}
 
 \item{init_score}{initial score is the base prediction lightgbm will boost from}
-
-\item{...}{other parameters passed to \code{params}}
 }
 \value{
 constructed dataset

@@ -23,7 +23,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
 #endif
 
 
@@ -52,6 +51,17 @@ typedef void* FastConfigHandle; /*!< \brief Handle of FastConfig. */
  * \return Error information
  */
 LIGHTGBM_C_EXPORT const char* LGBM_GetLastError();
+
+/*!
+ * \brief Dump all parameter names with their aliases to JSON.
+ * \param buffer_len String buffer length, if ``buffer_len < out_len``, you should re-allocate buffer
+ * \param[out] out_len Actual output length
+ * \param[out] out_str JSON format string of parameters, should pre-allocate memory
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DumpParamAliases(int64_t buffer_len,
+                                            int64_t* out_len,
+                                            char* out_str);
 
 /*!
  * \brief Register a callback function for log redirecting.
@@ -434,12 +444,12 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
 /* --- start Booster interfaces */
 
 /*!
-* \brief Get boolean representing whether booster is fitting linear trees.
+* \brief Get int representing whether booster is fitting linear trees.
 * \param handle Handle of booster
 * \param[out] out The address to hold linear trees indicator
 * \return 0 when succeed, -1 when failure happens
 */
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetLinear(BoosterHandle handle, bool* out);
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetLinear(BoosterHandle handle, int* out);
 
 /*!
  * \brief Create a new boosting learner.
@@ -562,6 +572,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle,
 /*!
  * \brief Update the model by specifying gradient and Hessian directly
  *        (this can be used to support customized loss functions).
+ * \note
+ * The length of the arrays referenced by ``grad`` and ``hess`` must be equal to
+ * ``num_class * num_train_data``, this is not verified by the library, the caller must ensure this.
  * \param handle Handle of booster
  * \param grad The first order derivative (gradient) statistics
  * \param hess The second order derivative (Hessian) statistics
@@ -1361,11 +1374,17 @@ static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everythin
 #endif
 /*!
  * \brief Set string message of the last error.
+ * \note
+ * This will call unsafe ``sprintf`` when compiled using C standards before C99.
  * \param msg Error message
  */
 INLINE_FUNCTION void LGBM_SetLastError(const char* msg) {
+#if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 199901L))
+  sprintf(LastErrorMsg(), "%s", msg);  /* NOLINT(runtime/printf) */
+#else
   const int err_buf_len = 512;
   snprintf(LastErrorMsg(), err_buf_len, "%s", msg);
+#endif
 }
 
 #endif  /* LIGHTGBM_C_API_H_ */

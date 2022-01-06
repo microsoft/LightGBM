@@ -25,7 +25,8 @@ lgb.cv(
   early_stopping_rounds = NULL,
   callbacks = list(),
   reset_data = FALSE,
-  ...
+  serializable = TRUE,
+  eval_train_metric = FALSE
 )
 }
 \arguments{
@@ -118,18 +119,12 @@ set to the iteration number of the best iteration.}
 \item{reset_data}{Boolean, setting it to TRUE (not the default value) will transform the booster model
 into a predictor model which frees up memory and the original datasets}
 
-\item{...}{other parameters, see Parameters.rst for more information. A few key parameters:
-\itemize{
-    \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
-    \item{\code{num_leaves}: Maximum number of leaves in one tree.}
-    \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
-                     overfit when #data is small. Tree still grow by leaf-wise.}
-    \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-                 the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
-                 not the number of threads (most CPU using hyper-threading to generate 2 threads
-                 per CPU core).}
-}
-NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
+\item{serializable}{whether to make the resulting objects serializable through functions such as
+\code{save} or \code{saveRDS} (see section "Model serialization").}
+
+\item{eval_train_metric}{\code{boolean}, whether to add the cross validation results on the
+training data. This parameter defaults to \code{FALSE}. Setting it to \code{TRUE}
+will increase run time.}
 }
 \value{
 a trained model \code{lgb.CVBooster}.

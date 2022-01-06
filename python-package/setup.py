@@ -40,7 +40,7 @@ def find_lib() -> List[str]:
     libpath = {'__file__': libpath_py}
     exec(compile(libpath_py.read_bytes(), libpath_py, 'exec'), libpath, libpath)
 
-    LIB_PATH = libpath['find_lib_path']()
+    LIB_PATH = libpath['find_lib_path']()  # type: ignore
     logger.info(f"Installing lib_lightgbm from: {LIB_PATH}")
     return LIB_PATH
 
@@ -165,7 +165,7 @@ def compile_cpp(
             lib_path = CURRENT_DIR / "compile" / "windows" / "x64" / "DLL" / "lib_lightgbm.dll"
             if not any((use_gpu, use_cuda, use_mpi, use_hdfs, nomp, bit32, integrated_opencl)):
                 logger.info("Starting to compile with MSBuild from existing solution file.")
-                platform_toolsets = ("v142", "v141", "v140")
+                platform_toolsets = ("v143", "v142", "v141", "v140")
                 for pt in platform_toolsets:
                     status = silent_call(["MSBuild",
                                           str(CURRENT_DIR / "compile" / "windows" / "LightGBM.sln"),
@@ -180,7 +180,12 @@ def compile_cpp(
                     logger.warning("Compilation with MSBuild from existing solution file failed.")
             if status != 0 or not lib_path.is_file():
                 arch = "Win32" if bit32 else "x64"
-                vs_versions = ("Visual Studio 16 2019", "Visual Studio 15 2017", "Visual Studio 14 2015")
+                vs_versions = (
+                    "Visual Studio 17 2022",
+                    "Visual Studio 16 2019",
+                    "Visual Studio 15 2017",
+                    "Visual Studio 14 2015"
+                )
                 for vs in vs_versions:
                     logger.info(f"Starting to compile with {vs} ({arch}).")
                     status = silent_call(cmake_cmd + ["-G", vs, "-A", arch])
@@ -371,7 +376,6 @@ if __name__ == "__main__":
                        'Operating System :: POSIX',
                        'Operating System :: Unix',
                        'Programming Language :: Python :: 3',
-                       'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',
                        'Programming Language :: Python :: 3.8',
                        'Programming Language :: Python :: 3.9',
