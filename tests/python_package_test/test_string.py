@@ -12,21 +12,21 @@ import sys
 sys.path.append("python-package")
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
-
+DATA_DIR = Path(__file__).absolute().parents[1] / 'data'
 # from utils import load_breast_cancer
 # import scipy.sparse
 import pandas as pd
 
 use_num = False
 
-def test_basic(tmp_path):
+def test_string_basic(tmp_path):
 
     if use_num:
-        X_train = pd.read_csv(r'tests\data\train_drug_num.csv')
-        X_test = pd.read_csv(r'tests\data\test_drug_num.csv')
+        X_train = pd.read_csv(DATA_DIR / 'train_drug_num.csv')
+        X_test = pd.read_csv(DATA_DIR / 'test_drug_num.csv')
     else:
-        X_train = pd.read_csv(r'tests\data\train_drug.csv')
-        X_test = pd.read_csv(r'tests\data\test_drug.csv')
+        X_train = pd.read_csv(DATA_DIR / 'train_drug.csv')
+        X_test = pd.read_csv(DATA_DIR / 'test_drug.csv')
     
     y_train = X_train.pop('Drug')
     y_test = X_test.pop('Drug')
@@ -99,4 +99,4 @@ def test_basic(tmp_path):
                                   np.sign(pred_early_stopping))
 
 
-test_basic(Path(r'tests\python_package_test\test_string'))
+# test_basic(Path(r'tests\python_package_test\test_string'))
