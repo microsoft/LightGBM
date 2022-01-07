@@ -1175,7 +1175,6 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   if (dataset->has_raw()) {
     dataset->ResizeRaw(static_cast<int>(sample_data.size()));
   }
-   
   auto t2 = std::chrono::high_resolution_clock::now();
   Log::Info("Construct bin mappers from text data time %.2f seconds",
             std::chrono::duration<double, std::milli>(t2 - t1) * 1e-3);
@@ -1368,7 +1367,6 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-     
   };
   TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
   if (!used_data_indices.empty()) {

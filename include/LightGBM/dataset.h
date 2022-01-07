@@ -13,8 +13,6 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
 
-// #include "../../src/io/parser.hpp"
-
 #include <string>
 #include <functional>
 #include <map>
@@ -26,9 +24,8 @@
 
 namespace LightGBM {
 
-class Str2Num {
+struct Str2Num {
 public:
-
   Str2Num(){
     current = 0;
   }
@@ -761,14 +758,6 @@ class Dataset {
     }
   }
   
-  //inline void set_mapping() {
-  //  // set mapping using string vector
-  //  Log::Info("in function set_mapping");
-  //  Log::Info("before for loop");
-  //  std::cout << mapping.size() << std::endl;
-  //  Log::Info("finishing function set_mapping");
-  //}
-
   inline void store_mapping()  {
     // store maps to mapping
     int offset = 0;
@@ -794,8 +783,7 @@ class Dataset {
     }
   }
 
-
-  inline std::vector< std::string >  get_mapping() const {
+  inline std::vector<std::string>  get_mapping() const {
     return mapping;
   }
 
@@ -841,7 +829,7 @@ class Dataset {
   std::vector<int> numeric_feature_map_;
   int num_numeric_features_;
   std::string parser_config_str_;
-  std::vector< std::string > mapping;
+  std::vector<std::string> mapping;
 };
 
 }  // namespace LightGBM

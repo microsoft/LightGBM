@@ -728,7 +728,6 @@ class Booster {
 
   std::string SaveModelToString(int start_iteration, int num_iteration,
                                 int feature_importance_type) const {
-
     return boosting_->SaveModelToString(start_iteration,
                                         num_iteration, feature_importance_type);
   }
