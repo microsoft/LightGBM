@@ -1,4 +1,6 @@
-context("lgb.plot.interpretation")
+VERBOSITY <- as.integer(
+    Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
 
 .sigmoid <- function(x) {
     1.0 / (1.0 + exp(-x))
@@ -28,6 +30,7 @@ test_that("lgb.plot.interepretation works as expected for binary classification"
         , max_depth = -1L
         , min_data_in_leaf = 1L
         , min_sum_hessian_in_leaf = 1.0
+        , verbosity = VERBOSITY
     )
     model <- lgb.train(
         params = params
@@ -82,6 +85,7 @@ test_that("lgb.plot.interepretation works as expected for multiclass classificat
         params = params
         , data = dtrain
         , nrounds = 3L
+        , verbose = VERBOSITY
     )
     num_trees <- 5L
     tree_interpretation <- lgb.interprete(

@@ -1,4 +1,6 @@
-context("lgb.plot.importance()")
+VERBOSITY <- as.integer(
+    Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
 
 test_that("lgb.plot.importance() should run without error for well-formed inputs", {
     data(agaricus.train, package = "lightgbm")
@@ -11,6 +13,7 @@ test_that("lgb.plot.importance() should run without error for well-formed inputs
         , max_depth = -1L
         , min_data_in_leaf = 1L
         , min_sum_hessian_in_leaf = 1.0
+        , verbosity = VERBOSITY
     )
     model <- lgb.train(params, dtrain, 3L)
     tree_imp <- lgb.importance(model, percentage = TRUE)

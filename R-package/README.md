@@ -16,6 +16,8 @@
     - [Installing from a Pre-compiled lib_lightgbm](#lib_lightgbm)
 * [Examples](#examples)
 * [Testing](#testing)
+    - [Running the Tests](#running-the-tests)
+    - [Code Coverage](#code-coverage)
 * [Preparing a CRAN Package](#preparing-a-cran-package)
 * [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
@@ -234,17 +236,42 @@ Testing
 
 The R package's unit tests are run automatically on every commit, via integrations like [GitHub Actions](https://github.com/microsoft/LightGBM/actions). Adding new tests in `R-package/tests/testthat` is a valuable way to improve the reliability of the R package.
 
+### Running the Tests
+
+While developing the R package, run the code below to run the unit tests.
+
+```shell
+sh build-cran-package.sh \
+    --no-build-vignettes
+
+R CMD INSTALL --with-keep.source lightgbm*.tar.gz
+cd R-package/tests
+Rscript testthat.R
+```
+
+To run the tests with more verbose logs, set environment variable `LIGHTGBM_TEST_VERBOSITY` to a valid value for parameter [`verbosity`](https://lightgbm.readthedocs.io/en/latest/Parameters.html#verbosity).
+
+```shell
+export LIGHTGBM_TEST_VERBOSITY=1
+cd R-package/tests
+Rscript testthat.R
+```
+
+### Code Coverage
+
 When adding tests, you may want to use test coverage to identify untested areas and to check if the tests you've added are covering all branches of the intended code.
 
 The example below shows how to generate code coverage for the R package on a macOS or Linux setup. To adjust for your environment, refer to [the customization step described above](#custom-installation-linux-mac).
 
 ```shell
 # Install
-sh build-cran-package.sh
+sh build-cran-package.sh \
+    --no-build-vignettes
 
 # Get coverage
 Rscript -e " \
-    coverage  <- covr::package_coverage('./lightgbm_r', type = 'tests', quiet = FALSE);
+    library(covr);
+    coverage <- covr::package_coverage('./lightgbm_r', type = 'tests', quiet = FALSE);
     print(coverage);
     covr::report(coverage, file = file.path(getwd(), 'coverage.html'), browse = TRUE);
     "

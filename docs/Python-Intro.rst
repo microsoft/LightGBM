@@ -228,18 +228,18 @@ Early stopping requires at least one set in ``valid_sets``. If there is more tha
 
 .. code:: python
 
-    bst = lgb.train(param, train_data, num_round, valid_sets=valid_sets, early_stopping_rounds=5)
+    bst = lgb.train(param, train_data, num_round, valid_sets=valid_sets, callbacks=[lgb.early_stopping(stopping_rounds=5)])
     bst.save_model('model.txt', num_iteration=bst.best_iteration)
 
 The model will train until the validation score stops improving.
-Validation score needs to improve at least every ``early_stopping_rounds`` to continue training.
+Validation score needs to improve at least every ``stopping_rounds`` to continue training.
 
-The index of iteration that has the best performance will be saved in the ``best_iteration`` field if early stopping logic is enabled by setting ``early_stopping_rounds``.
+The index of iteration that has the best performance will be saved in the ``best_iteration`` field if early stopping logic is enabled by setting ``early_stopping`` callback.
 Note that ``train()`` will return a model from the best iteration.
 
 This works with both metrics to minimize (L2, log loss, etc.) and to maximize (NDCG, AUC, etc.).
 Note that if you specify more than one evaluation metric, all of them will be used for early stopping.
-However, you can change this behavior and make LightGBM check only the first metric for early stopping by passing ``first_metric_only=True`` in ``param`` or ``early_stopping`` callback constructor.
+However, you can change this behavior and make LightGBM check only the first metric for early stopping by passing ``first_metric_only=True`` in ``early_stopping`` callback constructor.
 
 Prediction
 ----------

@@ -40,7 +40,7 @@ gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=20,
                 valid_sets=lgb_eval,
-                early_stopping_rounds=5)
+                callbacks=[lgb.early_stopping(stopping_rounds=5)])
 
 print('Saving model...')
 # save model to file

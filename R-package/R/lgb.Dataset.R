@@ -109,7 +109,7 @@ Dataset <- R6::R6Class(
                             params = list()) {
 
       # the Dataset's existing parameters should be overwritten by any passed in to this call
-      params <- modifyList(self$get_params(), params)
+      params <- modifyList(private$params, params)
 
       # Create new dataset
       ret <- Dataset$new(
@@ -236,7 +236,7 @@ Dataset <- R6::R6Class(
           if (length(private$raw_data@p) > 2147483647L) {
             stop("Cannot support large CSC matrix")
           }
-          # Are we using a dgCMatrix (sparsed matrix column compressed)
+          # Are we using a dgCMatrix (sparse matrix column compressed)
           handle <- .Call(
             LGBM_DatasetCreateFromCSC_R
             , private$raw_data@p
@@ -462,15 +462,14 @@ Dataset <- R6::R6Class(
           , info_len
         )
 
-        # Check if info is not empty
         if (info_len > 0L) {
 
           # Get back fields
           ret <- NULL
           ret <- if (field_name == "group") {
-            integer(info_len) # Integer
+            integer(info_len)
           } else {
-            numeric(info_len) # Numeric
+            numeric(info_len)
           }
 
           .Call(
@@ -501,9 +500,9 @@ Dataset <- R6::R6Class(
 
       # Check for type of information
       data <- if (field_name == "group") {
-        as.integer(data) # Integer
+        as.integer(data)
       } else {
-        as.numeric(data) # Numeric
+        as.numeric(data)
       }
 
       # Store information privately
@@ -531,50 +530,18 @@ Dataset <- R6::R6Class(
 
     },
 
-    # Slice dataset
-    slice = function(idxset, ...) {
+    slice = function(idxset) {
 
-      additional_keyword_args <- list(...)
-
-      if (length(additional_keyword_args) > 0L) {
-        warning(paste0(
-          "Dataset$slice(): Found the following passed through '...': "
-          , paste(names(additional_keyword_args), collapse = ", ")
-          , ". These are ignored and should be removed. "
-          , "To change the parameters of a Dataset produced by Dataset$slice(), use Dataset$set_params(). "
-          , "To modify attributes like 'init_score', use Dataset$set_field(). "
-          , "In future releases of lightgbm, this warning will become an error."
-        ))
-      }
-
-      # extract Dataset attributes passed through '...'
-      #
-      # NOTE: takes advantage of the fact that list[["non-existent-key"]] returns NULL
-      group <- additional_keyword_args[["group"]]
-      init_score <- additional_keyword_args[["init_score"]]
-      label <- additional_keyword_args[["label"]]
-      weight <- additional_keyword_args[["weight"]]
-
-      # remove attributes from '...', so only params are left
-      for (info_key in .INFO_KEYS()) {
-        additional_keyword_args[[info_key]] <- NULL
-      }
-
-      # Perform slicing
       return(
         Dataset$new(
           data = NULL
-          , params = utils::modifyList(self$get_params(), additional_keyword_args)
+          , params = private$params
           , reference = self
           , colnames = private$colnames
           , categorical_feature = private$categorical_feature
           , predictor = private$predictor
           , free_raw_data = private$free_raw_data
           , used_indices = sort(idxset, decreasing = FALSE)
-          , group = group
-          , init_score = init_score
-          , label = label
-          , weight = weight
         )
       )
 
@@ -587,15 +554,17 @@ Dataset <- R6::R6Class(
       if (length(params) == 0L) {
         return(invisible(self))
       }
+      new_params <- utils::modifyList(private$params, params)
       if (lgb.is.null.handle(x = private$handle)) {
-        private$params <- utils::modifyList(private$params, params)
+        private$params <- new_params
       } else {
         tryCatch({
           .Call(
             LGBM_DatasetUpdateParamChecking_R
             , lgb.params2str(params = private$params)
-            , lgb.params2str(params = params)
+            , lgb.params2str(params = new_params)
           )
+          private$params <- new_params
         }, error = function(e) {
           # If updating failed but raw data is not available, raise an error because
           # achieving what the user asked for is not possible
@@ -605,7 +574,7 @@ Dataset <- R6::R6Class(
 
           # If updating failed but raw data is available, modify the params
           # on the R side and re-set ("deconstruct") the Dataset
-          private$params <- utils::modifyList(private$params, params)
+          private$params <- new_params
           self$finalize()
         })
       }
@@ -613,6 +582,11 @@ Dataset <- R6::R6Class(
 
     },
 
+    # [description] Get only Dataset-specific parameters. This is primarily used by
+    #               Booster to update its parameters based on the characteristics of
+    #               a Dataset. It should not be used by other methods in this class,
+    #               since "verbose" is not a Dataset parameter and needs to be passed
+    #               through to avoid globally re-setting verbosity.
     get_params = function() {
       dataset_params <- unname(unlist(.DATASET_PARAMETERS()))
       ret <- list()
@@ -647,7 +621,6 @@ Dataset <- R6::R6Class(
 
     },
 
-    # Set reference
     set_reference = function(reference) {
 
       # setting reference to this same Dataset object doesn't require any changes
@@ -707,7 +680,6 @@ Dataset <- R6::R6Class(
     info = NULL,
     version = 0L,
 
-    # Get handle
     get_handle = function() {
 
       # Get handle and construct if needed
@@ -718,7 +690,6 @@ Dataset <- R6::R6Class(
 
     },
 
-    # Set predictor
     set_predictor = function(predictor) {
 
       if (identical(private$predictor, predictor)) {
@@ -776,7 +747,6 @@ Dataset <- R6::R6Class(
 #'                      This reduces LightGBM's memory consumption, but it means that the Dataset object
 #'                      cannot be changed after it has been constructed. If you'd prefer to be able to
 #'                      change the Dataset object after construction, set \code{free_raw_data = FALSE}.
-#' @param ... other parameters passed to \code{params}
 #'
 #' @return constructed dataset
 #'
@@ -800,22 +770,8 @@ lgb.Dataset <- function(data,
                         label = NULL,
                         weight = NULL,
                         group = NULL,
-                        init_score = NULL,
-                        ...) {
+                        init_score = NULL) {
 
-  additional_params <- list(...)
-  params <- modifyList(params, additional_params)
-
-  if (length(additional_params) > 0L) {
-    warning(paste0(
-      "lgb.Dataset: Found the following passed through '...': "
-      , paste(names(additional_params), collapse = ", ")
-      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-      , "Add these to 'params' instead. See ?lgb.Dataset for documentation on how to call this function."
-    ))
-  }
-
-  # Create new dataset
   return(
     invisible(Dataset$new(
       data = data
@@ -949,7 +905,6 @@ lgb.Dataset.construct <- function(dataset) {
 #' @title Dimensions of an \code{lgb.Dataset}
 #' @description Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
 #' @param x Object of class \code{lgb.Dataset}
-#' @param ... other parameters (ignored)
 #'
 #' @return a vector of numbers of rows and of columns
 #'
@@ -969,17 +924,7 @@ lgb.Dataset.construct <- function(dataset) {
 #' }
 #' @rdname dim
 #' @export
-dim.lgb.Dataset <- function(x, ...) {
-
-  additional_args <- list(...)
-  if (length(additional_args) > 0L) {
-    warning(paste0(
-      "dim.lgb.Dataset: Found the following passed through '...': "
-      , paste(names(additional_args), collapse = ", ")
-      , ". These are ignored. In future releases of lightgbm, this warning will become an error. "
-      , "See ?dim.lgb.Dataset for documentation on how to call this function."
-    ))
-  }
+dim.lgb.Dataset <- function(x) {
 
   if (!lgb.is.Dataset(x = x)) {
     stop("dim.lgb.Dataset: input data should be an lgb.Dataset object")
@@ -1068,7 +1013,6 @@ dimnames.lgb.Dataset <- function(x) {
 #'              original \code{lgb.Dataset} object
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param idxset an integer vector of indices of rows needed
-#' @param ... other parameters (currently not used)
 #' @return constructed sub dataset
 #'
 #' @examples
@@ -1082,19 +1026,19 @@ dimnames.lgb.Dataset <- function(x) {
 #' labels <- lightgbm::get_field(dsub, "label")
 #' }
 #' @export
-slice <- function(dataset, ...) {
+slice <- function(dataset, idxset) {
   UseMethod("slice")
 }
 
 #' @rdname slice
 #' @export
-slice.lgb.Dataset <- function(dataset, idxset, ...) {
+slice.lgb.Dataset <- function(dataset, idxset) {
 
   if (!lgb.is.Dataset(x = dataset)) {
     stop("slice.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
-  return(invisible(dataset$slice(idxset = idxset, ...)))
+  return(invisible(dataset$slice(idxset = idxset)))
 
 }
 

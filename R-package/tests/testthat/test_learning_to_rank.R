@@ -1,4 +1,6 @@
-context("Learning to rank")
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
 
 # numerical tolerance to use when checking metric values
 TOLERANCE <- 1e-06
@@ -25,6 +27,7 @@ test_that("learning-to-rank with lgb.train() works as expected", {
         , ndcg_at = ndcg_at
         , lambdarank_truncation_level = 3L
         , learning_rate = 0.001
+        , verbose = VERBOSITY
     )
     model <- lgb.train(
         params = params
@@ -89,7 +92,7 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         , nrounds = nrounds
         , nfold = nfold
     )
-    expect_is(cv_bst, "lgb.CVBooster")
+    expect_true(methods::is(cv_bst, "lgb.CVBooster"))
     expect_equal(length(cv_bst$boosters), nfold)
 
     # "valid" should contain results for each metric

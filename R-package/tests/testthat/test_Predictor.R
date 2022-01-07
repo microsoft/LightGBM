@@ -1,4 +1,6 @@
-context("Predictor")
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
 
 test_that("Predictor$finalize() should not fail", {
     X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
@@ -9,7 +11,7 @@ test_that("Predictor$finalize() should not fail", {
         , params = list(
             objective = "regression"
         )
-        , verbose = -1L
+        , verbose = VERBOSITY
         , nrounds = 3L
     )
     model_file <- tempfile(fileext = ".model")
@@ -37,7 +39,7 @@ test_that("predictions do not fail for integer input", {
         , params = list(
             objective = "regression"
         )
-        , verbose = -1L
+        , verbose = VERBOSITY
         , nrounds = 3L
     )
     X_double <- X[c(1L, 51L, 101L), , drop = FALSE]
@@ -70,6 +72,7 @@ test_that("start_iteration works correctly", {
             num_leaves = 4L
             , learning_rate = 0.6
             , objective = "binary"
+            , verbosity = VERBOSITY
         )
         , nrounds = 50L
         , valids = list("test" = dtest)

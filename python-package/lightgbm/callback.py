@@ -128,15 +128,15 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
     """
     if not isinstance(eval_result, dict):
         raise TypeError('eval_result should be a dictionary')
-    eval_result.clear()
 
     def _init(env: CallbackEnv) -> None:
+        eval_result.clear()
         for data_name, eval_name, _, _ in env.evaluation_result_list:
             eval_result.setdefault(data_name, collections.OrderedDict())
             eval_result[data_name].setdefault(eval_name, [])
 
     def _callback(env: CallbackEnv) -> None:
-        if not eval_result:
+        if env.iteration == env.begin_iteration:
             _init(env)
         for data_name, eval_name, result, _ in env.evaluation_result_list:
             eval_result[data_name][eval_name].append(result)
@@ -239,8 +239,18 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
             raise ValueError('For early stopping, '
                              'at least one dataset and eval metric is required for evaluation')
 
+        if stopping_rounds <= 0:
+            raise ValueError("stopping_rounds should be greater than zero.")
+
         if verbose:
             _log_info(f"Training until validation scores don't improve for {stopping_rounds} rounds")
+
+        # reset storages
+        best_score = []
+        best_iter = []
+        best_score_list = []
+        cmp_op = []
+        first_metric = ''
 
         n_metrics = len(set(m[1] for m in env.evaluation_result_list))
         n_datasets = len(env.evaluation_result_list) // n_metrics
@@ -299,7 +309,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
         nonlocal cmp_op
         nonlocal enabled
         nonlocal first_metric
-        if not cmp_op:
+        if env.iteration == env.begin_iteration:
             _init(env)
         if not enabled:
             return

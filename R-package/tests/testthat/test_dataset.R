@@ -1,4 +1,6 @@
-context("testing lgb.Dataset functionality")
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
 
 data(agaricus.train, package = "lightgbm")
 train_data <- agaricus.train$data[seq_len(1000L), ]
@@ -48,34 +50,6 @@ test_that("lgb.Dataset: slice, dim", {
   lgb.Dataset.construct(dsub1)
   expect_equal(nrow(dsub1), 42L)
   expect_equal(ncol(dsub1), ncol(test_data))
-})
-
-test_that("Dataset$slice() supports passing additional parameters through '...'", {
-  dtest <- lgb.Dataset(test_data, label = test_label)
-  dtest$construct()
-  dsub1 <- slice(
-    dataset = dtest
-    , idxset = seq_len(42L)
-    , feature_pre_filter = FALSE
-  )
-  dsub1$construct()
-  expect_identical(dtest$get_params(), list())
-  expect_identical(dsub1$get_params(), list(feature_pre_filter = FALSE))
-})
-
-test_that("Dataset$slice() supports passing Dataset attributes through '...'", {
-  dtest <- lgb.Dataset(test_data, label = test_label)
-  dtest$construct()
-  num_subset_rows <- 51L
-  init_score <- rnorm(n = num_subset_rows)
-  dsub1 <- slice(
-    dataset = dtest
-    , idxset = seq_len(num_subset_rows)
-    , init_score = init_score
-  )
-  dsub1$construct()
-  expect_null(dtest$get_field("init_score"), NULL)
-  expect_identical(dsub1$get_field("init_score"), init_score)
 })
 
 test_that("Dataset$set_reference() on a constructed Dataset fails if raw data has been freed", {
@@ -172,7 +146,10 @@ test_that("Dataset$set_reference() updates categorical_feature, colnames, and pr
   dtest$set_reference(dtrain)
 
   # after setting reference to dtrain, those attributes should have dtrain's values
-  expect_is(dtest$.__enclos_env__$private$predictor, "lgb.Predictor")
+  expect_true(methods::is(
+    dtest$.__enclos_env__$private$predictor
+    , "lgb.Predictor"
+  ))
   expect_identical(
     dtest$.__enclos_env__$private$predictor$.__enclos_env__$private$handle
     , dtrain$.__enclos_env__$private$predictor$.__enclos_env__$private$handle
@@ -223,7 +200,7 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
     , lightgbm:::lgb.params2str(params = list())
     , ref_handle
   )
-  expect_is(handle, "externalptr")
+  expect_true(methods::is(handle, "externalptr"))
   expect_false(is.null(handle))
   .Call(LGBM_DatasetFree_R, handle)
   handle <- NULL
@@ -396,6 +373,7 @@ test_that("lgb.Dataset: should be able to run lgb.train() immediately after usin
     , metric = "binary_logloss"
     , num_leaves = 5L
     , learning_rate = 1.0
+    , verbose = VERBOSITY
   )
 
   # should be able to train right away
@@ -434,7 +412,7 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
     , data = dtest_read_in
   )
 
-  expect_is(bst, "lgb.CVBooster")
+  expect_true(methods::is(bst, "lgb.CVBooster"))
 })
 
 test_that("lgb.Dataset: should be able to use and retrieve long feature names", {

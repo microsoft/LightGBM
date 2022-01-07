@@ -14,8 +14,7 @@ lgb.Dataset(
   label = NULL,
   weight = NULL,
   group = NULL,
-  init_score = NULL,
-  ...
+  init_score = NULL
 )
 }
 \arguments{
@@ -56,8 +55,6 @@ where the first 10 records are in the first group, records 11-30 are in the
 second group, etc.}
 
 \item{init_score}{initial score is the base prediction lightgbm will boost from}
-
-\item{...}{other parameters passed to \code{params}}
 }
 \value{
 constructed dataset
