@@ -463,3 +463,5 @@ dask-worker-space/
 *.pub
 *.rdp
 *_rsa
+
+/.history

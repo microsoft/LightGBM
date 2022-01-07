@@ -1,0 +1,4 @@
+buys,age,income,gender,m_status
+yes,q2535,high,male,single
+no,>35,medium,female,married
+yes,<25,low,male,single

@@ -120,6 +120,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   feature_names_ = train_data_->feature_names();
   feature_infos_ = train_data_->feature_infos();
   monotone_constraints_ = config->monotone_constraints;
+  mapping = train_data_->get_mapping();
   // get parser config file content
   parser_config_str_ = train_data_->parser_config_str();
 

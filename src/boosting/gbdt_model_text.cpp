@@ -393,31 +393,30 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
   for (size_t i = 0; i < pairs.size(); ++i) {
     ss << pairs[i].second << "=" << std::to_string(pairs[i].first) << '\n';
   }
+  ss << "\nparameters:" << '\n';
   if (config_ != nullptr) {
-    ss << "\nparameters:" << '\n';
     ss << config_->ToString() << "\n";
-    ss << "end of parameters" << '\n';
   } else if (!loaded_parameter_.empty()) {
-    ss << "\nparameters:" << '\n';
     ss << loaded_parameter_ << "\n";
-    ss << "end of parameters" << '\n';
   }
-  if (!parser_config_str_.empty()) {
-    ss << "\nparser:" << '\n';
-    ss << parser_config_str_ << "\n";
-    ss << "end of parser" << '\n';
-  }
+  ss << "end of parameters" << '\n';
 
-  std::vector< std::string > maps = train_data_->get_mapping();
-    
+  ss << "\nparser:" << '\n';
+  if (!parser_config_str_.empty()) {
+    ss << parser_config_str_ << "\n";
+  }
+  ss << "end of parser" << '\n';
+
+  std::vector< std::string > maps = mapping;
+  
   std::string str;
   for(int i=0; i < maps.size(); i++){
-    str += "map";
+    str += "map: ";
     str += maps[i]; 
   }
   ss << "\nMaps:\n\n";
   ss << str;
-  ss << "end of Maps";
+  ss << "end of Maps\n";
   return ss.str();
 }
 
@@ -587,7 +586,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
   num_init_iteration_ = num_iteration_for_pred_;
   iter_ = 0;
-  bool is_inparameter = false, is_inparser = false, is_inmaps = false;
+  bool is_inparameter = false, is_inparser = false, is_inmaps = false, is_inmapping = false;
   std::stringstream ss;
   Common::C_stringstream(ss);
   while (p < end) {
@@ -648,9 +647,19 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
         p += line_len;
         p = Common::SkipNewLine(p);
         break;
-      } else if(cur_line == std::string("map")){
+      } else if(Common::StartsWith(cur_line, "map: ")){
         index++;
         tmp.Str2NumMap.clear();
+        if (is_inmapping) {
+          mapping.push_back(ss.str());
+          ss.clear();
+          ss.str("");
+          ss << cur_line.substr(5, line_len-5).c_str() << "\n";
+        }
+        else {
+          is_inmapping = true;
+          ss << cur_line.substr(5, line_len - 5).c_str() << "\n";
+        }
       }
        else if (is_inmaps) {
          std::vector< std::string > key_value;
@@ -658,12 +667,16 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
          
          tmp.Str2NumMap.insert(std::pair < std::string , double > (key_value[0], std::stod(key_value[1]) ) );
          maps.push_back(tmp);
+
+         ss << cur_line << "\n";
       }
     }
     p += line_len;
     p = Common::SkipNewLine(p);
   }
-
+  mapping.push_back(ss.str());
+  ss.clear();
+  ss.str("");
   return true;
 }
 
