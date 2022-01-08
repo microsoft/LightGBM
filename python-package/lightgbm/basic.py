@@ -3543,7 +3543,7 @@ class Booster:
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for ``data``.
-        feature_name : list of str or 'auto', optional (default="auto")
+        feature_name : list of str, or 'auto', optional (default="auto")
             Feature names for ``data``.
             If 'auto' and data is pandas DataFrame, data columns names are used.
         categorical_feature : list of str or int, or 'auto', optional (default="auto")

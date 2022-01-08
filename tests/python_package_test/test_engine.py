@@ -1548,28 +1548,27 @@ def test_refit():
 def test_refit_dataset_params():
     # check refit accepts dataset_params
     X, y = load_breast_cancer(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_train = lgb.Dataset(X, y)
     train_params = {
         'objective': 'binary',
         'verbose': -1,
         'seed': 123
     }
     gbm = lgb.train(train_params, lgb_train, num_boost_round=10)
-    non_weight_err_pred = log_loss(y_test, gbm.predict(X_test))
-    refit_weight = np.random.rand(y_train.shape[0])
+    non_weight_err_pred = log_loss(y, gbm.predict(X))
+    refit_weight = np.random.rand(y.shape[0])
     dataset_params = {
         'max_bin': 260,
         'min_data_in_bin': 5,
         'data_random_seed': 123,
     }
     new_gbm = gbm.refit(
-        data=X_train,
-        label=y_train,
+        data=X,
+        label=y,
         weight=refit_weight,
         dataset_params=dataset_params,
     )
-    weight_err_pred = log_loss(y_test, new_gbm.predict(X_test))
+    weight_err_pred = log_loss(y, new_gbm.predict(X))
     train_set_params = new_gbm.train_set.get_params()
     stored_weights = new_gbm.train_set.get_weight()
     assert weight_err_pred != non_weight_err_pred
