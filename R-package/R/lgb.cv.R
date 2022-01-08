@@ -43,6 +43,9 @@ CVBooster <- R6::R6Class(
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets
+#' @param eval_train_metric \code{boolean}, whether to add the cross validation results on the
+#'               training data. This parameter defaults to \code{FALSE}. Setting it to \code{TRUE}
+#'               will increase run time.
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained model \code{lgb.CVBooster}.
 #'
@@ -87,6 +90,7 @@ lgb.cv <- function(params = list()
                    , callbacks = list()
                    , reset_data = FALSE
                    , serializable = TRUE
+                   , eval_train_metric = FALSE
                    ) {
 
   if (nrounds <= 0L) {
@@ -100,12 +104,6 @@ lgb.cv <- function(params = list()
     }
     data <- lgb.Dataset(data = data, label = label)
   }
-
-  # Setup temporary variables
-  params <- lgb.check.obj(params = params, obj = obj)
-  params <- lgb.check.eval(params = params, eval = eval)
-  fobj <- NULL
-  eval_functions <- list(NULL)
 
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.
@@ -122,13 +120,25 @@ lgb.cv <- function(params = list()
     , alternative_kwarg_value = nrounds
   )
   params <- lgb.check.wrapper_param(
+    main_param_name = "metric"
+    , params = params
+    , alternative_kwarg_value = NULL
+  )
+  params <- lgb.check.wrapper_param(
+    main_param_name = "objective"
+    , params = params
+    , alternative_kwarg_value = NULL
+  )
+  params <- lgb.check.wrapper_param(
     main_param_name = "early_stopping_round"
     , params = params
     , alternative_kwarg_value = early_stopping_rounds
   )
   early_stopping_rounds <- params[["early_stopping_round"]]
 
-  # Check for objective (function or not)
+  # extract any function objects passed for objective or metric
+  params <- lgb.check.obj(params = params, obj = obj)
+  fobj <- NULL
   if (is.function(params$objective)) {
     fobj <- params$objective
     params$objective <- "NONE"
@@ -138,6 +148,8 @@ lgb.cv <- function(params = list()
   # (for backwards compatibility). If it is a list of functions, store
   # all of them. This makes it possible to pass any mix of strings like "auc"
   # and custom functions to eval
+  params <- lgb.check.eval(params = params, eval = eval)
+  eval_functions <- list(NULL)
   if (is.function(eval)) {
     eval_functions <- list(eval)
   }
@@ -336,6 +348,9 @@ lgb.cv <- function(params = list()
       }
 
       booster <- Booster$new(params = params, train_set = dtrain)
+      if (isTRUE(eval_train_metric)) {
+        booster$add_valid(data = dtrain, name = "train")
+      }
       booster$add_valid(data = dtest, name = "valid")
       return(
         list(booster = booster)
