@@ -861,15 +861,16 @@ print.lgb.Booster <- function(x, ...) {
 
   if (!handle_is_null) {
     obj <- x$params$objective
-    if (obj == "none") {
+    if (tolower(obj) == "none") {
       obj <- "custom"
     }
-    if (x$.__enclos_env__$private$num_class == 1L) {
+    num_class <- x$.__enclos_env__$private$num_class
+    if (num_class == 1L) {
       cat(sprintf("Objective: %s\n", obj))
     } else {
       cat(sprintf("Objective: %s (%d classes)\n"
           , obj
-          , x$.__enclos_env__$private$num_class))
+          , num_class))
     }
   } else {
     cat("(Booster handle is invalid)\n")
