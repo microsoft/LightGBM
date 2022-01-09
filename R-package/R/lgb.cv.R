@@ -141,7 +141,7 @@ lgb.cv <- function(params = list()
   fobj <- NULL
   if (is.function(params$objective)) {
     fobj <- params$objective
-    params$objective <- "NONE"
+    params$objective <- "none"
   }
 
   # If eval is a single function, store it as a 1-element list
