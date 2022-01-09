@@ -244,8 +244,8 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
   )
 
   top_level_l2 <- top_level_bst$eval_train()[[1L]][["value"]]
-  params_l2    <- param_bst$eval_train()[[1L]][["value"]]
-  both_l2      <- both_customized$eval_train()[[1L]][["value"]]
+  params_l2 <- param_bst$eval_train()[[1L]][["value"]]
+  both_l2 <- both_customized$eval_train()[[1L]][["value"]]
 
   # check type just to be sure the subsetting didn't return a NULL
   expect_true(is.numeric(top_level_l2))
@@ -781,8 +781,8 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
   )
 
   top_level_l2 <- top_level_bst$eval_train()[[1L]][["value"]]
-  params_l2    <- param_bst$eval_train()[[1L]][["value"]]
-  both_l2      <- both_customized$eval_train()[[1L]][["value"]]
+  params_l2 <- param_bst$eval_train()[[1L]][["value"]]
+  both_l2 <- both_customized$eval_train()[[1L]][["value"]]
 
   # check type just to be sure the subsetting didn't return a NULL
   expect_true(is.numeric(top_level_l2))
@@ -1003,7 +1003,7 @@ test_that("lgb.train() works with early stopping for classification", {
   # train with early stopping #
   #############################
   early_stopping_rounds <- 5L
-  bst  <- lgb.train(
+  bst <- lgb.train(
     params = list(
       objective = "binary"
       , metric = "binary_error"
@@ -1115,7 +1115,7 @@ test_that("lgb.train() works with early stopping for classification with a metri
   #############################
   early_stopping_rounds <- 5L
   # the harsh max_depth guarantees that AUC improves over at least the first few iterations
-  bst_auc  <- lgb.train(
+  bst_auc <- lgb.train(
     params = list(
       objective = "binary"
       , metric = "auc"
@@ -1129,7 +1129,7 @@ test_that("lgb.train() works with early stopping for classification with a metri
       "valid1" = dvalid
     )
   )
-  bst_binary_error  <- lgb.train(
+  bst_binary_error <- lgb.train(
     params = list(
       objective = "binary"
       , metric = "binary_error"
@@ -1213,7 +1213,7 @@ test_that("lgb.train() works with early stopping for regression", {
   # train with early stopping #
   #############################
   early_stopping_rounds <- 5L
-  bst  <- lgb.train(
+  bst <- lgb.train(
     params = list(
       objective = "regression"
       , metric = "rmse"
@@ -1577,7 +1577,7 @@ test_that("lgb.train() works with early stopping for regression with a metric th
   # train with early stopping #
   #############################
   early_stopping_rounds <- 5L
-  bst  <- lgb.train(
+  bst <- lgb.train(
     params = list(
       objective = "regression"
       , metric = c(
