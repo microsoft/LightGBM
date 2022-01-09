@@ -861,7 +861,7 @@ print.lgb.Booster <- function(x, ...) {
 
   if (!handle_is_null) {
     obj <- x$params$objective
-    if (tolower(obj) == "none") {
+    if (obj == "none") {
       obj <- "custom"
     }
     num_class <- x$.__enclos_env__$private$num_class
