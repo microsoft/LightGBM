@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="src">
@@ -36,6 +36,9 @@
     </Filter>
     <Filter Include="include\LightGBM\utils\yamc">
       <UniqueIdentifier>{fa3b4166-a8fd-4030-b80d-c167089332c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\feature_engineering">
+      <UniqueIdentifier>{3ba2c4e7-ecef-4161-b3ca-efb9509064af}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -228,6 +231,9 @@
     <ClInclude Include="..\src\treelearner\linear_tree_learner.h">
       <Filter>src\treelearner</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\feature_engineering\encoder.hpp">
+      <Filter>src\feature_engineering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
@@ -325,6 +331,15 @@
     </ClCompile>
     <ClCompile Include="..\src\treelearner\linear_tree_learner.cpp">
       <Filter>src\treelearner</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\feature_engineering\category_feature_count_encoder.cpp">
+      <Filter>src\feature_engineering</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\feature_engineering\category_feature_target_encoder.cpp">
+      <Filter>src\feature_engineering</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\feature_engineering\category_feature_target_information_collector.cpp">
+      <Filter>src\feature_engineering</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
