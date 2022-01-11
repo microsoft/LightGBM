@@ -3248,7 +3248,7 @@ def test_goss_boosting_and_strategy_equivalent():
     }
     evals_result2 = {}
     gbm = lgb.train(params2, lgb_train,
-                    num_boost_round=50,
+                    num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result2)])
     np.testing.assert_allclose(evals_result1['valid_0']['l2'], evals_result2['valid_0']['l2'])
