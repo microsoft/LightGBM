@@ -611,7 +611,34 @@ def test_custom_objective_safety():
         bad_bst_multi.update(fobj=_bad_gradients)
 
 
-def test_training_with_pandas_nullable_dtypes():
+def test_regular_dtypes():
+    pd = pytest.importorskip('pandas')
+    target_dtypes = [
+        'uint8', 'uint16', 'uint32', 'uint64', 'int8', 'int16', 'int32', 'int64', 'float16', 'float32', 'float64', 'bool'
+    ]
+
+    # data as float64
+    X = np.random.randint(0, 11, size=(100, len(target_dtypes)))
+    X[:, -1] = X[:, -1] < 5  # bool
+    X = X.astype(np.float64)
+    y = np.random.rand(100)
+    ds = lgb.Dataset(X, y)
+    params = {'num_leaves': 15}
+    bst = lgb.train(params, ds, num_boost_round=5)
+    preds = bst.predict(X)
+
+    # data with different dtypes
+    df_dtypes = dict(enumerate(target_dtypes))
+    df = pd.DataFrame(X).astype(df_dtypes)
+    assert df.dtypes.tolist() == target_dtypes
+    ds2 = lgb.Dataset(df, y)
+    bst_different_dtypes = lgb.train(params, ds2, num_boost_round=5)
+    preds_different_dtypes = bst_different_dtypes.predict(df)
+
+    np.testing.assert_allclose(preds, preds_different_dtypes)
+
+
+def test_pandas_nullable_dtypes():
     pd = pytest.importorskip('pandas')
     rand_ints = np.random.randint(0, 2, size=100)
     unif_rands = np.random.rand(100)
