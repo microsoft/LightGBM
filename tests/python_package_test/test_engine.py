@@ -12,7 +12,7 @@ import numpy as np
 import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
-from sklearn.datasets import load_svmlight_file, make_multilabel_classification
+from sklearn.datasets import load_svmlight_file, make_multilabel_classification, make_regression
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
@@ -3227,7 +3227,7 @@ def test_force_split_with_feature_fraction(tmp_path):
 
 
 def test_goss_boosting_and_strategy_equivalent():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_regression(n_samples=10_000, n_features=10, n_informative=5)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
@@ -3238,7 +3238,7 @@ def test_goss_boosting_and_strategy_equivalent():
     }
     evals_result1 = {}
     gbm = lgb.train(params1, lgb_train,
-                    num_boost_round=50,
+                    num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result1)])
     params2 = {
@@ -3255,7 +3255,7 @@ def test_goss_boosting_and_strategy_equivalent():
 
 
 def test_sample_strategy_with_boosting():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_regression(n_samples=10_000, n_features=10, n_informative=5)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
@@ -3272,7 +3272,6 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 14
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3283,11 +3282,10 @@ def test_sample_strategy_with_boosting():
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
-                    num_boost_round=50,
+                    num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 12
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3302,7 +3300,6 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 12
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3317,7 +3314,6 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 12
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3332,7 +3328,6 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 7
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3347,5 +3342,4 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 12
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
