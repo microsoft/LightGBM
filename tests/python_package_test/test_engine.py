@@ -3268,7 +3268,7 @@ def test_sample_strategy_with_boosting():
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
-                    num_boost_round=50,
+                    num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
