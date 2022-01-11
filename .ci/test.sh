@@ -128,7 +128,7 @@ if [[ $TASK == "sdist" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
     fi
-    pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
+    pytest $BUILD_DIRECTORY/tests/python_package_test -s -vvv || exit -1
     exit 0
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
@@ -150,7 +150,7 @@ elif [[ $TASK == "bdist" ]]; then
         fi
     fi
     pip install --user $BUILD_DIRECTORY/python-package/dist/*.whl || exit -1
-    pytest $BUILD_DIRECTORY/tests || exit -1
+    pytest $BUILD_DIRECTORY/tests -s -vvv || exit -1
     exit 0
 fi
 
@@ -162,12 +162,12 @@ if [[ $TASK == "gpu" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
-        pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
+        pytest $BUILD_DIRECTORY/tests/python_package_test -s -vvv || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --gpu --opencl-include-dir="$AMDAPPSDK_PATH/include/" || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
-        pytest $BUILD_DIRECTORY/tests || exit -1
+        pytest $BUILD_DIRECTORY/tests -s -vvv || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
@@ -178,12 +178,12 @@ elif [[ $TASK == "cuda" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
-        pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
+        pytest $BUILD_DIRECTORY/tests/python_package_test -s -vvv || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
-        pytest $BUILD_DIRECTORY/tests || exit -1
+        pytest $BUILD_DIRECTORY/tests -s -vvv || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -DUSE_CUDA=ON ..
@@ -192,12 +192,12 @@ elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
-        pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
+        pytest $BUILD_DIRECTORY/tests/python_package_test -s -vvv || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --mpi || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
-        pytest $BUILD_DIRECTORY/tests || exit -1
+        pytest $BUILD_DIRECTORY/tests -s -vvv || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
