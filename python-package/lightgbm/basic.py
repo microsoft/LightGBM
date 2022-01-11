@@ -552,7 +552,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                              "Did not expect the data types in the following fields: "
                              f"{bad_index_cols_str}")
         target_dtype = _find_commmon_dtype(data.dtypes)
-        data = data.to_numpy(dtype=target_dtype, na_value=np.nan)
+        data = data.astype(target_dtype).values
     else:
         if feature_name == 'auto':
             feature_name = None

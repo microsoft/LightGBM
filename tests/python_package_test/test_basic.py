@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file
+from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
@@ -611,69 +612,87 @@ def test_custom_objective_safety():
         bad_bst_multi.update(fobj=_bad_gradients)
 
 
-def test_regular_dtypes():
+def test_numpy_regular_dtypes():
     pd = pytest.importorskip('pandas')
-    target_dtypes = [
-        'uint8', 'uint16', 'uint32', 'uint64', 'int8', 'int16', 'int32', 'int64', 'float16', 'float32', 'float64', 'bool'
-    ]
+    uints = ['uint8', 'uint16', 'uint32', 'uint64']
+    ints = ['int8', 'int16', 'int32', 'int64']
+    bool_and_floats = ['bool', 'float16', 'float32', 'float64']
+    rng = np.random.RandomState(42)
 
+    n_samples = 100
     # data as float64
-    X = np.random.randint(0, 11, size=(100, len(target_dtypes)))
-    X[:, -1] = X[:, -1] < 5  # bool
-    X = X.astype(np.float64)
-    y = np.random.rand(100)
-    ds = lgb.Dataset(X, y)
-    params = {'num_leaves': 15}
+    df = pd.DataFrame({
+        'x1': rng.randint(0, 2, n_samples),
+        'x2': rng.randint(1, 3, n_samples),
+        'x3': 10 * rng.randint(1, 3, n_samples),
+        'x4': 100 * rng.randint(1, 3, n_samples),
+    })
+    df = df.astype(np.float64)
+    y = df['x1'] * (df['x2'] + df['x3'] + df['x4'])
+    ds = lgb.Dataset(df, y)
+    params = {'objective': 'l2', 'num_leaves': 31, 'min_child_samples': 1}
     bst = lgb.train(params, ds, num_boost_round=5)
-    preds = bst.predict(X)
+    preds = bst.predict(df)
 
-    # data with different dtypes
-    df_dtypes = dict(enumerate(target_dtypes))
-    df = pd.DataFrame(X).astype(df_dtypes)
-    assert df.dtypes.tolist() == target_dtypes
-    ds2 = lgb.Dataset(df, y)
-    bst_different_dtypes = lgb.train(params, ds2, num_boost_round=5)
-    preds_different_dtypes = bst_different_dtypes.predict(df)
+    # test all features were used
+    assert bst.trees_to_dataframe()['split_feature'].nunique() == df.shape[1]
+    # test the score is better than predicting the mean
+    baseline = np.full_like(y, y.mean())
+    assert mean_squared_error(y, preds) < mean_squared_error(y, baseline)
 
-    np.testing.assert_allclose(preds, preds_different_dtypes)
+    # test all predictions are equal using different input dtypes
+    for target_dtypes in [uints, ints, bool_and_floats]:
+        df2 = df.astype({f'x{i}': dtype for i, dtype in enumerate(target_dtypes, start=1)})
+        assert df2.dtypes.tolist() == target_dtypes
+        ds2 = lgb.Dataset(df2, y)
+        bst2 = lgb.train(params, ds2, num_boost_round=5)
+        preds2 = bst2.predict(df2)
+        np.testing.assert_allclose(preds, preds2)
 
 
 def test_pandas_nullable_dtypes():
     pd = pytest.importorskip('pandas')
-    rand_ints = np.random.randint(0, 2, size=100)
-    unif_rands = np.random.rand(100)
+    rng = np.random.RandomState(0)
     df = pd.DataFrame(
         {
-            'x1': rand_ints,
-            'x2': unif_rands,
-            'x3': unif_rands < 0.5,
-            'x4': pd.arrays.SparseArray(rand_ints),
+            'x1': rng.randint(1, 3, size=100),
+            'x2': np.linspace(-1, 1, 100),
+            'x3': pd.arrays.SparseArray(rng.randint(0, 11, size=100)),
+            'x4': rng.rand(100) < 0.5,
         }
     )
     # introduce some missing values
     df.loc[1, 'x1'] = np.nan
     df.loc[2, 'x2'] = np.nan
-    df.loc[3, 'x3'] = np.nan
+    df.loc[3, 'x4'] = np.nan
     # the previous line turns x3 into object dtype in recent versions of pandas
-    df['x3'] = df['x3'].astype(np.float64)
-    y = np.random.rand(100)
+    df['x4'] = df['x4'].astype(np.float64)
+    y = df['x1'] * df['x2'] + df['x3'] * (1 + df['x4'])
+    y = y.fillna(0)
 
     # train with regular dtypes
-    params = {'num_leaves': 15}
+    params = {'objective': 'l2', 'num_leaves': 31, 'min_child_samples': 1}
     ds = lgb.Dataset(df, y)
     bst = lgb.train(params, ds, num_boost_round=5)
+    preds = bst.predict(df)
 
     # convert to nullable dtypes
     df2 = df.copy()
     df2['x1'] = df2['x1'].astype('Int32')
     df2['x2'] = df2['x2'].astype('Float64')
-    df2['x3'] = df2['x3'].astype('boolean')
+    df2['x4'] = df2['x4'].astype('boolean')
 
     # test training succeeds
     ds_nullable_dtypes = lgb.Dataset(df2, y)
     bst_nullable_dtypes = lgb.train(params, ds_nullable_dtypes, num_boost_round=5)
+    preds_nullable_dtypes = bst_nullable_dtypes.predict(df2)
+
+    trees_df = bst.trees_to_dataframe()
+    # test all features were used
+    assert trees_df['split_feature'].nunique() == df.shape[1]
+    # test the score is better than predicting the mean
+    baseline = np.full_like(y, y.mean())
+    assert mean_squared_error(y, preds) < mean_squared_error(y, baseline)
 
     # test equal predictions
-    preds = bst.predict(df)
-    preds_nullable_dtypes = bst_nullable_dtypes.predict(df2)
     np.testing.assert_allclose(preds, preds_nullable_dtypes)
