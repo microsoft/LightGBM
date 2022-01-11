@@ -145,14 +145,25 @@ using json11::Json;
     std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>> category_target_information_;
   };
 
-  class CategoryFeatureEncoderDeserializer {
-  public:
-    static CategoryFeatureEncoder* ParseFromJsonString(std::string content) {
-      std::string error_message;
-      json11::Json inputJson = json11::Json::parse(content, &error_message);
+  struct EncodeResult
+  {
+	  double value;
+	  std::string feature_name;
+  };
 
-      return nullptr;
-    }
+  class CategoryFeatureEncoderManager {
+  public:
+	  CategoryFeatureEncoderManager();
+
+	  std::vector<EncodeResult> Encode(int fold_id, int feature_id, double feature_value);
+
+	  std::vector<EncodeResult> Encode(int feature_id, double feature_value);
+
+  private:
+	  // <fold_id, <feature_id, Encoders>>
+	  std::vector<std::unordered_map<int, CategoryFeatureEncoder>> categoryFeatureEncoders_;
+
+	  double prior_;
   };
 }
 
