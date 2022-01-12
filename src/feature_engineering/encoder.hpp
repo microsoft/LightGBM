@@ -153,17 +153,22 @@ using json11::Json;
 
   class CategoryFeatureEncoderManager {
   public:
-	  CategoryFeatureEncoderManager();
-
 	  std::vector<EncodeResult> Encode(int fold_id, int feature_id, double feature_value);
 
 	  std::vector<EncodeResult> Encode(int feature_id, double feature_value);
 
+	  std::string DumpToJsonString();
+
+	  static CategoryFeatureEncoderManager Create(CategoryFeatureTargetInformationCollector informationCollector);
+
+	  static CategoryFeatureEncoderManager FromJsonString(std::string input);
+
   private:
 	  // <fold_id, <feature_id, Encoders>>
-	  std::vector<std::unordered_map<int, CategoryFeatureEncoder>> categoryFeatureEncoders_;
+	  std::vector<std::unordered_map<int, std::vector<CategoryFeatureEncoder>>> train_categoryFeatureEncoders_;
 
-	  double prior_;
+	  // <feature_id, Encoders>
+	  std::unordered_map<int, std::vector<CategoryFeatureEncoder>> categoryFeatureEncoders_;
   };
 }
 

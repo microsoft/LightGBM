@@ -307,6 +307,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\feature_engineering\category_feature_count_encoder.cpp" />
+    <ClCompile Include="..\src\feature_engineering\category_feature_encoder_manager.cpp" />
     <ClCompile Include="..\src\feature_engineering\category_feature_target_encoder.cpp" />
     <ClCompile Include="..\src\feature_engineering\category_feature_target_information_collector.cpp" />
     <ClCompile Include="..\src\application\application.cpp" />
