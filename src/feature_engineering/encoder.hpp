@@ -14,7 +14,7 @@
 namespace LightGBM {
 
 using json11::Json;
-
+  
   class CategoryFeatureEncoder {
   public:
     CategoryFeatureEncoder(const std::string feature_name) : feature_name_(feature_name){}
@@ -157,18 +157,25 @@ using json11::Json;
 
 	  std::vector<EncodeResult> Encode(int feature_id, double feature_value);
 
-	  std::string DumpToJsonString();
+	  std::string DumpToModelStringInJsonFormat();
 
-	  static CategoryFeatureEncoderManager Create(CategoryFeatureTargetInformationCollector informationCollector);
+	  static CategoryFeatureEncoderManager RecoverFromModelStringInJsonFormat(std::string input);
 
-	  static CategoryFeatureEncoderManager FromJsonString(std::string input);
+	  static CategoryFeatureEncoderManager Create(json11::Json::object settings, CategoryFeatureTargetInformationCollector informationCollector, std::vector<int> categorical_features);
 
   private:
 	  // <fold_id, <feature_id, Encoders>>
-	  std::vector<std::unordered_map<int, std::vector<CategoryFeatureEncoder>>> train_categoryFeatureEncoders_;
+	  std::vector<std::unordered_map<int, std::vector<CategoryFeatureEncoder>>> train_category_feature_encoders_;
 
 	  // <feature_id, Encoders>
-	  std::unordered_map<int, std::vector<CategoryFeatureEncoder>> categoryFeatureEncoders_;
+	  std::unordered_map<int, std::vector<CategoryFeatureEncoder>> category_feature_encoders_;
+
+	  // property name keys
+	  const std::string train_category_feature_encoders_key = "train_category_feature_encoders";
+	  const std::string category_feature_encoders_key = "category_feature_encoders";
+	  const std::string encorders_key = "encoders";
+	  const std::string feature_id_key = "fid";
+	  const std::string fold_id_key = "fold_id";
   };
 }
 
