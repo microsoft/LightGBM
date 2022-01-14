@@ -3249,8 +3249,10 @@ def test_record_evaluation_with_cv():
     ds = lgb.Dataset(X, y)
     eval_result = {}
     callbacks = [lgb.record_evaluation(eval_result)]
-    params = {'objective': 'l2', 'num_leaves': 3}
+    metrics = ['l2', 'rmse']
+    params = {'objective': 'l2', 'num_leaves': 3, 'metric': metrics}
     cv_hist = lgb.cv(params, ds, num_boost_round=5, stratified=False, callbacks=callbacks, eval_train_metric=True)
     assert list(eval_result.keys()) == ['train', 'valid']
     for dataset in ('train', 'valid'):
-        assert cv_hist[f'{dataset} l2-mean'] == eval_result[dataset]['l2']
+        for metric in metrics:
+            assert cv_hist[f'{dataset} {metric}-mean'] == eval_result[dataset][metric]
