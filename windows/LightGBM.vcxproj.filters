@@ -231,7 +231,7 @@
     <ClInclude Include="..\src\treelearner\linear_tree_learner.h">
       <Filter>src\treelearner</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\feature_engineering\encoder.hpp">
+    <ClInclude Include="..\src\feature_engineering\category_feature_encoder.hpp">
       <Filter>src\feature_engineering</Filter>
     </ClInclude>
   </ItemGroup>
@@ -342,6 +342,9 @@
       <Filter>src\feature_engineering</Filter>
     </ClCompile>
     <ClCompile Include="..\src\feature_engineering\category_feature_encoder_manager.cpp">
+      <Filter>src\feature_engineering</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\feature_engineering\category_feature_encoder.cpp">
       <Filter>src\feature_engineering</Filter>
     </ClCompile>
   </ItemGroup>

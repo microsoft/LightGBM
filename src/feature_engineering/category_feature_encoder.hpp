@@ -17,52 +17,42 @@ using json11::Json;
   
   class CategoryFeatureEncoder {
   public:
-    CategoryFeatureEncoder(const std::string feature_name) : feature_name_(feature_name){}
+	CategoryFeatureEncoder(int type) : type_(type){}
+
+    CategoryFeatureEncoder(const std::string feature_name, int type) : feature_name_(feature_name), type_(type) {}
 
     std::string GetFeatureName() {
       return feature_name_;
     }
 
-    virtual double Encode(double feature_value) const = 0;
+    virtual double Encode(double feature_value) = 0;
 
-    virtual json11::Json::object DumpToJsonObject() {
-      json11::Json::object result {
-        {encoder_type_key, json11::Json(default_encoder_type)},
-        {feature_name_key, json11::Json(feature_name_)},
-      };
+	virtual json11::Json::object DumpToJsonObject() = 0;
 
-      return result;
-    }
+	static std::unique_ptr<CategoryFeatureEncoder> RecoverFromModelStringInJsonFormat(json11::Json input);
 
   protected:
     std::string feature_name_;
-
-    // property name keys
-    const std::string feature_name_key = "feature_name";
-    const std::string encoder_type_key = "encoder_type";
-
-    // constant value
-    const int default_encoder_type = 0;
+	int type_;
   };
 
   class CategoryFeatureCountEncoder : public CategoryFeatureEncoder {
   public:
-    CategoryFeatureCountEncoder(std::string feature_name, std::unordered_map<int, double> count_information) : CategoryFeatureEncoder(feature_name), count_information_(count_information){}
+	CategoryFeatureCountEncoder(std::unordered_map<int, double> count_information) : CategoryFeatureEncoder(count_encoder_type), count_information_(count_information) {}
 
-    double Encode(double feature_value);
+    CategoryFeatureCountEncoder(std::string feature_name, std::unordered_map<int, double> count_information) : CategoryFeatureEncoder(feature_name, count_encoder_type), count_information_(count_information){}
 
-    json11::Json::object DumpToJsonObject();
+	double Encode(double feature_value) override;
+
+    json11::Json::object DumpToJsonObject() override;
+
+	static std::unique_ptr<CategoryFeatureEncoder> RecoverFromModelStringInJsonFormat(json11::Json input);
 
     // public constant value
-    const int count_encoder_type = 1;
+    static const int count_encoder_type = 1;
 
   private:
     std::unordered_map<int, double> count_information_;
-
-    // property name keys
-    const std::string count_information_key = "count_information";
-    const std::string count_information_category_key = "cat";
-    const std::string count_information_value_key = "value";
 
     // constant value
     const double default_value = 0.0;
@@ -70,29 +60,26 @@ using json11::Json;
 
   class CategoryFeatureTargetEncoder : public CategoryFeatureEncoder {
   public:
+	CategoryFeatureTargetEncoder(double prior, double prior_weight, double total_count, std::unordered_map<int, double> count_information)
+		: CategoryFeatureEncoder(target_encoder_type), prior_(prior), prior_weight_(prior_weight), total_count_(total_count), count_information_(count_information) {}
+
     CategoryFeatureTargetEncoder(std::string feature_name, double prior, double prior_weight, double total_count, std::unordered_map<int, double> count_information)
-      : CategoryFeatureEncoder(feature_name), prior_(prior), prior_weight_(prior_weight), total_count_(total_count), count_information_(count_information) {}
+      : CategoryFeatureEncoder(feature_name, target_encoder_type), prior_(prior), prior_weight_(prior_weight), total_count_(total_count), count_information_(count_information) {}
 
-    double Encode(double feature_value);
+    double Encode(double feature_value) override;
 
-    json11::Json::object DumpToJsonObject();
+    json11::Json::object DumpToJsonObject() override;
+
+	static std::unique_ptr<CategoryFeatureEncoder> RecoverFromModelStringInJsonFormat(json11::Json input);
 
     // public constant value
-    const int target_encoder_type = 1;
+    static const int target_encoder_type = 1;
 
   private:
     std::unordered_map<int, double> count_information_;
     double prior_;
     double prior_weight_;
     double total_count_;
-
-    // property name keys
-    const std::string count_information_key = "count_information";
-    const std::string count_information_category_key = "cat";
-    const std::string count_information_value_key = "value";
-    const std::string count_prior_key = "prior";
-    const std::string count_prior_weight_key = "prior_weight";
-    const std::string count_total_count_key = "total_count";
 
     // constant value
     const double default_value = 0.0;
@@ -118,7 +105,7 @@ using json11::Json;
 
     void HandleRecord(int fold_id, const std::vector<double>& record, double label);
 
-    void AppendFrom(CategoryFeatureTargetInformationCollector collector);
+    void AppendFrom(CategoryFeatureTargetInformationCollector& collector);
 
     std::vector<data_size_t> GetCounts() {
       return count_;
@@ -153,29 +140,25 @@ using json11::Json;
 
   class CategoryFeatureEncoderManager {
   public:
+	  CategoryFeatureEncoderManager(std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>>& train_category_feature_encoders, std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>& category_feature_encoders) 
+	  : train_category_feature_encoders_(train_category_feature_encoders), category_feature_encoders_(category_feature_encoders) {};
+
 	  std::vector<EncodeResult> Encode(int fold_id, int feature_id, double feature_value);
 
 	  std::vector<EncodeResult> Encode(int feature_id, double feature_value);
 
 	  std::string DumpToModelStringInJsonFormat();
 
-	  static CategoryFeatureEncoderManager RecoverFromModelStringInJsonFormat(std::string input);
+	  static std::unique_ptr<CategoryFeatureEncoderManager> RecoverFromModelStringInJsonFormat(std::string input);
 
-	  static CategoryFeatureEncoderManager Create(json11::Json::object settings, CategoryFeatureTargetInformationCollector informationCollector, std::vector<int> categorical_features);
+	  // static std::unique_ptr<CategoryFeatureEncoderManager> Create(json11::Json::object settings, CategoryFeatureTargetInformationCollector& informationCollector, std::vector<int>& categorical_features);
 
   private:
 	  // <fold_id, <feature_id, Encoders>>
-	  std::vector<std::unordered_map<int, std::vector<CategoryFeatureEncoder>>> train_category_feature_encoders_;
+	  std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>>& train_category_feature_encoders_;
 
 	  // <feature_id, Encoders>
-	  std::unordered_map<int, std::vector<CategoryFeatureEncoder>> category_feature_encoders_;
-
-	  // property name keys
-	  const std::string train_category_feature_encoders_key = "train_category_feature_encoders";
-	  const std::string category_feature_encoders_key = "category_feature_encoders";
-	  const std::string encorders_key = "encoders";
-	  const std::string feature_id_key = "fid";
-	  const std::string fold_id_key = "fold_id";
+	  std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>& category_feature_encoders_;
   };
 }
 

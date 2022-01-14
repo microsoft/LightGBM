@@ -288,7 +288,7 @@
     <ClInclude Include="..\src\metric\xentropy_metric.hpp" />
     <ClInclude Include="..\src\network\linkers.h" />
     <ClInclude Include="..\src\network\socket_wrapper.hpp" />
-    <ClInclude Include="..\src\feature_engineering\encoder.hpp" />
+    <ClInclude Include="..\src\feature_engineering\category_feature_encoder.hpp" />
     <ClInclude Include="..\src\objective\binary_objective.hpp" />
     <ClInclude Include="..\src\objective\rank_objective.hpp" />
     <ClInclude Include="..\src\objective\regression_objective.hpp" />
@@ -307,6 +307,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\feature_engineering\category_feature_count_encoder.cpp" />
+    <ClCompile Include="..\src\feature_engineering\category_feature_encoder.cpp" />
     <ClCompile Include="..\src\feature_engineering\category_feature_encoder_manager.cpp" />
     <ClCompile Include="..\src\feature_engineering\category_feature_target_encoder.cpp" />
     <ClCompile Include="..\src\feature_engineering\category_feature_target_information_collector.cpp" />
