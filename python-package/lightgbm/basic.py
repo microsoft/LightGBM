@@ -502,17 +502,17 @@ def c_int_array(data):
 
 
 def _get_bad_pandas_dtypes(dtypes):
-    return [i for i, dtype in enumerate(dtypes) if not is_numeric_dtype(dtype)]
+    def is_allowed_numpy_dtype(dtype):
+        return issubclass(dtype, (np.integer, np.floating, np.bool_)) and not issubclass(dtype, (np.timedelta64, np.float128))
+
+    return [i for i, dtype in enumerate(dtypes) if not is_allowed_numpy_dtype(dtype.type)]
 
 
 def _find_commmon_dtype(dtypes):
-    f64_dtypes = {'float64', 'Float64'}
-    target_dtype = 'float32'
+    target_dtype = np.float32
     for dtype in dtypes:
-        if is_dtype_sparse(dtype):
-            dtype = dtype.subtype
-        if dtype in f64_dtypes:
-            target_dtype = 'float64'
+        if dtype.type == np.float64:
+            target_dtype = np.float64
             break
     return target_dtype
 
@@ -552,7 +552,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                              "Did not expect the data types in the following fields: "
                              f"{bad_index_cols_str}")
         target_dtype = _find_commmon_dtype(data.dtypes)
-        data = data.astype(target_dtype).values
+        data = data.astype(target_dtype, copy=False).values
     else:
         if feature_name == 'auto':
             feature_name = None
