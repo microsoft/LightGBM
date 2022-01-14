@@ -3224,3 +3224,33 @@ def test_force_split_with_feature_fraction(tmp_path):
     for tree in tree_info:
         tree_structure = tree["tree_structure"]
         assert tree_structure['split_feature'] == 0
+
+
+
+def test_record_evaluation_with_train():
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    eval_result = {}
+    callbacks = [lgb.record_evaluation(eval_result)]
+    params = {'objective': 'l2', 'num_leaves': 3}
+    num_boost_round = 5
+    bst = lgb.train(params, ds, num_boost_round=num_boost_round, valid_sets=[ds], callbacks=callbacks)
+    assert list(eval_result.keys()) == ['training']
+    train_mses = []
+    for i in range(num_boost_round):
+        pred = bst.predict(X, num_iteration=i+1)
+        mse = mean_squared_error(y, pred)
+        train_mses.append(mse)
+    np.testing.assert_allclose(eval_result['training']['l2'], train_mses)
+
+
+def test_record_evaluation_with_cv():
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    eval_result = {}
+    callbacks = [lgb.record_evaluation(eval_result)]
+    params = {'objective': 'l2', 'num_leaves': 3}
+    cv_hist = lgb.cv(params, ds, num_boost_round=5, stratified=False, callbacks=callbacks, eval_train_metric=True)
+    assert list(eval_result.keys()) == ['train', 'valid']
+    for dataset in ('train', 'valid'):
+        assert cv_hist[f'{dataset} l2-mean'] == eval_result[dataset]['l2']
