@@ -3226,7 +3226,6 @@ def test_force_split_with_feature_fraction(tmp_path):
         assert tree_structure['split_feature'] == 0
 
 
-
 def test_record_evaluation_with_train():
     X, y = make_synthetic_regression()
     ds = lgb.Dataset(X, y)
@@ -3238,7 +3237,7 @@ def test_record_evaluation_with_train():
     assert list(eval_result.keys()) == ['training']
     train_mses = []
     for i in range(num_boost_round):
-        pred = bst.predict(X, num_iteration=i+1)
+        pred = bst.predict(X, num_iteration=i + 1)
         mse = mean_squared_error(y, pred)
         train_mses.append(mse)
     np.testing.assert_allclose(eval_result['training']['l2'], train_mses)
