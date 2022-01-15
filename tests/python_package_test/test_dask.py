@@ -539,11 +539,11 @@ def test_classifier_custom_objective(output, task, cluster):
             p2_proba = 1.0 / (1.0 + np.exp(-p2_raw))
             p2_class = (p2_proba > 0.5).astype(np.int64)
         elif task == 'multiclass-classification':
-            p1_proba = np.exp(p1_raw)/np.sum(np.exp(p1_raw), axis=1).reshape(-1, 1)
+            p1_proba = np.exp(p1_raw) / np.sum(np.exp(p1_raw), axis=1).reshape(-1, 1)
             p1_class = p1_proba.argmax(axis=1)
-            p1_proba_local = np.exp(p1_raw_local)/np.sum(np.exp(p1_raw_local), axis=1).reshape(-1, 1)
+            p1_proba_local = np.exp(p1_raw_local) / np.sum(np.exp(p1_raw_local), axis=1).reshape(-1, 1)
             p1_class_local = p1_proba_local.argmax(axis=1)
-            p2_proba = np.exp(p2_raw)/np.sum(np.exp(p2_raw), axis=1).reshape(-1, 1)
+            p2_proba = np.exp(p2_raw) / np.sum(np.exp(p2_raw), axis=1).reshape(-1, 1)
             p2_class = p2_proba.argmax(axis=1)
 
         # function should have been preserved
