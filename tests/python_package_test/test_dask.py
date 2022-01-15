@@ -526,22 +526,24 @@ def test_classifier_custom_objective(output, task, cluster):
         p1_raw = dask_classifier.predict(dX, raw_score=True).compute()
         p1_raw_local = dask_classifier_local.predict(X, raw_score=True)
 
-        # with a custom objective, prediction result is a raw score instead of predicted class
-        p1_proba = 1.0 / (1.0 + np.exp(-p1_raw))
-        p1_proba_local = 1.0 / (1.0 + np.exp(-p1_raw_local))
-
         local_classifier = lgb.LGBMClassifier(**params)
         local_classifier.fit(X, y, sample_weight=w)
         p2_raw = local_classifier.predict(X, raw_score=True)
-        p2_proba = 1.0 / (1.0 + np.exp(-p2_raw))
 
+        # with a custom objective, prediction result is a raw score instead of predicted class
         if task == 'binary-classification':
+            p1_proba = 1.0 / (1.0 + np.exp(-p1_raw))
             p1_class = (p1_proba > 0.5).astype(np.int64)
+            p1_proba_local = 1.0 / (1.0 + np.exp(-p1_raw_local))
             p1_class_local = (p1_proba_local > 0.5).astype(np.int64)
+            p2_proba = 1.0 / (1.0 + np.exp(-p2_raw))
             p2_class = (p2_proba > 0.5).astype(np.int64)
         elif task == 'multiclass-classification':
+            p1_proba = np.exp(p1_raw)/np.sum(np.exp(p1_raw), axis=1).reshape(-1, 1)
             p1_class = p1_proba.argmax(axis=1)
+            p1_proba_local = np.exp(p1_raw_local)/np.sum(np.exp(p1_raw_local), axis=1).reshape(-1, 1)
             p1_class_local = p1_proba_local.argmax(axis=1)
+            p2_proba = np.exp(p2_raw)/np.sum(np.exp(p2_raw), axis=1).reshape(-1, 1)
             p2_class = p2_proba.argmax(axis=1)
 
         # function should have been preserved
@@ -554,7 +556,7 @@ def test_classifier_custom_objective(output, task, cluster):
         assert_eq(p2_class, y)
 
         # probability estimates should be similar
-        assert_eq(p1_proba, p2_proba, atol=0.04)
+        assert_eq(p1_proba, p2_proba, atol=0.03)
         assert_eq(p1_proba, p1_proba_local)
 
 
