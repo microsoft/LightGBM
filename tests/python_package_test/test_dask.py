@@ -555,6 +555,7 @@ def test_classifier_custom_objective(output, task, cluster):
 
         # probability estimates should be similar
         assert_eq(p1_proba, p2_proba, atol=0.04)
+        assert_eq(p1_proba, p1_proba_local)
 
 
 def test_group_workers_by_host():
@@ -847,8 +848,9 @@ def test_regressor_custom_objective(output, cluster):
         assert_eq(p1, p1_local)
 
         # predictions should be better than random
-        assert_eq(p1, y, rtol=0.5, atol=50.)
-        assert_eq(p2, y, rtol=0.5, atol=50.)
+        assert_precision = {"rtol": 0.5, "atol": 50.}
+        assert_eq(p1, y, **assert_precision)
+        assert_eq(p2, y, **assert_precision)
 
 
 @pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])
@@ -1011,8 +1013,7 @@ def test_ranker_custom_objective(output, cluster):
 
         # distributed ranker should be able to rank decently well with the least-squares objective
         # and should have high rank correlation with scores from serial ranker.
-        dcor = spearmanr(rnkvec_dask, y).correlation
-        assert dcor > 0.6
+        assert spearmanr(rnkvec_dask, y).correlation > 0.6
         assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.8
         assert_eq(rnkvec_dask, rnkvec_dask_local)
 
