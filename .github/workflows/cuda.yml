@@ -26,7 +26,7 @@ jobs:
           - method: source
             compiler: gcc
             python_version: 3.7
-            cuda_version: "11.4.2"
+            cuda_version: "11.5.0"
           - method: pip
             compiler: clang
             python_version: 3.8

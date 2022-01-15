@@ -209,7 +209,7 @@ jobs:
         run: |
           cd R-package/tests
           exit_code=0
-          RDscript${{ matrix.r_customization }} testthat.R >> tests.log 2>&1 || exit_code=1
+          RDscript${{ matrix.r_customization }} testthat.R >> tests.log 2>&1 || exit_code=-1
           cat ./tests.log
           exit ${exit_code}
   test-r-debian-clang:
