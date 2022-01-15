@@ -1548,7 +1548,7 @@ def test_refit():
 def test_refit_dataset_params():
     # check refit accepts dataset_params
     X, y = load_breast_cancer(return_X_y=True)
-    lgb_train = lgb.Dataset(X, y)
+    lgb_train = lgb.Dataset(X, y, init_score=np.zeros(y.size))
     train_params = {
         'objective': 'binary',
         'verbose': -1,
@@ -1567,6 +1567,7 @@ def test_refit_dataset_params():
         label=y,
         weight=refit_weight,
         dataset_params=dataset_params,
+        decay_rate=0.0,
     )
     weight_err_pred = log_loss(y, new_gbm.predict(X))
     train_set_params = new_gbm.train_set.get_params()
