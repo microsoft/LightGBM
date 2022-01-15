@@ -439,17 +439,19 @@ class RegressionPoissonLoss: public RegressionL2loss {
    */
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
+    double exp_max_delta_step_ = std::exp(max_delta_step_);
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>(std::exp(score[i]) - label_[i]);
-        hessians[i] = static_cast<score_t>(std::exp(score[i] + max_delta_step_));
+        double exp_score = std::exp(score[i]);
+        gradients[i] = static_cast<score_t>(exp_score - label_[i]);
+        hessians[i] = static_cast<score_t>(exp_score * exp_max_delta_step_);
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>((std::exp(score[i]) - label_[i]) * weights_[i]);
-        hessians[i] = static_cast<score_t>(std::exp(score[i] + max_delta_step_) * weights_[i]);
+        gradients[i] = static_cast<score_t>((exp_score - label_[i]) * weights_[i]);
+        hessians[i] = static_cast<score_t>(exp_score * exp_max_delta_step_ * weights_[i]);
       }
     }
   }
@@ -689,14 +691,16 @@ class RegressionGammaLoss : public RegressionPoissonLoss {
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>(1.0 - label_[i] * std::exp(-score[i]));
-        hessians[i] = static_cast<score_t>(label_[i] * std::exp(-score[i]));
+        double exp_score = std::exp(-score[i]);
+        gradients[i] = static_cast<score_t>(1.0 - label_[i] * exp_score);
+        hessians[i] = static_cast<score_t>(label_[i] * exp_score);
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>((1.0 - label_[i] * std::exp(-score[i])) * weights_[i]);
-        hessians[i] = static_cast<score_t>(label_[i] * std::exp(-score[i]) * weights_[i]);
+        double exp_score = std::exp(-score[i]);
+        gradients[i] = static_cast<score_t>((1.0 - label_[i] * exp_score) * weights_[i]);
+        hessians[i] = static_cast<score_t>(label_[i] * exp_score * weights_[i]);
       }
     }
   }
@@ -725,16 +729,20 @@ class RegressionTweedieLoss: public RegressionPoissonLoss {
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>(-label_[i] * std::exp((1 - rho_) * score[i]) + std::exp((2 - rho_) * score[i]));
-        hessians[i] = static_cast<score_t>(-label_[i] * (1 - rho_) * std::exp((1 - rho_) * score[i]) +
-          (2 - rho_) * std::exp((2 - rho_) * score[i]));
+        double exp_1_score = std::exp((1 - rho_) * score[i]);
+        double exp_2_score = std::exp((2 - rho_) * score[i]);
+        gradients[i] = static_cast<score_t>(-label_[i] * exp_1_score + exp_2_score);
+        hessians[i] = static_cast<score_t>(-label_[i] * (1 - rho_) * exp_1_score +
+          (2 - rho_) * exp_2_score);
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>((-label_[i] * std::exp((1 - rho_) * score[i]) + std::exp((2 - rho_) * score[i])) * weights_[i]);
-        hessians[i] = static_cast<score_t>((-label_[i] * (1 - rho_) * std::exp((1 - rho_) * score[i]) +
-          (2 - rho_) * std::exp((2 - rho_) * score[i])) * weights_[i]);
+        double exp_1_score = std::exp((1 - rho_) * score[i]);
+        double exp_2_score = std::exp((2 - rho_) * score[i]);
+        gradients[i] = static_cast<score_t>((-label_[i] * exp_1_score + exp_2_score) * weights_[i]);
+        hessians[i] = static_cast<score_t>((-label_[i] * (1 - rho_) * exp_1_score +
+          (2 - rho_) * exp_2_score) * weights_[i]);
       }
     }
   }
