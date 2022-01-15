@@ -3272,6 +3272,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret < 10000
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3286,6 +3287,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret < 10000
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3300,6 +3302,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret < 10000
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3314,6 +3317,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret < 10000
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3328,6 +3332,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret < 10000
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3342,4 +3347,5 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret < 10000
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
