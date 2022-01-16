@@ -13,6 +13,7 @@
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/utils/common.h>
+#include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
@@ -29,6 +30,8 @@
 #include "application/predictor.hpp"
 #include <LightGBM/utils/yamc/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/yamc/yamc_shared_lock.hpp>
+
+using json11::Json;
 
 namespace LightGBM {
 
@@ -1594,6 +1597,16 @@ int LGBM_BoosterLoadModelFromString(
   API_END();
 }
 
+// extracts the value for key in a parameter line. E.g. for the key boosting and
+// a line like `[boosting: gbdt]` (without newline character), the extracted value would be "gbdt".
+std::string extract_param(std::string key, std::string line) {
+  std::string prefix = "[" + key + ": ";
+  std::string suffix = "]";
+  std::string prefix_replaced = line.replace(line.begin(), line.begin() + prefix.length(), "");
+  std::string suffix_replaced = prefix_replaced.replace(prefix_replaced.end() - suffix.length(), prefix_replaced.end(), "");
+  return suffix_replaced;
+}
+
 int LGBM_BoosterGetConfig(
   BoosterHandle handle,
   int64_t buffer_len,
@@ -1602,12 +1615,37 @@ int LGBM_BoosterGetConfig(
 ) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  // GBDT* ref_gbdt = reinterpret_cast<GBDT*>(ref_booster);
   std::string params = ref_booster->GetBoosting()->loaded_parameter_;
-  // std::string params = "abc";
-  *out_len = static_cast<int64_t>(params.size()) + 1;
+
+  // Converts parameters to Json
+  Json::object obj = Json::object{};
+  std::stringstream input_stream(params);
+  std::string line;
+
+  if (out_str != NULL)
+  {
+    while(std::getline(input_stream, line, '\n')){
+      if (line.rfind("[boosting: ", 0) == 0) {
+        obj["boosting"] = Json{extract_param("boosting", line)};
+      } else if (line.rfind("[num_iterations: ", 0) == 0) {
+        obj["num_iterations"] = Json{std::stoi(extract_param("num_iterations", line))};
+      } else if (line.rfind("[num_leaves: ", 0) == 0) {
+        obj["num_leaves"] = Json{std::stoi(extract_param("num_leaves", line))};
+      } else if (line.rfind("[learning_rate: ", 0) == 0) {
+        obj["learning_rate"] = Json{std::stod(extract_param("learning_rate", line))};
+      } else if (line.rfind("[tree_learner: ", 0) == 0) {
+        obj["tree_learner"] = Json{extract_param("tree_learner", line)};
+      }
+      // TODO: more params to be extracted
+    }
+  }
+
+  Json params_json = Json{obj};
+  std::string params_json_str = params_json.dump();
+
+  *out_len = static_cast<int64_t>(params_json_str.size()) + 1;
   if (*out_len <= buffer_len) {
-    std::memcpy(out_str, params.c_str(), *out_len);
+    std::memcpy(out_str, params_json_str.c_str(), *out_len);
   }
   API_END();
 }
