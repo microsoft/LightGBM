@@ -77,9 +77,7 @@ if [[ $TASK == "lint" ]]; then
         mypy \
         pycodestyle \
         pydocstyle \
-        "r-lintr>=2.0" \
-        r-stringi \
-        "r-xfun>=0.19"
+        "r-lintr>=2.0"
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
@@ -131,10 +129,10 @@ ${CONDA_ENTRYPOINT} install -y -n $CONDA_ENV \
     numpy \
     pandas \
     psutil \
-    python-graphviz \
     pytest \
     scikit-learn \
-    scipy
+    scipy || exit -1
+pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
