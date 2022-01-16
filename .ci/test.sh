@@ -31,7 +31,7 @@ fi
 
 # Ubuntu 14.04 jobs using https://github.com/guolinke/lightgbm-ci-docker do not have mambaforge
 if [[ $SETUP_CONDA == "false" ]]; then
-    CONDA_ENTRYPOINT="conda"
+    CONDA_ENTRYPOINT="conda -c conda-forge --override-channels"
 else
     CONDA_ENTRYPOINT="mamba"
 fi
