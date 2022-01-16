@@ -484,6 +484,11 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(const char* model_str,
                                                       int* out_num_iterations,
                                                       BoosterHandle* out);
 
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetConfig(BoosterHandle handle,
+  int64_t buffer_len,
+  int64_t* out_len,
+  char* out_str);
+
 /*!
  * \brief Free space for booster.
  * \param handle Handle of booster to be freed

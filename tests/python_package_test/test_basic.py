@@ -2,9 +2,11 @@
 import filecmp
 import numbers
 import re
+import tempfile
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file
@@ -609,3 +611,65 @@ def test_custom_objective_safety():
     good_bst_multi.update(fobj=_good_gradients)
     with pytest.raises(ValueError, match=re.escape(f"number of models per one iteration ({nclass})")):
         bad_bst_multi.update(fobj=_bad_gradients)
+@pytest.fixture(name="fake_model")
+def _fake_model() -> lgb.Booster:
+    # TODO: maybe removed deps on data_dir later
+    data_dir = Path(__file__).parent.parent.parent / "examples/binary_classification"
+
+    df_train = pd.read_csv(data_dir / "binary.train", header=None, sep="\t")
+    weights = pd.read_csv(data_dir / "binary.train.weight", header=None)[0]
+
+    # df_train = pd.DataFrame({
+    #     'feature_1': [0, 1, 2],
+    #     'feature_2': [0., 0.1, 0.2],
+    #     'feature_3': pd.Categorical(['a', 'b', 'b']),
+    #     'Target':
+    # })
+
+    X_train = df_train.drop(0, axis=1)
+    y_train = df_train[0]
+
+    params = {
+        "boosting_type": "gbdt",
+        "objective": "binary",
+        "metric": "binary_logloss",
+        "num_leaves": 31,
+        "learning_rate": 0.05,
+        "feature_fraction": 0.9,
+        "bagging_fraction": 0.8,
+        "bagging_freq": 5,
+        "verbose": 0,
+    }
+    lgb_train = lgb.Dataset(X_train, y_train, weight=weights, free_raw_data=False)
+    feature_name = [f"feature_{col}" for col in X_train.columns]
+
+    gbm = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=3,
+        valid_sets=lgb_train,  # eval training data
+        feature_name=feature_name,
+        categorical_feature=[21],
+    )
+
+    return gbm
+
+def test_booster_load_params_when_passed_model_file(fake_model: lgb.Booster) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        model_file = Path(temp_dir) / "model.txt"
+        fake_model.save_model(model_file)
+        # gbm.save_model('/Users/zhuyi/Projects/third-party/lightgbm/model.txt')
+
+        loaded = lgb.Booster(model_file=model_file)
+
+    # TODO: needs parse more params
+    assert 'boosting' in loaded.params
+
+def test_booster_load_params_when_passed_model_str(fake_model: lgb.Booster) -> None:
+    model_str = fake_model.model_to_string()
+
+    loaded = lgb.Booster(model_str=model_str)
+
+    # TODO: needs parse more params
+    assert 'boosting' in loaded.params
+    assert loaded.params['boosting'] == 'gbdt'

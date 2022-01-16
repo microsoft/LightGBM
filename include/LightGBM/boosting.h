@@ -316,6 +316,8 @@ class LIGHTGBM_EXPORT Boosting {
   virtual bool IsLinear() const { return false; }
 
   virtual std::string ParserConfigStr() const = 0;
+
+  std::string loaded_parameter_;
 };
 
 class GBDTBase : public Boosting {

@@ -1594,6 +1594,24 @@ int LGBM_BoosterLoadModelFromString(
   API_END();
 }
 
+int LGBM_BoosterGetConfig(
+  BoosterHandle handle,
+  int64_t buffer_len,
+  int64_t* out_len,
+  char* out_str
+) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  // GBDT* ref_gbdt = reinterpret_cast<GBDT*>(ref_booster);
+  std::string params = ref_booster->GetBoosting()->loaded_parameter_;
+  // std::string params = "abc";
+  *out_len = static_cast<int64_t>(params.size()) + 1;
+  if (*out_len <= buffer_len) {
+    std::memcpy(out_str, params.c_str(), *out_len);
+  }
+  API_END();
+}
+
 #ifdef _MSC_VER
   #pragma warning(disable : 4702)
 #endif

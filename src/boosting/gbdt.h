@@ -531,7 +531,6 @@ class GBDT : public GBDTBase {
   bool average_output_;
   bool need_re_bagging_;
   bool balanced_bagging_;
-  std::string loaded_parameter_;
   std::vector<int8_t> monotone_constraints_;
   const int bagging_rand_block_ = 1024;
   std::vector<Random> bagging_rands_;
