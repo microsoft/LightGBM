@@ -450,6 +450,7 @@ class RegressionPoissonLoss: public RegressionL2loss {
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
+        double exp_score = std::exp(score[i]);
         gradients[i] = static_cast<score_t>((exp_score - label_[i]) * weights_[i]);
         hessians[i] = static_cast<score_t>(exp_score * exp_max_delta_step_ * weights_[i]);
       }
