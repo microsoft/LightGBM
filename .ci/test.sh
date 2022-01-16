@@ -31,12 +31,14 @@ fi
 
 # Ubuntu 14.04 jobs using https://github.com/guolinke/lightgbm-ci-docker do not have mambaforge
 if [[ $SETUP_CONDA == "false" ]]; then
-    CONDA_ENTRYPOINT="conda -c conda-forge --override-channels"
+    CONDA_CREATE="conda create -c conda-forge --override-channels"
+    CONDA_INSTALL="conda install -c conda-forge --override-channels"
 else
-    CONDA_ENTRYPOINT="mamba"
+    CONDA_CREATE="mamba create"
+    CONDA_INSTALL="mamba install"
 fi
 
-${CONDA_ENTRYPOINT} create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
+${CONDA_CREATE} -q -y -n $CONDA_ENV python=$PYTHON_VERSION
 source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
@@ -69,7 +71,7 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
 fi
 
 if [[ $TASK == "lint" ]]; then
-    ${CONDA_ENTRYPOINT} install -q -y -n $CONDA_ENV \
+    ${CONDA_INSTALL} -q -y -n $CONDA_ENV \
         cmakelint \
         cpplint \
         isort \
@@ -93,7 +95,7 @@ if [[ $TASK == "lint" ]]; then
 fi
 
 if [[ $TASK == "if-else" ]]; then
-    ${CONDA_ENTRYPOINT} install -q -y -n $CONDA_ENV numpy
+    ${CONDA_INSTALL} -q -y -n $CONDA_ENV numpy
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
@@ -120,7 +122,7 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-${CONDA_ENTRYPOINT} install -y -n $CONDA_ENV \
+${CONDA_INSTALL} -y -n $CONDA_ENV \
     cloudpickle \
     dask \
     distributed \
@@ -247,7 +249,7 @@ matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     # requirements for examples
-    ${CONDA_ENTRYPOINT} install -q -y -n $CONDA_ENV \
+    ${CONDA_INSTALL} -q -y -n $CONDA_ENV \
         h5py \
         ipywidgets \
         notebook
