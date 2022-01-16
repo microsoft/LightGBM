@@ -132,9 +132,9 @@ ${CONDA_INSTALL} -y -n $CONDA_ENV \
     pandas \
     psutil \
     pytest \
+    python-graphviz \
     scikit-learn \
     scipy || exit -1
-pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
