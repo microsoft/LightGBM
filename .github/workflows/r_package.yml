@@ -179,66 +179,66 @@ jobs:
           $env:GITHUB_ACTIONS = "true"
           $env:TASK = "${{ matrix.task }}"
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
-  test-r-sanitizers:
-    name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
-    timeout-minutes: 60
-    runs-on: ubuntu-latest
-    container: wch1/r-debug
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - r_customization: san
-            compiler: gcc
-          - r_customization: csan
-            compiler: clang
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2.4.0
-        with:
-          fetch-depth: 5
-          submodules: true
-      - name: Install packages
-        shell: bash
-        run: |
-          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
-          sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
-          RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit -1
-      - name: Run tests with sanitizers
-        shell: bash
-        run: |
-          cd R-package/tests
-          exit_code=0
-          RDscript${{ matrix.r_customization }} testthat.R >> tests.log 2>&1 || exit_code=-1
-          cat ./tests.log
-          exit ${exit_code}
-  test-r-debian-clang:
-    name: r-package (debian, R-devel, clang)
-    timeout-minutes: 60
-    runs-on: ubuntu-latest
-    container: rhub/debian-clang-devel
-    steps:
-      - name: Install Git before checkout
-        shell: bash
-        run: |
-          apt-get update --allow-releaseinfo-change
-          apt-get install --no-install-recommends -y git
-      - name: Checkout repository
-        uses: actions/checkout@v2.4.0
-        with:
-          fetch-depth: 5
-          submodules: true
-      - name: Install packages and run tests
-        shell: bash
-        run: |
-          export PATH=/opt/R-devel/bin/:${PATH}
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
-          sh build-cran-package.sh
-          R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
-          if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
-              echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
-              exit -1
-          fi
+  # test-r-sanitizers:
+  #   name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
+  #   timeout-minutes: 60
+  #   runs-on: ubuntu-latest
+  #   container: wch1/r-debug
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - r_customization: san
+  #           compiler: gcc
+  #         - r_customization: csan
+  #           compiler: clang
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v2.4.0
+  #       with:
+  #         fetch-depth: 5
+  #         submodules: true
+  #     - name: Install packages
+  #       shell: bash
+  #       run: |
+  #         RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+  #         sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
+  #         RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit -1
+  #     - name: Run tests with sanitizers
+  #       shell: bash
+  #       run: |
+  #         cd R-package/tests
+  #         exit_code=0
+  #         RDscript${{ matrix.r_customization }} testthat.R >> tests.log 2>&1 || exit_code=-1
+  #         cat ./tests.log
+  #         exit ${exit_code}
+  # test-r-debian-clang:
+  #   name: r-package (debian, R-devel, clang)
+  #   timeout-minutes: 60
+  #   runs-on: ubuntu-latest
+  #   container: rhub/debian-clang-devel
+  #   steps:
+  #     - name: Install Git before checkout
+  #       shell: bash
+  #       run: |
+  #         apt-get update --allow-releaseinfo-change
+  #         apt-get install --no-install-recommends -y git
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v2.4.0
+  #       with:
+  #         fetch-depth: 5
+  #         submodules: true
+  #     - name: Install packages and run tests
+  #       shell: bash
+  #       run: |
+  #         export PATH=/opt/R-devel/bin/:${PATH}
+  #         Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+  #         sh build-cran-package.sh
+  #         R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
+  #         if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
+  #             echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
+  #             exit -1
+  #         fi
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
     runs-on: ubuntu-latest

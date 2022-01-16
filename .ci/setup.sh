@@ -18,7 +18,7 @@ if [[ $OS_NAME == "macos" ]]; then
         brew install swig
     fi
     brew install graphviz
-    curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+    curl -sL -o conda.sh https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-MacOSX-x86_64.sh
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
@@ -121,11 +121,10 @@ else  # Linux
         fi
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
-        if [[ $ARCH == "x86_64" ]]; then
-            curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-        else
-            curl -sL -o conda.sh https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh
-        fi
+        curl \
+            -sL \
+            -o conda.sh \
+            https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-${ARCH}.sh
     fi
 fi
 
