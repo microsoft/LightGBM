@@ -29,7 +29,14 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-mamba create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
+# Ubuntu 14.04 jobs using https://github.com/guolinke/lightgbm-ci-docker do not have mambaforge
+if [[ $SETUP_CONDA == "false" ]]; then
+    CONDA_ENTRYPOINT="conda"
+else
+    CONDA_ENTRYPOINT="mamba"
+fi
+
+${CONDA_ENTRYPOINT} create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
 source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
@@ -62,22 +69,17 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
 fi
 
 if [[ $TASK == "lint" ]]; then
-    mamba install -q -y -n $CONDA_ENV \
+    ${CONDA_ENTRYPOINT} install -q -y -n $CONDA_ENV \
+        cmakelint \
+        cpplint \
+        isort \
         libxml2 \
+        mypy \
         pycodestyle \
         pydocstyle \
         "r-lintr>=2.0" \
         r-stringi \
         "r-xfun>=0.19"
-
-    # # stringi needs to be installed separate from r-lintr to avoid issues like 'unable to load shared object stringi.so'
-    # # r-xfun below has to be upgraded because lintr requires > 0.19 for that package
-    # conda install -q -y -n $CONDA_ENV \
-    #     -c conda-forge \
-    #         libxml2 \
-    #         "r-xfun>=0.19" \
-    #         "r-lintr>=2.0"
-    pip install --user cmakelint cpplint isort mypy
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
@@ -93,7 +95,7 @@ if [[ $TASK == "lint" ]]; then
 fi
 
 if [[ $TASK == "if-else" ]]; then
-    mamba install -q -y -n $CONDA_ENV numpy
+    ${CONDA_ENTRYPOINT} install -q -y -n $CONDA_ENV numpy
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
@@ -120,7 +122,7 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-mamba install -q -y -n $CONDA_ENV \
+${CONDA_ENTRYPOINT} install -y -n $CONDA_ENV \
     cloudpickle \
     dask \
     distributed \
@@ -129,10 +131,10 @@ mamba install -q -y -n $CONDA_ENV \
     numpy \
     pandas \
     psutil \
+    python-graphviz \
     pytest \
     scikit-learn \
     scipy
-pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
@@ -247,7 +249,7 @@ matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     # requirements for examples
-    mamba install -q -y -n $CONDA_ENV \
+    ${CONDA_ENTRYPOINT} install -q -y -n $CONDA_ENV \
         h5py \
         ipywidgets \
         notebook
