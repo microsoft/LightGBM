@@ -258,15 +258,15 @@ jobs:
     vmImage: 'vs2017-win2016'
   strategy:
     matrix:
-      regular:
-        TASK: regular
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 3.8
-      bdist:
-        TASK: bdist
-      swig:
-        TASK: swig
+      # regular:
+      #   TASK: regular
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 3.8
+      # bdist:
+      #   TASK: bdist
+      # swig:
+      #   TASK: swig
       cpp_tests:
         TASK: cpp-tests
   steps:
