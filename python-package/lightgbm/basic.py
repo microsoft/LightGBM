@@ -3347,7 +3347,6 @@ class Booster:
             c_str(model_str),
             ctypes.byref(out_num_iterations),
             ctypes.byref(self.handle)))
-
         out_num_class = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetNumClasses(
             self.handle,

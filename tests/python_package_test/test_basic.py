@@ -652,7 +652,6 @@ def test_booster_load_params_when_passed_model_file(fake_model: lgb.Booster) -> 
     with tempfile.TemporaryDirectory() as temp_dir:
         model_file = Path(temp_dir) / "model.txt"
         fake_model.save_model(model_file)
-        # gbm.save_model('/Users/zhuyi/Projects/third-party/lightgbm/model.txt')
 
         loaded = lgb.Booster(model_file=model_file)
 
