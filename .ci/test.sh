@@ -38,7 +38,13 @@ else
     CONDA_INSTALL="mamba install"
 fi
 
-${CONDA_CREATE} -q -y -n $CONDA_ENV python=$PYTHON_VERSION
+# on Ubuntu 14.04, GPU build segfaults with gcc 11.x
+INITIAL_CONDA_CONSTRAINTS="python=${PYTHON_VERSION}"
+if [[ $TASK == "gpu" ]] && [[ $OS_NAME == "linux" ]] && [[ $IN_UBUNTU_LATEST_CONTAINER != "true" ]]; then
+    INITIAL_CONDA_CONSTRAINTS="${INITIAL_CONDA_CONSTRAINTS} libgcc-ng=9.3.0 libgomp=9.3.0"
+fi
+
+${CONDA_CREATE} -q -y -n $CONDA_ENV ${INITIAL_CONDA_CONSTRAINTS}
 source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
@@ -125,10 +131,10 @@ fi
 
 PACKAGES="cloudpickle dask distributed joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy"
 
-# on Ubuntu 14.04, GPU build segfaults with gcc 11.x
-if [[ $TASK == "gpu" ]] && [[ $OS_NAME == "linux" ]] && [[ $IN_UBUNTU_LATEST_CONTAINER != "true" ]]; then
-    PACKAGES="${PACKAGES} libgcc-ng=9.3.0 libgomp=9.3.0"
-fi
+# # on Ubuntu 14.04, GPU build segfaults with gcc 11.x
+# if [[ $TASK == "gpu" ]] && [[ $OS_NAME == "linux" ]] && [[ $IN_UBUNTU_LATEST_CONTAINER != "true" ]]; then
+#     PACKAGES="${PACKAGES} libgcc-ng=9.3.0 libgomp=9.3.0"
+# fi
 
 ${CONDA_INSTALL} -y -n $CONDA_ENV ${PACKAGES} || exit -1
 
