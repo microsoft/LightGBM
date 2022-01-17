@@ -31,9 +31,9 @@ fi
 
 # on Ubuntu 14.04, GPU build segfaults with gcc 11.x
 INITIAL_CONDA_CONSTRAINTS="python=${PYTHON_VERSION}"
-if [[ $TASK == "gpu" ]] && [[ $OS_NAME == "linux" ]] && [[ $IN_UBUNTU_LATEST_CONTAINER != "true" ]]; then
-    INITIAL_CONDA_CONSTRAINTS="${INITIAL_CONDA_CONSTRAINTS} libgcc-ng=9.3.0 libgomp=9.3.0"
-fi
+# if [[ $TASK == "gpu" ]] && [[ $OS_NAME == "linux" ]] && [[ $IN_UBUNTU_LATEST_CONTAINER != "true" ]]; then
+#     INITIAL_CONDA_CONSTRAINTS="${INITIAL_CONDA_CONSTRAINTS} libgcc-ng=9.3.0 libgomp=9.3.0"
+# fi
 
 mamba create -q -y -n $CONDA_ENV ${INITIAL_CONDA_CONSTRAINTS}
 source activate $CONDA_ENV
