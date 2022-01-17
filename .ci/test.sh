@@ -134,7 +134,7 @@ mamba install -q -y -n $CONDA_ENV \
     scipy || exit -1
 
 # python-graphviz has to be installed separately to prevent conda from downgrading to pypy
-mmamba install -q -y -n $CONDA_ENV \
+mamba install -q -y -n $CONDA_ENV \
     python-graphviz || exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
