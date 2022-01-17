@@ -259,21 +259,6 @@ def generate_r_docs(app: Sphinx) -> None:
         The application object representing the Sphinx process.
     """
     commands = f"""
-    /home/docs/.conda/bin/conda create \
-        -q \
-        -y \
-        -c conda-forge \
-        --override-channels \
-        -n r_env \
-            r-base=4.1.0=hb67fd72_2 \
-            r-data.table=1.14.0=r41hcfec24a_0 \
-            r-jsonlite=1.7.2=r41hcfec24a_0 \
-            r-knitr=1.35=r41hc72bb7e_0 \
-            r-matrix=1.3_4=r41he454529_0 \
-            r-pkgdown=1.6.1=r41hc72bb7e_0 \
-            r-rmarkdown=2.11=r41hc72bb7e_0 \
-            r-roxygen2=7.1.1=r41h03ef668_0
-    source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
     cd {CURR_PATH.parent}
     export R_LIBS="$CONDA_PREFIX/lib/R/library"

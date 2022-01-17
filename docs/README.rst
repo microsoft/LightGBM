@@ -13,11 +13,46 @@ After each commit on ``master``, documentation is updated and published to `Read
 Build
 -----
 
+It is not necessary to re-build this documentatioon while modifying LightGBM's source code.
+The HTML files generated using ``Sphinx`` are not checked into source control.
+However, you may want to build them locally during development to test changes.
+
+Docker
+^^^^^^
+
+The most reliable way to build the documentation locally is with Docker, using `the same images readthedocs uses <https://hub.docker.com/r/readthedocs/build>`_.
+
+Run the following from the root of this repository to pull the relevant image and run a container locally.
+
+.. code:: sh
+
+    docker run \
+        --rm \
+        -v $(pwd):/opt/LightGBM \
+        --env C_API=true \
+        --env CONDA=/opt/conda \
+        --env PYTHONUNBUFFERED=1 \
+        --env READTHEDOCS=true \
+        --workdir=/opt/LightGBM/docs \
+        --entrypoint="" \
+        --user=0 \
+        -it readthedocs/build:ubuntu-20.04-2021.09.23 \
+        /bin/bash --noprofile --norc build-docs.sh
+
+When that code completes, open ``docs/html/index.html`` in your browser.
+
+.. note::
+
+    The navigation in locally-built docs does not link to the local copy of the R documentation. To view the local version of the R docs, open ``docs/_build/html/R/index.html`` in your browser.
+
+Locally
+^^^^^^^
+
 You can build the documentation locally. Just install Doxygen and run in ``docs`` folder
 
 .. code:: sh
 
-    pip install -r requirements.txt
+    pip install breathe sphinx 'sphinx_rtd_theme>0.5'
     make html
 
 Unfortunately, documentation for R code is built only on our site, and commands above will not build it for you locally.
