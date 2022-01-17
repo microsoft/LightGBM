@@ -122,21 +122,15 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-${CONDA_INSTALL} -y -n $CONDA_ENV \
-    cloudpickle \
-    dask \
-    distributed \
-    joblib \
-    libgcc-ng=9.3.0 \
-    libgomp=9.3.0 \
-    matplotlib \
-    numpy \
-    pandas \
-    psutil \
-    pytest \
-    python-graphviz \
-    scikit-learn \
-    scipy || exit -1
+
+PACKAGES="cloudpickle dask distributed joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy"
+
+# on Ubuntu 14.04, GPU build segfaults with gcc 11.x
+if [[ $TASK == "gpu" ]] && [[ $OS_NAME == "linux" ]] && [[ $IN_UBUNTU_LATEST_CONTAINER != "true" ]]; then
+    PACKAGES="${PACKAGES} 'libgcc-ng<11.0'"
+fi
+
+${CONDA_INSTALL} -y -n $CONDA_ENV ${PACKAGES} || exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
