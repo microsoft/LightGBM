@@ -2620,10 +2620,10 @@ class Booster:
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
-            self.params = params
+            self.params = self.loads_params()
         elif model_str is not None:
-            self.params = {}
             self.model_from_string(model_str)
+            self.params = self.loads_params()
         else:
             raise TypeError('Need at least one training dataset or model file or model string '
                             'to create Booster instance')
@@ -3311,6 +3311,20 @@ class Booster:
             ctypes.c_int(end_iteration)))
         return self
 
+    def loads_params(self):
+        """Loads model parameters by calling LGBM_BoosterGetConfig."""
+        buffer_len = 2 << 20
+        tmp_out_len = ctypes.c_int64(0)
+        string_buffer = ctypes.create_string_buffer(buffer_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_BoosterGetConfig(
+            self.handle,
+            ctypes.c_int64(buffer_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+        _params_str = string_buffer.value.decode('utf-8')
+        return json.loads(_params_str)
+
     def model_from_string(self, model_str):
         """Load Booster from a string.
 
@@ -3333,21 +3347,6 @@ class Booster:
             c_str(model_str),
             ctypes.byref(out_num_iterations),
             ctypes.byref(self.handle)))
-
-        buffer_len = 2 << 20
-        tmp_out_len = ctypes.c_int64(0)
-        string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
-        _safe_call(_LIB.LGBM_BoosterGetConfig(
-            self.handle,
-            ctypes.c_int64(buffer_len),
-            ctypes.byref(tmp_out_len),
-            ptr_string_buffer))
-        _params_str = string_buffer.value.decode('utf-8')
-        # print(f'{_params_str=:}')
-        for line in io.StringIO(_params_str):
-            if line.startswith('[boosting: '):
-                self.params['boosting'] = line.strip().replace(f"[boosting: ", "").replace("]", "")
 
         out_num_class = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetNumClasses(

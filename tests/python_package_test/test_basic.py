@@ -611,6 +611,7 @@ def test_custom_objective_safety():
     good_bst_multi.update(fobj=_good_gradients)
     with pytest.raises(ValueError, match=re.escape(f"number of models per one iteration ({nclass})")):
         bad_bst_multi.update(fobj=_bad_gradients)
+
 @pytest.fixture(name="fake_model")
 def _fake_model() -> lgb.Booster:
     # TODO: maybe removed deps on data_dir later
@@ -618,13 +619,6 @@ def _fake_model() -> lgb.Booster:
 
     df_train = pd.read_csv(data_dir / "binary.train", header=None, sep="\t")
     weights = pd.read_csv(data_dir / "binary.train.weight", header=None)[0]
-
-    # df_train = pd.DataFrame({
-    #     'feature_1': [0, 1, 2],
-    #     'feature_2': [0., 0.1, 0.2],
-    #     'feature_3': pd.Categorical(['a', 'b', 'b']),
-    #     'Target':
-    # })
 
     X_train = df_train.drop(0, axis=1)
     y_train = df_train[0]
@@ -663,7 +657,7 @@ def test_booster_load_params_when_passed_model_file(fake_model: lgb.Booster) -> 
         loaded = lgb.Booster(model_file=model_file)
 
     # TODO: needs parse more params
-    assert 'boosting' in loaded.params
+    assert loaded.params['boosting'] == 'gbdt'
 
 def test_booster_load_params_when_passed_model_str(fake_model: lgb.Booster) -> None:
     model_str = fake_model.model_to_string()
@@ -671,5 +665,4 @@ def test_booster_load_params_when_passed_model_str(fake_model: lgb.Booster) -> N
     loaded = lgb.Booster(model_str=model_str)
 
     # TODO: needs parse more params
-    assert 'boosting' in loaded.params
     assert loaded.params['boosting'] == 'gbdt'
