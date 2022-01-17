@@ -212,66 +212,66 @@ def test_booster():
         ctypes.byref(booster))
     LIB.LGBM_BoosterAddValidData(booster, test)
     is_finished = ctypes.c_int(0)
-    # for i in range(1, 51):
-    #     LIB.LGBM_BoosterUpdateOneIter(booster, ctypes.byref(is_finished))
-    #     result = np.array([0.0], dtype=np.float64)
-    #     out_len = ctypes.c_int(0)
-    #     LIB.LGBM_BoosterGetEval(
-    #         booster,
-    #         ctypes.c_int(0),
-    #         ctypes.byref(out_len),
-    #         result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
-    #     if i % 10 == 0:
-    #         print(f'{i} iteration test AUC {result[0]:.6f}')
-    # LIB.LGBM_BoosterSaveModel(
-    #     booster,
-    #     ctypes.c_int(0),
-    #     ctypes.c_int(-1),
-    #     ctypes.c_int(0),
-    #     c_str('model.txt'))
-    # LIB.LGBM_BoosterFree(booster)
-    # free_dataset(train)
-    # free_dataset(test)
-    # booster2 = ctypes.c_void_p()
-    # num_total_model = ctypes.c_int(0)
-    # LIB.LGBM_BoosterCreateFromModelfile(
-    #     c_str('model.txt'),
-    #     ctypes.byref(num_total_model),
-    #     ctypes.byref(booster2))
-    # data = np.loadtxt(str(binary_example_dir / 'binary.test'), dtype=np.float64)
-    # mat = data[:, 1:]
-    # preb = np.empty(mat.shape[0], dtype=np.float64)
-    # num_preb = ctypes.c_int64(0)
-    # data = np.array(mat.reshape(mat.size), dtype=np.float64, copy=False)
-    # LIB.LGBM_BoosterPredictForMat(
-    #     booster2,
-    #     data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-    #     ctypes.c_int(dtype_float64),
-    #     ctypes.c_int32(mat.shape[0]),
-    #     ctypes.c_int32(mat.shape[1]),
-    #     ctypes.c_int(1),
-    #     ctypes.c_int(1),
-    #     ctypes.c_int(0),
-    #     ctypes.c_int(25),
-    #     c_str(''),
-    #     ctypes.byref(num_preb),
-    #     preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
-    # LIB.LGBM_BoosterPredictForFile(
-    #     booster2,
-    #     c_str(str(binary_example_dir / 'binary.test')),
-    #     ctypes.c_int(0),
-    #     ctypes.c_int(0),
-    #     ctypes.c_int(0),
-    #     ctypes.c_int(25),
-    #     c_str(''),
-    #     c_str('preb.txt'))
-    # LIB.LGBM_BoosterPredictForFile(
-    #     booster2,
-    #     c_str(str(binary_example_dir / 'binary.test')),
-    #     ctypes.c_int(0),
-    #     ctypes.c_int(0),
-    #     ctypes.c_int(10),
-    #     ctypes.c_int(25),
-    #     c_str(''),
-    #     c_str('preb.txt'))
+    for i in range(1, 51):
+        LIB.LGBM_BoosterUpdateOneIter(booster, ctypes.byref(is_finished))
+        result = np.array([0.0], dtype=np.float64)
+        out_len = ctypes.c_int(0)
+        LIB.LGBM_BoosterGetEval(
+            booster,
+            ctypes.c_int(0),
+            ctypes.byref(out_len),
+            result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
+        if i % 10 == 0:
+            print(f'{i} iteration test AUC {result[0]:.6f}')
+    LIB.LGBM_BoosterSaveModel(
+        booster,
+        ctypes.c_int(0),
+        ctypes.c_int(-1),
+        ctypes.c_int(0),
+        c_str('model.txt'))
+    LIB.LGBM_BoosterFree(booster)
+    free_dataset(train)
+    free_dataset(test)
+    booster2 = ctypes.c_void_p()
+    num_total_model = ctypes.c_int(0)
+    LIB.LGBM_BoosterCreateFromModelfile(
+        c_str('model.txt'),
+        ctypes.byref(num_total_model),
+        ctypes.byref(booster2))
+    data = np.loadtxt(str(binary_example_dir / 'binary.test'), dtype=np.float64)
+    mat = data[:, 1:]
+    preb = np.empty(mat.shape[0], dtype=np.float64)
+    num_preb = ctypes.c_int64(0)
+    data = np.array(mat.reshape(mat.size), dtype=np.float64, copy=False)
+    LIB.LGBM_BoosterPredictForMat(
+        booster2,
+        data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        ctypes.c_int(dtype_float64),
+        ctypes.c_int32(mat.shape[0]),
+        ctypes.c_int32(mat.shape[1]),
+        ctypes.c_int(1),
+        ctypes.c_int(1),
+        ctypes.c_int(0),
+        ctypes.c_int(25),
+        c_str(''),
+        ctypes.byref(num_preb),
+        preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
+    LIB.LGBM_BoosterPredictForFile(
+        booster2,
+        c_str(str(binary_example_dir / 'binary.test')),
+        ctypes.c_int(0),
+        ctypes.c_int(0),
+        ctypes.c_int(0),
+        ctypes.c_int(25),
+        c_str(''),
+        c_str('preb.txt'))
+    LIB.LGBM_BoosterPredictForFile(
+        booster2,
+        c_str(str(binary_example_dir / 'binary.test')),
+        ctypes.c_int(0),
+        ctypes.c_int(0),
+        ctypes.c_int(10),
+        ctypes.c_int(25),
+        c_str(''),
+        c_str('preb.txt'))
     LIB.LGBM_BoosterFree(booster2)

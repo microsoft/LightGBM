@@ -127,6 +127,8 @@ ${CONDA_INSTALL} -y -n $CONDA_ENV \
     dask \
     distributed \
     joblib \
+    libgcc-ng=9.3.0 \
+    libgomp=9.3.0 \
     matplotlib \
     numpy \
     pandas \
