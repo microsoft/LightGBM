@@ -29,22 +29,13 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-# Ubuntu 14.04 jobs using https://github.com/guolinke/lightgbm-ci-docker do not have mambaforge
-if [[ $SETUP_CONDA == "false" ]]; then
-    CONDA_CREATE="conda create -c conda-forge --override-channels"
-    CONDA_INSTALL="conda install -c conda-forge --override-channels"
-else
-    CONDA_CREATE="mamba create"
-    CONDA_INSTALL="mamba install"
-fi
-
 # on Ubuntu 14.04, GPU build segfaults with gcc 11.x
 INITIAL_CONDA_CONSTRAINTS="python=${PYTHON_VERSION}"
 if [[ $TASK == "gpu" ]] && [[ $OS_NAME == "linux" ]] && [[ $IN_UBUNTU_LATEST_CONTAINER != "true" ]]; then
     INITIAL_CONDA_CONSTRAINTS="${INITIAL_CONDA_CONSTRAINTS} libgcc-ng=9.3.0 libgomp=9.3.0"
 fi
 
-${CONDA_CREATE} -q -y -n $CONDA_ENV ${INITIAL_CONDA_CONSTRAINTS}
+mamba create -q -y -n $CONDA_ENV ${INITIAL_CONDA_CONSTRAINTS}
 source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
@@ -77,7 +68,7 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
 fi
 
 if [[ $TASK == "lint" ]]; then
-    ${CONDA_INSTALL} -q -y -n $CONDA_ENV \
+    mamba install -q -y -n $CONDA_ENV \
         cmakelint \
         cpplint \
         isort \
@@ -101,7 +92,7 @@ if [[ $TASK == "lint" ]]; then
 fi
 
 if [[ $TASK == "if-else" ]]; then
-    ${CONDA_INSTALL} -q -y -n $CONDA_ENV numpy
+    mamba install -q -y -n $CONDA_ENV numpy
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
@@ -129,7 +120,7 @@ if [[ $TASK == "swig" ]]; then
 fi
 
 
-${CONDA_INSTALL} -q -y -n $CONDA_ENV \
+mamba install -q -y -n $CONDA_ENV \
     cloudpickle \
     dask \
     distributed \
@@ -143,7 +134,7 @@ ${CONDA_INSTALL} -q -y -n $CONDA_ENV \
     scipy || exit -1
 
 # python-graphviz has to be installed separately to prevent conda from downgrading to pypy
-${CONDA_INSTALL} -q -y -n $CONDA_ENV \
+mmamba install -q -y -n $CONDA_ENV \
     python-graphviz || exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
@@ -259,7 +250,7 @@ matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     # requirements for examples
-    ${CONDA_INSTALL} -q -y -n $CONDA_ENV \
+    mamba install -q -y -n $CONDA_ENV \
         h5py \
         ipywidgets \
         notebook

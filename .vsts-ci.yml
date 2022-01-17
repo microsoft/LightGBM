@@ -14,7 +14,7 @@ variables:
 resources:
   containers:
   - container: ubuntu1404
-    image: lightgbm/vsts-agent:ubuntu-14.04
+    image: lightgbm/vsts-agent:ubuntu-14.04-dev
   - container: ubuntu-latest
     image: 'ubuntu:latest'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
