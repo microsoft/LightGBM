@@ -127,7 +127,7 @@ PACKAGES="cloudpickle dask distributed joblib matplotlib numpy pandas psutil pyt
 
 # on Ubuntu 14.04, GPU build segfaults with gcc 11.x
 if [[ $TASK == "gpu" ]] && [[ $OS_NAME == "linux" ]] && [[ $IN_UBUNTU_LATEST_CONTAINER != "true" ]]; then
-    PACKAGES="${PACKAGES} 'libgcc-ng<10.0' 'libgomp<10.0'"
+    PACKAGES="${PACKAGES} 'libgcc-ng<10.0' 'libgfortran<10.0' 'libgomp<10.0' 'libstdcxx-ng<10.0'"
 fi
 
 ${CONDA_INSTALL} -y -n $CONDA_ENV ${PACKAGES} || exit -1
