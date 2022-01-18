@@ -29,6 +29,6 @@ ${CONDA}/envs/docs-env/bin/python \
     -b html \
     -d _build/doctrees \
     -D language=en \
-    . _build/html
+    . _build/html || exit -1
 
 echo "Done building docs. Open docs/_build/html/index.html in a web browser to view them."
