@@ -17,6 +17,11 @@ static const std::string category_feature_encoders_key = "category_feature_encod
 static const std::string encorders_key = "encoders";
 static const std::string feature_id_key = "fid";
 static const std::string fold_id_key = "fold_id";
+static const std::string encoder_type_key = "type";
+static const std::string prior_key = "prior";
+static const std::string prior_weight_key = "prior_weight";
+static const std::string count_encoder_type = "count";
+static const std::string taregt_label_encoder_type = "taregt_label";
 
 namespace LightGBM {
 	std::vector<EncodeResult> CategoryFeatureEncoderManager::Encode(int fold_id, int feature_id, double feature_value) {
@@ -95,7 +100,7 @@ namespace LightGBM {
 		return json11::Json(result).dump();
 	}
 
-	std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> ParseCategoryFeatureEncoders(Json input_json) {
+	std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>& ParseCategoryFeatureEncoders(Json input_json) {
 		std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> result;
 
 		for each (Json encoders_per_feature_json in input_json.array_items())
@@ -119,16 +124,59 @@ namespace LightGBM {
 			Log::Fatal("Invalid CategoryFeatureEncoderManager model: %s. Please check if follow json format.", err.c_str());
 		}
 
-		std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> category_feature_encoders; // = ParseCategoryFeatureEncoders(input_json[category_feature_encoders_key]);
+		std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>& category_feature_encoders = ParseCategoryFeatureEncoders(input_json[category_feature_encoders_key]);
 		std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>> train_category_feature_encoders;
 
 		CategoryFeatureEncoderManager result(train_category_feature_encoders, category_feature_encoders);
 		Json train_category_feature_encoders_json = input_json[train_category_feature_encoders_key];
 		for each (Json entry in train_category_feature_encoders_json.array_items())
 		{
-			train_category_feature_encoders.push_back(ParseCategoryFeatureEncoders(entry));
+			train_category_feature_encoders.push_back(std::move(ParseCategoryFeatureEncoders(entry)));
 		}
 
 		return std::unique_ptr<CategoryFeatureEncoderManager>(&result);
+	}
+
+	std::unique_ptr<CategoryFeatureEncoder> CreateEncoder(std::string featureName, json11::Json encoder_setting, CategoryFeatureTargetInformation targetInformation) {
+		if (count_encoder_type.compare(encoder_setting[encoder_type_key].string_value()) == 0) {
+			return std::unique_ptr<CategoryFeatureEncoder>(new CategoryFeatureCountEncoder(featureName, targetInformation.category_count));
+		}
+		
+		if (taregt_label_encoder_type.compare(encoder_setting[encoder_type_key].string_value()) == 0) {
+			double prior = encoder_setting[prior_key].is_null() ? (targetInformation.label_sum / targetInformation.total_count) : encoder_setting[prior_key].number_value();
+			double prior_weight = encoder_setting[prior_weight_key].is_null() ? 0 : encoder_setting[prior_weight_key].number_value();
+
+			return std::unique_ptr<CategoryFeatureEncoder>(new CategoryFeatureTargetEncoder(featureName, prior, prior_weight, targetInformation.category_count, targetInformation.category_label_sum));
+		}
+
+		return std::unique_ptr<CategoryFeatureEncoder>();
+	}
+
+	std::unique_ptr<CategoryFeatureEncoderManager> CategoryFeatureEncoderManager::Create(json11::Json settings, CategoryFeatureTargetInformationCollector& informationCollector, int fold_count)
+	{
+		std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>> train_category_feature_encoders;
+		std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> category_feature_encoders;
+
+		std::vector<int>& categorical_features = informationCollector.GetCategoricalFeatures();
+		std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>& category_target_information = informationCollector.GetCategoryTargetInformation();
+		std::unordered_map<int, CategoryFeatureTargetInformation>& global_category_target_information = informationCollector.GetGlobalCategoryTargetInformation();
+		
+		for (int e_index = 0; e_index < settings.array_items().size(); ++e_index) {
+			Json encoder_setting = settings.array_items()[e_index];
+
+			for each (int f_id in categorical_features) {
+				const std::string feature_name = std::to_string(f_id) + "_" + std::to_string(e_index);
+
+				for (int fold_id = 0; fold_id < fold_count; ++fold_id) {
+					CategoryFeatureTargetInformation targetInformation = category_target_information[fold_id][f_id];
+
+					train_category_feature_encoders[fold_id][f_id].push_back(std::move(CreateEncoder(feature_name, encoder_setting, targetInformation)));
+				}
+
+				category_feature_encoders[f_id].push_back(std::move(CreateEncoder(feature_name, encoder_setting, global_category_target_information[f_id])));
+			}
+		}
+
+		return std::unique_ptr<CategoryFeatureEncoderManager>(new CategoryFeatureEncoderManager(train_category_feature_encoders, category_feature_encoders));
 	}
 }

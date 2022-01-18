@@ -38,9 +38,9 @@ using json11::Json;
 
   class CategoryFeatureCountEncoder : public CategoryFeatureEncoder {
   public:
-	CategoryFeatureCountEncoder(std::unordered_map<int, double> count_information) : CategoryFeatureEncoder(count_encoder_type), count_information_(count_information) {}
+	CategoryFeatureCountEncoder(std::unordered_map<int, int> count_information) : CategoryFeatureEncoder(count_encoder_type), count_information_(count_information) {}
 
-    CategoryFeatureCountEncoder(std::string feature_name, std::unordered_map<int, double> count_information) : CategoryFeatureEncoder(feature_name, count_encoder_type), count_information_(count_information){}
+    CategoryFeatureCountEncoder(std::string feature_name, std::unordered_map<int, int> count_information) : CategoryFeatureEncoder(feature_name, count_encoder_type), count_information_(count_information){}
 
 	double Encode(double feature_value) override;
 
@@ -52,7 +52,7 @@ using json11::Json;
     static const int count_encoder_type = 1;
 
   private:
-    std::unordered_map<int, double> count_information_;
+    std::unordered_map<int, int> count_information_;
 
     // constant value
     const double default_value = 0.0;
@@ -60,11 +60,11 @@ using json11::Json;
 
   class CategoryFeatureTargetEncoder : public CategoryFeatureEncoder {
   public:
-	CategoryFeatureTargetEncoder(double prior, double prior_weight, double total_count, std::unordered_map<int, double> count_information)
-		: CategoryFeatureEncoder(target_encoder_type), prior_(prior), prior_weight_(prior_weight), total_count_(total_count), count_information_(count_information) {}
+	CategoryFeatureTargetEncoder(double prior, double prior_weight, std::unordered_map<int, int> count_information, std::unordered_map<int, double> label_information)
+		: CategoryFeatureEncoder(target_encoder_type), prior_(prior), prior_weight_(prior_weight), count_information_(count_information), label_information_(label_information){}
 
-    CategoryFeatureTargetEncoder(std::string feature_name, double prior, double prior_weight, double total_count, std::unordered_map<int, double> count_information)
-      : CategoryFeatureEncoder(feature_name, target_encoder_type), prior_(prior), prior_weight_(prior_weight), total_count_(total_count), count_information_(count_information) {}
+    CategoryFeatureTargetEncoder(std::string feature_name, double prior, double prior_weight, std::unordered_map<int, int> count_information, std::unordered_map<int, double> label_information)
+      : CategoryFeatureEncoder(feature_name, target_encoder_type), prior_(prior), prior_weight_(prior_weight), count_information_(count_information), label_information_(label_information) {}
 
     double Encode(double feature_value) override;
 
@@ -76,10 +76,10 @@ using json11::Json;
     static const int target_encoder_type = 1;
 
   private:
-    std::unordered_map<int, double> count_information_;
+    std::unordered_map<int, int> count_information_;
+	std::unordered_map<int, double> label_information_;
     double prior_;
     double prior_weight_;
-    double total_count_;
 
     // constant value
     const double default_value = 0.0;
@@ -91,6 +91,10 @@ using json11::Json;
 
     // <category_id, label_sum>
     std::unordered_map<int, double> category_label_sum; 
+
+	int total_count;
+
+	int label_sum;
   };
 
   class CategoryFeatureTargetInformationCollector {
@@ -98,8 +102,6 @@ using json11::Json;
     CategoryFeatureTargetInformationCollector(std::vector<int> categorical_features, int fold_count) {
       categorical_features_ = categorical_features;
 
-      count_.resize(fold_count);
-      label_sum_.resize(fold_count);
       category_target_information_.resize(fold_count);
     }
 
@@ -107,29 +109,40 @@ using json11::Json;
 
     void AppendFrom(CategoryFeatureTargetInformationCollector& collector);
 
-    std::vector<data_size_t> GetCounts() {
-      return count_;
-    }
-
-    std::vector<double> GetLabelSum() {
-      return label_sum_;
-    }
-
     std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>> GetCategoryTargetInformation() {
       return category_target_information_;
     }
 
+	std::vector<int> GetCategoricalFeatures() {
+		return categorical_features_;
+	}
+
+	std::vector<data_size_t> GetCounts() {
+		return count_;
+	}
+
+	std::vector<double> GetLabelSum() {
+		return label_sum_;
+	}
+
+	std::unordered_map<int, CategoryFeatureTargetInformation> GetGlobalCategoryTargetInformation() {
+		return global_category_target_information_;
+	}
+
   private:
     std::vector<int> categorical_features_;
 
-    // <fold_id, row_count>
-    std::vector<data_size_t> count_; 
+	// <fold_id, row_count>
+	std::vector<data_size_t> count_;
 
-    // <fold_id, label_sum>
-    std::vector<double> label_sum_; 
+	// <fold_id, label_sum>
+	std::vector<double> label_sum_;
 
     // <fold_id, <feature_id, CategoryFeatureTargetInformation>>
     std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>> category_target_information_;
+
+	// <feature_id, CategoryFeatureTargetInformation>
+	std::unordered_map<int, CategoryFeatureTargetInformation> global_category_target_information_;
   };
 
   struct EncodeResult
@@ -151,7 +164,7 @@ using json11::Json;
 
 	  static std::unique_ptr<CategoryFeatureEncoderManager> RecoverFromModelStringInJsonFormat(std::string input);
 
-	  // static std::unique_ptr<CategoryFeatureEncoderManager> Create(json11::Json::object settings, CategoryFeatureTargetInformationCollector& informationCollector, std::vector<int>& categorical_features);
+	  static std::unique_ptr<CategoryFeatureEncoderManager> Create(json11::Json settings, CategoryFeatureTargetInformationCollector& informationCollector, int fold_count);
 
   private:
 	  // <fold_id, <feature_id, Encoders>>

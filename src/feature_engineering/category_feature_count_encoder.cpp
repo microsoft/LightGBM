@@ -7,8 +7,8 @@
 
 // property name keys
 const std::string count_information_key = "count_information";
-const std::string count_information_category_key = "cat";
-const std::string count_information_value_key = "value";
+const std::string category_key = "cat";
+const std::string value_key = "value";
 
 namespace LightGBM {
   double CategoryFeatureCountEncoder::Encode(double feature_value) {
@@ -29,8 +29,8 @@ namespace LightGBM {
     for (const auto& count_pair : count_information_) {
       count_information_json.emplace_back(
         json11::Json::object{
-          {count_information_category_key, json11::Json(count_pair.first)},
-          {count_information_value_key, json11::Json(count_pair.second)},
+          {category_key, json11::Json(count_pair.first)},
+          {value_key, json11::Json(count_pair.second)},
         });
     }
     result[count_information_key] = json11::Json(count_information_json);
@@ -40,12 +40,12 @@ namespace LightGBM {
 
   std::unique_ptr<CategoryFeatureEncoder> CategoryFeatureCountEncoder::RecoverFromModelStringInJsonFormat(json11::Json input)
   {
-	  std::unordered_map<int, double> count_information;
+	  std::unordered_map<int, int> count_information;
 
 	  std::vector<Json> count_information_json = input[count_information_key].array_items();
 	  for (Json entry : count_information_json) {
-		  int count_information_category = entry[count_information_category_key].int_value();
-		  double count_information_value = entry[count_information_value_key].number_value();
+		  int count_information_category = entry[category_key].int_value();
+		  int count_information_value = entry[value_key].int_value();
 
 		  count_information[count_information_category] = count_information_value;
 	  }
