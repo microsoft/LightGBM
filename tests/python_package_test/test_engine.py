@@ -3227,7 +3227,7 @@ def test_force_split_with_feature_fraction(tmp_path):
 
 
 def test_goss_boosting_and_strategy_equivalent():
-    X, y = make_regression(n_samples=10_000, n_features=10, n_informative=5)
+    X, y = make_regression(n_samples=10_000, n_features=10, n_informative=5, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
@@ -3255,7 +3255,7 @@ def test_goss_boosting_and_strategy_equivalent():
 
 
 def test_sample_strategy_with_boosting():
-    X, y = make_regression(n_samples=10_000, n_features=10, n_informative=5)
+    X, y = make_regression(n_samples=10_000, n_features=10, n_informative=5, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
@@ -3272,7 +3272,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 10000
+    assert ret < 4000
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3287,7 +3287,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 10000
+    assert ret < 4000
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3302,7 +3302,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 10000
+    assert ret < 4000
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3317,7 +3317,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 10000
+    assert ret < 4000
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3332,7 +3332,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 10000
+    assert ret < 4000
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
     params = {
@@ -3347,5 +3347,5 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 10000
+    assert ret < 4000
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
