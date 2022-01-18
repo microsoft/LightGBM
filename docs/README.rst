@@ -13,7 +13,7 @@ After each commit on ``master``, documentation is updated and published to `Read
 Build
 -----
 
-It is not necessary to re-build this documentatioon while modifying LightGBM's source code.
+It is not necessary to re-build this documentation while modifying LightGBM's source code.
 The HTML files generated using ``Sphinx`` are not checked into source control.
 However, you may want to build them locally during development to test changes.
 
@@ -28,6 +28,7 @@ Run the following from the root of this repository to pull the relevant image an
 
     docker run \
         --rm \
+        --user=0 \
         -v $(pwd):/opt/LightGBM \
         --env C_API=true \
         --env CONDA=/opt/conda \
@@ -35,9 +36,8 @@ Run the following from the root of this repository to pull the relevant image an
         --env READTHEDOCS=true \
         --workdir=/opt/LightGBM/docs \
         --entrypoint="" \
-        --user=0 \
         -it readthedocs/build:ubuntu-20.04-2021.09.23 \
-        /bin/bash --noprofile --norc build-docs.sh
+        /bin/bash build-docs.sh
 
 When that code completes, open ``docs/html/index.html`` in your browser.
 

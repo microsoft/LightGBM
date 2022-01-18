@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e -u -o pipefail
-
 rm -f ./_FIRST_RUN.flag
 
 ARCH=$(uname -m)
@@ -12,13 +10,13 @@ curl \
     -o ${HOME}/conda.sh \
     "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-${ARCH}.sh"
 
-bash ${HOME}/conda.sh -b -p ${CONDA}
+/bin/bash ${HOME}/conda.sh -b -p ${CONDA}
 
 conda config --set always_yes yes --set changeps1 no
 
 mamba env create \
     --name docs-env \
-    --file env.yml
+    --file env.yml || exit -1
 
 source activate docs-env
 
@@ -33,4 +31,4 @@ ${CONDA}/envs/docs-env/bin/python \
     -D language=en \
     . _build/html
 
-echo "Done builing docs. Open docs/_build/html/index.html in a web browser to view them."
+echo "Done building docs. Open docs/_build/html/index.html in a web browser to view them."
