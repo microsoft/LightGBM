@@ -501,7 +501,8 @@ def c_int_array(data):
 
 
 def _get_bad_pandas_dtypes(dtypes):
-    float128 = getattr(np, 'float128', None)
+    float128 = getattr(np, 'float128', type(None))
+
     def is_allowed_numpy_dtype(dtype):
         return (
             issubclass(dtype, (np.integer, np.floating, np.bool_))
