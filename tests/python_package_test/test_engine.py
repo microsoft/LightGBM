@@ -3243,15 +3243,23 @@ def test_record_evaluation_with_train():
     np.testing.assert_allclose(eval_result['training']['l2'], train_mses)
 
 
-def test_record_evaluation_with_cv():
+@pytest.mark.parametrize('train_metric', [False, True])
+def test_record_evaluation_with_cv(train_metric):
     X, y = make_synthetic_regression()
     ds = lgb.Dataset(X, y)
     eval_result = {}
     callbacks = [lgb.record_evaluation(eval_result)]
     metrics = ['l2', 'rmse']
     params = {'objective': 'l2', 'num_leaves': 3, 'metric': metrics}
-    cv_hist = lgb.cv(params, ds, num_boost_round=5, stratified=False, callbacks=callbacks, eval_train_metric=True)
-    assert list(eval_result.keys()) == ['train', 'valid']
-    for dataset in ('train', 'valid'):
+    cv_hist = lgb.cv(params, ds, num_boost_round=5, stratified=False, callbacks=callbacks, eval_train_metric=train_metric)
+    expected_datasets = {'valid'}
+    if train_metric:
+        expected_datasets.add('train')
+    assert set(eval_result.keys()) == expected_datasets
+    for dataset in expected_datasets:
         for metric in metrics:
-            assert cv_hist[f'{dataset} {metric}-mean'] == eval_result[dataset][metric]
+            for agg in ('mean', 'stdv'):
+                key = f'{metric}-{agg}'
+                if train_metric:
+                    key = f'{dataset} {key}'
+                assert cv_hist[key] == eval_result[dataset][f'{metric}-{agg}']

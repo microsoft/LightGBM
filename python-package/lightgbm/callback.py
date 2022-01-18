@@ -129,16 +129,28 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
     if not isinstance(eval_result, dict):
         raise TypeError('eval_result should be a dictionary')
 
+    def _extract_data_and_eval_name(data_eval):
+        data_eval = data_eval.split()
+        if len(data_eval) == 1:  # no train metric
+            data_name = 'valid'
+            eval_name = data_eval[0]
+        else:
+            data_name, eval_name = data_eval
+        return data_name, eval_name
+
     def _init(env: CallbackEnv) -> None:
         eval_result.clear()
         for item in env.evaluation_result_list:
             if len(item) == 4:  # regular train
                 data_name, eval_name = item[:2]
             else:  # cv
-                data_eval = item[1]
-                data_name, eval_name = data_eval.split()
+                data_name, eval_name = _extract_data_and_eval_name(item[1])
             eval_result.setdefault(data_name, collections.OrderedDict())
-            eval_result[data_name].setdefault(eval_name, [])
+            if len(item) == 4:
+                eval_result[data_name].setdefault(eval_name, [])
+            else:
+                eval_result[data_name].setdefault(f'{eval_name}-mean', [])
+                eval_result[data_name].setdefault(f'{eval_name}-stdv', [])
 
     def _callback(env: CallbackEnv) -> None:
         if env.iteration == env.begin_iteration:
@@ -146,10 +158,12 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
         for item in env.evaluation_result_list:
             if len(item) == 4:
                 data_name, eval_name, result = item[:3]
+                eval_result[data_name][eval_name].append(result)
             else:
-                data_eval, result = item[1:3]
-                data_name, eval_name = data_eval.split()
-            eval_result[data_name][eval_name].append(result)
+                data_name, eval_name = _extract_data_and_eval_name(item[1])
+                res_mean, res_stdv = item[2], item[4]
+                eval_result[data_name][f'{eval_name}-mean'].append(res_mean)
+                eval_result[data_name][f'{eval_name}-stdv'].append(res_stdv)
     _callback.order = 20  # type: ignore
     return _callback
 
