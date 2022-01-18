@@ -43,6 +43,7 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -n docs-env \
         -c conda-forge \
         --override-channels \
+            doxygen \
             rstcheck
     source activate docs-env
     # check reStructuredText formatting
