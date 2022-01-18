@@ -6,8 +6,6 @@ try:
     from pandas import DataFrame as pd_DataFrame
     from pandas import Series as pd_Series
     from pandas import concat
-    from pandas.api.types import is_numeric_dtype
-    from pandas.api.types import is_sparse as is_dtype_sparse
     try:
         from pandas import CategoricalDtype as pd_CategoricalDtype
     except ImportError:
@@ -35,8 +33,6 @@ except ImportError:
             pass
 
     concat = None
-    is_dtype_sparse = None
-    is_numeric_dtype = None
 
 """matplotlib"""
 try:

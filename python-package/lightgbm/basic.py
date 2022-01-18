@@ -17,8 +17,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Un
 import numpy as np
 import scipy.sparse
 
-from .compat import (PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, is_numeric_dtype, pd_CategoricalDtype,
-                     pd_DataFrame, pd_Series)
+from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
 
 ZERO_THRESHOLD = 1e-35
@@ -502,19 +501,14 @@ def c_int_array(data):
 
 
 def _get_bad_pandas_dtypes(dtypes):
+    float128 = getattr(np, 'float128', None)
     def is_allowed_numpy_dtype(dtype):
-        return issubclass(dtype, (np.integer, np.floating, np.bool_)) and not issubclass(dtype, (np.timedelta64, np.float128))
+        return (
+            issubclass(dtype, (np.integer, np.floating, np.bool_))
+            and not issubclass(dtype, (np.timedelta64, float128))
+        )
 
     return [i for i, dtype in enumerate(dtypes) if not is_allowed_numpy_dtype(dtype.type)]
-
-
-def _find_commmon_dtype(dtypes):
-    target_dtype = np.float32
-    for dtype in dtypes:
-        if dtype.type == np.float64:
-            target_dtype = np.float64
-            break
-    return target_dtype
 
 
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
@@ -551,7 +545,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
                              "Did not expect the data types in the following fields: "
                              f"{bad_index_cols_str}")
-        target_dtype = _find_commmon_dtype(data.dtypes)
+        target_dtype = np.find_common_type((dtype.type for dtype in data.dtypes), [])
         data = data.astype(target_dtype, copy=False).values
     else:
         if feature_name == 'auto':
