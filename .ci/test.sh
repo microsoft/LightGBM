@@ -29,15 +29,22 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
-source activate $CONDA_ENV
-
 cd $BUILD_DIRECTORY
 
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     cd $BUILD_DIRECTORY/docs
-    conda install -q -y -n $CONDA_ENV -c conda-forge doxygen rstcheck
-    pip install --user -r requirements.txt
+    conda env create \
+        -q \
+        -n docs-env \
+        -f ./env.yml
+    conda install \
+        -q \
+        -y \
+        -n docs-env \
+        -c conda-forge \
+        --override-channels \
+            rstcheck
+    source activate docs-env
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report warning $(find . -type f -name "*.rst") || exit -1
@@ -59,6 +66,9 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     diff $BUILD_DIRECTORY/src/io/config_auto-backup.cpp $BUILD_DIRECTORY/src/io/config_auto.cpp || exit -1
     exit 0
 fi
+
+conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
+source activate $CONDA_ENV
 
 if [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \

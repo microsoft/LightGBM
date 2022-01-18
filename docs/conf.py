@@ -283,6 +283,7 @@ def generate_r_docs(app: Sphinx) -> None:
     cd {CURR_PATH.parent}
     """
     try:
+        print("Building R-package documentation")
         # Warning! The following code can cause buffer overflows on RTD.
         # Consider suppressing output completely if RTD project silently fails.
         # Refer to https://github.com/svenevs/exhale
@@ -296,6 +297,7 @@ def generate_r_docs(app: Sphinx) -> None:
             raise RuntimeError(output)
         else:
             print(output)
+            print("Done building R-package documentation")
     except BaseException as e:
         raise Exception(f"An error has occurred while generating documentation for R-package\n{e}")
 
