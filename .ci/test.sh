@@ -33,12 +33,8 @@ cd $BUILD_DIRECTORY
 
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     cd $BUILD_DIRECTORY/docs
-    conda create \
-        -q \
-        -y \
+    conda env create \
         -n docs-env \
-        -c conda-forge \
-        --override-channels \
         --file ./env.yml || exit -1
     conda install \
         -q \
