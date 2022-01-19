@@ -14,7 +14,8 @@ curl \
 
 conda config --set always_yes yes --set changeps1 no
 
-mamba env create \
+mamba create \
+    --yes \
     --name docs-env \
     --file env.yml || exit -1
 
