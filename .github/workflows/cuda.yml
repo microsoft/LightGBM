@@ -91,7 +91,7 @@ jobs:
             cuda_major=${cuda_version%%.*}
             docker_img="nvcr.io/nvidia/cuda:${cuda_version}-devel"
             if [[ ${cuda_major} -gt 10 ]]; then
-                docker_img="${docker_img}-ubuntu$(lsb_release -rs)"
+                docker_img="${docker_img}-ubuntu$(lsb_release -rs)" 
             fi
             docker run --env-file docker.env -v "$GITHUB_WORKSPACE":"$ROOT_DOCKER_FOLDER" --rm --gpus all "$docker_img" /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
   all-successful:
