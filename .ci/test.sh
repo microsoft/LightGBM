@@ -32,7 +32,7 @@ fi
 # on Ubuntu 14.04, gpu_source build segfaults with gcc 10.x or 11.x
 INITIAL_CONDA_CONSTRAINTS="python=${PYTHON_VERSION}"
 if [[ $TASK == "gpu" ]] && [[ $OS_NAME == "linux" ]] && [[ $IN_UBUNTU_LATEST_CONTAINER != "true" ]]; then
-    INITIAL_CONDA_CONSTRAINTS="${INITIAL_CONDA_CONSTRAINTS} libgcc-ng=9.3.0 libgomp=9.3.0"
+    INITIAL_CONDA_CONSTRAINTS="python=3.9.6"
 fi
 
 mamba create -q -y -n $CONDA_ENV ${INITIAL_CONDA_CONSTRAINTS}
