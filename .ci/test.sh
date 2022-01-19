@@ -39,7 +39,7 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -n docs-env \
         -c conda-forge \
         --override-channels \
-        -f ./env.yml
+        --file ./env.yml || exit -1
     conda install \
         -q \
         -y \
@@ -47,7 +47,7 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -c conda-forge \
         --override-channels \
             doxygen \
-            rstcheck
+            rstcheck || exit -1
     source activate docs-env
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
