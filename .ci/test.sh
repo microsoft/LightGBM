@@ -29,7 +29,11 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-mamba create -q -y -n $CONDA_ENV "python=${PYTHON_VERSION}"
+INITIAL_CONDA_CONSTRAINTS="python=${PYTHON_VERSION}"
+if [[ $OS_NAME == "linux" ]]; then
+    INITIAL_CONDA_CONSTRAINTS="${INITIAL_CONDA_CONSTRAINTS} libstdcxx-ng"
+fi
+mamba create -q -y -n $CONDA_ENV ${INITIAL_CONDA_CONSTRAINTS}
 source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
