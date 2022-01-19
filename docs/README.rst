@@ -62,6 +62,6 @@ If you faced any problems with Doxygen installation or you simply do not need do
 
 .. code:: sh
 
-    pip install -r requirements_base.txt
+    pip install breathe sphinx 'sphinx_rtd_theme>0.5'
     export C_API=NO || set C_API=NO
     make html
