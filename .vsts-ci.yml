@@ -46,11 +46,27 @@ jobs:
       #   TASK: mpi
       #   METHOD: source
       #   PYTHON_VERSION: 3.8
-      gpu_source:
+      gpu_source_py37:
+        TASK: gpu
+        METHOD: source
+        PYTHON_VERSION: 3.7
+      gpu_source_py38:
+        TASK: gpu
+        METHOD: source
+        PYTHON_VERSION: 3.8
+      gpu_source_py39:
+        TASK: gpu
+        METHOD: source
+        PYTHON_VERSION: 3.9
+      gpu_source_396:
         TASK: gpu
         METHOD: source
         # on Ubuntu 14.04, gpu_source build segfaults with Python 3.9.9
         PYTHON_VERSION: 3.9.6
+      gpu_source_py310:
+        TASK: gpu
+        METHOD: source
+        PYTHON_VERSION: 3.10
       # swig:
       #   TASK: swig
   steps:
