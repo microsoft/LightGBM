@@ -11,11 +11,11 @@
  // property name keys
 const std::string feature_name_key = "feature_name";
 const std::string encoder_type_key = "encoder_type";
+const std::string feature_name = "TestFeature";
 
 class CategoryFeatureCountEncoderTests : public testing::Test { };
 
 TEST_F(CategoryFeatureCountEncoderTests, GivenCategoryValue_WhenEncoding_ThenEncodedValueShouldBeReturned) {
-  const std::string feature_name = "TestFeature";
   std::unordered_map<int, int> count_information;
   count_information[1] = 2;
   count_information[2] = 3;
@@ -29,8 +29,6 @@ TEST_F(CategoryFeatureCountEncoderTests, GivenCategoryValue_WhenEncoding_ThenEnc
 }
 
 TEST_F(CategoryFeatureCountEncoderTests, GivenCategoryFeatureCountEncoder_WhenRecoverFromDumpedJson_ThenEncoderWithAllInformationShouldBeReturned) {
-	const std::string feature_name = "TestFeature";
-	
 	std::unordered_map<int, int> count_information;
 	count_information[1] = 2;
 
@@ -49,4 +47,30 @@ TEST_F(CategoryFeatureCountEncoderTests, GivenCategoryFeatureCountEncoder_WhenRe
 
 	std::unique_ptr<LightGBM::CategoryFeatureEncoder> encoder2_from_json = LightGBM::CategoryFeatureEncoder::RecoverFromModelStringInJsonFormat(json11::Json::Json(encoder2_in_Json));
 	EXPECT_EQ(encoder2_from_json->Encode(1), 0);
+}
+
+class CategoryFeatureTargetEncoderTests : public testing::Test { };
+
+TEST_F(CategoryFeatureTargetEncoderTests, GivenCategoryValue_WhenEncoding_ThenEncodedValueShouldBeReturned) {
+  std::unordered_map<int, int> count_information;
+  int count1 = 2;
+  int count2 = 3;
+  count_information[1] = 2;
+  count_information[2] = 3;
+
+  std::unordered_map<int, double> label_information;
+  double label1 = 3.0;
+  double label2 = 4.0;
+  label_information[1] = 3.0;
+  label_information[2] = 4.0;
+
+  double prior = 2.0;
+  double prior_weight = 0.3;
+
+  LightGBM::CategoryFeatureTargetEncoder encoder(feature_name, prior, prior_weight, count_information, label_information);
+
+  EXPECT_EQ(encoder.Encode(1), (label1 + prior * prior_weight) / (count1 + prior_weight));
+  EXPECT_EQ(encoder.Encode(2), (label2 + prior * prior_weight) / (count2 + prior_weight));
+  EXPECT_EQ(encoder.Encode(-1), 0);
+  EXPECT_EQ(encoder.GetFeatureName(), feature_name);
 }
