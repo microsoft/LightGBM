@@ -21,7 +21,7 @@ mamba create \
 
 source activate docs-env
 
-${CONDA}/envs/docs-env/bin/python \
+python \
     -m sphinx \
     -T \
     -E \
