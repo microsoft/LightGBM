@@ -50,6 +50,6 @@ namespace LightGBM {
 		  count_information[count_information_category] = count_information_value;
 	  }
 
-	  return std::make_unique<CategoryFeatureCountEncoder>(CategoryFeatureCountEncoder(count_information));
+	  return std::unique_ptr<CategoryFeatureEncoder>(new CategoryFeatureCountEncoder(count_information));
   }
 }

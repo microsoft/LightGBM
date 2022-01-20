@@ -369,6 +369,7 @@ file(
       src/objective/*.cpp
       src/network/*.cpp
       src/treelearner/*.cpp
+      src/feature_engineering/*.cpp
 if(USE_CUDA)
       src/treelearner/*.cu
 endif()

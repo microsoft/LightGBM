@@ -21,9 +21,13 @@ using json11::Json;
 
     CategoryFeatureEncoder(const std::string feature_name, int type) : feature_name_(feature_name), type_(type) {}
 
-    std::string GetFeatureName() {
+    inline std::string GetFeatureName() {
       return feature_name_;
     }
+
+	inline int GetTypeId() {
+		return type_;
+	}
 
     virtual double Encode(double feature_value) = 0;
 
@@ -73,7 +77,7 @@ using json11::Json;
 	static std::unique_ptr<CategoryFeatureEncoder> RecoverFromModelStringInJsonFormat(json11::Json input);
 
     // public constant value
-    static const int target_encoder_type = 1;
+    static const int target_encoder_type = 2;
 
   private:
     std::unordered_map<int, int> count_information_;
@@ -94,7 +98,7 @@ using json11::Json;
 
 	int total_count;
 
-	int label_sum;
+	double label_sum;
   };
 
   class CategoryFeatureTargetInformationCollector {

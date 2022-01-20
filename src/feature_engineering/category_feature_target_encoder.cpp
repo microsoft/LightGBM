@@ -62,7 +62,7 @@ namespace LightGBM {
 	  std::vector<Json> count_information_json = input[count_information_key].array_items();
 	  for (Json entry : count_information_json) {
 		  int category = entry[category_key].int_value();
-		  double category_value = entry[value_key].int_value();
+		  int category_value = entry[value_key].int_value();
 
 		  count_information[category] = category_value;
 	  }
@@ -76,6 +76,6 @@ namespace LightGBM {
 		  label_information[category] = category_value;
 	  }
 
-	  return std::make_unique<CategoryFeatureTargetEncoder>(CategoryFeatureTargetEncoder(prior, prior_weight, count_information, label_information));
+	  return std::unique_ptr<CategoryFeatureEncoder>(new CategoryFeatureTargetEncoder(prior, prior_weight, count_information, label_information));
   }
 }

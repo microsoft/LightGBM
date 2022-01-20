@@ -70,7 +70,6 @@ namespace LightGBM {
 		json11::Json::array train_category_feature_encoders_json;
 
 		for (int fold_id = 0; fold_id < train_category_feature_encoders_.size(); ++fold_id) {
-			std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>& category_feature_encoders = train_category_feature_encoders_[fold_id];
 			json11::Json::array category_feature_encoders_per_fold;
 
 			for (auto it = category_feature_encoders_.begin(); it != category_feature_encoders_.end(); ++it)
@@ -100,7 +99,7 @@ namespace LightGBM {
 		return json11::Json(result).dump();
 	}
 
-	std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>& ParseCategoryFeatureEncoders(Json input_json) {
+	std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> ParseCategoryFeatureEncoders(Json input_json) {
 		std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> result;
 
 		for each (Json encoders_per_feature_json in input_json.array_items())
@@ -124,16 +123,22 @@ namespace LightGBM {
 			Log::Fatal("Invalid CategoryFeatureEncoderManager model: %s. Please check if follow json format.", err.c_str());
 		}
 
-		std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>& category_feature_encoders = ParseCategoryFeatureEncoders(input_json[category_feature_encoders_key]);
-		std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>> train_category_feature_encoders;
-
-		CategoryFeatureEncoderManager result(train_category_feature_encoders, category_feature_encoders);
-		Json train_category_feature_encoders_json = input_json[train_category_feature_encoders_key];
-		for each (Json entry in train_category_feature_encoders_json.array_items())
+		std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>&& category_feature_encoders = ParseCategoryFeatureEncoders(input_json[category_feature_encoders_key]);
+		
+	    std::vector<Json> train_category_feature_encoders_json = input_json[train_category_feature_encoders_key].array_items();
+		std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>> train_category_feature_encoders(train_category_feature_encoders_json.size());
+	    for (int fold_id = 0; fold_id < train_category_feature_encoders_json.size(); fold_id++)
 		{
-			train_category_feature_encoders.push_back(std::move(ParseCategoryFeatureEncoders(entry)));
+			Json entry = train_category_feature_encoders_json[fold_id];
+			std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>&& category_feature_encoders_fold = ParseCategoryFeatureEncoders(entry);
+
+			for (auto it = category_feature_encoders_fold.begin(); it != category_feature_encoders_fold.end(); ++it)
+			{
+				train_category_feature_encoders[fold_id][it->first] = std::move(it->second);
+			}
 		}
 
+		CategoryFeatureEncoderManager result(train_category_feature_encoders, category_feature_encoders);
 		return std::unique_ptr<CategoryFeatureEncoderManager>(&result);
 	}
 
@@ -157,9 +162,9 @@ namespace LightGBM {
 		std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>> train_category_feature_encoders;
 		std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> category_feature_encoders;
 
-		std::vector<int>& categorical_features = informationCollector.GetCategoricalFeatures();
-		std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>& category_target_information = informationCollector.GetCategoryTargetInformation();
-		std::unordered_map<int, CategoryFeatureTargetInformation>& global_category_target_information = informationCollector.GetGlobalCategoryTargetInformation();
+		std::vector<int>&& categorical_features = informationCollector.GetCategoricalFeatures();
+		std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>&& category_target_information = informationCollector.GetCategoryTargetInformation();
+		std::unordered_map<int, CategoryFeatureTargetInformation>&& global_category_target_information = informationCollector.GetGlobalCategoryTargetInformation();
 		
 		for (int e_index = 0; e_index < settings.array_items().size(); ++e_index) {
 			Json encoder_setting = settings.array_items()[e_index];
