@@ -40,11 +40,7 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         --override-channels \
         -n docs-env \
             python=3.9
-    conda install \
-        -q \
-        -y \
-        -c conda-forge \
-        --override-channels \
+    conda env update \
         -n docs-env \
         --file ./env.yml || exit -1
     conda install \
