@@ -63,6 +63,47 @@ CUDATreeLearner::CUDATreeLearner(const Config* config)
 }
 
 CUDATreeLearner::~CUDATreeLearner() {
+ #pragma omp parallel for schedule(static, num_gpu_)
+
+  for (int device_id = 0; device_id < num_gpu_; ++device_id) {
+    // do nothing it there is no gpu feature
+    int num_gpu_feature_groups = num_gpu_feature_groups_[device_id];
+    if (num_gpu_feature_groups) {
+      CUDASUCCESS_OR_FATAL(cudaSetDevice(device_id));
+
+      if (device_features_[device_id] != NULL) {
+        CUDASUCCESS_OR_FATAL(cudaFree(device_features_[device_id]));
+      }
+
+      if (device_gradients_[device_id] != NULL) {
+        CUDASUCCESS_OR_FATAL(cudaFree(device_gradients_[device_id]));
+      }
+
+      if (device_hessians_[device_id] != NULL) {
+        CUDASUCCESS_OR_FATAL(cudaFree(device_hessians_[device_id]));
+      }
+
+      if (device_feature_masks_[device_id] != NULL) {
+         CUDASUCCESS_OR_FATAL(cudaFree(device_feature_masks_[device_id]));
+      }
+
+      if (device_data_indices_[device_id] != NULL) {
+        CUDASUCCESS_OR_FATAL(cudaFree(device_data_indices_[device_id]));
+      }
+
+      if (sync_counters_[device_id] != NULL) {
+        CUDASUCCESS_OR_FATAL(cudaFree(sync_counters_[device_id]));
+      }
+
+      if (device_subhistograms_[device_id] != NULL) {
+        CUDASUCCESS_OR_FATAL(cudaFree(device_subhistograms_[device_id]));
+      }
+
+      if (device_histogram_outputs_[device_id] != NULL) {
+        CUDASUCCESS_OR_FATAL(cudaFree(device_histogram_outputs_[device_id]));
+      }
+    }
+  }
 }
 
 
