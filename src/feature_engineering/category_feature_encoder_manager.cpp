@@ -119,14 +119,14 @@ namespace LightGBM {
 
     std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>&& category_feature_encoders_tmp = ParseCategoryFeatureEncoders(input_json[category_feature_encoders_key]);
     std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> category_feature_encoders(std::move(category_feature_encoders_tmp));
-    
+
     std::vector<Json> train_category_feature_encoders_json = input_json[train_category_feature_encoders_key].array_items();
     std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>> train_category_feature_encoders(train_category_feature_encoders_json.size());
     for (int fold_id = 0; fold_id < train_category_feature_encoders_json.size(); fold_id++) {
       Json entry = train_category_feature_encoders_json[fold_id];
       std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>&& train_category_feature_encoders_tmp = ParseCategoryFeatureEncoders(entry);
       std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> category_feature_encoders_fold(std::move(train_category_feature_encoders_tmp));
-      
+
       for (auto it = category_feature_encoders_fold.begin(); it != category_feature_encoders_fold.end(); ++it) {
         train_category_feature_encoders[fold_id][it->first] = std::move(it->second);
       }
@@ -139,7 +139,7 @@ namespace LightGBM {
     if (count_encoder_type.compare(encoder_setting[encoder_type_key].string_value()) == 0) {
       return std::unique_ptr<CategoryFeatureEncoder>(new CategoryFeatureCountEncoder(featureName, targetInformation.category_count));
     }
-    
+
     if (taregt_label_encoder_type.compare(encoder_setting[encoder_type_key].string_value()) == 0) {
       double prior = encoder_setting[prior_key].is_null() ? (targetInformation.label_sum / targetInformation.total_count) : encoder_setting[prior_key].number_value();
       double prior_weight = encoder_setting[prior_weight_key].is_null() ? 0 : encoder_setting[prior_weight_key].number_value();
@@ -157,7 +157,7 @@ namespace LightGBM {
     int fold_count = category_target_information.size();
     std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>> train_category_feature_encoders(fold_count);
     std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> category_feature_encoders;
-    
+
     for (int e_index = 0; e_index < settings.array_items().size(); ++e_index) {
       Json encoder_setting = settings.array_items()[e_index];
 
