@@ -147,8 +147,7 @@ using json11::Json;
 	std::unordered_map<int, CategoryFeatureTargetInformation> global_category_target_information_;
   };
 
-  struct EncodeResult
-  {
+  struct EncodeResult {
 	  double value;
 	  std::string feature_name;
   };

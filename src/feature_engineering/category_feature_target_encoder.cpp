@@ -24,8 +24,7 @@ namespace LightGBM {
     return default_value;
   }
 
-  json11::Json::object CategoryFeatureTargetEncoder::DumpToJsonObject()
-  {
+  json11::Json::object CategoryFeatureTargetEncoder::DumpToJsonObject() {
     json11::Json::object result = CategoryFeatureEncoder::DumpToJsonObject();
     result[count_prior_key] = json11::Json(prior_);
     result[count_prior_weight_key] = json11::Json(prior_weight_);
@@ -53,8 +52,7 @@ namespace LightGBM {
     return result;
   }
 
-  std::unique_ptr<CategoryFeatureEncoder> CategoryFeatureTargetEncoder::RecoverFromModelStringInJsonFormat(json11::Json input)
-  {
+  std::unique_ptr<CategoryFeatureEncoder> CategoryFeatureTargetEncoder::RecoverFromModelStringInJsonFormat(json11::Json input) {
 	  double prior = input[count_prior_key].number_value();
 	  double prior_weight = input[count_prior_weight_key].number_value();
 	  

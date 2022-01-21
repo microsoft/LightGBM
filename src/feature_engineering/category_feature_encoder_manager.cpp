@@ -51,17 +51,15 @@ namespace LightGBM {
 	std::string CategoryFeatureEncoderManager::DumpToModelStringInJsonFormat() {
 		json11::Json::array category_feature_encoders_json;
 		
-        for (auto it = category_feature_encoders_.begin(); it != category_feature_encoders_.end(); ++it)
-		{
+        for (auto it = category_feature_encoders_.begin(); it != category_feature_encoders_.end(); ++it) {
 			json11::Json::array category_feature_encoders_per_feature;
 
-			for (size_t i = 0; i < it->second.size(); i++)
-			{
+			for (size_t i = 0; i < it->second.size(); i++) {
 				category_feature_encoders_per_feature.emplace_back(it->second[i]->DumpToJsonObject());
 			}
 
 			category_feature_encoders_json.emplace_back(
-				json11::Json::object{
+				json11::Json::object {
 					{ feature_id_key, json11::Json(it->first) },
 					{ encorders_key, json11::Json(category_feature_encoders_per_feature) },
 			});
@@ -72,17 +70,15 @@ namespace LightGBM {
 		for (int fold_id = 0; fold_id < train_category_feature_encoders_.size(); ++fold_id) {
 			json11::Json::array category_feature_encoders_per_fold;
 
-			for (auto it = train_category_feature_encoders_[fold_id].begin(); it != train_category_feature_encoders_[fold_id].end(); ++it)
-			{
+			for (auto it = train_category_feature_encoders_[fold_id].begin(); it != train_category_feature_encoders_[fold_id].end(); ++it) {
 				json11::Json::array category_feature_encoders_per_feature;
 
-				for (size_t i = 0; i < it->second.size(); i++)
-				{
+				for (size_t i = 0; i < it->second.size(); i++) {
 					category_feature_encoders_per_feature.emplace_back(it->second[i]->DumpToJsonObject());
 				}
 
 				category_feature_encoders_per_fold.emplace_back(
-					json11::Json::object{
+					json11::Json::object {
 						{ feature_id_key, json11::Json(it->first) },
 						{ encorders_key, json11::Json(category_feature_encoders_per_feature) },
 				});
@@ -102,12 +98,10 @@ namespace LightGBM {
 	std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> ParseCategoryFeatureEncoders(Json input_json) {
 		std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> result;
 
-		for each (Json encoders_per_feature_json in input_json.array_items())
-		{
+		for each (Json encoders_per_feature_json in input_json.array_items()) {
 			int featureId = encoders_per_feature_json[feature_id_key].int_value();
 
-			for each (Json encoder_json in encoders_per_feature_json[encorders_key].array_items())
-			{
+			for each (Json encoder_json in encoders_per_feature_json[encorders_key].array_items()) {
 				result[featureId].push_back(std::move(CategoryFeatureEncoder::RecoverFromModelStringInJsonFormat(encoder_json)));
 			}
 		}
@@ -128,14 +122,12 @@ namespace LightGBM {
 		
 	    std::vector<Json> train_category_feature_encoders_json = input_json[train_category_feature_encoders_key].array_items();
 		std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>> train_category_feature_encoders(train_category_feature_encoders_json.size());
-	    for (int fold_id = 0; fold_id < train_category_feature_encoders_json.size(); fold_id++)
-		{
+	    for (int fold_id = 0; fold_id < train_category_feature_encoders_json.size(); fold_id++)	{
 			Json entry = train_category_feature_encoders_json[fold_id];
 			std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>&& train_category_feature_encoders_tmp = ParseCategoryFeatureEncoders(entry);
 			std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> category_feature_encoders_fold(std::move(train_category_feature_encoders_tmp));
 			
-			for (auto it = category_feature_encoders_fold.begin(); it != category_feature_encoders_fold.end(); ++it)
-			{
+			for (auto it = category_feature_encoders_fold.begin(); it != category_feature_encoders_fold.end(); ++it) {
 				train_category_feature_encoders[fold_id][it->first] = std::move(it->second);
 			}
 		}
@@ -158,8 +150,7 @@ namespace LightGBM {
 		return std::unique_ptr<CategoryFeatureEncoder>();
 	}
 
-	std::unique_ptr<CategoryFeatureEncoderManager> CategoryFeatureEncoderManager::Create(json11::Json settings, CategoryFeatureTargetInformationCollector& informationCollector)
-	{
+	std::unique_ptr<CategoryFeatureEncoderManager> CategoryFeatureEncoderManager::Create(json11::Json settings, CategoryFeatureTargetInformationCollector& informationCollector) {
 		std::vector<int>&& categorical_features = informationCollector.GetCategoricalFeatures();
 		std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>&& category_target_information = informationCollector.GetCategoryTargetInformation();
 		std::unordered_map<int, CategoryFeatureTargetInformation>&& global_category_target_information = informationCollector.GetGlobalCategoryTargetInformation();

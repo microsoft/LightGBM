@@ -21,8 +21,7 @@ namespace LightGBM {
     return default_value;
   }
 
-  json11::Json::object CategoryFeatureCountEncoder::DumpToJsonObject()
-  {
+  json11::Json::object CategoryFeatureCountEncoder::DumpToJsonObject() {
     json11::Json::object result = CategoryFeatureEncoder::DumpToJsonObject();
 
     json11::Json::array count_information_json;
@@ -38,8 +37,7 @@ namespace LightGBM {
     return result;
   }
 
-  std::unique_ptr<CategoryFeatureEncoder> CategoryFeatureCountEncoder::RecoverFromModelStringInJsonFormat(json11::Json input)
-  {
+  std::unique_ptr<CategoryFeatureEncoder> CategoryFeatureCountEncoder::RecoverFromModelStringInJsonFormat(json11::Json input) {
 	  std::unordered_map<int, int> count_information;
 
 	  std::vector<Json> count_information_json = input[count_information_key].array_items();
