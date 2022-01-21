@@ -38,16 +38,16 @@ namespace LightGBM {
   }
 
   std::unique_ptr<CategoryFeatureEncoder> CategoryFeatureCountEncoder::RecoverFromModelStringInJsonFormat(json11::Json input) {
-	  std::unordered_map<int, int> count_information;
+    std::unordered_map<int, int> count_information;
 
-	  std::vector<Json> count_information_json = input[count_information_key].array_items();
-	  for (Json entry : count_information_json) {
-		  int count_information_category = entry[category_key].int_value();
-		  int count_information_value = entry[value_key].int_value();
+    std::vector<Json> count_information_json = input[count_information_key].array_items();
+    for (Json entry : count_information_json) {
+      int count_information_category = entry[category_key].int_value();
+      int count_information_value = entry[value_key].int_value();
 
-		  count_information[count_information_category] = count_information_value;
-	  }
+      count_information[count_information_category] = count_information_value;
+    }
 
-	  return std::unique_ptr<CategoryFeatureEncoder>(new CategoryFeatureCountEncoder(count_information));
+    return std::unique_ptr<CategoryFeatureEncoder>(new CategoryFeatureCountEncoder(count_information));
   }
 }

@@ -39,41 +39,41 @@ namespace LightGBM {
     }
     result[count_information_key] = json11::Json(count_information_json);
 
-	json11::Json::array label_information_json;
-	for (const auto& count_pair : label_information_) {
-		label_information_json.emplace_back(
-			json11::Json::object{
-				{ category_key, json11::Json(count_pair.first) },
-				{ value_key, json11::Json(count_pair.second) }
-		});
-	}
-	result[label_information_key] = json11::Json(label_information_json);
+    json11::Json::array label_information_json;
+    for (const auto& count_pair : label_information_) {
+      label_information_json.emplace_back(
+        json11::Json::object{
+          { category_key, json11::Json(count_pair.first) },
+          { value_key, json11::Json(count_pair.second) }
+      });
+    }
+    result[label_information_key] = json11::Json(label_information_json);
 
     return result;
   }
 
   std::unique_ptr<CategoryFeatureEncoder> CategoryFeatureTargetEncoder::RecoverFromModelStringInJsonFormat(json11::Json input) {
-	  double prior = input[count_prior_key].number_value();
-	  double prior_weight = input[count_prior_weight_key].number_value();
-	  
-	  std::unordered_map<int, int> count_information;
-	  std::vector<Json> count_information_json = input[count_information_key].array_items();
-	  for (Json entry : count_information_json) {
-		  int category = entry[category_key].int_value();
-		  int category_value = entry[value_key].int_value();
+    double prior = input[count_prior_key].number_value();
+    double prior_weight = input[count_prior_weight_key].number_value();
+    
+    std::unordered_map<int, int> count_information;
+    std::vector<Json> count_information_json = input[count_information_key].array_items();
+    for (Json entry : count_information_json) {
+      int category = entry[category_key].int_value();
+      int category_value = entry[value_key].int_value();
 
-		  count_information[category] = category_value;
-	  }
+      count_information[category] = category_value;
+    }
 
-	  std::unordered_map<int, double> label_information;
-	  std::vector<Json> label_information_json = input[label_information_key].array_items();
-	  for (Json entry : label_information_json) {
-		  int category = entry[category_key].int_value();
-		  double category_value = entry[value_key].number_value();
+    std::unordered_map<int, double> label_information;
+    std::vector<Json> label_information_json = input[label_information_key].array_items();
+    for (Json entry : label_information_json) {
+      int category = entry[category_key].int_value();
+      double category_value = entry[value_key].number_value();
 
-		  label_information[category] = category_value;
-	  }
+      label_information[category] = category_value;
+    }
 
-	  return std::unique_ptr<CategoryFeatureEncoder>(new CategoryFeatureTargetEncoder(prior, prior_weight, count_information, label_information));
+    return std::unique_ptr<CategoryFeatureEncoder>(new CategoryFeatureTargetEncoder(prior, prior_weight, count_information, label_information));
   }
 }

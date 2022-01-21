@@ -47,24 +47,24 @@ TEST_F(CategoryFeatureCountEncoderTests, GivenCategoryValue_WhenEncoding_ThenEnc
 }
 
 TEST_F(CategoryFeatureCountEncoderTests, GivenCategoryFeatureCountEncoder_WhenRecoverFromDumpedJson_ThenEncoderWithAllInformationShouldBeReturned) {
-	std::unordered_map<int, int> count_information;
-	count_information[1] = 2;
+  std::unordered_map<int, int> count_information;
+  count_information[1] = 2;
 
-	LightGBM::CategoryFeatureCountEncoder encoder1(feature_name, count_information);
-	json11::Json::object encoder1_in_Json = encoder1.DumpToJsonObject();
-	std::unique_ptr<LightGBM::CategoryFeatureEncoder> encoder1_from_json = LightGBM::CategoryFeatureEncoder::RecoverFromModelStringInJsonFormat(json11::Json::Json(encoder1_in_Json));
+  LightGBM::CategoryFeatureCountEncoder encoder1(feature_name, count_information);
+  json11::Json::object encoder1_in_Json = encoder1.DumpToJsonObject();
+  std::unique_ptr<LightGBM::CategoryFeatureEncoder> encoder1_from_json = LightGBM::CategoryFeatureEncoder::RecoverFromModelStringInJsonFormat(json11::Json::Json(encoder1_in_Json));
 
-	EXPECT_EQ(encoder1_from_json->Encode(1), 2);
-	EXPECT_EQ(encoder1_from_json->GetTypeId(), LightGBM::CategoryFeatureCountEncoder::count_encoder_type);
-	EXPECT_EQ(encoder1_from_json->GetFeatureName(), feature_name);
+  EXPECT_EQ(encoder1_from_json->Encode(1), 2);
+  EXPECT_EQ(encoder1_from_json->GetTypeId(), LightGBM::CategoryFeatureCountEncoder::count_encoder_type);
+  EXPECT_EQ(encoder1_from_json->GetFeatureName(), feature_name);
 
-	// Empty encoder
-	LightGBM::CategoryFeatureCountEncoder encoder2(feature_name, std::unordered_map<int, int>());
-	json11::Json::object encoder2_in_Json = encoder2.DumpToJsonObject();
-	EXPECT_EQ(encoder2_in_Json[feature_name_key].string_value(), feature_name);
+  // Empty encoder
+  LightGBM::CategoryFeatureCountEncoder encoder2(feature_name, std::unordered_map<int, int>());
+  json11::Json::object encoder2_in_Json = encoder2.DumpToJsonObject();
+  EXPECT_EQ(encoder2_in_Json[feature_name_key].string_value(), feature_name);
 
-	std::unique_ptr<LightGBM::CategoryFeatureEncoder> encoder2_from_json = LightGBM::CategoryFeatureEncoder::RecoverFromModelStringInJsonFormat(json11::Json::Json(encoder2_in_Json));
-	EXPECT_EQ(encoder2_from_json->Encode(1), 0);
+  std::unique_ptr<LightGBM::CategoryFeatureEncoder> encoder2_from_json = LightGBM::CategoryFeatureEncoder::RecoverFromModelStringInJsonFormat(json11::Json::Json(encoder2_in_Json));
+  EXPECT_EQ(encoder2_from_json->Encode(1), 0);
 }
 
 class CategoryFeatureTargetEncoderTests : public testing::Test { };
@@ -107,17 +107,17 @@ TEST_F(CategoryFeatureTargetEncoderTests, GivenCategoryFeatureTargetEncoder_When
 
   LightGBM::CategoryFeatureTargetEncoder encoder1(feature_name, prior, prior_weight, count_information, label_information);
   json11::Json::object encoder1_in_Json = encoder1.DumpToJsonObject();
-	std::unique_ptr<LightGBM::CategoryFeatureEncoder> encoder1_from_json = LightGBM::CategoryFeatureEncoder::RecoverFromModelStringInJsonFormat(json11::Json::Json(encoder1_in_Json));
+  std::unique_ptr<LightGBM::CategoryFeatureEncoder> encoder1_from_json = LightGBM::CategoryFeatureEncoder::RecoverFromModelStringInJsonFormat(json11::Json::Json(encoder1_in_Json));
 
-	EXPECT_EQ(encoder1_from_json->Encode(1), (label1 + prior * prior_weight) / (count1 + prior_weight));
-	EXPECT_EQ(encoder1_from_json->GetTypeId(), LightGBM::CategoryFeatureTargetEncoder::target_encoder_type);
-	EXPECT_EQ(encoder1_from_json->GetFeatureName(), feature_name);
+  EXPECT_EQ(encoder1_from_json->Encode(1), (label1 + prior * prior_weight) / (count1 + prior_weight));
+  EXPECT_EQ(encoder1_from_json->GetTypeId(), LightGBM::CategoryFeatureTargetEncoder::target_encoder_type);
+  EXPECT_EQ(encoder1_from_json->GetFeatureName(), feature_name);
 
-	// Empty encoder
+  // Empty encoder
   LightGBM::CategoryFeatureTargetEncoder encoder2(feature_name, prior, prior_weight, std::unordered_map<int, int>(), std::unordered_map<int, double>());
-	json11::Json::object encoder2_in_Json = encoder2.DumpToJsonObject();
+  json11::Json::object encoder2_in_Json = encoder2.DumpToJsonObject();
   std::unique_ptr<LightGBM::CategoryFeatureEncoder> encoder2_from_json = LightGBM::CategoryFeatureEncoder::RecoverFromModelStringInJsonFormat(json11::Json::Json(encoder2_in_Json));
-	EXPECT_EQ(encoder2_from_json->Encode(1), 0);
+  EXPECT_EQ(encoder2_from_json->Encode(1), 0);
 }
 
 class CategoryFeatureTargetInformationCollectorTests : public testing::Test { };
@@ -209,16 +209,16 @@ TEST_F(CategoryFeatureEncoderManagerTests, GivenCollectorAndSettings_WhenCreateM
 
   json11::Json::array encoder_settings;
   encoder_settings.emplace_back(json11::Json::object {
-			{ encoder_type_key, json11::Json(count_encoder_type) },
-		});
+      { encoder_type_key, json11::Json(count_encoder_type) },
+    });
 
   double prior_weight = 0.3; 
   double prior = 0.5;
   encoder_settings.emplace_back(json11::Json::object {
-			{ encoder_type_key, json11::Json(taregt_label_encoder_type) },
+      { encoder_type_key, json11::Json(taregt_label_encoder_type) },
       { prior_weight_key, json11::Json(prior_weight) },
       { prior_key, json11::Json(prior) },
-		});
+    });
   std::unique_ptr<LightGBM::CategoryFeatureEncoderManager> manager = LightGBM::CategoryFeatureEncoderManager::Create(json11::Json(encoder_settings), collector);
   std::string manager_string_in_json_string = manager->DumpToModelStringInJsonFormat();
 
@@ -246,16 +246,16 @@ TEST_F(CategoryFeatureEncoderManagerTests, GivenCollectorAndSettings_WhenRecover
 
   json11::Json::array encoder_settings;
   encoder_settings.emplace_back(json11::Json::object {
-			{ encoder_type_key, json11::Json(count_encoder_type) },
-		});
+      { encoder_type_key, json11::Json(count_encoder_type) },
+    });
 
   double prior_weight = 0.3; 
   double prior = 0.5;
   encoder_settings.emplace_back(json11::Json::object {
-			{ encoder_type_key, json11::Json(taregt_label_encoder_type) },
+      { encoder_type_key, json11::Json(taregt_label_encoder_type) },
       { prior_weight_key, json11::Json(prior_weight) },
       { prior_key, json11::Json(prior) },
-		});
+    });
   std::unique_ptr<LightGBM::CategoryFeatureEncoderManager> manager = LightGBM::CategoryFeatureEncoderManager::Create(json11::Json(encoder_settings), collector);
   std::string manager_string_in_json_string = manager->DumpToModelStringInJsonFormat();
   std::unique_ptr<LightGBM::CategoryFeatureEncoderManager> manager_recovered = LightGBM::CategoryFeatureEncoderManager::RecoverFromModelStringInJsonFormat(manager_string_in_json_string);
@@ -278,17 +278,17 @@ TEST_F(CategoryFeatureEncoderManagerTests, GivenCategoryFeatureEncoderManager_Wh
 
   json11::Json::array encoder_settings;
   encoder_settings.emplace_back(json11::Json::object {
-			{ encoder_type_key, json11::Json(count_encoder_type) },
-		});
+      { encoder_type_key, json11::Json(count_encoder_type) },
+    });
 
   double prior_weight = 0.3; 
   double fold0_expect_prior = (fold0_record0_label + fold0_record1_label)/ 2.0;
   double fold1_expect_prior = (fold1_record0_label + fold1_record1_label + fold1_record2_label)/ 3.0;
   double global_expect_prior = (fold0_record0_label + fold0_record1_label + fold1_record0_label + fold1_record1_label + fold1_record2_label)/ 5.0;
   encoder_settings.emplace_back(json11::Json::object {
-			{ encoder_type_key, json11::Json(taregt_label_encoder_type) },
+      { encoder_type_key, json11::Json(taregt_label_encoder_type) },
       { prior_weight_key, json11::Json(prior_weight) },
-		});
+    });
   std::unique_ptr<LightGBM::CategoryFeatureEncoderManager> manager = LightGBM::CategoryFeatureEncoderManager::Create(json11::Json(encoder_settings), collector);
   std::string manager_string_in_json_string = manager->DumpToModelStringInJsonFormat();
   std::unique_ptr<LightGBM::CategoryFeatureEncoderManager> manager_recovered = LightGBM::CategoryFeatureEncoderManager::RecoverFromModelStringInJsonFormat(manager_string_in_json_string);
