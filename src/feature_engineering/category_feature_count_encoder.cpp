@@ -6,9 +6,9 @@
 #include "category_feature_encoder.hpp"
 
 // property name keys
-const std::string count_information_key = "count_information";
-const std::string category_key = "cat";
-const std::string value_key = "value";
+const char count_information_key[] = "count_information";
+const char category_key[] = "cat";
+const char value_key[] = "value";
 
 namespace LightGBM {
   double CategoryFeatureCountEncoder::Encode(double feature_value) {
@@ -50,4 +50,4 @@ namespace LightGBM {
 
     return std::unique_ptr<CategoryFeatureEncoder>(new CategoryFeatureCountEncoder(count_information));
   }
-}
+} // namespace LightGBM
