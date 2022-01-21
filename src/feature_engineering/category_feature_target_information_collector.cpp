@@ -9,19 +9,19 @@
 
 namespace LightGBM {
   void CategoryFeatureTargetInformationCollector::HandleRecord(int fold_id, const std::vector<double>& record, double label) {
-    std::unordered_map<int, CategoryFeatureTargetInformation> category_target_information_records = category_target_information_[fold_id];
+    std::unordered_map<int, CategoryFeatureTargetInformation>& category_target_information_records = category_target_information_[fold_id];
 
     for (auto iterator = categorical_features_.begin(); iterator != categorical_features_.end(); iterator++ ) {
       int feature_id = *iterator;
       int category = static_cast<int>(record[feature_id]);
 
-	  CategoryFeatureTargetInformation category_target_information_record = category_target_information_records[feature_id];
+	  CategoryFeatureTargetInformation& category_target_information_record = category_target_information_records[feature_id];
       category_target_information_record.category_count[category] += 1;
       category_target_information_record.category_label_sum[category] += label;
 	  category_target_information_record.total_count += 1;
 	  category_target_information_record.label_sum += label;
 
-	  CategoryFeatureTargetInformation global_category_target_information_record = global_category_target_information_[feature_id];
+	  CategoryFeatureTargetInformation& global_category_target_information_record = global_category_target_information_[feature_id];
 	  global_category_target_information_record.category_count[category] += 1;
 	  global_category_target_information_record.category_label_sum[category] += label;
 	  global_category_target_information_record.total_count += 1;
@@ -33,19 +33,21 @@ namespace LightGBM {
   }
 
   void CategoryFeatureTargetInformationCollector::AppendFrom(CategoryFeatureTargetInformationCollector& collector) {
-	std::vector<data_size_t> target_count_record = collector.GetCounts();
+	std::vector<data_size_t>& target_count_record = collector.GetCounts();
 	count_.reserve(count_.size() + target_count_record.size());
 	count_.insert(count_.end(), target_count_record.begin(), target_count_record.end());
 
-	std::vector<double> target_sum_record = collector.GetLabelSum();
+	std::vector<double>& target_sum_record = collector.GetLabelSum();
 	label_sum_.reserve(label_sum_.size() + target_sum_record.size());
 	label_sum_.insert(label_sum_.end(), target_sum_record.begin(), target_sum_record.end());
 
-    std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>> target_category_target_information = collector.GetCategoryTargetInformation();
-    category_target_information_.reserve(category_target_information_.size() + target_category_target_information.size());
-    category_target_information_.insert(category_target_information_.end(), target_category_target_information.begin(), target_category_target_information.end());
+    std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>& target_category_target_information = collector.GetCategoryTargetInformation();
+	for each (auto& entry in target_category_target_information)
+	{
+		category_target_information_.push_back(entry);
+	}
 
-	std::unordered_map<int, CategoryFeatureTargetInformation> global_category_target_information_record = collector.GetGlobalCategoryTargetInformation();
+	std::unordered_map<int, CategoryFeatureTargetInformation>& global_category_target_information_record = collector.GetGlobalCategoryTargetInformation();
 	for each (auto& feature_information in global_category_target_information_record)
 	{
 		for each (auto& category_count in feature_information.second.category_count)

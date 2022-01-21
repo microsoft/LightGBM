@@ -103,10 +103,8 @@ using json11::Json;
 
   class CategoryFeatureTargetInformationCollector {
   public:
-    CategoryFeatureTargetInformationCollector(std::vector<int> categorical_features, int fold_count) {
+    CategoryFeatureTargetInformationCollector(std::vector<int> categorical_features, int fold_count) : count_(fold_count), label_sum_(fold_count), category_target_information_(fold_count){
       categorical_features_ = categorical_features;
-
-      category_target_information_.resize(fold_count);
     }
 
     void HandleRecord(int fold_id, const std::vector<double>& record, double label);
@@ -157,8 +155,9 @@ using json11::Json;
 
   class CategoryFeatureEncoderManager {
   public:
-	  CategoryFeatureEncoderManager(std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>>& train_category_feature_encoders, std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>& category_feature_encoders) 
-	  : train_category_feature_encoders_(train_category_feature_encoders), category_feature_encoders_(category_feature_encoders) {};
+	  CategoryFeatureEncoderManager(std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>>& train_category_feature_encoders, std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>& category_feature_encoders)
+	  : train_category_feature_encoders_(std::move(train_category_feature_encoders)), category_feature_encoders_(std::move(category_feature_encoders)) {
+	  };
 
 	  std::vector<EncodeResult> Encode(int fold_id, int feature_id, double feature_value);
 
@@ -168,14 +167,14 @@ using json11::Json;
 
 	  static std::unique_ptr<CategoryFeatureEncoderManager> RecoverFromModelStringInJsonFormat(std::string input);
 
-	  static std::unique_ptr<CategoryFeatureEncoderManager> Create(json11::Json settings, CategoryFeatureTargetInformationCollector& informationCollector, int fold_count);
+	  static std::unique_ptr<CategoryFeatureEncoderManager> Create(json11::Json settings, CategoryFeatureTargetInformationCollector& informationCollector);
 
   private:
 	  // <fold_id, <feature_id, Encoders>>
-	  std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>>& train_category_feature_encoders_;
+	  std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>> train_category_feature_encoders_;
 
 	  // <feature_id, Encoders>
-	  std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>& category_feature_encoders_;
+	  std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> category_feature_encoders_;
   };
 }
 
