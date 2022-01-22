@@ -131,7 +131,7 @@ else  # Linux
     fi
 fi
 
-if [[ "${TASK}" != "r-package" ]]; then
+if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
         sh mambaforge.sh -b -p $CONDA
     fi
