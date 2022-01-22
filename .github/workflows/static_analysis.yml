@@ -39,7 +39,7 @@ jobs:
         run: |
           export TASK="${{ matrix.task }}"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export CONDA=${HOME}/miniconda
+          export CONDA=${HOME}/mamba
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
           $GITHUB_WORKSPACE/.ci/test.sh || exit -1

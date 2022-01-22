@@ -66,7 +66,6 @@ if [[ $TASK == "lint" ]]; then
         cmakelint \
         cpplint \
         isort \
-        libxml2 \
         mypy \
         pycodestyle \
         pydocstyle \
