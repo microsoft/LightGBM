@@ -1722,6 +1722,40 @@ def test_refit():
     assert err_pred > new_err_pred
 
 
+def test_refit_dataset_params():
+    # check refit accepts dataset_params
+    X, y = load_breast_cancer(return_X_y=True)
+    lgb_train = lgb.Dataset(X, y, init_score=np.zeros(y.size))
+    train_params = {
+        'objective': 'binary',
+        'verbose': -1,
+        'seed': 123
+    }
+    gbm = lgb.train(train_params, lgb_train, num_boost_round=10)
+    non_weight_err_pred = log_loss(y, gbm.predict(X))
+    refit_weight = np.random.rand(y.shape[0])
+    dataset_params = {
+        'max_bin': 260,
+        'min_data_in_bin': 5,
+        'data_random_seed': 123,
+    }
+    new_gbm = gbm.refit(
+        data=X,
+        label=y,
+        weight=refit_weight,
+        dataset_params=dataset_params,
+        decay_rate=0.0,
+    )
+    weight_err_pred = log_loss(y, new_gbm.predict(X))
+    train_set_params = new_gbm.train_set.get_params()
+    stored_weights = new_gbm.train_set.get_weight()
+    assert weight_err_pred != non_weight_err_pred
+    assert train_set_params["max_bin"] == 260
+    assert train_set_params["min_data_in_bin"] == 5
+    assert train_set_params["data_random_seed"] == 123
+    np.testing.assert_allclose(stored_weights, refit_weight)
+
+
 def test_mape_rf():
     X, y = load_boston(return_X_y=True)
     params = {
