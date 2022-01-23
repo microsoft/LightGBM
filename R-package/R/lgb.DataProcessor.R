@@ -55,9 +55,9 @@ DataProcessor <- R6::R6Class(
           } else if (is.character(label) && NROW(label) == 1L && label %in% self$colnames) {
             self$colnames <- self$colnames[self$colnames != label]
             if (data.table::is.data.table(data)) {
-              label <- data[, label, with=FALSE, drop=TRUE]
+              label <- data[, label, with = FALSE, drop = TRUE]
             } else {
-              label <- data[, label, drop=TRUE]
+              label <- data[, label, drop = TRUE]
             }
           }
 
