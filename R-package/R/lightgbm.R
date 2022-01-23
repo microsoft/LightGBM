@@ -94,6 +94,18 @@ NULL
 #' @param weight vector of response values. If not NULL, will set to dataset
 #' @param save_name File name to use when writing the trained model to disk. Should end in ".model".
 #'                  If passing `NULL`, will not save the trained model to disk.
+#' @param nthreads Number of parallel threads to use. For best speed, this should be set to the number of
+#'                 physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
+#'                 number of maximum threads (e.g. `nthreads = max(parallel::detectCores() / 2L, 1L)` as
+#'                 a shorthand for the optimal value).
+#'
+#'                 Be aware that using too many threads can result in speed degradation in smaller datasets
+#'                 (see the parameters documentation for more details).
+#'
+#'                 If passing zero, will use the default number of threads configured for OpenMP
+#'                 (typically controlled through an environment variable `OMP_NUM_THREADS`).
+#'
+#'                 This parameter overrides `num_threads` in `params` if it exists there.
 #' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
 #'     \itemize{
 #'        \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}
@@ -111,12 +123,14 @@ NULL
 #'     }
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained \code{lgb.Booster}
+#' @importFrom parallel detectCores
 #' @export
 lightgbm <- function(data,
                      label = NULL,
                      weight = NULL,
                      params = list(),
                      nrounds = 100L,
+                     nthreads = parallel::detectCores(),
                      verbose = 1L,
                      eval_freq = 1L,
                      early_stopping_rounds = NULL,
@@ -130,6 +144,8 @@ lightgbm <- function(data,
   if (nrounds <= 0L) {
     stop("nrounds should be greater than zero")
   }
+
+  params$num_threads <- nthreads
 
   # Set data to a temporary variable
   dtrain <- data

@@ -16,6 +16,7 @@
 #'   agaricus.train$data
 #'   , agaricus.train$label
 #'   , params = list(objective = "binary", nthreads = 1L)
+#'   , nthreads = 1L
 #'   , nrounds = 5L
 #'   , save_name = NULL
 #'   , verbose = 0)

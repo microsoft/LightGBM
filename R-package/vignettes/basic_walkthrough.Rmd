@@ -68,6 +68,7 @@ fit <- lightgbm(
     , objective = "binary"
   )
   , nrounds = 10L
+  , nthreads = 1L
   , verbose = -1L
 )
 

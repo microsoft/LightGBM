@@ -68,6 +68,7 @@ test_that("start_iteration works correctly", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
+        , nthreads = 1L
         , params = list(
             num_leaves = 4L
             , learning_rate = 0.6
