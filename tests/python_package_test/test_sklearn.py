@@ -6,29 +6,18 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pytest
-from pkg_resources import parse_version
-from sklearn import __version__ as sk_version
 from sklearn.base import clone
 from sklearn.datasets import load_svmlight_file, make_multilabel_classification
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
-from sklearn.utils.estimator_checks import check_parameters_default_constructible
+from sklearn.utils.estimator_checks import check_parameters_default_constructible, parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
 
 from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking,
                     make_synthetic_regression)
-
-sk_version = parse_version(sk_version)
-if sk_version < parse_version("0.23"):
-    import warnings
-
-    from sklearn.exceptions import SkipTestWarning
-    from sklearn.utils.estimator_checks import SkipTest, _yield_all_checks
-else:
-    from sklearn.utils.estimator_checks import parametrize_with_checks
 
 decreasing_generator = itertools.count(0, -1)
 
