@@ -340,8 +340,6 @@ def test_random_search():
     assert score <= 1.
 
 
-# sklearn < 0.22 does not have the post fit attribute: classes_
-@pytest.mark.skipif(sk_version < parse_version('0.22'), reason='scikit-learn version is less than 0.22')
 def test_multioutput_classifier():
     n_outputs = 3
     X, y = make_multilabel_classification(n_samples=100, n_features=20,
@@ -361,8 +359,6 @@ def test_multioutput_classifier():
         assert isinstance(classifier.booster_, lgb.Booster)
 
 
-# sklearn < 0.23 does not have as_frame parameter
-@pytest.mark.skipif(sk_version < parse_version('0.23'), reason='scikit-learn version is less than 0.23')
 def test_multioutput_regressor():
     bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
     X, y = bunch['data'], bunch['target']
