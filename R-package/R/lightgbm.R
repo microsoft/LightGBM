@@ -92,6 +92,13 @@ NULL
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weight vector of response values. If not NULL, will set to dataset
+#' @param init_score Initial values for each observation from which the boosting process will
+#'                   be started (e.g. as the result of some previous model). If not passing it (the default),
+#'                   will start from a blank state.
+#' @param objective Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
+#'                  For a list of accepted objectives, see
+#'                  \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+#'                  the "Parameters" section of the documentation}.
 #' @param save_name File name to use when writing the trained model to disk. Should end in ".model".
 #'                  If passing `NULL`, will not save the trained model to disk.
 #' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
@@ -115,6 +122,8 @@ NULL
 lightgbm <- function(data,
                      label = NULL,
                      weight = NULL,
+                     init_score = NULL,
+                     objective = "regression",
                      params = list(),
                      nrounds = 100L,
                      verbose = 1L,
@@ -136,13 +145,14 @@ lightgbm <- function(data,
 
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
   if (!lgb.is.Dataset(x = dtrain)) {
-    dtrain <- lgb.Dataset(data = data, label = label, weight = weight)
+    dtrain <- lgb.Dataset(data = data, label = label, weight = weight, init_score = init_score)
   }
 
   train_args <- list(
     "params" = params
     , "data" = dtrain
     , "nrounds" = nrounds
+    , "obj" = objective
     , "verbose" = verbose
     , "eval_freq" = eval_freq
     , "early_stopping_rounds" = early_stopping_rounds

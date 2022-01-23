@@ -8,6 +8,8 @@ lightgbm(
   data,
   label = NULL,
   weight = NULL,
+  init_score = NULL,
+  objective = "regression",
   params = list(),
   nrounds = 100L,
   verbose = 1L,
@@ -28,6 +30,15 @@ may allow you to pass other types of data like \code{matrix} and then separately
 \item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}}
 
 \item{weight}{vector of response values. If not NULL, will set to dataset}
+
+\item{init_score}{Initial values for each observation from which the boosting process will
+be started (e.g. as the result of some previous model). If not passing it (the default),
+will start from a blank state.}
+
+\item{objective}{Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
+For a list of accepted objectives, see
+\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+the "Parameters" section of the documentation}.}
 
 \item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 the "Parameters" section of the documentation} for a list of parameters and valid values.}
