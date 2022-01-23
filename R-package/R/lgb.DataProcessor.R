@@ -42,9 +42,13 @@ DataProcessor <- R6::R6Class(
 
         if (NROW(self$colnames)) {
 
+          # A replacement of 'deparse1' which was added in R 4.0.0,
+          # added for compatibility with older R versions
+          deparse1_ <- function(x) paste(deparse(x, width.cutoff = 500L), collapse = "")
+
           label_nse <- substitute(label)
           label_nse <- eval.parent(substitute(substitute(label_nse)), n = 2L)
-          label_nse <- deparse1(label_nse, collapse = "")
+          label_nse <- deparse1_(label_nse)
           if (label_nse != "NULL" && label_nse %in% self$colnames) {
             self$colnames <- self$colnames[self$colnames != label_nse]
             if (data.table::is.data.table(data)) {
@@ -63,7 +67,7 @@ DataProcessor <- R6::R6Class(
 
           weights_nse <- substitute(weights)
           weights_nse <- eval.parent(substitute(substitute(weights_nse)), n = 2L)
-          weights_nse <- deparse1(weights_nse, collapse = "")
+          weights_nse <- deparse1_(weights_nse)
           if (weights_nse != "NULL" && weights_nse %in% self$colnames) {
             self$colnames <- self$colnames[self$colnames != weights_nse]
             if (data.table::is.data.table(data)) {
@@ -82,7 +86,7 @@ DataProcessor <- R6::R6Class(
 
           init_score_nse <- substitute(init_score)
           init_score_nse <- eval.parent(substitute(substitute(init_score_nse)), n = 2L)
-          init_score_nse <- deparse1(init_score_nse, collapse = "")
+          init_score_nse <- deparse1_(init_score_nse)
           if (init_score_nse != "NULL" && init_score_nse %in% self$colnames) {
             self$colnames <- self$colnames[self$colnames != init_score_nse]
             if (data.table::is.data.table(data)) {
