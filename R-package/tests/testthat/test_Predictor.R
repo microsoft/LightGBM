@@ -79,7 +79,7 @@ test_that("start_iteration works correctly", {
         , early_stopping_rounds = 2L
     )
     expect_true(lgb.is.Booster(bst))
-    pred1 <- predict(bst, data = test$data, rawscore = TRUE)
+    pred1 <- predict(bst, newdata = test$data, rawscore = TRUE)
     pred_contrib1 <- predict(bst, test$data, predcontrib = TRUE)
     pred2 <- rep(0.0, length(pred1))
     pred_contrib2 <- rep(0.0, length(pred2))

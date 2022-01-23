@@ -731,8 +731,8 @@ Booster <- R6::R6Class(
 #' @title Predict method for LightGBM model
 #' @description Predicted values based on class \code{lgb.Booster}
 #' @param object Object of class \code{lgb.Booster}
-#' @param data a \code{matrix} object, a \code{dgCMatrix} object or
-#'             a character representing a path to a text file (CSV, TSV, or LibSVM)
+#' @param newdata a \code{matrix} object, a \code{dgCMatrix} object or
+#'                a character representing a path to a text file (CSV, TSV, or LibSVM)
 #' @param start_iteration int or None, optional (default=None)
 #'                        Start index of the iteration to predict.
 #'                        If None or <= 0, starts from the first iteration.
@@ -797,7 +797,7 @@ Booster <- R6::R6Class(
 #' @importFrom utils modifyList
 #' @export
 predict.lgb.Booster <- function(object,
-                                data,
+                                newdata,
                                 start_iteration = NULL,
                                 num_iteration = NULL,
                                 rawscore = FALSE,
@@ -823,7 +823,7 @@ predict.lgb.Booster <- function(object,
 
   return(
     object$predict(
-      data = data
+      data = newdata
       , start_iteration = start_iteration
       , num_iteration = num_iteration
       , rawscore = rawscore

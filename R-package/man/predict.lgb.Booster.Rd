@@ -6,7 +6,7 @@
 \usage{
 \method{predict}{lgb.Booster}(
   object,
-  data,
+  newdata,
   start_iteration = NULL,
   num_iteration = NULL,
   rawscore = FALSE,
@@ -21,7 +21,7 @@
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
-\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or
+\item{newdata}{a \code{matrix} object, a \code{dgCMatrix} object or
 a character representing a path to a text file (CSV, TSV, or LibSVM)}
 
 \item{start_iteration}{int or None, optional (default=None)
