@@ -1243,39 +1243,10 @@ def test_check_is_fitted():
         check_is_fitted(model)
 
 
-def _tested_estimators():
-    for Estimator in [lgb.sklearn.LGBMClassifier, lgb.sklearn.LGBMRegressor]:
-        yield Estimator()
-
-
-if sk_version < parse_version("0.23"):
-    def _generate_checks_per_estimator(check_generator, estimators):
-        for estimator in estimators:
-            name = estimator.__class__.__name__
-            for check in check_generator(name, estimator):
-                yield estimator, check
-
-    @pytest.mark.skipif(
-        sk_version < parse_version("0.21"), reason="scikit-learn version is less than 0.21"
-    )
-    @pytest.mark.parametrize(
-        "estimator, check",
-        _generate_checks_per_estimator(_yield_all_checks, _tested_estimators()),
-    )
-    def test_sklearn_integration(estimator, check):
-        xfail_checks = estimator._get_tags()["_xfail_checks"]
-        check_name = check.__name__ if hasattr(check, "__name__") else check.func.__name__
-        if xfail_checks and check_name in xfail_checks:
-            warnings.warn(xfail_checks[check_name], SkipTestWarning)
-            raise SkipTest
-        estimator.set_params(min_child_samples=1, min_data_in_bin=1)
-        name = estimator.__class__.__name__
-        check(name, estimator)
-else:
-    @parametrize_with_checks(list(_tested_estimators()))
-    def test_sklearn_integration(estimator, check, request):
-        estimator.set_params(min_child_samples=1, min_data_in_bin=1)
-        check(estimator)
+@parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
+def test_sklearn_integration(estimator, check):
+    estimator.set_params(min_child_samples=1, min_data_in_bin=1)
+    check(estimator)
 
 
 @pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
