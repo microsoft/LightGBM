@@ -45,7 +45,10 @@ for logistic regression would result in predictions for log-odds instead of prob
 \item{header}{only used for prediction for text file. True if text file has header}
 
 \item{reshape}{whether to reshape the vector of predictions to a matrix form when there are several
-prediction outputs per case.}
+               prediction outputs per case.
+
+               If passing `reshape=TRUE` and `data` has row names, the output will also have those
+               row names.}
 
 \item{params}{a list of additional named parameters. See
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{

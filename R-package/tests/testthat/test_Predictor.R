@@ -111,3 +111,21 @@ test_that("start_iteration works correctly", {
     pred_leaf2 <- predict(bst, test$data, start_iteration = 0L, num_iteration = end_iter + 1L, predleaf = TRUE)
     expect_equal(pred_leaf1, pred_leaf2)
 })
+
+test_that("predictions keep row names from the data", {
+    data("mtcars")
+    X <- as.matrix(mtcars[, -1L])
+    y <- as.numeric(mtcars[, 1L])
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    bst <- lgb.train(
+        dtrain
+        , obj = "regression"
+        , nrounds = 5L
+    )
+    pred <- predict(bst, X, reshape = TRUE)
+    expect_false(is.null(row.names(pred)))
+    expect_equal(row.names(X), row.names(pred))
+
+    row.names(X) <- NULL
+    expect_null(row.names(pred))
+})

@@ -749,6 +749,9 @@ Booster <- R6::R6Class(
 #' @param header only used for prediction for text file. True if text file has header
 #' @param reshape whether to reshape the vector of predictions to a matrix form when there are several
 #'                prediction outputs per case.
+#'
+#'                If passing `reshape=TRUE` and `data` has row names, the output will also have those
+#'                row names.
 #' @param params a list of additional named parameters. See
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 #'               the "Predict Parameters" section of the documentation} for a list of parameters and
@@ -821,19 +824,26 @@ predict.lgb.Booster <- function(object,
     ))
   }
 
-  return(
-    object$predict(
-      data = data
-      , start_iteration = start_iteration
-      , num_iteration = num_iteration
-      , rawscore = rawscore
-      , predleaf =  predleaf
-      , predcontrib =  predcontrib
-      , header = header
-      , reshape = reshape
-      , params = params
-    )
+  pred <- object$predict(
+    data = data
+    , start_iteration = start_iteration
+    , num_iteration = num_iteration
+    , rawscore = rawscore
+    , predleaf =  predleaf
+    , predcontrib =  predcontrib
+    , header = header
+    , reshape = reshape
+    , params = params
   )
+
+  if (reshape && NROW(row.names(data))) {
+    if (is.null(dim(pred))) {
+      names(pred) <- row.names(data)
+    } else {
+      row.names(pred) <- row.names(data)
+    }
+  }
+  return(pred)
 }
 
 #' @name print.lgb.Booster
