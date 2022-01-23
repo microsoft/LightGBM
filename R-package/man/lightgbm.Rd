@@ -157,7 +157,7 @@ will start from a blank state.}
                 (see the parameters documentation for more details).
 
                 If passing zero, will use the default number of threads configured for OpenMP.
-                
+
                 This parameter overrides `num_threads` in `params` if it exists there.}
 
 \item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
@@ -192,7 +192,7 @@ If passing `NULL`, will not save the trained model to disk.}
          them as column names from `X`), then `X` will be subsetted, and any additional parameters
          passed that correspond to column indices (such as per-column `max_bin` or
          `categorical_features`) will be applied on the subsetted data.
-         
+
          Supports dense matrices from base R (class `matrix`, will be casted to `double` storage
          mode if it isn't already) and sparse matrices in CSC format from the `Matrix` package
          (class `dgCMatrix`).}
