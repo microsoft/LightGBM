@@ -12,16 +12,17 @@ test_that("Feature penalties work properly", {
     feature_penalties <- rep(1.0, ncol(train$data))
     feature_penalties[var_index] <- x
     lightgbm(
-      data = train$data
-      , label = train$label
+      X = train$data
+      , y = train$label
       , params = list(
         num_leaves = 5L
         , learning_rate = 0.05
-        , objective = "binary"
         , feature_penalty = paste0(feature_penalties, collapse = ",")
         , metric = "binary_error"
       )
+      , objective = "binary"
       , nrounds = 5L
+      , nthreads = 1L
       , verbose = -1L
       , save_name = tempfile(fileext = ".model")
     )
@@ -64,16 +65,17 @@ test_that("training should warn if you use 'dart' boosting, specified with 'boos
     params <- list(
         num_leaves = 5L
         , learning_rate = 0.05
-        , objective = "binary"
         , metric = "binary_error"
     )
     params[[boosting_param]] <- "dart"
     expect_warning({
       result <- lightgbm(
-        data = train$data
-        , label = train$label
+        X = train$data
+        , y = train$label
         , params = params
+        , objective = "binary"
         , nrounds = 5L
+        , nthreads = 1L
         , verbose = -1L
         , save_name = tempfile(fileext = ".model")
       )

@@ -51,22 +51,37 @@ The R package of LightGBM offers two functions to train a model:
 
 ### Using the `lightgbm()` function
 
-In a first step, you need to convert data to numeric. Afterwards, you are ready to fit the model by the `lightgbm()` function.
+The `lightgbm()` function provides a formula interface as well as an X/y interface. As a
+first step, the variable to predict needs to be converted to a `factor`.
 
 ```{r}
 # Numeric response and feature matrix
-y <- as.numeric(bank$y == "yes")
-X <- data.matrix(bank[, c("age", "balance")])
+bank$y <- factor(bank$y)
 
-# Train
+# Train with formula interface
 fit <- lightgbm(
-  data = X
-  , label = y
+  y ~ age + balance
+  , data = bank
   , params = list(
     num_leaves = 4L
     , learning_rate = 1.0
-    , objective = "binary"
   )
+  , nrounds = 10L
+  , verbose = -1L
+)
+
+# Train with X/y interface
+y <- as.numeric(bank$y == "yes")
+X <- data.matrix(bank[, c("age", "balance")])
+
+fit <- lightgbm(
+  X
+  , y
+  , params = list(
+    num_leaves = 4L
+    , learning_rate = 1.0
+  )
+  , objective = "binary"
   , nrounds = 10L
   , verbose = -1L
 )

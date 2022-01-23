@@ -6,23 +6,73 @@
 \usage{
 \method{predict}{lgb.Booster}(
   object,
-  data,
+  newdata,
+  type = c("score", "class", "raw", "leaf", "contrib"),
   start_iteration = NULL,
   num_iteration = NULL,
-  rawscore = FALSE,
-  predleaf = FALSE,
-  predcontrib = FALSE,
   header = FALSE,
-  reshape = FALSE,
+  reshape = TRUE,
+  index1 = TRUE,
   params = list(),
   ...
 )
 }
 \arguments{
-\item{object}{Object of class \code{lgb.Booster}}
+\item{object}{Object of class \code{lgb.Booster} from which to make predictions.}
 
-\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or
-a character representing a path to a text file (CSV, TSV, or LibSVM)}
+\item{newdata}{New data on which to make predictions. Allowed types are:\itemize{
+               \item `data.frame`, \bold{only if} the model object was produced through the \link{lightgbm}
+                     interface. If the input to \link{lightgbm} was a `formula` or a `data.frame` with
+                     categorical columns (`factor` or `character`), then \bold{only} `data.frame` inputs will
+                     be accepted here. Columns will be taken according to the names that they had in the data
+                     that they were passed to the model (i.e. the input here will be reordered if the order
+                     does not match, and will be subsetted if it has additional columns).
+               \item `matrix` from base R. Will be converted to numeric if it isn't already.
+               \item `dgCMatrix` from package `Matrix`.
+               \item `character` with a single entry representing a path to a text file in CSV, TSV,
+                     or SVMLight / LibSVM formats.
+               }
+               Other input types are not allowed.
+
+               Note that, if using the `formula` interface, the user is responsible for making
+               factor variables' levels match to those that were passed in the data to which the model
+               was fitted, and if the model was not produced through the \link{lightgbm} interface
+               (e.g. through \link{lgb.train} or \link{lgb.cv}), then the user is responsible for
+               handling the encoding of categorical variables.}
+
+\item{type}{Type of prediction to output. Allowed types are:\itemize{
+\item `"score"`, which will output the predicted score according to the function
+      objective function being optimized (equivalent to `"link"` in base R's `glm`) - for
+      example, for `objective="binary"`, it will output probabilities, while for
+      `objective="regression"`, it will output predicted values. For objective functions other
+      than multi-class classification, the result will be a numeric vector with number of rows
+      matching to `nrow(newdata)`. For multi-class classification, if passing `reshape=TRUE`,
+      it will output a matrix with columns matching to the number of classes (and if the model
+      object was produced through the \link{lightgbm} interface instead of through
+      \link{lgb.train} or \link{lgb.cv}, it will have class names as column names if available),
+      and if passing `reshape=FALSE`, will output a numeric vector with these same results in
+      row-major order.
+ \item `"class"` (only for binary and multi-class classification objectives), which will
+       output the class with the highest predicted score. If the model object was produced through
+       the \link{lightgbm} interface and the label was a factor variable, the result will be a
+       factor variable with levels matching to classes, otherwise it will be an integer vector
+       with indicating the class number.
+ \item `"raw"`, which will output the non-transformed numbers (sum of predictions from
+       boosting iterations' results) from which the score is produced for a given objective
+       function - for example, for `objective="binary"`, this corresponds to log-odds. The
+       output type is the same as for `type="score"`.
+ \item `"leaf"`, which will output the index of the terminal node / leaf at which
+       each observations falls in each tree in the model, outputted as as integers. If passing
+       `reshape=TRUE`, the result will be a matrix with number of columns matching to number of
+       trees, otherwise it will be a vector with this same matrix in row-major order.
+ \item `"contrib"`, which will return the per-feature contributions for each prediction.
+       If passing `reshape=TRUE`, the result will be a matrix with number of columns matching
+       to number of features that the model saw while fitting, otherwise will be a vector with
+       this same matrix outputted in row-major order. If the model object was produced through
+       the \link{lightgbm} interface, `reshape=TRUE` is passed, and the data to which the model
+       was fit had column names, then the output matrix will have column names corresponding to
+       the feature names.
+  }}
 
 \item{start_iteration}{int or None, optional (default=None)
 Start index of the iteration to predict.
@@ -34,37 +84,34 @@ If None, if the best iteration exists and start_iteration is None or <= 0, the
 best iteration is used; otherwise, all iterations from start_iteration are used.
 If <= 0, all iterations from start_iteration are used (no limits).}
 
-\item{rawscore}{whether the prediction should be returned in the for of original untransformed
-sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
-for logistic regression would result in predictions for log-odds instead of probabilities.}
-
-\item{predleaf}{whether predict leaf index instead.}
-
-\item{predcontrib}{return per-feature contributions for each record.}
-
 \item{header}{only used for prediction for text file. True if text file has header}
 
 \item{reshape}{whether to reshape the vector of predictions to a matrix form when there are several
-prediction outputs per case.}
+prediction outputs per case. When using `reshape=FALSE`, the output will
+be in row-major order (contrary to R matrices which assume column-major order).
+If passing `reshape=TRUE` and `newdata` has row names, the output will also have those
+row names.}
+
+\item{index1}{When producing outputs that correspond to some numeration (such as
+`type="class"` or `type="leaf"`), whether to make these outputs have a numeration
+starting at 1 or at zero. Note that the underlying lightgbm core library uses zero-based
+numeration, thus `index1=FALSE` will be slightly faster.}
 
 \item{params}{a list of additional named parameters. See
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 the "Predict Parameters" section of the documentation} for a list of parameters and
 valid values.}
 
-\item{...}{ignored}
+\item{...}{Ignored.}
 }
 \value{
-For regression or binary classification, it returns a vector of length \code{nrows(data)}.
-        For multiclass classification, either a \code{num_class * nrows(data)} vector or
-        a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
-        the \code{reshape} value.
-
-        When \code{predleaf = TRUE}, the output is a matrix object with the
-        number of columns corresponding to the number of trees.
+Either a matrix with number of rows matching to the number of rows in `newdata`, or
+        a vector with number of entries matching to rows in `newdata`, or a vector representing a
+        matrix in row-major order with number of entries matching to `nrow(newdata)*n_outputs`;
+        depending on the requested `type` and `reshape` parameter.
 }
 \description{
-Predicted values based on class \code{lgb.Booster}
+Predict values on new data based on a boosting model (class \code{lgb.Booster}).
 }
 \examples{
 \donttest{
