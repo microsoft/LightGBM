@@ -1207,14 +1207,13 @@ def test_pandas_categorical():
 
 def test_pandas_sparse():
     pd = pytest.importorskip("pandas")
-    from pandas.arrays import SparseArray
-    X = pd.DataFrame({"A": SparseArray(np.random.permutation([0, 1, 2] * 100)),
-                      "B": SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
-                      "C": SparseArray(np.random.permutation([True, False] * 150))})
-    y = pd.Series(SparseArray(np.random.permutation([0, 1] * 150)))
-    X_test = pd.DataFrame({"A": SparseArray(np.random.permutation([0, 2] * 30)),
-                           "B": SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
-                           "C": SparseArray(np.random.permutation([True, False] * 30))})
+    X = pd.DataFrame({"A": pd.arrays.SparseArray(np.random.permutation([0, 1, 2] * 100)),
+                      "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+                      "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 150))})
+    y = pd.Series(pd.arrays.SparseArray(np.random.permutation([0, 1] * 150)))
+    X_test = pd.DataFrame({"A": pd.arrays.SparseArray(np.random.permutation([0, 2] * 30)),
+                           "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+                           "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 30))})
     for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
         assert pd.api.types.is_sparse(dtype)
     params = {
