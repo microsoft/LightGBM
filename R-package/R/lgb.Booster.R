@@ -753,6 +753,10 @@ Booster <- R6::R6Class(
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 #'               the "Predict Parameters" section of the documentation} for a list of parameters and
 #'               valid values.
+#' @param index1 When producing outputs that correspond to some numeration (such as
+#'               leaf indices), whether to make these outputs have a numeration
+#'               starting at 1 or at zero. Note that the underlying lightgbm core library uses zero-based
+#'               numeration, thus `index1=FALSE` will be slightly faster.
 #' @param ... ignored
 #' @return For regression or binary classification, it returns a vector of length \code{nrows(data)}.
 #'         For multiclass classification, either a \code{num_class * nrows(data)} vector or
@@ -806,6 +810,7 @@ predict.lgb.Booster <- function(object,
                                 header = FALSE,
                                 reshape = FALSE,
                                 params = list(),
+                                index1 = TRUE,
                                 ...) {
 
   if (!lgb.is.Booster(x = object)) {
@@ -821,19 +826,22 @@ predict.lgb.Booster <- function(object,
     ))
   }
 
-  return(
-    object$predict(
-      data = data
-      , start_iteration = start_iteration
-      , num_iteration = num_iteration
-      , rawscore = rawscore
-      , predleaf =  predleaf
-      , predcontrib =  predcontrib
-      , header = header
-      , reshape = reshape
-      , params = params
-    )
+  pred <- object$predict(
+    data = data
+    , start_iteration = start_iteration
+    , num_iteration = num_iteration
+    , rawscore = rawscore
+    , predleaf =  predleaf
+    , predcontrib =  predcontrib
+    , header = header
+    , reshape = reshape
+    , params = params
   )
+
+  if (predleaf && index1) {
+    pred <- pred + 1L
+  }
+  return(pred)
 }
 
 #' @name print.lgb.Booster

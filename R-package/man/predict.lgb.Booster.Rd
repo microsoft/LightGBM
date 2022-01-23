@@ -15,6 +15,7 @@
   header = FALSE,
   reshape = FALSE,
   params = list(),
+  index1 = TRUE,
   ...
 )
 }
@@ -51,6 +52,11 @@ prediction outputs per case.}
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 the "Predict Parameters" section of the documentation} for a list of parameters and
 valid values.}
+
+\item{index1}{When producing outputs that correspond to some numeration (such as
+leaf indices), whether to make these outputs have a numeration
+starting at 1 or at zero. Note that the underlying lightgbm core library uses zero-based
+numeration, thus `index1=FALSE` will be slightly faster.}
 
 \item{...}{ignored}
 }
