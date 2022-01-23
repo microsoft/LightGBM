@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from sklearn.base import clone
 from sklearn.datasets import load_svmlight_file, make_multilabel_classification
+from sklearn.ensemble import StackingClassifier
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
@@ -233,11 +234,7 @@ def test_dart():
     assert score <= 1.
 
 
-# sklearn <0.23 does not have a stacking classifier and n_features_in_ property
-@pytest.mark.skipif(sk_version < parse_version("0.23"), reason='scikit-learn version is less than 0.23')
 def test_stacking_classifier():
-    from sklearn.ensemble import StackingClassifier
-
     X, y = load_iris(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     classifiers = [('gbm1', lgb.LGBMClassifier(n_estimators=3)),
