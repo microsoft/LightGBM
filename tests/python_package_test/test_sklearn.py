@@ -12,7 +12,7 @@ from sklearn.ensemble import StackingClassifier, StackingRegressor
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
-from sklearn.utils.estimator_checks import check_parameters_default_constructible, parametrize_with_checks
+from sklearn.utils.estimator_checks import parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
@@ -1276,17 +1276,6 @@ else:
     def test_sklearn_integration(estimator, check, request):
         estimator.set_params(min_child_samples=1, min_data_in_bin=1)
         check(estimator)
-
-
-@pytest.mark.skipif(
-    sk_version >= parse_version("0.24"),
-    reason="Default constructible check included in common check from 0.24"
-)
-@pytest.mark.parametrize("estimator", list(_tested_estimators()))
-def test_parameters_default_constructible(estimator):
-    name, Estimator = estimator.__class__.__name__, estimator.__class__
-    # Test that estimators are default-constructible
-    check_parameters_default_constructible(name, Estimator)
 
 
 @pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
