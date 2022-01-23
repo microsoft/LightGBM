@@ -53,7 +53,7 @@
 #'               the "Parameters" section of the documentation} for a list of parameters and valid values.
 #' @param verbose verbosity for output, if <= 0, also will disable the print of evaluation during training
 #' @param serializable whether to make the resulting objects serializable through functions such as
-#' \code{save} or \code{saveRDS} (see section "Model serialization").
+#'                     \code{save} or \code{saveRDS} (see section "Model serialization").
 #' @section Early Stopping:
 #'
 #'          "early stopping" refers to stopping the training process if the model's performance on a given
@@ -120,7 +120,7 @@ lightgbm <- function(data,
                      verbose = 1L,
                      eval_freq = 1L,
                      early_stopping_rounds = NULL,
-                     save_name = "lightgbm.model",
+                     save_name = NULL,
                      init_model = NULL,
                      callbacks = list(),
                      serializable = TRUE,

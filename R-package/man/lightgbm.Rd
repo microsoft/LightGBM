@@ -13,7 +13,7 @@ lightgbm(
   verbose = 1L,
   eval_freq = 1L,
   early_stopping_rounds = NULL,
-  save_name = "lightgbm.model",
+  save_name = NULL,
   init_model = NULL,
   callbacks = list(),
   serializable = TRUE,
