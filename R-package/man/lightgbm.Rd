@@ -7,7 +7,7 @@
 lightgbm(
   data,
   label = NULL,
-  weight = NULL,
+  weights = NULL,
   params = list(),
   nrounds = 100L,
   verbose = 1L,
@@ -27,7 +27,8 @@ may allow you to pass other types of data like \code{matrix} and then separately
 
 \item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}}
 
-\item{weight}{vector of response values. If not NULL, will set to dataset}
+\item{weights}{Sample / observation weights for rows in the input data. If `NULL`, will assume that all
+observations / rows have the same importance / weight.}
 
 \item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 the "Parameters" section of the documentation} for a list of parameters and valid values.}
