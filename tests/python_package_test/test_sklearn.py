@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from sklearn.base import clone
 from sklearn.datasets import load_svmlight_file, make_multilabel_classification
-from sklearn.ensemble import StackingClassifier
+from sklearn.ensemble import StackingClassifier, StackingRegressor
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
@@ -255,11 +255,7 @@ def test_stacking_classifier():
     assert all(clf.classes_ == clf.named_estimators_['gbm1'].classes_)
 
 
-# sklearn <0.23 does not have a stacking regressor and n_features_in_ property
-@pytest.mark.skipif(sk_version < parse_version('0.23'), reason='scikit-learn version is less than 0.23')
 def test_stacking_regressor():
-    from sklearn.ensemble import StackingRegressor
-
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     regressors = [('gbm1', lgb.LGBMRegressor(n_estimators=3)),
