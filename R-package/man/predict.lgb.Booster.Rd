@@ -13,7 +13,7 @@
   predleaf = FALSE,
   predcontrib = FALSE,
   header = FALSE,
-  reshape = FALSE,
+  reshape = TRUE,
   params = list(),
   ...
 )
@@ -45,7 +45,12 @@ for logistic regression would result in predictions for log-odds instead of prob
 \item{header}{only used for prediction for text file. True if text file has header}
 
 \item{reshape}{whether to reshape the vector of predictions to a matrix form when there are several
-prediction outputs per case.}
+prediction outputs per case. If passing `reshape=TRUE` and the requested prediction is
+a multi-output result, the output will be a matrix with number of rows matching to the
+number of rows in the prediction data, and number of columns matching to the number of
+prediction outputs. If passing `reshape=FALSE`, multi-output predictions will be returned
+as a vector with this same matrix in row-major order (contrary to R matrices which use
+column-major order).}
 
 \item{params}{a list of additional named parameters. See
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{

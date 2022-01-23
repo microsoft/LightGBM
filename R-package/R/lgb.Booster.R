@@ -748,7 +748,12 @@ Booster <- R6::R6Class(
 #' @param predcontrib return per-feature contributions for each record.
 #' @param header only used for prediction for text file. True if text file has header
 #' @param reshape whether to reshape the vector of predictions to a matrix form when there are several
-#'                prediction outputs per case.
+#'                prediction outputs per case. If passing `reshape=TRUE` and the requested prediction is
+#'                a multi-output result, the output will be a matrix with number of rows matching to the
+#'                number of rows in the prediction data, and number of columns matching to the number of
+#'                prediction outputs. If passing `reshape=FALSE`, multi-output predictions will be returned
+#'                as a vector with this same matrix in row-major order (contrary to R matrices which use
+#'                column-major order).
 #' @param params a list of additional named parameters. See
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 #'               the "Predict Parameters" section of the documentation} for a list of parameters and
@@ -804,7 +809,7 @@ predict.lgb.Booster <- function(object,
                                 predleaf = FALSE,
                                 predcontrib = FALSE,
                                 header = FALSE,
-                                reshape = FALSE,
+                                reshape = TRUE,
                                 params = list(),
                                 ...) {
 
