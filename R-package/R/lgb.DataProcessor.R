@@ -21,7 +21,7 @@ DataProcessor <- R6::R6Class(
                           init_score = NULL) {
 
       if (!is.null(model_formula)) {
-        
+
         if (!is.data.frame(data)) {
           stop("'lightgbm()' formula interface is only supported for 'data.frame' inputs.")
         }
@@ -35,13 +35,13 @@ DataProcessor <- R6::R6Class(
         model_frame <- model.frame(model_formula, data, na.action = NULL)
         label <- model.response(model_frame, type = "any")
         data <- model.matrix(self$formula_predict, data = model_frame)
-        
+
       } else {
-        
+
         self$colnames <- colnames(data)
-        
+
         if (NROW(self$colnames)) {
-          
+
           label_nse <- substitute(label)
           label_nse <- eval.parent(substitute(substitute(label_nse)), n = 2L)
           label_nse <- deparse1(label_nse, collapse = "")
@@ -60,7 +60,7 @@ DataProcessor <- R6::R6Class(
               label <- data[, label, drop=TRUE]
             }
           }
-          
+
           weights_nse <- substitute(weights)
           weights_nse <- eval.parent(substitute(substitute(weights_nse)), n = 2L)
           weights_nse <- deparse1(weights_nse, collapse = "")
@@ -79,7 +79,7 @@ DataProcessor <- R6::R6Class(
               weights <- data[, weights, drop = TRUE]
             }
           }
-          
+
           init_score_nse <- substitute(init_score)
           init_score_nse <- eval.parent(substitute(substitute(init_score_nse)), n = 2L)
           init_score_nse <- deparse1(init_score_nse, collapse = "")
@@ -98,7 +98,7 @@ DataProcessor <- R6::R6Class(
               init_score <- data[, init_score, drop = TRUE]
             }
           }
-          
+
           if (length(self$colnames) < ncol(data)) {
             if (data.table::is.data.table(data)) {
               data <- data[, self$colnames, with = FALSE, drop = FALSE]
@@ -109,11 +109,11 @@ DataProcessor <- R6::R6Class(
         } else {
           self$colnames <- NULL
         }
-        
+
         self$ncols <- ncol(data)
-        
+
         if (is.data.frame(data)) {
-          
+
           supported_types <- c("numeric", "integer", "factor", "character", "Date", "POSIXct")
           coltype_is_supported <- sapply(data, function(col) inherits(col, supported_types))
           if (!all(coltype_is_supported)) {
@@ -124,14 +124,14 @@ DataProcessor <- R6::R6Class(
             stop(sprintf("Error: 'lightgbm()' received 'data' with unsupported column types: %s"
                          , paste(head(unsupported_types, 5L)), collapse = ", "))
           }
-          
+
           data <- data.table::as.data.table(data)
-          
+
           cols_char <- names(data)[sapply(data, is.character)]
           if (NROW(cols_char)) {
             suppressWarnings(data[, (cols_char) := lapply(.SD, factor), .SDcols = cols_char])
           }
-          
+
           cols_factors <- names(data)[sapply(data, is.factor)]
           if (NROW(cols_factors)) {
             has_ordered_factor <- any(sapply(data, is.ordered))
@@ -153,11 +153,10 @@ DataProcessor <- R6::R6Class(
           } else {
             params$categorical_feature <- NULL
           }
-          
+
           data <- as.matrix(data, drop = FALSE)
         }
       }
-
 
       if (is.character(label)) {
         label <- factor(label)
@@ -176,14 +175,14 @@ DataProcessor <- R6::R6Class(
         }
         label <- as.numeric(label) - 1.0
       }
-      
+
       if (!is.numeric(label)) {
         label <- as.numeric(label)
       }
       if (length(label) != nrow(data)) {
         stop("Labels to predict must have length equal to the number of rows in 'X'/'data'.")
       }
-      
+
       if (!is.null(weights)) {
         weights <- as.numeric(weights)
         if (length(weights) != nrow(data)) {
@@ -196,7 +195,7 @@ DataProcessor <- R6::R6Class(
           stop("'init_score' must have length equal to the number of rows in 'X'/'data'.")
         }
       }
-      
+
       dataset <- lgb.Dataset(
         data = data
         , label = label
@@ -206,14 +205,14 @@ DataProcessor <- R6::R6Class(
       )
       env_out$dataset <- dataset
     },
-    
+
     process_new_data = function(data) {
       if (!is.null(self$formula_predict)) {
-        
+
         data <- model.matrix(self$formula_predict, data = data)
-        
+
       } else {
-        
+
         if (is.null(dim(data))) {
           if (inherits(data, "sparseVector")) {
             data <- t(as(data, "CsparseMatrix"))
@@ -224,12 +223,12 @@ DataProcessor <- R6::R6Class(
             data <- matrix(data, nrow = 1L)
           }
         }
-        
+
         if (ncol(data) < self$ncols) {
           stop(sprintf("New data has fewer columns than expected (%d vs %d)"
                        , ncol(data), self$ncols))
         }
-        
+
         if (NROW(self$colnames)) {
           if (data.table::is.data.table(data)) {
             data <- data[, self$colnames, with = FALSE, drop = FALSE]
@@ -245,7 +244,7 @@ DataProcessor <- R6::R6Class(
             }
           }
         }
-        
+
         if (NROW(self$factor_levels)) {
           if (!is.data.frame(data)) {
             stop(paste0("When calling 'lightgbm()' on a 'data.frame' with factor columns,"
@@ -271,14 +270,14 @@ DataProcessor <- R6::R6Class(
           ]
         }
       }
-      
+
       if (is.data.frame(data)) {
         data <- as.matrix(data, drop = FALSE)
       }
-      
+
       return(data)
     },
-    
+
     process_predictions = function(pred, is_contrib = FALSE) {
       if (!is_contrib && NROW(self$label_levels)) {
         if (is.matrix(pred) && ncol(pred) == length(self$label_levels)) {

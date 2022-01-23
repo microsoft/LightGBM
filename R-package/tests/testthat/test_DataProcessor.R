@@ -20,7 +20,7 @@ test_that("lightgbm() and predict() work with formula interface", {
   expect_equal(levels(pred), levels(iris$Species))
 
   model <- lightgbm(
-    Species ~ . + log(Petal.Length) + I(Petal.Length^2) - Sepal.Width
+    Species ~ . + log(Petal.Length) + I(Petal.Length^2.0) - Sepal.Width
     , data = iris
     , nthreads = 1L
     , verbose = -1L
@@ -218,7 +218,7 @@ test_that("lightbm() data.frame interface handles categorical features", {
 
 test_that("lightgbm() accepts dataset parameters", {
   set.seed(123L)
-  df <- data.frame(col1 = c(runif(1000L), rep(0.0, 100)))
+  df <- data.frame(col1 = c(runif(1000L), rep(0.0, 100L)))
   df$col2 <- df$col1
   n_bins <- 5L
   model <- lightgbm(
@@ -242,7 +242,7 @@ test_that("lightgbm() accepts dataset parameters", {
 
 test_that("lightgbm() accepts NSE for different arguments", {
   iris_dt <- data.table::as.data.table(iris)
-  iris_dt[, wcol := 1]
+  iris_dt[, wcol := 1.0]
   model <- lightgbm(
     iris_dt
     , "Species"
@@ -259,9 +259,9 @@ test_that("lightgbm() accepts NSE for different arguments", {
 
 test_that("lightgbm() does not throw warnings in the presence of NAs", {
   df <- data.frame(
-    col1 = rep(c(1,2,NA), 100)
-    , col2 = rep(c("a", NA, "b"), 100)
-    , col3 = rep(c(1,2,1), 100)
+    col1 = rep(c(1.0, 2.0, NA), 100L)
+    , col2 = rep(c("a", NA, "b"), 100L)
+    , col3 = rep(c(1.0, 2.0, 1.0), 100L)
   )
   expect_warning({
     model <- lightgbm(
