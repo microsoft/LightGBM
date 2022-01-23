@@ -1225,8 +1225,6 @@ def test_actual_number_of_trees():
     np.testing.assert_array_equal(gbm.predict(np.array(X) * 10), y)
 
 
-# sklearn < 0.22 requires passing "attributes" argument
-@pytest.mark.skipif(sk_version < parse_version('0.22'), reason='scikit-learn version is less than 0.22')
 def test_check_is_fitted():
     X, y = load_digits(n_class=2, return_X_y=True)
     est = lgb.LGBMModel(n_estimators=5, objective="binary")
