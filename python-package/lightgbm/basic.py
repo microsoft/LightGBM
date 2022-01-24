@@ -3311,7 +3311,7 @@ class Booster:
             ctypes.c_int(end_iteration)))
         return self
 
-    def _load_params(self):
+    def _load_params(self)-> Dict[str, Any]:
         """Loads model parameters by calling LGBM_BoosterGetConfig."""
         buffer_len = 2 << 20
         tmp_out_len = ctypes.c_int64(0)
