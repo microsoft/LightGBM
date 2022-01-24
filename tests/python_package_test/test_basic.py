@@ -612,55 +612,72 @@ def test_custom_objective_safety():
     with pytest.raises(ValueError, match=re.escape(f"number of models per one iteration ({nclass})")):
         bad_bst_multi.update(fobj=_bad_gradients)
 
+
+@pytest.fixture(name="fake_input_params")
+def _fake_input_params():
+    return {
+        "boosting": "gbdt",
+        "boost_from_average": True,
+        "learning_rate": 0.05,
+        "metric": "binary_logloss",
+        "monotone_constraints": [-1, 0, 1],
+        "num_iterations": 5,
+        "num_leaves": 31,
+        "objective": "binary",
+    }
+
+
+@pytest.fixture(name="fake_output_params")
+def _fake_output_params(fake_input_params):
+    out = fake_input_params.copy()
+    out.update(
+        {
+            "tree_learner": "serial",
+        }
+    )
+    return out
+
+
 @pytest.fixture(name="fake_model")
-def _fake_model() -> lgb.Booster:
-    # TODO: maybe removed deps on data_dir later
+def _fake_model(fake_input_params):
     data_dir = Path(__file__).parent.parent.parent / "examples/binary_classification"
 
     df_train = pd.read_csv(data_dir / "binary.train", header=None, sep="\t")
 
-    X_train = df_train.drop(0, axis=1)
+    # just take three features for simplicity
+    X_train = df_train.drop(0, axis=1)[[1,2,3]]
     y_train = df_train[0]
 
-    params = {
-        "boosting_type": "gbdt",
-        "objective": "binary",
-        "metric": "binary_logloss",
-        "num_leaves": 31,
-        "learning_rate": 0.05,
-        "feature_fraction": 0.9,
-        "bagging_fraction": 0.8,
-        "bagging_freq": 5,
-        "verbose": 0,
-    }
     lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=False)
-    feature_name = [f"feature_{col}" for col in X_train.columns]
-
+    feature_names = [f"feature_{col}" for col in X_train.columns]
     gbm = lgb.train(
-        params,
-        lgb_train,
+        params=fake_input_params,
+        train_set=lgb_train,
         num_boost_round=3,
         valid_sets=lgb_train,  # eval training data
-        feature_name=feature_name,
-        categorical_feature=[21],
+        feature_name=feature_names,
     )
 
     return gbm
 
-def test_booster__load_param_when_passed_model_file(fake_model):
+
+def test_booster__load_param_when_passed_model_file(fake_model, fake_output_params):
     with tempfile.TemporaryDirectory() as temp_dir:
         model_file = Path(temp_dir) / "model.txt"
         fake_model.save_model(model_file)
 
         loaded = lgb.Booster(model_file=model_file)
 
-    # TODO: needs parse more params
-    assert loaded.params['boosting'] == 'gbdt'
+    actual = loaded.params
+    expected = fake_output_params
+    assert actual == expected
 
-def test_booster__load_param_when_passed_model_str(fake_model):
+
+def test_booster__load_param_when_passed_model_str(fake_model, fake_output_params):
     model_str = fake_model.model_to_string()
 
     loaded = lgb.Booster(model_str=model_str)
 
-    # TODO: needs parse more params
-    assert loaded.params['boosting'] == 'gbdt'
+    actual = loaded.params
+    expected = fake_output_params
+    assert actual == expected

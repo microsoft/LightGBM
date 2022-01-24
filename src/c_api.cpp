@@ -1627,14 +1627,24 @@ int LGBM_BoosterGetConfig(
     while(std::getline(input_stream, line, '\n')){
       if (line.rfind("[boosting: ", 0) == 0) {
         obj["boosting"] = Json{extract_param("boosting", line)};
+      } else if (line.rfind("[boost_from_average: ", 0) == 0) {
+        obj["boost_from_average"] = Json{std::stod(extract_param("boost_from_average", line)) == 1 ? true : false};
+      } else if (line.rfind("[learning_rate: ", 0) == 0) {
+        obj["learning_rate"] = Json{std::stod(extract_param("learning_rate", line))};
+      } else if (line.rfind("[metric: ", 0) == 0) {
+        obj["metric"] = Json{extract_param("metric", line)};
+      } else if (line.rfind("[monotone_constraints: ", 0) == 0) {
+        obj["monotone_constraints"] = Json{LightGBM::Common::StringToArray<int8_t>(extract_param("monotone_constraints", line), ',')};
       } else if (line.rfind("[num_iterations: ", 0) == 0) {
         obj["num_iterations"] = Json{std::stoi(extract_param("num_iterations", line))};
       } else if (line.rfind("[num_leaves: ", 0) == 0) {
         obj["num_leaves"] = Json{std::stoi(extract_param("num_leaves", line))};
-      } else if (line.rfind("[learning_rate: ", 0) == 0) {
-        obj["learning_rate"] = Json{std::stod(extract_param("learning_rate", line))};
+      } else if (line.rfind("[objective: ", 0) == 0) {
+        obj["objective"] = Json{extract_param("objective", line)};
       } else if (line.rfind("[tree_learner: ", 0) == 0) {
         obj["tree_learner"] = Json{extract_param("tree_learner", line)};
+      } else if (line.rfind("[verbose: ", 0) == 0) {
+        obj["verbose"] = Json{std::stoi(extract_param("verbose", line))};
       }
       // TODO: more params to be extracted
     }
