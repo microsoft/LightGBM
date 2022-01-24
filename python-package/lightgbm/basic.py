@@ -2620,10 +2620,10 @@ class Booster:
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
-            self.params = self.loads_params()
+            self.params = self._load_params()
         elif model_str is not None:
             self.model_from_string(model_str)
-            self.params = self.loads_params()
+            self.params = self._load_params()
         else:
             raise TypeError('Need at least one training dataset or model file or model string '
                             'to create Booster instance')
@@ -3311,7 +3311,7 @@ class Booster:
             ctypes.c_int(end_iteration)))
         return self
 
-    def loads_params(self):
+    def _load_params(self):
         """Loads model parameters by calling LGBM_BoosterGetConfig."""
         buffer_len = 2 << 20
         tmp_out_len = ctypes.c_int64(0)
