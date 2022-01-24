@@ -144,7 +144,7 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
             if len(item) == 4:  # regular train
                 data_name, eval_name = item[:2]
             else:  # cv
-                data_name, eval_name = _extract_data_and_eval_name(item[1])
+                data_name, eval_name = item[1].split()
             eval_result.setdefault(data_name, collections.OrderedDict())
             if len(item) == 4:
                 eval_result[data_name].setdefault(eval_name, [])
@@ -160,7 +160,7 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
                 data_name, eval_name, result = item[:3]
                 eval_result[data_name][eval_name].append(result)
             else:
-                data_name, eval_name = _extract_data_and_eval_name(item[1])
+                data_name, eval_name = item[1].split()
                 res_mean, res_stdv = item[2], item[4]
                 eval_result[data_name][f'{eval_name}-mean'].append(res_mean)
                 eval_result[data_name][f'{eval_name}-stdv'].append(res_stdv)
