@@ -618,7 +618,6 @@ def _fake_model() -> lgb.Booster:
     data_dir = Path(__file__).parent.parent.parent / "examples/binary_classification"
 
     df_train = pd.read_csv(data_dir / "binary.train", header=None, sep="\t")
-    weights = pd.read_csv(data_dir / "binary.train.weight", header=None)[0]
 
     X_train = df_train.drop(0, axis=1)
     y_train = df_train[0]
@@ -634,7 +633,7 @@ def _fake_model() -> lgb.Booster:
         "bagging_freq": 5,
         "verbose": 0,
     }
-    lgb_train = lgb.Dataset(X_train, y_train, weight=weights, free_raw_data=False)
+    lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=False)
     feature_name = [f"feature_{col}" for col in X_train.columns]
 
     gbm = lgb.train(
