@@ -648,7 +648,7 @@ def _fake_model() -> lgb.Booster:
 
     return gbm
 
-def test_booster__load_param_when_passed_model_file(fake_model: lgb.Booster) -> None:
+def test_booster__load_param_when_passed_model_file(fake_model):
     with tempfile.TemporaryDirectory() as temp_dir:
         model_file = Path(temp_dir) / "model.txt"
         fake_model.save_model(model_file)
@@ -658,7 +658,7 @@ def test_booster__load_param_when_passed_model_file(fake_model: lgb.Booster) -> 
     # TODO: needs parse more params
     assert loaded.params['boosting'] == 'gbdt'
 
-def test_booster__load_param_when_passed_model_str(fake_model: lgb.Booster) -> None:
+def test_booster__load_param_when_passed_model_str(fake_model):
     model_str = fake_model.model_to_string()
 
     loaded = lgb.Booster(model_str=model_str)
