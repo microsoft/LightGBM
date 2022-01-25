@@ -830,7 +830,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
  * \param indices Pointer to column indices for CSR or row indices for CSC
  * \param data Pointer to the data space
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- * \param nindptr Number of rows in the matrix + 1
+ * \param nindptr Number of entries in ``indptr``
  * \param nelem Number of nonzero elements in the matrix
  * \param num_col_or_row Number of columns for CSR or number of rows for CSC
  * \param predict_type What should be predicted, only feature contributions supported currently
