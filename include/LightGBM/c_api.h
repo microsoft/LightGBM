@@ -839,7 +839,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
  * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param matrix_type Type of matrix input and output, can be ``C_API_MATRIX_TYPE_CSR`` or ``C_API_MATRIX_TYPE_CSC``
- * \param[out] out_len Length of output indptr and data (pointer to an array of two elements)
+ * \param[out] out_len Length of output data and indptr (pointer to an array of two elements)
  * \param[out] out_indptr Pointer to output row headers for CSR or column headers for CSC
  * \param[out] out_indices Pointer to sparse column indices for CSR or row indices for CSC
  * \param[out] out_data Pointer to sparse data space
