@@ -25,13 +25,16 @@
 \item{data}{a \code{matrix} object, a \code{dgCMatrix} object or
 a character representing a path to a text file (CSV, TSV, or LibSVM)}
 
-\item{start_iteration}{int or None, optional (default=None)
-Start index of the iteration to predict.
-If None or <= 0, starts from the first iteration.}
+\item{start_iteration}{int or `NULL`, optional (default=`NULL`)
+                       Start index of the iteration to predict.
+                       If `NULL` or <= 0, starts from the first iteration.
 
-\item{num_iteration}{int or None, optional (default=None)
+                       If using `index1=FALSE`, it will be assumed that the numeration starts
+                       at zero (e.g. passing '2' will mean starting from the 3rd round).}
+
+\item{num_iteration}{int or `NULL`, optional (default=`NULL`)
 Limit number of iterations in the prediction.
-If None, if the best iteration exists and start_iteration is None or <= 0, the
+If `NULL`, if the best iteration exists and start_iteration is `NULL` or <= 0, the
 best iteration is used; otherwise, all iterations from start_iteration are used.
 If <= 0, all iterations from start_iteration are used (no limits).}
 
@@ -53,10 +56,10 @@ prediction outputs per case.}
 the "Predict Parameters" section of the documentation} for a list of parameters and
 valid values.}
 
-\item{index1}{When producing outputs that correspond to some numeration (such as
-leaf indices), whether to make these outputs have a numeration
-starting at 1 or at zero. Note that the underlying lightgbm core library uses zero-based
-numeration, thus `index1=FALSE` will be slightly faster.}
+\item{index1}{When passing argument `start_iteration` and/or when producing outputs that correspond
+to some numeration (such as leaf indices), whether to take these inputs as and/or make
+these outputs have a numeration starting at 1 or at 0. Note that the underlying lightgbm
+core library uses zero-based numeration, thus `index1=FALSE` will be slightly faster.}
 
 \item{...}{ignored}
 }
