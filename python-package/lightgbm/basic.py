@@ -546,7 +546,9 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
                              "Did not expect the data types in the following fields: "
                              f"{bad_index_cols_str}")
-        target_dtype = np.find_common_type((dtype.type for dtype in data.dtypes), [])
+        df_dtypes = [dtype.type for dtype in data.dtypes]
+        df_dtypes.append(np.float32)  # so that the target dtype considers floats
+        target_dtype = np.find_common_type(df_dtypes, [])
         data = data.astype(target_dtype, copy=False).values
     else:
         if feature_name == 'auto':
