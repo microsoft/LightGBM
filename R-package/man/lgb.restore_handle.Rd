@@ -19,6 +19,10 @@ After a LightGBM model object is de-serialized through functions such as \code{s
 object is restored automatically when calling functions such as \code{predict}, but this function can be
 used to forcibly restore it beforehand. Note that the object will be modified in-place.
 }
+\details{
+Be aware that fast single-row CSR prediction configurations are not restored through this
+function - instead, they have to be generated anew with the desired parameters.
+}
 \examples{
 library(lightgbm)
 data("agaricus.train")

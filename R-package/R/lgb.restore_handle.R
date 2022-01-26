@@ -4,6 +4,9 @@
 #' \code{saveRDS}, its underlying C++ object will be blank and needs to be restored to able to use it. Such
 #' object is restored automatically when calling functions such as \code{predict}, but this function can be
 #' used to forcibly restore it beforehand. Note that the object will be modified in-place.
+#'
+#' @details Be aware that fast single-row CSR prediction configurations are not restored through this
+#' function - instead, they have to be generated anew with the desired parameters.
 #' @param model \code{lgb.Booster} object which was de-serialized and whose underlying C++ object and R handle
 #' need to be restored.
 #'

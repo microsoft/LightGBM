@@ -21,8 +21,17 @@
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
-\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or
-a character representing a path to a text file (CSV, TSV, or LibSVM)}
+\item{data}{a \code{matrix} object, a \code{dgCMatrix}, a \code{dgRMatrix} object, a \code{dsparseVector} object,
+            or a character representing a path to a text file (CSV, TSV, or LibSVM).
+
+            For sparse inputs, if predictions are only going to be made for a single row, it will be faster to
+            use CSR format, in which case the data may be passed as either a single-row CSR matrix (class
+            `dgRMatrix` from package `Matrix`) or as a sparse numeric vector (class `dsparseVector` from
+            package `Matrix`).
+
+            If single-row predictions are going to be performed frequently, it is recommended to
+            pre-configure the model object for fast single-row sparse predictions through function
+            \link{lgb.configure_fast_predict}.}
 
 \item{start_iteration}{int or None, optional (default=None)
 Start index of the iteration to predict.
@@ -45,7 +54,10 @@ for logistic regression would result in predictions for log-odds instead of prob
 \item{header}{only used for prediction for text file. True if text file has header}
 
 \item{reshape}{whether to reshape the vector of predictions to a matrix form when there are several
-prediction outputs per case.}
+               prediction outputs per case.
+
+               If passing `predcontrib=TRUE` and the input data is sparse, this parameter will be forced
+               to `TRUE`, outputting a sparse matrix or vector of the same class as the input data.}
 
 \item{params}{a list of additional named parameters. See
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
@@ -62,9 +74,18 @@ For regression or binary classification, it returns a vector of length \code{nro
 
         When \code{predleaf = TRUE}, the output is a matrix object with the
         number of columns corresponding to the number of trees.
+
+        If using `predcontrib=TRUE` and the input data is a sparse matrix or sparse vector,
+        the output will also be a sparse matrix or vector of the same class.
 }
 \description{
 Predicted values based on class \code{lgb.Booster}
+}
+\details{
+If the model object has been configured for fast single-row CSR predictions through
+         \link{lgb.configure_fast_predict}, this function will use the prediction parameters
+         that were configured for it - as such, extra prediction parameters should not be passed
+         here, otherwise the configuration will be ignored and the slow route will be taken.
 }
 \examples{
 \donttest{

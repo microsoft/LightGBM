@@ -282,3 +282,17 @@ lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_v
   params[[main_param_name]] <- alternative_kwarg_value
   return(params)
 }
+
+lgb.equal.or.both.null <- function(a, b) {
+  if (is.null(a)) {
+    if (!is.null(b)) {
+      return(FALSE)
+    }
+    return(TRUE)
+  } else {
+    if (is.null(b)) {
+      return(FALSE)
+    }
+    return(a == b)
+  }
+}
