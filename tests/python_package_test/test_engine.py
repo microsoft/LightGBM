@@ -3226,7 +3226,7 @@ def test_force_split_with_feature_fraction(tmp_path):
         assert tree_structure['split_feature'] == 0
 
 
-def test_numpy_regular_dtypes():
+def test_pandas_with_numpy_regular_dtypes():
     pd = pytest.importorskip('pandas')
     uints = ['uint8', 'uint16', 'uint32', 'uint64']
     ints = ['int8', 'int16', 'int32', 'int64']
@@ -3267,14 +3267,12 @@ def test_numpy_regular_dtypes():
 def test_pandas_nullable_dtypes():
     pd = pytest.importorskip('pandas')
     rng = np.random.RandomState(0)
-    df = pd.DataFrame(
-        {
-            'x1': rng.randint(1, 3, size=100),
-            'x2': np.linspace(-1, 1, 100),
-            'x3': pd.arrays.SparseArray(rng.randint(0, 11, size=100)),
-            'x4': rng.rand(100) < 0.5,
-        }
-    )
+    df = pd.DataFrame({
+        'x1': rng.randint(1, 3, size=100),
+        'x2': np.linspace(-1, 1, 100),
+        'x3': pd.arrays.SparseArray(rng.randint(0, 11, size=100)),
+        'x4': rng.rand(100) < 0.5,
+    })
     # introduce some missing values
     df.loc[1, 'x1'] = np.nan
     df.loc[2, 'x2'] = np.nan
@@ -3301,7 +3299,7 @@ def test_pandas_nullable_dtypes():
     bst_nullable_dtypes = lgb.train(params, ds_nullable_dtypes, num_boost_round=5)
     preds_nullable_dtypes = bst_nullable_dtypes.predict(df2)
 
-    trees_df = bst.trees_to_dataframe()
+    trees_df = bst_nullable_dtypes.trees_to_dataframe()
     # test all features were used
     assert trees_df['split_feature'].nunique() == df.shape[1]
     # test the score is better than predicting the mean
