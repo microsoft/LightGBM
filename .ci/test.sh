@@ -127,8 +127,10 @@ mamba install -q -y -n $CONDA_ENV \
     scipy || exit -1
 
 # python-graphviz has to be installed separately to prevent conda from downgrading to pypy
-mamba install -q -y -n $CONDA_ENV \
+echo "installing python-graphviz"
+mamba install --verbose -y -n $CONDA_ENV \
     python-graphviz || exit -1
+echo "done installing python-graphviz"
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
