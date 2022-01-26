@@ -540,7 +540,7 @@ Booster <- R6::R6Class(
                                       predleaf = FALSE,
                                       predcontrib = FALSE,
                                       params = list()) {
-      
+
       self$restore_handle()
       ncols <- .Call(LGBM_BoosterGetNumFeature_R, private$handle)
 

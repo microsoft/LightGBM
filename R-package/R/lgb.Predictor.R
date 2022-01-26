@@ -143,7 +143,7 @@ Predictor <- R6::R6Class(
         }
 
         if (inherits(data, "dsparseVector")) {
-          
+
           if (length(data) > ncols) {
             stop(sprintf("Model was fitted to data with %d columns, input data has %.0f columns."
                          , ncols, length(data)))
@@ -226,12 +226,12 @@ Predictor <- R6::R6Class(
           return(out)
 
         } else {
-          
+
           stop(sprintf("Predictions on sparse inputs are only allowed for '%s', '%s', '%s' - got: %s"
                        , "dsparseVector", "dgRMatrix", "dgCMatrix", paste(class(data), collapse = ", ")))
-        
+
         }
-      
+
       } else {
 
         # Not a file, we need to predict from R object
@@ -377,7 +377,7 @@ Predictor <- R6::R6Class(
               ncols <- self$fast_predict_config$ncols
               use_fast_config <- self$check_can_use_fast_predict_config(
                 TRUE
-                ,rawscore
+                , rawscore
                 , predleaf
                 , predcontrib
                 , start_iteration
