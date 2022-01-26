@@ -872,7 +872,7 @@ SEXP LGBM_BoosterPredictForCSRSingleRow_R(SEXP handle,
   _AssertBoosterHandleNotNull(handle);
   int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
   const char* parameter_ptr = CHAR(PROTECT(Rf_asChar(parameter)));
-  int nnz = (int)Rf_xlength(data);
+  int nnz = static_cast<int>(Rf_xlength(data));
   const int indptr[] = {0, nnz};
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForCSRSingleRow(R_ExternalPtrAddr(handle),
@@ -920,7 +920,7 @@ SEXP LGBM_BoosterPredictForCSRSingleRowFast_R(SEXP handle_fastConfig,
   SEXP data,
   SEXP out_result) {
   R_API_BEGIN();
-  int nnz = (int)Rf_xlength(data);
+  int nnz = static_cast<int>(Rf_xlength(data));
   const int indptr[] = {0, nnz};
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForCSRSingleRowFast(R_ExternalPtrAddr(handle_fastConfig),
@@ -935,7 +935,7 @@ SEXP LGBM_BoosterPredictForCSRSingleRowFast_R(SEXP handle_fastConfig,
 struct SparseOutputPointers {
   void* indptr; int32_t* indices; void* data; int indptr_type; int data_type;
   SparseOutputPointers(void* indptr, int32_t* indices, void* data)
-  : indptr(indptr), indices(indices), data(data) {};
+  : indptr(indptr), indices(indices), data(data) {}
 };
 
 void delete_SparseOutputPointers(SparseOutputPointers *ptr) {
@@ -992,7 +992,7 @@ SEXP LGBM_BoosterPredictSparseOutput_R(SEXP handle,
   std::memcpy(INTEGER(out_indptr_R), out_indptr, out_len[1]*sizeof(int));
   std::memcpy(INTEGER(out_indices_R), out_indices, out_len[0]*sizeof(int));
   std::memcpy(REAL(out_data_R), out_data, out_len[0]*sizeof(double));
-  
+
   UNPROTECT(3);
   return out;
   R_API_END();
