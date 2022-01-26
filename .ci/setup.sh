@@ -101,15 +101,9 @@ else  # Linux
                 clang \
                 libomp-dev
         fi
-        curl \
-            -s \
-            -L \
-            --insecure \
-            https://apt.kitware.com/keys/kitware-archive-latest.asc \
-        | apt-key add -
+        curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
         apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
-        apt-get --allow-unauthenticated upgrade -y
-        apt-get --allow-unauthenticated update -y
+        apt-get update
         apt-get install --no-install-recommends -y \
             cmake
     else
