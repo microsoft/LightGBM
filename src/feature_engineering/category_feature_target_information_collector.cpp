@@ -41,18 +41,18 @@ namespace LightGBM {
     label_sum_.reserve(label_sum_.size() + target_sum_record.size());
     label_sum_.insert(label_sum_.end(), target_sum_record.begin(), target_sum_record.end());
 
-      std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>& target_category_target_information = collector.GetCategoryTargetInformation();
-    for each (auto& entry in target_category_target_information) {
+    std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>& target_category_target_information = collector.GetCategoryTargetInformation();
+    for (auto& entry : target_category_target_information) {
       category_target_information_.push_back(entry);
     }
 
     std::unordered_map<int, CategoryFeatureTargetInformation>& global_category_target_information_record = collector.GetGlobalCategoryTargetInformation();
-    for each (auto& feature_information in global_category_target_information_record) {
-      for each (auto& category_count in feature_information.second.category_count) {
+    for (auto& feature_information : global_category_target_information_record) {
+      for (auto& category_count : feature_information.second.category_count) {
         global_category_target_information_[feature_information.first].category_count[category_count.first] += category_count.second;
       }
 
-      for each (auto& label_sum in feature_information.second.category_label_sum) {
+      for (auto& label_sum : feature_information.second.category_label_sum) {
         global_category_target_information_[feature_information.first].category_label_sum[label_sum.first] += label_sum.second;
       }
 

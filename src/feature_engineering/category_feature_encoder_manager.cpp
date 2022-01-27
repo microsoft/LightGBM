@@ -98,10 +98,10 @@ namespace LightGBM {
   std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> ParseCategoryFeatureEncoders(Json input_json) {
     std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> result;
 
-    for each (Json encoders_per_feature_json in input_json.array_items()) {
+    for (Json encoders_per_feature_json : input_json.array_items()) {
       int featureId = encoders_per_feature_json[feature_id_key].int_value();
 
-      for each (Json encoder_json in encoders_per_feature_json[encorders_key].array_items()) {
+      for (Json encoder_json : encoders_per_feature_json[encorders_key].array_items()) {
         result[featureId].push_back(std::move(CategoryFeatureEncoder::RecoverFromModelStringInJsonFormat(encoder_json)));
       }
     }
@@ -161,7 +161,7 @@ namespace LightGBM {
     for (int e_index = 0; e_index < settings.array_items().size(); ++e_index) {
       Json encoder_setting = settings.array_items()[e_index];
 
-      for each (int f_id in categorical_features) {
+      for (int f_id : categorical_features) {
         const std::string feature_name = std::to_string(f_id) + "_" + std::to_string(e_index);
 
         for (int fold_id = 0; fold_id < fold_count; ++fold_id) {
