@@ -108,7 +108,12 @@ test_that("start_iteration works correctly", {
     expect_equal(pred2, pred1)
     expect_equal(pred_contrib2, pred_contrib1)
 
-    pred_leaf1 <- predict(bst, test$data, predleaf = TRUE)
+    pred_leaf1 <- predict(
+        bst
+        , test$data
+        , predleaf = TRUE
+        , index1 = FALSE
+    )
     pred_leaf2 <- predict(
         bst
         , test$data
