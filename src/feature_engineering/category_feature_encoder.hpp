@@ -5,14 +5,14 @@
 #ifndef LIGHTGBM_ENCODER_HPP_
 #define LIGHTGBM_ENCODER_HPP_
 
+#include <LightGBM/utils/json11.h>
+#include <LightGBM/meta.h>
+
 #include <string>
 #include <memory>
 #include <utility>
 #include <unordered_map>
 #include <vector>
-
-#include <LightGBM/utils/json11.h>
-#include <LightGBM/meta.h>
 
 namespace LightGBM {
 
@@ -38,7 +38,7 @@ class CategoryFeatureEncoder {
 
   static std::unique_ptr<CategoryFeatureEncoder> RecoverFromModelStringInJsonFormat(json11::Json input);
 
-  protected:
+ protected:
   std::string feature_name_;
   int type_;
 };
@@ -106,7 +106,7 @@ struct CategoryFeatureTargetInformation {
 
 class CategoryFeatureTargetInformationCollector {
  public:
-  CategoryFeatureTargetInformationCollector(std::vector<int> categorical_features, int fold_count) : count_(fold_count), label_sum_(fold_count), category_target_information_(fold_count){
+  CategoryFeatureTargetInformationCollector(std::vector<int> categorical_features, int fold_count) : count_(fold_count), label_sum_(fold_count), category_target_information_(fold_count) {
     categorical_features_ = categorical_features;
   }
 

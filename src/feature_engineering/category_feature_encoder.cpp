@@ -4,10 +4,11 @@
 */
 
 #include "category_feature_encoder.hpp"
-#include <memory>
-#include <utility>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/json11.h>
+
+#include <memory>
+#include <utility>
 
 // property name keys
 const char feature_name_key[] = "feature_name";

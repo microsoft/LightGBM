@@ -4,13 +4,12 @@
 */
 
 #include "category_feature_encoder.hpp"
+#include <LightGBM/utils/json11.h>
+#include <LightGBM/utils/log.h>
 
 #include <unordered_map>
 #include <string>
 #include <algorithm>
-
-#include <LightGBM/utils/json11.h>
-#include <LightGBM/utils/log.h>
 
 // property name keys
 static const char train_category_feature_encoders_key[] = "train_category_feature_encoders";

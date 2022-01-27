@@ -3,15 +3,14 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include "../src/feature_engineering/category_feature_encoder.hpp"
+#include "../include/LightGBM/utils/json11.h"
 
 #include <string>
 #include <unordered_map>
 
 #include <gtest/gtest.h>
 
-#include "../include/LightGBM/utils/json11.h"
-
- // property name keys
+// property name keys
 static const char feature_name_key[] = "feature_name";
 static const char encoder_type_key[] = "encoder_type";
 static const char feature_name[] = "TestFeature";
@@ -215,7 +214,7 @@ TEST_F(CategoryFeatureEncoderManagerTests, GivenCollectorAndSettings_WhenCreateM
       { encoder_type_key, json11::Json(count_encoder_type) },
     });
 
-  double prior_weight = 0.3; 
+  double prior_weight = 0.3;
   double prior = 0.5;
   encoder_settings.emplace_back(json11::Json::object {
       { encoder_type_key, json11::Json(taregt_label_encoder_type) },
@@ -252,7 +251,7 @@ TEST_F(CategoryFeatureEncoderManagerTests, GivenCollectorAndSettings_WhenRecover
       { encoder_type_key, json11::Json(count_encoder_type) },
     });
 
-  double prior_weight = 0.3; 
+  double prior_weight = 0.3;
   double prior = 0.5;
   encoder_settings.emplace_back(json11::Json::object {
       { encoder_type_key, json11::Json(taregt_label_encoder_type) },
@@ -284,7 +283,7 @@ TEST_F(CategoryFeatureEncoderManagerTests, GivenCategoryFeatureEncoderManager_Wh
       { encoder_type_key, json11::Json(count_encoder_type) },
     });
 
-  double prior_weight = 0.3; 
+  double prior_weight = 0.3;
   double fold0_expect_prior = (fold0_record0_label + fold0_record1_label)/ 2.0;
   double fold1_expect_prior = (fold1_record0_label + fold1_record1_label + fold1_record2_label)/ 3.0;
   double global_expect_prior = (fold0_record0_label + fold0_record1_label + fold1_record0_label + fold1_record1_label + fold1_record2_label)/ 5.0;
