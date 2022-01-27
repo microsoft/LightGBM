@@ -123,9 +123,10 @@ test_that("predictions keep row names from the data", {
         , nrounds = 5L
     )
     pred <- predict(bst, X, reshape = TRUE)
-    expect_false(is.null(row.names(pred)))
-    expect_equal(row.names(X), row.names(pred))
+    expect_true(is.vector(pred))
+    expect_false(is.null(names(pred)))
+    expect_equal(row.names(X), names(pred))
 
     row.names(X) <- NULL
-    expect_null(row.names(pred))
+    expect_null(names(pred))
 })
