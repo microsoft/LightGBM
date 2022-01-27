@@ -118,7 +118,7 @@ test_that("predictions keep row names from the data", {
     y <- as.numeric(mtcars[, 1L])
     dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
     bst <- lgb.train(
-        dtrain
+        data = dtrain
         , obj = "regression"
         , nrounds = 5L
     )
