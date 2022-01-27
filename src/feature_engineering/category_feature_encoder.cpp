@@ -3,10 +3,11 @@
 * Licensed under the MIT License. See LICENSE file in the project root for license information.
 */
 
+#include "category_feature_encoder.hpp"
 #include <memory>
+#include <utility>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/json11.h>
-#include "category_feature_encoder.hpp"
 
 // property name keys
 const char feature_name_key[] = "feature_name";
@@ -38,4 +39,4 @@ namespace LightGBM {
     result->feature_name_ = feature_name;
     return result;
   }
-} // namespace LightGBM
+}  // namespace LightGBM

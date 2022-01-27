@@ -2,20 +2,23 @@
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
+#include "../src/feature_engineering/category_feature_encoder.hpp"
+
 #include <string>
 #include <unordered_map>
+
 #include <gtest/gtest.h>
-#include "../src/feature_engineering/category_feature_encoder.hpp"
+
 #include "../include/LightGBM/utils/json11.h"
 
  // property name keys
-const std::string feature_name_key = "feature_name";
-const std::string encoder_type_key = "encoder_type";
-const std::string feature_name = "TestFeature";
-const std::string prior_key = "prior";
-const std::string prior_weight_key = "prior_weight";
-const std::string count_encoder_type = "count";
-const std::string taregt_label_encoder_type = "taregt_label";
+static const char feature_name_key[] = "feature_name";
+static const char encoder_type_key[] = "encoder_type";
+static const char feature_name[] = "TestFeature";
+static const char prior_key[] = "prior";
+static const char prior_weight_key[] = "prior_weight";
+static const char count_encoder_type[] = "count";
+static const char taregt_label_encoder_type[] = "taregt_label";
 
 // test records
 std::vector<int> categorical_features {0, 2, 4};

@@ -6,12 +6,12 @@
 #include "category_feature_encoder.hpp"
 
 // property name keys
-const std::string count_information_key = "count_information";
-const std::string label_information_key = "label_information";
-const std::string category_key = "cat";
-const std::string value_key = "value";
-const std::string count_prior_key = "prior";
-const std::string count_prior_weight_key = "prior_weight";
+static const char count_information_key[] = "count_information";
+static const char label_information_key[] = "label_information";
+static const char category_key[] = "cat";
+static const char value_key[] = "value";
+static const char count_prior_key[] = "prior";
+static const char count_prior_weight_key[] = "prior_weight";
 
 namespace LightGBM {
   double CategoryFeatureTargetEncoder::Encode(double feature_value) {
@@ -55,7 +55,7 @@ namespace LightGBM {
   std::unique_ptr<CategoryFeatureEncoder> CategoryFeatureTargetEncoder::RecoverFromModelStringInJsonFormat(json11::Json input) {
     double prior = input[count_prior_key].number_value();
     double prior_weight = input[count_prior_weight_key].number_value();
-    
+
     std::unordered_map<int, int> count_information;
     std::vector<Json> count_information_json = input[count_information_key].array_items();
     for (Json entry : count_information_json) {
@@ -76,4 +76,4 @@ namespace LightGBM {
 
     return std::unique_ptr<CategoryFeatureEncoder>(new CategoryFeatureTargetEncoder(prior, prior_weight, count_information, label_information));
   }
-}
+}  // namespace LightGBM

@@ -50,4 +50,4 @@ namespace LightGBM {
 
     return std::unique_ptr<CategoryFeatureEncoder>(new CategoryFeatureCountEncoder(count_information));
   }
-} // namespace LightGBM
+}  // namespace LightGBM

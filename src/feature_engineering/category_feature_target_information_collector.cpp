@@ -11,7 +11,7 @@ namespace LightGBM {
   void CategoryFeatureTargetInformationCollector::HandleRecord(int fold_id, const std::vector<double>& record, double label) {
     std::unordered_map<int, CategoryFeatureTargetInformation>& category_target_information_records = category_target_information_[fold_id];
 
-    for (auto iterator = categorical_features_.begin(); iterator != categorical_features_.end(); iterator++ ) {
+    for (auto iterator = categorical_features_.begin(); iterator != categorical_features_.end(); iterator++) {
       int feature_id = *iterator;
       int category = static_cast<int>(record[feature_id]);
 
@@ -32,7 +32,7 @@ namespace LightGBM {
     label_sum_[fold_id] += label;
   }
 
-  void CategoryFeatureTargetInformationCollector::AppendFrom(CategoryFeatureTargetInformationCollector& collector) {
+  void CategoryFeatureTargetInformationCollector::AppendFrom(const CategoryFeatureTargetInformationCollector& collector) {
     std::vector<data_size_t>& target_count_record = collector.GetCounts();
     count_.reserve(count_.size() + target_count_record.size());
     count_.insert(count_.end(), target_count_record.begin(), target_count_record.end());
@@ -48,13 +48,11 @@ namespace LightGBM {
 
     std::unordered_map<int, CategoryFeatureTargetInformation>& global_category_target_information_record = collector.GetGlobalCategoryTargetInformation();
     for each (auto& feature_information in global_category_target_information_record) {
-      for each (auto& category_count in feature_information.second.category_count)
-      {
+      for each (auto& category_count in feature_information.second.category_count) {
         global_category_target_information_[feature_information.first].category_count[category_count.first] += category_count.second;
       }
 
-      for each (auto& label_sum in feature_information.second.category_label_sum)
-      {
+      for each (auto& label_sum in feature_information.second.category_label_sum) {
         global_category_target_information_[feature_information.first].category_label_sum[label_sum.first] += label_sum.second;
       }
 
@@ -62,4 +60,4 @@ namespace LightGBM {
       global_category_target_information_[feature_information.first].label_sum += global_category_target_information_record[feature_information.first].label_sum;
     }
   }
-}
+}  // namespace LightGBM
