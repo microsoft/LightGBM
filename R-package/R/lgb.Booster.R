@@ -829,7 +829,7 @@ predict.lgb.Booster <- function(object,
     ))
   }
 
-  if (!is.null(start_iteration) && start_iteration > 0 && index1) {
+  if (!is.null(start_iteration) && start_iteration > 0L && index1) {
     start_iteration <- start_iteration - 1L
   }
 

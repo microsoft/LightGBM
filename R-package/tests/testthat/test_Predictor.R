@@ -95,6 +95,7 @@ test_that("start_iteration works correctly", {
             , start_iteration = start_iter
             , num_iteration = n_iter
             , rawscore = TRUE
+            , index1 = FALSE
         )
         inc_pred_contrib <- bst$predict(test$data
             , start_iteration = start_iter
@@ -108,6 +109,13 @@ test_that("start_iteration works correctly", {
     expect_equal(pred_contrib2, pred_contrib1)
 
     pred_leaf1 <- predict(bst, test$data, predleaf = TRUE)
-    pred_leaf2 <- predict(bst, test$data, start_iteration = 0L, num_iteration = end_iter + 1L, predleaf = TRUE)
+    pred_leaf2 <- predict(
+        bst
+        , test$data
+        , start_iteration = 0L
+        , num_iteration = end_iter + 1L
+        , predleaf = TRUE
+        , index1 = FALSE
+    )
     expect_equal(pred_leaf1, pred_leaf2)
 })
