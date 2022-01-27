@@ -152,9 +152,9 @@ namespace LightGBM {
 
   std::unique_ptr<CategoryFeatureEncoderManager> CategoryFeatureEncoderManager::Create(json11::Json settings, const CategoryFeatureTargetInformationCollector& informationCollector) {
     const std::vector<int>& categorical_features = informationCollector.GetCategoricalFeatures();
-	const std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>& category_target_information = informationCollector.GetCategoryTargetInformation();
-	const std::unordered_map<int, CategoryFeatureTargetInformation>& global_category_target_information = informationCollector.GetGlobalCategoryTargetInformation();
-    int fold_count = category_target_information.size();
+    const std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>& category_target_information = informationCollector.GetCategoryTargetInformation();
+    const std::unordered_map<int, CategoryFeatureTargetInformation>& global_category_target_information = informationCollector.GetGlobalCategoryTargetInformation();
+    size_t fold_count = category_target_information.size();
     std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>> train_category_feature_encoders(fold_count);
     std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> category_feature_encoders;
 

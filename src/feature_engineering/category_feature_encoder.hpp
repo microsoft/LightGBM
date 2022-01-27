@@ -157,6 +157,7 @@ struct EncodeResult {
 
 class CategoryFeatureEncoderManager {
  public:
+  // NOLINTNEXTLINE
   CategoryFeatureEncoderManager(std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>>& train_category_feature_encoders, std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>& category_feature_encoders)
   : train_category_feature_encoders_(std::move(train_category_feature_encoders)), category_feature_encoders_(std::move(category_feature_encoders)) { }
 
