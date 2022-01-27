@@ -33,20 +33,20 @@ namespace LightGBM {
   }
 
   void CategoryFeatureTargetInformationCollector::AppendFrom(const CategoryFeatureTargetInformationCollector& collector) {
-    std::vector<data_size_t>& target_count_record = collector.GetCounts();
+    const std::vector<data_size_t>& target_count_record = collector.GetCounts();
     count_.reserve(count_.size() + target_count_record.size());
     count_.insert(count_.end(), target_count_record.begin(), target_count_record.end());
 
-    std::vector<double>& target_sum_record = collector.GetLabelSum();
+	const std::vector<double>& target_sum_record = collector.GetLabelSum();
     label_sum_.reserve(label_sum_.size() + target_sum_record.size());
     label_sum_.insert(label_sum_.end(), target_sum_record.begin(), target_sum_record.end());
 
-    std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>& target_category_target_information = collector.GetCategoryTargetInformation();
+	const std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>& target_category_target_information = collector.GetCategoryTargetInformation();
     for (auto& entry : target_category_target_information) {
       category_target_information_.push_back(entry);
     }
 
-    std::unordered_map<int, CategoryFeatureTargetInformation>& global_category_target_information_record = collector.GetGlobalCategoryTargetInformation();
+	const std::unordered_map<int, CategoryFeatureTargetInformation>& global_category_target_information_record = collector.GetGlobalCategoryTargetInformation();
     for (auto& feature_information : global_category_target_information_record) {
       for (auto& category_count : feature_information.second.category_count) {
         global_category_target_information_[feature_information.first].category_count[category_count.first] += category_count.second;
@@ -56,8 +56,8 @@ namespace LightGBM {
         global_category_target_information_[feature_information.first].category_label_sum[label_sum.first] += label_sum.second;
       }
 
-      global_category_target_information_[feature_information.first].total_count += global_category_target_information_record[feature_information.first].total_count;
-      global_category_target_information_[feature_information.first].label_sum += global_category_target_information_record[feature_information.first].label_sum;
+      global_category_target_information_[feature_information.first].total_count += global_category_target_information_record.at(feature_information.first).total_count;
+      global_category_target_information_[feature_information.first].label_sum += global_category_target_information_record.at(feature_information.first).label_sum;
     }
   }
 }  // namespace LightGBM

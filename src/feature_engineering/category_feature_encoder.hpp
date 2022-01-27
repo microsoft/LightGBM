@@ -83,10 +83,10 @@ class CategoryFeatureTargetEncoder : public CategoryFeatureEncoder {
   static const int target_encoder_type = 2;
 
  private:
-  std::unordered_map<int, int> count_information_;
-  std::unordered_map<int, double> label_information_;
   double prior_;
   double prior_weight_;
+  std::unordered_map<int, int> count_information_;
+  std::unordered_map<int, double> label_information_;
 
   // constant value
   const double default_value = 0.0;
@@ -114,23 +114,23 @@ class CategoryFeatureTargetInformationCollector {
 
   void AppendFrom(const CategoryFeatureTargetInformationCollector& collector);
 
-  std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>> GetCategoryTargetInformation() const {
+  const std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>& GetCategoryTargetInformation() const {
     return category_target_information_;
   }
 
-  std::vector<int> GetCategoricalFeatures() const {
+  const std::vector<int>& GetCategoricalFeatures() const {
     return categorical_features_;
   }
 
-  std::vector<data_size_t> GetCounts() const {
+  const std::vector<data_size_t>& GetCounts() const {
     return count_;
   }
 
-  std::vector<double> GetLabelSum() const {
+  const std::vector<double>& GetLabelSum() const {
     return label_sum_;
   }
 
-  std::unordered_map<int, CategoryFeatureTargetInformation> GetGlobalCategoryTargetInformation() const {
+  const std::unordered_map<int, CategoryFeatureTargetInformation>& GetGlobalCategoryTargetInformation() const {
     return global_category_target_information_;
   }
 

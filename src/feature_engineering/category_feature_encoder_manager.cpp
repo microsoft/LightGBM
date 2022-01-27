@@ -151,26 +151,26 @@ namespace LightGBM {
   }
 
   std::unique_ptr<CategoryFeatureEncoderManager> CategoryFeatureEncoderManager::Create(json11::Json settings, const CategoryFeatureTargetInformationCollector& informationCollector) {
-    std::vector<int>&& categorical_features = informationCollector.GetCategoricalFeatures();
-    std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>&& category_target_information = informationCollector.GetCategoryTargetInformation();
-    std::unordered_map<int, CategoryFeatureTargetInformation>&& global_category_target_information = informationCollector.GetGlobalCategoryTargetInformation();
+    const std::vector<int>& categorical_features = informationCollector.GetCategoricalFeatures();
+	const std::vector<std::unordered_map<int, CategoryFeatureTargetInformation>>& category_target_information = informationCollector.GetCategoryTargetInformation();
+	const std::unordered_map<int, CategoryFeatureTargetInformation>& global_category_target_information = informationCollector.GetGlobalCategoryTargetInformation();
     int fold_count = category_target_information.size();
     std::vector<std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>>> train_category_feature_encoders(fold_count);
     std::unordered_map<int, std::vector<std::unique_ptr<CategoryFeatureEncoder>>> category_feature_encoders;
 
-    for (int e_index = 0; e_index < settings.array_items().size(); ++e_index) {
+    for (size_t e_index = 0; e_index < settings.array_items().size(); ++e_index) {
       Json encoder_setting = settings.array_items()[e_index];
 
       for (int f_id : categorical_features) {
         const std::string feature_name = std::to_string(f_id) + "_" + std::to_string(e_index);
 
         for (int fold_id = 0; fold_id < fold_count; ++fold_id) {
-          CategoryFeatureTargetInformation targetInformation = category_target_information[fold_id][f_id];
+          CategoryFeatureTargetInformation targetInformation = category_target_information[fold_id].at(f_id);
 
           train_category_feature_encoders[fold_id][f_id].push_back(std::move(CreateEncoder(feature_name, encoder_setting, targetInformation)));
         }
 
-        category_feature_encoders[f_id].push_back(std::move(CreateEncoder(feature_name, encoder_setting, global_category_target_information[f_id])));
+        category_feature_encoders[f_id].push_back(std::move(CreateEncoder(feature_name, encoder_setting, global_category_target_information.at(f_id))));
       }
     }
 
