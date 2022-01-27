@@ -128,5 +128,6 @@ test_that("predictions keep row names from the data", {
     expect_equal(row.names(X), names(pred))
 
     row.names(X) <- NULL
+    pred <- predict(bst, X, reshape = TRUE)
     expect_null(names(pred))
 })
