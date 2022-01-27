@@ -90,7 +90,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   for (int i = 0; i < num_threshold_bin; ++i) {
     cat_threshold_inner_.push_back(threshold_bin[i]);
   }
-  ++num_leaves_;
+  num_leaves_+=1;
   return num_leaves_ - 1;
 }
 
