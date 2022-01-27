@@ -3,11 +3,12 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #include <gtest/gtest.h>
-#include "../src/feature_engineering/category_feature_encoder.hpp"
-#include "../include/LightGBM/utils/json11.h"
 
 #include <string>
 #include <unordered_map>
+
+#include "../src/feature_engineering/category_feature_encoder.hpp"
+#include "../include/LightGBM/utils/json11.h"
 
 // property name keys
 static const char feature_name_key[] = "feature_name";
