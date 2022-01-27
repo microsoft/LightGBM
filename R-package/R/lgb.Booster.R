@@ -846,7 +846,7 @@ predict.lgb.Booster <- function(object,
   )
 
   if (predleaf && index1) {
-    pred <- pred + 1L
+    pred <- pred + 1.0
   }
   return(pred)
 }
