@@ -81,16 +81,18 @@ if [[ $OS_NAME == "macos" ]]; then
         -pkg $(pwd)/R.pkg \
         -target /
 
-    # Older R versions (<= 4.1.1) on newer macOS (>= 11.0.0) cannot create the necessary symlinks.
+    # Older R versions (<= 4.1.2) on newer macOS (>= 11.0.0) cannot create the necessary symlinks.
     # See https://github.com/r-lib/actions/issues/412.
-    sudo ln \
-        -sf \
-        /Library/Frameworks/R.framework/Resources/bin/R \
-        /usr/local/bin/R
-    sudo ln \
-        -sf \
-        /Library/Frameworks/R.framework/Resources/bin/Rscript \
-        /usr/local/bin/Rscript
+    if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
+        sudo ln \
+            -sf \
+            /Library/Frameworks/R.framework/Resources/bin/R \
+            /usr/local/bin/R
+        sudo ln \
+            -sf \
+            /Library/Frameworks/R.framework/Resources/bin/Rscript \
+            /usr/local/bin/Rscript
+    fi
 
     # Fix "duplicate libomp versions" issue on Mac
     # by replacing the R libomp.dylib with a symlink to the one installed with brew
