@@ -29,7 +29,7 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-mamba create -vvv -y -n $CONDA_ENV python=${PYTHON_VERSION}
+mamba create -vv -y -n $CONDA_ENV python=${PYTHON_VERSION}
 source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
@@ -113,7 +113,7 @@ if [[ $TASK == "swig" ]]; then
 fi
 
 
-mamba install -q -y -n $CONDA_ENV \
+mamba install -vv --update-all -y -n $CONDA_ENV \
     cloudpickle \
     dask \
     distributed \

@@ -35,17 +35,17 @@ jobs:
     matrix:
       regular:
         TASK: regular
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 3.7
-      bdist:
-        TASK: bdist
-      inference:
-        TASK: if-else
-      mpi_source:
-        TASK: mpi
-        METHOD: source
-        PYTHON_VERSION: 3.8
+      # sdist:
+      #   TASK: sdist
+      #   PYTHON_VERSION: 3.7
+      # bdist:
+      #   TASK: bdist
+      # inference:
+      #   TASK: if-else
+      # mpi_source:
+      #   TASK: mpi
+      #   METHOD: source
+      #   PYTHON_VERSION: 3.8
       gpu_source:
         TASK: gpu
         METHOD: source
