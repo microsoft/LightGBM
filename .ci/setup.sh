@@ -129,9 +129,10 @@ if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
         sh mambaforge.sh -b -p $CONDA
     fi
-    echo "---- mamba info ---"
+    echo "---- mamba info before update ---"
     mamba info
-    exit -1
     conda config --set always_yes yes --set changeps1 no
     conda update -q -y mamba
+    echo "---- mamba info after update ---"
+    exit -1
 fi
