@@ -78,6 +78,7 @@ if [[ $OS_NAME == "macos" ]]; then
 
     curl -sL https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -o R.pkg
     sudo installer \
+        -dumplog \
         -pkg $(pwd)/R.pkg \
         -target /
 
