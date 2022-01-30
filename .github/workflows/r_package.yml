@@ -57,7 +57,7 @@ jobs:
             compiler: gcc
             r_version: 3.6
             build_type: cmake
-          - os: macOS-latest
+          - os: macOS-10.15
             task: r-package
             compiler: gcc
             r_version: 4.1
@@ -67,7 +67,7 @@ jobs:
             compiler: clang
             r_version: 3.6
             build_type: cmake
-          - os: macOS-latest
+          - os: macOS-10.15
             task: r-package
             compiler: clang
             r_version: 4.1
@@ -125,7 +125,7 @@ jobs:
           #   compiler: gcc
           #   r_version: 4.0
           #   build_type: cran
-          - os: macOS-latest
+          - os: macOS-10.15
             task: r-package
             compiler: clang
             r_version: 4.1
