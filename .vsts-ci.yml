@@ -194,6 +194,7 @@ jobs:
       docker pull "${IMAGE_URI}" || exit -1
       PLATFORM=$(docker inspect --format='{{.Os}}/{{.Architecture}}' "${IMAGE_URI}") || exit -1
       echo "detected image platform: ${PLATFORM}"
+      echo "artifacts dir: $(Build.ArtifactStagingDirectory)"
       docker run \
         --platform "${PLATFORM}" \
         --rm \
