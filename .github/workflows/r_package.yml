@@ -157,7 +157,7 @@ jobs:
           export TASK="${{ matrix.task }}"
           export COMPILER="${{ matrix.compiler }}"
           export GITHUB_ACTIONS="true"
-          if [[ $("${{ matrix.os }}" | head -c5) == "macOS" ]]; then
+          if [[ $(echo "${{ matrix.os }}" | head -c5) == "macOS" ]]; then
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
