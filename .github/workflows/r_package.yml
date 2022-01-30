@@ -60,7 +60,7 @@ jobs:
           - os: macOS-latest
             task: r-package
             compiler: gcc
-            r_version: 4.0
+            r_version: 4.1
             build_type: cmake
           - os: macOS-latest
             task: r-package
@@ -70,7 +70,7 @@ jobs:
           - os: macOS-latest
             task: r-package
             compiler: clang
-            r_version: 4.0
+            r_version: 4.1
             build_type: cmake
           # - os: windows-latest
           #   task: r-package
@@ -128,7 +128,7 @@ jobs:
           - os: macOS-latest
             task: r-package
             compiler: clang
-            r_version: 4.0
+            r_version: 4.1
             build_type: cran
           ################
           # Other checks #
