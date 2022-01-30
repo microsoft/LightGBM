@@ -30,10 +30,10 @@ if [[ "$TASK" == "cpp-tests" ]]; then
 fi
 
 echo "--- running mamba create ---"
-mamba create -vv -y -n $CONDA_ENV python=${PYTHON_VERSION}
+mamba create -q -y -n $CONDA_ENV python=${PYTHON_VERSION}
 echo "--- done running mamba create ---"
 echo "--- running mamba clean a third time"
-mamba clean --yes --all
+mamba clean -q --yes --all
 echo "--- done runniing mamba clean yet again"
 source activate $CONDA_ENV
 echo "--- activating test env ---"
@@ -119,7 +119,7 @@ if [[ $TASK == "swig" ]]; then
 fi
 
 echo "--- mamba installing test ---"
-mamba install -vv --update-all -y -n $CONDA_ENV \
+mamba install -q -y -n $CONDA_ENV \
     cloudpickle \
     dask \
     distributed \
@@ -133,7 +133,7 @@ mamba install -vv --update-all -y -n $CONDA_ENV \
     scipy || exit -1
 echo "--- done mamba installing dependencies ---"
 echo "--- running mamba clean a fourth time"
-mamba clean --yes --all
+mamba clean -q --yes --all
 echo "--- done runniing mamba clean a fourth time"
 
 # python-graphviz has to be installed separately to prevent conda from downgrading to pypy
