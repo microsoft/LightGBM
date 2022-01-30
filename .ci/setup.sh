@@ -132,7 +132,7 @@ if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
     echo "---- mamba info before update ---"
     mamba info
     conda config --set always_yes yes --set changeps1 no
-    conda update -q -y mamba
+    conda update -vvv -y mamba
     echo "---- mamba info after update ---"
     mamba info
     exit -1
