@@ -83,7 +83,7 @@ if [[ $OS_NAME == "macos" ]]; then
 
     # Older R versions (<= 4.1.2) on newer macOS (>= 11.0.0) cannot create the necessary symlinks.
     # See https://github.com/r-lib/actions/issues/412.
-    if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
+    if [[ $(sw_vers -productVersion | head -c2) -ge "11" ]]; then
         sudo ln \
             -sf \
             /Library/Frameworks/R.framework/Resources/bin/R \
