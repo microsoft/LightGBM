@@ -129,15 +129,6 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
     if not isinstance(eval_result, dict):
         raise TypeError('eval_result should be a dictionary')
 
-    def _extract_data_and_eval_name(data_eval):
-        data_eval = data_eval.split()
-        if len(data_eval) == 1:  # no train metric
-            data_name = 'valid'
-            eval_name = data_eval[0]
-        else:
-            data_name, eval_name = data_eval
-        return data_name, eval_name
-
     def _init(env: CallbackEnv) -> None:
         eval_result.clear()
         for item in env.evaluation_result_list:
