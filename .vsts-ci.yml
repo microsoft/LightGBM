@@ -35,17 +35,17 @@ jobs:
     matrix:
       regular:
         TASK: regular
-      # sdist:
-      #   TASK: sdist
-      #   PYTHON_VERSION: 3.7
-      # bdist:
-      #   TASK: bdist
-      # inference:
-      #   TASK: if-else
-      # mpi_source:
-      #   TASK: mpi
-      #   METHOD: source
-      #   PYTHON_VERSION: 3.8
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 3.7
+      bdist:
+        TASK: bdist
+      inference:
+        TASK: if-else
+      mpi_source:
+        TASK: mpi
+        METHOD: source
+        PYTHON_VERSION: 3.8
       gpu_source:
         TASK: gpu
         METHOD: source
@@ -194,7 +194,6 @@ jobs:
       docker pull "${IMAGE_URI}" || exit -1
       PLATFORM=$(docker inspect --format='{{.Os}}/{{.Architecture}}' "${IMAGE_URI}") || exit -1
       echo "detected image platform: ${PLATFORM}"
-      echo "artifacts dir: $(Build.ArtifactStagingDirectory)"
       docker run \
         --platform "${PLATFORM}" \
         --rm \

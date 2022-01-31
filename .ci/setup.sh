@@ -126,23 +126,11 @@ else  # Linux
 fi
 
 if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
-    
     if [[ $SETUP_CONDA != "false" ]]; then
-        echo "--- setting up mamaforge ---"
         sh mambaforge.sh -b -p $CONDA
-        echo "--- done setting up mambaforge ---"
     fi
-    echo "--- running mamba clean ---"
     mamba clean -q --yes --all
-    echo "--- mamba info before update ---"
-    mamba info
-    echo "--- running conda config ---"
     conda config --set always_yes yes --set changeps1 no
-    echo "--- running conda update ---"
     conda update -q -y mamba
-    echo "--- running mamba clean again ---"
     mamba clean -q --yes --all
-    echo "--- mamba info after update ---"
-    mamba info
-    echo "--- done running second mamba info ---"
 fi
