@@ -40,7 +40,7 @@ jobs:
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
-            r_version: 4.0
+            r_version: 4.1
             build_type: cmake
           - os: ubuntu-latest
             task: r-package
@@ -50,7 +50,7 @@ jobs:
           - os: ubuntu-latest
             task: r-package
             compiler: clang
-            r_version: 4.0
+            r_version: 4.1
             build_type: cmake
           - os: macOS-latest
             task: r-package
@@ -82,7 +82,7 @@ jobs:
             task: r-package
             compiler: MINGW
             toolchain: MSYS
-            r_version: 4.0
+            r_version: 4.1
             build_type: cmake
           # Visual Studio 2017
           - os: windows-2016
@@ -96,14 +96,14 @@ jobs:
             task: r-package
             compiler: MSVC
             toolchain: MSVC
-            r_version: 4.0
+            r_version: 4.1
             build_type: cmake
           # Visual Studio 2022
           - os: windows-2022
             task: r-package
             compiler: MSVC
             toolchain: MSVC
-            r_version: 4.0
+            r_version: 4.1
             build_type: cmake
           ###############
           # CRAN builds #
@@ -118,12 +118,12 @@ jobs:
             task: r-package
             compiler: MINGW
             toolchain: MSYS
-            r_version: 4.0
+            r_version: 4.1
             build_type: cran
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
-            r_version: 4.0
+            r_version: 4.1
             build_type: cran
           - os: macOS-10.15
             task: r-package
@@ -136,7 +136,7 @@ jobs:
           - os: ubuntu-latest
             task: r-rchk
             compiler: gcc
-            r_version: 4.0
+            r_version: 4.1
             build_type: cran
     steps:
       - name: Prevent conversion of line endings on Windows
