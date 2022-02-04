@@ -29,15 +29,13 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-mamba create -q -y -n $CONDA_ENV python=${PYTHON_VERSION}
-mamba clean -q --yes --all
+conda create -q -y -n $CONDA_ENV python=${PYTHON_VERSION}
 source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
 
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     cd $BUILD_DIRECTORY/docs
-    # NOTE: this job uses conda instead of mamba for consistency with RTD builds
     conda install -q -y -n $CONDA_ENV -c conda-forge doxygen rstcheck
     pip install --user -r requirements.txt
     # check reStructuredText formatting
@@ -63,7 +61,7 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
 fi
 
 if [[ $TASK == "lint" ]]; then
-    mamba install -q -y -n $CONDA_ENV \
+    conda install -q -y -n $CONDA_ENV \
         cmakelint \
         cpplint \
         isort \
@@ -86,7 +84,7 @@ if [[ $TASK == "lint" ]]; then
 fi
 
 if [[ $TASK == "if-else" ]]; then
-    mamba install -q -y -n $CONDA_ENV numpy
+    conda install -q -y -n $CONDA_ENV numpy
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
@@ -113,7 +111,7 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-mamba install -q -y -n $CONDA_ENV \
+conda install -q -y -n $CONDA_ENV \
     cloudpickle \
     dask \
     distributed \
@@ -125,12 +123,10 @@ mamba install -q -y -n $CONDA_ENV \
     pytest \
     scikit-learn \
     scipy || exit -1
-mamba clean -q --yes --all
 
 # python-graphviz has to be installed separately to prevent conda from downgrading to pypy
-mamba install -q -y -n $CONDA_ENV \
+conda install -q -y -n $CONDA_ENV \
     python-graphviz || exit -1
-mamba clean -q --yes --all
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
@@ -245,7 +241,7 @@ matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     # requirements for examples
-    mamba install -q -y -n $CONDA_ENV \
+    conda install -q -y -n $CONDA_ENV \
         h5py \
         ipywidgets \
         notebook
