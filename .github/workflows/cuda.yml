@@ -81,7 +81,7 @@ jobs:
             LGB_VER=$(head -n 1 VERSION.txt)
             EOF
             cat > docker-script.sh <<EOF
-            export CONDA=\$HOME/mambaforge
+            export CONDA=\$HOME/miniforge
             export PATH=\$CONDA/bin:\$PATH
             nvidia-smi
             $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1

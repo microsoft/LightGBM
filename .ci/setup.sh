@@ -20,8 +20,8 @@ if [[ $OS_NAME == "macos" ]]; then
     brew install graphviz
     curl \
         -sL \
-        -o mambaforge.sh \
-        https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-MacOSX-x86_64.sh
+        -o miniforge.sh \
+        https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
@@ -120,14 +120,14 @@ else  # Linux
     if [[ $SETUP_CONDA != "false" ]]; then
         curl \
             -sL \
-            -o mambaforge.sh \
-            https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-${ARCH}.sh
+            -o miniforge.sh \
+            https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh
     fi
 fi
 
 if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
-        sh mambaforge.sh -b -p $CONDA
+        sh miniforge.sh -b -p $CONDA
     fi
     conda config --set always_yes yes --set changeps1 no
     conda update -q -y conda
