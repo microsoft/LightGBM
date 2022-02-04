@@ -17,7 +17,6 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "swig" ]]; then
         brew install swig
     fi
-    brew install graphviz
     curl \
         -sL \
         -o miniforge.sh \
@@ -45,9 +44,6 @@ else  # Linux
             libicu66 \
             libssl1.1 \
             libunwind8 \
-            libxau6 \
-            libxext6 \
-            libxrender1 \
             locales \
             netcat \
             unzip \
@@ -84,16 +80,11 @@ else  # Linux
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
-    ARCH=$(uname -m)
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
         apt-get install --no-install-recommends -y \
             curl \
-            graphviz \
-            libxau6 \
-            libxext6 \
-            libxrender1 \
             lsb-release \
             software-properties-common
         if [[ $COMPILER == "clang" ]]; then
@@ -106,18 +97,9 @@ else  # Linux
         apt-get update
         apt-get install --no-install-recommends -y \
             cmake
-    else
-        if [[ $ARCH != "x86_64" ]]; then
-            yum update -y
-            yum install -y \
-                graphviz
-        else
-            sudo apt-get update
-            sudo apt-get install --no-install-recommends -y \
-                graphviz
-        fi
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
+        ARCH=$(uname -m)
         curl \
             -sL \
             -o miniforge.sh \
