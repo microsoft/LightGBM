@@ -38,5 +38,7 @@ install:
 build: false
 
 test_script:
+  - conda config --add channels conda-forge
+  - conda config --set channel_priority strict
   - conda init powershell
   - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test_windows.ps1
