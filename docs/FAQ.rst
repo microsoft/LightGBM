@@ -218,7 +218,7 @@ You can find LightGBM's logo in different file formats and resolutions `here <ht
 
 If you are using any Python package that depends on ``threadpoolctl``, you also may see the following warning in your logs in this case:
 
-.. code-block:: bash
+.. code-block:: console
 
     /root/miniconda/envs/test-env/lib/python3.8/site-packages/threadpoolctl.py:546: RuntimeWarning: 
     Found Intel OpenMP ('libiomp') and LLVM OpenMP ('libomp') loaded at
