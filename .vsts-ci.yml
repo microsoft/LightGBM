@@ -25,7 +25,7 @@ jobs:
 - job: Linux
 ###########################################
   variables:
-    COMPILER: gcc
+    COMPILER: clang
     SETUP_CONDA: 'false'
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
@@ -79,7 +79,7 @@ jobs:
 - job: Linux_latest
 ###########################################
   variables:
-    COMPILER: clang
+    COMPILER: gcc
     DEBIAN_FRONTEND: 'noninteractive'
     IN_UBUNTU_LATEST_CONTAINER: 'true'
     OS_NAME: 'linux'
@@ -214,7 +214,7 @@ jobs:
 - job: macOS
 ###########################################
   variables:
-    COMPILER: clang
+    COMPILER: gcc
     OS_NAME: 'macos'
     PRODUCES_ARTIFACTS: 'true'
   pool:
