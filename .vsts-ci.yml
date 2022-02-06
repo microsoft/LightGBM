@@ -49,8 +49,9 @@ jobs:
       gpu_source:
         TASK: gpu
         METHOD: source
-        # on Ubuntu 14.04, gpu_source build segfaults with Python 3.9.9
-        PYTHON_VERSION: 3.9.6
+        # on Ubuntu 14.04, gpu_source build segfaults with newer version of Python
+        # (and newer version of scipy as a consequence)
+        PYTHON_VERSION: 3.7
       swig:
         TASK: swig
   steps:
