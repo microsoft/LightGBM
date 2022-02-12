@@ -141,7 +141,7 @@ lgb.cv <- function(params = list()
   fobj <- NULL
   if (is.function(params$objective)) {
     fobj <- params$objective
-    params$objective <- "NONE"
+    params$objective <- "none"
   }
 
   # If eval is a single function, store it as a 1-element list
@@ -528,14 +528,14 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 #' @importFrom stats quantile
 lgb.stratified.folds <- function(y, k) {
 
-  ## Group the numeric data based on their magnitudes
-  ## and sample within those groups.
-  ## When the number of samples is low, we may have
-  ## issues further slicing the numeric data into
-  ## groups. The number of groups will depend on the
-  ## ratio of the number of folds to the sample size.
-  ## At most, we will use quantiles. If the sample
-  ## is too small, we just do regular unstratified CV
+  # Group the numeric data based on their magnitudes
+  # and sample within those groups.
+  # When the number of samples is low, we may have
+  # issues further slicing the numeric data into
+  # groups. The number of groups will depend on the
+  # ratio of the number of folds to the sample size.
+  # At most, we will use quantiles. If the sample
+  # is too small, we just do regular unstratified CV
   if (is.numeric(y)) {
 
     cuts <- length(y) %/% k
@@ -555,29 +555,28 @@ lgb.stratified.folds <- function(y, k) {
 
   if (k < length(y)) {
 
-    ## Reset levels so that the possible levels and
-    ## the levels in the vector are the same
+    # Reset levels so that the possible levels and
+    # the levels in the vector are the same
     y <- as.factor(as.character(y))
     numInClass <- table(y)
     foldVector <- vector(mode = "integer", length(y))
 
-    ## For each class, balance the fold allocation as far
-    ## as possible, then resample the remainder.
-    ## The final assignment of folds is also randomized.
-
+    # For each class, balance the fold allocation as far
+    # as possible, then resample the remainder.
+    # The final assignment of folds is also randomized.
     for (i in seq_along(numInClass)) {
 
-      ## Create a vector of integers from 1:k as many times as possible without
-      ## going over the number of samples in the class. Note that if the number
-      ## of samples in a class is less than k, nothing is produced here.
+      # Create a vector of integers from 1:k as many times as possible without
+      # going over the number of samples in the class. Note that if the number
+      # of samples in a class is less than k, nothing is produced here.
       seqVector <- rep(seq_len(k), numInClass[i] %/% k)
 
-      ## Add enough random integers to get length(seqVector) == numInClass[i]
+      # Add enough random integers to get length(seqVector) == numInClass[i]
       if (numInClass[i] %% k > 0L) {
         seqVector <- c(seqVector, sample.int(k, numInClass[i] %% k))
       }
 
-      ## Shuffle the integers for fold assignment and assign to this classes's data
+      # Shuffle the integers for fold assignment and assign to this classes's data
       foldVector[y == dimnames(numInClass)$y[i]] <- sample(seqVector)
 
     }
