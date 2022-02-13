@@ -2768,7 +2768,7 @@ test_that("lightgbm() accepts objective as function argument and under params", 
     , verbose = -1L
   )
   expect_equal(bst1$params$objective, "regression")
-  
+
   bst2 <- lightgbm(
     data = train$data
     , label = train$label
