@@ -122,8 +122,6 @@ NULL
 lightgbm <- function(data,
                      label = NULL,
                      weight = NULL,
-                     init_score = NULL,
-                     objective = "regression",
                      params = list(),
                      nrounds = 100L,
                      verbose = 1L,
@@ -133,6 +131,8 @@ lightgbm <- function(data,
                      init_model = NULL,
                      callbacks = list(),
                      serializable = TRUE,
+                     objective = "regression",
+                     init_score = NULL,
                      ...) {
 
   # validate inputs early to avoid unnecessary computation
@@ -146,6 +146,16 @@ lightgbm <- function(data,
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
   if (!lgb.is.Dataset(x = dtrain)) {
     dtrain <- lgb.Dataset(data = data, label = label, weight = weight, init_score = init_score)
+  }
+
+  if (length(intersect(names(params), .PARAMETER_ALIASES()[["objective"]]))) {
+    obj_names <- .PARAMETER_ALIASES()[["objective"]]
+    for (obj_name in obj_names) {
+      if (!is.null(params[[obj_name]])) {
+        objective <- params[[obj_name]]
+        break
+      }
+    }
   }
 
   train_args <- list(

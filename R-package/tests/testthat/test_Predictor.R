@@ -68,10 +68,10 @@ test_that("start_iteration works correctly", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , objective = "binary"
         , params = list(
             num_leaves = 4L
             , learning_rate = 0.6
+            , objective = "binary"
             , verbosity = VERBOSITY
         )
         , nrounds = 50L

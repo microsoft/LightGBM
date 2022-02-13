@@ -74,9 +74,9 @@ test_that("train and predict binary classification", {
   bst <- lightgbm(
     data = train$data
     , label = train$label
-    , objective = "binary"
     , params = list(
         num_leaves = 5L
+        , objective = "binary"
         , metric = "binary_error"
     )
     , nrounds = nrounds
@@ -104,12 +104,12 @@ test_that("train and predict softmax", {
   bst <- lightgbm(
     data = as.matrix(iris[, -5L])
     , label = lb
-    , objective = "multiclass"
     , params = list(
         num_leaves = 4L
         , learning_rate = 0.05
         , min_data = 20L
         , min_hessian = 10.0
+        , objective = "multiclass"
         , metric = "multi_error"
         , num_class = 3L
     )
@@ -131,10 +131,10 @@ test_that("use of multiple eval metrics works", {
   bst <- lightgbm(
     data = train$data
     , label = train$label
-    , objective = "binary"
     , params = list(
         num_leaves = 4L
         , learning_rate = 1.0
+        , objective = "binary"
         , metric = metrics
     )
     , nrounds = 10L
@@ -155,9 +155,9 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
   bst <- lightgbm(
     data = train$data
     , label = train$label
-    , objective = "binary"
     , params = list(
         num_leaves = 5L
+        , objective = "binary"
         , metric = "binary_error"
     )
     , nrounds = nrounds
@@ -173,9 +173,9 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
   bst <- lightgbm(
     data = train$data
     , label = train$label
-    , objective = "regression"
     , params = list(
         num_leaves = 5L
+        , objective = "regression"
         , metric = "l2"
     )
     , nrounds = nrounds
@@ -192,7 +192,6 @@ test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
     expect_error({
       bst <- lightgbm(
         data = dtrain
-        , objective = "regression"
         , params = params
         , nrounds = nround_value
         , save_name = tempfile(fileext = ".model")
@@ -208,10 +207,10 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
   top_level_bst <- lightgbm(
     data = train$data
     , label = train$label
-    , objective = "regression"
     , nrounds = nrounds
     , params = list(
-      metric = "l2"
+      objective = "regression"
+      , metric = "l2"
       , num_leaves = 5L
     )
     , save_name = tempfile(fileext = ".model")
@@ -221,9 +220,9 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
   param_bst <- lightgbm(
     data = train$data
     , label = train$label
-    , objective = "regression"
     , params = list(
-      metric = "l2"
+      objective = "regression"
+      , metric = "l2"
       , num_leaves = 5L
       , nrounds = nrounds
     )
@@ -234,10 +233,10 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
   both_customized <- lightgbm(
     data = train$data
     , label = train$label
-    , objective = "regression"
     , nrounds = 20L
     , params = list(
-      metric = "l2"
+      objective = "regression"
+      , metric = "l2"
       , num_leaves = 5L
       , nrounds = nrounds
     )
@@ -277,9 +276,9 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
   bst <- lightgbm(
     data = train$data
     , label = train$label
-    , objective = "binary"
     , params = list(
         num_leaves = 5L
+        , objective = "binary"
         , metric = c(
             "binary_error"
             , "auc"
@@ -314,8 +313,8 @@ test_that("lightgbm() does not write model to disk if save_name=NULL", {
   model <- lightgbm(
     data = train$data
     , label = train$label
-    , objective = "binary"
     , nrounds = 5L
+    , params = list(objective = "binary")
     , verbose = 0L
     , save_name = NULL
   )
@@ -1662,9 +1661,9 @@ test_that("lgb.train() works with integer, double, and numeric data", {
     bst <- lightgbm(
       data = X
       , label = y
-      , objective = "regression"
       , params = list(
-        min_data = 1L
+        objective = "regression"
+        , min_data = 1L
         , learning_rate = 0.01
         , seed = 708L
       )
@@ -1970,14 +1969,14 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
   bst <- lightgbm(
     data = dtrain
     , nrounds = nrounds
-    , objective = "binary"
     , valids = list(
       "valid1" = dvalid1
       , "something-random-we-would-not-hardcode" = dtrain
       , "valid2" = dvalid2
     )
     , params = list(
-      metric = "auc"
+      objective = "binary"
+      , metric = "auc"
       , learning_rate = 1.5
       , num_leaves = 5L
     )
@@ -2515,11 +2514,10 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
 
 test_that("lgb.train() throws an informative error if interaction_constraints is not a list", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(interaction_constraints = "[1,2],[3]")
+  params <- list(objective = "regression", interaction_constraints = "[1,2],[3]")
     expect_error({
       bst <- lightgbm(
         data = dtrain
-        , objective = "regression"
         , params = params
         , nrounds = 2L
       )
@@ -2529,11 +2527,10 @@ test_that("lgb.train() throws an informative error if interaction_constraints is
 test_that(paste0("lgb.train() throws an informative error if the members of interaction_constraints ",
                  "are not character or numeric vectors"), {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(interaction_constraints = list(list(1L, 2L), list(3L)))
+  params <- list(objective = "regression", interaction_constraints = list(list(1L, 2L), list(3L)))
     expect_error({
       bst <- lightgbm(
         data = dtrain
-        , objective = "regression"
         , params = params
         , nrounds = 2L
       )
@@ -2542,11 +2539,11 @@ test_that(paste0("lgb.train() throws an informative error if the members of inte
 
 test_that("lgb.train() throws an informative error if interaction_constraints contains a too large index", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(interaction_constraints = list(c(1L, length(colnames(train$data)) + 1L), 3L))
+  params <- list(objective = "regression",
+                 interaction_constraints = list(c(1L, length(colnames(train$data)) + 1L), 3L))
     expect_error({
       bst <- lightgbm(
         data = dtrain
-        , objective = "regression"
         , params = params
         , nrounds = 2L
       )
@@ -2558,29 +2555,26 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
   set.seed(1L)
   dtrain <- lgb.Dataset(train$data, label = train$label)
 
-  params <- list(interaction_constraints = list(c(1L, 2L), 3L))
+  params <- list(objective = "regression", interaction_constraints = list(c(1L, 2L), 3L))
   bst <- lightgbm(
     data = dtrain
-    , objective = "regression"
     , params = params
     , nrounds = 2L
   )
   pred1 <- bst$predict(test$data)
 
   cnames <- colnames(train$data)
-  params <- list(interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), cnames[[3L]]))
+  params <- list(objective = "regression", interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), cnames[[3L]]))
   bst <- lightgbm(
     data = dtrain
-    , objective = "regression"
     , params = params
     , nrounds = 2L
   )
   pred2 <- bst$predict(test$data)
 
-  params <- list(interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), 3L))
+  params <- list(objective = "regression", interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), 3L))
   bst <- lightgbm(
     data = dtrain
-    , objective = "regression"
     , params = params
     , nrounds = 2L
   )
@@ -2595,20 +2589,19 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   set.seed(1L)
   dtrain <- lgb.Dataset(train$data, label = train$label)
 
-  params <- list(interaction_constraints = list(c(1L, 2L), 3L))
+  params <- list(objective = "regression", interaction_constraints = list(c(1L, 2L), 3L))
   bst <- lightgbm(
     data = dtrain
-    , objective = "regression"
     , params = params
     , nrounds = 2L
   )
   pred1 <- bst$predict(test$data)
 
   new_colnames <- paste0(colnames(train$data), "_x")
-  params <- list(interaction_constraints = list(c(new_colnames[1L], new_colnames[2L]), new_colnames[3L]))
+  params <- list(objective = "regression"
+                 , interaction_constraints = list(c(new_colnames[1L], new_colnames[2L]), new_colnames[3L]))
   bst <- lightgbm(
     data = dtrain
-    , objective = "regression"
     , params = params
     , nrounds = 2L
     , colnames = new_colnames
@@ -2765,3 +2758,68 @@ for (x3_to_categorical in c(TRUE, FALSE)) {
     })
   }
 }
+
+test_that("lightgbm() accepts objective as function argument and under params", {
+  bst1 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , params = list(objective = "regression")
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst1$params$objective, "regression")
+  
+  bst2 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "regression"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst2$params$objective, "regression")
+})
+
+test_that("lightgbm() prioritizes objective under params over objective as function argument", {
+  bst1 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "regression"
+    , params = list(objective = "regression_l1")
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst1$params$objective, "regression_l1")
+
+  bst2 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "regression"
+    , params = list(loss = "regression_l1")
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst2$params$objective, "regression_l1")
+})
+
+test_that("lightgbm() accepts init_score as function argument", {
+  bst1 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "binary"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  pred1 <- predict(bst1, train$data, rawscore = TRUE)
+
+  bst2 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , init_score = pred1
+    , objective = "binary"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  pred2 <- predict(bst2, train$data, rawscore = TRUE)
+
+  expect_true(any(pred1 != pred2))
+})
