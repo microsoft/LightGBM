@@ -1,4 +1,6 @@
-context("Learning to rank")
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
 
 # numerical tolerance to use when checking metric values
 TOLERANCE <- 1e-06
@@ -18,13 +20,14 @@ test_that("learning-to-rank with lgb.train() works as expected", {
         , group = rep(150L, 40L)
     )
     ndcg_at <- "1,2,3"
-    eval_names <-  paste0("ndcg@", strsplit(ndcg_at, ",")[[1L]])
+    eval_names <- paste0("ndcg@", strsplit(ndcg_at, ",")[[1L]])
     params <- list(
         objective = "lambdarank"
         , metric = "ndcg"
         , ndcg_at = ndcg_at
         , lambdarank_truncation_level = 3L
         , learning_rate = 0.001
+        , verbose = VERBOSITY
     )
     model <- lgb.train(
         params = params
@@ -71,7 +74,7 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         , group = rep(150L, 40L)
     )
     ndcg_at <- "1,2,3"
-    eval_names <-  paste0("ndcg@", strsplit(ndcg_at, ",")[[1L]])
+    eval_names <- paste0("ndcg@", strsplit(ndcg_at, ",")[[1L]])
     params <- list(
         objective = "lambdarank"
         , metric = "ndcg"
@@ -89,12 +92,12 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         , nrounds = nrounds
         , nfold = nfold
     )
-    expect_is(cv_bst, "lgb.CVBooster")
+    expect_true(methods::is(cv_bst, "lgb.CVBooster"))
     expect_equal(length(cv_bst$boosters), nfold)
 
     # "valid" should contain results for each metric
     eval_results <- cv_bst$record_evals[["valid"]]
-    eval_names <-  c("ndcg@1", "ndcg@2", "ndcg@3")
+    eval_names <- c("ndcg@1", "ndcg@2", "ndcg@3")
     expect_identical(names(eval_results), eval_names)
 
     # check that best score and iter make sense (0.0 < nDCG < 1.0)

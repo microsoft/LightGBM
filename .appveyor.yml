@@ -1,4 +1,4 @@
-version: 3.3.1.99.{build}
+version: 3.3.2.99.{build}
 
 image: Visual Studio 2015
 platform: x64
@@ -35,5 +35,7 @@ install:
 build: false
 
 test_script:
+  - conda config --add channels conda-forge
+  - conda config --set channel_priority strict
   - conda init powershell
   - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test_windows.ps1

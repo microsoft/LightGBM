@@ -239,6 +239,9 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
             raise ValueError('For early stopping, '
                              'at least one dataset and eval metric is required for evaluation')
 
+        if stopping_rounds <= 0:
+            raise ValueError("stopping_rounds should be greater than zero.")
+
         if verbose:
             _log_info(f"Training until validation scores don't improve for {stopping_rounds} rounds")
 

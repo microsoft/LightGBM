@@ -60,6 +60,9 @@ const int INVALID_SOCKET = -1;
 #endif
 
 #ifdef _WIN32
+#ifndef _UCRT
+// Recent MinGW has inet_pton, which then causes compiler error in
+// combination with this replacement.
 #ifndef _MSC_VER
 // not using visual studio in windows
 inline int inet_pton(int af, const char *src, void *dst) {
@@ -84,6 +87,7 @@ inline int inet_pton(int af, const char *src, void *dst) {
   }
   return 0;
 }
+#endif
 #endif
 #endif
 
