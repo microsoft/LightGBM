@@ -92,9 +92,7 @@ NULL
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weight vector of response values. If not NULL, will set to dataset
-#' @param init_score Initial values for each observation from which the boosting process will
-#'                   be started (e.g. as the result of some previous model). If not passing it (the default),
-#'                   will start from a blank state.
+#' @param init_score initial score is the base prediction lightgbm will boost from
 #' @param objective Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
 #'                  For a list of accepted objectives, see
 #'                  \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
