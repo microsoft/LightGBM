@@ -127,8 +127,8 @@ test_that("lgb.load() gives the expected error messages given different incorrec
     train <- agaricus.train
     test <- agaricus.test
     bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
+        X = as.matrix(train$data)
+        , y = train$label
         , params = list(
             objective = "binary"
             , num_leaves = 4L
@@ -136,6 +136,7 @@ test_that("lgb.load() gives the expected error messages given different incorrec
             , verbose = VERBOSITY
         )
         , nrounds = 2L
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
     )
 
@@ -174,8 +175,8 @@ test_that("Loading a Booster from a text file works", {
     train <- agaricus.train
     test <- agaricus.test
     bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
+        X = as.matrix(train$data)
+        , y = train$label
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
@@ -183,6 +184,7 @@ test_that("Loading a Booster from a text file works", {
             , verbose = VERBOSITY
         )
         , nrounds = 2L
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
@@ -251,8 +253,8 @@ test_that("Loading a Booster from a string works", {
     train <- agaricus.train
     test <- agaricus.test
     bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
+        X = as.matrix(train$data)
+        , y = train$label
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
@@ -260,6 +262,7 @@ test_that("Loading a Booster from a string works", {
             , verbose = VERBOSITY
         )
         , nrounds = 2L
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
@@ -284,21 +287,22 @@ test_that("Saving a large model to string should work", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
+        X = as.matrix(train$data)
+        , y = train$label
         , params = list(
             num_leaves = 100L
             , learning_rate = 0.01
             , objective = "binary"
         )
         , nrounds = 500L
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
         , verbose = VERBOSITY
     )
 
     pred <- predict(bst, train$data)
-    pred_leaf_indx <- predict(bst, train$data, predleaf = TRUE)
-    pred_raw_score <- predict(bst, train$data, rawscore = TRUE)
+    pred_leaf_indx <- predict(bst, train$data, type = "leaf")
+    pred_raw_score <- predict(bst, train$data, type = "raw")
     model_string <- bst$save_model_to_string()
 
     # make sure this test is still producing a model bigger than the default
@@ -316,8 +320,8 @@ test_that("Saving a large model to string should work", {
         model_str = model_string
     )
     pred2 <- predict(bst2, train$data)
-    pred2_leaf_indx <- predict(bst2, train$data, predleaf = TRUE)
-    pred2_raw_score <- predict(bst2, train$data, rawscore = TRUE)
+    pred2_leaf_indx <- predict(bst2, train$data, type = "leaf")
+    pred2_raw_score <- predict(bst2, train$data, type = "raw")
     expect_identical(pred, pred2)
     expect_identical(pred_leaf_indx, pred2_leaf_indx)
     expect_identical(pred_raw_score, pred2_raw_score)
@@ -328,14 +332,15 @@ test_that("Saving a large model to JSON should work", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
+        X = as.matrix(train$data)
+        , y = train$label
         , params = list(
             num_leaves = 100L
             , learning_rate = 0.01
-            , objective = "binary"
         )
+        , objective = "binary"
         , nrounds = 200L
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
         , verbose = VERBOSITY
     )
@@ -358,15 +363,16 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
     train <- agaricus.train
     test <- agaricus.test
     bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
+        X = as.matrix(train$data)
+        , y = train$label
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
-            , objective = "binary"
             , verbose = VERBOSITY
         )
+        , objective = "binary"
         , nrounds = 2L
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
@@ -414,15 +420,16 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
     data(agaricus.train, package = "lightgbm")
     nrounds <- 2L
     bst <- lightgbm(
-        data = as.matrix(agaricus.train$data)
-        , label = agaricus.train$label
+        X = as.matrix(agaricus.train$data)
+        , y = agaricus.train$label
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
-            , objective = "binary"
             , verbose = VERBOSITY
         )
+        , objective = "binary"
         , nrounds = nrounds
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
     )
     data(agaricus.test, package = "lightgbm")
@@ -508,15 +515,16 @@ test_that("Booster$rollback_one_iter() should work as expected", {
     test <- agaricus.test
     nrounds <- 5L
     bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
+        X = as.matrix(train$data)
+        , y = train$label
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
-            , objective = "binary"
             , verbose = VERBOSITY
         )
+        , objective = "binary"
         , nrounds = nrounds
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
     )
     expect_equal(bst$current_iter(), nrounds)
@@ -543,15 +551,16 @@ test_that("Booster$update() passing a train_set works as expected", {
 
     # train with 2 rounds and then update
     bst <- lightgbm(
-        data = as.matrix(agaricus.train$data)
-        , label = agaricus.train$label
+        X = as.matrix(agaricus.train$data)
+        , y = agaricus.train$label
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
-            , objective = "binary"
             , verbose = VERBOSITY
         )
+        , objective = "binary"
         , nrounds = nrounds
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
@@ -567,15 +576,16 @@ test_that("Booster$update() passing a train_set works as expected", {
 
     # train with 3 rounds directly
     bst2 <- lightgbm(
-        data = as.matrix(agaricus.train$data)
-        , label = agaricus.train$label
+        X = as.matrix(agaricus.train$data)
+        , y = agaricus.train$label
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
-            , objective = "binary"
             , verbose = VERBOSITY
         )
+        , objective = "binary"
         , nrounds = nrounds +  1L
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst2))
@@ -593,15 +603,16 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
 
     # train with 2 rounds and then update
     bst <- lightgbm(
-        data = as.matrix(agaricus.train$data)
-        , label = agaricus.train$label
+        X = as.matrix(agaricus.train$data)
+        , y = agaricus.train$label
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
-            , objective = "binary"
             , verbose = VERBOSITY
         )
+        , objective = "binary"
         , nrounds = nrounds
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
     )
     expect_error({
@@ -689,15 +700,16 @@ test_that("Saving a model with different feature importance types works", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
+        X = as.matrix(train$data)
+        , y = train$label
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
-            , objective = "binary"
             , verbose = VERBOSITY
         )
+        , objective = "binary"
         , nrounds = 2L
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
@@ -745,15 +757,16 @@ test_that("Saving a model with unknown importance type fails", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
+        X = as.matrix(train$data)
+        , y = train$label
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
-            , objective = "binary"
             , verbose = VERBOSITY
         )
+        , objective = "binary"
         , nrounds = 2L
+        , nthreads = 1L
         , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
@@ -1097,8 +1110,9 @@ test_that("Handle is automatically restored when calling predict", {
     bst <- lightgbm(
         agaricus.train$data
         , agaricus.train$label
+        , objective = "binary"
         , nrounds = 5L
-        , obj = "binary"
+        , nthreads = 1L
         , params = list(
             verbose = VERBOSITY
         )

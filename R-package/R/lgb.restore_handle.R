@@ -15,8 +15,9 @@
 #' model <- lightgbm(
 #'   agaricus.train$data
 #'   , agaricus.train$label
-#'   , params = list(objective = "binary", nthreads = 1L)
+#'   , objective = "binary"
 #'   , nrounds = 5L
+#'   , nthreads = 1L
 #'   , save_name = NULL
 #'   , verbose = 0)
 #' fname <- tempfile(fileext="rds")

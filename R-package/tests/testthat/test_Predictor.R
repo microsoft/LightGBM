@@ -66,21 +66,22 @@ test_that("start_iteration works correctly", {
         , label = agaricus.test$label
     )
     bst <- lightgbm(
-        data = as.matrix(train$data)
-        , label = train$label
+        X = as.matrix(train$data)
+        , y = train$label
         , params = list(
             num_leaves = 4L
             , learning_rate = 0.6
-            , objective = "binary"
             , verbosity = VERBOSITY
         )
+        , objective = "binary"
         , nrounds = 50L
+        , nthreads = 1L
         , valids = list("test" = dtest)
         , early_stopping_rounds = 2L
     )
     expect_true(lgb.is.Booster(bst))
-    pred1 <- predict(bst, data = test$data, rawscore = TRUE)
-    pred_contrib1 <- predict(bst, test$data, predcontrib = TRUE)
+    pred1 <- predict(bst, newdata = test$data, type = "raw")
+    pred_contrib1 <- predict(bst, test$data, type = "contrib")
     pred2 <- rep(0.0, length(pred1))
     pred_contrib2 <- rep(0.0, length(pred2))
     step <- 11L
@@ -94,7 +95,7 @@ test_that("start_iteration works correctly", {
         inc_pred <- predict(bst, test$data
             , start_iteration = start_iter
             , num_iteration = n_iter
-            , rawscore = TRUE
+            , type = "raw"
         )
         inc_pred_contrib <- bst$predict(test$data
             , start_iteration = start_iter
@@ -107,7 +108,7 @@ test_that("start_iteration works correctly", {
     expect_equal(pred2, pred1)
     expect_equal(pred_contrib2, pred_contrib1)
 
-    pred_leaf1 <- predict(bst, test$data, predleaf = TRUE)
-    pred_leaf2 <- predict(bst, test$data, start_iteration = 0L, num_iteration = end_iter + 1L, predleaf = TRUE)
+    pred_leaf1 <- predict(bst, test$data, type = "leaf")
+    pred_leaf2 <- predict(bst, test$data, start_iteration = 0L, num_iteration = end_iter + 1L, type = "leaf")
     expect_equal(pred_leaf1, pred_leaf2)
 })

@@ -86,68 +86,376 @@
 #' @keywords internal
 NULL
 
-#' @name lightgbm
+#' @rdname lightgbm
 #' @title Train a LightGBM model
-#' @description Simple interface for training a LightGBM model.
+#' @description Simplified interface for training / fitting a LightGBM model which follows typical
+#'              R idioms for model fitting and predictions. Note that this interface does not
+#'              expose the full spectrum of library features as \link{lgb.train} does.
+#' @details This is a thin wrapper over \link{lgb.Dataset} and then \link{lgb.train} which performs
+#'          extra steps such as  automatically detecting categorical variables and handling their
+#'          encoding. It is intended as an easy-to-use interface that follows common R idioms for
+#'          predictive models.
+#'
+#'          It uses base R's functions for processing the data, such as `factor`, which are not
+#'          particularly efficient - for serious usage, it is recommended to use the \link{lgb.train}
+#'          interface with \link{lgb.Dataset} instead, handling aspects such as encoding of categorical
+#'          variables externally through your favorite tools.
+#'
+#'          \bold{Important:} using the `formula` interface relies on R's own formula handling, which
+#'          might be very slow for large inputs and will dummy-encode all categorical variables
+#'          (meaning: they will not be treated as categorical in tree splits, rather each level will be
+#'          treated as a separate variable, without exploiting the sparsity and independence patterns
+#'          in the encoded data).
+#'
+#'          When models are produced through this interface (as opposed to \link{lgb.train}), the
+#'          method \link{predict.lgb.Booster} will additionally gain new behaviors, such as taking
+#'          columns by name from the new input data or adding names to the resulting predicted matrices
+#'          (based on the classes or features depending on what is being predicted).
 #' @inheritParams lgb_shared_params
-#' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
-#' @param weight vector of response values. If not NULL, will set to dataset
+#' @param formula A formula for specifying the response/label and predictors/features in the
+#'                model to be fitted. This is provided for ease of use, but using the `formula` interface
+#'                is discouraged for a couple reasons (see details section for mode details):\itemize{
+#'                \item It converts all factor variables to dummy encoding, which typically does not lead to
+#'                      models as good as those in which categorical variables are treated as such.
+#'                \item It uses base R's formula handling for inputs, which can be particularly
+#'                      computationally inefficient compared to the alternatives.
+#'                \item If the number of variables is large, it can increase model size quite a bit.
+#'                }
+#'
+#'                If using the `formula` interface, then `data` must be a `data.frame`.
+#' @param data A `data.frame`. In the non-formula interface, it will use all available variables
+#'             (those not specified as being `label`, `weight`, or `init_score`) as features / predictors,
+#'             and will assume their types are:\itemize{
+#'             \item Numeric, if they are of type `numeric`, `integer`, `Date`, `POSIXct`.
+#'             \item Categorical, if they are of type `factor`, `character`.
+#'             }
+#'
+#'             Other variable types are not accepted. Note that the underlying core library only accepts
+#'             `numeric` inputs, thus other types will end up being casted.
+#'
+#'             Note that, if using the `data.frame` interface, it is not possible to manually specify
+#'             categorical variables through `params` - instead, these will be deduced from the data types,
+#'             and their encoding will be handled internally in the fitting and prediction functions.
+#'             Under the `data.frame` interface, if the data contains any categorical variables, then at
+#'             prediction time only `data.frame` inputs will be allowed.
+#' @param X Data features / covariates / predictors with which the model will try to predict `y`.
+#'
+#'          Note that, if using non-standard evaluation for `y`, `weights`, or `init_score` (specifying
+#'          them as column names from `X`), then `X` will be subsetted, and any additional parameters
+#'          passed that correspond to column indices (such as per-column `max_bin` or
+#'          `categorical_features`) will be applied on the subsetted data.
+#'
+#'          Supports dense matrices from base R (class `matrix`, will be casted to `double` storage
+#'          mode if it isn't already) and sparse matrices in CSC format from the `Matrix` package
+#'          (class `dgCMatrix`).
+#' @param y,label Target / response variable to predict. May be passed as:\itemize{
+#'                \item The name of a column from `X` / `data`, if it has column names. Will use non-standard
+#'                      evaluation in order to try to determine if it matches with the name of a column in
+#'                      `X` / `data` (i.e. will accept it as the name of a column without putting quotes
+#'                      around it), and can also be passed as a character.
+#'                 \item A vector with the number of entries matching to the number of rows in `X` / `data`.
+#'                 }
+#'                 If passing `objective="auto"`, the optimization objective will be determined according to
+#'                 the type / class of this variable.
+#'
+#'                 If `y` is passed as a factor, then `num_class` in `params` will be set automatically
+#'                 according to its levels.
+#'
+#'                 Passing `y` as a factor will also make \link{predict.lgb.Booster} use its levels in the
+#'                 outputs from predictions when appropriate.
+#' @param weights Sample / observation weights for rows in `X` / `data`. Same format as
+#'                `y` (i.e. accepts non-standard evaluation for column names, and accepts numeric vectors).
+#' @param init_score Initial values for each observation from which the boosting process will
+#'                   be started (e.g. as the result of some previous model). If not passing it (the default),
+#'                   will start from a blank state.
+#' @param objective Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
+#'                  For a list of accepted objectives, see
+#'                  \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
+#'                  the "Parameters" section of the documentation}.
+#'
+#'                  If passing `"auto"`, will be deduced from the type of `y` / `label`:\itemize{
+#'                  \item If `y` is not a factor, will set the objective to `"regression"`.
+#'                  \item If `y` is a factor with two classes, will set the objective to `"binary"`.
+#'                  \item If `y` is a factor with more than two classes, will set the objective to `"multiclass"`.
+#'                  }
+#'
+#'                  If `y` is a factor, then it will automatically set parameter `num_classes` based on
+#'                  its number of levels, overriding any such entry in `params` if it is present there.
+#' @param nthreads Number of parallel threads to use. For best speed, this should be set to the number of
+#'                 physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
+#'                 number of maximum threads (e.g. `nthreads = max(parallel::detectCores() / 2L, 1L)` as
+#'                 a shorthand for the optimal value).
+#'
+#'                 Be aware that using too many threads can result in speed degradation in smaller datasets
+#'                 (see the parameters documentation for more details).
+#'
+#'                 If passing zero, will use the default number of threads configured for OpenMP.
+#'
+#'                 This parameter overrides `num_threads` in `params` if it exists there.
+#' @param dataset_params Extra parameters to pass to \link{lgb.Dataset} once it comes the
+#'                       time to convert the dataset to this library's internal format.
+#'
+#'                       For a list of the accepted parameters, see
+#'                       \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#io-parameters}{
+#'                       the "I/O Parameters" section of the documentation}.
 #' @param save_name File name to use when writing the trained model to disk. Should end in ".model".
 #'                  If passing `NULL`, will not save the trained model to disk.
-#' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
+#' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example:
 #'     \itemize{
 #'        \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}
-#'        \item{\code{obj}: objective function, can be character or custom objective function. Examples include
-#'                   \code{regression}, \code{regression_l1}, \code{huber},
-#'                    \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
 #'        \item{\code{eval}: evaluation function, can be (a list of) character or custom eval function}
 #'        \item{\code{record}: Boolean, TRUE will record iteration message to \code{booster$record_evals}}
 #'        \item{\code{colnames}: feature names, if not null, will use this to overwrite the names in dataset}
 #'        \item{\code{categorical_feature}: categorical features. This can either be a character vector of feature
-#'                            names or an integer vector with the indices of the features (e.g. \code{c(1L, 10L)} to
-#'                            say "the first and tenth columns").}
+#'              names or an integer vector with the indices of the features (e.g. \code{c(1L, 10L)} to
+#'              say "the first and tenth columns"). This parameter is not supported in the `formula` and
+#'              `data.frame` interfaces.}
 #'        \item{\code{reset_data}: Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                          into a predictor model which frees up memory and the original datasets}
 #'     }
 #' @inheritSection lgb_shared_params Early Stopping
-#' @return a trained \code{lgb.Booster}
+#' @return A trained \code{lgb.Booster} model object.
+#' @importFrom utils head
+#' @importFrom parallel detectCores
+#' @examples
+#' library(lightgbm)
+#' data("iris")
+#' model <- lightgbm(Species ~ ., data = iris, verbose = -1L, nthreads = 1L)
+#' pred <- predict(model, iris, type = "class")
+#' all(pred == iris$Species)
+#'
+#' model <- lightgbm(iris, Species, verbose = -1L, nthreads = 1L)
+#' head(predict(model, iris, type = "score"))
+#'
+#' model <- lightgbm(as.matrix(iris[, -5L]), iris$Species, verbose = -1L, nthreads = 1L)
+#' head(predict(model, iris, type = "raw"))
 #' @export
-lightgbm <- function(data,
-                     label = NULL,
-                     weight = NULL,
-                     params = list(),
-                     nrounds = 100L,
-                     verbose = 1L,
-                     eval_freq = 1L,
-                     early_stopping_rounds = NULL,
-                     save_name = "lightgbm.model",
-                     init_model = NULL,
-                     callbacks = list(),
-                     serializable = TRUE,
-                     ...) {
+lightgbm <- function(...) {
+  UseMethod("lightgbm")
+}
+
+#' @rdname lightgbm
+#' @export
+lightgbm.formula <- function(formula,
+                             data,
+                             weights = NULL,
+                             init_score = NULL,
+                             objective = "auto",
+                             nrounds = 100L,
+                             nthreads = parallel::detectCores(),
+                             params = list(),
+                             dataset_params = list(),
+                             verbose = 1L,
+                             eval_freq = 1L,
+                             early_stopping_rounds = NULL,
+                             save_name = NULL,
+                             serializable = TRUE,
+                             ...
+                             ) {
+  data_processor_outputs <- new.env()
+  data_processor <- DataProcessor$new(
+    data_processor_outputs
+    , data
+    , dataset_params
+    , model_formula = formula
+    , label = NULL
+    , weights = weights
+    , init_score = init_score
+  )
+  return(
+    lightgbm_internal(
+      data_processor_outputs = data_processor_outputs
+      , data_processor = data_processor
+      , objective = objective
+      , nthreads = nthreads
+      , params = params
+      , nrounds = nrounds
+      , verbose = verbose
+      , eval_freq = eval_freq
+      , early_stopping_rounds = early_stopping_rounds
+      , save_name = save_name
+      , serializable = serializable
+      , ...
+    )
+  )
+}
+
+#' @rdname lightgbm
+#' @export
+lightgbm.data.frame <- function(data,
+                                label,
+                                weights = NULL,
+                                init_score = NULL,
+                                objective = "auto",
+                                nrounds = 100L,
+                                nthreads = parallel::detectCores(),
+                                params = list(),
+                                dataset_params = list(),
+                                verbose = 1L,
+                                eval_freq = 1L,
+                                early_stopping_rounds = NULL,
+                                save_name = NULL,
+                                serializable = TRUE,
+                                ...) {
+  if (!is.null(params$categorical_feature) || !is.null(dataset_params$categorical_feature)) {
+    stop("'categorical_feature' is not supported for 'data.frame' inputs in 'lightgbm()'.")
+  }
+  data_processor_outputs <- new.env()
+  data_processor <- DataProcessor$new(
+    data_processor_outputs
+    , as.data.frame(data)
+    , dataset_params
+    , model_formula = NULL
+    , label = label
+    , weights = weights
+    , init_score = init_score
+  )
+  return(
+    lightgbm_internal(
+      data_processor_outputs = data_processor_outputs
+      , data_processor = data_processor
+      , objective = objective
+      , nthreads = nthreads
+      , params = params
+      , nrounds = nrounds
+      , verbose = verbose
+      , eval_freq = eval_freq
+      , early_stopping_rounds = early_stopping_rounds
+      , save_name = save_name
+      , serializable = serializable
+      , ...
+    )
+  )
+}
+
+#' @rdname lightgbm
+#' @export
+lightgbm.matrix <- function(X,
+                            y,
+                            weights = NULL,
+                            init_score = NULL,
+                            objective = "auto",
+                            nrounds = 100L,
+                            nthreads = parallel::detectCores(),
+                            params = list(),
+                            dataset_params = list(),
+                            verbose = 1L,
+                            eval_freq = 1L,
+                            early_stopping_rounds = NULL,
+                            save_name = NULL,
+                            serializable = TRUE,
+                            ...) {
+  data_processor_outputs <- new.env()
+  data_processor <- DataProcessor$new(
+    data_processor_outputs
+    , X
+    , dataset_params
+    , model_formula = NULL
+    , label = y
+    , weights = weights
+    , init_score = init_score
+  )
+  return(
+    lightgbm_internal(
+      data_processor_outputs = data_processor_outputs
+      , data_processor = data_processor
+      , objective = objective
+      , nthreads = nthreads
+      , params = params
+      , nrounds = nrounds
+      , verbose = verbose
+      , eval_freq = eval_freq
+      , early_stopping_rounds = early_stopping_rounds
+      , save_name = save_name
+      , serializable = serializable
+      , ...
+    )
+  )
+}
+
+#' @rdname lightgbm
+#' @export
+lightgbm.dgCMatrix <- function(X,
+                               y,
+                               weights = NULL,
+                               init_score = NULL,
+                               objective = "auto",
+                               nrounds = 100L,
+                               nthreads = parallel::detectCores(),
+                               params = list(),
+                               dataset_params = list(),
+                               verbose = 1L,
+                               eval_freq = 1L,
+                               early_stopping_rounds = NULL,
+                               save_name = NULL,
+                               serializable = TRUE,
+                               ...) {
+  data_processor_outputs <- new.env()
+  data_processor <- DataProcessor$new(
+    data_processor_outputs
+    , X
+    , dataset_params
+    , model_formula = NULL
+    , label = y
+    , weights = weights
+    , init_score = init_score
+  )
+  return(
+    lightgbm_internal(
+      data_processor_outputs = data_processor_outputs
+      , data_processor = data_processor
+      , objective = objective
+      , nthreads = nthreads
+      , params = params
+      , nrounds = nrounds
+      , verbose = verbose
+      , eval_freq = eval_freq
+      , early_stopping_rounds = early_stopping_rounds
+      , save_name = save_name
+      , serializable = serializable
+      , ...
+    )
+  )
+}
+
+lightgbm_internal <- function(data_processor_outputs,
+                              data_processor,
+                              objective,
+                              nthreads,
+                              params = list(),
+                              nrounds = 100L,
+                              verbose = 1L,
+                              eval_freq = 1L,
+                              early_stopping_rounds = NULL,
+                              save_name = "lightgbm.model",
+                              serializable = TRUE,
+                              ...) {
+  if (objective == "auto") {
+    objective <- data_processor_outputs$objective
+  }
+  if (objective %in% c("multiclass", "multiclassova") && NROW(data_processor$label_levels)) {
+    if (!is.null(params$num_class)) {
+      warning("'num_class' is overriden when using 'lightgbm()' interface with factors.")
+    }
+    params$num_class <- length(data_processor$label_levels)
+  }
+  params$num_threads <- nthreads
 
   # validate inputs early to avoid unnecessary computation
   if (nrounds <= 0L) {
     stop("nrounds should be greater than zero")
   }
 
-  # Set data to a temporary variable
-  dtrain <- data
-
-  # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
-  if (!lgb.is.Dataset(x = dtrain)) {
-    dtrain <- lgb.Dataset(data = data, label = label, weight = weight)
-  }
+  dtrain <- data_processor_outputs$dataset
 
   train_args <- list(
     "params" = params
     , "data" = dtrain
     , "nrounds" = nrounds
+    , "obj" = objective
     , "verbose" = verbose
     , "eval_freq" = eval_freq
     , "early_stopping_rounds" = early_stopping_rounds
-    , "init_model" = init_model
-    , "callbacks" = callbacks
     , "serializable" = serializable
   )
   train_args <- append(train_args, list(...))
@@ -166,6 +474,7 @@ lightgbm <- function(data,
     what = lgb.train
     , args = train_args
   )
+  bst$data_processor <- data_processor
 
   # Store model under a specific name
   if (!is.null(save_name)) {
