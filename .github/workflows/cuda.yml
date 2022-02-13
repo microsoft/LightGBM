@@ -24,15 +24,15 @@ jobs:
       matrix:
         include:
           - method: source
-            compiler: clang
+            compiler: gcc
             python_version: 3.7
             cuda_version: "11.5.1"
           - method: pip
-            compiler: gcc
+            compiler: clang
             python_version: 3.8
             cuda_version: "10.0"
           - method: wheel
-            compiler: clang
+            compiler: gcc
             python_version: 3.9
             cuda_version: "9.0"
     steps:
