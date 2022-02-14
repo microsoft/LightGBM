@@ -20,8 +20,8 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.1.1
-    export R_LINUX_VERSION="4.1.1-1.2004.0"
+    export R_MAC_VERSION=4.1.2
+    export R_LINUX_VERSION="4.1.2-1.2004.0"
     export R_APT_REPO="focal-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
@@ -80,6 +80,19 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo installer \
         -pkg $(pwd)/R.pkg \
         -target /
+
+    # Older R versions (<= 4.1.2) on newer macOS (>= 11.0.0) cannot create the necessary symlinks.
+    # See https://github.com/r-lib/actions/issues/412.
+    if [[ $(sw_vers -productVersion | head -c2) -ge "11" ]]; then
+        sudo ln \
+            -sf \
+            /Library/Frameworks/R.framework/Resources/bin/R \
+            /usr/local/bin/R
+        sudo ln \
+            -sf \
+            /Library/Frameworks/R.framework/Resources/bin/Rscript \
+            /usr/local/bin/Rscript
+    fi
 
     # Fix "duplicate libomp versions" issue on Mac
     # by replacing the R libomp.dylib with a symlink to the one installed with brew

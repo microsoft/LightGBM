@@ -244,8 +244,8 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
   )
 
   top_level_l2 <- top_level_bst$eval_train()[[1L]][["value"]]
-  params_l2    <- param_bst$eval_train()[[1L]][["value"]]
-  both_l2      <- both_customized$eval_train()[[1L]][["value"]]
+  params_l2 <- param_bst$eval_train()[[1L]][["value"]]
+  both_l2 <- both_customized$eval_train()[[1L]][["value"]]
 
   # check type just to be sure the subsetting didn't return a NULL
   expect_true(is.numeric(top_level_l2))
@@ -547,6 +547,52 @@ test_that("lgb.cv() respects showsd argument", {
   expect_identical(evals_no_showsd[["eval_err"]], list())
 })
 
+test_that("lgb.cv() respects parameter aliases for objective", {
+  nrounds <- 3L
+  nfold <- 4L
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  cv_bst <- lgb.cv(
+    data = dtrain
+    , params = list(
+      num_leaves = 5L
+      , application = "binary"
+      , num_iterations = nrounds
+    )
+    , nfold = nfold
+  )
+  expect_equal(cv_bst$best_iter, nrounds)
+  expect_named(cv_bst$record_evals[["valid"]], "binary_logloss")
+  expect_length(cv_bst$record_evals[["valid"]][["binary_logloss"]][["eval"]], nrounds)
+  expect_length(cv_bst$boosters, nfold)
+})
+
+test_that("lgb.cv() respects parameter aliases for metric", {
+  nrounds <- 3L
+  nfold <- 4L
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  cv_bst <- lgb.cv(
+    data = dtrain
+    , params = list(
+      num_leaves = 5L
+      , objective = "binary"
+      , num_iterations = nrounds
+      , metric_types = c("auc", "binary_logloss")
+    )
+    , nfold = nfold
+  )
+  expect_equal(cv_bst$best_iter, nrounds)
+  expect_named(cv_bst$record_evals[["valid"]], c("auc", "binary_logloss"))
+  expect_length(cv_bst$record_evals[["valid"]][["binary_logloss"]][["eval"]], nrounds)
+  expect_length(cv_bst$record_evals[["valid"]][["auc"]][["eval"]], nrounds)
+  expect_length(cv_bst$boosters, nfold)
+})
+
 test_that("lgb.cv() respects eval_train_metric argument", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(
@@ -614,6 +660,53 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
     , ignore.order = FALSE
     , ignore.case = FALSE
   )
+})
+
+test_that("lgb.train() respects parameter aliases for objective", {
+  nrounds <- 3L
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  bst <- lgb.train(
+    data = dtrain
+    , params = list(
+      num_leaves = 5L
+      , application = "binary"
+      , num_iterations = nrounds
+    )
+    , valids = list(
+      "the_training_data" = dtrain
+    )
+  )
+  expect_named(bst$record_evals[["the_training_data"]], "binary_logloss")
+  expect_length(bst$record_evals[["the_training_data"]][["binary_logloss"]][["eval"]], nrounds)
+  expect_equal(bst$params[["objective"]], "binary")
+})
+
+test_that("lgb.train() respects parameter aliases for metric", {
+  nrounds <- 3L
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  bst <- lgb.train(
+    data = dtrain
+    , params = list(
+      num_leaves = 5L
+      , objective = "binary"
+      , num_iterations = nrounds
+      , metric_types = c("auc", "binary_logloss")
+    )
+    , valids = list(
+      "train" = dtrain
+    )
+  )
+  record_results <- bst$record_evals[["train"]]
+  expect_equal(sort(names(record_results)), c("auc", "binary_logloss"))
+  expect_length(record_results[["auc"]][["eval"]], nrounds)
+  expect_length(record_results[["binary_logloss"]][["eval"]], nrounds)
+  expect_equal(bst$params[["metric"]], list("auc", "binary_logloss"))
 })
 
 test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
@@ -688,8 +781,8 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
   )
 
   top_level_l2 <- top_level_bst$eval_train()[[1L]][["value"]]
-  params_l2    <- param_bst$eval_train()[[1L]][["value"]]
-  both_l2      <- both_customized$eval_train()[[1L]][["value"]]
+  params_l2 <- param_bst$eval_train()[[1L]][["value"]]
+  both_l2 <- both_customized$eval_train()[[1L]][["value"]]
 
   # check type just to be sure the subsetting didn't return a NULL
   expect_true(is.numeric(top_level_l2))
@@ -910,7 +1003,7 @@ test_that("lgb.train() works with early stopping for classification", {
   # train with early stopping #
   #############################
   early_stopping_rounds <- 5L
-  bst  <- lgb.train(
+  bst <- lgb.train(
     params = list(
       objective = "binary"
       , metric = "binary_error"
@@ -1022,7 +1115,7 @@ test_that("lgb.train() works with early stopping for classification with a metri
   #############################
   early_stopping_rounds <- 5L
   # the harsh max_depth guarantees that AUC improves over at least the first few iterations
-  bst_auc  <- lgb.train(
+  bst_auc <- lgb.train(
     params = list(
       objective = "binary"
       , metric = "auc"
@@ -1036,7 +1129,7 @@ test_that("lgb.train() works with early stopping for classification with a metri
       "valid1" = dvalid
     )
   )
-  bst_binary_error  <- lgb.train(
+  bst_binary_error <- lgb.train(
     params = list(
       objective = "binary"
       , metric = "binary_error"
@@ -1120,7 +1213,7 @@ test_that("lgb.train() works with early stopping for regression", {
   # train with early stopping #
   #############################
   early_stopping_rounds <- 5L
-  bst  <- lgb.train(
+  bst <- lgb.train(
     params = list(
       objective = "regression"
       , metric = "rmse"
@@ -1484,7 +1577,7 @@ test_that("lgb.train() works with early stopping for regression with a metric th
   # train with early stopping #
   #############################
   early_stopping_rounds <- 5L
-  bst  <- lgb.train(
+  bst <- lgb.train(
     params = list(
       objective = "regression"
       , metric = c(
@@ -2060,6 +2153,56 @@ test_that("early stopping works with lgb.cv()", {
     length(bst$record_evals[["valid"]][["increasing_metric"]][["eval"]])
     , early_stopping_rounds + 1L
   )
+})
+
+test_that("lgb.cv() respects changes to logging verbosity", {
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  # (verbose = 1) should be INFO and WARNING level logs
+  lgb_cv_logs <- capture.output({
+    cv_bst <- lgb.cv(
+      params = list()
+      , nfold = 2L
+      , nrounds = 5L
+      , data = dtrain
+      , obj = "binary"
+      , verbose = 1L
+    )
+  })
+  expect_true(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
+
+  # (verbose = 0) should be WARNING level logs only
+  lgb_cv_logs <- capture.output({
+    cv_bst <- lgb.cv(
+      params = list()
+      , nfold = 2L
+      , nrounds = 5L
+      , data = dtrain
+      , obj = "binary"
+      , verbose = 0L
+    )
+  })
+  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
+
+  # (verbose = -1) no logs
+  lgb_cv_logs <- capture.output({
+    cv_bst <- lgb.cv(
+      params = list()
+      , nfold = 2L
+      , nrounds = 5L
+      , data = dtrain
+      , obj = "binary"
+      , verbose = -1L
+    )
+  })
+  # NOTE: this is not length(lgb_cv_logs) == 0 because lightgbm's
+  #       dependencies might print other messages
+  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
+  expect_false(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
 })
 
 test_that("lgb.cv() updates params based on keyword arguments", {
