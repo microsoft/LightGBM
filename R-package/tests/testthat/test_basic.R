@@ -2823,3 +2823,13 @@ test_that("lightgbm() accepts init_score as function argument", {
 
   expect_true(any(pred1 != pred2))
 })
+
+test_that("lightgbm() defaults to 'regression' objective if objective not otherwise provided", {
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst$params$objective, "regression")
+})
