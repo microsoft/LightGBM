@@ -2996,7 +2996,7 @@ class Booster:
                 self.reset_parameter({"objective": "none"}).__set_objective_to_none = True
             preds = self.__inner_predict(0)
             num_data = self.train_set.num_data()
-            num_class = self._Booster__num_class
+            num_class = self.num_model_per_iteration()
             if num_class > 1:
                 preds = preds.reshape(num_data, num_class, order='F')
             grad, hess = fobj(preds, self.train_set)

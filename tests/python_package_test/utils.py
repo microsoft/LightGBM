@@ -118,8 +118,8 @@ def make_synthetic_regression(n_samples=100):
 
 def softmax(x):
     row_wise_max = np.max(x, axis=1).reshape(-1, 1)
-    x = x - row_wise_max
-    return np.exp(x) / np.sum(np.exp(x), axis=1).reshape(-1, 1)
+    exp_x = np.exp(x - row_wise_max)
+    return exp_x / np.sum(exp_x, axis=1).reshape(-1, 1)
 
 
 def sklearn_multiclass_custom_objective(y_true, y_pred):
