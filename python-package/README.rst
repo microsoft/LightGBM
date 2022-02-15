@@ -30,7 +30,7 @@ For **Linux** users, **glibc** >= 2.14 is required. Also, in some rare cases, wh
 
 For **macOS** (we provide wheels for 3 newest macOS versions) users:
 
-- Starting from version 2.2.1, the library file in distribution wheels is built by the **Apple Clang** (Xcode_8.3.3 for versions 2.2.1 - 2.3.1, Xcode_9.4.1 for versions 2.3.2 - 3.3.1 and Xcode_10.3 from version 4.0.0) compiler. This means that you don't need to install the **gcc** compiler anymore. Instead of that you need to install the **OpenMP** library, which is required for running LightGBM on the system with the **Apple Clang** compiler. You can install the **OpenMP** library by the following command: ``brew install libomp``.
+- Starting from version 2.2.1, the library file in distribution wheels is built by the **Apple Clang** (Xcode_8.3.3 for versions 2.2.1 - 2.3.1, Xcode_9.4.1 for versions 2.3.2 - 3.3.2 and Xcode_10.3 from version 4.0.0) compiler. This means that you don't need to install the **gcc** compiler anymore. Instead of that you need to install the **OpenMP** library, which is required for running LightGBM on the system with the **Apple Clang** compiler. You can install the **OpenMP** library by the following command: ``brew install libomp``.
 
 - For version smaller than 2.2.1 and not smaller than 2.1.2, **gcc-8** with **OpenMP** support must be installed first. Refer to `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__ for installation of **gcc-8** with **OpenMP** support.
 
@@ -163,6 +163,8 @@ Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 If you use ``conda`` to manage Python dependencies, you can install LightGBM using ``conda install``.
+
+We strongly recommend installation from the ``conda-forge`` channel and not from the ``default`` one due to many reasons. The main ones are less time delay for new releases, greater number of supported architectures and better handling of dependency conflicts, especially workaround for OpenMP is crucial for LightGBM. More details can be found in `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`_.
 
 **Note**: The `lightgbm conda-forge feedstock <https://github.com/conda-forge/lightgbm-feedstock>`_ is not maintained by LightGBM maintainers.
 

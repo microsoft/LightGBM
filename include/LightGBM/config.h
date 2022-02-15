@@ -703,6 +703,7 @@ struct Config {
   // desc = **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers starting from zero
   // desc = **Note**: all negative values will be treated as **missing values**
   // desc = **Note**: the output cannot be monotonically constrained with respect to a categorical feature
+  // desc = **Note**: floating point numbers in categorical features will be rounded towards 0
   std::string categorical_feature = "";
 
   // desc = path to a ``.json`` file that specifies bin upper bounds for some or all features

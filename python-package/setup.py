@@ -340,6 +340,7 @@ if __name__ == "__main__":
           version=version,
           description='LightGBM Python Package',
           long_description=readme,
+          python_requires='>=3.6',
           install_requires=[
               'wheel',
               'numpy',

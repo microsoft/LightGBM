@@ -828,6 +828,8 @@ Dataset Parameters
 
    -  **Note**: the output cannot be monotonically constrained with respect to a categorical feature
 
+   -  **Note**: floating point numbers in categorical features will be rounded towards 0
+
 -  ``forcedbins_filename`` :raw-html:`<a id="forcedbins_filename" title="Permalink to this parameter" href="#forcedbins_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
 
    -  path to a ``.json`` file that specifies bin upper bounds for some or all features

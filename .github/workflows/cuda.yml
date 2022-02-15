@@ -26,7 +26,7 @@ jobs:
           - method: source
             compiler: gcc
             python_version: 3.7
-            cuda_version: "11.4.2"
+            cuda_version: "11.5.1"
           - method: pip
             compiler: clang
             python_version: 3.8
@@ -81,7 +81,7 @@ jobs:
             LGB_VER=$(head -n 1 VERSION.txt)
             EOF
             cat > docker-script.sh <<EOF
-            export CONDA=\$HOME/miniconda
+            export CONDA=\$HOME/miniforge
             export PATH=\$CONDA/bin:\$PATH
             nvidia-smi
             $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1

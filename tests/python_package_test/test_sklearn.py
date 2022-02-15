@@ -6,29 +6,19 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pytest
-from pkg_resources import parse_version
-from sklearn import __version__ as sk_version
 from sklearn.base import clone
 from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
+from sklearn.ensemble import StackingClassifier, StackingRegressor
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
-from sklearn.utils.estimator_checks import check_parameters_default_constructible
+from sklearn.utils.estimator_checks import parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
 
 from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking,
                     make_synthetic_regression, sklearn_multiclass_custom_objective, softmax)
-
-sk_version = parse_version(sk_version)
-if sk_version < parse_version("0.23"):
-    import warnings
-
-    from sklearn.exceptions import SkipTestWarning
-    from sklearn.utils.estimator_checks import SkipTest, _yield_all_checks
-else:
-    from sklearn.utils.estimator_checks import parametrize_with_checks
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -244,11 +234,7 @@ def test_dart():
     assert score <= 1.
 
 
-# sklearn <0.23 does not have a stacking classifier and n_features_in_ property
-@pytest.mark.skipif(sk_version < parse_version("0.23"), reason='scikit-learn version is less than 0.23')
 def test_stacking_classifier():
-    from sklearn.ensemble import StackingClassifier
-
     X, y = load_iris(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     classifiers = [('gbm1', lgb.LGBMClassifier(n_estimators=3)),
@@ -269,11 +255,7 @@ def test_stacking_classifier():
     assert all(clf.classes_ == clf.named_estimators_['gbm1'].classes_)
 
 
-# sklearn <0.23 does not have a stacking regressor and n_features_in_ property
-@pytest.mark.skipif(sk_version < parse_version('0.23'), reason='scikit-learn version is less than 0.23')
 def test_stacking_regressor():
-    from sklearn.ensemble import StackingRegressor
-
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     regressors = [('gbm1', lgb.LGBMRegressor(n_estimators=3)),
@@ -358,8 +340,6 @@ def test_random_search():
     assert score <= 1.
 
 
-# sklearn < 0.22 does not have the post fit attribute: classes_
-@pytest.mark.skipif(sk_version < parse_version('0.22'), reason='scikit-learn version is less than 0.22')
 def test_multioutput_classifier():
     n_outputs = 3
     X, y = make_multilabel_classification(n_samples=100, n_features=20,
@@ -379,8 +359,6 @@ def test_multioutput_classifier():
         assert isinstance(classifier.booster_, lgb.Booster)
 
 
-# sklearn < 0.23 does not have as_frame parameter
-@pytest.mark.skipif(sk_version < parse_version('0.23'), reason='scikit-learn version is less than 0.23')
 def test_multioutput_regressor():
     bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
     X, y = bunch['data'], bunch['target']
@@ -397,8 +375,6 @@ def test_multioutput_regressor():
         assert isinstance(regressor.booster_, lgb.Booster)
 
 
-# sklearn < 0.22 does not have the post fit attribute: classes_
-@pytest.mark.skipif(sk_version < parse_version('0.22'), reason='scikit-learn version is less than 0.22')
 def test_classifier_chain():
     n_outputs = 3
     X, y = make_multilabel_classification(n_samples=100, n_features=20,
@@ -420,8 +396,6 @@ def test_classifier_chain():
         assert isinstance(classifier.booster_, lgb.Booster)
 
 
-# sklearn < 0.23 does not have as_frame parameter
-@pytest.mark.skipif(sk_version < parse_version('0.23'), reason='scikit-learn version is less than 0.23')
 def test_regressor_chain():
     bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
     X, y = bunch['data'], bunch['target']
@@ -619,20 +593,15 @@ def test_pandas_categorical():
 
 def test_pandas_sparse():
     pd = pytest.importorskip("pandas")
-    try:
-        from pandas.arrays import SparseArray
-    except ImportError:  # support old versions
-        from pandas import SparseArray
-    X = pd.DataFrame({"A": SparseArray(np.random.permutation([0, 1, 2] * 100)),
-                      "B": SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
-                      "C": SparseArray(np.random.permutation([True, False] * 150))})
-    y = pd.Series(SparseArray(np.random.permutation([0, 1] * 150)))
-    X_test = pd.DataFrame({"A": SparseArray(np.random.permutation([0, 2] * 30)),
-                           "B": SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
-                           "C": SparseArray(np.random.permutation([True, False] * 30))})
-    if pd.__version__ >= '0.24.0':
-        for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
-            assert pd.api.types.is_sparse(dtype)
+    X = pd.DataFrame({"A": pd.arrays.SparseArray(np.random.permutation([0, 1, 2] * 100)),
+                      "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+                      "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 150))})
+    y = pd.Series(pd.arrays.SparseArray(np.random.permutation([0, 1] * 150)))
+    X_test = pd.DataFrame({"A": pd.arrays.SparseArray(np.random.permutation([0, 2] * 30)),
+                           "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+                           "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 30))})
+    for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
+        assert pd.api.types.is_sparse(dtype)
     gbm = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y)
     pred_sparse = gbm.predict(X_test, raw_score=True)
     if hasattr(X_test, 'sparse'):
@@ -1256,8 +1225,6 @@ def test_actual_number_of_trees():
     np.testing.assert_array_equal(gbm.predict(np.array(X) * 10), y)
 
 
-# sklearn < 0.22 requires passing "attributes" argument
-@pytest.mark.skipif(sk_version < parse_version('0.22'), reason='scikit-learn version is less than 0.22')
 def test_check_is_fitted():
     X, y = load_digits(n_class=2, return_X_y=True)
     est = lgb.LGBMModel(n_estimators=5, objective="binary")
@@ -1276,50 +1243,10 @@ def test_check_is_fitted():
         check_is_fitted(model)
 
 
-def _tested_estimators():
-    for Estimator in [lgb.sklearn.LGBMClassifier, lgb.sklearn.LGBMRegressor]:
-        yield Estimator()
-
-
-if sk_version < parse_version("0.23"):
-    def _generate_checks_per_estimator(check_generator, estimators):
-        for estimator in estimators:
-            name = estimator.__class__.__name__
-            for check in check_generator(name, estimator):
-                yield estimator, check
-
-    @pytest.mark.skipif(
-        sk_version < parse_version("0.21"), reason="scikit-learn version is less than 0.21"
-    )
-    @pytest.mark.parametrize(
-        "estimator, check",
-        _generate_checks_per_estimator(_yield_all_checks, _tested_estimators()),
-    )
-    def test_sklearn_integration(estimator, check):
-        xfail_checks = estimator._get_tags()["_xfail_checks"]
-        check_name = check.__name__ if hasattr(check, "__name__") else check.func.__name__
-        if xfail_checks and check_name in xfail_checks:
-            warnings.warn(xfail_checks[check_name], SkipTestWarning)
-            raise SkipTest
-        estimator.set_params(min_child_samples=1, min_data_in_bin=1)
-        name = estimator.__class__.__name__
-        check(name, estimator)
-else:
-    @parametrize_with_checks(list(_tested_estimators()))
-    def test_sklearn_integration(estimator, check, request):
-        estimator.set_params(min_child_samples=1, min_data_in_bin=1)
-        check(estimator)
-
-
-@pytest.mark.skipif(
-    sk_version >= parse_version("0.24"),
-    reason="Default constructible check included in common check from 0.24"
-)
-@pytest.mark.parametrize("estimator", list(_tested_estimators()))
-def test_parameters_default_constructible(estimator):
-    name, Estimator = estimator.__class__.__name__, estimator.__class__
-    # Test that estimators are default-constructible
-    check_parameters_default_constructible(name, Estimator)
+@parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
+def test_sklearn_integration(estimator, check):
+    estimator.set_params(min_child_samples=1, min_data_in_bin=1)
+    check(estimator)
 
 
 @pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
