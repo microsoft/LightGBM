@@ -95,7 +95,7 @@ lgb.train <- function(params = list(),
   params <- lgb.check.wrapper_param(
     main_param_name = "objective"
     , params = params
-    , alternative_kwarg_value = NULL
+    , alternative_kwarg_value = obj
   )
   params <- lgb.check.wrapper_param(
     main_param_name = "early_stopping_round"
@@ -105,7 +105,7 @@ lgb.train <- function(params = list(),
   early_stopping_rounds <- params[["early_stopping_round"]]
 
   # extract any function objects passed for objective or metric
-  params <- lgb.check.obj(params = params, obj = obj)
+  params <- lgb.check.obj(params = params)
   fobj <- NULL
   if (is.function(params$objective)) {
     fobj <- params$objective

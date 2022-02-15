@@ -569,6 +569,23 @@ test_that("lgb.cv() respects parameter aliases for objective", {
   expect_length(cv_bst$boosters, nfold)
 })
 
+test_that("lgb.cv() prefers objective in params to keyword argument", {
+  data("EuStockMarkets")
+  bst <- lgb.train(
+    data = lgb.Dataset(
+      data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
+      , label = EuStockMarkets[, "DAX"]
+    )
+    , params = list(
+      objective = "regression_l2"
+      , verbosity = -1L
+    )
+    , nrounds = 5L
+    , obj = "regression_l1"
+  )
+  expect_equal(bst$params$objective, "regression_l2")
+})
+
 test_that("lgb.cv() respects parameter aliases for metric", {
   nrounds <- 3L
   nfold <- 4L
@@ -682,6 +699,23 @@ test_that("lgb.train() respects parameter aliases for objective", {
   expect_named(bst$record_evals[["the_training_data"]], "binary_logloss")
   expect_length(bst$record_evals[["the_training_data"]][["binary_logloss"]][["eval"]], nrounds)
   expect_equal(bst$params[["objective"]], "binary")
+})
+
+test_that("lgb.train() prefers objective in params to keyword argument", {
+  data("EuStockMarkets")
+  bst <- lgb.train(
+    data = lgb.Dataset(
+      data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
+      , label = EuStockMarkets[, "DAX"]
+    )
+    , params = list(
+        objective = "regression_l2"
+        , verbosity = -1L
+    )
+    , nrounds = 5L
+    , obj = "regression_l1"
+  )
+  expect_equal(bst$params$objective, "regression_l2")
 })
 
 test_that("lgb.train() respects parameter aliases for metric", {
