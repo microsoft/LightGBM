@@ -3151,7 +3151,7 @@ class Booster:
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
-                    The evaluation dataset.
+                    A ``Dataset`` to evaluate.
                 eval_name : str
                     The name of evaluation function (without whitespace).
                 eval_result : float

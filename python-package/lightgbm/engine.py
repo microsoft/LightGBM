@@ -83,7 +83,7 @@ def train(
                 If ``fobj`` is specified, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             eval_data : Dataset
-                The training dataset.
+                A ``Dataset`` to evaluate.
             eval_name : str
                 The name of evaluation function (without whitespaces).
             eval_result : float
@@ -429,15 +429,15 @@ def cv(params, train_set, num_boost_round=100,
 
     feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
-        Each evaluation function should accept two parameters: preds, train_data,
+        Each evaluation function should accept two parameters: preds, eval_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
             preds : numpy 1-D array
                 The predicted values.
                 If ``fobj`` is specified, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
-            train_data : Dataset
-                The training dataset.
+            eval_data : Dataset
+                A ``Dataset`` to evaluate.
             eval_name : str
                 The name of evaluation function (without whitespace).
             eval_result : float
