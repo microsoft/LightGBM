@@ -571,19 +571,30 @@ test_that("lgb.cv() respects parameter aliases for objective", {
 
 test_that("lgb.cv() prefers objective in params to keyword argument", {
   data("EuStockMarkets")
-  bst <- lgb.train(
+  cv_bst <- lgb.cv(
     data = lgb.Dataset(
       data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
       , label = EuStockMarkets[, "DAX"]
     )
     , params = list(
-      objective = "regression_l2"
+      application = "regression_l1"
       , verbosity = -1L
     )
     , nrounds = 5L
-    , obj = "regression_l1"
+    , obj = "regression_l2"
   )
-  expect_equal(bst$params$objective, "regression_l2")
+  for (bst_list in cv_bst$boosters) {
+    bst <- bst_list[["booster"]]
+    expect_equal(bst$params$objective, "regression_l1")
+    # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+    #       allowing access to the "objective" attribute of the Booster object on the C++ side
+    model_txt_lines <- strsplit(
+      x = bst$save_model_to_string()
+      , split = "\n"
+    )[[1L]]
+    expect_true(any(model_txt_lines == "objective=regression_l1"))
+    expect_false(any(model_txt_lines == "objective=regression_l2"))
+  }
 })
 
 test_that("lgb.cv() respects parameter aliases for metric", {
@@ -709,13 +720,21 @@ test_that("lgb.train() prefers objective in params to keyword argument", {
       , label = EuStockMarkets[, "DAX"]
     )
     , params = list(
-        objective = "regression_l2"
+        loss = "regression_l1"
         , verbosity = -1L
     )
     , nrounds = 5L
-    , obj = "regression_l1"
+    , obj = "regression_l2"
   )
-  expect_equal(bst$params$objective, "regression_l2")
+  expect_equal(bst$params$objective, "regression_l1")
+  # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+  #       allowing access to the "objective" attribute of the Booster object on the C++ side
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
 })
 
 test_that("lgb.train() respects parameter aliases for metric", {
