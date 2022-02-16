@@ -24,7 +24,9 @@ Categorical Feature Support
    Refer to the parameter ``categorical_feature`` in `Parameters <./Parameters.rst#categorical_feature>`__.
 
 -  Categorical features will be cast to ``int`` so they must be encoded as non-negative integers (negative values will be treated as missing)
-   less than ``Int32.MaxValue`` (2147483647). It is best to use a contiguous range of integers started from zero.
+   less than ``Int32.MaxValue`` (2147483647).
+   It is best to use a contiguous range of integers started from zero.
+   Floating point numbers in categorical features will be rounded towards 0.
 
 -  Use ``min_data_per_group``, ``cat_smooth`` to deal with over-fitting (when ``#data`` is small or ``#category`` is large).
 
