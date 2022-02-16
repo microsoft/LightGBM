@@ -31,8 +31,7 @@ Run the following from the root of this repository to pull the relevant image an
         --user=0 \
         -v $(pwd):/opt/LightGBM \
         --env C_API=true \
-        --env CONDA=/opt/conda \
-        --env PYTHONUNBUFFERED=1 \
+        --env CONDA=/opt/miniforge \
         --env READTHEDOCS=true \
         --workdir=/opt/LightGBM/docs \
         --entrypoint="" \
