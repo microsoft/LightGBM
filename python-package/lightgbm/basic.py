@@ -3191,14 +3191,14 @@ class Booster:
         ----------
         feval : callable or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, train_data,
+            Should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
-                train_data : Dataset
+                eval_data : Dataset
                     The training dataset.
                 eval_name : str
                     The name of evaluation function (without whitespace).
@@ -3224,14 +3224,14 @@ class Booster:
         ----------
         feval : callable or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, valid_data,
+            Should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
-                valid_data : Dataset
+                eval_data : Dataset
                     The validation dataset.
                 eval_name : str
                     The name of evaluation function (without whitespace).
