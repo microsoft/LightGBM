@@ -92,8 +92,6 @@ NULL
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weight vector of response values. If not NULL, will set to dataset
-#' @param save_name File name to use when writing the trained model to disk. Should end in ".model".
-#'                  If passing `NULL`, will not save the trained model to disk.
 #' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
 #'     \itemize{
 #'        \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}
@@ -120,7 +118,6 @@ lightgbm <- function(data,
                      verbose = 1L,
                      eval_freq = 1L,
                      early_stopping_rounds = NULL,
-                     save_name = NULL,
                      init_model = NULL,
                      callbacks = list(),
                      serializable = TRUE,
@@ -166,11 +163,6 @@ lightgbm <- function(data,
     what = lgb.train
     , args = train_args
   )
-
-  # Store model under a specific name
-  if (!is.null(save_name)) {
-    bst$save_model(filename = save_name)
-  }
 
   return(bst)
 }
