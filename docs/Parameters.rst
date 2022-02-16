@@ -816,7 +816,7 @@ Dataset Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``categorical_feature=name:c1,c2,c3`` means c1, c2 and c3 are categorical features
 
-   -  **Note**: only supports categorical with ``int`` type (not applicable for data represented as pandas DataFrame in Python-package)
+   -  **Note**: all values will be cast to ``int`` (integer codes will be extracted from pandas categoricals in the Python-package)
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
 

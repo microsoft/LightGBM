@@ -1155,7 +1155,7 @@ class Dataset:
             If list of int, interpreted as indices.
             If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
-            All values in categorical features should be less than int32 max value (2147483647).
+            All values in categorical features will be cast to int32 and thus should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
             The output cannot be monotonically constrained with respect to a categorical feature.
