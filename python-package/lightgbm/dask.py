@@ -424,7 +424,8 @@ def _train(
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Class of the local underlying model.
     sample_weight : Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)
-        Weights of training data.
+        Weights of training data. Weight should be non-negative values because the Hessian
+        value multiplied by weight is supposed to be non-negative.
     init_score : Dask Array or Dask Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task), or Dask Array or Dask DataFrame of shape = [n_samples, n_classes] (for multi-class task), or None, optional (default=None)
         Init score of training data.
     group : Dask Array or Dask Series or None, optional (default=None)

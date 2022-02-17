@@ -224,7 +224,7 @@ _lgbmmodel_doc_fit = (
         The target values (class labels in classification, real numbers in regression).
     sample_weight : {sample_weight_shape}
         Weights of training data. Weights should be non-negative values because the Hessian
-            value multiplied by weights is supposed to be non-negative.
+        value multiplied by weights is supposed to be non-negative.
     init_score : {init_score_shape}
         Init score of training data.
     group : {group_shape}

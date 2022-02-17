@@ -1819,8 +1819,7 @@ class Dataset:
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Weight for each instance. Weight should be non-negative values because the Hessian
-            value multiplied by weight is supposed to be non-negative.
+            Weight for each instance.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
@@ -2272,8 +2271,7 @@ class Dataset:
         Returns
         -------
         weight : numpy array or None
-            Weight for each data point from the Dataset. Weight should be non-negative values because the Hessian
-            value multiplied by weight is supposed to be non-negative.
+            Weight for each data point from the Dataset.
         """
         if self.weight is None:
             self.weight = self.get_field('weight')
