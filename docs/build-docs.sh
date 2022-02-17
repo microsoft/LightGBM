@@ -5,7 +5,7 @@ rm -f ./_FIRST_RUN.flag
 export PATH="${CONDA}/bin:${PATH}"
 
 curl \
-    -L \
+    -sL \
     -o ${HOME}/miniforge.sh \
     https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
 

@@ -20,7 +20,7 @@ However, you may want to build them locally during development to test changes.
 Docker
 ^^^^^^
 
-The most reliable way to build the documentation locally is with Docker, using `the same images readthedocs uses <https://hub.docker.com/r/readthedocs/build>`_.
+The most reliable way to build the documentation locally is with Docker, using `the same images Read the Docs uses <https://hub.docker.com/r/readthedocs/build>`_.
 
 Run the following from the root of this repository to pull the relevant image and run a container locally.
 
@@ -51,7 +51,7 @@ You can build the documentation locally. Just install Doxygen and run in ``docs`
 
 .. code:: sh
 
-    pip install breathe sphinx 'sphinx_rtd_theme>0.5'
+    pip install breathe sphinx 'sphinx_rtd_theme>=0.5'
     make html
 
 Unfortunately, documentation for R code is built only on our site, and commands above will not build it for you locally.
@@ -61,6 +61,6 @@ If you faced any problems with Doxygen installation or you simply do not need do
 
 .. code:: sh
 
-    pip install sphinx 'sphinx_rtd_theme>0.5'
+    pip install sphinx 'sphinx_rtd_theme>=0.5'
     export C_API=NO || set C_API=NO
     make html

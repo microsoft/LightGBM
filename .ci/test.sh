@@ -43,8 +43,6 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -q \
         -y \
         -n $CONDA_ENV \
-        -c conda-forge \
-        --override-channels \
             doxygen \
             rstcheck || exit -1
     # check reStructuredText formatting
