@@ -231,6 +231,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
     callback : callable
         The callback that activates early stopping.
     """
+
     class _early_stopping_callback:
         def __init__(self, stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True, min_delta: Union[float, List[float]] = 0.0) -> None:
             self.stopping_rounds = stopping_rounds
@@ -239,11 +240,9 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
             self.min_delta = min_delta
 
             self.enabled = True
-
             self._reset_storages()
 
         def _reset_storages(self) -> None:
-            # reset storages
             self.best_score = []
             self.best_iter = []
             self.best_score_list = []
@@ -305,7 +304,6 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
             # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
             self.first_metric = env.evaluation_result_list[0][1].split(" ")[-1]
             for eval_ret, delta in zip(env.evaluation_result_list, deltas):
-                print(eval_ret, delta)
                 self.best_iter.append(0)
                 self.best_score_list.append(None)
                 if eval_ret[3]:  # greater is better
@@ -360,6 +358,5 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
                     raise EarlyStopException(
                         self.best_iter[i], self.best_score_list[i])
                 self._final_iteration_check(env, eval_name_splitted, i)
-
     _early_stopping_callback.order = 30  # type: ignore
     return _early_stopping_callback(stopping_rounds=stopping_rounds, first_metric_only=first_metric_only, verbose=verbose, min_delta=min_delta)
