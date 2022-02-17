@@ -578,7 +578,7 @@ test_that("lgb.cv() prefers objective in params to keyword argument", {
     )
     , params = list(
       application = "regression_l1"
-      , verbosity = -1L
+      , verbosity = VERBOSITY
     )
     , nrounds = 5L
     , obj = "regression_l2"
@@ -721,7 +721,7 @@ test_that("lgb.train() prefers objective in params to keyword argument", {
     )
     , params = list(
         loss = "regression_l1"
-        , verbosity = -1L
+        , verbosity = VERBOSITY
     )
     , nrounds = 5L
     , obj = "regression_l2"
