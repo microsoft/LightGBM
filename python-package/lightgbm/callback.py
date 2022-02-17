@@ -234,6 +234,9 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
 
     class _early_stopping_callback:
         def __init__(self, stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True, min_delta: Union[float, List[float]] = 0.0) -> None:
+            self.order = 30
+            self.before_iteration = False
+
             self.stopping_rounds = stopping_rounds
             self.first_metric_only = first_metric_only
             self.verbose = verbose
@@ -358,5 +361,5 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
                     raise EarlyStopException(
                         self.best_iter[i], self.best_score_list[i])
                 self._final_iteration_check(env, eval_name_splitted, i)
-    _early_stopping_callback.order = 30  # type: ignore
+
     return _early_stopping_callback(stopping_rounds=stopping_rounds, first_metric_only=first_metric_only, verbose=verbose, min_delta=min_delta)
