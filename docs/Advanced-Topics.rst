@@ -25,6 +25,7 @@ Categorical Feature Support
 
 -  Categorical features must be encoded as non-negative integers (``int``) less than ``Int32.MaxValue`` (2147483647).
    It is best to use a contiguous range of integers started from zero.
+   Floating point numbers in categorical features will be rounded towards 0.
 
 -  Use ``min_data_per_group``, ``cat_smooth`` to deal with over-fitting (when ``#data`` is small or ``#category`` is large).
 
