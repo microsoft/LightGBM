@@ -136,7 +136,6 @@ test_that("lgb.load() gives the expected error messages given different incorrec
             , verbose = VERBOSITY
         )
         , nrounds = 2L
-        , save_name = tempfile(fileext = ".model")
     )
 
     # you have to give model_str or filename
@@ -183,7 +182,6 @@ test_that("Loading a Booster from a text file works", {
             , verbose = VERBOSITY
         )
         , nrounds = 2L
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -260,7 +258,6 @@ test_that("Loading a Booster from a string works", {
             , verbose = VERBOSITY
         )
         , nrounds = 2L
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -292,7 +289,6 @@ test_that("Saving a large model to string should work", {
             , objective = "binary"
         )
         , nrounds = 500L
-        , save_name = tempfile(fileext = ".model")
         , verbose = VERBOSITY
     )
 
@@ -336,7 +332,6 @@ test_that("Saving a large model to JSON should work", {
             , objective = "binary"
         )
         , nrounds = 200L
-        , save_name = tempfile(fileext = ".model")
         , verbose = VERBOSITY
     )
 
@@ -367,7 +362,6 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
             , verbose = VERBOSITY
         )
         , nrounds = 2L
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -423,7 +417,6 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
             , verbose = VERBOSITY
         )
         , nrounds = nrounds
-        , save_name = tempfile(fileext = ".model")
     )
     data(agaricus.test, package = "lightgbm")
     dtest <- Dataset$new(
@@ -517,7 +510,6 @@ test_that("Booster$rollback_one_iter() should work as expected", {
             , verbose = VERBOSITY
         )
         , nrounds = nrounds
-        , save_name = tempfile(fileext = ".model")
     )
     expect_equal(bst$current_iter(), nrounds)
     expect_true(lgb.is.Booster(bst))
@@ -552,7 +544,6 @@ test_that("Booster$update() passing a train_set works as expected", {
             , verbose = VERBOSITY
         )
         , nrounds = nrounds
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
     expect_equal(bst$current_iter(), nrounds)
@@ -576,7 +567,6 @@ test_that("Booster$update() passing a train_set works as expected", {
             , verbose = VERBOSITY
         )
         , nrounds = nrounds +  1L
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst2))
     expect_equal(bst2$current_iter(), nrounds +  1L)
@@ -602,7 +592,6 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
             , verbose = VERBOSITY
         )
         , nrounds = nrounds
-        , save_name = tempfile(fileext = ".model")
     )
     expect_error({
         bst$update(
@@ -698,7 +687,6 @@ test_that("Saving a model with different feature importance types works", {
             , verbose = VERBOSITY
         )
         , nrounds = 2L
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -754,7 +742,6 @@ test_that("Saving a model with unknown importance type fails", {
             , verbose = VERBOSITY
         )
         , nrounds = 2L
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 

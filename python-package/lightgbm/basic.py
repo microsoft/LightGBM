@@ -1160,6 +1160,7 @@ class Dataset:
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
             The output cannot be monotonically constrained with respect to a categorical feature.
+            Floating point numbers in categorical features will be rounded towards 0.
         params : dict or None, optional (default=None)
             Other parameters for Dataset.
         free_raw_data : bool, optional (default=True)
@@ -3192,14 +3193,14 @@ class Booster:
         ----------
         feval : callable or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, train_data,
+            Should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
-                train_data : Dataset
+                eval_data : Dataset
                     The training dataset.
                 eval_name : str
                     The name of evaluation function (without whitespace).
@@ -3225,14 +3226,14 @@ class Booster:
         ----------
         feval : callable or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, valid_data,
+            Should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
-                valid_data : Dataset
+                eval_data : Dataset
                     The validation dataset.
                 eval_name : str
                     The name of evaluation function (without whitespace).
@@ -3564,6 +3565,7 @@ class Booster:
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
             The output cannot be monotonically constrained with respect to a categorical feature.
+            Floating point numbers in categorical features will be rounded towards 0.
         dataset_params : dict or None, optional (default=None)
             Other parameters for Dataset ``data``.
         free_raw_data : bool, optional (default=True)
