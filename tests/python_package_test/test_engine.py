@@ -3292,6 +3292,7 @@ def test_record_evaluation_with_cv(train_metric):
                     cv_hist[key], eval_result[dataset][f'{metric}-{agg}']
                 )
 
+
 def test_pandas_with_numpy_regular_dtypes():
     pd = pytest.importorskip('pandas')
     uints = ['uint8', 'uint16', 'uint32', 'uint64']
