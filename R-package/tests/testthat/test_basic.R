@@ -635,6 +635,24 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
   )
 })
 
+test_that("lgb.train() raises an informative error for unrecognized objectives", {
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  expect_error({
+    expect_warning({
+      bst <- lgb.train(
+        data = dtrain
+        , params = list(
+          objective_type = "not_a_real_objective"
+          , verbosity = VERBOSITY
+        )
+      )
+    }, regexp = "[LightGBM] [Fatal] Unknown objective type name: not_a_real_objective")
+  }, regexp = "lgb.Booster: cannot create Booster handle")
+})
+
 test_that("lgb.train() respects parameter aliases for objective", {
   nrounds <- 3L
   dtrain <- lgb.Dataset(
