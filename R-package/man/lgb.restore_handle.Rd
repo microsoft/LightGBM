@@ -31,7 +31,6 @@ model <- lightgbm(
   , agaricus.train$label
   , params = list(objective = "binary", nthreads = 1L)
   , nrounds = 5L
-  , save_name = NULL
   , verbose = 0)
 fname <- tempfile(fileext="rds")
 saveRDS(model, fname)

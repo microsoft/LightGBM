@@ -17,8 +17,10 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "swig" ]]; then
         brew install swig
     fi
-    brew install graphviz
-    curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+    curl \
+        -sL \
+        -o miniforge.sh \
+        https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh
 else  # Linux
     if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
@@ -42,9 +44,6 @@ else  # Linux
             libicu66 \
             libssl1.1 \
             libunwind8 \
-            libxau6 \
-            libxext6 \
-            libxrender1 \
             locales \
             netcat \
             unzip \
@@ -81,16 +80,11 @@ else  # Linux
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
-    ARCH=$(uname -m)
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
         apt-get install --no-install-recommends -y \
             curl \
-            graphviz \
-            libxau6 \
-            libxext6 \
-            libxrender1 \
             lsb-release \
             software-properties-common
         if [[ $COMPILER == "clang" ]]; then
@@ -103,29 +97,19 @@ else  # Linux
         apt-get update
         apt-get install --no-install-recommends -y \
             cmake
-    else
-        if [[ $ARCH != "x86_64" ]]; then
-            yum update -y
-            yum install -y \
-                graphviz
-        else
-            sudo apt-get update
-            sudo apt-get install --no-install-recommends -y \
-                graphviz
-        fi
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
-        if [[ $ARCH == "x86_64" ]]; then
-            curl -sL -o conda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-        else
-            curl -sL -o conda.sh https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh
-        fi
+        ARCH=$(uname -m)
+        curl \
+            -sL \
+            -o miniforge.sh \
+            https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh
     fi
 fi
 
-if [[ "${TASK}" != "r-package" ]]; then
+if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
-        sh conda.sh -b -p $CONDA
+        sh miniforge.sh -b -p $CONDA
     fi
     conda config --set always_yes yes --set changeps1 no
     conda update -q -y conda
