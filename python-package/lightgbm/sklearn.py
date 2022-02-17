@@ -59,7 +59,7 @@ class _ObjectiveFunctionWrapper:
 
                 y_true : numpy 1-D array of shape = [n_samples]
                     The target values.
-                y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                y_pred : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape = [n_samples, n_classes] (for multi-class task)
                     The predicted values.
                     Predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task.
@@ -78,9 +78,8 @@ class _ObjectiveFunctionWrapper:
 
         .. note::
 
-            For multi-class task, the y_pred is group by class_id first, then group by row_id.
-            If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i]
-            and you should group grad and hess in this way as well.
+            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            and grad and hess should be returned in the same format.
         """
         self.func = func
 
@@ -89,7 +88,7 @@ class _ObjectiveFunctionWrapper:
 
         Parameters
         ----------
-        preds : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        preds : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape = [n_samples, n_classes] (for multi-class task)
             The predicted values.
         dataset : Dataset
             The training dataset.
@@ -114,20 +113,13 @@ class _ObjectiveFunctionWrapper:
         """weighted for objective"""
         weight = dataset.get_weight()
         if weight is not None:
-            """only one class"""
-            if len(weight) == len(grad):
-                grad = np.multiply(grad, weight)
-                hess = np.multiply(hess, weight)
-            else:
-                num_data = len(weight)
-                num_class = len(grad) // num_data
-                if num_class * num_data != len(grad):
-                    raise ValueError("Length of grad and hess should equal to num_class * num_data")
-                for k in range(num_class):
-                    for i in range(num_data):
-                        idx = k * num_data + i
-                        grad[idx] *= weight[i]
-                        hess[idx] *= weight[i]
+            if grad.ndim == 2:  # multi-class
+                num_data = grad.shape[0]
+                if weight.size != num_data:
+                    raise ValueError("grad and hess should be of shape [n_samples, n_classes]")
+                weight = weight.reshape(num_data, 1)
+            grad *= weight
+            hess *= weight
         return grad, hess
 
 
@@ -152,7 +144,7 @@ class _EvalFunctionWrapper:
 
                 y_true : numpy 1-D array of shape = [n_samples]
                     The target values.
-                y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+                y_pred : numpy 1-D array of shape = [n_samples] or numpy 2-D array shape = [n_samples, n_classes] (for multi-class task)
                     The predicted values.
                     In case of custom ``objective``, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -173,8 +165,8 @@ class _EvalFunctionWrapper:
 
         .. note::
 
-            For multi-class task, the y_pred is group by class_id first, then group by row_id.
-            If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
+            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            and grad and hess should be returned in the same format.
         """
         self.func = func
 
@@ -183,7 +175,7 @@ class _EvalFunctionWrapper:
 
         Parameters
         ----------
-        preds : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        preds : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape = [n_samples, n_classes] (for multi-class task)
             The predicted values.
         dataset : Dataset
             The training dataset.
@@ -286,7 +278,7 @@ _lgbmmodel_doc_custom_eval_note = """
 
         y_true : numpy 1-D array of shape = [n_samples]
             The target values.
-        y_pred : numpy 1-D array of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+        y_pred : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape = [n_samples, n_classes] (for multi-class task)
             The predicted values.
             In case of custom ``objective``, predicted values are returned before any transformation,
             e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -305,8 +297,8 @@ _lgbmmodel_doc_custom_eval_note = """
         is_higher_better : bool
             Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-    For multi-class task, the y_pred is group by class_id first, then group by row_id.
-    If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
+    For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+    and grad and hess should be returned in the same format.
 """
 
 _lgbmmodel_doc_predict = (

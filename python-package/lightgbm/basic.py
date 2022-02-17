@@ -2959,6 +2959,9 @@ class Booster:
                     The value of the second order derivative (Hessian) of the loss
                     with respect to the elements of preds for each sample point.
 
+            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            and grad and hess should be returned in the same format.
+
         Returns
         -------
         is_finished : bool
@@ -3012,9 +3015,8 @@ class Booster:
 
             Score is returned before any transformation,
             e.g. it is raw margin instead of probability of positive class for binary task.
-            For multi-class task, the score is group by class_id first, then group by row_id.
-            If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
-            and you should group grad and hess in this way as well.
+            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            and grad and hess should be returned in the same format.
 
         Parameters
         ----------
@@ -3163,8 +3165,8 @@ class Booster:
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            For multi-class task, the preds is group by class_id first, then group by row_id.
-            If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
+            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            and grad and hess should be returned in the same format.
 
         Returns
         -------
@@ -3198,7 +3200,7 @@ class Booster:
             Should accept two parameters: preds, train_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : numpy 1-D array
+                preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3211,8 +3213,8 @@ class Booster:
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            For multi-class task, the preds is group by class_id first, then group by row_id.
-            If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
+            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            and grad and hess should be returned in the same format.
 
         Returns
         -------
@@ -3231,7 +3233,7 @@ class Booster:
             Should accept two parameters: preds, valid_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : numpy 1-D array
+                preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3244,8 +3246,8 @@ class Booster:
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            For multi-class task, the preds is group by class_id first, then group by row_id.
-            If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
+            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            and grad and hess should be returned in the same format.
 
         Returns
         -------

@@ -15,6 +15,8 @@ import pytest
 
 import lightgbm as lgb
 
+from .utils import sklearn_multiclass_custom_objective
+
 if not platform.startswith('linux'):
     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if machine() != 'x86_64':
@@ -271,25 +273,6 @@ def _objective_logistic_regression(y_true, y_pred):
     return grad, hess
 
 
-def _objective_logloss(y_true, y_pred):
-    num_rows = len(y_true)
-    num_class = len(np.unique(y_true))
-    # operate on preds as [num_data, num_classes] matrix
-    y_pred = y_pred.reshape(-1, num_class, order='F')
-    row_wise_max = np.max(y_pred, axis=1).reshape(num_rows, 1)
-    preds = y_pred - row_wise_max
-    prob = np.exp(preds) / np.sum(np.exp(preds), axis=1).reshape(num_rows, 1)
-    grad_update = np.zeros_like(preds)
-    grad_update[np.arange(num_rows), y_true.astype(np.int32)] = -1.0
-    grad = prob + grad_update
-    factor = num_class / (num_class - 1)
-    hess = factor * prob * (1 - prob)
-    # reshape back to 1-D array, grouped by class id and then row id
-    grad = grad.T.reshape(-1)
-    hess = hess.T.reshape(-1)
-    return grad, hess
-
-
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
 @pytest.mark.parametrize('boosting_type', boosting_types)
@@ -507,7 +490,7 @@ def test_classifier_custom_objective(output, task, cluster):
             })
         elif task == 'multiclass-classification':
             params.update({
-                'objective': _objective_logloss,
+                'objective': sklearn_multiclass_custom_objective,
                 'num_classes': 3
             })
 
