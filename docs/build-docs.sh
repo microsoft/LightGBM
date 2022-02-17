@@ -12,6 +12,7 @@ curl \
 /bin/bash ${HOME}/miniforge.sh -b -p ${CONDA}
 
 conda config --set always_yes yes --set changeps1 no
+conda update -q -y conda
 
 conda env create \
     --name docs-env \

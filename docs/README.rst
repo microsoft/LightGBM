@@ -42,19 +42,20 @@ When that code completes, open ``docs/html/index.html`` in your browser.
 
 .. note::
 
-    The navigation in locally-built docs does not link to the local copy of the R documentation. To view the local version of the R docs, open ``docs/_build/html/R/index.html`` in your browser.
+    The navigation in these locally-built docs does not link to the local copy of the R documentation. To view the local version of the R docs, open ``docs/_build/html/R/index.html`` in your browser.
 
-Locally
-^^^^^^^
+Without Docker
+^^^^^^^^^^^^^^
 
-You can build the documentation locally. Just install Doxygen and run in ``docs`` folder
+You can build the documentation locally without Docker. Just install Doxygen and run in ``docs`` folder
 
 .. code:: sh
 
     pip install breathe sphinx 'sphinx_rtd_theme>=0.5'
     make html
 
-Unfortunately, documentation for R code is built only on our site, and commands above will not build it for you locally.
+Note that this will not build the R documentation.
+To build the R docuumentation locally, use the Docker-based approach described above.
 Consider using common R utilities for documentation generation, if you need it.
 
 If you faced any problems with Doxygen installation or you simply do not need documentation for C code, it is possible to build the documentation without it:
