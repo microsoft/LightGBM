@@ -71,7 +71,40 @@ merge.eval.string <- function(env) {
 
 }
 
-cb.print.evaluation <- function(period) {
+#' @name cb.print.evaluation
+#' @rdname callbacks
+#' @title Creates a callback function that periodically prints the evaluation results
+#' @description Creates a callback function that prints the evaluation results every \code{period} boosting iteration(s).
+#' The first and last boosting stage is also logged.
+#' @param period The period to print the evaluation results (default is \code{1L}.
+#' @return A function that can be passed as element of the \code{callbacks} list to
+#' \code{lgb.train()}, \code{lgb.cv()}, and \code{lightgbm()}.
+#' @export
+#' @examples
+#' \donttest{
+#' data(agaricus.train, package = "lightgbm")
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label = train$label)
+#' data(agaricus.test, package = "lightgbm")
+#' test <- agaricus.test
+#' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 10L
+#'   , learning_rate = 1
+#' )
+#' valids <- list(train = dtrain, test = dtest)
+#' model <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 20L
+#'   , valids = valids
+#'   , eval_freq = 0L,
+#'   , callbacks = list(cb.print.evaluation(2L))
+#' )
+#' }
+cb.print.evaluation <- function(period = 1L) {
 
   # Create callback
   callback <- function(env) {
@@ -109,6 +142,38 @@ cb.print.evaluation <- function(period) {
 
 }
 
+#' @name cb.record.evaluation
+#' @rdname callbacks
+#' @title Creates a callback function that records the evaluation history
+#' @description Creates a callback function that records the evaluation history to be stored in
+#' the attribute \code{record_evals} of the \code{Booster} object.
+#' @return A function that can be passed as element of the \code{callbacks} list to
+#' \code{lgb.train()}, \code{lgb.cv()}, and \code{lightgbm()}.
+#' @export
+#' @examples
+#' \donttest{
+#' data(agaricus.train, package = "lightgbm")
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label = train$label)
+#' data(agaricus.test, package = "lightgbm")
+#' test <- agaricus.test
+#' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 10L
+#'   , learning_rate = 1
+#' )
+#' valids <- list(train = dtrain, test = dtest)
+#' model <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 2L
+#'   , valids = valids
+#'   , callbacks = list(cb.record.evaluation())
+#' )
+#' model$record_evals
+#' }
 cb.record.evaluation <- function() {
 
   # Create callback
@@ -184,7 +249,48 @@ cb.record.evaluation <- function() {
 
 }
 
-cb.early.stop <- function(stopping_rounds, first_metric_only, verbose) {
+#' @name cb.early.stop
+#' @rdname callbacks
+#' @title Creates a callback function that activates early stopping
+#' @description Creates a callback function that activates early stopping.
+#' The model will train until the validation score stops improving.
+#' The validation score needs to improve at least every \code{stopping_rounds} rounds to continue training.
+#' Requires at least one validation data and one metric. If there is more than one, will check all of them.
+#' The training data is ignored alltogether. To check only the first metric, set \code{first_metric_only} to \code{TRUE}.
+#' The index of iteration that has the best performance will be saved in the \code{best_iter} attribute of the model.
+#' @param stopping_rounds The validation score needs to improve at least that number of rounds to continue training.
+#' @param first_metric_only Whether only the first metric is to be monitored (default is \code{FALSE}).
+#' @param verbose Whether to log message with early stopping information (default is \code{TRUE}).
+#' @return A function that can be passed as element of the \code{callbacks} list to 
+#' \code{lgb.train()}, \code{lgb.cv()}, and \code{lightgbm()}.
+#' @export
+#' @examples
+#' \donttest{
+#' data(agaricus.train, package = "lightgbm")
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label = train$label)
+#' data(agaricus.test, package = "lightgbm")
+#' test <- agaricus.test
+#' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 10L
+#'   , learning_rate = 1
+#' )
+#' valids <- list(test = dtest)
+#' model <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 200L
+#'   , valids = valids
+#'   , callbacks = list(cb.early.stop(3))
+#' )
+#' print(paste("Best iteration:", model$best_iter))
+#' }
+cb.early.stop <- function(stopping_rounds
+                          , first_metric_only = FALSE
+                          , verbose = TRUE) {
 
   factor_to_bigger_better <- NULL
   best_iter <- NULL
