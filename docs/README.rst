@@ -38,7 +38,7 @@ Run the following from the root of this repository to pull the relevant image an
         -it readthedocs/build:ubuntu-20.04-2021.09.23 \
         /bin/bash build-docs.sh
 
-When that code completes, open ``docs/html/index.html`` in your browser.
+When that code completes, open ``docs/_build/html/index.html`` in your browser.
 
 .. note::
 
@@ -55,8 +55,8 @@ You can build the documentation locally without Docker. Just install Doxygen and
     make html
 
 Note that this will not build the R documentation.
-To build the R docuumentation locally, use the Docker-based approach described above.
 Consider using common R utilities for documentation generation, if you need it.
+Or use the Docker-based approach described above to build the R documentation locally.
 
 If you faced any problems with Doxygen installation or you simply do not need documentation for C code, it is possible to build the documentation without it:
 
