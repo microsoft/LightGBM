@@ -254,7 +254,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
         def _reset_storages(self) -> None:
             self.best_score = []
             self.best_iter = []
-            self.best_score_list: list = []
+            self.best_score_list = []
             self.cmp_op = []
             self.first_metric = ''
 
@@ -274,7 +274,6 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
             if self.verbose:
                 _log_info(f"Training until validation scores don't improve for {self.stopping_rounds} rounds")
 
-            # reset storages
             self._reset_storages()
 
             n_metrics = len(set(m[1] for m in env.evaluation_result_list))
