@@ -340,7 +340,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
                 if self.first_metric_only and self.first_metric != eval_name_splitted[-1]:
                     continue  # use only the first metric for early stopping
                 if ((env.evaluation_result_list[i][0] == "cv_agg" and eval_name_splitted[0] == "train"
-                    or env.evaluation_result_list[i][0] == env.model._train_data_name)):
+                        or env.evaluation_result_list[i][0] == env.model._train_data_name)):
                     self._final_iteration_check(env, eval_name_splitted, i)
                     continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
                 elif env.iteration - self.best_iter[i] >= self.stopping_rounds:
