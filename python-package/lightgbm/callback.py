@@ -233,7 +233,13 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
     """
 
     class _early_stopping_callback:
-        def __init__(self, stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True, min_delta: Union[float, List[float]] = 0.0) -> None:
+        def __init__(
+            self,
+            stopping_rounds: int,
+            first_metric_only: bool = False,
+            verbose: bool = True,
+            min_delta: Union[float, List[float]] = 0.0
+        ) -> None:
             self.order = 30
             self.before_iteration = False
 
