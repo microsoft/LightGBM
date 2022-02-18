@@ -164,6 +164,8 @@ Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
 
 If you use ``conda`` to manage Python dependencies, you can install LightGBM using ``conda install``.
 
+We strongly recommend installation from the ``conda-forge`` channel and not from the ``default`` one due to many reasons. The main ones are less time delay for new releases, greater number of supported architectures and better handling of dependency conflicts, especially workaround for OpenMP is crucial for LightGBM. More details can be found in `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`_.
+
 **Note**: The `lightgbm conda-forge feedstock <https://github.com/conda-forge/lightgbm-feedstock>`_ is not maintained by LightGBM maintainers.
 
 .. code:: sh

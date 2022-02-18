@@ -31,15 +31,11 @@ import pandas as pd
 import sklearn.utils.estimator_checks as sklearn_checks
 from dask.array.utils import assert_eq
 from dask.distributed import Client, LocalCluster, default_client, wait
-from pkg_resources import parse_version
 from scipy.sparse import csc_matrix, csr_matrix
 from scipy.stats import spearmanr
-from sklearn import __version__ as sk_version
 from sklearn.datasets import make_blobs, make_regression
 
 from .utils import make_ranking
-
-sk_version = parse_version(sk_version)
 
 tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ranking']
 distributed_training_algorithms = ['data', 'voting']
@@ -1854,10 +1850,7 @@ def test_sklearn_integration(estimator, check, cluster):
 @pytest.mark.parametrize("estimator", list(_tested_estimators()))
 def test_parameters_default_constructible(estimator):
     name = estimator.__class__.__name__
-    if sk_version >= parse_version("0.24"):
-        Estimator = estimator
-    else:
-        Estimator = estimator.__class__
+    Estimator = estimator
     sklearn_checks.check_parameters_default_constructible(name, Estimator)
 
 

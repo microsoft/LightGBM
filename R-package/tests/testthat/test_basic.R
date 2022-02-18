@@ -80,7 +80,6 @@ test_that("train and predict binary classification", {
         , metric = "binary_error"
     )
     , nrounds = nrounds
-    , save_name = tempfile(fileext = ".model")
   )
   expect_false(is.null(bst$record_evals))
   record_results <- lgb.get.eval.result(bst, "train", "binary_error")
@@ -114,7 +113,6 @@ test_that("train and predict softmax", {
         , num_class = 3L
     )
     , nrounds = 20L
-    , save_name = tempfile(fileext = ".model")
   )
 
   expect_false(is.null(bst$record_evals))
@@ -138,7 +136,6 @@ test_that("use of multiple eval metrics works", {
         , metric = metrics
     )
     , nrounds = 10L
-    , save_name = tempfile(fileext = ".model")
   )
   expect_false(is.null(bst$record_evals))
   expect_named(
@@ -161,7 +158,6 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
         , metric = "binary_error"
     )
     , nrounds = nrounds
-    , save_name = tempfile(fileext = ".model")
   )
   expect_true(abs(bst$lower_bound() - -1.590853) < TOLERANCE)
   expect_true(abs(bst$upper_bound() - 1.871015) <  TOLERANCE)
@@ -179,7 +175,6 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
         , metric = "l2"
     )
     , nrounds = nrounds
-    , save_name = tempfile(fileext = ".model")
   )
   expect_true(abs(bst$lower_bound() - 0.1513859) < TOLERANCE)
   expect_true(abs(bst$upper_bound() - 0.9080349) < TOLERANCE)
@@ -194,7 +189,6 @@ test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
         data = dtrain
         , params = params
         , nrounds = nround_value
-        , save_name = tempfile(fileext = ".model")
       )
     }, "nrounds should be greater than zero")
   }
@@ -213,7 +207,6 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
       , metric = "l2"
       , num_leaves = 5L
     )
-    , save_name = tempfile(fileext = ".model")
   )
 
   set.seed(708L)
@@ -226,7 +219,6 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
       , num_leaves = 5L
       , nrounds = nrounds
     )
-    , save_name = tempfile(fileext = ".model")
   )
 
   set.seed(708L)
@@ -240,7 +232,6 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
       , num_leaves = 5L
       , nrounds = nrounds
     )
-    , save_name = tempfile(fileext = ".model")
   )
 
   top_level_l2 <- top_level_bst$eval_train()[[1L]][["value"]]
@@ -289,7 +280,6 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
       "valid1" = dvalid1
       , "valid2" = dvalid2
     )
-    , save_name = tempfile(fileext = ".model")
   )
 
   expect_named(
@@ -305,23 +295,6 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
   expect_true(abs(bst$record_evals[["train"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
   expect_true(abs(bst$record_evals[["valid1"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
   expect_true(abs(bst$record_evals[["valid2"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
-})
-
-test_that("lightgbm() does not write model to disk if save_name=NULL", {
-  files_before <- list.files(getwd())
-
-  model <- lightgbm(
-    data = train$data
-    , label = train$label
-    , nrounds = 5L
-    , params = list(objective = "binary")
-    , verbose = 0L
-    , save_name = NULL
-  )
-
-  files_after <- list.files(getwd())
-
-  expect_equal(files_before, files_after)
 })
 
 test_that("training continuation works", {
@@ -569,6 +542,34 @@ test_that("lgb.cv() respects parameter aliases for objective", {
   expect_length(cv_bst$boosters, nfold)
 })
 
+test_that("lgb.cv() prefers objective in params to keyword argument", {
+  data("EuStockMarkets")
+  cv_bst <- lgb.cv(
+    data = lgb.Dataset(
+      data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
+      , label = EuStockMarkets[, "DAX"]
+    )
+    , params = list(
+      application = "regression_l1"
+      , verbosity = VERBOSITY
+    )
+    , nrounds = 5L
+    , obj = "regression_l2"
+  )
+  for (bst_list in cv_bst$boosters) {
+    bst <- bst_list[["booster"]]
+    expect_equal(bst$params$objective, "regression_l1")
+    # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+    #       allowing access to the "objective" attribute of the Booster object on the C++ side
+    model_txt_lines <- strsplit(
+      x = bst$save_model_to_string()
+      , split = "\n"
+    )[[1L]]
+    expect_true(any(model_txt_lines == "objective=regression_l1"))
+    expect_false(any(model_txt_lines == "objective=regression_l2"))
+  }
+})
+
 test_that("lgb.cv() respects parameter aliases for metric", {
   nrounds <- 3L
   nfold <- 4L
@@ -684,6 +685,31 @@ test_that("lgb.train() respects parameter aliases for objective", {
   expect_equal(bst$params[["objective"]], "binary")
 })
 
+test_that("lgb.train() prefers objective in params to keyword argument", {
+  data("EuStockMarkets")
+  bst <- lgb.train(
+    data = lgb.Dataset(
+      data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
+      , label = EuStockMarkets[, "DAX"]
+    )
+    , params = list(
+        loss = "regression_l1"
+        , verbosity = VERBOSITY
+    )
+    , nrounds = 5L
+    , obj = "regression_l2"
+  )
+  expect_equal(bst$params$objective, "regression_l1")
+  # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+  #       allowing access to the "objective" attribute of the Booster object on the C++ side
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+})
+
 test_that("lgb.train() respects parameter aliases for metric", {
   nrounds <- 3L
   dtrain <- lgb.Dataset(
@@ -742,7 +768,6 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
       objective = "regression"
       , metric = "l2"
       , num_leaves = 5L
-      , save_name = tempfile(fileext = ".model")
       , verbose = VERBOSITY
     )
   )
@@ -758,7 +783,6 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
       , metric = "l2"
       , num_leaves = 5L
       , nrounds = nrounds
-      , save_name = tempfile(fileext = ".model")
       , verbose = VERBOSITY
     )
   )
@@ -775,7 +799,6 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
       , metric = "l2"
       , num_leaves = 5L
       , nrounds = nrounds
-      , save_name = tempfile(fileext = ".model")
       , verbose = VERBOSITY
     )
   )
@@ -1981,7 +2004,6 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
       , num_leaves = 5L
     )
     , verbose = -7L
-    , save_name = tempfile(fileext = ".model")
   )
   # when verbose <= 0 is passed to lightgbm(), 'valids' is passed through to lgb.train()
   # untouched. If you set verbose to > 0, the training data will still be first but called "train"
