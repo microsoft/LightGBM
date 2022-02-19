@@ -15,7 +15,7 @@ env:
   CONDA_ENV: test-env
   GITHUB_ACTIONS: 'true'
   OS_NAME: 'linux'
-  PYTHON_VERSION: 3.9
+  PYTHON_VERSION: '3.10'
 
 jobs:
   test:
@@ -39,7 +39,7 @@ jobs:
         run: |
           export TASK="${{ matrix.task }}"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export CONDA=${HOME}/miniconda
+          export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
           $GITHUB_WORKSPACE/.ci/test.sh || exit -1

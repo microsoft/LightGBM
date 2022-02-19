@@ -38,6 +38,7 @@ src/external_libs/fmt/.*\.md
 src/external_libs/fmt/.travis.yml
 src/external_libs/fmt/doc
 src/external_libs/fmt/support/Android\.mk
+src/external_libs/fmt/support/bazel/.bazel.*
 src/external_libs/fmt/support/.*\.gradle
 src/external_libs/fmt/support/.*\.pro
 src/external_libs/fmt/support/.*\.py
