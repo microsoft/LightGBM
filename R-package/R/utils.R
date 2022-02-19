@@ -117,7 +117,7 @@ lgb.check_interaction_constraints <- function(interaction_constraints, column_na
 
 }
 
-lgb.check.obj <- function(params, obj) {
+lgb.check.obj <- function(params) {
 
   # List known objectives in a vector
   OBJECTIVES <- c(
@@ -158,24 +158,17 @@ lgb.check.obj <- function(params, obj) {
     , "xendcg_mart"
   )
 
-  # Check whether the objective is empty or not, and take it from params if needed
-  if (!is.null(obj)) {
-    params$objective <- obj
+  if (is.null(params$objective)) {
+    stop("lgb.check.obj: objective should be a character or a function")
   }
 
-  # Check whether the objective is a character
   if (is.character(params$objective)) {
 
-    # If the objective is a character, check if it is a known objective
     if (!(params$objective %in% OBJECTIVES)) {
 
       stop("lgb.check.obj: objective name error should be one of (", paste0(OBJECTIVES, collapse = ", "), ")")
 
     }
-
-  } else if (!is.function(params$objective)) {
-
-    stop("lgb.check.obj: objective should be a character or a function")
 
   }
 

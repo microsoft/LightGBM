@@ -36,8 +36,15 @@ cd $BUILD_DIRECTORY
 
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     cd $BUILD_DIRECTORY/docs
-    conda install -q -y -n $CONDA_ENV -c conda-forge doxygen rstcheck
-    pip install --user -r requirements.txt
+    conda env update \
+        -n $CONDA_ENV \
+        --file ./env.yml || exit -1
+    conda install \
+        -q \
+        -y \
+        -n $CONDA_ENV \
+            doxygen \
+            rstcheck || exit -1
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report warning $(find . -type f -name "*.rst") || exit -1
@@ -62,16 +69,13 @@ fi
 
 if [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
+        cmakelint \
+        cpplint \
+        isort \
+        mypy \
         pycodestyle \
         pydocstyle \
-        r-stringi  # stringi needs to be installed separate from r-lintr to avoid issues like 'unable to load shared object stringi.so'
-    # r-xfun below has to be upgraded because lintr requires > 0.19 for that package
-    conda install -q -y -n $CONDA_ENV \
-        -c conda-forge \
-            libxml2 \
-            "r-xfun>=0.19" \
-            "r-lintr>=2.0"
-    pip install --user cmakelint cpplint isort mypy
+        "r-lintr>=2.0"
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
@@ -114,8 +118,22 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-conda install -q -y -n $CONDA_ENV cloudpickle "dask=2021.9.1" "distributed=2021.9.1" joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
-pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
+conda install -q -y -n $CONDA_ENV \
+    cloudpickle \
+    dask \
+    distributed \
+    joblib \
+    matplotlib \
+    numpy \
+    pandas \
+    psutil \
+    pytest \
+    scikit-learn \
+    scipy || exit -1
+
+# python-graphviz has to be installed separately to prevent conda from downgrading to pypy
+conda install -q -y -n $CONDA_ENV \
+    python-graphviz || exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
@@ -229,7 +247,11 @@ import matplotlib\
 matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
-    conda install -q -y -n $CONDA_ENV h5py ipywidgets notebook  # requirements for examples
+    # requirements for examples
+    conda install -q -y -n $CONDA_ENV \
+        h5py \
+        ipywidgets \
+        notebook
     for f in *.py **/*.py; do python $f || exit -1; done  # run all examples
     cd $BUILD_DIRECTORY/examples/python-guide/notebooks
     sed -i'.bak' 's/INTERACTIVE = False/assert False, \\"Interactive mode disabled\\"/' interactive_plot_example.ipynb

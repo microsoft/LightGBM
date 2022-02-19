@@ -262,6 +262,7 @@ _lgbmmodel_doc_fit = (
         Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
         The output cannot be monotonically constrained with respect to a categorical feature.
+        Floating point numbers in categorical features will be rounded towards 0.
     callbacks : list of callable, or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
