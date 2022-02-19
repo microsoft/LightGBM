@@ -542,6 +542,34 @@ test_that("lgb.cv() respects parameter aliases for objective", {
   expect_length(cv_bst$boosters, nfold)
 })
 
+test_that("lgb.cv() prefers objective in params to keyword argument", {
+  data("EuStockMarkets")
+  cv_bst <- lgb.cv(
+    data = lgb.Dataset(
+      data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
+      , label = EuStockMarkets[, "DAX"]
+    )
+    , params = list(
+      application = "regression_l1"
+      , verbosity = VERBOSITY
+    )
+    , nrounds = 5L
+    , obj = "regression_l2"
+  )
+  for (bst_list in cv_bst$boosters) {
+    bst <- bst_list[["booster"]]
+    expect_equal(bst$params$objective, "regression_l1")
+    # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+    #       allowing access to the "objective" attribute of the Booster object on the C++ side
+    model_txt_lines <- strsplit(
+      x = bst$save_model_to_string()
+      , split = "\n"
+    )[[1L]]
+    expect_true(any(model_txt_lines == "objective=regression_l1"))
+    expect_false(any(model_txt_lines == "objective=regression_l2"))
+  }
+})
+
 test_that("lgb.cv() respects parameter aliases for metric", {
   nrounds <- 3L
   nfold <- 4L
@@ -655,6 +683,31 @@ test_that("lgb.train() respects parameter aliases for objective", {
   expect_named(bst$record_evals[["the_training_data"]], "binary_logloss")
   expect_length(bst$record_evals[["the_training_data"]][["binary_logloss"]][["eval"]], nrounds)
   expect_equal(bst$params[["objective"]], "binary")
+})
+
+test_that("lgb.train() prefers objective in params to keyword argument", {
+  data("EuStockMarkets")
+  bst <- lgb.train(
+    data = lgb.Dataset(
+      data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
+      , label = EuStockMarkets[, "DAX"]
+    )
+    , params = list(
+        loss = "regression_l1"
+        , verbosity = VERBOSITY
+    )
+    , nrounds = 5L
+    , obj = "regression_l2"
+  )
+  expect_equal(bst$params$objective, "regression_l1")
+  # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+  #       allowing access to the "objective" attribute of the Booster object on the C++ side
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
 })
 
 test_that("lgb.train() respects parameter aliases for metric", {
