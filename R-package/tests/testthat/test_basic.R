@@ -2785,20 +2785,32 @@ test_that("lightgbm() accepts objective as function argument and under params", 
   bst1 <- lightgbm(
     data = train$data
     , label = train$label
-    , params = list(objective = "regression")
+    , params = list(objective = "regression_l1")
     , nrounds = 5L
     , verbose = -1L
   )
-  expect_equal(bst1$params$objective, "regression")
+  expect_equal(bst1$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst1$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
 
   bst2 <- lightgbm(
     data = train$data
     , label = train$label
-    , objective = "regression"
+    , objective = "regression_l1"
     , nrounds = 5L
     , verbose = -1L
   )
-  expect_equal(bst2$params$objective, "regression")
+  expect_equal(bst2$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst2$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
 })
 
 test_that("lightgbm() prioritizes objective under params over objective as function argument", {
@@ -2811,6 +2823,12 @@ test_that("lightgbm() prioritizes objective under params over objective as funct
     , verbose = -1L
   )
   expect_equal(bst1$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst1$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
 
   bst2 <- lightgbm(
     data = train$data
@@ -2821,6 +2839,12 @@ test_that("lightgbm() prioritizes objective under params over objective as funct
     , verbose = -1L
   )
   expect_equal(bst2$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst2$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
 })
 
 test_that("lightgbm() accepts init_score as function argument", {
