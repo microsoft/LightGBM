@@ -1275,8 +1275,7 @@ LightGBM supports weighted training. It uses an additional file to store weight 
     0.8
     ...
 
-It means the weight of the first data row is ``1.0``, second is ``0.5``, and so on. Weight should be non-negative
-values because the Hessian value multiplied by weight is supposed to be non-negative.
+It means the weight of the first data row is ``1.0``, second is ``0.5``, and so on. Weights should be non-negative.
 
 The weight file corresponds with data file line by line, and has per weight per line.
 

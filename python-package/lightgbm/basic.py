@@ -1138,7 +1138,7 @@ class Dataset:
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Weight for each instance. Weight should be non-negative values because the Hessian
+            Weight for each instance. Weights should be non-negative values because the Hessian
             value multiplied by weight is supposed to be non-negative.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query data.
@@ -1819,7 +1819,8 @@ class Dataset:
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Weight for each instance.
+            Weight for each instance. Weights should be non-negative because it may cause division by zero
+            in metrics calculation (sum of weights as denominator).
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
@@ -2155,8 +2156,7 @@ class Dataset:
         Parameters
         ----------
         weight : list, numpy 1-D array, pandas Series or None
-            Weight to be set for each data point. Weight should be non-negative values because the Hessian
-            value multiplied by weight is supposed to be non-negative.
+            Weight to be set for each data point. Weights should be non-negative.
 
         Returns
         -------
@@ -2271,7 +2271,7 @@ class Dataset:
         Returns
         -------
         weight : numpy array or None
-            Weight for each data point from the Dataset.
+            Weight for each data point from the Dataset. Weights should be non-negative.
         """
         if self.weight is None:
             self.weight = self.get_field('weight')
@@ -3544,7 +3544,7 @@ class Booster:
         reference : Dataset or None, optional (default=None)
             Reference for ``data``.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Weight for each ``data`` instance. Weight should be non-negative values because the Hessian
+            Weight for each ``data`` instance. Weights should be non-negative values because the Hessian
             value multiplied by weight is supposed to be non-negative.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query size for ``data``.

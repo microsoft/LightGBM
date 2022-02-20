@@ -157,7 +157,8 @@ class _EvalFunctionWrapper:
                     In case of custom ``objective``, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 weight : numpy 1-D array of shape = [n_samples]
-                    The weight of samples.
+                    The weight of samples. Weights should be non-negative because it may cause division by zero
+                    in metrics calculation (sum of weights as denominator).
                 group : numpy 1-D array
                     Group/query data.
                     Only used in the learning-to-rank task.
@@ -238,7 +239,8 @@ _lgbmmodel_doc_fit = (
     eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
     eval_sample_weight : {eval_sample_weight_shape}
-        Weights of eval data.
+        Weights of eval data. Weights should be non-negative because it may cause division by zero
+        in metrics calculation (sum of weights as denominator).
     eval_class_weight : list or None, optional (default=None)
         Class weights of eval data.
     eval_init_score : {eval_init_score_shape}
@@ -293,7 +295,8 @@ _lgbmmodel_doc_custom_eval_note = """
             In case of custom ``objective``, predicted values are returned before any transformation,
             e.g. they are raw margin instead of probability of positive class for binary task in this case.
         weight : numpy 1-D array of shape = [n_samples]
-            The weight of samples.
+            The weight of samples. Weights should be non-negative because it may cause division by zero
+            in metrics calculation (sum of weights as denominator).
         group : numpy 1-D array
             Group/query data.
             Only used in the learning-to-rank task.
