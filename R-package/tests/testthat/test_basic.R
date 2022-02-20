@@ -2878,4 +2878,11 @@ test_that("lightgbm() defaults to 'regression' objective if objective not otherw
     , verbose = -1L
   )
   expect_equal(bst$params$objective, "regression")
+  expect_equal(bst$params$objective, "regression")
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression"))
+  expect_false(any(model_txt_lines == "objective=regression_l1"))
 })
