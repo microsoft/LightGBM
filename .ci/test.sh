@@ -36,8 +36,15 @@ cd $BUILD_DIRECTORY
 
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     cd $BUILD_DIRECTORY/docs
-    conda install -q -y -n $CONDA_ENV -c conda-forge doxygen rstcheck
-    pip install --user -r requirements.txt
+    conda env update \
+        -n $CONDA_ENV \
+        --file ./env.yml || exit -1
+    conda install \
+        -q \
+        -y \
+        -n $CONDA_ENV \
+            doxygen \
+            rstcheck || exit -1
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report warning $(find . -type f -name "*.rst") || exit -1
