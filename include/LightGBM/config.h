@@ -670,7 +670,7 @@ struct Config {
   // desc = add a prefix ``name:`` for column name, e.g. ``weight=name:weight``
   // desc = **Note**: works only in case of loading data directly from text file
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0, and weight is column\_1, the correct parameter is ``weight=0``
-  // desc = **Note**: weights should be non-negative values because the Hessian value multiplied by weight is supposed to be non-negative.
+  // desc = **Note**: weights should be non-negative values because the Hessian value multiplied by weight is supposed to be non-negative
   std::string weight_column = "";
 
   // type = int or string
