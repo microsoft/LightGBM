@@ -265,11 +265,13 @@ The example below shows how to generate code coverage for the R package on a mac
 
 ```shell
 # Install
-sh build-cran-package.sh
+sh build-cran-package.sh \
+    --no-build-vignettes
 
 # Get coverage
 Rscript -e " \
-    coverage  <- covr::package_coverage('./lightgbm_r', type = 'tests', quiet = FALSE);
+    library(covr);
+    coverage <- covr::package_coverage('./lightgbm_r', type = 'tests', quiet = FALSE);
     print(coverage);
     covr::report(coverage, file = file.path(getwd(), 'coverage.html'), browse = TRUE);
     "

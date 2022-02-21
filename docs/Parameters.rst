@@ -820,7 +820,7 @@ Dataset Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``categorical_feature=name:c1,c2,c3`` means c1, c2 and c3 are categorical features
 
-   -  **Note**: only supports categorical with ``int`` type (not applicable for data represented as pandas DataFrame in Python-package)
+   -  **Note**: all values will be cast to ``int32`` (integer codes will be extracted from pandas categoricals in the Python-package)
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
 
@@ -831,6 +831,8 @@ Dataset Parameters
    -  **Note**: all negative values will be treated as **missing values**
 
    -  **Note**: the output cannot be monotonically constrained with respect to a categorical feature
+
+   -  **Note**: floating point numbers in categorical features will be rounded towards 0
 
 -  ``forcedbins_filename`` :raw-html:`<a id="forcedbins_filename" title="Permalink to this parameter" href="#forcedbins_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
 
