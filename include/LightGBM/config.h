@@ -81,9 +81,11 @@ struct Config {
   static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
+  #ifndef __NVCC__
   #pragma region Parameters
 
   #pragma region Core Parameters
+  #endif  // __NVCC__
 
   // [no-save]
   // [doc-only]
@@ -230,9 +232,11 @@ struct Config {
   // desc = **Note**: to avoid potential instability due to numerical issues, please set ``force_col_wise=true`` or ``force_row_wise=true`` when setting ``deterministic=true``
   bool deterministic = false;
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region Learning Control Parameters
+  #endif  // __NVCC__
 
   // desc = used only with ``cpu`` device type
   // desc = set this to ``true`` to force col-wise histogram building
@@ -570,11 +574,13 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   int snapshot_freq = -1;
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region IO Parameters
 
   #pragma region Dataset Parameters
+  #endif  // __NVCC__
 
   // alias = linear_trees
   // desc = fit piecewise linear gradient boosting tree
@@ -729,9 +735,11 @@ struct Config {
   // desc = **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/microsoft/lightgbm-transform/issues>`__
   std::string parser_config_file = "";
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region Predict Parameters
+  #endif  // __NVCC__
 
   // [no-save]
   // desc = used only in ``prediction`` task
@@ -801,9 +809,11 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string output_result = "LightGBM_predict_result.txt";
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region Convert Parameters
+  #endif  // __NVCC__
 
   // [no-save]
   // desc = used only in ``convert_model`` task
@@ -819,11 +829,13 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string convert_model = "gbdt_prediction.cpp";
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma endregion
 
   #pragma region Objective Parameters
+  #endif  // __NVCC__
 
   // desc = used only in ``rank_xendcg`` objective
   // desc = random seed for objectives, if random process is needed
@@ -903,9 +915,11 @@ struct Config {
   // desc = separate by ``,``
   std::vector<double> label_gain;
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region Metric Parameters
+  #endif  // __NVCC__
 
   // [doc-only]
   // alias = metrics, metric_types
@@ -977,9 +991,11 @@ struct Config {
   // desc = if not specified, will use equal weights for all classes
   std::vector<double> auc_mu_weights;
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region Network Parameters
+  #endif  // __NVCC__
 
   // check = >0
   // alias = num_machine
@@ -1008,9 +1024,11 @@ struct Config {
   // desc = list of machines in the following format: ``ip1:port1,ip2:port2``
   std::string machines = "";
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region GPU Parameters
+  #endif  // __NVCC__
 
   // desc = OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
   // desc = ``-1`` means the system-wide default platform
@@ -1031,9 +1049,11 @@ struct Config {
   // desc = **Note**: can be used only in CUDA implementation
   int num_gpu = 1;
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma endregion
+  #endif  // __NVCC__
 
   size_t file_load_progress_interval_bytes = size_t(10) * 1024 * 1024 * 1024;
 

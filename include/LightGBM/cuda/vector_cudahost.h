@@ -42,7 +42,7 @@ struct CHAllocator {
   T* allocate(std::size_t n) {
     T* ptr;
     if (n == 0) return NULL;
-    n = (n + kAlignedSize - 1) & -kAlignedSize;
+    n = (n + kAlignedSize - 1) / kAlignedSize * kAlignedSize;
     #if defined(USE_CUDA) || defined(USE_CUDA_EXP)
       if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaError_t ret = cudaHostAlloc(&ptr, n*sizeof(T), cudaHostAllocPortable);

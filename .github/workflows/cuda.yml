@@ -15,7 +15,7 @@ env:
 
 jobs:
   test:
-    name: cuda ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
+    name: cuda ${{ matrix.tree_learner }} ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: [self-hosted, linux]
     timeout-minutes: 60
     strategy:
@@ -90,7 +90,7 @@ jobs:
             GITHUB_ACTIONS=${{ env.github_actions }}
             OS_NAME=${{ env.os_name }}
             COMPILER=${{ matrix.compiler }}
-            TASK=${{ matrix.tree_learner }}
+            TASK=${{ env.task }}
             METHOD=${{ matrix.method }}
             CONDA_ENV=${{ env.conda_env }}
             PYTHON_VERSION=${{ matrix.python_version }}
