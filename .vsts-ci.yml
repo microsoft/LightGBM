@@ -41,6 +41,7 @@ jobs:
         PYTHON_VERSION: '3.7'
       bdist:
         TASK: bdist
+        PYTHON_VERSION: '3.8'
       inference:
         TASK: if-else
       mpi_source:
