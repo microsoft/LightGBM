@@ -48,6 +48,15 @@ class CUDARowData {
   void CopySubrowAndSubcol(const CUDARowData* full_set, const data_size_t* used_indices,
     const data_size_t num_used_indices, const std::vector<bool>& is_feature_used, const Dataset* train_data);
 
+  template <typename BIN_TYPE>
+  const BIN_TYPE* GetBin() const;
+
+  template <typename PTR_TYPE>
+  const PTR_TYPE* GetPartitionPtr() const;
+
+  template <typename PTR_TYPE>
+  const PTR_TYPE* GetRowPtr() const;
+
   int NumLargeBinPartition() const { return static_cast<int>(large_bin_partitions_.size()); }
 
   int num_feature_partitions() const { return num_feature_partitions_; }
@@ -59,24 +68,6 @@ class CUDARowData {
   uint8_t bit_type() const { return bit_type_; }
 
   uint8_t row_ptr_bit_type() const { return row_ptr_bit_type_; }
-
-  const uint8_t* cuda_data_uint8() const { return cuda_data_uint8_t_; }
-
-  const uint16_t* cuda_data_uint16() const { return cuda_data_uint16_t_; }
-
-  const uint32_t* cuda_data_uint32() const { return cuda_data_uint32_t_; }
-
-  const uint16_t* cuda_row_ptr_uint16() const { return cuda_row_ptr_uint16_t_; }
-
-  const uint32_t* cuda_row_ptr_uint32() const { return cuda_row_ptr_uint32_t_; }
-
-  const uint64_t* cuda_row_ptr_uint64() const { return cuda_row_ptr_uint64_t_; }
-
-  const uint16_t* cuda_partition_ptr_uint16() const { return cuda_partition_ptr_uint16_t_; }
-
-  const uint32_t* cuda_partition_ptr_uint32() const { return cuda_partition_ptr_uint32_t_; }
-
-  const uint64_t* cuda_partition_ptr_uint64() const { return cuda_partition_ptr_uint64_t_; }
 
   const int* cuda_feature_partition_column_index_offsets() const { return cuda_feature_partition_column_index_offsets_; }
 

@@ -76,6 +76,21 @@ class CUDAHistogramConstructor {
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
     const data_size_t num_data_in_smaller_leaf);
 
+  template <typename HIST_TYPE, size_t SHARED_HIST_SIZE, typename BIN_TYPE>
+  void LaunchConstructHistogramKernelInner0(
+    const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
+    const data_size_t num_data_in_smaller_leaf);
+
+  template <typename HIST_TYPE, size_t SHARED_HIST_SIZE, typename BIN_TYPE, typename PTR_TYPE>
+  void LaunchConstructHistogramKernelInner1(
+    const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
+    const data_size_t num_data_in_smaller_leaf);
+
+  template <typename HIST_TYPE, size_t SHARED_HIST_SIZE, typename BIN_TYPE, typename PTR_TYPE, bool USE_GLOBAL_MEM_BUFFER>
+  void LaunchConstructHistogramKernelInner2(
+    const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
+    const data_size_t num_data_in_smaller_leaf);
+
   void LaunchConstructHistogramKernel(
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
     const data_size_t num_data_in_smaller_leaf);

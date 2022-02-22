@@ -64,12 +64,11 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
   void AllocateBitset();
 
+  #ifdef DEUBG
   void CheckSplitValid(
-    const int inner_split_feature,
-    const uint32_t inner_threshold,
     const int left_leaf, const int right_leaf,
-    const double sum_left_gradients, const double sum_right_gradients,
-    const data_size_t left_count, const data_size_t right_count);
+    const double sum_left_gradients, const double sum_right_gradients);
+  #endif  // DEBUG
 
   // GPU device ID
   int gpu_device_id_;

@@ -415,6 +415,63 @@ void CUDARowData::InitSparseData(const BIN_TYPE* host_data,
   }
 }
 
+template <typename BIN_TYPE>
+const BIN_TYPE* CUDARowData::GetBin() const {
+  if (bit_type_ == 8) {
+    return reinterpret_cast<const BIN_TYPE*>(cuda_data_uint8_t_);
+  } else if (bit_type_ == 16) {
+    return reinterpret_cast<const BIN_TYPE*>(cuda_data_uint16_t_);
+  } else if (bit_type_ == 32) {
+    return reinterpret_cast<const BIN_TYPE*>(cuda_data_uint32_t_);
+  } else {
+    Log::Fatal("Unknown bit_type %d for GetBin.", bit_type_);
+  }
+}
+
+template const uint8_t* CUDARowData::GetBin<uint8_t>() const;
+
+template const uint16_t* CUDARowData::GetBin<uint16_t>() const;
+
+template const uint32_t* CUDARowData::GetBin<uint32_t>() const;
+
+template <typename PTR_TYPE>
+const PTR_TYPE* CUDARowData::GetRowPtr() const {
+  if (row_ptr_bit_type_ == 16) {
+    return reinterpret_cast<const PTR_TYPE*>(cuda_row_ptr_uint16_t_);
+  } else if (row_ptr_bit_type_ == 32) {
+    return reinterpret_cast<const PTR_TYPE*>(cuda_row_ptr_uint32_t_);
+  } else if (row_ptr_bit_type_ == 64) {
+    return reinterpret_cast<const PTR_TYPE*>(cuda_row_ptr_uint64_t_);
+  } else {
+    Log::Fatal("Unknown row_ptr_bit_type = %d for GetRowPtr.", row_ptr_bit_type_);
+  }
+}
+
+template const uint16_t* CUDARowData::GetRowPtr<uint16_t>() const;
+
+template const uint32_t* CUDARowData::GetRowPtr<uint32_t>() const;
+
+template const uint64_t* CUDARowData::GetRowPtr<uint64_t>() const;
+
+template <typename PTR_TYPE>
+const PTR_TYPE* CUDARowData::GetPartitionPtr() const {
+  if (row_ptr_bit_type_ == 16) {
+    return reinterpret_cast<const PTR_TYPE*>(cuda_partition_ptr_uint16_t_);
+  } else if (row_ptr_bit_type_ == 32) {
+    return reinterpret_cast<const PTR_TYPE*>(cuda_partition_ptr_uint32_t_);
+  } else if (row_ptr_bit_type_ == 64) {
+    return reinterpret_cast<const PTR_TYPE*>(cuda_partition_ptr_uint64_t_);
+  } else {
+    Log::Fatal("Unknown row_ptr_bit_type = %d for GetPartitionPtr.", row_ptr_bit_type_);
+  }
+}
+
+template const uint16_t* CUDARowData::GetPartitionPtr<uint16_t>() const;
+
+template const uint32_t* CUDARowData::GetPartitionPtr<uint32_t>() const;
+
+template const uint64_t* CUDARowData::GetPartitionPtr<uint64_t>() const;
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
