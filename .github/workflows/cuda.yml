@@ -11,6 +11,7 @@ on:
 env:
   github_actions: 'true'
   os_name: linux
+  task: cuda
   conda_env: test-env
 
 jobs:
