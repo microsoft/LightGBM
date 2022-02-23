@@ -520,6 +520,22 @@ test_that("lgb.cv() respects showsd argument", {
   expect_identical(evals_no_showsd[["eval_err"]], list())
 })
 
+test_that("lgb.cv() raises an informative error for unrecognized objectives", {
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  expect_error({
+    bst <- lgb.cv(
+      data = dtrain
+      , params = list(
+        objective_type = "not_a_real_objective"
+        , verbosity = VERBOSITY
+      )
+    )
+  }, regexp = "Unknown objective type name: not_a_real_objective")
+})
+
 test_that("lgb.cv() respects parameter aliases for objective", {
   nrounds <- 3L
   nfold <- 4L
@@ -540,6 +556,34 @@ test_that("lgb.cv() respects parameter aliases for objective", {
   expect_named(cv_bst$record_evals[["valid"]], "binary_logloss")
   expect_length(cv_bst$record_evals[["valid"]][["binary_logloss"]][["eval"]], nrounds)
   expect_length(cv_bst$boosters, nfold)
+})
+
+test_that("lgb.cv() prefers objective in params to keyword argument", {
+  data("EuStockMarkets")
+  cv_bst <- lgb.cv(
+    data = lgb.Dataset(
+      data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
+      , label = EuStockMarkets[, "DAX"]
+    )
+    , params = list(
+      application = "regression_l1"
+      , verbosity = VERBOSITY
+    )
+    , nrounds = 5L
+    , obj = "regression_l2"
+  )
+  for (bst_list in cv_bst$boosters) {
+    bst <- bst_list[["booster"]]
+    expect_equal(bst$params$objective, "regression_l1")
+    # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+    #       allowing access to the "objective" attribute of the Booster object on the C++ side
+    model_txt_lines <- strsplit(
+      x = bst$save_model_to_string()
+      , split = "\n"
+    )[[1L]]
+    expect_true(any(model_txt_lines == "objective=regression_l1"))
+    expect_false(any(model_txt_lines == "objective=regression_l2"))
+  }
 })
 
 test_that("lgb.cv() respects parameter aliases for metric", {
@@ -635,6 +679,22 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
   )
 })
 
+test_that("lgb.train() raises an informative error for unrecognized objectives", {
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  expect_error({
+    bst <- lgb.train(
+      data = dtrain
+      , params = list(
+        objective_type = "not_a_real_objective"
+        , verbosity = VERBOSITY
+      )
+    )
+  }, regexp = "Unknown objective type name: not_a_real_objective")
+})
+
 test_that("lgb.train() respects parameter aliases for objective", {
   nrounds <- 3L
   dtrain <- lgb.Dataset(
@@ -655,6 +715,31 @@ test_that("lgb.train() respects parameter aliases for objective", {
   expect_named(bst$record_evals[["the_training_data"]], "binary_logloss")
   expect_length(bst$record_evals[["the_training_data"]][["binary_logloss"]][["eval"]], nrounds)
   expect_equal(bst$params[["objective"]], "binary")
+})
+
+test_that("lgb.train() prefers objective in params to keyword argument", {
+  data("EuStockMarkets")
+  bst <- lgb.train(
+    data = lgb.Dataset(
+      data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
+      , label = EuStockMarkets[, "DAX"]
+    )
+    , params = list(
+        loss = "regression_l1"
+        , verbosity = VERBOSITY
+    )
+    , nrounds = 5L
+    , obj = "regression_l2"
+  )
+  expect_equal(bst$params$objective, "regression_l1")
+  # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+  #       allowing access to the "objective" attribute of the Booster object on the C++ side
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
 })
 
 test_that("lgb.train() respects parameter aliases for metric", {
@@ -2727,3 +2812,108 @@ for (x3_to_categorical in c(TRUE, FALSE)) {
     })
   }
 }
+
+test_that("lightgbm() accepts objective as function argument and under params", {
+  bst1 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , params = list(objective = "regression_l1")
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst1$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst1$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+
+  bst2 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "regression_l1"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst2$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst2$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+})
+
+test_that("lightgbm() prioritizes objective under params over objective as function argument", {
+  bst1 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "regression"
+    , params = list(objective = "regression_l1")
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst1$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst1$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+
+  bst2 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "regression"
+    , params = list(loss = "regression_l1")
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst2$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst2$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+})
+
+test_that("lightgbm() accepts init_score as function argument", {
+  bst1 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "binary"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  pred1 <- predict(bst1, train$data, rawscore = TRUE)
+
+  bst2 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , init_score = pred1
+    , objective = "binary"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  pred2 <- predict(bst2, train$data, rawscore = TRUE)
+
+  expect_true(any(pred1 != pred2))
+})
+
+test_that("lightgbm() defaults to 'regression' objective if objective not otherwise provided", {
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst$params$objective, "regression")
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression"))
+  expect_false(any(model_txt_lines == "objective=regression_l1"))
+})
