@@ -103,8 +103,11 @@ autodoc_mock_imports = [
     'pandas',
     'scipy',
     'scipy.sparse',
-    'sklearn'
 ]
+try:
+    import sklearn
+except ImportError:
+    autodoc_mock_imports.append('sklearn')
 # hide type hints in API docs
 autodoc_typehints = "none"
 
