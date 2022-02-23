@@ -41,6 +41,7 @@ jobs:
         PYTHON_VERSION: '3.7'
       bdist:
         TASK: bdist
+        PYTHON_VERSION: '3.8'
       inference:
         TASK: if-else
       mpi_source:
@@ -52,7 +53,7 @@ jobs:
         METHOD: source
         # on Ubuntu 14.04, gpu_source build segfaults with newer version of Python
         # (and newer version of scipy as a consequence)
-        PYTHON_VERSION: 3.7
+        PYTHON_VERSION: '3.7'
       swig:
         TASK: swig
   steps:
