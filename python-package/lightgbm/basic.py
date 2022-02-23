@@ -2997,13 +2997,8 @@ class Booster:
         else:
             if not self.__set_objective_to_none:
                 self.reset_parameter({"objective": "none"}).__set_objective_to_none = True
-            preds = self.__inner_predict(0)
-            num_data = self.train_set.num_data()
-            num_class = self.num_model_per_iteration()
-            if num_class > 1:
-                preds = preds.reshape(num_data, num_class, order='F')
-            grad, hess = fobj(preds, self.train_set)
-            if num_class > 1:
+            grad, hess = fobj(self.__inner_predict(0), self.train_set)
+            if self.num_model_per_iteration() > 1:
                 grad = grad.ravel(order='F')
                 hess = hess.ravel(order='F')
             return self.__boost(grad, hess)
@@ -3872,7 +3867,11 @@ class Booster:
             if tmp_out_len.value != len(self.__inner_predict_buffer[data_idx]):
                 raise ValueError(f"Wrong length of predict results for data {data_idx}")
             self.__is_predicted_cur_iter[data_idx] = True
-        return self.__inner_predict_buffer[data_idx]
+        result = self.__inner_predict_buffer[data_idx]
+        if self.__num_class > 1:
+            num_data = result.size // self.__num_class
+            result = result.reshape(num_data, self.__num_class, order='F')
+        return result
 
     def __get_eval_info(self):
         """Get inner evaluation count and names."""
