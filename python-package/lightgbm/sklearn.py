@@ -471,6 +471,9 @@ class LGBMModel(_LGBMModelBase):
             hess : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape = [n_samples, n_classes] (for multi-class task)
                 The value of the second order derivative (Hessian) of the loss
                 with respect to the elements of y_pred for each sample point.
+
+        For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+        and grad and hess should be returned in the same format.
         """
         if not SKLEARN_INSTALLED:
             raise LightGBMError('scikit-learn is required for lightgbm.sklearn. '

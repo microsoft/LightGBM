@@ -635,7 +635,6 @@ def test_multiclass_custom_eval():
         y_true = ds.get_label()
         return 'custom_logloss', log_loss(y_true, y_pred), False
 
-
     centers = [[-4, -4], [4, 4], [-4, 4]]
     X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
