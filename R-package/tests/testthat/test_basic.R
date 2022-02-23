@@ -2812,3 +2812,108 @@ for (x3_to_categorical in c(TRUE, FALSE)) {
     })
   }
 }
+
+test_that("lightgbm() accepts objective as function argument and under params", {
+  bst1 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , params = list(objective = "regression_l1")
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst1$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst1$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+
+  bst2 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "regression_l1"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst2$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst2$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+})
+
+test_that("lightgbm() prioritizes objective under params over objective as function argument", {
+  bst1 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "regression"
+    , params = list(objective = "regression_l1")
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst1$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst1$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+
+  bst2 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "regression"
+    , params = list(loss = "regression_l1")
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst2$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst2$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+})
+
+test_that("lightgbm() accepts init_score as function argument", {
+  bst1 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "binary"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  pred1 <- predict(bst1, train$data, rawscore = TRUE)
+
+  bst2 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , init_score = pred1
+    , objective = "binary"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  pred2 <- predict(bst2, train$data, rawscore = TRUE)
+
+  expect_true(any(pred1 != pred2))
+})
+
+test_that("lightgbm() defaults to 'regression' objective if objective not otherwise provided", {
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst$params$objective, "regression")
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression"))
+  expect_false(any(model_txt_lines == "objective=regression_l1"))
+})
