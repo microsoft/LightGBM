@@ -58,6 +58,8 @@ Note that this will not build the R documentation.
 Consider using common R utilities for documentation generation, if you need it.
 Or use the Docker-based approach described above to build the R documentation locally.
 
+Optionally, you may also install ``scikit-learn`` and get richer documentation for the classes in ``Scikit-learn API``.
+
 If you faced any problems with Doxygen installation or you simply do not need documentation for C code, it is possible to build the documentation without it:
 
 .. code:: sh
