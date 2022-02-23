@@ -520,6 +520,22 @@ test_that("lgb.cv() respects showsd argument", {
   expect_identical(evals_no_showsd[["eval_err"]], list())
 })
 
+test_that("lgb.cv() raises an informative error for unrecognized objectives", {
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  expect_error({
+    bst <- lgb.cv(
+      data = dtrain
+      , params = list(
+        objective_type = "not_a_real_objective"
+        , verbosity = VERBOSITY
+      )
+    )
+  }, regexp = "Unknown objective type name: not_a_real_objective")
+})
+
 test_that("lgb.cv() respects parameter aliases for objective", {
   nrounds <- 3L
   nfold <- 4L
@@ -661,6 +677,22 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
     , ignore.order = FALSE
     , ignore.case = FALSE
   )
+})
+
+test_that("lgb.train() raises an informative error for unrecognized objectives", {
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  expect_error({
+    bst <- lgb.train(
+      data = dtrain
+      , params = list(
+        objective_type = "not_a_real_objective"
+        , verbosity = VERBOSITY
+      )
+    )
+  }, regexp = "Unknown objective type name: not_a_real_objective")
 })
 
 test_that("lgb.train() respects parameter aliases for objective", {
