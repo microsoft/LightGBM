@@ -78,7 +78,7 @@ class _ObjectiveFunctionWrapper:
 
         .. note::
 
-            For multi-class task, y_pred are numpy 2-D array of shape = [n_samples, n_classes],
+            For multi-class task, y_pred is a numpy 2-D array of shape = [n_samples, n_classes],
             and grad and hess should be returned in the same format.
         """
         self.func = func
@@ -465,7 +465,7 @@ class LGBMModel(_LGBMModelBase):
                 The value of the second order derivative (Hessian) of the loss
                 with respect to the elements of y_pred for each sample point.
 
-        For multi-class task, y_pred are numpy 2-D array of shape = [n_samples, n_classes],
+        For multi-class task, y_pred is a numpy 2-D array of shape = [n_samples, n_classes],
         and grad and hess should be returned in the same format.
         """
         if not SKLEARN_INSTALLED:
