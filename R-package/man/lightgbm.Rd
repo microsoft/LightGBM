@@ -54,8 +54,8 @@ set to the iteration number of the best iteration.}
 
 \item{objective}{Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
 For a list of accepted objectives, see
-\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
-the "Parameters" section of the documentation}.}
+\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
+the "objective" item of the "Parameters" section of the documentation}.}
 
 \item{init_score}{initial score is the base prediction lightgbm will boost from}
 
