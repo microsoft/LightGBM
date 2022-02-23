@@ -117,64 +117,6 @@ lgb.check_interaction_constraints <- function(interaction_constraints, column_na
 
 }
 
-lgb.check.obj <- function(params) {
-
-  # List known objectives in a vector
-  OBJECTIVES <- c(
-    "regression"
-    , "regression_l1"
-    , "regression_l2"
-    , "mean_squared_error"
-    , "mse"
-    , "l2_root"
-    , "root_mean_squared_error"
-    , "rmse"
-    , "mean_absolute_error"
-    , "mae"
-    , "quantile"
-    , "huber"
-    , "fair"
-    , "poisson"
-    , "binary"
-    , "lambdarank"
-    , "multiclass"
-    , "softmax"
-    , "multiclassova"
-    , "multiclass_ova"
-    , "ova"
-    , "ovr"
-    , "xentropy"
-    , "cross_entropy"
-    , "xentlambda"
-    , "cross_entropy_lambda"
-    , "mean_absolute_percentage_error"
-    , "mape"
-    , "gamma"
-    , "tweedie"
-    , "rank_xendcg"
-    , "xendcg"
-    , "xe_ndcg"
-    , "xe_ndcg_mart"
-    , "xendcg_mart"
-  )
-
-  if (is.null(params$objective)) {
-    stop("lgb.check.obj: objective should be a character or a function")
-  }
-
-  if (is.character(params$objective)) {
-
-    if (!(params$objective %in% OBJECTIVES)) {
-
-      stop("lgb.check.obj: objective name error should be one of (", paste0(OBJECTIVES, collapse = ", "), ")")
-
-    }
-
-  }
-
-  return(params)
-
-}
 
 # [description]
 #     Take any character values from eval and store them in params$metric.
