@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file, make_blobs
-from sklearn.metrics import log_loss
+from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
@@ -658,3 +658,15 @@ def test_multiclass_custom_eval():
         _, metric, value, _ = bst.eval(ds, key, feval=custom_eval)[1]  # first element is multi_logloss
         assert metric == 'custom_logloss'
         np.testing.assert_allclose(value, eval_result[key][metric][-1])
+
+
+@pytest.mark.parametrize('dtype', [np.float32, np.float64])
+def test_no_copy_when_single_float_dtype_dataframe(dtype):
+    pd = pytest.importorskip('pandas')
+    X = np.random.rand(10, 2).astype(dtype)
+    df = pd.DataFrame(X)
+    # feature names are required to not make a copy (rename makes a copy)
+    feature_name = ['x1', 'x2']
+    built_data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
+    assert built_data.dtype == dtype
+    assert np.shares_memory(X, built_data)

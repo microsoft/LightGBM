@@ -17,8 +17,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Un
 import numpy as np
 import scipy.sparse
 
-from .compat import (PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, pd_CategoricalDtype, pd_DataFrame,
-                     pd_Series)
+from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
 
 ZERO_THRESHOLD = 1e-35
@@ -502,14 +501,15 @@ def c_int_array(data):
 
 
 def _get_bad_pandas_dtypes(dtypes):
-    pandas_dtype_mapper = {'int8': 'int', 'int16': 'int', 'int32': 'int',
-                           'int64': 'int', 'uint8': 'int', 'uint16': 'int',
-                           'uint32': 'int', 'uint64': 'int', 'bool': 'int',
-                           'float16': 'float', 'float32': 'float', 'float64': 'float'}
-    bad_indices = [i for i, dtype in enumerate(dtypes) if (dtype.name not in pandas_dtype_mapper
-                                                           and (not is_dtype_sparse(dtype)
-                                                                or dtype.subtype.name not in pandas_dtype_mapper))]
-    return bad_indices
+    float128 = getattr(np, 'float128', type(None))
+
+    def is_allowed_numpy_dtype(dtype):
+        return (
+            issubclass(dtype, (np.integer, np.floating, np.bool_))
+            and not issubclass(dtype, (np.timedelta64, float128))
+        )
+
+    return [i for i, dtype in enumerate(dtypes) if not is_allowed_numpy_dtype(dtype.type)]
 
 
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
@@ -546,9 +546,10 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
                              "Did not expect the data types in the following fields: "
                              f"{bad_index_cols_str}")
-        data = data.values
-        if data.dtype != np.float32 and data.dtype != np.float64:
-            data = data.astype(np.float32)
+        df_dtypes = [dtype.type for dtype in data.dtypes]
+        df_dtypes.append(np.float32)  # so that the target dtype considers floats
+        target_dtype = np.find_common_type(df_dtypes, [])
+        data = data.astype(target_dtype, copy=False).values
     else:
         if feature_name == 'auto':
             feature_name = None
