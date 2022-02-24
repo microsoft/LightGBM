@@ -227,13 +227,13 @@ class _EarlyStoppingCallback:
 
     def _init(self, env: CallbackEnv) -> None:
         self.enabled = not any(env.params.get(boost_alias, "") == 'dart' for boost_alias
-                                in _ConfigAliases.get("boosting"))
+                               in _ConfigAliases.get("boosting"))
         if not self.enabled:
             _log_warning('Early stopping is not available in dart mode')
             return
         if not env.evaluation_result_list:
             raise ValueError('For early stopping, '
-                                'at least one dataset and eval metric is required for evaluation')
+                             'at least one dataset and eval metric is required for evaluation')
 
         if self.stopping_rounds <= 0:
             raise ValueError("stopping_rounds should be greater than zero.")
@@ -286,7 +286,7 @@ class _EarlyStoppingCallback:
             if self.verbose:
                 best_score_str = '\t'.join([_format_eval_result(x) for x in self.best_score_list[i]])
                 _log_info('Did not meet early stopping. '
-                            f'Best iteration is:\n[{self.best_iter[i] + 1}]\t{best_score_str}')
+                          f'Best iteration is:\n[{self.best_iter[i] + 1}]\t{best_score_str}')
                 if self.first_metric_only:
                     _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
             raise EarlyStopException(self.best_iter[i], self.best_score_list[i])
