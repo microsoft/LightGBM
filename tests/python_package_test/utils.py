@@ -1,6 +1,9 @@
 # coding: utf-8
 from functools import lru_cache
+import pickle
 
+import cloudpickle
+import joblib
 import numpy as np
 import sklearn.datasets
 from sklearn.utils import check_random_state
@@ -114,3 +117,29 @@ def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
 @lru_cache(maxsize=None)
 def make_synthetic_regression(n_samples=100):
     return sklearn.datasets.make_regression(n_samples, n_features=4, n_informative=2, random_state=42)
+
+
+def pickle_obj(obj, filepath, serializer):
+    if serializer == 'pickle':
+        with open(filepath, 'wb') as f:
+            pickle.dump(obj, f)
+    elif serializer == 'joblib':
+        joblib.dump(obj, filepath)
+    elif serializer == 'cloudpickle':
+        with open(filepath, 'wb') as f:
+            cloudpickle.dump(obj, f)
+    else:
+        raise ValueError(f'Unrecognized serializer type: {serializer}')
+
+
+def unpickle_obj(filepath, serializer):
+    if serializer == 'pickle':
+        with open(filepath, 'rb') as f:
+            return pickle.load(f)
+    elif serializer == 'joblib':
+        return joblib.load(filepath)
+    elif serializer == 'cloudpickle':
+        with open(filepath, 'rb') as f:
+            return cloudpickle.load(f)
+    else:
+        raise ValueError(f'Unrecognized serializer type: {serializer}')
