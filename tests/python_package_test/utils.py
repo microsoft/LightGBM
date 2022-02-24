@@ -119,6 +119,23 @@ def make_synthetic_regression(n_samples=100):
     return sklearn.datasets.make_regression(n_samples, n_features=4, n_informative=2, random_state=42)
 
 
+def softmax(x):
+    row_wise_max = np.max(x, axis=1).reshape(-1, 1)
+    exp_x = np.exp(x - row_wise_max)
+    return exp_x / np.sum(exp_x, axis=1).reshape(-1, 1)
+
+
+def sklearn_multiclass_custom_objective(y_true, y_pred):
+    num_rows, num_class = y_pred.shape
+    prob = softmax(y_pred)
+    grad_update = np.zeros_like(prob)
+    grad_update[np.arange(num_rows), y_true.astype(np.int32)] = -1.0
+    grad = prob + grad_update
+    factor = num_class / (num_class - 1)
+    hess = factor * prob * (1 - prob)
+    return grad, hess
+
+
 def pickle_obj(obj, filepath, serializer):
     if serializer == 'pickle':
         with open(filepath, 'wb') as f:

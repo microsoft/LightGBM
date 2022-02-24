@@ -17,8 +17,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Un
 import numpy as np
 import scipy.sparse
 
-from .compat import (PANDAS_INSTALLED, concat, dt_DataTable, is_dtype_sparse, pd_CategoricalDtype, pd_DataFrame,
-                     pd_Series)
+from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
 
 ZERO_THRESHOLD = 1e-35
@@ -502,14 +501,15 @@ def c_int_array(data):
 
 
 def _get_bad_pandas_dtypes(dtypes):
-    pandas_dtype_mapper = {'int8': 'int', 'int16': 'int', 'int32': 'int',
-                           'int64': 'int', 'uint8': 'int', 'uint16': 'int',
-                           'uint32': 'int', 'uint64': 'int', 'bool': 'int',
-                           'float16': 'float', 'float32': 'float', 'float64': 'float'}
-    bad_indices = [i for i, dtype in enumerate(dtypes) if (dtype.name not in pandas_dtype_mapper
-                                                           and (not is_dtype_sparse(dtype)
-                                                                or dtype.subtype.name not in pandas_dtype_mapper))]
-    return bad_indices
+    float128 = getattr(np, 'float128', type(None))
+
+    def is_allowed_numpy_dtype(dtype):
+        return (
+            issubclass(dtype, (np.integer, np.floating, np.bool_))
+            and not issubclass(dtype, (np.timedelta64, float128))
+        )
+
+    return [i for i, dtype in enumerate(dtypes) if not is_allowed_numpy_dtype(dtype.type)]
 
 
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
@@ -546,9 +546,10 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
                              "Did not expect the data types in the following fields: "
                              f"{bad_index_cols_str}")
-        data = data.values
-        if data.dtype != np.float32 and data.dtype != np.float64:
-            data = data.astype(np.float32)
+        df_dtypes = [dtype.type for dtype in data.dtypes]
+        df_dtypes.append(np.float32)  # so that the target dtype considers floats
+        target_dtype = np.find_common_type(df_dtypes, [])
+        data = data.astype(target_dtype, copy=False).values
     else:
         if feature_name == 'auto':
             feature_name = None
@@ -1138,7 +1139,7 @@ class Dataset:
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Weight for each instance.
+            Weight for each instance. Weights should be non-negative.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
@@ -1155,10 +1156,11 @@ class Dataset:
             If list of int, interpreted as indices.
             If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
-            All values in categorical features should be less than int32 max value (2147483647).
+            All values in categorical features will be cast to int32 and thus should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
             The output cannot be monotonically constrained with respect to a categorical feature.
+            Floating point numbers in categorical features will be rounded towards 0.
         params : dict or None, optional (default=None)
             Other parameters for Dataset.
         free_raw_data : bool, optional (default=True)
@@ -1817,7 +1819,7 @@ class Dataset:
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
             Label of the data.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Weight for each instance.
+            Weight for each instance. Weights should be non-negative.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
@@ -2153,7 +2155,7 @@ class Dataset:
         Parameters
         ----------
         weight : list, numpy 1-D array, pandas Series or None
-            Weight to be set for each data point.
+            Weight to be set for each data point. Weights should be non-negative.
 
         Returns
         -------
@@ -2268,7 +2270,7 @@ class Dataset:
         Returns
         -------
         weight : numpy array or None
-            Weight for each data point from the Dataset.
+            Weight for each data point from the Dataset. Weights should be non-negative.
         """
         if self.weight is None:
             self.weight = self.get_field('weight')
@@ -2946,22 +2948,21 @@ class Booster:
             Should accept two parameters: preds, train_data,
             and return (grad, hess).
 
-                preds : numpy 1-D array
+                preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     Predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task.
                 train_data : Dataset
                     The training dataset.
-                grad : list, numpy 1-D array or pandas Series
+                grad : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The value of the first order derivative (gradient) of the loss
                     with respect to the elements of preds for each sample point.
-                hess : list, numpy 1-D array or pandas Series
+                hess : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The value of the second order derivative (Hessian) of the loss
                     with respect to the elements of preds for each sample point.
 
-            For multi-class task, the preds is group by class_id first, then group by row_id.
-            If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
-            and you should group grad and hess in this way as well.
+            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            and grad and hess should be returned in the same format.
 
         Returns
         -------
@@ -2999,6 +3000,9 @@ class Booster:
             if not self.__set_objective_to_none:
                 self.reset_parameter({"objective": "none"}).__set_objective_to_none = True
             grad, hess = fobj(self.__inner_predict(0), self.train_set)
+            if self.num_model_per_iteration() > 1:
+                grad = grad.ravel(order='F')
+                hess = hess.ravel(order='F')
             return self.__boost(grad, hess)
 
     def __boost(self, grad, hess):
@@ -3008,16 +3012,15 @@ class Booster:
 
             Score is returned before any transformation,
             e.g. it is raw margin instead of probability of positive class for binary task.
-            For multi-class task, the score is group by class_id first, then group by row_id.
-            If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
-            and you should group grad and hess in this way as well.
+            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            and grad and hess should be returned in the same format.
 
         Parameters
         ----------
-        grad : list, numpy 1-D array or pandas Series
+        grad : numpy 1-D array or numpy 2-D array (for multi-class task)
             The value of the first order derivative (gradient) of the loss
             with respect to the elements of score for each sample point.
-        hess : list, numpy 1-D array or pandas Series
+        hess : numpy 1-D array or numpy 2-D array (for multi-class task)
             The value of the second order derivative (Hessian) of the loss
             with respect to the elements of score for each sample point.
 
@@ -3151,7 +3154,7 @@ class Booster:
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
-                    The evaluation dataset.
+                    A ``Dataset`` to evaluate.
                 eval_name : str
                     The name of evaluation function (without whitespace).
                 eval_result : float
@@ -3159,8 +3162,8 @@ class Booster:
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            For multi-class task, the preds is group by class_id first, then group by row_id.
-            If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
+            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            and grad and hess should be returned in the same format.
 
         Returns
         -------
@@ -3194,7 +3197,7 @@ class Booster:
             Should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : numpy 1-D array
+                preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3207,8 +3210,8 @@ class Booster:
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            For multi-class task, the preds is group by class_id first, then group by row_id.
-            If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
+            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            and grad and hess should be returned in the same format.
 
         Returns
         -------
@@ -3227,7 +3230,7 @@ class Booster:
             Should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : numpy 1-D array
+                preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
@@ -3240,8 +3243,8 @@ class Booster:
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-            For multi-class task, the preds is group by class_id first, then group by row_id.
-            If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
+            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            and grad and hess should be returned in the same format.
 
         Returns
         -------
@@ -3541,8 +3544,7 @@ class Booster:
         reference : Dataset or None, optional (default=None)
             Reference for ``data``.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
-            Weight for each ``data`` instance. Weight should be non-negative values because the Hessian
-            value multiplied by weight is supposed to be non-negative.
+            Weight for each ``data`` instance. Weights should be non-negative.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query size for ``data``.
             Only used in the learning-to-rank task.
@@ -3559,10 +3561,11 @@ class Booster:
             If list of int, interpreted as indices.
             If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
-            All values in categorical features should be less than int32 max value (2147483647).
+            All values in categorical features will be cast to int32 and thus should be less than int32 max value (2147483647).
             Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
             The output cannot be monotonically constrained with respect to a categorical feature.
+            Floating point numbers in categorical features will be rounded towards 0.
         dataset_params : dict or None, optional (default=None)
             Other parameters for Dataset ``data``.
         free_raw_data : bool, optional (default=True)
@@ -3866,7 +3869,11 @@ class Booster:
             if tmp_out_len.value != len(self.__inner_predict_buffer[data_idx]):
                 raise ValueError(f"Wrong length of predict results for data {data_idx}")
             self.__is_predicted_cur_iter[data_idx] = True
-        return self.__inner_predict_buffer[data_idx]
+        result = self.__inner_predict_buffer[data_idx]
+        if self.__num_class > 1:
+            num_data = result.size // self.__num_class
+            result = result.reshape(num_data, self.__num_class, order='F')
+        return result
 
     def __get_eval_info(self):
         """Get inner evaluation count and names."""

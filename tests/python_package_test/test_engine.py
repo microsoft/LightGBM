@@ -3292,7 +3292,23 @@ def test_record_evaluation_with_cv(train_metric):
                     cv_hist[key], eval_result[dataset][f'{metric}-{agg}']
                 )
 
-@pytest.mark.parametrize('serializer', ["pickle", "joblib", "cloudpickle"])
+
+def test_pandas_with_numpy_regular_dtypes():
+    pd = pytest.importorskip('pandas')
+    uints = ['uint8', 'uint16', 'uint32', 'uint64']
+    ints = ['int8', 'int16', 'int32', 'int64']
+    bool_and_floats = ['bool', 'float16', 'float32', 'float64']
+    rng = np.random.RandomState(42)
+
+    n_samples = 100
+    # data as float64
+    df = pd.DataFrame({
+        'x1': rng.randint(0, 2, n_samples),
+        'x2': rng.randint(1, 3, n_samples),
+        'x3': 10 * rng.randint(1, 3, n_samples),
+        'x4': 100 * rng.randint(1, 3, n_samples),
+
+
 def test_early_stopping_callback_is_picklable(serializer, tmp_path):
     callback = lgb.early_stopping(stopping_rounds=5)
     tmp_file = tmp_path / "early_stopping.pkl"
