@@ -320,7 +320,7 @@ class _EarlyStoppingCallback:
             self._final_iteration_check(env, eval_name_splitted, i)
 
 
-def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True, min_delta: Union[float, List[float]] = 0.0) -> Callable:
+def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True, min_delta: Union[float, List[float]] = 0.0) -> _EarlyStoppingCallback:
     """Create a callback that activates early stopping.
 
     Activates early stopping.
