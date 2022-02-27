@@ -12,7 +12,7 @@ import numpy as np
 import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
-from sklearn.datasets import load_svmlight_file, make_multilabel_classification, make_blobs
+from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
