@@ -12,13 +12,14 @@ import numpy as np
 import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
-from sklearn.datasets import load_svmlight_file, make_multilabel_classification
+from sklearn.datasets import load_svmlight_file, make_multilabel_classification, make_blobs
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
 import lightgbm as lgb
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression
+from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression,
+                    sklearn_multiclass_custom_objective, softmax)
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -2308,6 +2309,54 @@ def test_default_objective_and_metric():
     assert len(evals_result['valid_0']) == 1
     assert 'l2' in evals_result['valid_0']
     assert len(evals_result['valid_0']['l2']) == 5
+
+
+def test_multiclass_custom_objective():
+    def custom_obj(y_pred, ds):
+        y_true = ds.get_label()
+        return sklearn_multiclass_custom_objective(y_true, y_pred)
+
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    ds = lgb.Dataset(X, y)
+    params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
+    builtin_obj_bst = lgb.train(params, ds, num_boost_round=10)
+    builtin_obj_preds = builtin_obj_bst.predict(X)
+
+    custom_obj_bst = lgb.train(params, ds, num_boost_round=10, fobj=custom_obj)
+    custom_obj_preds = softmax(custom_obj_bst.predict(X))
+
+    np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
+
+
+def test_multiclass_custom_eval():
+    def custom_eval(y_pred, ds):
+        y_true = ds.get_label()
+        return 'custom_logloss', log_loss(y_true, y_pred), False
+
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
+    train_ds = lgb.Dataset(X_train, y_train)
+    valid_ds = lgb.Dataset(X_valid, y_valid, reference=train_ds)
+    params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
+    eval_result = {}
+    bst = lgb.train(
+        params,
+        train_ds,
+        num_boost_round=10,
+        valid_sets=[train_ds, valid_ds],
+        valid_names=['train', 'valid'],
+        feval=custom_eval,
+        callbacks=[lgb.record_evaluation(eval_result)],
+        keep_training_booster=True,
+    )
+
+    for key, ds in zip(['train', 'valid'], [train_ds, valid_ds]):
+        np.testing.assert_allclose(eval_result[key]['multi_logloss'], eval_result[key]['custom_logloss'])
+        _, metric, value, _ = bst.eval(ds, key, feval=custom_eval)[1]  # first element is multi_logloss
+        assert metric == 'custom_logloss'
+        np.testing.assert_allclose(value, eval_result[key][metric][-1])
 
 
 @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason='not enough RAM')
