@@ -8,13 +8,13 @@ import numpy as np
 import pytest
 from scipy import sparse
 from sklearn.datasets import dump_svmlight_file, load_svmlight_file, make_blobs
-from sklearn.metrics import log_loss, mean_squared_error
+from sklearn.metrics import log_loss
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import load_breast_cancer, make_synthetic_regression, sklearn_multiclass_custom_objective, softmax
+from .utils import load_breast_cancer, sklearn_multiclass_custom_objective, softmax
 
 
 def test_basic(tmp_path):

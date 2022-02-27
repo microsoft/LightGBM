@@ -17,6 +17,7 @@ from sklearn.metrics import average_precision_score, log_loss, mean_absolute_err
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
 import lightgbm as lgb
+from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
 from .utils import load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression
 

@@ -2138,7 +2138,7 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
 template<typename T>
 void remap(const void* input, int32_t nrow, int32_t ncol, const std::unordered_map<int, int> &remappings, int is_row_major, T* ptr_output) {
   const T* ptr_input = static_cast<const T*>(input);
-  for (auto& it : remappings) {
+  for (const auto& it : remappings) {
     int src = it.first;
     int dest = it.second;
     if (is_row_major) {
