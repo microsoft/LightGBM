@@ -2141,7 +2141,6 @@ void remap(const void* input, int32_t nrow, int32_t ncol, const std::unordered_m
   for (auto& it : remappings) {
     int src = it.first;
     int dest = it.second;
-    Log::Info("Writing %d to %d", src, dest);
     if (is_row_major) {
       for (int32_t i = 0; i < nrow; ++i) {
         ptr_output[dest + ncol * i] = ptr_input[src + ncol * i];
@@ -2151,10 +2150,6 @@ void remap(const void* input, int32_t nrow, int32_t ncol, const std::unordered_m
         ptr_output[dest * ncol + i] = ptr_input[src * ncol + i];
       }
     }
-  }
-  Log::Info("Final");
-  for (int i = 0; i < nrow * ncol; ++i) {
-    Log::Info("%f", ptr_output[i]);
   }
 }
 
