@@ -512,23 +512,12 @@ def _get_bad_pandas_dtypes(dtypes):
     return bad_indices
 
 
-def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical, validate_features=False):
+def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, pd_DataFrame):
         if len(data.shape) != 2 or data.shape[0] < 1:
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
             data = data.rename(columns=str)
-        elif isinstance(feature_name, list) and validate_features:
-            df_features = [str(x) for x in data.columns]
-            missing_features = set(feature_name) - set(df_features)
-            if missing_features:
-                raise ValueError(
-                    f"The following features are missing: {missing_features}.\n"
-                    "If you're sure the features are correct you can disable this check by setting validate_features=False"
-                )
-            sort_idxs = [df_features.index(feature) for feature in feature_name]
-            if not all(x == i for i, x in enumerate(sort_idxs)):
-                data = data.iloc[:, sort_idxs]  # ensure column order
         cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
@@ -746,9 +735,18 @@ class _InnerPredictor:
         this.pop('handle', None)
         return this
 
-    def predict(self, data, start_iteration=0, num_iteration=-1,
-                raw_score=False, pred_leaf=False, pred_contrib=False, data_has_header=False,
-                is_reshape=True):
+    def predict(
+        self,
+        data,
+        start_iteration=0,
+        num_iteration=-1,
+        raw_score=False,
+        pred_leaf=False,
+        pred_contrib=False,
+        data_has_header=False,
+        is_reshape=True,
+        data_names=None,
+    ):
         """Predict logic.
 
         Parameters
@@ -805,15 +803,15 @@ class _InnerPredictor:
         elif isinstance(data, scipy.sparse.csc_matrix):
             preds, nrow = self.__pred_for_csc(data, start_iteration, num_iteration, predict_type)
         elif isinstance(data, np.ndarray):
-            preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type, data_names)
         elif isinstance(data, list):
             try:
                 data = np.array(data)
             except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
-            preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type, None)
         elif isinstance(data, dt_DataTable):
-            preds, nrow = self.__pred_for_np2d(data.to_numpy(), start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_np2d(data.to_numpy(), start_iteration, num_iteration, predict_type, None)
         else:
             try:
                 _log_warning('Converting data to scipy sparse matrix.')
@@ -848,7 +846,7 @@ class _InnerPredictor:
             ctypes.byref(n_preds)))
         return n_preds.value
 
-    def __pred_for_np2d(self, mat, start_iteration, num_iteration, predict_type):
+    def __pred_for_np2d(self, mat, start_iteration, num_iteration, predict_type, data_names):
         """Predict for a 2-D numpy matrix."""
         if len(mat.shape) != 2:
             raise ValueError('Input numpy.ndarray or list must be 2 dimensional')
@@ -865,19 +863,38 @@ class _InnerPredictor:
             elif len(preds.shape) != 1 or len(preds) != n_preds:
                 raise ValueError("Wrong length of pre-allocated predict array")
             out_num_preds = ctypes.c_int64(0)
-            _safe_call(_LIB.LGBM_BoosterPredictForMat(
-                self.handle,
-                ptr_data,
-                ctypes.c_int(type_ptr_data),
-                ctypes.c_int32(mat.shape[0]),
-                ctypes.c_int32(mat.shape[1]),
-                ctypes.c_int(C_API_IS_ROW_MAJOR),
-                ctypes.c_int(predict_type),
-                ctypes.c_int(start_iteration),
-                ctypes.c_int(num_iteration),
-                c_str(self.pred_parameter),
-                ctypes.byref(out_num_preds),
-                preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+            if data_names is None:
+                _safe_call(_LIB.LGBM_BoosterPredictForMat(
+                    self.handle,
+                    ptr_data,
+                    ctypes.c_int(type_ptr_data),
+                    ctypes.c_int32(mat.shape[0]),
+                    ctypes.c_int32(mat.shape[1]),
+                    ctypes.c_int(C_API_IS_ROW_MAJOR),
+                    ctypes.c_int(predict_type),
+                    ctypes.c_int(start_iteration),
+                    ctypes.c_int(num_iteration),
+                    c_str(self.pred_parameter),
+                    ctypes.byref(out_num_preds),
+                    preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+            else:
+                ptr_names = (ctypes.c_char_p * len(data_names))()
+                ptr_names[:] = [n.encode('utf-8') for n in data_names]
+                print(data_names)
+                _safe_call(_LIB.LGBM_BoosterPredictForNamedMat(
+                    self.handle,
+                    ptr_data,
+                    ptr_names,
+                    ctypes.c_int(type_ptr_data),
+                    ctypes.c_int32(mat.shape[0]),
+                    ctypes.c_int32(mat.shape[1]),
+                    ctypes.c_int(C_API_IS_ROW_MAJOR),
+                    ctypes.c_int(predict_type),
+                    ctypes.c_int(start_iteration),
+                    ctypes.c_int(num_iteration),
+                    c_str(self.pred_parameter),
+                    ctypes.byref(out_num_preds),
+                    preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
             if n_preds != out_num_preds.value:
                 raise ValueError("Wrong length for predict results")
             return preds, mat.shape[0]
@@ -3515,16 +3532,28 @@ class Booster:
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
-        data = _data_from_pandas(data, self.feature_name(), None, self.pandas_categorical, validate_features=validate_features)[0]
+        elif isinstance(data, pd_DataFrame) and validate_features:
+            data_names = [str(col) for col in data.columns]
+        else:
+            data_names = None
+        data = _data_from_pandas(data, None, None, self.pandas_categorical)[0]
         predictor = self._to_predictor(deepcopy(kwargs))
         if num_iteration is None:
             if start_iteration <= 0:
                 num_iteration = self.best_iteration
             else:
                 num_iteration = -1
-        return predictor.predict(data, start_iteration, num_iteration,
-                                 raw_score, pred_leaf, pred_contrib,
-                                 data_has_header, is_reshape)
+        return predictor.predict(
+            data,
+            start_iteration,
+            num_iteration,
+            raw_score,
+            pred_leaf,
+            pred_contrib,
+            data_has_header,
+            is_reshape,
+            data_names,
+        )
 
     def refit(self, data, label, decay_rate=0.9, **kwargs):
         """Refit the existing Booster by new data.

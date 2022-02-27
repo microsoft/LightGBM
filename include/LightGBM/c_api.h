@@ -1034,6 +1034,22 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
                                                 double* out_result);
 
 /*!
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForNamedMat(BoosterHandle handle,
+                                                const void* data,
+                                                const char** names,
+                                                int data_type,
+                                                int32_t nrow,
+                                                int32_t ncol,
+                                                int is_row_major,
+                                                int predict_type,
+                                                int start_iteration,
+                                                int num_iteration,
+                                                const char* parameter,
+                                                int64_t* out_len,
+                                                double* out_result);
+
+/*!
  * \brief Make prediction for a new dataset.
  * \note
  * You should pre-allocate memory for ``out_result``:

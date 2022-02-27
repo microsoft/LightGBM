@@ -609,31 +609,3 @@ def test_custom_objective_safety():
     good_bst_multi.update(fobj=_good_gradients)
     with pytest.raises(ValueError, match=re.escape(f"number of models per one iteration ({nclass})")):
         bad_bst_multi.update(fobj=_bad_gradients)
-
-
-@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
-def test_validate_features():
-    X, y = make_synthetic_regression()
-    features = ['x1', 'x2', 'x3', 'x4']
-    df = pd_DataFrame(X, columns=features)
-    ds = lgb.Dataset(df, y)
-    bst = lgb.train({'num_leaves': 15, 'verbose': -1}, ds, num_boost_round=10)
-    assert bst.feature_name() == features
-
-    # try to predict with a different feature
-    df2 = df.rename(columns={'x1': 'z'})
-    with pytest.raises(ValueError, match="The following features are missing: {'x1'}"):
-        bst.predict(df2)
-
-    # check that disabling the check doesn't raise the error
-    bst.predict(df2, validate_features=False)
-
-    # predict with the features out of order
-    preds_sorted_features = bst.predict(df[features])
-    scrambled_features = ['x3', 'x1', 'x4', 'x2']
-    preds_scrambled_features = bst.predict(df[scrambled_features])
-    np.testing.assert_allclose(preds_sorted_features, preds_scrambled_features)
-
-    # check that disabling the check doesn't raise an error and produces incorrect predictions
-    preds_scrambled_features_no_check = bst.predict(df[scrambled_features], validate_features=False)
-    np.testing.assert_raises(AssertionError, np.testing.assert_allclose, preds_sorted_features, preds_scrambled_features_no_check)

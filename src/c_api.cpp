@@ -2134,6 +2134,91 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
   API_END();
 }
 
+
+template<typename T>
+void remap(const void* input, int32_t nrow, int32_t ncol, const std::unordered_map<int, int> &remappings, int is_row_major, T* ptr_output) {
+  const T* ptr_input = static_cast<const T*>(input);
+  for (auto& it : remappings) {
+    int src = it.first;
+    int dest = it.second;
+    Log::Info("Writing %d to %d", src, dest);
+    if (is_row_major) {
+      for (int32_t i = 0; i < nrow; ++i) {
+        ptr_output[dest + ncol * i] = ptr_input[src + ncol * i];
+      }
+    } else {
+      for (int32_t i = 0; i < nrow; ++i) {
+        ptr_output[dest * ncol + i] = ptr_input[src * ncol + i];
+      }
+    }
+  }
+  Log::Info("Final");
+  for (int i = 0; i < nrow * ncol; ++i) {
+    Log::Info("%f", ptr_output[i]);
+  }
+}
+
+
+int LGBM_BoosterPredictForNamedMat(BoosterHandle handle,
+                                   const void* data,
+                                   const char** names,
+                                   int data_type,
+                                   int32_t nrow,
+                                   int32_t ncol,
+                                   int is_row_major,
+                                   int predict_type,
+                                   int start_iteration,
+                                   int num_iteration,
+                                   const char* parameter,
+                                   int64_t* out_len,
+                                   double* out_result) {
+  API_BEGIN();
+  int features_out_len;
+  size_t out_buffer_len;
+  LGBM_BoosterGetFeatureNames(handle, 0, &features_out_len, 0, &out_buffer_len, nullptr);
+  std::vector<std::vector<char>> tmp_names(features_out_len);
+  std::vector<char*> fnames(features_out_len);
+  for (int i = 0; i < features_out_len; ++i) {
+    tmp_names[i].resize(out_buffer_len);
+    fnames[i] = tmp_names[i].data();
+  }
+  size_t allocated_buffer_len = out_buffer_len;
+  int expected_len = static_cast<int>(ncol);
+  LGBM_BoosterGetFeatureNames(handle, expected_len, &features_out_len, allocated_buffer_len, &out_buffer_len, fnames.data());
+
+  std::unordered_map<std::string, int> feature_positions;
+  for (int i = 0; i < ncol; ++i) {
+    feature_positions[names[i]] = i;
+  }
+  std::unordered_map<int, int> remappings(ncol);
+  for (int i = 0; i < ncol; ++i) {
+    auto it = feature_positions.find(fnames[i]);
+    if (it == feature_positions.end()) {
+      Log::Fatal("%s not found in data", fnames[i]);
+    }
+    int pos = it->second;
+    if (pos != i) {
+      Log::Info("%s found at position %d, expected %d", fnames[i], pos, i);
+      remappings[pos] = i;
+    }
+  }
+  if (remappings.size() > 0) {  // needs adjust
+    if (data_type == C_API_DTYPE_FLOAT32) {
+      float* ptr_remapped = (float*) malloc(nrow * ncol * sizeof(float));
+      remap<float>(data, nrow, ncol, remappings, is_row_major, ptr_remapped);
+      LGBM_BoosterPredictForMat(handle, ptr_remapped, data_type, nrow, ncol, is_row_major, predict_type, start_iteration, num_iteration, parameter, out_len, out_result);
+    } else {
+      double* ptr_remapped = (double*) malloc(nrow * ncol * sizeof(double));
+      remap<double>(data, nrow, ncol, remappings, is_row_major, ptr_remapped);
+      LGBM_BoosterPredictForMat(handle, ptr_remapped, data_type, nrow, ncol, is_row_major, predict_type, start_iteration, num_iteration, parameter, out_len, out_result);
+    }
+  } else {
+    LGBM_BoosterPredictForMat(handle, data, data_type, nrow, ncol, is_row_major, predict_type, start_iteration, num_iteration, parameter, out_len, out_result);
+  }
+  API_END();
+}
+
+
 int LGBM_BoosterPredictForMatSingleRow(BoosterHandle handle,
                                        const void* data,
                                        int data_type,

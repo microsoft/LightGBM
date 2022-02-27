@@ -1381,7 +1381,7 @@ def test_validate_features(task):
 
     # try to predict with a different feature
     df2 = df.rename(columns={'x1': 'z'})
-    with pytest.raises(ValueError, match="The following features are missing: {'x1'}"):
+    with pytest.raises(lgb.basic.LightGBMError, match="x1 not found in data"):
         model.predict(df2)
 
     # check that disabling the check doesn't raise the error
