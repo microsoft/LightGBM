@@ -9,7 +9,7 @@ pr:
 - master
 variables:
   AZURE: 'true'
-  PYTHON_VERSION: 3.9
+  PYTHON_VERSION: '3.10'
   CONDA_ENV: test-env
 resources:
   containers:
@@ -35,20 +35,25 @@ jobs:
     matrix:
       regular:
         TASK: regular
+        PYTHON_VERSION: '3.9'
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 3.7
+        PYTHON_VERSION: '3.7'
       bdist:
         TASK: bdist
+        PYTHON_VERSION: '3.8'
       inference:
         TASK: if-else
       mpi_source:
         TASK: mpi
         METHOD: source
-        PYTHON_VERSION: 3.8
+        PYTHON_VERSION: '3.8'
       gpu_source:
         TASK: gpu
         METHOD: source
+        # on Ubuntu 14.04, gpu_source build segfaults with newer version of Python
+        # (and newer version of scipy as a consequence)
+        PYTHON_VERSION: '3.7'
       swig:
         TASK: swig
   steps:
@@ -91,7 +96,7 @@ jobs:
         TASK: sdist
       bdist:
         TASK: bdist
-        PYTHON_VERSION: 3.8
+        PYTHON_VERSION: '3.8'
       inference:
         TASK: if-else
       mpi_source:
@@ -100,21 +105,23 @@ jobs:
       mpi_pip:
         TASK: mpi
         METHOD: pip
-        PYTHON_VERSION: 3.8
+        PYTHON_VERSION: '3.9'
       mpi_wheel:
         TASK: mpi
         METHOD: wheel
-        PYTHON_VERSION: 3.7
+        PYTHON_VERSION: '3.7'
       gpu_source:
         TASK: gpu
         METHOD: source
+        PYTHON_VERSION: '3.9'
       gpu_pip:
         TASK: gpu
         METHOD: pip
+        PYTHON_VERSION: '3.8'
       gpu_wheel:
         TASK: gpu
         METHOD: wheel
-        PYTHON_VERSION: 3.7
+        PYTHON_VERSION: '3.7'
       cpp_tests:
         TASK: cpp-tests
         METHOD: with-sanitizers
@@ -122,7 +129,7 @@ jobs:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
-      CONDA=$HOME/miniconda
+      CONDA=$HOME/miniforge
       echo "##vso[task.setvariable variable=CONDA]$CONDA"
       echo "##vso[task.prependpath]$CONDA/bin"
       AMDAPPSDK_PATH=$BUILD_SOURCESDIRECTORY/AMDAPPSDK
@@ -183,7 +190,7 @@ jobs:
       BUILD_ARTIFACTSTAGINGDIRECTORY=$BUILD_ARTIFACTSTAGINGDIRECTORY
       EOF
       cat > docker-script.sh <<EOF
-      export CONDA=\$HOME/miniconda
+      export CONDA=\$HOME/miniforge
       export PATH=\$CONDA/bin:\$PATH
       $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
       $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
@@ -220,10 +227,10 @@ jobs:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: 3.7
+        PYTHON_VERSION: '3.7'
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 3.8
+        PYTHON_VERSION: '3.8'
       bdist:
         TASK: bdist
       swig:
@@ -236,7 +243,7 @@ jobs:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
-      CONDA=$AGENT_HOMEDIRECTORY/miniconda
+      CONDA=$AGENT_HOMEDIRECTORY/miniforge
       echo "##vso[task.setvariable variable=CONDA]$CONDA"
       echo "##vso[task.prependpath]$CONDA/bin"
       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_8_X64"
@@ -260,9 +267,10 @@ jobs:
     matrix:
       regular:
         TASK: regular
+        PYTHON_VERSION: '3.9'
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 3.8
+        PYTHON_VERSION: '3.8'
       bdist:
         TASK: bdist
       swig:
@@ -278,6 +286,8 @@ jobs:
     condition: eq(variables['TASK'], 'bdist')
     displayName: 'Install OpenCL'
   - script: |
+      cmd /c "conda config --add channels conda-forge"
+      cmd /c "conda config --set channel_priority strict"
       cmd /c "conda init powershell"
       cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
     displayName: Test

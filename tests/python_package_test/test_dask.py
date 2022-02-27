@@ -15,6 +15,8 @@ import pytest
 
 import lightgbm as lgb
 
+from .utils import sklearn_multiclass_custom_objective
+
 if not platform.startswith('linux'):
     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if machine() != 'x86_64':
@@ -31,15 +33,11 @@ import pandas as pd
 import sklearn.utils.estimator_checks as sklearn_checks
 from dask.array.utils import assert_eq
 from dask.distributed import Client, LocalCluster, default_client, wait
-from pkg_resources import parse_version
 from scipy.sparse import csc_matrix, csr_matrix
 from scipy.stats import spearmanr
-from sklearn import __version__ as sk_version
 from sklearn.datasets import make_blobs, make_regression
 
 from .utils import make_ranking
-
-sk_version = parse_version(sk_version)
 
 tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ranking']
 distributed_training_algorithms = ['data', 'voting']
@@ -262,6 +260,19 @@ def _unpickle(filepath, serializer):
         raise ValueError(f'Unrecognized serializer type: {serializer}')
 
 
+def _objective_least_squares(y_true, y_pred):
+    grad = y_pred - y_true
+    hess = np.ones(len(y_true))
+    return grad, hess
+
+
+def _objective_logistic_regression(y_true, y_pred):
+    y_pred = 1.0 / (1.0 + np.exp(-y_pred))
+    grad = y_pred - y_true
+    hess = y_pred * (1.0 - y_pred)
+    return grad, hess
+
+
 @pytest.mark.parametrize('output', data_output)
 @pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
 @pytest.mark.parametrize('boosting_type', boosting_types)
@@ -453,6 +464,79 @@ def test_classifier_pred_contrib(output, task, cluster):
             for i in range(num_classes):
                 base_value_col = num_features * (i + 1) + i
                 assert len(np.unique(preds_with_contrib[:, base_value_col]) == 1)
+
+
+@pytest.mark.parametrize('output', data_output)
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification'])
+def test_classifier_custom_objective(output, task, cluster):
+    with Client(cluster) as client:
+        X, y, w, _, dX, dy, dw, _ = _create_data(
+            objective=task,
+            output=output,
+        )
+
+        params = {
+            "n_estimators": 50,
+            "num_leaves": 31,
+            "verbose": -1,
+            "seed": 708,
+            "deterministic": True,
+            "force_col_wise": True
+        }
+
+        if task == 'binary-classification':
+            params.update({
+                'objective': _objective_logistic_regression,
+            })
+        elif task == 'multiclass-classification':
+            params.update({
+                'objective': sklearn_multiclass_custom_objective,
+                'num_classes': 3
+            })
+
+        dask_classifier = lgb.DaskLGBMClassifier(
+            client=client,
+            time_out=5,
+            tree_learner='data',
+            **params
+        )
+        dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
+        dask_classifier_local = dask_classifier.to_local()
+        p1_raw = dask_classifier.predict(dX, raw_score=True).compute()
+        p1_raw_local = dask_classifier_local.predict(X, raw_score=True)
+
+        local_classifier = lgb.LGBMClassifier(**params)
+        local_classifier.fit(X, y, sample_weight=w)
+        p2_raw = local_classifier.predict(X, raw_score=True)
+
+        # with a custom objective, prediction result is a raw score instead of predicted class
+        if task == 'binary-classification':
+            p1_proba = 1.0 / (1.0 + np.exp(-p1_raw))
+            p1_class = (p1_proba > 0.5).astype(np.int64)
+            p1_proba_local = 1.0 / (1.0 + np.exp(-p1_raw_local))
+            p1_class_local = (p1_proba_local > 0.5).astype(np.int64)
+            p2_proba = 1.0 / (1.0 + np.exp(-p2_raw))
+            p2_class = (p2_proba > 0.5).astype(np.int64)
+        elif task == 'multiclass-classification':
+            p1_proba = np.exp(p1_raw) / np.sum(np.exp(p1_raw), axis=1).reshape(-1, 1)
+            p1_class = p1_proba.argmax(axis=1)
+            p1_proba_local = np.exp(p1_raw_local) / np.sum(np.exp(p1_raw_local), axis=1).reshape(-1, 1)
+            p1_class_local = p1_proba_local.argmax(axis=1)
+            p2_proba = np.exp(p2_raw) / np.sum(np.exp(p2_raw), axis=1).reshape(-1, 1)
+            p2_class = p2_proba.argmax(axis=1)
+
+        # function should have been preserved
+        assert callable(dask_classifier.objective_)
+        assert callable(dask_classifier_local.objective_)
+
+        # should correctly classify every sample
+        assert_eq(p1_class, y)
+        assert_eq(p1_class_local, y)
+        assert_eq(p2_class, y)
+
+        # probability estimates should be similar
+        assert_eq(p1_proba, p2_proba, atol=0.03)
+        assert_eq(p1_proba, p1_proba_local)
 
 
 def test_group_workers_by_host():
@@ -700,6 +784,56 @@ def test_regressor_quantile(output, alpha, cluster):
             assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
 
 
+@pytest.mark.parametrize('output', data_output)
+def test_regressor_custom_objective(output, cluster):
+    with Client(cluster) as client:
+        X, y, w, _, dX, dy, dw, _ = _create_data(
+            objective='regression',
+            output=output
+        )
+
+        params = {
+            "n_estimators": 10,
+            "num_leaves": 10,
+            "objective": _objective_least_squares
+        }
+
+        dask_regressor = lgb.DaskLGBMRegressor(
+            client=client,
+            time_out=5,
+            tree_learner='data',
+            **params
+        )
+        dask_regressor = dask_regressor.fit(dX, dy, sample_weight=dw)
+        dask_regressor_local = dask_regressor.to_local()
+        p1 = dask_regressor.predict(dX)
+        p1_local = dask_regressor_local.predict(X)
+        s1_local = dask_regressor_local.score(X, y)
+        s1 = _r2_score(dy, p1)
+        p1 = p1.compute()
+
+        local_regressor = lgb.LGBMRegressor(**params)
+        local_regressor.fit(X, y, sample_weight=w)
+        p2 = local_regressor.predict(X)
+        s2 = local_regressor.score(X, y)
+
+        # function should have been preserved
+        assert callable(dask_regressor.objective_)
+        assert callable(dask_regressor_local.objective_)
+
+        # Scores should be the same
+        assert_eq(s1, s2, atol=0.01)
+        assert_eq(s1, s1_local)
+
+        # local and Dask predictions should be the same
+        assert_eq(p1, p1_local)
+
+        # predictions should be better than random
+        assert_precision = {"rtol": 0.5, "atol": 50.}
+        assert_eq(p1, y, **assert_precision)
+        assert_eq(p2, y, **assert_precision)
+
+
 @pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])
 @pytest.mark.parametrize('group', [None, group_sizes])
 @pytest.mark.parametrize('boosting_type', boosting_types)
@@ -806,6 +940,67 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
             node_uses_cat_col = tree_df['split_feature'].isin(cat_cols)
             assert node_uses_cat_col.sum() > 0
             assert tree_df.loc[node_uses_cat_col, "decision_type"].unique()[0] == '=='
+
+
+@pytest.mark.parametrize('output', ['array', 'dataframe', 'dataframe-with-categorical'])
+def test_ranker_custom_objective(output, cluster):
+    with Client(cluster) as client:
+        if output == 'dataframe-with-categorical':
+            X, y, w, g, dX, dy, dw, dg = _create_data(
+                objective='ranking',
+                output=output,
+                group=group_sizes,
+                n_features=1,
+                n_informative=1
+            )
+        else:
+            X, y, w, g, dX, dy, dw, dg = _create_data(
+                objective='ranking',
+                output=output,
+                group=group_sizes
+            )
+
+        # rebalance small dask.Array dataset for better performance.
+        if output == 'array':
+            dX = dX.persist()
+            dy = dy.persist()
+            dw = dw.persist()
+            dg = dg.persist()
+            _ = wait([dX, dy, dw, dg])
+            client.rebalance()
+
+        params = {
+            "random_state": 42,
+            "n_estimators": 50,
+            "num_leaves": 20,
+            "min_child_samples": 1,
+            "objective": _objective_least_squares
+        }
+
+        dask_ranker = lgb.DaskLGBMRanker(
+            client=client,
+            time_out=5,
+            tree_learner_type="data",
+            **params
+        )
+        dask_ranker = dask_ranker.fit(dX, dy, sample_weight=dw, group=dg)
+        rnkvec_dask = dask_ranker.predict(dX).compute()
+        dask_ranker_local = dask_ranker.to_local()
+        rnkvec_dask_local = dask_ranker_local.predict(X)
+
+        local_ranker = lgb.LGBMRanker(**params)
+        local_ranker.fit(X, y, sample_weight=w, group=g)
+        rnkvec_local = local_ranker.predict(X)
+
+        # distributed ranker should be able to rank decently well with the least-squares objective
+        # and should have high rank correlation with scores from serial ranker.
+        assert spearmanr(rnkvec_dask, y).correlation > 0.6
+        assert spearmanr(rnkvec_dask, rnkvec_local).correlation > 0.8
+        assert_eq(rnkvec_dask, rnkvec_dask_local)
+
+        # function should have been preserved
+        assert callable(dask_ranker.objective_)
+        assert callable(dask_ranker_local.objective_)
 
 
 @pytest.mark.parametrize('task', tasks)
@@ -1638,10 +1833,7 @@ def test_sklearn_integration(estimator, check, cluster):
 @pytest.mark.parametrize("estimator", list(_tested_estimators()))
 def test_parameters_default_constructible(estimator):
     name = estimator.__class__.__name__
-    if sk_version >= parse_version("0.24"):
-        Estimator = estimator
-    else:
-        Estimator = estimator.__class__
+    Estimator = estimator
     sklearn_checks.check_parameters_default_constructible(name, Estimator)
 
 

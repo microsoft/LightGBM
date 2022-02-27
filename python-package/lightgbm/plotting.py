@@ -556,7 +556,7 @@ def create_tree_digraph(
             - ``'internal_count'`` : number of records from the training data that fall into this non-leaf node
             - ``'internal_weight'`` : total weight of all nodes that fall into this non-leaf node
             - ``'leaf_count'`` : number of records from the training data that fall into this leaf node
-            - ``'leaf_weight'`` : total weight (sum of hessian) of all observations that fall into this leaf node
+            - ``'leaf_weight'`` : total weight (sum of Hessian) of all observations that fall into this leaf node
             - ``'data_percentage'`` : percentage of training data that fall into this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
@@ -649,7 +649,7 @@ def plot_tree(
             - ``'internal_count'`` : number of records from the training data that fall into this non-leaf node
             - ``'internal_weight'`` : total weight of all nodes that fall into this non-leaf node
             - ``'leaf_count'`` : number of records from the training data that fall into this leaf node
-            - ``'leaf_weight'`` : total weight (sum of hessian) of all observations that fall into this leaf node
+            - ``'leaf_weight'`` : total weight (sum of Hessian) of all observations that fall into this leaf node
             - ``'data_percentage'`` : percentage of training data that fall into this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.

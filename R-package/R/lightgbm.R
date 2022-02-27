@@ -53,7 +53,7 @@
 #'               the "Parameters" section of the documentation} for a list of parameters and valid values.
 #' @param verbose verbosity for output, if <= 0, also will disable the print of evaluation during training
 #' @param serializable whether to make the resulting objects serializable through functions such as
-#' \code{save} or \code{saveRDS} (see section "Model serialization").
+#'                     \code{save} or \code{saveRDS} (see section "Model serialization").
 #' @section Early Stopping:
 #'
 #'          "early stopping" refers to stopping the training process if the model's performance on a given
@@ -92,8 +92,11 @@ NULL
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weight vector of response values. If not NULL, will set to dataset
-#' @param save_name File name to use when writing the trained model to disk. Should end in ".model".
-#'                  If passing `NULL`, will not save the trained model to disk.
+#' @param objective Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
+#'                  For a list of accepted objectives, see
+#'                  \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
+#'                  the "objective" item of the "Parameters" section of the documentation}.
+#' @param init_score initial score is the base prediction lightgbm will boost from
 #' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
 #'     \itemize{
 #'        \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}
@@ -120,10 +123,11 @@ lightgbm <- function(data,
                      verbose = 1L,
                      eval_freq = 1L,
                      early_stopping_rounds = NULL,
-                     save_name = "lightgbm.model",
                      init_model = NULL,
                      callbacks = list(),
                      serializable = TRUE,
+                     objective = "regression",
+                     init_score = NULL,
                      ...) {
 
   # validate inputs early to avoid unnecessary computation
@@ -136,13 +140,14 @@ lightgbm <- function(data,
 
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
   if (!lgb.is.Dataset(x = dtrain)) {
-    dtrain <- lgb.Dataset(data = data, label = label, weight = weight)
+    dtrain <- lgb.Dataset(data = data, label = label, weight = weight, init_score = init_score)
   }
 
   train_args <- list(
     "params" = params
     , "data" = dtrain
     , "nrounds" = nrounds
+    , "obj" = objective
     , "verbose" = verbose
     , "eval_freq" = eval_freq
     , "early_stopping_rounds" = early_stopping_rounds
@@ -166,11 +171,6 @@ lightgbm <- function(data,
     what = lgb.train
     , args = train_args
   )
-
-  # Store model under a specific name
-  if (!is.null(save_name)) {
-    bst$save_model(filename = save_name)
-  }
 
   return(bst)
 }

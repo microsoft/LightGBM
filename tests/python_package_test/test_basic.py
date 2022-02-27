@@ -7,13 +7,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 from scipy import sparse
-from sklearn.datasets import dump_svmlight_file, load_svmlight_file
+from sklearn.datasets import dump_svmlight_file, load_svmlight_file, make_blobs
+from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import load_breast_cancer, make_synthetic_regression
+from .utils import load_breast_cancer, make_synthetic_regression, sklearn_multiclass_custom_objective, softmax
 
 
 def test_basic(tmp_path):
@@ -587,7 +588,7 @@ def _bad_gradients(preds, _):
 
 
 def _good_gradients(preds, _):
-    return np.random.randn(len(preds)), np.random.rand(len(preds))
+    return np.random.randn(*preds.shape), np.random.rand(*preds.shape)
 
 
 def test_custom_objective_safety():
@@ -609,3 +610,63 @@ def test_custom_objective_safety():
     good_bst_multi.update(fobj=_good_gradients)
     with pytest.raises(ValueError, match=re.escape(f"number of models per one iteration ({nclass})")):
         bad_bst_multi.update(fobj=_bad_gradients)
+
+
+def test_multiclass_custom_objective():
+    def custom_obj(y_pred, ds):
+        y_true = ds.get_label()
+        return sklearn_multiclass_custom_objective(y_true, y_pred)
+
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    ds = lgb.Dataset(X, y)
+    params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
+    builtin_obj_bst = lgb.train(params, ds, num_boost_round=10)
+    builtin_obj_preds = builtin_obj_bst.predict(X)
+
+    custom_obj_bst = lgb.train(params, ds, num_boost_round=10, fobj=custom_obj)
+    custom_obj_preds = softmax(custom_obj_bst.predict(X))
+
+    np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
+
+
+def test_multiclass_custom_eval():
+    def custom_eval(y_pred, ds):
+        y_true = ds.get_label()
+        return 'custom_logloss', log_loss(y_true, y_pred), False
+
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
+    train_ds = lgb.Dataset(X_train, y_train)
+    valid_ds = lgb.Dataset(X_valid, y_valid, reference=train_ds)
+    params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
+    eval_result = {}
+    bst = lgb.train(
+        params,
+        train_ds,
+        num_boost_round=10,
+        valid_sets=[train_ds, valid_ds],
+        valid_names=['train', 'valid'],
+        feval=custom_eval,
+        callbacks=[lgb.record_evaluation(eval_result)],
+        keep_training_booster=True,
+    )
+
+    for key, ds in zip(['train', 'valid'], [train_ds, valid_ds]):
+        np.testing.assert_allclose(eval_result[key]['multi_logloss'], eval_result[key]['custom_logloss'])
+        _, metric, value, _ = bst.eval(ds, key, feval=custom_eval)[1]  # first element is multi_logloss
+        assert metric == 'custom_logloss'
+        np.testing.assert_allclose(value, eval_result[key][metric][-1])
+
+
+@pytest.mark.parametrize('dtype', [np.float32, np.float64])
+def test_no_copy_when_single_float_dtype_dataframe(dtype):
+    pd = pytest.importorskip('pandas')
+    X = np.random.rand(10, 2).astype(dtype)
+    df = pd.DataFrame(X)
+    # feature names are required to not make a copy (rename makes a copy)
+    feature_name = ['x1', 'x2']
+    built_data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
+    assert built_data.dtype == dtype
+    assert np.shares_memory(X, built_data)
