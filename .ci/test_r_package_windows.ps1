@@ -114,11 +114,11 @@ Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/
 
 # Install R
 Write-Output "Installing R"
-Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386" ; Check-Output $?
+Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386" ; Check-Output $?
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
-Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
+Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
@@ -153,7 +153,7 @@ if ($env:COMPILER -ne "MSVC") {
   if ($env:R_BUILD_TYPE -eq "cmake") {
     if ($env:TOOLCHAIN -eq "MINGW") {
       Write-Output "Telling R to use MinGW"
-      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-mingw', '-j4')"
+      $env:BUILD_R_FLAGS = "c('--use-mingw', '-j4')"
     } elseif ($env:TOOLCHAIN -eq "MSYS") {
       Write-Output "Telling R to use MSYS"
       $env:BUILD_R_FLAGS = "c('--skip-install', '--use-msys2', '-j4')"
