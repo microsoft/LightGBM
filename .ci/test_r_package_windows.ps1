@@ -153,7 +153,7 @@ if ($env:COMPILER -ne "MSVC") {
   if ($env:R_BUILD_TYPE -eq "cmake") {
     if ($env:TOOLCHAIN -eq "MINGW") {
       Write-Output "Telling R to use MinGW"
-      $env:BUILD_R_FLAGS = "c('--use-mingw', '-j4')"
+      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-mingw', '-j4')"
     } elseif ($env:TOOLCHAIN -eq "MSYS") {
       Write-Output "Telling R to use MSYS"
       $env:BUILD_R_FLAGS = "c('--skip-install', '--use-msys2', '-j4')"
@@ -172,6 +172,13 @@ if ($env:COMPILER -ne "MSVC") {
     if ($env:R_MAJOR_VERSION -eq "3") {
       $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
     }
+    Write-Output "--- location of tar ---"
+    Get-Command tar
+    Write-Output "--- location of gzip ---"
+    Get-Command gzip
+    Write-Output "--- location of gunzip ---"
+    Get-Command gunzip
+    Write-Output "Building CRAN package"
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
     Remove-From-Path ".*msys64.*"
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
