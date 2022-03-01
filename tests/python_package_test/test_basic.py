@@ -612,6 +612,7 @@ def test_custom_objective_safety():
         bad_bst_multi.update(fobj=_bad_gradients)
 
 
+<<<<<<< HEAD
 def test_multiclass_custom_objective():
     def custom_obj(y_pred, ds):
         y_true = ds.get_label()

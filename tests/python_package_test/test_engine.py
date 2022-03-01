@@ -3253,6 +3253,7 @@ def test_force_split_with_feature_fraction(tmp_path):
     for tree in tree_info:
         tree_structure = tree["tree_structure"]
         assert tree_structure['split_feature'] == 0
+<<<<<<< HEAD
 
 
 def test_record_evaluation_with_train():
