@@ -512,7 +512,7 @@ def _get_bad_pandas_dtypes(dtypes):
     return [i for i, dtype in enumerate(dtypes) if not is_allowed_numpy_dtype(dtype.type)]
 
 
-def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical, validate_features=False):
+def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical, validate_features):
     if isinstance(data, pd_DataFrame):
         if len(data.shape) != 2 or data.shape[0] < 1:
             raise ValueError('Input data must be 2 dimensional and non empty.')
@@ -1432,7 +1432,8 @@ class Dataset:
         data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data,
                                                                                              feature_name,
                                                                                              categorical_feature,
-                                                                                             self.pandas_categorical)
+                                                                                             self.pandas_categorical,
+                                                                                             False)
         label = _label_from_pandas(label)
 
         # process for args
@@ -3460,7 +3461,7 @@ class Booster:
 
     def predict(self, data, start_iteration=0, num_iteration=None,
                 raw_score=False, pred_leaf=False, pred_contrib=False,
-                data_has_header=False, is_reshape=True, validate_features=True,
+                data_has_header=False, is_reshape=True, validate_features=False,
                 **kwargs):
         """Make a prediction.
 
@@ -3497,7 +3498,7 @@ class Booster:
             Used only if data is str.
         is_reshape : bool, optional (default=True)
             If True, result is reshaped to [nrow, ncol].
-        validate_features : bool, optional (default=True)
+        validate_features : bool, optional (default=False)
             If True, ensure that the features used to predict match the ones used to train.
             Used only if data is pandas DataFrame.
         **kwargs
@@ -3511,7 +3512,7 @@ class Booster:
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
-        data = _data_from_pandas(data, self.feature_name(), None, self.pandas_categorical, validate_features=validate_features)[0]
+        data = _data_from_pandas(data, self.feature_name(), None, self.pandas_categorical, validate_features)[0]
         predictor = self._to_predictor(deepcopy(kwargs))
         if num_iteration is None:
             if start_iteration <= 0:

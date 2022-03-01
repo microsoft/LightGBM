@@ -325,7 +325,7 @@ _lgbmmodel_doc_predict = (
             Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
             column, where the last column is the expected value.
 
-    validate_features : bool, optional (default=True)
+    validate_features : bool, optional (default=False)
         If True, ensure that the features used to predict match the ones used to train.
         Used only if data is pandas DataFrame.
     **kwargs
@@ -789,7 +789,7 @@ class LGBMModel(_LGBMModelBase):
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
 
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
-                pred_leaf=False, pred_contrib=False, validate_features=True, **kwargs):
+                pred_leaf=False, pred_contrib=False, validate_features=False, **kwargs):
         """Docstring is set after definition, using a template."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
@@ -1051,7 +1051,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                    + _base_doc[_base_doc.find('eval_metric :'):])
 
     def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
-                pred_leaf=False, pred_contrib=False, validate_features=True,
+                pred_leaf=False, pred_contrib=False, validate_features=False,
                 **kwargs):
         """Docstring is inherited from the LGBMModel."""
         result = self.predict_proba(X, raw_score, start_iteration, num_iteration,
@@ -1066,7 +1066,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     predict.__doc__ = LGBMModel.predict.__doc__
 
     def predict_proba(self, X, raw_score=False, start_iteration=0, num_iteration=None,
-                      pred_leaf=False, pred_contrib=False, validate_features=True, **kwargs):
+                      pred_leaf=False, pred_contrib=False, validate_features=False, **kwargs):
         """Docstring is set after definition, using a template."""
         result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, validate_features, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
