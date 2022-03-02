@@ -19,7 +19,7 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 import lightgbm as lgb
 
 from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression, pickle_obj,
-                    unpickle_obj, sklearn_multiclass_custom_objective, softmax)
+                    sklearn_multiclass_custom_objective, softmax, unpickle_obj)
 
 decreasing_generator = itertools.count(0, -1)
 
