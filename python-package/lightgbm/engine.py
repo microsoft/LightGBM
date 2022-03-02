@@ -9,13 +9,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from . import callback
-from .basic import (Booster, Dataset, LightGBMError, _ArrayLike, _choose_param_value, _ConfigAliases, _InnerPredictor,
-                    _log_warning)
+from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomObjectiveFunction = Callable[
     [np.ndarray, Dataset],
-    Tuple[_ArrayLike, _ArrayLike]
+    Tuple[np.ndarray, np.ndarray]
 ]
 _LGBM_CustomMetricFunction = Callable[
     [np.ndarray, Dataset],
@@ -56,30 +55,30 @@ def train(
         Should accept two parameters: preds, train_data,
         and return (grad, hess).
 
-            preds : numpy 1-D array
+            preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The predicted values.
                 Predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task.
             train_data : Dataset
                 The training dataset.
-            grad : list, numpy 1-D array or pandas Series
+            grad : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The value of the first order derivative (gradient) of the loss
                 with respect to the elements of preds for each sample point.
-            hess : list, numpy 1-D array or pandas Series
+            hess : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The value of the second order derivative (Hessian) of the loss
                 with respect to the elements of preds for each sample point.
 
-        For multi-class task, the preds is group by class_id first, then group by row_id.
-        If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
-        and you should group grad and hess in this way as well.
+        For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
+        and grad and hess should be returned in the same format.
 
     feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, eval_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-            preds : numpy 1-D array
+            preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The predicted values.
+                For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
                 If ``fobj`` is specified, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             eval_data : Dataset
@@ -91,8 +90,6 @@ def train(
             is_higher_better : bool
                 Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-        For multi-class task, the preds is group by class_id first, then group by row_id.
-        If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
         set the ``metric`` parameter to the string ``"None"`` in ``params``.
     init_model : str, pathlib.Path, Booster or None, optional (default=None)
@@ -411,30 +408,30 @@ def cv(params, train_set, num_boost_round=100,
         Should accept two parameters: preds, train_data,
         and return (grad, hess).
 
-            preds : numpy 1-D array
+            preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The predicted values.
                 Predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task.
             train_data : Dataset
                 The training dataset.
-            grad : list, numpy 1-D array or pandas Series
+            grad : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The value of the first order derivative (gradient) of the loss
                 with respect to the elements of preds for each sample point.
-            hess : list, numpy 1-D array or pandas Series
+            hess : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The value of the second order derivative (Hessian) of the loss
                 with respect to the elements of preds for each sample point.
 
-        For multi-class task, the preds is group by class_id first, then group by row_id.
-        If you want to get i-th row preds in j-th class, the access way is score[j * num_data + i]
-        and you should group grad and hess in this way as well.
+        For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
+        and grad and hess should be returned in the same format.
 
     feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, eval_data,
         and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-            preds : numpy 1-D array
+            preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The predicted values.
+                For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
                 If ``fobj`` is specified, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             eval_data : Dataset
@@ -446,8 +443,6 @@ def cv(params, train_set, num_boost_round=100,
             is_higher_better : bool
                 Is eval result higher better, e.g. AUC is ``is_higher_better``.
 
-        For multi-class task, the preds is group by class_id first, then group by row_id.
-        If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         To ignore the default metric corresponding to the used objective,
         set ``metrics`` to the string ``"None"``.
     init_model : str, pathlib.Path, Booster or None, optional (default=None)

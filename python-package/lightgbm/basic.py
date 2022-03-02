@@ -2752,7 +2752,7 @@ class Booster:
             - ``missing_direction`` : str, split direction that missing values should go to. ``None`` for leaf nodes.
             - ``missing_type`` : str, describes what types of values are treated as missing.
             - ``value`` : float64, predicted value for this leaf node, multiplied by the learning rate.
-            - ``weight`` : float64 or int64, sum of hessian (second-order derivative of objective), summed over observations that fall in this node.
+            - ``weight`` : float64 or int64, sum of Hessian (second-order derivative of objective), summed over observations that fall in this node.
             - ``count`` : int64, number of records in the training data that fall into this node.
 
         Returns
@@ -2961,7 +2961,7 @@ class Booster:
                     The value of the second order derivative (Hessian) of the loss
                     with respect to the elements of preds for each sample point.
 
-            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
             and grad and hess should be returned in the same format.
 
         Returns
@@ -3000,9 +3000,6 @@ class Booster:
             if not self.__set_objective_to_none:
                 self.reset_parameter({"objective": "none"}).__set_objective_to_none = True
             grad, hess = fobj(self.__inner_predict(0), self.train_set)
-            if self.num_model_per_iteration() > 1:
-                grad = grad.ravel(order='F')
-                hess = hess.ravel(order='F')
             return self.__boost(grad, hess)
 
     def __boost(self, grad, hess):
@@ -3012,7 +3009,7 @@ class Booster:
 
             Score is returned before any transformation,
             e.g. it is raw margin instead of probability of positive class for binary task.
-            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            For multi-class task, score are numpy 2-D array of shape = [n_samples, n_classes],
             and grad and hess should be returned in the same format.
 
         Parameters
@@ -3029,6 +3026,9 @@ class Booster:
         is_finished : bool
             Whether the boost was successfully finished.
         """
+        if self.__num_class > 1:
+            grad = grad.ravel(order='F')
+            hess = hess.ravel(order='F')
         grad = list_to_1d_numpy(grad, name='gradient')
         hess = list_to_1d_numpy(hess, name='hessian')
         assert grad.flags.c_contiguous
@@ -3036,12 +3036,11 @@ class Booster:
         if len(grad) != len(hess):
             raise ValueError(f"Lengths of gradient ({len(grad)}) and Hessian ({len(hess)}) don't match")
         num_train_data = self.train_set.num_data()
-        num_models = self.__num_class
-        if len(grad) != num_train_data * num_models:
+        if len(grad) != num_train_data * self.__num_class:
             raise ValueError(
                 f"Lengths of gradient ({len(grad)}) and Hessian ({len(hess)}) "
                 f"don't match training data length ({num_train_data}) * "
-                f"number of models per one iteration ({num_models})"
+                f"number of models per one iteration ({self.__num_class})"
             )
         is_finished = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterUpdateOneIterCustom(
@@ -3149,8 +3148,9 @@ class Booster:
             Should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
-                preds : numpy 1-D array
+                preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
+                    For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
@@ -3161,9 +3161,6 @@ class Booster:
                     The eval result.
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
-
-            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
-            and grad and hess should be returned in the same format.
 
         Returns
         -------
@@ -3199,6 +3196,7 @@ class Booster:
 
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
+                    For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
@@ -3209,9 +3207,6 @@ class Booster:
                     The eval result.
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
-
-            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
-            and grad and hess should be returned in the same format.
 
         Returns
         -------
@@ -3232,6 +3227,7 @@ class Booster:
 
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
+                    For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
                     If ``fobj`` is specified, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
@@ -3242,9 +3238,6 @@ class Booster:
                     The eval result.
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
-
-            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
-            and grad and hess should be returned in the same format.
 
         Returns
         -------

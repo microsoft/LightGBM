@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import Booster, Dataset, LightGBMError, _ArrayLike, _choose_param_value, _ConfigAliases, _log_warning
+from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _log_warning
 from .callback import record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
@@ -19,11 +19,11 @@ _EvalResultType = Tuple[str, float, bool]
 _LGBM_ScikitCustomObjectiveFunction = Union[
     Callable[
         [np.ndarray, np.ndarray],
-        Tuple[_ArrayLike, _ArrayLike]
+        Tuple[np.ndarray, np.ndarray]
     ],
     Callable[
         [np.ndarray, np.ndarray, np.ndarray],
-        Tuple[_ArrayLike, _ArrayLike]
+        Tuple[np.ndarray, np.ndarray]
     ],
 ]
 _LGBM_ScikitCustomEvalFunction = Union[
@@ -72,13 +72,13 @@ class _ObjectiveFunctionWrapper:
                 grad : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape [n_samples, n_classes] (for multi-class task)
                     The value of the first order derivative (gradient) of the loss
                     with respect to the elements of y_pred for each sample point.
-                hess : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape [n_samples, n_classes] (for multi-class task)
+                hess : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape = [n_samples, n_classes] (for multi-class task)
                     The value of the second order derivative (Hessian) of the loss
                     with respect to the elements of y_pred for each sample point.
 
         .. note::
 
-            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+            For multi-class task, y_pred is a numpy 2-D array of shape = [n_samples, n_classes],
             and grad and hess should be returned in the same format.
         """
         self.func = func
@@ -95,10 +95,10 @@ class _ObjectiveFunctionWrapper:
 
         Returns
         -------
-        grad : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape [n_samples, n_classes] (for multi-class task)
+        grad : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape = [n_samples, n_classes] (for multi-class task)
             The value of the first order derivative (gradient) of the loss
             with respect to the elements of preds for each sample point.
-        hess : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape [n_samples, n_classes] (for multi-class task)
+        hess : numpy 1-D array of shape = [n_samples] or numpy 2-D array of shape = [n_samples, n_classes] (for multi-class task)
             The value of the second order derivative (Hessian) of the loss
             with respect to the elements of preds for each sample point.
         """
@@ -162,11 +162,6 @@ class _EvalFunctionWrapper:
                     The eval result.
                 is_higher_better : bool
                     Is eval result higher better, e.g. AUC is ``is_higher_better``.
-
-        .. note::
-
-            For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
-            and grad and hess should be returned in the same format.
         """
         self.func = func
 
@@ -297,9 +292,6 @@ _lgbmmodel_doc_custom_eval_note = """
             The eval result.
         is_higher_better : bool
             Is eval result higher better, e.g. AUC is ``is_higher_better``.
-
-    For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
-    and grad and hess should be returned in the same format.
 """
 
 _lgbmmodel_doc_predict = (
@@ -415,7 +407,7 @@ class LGBMModel(_LGBMModelBase):
         min_split_gain : float, optional (default=0.)
             Minimum loss reduction required to make a further partition on a leaf node of the tree.
         min_child_weight : float, optional (default=1e-3)
-            Minimum sum of instance weight (hessian) needed in a child (leaf).
+            Minimum sum of instance weight (Hessian) needed in a child (leaf).
         min_child_samples : int, optional (default=20)
             Minimum number of data needed in a child (leaf).
         subsample : float, optional (default=1.)
@@ -473,7 +465,7 @@ class LGBMModel(_LGBMModelBase):
                 The value of the second order derivative (Hessian) of the loss
                 with respect to the elements of y_pred for each sample point.
 
-        For multi-class task, preds are a [n_samples, n_classes] numpy 2-D array,
+        For multi-class task, y_pred is a numpy 2-D array of shape = [n_samples, n_classes],
         and grad and hess should be returned in the same format.
         """
         if not SKLEARN_INSTALLED:
