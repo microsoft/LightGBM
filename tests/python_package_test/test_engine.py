@@ -21,7 +21,6 @@ import lightgbm as lgb
 from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression, pickle_obj,
                     unpickle_obj, sklearn_multiclass_custom_objective, softmax)
 
-
 decreasing_generator = itertools.count(0, -1)
 
 
