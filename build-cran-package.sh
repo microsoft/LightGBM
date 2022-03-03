@@ -216,8 +216,7 @@ if ${BUILD_VIGNETTES} ; then
         --exclude=**/conftest.c \
         --exclude=**/conftest.exe \
         -f "${TARBALL_NAME}" \
-        lightgbm \
-    > /dev/null 2>&1
+        lightgbm
     echo "Done creating ${TARBALL_NAME}"
 
     rm -rf ./_tmp
