@@ -178,6 +178,8 @@ if ($env:COMPILER -ne "MSVC") {
     Get-Command gzip
     Write-Output "--- location of gunzip ---"
     Get-Command gunzip
+    Write-Output "--- location of sh ---"
+    Get-Command sh
     Write-Output "Building CRAN package"
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
     Remove-From-Path ".*msys64.*"
