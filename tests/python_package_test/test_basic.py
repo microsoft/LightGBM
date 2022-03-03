@@ -2,6 +2,7 @@
 import filecmp
 import numbers
 import re
+from math import ceil
 from pathlib import Path
 
 import numpy as np
@@ -623,7 +624,8 @@ def test_no_copy_when_single_float_dtype_dataframe(dtype):
     assert np.shares_memory(X, built_data)
 
 
-def test_feature_num_bin():
+@pytest.mark.parametrize('min_data_in_bin', [2, 10])
+def test_feature_num_bin(min_data_in_bin):
     X = np.vstack([
         np.random.rand(100),
         np.array([1, 2] * 50),
@@ -631,9 +633,9 @@ def test_feature_num_bin():
         np.array([1, 2] * 49 + 2 * [np.nan]),
         np.zeros(100),
     ]).T
-    ds = lgb.Dataset(X).construct()
+    ds = lgb.Dataset(X, params={'min_data_in_bin': min_data_in_bin}).construct()
     expected_num_bins = np.array([
-        35,  # ceil(100[n_samples] / 3[min_data_in_bin]) = 34 + bin for zero
+        ceil(100 / min_data_in_bin) + 1,  # extra bin for zero
         3,  # 0, 1, 2
         3,  # 0, 1, 2
         4,  # 0, 1, 2 + nan
@@ -641,3 +643,11 @@ def test_feature_num_bin():
     ])
     actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
     np.testing.assert_equal(actual_num_bins, expected_num_bins)
+
+
+def test_feature_num_bin_with_max_bin_by_feature():
+    X = np.random.rand(100, 3)
+    max_bin_by_feature = np.random.randint(3, 30, size=X.shape[1])
+    ds = lgb.Dataset(X, params={'max_bin_by_feature': max_bin_by_feature}).construct()
+    actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
+    np.testing.assert_equal(actual_num_bins, max_bin_by_feature)
