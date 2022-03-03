@@ -12,14 +12,6 @@ _EvalResultTuple = Union[
 ]
 
 
-def _gt_delta(curr_score: float, best_score: float, delta: float) -> bool:
-    return curr_score > best_score + delta
-
-
-def _lt_delta(curr_score: float, best_score: float, delta: float) -> bool:
-    return curr_score < best_score - delta
-
-
 class EarlyStopException(Exception):
     """Exception of early stopping."""
 
@@ -200,6 +192,8 @@ def reset_parameter(**kwargs: Union[list, Callable]) -> Callable:
 
 
 class _EarlyStoppingCallback:
+    """Internal early stopping callable class."""
+
     def __init__(
         self,
         stopping_rounds: int,
@@ -224,6 +218,12 @@ class _EarlyStoppingCallback:
         self.best_score_list = []
         self.cmp_op = []
         self.first_metric = ''
+
+    def _gt_delta(self, curr_score: float, best_score: float, delta: float) -> bool:
+        return curr_score > best_score + delta
+
+    def _lt_delta(self, curr_score: float, best_score: float, delta: float) -> bool:
+        return curr_score < best_score - delta
 
     def _init(self, env: CallbackEnv) -> None:
         self.enabled = not any(env.params.get(boost_alias, "") == 'dart' for boost_alias
@@ -276,10 +276,10 @@ class _EarlyStoppingCallback:
             self.best_score_list.append(None)
             if eval_ret[3]:  # greater is better
                 self.best_score.append(float('-inf'))
-                self.cmp_op.append(partial(_gt_delta, delta=delta))
+                self.cmp_op.append(partial(self._gt_delta, delta=delta))
             else:
                 self.best_score.append(float('inf'))
-                self.cmp_op.append(partial(_lt_delta, delta=delta))
+                self.cmp_op.append(partial(self._lt_delta, delta=delta))
 
     def _final_iteration_check(self, env: CallbackEnv, eval_name_splitted: List[str], i: int) -> None:
         if env.iteration == env.end_iteration - 1:
@@ -349,10 +349,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
 
     Returns
     -------
-    callback : callable
+    callback : _EarlyStoppingCallback
         The callback that activates early stopping.
     """
     return _EarlyStoppingCallback(stopping_rounds=stopping_rounds, first_metric_only=first_metric_only, verbose=verbose, min_delta=min_delta)
-
-
-_EarlyStoppingCallback.__doc__ = early_stopping.__doc__
