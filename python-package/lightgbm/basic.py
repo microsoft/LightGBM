@@ -2371,6 +2371,29 @@ class Dataset:
         else:
             raise LightGBMError("Cannot get num_feature before construct dataset")
 
+    def feature_num_bin(self, feature_idx: int) -> int:
+        """Get the number of bins for a feature.
+
+        Parameters
+        ----------
+        feature_idx : int
+            Index of the feature.
+
+        Returns
+        -------
+        number_of_bins : int
+            The number of constructed bins for the feature in the Dataset.
+        """
+        if self.handle is not None:
+            ret = ctypes.c_int(0)
+            feature = ctypes.c_int(feature_idx)
+            _safe_call(_LIB.LGBM_DatasetGetFeatureNumBin(self.handle,
+                                                         feature,
+                                                         ctypes.byref(ret)))
+            return ret.value
+        else:
+            raise LightGBMError("Cannot get feature_num_bin before construct dataset")
+
     def get_ref_chain(self, ref_limit=100):
         """Get a chain of Dataset objects.
 

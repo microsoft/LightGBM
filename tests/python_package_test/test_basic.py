@@ -621,3 +621,23 @@ def test_no_copy_when_single_float_dtype_dataframe(dtype):
     built_data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
     assert built_data.dtype == dtype
     assert np.shares_memory(X, built_data)
+
+
+def test_feature_num_bin():
+    X = np.vstack([
+        np.random.rand(100),
+        np.array([1, 2] * 50),
+        np.array([0, 1, 2] * 33 + [0]),
+        np.array([1, 2] * 49 + 2 * [np.nan]),
+        np.zeros(100),
+    ]).T
+    ds = lgb.Dataset(X).construct()
+    expected_num_bins = np.array([
+        35,  # ceil(100[n_samples] / 3[min_data_in_bin]) = 34 + bin for zero
+        3,  # 0, 1, 2
+        3,  # 0, 1, 2
+        4,  # 0, 1, 2 + nan
+        0,  # unused
+    ])
+    actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
+    np.testing.assert_equal(actual_num_bins, expected_num_bins)
