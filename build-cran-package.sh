@@ -199,7 +199,7 @@ if ${BUILD_VIGNETTES} ; then
 
     echo "untarring ${TARBALL_NAME}"
     cd _tmp
-        tar -xvf "${TARBALL_NAME}" > /dev/null 2>&1
+        tar -xvfz "${TARBALL_NAME}" > /dev/null 2>&1
         rm -rf "${TARBALL_NAME}"
     cd ..
     echo "done untarring ${TARBALL_NAME}"
