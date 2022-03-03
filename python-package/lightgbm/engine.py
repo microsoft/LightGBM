@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning
+from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning, _separate_metrics_list, _concat_params_metrics, _concat_metric_feval_callables
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomObjectiveFunction = Callable[
@@ -125,6 +125,14 @@ def train(
     """
     # create predictor first
     params = copy.deepcopy(params)
+    eval_metric = params['metric']
+    if eval_metric is not None:
+        eval_metric_list = copy.deepcopy(eval_metric)
+        if not isinstance(eval_metric_list, list):
+            eval_metric_list = [eval_metric_list]
+        eval_metrics_callable, eval_metrics_builtin = _separate_metrics_list(eval_metric_list)
+        params = _concat_params_metrics(params, eval_metrics_builtin)
+        feval = _concat_metric_feval_callables(feval, eval_metrics_callable)
     if fobj is not None:
         for obj_alias in _ConfigAliases.get("objective"):
             params.pop(obj_alias, None)

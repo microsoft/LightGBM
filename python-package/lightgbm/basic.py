@@ -19,6 +19,7 @@ import scipy.sparse
 
 from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
+from .sklearn import _EvalFunctionWrapper
 
 ZERO_THRESHOLD = 1e-35
 
@@ -294,6 +295,32 @@ def param_dict_to_str(data):
         elif val is not None:
             raise TypeError(f'Unknown type of parameter:{key}, got:{type(val).__name__}')
     return ' '.join(pairs)
+
+
+def _separate_metrics_list(metrics_list):
+    """Separate built-in from callable evaluation metrics."""
+    metrics_callable = [_EvalFunctionWrapper(f) for f in metrics_list if callable(f)]
+    metrics_builtin = [m for m in metrics_list if isinstance(m, str)]
+    return metrics_callable, metrics_builtin
+
+
+def _concat_params_metrics(params, metrics_builtin):
+    """Concatenate metric from params (or default if not provided in params) and eval_metric."""
+    params = deepcopy(params)
+    params_metric = deepcopy(params['metric'])
+    params_metric = [params_metric] if isinstance(params_metric, (str, type(None))) else params_metric
+    params_metric = [e for e in metrics_builtin if e not in params_metric] + params_metric
+    params_metric = [metric for metric in params_metric if metric is not None]
+    params['metric'] = params_metric
+    return params
+
+
+def _concat_metric_feval_callables(metrics_callable, feval_callable):
+    """Concatenate evaluation metric from params and feval."""
+    feval_callable = [feval_callable] if (isinstance(feval_callable, type(None)) or callable(feval_callable)) else feval_callable
+    feval_callable = [e for e in metrics_callable if e not in feval_callable] + feval_callable
+    feval_callable = [metric for metric in feval_callable if metric is not None]
+    return feval_callable
 
 
 class _TempFile:
