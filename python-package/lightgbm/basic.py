@@ -323,6 +323,16 @@ def _concat_metric_feval_callables(metrics_callable, feval_callable):
     return feval_callable
 
 
+def _objective_is_callable(params, fobj_callable):
+    """Check if objective function from params or from fobj is callable."""
+    params_objective = deepcopy(params['objective'])
+    # if objective in params is callable ignore the callable from fobj
+    if callable(params_objective):
+        return params_objective
+    elif callable(fobj_callable):
+        return fobj_callable
+
+
 class _TempFile:
     """Proxy class to workaround errors on Windows."""
 
