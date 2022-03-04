@@ -3143,7 +3143,7 @@ class Booster:
             Data for the evaluating.
         name : str
             Name of the data.
-        feval :  callable, list of callable, or None, optional (default=None)
+        feval : callable, list of callable, or None, optional (default=None)
             Customized evaluation function.
             Each evaluation function should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
@@ -3189,7 +3189,7 @@ class Booster:
 
         Parameters
         ----------
-        feval :  callable, list of callable, or None, optional (default=None)
+        feval : callable, list of callable, or None, optional (default=None)
             Customized evaluation function.
             Each evaluation function should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
@@ -3220,7 +3220,7 @@ class Booster:
 
         Parameters
         ----------
-        feval :  callable, list of callable, or None, optional (default=None)
+        feval : callable, list of callable, or None, optional (default=None)
             Customized evaluation function.
             Each evaluation function should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
