@@ -131,8 +131,9 @@ def train(
     # merge metrics through params and feval
     if eval_metric is not None:
         eval_metric_list = copy.deepcopy(eval_metric)
-        if not isinstance(eval_metric_list, list):
-            eval_metric_list = [eval_metric_list]
+        if not isinstance(eval_metric, list):
+            eval_metric_list = [eval_metric_list] if isinstance(eval_metric_list, str) else list(eval_metric_list)
+            params['metric'] = eval_metric_list
         eval_metrics_callable, eval_metrics_builtin = _separate_metrics_list(eval_metric_list)
         params = _concat_params_metrics(params, eval_metrics_builtin)
         feval = _concat_metric_feval_callables(eval_metrics_callable, feval)
