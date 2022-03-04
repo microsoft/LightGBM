@@ -9,7 +9,9 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning, _separate_metrics_list, _concat_params_metrics, _concat_metric_feval_callables, _objective_is_callable
+from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _concat_metric_feval_callables,
+                    _concat_params_metrics, _ConfigAliases, _InnerPredictor, _log_warning, _objective_is_callable,
+                    _separate_metrics_list)
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomObjectiveFunction = Callable[
