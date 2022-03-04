@@ -125,7 +125,7 @@ def train(
     """
     # create predictor first
     params = copy.deepcopy(params)
-    eval_metric = params['metric']
+    eval_metric = params.get('metric')
     # merge metrics through params and feval
     if eval_metric is not None:
         eval_metric_list = copy.deepcopy(eval_metric)
@@ -133,7 +133,7 @@ def train(
             eval_metric_list = [eval_metric_list]
         eval_metrics_callable, eval_metrics_builtin = _separate_metrics_list(eval_metric_list)
         params = _concat_params_metrics(params, eval_metrics_builtin)
-        feval = _concat_metric_feval_callables(feval, eval_metrics_callable)
+        feval = _concat_metric_feval_callables(eval_metrics_callable, feval)
     # objective can be passed either through params or fobj
     fobj = _objective_is_callable(params, fobj)
     if fobj is not None:

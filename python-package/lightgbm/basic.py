@@ -19,7 +19,6 @@ import scipy.sparse
 
 from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
-from .sklearn import _EvalFunctionWrapper
 
 ZERO_THRESHOLD = 1e-35
 
@@ -299,7 +298,7 @@ def param_dict_to_str(data):
 
 def _separate_metrics_list(metrics_list):
     """Separate built-in from callable evaluation metrics."""
-    metrics_callable = [_EvalFunctionWrapper(f) for f in metrics_list if callable(f)]
+    metrics_callable = [f for f in metrics_list if callable(f)]
     metrics_builtin = [m for m in metrics_list if isinstance(m, str)]
     return metrics_callable, metrics_builtin
 
@@ -307,7 +306,7 @@ def _separate_metrics_list(metrics_list):
 def _concat_params_metrics(params, metrics_builtin):
     """Concatenate metric from params (or default if not provided in params) and eval_metric."""
     params = deepcopy(params)
-    params_metric = deepcopy(params['metric'])
+    params_metric = deepcopy(params.get('metric'))
     params_metric = [params_metric] if isinstance(params_metric, (str, type(None))) else params_metric
     params_metric = [e for e in metrics_builtin if e not in params_metric] + params_metric
     params_metric = [metric for metric in params_metric if metric is not None]
@@ -325,12 +324,14 @@ def _concat_metric_feval_callables(metrics_callable, feval_callable):
 
 def _objective_is_callable(params, fobj_callable):
     """Check if objective function from params or from fobj is callable."""
-    params_objective = deepcopy(params['objective'])
+    params_objective = deepcopy(params.get('objective'))
     # if objective in params is callable ignore the callable from fobj
     if callable(params_objective):
         return params_objective
     elif callable(fobj_callable):
         return fobj_callable
+    else:
+        return None
 
 
 class _TempFile:
