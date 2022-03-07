@@ -381,7 +381,7 @@ Dataset <- R6::R6Class(
       if (lgb.is.null.handle(x = private$handle)) {
         stop("Cannot get number of bins in feature before constructing Dataset.")
       }
-      num_bin <- integer(1)
+      num_bin <- integer(1L)
       .Call(
         LGBM_DatasetGetFeatureNumBin_R
         , private$handle
