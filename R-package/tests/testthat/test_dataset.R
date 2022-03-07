@@ -537,10 +537,10 @@ test_that("lgb.Dataset$get_feature_num_bin() works", {
   ds <- lgb.Dataset(data, params = list(min_data_in_bin = min_data_in_bin))
   ds$construct()
   expected_num_bins <- c(
-    as.integer(ceiling(100L / min_data_in_bin) + 1L)  # extra bin for zero
+    100L %/% min_data_in_bin + 1L  # extra bin for zero
     , 3L  # 0, 1, 2
     , 3L  # 0, 1, 2
-    , 4L  # 0, 1, 2, + NA
+    , 4L  # 0, 1, 2 + NA
     , 0L  # unused
   )
   actual_num_bins <- sapply(1L:5L, ds$get_feature_num_bin)

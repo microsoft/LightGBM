@@ -2,7 +2,6 @@
 import filecmp
 import numbers
 import re
-from math import ceil
 from pathlib import Path
 
 import numpy as np
@@ -635,7 +634,7 @@ def test_feature_num_bin(min_data_in_bin):
     ]).T
     ds = lgb.Dataset(X, params={'min_data_in_bin': min_data_in_bin}).construct()
     expected_num_bins = [
-        ceil(100 / min_data_in_bin) + 1,  # extra bin for zero
+        100 // min_data_in_bin + 1,  # extra bin for zero
         3,  # 0, 1, 2
         3,  # 0, 1, 2
         4,  # 0, 1, 2 + nan
