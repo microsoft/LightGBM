@@ -500,7 +500,7 @@ test_that("Dataset: method calls on a Dataset with a null handle should raise an
   }, regexp = "cannot get column names before dataset has been constructed")
   expect_error({
     dtrain$get_feature_num_bin(1L)
-  }, regexp = "Cannot perform Dataset$get_feature_num_bin() before constructing Dataset.")
+  }, regexp = "Cannot get number of bins in feature before constructing Dataset.")
   expect_error({
     dtrain$save_binary(fname = tempfile(fileext = ".bin"))
   }, regexp = "Attempting to create a Dataset without any raw data")
@@ -527,23 +527,22 @@ test_that("Dataset: method calls on a Dataset with a null handle should raise an
 })
 
 test_that("lgb.Dataset$get_feature_num_bin() works", {
-  data <- cbind(
-    runif(100)
-    , rep(1:2, 50)
-    , c(rep(0:2, 33), 0)
-    , c(rep(1:2, 49), rep(NA_real_, 2))
-    , rep(0, 100)
-  )
-  min_data_in_bin = 2
+  data <- matrix(nrow = 100L, ncol = 5L)
+  data[, 1L] = runif(100L)
+  data[, 2L] = rep(1L:2L, 50L)
+  data[, 3L] = c(rep(0L:2L, 33L), 0L)
+  data[, 4L] = c(rep(1L:2L, 49L), rep(NA_real_, 2L))
+  data[, 5L] = rep(0L, 100L)
+  min_data_in_bin = 2L
   ds <- lgb.Dataset(data, params = list(min_data_in_bin = min_data_in_bin))
   ds$construct()
   expected_num_bins <- c(
-    as.integer(ceiling(100 / min_data_in_bin) + 1)  # extra bin for zero
+    as.integer(ceiling(100L / min_data_in_bin) + 1L)  # extra bin for zero
     , 3L  # 0, 1, 2
     , 3L  # 0, 1, 2
     , 4L  # 0, 1, 2, + NA
     , 0L  # unused
   )
-  actual_num_bins <- sapply(1:5, ds$get_feature_num_bin)
+  actual_num_bins <- sapply(1L:5L, ds$get_feature_num_bin)
   expect_identical(actual_num_bins, expected_num_bins)
 })
