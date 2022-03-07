@@ -376,6 +376,21 @@ Dataset <- R6::R6Class(
 
     },
 
+    # Get number of bins for feature
+    get_feature_num_bin = function(feature_idx) {
+      if (lgb.is.null.handle(x = private$handle)) {
+        stop("Cannot perform Dataset$get_feature_num_bin() before constructing Dataset.")
+      }
+      num_bin <- integer(1)
+      .Call(
+        LGBM_DatasetGetFeatureNumBin_R
+        , private$handle
+        , feature_idx - 1
+        , num_bin
+      )
+      num_bin
+    },
+
     # Get column names
     get_colnames = function() {
 

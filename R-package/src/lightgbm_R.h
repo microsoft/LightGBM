@@ -213,6 +213,19 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetNumFeature_R(
   SEXP out
 );
 
+/*!
+* \brief get number of bins for feature
+* \param handle the handle to the Dataset
+* \param feature the index of the feature
+* \param out The output of number of bins
+* \return R NULL value
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFeatureNumBin_R(
+  SEXP handle,
+  SEXP feature,
+  SEXP out
+);
+
 // --- start Booster interfaces
 
 /*!
