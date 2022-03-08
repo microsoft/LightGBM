@@ -11,7 +11,7 @@
 #include <LightGBM/cuda/cuda_utils.h>
 #include <vector>
 
-#include "../meta.h"
+#include <LightGBM/meta.h>
 
 namespace LightGBM {
 

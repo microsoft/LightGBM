@@ -16,7 +16,7 @@ env:
 
 jobs:
   test:
-    name: device_type ${{ matrix.tree_learner }} cuda_version ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
+    name: ${{ matrix.tree_learner }} ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: [self-hosted, linux]
     timeout-minutes: 60
     strategy:
@@ -39,7 +39,7 @@ jobs:
             cuda_version: "9.0"
             tree_learner: cuda
           - method: source
-            compiler: gcc
+            compiler: clang
             python_version: "3.8"
             cuda_version: "11.5.1"
             tree_learner: cuda_exp

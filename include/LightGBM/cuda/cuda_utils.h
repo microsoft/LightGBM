@@ -1,10 +1,5 @@
 /*!
- * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See LICENSE file in the project root for license information.
- */
-
-/*!
- * Copyright (c) 2020 IBM Corporation. All rights reserved.
+ * Copyright (c) 2020-2021 IBM Corporation, Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 

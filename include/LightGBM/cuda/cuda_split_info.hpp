@@ -6,8 +6,8 @@
 
 #ifdef USE_CUDA_EXP
 
-#ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_SPLIT_INFO_HPP_
-#define LIGHTGBM_TREELEARNER_CUDA_CUDA_SPLIT_INFO_HPP_
+#ifndef LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
+#define LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
 
 #include <LightGBM/meta.h>
 
@@ -39,15 +39,12 @@ class CUDASplitInfo {
   int* cat_threshold_real = nullptr;
 
   __device__ CUDASplitInfo() {
-    printf("default constructor is called\n");
     num_cat_threshold = 0;
     cat_threshold = nullptr;
     cat_threshold_real = nullptr;
-    printf("default constructor is called, num_cat_threshold = %d\n", num_cat_threshold);
   }
 
   __device__ ~CUDASplitInfo() {
-    printf("default destructor is called\n");
     if (num_cat_threshold > 0) {
       if (cat_threshold != nullptr) {
         cudaFree(cat_threshold);
@@ -103,6 +100,6 @@ class CUDASplitInfo {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_SPLIT_INFO_HPP_
+#endif  // LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
 
 #endif  // USE_CUDA_EXP

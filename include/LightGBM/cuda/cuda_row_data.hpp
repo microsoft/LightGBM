@@ -16,11 +16,11 @@
 
 #include <vector>
 
-#include "../train_share_states.h"
+#include <LightGBM/train_share_states.h>
 
 #define COPY_SUBROW_BLOCK_SIZE_ROW_DATA (1024)
 
-#if CUDART_VERSION <= 10000
+#if CUDART_VERSION == 10000
 #define DP_SHARED_HIST_SIZE (5560)
 #else
 #define DP_SHARED_HIST_SIZE (6144)
@@ -123,7 +123,7 @@ class CUDARowData {
   int max_num_column_per_partition_;
   /*! \brief number of partitions */
   int num_feature_partitions_;
-  /*! \brief used when bagging with subset, number of used indice */
+  /*! \brief used when bagging with subset, number of used indices */
   data_size_t num_used_indices_;
   /*! \brief used when bagging with subset, number of total elements */
   uint64_t num_total_elements_;
@@ -175,6 +175,6 @@ class CUDARowData {
 };
 
 }  // namespace LightGBM
-#endif  // LIGHTGBM_CUDA_COLUMN_DATA_HPP_
+#endif  // LIGHTGBM_CUDA_ROW_DATA_HPP_
 
 #endif  // USE_CUDA_EXP

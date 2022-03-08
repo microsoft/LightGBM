@@ -636,7 +636,7 @@ To build LightGBM CUDA version, run the following commands:
   cmake -DUSE_CUDA=1 ..
   make -j4
 
-Recently, a new CUDA version with better efficiency is implemented as an experimental feature. To build the new CUDA version, replace -DUSE_CUDA with -DUSE_CUDA_EXP in the above commands.
+Recently, a new CUDA version with better efficiency is implemented as an experimental feature. To build the new CUDA version, replace ``-DUSE_CUDA`` with ``-DUSE_CUDA_EXP`` in the above commands. Please note that new version requires **CUDA** 10.0 or later libraries.
 
 **Note**: glibc >= 2.14 is required.
 

@@ -173,7 +173,11 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA OR USE_CUDA_EXP)
-    find_package(CUDA 9.0 REQUIRED)
+    if (USE_CUDA)
+      find_package(CUDA 9.0 REQUIRED)
+    else()
+      find_package(CUDA 10.0 REQUIRED)
+    endif()
     include_directories(${CUDA_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
 
@@ -375,11 +379,10 @@ file(
       src/objective/*.cpp
       src/network/*.cpp
       src/treelearner/*.cpp
-if(USE_CUDA)
+if(USE_CUDA OR USE_CUDA_EXP)
       src/treelearner/*.cu
 endif()
 if(USE_CUDA_EXP)
-      src/treelearner/*.cu
       src/treelearner/cuda/*.cpp
       src/treelearner/cuda/*.cu
       src/io/cuda/*.cu
