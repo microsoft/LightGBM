@@ -3427,8 +3427,10 @@ def test_pandas_nullable_dtypes():
 
 
 def test_boost_from_average_with_single_leaf_trees():
-    X = np.array(
-        [[1021.0589, 1018.9578],
+    # test data are taken from bug report
+    # https://github.com/microsoft/LightGBM/issues/4708
+    X = np.array([
+        [1021.0589, 1018.9578],
         [1023.85754, 1018.7854],
         [1024.5468, 1018.88513],
         [1019.02954, 1018.88513],
@@ -3440,7 +3442,7 @@ def test_boost_from_average_with_single_leaf_trees():
         "min_data_in_bin": 1,
         "extra_seed": 7,
         "objective": "regression",
-        "verbose": -2,
+        "verbose": -1,
         "boost_from_average": True,
         "min_data_in_leaf": 1,
     }
@@ -3449,4 +3451,4 @@ def test_boost_from_average_with_single_leaf_trees():
 
     preds = model.predict(X)
     mean_preds = np.mean(preds)
-    assert mean_preds >= y.min() and mean_preds <= y.max()
+    assert y.min() <= mean_preds <= y.max()
