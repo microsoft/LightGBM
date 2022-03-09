@@ -9,9 +9,9 @@
 #define LIGHTGBM_CUDA_META_DATA_HPP_
 
 #include <LightGBM/cuda/cuda_utils.h>
-#include <vector>
-
 #include <LightGBM/meta.h>
+
+#include <vector>
 
 namespace LightGBM {
 
