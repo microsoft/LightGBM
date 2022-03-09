@@ -23,7 +23,6 @@ test_that("Feature penalties work properly", {
       )
       , nrounds = 5L
       , verbose = -1L
-      , save_name = tempfile(fileext = ".model")
     )
   })
 
@@ -75,7 +74,6 @@ test_that("training should warn if you use 'dart' boosting, specified with 'boos
         , params = params
         , nrounds = 5L
         , verbose = -1L
-        , save_name = tempfile(fileext = ".model")
       )
     }, regexp = "Early stopping is not available in 'dart' mode")
   }

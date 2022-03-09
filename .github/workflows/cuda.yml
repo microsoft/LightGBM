@@ -25,15 +25,15 @@ jobs:
         include:
           - method: source
             compiler: gcc
-            python_version: 3.7
-            cuda_version: "11.5.0"
+            python_version: "3.8"
+            cuda_version: "11.5.1"
           - method: pip
             compiler: clang
-            python_version: 3.8
+            python_version: "3.9"
             cuda_version: "10.0"
           - method: wheel
             compiler: gcc
-            python_version: 3.9
+            python_version: "3.10"
             cuda_version: "9.0"
     steps:
       - name: Setup or update software on host machine
@@ -81,7 +81,7 @@ jobs:
             LGB_VER=$(head -n 1 VERSION.txt)
             EOF
             cat > docker-script.sh <<EOF
-            export CONDA=\$HOME/miniconda
+            export CONDA=\$HOME/miniforge
             export PATH=\$CONDA/bin:\$PATH
             nvidia-smi
             $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1

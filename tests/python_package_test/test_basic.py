@@ -587,7 +587,7 @@ def _bad_gradients(preds, _):
 
 
 def _good_gradients(preds, _):
-    return np.random.randn(len(preds)), np.random.rand(len(preds))
+    return np.random.randn(*preds.shape), np.random.rand(*preds.shape)
 
 
 def test_custom_objective_safety():
@@ -609,3 +609,15 @@ def test_custom_objective_safety():
     good_bst_multi.update(fobj=_good_gradients)
     with pytest.raises(ValueError, match=re.escape(f"number of models per one iteration ({nclass})")):
         bad_bst_multi.update(fobj=_bad_gradients)
+
+
+@pytest.mark.parametrize('dtype', [np.float32, np.float64])
+def test_no_copy_when_single_float_dtype_dataframe(dtype):
+    pd = pytest.importorskip('pandas')
+    X = np.random.rand(10, 2).astype(dtype)
+    df = pd.DataFrame(X)
+    # feature names are required to not make a copy (rename makes a copy)
+    feature_name = ['x1', 'x2']
+    built_data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
+    assert built_data.dtype == dtype
+    assert np.shares_memory(X, built_data)
