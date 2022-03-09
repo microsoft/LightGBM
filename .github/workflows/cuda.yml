@@ -39,7 +39,7 @@ jobs:
             cuda_version: "9.0"
             tree_learner: cuda
           - method: source
-            compiler: clang
+            compiler: gcc
             python_version: "3.8"
             cuda_version: "11.5.1"
             tree_learner: cuda_exp
