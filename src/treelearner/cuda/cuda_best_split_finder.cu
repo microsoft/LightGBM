@@ -491,7 +491,6 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner(
     double sum_left_gradient = ShufflePrefixSum<double>(grad, shared_mem_buffer_double);
     __syncthreads();
     double sum_left_hessian = ShufflePrefixSum<double>(hess, shared_mem_buffer_double);
-    // TODO(shiyu1994): constrain the split with min_data_in_group
     if (threadIdx_x < used_bin && threadIdx_x < max_num_cat) {
       const data_size_t left_count = static_cast<data_size_t>(__double2int_rn(sum_left_hessian * cnt_factor));
       const double sum_right_gradient = sum_gradients - sum_left_gradient;
@@ -531,7 +530,6 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner(
     sum_left_gradient = ShufflePrefixSum<double>(grad, shared_mem_buffer_double);
     __syncthreads();
     sum_left_hessian = ShufflePrefixSum<double>(hess, shared_mem_buffer_double);
-    // TODO(shiyu1994): constrain the split with min_data_in_group
     if (threadIdx_x < used_bin && threadIdx_x < max_num_cat) {
       const data_size_t left_count = static_cast<data_size_t>(__double2int_rn(sum_left_hessian * cnt_factor));
       const double sum_right_gradient = sum_gradients - sum_left_gradient;
@@ -1113,7 +1111,6 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner_GlobalMemory(
     GlobalMemoryPrefixSum<double>(hist_grad_buffer_ptr, static_cast<size_t>(bin_end));
     __syncthreads();
     GlobalMemoryPrefixSum<double>(hist_hess_buffer_ptr, static_cast<size_t>(bin_end));
-    // TODO(shiyu1994): constrain the split with min_data_in_group
     for (int bin = static_cast<int>(threadIdx_x); bin < used_bin && bin < max_num_cat; bin += static_cast<int>(blockDim.x)) {
       const double sum_left_gradient = hist_grad_buffer_ptr[bin];
       const double sum_left_hessian = hist_hess_buffer_ptr[bin];
@@ -1153,7 +1150,6 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner_GlobalMemory(
     GlobalMemoryPrefixSum<double>(hist_grad_buffer_ptr, static_cast<size_t>(bin_end));
     __syncthreads();
     GlobalMemoryPrefixSum<double>(hist_hess_buffer_ptr, static_cast<size_t>(bin_end));
-    // TODO(shiyu1994): constrain the split with min_data_in_group
     for (int bin = static_cast<int>(threadIdx_x); bin < used_bin && bin < max_num_cat; bin += static_cast<int>(blockDim.x)) {
       const double sum_left_gradient = hist_grad_buffer_ptr[bin];
       const double sum_left_hessian = hist_hess_buffer_ptr[bin];
