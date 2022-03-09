@@ -464,7 +464,6 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner(
       used_bin = local_used_bin;
     }
     __syncthreads();
-    // TODO(shiyu1994): with more threads, this kernel may use out registers
     BitonicArgSort_1024<double, int16_t, true>(shared_value_buffer, shared_index_buffer, bin_end);
     __syncthreads();
     const int max_num_cat = min(max_cat_threshold, (used_bin + 1) / 2);

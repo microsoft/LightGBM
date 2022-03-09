@@ -110,7 +110,6 @@ void ShufflePrefixSumGlobal(T* values, size_t len, T* block_prefix_sum_buffer);
 template <typename T>
 __device__ __forceinline__ T ShuffleReduceSumWarp(T value, const data_size_t len) {
   if (len > 0) {
-    // TODO(shiyu1994): check how mask works
     const uint32_t mask = 0xffffffff;
     for (int offset = warpSize / 2; offset > 0; offset >>= 1) {
       value += __shfl_down_sync(mask, value, offset);
@@ -141,7 +140,6 @@ __device__ __forceinline__ T ShuffleReduceSum(T value, T* shared_mem_buffer, con
 template <typename T>
 __device__ __forceinline__ T ShuffleReduceMaxWarp(T value, const data_size_t len) {
   if (len > 0) {
-    // TODO(shiyu1994): check how mask works
     const uint32_t mask = 0xffffffff;
     for (int offset = warpSize / 2; offset > 0; offset >>= 1) {
       value = max(value, __shfl_down_sync(mask, value, offset));
