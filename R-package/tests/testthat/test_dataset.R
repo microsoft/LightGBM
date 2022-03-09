@@ -529,10 +529,10 @@ test_that("Dataset: method calls on a Dataset with a null handle should raise an
 test_that("lgb.Dataset$get_feature_num_bin() works", {
   raw_df <- data.frame(
     all_random = runif(100L)
-    , two_vals = rep(c(1, 2), 50L)
-    , three_vals = c(rep(c(0, 1, 2), 33L), 0L)
-    , two_vals_plus_missing = c(rep(c(1, 2), 49L), NA_real_, NA_real_)
-    , all_zero = rep(0, 100L)
+    , two_vals = rep(c(1.0, 2.0), 50L)
+    , three_vals = c(rep(c(0.0, 1.0, 2.0), 33L), 0.0)
+    , two_vals_plus_missing = c(rep(c(1.0, 2.0), 49L), NA_real_, NA_real_)
+    , all_zero = rep(0.0, 100L)
   )
   raw_mat <- data.matrix(raw_df)
   min_data_in_bin <- 2L
