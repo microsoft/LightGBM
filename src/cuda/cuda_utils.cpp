@@ -3,9 +3,9 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#include <LightGBM/cuda/cuda_utils.h>
-
 #ifdef USE_CUDA_EXP
+
+#include <LightGBM/cuda/cuda_utils.h>
 
 namespace LightGBM {
 
