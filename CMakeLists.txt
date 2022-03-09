@@ -173,7 +173,7 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA OR USE_CUDA_EXP)
-    if (USE_CUDA)
+    if(USE_CUDA)
       find_package(CUDA 9.0 REQUIRED)
     else()
       find_package(CUDA 10.0 REQUIRED)
