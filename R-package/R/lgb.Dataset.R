@@ -388,7 +388,7 @@ Dataset <- R6::R6Class(
         , feature_idx - 1L
         , num_bin
       )
-      num_bin
+      return(num_bin)
     },
 
     # Get column names
