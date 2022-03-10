@@ -184,7 +184,8 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, pd_Series):
         if _get_bad_pandas_dtypes([data.dtypes]):
-            raise ValueError('Series.dtypes must be int, float or bool')
+            raise ValueError(f'Series.dtypes must be int, float or bool. Series '
+                             f'\'{data.name}\' found to have dtype \'{data.dtypes}\'')
         return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
     else:
         raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
@@ -217,8 +218,12 @@ def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -
     if _is_2d_list(data):
         return np.array(data, dtype=dtype)
     if isinstance(data, pd_DataFrame):
-        if _get_bad_pandas_dtypes(data.dtypes):
-            raise ValueError('DataFrame.dtypes must be int, float or bool')
+        bad_indices = _get_bad_pandas_dtypes(data.dtypes)
+        if bad_indices:
+            bad_dtypes = data.dtypes.iloc[bad_indices]
+            bad_dtypes_str = str(list(bad_dtypes.items()))
+            raise ValueError('DataFrame.dtypes must be int, float or bool.\n'
+                             f'Fields with bad data types: {bad_dtypes_str}')
         return cast_numpy_array_to_dtype(data.values, dtype)
     raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
@@ -542,10 +547,10 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             feature_name = list(data.columns)
         bad_indices = _get_bad_pandas_dtypes(data.dtypes)
         if bad_indices:
-            bad_index_cols_str = ', '.join(data.columns[bad_indices])
-            raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
-                             "Did not expect the data types in the following fields: "
-                             f"{bad_index_cols_str}")
+            bad_dtypes = data.dtypes.iloc[bad_indices]
+            bad_dtypes_str = str(list(bad_dtypes.items()))
+            raise ValueError('DataFrame.dtypes must be int, float or bool.\n'
+                             f'Fields with bad data types: {bad_dtypes_str}')
         df_dtypes = [dtype.type for dtype in data.dtypes]
         df_dtypes.append(np.float32)  # so that the target dtype considers floats
         target_dtype = np.find_common_type(df_dtypes, [])
@@ -562,8 +567,12 @@ def _label_from_pandas(label):
     if isinstance(label, pd_DataFrame):
         if len(label.columns) > 1:
             raise ValueError('DataFrame for label cannot have multiple columns')
-        if _get_bad_pandas_dtypes(label.dtypes):
-            raise ValueError('DataFrame.dtypes for label must be int, float or bool')
+        bad_indices = _get_bad_pandas_dtypes(label.dtypes)
+        if bad_indices:
+            bad_dtypes = label.dtypes.iloc[bad_indices]
+            bad_dtypes_str = str(list(bad_dtypes.items()))
+            raise ValueError('DataFrame.dtypes must be int, float or bool.\n'
+                             f'Fields with bad data types: {bad_dtypes_str}')
         label = np.ravel(label.values.astype(np.float32, copy=False))
     return label
 
