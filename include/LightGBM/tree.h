@@ -179,6 +179,9 @@ class Tree {
   /*! \brief Get the number of data points that fall at or below this node*/
   inline int data_count(int node) const { return node >= 0 ? internal_count_[node] : leaf_count_[~node]; }
 
+  /*! \brief Get the summed weights of data points that fall at or below this node*/
+  inline int data_weight(int node) const { return node >= 0 ? internal_weight_[node] : leaf_weight_[~node]; }
+
   /*!
   * \brief Shrinkage for the tree's output
   *        shrinkage rate (a.k.a learning rate) is used to tune the training process
@@ -563,7 +566,7 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   leaf_parent_[leaf] = new_node_idx;
   leaf_parent_[num_leaves_] = new_node_idx;
   // save current leaf value to internal node before change
-  internal_weight_[new_node_idx] = leaf_weight_[leaf];
+  internal_weight_[new_node_idx] = left_weight + right_weight;
   internal_value_[new_node_idx] = leaf_value_[leaf];
   internal_count_[new_node_idx] = left_cnt + right_cnt;
   leaf_value_[leaf] = std::isnan(left_value) ? 0.0f : left_value;
