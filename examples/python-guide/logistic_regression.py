@@ -57,9 +57,9 @@ def experiment(objective, label_type, data):
 
     Parameters
     ----------
-    objective : string 'binary' or 'xentropy'
+    objective : {'binary', 'xentropy'}
         Objective function.
-    label_type : string 'binary' or 'probability'
+    label_type : {'binary', 'probability'}
         Type of the label.
     data : dict
         Data for training.

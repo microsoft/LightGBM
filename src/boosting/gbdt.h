@@ -394,6 +394,8 @@ class GBDT : public GBDTBase {
 
   bool IsLinear() const override { return linear_tree_; }
 
+  inline std::string ParserConfigStr() const override {return parser_config_str_;}
+
  protected:
   virtual bool GetIsConstHessian(const ObjectiveFunction* objective_function) {
     if (objective_function != nullptr) {
@@ -483,6 +485,8 @@ class GBDT : public GBDTBase {
   std::vector<std::unique_ptr<Tree>> models_;
   /*! \brief Max feature index of training data*/
   int max_feature_idx_;
+  /*! \brief Parser config file content */
+  std::string parser_config_str_ = "";
 
 #ifdef USE_CUDA
   /*! \brief First order derivative of training data */

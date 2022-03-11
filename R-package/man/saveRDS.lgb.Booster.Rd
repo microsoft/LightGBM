@@ -2,7 +2,7 @@
 % Please edit documentation in R/saveRDS.lgb.Booster.R
 \name{saveRDS.lgb.Booster}
 \alias{saveRDS.lgb.Booster}
-\title{saveRDS for \code{lgb.Booster} models}
+\title{saveRDS for \code{lgb.Booster} models (DEPRECATED)}
 \usage{
 saveRDS.lgb.Booster(
   object,
@@ -38,8 +38,10 @@ compression to be used. Ignored if file is a connection.}
 NULL invisibly.
 }
 \description{
-Attempts to save a model using RDS. Has an additional parameter (\code{raw})
-             which decides whether to save the raw model or not.
+Calls \code{saveRDS} on an \code{lgb.Booster} object, making it serializable before the call if
+             it isn't already.
+
+             \bold{This function throws a warning and will be removed in future versions.}
 }
 \examples{
 \donttest{
@@ -50,15 +52,18 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-params <- list(objective = "regression", metric = "l2")
+params <- list(
+  objective = "regression"
+  , metric = "l2"
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 valids <- list(test = dtest)
 model <- lgb.train(
     params = params
     , data = dtrain
     , nrounds = 10L
     , valids = valids
-    , min_data = 1L
-    , learning_rate = 1.0
     , early_stopping_rounds = 5L
 )
 model_file <- tempfile(fileext = ".rds")

@@ -12,19 +12,6 @@
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the
 #'                   booster model into a predictor model which frees up memory and the
 #'                   original datasets
-#' @param ... other parameters, see \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
-#'            the "Parameters" section of the documentation} for more information. A few key parameters:
-#'            \itemize{
-#'                \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"},
-#'                                                      \code{"goss"} or \code{"mvs"}.}
-#'                \item{\code{num_leaves}: Maximum number of leaves in one tree.}
-#'                \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
-#'                                 overfitting. Tree still grow by leaf-wise.}
-#'                \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-#'                             the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
-#'                             not the number of threads (most CPU using hyper-threading to generate 2 threads
-#'                             per CPU core).}
-#'            }
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained booster model \code{lgb.Booster}.
 #'
@@ -36,15 +23,18 @@
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
 #' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' params <- list(objective = "regression", metric = "l2")
+#' params <- list(
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 1.0
+#' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , valids = valids
-#'   , min_data = 1L
-#'   , learning_rate = 1.0
 #'   , early_stopping_rounds = 3L
 #' )
 #' }
@@ -64,7 +54,7 @@ lgb.train <- function(params = list(),
                       early_stopping_rounds = NULL,
                       callbacks = list(),
                       reset_data = FALSE,
-                      ...) {
+                      serializable = TRUE) {
 
   # validate inputs early to avoid unnecessary computation
   if (nrounds <= 0L) {
@@ -83,23 +73,29 @@ lgb.train <- function(params = list(),
     }
   }
 
-  # Setup temporary variables
-  additional_params <- list(...)
-  params <- append(params, additional_params)
-  params$verbose <- verbose
-  params <- lgb.check.obj(params = params, obj = obj)
-  params <- lgb.check.eval(params = params, eval = eval)
-  fobj <- NULL
-  eval_functions <- list(NULL)
-
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.
   # this ensures that the model stored with Booster$save() correctly represents
   # what was passed in
   params <- lgb.check.wrapper_param(
+    main_param_name = "verbosity"
+    , params = params
+    , alternative_kwarg_value = verbose
+  )
+  params <- lgb.check.wrapper_param(
     main_param_name = "num_iterations"
     , params = params
     , alternative_kwarg_value = nrounds
+  )
+  params <- lgb.check.wrapper_param(
+    main_param_name = "metric"
+    , params = params
+    , alternative_kwarg_value = NULL
+  )
+  params <- lgb.check.wrapper_param(
+    main_param_name = "objective"
+    , params = params
+    , alternative_kwarg_value = obj
   )
   params <- lgb.check.wrapper_param(
     main_param_name = "early_stopping_round"
@@ -108,16 +104,19 @@ lgb.train <- function(params = list(),
   )
   early_stopping_rounds <- params[["early_stopping_round"]]
 
-  # Check for objective (function or not)
+  # extract any function objects passed for objective or metric
+  fobj <- NULL
   if (is.function(params$objective)) {
     fobj <- params$objective
-    params$objective <- "NONE"
+    params$objective <- "none"
   }
 
   # If eval is a single function, store it as a 1-element list
   # (for backwards compatibility). If it is a list of functions, store
   # all of them. This makes it possible to pass any mix of strings like "auc"
   # and custom functions to eval
+  params <- lgb.check.eval(params = params, eval = eval)
+  eval_functions <- list(NULL)
   if (is.function(eval)) {
     eval_functions <- list(eval)
   }
@@ -381,6 +380,10 @@ lgb.train <- function(params = list(),
     booster$best_score <- booster_old$best_score
     booster$record_evals <- booster_old$record_evals
 
+  }
+
+  if (serializable) {
+    booster$save_raw()
   }
 
   return(booster)

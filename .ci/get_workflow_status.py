@@ -22,7 +22,7 @@ def get_runs(trigger_phrase):
 
     Parameters
     ----------
-    trigger_phrase : string
+    trigger_phrase : str
         Code phrase that triggers workflow.
 
     Returns
@@ -33,15 +33,26 @@ def get_runs(trigger_phrase):
     pr_runs = []
     if environ.get("GITHUB_EVENT_NAME", "") == "pull_request":
         pr_number = int(environ.get("GITHUB_REF").split('/')[-2])
-        req = request.Request(url="{}/repos/microsoft/LightGBM/issues/{}/comments".format(environ.get("GITHUB_API_URL"),
-                                                                                          pr_number),
-                              headers={"Accept": "application/vnd.github.v3+json"})
-        url = request.urlopen(req)
-        data = json.loads(url.read().decode('utf-8'))
-        url.close()
-        pr_runs = [i for i in data
-                   if i['author_association'].lower() in {'owner', 'member', 'collaborator'}
-                   and i['body'].startswith('/gha run {}'.format(trigger_phrase))]
+        page = 1
+        while True:
+            req = request.Request(
+                url="{}/repos/microsoft/LightGBM/issues/{}/comments?page={}&per_page=100".format(
+                    environ.get("GITHUB_API_URL"),
+                    pr_number,
+                    page
+                ),
+                headers={"Accept": "application/vnd.github.v3+json"}
+            )
+            url = request.urlopen(req)
+            data = json.loads(url.read().decode('utf-8'))
+            url.close()
+            if not data:
+                break
+            runs_on_page = [i for i in data
+                            if i['author_association'].lower() in {'owner', 'member', 'collaborator'}
+                            and i['body'].startswith('/gha run {}'.format(trigger_phrase))]
+            pr_runs.extend(runs_on_page)
+            page += 1
     return pr_runs[::-1]
 
 
@@ -55,7 +66,7 @@ def get_status(runs):
 
     Returns
     -------
-    status : string
+    status : str
         The most recent status of workflow.
         Can be 'success', 'failure' or 'in-progress'.
     """

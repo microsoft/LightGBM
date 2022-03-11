@@ -7,7 +7,7 @@ from shutil import copyfile
 
 if __name__ == "__main__":
     source = Path(sys.argv[1])
-    current_dir = Path(__file__).parent.absolute()
+    current_dir = Path(__file__).absolute().parent
     linux_folder_path = current_dir / "runtimes" / "linux-x64" / "native"
     linux_folder_path.mkdir(parents=True, exist_ok=True)
     osx_folder_path = current_dir / "runtimes" / "osx-x64" / "native"
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         <version>{version}</version>
         <authors>Guolin Ke</authors>
         <owners>Guolin Ke</owners>
-        <licenseUrl>https://github.com/microsoft/LightGBM/blob/master/LICENSE</licenseUrl>
+        <license type="expression">MIT</license>
         <projectUrl>https://github.com/microsoft/LightGBM</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A fast, distributed, high performance gradient boosting framework</description>

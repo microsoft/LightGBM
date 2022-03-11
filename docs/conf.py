@@ -24,25 +24,20 @@ from pathlib import Path
 from re import compile
 from shutil import copytree
 from subprocess import PIPE, Popen
-from unittest.mock import Mock
+from typing import Any, List
 
 import sphinx
 from docutils.nodes import reference
 from docutils.parsers.rst import Directive
 from docutils.transforms import Transform
+from sphinx.application import Sphinx
 from sphinx.errors import VersionRequirementError
 
-CURR_PATH = Path(__file__).parent.absolute()
+CURR_PATH = Path(__file__).absolute().parent
 LIB_PATH = CURR_PATH.parent / 'python-package'
 sys.path.insert(0, str(LIB_PATH))
 
 INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#)")
-
-# -- mock out modules
-MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
-                'sklearn', 'matplotlib', 'pandas', 'graphviz', 'dask', 'dask.distributed']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = Mock()
 
 
 class InternalRefTransform(Transform):
@@ -51,7 +46,7 @@ class InternalRefTransform(Transform):
     default_priority = 210
     """Numerical priority of this transform, 0 through 999."""
 
-    def apply(self, **kwargs):
+    def apply(self, **kwargs: Any) -> None:
         """Apply the transform to the document tree."""
         for section in self.document.traverse(reference):
             if section.get("refuri") is not None:
@@ -63,7 +58,7 @@ class IgnoredDirective(Directive):
 
     has_content = True
 
-    def run(self):
+    def run(self) -> List:
         """Do nothing."""
         return []
 
@@ -97,7 +92,22 @@ autodoc_default_options = {
     "inherited-members": True,
     "show-inheritance": True,
 }
-
+# mock out modules
+autodoc_mock_imports = [
+    'dask',
+    'dask.distributed',
+    'datatable',
+    'graphviz',
+    'matplotlib',
+    'numpy',
+    'pandas',
+    'scipy',
+    'scipy.sparse',
+]
+try:
+    import sklearn
+except ImportError:
+    autodoc_mock_imports.append('sklearn')
 # hide type hints in API docs
 autodoc_typehints = "none"
 
@@ -197,12 +207,12 @@ htmlhelp_basename = 'LightGBMdoc'
 latex_logo = str(CURR_PATH / 'logo' / 'LightGBM_logo_black_text_small.png')
 
 
-def generate_doxygen_xml(app):
+def generate_doxygen_xml(app: Sphinx) -> None:
     """Generate XML documentation for C API by Doxygen.
 
     Parameters
     ----------
-    app : object
+    app : sphinx.application.Sphinx
         The application object representing the Sphinx process.
     """
     doxygen_args = [
@@ -219,6 +229,7 @@ def generate_doxygen_xml(app):
         "MACRO_EXPANSION=YES",
         "EXPAND_ONLY_PREDEF=NO",
         "SKIP_FUNCTION_MACROS=NO",
+        "PREDEFINED=__cplusplus",
         "SORT_BRIEF_DOCS=YES",
         "WARN_AS_ERROR=YES",
     ]
@@ -242,32 +253,23 @@ def generate_doxygen_xml(app):
         raise Exception(f"An error has occurred while executing Doxygen\n{e}")
 
 
-def generate_r_docs(app):
+def generate_r_docs(app: Sphinx) -> None:
     """Generate documentation for R-package.
 
     Parameters
     ----------
-    app : object
+    app : sphinx.application.Sphinx
         The application object representing the Sphinx process.
     """
     commands = f"""
-    /home/docs/.conda/bin/conda create \
-        -q \
-        -y \
-        -c conda-forge \
-        -n r_env \
-            cmake=3.18.2=ha30ef3c_0 \
-            r-base=4.0.3=ha43b4e8_3 \
-            r-data.table=1.13.2=r40h0eb13af_0 \
-            r-jsonlite=1.7.1=r40hcdcec82_0 \
-            r-matrix=1.2_18=r40h7fa42b6_3 \
-            r-pkgdown=1.6.1=r40h6115d3f_0 \
-            r-roxygen2=7.1.1=r40h0357c0b_0
-    source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
     cd {CURR_PATH.parent}
     export R_LIBS="$CONDA_PREFIX/lib/R/library"
-    Rscript build_r.R || exit -1
+    sh build-cran-package.sh || exit -1
+    R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit -1
+    cp -R \
+        {CURR_PATH.parent / "R-package" / "pkgdown"} \
+        {CURR_PATH.parent / "lightgbm_r" / "pkgdown"}
     cd {CURR_PATH.parent / "lightgbm_r"}
     Rscript -e "roxygen2::roxygenize(load = 'installed')" || exit -1
     Rscript -e "pkgdown::build_site( \
@@ -284,6 +286,7 @@ def generate_r_docs(app):
     cd {CURR_PATH.parent}
     """
     try:
+        print("Building R-package documentation")
         # Warning! The following code can cause buffer overflows on RTD.
         # Consider suppressing output completely if RTD project silently fails.
         # Refer to https://github.com/svenevs/exhale
@@ -297,16 +300,17 @@ def generate_r_docs(app):
             raise RuntimeError(output)
         else:
             print(output)
+            print("Done building R-package documentation")
     except BaseException as e:
         raise Exception(f"An error has occurred while generating documentation for R-package\n{e}")
 
 
-def setup(app):
+def setup(app: Sphinx) -> None:
     """Add new elements at Sphinx initialization time.
 
     Parameters
     ----------
-    app : object
+    app : sphinx.application.Sphinx
         The application object representing the Sphinx process.
     """
     first_run = not (CURR_PATH / '_FIRST_RUN.flag').exists()

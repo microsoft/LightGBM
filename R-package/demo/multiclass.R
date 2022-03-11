@@ -18,14 +18,18 @@ dtest <- lgb.Dataset.create.valid(dtrain, data = test[, 1L:4L], label = test[, 5
 valids <- list(test = dtest)
 
 # Method 1 of training
-params <- list(objective = "multiclass", metric = "multi_error", num_class = 3L)
+params <- list(
+    objective = "multiclass"
+    , metric = "multi_error"
+    , num_class = 3L
+    , min_data = 1L
+    , learning_rate = 1.0
+)
 model <- lgb.train(
     params
     , dtrain
     , 100L
     , valids
-    , min_data = 1L
-    , learning_rate = 1.0
     , early_stopping_rounds = 10L
 )
 
@@ -34,17 +38,19 @@ model <- lgb.train(
 my_preds <- predict(model, test[, 1L:4L])
 
 # Method 2 of training, identical
-model <- lgb.train(
-    list()
-    , dtrain
-    , 100L
-    , valids
-    , min_data = 1L
+params <- list(
+    min_data = 1L
     , learning_rate = 1.0
-    , early_stopping_rounds = 10L
     , objective = "multiclass"
     , metric = "multi_error"
     , num_class = 3L
+)
+model <- lgb.train(
+    params
+    , dtrain
+    , 100L
+    , valids
+    , early_stopping_rounds = 10L
 )
 
 # We can predict on test data, identical

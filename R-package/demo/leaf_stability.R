@@ -85,18 +85,21 @@ test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 
 # setup parameters and we train a model
-params <- list(objective = "regression", metric = "l2")
+params <- list(
+  objective = "regression"
+  , metric = "l2"
+  , min_data = 1L
+  , learning_rate = 0.1
+  , bagging_fraction = 0.1
+  , bagging_freq = 1L
+  , bagging_seed = 1L
+)
 valids <- list(test = dtest)
 model <- lgb.train(
     params
     , dtrain
     , 50L
     , valids
-    , min_data = 1L
-    , learning_rate = 0.1
-    , bagging_fraction = 0.1
-    , bagging_freq = 1L
-    , bagging_seed = 1L
 )
 
 # We create a data.frame with the following structure:
@@ -141,13 +144,17 @@ table(new_data$binned)
 .depth_density_plot(df = new_data)
 
 # Now, let's show with other parameters
+params <- list(
+  objective = "regression"
+  , metric = "l2"
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 model2 <- lgb.train(
     params
     , dtrain
     , 100L
     , valids
-    , min_data = 1L
-    , learning_rate = 1.0
 )
 
 # We create the data structure, but for model2
@@ -193,13 +200,17 @@ table(new_data2$binned)
 .depth_density_plot(df = new_data2)
 
 # Now, try with very severe overfitting
+params <- list(
+  objective = "regression"
+  , metric = "l2"
+  , min_data = 1L
+  , learning_rate = 1.0
+)
 model3 <- lgb.train(
     params
     , dtrain
     , 1000L
     , valids
-    , min_data = 1L
-    , learning_rate = 1.0
 )
 
 # We create the data structure, but for model3

@@ -53,7 +53,7 @@ Callbacks
     :toctree: pythonapi/
 
     early_stopping
-    print_evaluation
+    log_evaluation
     record_evaluation
     reset_parameter
 

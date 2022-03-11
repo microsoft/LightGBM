@@ -27,8 +27,8 @@ ptest  <- predict(bst, agaricus.test$data, rawscore = TRUE)
 
 # set the init_score property of dtrain and dtest
 # base margin is the base prediction we will boost from
-setinfo(dtrain, "init_score", ptrain)
-setinfo(dtest, "init_score", ptest)
+set_field(dtrain, "init_score", ptrain)
+set_field(dtest, "init_score", ptest)
 
 print("This is result of boost from initial prediction")
 bst <- lgb.train(

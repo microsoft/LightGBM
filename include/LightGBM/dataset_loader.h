@@ -67,7 +67,7 @@ class DatasetLoader {
   /*! \brief Random generator*/
   Random random_;
   /*! \brief prediction function for initial model */
-  const PredictFunction& predict_fun_;
+  const PredictFunction predict_fun_;
   /*! \brief number of classes */
   int num_class_;
   /*! \brief index of label column */

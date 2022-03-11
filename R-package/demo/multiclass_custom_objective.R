@@ -20,18 +20,20 @@ valids <- list(train = dtrain, test = dtest)
 # Method 1 of training with built-in multiclass objective
 # Note: need to turn off boost from average to match custom objective
 # (https://github.com/microsoft/LightGBM/issues/1846)
-model_builtin <- lgb.train(
-    list()
-    , dtrain
+params <- list(
+    min_data = 1L
+    , learning_rate = 1.0
+    , num_class = 3L
     , boost_from_average = FALSE
+    , metric = "multi_logloss"
+)
+model_builtin <- lgb.train(
+    params
+    , dtrain
     , 100L
     , valids
-    , min_data = 1L
-    , learning_rate = 1.0
     , early_stopping_rounds = 10L
-    , objective = "multiclass"
-    , metric = "multi_logloss"
-    , num_class = 3L
+    , obj = "multiclass"
 )
 
 preds_builtin <- predict(model_builtin, test[, 1L:4L], rawscore = TRUE, reshape = TRUE)
@@ -41,7 +43,7 @@ probs_builtin <- exp(preds_builtin) / rowSums(exp(preds_builtin))
 
 # User defined objective function, given prediction, return gradient and second order gradient
 custom_multiclass_obj <- function(preds, dtrain) {
-    labels <- getinfo(dtrain, "label")
+    labels <- get_field(dtrain, "label")
 
     # preds is a matrix with rows corresponding to samples and columns corresponding to choices
     preds <- matrix(preds, nrow = length(labels))
@@ -71,7 +73,7 @@ custom_multiclass_obj <- function(preds, dtrain) {
 
 # define custom metric
 custom_multiclass_metric <- function(preds, dtrain) {
-    labels <- getinfo(dtrain, "label")
+    labels <- get_field(dtrain, "label")
     preds <- matrix(preds, nrow = length(labels))
     preds <- preds - apply(preds, 1L, max)
     prob <- exp(preds) / rowSums(exp(preds))
@@ -92,17 +94,19 @@ custom_multiclass_metric <- function(preds, dtrain) {
     ))
 }
 
+params <- list(
+    min_data = 1L
+    , learning_rate = 1.0
+    , num_class = 3L
+)
 model_custom <- lgb.train(
-    list()
+    params
     , dtrain
     , 100L
     , valids
-    , min_data = 1L
-    , learning_rate = 1.0
     , early_stopping_rounds = 10L
-    , objective = custom_multiclass_obj
+    , obj = custom_multiclass_obj
     , eval = custom_multiclass_metric
-    , num_class = 3L
 )
 
 preds_custom <- predict(model_custom, test[, 1L:4L], rawscore = TRUE, reshape = TRUE)

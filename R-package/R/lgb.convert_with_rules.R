@@ -10,9 +10,9 @@
     )
 }
 
-# [description] check a data frame or data table for columns tthat are any
-#               type other than numeric and integer. This is used by lgb.convert()
-#               and lgb.convert_with_rules() too warn if more action is needed by users
+# [description] check a data frame or data table for columns that are any
+#               type other than numeric and integer. This is used by lgb.convert_with_rules()
+#               to warn if more action is needed by users
 #               before a dataset can be converted to a lgb.Dataset.
 .warn_for_unconverted_columns <- function(df, function_name) {
     column_classes <- .get_column_classes(df = df)

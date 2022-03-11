@@ -1,0 +1,3 @@
+LIBRARY lightgbm.dll
+EXPORTS
+ R_init_lightgbm

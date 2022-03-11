@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     # make this array dense because we're splitting across
     # a sparse boundary to partition the data
-    X = X.todense()
+    X = X.toarray()
 
     dX = da.from_array(
         x=X,

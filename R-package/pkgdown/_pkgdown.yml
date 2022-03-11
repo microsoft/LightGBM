@@ -17,18 +17,21 @@ development:
   mode: unreleased
 
 authors:
+  Yu Shi:
+    href: https://github.com/shiyu1994
+    html: <img src="https://avatars.githubusercontent.com/u/14541765?s=400&v=4" height="48" /> Yu Shi
   Guolin Ke:
     href: https://github.com/guolinke
-    html: <img src="https://avatars0.githubusercontent.com/u/16040950?s=400&v=4" height="48" /> Guolin Ke
+    html: <img src="https://avatars.githubusercontent.com/u/16040950?s=400&v=4" height="48" /> Guolin Ke
   Damien Soukhavong:
     href: https://github.com/Laurae2
-    html: <img src="https://avatars1.githubusercontent.com/u/9083669?s=460&v=4" height="48" /> Damien Soukhavong
+    html: <img src="https://avatars.githubusercontent.com/u/9083669?s=400&v=4" height="48" /> Damien Soukhavong
   Yachen Yan:
     href: https://github.com/yanyachen
-    html: <img src="https://avatars1.githubusercontent.com/u/6893682?s=460&v=4" height="48" /> Yachen Yan
+    html: <img src="https://avatars.githubusercontent.com/u/6893682?s=400&v=4" height="48" /> Yachen Yan
   James Lamb:
     href: https://github.com/jameslamb
-    html: <img src="https://avatars1.githubusercontent.com/u/7608904?s=400&v=4" height="48" /> James Lamb
+    html: <img src="https://avatars.githubusercontent.com/u/7608904?s=400&v=4" height="48" /> James Lamb
 
 navbar:
   title: LightGBM
@@ -38,6 +41,8 @@ navbar:
     href: ../
   - icon: fa-home fa-lg
     href: index.html
+  - text: Articles
+    href: articles/index.html
   - text: Reference
     href: reference/index.html
   right:
@@ -56,8 +61,8 @@ reference:
     contents:
     - '`dim.lgb.Dataset`'
     - '`dimnames.lgb.Dataset`'
-    - '`getinfo`'
-    - '`setinfo`'
+    - '`get_field`'
+    - '`set_field`'
     - '`slice`'
     - '`lgb.Dataset`'
     - '`lgb.Dataset.construct`'

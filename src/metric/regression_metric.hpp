@@ -212,7 +212,7 @@ class FairLossMetric: public RegressionMetric<FairLossMetric> {
   inline static double LossOnPoint(label_t label, double score, const Config& config) {
     const double x = std::fabs(score - label);
     const double c = config.fair_c;
-    return c * x - c * c * std::log(1.0f + x / c);
+    return c * x - c * c * std::log1p(x / c);
   }
 
   inline static const char* Name() {

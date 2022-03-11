@@ -1,5 +1,6 @@
 # User options
 use_gpu <- FALSE
+make_args_from_build_script <- character(0L)
 
 # For Windows, the package will be built with Visual Studio
 # unless you set one of these to TRUE
@@ -64,7 +65,8 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
 # try to generate Visual Studio build files
 .generate_vs_makefiles <- function(cmake_args) {
   vs_versions <- c(
-    "Visual Studio 16 2019"
+    "Visual Studio 17 2022"
+    , "Visual Studio 16 2019"
     , "Visual Studio 15 2017"
     , "Visual Studio 14 2015"
   )
@@ -132,7 +134,7 @@ if (WINDOWS && use_visual_studio) {
 # Prepare installation steps
 cmake_args <- NULL
 build_cmd <- "make"
-build_args <- "_lightgbm"
+build_args <- c("_lightgbm", make_args_from_build_script)
 lib_folder <- file.path(source_dir, fsep = "/")
 
 # add in command-line arguments
@@ -194,7 +196,7 @@ if (WINDOWS) {
     cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
     .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
     build_cmd <- windows_build_tool
-    build_args <- "_lightgbm"
+    build_args <- c("_lightgbm", make_args_from_build_script)
   } else {
     visual_studio_succeeded <- .generate_vs_makefiles(cmake_args)
     if (!isTRUE(visual_studio_succeeded)) {
@@ -203,7 +205,7 @@ if (WINDOWS) {
       cmake_args <- c(cmake_args, "-G", shQuote(windows_makefile_generator))
       .run_shell_command("cmake", c(cmake_args, ".."), strict = FALSE)
       build_cmd <- windows_build_tool
-      build_args <- "_lightgbm"
+      build_args <- c("_lightgbm", make_args_from_build_script)
     } else {
       build_cmd <- "cmake"
       build_args <- c("--build", ".", "--target", "_lightgbm", "--config", "Release")

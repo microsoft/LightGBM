@@ -7,10 +7,11 @@ dask.Array and dask.DataFrame collections.
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
 import socket
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from copy import deepcopy
 from enum import Enum, auto
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
+from functools import partial
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 from urllib.parse import urlparse
 
 import numpy as np
@@ -18,15 +19,19 @@ import scipy.sparse as ss
 
 from .basic import _LIB, LightGBMError, _choose_param_value, _ConfigAliases, _log_info, _log_warning, _safe_call
 from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
-                     dask_Array, dask_DataFrame, dask_Series, default_client, delayed, pd_DataFrame, pd_Series, wait)
-from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _lgbmmodel_doc_custom_eval_note,
-                      _lgbmmodel_doc_fit, _lgbmmodel_doc_predict)
+                     dask_Array, dask_array_from_delayed, dask_bag_from_delayed, dask_DataFrame, dask_Series,
+                     default_client, delayed, pd_DataFrame, pd_Series, wait)
+from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _LGBM_ScikitCustomEvalFunction,
+                      _LGBM_ScikitCustomObjectiveFunction, _lgbmmodel_doc_custom_eval_note, _lgbmmodel_doc_fit,
+                      _lgbmmodel_doc_predict)
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
 _DaskVectorLike = Union[dask_Array, dask_Series]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
+
+_HostWorkers = namedtuple('_HostWorkers', ['default', 'all'])
 
 
 class _DatasetNames(Enum):
@@ -60,18 +65,73 @@ def _get_dask_client(client: Optional[Client]) -> Client:
         return client
 
 
-def _find_random_open_port() -> int:
-    """Find a random open port on localhost.
+def _find_n_open_ports(n: int) -> List[int]:
+    """Find n random open ports on localhost.
 
     Returns
     -------
-    port : int
-        A free port on localhost
+    ports : list of int
+        n random open ports on localhost.
     """
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    sockets = []
+    for _ in range(n):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind(('', 0))
-        port = s.getsockname()[1]
-    return port
+        sockets.append(s)
+    ports = []
+    for s in sockets:
+        ports.append(s.getsockname()[1])
+        s.close()
+    return ports
+
+
+def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, _HostWorkers]:
+    """Group all worker addresses by hostname.
+
+    Returns
+    -------
+    host_to_workers : dict
+        mapping from hostname to all its workers.
+    """
+    host_to_workers: Dict[str, _HostWorkers] = {}
+    for address in worker_addresses:
+        hostname = urlparse(address).hostname
+        if not hostname:
+            raise ValueError(f"Could not parse host name from worker address '{address}'")
+        if hostname not in host_to_workers:
+            host_to_workers[hostname] = _HostWorkers(default=address, all=[address])
+        else:
+            host_to_workers[hostname].all.append(address)
+    return host_to_workers
+
+
+def _assign_open_ports_to_workers(
+    client: Client,
+    host_to_workers: Dict[str, _HostWorkers]
+) -> Dict[str, int]:
+    """Assign an open port to each worker.
+
+    Returns
+    -------
+    worker_to_port: dict
+        mapping from worker address to an open port.
+    """
+    host_ports_futures = {}
+    for hostname, workers in host_to_workers.items():
+        n_workers_in_host = len(workers.all)
+        host_ports_futures[hostname] = client.submit(
+            _find_n_open_ports,
+            n=n_workers_in_host,
+            workers=[workers.default],
+            pure=False,
+            allow_other_workers=False,
+        )
+    found_ports = client.gather(host_ports_futures)
+    worker_to_port = {}
+    for hostname, workers in host_to_workers.items():
+        for worker, port in zip(workers.all, found_ports[hostname]):
+            worker_to_port[worker] = port
+    return worker_to_port
 
 
 def _concat(seq: List[_DaskPart]) -> _DaskPart:
@@ -292,7 +352,7 @@ def _split_to_parts(data: _DaskCollection, is_matrix: bool) -> List[_DaskPart]:
     return parts
 
 
-def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[str, int]:
+def _machines_to_worker_map(machines: str, worker_addresses: Iterable[str]) -> Dict[str, int]:
     """Create a worker_map from machines list.
 
     Given ``machines`` and a list of Dask worker addresses, return a mapping where the keys are
@@ -303,7 +363,7 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
     machines : str
         A comma-delimited list of workers, of the form ``ip1:port,ip2:port``.
     worker_addresses : list of str
-        A list of Dask worker addresses, of the form ``{protocol}{hostname}:{port}``, where ``port`` is the port Dask's scheduler uses to talk to that worker.
+        An iterable of Dask worker addresses, of the form ``{protocol}{hostname}:{port}``, where ``port`` is the port Dask's scheduler uses to talk to that worker.
 
     Returns
     -------
@@ -323,47 +383,11 @@ def _machines_to_worker_map(machines: str, worker_addresses: List[str]) -> Dict[
     out = {}
     for address in worker_addresses:
         worker_host = urlparse(address).hostname
+        if not worker_host:
+            raise ValueError(f"Could not parse host name from worker address '{address}'")
         out[address] = machine_to_port[worker_host].pop()
 
     return out
-
-
-def _possibly_fix_worker_map_duplicates(worker_map: Dict[str, int], client: Client) -> Dict[str, int]:
-    """Fix any duplicate IP-port pairs in a ``worker_map``."""
-    worker_map = deepcopy(worker_map)
-    workers_that_need_new_ports = []
-    host_to_port = defaultdict(set)
-    for worker, port in worker_map.items():
-        host = urlparse(worker).hostname
-        if port in host_to_port[host]:
-            workers_that_need_new_ports.append(worker)
-        else:
-            host_to_port[host].add(port)
-
-    # if any duplicates were found, search for new ports one by one
-    for worker in workers_that_need_new_ports:
-        _log_info(f"Searching for a LightGBM training port for worker '{worker}'")
-        host = urlparse(worker).hostname
-        retries_remaining = 100
-        while retries_remaining > 0:
-            retries_remaining -= 1
-            new_port = client.submit(
-                _find_random_open_port,
-                workers=[worker],
-                allow_other_workers=False,
-                pure=False
-            ).result()
-            if new_port not in host_to_port[host]:
-                worker_map[worker] = new_port
-                host_to_port[host].add(new_port)
-                break
-
-        if retries_remaining == 0:
-            raise LightGBMError(
-                "Failed to find an open port. Try re-running training or explicitly setting 'machines' or 'local_listen_port'."
-            )
-
-    return worker_map
 
 
 def _train(
@@ -373,15 +397,15 @@ def _train(
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
     sample_weight: Optional[_DaskVectorLike] = None,
-    init_score: Optional[_DaskVectorLike] = None,
+    init_score: Optional[_DaskCollection] = None,
     group: Optional[_DaskVectorLike] = None,
     eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
     eval_names: Optional[List[str]] = None,
-    eval_sample_weight: Optional[List[_DaskCollection]] = None,
+    eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
     eval_class_weight: Optional[List[Union[dict, str]]] = None,
     eval_init_score: Optional[List[_DaskCollection]] = None,
-    eval_group: Optional[List[_DaskCollection]] = None,
-    eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+    eval_group: Optional[List[_DaskVectorLike]] = None,
+    eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
     eval_at: Optional[Iterable[int]] = None,
     **kwargs: Any
 ) -> LGBMModel:
@@ -400,8 +424,8 @@ def _train(
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Class of the local underlying model.
     sample_weight : Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)
-        Weights of training data.
-    init_score : Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)
+        Weights of training data. Weights should be non-negative.
+    init_score : Dask Array or Dask Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task), or Dask Array or Dask DataFrame of shape = [n_samples, n_classes] (for multi-class task), or None, optional (default=None)
         Init score of training data.
     group : Dask Array or Dask Series or None, optional (default=None)
         Group/query data.
@@ -409,23 +433,23 @@ def _train(
         sum(group) = n_samples.
         For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-    eval_set : list of (X, y) tuples of Dask data collections or None, optional (default=None)
+    eval_set : list of (X, y) tuples of Dask data collections, or None, optional (default=None)
         List of (X, y) tuple pairs to use as validation sets.
         Note, that not all workers may receive chunks of every eval set within ``eval_set``. When the returned
         lightgbm estimator is not trained using any chunks of a particular eval set, its corresponding component
         of evals_result_ and best_score_ will be 'not_evaluated'.
-    eval_names : list of strings or None, optional (default=None)
+    eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
-    eval_sample_weight : list of Dask Arrays, Dask Series or None, optional (default=None)
-        Weights for each validation set in eval_set.
+    eval_sample_weight : list of Dask Array or Dask Series, or None, optional (default=None)
+        Weights for each validation set in eval_set. Weights should be non-negative.
     eval_class_weight : list of dict or str, or None, optional (default=None)
         Class weights, one dict or str for each validation set in eval_set.
-    eval_init_score : list of Dask Arrays, Dask Series or None, optional (default=None)
+    eval_init_score : list of Dask Array, Dask Series or Dask DataFrame (for multi-class task), or None, optional (default=None)
         Initial model score for each validation set in eval_set.
-    eval_group : list of Dask Arrays, Dask Series or None, optional (default=None)
+    eval_group : list of Dask Array or Dask Series, or None, optional (default=None)
         Group/query for each validation set in eval_set.
-    eval_metric : string, callable, list or None, optional (default=None)
-        If string, it should be a built-in evaluation metric to use.
+    eval_metric : str, callable, list or None, optional (default=None)
+        If str, it should be a built-in evaluation metric to use.
         If callable, it should be a custom evaluation metric, see note below for more details.
         If list, it can be a list of built-in metrics, a list of custom evaluation metrics, or a mix of both.
         In either case, the ``metric`` from the Dask model parameters (or inferred from the objective) will be evaluated and used as well.
@@ -724,18 +748,8 @@ def _train(
             }
         else:
             _log_info("Finding random open ports for workers")
-            # this approach with client.run() is faster than searching for ports
-            # serially, but can produce duplicates sometimes. Try the fast approach one
-            # time, then pass it through a function that will use a slower but more reliable
-            # approach if duplicates are found.
-            worker_address_to_port = client.run(
-                _find_random_open_port,
-                workers=list(worker_addresses)
-            )
-            worker_address_to_port = _possibly_fix_worker_map_duplicates(
-                worker_map=worker_address_to_port,
-                client=client
-            )
+            host_to_workers = _group_workers_by_host(worker_map.keys())
+            worker_address_to_port = _assign_open_ports_to_workers(client, host_to_workers)
 
         machines = ','.join([
             f'{urlparse(worker_address).hostname}:{port}'
@@ -836,13 +850,14 @@ def _predict_part(
 def _predict(
     model: LGBMModel,
     data: _DaskMatrixLike,
+    client: Client,
     raw_score: bool = False,
     pred_proba: bool = False,
     pred_leaf: bool = False,
     pred_contrib: bool = False,
     dtype: _PredictionDtype = np.float32,
     **kwargs: Any
-) -> dask_Array:
+) -> Union[dask_Array, List[dask_Array]]:
     """Inner predict routine.
 
     Parameters
@@ -870,7 +885,7 @@ def _predict(
         The predicted values.
     X_leaves : Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
         If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-    X_SHAP_values : Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
+    X_SHAP_values : Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or (if multi-class and using sparse inputs) a list of ``n_classes`` Dask Arrays of shape = [n_samples, n_features + 1]
         If ``pred_contrib=True``, the feature contributions for each sample.
     """
     if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
@@ -886,16 +901,100 @@ def _predict(
             **kwargs
         ).values
     elif isinstance(data, dask_Array):
-        return data.map_blocks(
+        # for multi-class classification with sparse matrices, pred_contrib predictions
+        # are returned as a list of sparse matrices (one per class)
+        num_classes = model._n_classes or -1
+
+        if (
+            num_classes > 2
+            and pred_contrib
+            and isinstance(data._meta, ss.spmatrix)
+        ):
+
+            predict_function = partial(
+                _predict_part,
+                model=model,
+                raw_score=False,
+                pred_proba=pred_proba,
+                pred_leaf=False,
+                pred_contrib=True,
+                **kwargs
+            )
+
+            delayed_chunks = data.to_delayed()
+            bag = dask_bag_from_delayed(delayed_chunks[:, 0])
+
+            @delayed
+            def _extract(items: List[Any], i: int) -> Any:
+                return items[i]
+
+            preds = bag.map_partitions(predict_function)
+
+            # pred_contrib output will have one column per feature,
+            # plus one more for the base value
+            num_cols = model.n_features_ + 1
+
+            nrows_per_chunk = data.chunks[0]
+            out: List[List[dask_Array]] = [[] for _ in range(num_classes)]
+
+            # need to tell Dask the expected type and shape of individual preds
+            pred_meta = data._meta
+
+            for j, partition in enumerate(preds.to_delayed()):
+                for i in range(num_classes):
+                    part = dask_array_from_delayed(
+                        value=_extract(partition, i),
+                        shape=(nrows_per_chunk[j], num_cols),
+                        meta=pred_meta
+                    )
+                    out[i].append(part)
+
+            # by default, dask.array.concatenate() concatenates sparse arrays into a COO matrix
+            # the code below is used instead to ensure that the sparse type is preserved during concatentation
+            if isinstance(pred_meta, ss.csr_matrix):
+                concat_fn = partial(ss.vstack, format='csr')
+            elif isinstance(pred_meta, ss.csc_matrix):
+                concat_fn = partial(ss.vstack, format='csc')
+            else:
+                concat_fn = ss.vstack
+
+            # At this point, `out` is a list of lists of delayeds (each of which points to a matrix).
+            # Concatenate them to return a list of Dask Arrays.
+            out_arrays: List[dask_Array] = []
+            for i in range(num_classes):
+                out_arrays.append(
+                    dask_array_from_delayed(
+                        value=delayed(concat_fn)(out[i]),
+                        shape=(data.shape[0], num_cols),
+                        meta=pred_meta
+                    )
+                )
+
+            return out_arrays
+
+        data_row = client.compute(data[[0]]).result()
+        predict_fn = partial(
             _predict_part,
             model=model,
             raw_score=raw_score,
             pred_proba=pred_proba,
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,
+            **kwargs,
+        )
+        pred_row = predict_fn(data_row)
+        chunks = (data.chunks[0],)
+        map_blocks_kwargs = {}
+        if len(pred_row.shape) > 1:
+            chunks += (pred_row.shape[1],)
+        else:
+            map_blocks_kwargs['drop_axis'] = 1
+        return data.map_blocks(
+            predict_fn,
+            chunks=chunks,
+            meta=pred_row,
             dtype=dtype,
-            drop_axis=1,
-            **kwargs
+            **map_blocks_kwargs,
         )
     else:
         raise TypeError(f'Data must be either Dask Array or Dask DataFrame. Got {type(data).__name__}.')
@@ -930,24 +1029,20 @@ class _DaskLGBMModel:
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskVectorLike] = None,
-        init_score: Optional[_DaskVectorLike] = None,
+        init_score: Optional[_DaskCollection] = None,
         group: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
-        eval_group: Optional[List[_DaskCollection]] = None,
-        eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+        eval_group: Optional[List[_DaskVectorLike]] = None,
+        eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
         eval_at: Optional[Iterable[int]] = None,
-        early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
             raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
-
-        if early_stopping_rounds is not None:
-            raise RuntimeError('early_stopping_rounds is not currently supported in lightgbm.dask')
 
         params = self.get_params(True)
         params.pop("client", None)
@@ -1005,7 +1100,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         learning_rate: float = 0.1,
         n_estimators: int = 100,
         subsample_for_bin: int = 200000,
-        objective: Optional[Union[Callable, str]] = None,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
         class_weight: Optional[Union[dict, str]] = None,
         min_split_gain: float = 0.,
         min_child_weight: float = 1e-3,
@@ -1017,7 +1112,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = True,
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1043,22 +1137,17 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             reg_lambda=reg_lambda,
             random_state=random_state,
             n_jobs=n_jobs,
-            silent=silent,
             importance_type=importance_type,
             **kwargs
         )
 
     _base_doc = LGBMClassifier.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    _base_doc = f"""
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')  # type: ignore
+    __init__.__doc__ = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
         {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
         {_kwargs}{_after_kwargs}
         """
-
-    # the note on custom objective functions in LGBMModel.__init__ is not
-    # currently relevant for the Dask estimators
-    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_dask_getstate()
@@ -1068,20 +1157,16 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskVectorLike] = None,
-        init_score: Optional[_DaskVectorLike] = None,
+        init_score: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_sample_weight: Optional[List[_DaskCollection]] = None,
+        eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
-        eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
-        early_stopping_rounds: Optional[int] = None,
+        eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
-        if early_stopping_rounds is not None:
-            raise RuntimeError('early_stopping_rounds is not currently supported in lightgbm.dask')
-
         return self._lgb_dask_fit(
             model_factory=LGBMClassifier,
             X=X,
@@ -1101,26 +1186,28 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
         y_shape="Dask Array, Dask DataFrame or Dask Series of shape = [n_samples]",
         sample_weight_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
-        init_score_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
+        init_score_shape="Dask Array or Dask Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task), or Dask Array or Dask DataFrame of shape = [n_samples, n_classes] (for multi-class task), or None, optional (default=None)",
         group_shape="Dask Array or Dask Series or None, optional (default=None)",
-        eval_sample_weight_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_init_score_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_group_shape="list of Dask Arrays or Dask Series or None, optional (default=None)"
+        eval_sample_weight_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_init_score_shape="list of Dask Array, Dask Series or Dask DataFrame (for multi-class task), or None, optional (default=None)",
+        eval_group_shape="list of Dask Array or Dask Series, or None, optional (default=None)"
     )
 
-    # DaskLGBMClassifier does not support group, eval_group, early_stopping_rounds.
+    # DaskLGBMClassifier does not support group, eval_group.
     _base_doc = (_base_doc[:_base_doc.find('group :')]
                  + _base_doc[_base_doc.find('eval_set :'):])
 
     _base_doc = (_base_doc[:_base_doc.find('eval_group :')]
                  + _base_doc[_base_doc.find('eval_metric :'):])
 
-    _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
-                 + _base_doc[_base_doc.find('verbose :'):])
-
     # DaskLGBMClassifier support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
         Other parameters passed through to ``LGBMClassifier.fit()``.
+
+    Returns
+    -------
+    self : lightgbm.DaskLGBMClassifier
+        Returns self.
 
     {_lgbmmodel_doc_custom_eval_note}
         """
@@ -1131,6 +1218,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             model=self.to_local(),
             data=X,
             dtype=self.classes_.dtype,
+            client=_get_dask_client(self.client),
             **kwargs
         )
 
@@ -1140,7 +1228,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         output_name="predicted_result",
         predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
-        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or (if multi-class and using sparse inputs) a list of ``n_classes`` Dask Arrays of shape = [n_samples, n_features + 1]"
     )
 
     def predict_proba(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
@@ -1149,6 +1237,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             model=self.to_local(),
             data=X,
             pred_proba=True,
+            client=_get_dask_client(self.client),
             **kwargs
         )
 
@@ -1158,7 +1247,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         output_name="predicted_probability",
         predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
-        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]"
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or (if multi-class and using sparse inputs) a list of ``n_classes`` Dask Arrays of shape = [n_samples, n_features + 1]"
     )
 
     def to_local(self) -> LGBMClassifier:
@@ -1183,7 +1272,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         learning_rate: float = 0.1,
         n_estimators: int = 100,
         subsample_for_bin: int = 200000,
-        objective: Optional[Union[Callable, str]] = None,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
         class_weight: Optional[Union[dict, str]] = None,
         min_split_gain: float = 0.,
         min_child_weight: float = 1e-3,
@@ -1195,7 +1284,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = True,
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1221,21 +1309,17 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             reg_lambda=reg_lambda,
             random_state=random_state,
             n_jobs=n_jobs,
-            silent=silent,
             importance_type=importance_type,
             **kwargs
         )
 
     _base_doc = LGBMRegressor.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    _base_doc = f"""
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')  # type: ignore
+    __init__.__doc__ = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
         {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
         {_kwargs}{_after_kwargs}
         """
-    # the note on custom objective functions in LGBMModel.__init__ is not
-    # currently relevant for the Dask estimators
-    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_dask_getstate()
@@ -1248,16 +1332,12 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         init_score: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_sample_weight: Optional[List[_DaskCollection]] = None,
-        eval_init_score: Optional[List[_DaskCollection]] = None,
-        eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
-        early_stopping_rounds: Optional[int] = None,
+        eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
+        eval_init_score: Optional[List[_DaskVectorLike]] = None,
+        eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        if early_stopping_rounds is not None:
-            raise RuntimeError('early_stopping_rounds is not currently supported in lightgbm.dask')
-
         return self._lgb_dask_fit(
             model_factory=LGBMRegressor,
             X=X,
@@ -1278,12 +1358,12 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         sample_weight_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array or Dask Series or None, optional (default=None)",
-        eval_sample_weight_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_init_score_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_group_shape="list of Dask Arrays or Dask Series or None, optional (default=None)"
+        eval_sample_weight_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_init_score_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_group_shape="list of Dask Array or Dask Series, or None, optional (default=None)"
     )
 
-    # DaskLGBMRegressor does not support group, eval_class_weight, eval_group, early_stopping_rounds.
+    # DaskLGBMRegressor does not support group, eval_class_weight, eval_group.
     _base_doc = (_base_doc[:_base_doc.find('group :')]
                  + _base_doc[_base_doc.find('eval_set :'):])
 
@@ -1293,12 +1373,14 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     _base_doc = (_base_doc[:_base_doc.find('eval_group :')]
                  + _base_doc[_base_doc.find('eval_metric :'):])
 
-    _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
-                 + _base_doc[_base_doc.find('verbose :'):])
-
     # DaskLGBMRegressor support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
         Other parameters passed through to ``LGBMRegressor.fit()``.
+
+    Returns
+    -------
+    self : lightgbm.DaskLGBMRegressor
+        Returns self.
 
     {_lgbmmodel_doc_custom_eval_note}
         """
@@ -1308,6 +1390,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         return _predict(
             model=self.to_local(),
             data=X,
+            client=_get_dask_client(self.client),
             **kwargs
         )
 
@@ -1342,7 +1425,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         learning_rate: float = 0.1,
         n_estimators: int = 100,
         subsample_for_bin: int = 200000,
-        objective: Optional[Union[Callable, str]] = None,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
         class_weight: Optional[Union[dict, str]] = None,
         min_split_gain: float = 0.,
         min_child_weight: float = 1e-3,
@@ -1354,7 +1437,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: int = -1,
-        silent: bool = True,
         importance_type: str = 'split',
         client: Optional[Client] = None,
         **kwargs: Any
@@ -1380,22 +1462,17 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             reg_lambda=reg_lambda,
             random_state=random_state,
             n_jobs=n_jobs,
-            silent=silent,
             importance_type=importance_type,
             **kwargs
         )
 
     _base_doc = LGBMRanker.__init__.__doc__
-    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')
-    _base_doc = f"""
+    _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition('**kwargs')  # type: ignore
+    __init__.__doc__ = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
         {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
         {_kwargs}{_after_kwargs}
         """
-
-    # the note on custom objective functions in LGBMModel.__init__ is not
-    # currently relevant for the Dask estimators
-    __init__.__doc__ = _base_doc[:_base_doc.find('Note\n')]
 
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_dask_getstate()
@@ -1409,18 +1486,14 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         group: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
-        eval_sample_weight: Optional[List[_DaskCollection]] = None,
-        eval_init_score: Optional[List[_DaskCollection]] = None,
-        eval_group: Optional[List[_DaskCollection]] = None,
-        eval_metric: Optional[Union[Callable, str, List[Union[Callable, str]]]] = None,
+        eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
+        eval_init_score: Optional[List[_DaskVectorLike]] = None,
+        eval_group: Optional[List[_DaskVectorLike]] = None,
+        eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
         eval_at: Iterable[int] = (1, 2, 3, 4, 5),
-        early_stopping_rounds: Optional[int] = None,
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
-        if early_stopping_rounds is not None:
-            raise RuntimeError('early_stopping_rounds is not currently supported in lightgbm.dask')
-
         return self._lgb_dask_fit(
             model_factory=LGBMRanker,
             X=X,
@@ -1444,30 +1517,40 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         sample_weight_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)",
         group_shape="Dask Array or Dask Series or None, optional (default=None)",
-        eval_sample_weight_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_init_score_shape="list of Dask Arrays or Dask Series or None, optional (default=None)",
-        eval_group_shape="list of Dask Arrays or Dask Series or None, optional (default=None)"
+        eval_sample_weight_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_init_score_shape="list of Dask Array or Dask Series, or None, optional (default=None)",
+        eval_group_shape="list of Dask Array or Dask Series, or None, optional (default=None)"
     )
 
     # DaskLGBMRanker does not support eval_class_weight or early stopping
     _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
                  + _base_doc[_base_doc.find('eval_init_score :'):])
 
-    _base_doc = (_base_doc[:_base_doc.find('early_stopping_rounds :')]
+    _base_doc = (_base_doc[:_base_doc.find('feature_name :')]
                  + "eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))\n"
                  + f"{' ':8}The evaluation positions of the specified metric.\n"
-                 + f"{' ':4}{_base_doc[_base_doc.find('verbose :'):]}")
+                 + f"{' ':4}{_base_doc[_base_doc.find('feature_name :'):]}")
 
     # DaskLGBMRanker support for callbacks and init_model is not tested
     fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
         Other parameters passed through to ``LGBMRanker.fit()``.
+
+    Returns
+    -------
+    self : lightgbm.DaskLGBMRanker
+        Returns self.
 
     {_lgbmmodel_doc_custom_eval_note}
         """
 
     def predict(self, X: _DaskMatrixLike, **kwargs: Any) -> dask_Array:
         """Docstring is inherited from the lightgbm.LGBMRanker.predict."""
-        return _predict(self.to_local(), X, **kwargs)
+        return _predict(
+            model=self.to_local(),
+            data=X,
+            client=_get_dask_client(self.client),
+            **kwargs
+        )
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",

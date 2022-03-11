@@ -9,7 +9,7 @@ pr:
 - master
 variables:
   AZURE: 'true'
-  PYTHON_VERSION: 3.9
+  PYTHON_VERSION: '3.10'
   CONDA_ENV: test-env
 resources:
   containers:
@@ -19,7 +19,7 @@ resources:
     image: 'ubuntu:latest'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
   - container: rbase
-    image: rocker/r-base
+    image: wch1/r-debug
 jobs:
 ###########################################
 - job: Linux
@@ -35,20 +35,25 @@ jobs:
     matrix:
       regular:
         TASK: regular
+        PYTHON_VERSION: '3.9'
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 3.7
+        PYTHON_VERSION: '3.7'
       bdist:
         TASK: bdist
+        PYTHON_VERSION: '3.8'
       inference:
         TASK: if-else
       mpi_source:
         TASK: mpi
         METHOD: source
-        PYTHON_VERSION: 3.8
+        PYTHON_VERSION: '3.8'
       gpu_source:
         TASK: gpu
         METHOD: source
+        # on Ubuntu 14.04, gpu_source build segfaults with newer version of Python
+        # (and newer version of scipy as a consequence)
+        PYTHON_VERSION: '3.7'
       swig:
         TASK: swig
   steps:
@@ -87,12 +92,11 @@ jobs:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: 3.6
       sdist:
         TASK: sdist
       bdist:
         TASK: bdist
-        PYTHON_VERSION: 3.8
+        PYTHON_VERSION: '3.8'
       inference:
         TASK: if-else
       mpi_source:
@@ -101,22 +105,23 @@ jobs:
       mpi_pip:
         TASK: mpi
         METHOD: pip
-        PYTHON_VERSION: 3.8
+        PYTHON_VERSION: '3.9'
       mpi_wheel:
         TASK: mpi
         METHOD: wheel
-        PYTHON_VERSION: 3.7
+        PYTHON_VERSION: '3.7'
       gpu_source:
         TASK: gpu
         METHOD: source
+        PYTHON_VERSION: '3.9'
       gpu_pip:
         TASK: gpu
         METHOD: pip
-        PYTHON_VERSION: 3.6
+        PYTHON_VERSION: '3.8'
       gpu_wheel:
         TASK: gpu
         METHOD: wheel
-        PYTHON_VERSION: 3.7
+        PYTHON_VERSION: '3.7'
       cpp_tests:
         TASK: cpp-tests
         METHOD: with-sanitizers
@@ -124,7 +129,7 @@ jobs:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
-      CONDA=$HOME/miniconda
+      CONDA=$HOME/miniforge
       echo "##vso[task.setvariable variable=CONDA]$CONDA"
       echo "##vso[task.prependpath]$CONDA/bin"
       AMDAPPSDK_PATH=$BUILD_SOURCESDIRECTORY/AMDAPPSDK
@@ -185,17 +190,22 @@ jobs:
       BUILD_ARTIFACTSTAGINGDIRECTORY=$BUILD_ARTIFACTSTAGINGDIRECTORY
       EOF
       cat > docker-script.sh <<EOF
-      export CONDA=\$HOME/miniconda
+      export CONDA=\$HOME/miniforge
       export PATH=\$CONDA/bin:\$PATH
       $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
       $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
       EOF
+      IMAGE_URI="quay.io/pypa/manylinux2014_${ARCH}"
+      docker pull "${IMAGE_URI}" || exit -1
+      PLATFORM=$(docker inspect --format='{{.Os}}/{{.Architecture}}' "${IMAGE_URI}") || exit -1
+      echo "detected image platform: ${PLATFORM}"
       docker run \
+        --platform "${PLATFORM}" \
         --rm \
         --env-file docker.env \
         -v "$(Build.SourcesDirectory)":"$ROOT_DOCKER_FOLDER" \
         -v "$(Build.ArtifactStagingDirectory)":"$(Build.ArtifactStagingDirectory)" \
-        "quay.io/pypa/manylinux2014_$ARCH" \
+        "${IMAGE_URI}" \
         /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
     displayName: 'Setup and run tests'
   - task: PublishBuildArtifacts@1
@@ -212,15 +222,15 @@ jobs:
     OS_NAME: 'macos'
     PRODUCES_ARTIFACTS: 'true'
   pool:
-    vmImage: 'macOS-10.14'
+    vmImage: 'macOS-10.15'
   strategy:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: 3.7
+        PYTHON_VERSION: '3.7'
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 3.8
+        PYTHON_VERSION: '3.8'
       bdist:
         TASK: bdist
       swig:
@@ -233,7 +243,7 @@ jobs:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
-      CONDA=$AGENT_HOMEDIRECTORY/miniconda
+      CONDA=$AGENT_HOMEDIRECTORY/miniforge
       echo "##vso[task.setvariable variable=CONDA]$CONDA"
       echo "##vso[task.prependpath]$CONDA/bin"
       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_8_X64"
@@ -257,10 +267,10 @@ jobs:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: 3.6
+        PYTHON_VERSION: '3.9'
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 3.8
+        PYTHON_VERSION: '3.8'
       bdist:
         TASK: bdist
       swig:
@@ -276,6 +286,8 @@ jobs:
     condition: eq(variables['TASK'], 'bdist')
     displayName: 'Install OpenCL'
   - script: |
+      cmd /c "conda config --add channels conda-forge"
+      cmd /c "conda config --set channel_priority strict"
       cmd /c "conda init powershell"
       cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
     displayName: Test
@@ -295,7 +307,11 @@ jobs:
   steps:
   - script: |
       LGB_VER=$(head -n 1 VERSION.txt | sed "s/rc/-/g")
-      sh build-cran-package.sh || exit -1
+      R_LIB_PATH=~/Rlib
+      export R_LIBS=${R_LIB_PATH}
+      mkdir -p ${R_LIB_PATH}
+      RDscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown'),  lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
+      sh build-cran-package.sh --r-executable=RD || exit -1
       mv lightgbm_${LGB_VER}.tar.gz $(Build.ArtifactStagingDirectory)/lightgbm-${LGB_VER}-r-cran.tar.gz
     displayName: 'Build CRAN R-package'
   - task: PublishBuildArtifacts@1

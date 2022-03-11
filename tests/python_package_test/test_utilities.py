@@ -31,16 +31,18 @@ def test_register_logger(tmp_path):
     lgb_data = lgb.Dataset(X, y)
 
     eval_records = {}
+    callbacks = [
+        lgb.record_evaluation(eval_records),
+        lgb.log_evaluation(2),
+        lgb.early_stopping(4)
+    ]
     lgb.train({'objective': 'binary', 'metric': ['auc', 'binary_error']},
               lgb_data, num_boost_round=10, feval=dummy_metric,
-              valid_sets=[lgb_data], evals_result=eval_records,
-              categorical_feature=[1], early_stopping_rounds=4, verbose_eval=2)
+              valid_sets=[lgb_data], categorical_feature=[1], callbacks=callbacks)
 
     lgb.plot_metric(eval_records)
 
     expected_log = r"""
-WARNING | categorical_feature in Dataset is overridden.
-New categorical_feature is [1]
 INFO | [LightGBM] [Warning] There are no meaningful features, as all feature values are constant.
 INFO | [LightGBM] [Info] Number of positive: 2, number of negative: 2
 INFO | [LightGBM] [Info] Total Bins 0

@@ -203,7 +203,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
         const double w = weights_[i];
         const double y = label_[i];
         const double epf = std::exp(score[i]);
-        const double hhat = std::log(1.0f + epf);
+        const double hhat = std::log1p(epf);
         const double z = 1.0f - std::exp(-w*hhat);
         const double enf = 1.0f / epf;  // = std::exp(-score[i]);
         gradients[i] = static_cast<score_t>((1.0f - y / z) * w / (1.0f + enf));
@@ -231,7 +231,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
   //
 
   void ConvertOutput(const double* input, double* output) const override {
-    output[0] = std::log(1.0f + std::exp(input[0]));
+    output[0] = std::log1p(std::exp(input[0]));
   }
 
   std::string ToString() const override {
@@ -259,7 +259,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
       }
     }
     double havg = suml / sumw;
-    double initscore = std::log(std::exp(havg) - 1.0f);
+    double initscore = std::log(std::expm1(havg));
     Log::Info("[%s:%s]: havg = %f -> initscore = %f",  GetName(), __func__, havg, initscore);
     return initscore;
   }

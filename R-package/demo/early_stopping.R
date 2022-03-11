@@ -21,7 +21,7 @@ num_round <- 20L
 # User define objective function, given prediction, return gradient and second order gradient
 # This is loglikelihood loss
 logregobj <- function(preds, dtrain) {
-  labels <- getinfo(dtrain, "label")
+  labels <- get_field(dtrain, "label")
   preds <- 1.0 / (1.0 + exp(-preds))
   grad <- preds - labels
   hess <- preds * (1.0 - preds)
@@ -35,7 +35,7 @@ logregobj <- function(preds, dtrain) {
 # The built-in evaluation error assumes input is after logistic transformation
 # Keep this in mind when you use the customization, and maybe you need write customized evaluation function
 evalerror <- function(preds, dtrain) {
-  labels <- getinfo(dtrain, "label")
+  labels <- get_field(dtrain, "label")
   err <- as.numeric(sum(labels != (preds > 0.5))) / length(labels)
   return(list(name = "error", value = err, higher_better = FALSE))
 }
@@ -46,7 +46,7 @@ bst <- lgb.train(
   , dtrain
   , num_round
   , valids
-  , objective = logregobj
+  , obj = logregobj
   , eval = evalerror
   , early_stopping_round = 3L
 )

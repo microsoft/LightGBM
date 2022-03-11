@@ -35,14 +35,19 @@ Predictor <- R6::R6Class(
         # Create handle on it
         handle <- .Call(
           LGBM_BoosterCreateFromModelfile_R
-          , modelfile
+          , path.expand(modelfile)
         )
         private$need_free_handle <- TRUE
 
-      } else if (methods::is(modelfile, "lgb.Booster.handle")) {
+      } else if (methods::is(modelfile, "lgb.Booster.handle") || inherits(modelfile, "externalptr")) {
 
         # Check if model file is a booster handle already
         handle <- modelfile
+        private$need_free_handle <- FALSE
+
+      } else if (lgb.is.Booster(modelfile)) {
+
+        handle <- modelfile$get_handle()
         private$need_free_handle <- FALSE
 
       } else {
@@ -95,6 +100,8 @@ Predictor <- R6::R6Class(
 
       # Check if data is a file name and not a matrix
       if (identical(class(data), "character") && length(data) == 1L) {
+
+        data <- path.expand(data)
 
         # Data is a filename, create a temporary file with a "lightgbm_" pattern in it
         tmp_filename <- tempfile(pattern = "lightgbm_")

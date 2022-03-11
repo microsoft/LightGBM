@@ -19,6 +19,7 @@
 #include <memory>
 #include <random>
 #include <vector>
+#include <set>
 
 #include "col_sampler.hpp"
 #include "data_partition.hpp"
@@ -142,6 +143,8 @@ class SerialTreeLearner: public TreeLearner {
 
   virtual void FindBestSplits(const Tree* tree);
 
+  virtual void FindBestSplits(const Tree* tree, const std::set<int>* force_features);
+
   virtual void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
   virtual void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract, const Tree*);
@@ -164,6 +167,8 @@ class SerialTreeLearner: public TreeLearner {
   /* Force splits with forced_split_json dict and then return num splits forced.*/
   int32_t ForceSplits(Tree* tree, int* left_leaf, int* right_leaf,
                       int* cur_depth);
+
+  std::set<int> FindAllForceFeatures(Json force_split_leaf_setting);
 
   /*!
   * \brief Get the number of data in a leaf

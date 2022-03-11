@@ -24,7 +24,7 @@ class FileLoader:
                         self.params[key] = value if key != 'num_trees' else int(value)
 
     def load_dataset(self, suffix, is_sparse=False):
-        filename = self.path(suffix)
+        filename = str(self.path(suffix))
         if is_sparse:
             X, Y = load_svmlight_file(filename, dtype=np.float64, zero_based=True)
             return X, Y, filename
@@ -62,7 +62,7 @@ class FileLoader:
                 assert a == b, f
 
     def path(self, suffix):
-        return str(self.directory / f'{self.prefix}{suffix}')
+        return self.directory / f'{self.prefix}{suffix}'
 
 
 def test_binary():
