@@ -510,7 +510,7 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series):
     bad_pandas_dtypes = [
         f'{column_name}: {pandas_dtype}'
         for column_name, pandas_dtype in pandas_dtypes_series.iteritems()
-        if not is_allowed_numpy_dtype(pandas_dtype)
+        if not is_allowed_numpy_dtype(pandas_dtype.type)
     ]
     if bad_pandas_dtypes:
         raise ValueError('DataFrame.dtypes must be int, float or bool.\n'
