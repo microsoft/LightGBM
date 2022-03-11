@@ -131,15 +131,30 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
 
     def _init(env: CallbackEnv) -> None:
         eval_result.clear()
-        for data_name, eval_name, _, _ in env.evaluation_result_list:
+        for item in env.evaluation_result_list:
+            if len(item) == 4:  # regular train
+                data_name, eval_name = item[:2]
+            else:  # cv
+                data_name, eval_name = item[1].split()
             eval_result.setdefault(data_name, collections.OrderedDict())
-            eval_result[data_name].setdefault(eval_name, [])
+            if len(item) == 4:
+                eval_result[data_name].setdefault(eval_name, [])
+            else:
+                eval_result[data_name].setdefault(f'{eval_name}-mean', [])
+                eval_result[data_name].setdefault(f'{eval_name}-stdv', [])
 
     def _callback(env: CallbackEnv) -> None:
         if env.iteration == env.begin_iteration:
             _init(env)
-        for data_name, eval_name, result, _ in env.evaluation_result_list:
-            eval_result[data_name][eval_name].append(result)
+        for item in env.evaluation_result_list:
+            if len(item) == 4:
+                data_name, eval_name, result = item[:3]
+                eval_result[data_name][eval_name].append(result)
+            else:
+                data_name, eval_name = item[1].split()
+                res_mean, res_stdv = item[2], item[4]
+                eval_result[data_name][f'{eval_name}-mean'].append(res_mean)
+                eval_result[data_name][f'{eval_name}-stdv'].append(res_stdv)
     _callback.order = 20  # type: ignore
     return _callback
 
