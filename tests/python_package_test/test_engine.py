@@ -1025,24 +1025,30 @@ def test_cvbooster():
         'metric': 'binary_logloss',
         'verbose': -1,
     }
+    nfold = 3
     lgb_train = lgb.Dataset(X_train, y_train)
     # with early stopping
     cv_res = lgb.cv(params, lgb_train,
                     num_boost_round=25,
-                    nfold=3,
+                    nfold=nfold,
                     callbacks=[lgb.early_stopping(stopping_rounds=5)],
                     return_cvbooster=True)
     assert 'cvbooster' in cv_res
     cvb = cv_res['cvbooster']
     assert isinstance(cvb, lgb.CVBooster)
     assert isinstance(cvb.boosters, list)
-    assert len(cvb.boosters) == 3
+    assert len(cvb.boosters) == nfold
     assert all(isinstance(bst, lgb.Booster) for bst in cvb.boosters)
     assert cvb.best_iteration > 0
     # predict by each fold booster
-    preds = cvb.predict(X_test, num_iteration=cvb.best_iteration)
+    preds = cvb.predict(X_test)
     assert isinstance(preds, list)
-    assert len(preds) == 3
+    assert len(preds) == nfold
+    # check that each booster predicted using the best iteration
+    for fold_preds, bst in zip(preds, cvb.boosters):
+        assert bst.best_iteration == cvb.best_iteration
+        expected = bst.predict(X_test, num_iteration=cvb.best_iteration)
+        np.testing.assert_allclose(fold_preds, expected)
     # fold averaging
     avg_pred = np.mean(preds, axis=0)
     ret = log_loss(y_test, avg_pred)

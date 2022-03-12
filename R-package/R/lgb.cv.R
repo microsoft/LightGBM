@@ -434,6 +434,10 @@ lgb.cv <- function(params = list()
     )
     cv_booster$best_score <- cv_booster$record_evals[["valid"]][[first_metric]][[.EVAL_KEY()]][[cv_booster$best_iter]]
   }
+  # Propagate the best_iter attribute from the cv_booster to the individual boosters
+  for (bst in cv_booster$boosters) {
+    bst$booster$best_iter <- cv_booster$best_iter
+  }
 
   if (reset_data) {
     lapply(cv_booster$boosters, function(fd) {
