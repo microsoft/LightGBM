@@ -3143,9 +3143,9 @@ class Booster:
             Data for the evaluating.
         name : str
             Name of the data.
-        feval : callable or None, optional (default=None)
+        feval : callable, list of callable, or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, eval_data,
+            Each evaluation function should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
@@ -3189,9 +3189,9 @@ class Booster:
 
         Parameters
         ----------
-        feval : callable or None, optional (default=None)
+        feval : callable, list of callable, or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, eval_data,
+            Each evaluation function should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
@@ -3220,9 +3220,9 @@ class Booster:
 
         Parameters
         ----------
-        feval : callable or None, optional (default=None)
+        feval : callable, list of callable, or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, eval_data,
+            Each evaluation function should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)

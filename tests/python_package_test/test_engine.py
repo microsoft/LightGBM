@@ -3424,3 +3424,31 @@ def test_pandas_nullable_dtypes():
 
     # test equal predictions
     np.testing.assert_allclose(preds, preds_nullable_dtypes)
+
+
+def test_boost_from_average_with_single_leaf_trees():
+    # test data are taken from bug report
+    # https://github.com/microsoft/LightGBM/issues/4708
+    X = np.array([
+        [1021.0589, 1018.9578],
+        [1023.85754, 1018.7854],
+        [1024.5468, 1018.88513],
+        [1019.02954, 1018.88513],
+        [1016.79926, 1018.88513],
+        [1007.6, 1018.88513]], dtype=np.float32)
+    y = np.array([1023.8, 1024.6, 1024.4, 1023.8, 1022.0, 1014.4], dtype=np.float32)
+    params = {
+        "extra_trees": True,
+        "min_data_in_bin": 1,
+        "extra_seed": 7,
+        "objective": "regression",
+        "verbose": -1,
+        "boost_from_average": True,
+        "min_data_in_leaf": 1,
+    }
+    train_set = lgb.Dataset(X, y)
+    model = lgb.train(params=params, train_set=train_set, num_boost_round=10)
+
+    preds = model.predict(X)
+    mean_preds = np.mean(preds)
+    assert y.min() <= mean_preds <= y.max()
