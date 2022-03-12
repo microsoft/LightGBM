@@ -2270,7 +2270,8 @@ def test_multiple_feval_train():
 def test_params_metric_feval_callable_train():
     # Test classification
     X, y = load_breast_cancer(return_X_y=True)
-    params = {'verbose': -1, 'objective': 'binary', 'metric': ['binary_logloss', constant_metric]}
+    # Test single callable
+    params = {'verbose': -1, 'objective': 'binary', 'metric': constant_metric}
     X_train, X_validation, y_train, y_validation = train_test_split(X, y, test_size=0.2)
     train_dataset = lgb.Dataset(data=X_train, label=y_train)
     validation_dataset = lgb.Dataset(data=X_validation, label=y_validation, reference=train_dataset)
@@ -2283,8 +2284,7 @@ def test_params_metric_feval_callable_train():
         feval=decreasing_metric,
         callbacks=[lgb.record_evaluation(evals_result)]
     )
-    assert len(evals_result['valid_0']) == 3
-    assert 'binary_logloss' in evals_result['valid_0']
+    assert len(evals_result['valid_0']) == 2
     assert 'error' in evals_result['valid_0']
     assert 'decreasing_metric' in evals_result['valid_0']
 
