@@ -7,7 +7,7 @@ on:
 jobs:
   test:
     name: solaris-cran
-    timeout-minutes: 120
+    timeout-minutes: 240
     runs-on: ubuntu-latest
     container: wch1/r-debug
     env:
