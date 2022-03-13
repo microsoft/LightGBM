@@ -2207,6 +2207,16 @@ test_that("early stopping works with lgb.cv()", {
     length(bst$record_evals[["valid"]][["increasing_metric"]][["eval"]])
     , early_stopping_rounds + 1L
   )
+
+  # every booster's predict method should use best_iter as num_iteration in predict
+  random_data <- as.matrix(rnorm(10L), ncol = 1L, drop = FALSE)
+  for (x in bst$boosters) {
+    expect_equal(x$booster$best_iter, bst$best_iter)
+    expect_gt(x$booster$current_iter(), bst$best_iter)
+    preds_iter <- predict(x$booster, random_data, num_iteration = bst$best_iter)
+    preds_no_iter <- predict(x$booster, random_data)
+    expect_equal(preds_iter, preds_no_iter)
+  }
 })
 
 test_that("lgb.cv() respects changes to logging verbosity", {
