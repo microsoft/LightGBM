@@ -377,7 +377,7 @@ Dataset <- R6::R6Class(
     },
 
     # Get number of bins for feature
-    get_feature_num_bin = function(feature_idx) {
+    get_feature_num_bin = function(feature) {
       if (lgb.is.null.handle(x = private$handle)) {
         stop("Cannot get number of bins in feature before constructing Dataset.")
       }
@@ -385,7 +385,7 @@ Dataset <- R6::R6Class(
       .Call(
         LGBM_DatasetGetFeatureNumBin_R
         , private$handle
-        , feature_idx - 1L
+        , feature - 1L
         , num_bin
       )
       return(num_bin)
