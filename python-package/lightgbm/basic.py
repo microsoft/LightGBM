@@ -513,7 +513,7 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series):
         if not is_allowed_numpy_dtype(pandas_dtype.type)
     ]
     if bad_pandas_dtypes:
-        raise ValueError('DataFrame.dtypes must be int, float or bool.\n'
+        raise ValueError('pandas dtypes must be int, float or bool.\n'
                          f'Fields with bad pandas dtypes: {", ".join(bad_pandas_dtypes)}')
 
 
