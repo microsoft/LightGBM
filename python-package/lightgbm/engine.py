@@ -9,7 +9,9 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning
+from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _concat_metric_feval_callables,
+                    _concat_params_metrics, _ConfigAliases, _InnerPredictor, _log_warning, _objective_is_callable,
+                    _separate_metrics_list)
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomObjectiveFunction = Callable[
@@ -125,6 +127,7 @@ def train(
     """
     # create predictor first
     params = copy.deepcopy(params)
+    fobj = _objective_is_callable(params, fobj)
     if fobj is not None:
         for obj_alias in _ConfigAliases.get("objective"):
             params.pop(obj_alias, None)
@@ -488,6 +491,7 @@ def cv(params, train_set, num_boost_round=100,
         raise TypeError("Training only accepts Dataset object")
 
     params = copy.deepcopy(params)
+    fobj = _objective_is_callable(params, fobj)
     if fobj is not None:
         for obj_alias in _ConfigAliases.get("objective"):
             params.pop(obj_alias, None)
