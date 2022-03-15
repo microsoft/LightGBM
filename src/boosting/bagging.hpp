@@ -178,4 +178,4 @@ class BAGGING : public SampleStrategy {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_SAMPLE_STRATEGY_BAGGING_HPP_
+#endif  // LIGHTGBM_BOOSTING_BAGGING_HPP_
