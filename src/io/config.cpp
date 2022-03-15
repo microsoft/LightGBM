@@ -344,6 +344,9 @@ void Config::CheckParamConflict() {
     // force row-wise for cuda_exp version
     force_col_wise = false;
     force_row_wise = true;
+    if (deterministic) {
+      Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
+    }
   }
   // force gpu_use_dp for CUDA
   if (device_type == std::string("cuda") && !gpu_use_dp) {
