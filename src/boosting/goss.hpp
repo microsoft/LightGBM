@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifndef LIGHTGBM_SAMPLE_STRATEGY_GOSS_HPP_
-#define LIGHTGBM_SAMPLE_STRATEGY_GOSS_HPP_
+#ifndef LIGHTGBM_BOOSTING_GOSS_HPP_
+#define LIGHTGBM_BOOSTING_GOSS_HPP_
 
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/sample_strategy.h>
