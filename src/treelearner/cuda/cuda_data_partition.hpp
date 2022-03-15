@@ -3,20 +3,19 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_CUDA_DATA_SPLITTER_HPP_
-#define LIGHTGBM_CUDA_DATA_SPLITTER_HPP_
+#ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_DATA_PARTITION_HPP_
+#define LIGHTGBM_TREELEARNER_CUDA_CUDA_DATA_PARTITION_HPP_
 
 #ifdef USE_CUDA_EXP
 
-#include <LightGBM/meta.h>
-#include <LightGBM/tree.h>
 #include <LightGBM/bin.h>
-
-#include <vector>
-
 #include <LightGBM/cuda/cuda_column_data.hpp>
 #include <LightGBM/cuda/cuda_split_info.hpp>
 #include <LightGBM/cuda/cuda_tree.hpp>
+#include <LightGBM/meta.h>
+#include <LightGBM/tree.h>
+
+#include <vector>
 
 #include "cuda_leaf_splits.hpp"
 
@@ -391,4 +390,4 @@ class CUDADataPartition {
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
-#endif  // LIGHTGBM_CUDA_DATA_SPLITTER_HPP_
+#endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_DATA_PARTITION_HPP_

@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2020 IBM Corporation. All rights reserved.
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
@@ -15,7 +15,7 @@ void SynchronizeCUDADevice(const char* file, const int line) {
 
 void PrintLastCUDAError() {
   const char* error_name = cudaGetErrorName(cudaGetLastError());
-  Log::Warning(error_name);
+  Log::Fatal(error_name);
 }
 
 void SetCUDADevice(int gpu_device_id, const char* file, int line) {

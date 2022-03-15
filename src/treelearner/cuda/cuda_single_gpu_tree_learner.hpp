@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_NEW_CUDA_TREE_LEARNER_HPP_
-#define LIGHTGBM_NEW_CUDA_TREE_LEARNER_HPP_
+#ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_SINGLE_GPU_TREE_LEARNER_HPP_
+#define LIGHTGBM_TREELEARNER_CUDA_CUDA_SINGLE_GPU_TREE_LEARNER_HPP_
 
 #include <memory>
 #include <vector>
@@ -140,4 +140,4 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
-#endif  // LIGHTGBM_NEW_CUDA_TREE_LEARNER_HPP_
+#endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_SINGLE_GPU_TREE_LEARNER_HPP_

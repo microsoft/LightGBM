@@ -17,7 +17,6 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 from .utils import load_breast_cancer
 
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
 def test_basic(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
                                                         test_size=0.1, random_state=2)
@@ -49,8 +48,9 @@ def test_basic(tmp_path):
     assert bst.current_iteration() == 20
     assert bst.num_trees() == 20
     assert bst.num_model_per_iteration() == 1
-    assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
-    assert bst.upper_bound() == pytest.approx(3.3182142872462883)
+    if getenv('TASK', '') != 'cuda_exp':
+        assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
+        assert bst.upper_bound() == pytest.approx(3.3182142872462883)
 
     tname = tmp_path / "svm_light.dat"
     model_file = tmp_path / "model.txt"

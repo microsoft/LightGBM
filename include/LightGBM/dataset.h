@@ -6,6 +6,8 @@
 #define LIGHTGBM_DATASET_H_
 
 #include <LightGBM/config.h>
+#include <LightGBM/cuda/cuda_column_data.hpp>
+#include <LightGBM/cuda/cuda_metadata.hpp>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/train_share_states.h>
@@ -21,9 +23,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
-#include <LightGBM/cuda/cuda_column_data.hpp>
-#include <LightGBM/cuda/cuda_metadata.hpp>
 
 namespace LightGBM {
 

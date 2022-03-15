@@ -4,18 +4,17 @@
  * license information.
  */
 
-#ifndef LIGHTGBM_CUDA_BEST_SPLIT_FINDER_HPP_
-#define LIGHTGBM_CUDA_BEST_SPLIT_FINDER_HPP_
+#ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_BEST_SPLIT_FINDER_HPP_
+#define LIGHTGBM_TREELEARNER_CUDA_CUDA_BEST_SPLIT_FINDER_HPP_
 
 #ifdef USE_CUDA_EXP
 
 #include <LightGBM/bin.h>
+#include <LightGBM/cuda/cuda_random.hpp>
+#include <LightGBM/cuda/cuda_split_info.hpp>
 #include <LightGBM/dataset.h>
 
 #include <vector>
-
-#include <LightGBM/cuda/cuda_random.hpp>
-#include <LightGBM/cuda/cuda_split_info.hpp>
 
 #include "cuda_leaf_splits.hpp"
 
@@ -203,4 +202,4 @@ class CUDABestSplitFinder {
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
-#endif  // LIGHTGBM_CUDA_HISTOGRAM_CONSTRUCTOR_HPP_
+#endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_BEST_SPLIT_FINDER_HPP_
