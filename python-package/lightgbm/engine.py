@@ -43,7 +43,8 @@ def train(
     Parameters
     ----------
     params : dict
-        Parameters for training.
+        Parameters for training. If callable objective functions is passed through ``params`` and ``fobj``
+        the Booster uses the first one.
     train_set : Dataset
         Data to be trained on.
     num_boost_round : int, optional (default=100)
@@ -386,7 +387,8 @@ def cv(params, train_set, num_boost_round=100,
     Parameters
     ----------
     params : dict
-        Parameters for Booster.
+        Parameters for Booster. If callable objective functions is passed through ``params`` and ``fobj``
+        the Booster uses the first one.
     train_set : Dataset
         Data to be trained on.
     num_boost_round : int, optional (default=100)
