@@ -2344,7 +2344,7 @@ def test_objective_callable_cv():
     params_with_metric = {'verbose': -1, 'objective': mse_obj, 'metric': 'l2'}
     cv_res = lgb.cv(params_with_metric, lgb_train, num_boost_round=10,
                     nfold=3, stratified=False)
-    assert 'valid l2-mean' not in cv_res
+    assert 'valid l2-mean' in cv_res
     assert len(cv_res['valid l2-mean']) == 10
 
 
