@@ -499,6 +499,9 @@ test_that("Dataset: method calls on a Dataset with a null handle should raise an
     dtrain$get_colnames()
   }, regexp = "cannot get column names before dataset has been constructed")
   expect_error({
+    dtrain$get_feature_num_bin(1L)
+  }, regexp = "Cannot get number of bins in feature before constructing Dataset.")
+  expect_error({
     dtrain$save_binary(fname = tempfile(fileext = ".bin"))
   }, regexp = "Attempting to create a Dataset without any raw data")
   expect_error({
@@ -521,4 +524,27 @@ test_that("Dataset: method calls on a Dataset with a null handle should raise an
   expect_error({
     dtrain$set_reference(reference = dvalid)
   }, regexp = "cannot get column names before dataset has been constructed")
+})
+
+test_that("lgb.Dataset$get_feature_num_bin() works", {
+  raw_df <- data.frame(
+    all_random = runif(100L)
+    , two_vals = rep(c(1.0, 2.0), 50L)
+    , three_vals = c(rep(c(0.0, 1.0, 2.0), 33L), 0.0)
+    , two_vals_plus_missing = c(rep(c(1.0, 2.0), 49L), NA_real_, NA_real_)
+    , all_zero = rep(0.0, 100L)
+  )
+  raw_mat <- data.matrix(raw_df)
+  min_data_in_bin <- 2L
+  ds <- lgb.Dataset(raw_mat, params = list(min_data_in_bin = min_data_in_bin))
+  ds$construct()
+  expected_num_bins <- c(
+    100L %/% min_data_in_bin + 1L  # extra bin for zero
+    , 3L  # 0, 1, 2
+    , 3L  # 0, 1, 2
+    , 4L  # 0, 1, 2 + NA
+    , 0L  # unused
+  )
+  actual_num_bins <- sapply(1L:5L, ds$get_feature_num_bin)
+  expect_identical(actual_num_bins, expected_num_bins)
 })
