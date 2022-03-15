@@ -2267,48 +2267,6 @@ def test_multiple_feval_train():
     assert 'decreasing_metric' in evals_result['valid_0']
 
 
-def test_params_metric_feval_callable_train():
-    # Test classification
-    X, y = load_breast_cancer(return_X_y=True)
-    # Test single callable
-    params = {'verbose': -1, 'objective': 'binary', 'metric': constant_metric}
-    X_train, X_validation, y_train, y_validation = train_test_split(X, y, test_size=0.2)
-    train_dataset = lgb.Dataset(data=X_train, label=y_train)
-    validation_dataset = lgb.Dataset(data=X_validation, label=y_validation, reference=train_dataset)
-    evals_result = {}
-    lgb.train(
-        params=params,
-        train_set=train_dataset,
-        valid_sets=validation_dataset,
-        num_boost_round=5,
-        feval=decreasing_metric,
-        callbacks=[lgb.record_evaluation(evals_result)]
-    )
-    assert len(evals_result['valid_0']) == 2
-    assert 'error' in evals_result['valid_0']
-    assert 'decreasing_metric' in evals_result['valid_0']
-
-    # Test regression
-    X, y = load_boston(return_X_y=True)
-    params = {'verbose': -1, 'metric': ['l2', constant_metric]}
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    lgb_train = lgb.Dataset(X_train, y_train)
-    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-    evals_result = {}
-    gbm = lgb.train(
-        params,
-        lgb_train,
-        num_boost_round=50,
-        valid_sets=lgb_eval,
-        feval=(lambda p, d: ('custom_mae', mean_absolute_error(p, d.get_label()), False)),
-        callbacks=[lgb.record_evaluation(evals_result)]
-    )
-    assert len(evals_result['valid_0']) == 3
-    assert 'l2' in evals_result['valid_0']
-    assert 'error' in evals_result['valid_0']
-    assert 'custom_mae' in evals_result['valid_0']
-
-
 def test_objective_callable_train():
     # Test classification
     X, y = load_breast_cancer(return_X_y=True)

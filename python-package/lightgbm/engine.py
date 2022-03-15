@@ -127,19 +127,6 @@ def train(
     """
     # create predictor first
     params = copy.deepcopy(params)
-    eval_metric = params.get('metric')
-    # merge metrics through params and feval
-    if eval_metric is not None:
-        eval_metric_list = copy.deepcopy(eval_metric)
-        if not isinstance(eval_metric, list):
-            eval_metric_is_str = isinstance(eval_metric_list, str)
-            eval_metric_is_callable = callable(eval_metric_list)
-            eval_metric_list = [eval_metric_list] if (eval_metric_is_str or eval_metric_is_callable) else list(eval_metric_list)
-            params['metric'] = eval_metric_list
-        eval_metrics_callable, eval_metrics_builtin = _separate_metrics_list(eval_metric_list)
-        params = _concat_params_metrics(params, eval_metrics_builtin)
-        feval = _concat_metric_feval_callables(eval_metrics_callable, feval)
-    # customized objective can be passed either through params or fobj
     fobj = _objective_is_callable(params, fobj)
     if fobj is not None:
         for obj_alias in _ConfigAliases.get("objective"):
@@ -504,6 +491,7 @@ def cv(params, train_set, num_boost_round=100,
         raise TypeError("Training only accepts Dataset object")
 
     params = copy.deepcopy(params)
+    fobj = _objective_is_callable(params, fobj)
     if fobj is not None:
         for obj_alias in _ConfigAliases.get("objective"):
             params.pop(obj_alias, None)
