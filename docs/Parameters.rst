@@ -127,15 +127,13 @@ Core Parameters
 
       -  label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
 
--  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
+-  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, aliases: ``boosting_type``, ``boost``
 
    -  ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
 
    -  ``rf``, Random Forest, aliases: ``random_forest``
 
    -  ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
-
-   -  ``goss``, Gradient-based One-Side Sampling
 
       -  **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
 

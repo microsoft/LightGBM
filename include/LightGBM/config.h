@@ -141,11 +141,10 @@ struct Config {
   // [doc-only]
   // type = enum
   // alias = boosting_type, boost
-  // options = gbdt, rf, dart, goss
+  // options = gbdt, rf, dart
   // desc = ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
-  // desc = ``goss``, Gradient-based One-Side Sampling
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
