@@ -147,4 +147,4 @@ class GOSS : public SampleStrategy {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_SAMPLE_STRATEGY_GOSS_HPP_
+#endif  // LIGHTGBM_BOOSTING_GOSS_HPP_
