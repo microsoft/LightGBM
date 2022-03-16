@@ -84,13 +84,6 @@ jobs:
             toolchain: MSYS
             r_version: 4.1
             build_type: cmake
-          # Visual Studio 2017
-          - os: windows-2016
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 3.6
-            build_type: cmake
           # Visual Studio 2019
           - os: windows-2019
             task: r-package
