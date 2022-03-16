@@ -89,7 +89,7 @@ jobs:
             task: r-package
             compiler: MSVC
             toolchain: MSVC
-            r_version: 4.1
+            r_version: 3.6
             build_type: cmake
           # Visual Studio 2022
           - os: windows-2022
