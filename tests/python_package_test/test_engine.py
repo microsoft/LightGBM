@@ -2199,7 +2199,7 @@ def test_metrics():
         assert 'valid error-mean' in res
         # multiclass metric alias with custom one for custom objective
         res = get_cv_result(params_obj_class_3_verbose, fobj=dummy_obj, feval=constant_metric)
-        assert len(res) == 2
+        assert len(res) == 4
         assert 'valid error-mean' in res
         # no metric for invalid class_num
         res = get_cv_result(params_obj_class_1_verbose, fobj=dummy_obj)
@@ -2280,18 +2280,13 @@ def test_objective_callable_train():
     X_train, X_validation, y_train, y_validation = train_test_split(X, y, test_size=0.2)
     train_dataset = lgb.Dataset(data=X_train, label=y_train)
     validation_dataset = lgb.Dataset(data=X_validation, label=y_validation, reference=train_dataset)
-    evals_result = {}
-    lgb.train(
+    booster = lgb.train(
         params=params,
         train_set=train_dataset,
         valid_sets=validation_dataset,
-        num_boost_round=5,
-        feval=decreasing_metric,
-        callbacks=[lgb.record_evaluation(evals_result)]
+        num_boost_round=5
     )
-    assert len(evals_result['valid_0']) == 2
-    assert 'binary_logloss' in evals_result['valid_0']
-    assert 'decreasing_metric' in evals_result['valid_0']
+    assert booster.params['objective'] == 'none'
 
     # Test regression
     def mse_obj(y_pred, dtrain):
@@ -2304,17 +2299,13 @@ def test_objective_callable_train():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-    evals_result = {}
-    lgb.train(
+    booster = lgb.train(
         params,
         lgb_train,
-        num_boost_round=50,
+        num_boost_round=5,
         valid_sets=lgb_eval,
-        feval=decreasing_metric,
-        callbacks=[lgb.record_evaluation(evals_result)]
     )
-    assert len(evals_result['valid_0']) == 1
-    assert 'decreasing_metric' in evals_result['valid_0']
+    assert booster.params['objective'] == 'none'
 
 
 def test_objective_callable_cv():
