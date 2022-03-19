@@ -493,6 +493,8 @@ def cv(params, train_set, num_boost_round=100,
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
     params = copy.deepcopy(params)
+    if isinstance(params.get('objective'), str) and callable(fobj):
+        params['objective'] = fobj
     params = _choose_param_value(
         main_param_name='objective',
         params=params,

@@ -2206,7 +2206,7 @@ def test_metrics():
         assert 'valid error-mean' in res
         # multiclass metric alias with custom one for custom objective
         res = get_cv_result(params_obj_class_3_verbose, fobj=dummy_obj, feval=constant_metric)
-        assert len(res) == 4
+        assert len(res) == 2
         assert 'valid error-mean' in res
         # no metric for invalid class_num
         res = get_cv_result(params_obj_class_1_verbose, fobj=dummy_obj)
