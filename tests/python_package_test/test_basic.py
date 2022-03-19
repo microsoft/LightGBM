@@ -511,6 +511,35 @@ def test_choose_param_value():
     assert original_params == expected_params
 
 
+def test_choose_param_value_objective():
+    def dummy_obj(preds, train_data):
+        return np.ones(preds.shape), np.ones(preds.shape)
+
+    def mse_obj(y_pred, dtrain):
+        y_true = dtrain.get_label()
+        grad = (y_pred - y_true)
+        hess = np.ones(len(grad))
+        return grad, hess
+
+    # If callable is found in objective
+    params = {'objective': dummy_obj}
+    params = lgb.basic._choose_param_value(
+        main_param_name="objective",
+        params=params,
+        default_value=None
+    )
+    assert params['objective'] == dummy_obj
+
+    # If callable in objective and fobj prefer 'objective'
+    params = {'objective': dummy_obj}
+    params = lgb.basic._choose_param_value(
+        main_param_name="objective",
+        params=params,
+        default_value=mse_obj
+    )
+    assert params['objective'] == dummy_obj
+
+
 @pytest.mark.parametrize('collection', ['1d_np', '2d_np', 'pd_float', 'pd_str', '1d_list', '2d_list'])
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
 def test_list_to_1d_numpy(collection, dtype):
