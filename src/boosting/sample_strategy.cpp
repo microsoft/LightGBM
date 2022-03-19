@@ -16,9 +16,9 @@ SampleStrategy* SampleStrategy::CreateSampleStrategy(const Config* config, const
     Log::Warning("Found boosting=goss. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=goss. To suppress this warning, set data_sample_strategy=goss instead.");
   }
   if (use_goss_as_boosting || use_goss_as_strategy) {
-    return new GOSS(config, train_data, num_tree_per_iteration);
+    return new GOSSStrategy(config, train_data, num_tree_per_iteration);
   } else {
-    return new BAGGING(config, train_data, objective_function, num_tree_per_iteration);
+    return new BaggingSampleStrategy(config, train_data, objective_function, num_tree_per_iteration);
   }
 }
 

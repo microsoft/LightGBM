@@ -153,6 +153,7 @@ struct Config {
   // options = bagging, goss
   // desc = ``bagging``, Randomly Bagging Sampling
   // desc = ``goss``, Gradient-based One-Side Sampling
+  // desc = ``bagging`` is only effective when bagging_freq > 0 and bagging_fraction < 1.0
   std::string data_sample_strategy = "bagging";
 
   // alias = train, train_data, train_data_file, data_filename
@@ -253,7 +254,7 @@ struct Config {
   // desc = enabling this is recommended when:
   // descl2 = the number of data points is large, and the total number of bins is relatively small
   // descl2 = ``num_threads`` is relatively small, e.g. ``<= 16``
-  // descl2 = you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
+  // descl2 = you want to use small ``bagging_fraction`` or ``goss`` sample strategy to speed up
   // desc = **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
   // desc = **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them

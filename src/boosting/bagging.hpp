@@ -8,9 +8,9 @@
 
 namespace LightGBM {
 
-class BAGGING : public SampleStrategy {
+class BaggingSampleStrategy : public SampleStrategy {
  public:
-  BAGGING(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration)
+  BaggingSampleStrategy(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration)
     : need_re_bagging_(false) {
     config_ = config;
     train_data_ = train_data;
@@ -19,9 +19,9 @@ class BAGGING : public SampleStrategy {
     num_tree_per_iteration_ = num_tree_per_iteration;
   }
 
-  ~BAGGING() {}
+  ~BaggingSampleStrategy() {}
 
-  void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) override {
+  void Bagging(int iter, TreeLearner* tree_learner, score_t* /*gradients*/, score_t* /*hessians*/) override {
     Common::FunctionTimer fun_timer("GBDT::Bagging", global_timer);
     // if need bagging
     if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0) ||
@@ -55,9 +55,6 @@ class BAGGING : public SampleStrategy {
                                       bag_data_cnt_);
       }
     }
-    // avoid warnings
-    std::ignore = gradients;
-    std::ignore = hessians;
   }
 
   void ResetSampleConfig(const Config* config, bool is_change_dataset) override {
