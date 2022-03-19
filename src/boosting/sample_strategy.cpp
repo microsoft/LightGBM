@@ -9,7 +9,11 @@
 
 namespace LightGBM {
 
-SampleStrategy* SampleStrategy::CreateSampleStrategy(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration) {
+SampleStrategy* SampleStrategy::CreateSampleStrategy(
+  const Config* config,
+  const Dataset* train_data,
+  const ObjectiveFunction* objective_function,
+  int num_tree_per_iteration) {
   bool use_goss_as_boosting = config->boosting == std::string("goss");
   bool use_goss_as_strategy = config->data_sample_strategy == std::string("goss");
   if (use_goss_as_boosting) {
