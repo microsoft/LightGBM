@@ -143,6 +143,8 @@ Core Parameters
 
    -  ``goss``, Gradient-based One-Side Sampling
 
+   -  ``bagging`` is only effective when bagging_freq > 0 and bagging_fraction < 1.0
+
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
    -  path of training data, LightGBM will train from this data
@@ -268,7 +270,7 @@ Learning Control Parameters
 
       -  ``num_threads`` is relatively small, e.g. ``<= 16``
 
-      -  you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
+      -  you want to use small ``bagging_fraction`` or ``goss`` sample strategy to speed up
 
    -  **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
 
