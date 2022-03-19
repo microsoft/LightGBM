@@ -28,6 +28,13 @@ def dummy_obj(preds, train_data):
     return np.ones(preds.shape), np.ones(preds.shape)
 
 
+def mse_obj(y_pred, dtrain):
+    y_true = dtrain.get_label()
+    grad = (y_pred - y_true)
+    hess = np.ones(len(grad))
+    return grad, hess
+
+
 def multi_logloss(y_true, y_pred):
     return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
 
@@ -2289,11 +2296,6 @@ def test_objective_callable_train():
     assert booster.params['objective'] == 'none'
 
     # Test regression
-    def mse_obj(y_pred, dtrain):
-        y_true = dtrain.get_label()
-        grad = (y_pred - y_true)
-        hess = np.ones(len(grad))
-        return grad, hess
     X, y = load_boston(return_X_y=True)
     params = {'verbose': -1, 'objective': mse_obj}
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -2318,25 +2320,33 @@ def test_objective_callable_cv():
         params,
         train_dataset,
         num_boost_round=25,
-        nfold=3
+        nfold=3,
+        return_cvbooster=True
     )
-    assert 'valid binary_logloss-mean' in cv_res
-    assert len(cv_res['valid binary_logloss-mean']) == 25
+    cv_booster = cv_res['cvbooster'].boosters
+    cv_objs = [
+        cb.params['objective'] == 'none' for cb in cv_booster
+    ]
+    assert all(cv_objs)
 
     # Test regression
-    def mse_obj(y_pred, dtrain):
-        y_true = dtrain.get_label()
-        grad = (y_pred - y_true)
-        hess = np.ones(len(grad))
-        return grad, hess
     X_train, y_train = make_synthetic_regression()
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
     params_with_metric = {'verbose': -1, 'objective': mse_obj, 'metric': 'l2'}
-    cv_res = lgb.cv(params_with_metric, lgb_train, num_boost_round=10,
-                    nfold=3, stratified=False)
-    assert 'valid l2-mean' in cv_res
-    assert len(cv_res['valid l2-mean']) == 10
+    cv_res = lgb.cv(
+        params_with_metric,
+        lgb_train,
+        num_boost_round=10,
+        nfold=3,
+        stratified=False,
+        return_cvbooster=True
+    )
+    cv_booster = cv_res['cvbooster'].boosters
+    cv_objs = [
+        cb.params['objective'] == 'none' for cb in cv_booster
+    ]
+    assert all(cv_objs)
 
 
 def test_multiple_feval_cv():
