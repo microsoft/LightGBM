@@ -15,6 +15,14 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import load_breast_cancer
 
+objective_alias = [
+    "objective",
+    "objective_type",
+    "app",
+    "application",
+    "loss"
+]
+
 
 def test_basic(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
@@ -511,7 +519,8 @@ def test_choose_param_value():
     assert original_params == expected_params
 
 
-def test_choose_param_value_objective():
+@pytest.mark.parametrize("objective_alias", objective_alias)
+def test_choose_param_value_objective(objective_alias):
     def dummy_obj(preds, train_data):
         return np.ones(preds.shape), np.ones(preds.shape)
 
