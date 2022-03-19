@@ -9,8 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from . import callback
-from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning,
-                    _objective_is_callable)
+from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomObjectiveFunction = Callable[
@@ -42,8 +41,8 @@ def train(
     Parameters
     ----------
     params : dict
-        Parameters for training. If callable objective functions is passed through ``params`` and ``fobj``
-        the Booster uses the first one.
+        Parameters for Booster. Values passed through `params` take precedence over those
+        supplied via keyword arguments.
     train_set : Dataset
         Data to be trained on.
     num_boost_round : int, optional (default=100)
@@ -127,11 +126,14 @@ def train(
     """
     # create predictor first
     params = copy.deepcopy(params)
-    fobj = _objective_is_callable(params, fobj)
-    if fobj is not None:
-        for obj_alias in _ConfigAliases.get("objective"):
-            params.pop(obj_alias, None)
-        params['objective'] = 'none'
+    params = _choose_param_value(
+        main_param_name='objective',
+        params=params,
+        default_value=fobj
+    )
+    if callable(params["objective"]):
+        fobj = params["objective"]
+        params["objective"] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             num_boost_round = params.pop(alias)
@@ -386,8 +388,8 @@ def cv(params, train_set, num_boost_round=100,
     Parameters
     ----------
     params : dict
-        Parameters for Booster. If callable objective functions is passed through ``params`` and ``fobj``
-        the Booster uses the first one.
+        Parameters for Booster. Values passed through `params` take precedence over those
+        supplied via keyword arguments.
     train_set : Dataset
         Data to be trained on.
     num_boost_round : int, optional (default=100)
@@ -490,13 +492,15 @@ def cv(params, train_set, num_boost_round=100,
     """
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
-
     params = copy.deepcopy(params)
-    fobj = _objective_is_callable(params, fobj)
-    if fobj is not None:
-        for obj_alias in _ConfigAliases.get("objective"):
-            params.pop(obj_alias, None)
-        params['objective'] = 'none'
+    params = _choose_param_value(
+        main_param_name='objective',
+        params=params,
+        default_value=fobj
+    )
+    if callable(params["objective"]):
+        fobj = params["objective"]
+        params["objective"] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             _log_warning(f"Found '{alias}' in params. Will use it instead of 'num_boost_round' argument")
