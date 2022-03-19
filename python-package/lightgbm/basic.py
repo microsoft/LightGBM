@@ -294,32 +294,6 @@ def param_dict_to_str(data):
     return ' '.join(pairs)
 
 
-def _separate_metrics_list(metrics_list):
-    """Separate built-in from callable evaluation metrics."""
-    metrics_callable = [f for f in metrics_list if callable(f)]
-    metrics_builtin = [m for m in metrics_list if isinstance(m, str)]
-    return metrics_callable, metrics_builtin
-
-
-def _concat_params_metrics(params, metrics_builtin):
-    """Concatenate metric from params (or default if not provided in params) and eval_metric."""
-    params = deepcopy(params)
-    params_metric = deepcopy(params.get('metric'))
-    params_metric = [params_metric] if isinstance(params_metric, (str, type(None))) else params_metric
-    params_metric = [e for e in metrics_builtin if e not in params_metric] + params_metric
-    params_metric = [metric for metric in params_metric if metric is not None]
-    params['metric'] = params_metric
-    return params
-
-
-def _concat_metric_feval_callables(metrics_callable, feval_callable):
-    """Concatenate evaluation metric from params and feval."""
-    feval_callable = [feval_callable] if (isinstance(feval_callable, type(None)) or callable(feval_callable)) else feval_callable
-    feval_callable = [e for e in metrics_callable if e not in feval_callable] + feval_callable
-    feval_callable = [metric for metric in feval_callable if metric is not None]
-    return feval_callable
-
-
 def _objective_is_callable(params, fobj_callable):
     """Check if objective function from params or from fobj is callable."""
     # objective function has different aliases
