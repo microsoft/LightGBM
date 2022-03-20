@@ -25,7 +25,8 @@ lgb.cv(
   early_stopping_rounds = NULL,
   callbacks = list(),
   reset_data = FALSE,
-  serializable = TRUE
+  serializable = TRUE,
+  eval_train_metric = FALSE
 )
 }
 \arguments{
@@ -120,6 +121,10 @@ into a predictor model which frees up memory and the original datasets}
 
 \item{serializable}{whether to make the resulting objects serializable through functions such as
 \code{save} or \code{saveRDS} (see section "Model serialization").}
+
+\item{eval_train_metric}{\code{boolean}, whether to add the cross validation results on the
+training data. This parameter defaults to \code{FALSE}. Setting it to \code{TRUE}
+will increase run time.}
 }
 \value{
 a trained model \code{lgb.CVBooster}.

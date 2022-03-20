@@ -581,7 +581,9 @@ Following procedure is for the **MSVC** (Microsoft Visual C++) build.
 
    Visual Studio 2017 -> ``msvc-14.1-64.exe``,
 
-   Visual Studio 2019 -> ``msvc-14.2-64.exe``.
+   Visual Studio 2019 -> ``msvc-14.2-64.exe``,
+
+   Visual Studio 2022 -> ``msvc-14.3-64.exe``.
 
 4. Run the following commands:
 
