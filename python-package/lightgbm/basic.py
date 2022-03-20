@@ -116,7 +116,7 @@ def _log_error(msg: str) -> None:
 
 @_normalize_native_string
 def _log_native(msg: str) -> None:
-    _LOGGER.info(msg)
+    getattr(_LOGGER, _INFO_METHOD_NAME)(msg)
 
 
 def _log_callback(msg: bytes) -> None:

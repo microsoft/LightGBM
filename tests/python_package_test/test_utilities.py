@@ -143,38 +143,48 @@ def test_register_invalid_logger():
         lgb.register_logger(LoggerWithAttributeNotCallable())
 
 
-def test_register_custom_logger(tmp_path):
-    log_filename = tmp_path / "LightGBM_test_custom_logger.log"
+
+def test_register_custom_logger():
+    logged_messages = []
 
     class CustomLogger:
-        def __init__(self, log_filename):
-            self.writer = open(log_filename, "w")
-
         def custom_info(self, msg: str) -> None:
-            self.writer.write(msg + "\n")
-            self.writer.flush()
+            logged_messages.append(msg)
 
         def custom_warning(self, msg: str) -> None:
-            self.writer.write(msg + "\n")
-            self.writer.flush()
+            logged_messages.append(msg)
 
         def custom_error(self, msg: str) -> None:
-            self.writer.write(msg + "\n")
-            self.writer.flush()
+            logged_messages.append(msg)
 
-    custom_logger = CustomLogger(log_filename)
-    lgb.register_logger(custom_logger, info_method_name="custom_info",
-                        warning_method_name="custom_warning",
-                        error_method_name="custom_error")
+    custom_logger = CustomLogger()
+    lgb.register_logger(
+        custom_logger,
+        info_method_name="custom_info",
+        warning_method_name="custom_warning",
+        error_method_name="custom_error",
+    )
 
-    lgb._log_info("info message")
-    lgb._log_warning("warning message")
-    lgb._log_error("error message")
+    lgb.basic._log_info("info message")
+    lgb.basic._log_warning("warning message")
+    lgb.basic._log_error("error message")
 
-    expected_log = r"""
-info message
-warning message
-error message
-""".strip()
-    logged_message = open(log_filename, "r").read().strip()
-    assert logged_message == expected_log
+    expected_log = ["info message", "warning message", "error message"]
+    assert logged_messages == expected_log
+
+    logged_messages = []
+    X = np.array([[1, 2, 3],
+                  [1, 2, 4],
+                  [1, 2, 4],
+                  [1, 2, 3]],
+                 dtype=np.float32)
+    y = np.array([0, 1, 1, 0])
+    lgb_data = lgb.Dataset(X, y)
+    lgb.train(
+        {'objective': 'binary', 'metric': 'auc'},
+        lgb_data,
+        num_boost_round=10,
+        valid_sets=[lgb_data],
+        categorical_feature=[1]
+    )
+    assert logged_messages, "custom logger was not called"
