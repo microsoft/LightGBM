@@ -3471,11 +3471,12 @@ def test_training_leaf_count_zero(device):
     # Make random data with the seed
     R,C = 100000, 10
     if device == 'cpu':
-        intData = pd.read_csv(f"tests/data/data_fail_leaf_count_zero_cpu.csv", index_col=0)
-        data = (intData / 1_000_000_000).astype(np.float32)
+        np.random.seed(0)
     else:
-        intData = pd.read_csv(f"tests/data/data_fail_leaf_count_zero_gpu.csv", index_col=0)
-        data = (intData / 1_000_000_000).astype(np.float32)
+        np.random.seed(50)
+    data = pd.DataFrame(np.random.randn(R,C), dtype=np.float32)
+    for i in range(1,C):
+        data[i] += data[0] * np.random.randn()
 
     # Split train/test = 60/40
     N = int(0.6*len(data))
@@ -3509,30 +3510,3 @@ def test_training_leaf_count_zero(device):
     # The code without the fix will break on the following line
     gbm = lgb.train(params, train, num_boost_round=5000, valid_sets=test)
     assert True
-
-@pytest.mark.parametrize('device', ['cpu', 'gpu'])
-def test_training_num_machines_gt_one(device):
-    # test data is prepared produce one of the following errors (without the fix):
-    #    Check failed: (best_split_info.left_count) > (0)
-    #    Check failed: (best_split_info.right_count) > (0)
-    # When this is fixed then the error produced is
-    # The issues related to this tests are:
-    # https://github.com/microsoft/LightGBM/issues/4946
-
-    data = pd.read_csv("tests/data/data_fail_num_machines_gt_one.csv", index_col=0)
-
-    X = (data.iloc[:, 0:10]/1_000_000_000).astype(np.float32)
-    y = (data.iloc[:, 10:11]/1_000_000_000).astype(np.float32)
-    w = data.iloc[:, 11:12].astype(np.float32)
-
-    model = lgb.sklearn.LGBMRegressor(
-        device=device,
-        deterministic=True,
-        objective='mape',
-        subsample=0.7,
-        subsample_freq=1
-    )
-
-    print(model.get_params())
-
-    model.fit(X=X, y=y, sample_weight=w.values.ravel())
