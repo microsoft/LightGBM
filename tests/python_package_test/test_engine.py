@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import psutil
 import pytest
+from scipy import special
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
 from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
@@ -33,6 +34,27 @@ def mse_obj(y_pred, dtrain):
     grad = (y_pred - y_true)
     hess = np.ones(len(grad))
     return grad, hess
+
+
+def logloss_obj(preds, train_data):
+    """Taken from https://maxhalford.github.io/blog/lightgbm-focal-loss/"""
+    y = train_data.get_label()
+    p = special.expit(preds)
+    grad = p - y
+    hess = p * (1 - p)
+    return grad, hess
+
+
+def logloss_metric(preds, train_data):
+    """Taken from https://maxhalford.github.io/blog/lightgbm-focal-loss/"""
+    y = train_data.get_label()
+    p = special.expit(preds)
+    ll = np.empty_like(p)
+    pos = y == 1
+    ll[pos] = np.log(p[pos])
+    ll[~pos] = np.log(1 - p[~pos])
+    is_higher_better = False
+    return 'logloss', -ll.mean(), is_higher_better
 
 
 def multi_logloss(y_true, y_pred):
@@ -2283,31 +2305,44 @@ def test_multiple_feval_train():
 def test_objective_callable_train():
     # Test classification
     X, y = load_breast_cancer(return_X_y=True)
-    params = {'verbose': -1, 'objective': dummy_obj, 'metric': 'binary_logloss'}
-    X_train, X_validation, y_train, y_validation = train_test_split(X, y, test_size=0.2)
-    train_dataset = lgb.Dataset(data=X_train, label=y_train)
-    validation_dataset = lgb.Dataset(data=X_validation, label=y_validation, reference=train_dataset)
+    params = {
+        'verbose': -1,
+        'objective': logloss_obj,
+        'learning_rate': 0.01
+    }
+    train_dataset = lgb.Dataset(X, y)
     booster = lgb.train(
         params=params,
         train_set=train_dataset,
-        valid_sets=validation_dataset,
-        num_boost_round=5
+        num_boost_round=100,
+        feval=logloss_metric
     )
+    y_pred = special.expit(booster.predict(X))
+    logloss_error = log_loss(y, y_pred)
+    rocauc_error = roc_auc_score(y, y_pred)
     assert booster.params['objective'] == 'none'
+    assert logloss_error == pytest.approx(0.25, 0.1)
+    assert rocauc_error == pytest.approx(0.99, 0.5)
 
     # Test regression
-    X, y = load_boston(return_X_y=True)
-    params = {'verbose': -1, 'objective': mse_obj}
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    lgb_train = lgb.Dataset(X_train, y_train)
-    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+    X, y = make_synthetic_regression()
+    params = {
+        'verbose': -1,
+        'objective': mse_obj
+    }
+    lgb_train = lgb.Dataset(X, y)
     booster = lgb.train(
         params,
         lgb_train,
-        num_boost_round=5,
-        valid_sets=lgb_eval,
+        num_boost_round=100
     )
+    y_pred = booster.predict(X)
+    mae_error = mean_absolute_error(y, y_pred)
+    mse_error = mean_squared_error(y, y_pred)
+    
     assert booster.params['objective'] == 'none'
+    assert mae_error == pytest.approx(8, 0.1)
+    assert mse_error == pytest.approx(119, 1)
 
 
 def test_objective_callable_cv():
@@ -2331,9 +2366,12 @@ def test_objective_callable_cv():
 
     # Test regression
     X_train, y_train = make_synthetic_regression()
-    params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
-    params_with_metric = {'verbose': -1, 'objective': mse_obj, 'metric': 'l2'}
+    params_with_metric = {
+        'verbose': -1,
+        'objective': mse_obj,
+        'metric': 'l2'
+    }
     cv_res = lgb.cv(
         params_with_metric,
         lgb_train,

@@ -15,14 +15,6 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import load_breast_cancer
 
-objective_alias = [
-    "objective",
-    "objective_type",
-    "app",
-    "application",
-    "loss"
-]
-
 
 def test_basic(tmp_path):
     X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(return_X_y=True),
@@ -519,7 +511,7 @@ def test_choose_param_value():
     assert original_params == expected_params
 
 
-@pytest.mark.parametrize("objective_alias", objective_alias)
+@pytest.mark.parametrize("objective_alias", lgb.basic._ConfigAliases.get("objective"))
 def test_choose_param_value_objective(objective_alias):
     def dummy_obj(preds, train_data):
         return np.ones(preds.shape), np.ones(preds.shape)
@@ -531,7 +523,7 @@ def test_choose_param_value_objective(objective_alias):
         return grad, hess
 
     # If callable is found in objective
-    params = {'objective': dummy_obj}
+    params = {objective_alias: dummy_obj}
     params = lgb.basic._choose_param_value(
         main_param_name="objective",
         params=params,
@@ -539,14 +531,23 @@ def test_choose_param_value_objective(objective_alias):
     )
     assert params['objective'] == dummy_obj
 
-    # If callable in objective and fobj prefer 'objective'
-    params = {'objective': dummy_obj}
+    # Value in params should be preferred to the default_value passed from keyword arguments
+    params = {objective_alias: dummy_obj}
     params = lgb.basic._choose_param_value(
         main_param_name="objective",
         params=params,
         default_value=mse_obj
     )
     assert params['objective'] == dummy_obj
+
+    # None of objective or its aliases in params, but default_value is callable.
+    params = {}
+    params = lgb.basic._choose_param_value(
+        main_param_name="objective",
+        params=params,
+        default_value=mse_obj
+    )
+    assert params['objective'] == mse_obj
 
 
 @pytest.mark.parametrize('collection', ['1d_np', '2d_np', 'pd_float', 'pd_str', '1d_list', '2d_list'])

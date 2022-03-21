@@ -41,7 +41,7 @@ def train(
     Parameters
     ----------
     params : dict
-        Parameters for Booster. Values passed through `params` take precedence over those
+        Parameters for Booster. Values passed through ``params`` take precedence over those
         supplied via keyword arguments.
     train_set : Dataset
         Data to be trained on.
@@ -388,7 +388,7 @@ def cv(params, train_set, num_boost_round=100,
     Parameters
     ----------
     params : dict
-        Parameters for Booster. Values passed through `params` take precedence over those
+        Parameters for Booster. Values passed through ``params`` take precedence over those
         supplied via keyword arguments.
     train_set : Dataset
         Data to be trained on.
