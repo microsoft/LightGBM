@@ -18,7 +18,7 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 
 import lightgbm as lgb
 
-from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression,
+from utils import (load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression,
                     sklearn_multiclass_custom_objective, softmax)
 
 decreasing_generator = itertools.count(0, -1)
@@ -3311,24 +3311,32 @@ def test_goss_boosting_and_strategy_equivalent():
     params1 = {
         'boosting': 'goss',
         'metric': 'l2',
-        'verbose': -1
+        'verbose': -1,
+        'bagging_seed': 0,
+        'learning_rate': 0.05,
+        'num_threads': 1,
+        'force_row_wise': True,
     }
     evals_result1 = {}
-    gbm = lgb.train(params1, lgb_train,
-                    num_boost_round=10,
-                    valid_sets=lgb_eval,
-                    callbacks=[lgb.record_evaluation(evals_result1)])
+    lgb.train(params1, lgb_train,
+              num_boost_round=10,
+              valid_sets=lgb_eval,
+              callbacks=[lgb.record_evaluation(evals_result1)])
     params2 = {
         'data_sample_strategy': 'goss',
         'metric': 'l2',
-        'verbose': -1
+        'verbose': -1,
+        'bagging_seed': 0,
+        'learning_rate': 0.05,
+        'num_threads': 1,
+        'force_row_wise': True,
     }
     evals_result2 = {}
-    gbm = lgb.train(params2, lgb_train,
-                    num_boost_round=10,
-                    valid_sets=lgb_eval,
-                    callbacks=[lgb.record_evaluation(evals_result2)])
-    np.testing.assert_allclose(evals_result1['valid_0']['l2'], evals_result2['valid_0']['l2'])
+    lgb.train(params2, lgb_train,
+              num_boost_round=10,
+              valid_sets=lgb_eval,
+              callbacks=[lgb.record_evaluation(evals_result2)])
+    np.testing.assert_equal(evals_result1['valid_0']['l2'], evals_result2['valid_0']['l2'])
 
 
 def test_sample_strategy_with_boosting():
@@ -3577,3 +3585,5 @@ def test_boost_from_average_with_single_leaf_trees():
     preds = model.predict(X)
     mean_preds = np.mean(preds)
     assert y.min() <= mean_preds <= y.max()
+
+test_goss_boosting_and_strategy_equivalent()
