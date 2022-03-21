@@ -9,6 +9,7 @@ import random
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
@@ -3458,3 +3459,80 @@ def test_boost_from_average_with_single_leaf_trees():
     preds = model.predict(X)
     mean_preds = np.mean(preds)
     assert y.min() <= mean_preds <= y.max()
+
+@pytest.mark.parametrize('device', ['cpu', 'gpu'])
+def test_training_leaf_count_zero(device):
+    # test data is prepared produce one of the following errors (without the fix):
+    #    Check failed: (best_split_info.left_count) > (0)
+    #    Check failed: (best_split_info.right_count) > (0)
+    # The issues related to this tests are:
+    # https://github.com/microsoft/LightGBM/issues/4946
+
+    # Make random data with the seed
+    R,C = 100000, 10
+    if device == 'cpu':
+        intData = pd.read_csv(f"tests/data/data_fail_leaf_count_zero_cpu.csv", index_col=0)
+        data = (intData / 1_000_000_000).astype(np.float32)
+    else:
+        intData = pd.read_csv(f"tests/data/data_fail_leaf_count_zero_gpu.csv", index_col=0)
+        data = (intData / 1_000_000_000).astype(np.float32)
+
+    # Split train/test = 60/40
+    N = int(0.6*len(data))
+    train_data = data.loc[:N]
+    test_data = data.loc[N:]
+
+    train = lgb.Dataset(train_data.iloc[:, 1:], train_data.iloc[:,0], free_raw_data=True)
+    test = lgb.Dataset(test_data.iloc[:, 1:], test_data.iloc[:,0], 
+        free_raw_data=True, reference=train)
+
+    # The test is run twice, on cpu and gpu
+    params = {
+        'device': device,
+        'boosting_type': 'gbdt',
+        'objective': 'regression',
+        'max_tree_output':0.03,
+        'max_bin': 20,
+        'max_depth': 10,
+        'num_leaves': 127,
+        'seed': 8,
+        'learning_rate': 0.01,
+        'bagging_fraction': 0.5,
+        'bagging_freq': 1,
+        'min_data_in_leaf': 0,
+        'verbose': -1,
+        'min_split_gain': 0.1,
+        'cegb_penalty_feature_coupled': 5 * np.ones(C - 1),
+        'cegb_penalty_split': 0.0000002,
+    }
+
+    # The code without the fix will break on the following line
+    gbm = lgb.train(params, train, num_boost_round=5000, valid_sets=test)
+    assert True
+
+@pytest.mark.parametrize('device', ['cpu', 'gpu'])
+def test_training_num_machines_gt_one(device):
+    # test data is prepared produce one of the following errors (without the fix):
+    #    Check failed: (best_split_info.left_count) > (0)
+    #    Check failed: (best_split_info.right_count) > (0)
+    # When this is fixed then the error produced is
+    # The issues related to this tests are:
+    # https://github.com/microsoft/LightGBM/issues/4946
+
+    data = pd.read_csv("tests/data/data_fail_num_machines_gt_one.csv", index_col=0)
+
+    X = (data.iloc[:, 0:10]/1_000_000_000).astype(np.float32)
+    y = (data.iloc[:, 10:11]/1_000_000_000).astype(np.float32)
+    w = data.iloc[:, 11:12].astype(np.float32)
+
+    model = lgb.sklearn.LGBMRegressor(
+        device=device,
+        deterministic=True,
+        objective='mape',
+        subsample=0.7,
+        subsample_freq=1
+    )
+
+    print(model.get_params())
+
+    model.fit(X=X, y=y, sample_weight=w.values.ravel())

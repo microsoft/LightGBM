@@ -683,7 +683,8 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
 
   // init the leaves that used on next iteration
   if (best_split_info.left_count < best_split_info.right_count) {
-    CHECK_GT(best_split_info.left_count, 0);
+    if (best_split_info.left_count == 0)
+      Log::Warning("Best split left count is 0 for leaf %d", *left_leaf);
     smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(),
                                best_split_info.left_sum_gradient,
                                best_split_info.left_sum_hessian,
@@ -693,7 +694,8 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                               best_split_info.right_sum_hessian,
                               best_split_info.right_output);
   } else {
-    CHECK_GT(best_split_info.right_count, 0);
+    if(best_split_info.right_count == 0)
+      Log::Warning("Best split right count is 0 for leaf %d", *right_leaf);
     smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(),
                                best_split_info.right_sum_gradient,
                                best_split_info.right_sum_hessian,
@@ -735,7 +737,8 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
         const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper, bag_mapper, cnt_leaf_data);
         tree->SetLeafOutput(i, new_output);
       } else {
-        CHECK_GT(num_machines, 1);
+        if (num_machines > 1)
+          Log::Warning("num_machines greater than 1 for leaf %d, num_machines is %d", i, num_machines);
         tree->SetLeafOutput(i, 0.0);
         n_nozeroworker_perleaf[i] = 0;
       }
