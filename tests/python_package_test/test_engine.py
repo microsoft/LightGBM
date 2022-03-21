@@ -2337,36 +2337,40 @@ def test_objective_callable_train():
         num_boost_round=100
     )
     y_pred = booster.predict(X)
-    mae_error = mean_absolute_error(y, y_pred)
     mse_error = mean_squared_error(y, y_pred)
-    
     assert booster.params['objective'] == 'none'
-    assert mae_error == pytest.approx(8, 0.1)
     assert mse_error == pytest.approx(119, 1)
 
 
 def test_objective_callable_cv():
     # Test classification
     X, y = load_breast_cancer(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    params = {'verbose': -1, 'objective': dummy_obj, 'metric': 'binary_logloss'}
-    train_dataset = lgb.Dataset(X_train, y_train)
+    params = {
+        'verbose': -1,
+        'objective': logloss_obj,
+        'learning_rate': 0.01
+    }
+    train_dataset = lgb.Dataset(X, y)
     cv_res = lgb.cv(
         params,
         train_dataset,
-        num_boost_round=25,
+        num_boost_round=100,
         nfold=3,
         return_cvbooster=True
     )
     cv_booster = cv_res['cvbooster'].boosters
+    cv_logloss_errors = [
+        log_loss(y, special.expit(cb.predict(X))) < 0.29 for cb in cv_booster
+    ]
     cv_objs = [
         cb.params['objective'] == 'none' for cb in cv_booster
     ]
     assert all(cv_objs)
+    assert all(cv_logloss_errors)
 
     # Test regression
-    X_train, y_train = make_synthetic_regression()
-    lgb_train = lgb.Dataset(X_train, y_train)
+    X, y = make_synthetic_regression()
+    lgb_train = lgb.Dataset(X, y)
     params_with_metric = {
         'verbose': -1,
         'objective': mse_obj,
@@ -2375,16 +2379,20 @@ def test_objective_callable_cv():
     cv_res = lgb.cv(
         params_with_metric,
         lgb_train,
-        num_boost_round=10,
+        num_boost_round=100,
         nfold=3,
         stratified=False,
         return_cvbooster=True
     )
     cv_booster = cv_res['cvbooster'].boosters
+    cv_mse_errors = [
+        mean_squared_error(y, cb.predict(X)) < 295 for cb in cv_booster
+    ]
     cv_objs = [
         cb.params['objective'] == 'none' for cb in cv_booster
     ]
     assert all(cv_objs)
+    assert all(cv_mse_errors)
 
 
 def test_multiple_feval_cv():
