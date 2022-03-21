@@ -152,8 +152,8 @@ struct Config {
   // type = enum
   // options = bagging, goss
   // desc = ``bagging``, Randomly Bagging Sampling
+  // descl2 = **Note**: ``bagging`` is only effective when ``bagging_freq > 0`` and ``bagging_fraction < 1.0``
   // desc = ``goss``, Gradient-based One-Side Sampling
-  // desc = ``bagging`` is only effective when bagging_freq > 0 and bagging_fraction < 1.0
   std::string data_sample_strategy = "bagging";
 
   // alias = train, train_data, train_data_file, data_filename
