@@ -28,7 +28,6 @@ def train(
     num_boost_round: int = 100,
     valid_sets: Optional[List[Dataset]] = None,
     valid_names: Optional[List[str]] = None,
-    fobj: Optional[_LGBM_CustomObjectiveFunction] = None,
     feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
     init_model: Optional[Union[str, Path, Booster]] = None,
     feature_name: Union[List[str], str] = 'auto',
@@ -51,27 +50,6 @@ def train(
         List of data to be evaluated on during training.
     valid_names : list of str, or None, optional (default=None)
         Names of ``valid_sets``.
-    fobj : callable or None, optional (default=None)
-        Customized objective function.
-        Should accept two parameters: preds, train_data,
-        and return (grad, hess).
-
-            preds : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The predicted values.
-                Predicted values are returned before any transformation,
-                e.g. they are raw margin instead of probability of positive class for binary task.
-            train_data : Dataset
-                The training dataset.
-            grad : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The value of the first order derivative (gradient) of the loss
-                with respect to the elements of preds for each sample point.
-            hess : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The value of the second order derivative (Hessian) of the loss
-                with respect to the elements of preds for each sample point.
-
-        For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
-        and grad and hess should be returned in the same format.
-
     feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, eval_data,
@@ -119,6 +97,27 @@ def train(
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
 
+    Note
+    ----
+    A custom objective function can be provided for the ``objective`` parameter.
+    It should accept two parameters: preds, train_data and return (grad, hess).
+
+        preds : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The predicted values.
+            Predicted values are returned before any transformation,
+            e.g. they are raw margin instead of probability of positive class for binary task.
+        train_data : Dataset
+            The training dataset.
+        grad : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The value of the first order derivative (gradient) of the loss
+            with respect to the elements of preds for each sample point.
+        hess : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The value of the second order derivative (Hessian) of the loss
+            with respect to the elements of preds for each sample point.
+
+    For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
+    and grad and hess should be returned in the same format.
+
     Returns
     -------
     booster : Booster
@@ -129,8 +128,9 @@ def train(
     params = _choose_param_value(
         main_param_name='objective',
         params=params,
-        default_value=fobj
+        default_value=None
     )
+    fobj = None
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = 'none'
@@ -409,27 +409,6 @@ def cv(params, train_set, num_boost_round=100,
     metrics : str, list of str, or None, optional (default=None)
         Evaluation metrics to be monitored while CV.
         If not None, the metric in ``params`` will be overridden.
-    fobj : callable or None, optional (default=None)
-        Customized objective function.
-        Should accept two parameters: preds, train_data,
-        and return (grad, hess).
-
-            preds : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The predicted values.
-                Predicted values are returned before any transformation,
-                e.g. they are raw margin instead of probability of positive class for binary task.
-            train_data : Dataset
-                The training dataset.
-            grad : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The value of the first order derivative (gradient) of the loss
-                with respect to the elements of preds for each sample point.
-            hess : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The value of the second order derivative (Hessian) of the loss
-                with respect to the elements of preds for each sample point.
-
-        For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
-        and grad and hess should be returned in the same format.
-
     feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, eval_data,
@@ -480,6 +459,27 @@ def cv(params, train_set, num_boost_round=100,
     return_cvbooster : bool, optional (default=False)
         Whether to return Booster models trained on each fold through ``CVBooster``.
 
+    Note
+    ----
+    A custom objective function can be provided for the ``objective`` parameter.
+    It should accept two parameters: preds, train_data and return (grad, hess).
+
+        preds : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The predicted values.
+            Predicted values are returned before any transformation,
+            e.g. they are raw margin instead of probability of positive class for binary task.
+        train_data : Dataset
+            The training dataset.
+        grad : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The value of the first order derivative (gradient) of the loss
+            with respect to the elements of preds for each sample point.
+        hess : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The value of the second order derivative (Hessian) of the loss
+            with respect to the elements of preds for each sample point.
+
+    For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
+    and grad and hess should be returned in the same format.
+
     Returns
     -------
     eval_hist : dict
@@ -493,13 +493,12 @@ def cv(params, train_set, num_boost_round=100,
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
     params = copy.deepcopy(params)
-    if isinstance(params.get('objective'), str) and callable(fobj):
-        params['objective'] = fobj
     params = _choose_param_value(
         main_param_name='objective',
         params=params,
-        default_value=fobj
+        default_value=None
     )
+    fobj = None
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = 'none'
