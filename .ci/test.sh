@@ -197,6 +197,7 @@ elif [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
     else
         sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda_exp";/' $BUILD_DIRECTORY/include/LightGBM/config.h
         grep -q 'std::string device_type = "cuda_exp"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+        # by default ``gpu_use_dp=false`` for efficiency. change to ``true`` here for exact results in ci tests
         sed -i'.bak' 's/gpu_use_dp = false;/gpu_use_dp = true;/' $BUILD_DIRECTORY/include/LightGBM/config.h
         grep -q 'gpu_use_dp = true' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     fi
