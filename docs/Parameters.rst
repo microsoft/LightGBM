@@ -141,9 +141,9 @@ Core Parameters
 
    -  ``bagging``, Randomly Bagging Sampling
 
-   -  ``goss``, Gradient-based One-Side Sampling
+      -  **Note**: ``bagging`` is only effective when ``bagging_freq > 0`` and ``bagging_fraction < 1.0``
 
-   -  ``bagging`` is only effective when bagging_freq > 0 and bagging_fraction < 1.0
+   -  ``goss``, Gradient-based One-Side Sampling
 
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
