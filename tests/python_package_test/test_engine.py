@@ -3460,6 +3460,7 @@ def test_boost_from_average_with_single_leaf_trees():
     mean_preds = np.mean(preds)
     assert y.min() <= mean_preds <= y.max()
 
+
 @pytest.mark.parametrize('device', ['cpu'])
 def test_training_leaf_count_zero(device):
     # test data is prepared produce one of the following errors (without the fix):
@@ -3469,30 +3470,29 @@ def test_training_leaf_count_zero(device):
     # https://github.com/microsoft/LightGBM/issues/4946
 
     # Make random data with the seed
-    R,C = 100000, 10
+    R, C = 100000, 10
     if device == 'cpu':
         np.random.seed(0)
     else:
         np.random.seed(50)
-    data = pd.DataFrame(np.random.randn(R,C), dtype=np.float32)
-    for i in range(1,C):
+    data = pd.DataFrame(np.random.randn(R, C), dtype=np.float32)
+    for i in range(1, C):
         data[i] += data[0] * np.random.randn()
 
     # Split train/test = 60/40
-    N = int(0.6*len(data))
+    N = int(0.6 * len(data))
     train_data = data.loc[:N]
     test_data = data.loc[N:]
 
-    train = lgb.Dataset(train_data.iloc[:, 1:], train_data.iloc[:,0], free_raw_data=True)
-    test = lgb.Dataset(test_data.iloc[:, 1:], test_data.iloc[:,0], 
-        free_raw_data=True, reference=train)
+    train = lgb.Dataset(train_data.iloc[:, 1:], train_data.iloc[:, 0], free_raw_data=True)
+    test = lgb.Dataset(test_data.iloc[:, 1:], test_data.iloc[:, 0], free_raw_data=True, reference=train)
 
     # The test is run twice, on cpu and gpu
     params = {
         'device': device,
         'boosting_type': 'gbdt',
         'objective': 'regression',
-        'max_tree_output':0.03,
+        'max_tree_output': 0.03,
         'max_bin': 20,
         'max_depth': 10,
         'num_leaves': 127,
