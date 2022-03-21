@@ -694,7 +694,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                               best_split_info.right_sum_hessian,
                               best_split_info.right_output);
   } else {
-    if(best_split_info.right_count == 0)
+    if (best_split_info.right_count == 0)
       Log::Warning("Best split right count is 0 for leaf %d", *right_leaf);
     smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(),
                                best_split_info.right_sum_gradient,
