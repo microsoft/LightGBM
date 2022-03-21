@@ -9,13 +9,14 @@
 #ifdef USE_CUDA_EXP
 
 #include <LightGBM/bin.h>
-#include <LightGBM/cuda/cuda_column_data.hpp>
-#include <LightGBM/cuda/cuda_split_info.hpp>
-#include <LightGBM/cuda/cuda_tree.hpp>
 #include <LightGBM/meta.h>
 #include <LightGBM/tree.h>
 
 #include <vector>
+
+#include <LightGBM/cuda/cuda_column_data.hpp>
+#include <LightGBM/cuda/cuda_split_info.hpp>
+#include <LightGBM/cuda/cuda_tree.hpp>
 
 #include "cuda_leaf_splits.hpp"
 

@@ -10,11 +10,12 @@
 #ifdef USE_CUDA_EXP
 
 #include <LightGBM/bin.h>
-#include <LightGBM/cuda/cuda_random.hpp>
-#include <LightGBM/cuda/cuda_split_info.hpp>
 #include <LightGBM/dataset.h>
 
 #include <vector>
+
+#include <LightGBM/cuda/cuda_random.hpp>
+#include <LightGBM/cuda/cuda_split_info.hpp>
 
 #include "cuda_leaf_splits.hpp"
 
