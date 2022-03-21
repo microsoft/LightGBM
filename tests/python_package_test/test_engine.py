@@ -3460,7 +3460,7 @@ def test_boost_from_average_with_single_leaf_trees():
     mean_preds = np.mean(preds)
     assert y.min() <= mean_preds <= y.max()
 
-@pytest.mark.parametrize('device', ['cpu', 'gpu'])
+@pytest.mark.parametrize('device', ['cpu'])
 def test_training_leaf_count_zero(device):
     # test data is prepared produce one of the following errors (without the fix):
     #    Check failed: (best_split_info.left_count) > (0)
