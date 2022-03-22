@@ -43,7 +43,7 @@ def test_register_logger(tmp_path):
     lgb.plot_metric(eval_records)
 
     expected_log = r"""
-INFO | [LightGBM] [Warning] There are no meaningful features, as all feature values are constant.
+INFO | [LightGBM] [Warning] There are no meaningful features which satisfy the provided configuration. Decreasing Dataset parameters min_data_in_bin or min_data_in_leaf and re-constructing Dataset might resolve this warning.
 INFO | [LightGBM] [Info] Number of positive: 2, number of negative: 2
 INFO | [LightGBM] [Info] Total Bins 0
 INFO | [LightGBM] [Info] Number of data points in the train set: 4, number of used features: 0

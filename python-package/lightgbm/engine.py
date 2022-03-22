@@ -581,6 +581,8 @@ def cv(params, train_set, num_boost_round=100,
                                         evaluation_result_list=res))
         except callback.EarlyStopException as earlyStopException:
             cvfolds.best_iteration = earlyStopException.best_iteration + 1
+            for bst in cvfolds.boosters:
+                bst.best_iteration = cvfolds.best_iteration
             for k in results:
                 results[k] = results[k][:cvfolds.best_iteration]
             break

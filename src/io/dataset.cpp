@@ -333,8 +333,9 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   }
   if (used_features.empty()) {
     Log::Warning(
-        "There are no meaningful features, as all feature values are "
-        "constant.");
+        "There are no meaningful features which satisfy the provided configuration. "
+        "Decreasing Dataset parameters min_data_in_bin or min_data_in_leaf and re-constructing "
+        "Dataset might resolve this warning.");
   }
   auto features_in_group = NoGroup(used_features);
 
