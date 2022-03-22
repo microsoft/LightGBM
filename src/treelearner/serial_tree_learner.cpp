@@ -737,8 +737,8 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
         const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper, bag_mapper, cnt_leaf_data);
         tree->SetLeafOutput(i, new_output);
       } else {
-        if (num_machines > 1)
-          Log::Warning("num_machines greater than 1 for leaf %d, num_machines is %d", i, num_machines);
+        if (num_machines <= 1)
+          Log::Warning("num_machines less or equal to 1 for leaf %d, num_machines is %d", i, num_machines);
         tree->SetLeafOutput(i, 0.0);
         n_nozeroworker_perleaf[i] = 0;
       }
