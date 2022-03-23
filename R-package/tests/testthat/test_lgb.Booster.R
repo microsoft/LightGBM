@@ -137,7 +137,6 @@ test_that("lgb.load() gives the expected error messages given different incorrec
             , verbose = VERBOSITY
         )
         , nrounds = 2L
-        , save_name = tempfile(fileext = ".model")
     )
 
     # you have to give model_str or filename
@@ -185,7 +184,6 @@ test_that("Loading a Booster from a text file works", {
             , verbose = VERBOSITY
         )
         , nrounds = 2L
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -263,7 +261,6 @@ test_that("Loading a Booster from a string works", {
             , verbose = VERBOSITY
         )
         , nrounds = 2L
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -296,7 +293,6 @@ test_that("Saving a large model to string should work", {
             , objective = "binary"
         )
         , nrounds = 500L
-        , save_name = tempfile(fileext = ".model")
         , verbose = VERBOSITY
     )
 
@@ -341,7 +337,6 @@ test_that("Saving a large model to JSON should work", {
             , objective = "binary"
         )
         , nrounds = 200L
-        , save_name = tempfile(fileext = ".model")
         , verbose = VERBOSITY
     )
 
@@ -373,7 +368,6 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
             , verbose = VERBOSITY
         )
         , nrounds = 2L
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -430,7 +424,6 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
             , verbose = VERBOSITY
         )
         , nrounds = nrounds
-        , save_name = tempfile(fileext = ".model")
     )
     data(agaricus.test, package = "lightgbm")
     dtest <- Dataset$new(
@@ -525,7 +518,6 @@ test_that("Booster$rollback_one_iter() should work as expected", {
             , verbose = VERBOSITY
         )
         , nrounds = nrounds
-        , save_name = tempfile(fileext = ".model")
     )
     expect_equal(bst$current_iter(), nrounds)
     expect_true(lgb.is.Booster(bst))
@@ -561,7 +553,6 @@ test_that("Booster$update() passing a train_set works as expected", {
             , verbose = VERBOSITY
         )
         , nrounds = nrounds
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
     expect_equal(bst$current_iter(), nrounds)
@@ -586,7 +577,6 @@ test_that("Booster$update() passing a train_set works as expected", {
             , verbose = VERBOSITY
         )
         , nrounds = nrounds +  1L
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst2))
     expect_equal(bst2$current_iter(), nrounds +  1L)
@@ -613,7 +603,6 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
             , verbose = VERBOSITY
         )
         , nrounds = nrounds
-        , save_name = tempfile(fileext = ".model")
     )
     expect_error({
         bst$update(
@@ -710,7 +699,6 @@ test_that("Saving a model with different feature importance types works", {
             , verbose = VERBOSITY
         )
         , nrounds = 2L
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -767,7 +755,6 @@ test_that("Saving a model with unknown importance type fails", {
             , verbose = VERBOSITY
         )
         , nrounds = 2L
-        , save_name = tempfile(fileext = ".model")
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -973,7 +960,76 @@ test_that("Booster$new() using a Dataset with a null handle should raise an info
                 verbose = VERBOSITY
             )
         )
-    }, regexp = "lgb.Booster: cannot create Booster handle")
+    }, regexp = "Attempting to create a Dataset without any raw data")
+})
+
+test_that("Booster$new() raises informative errors for malformed inputs", {
+  data(agaricus.train, package = "lightgbm")
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+
+  # no inputs
+  expect_error({
+    Booster$new()
+  }, regexp = "lgb.Booster: Need at least either training dataset, model file, or model_str")
+
+  # unrecognized objective
+  expect_error({
+    Booster$new(
+      params = list(objective = "not_a_real_objective")
+      , train_set = dtrain
+    )
+  }, regexp = "Unknown objective type name: not_a_real_objective")
+
+  # train_set is not a Dataset
+  expect_error({
+    Booster$new(
+      train_set = data.table::data.table(rnorm(1L:10L))
+    )
+  }, regexp = "lgb.Booster: Can only use lgb.Dataset as training data")
+
+  # model file isn't a string
+  expect_error({
+    Booster$new(
+      modelfile = list()
+    )
+  }, regexp = "lgb.Booster: Can only use a string as model file path")
+
+  # model file doesn't exist
+  expect_error({
+    Booster$new(
+      params = list()
+      , modelfile = "file-that-does-not-exist.model"
+    )
+  }, regexp = "Could not open file-that-does-not-exist.model")
+
+  # model file doesn't contain a valid LightGBM model
+  model_file <- tempfile(fileext = ".model")
+  writeLines(
+    text = c("make", "good", "predictions")
+    , con = model_file
+  )
+  expect_error({
+    Booster$new(
+      params = list()
+      , modelfile = model_file
+    )
+  }, regexp = "Unknown model format or submodel type in model file")
+
+  # malformed model string
+  expect_error({
+    Booster$new(
+      params = list()
+      , model_str = "a\nb\n"
+    )
+  }, regexp = "Model file doesn't specify the number of classes")
+
+  # model string isn't character or raw
+  expect_error({
+    Booster$new(
+      model_str = numeric()
+    )
+  }, regexp = "lgb.Booster: Can only use a character/raw vector as model_str")
 })
 
 # this is almost identical to the test above it, but for lgb.cv(). A lot of code

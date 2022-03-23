@@ -1550,6 +1550,20 @@ int LGBM_DatasetGetNumFeature(DatasetHandle handle,
   API_END();
 }
 
+int LGBM_DatasetGetFeatureNumBin(DatasetHandle handle,
+                                 int feature,
+                                 int* out) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  int inner_idx = dataset->InnerFeatureIndex(feature);
+  if (inner_idx >= 0) {
+    *out = dataset->FeatureNumBin(inner_idx);
+  } else {
+    *out = 0;
+  }
+  API_END();
+}
+
 int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
                                 DatasetHandle source) {
   API_BEGIN();
@@ -1966,17 +1980,17 @@ int LGBM_BoosterPredictSparseOutput(BoosterHandle handle,
 int LGBM_BoosterFreePredictSparse(void* indptr, int32_t* indices, void* data, int indptr_type, int data_type) {
   API_BEGIN();
   if (indptr_type == C_API_DTYPE_INT32) {
-    delete reinterpret_cast<int32_t*>(indptr);
+    delete[] reinterpret_cast<int32_t*>(indptr);
   } else if (indptr_type == C_API_DTYPE_INT64) {
-    delete reinterpret_cast<int64_t*>(indptr);
+    delete[] reinterpret_cast<int64_t*>(indptr);
   } else {
     Log::Fatal("Unknown indptr type in LGBM_BoosterFreePredictSparse");
   }
-  delete indices;
+  delete[] indices;
   if (data_type == C_API_DTYPE_FLOAT32) {
-    delete reinterpret_cast<float*>(data);
+    delete[] reinterpret_cast<float*>(data);
   } else if (data_type == C_API_DTYPE_FLOAT64) {
-    delete reinterpret_cast<double*>(data);
+    delete[] reinterpret_cast<double*>(data);
   } else {
     Log::Fatal("Unknown data type in LGBM_BoosterFreePredictSparse");
   }
