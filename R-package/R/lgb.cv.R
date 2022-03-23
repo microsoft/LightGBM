@@ -127,7 +127,7 @@ lgb.cv <- function(params = list()
   params <- lgb.check.wrapper_param(
     main_param_name = "objective"
     , params = params
-    , alternative_kwarg_value = NULL
+    , alternative_kwarg_value = obj
   )
   params <- lgb.check.wrapper_param(
     main_param_name = "early_stopping_round"
@@ -137,7 +137,6 @@ lgb.cv <- function(params = list()
   early_stopping_rounds <- params[["early_stopping_round"]]
 
   # extract any function objects passed for objective or metric
-  params <- lgb.check.obj(params = params, obj = obj)
   fobj <- NULL
   if (is.function(params$objective)) {
     fobj <- params$objective
@@ -434,6 +433,10 @@ lgb.cv <- function(params = list()
       )
     )
     cv_booster$best_score <- cv_booster$record_evals[["valid"]][[first_metric]][[.EVAL_KEY()]][[cv_booster$best_iter]]
+  }
+  # Propagate the best_iter attribute from the cv_booster to the individual boosters
+  for (bst in cv_booster$boosters) {
+    bst$booster$best_iter <- cv_booster$best_iter
   }
 
   if (reset_data) {

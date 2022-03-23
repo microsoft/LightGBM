@@ -211,6 +211,30 @@ See `Microsoft/LightGBM#3060 <https://github.com/microsoft/LightGBM/issues/3060#
 
 You can find LightGBM's logo in different file formats and resolutions `here <https://github.com/microsoft/LightGBM/tree/master/docs/logo>`__.
 
+16. LightGBM crashes randomly or operating system hangs during or after running LightGBM.
+-----------------------------------------------------------------------------------------
+
+**Possible Cause**: This behavior may indicate that you have multiple OpenMP libraries installed on your machine and they conflict with each other, similarly to the ``FAQ #10``.
+
+If you are using any Python package that depends on ``threadpoolctl``, you also may see the following warning in your logs in this case:
+
+.. code-block:: console
+
+    /root/miniconda/envs/test-env/lib/python3.8/site-packages/threadpoolctl.py:546: RuntimeWarning: 
+    Found Intel OpenMP ('libiomp') and LLVM OpenMP ('libomp') loaded at
+    the same time. Both libraries are known to be incompatible and this
+    can cause random crashes or deadlocks on Linux when loaded in the
+    same Python program.
+    Using threadpoolctl may cause crashes or deadlocks. For more
+    information and possible workarounds, please see
+        https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md
+
+Detailed description of conflicts between multiple OpenMP instances is provided in the `following document <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md>`__.
+
+**Solution**: Assuming you are using LightGBM Python-package and conda as a package manager, we strongly recommend using ``conda-forge`` channel as the only source of all your Python package installations because it contains built-in patches to workaround OpenMP conflicts. Some other workarounds are listed `here <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md#workarounds-for-intel-openmp-and-llvm-openmp-case>`__.
+
+If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
+
 ------
 
 R-package
@@ -309,3 +333,10 @@ Therefore, the first thing you should try in case of segfaults is **compiling fr
 For the OS-specific prerequisites see `this guide <https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst#user-content-build-from-sources>`__.
 
 Also, feel free to post a new issue in our GitHub repository. We always look at each case individually and try to find a root cause.
+
+4. I would like to install LightGBM from conda. What channel should I choose?
+-----------------------------------------------------------------------------
+
+We strongly recommend installation from the ``conda-forge`` channel and not from the ``default`` one due to many reasons.
+The main ones are less time delay for new releases, greater number of supported architectures and better handling of dependency conflicts, especially workaround for OpenMP is crucial for LightGBM.
+More details can be found in `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`__.

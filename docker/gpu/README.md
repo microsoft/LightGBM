@@ -18,7 +18,7 @@ LightGBM can be utilized in GPU and CPU modes and via Python.
 ## Contents
 
 - LightGBM (cpu + gpu)
-- Python 3.8 (conda) + scikit-learn, notebooks, pandas, matplotlib
+- Python (conda) + scikit-learn, notebooks, pandas, matplotlib
 
 Running the container starts a Jupyter Notebook at `localhost:8888`.
 
