@@ -880,7 +880,7 @@ predict.lgb.Booster <- function(object,
     ))
   }
 
-  if (!reshape && predcontrib && inherits(data, c("dsparseMatrix", "dsparseVector"))) {
+  if (!reshape && predcontrib && inherits(newdata, c("dsparseMatrix", "dsparseVector"))) {
     reshape <- TRUE
   }
 
