@@ -143,7 +143,6 @@ def test_register_invalid_logger():
         lgb.register_logger(LoggerWithAttributeNotCallable())
 
 
-
 def test_register_custom_logger():
     logged_messages = []
 
