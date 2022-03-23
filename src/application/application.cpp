@@ -36,7 +36,7 @@ Application::Application(int argc, char** argv) {
     Log::Fatal("No training/prediction data, application quit");
   }
 
-  if (config_.device_type == std::string("cuda")) {
+  if (config_.device_type == std::string("cuda") || config_.device_type == std::string("cuda_exp")) {
       LGBM_config_::current_device = lgbm_device_cuda;
   }
 }

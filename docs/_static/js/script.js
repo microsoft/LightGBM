@@ -2,6 +2,12 @@ $(function() {
     /* Use wider container for the page content */
     $('.wy-nav-content').each(function() { this.style.setProperty('max-width', 'none', 'important'); });
 
+    /* List each class property item on a new line
+       https://github.com/microsoft/LightGBM/issues/5073 */
+    if(window.location.pathname.toLocaleLowerCase().indexOf('pythonapi') != -1) {
+        $('.py.property').each(function() { this.style.setProperty('display', 'inline', 'important'); });
+    }
+
     /* Point to the same version of R API as the current docs version */
     var current_version_elems = $('.rst-current-version');
     if(current_version_elems.length !== 0) {

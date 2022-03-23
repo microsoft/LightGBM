@@ -1,6 +1,6 @@
 FROM ubuntu:16.04
 
-ARG CONDA_DIR=/opt/conda
+ARG CONDA_DIR=/opt/miniforge
 ENV PATH $CONDA_DIR/bin:$PATH
 
 RUN apt-get update && \
@@ -13,8 +13,8 @@ RUN apt-get update && \
         curl \
         git && \
     # python environment
-    curl -sL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o conda.sh && \
-    /bin/bash conda.sh -f -b -p $CONDA_DIR && \
+    curl -sL https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -o miniforge.sh && \
+    /bin/bash miniforge.sh -f -b -p $CONDA_DIR && \
     export PATH="$CONDA_DIR/bin:$PATH" && \
     conda config --set always_yes yes --set changeps1 no && \
     # lightgbm

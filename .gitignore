@@ -346,6 +346,7 @@ instance/
 # Sphinx documentation
 docs/_build/
 docs/pythonapi/
+*.flag
 
 # Doxygen documentation
 docs/doxyoutput/

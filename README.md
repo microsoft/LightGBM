@@ -69,6 +69,8 @@ Julia-package: https://github.com/IQVIA-ML/LightGBM.jl
 
 JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
 
+Nyoka (Python PMML converter): https://github.com/SoftwareAG/nyoka
+
 Treelite (model compiler for efficient deployment): https://github.com/dmlc/treelite
 
 lleaves (LLVM-based model compiler for efficient inference): https://github.com/siboehm/lleaves

@@ -7,6 +7,7 @@
 
 #include <LightGBM/bin.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/threading.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -290,6 +291,15 @@ class MultiValSparseBin : public MultiValBin {
 
   MultiValSparseBin<INDEX_T, VAL_T>* Clone() override;
 
+
+  #ifdef USE_CUDA_EXP
+  const void* GetRowWiseData(uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const override;
+  #endif  // USE_CUDA_EXP
+
  private:
   data_size_t num_data_;
   int num_bin_;
@@ -317,4 +327,5 @@ MultiValSparseBin<INDEX_T, VAL_T>* MultiValSparseBin<INDEX_T, VAL_T>::Clone() {
 }
 
 }  // namespace LightGBM
+
 #endif  // LIGHTGBM_IO_MULTI_VAL_SPARSE_BIN_HPP_
