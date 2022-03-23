@@ -807,7 +807,7 @@ predict.lgb.Booster <- function(object,
   }
 
   pred <- object$predict(
-    data = data
+    data = newdata
     , start_iteration = start_iteration
     , num_iteration = num_iteration
     , rawscore = rawscore
@@ -818,11 +818,11 @@ predict.lgb.Booster <- function(object,
     , params = params
   )
 
-  if (reshape && NROW(row.names(data))) {
+  if (reshape && NROW(row.names(newdata))) {
     if (is.null(dim(pred))) {
-      names(pred) <- row.names(data)
+      names(pred) <- row.names(newdata)
     } else {
-      row.names(pred) <- row.names(data)
+      row.names(pred) <- row.names(newdata)
     }
   }
   return(pred)
