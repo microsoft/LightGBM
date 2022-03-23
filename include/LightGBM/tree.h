@@ -39,7 +39,7 @@ class Tree {
   */
   Tree(const char* str, size_t* used_len);
 
-  ~Tree() noexcept = default;
+  virtual ~Tree() noexcept = default;
 
   /*!
   * \brief Performing a split on tree leaves.
@@ -100,7 +100,7 @@ class Tree {
   * \param num_data Number of total data
   * \param score Will add prediction to score
   */
-  void AddPredictionToScore(const Dataset* data,
+  virtual void AddPredictionToScore(const Dataset* data,
                             data_size_t num_data,
                             double* score) const;
 
@@ -111,7 +111,7 @@ class Tree {
   * \param num_data Number of total data
   * \param score Will add prediction to score
   */
-  void AddPredictionToScore(const Dataset* data,
+  virtual void AddPredictionToScore(const Dataset* data,
                             const data_size_t* used_data_indices,
                             data_size_t num_data, double* score) const;
 
@@ -184,7 +184,7 @@ class Tree {
   *        shrinkage rate (a.k.a learning rate) is used to tune the training process
   * \param rate The factor of shrinkage
   */
-  inline void Shrinkage(double rate) {
+  virtual inline void Shrinkage(double rate) {
 #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_ - 1; ++i) {
       leaf_value_[i] = MaybeRoundToZero(leaf_value_[i] * rate);
@@ -209,7 +209,7 @@ class Tree {
 
   inline double shrinkage() const { return shrinkage_; }
 
-  inline void AddBias(double val) {
+  virtual inline void AddBias(double val) {
 #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_ - 1; ++i) {
       leaf_value_[i] = MaybeRoundToZero(leaf_value_[i] + val);
@@ -319,11 +319,15 @@ class Tree {
 
   inline bool is_linear() const { return is_linear_; }
 
+  #ifdef USE_CUDA_EXP
+  inline bool is_cuda_tree() const { return is_cuda_tree_; }
+  #endif  // USE_CUDA_EXP
+
   inline void SetIsLinear(bool is_linear) {
     is_linear_ = is_linear;
   }
 
- private:
+ protected:
   std::string NumericalDecisionIfElse(int node) const;
 
   std::string CategoricalDecisionIfElse(int node) const;
@@ -528,6 +532,10 @@ class Tree {
   std::vector<std::vector<int>> leaf_features_;
   /* \brief features used in leaf linear models; indexing is relative to used_features_ */
   std::vector<std::vector<int>> leaf_features_inner_;
+  #ifdef USE_CUDA_EXP
+  /*! \brief Marks whether this tree is a CUDATree */
+  bool is_cuda_tree_;
+  #endif  // USE_CUDA_EXP
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,

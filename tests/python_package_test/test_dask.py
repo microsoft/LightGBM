@@ -2,7 +2,6 @@
 """Tests for lightgbm.dask module"""
 
 import inspect
-import pickle
 import random
 import socket
 from itertools import groupby
@@ -15,6 +14,8 @@ import pytest
 
 import lightgbm as lgb
 
+from .utils import sklearn_multiclass_custom_objective
+
 if not platform.startswith('linux'):
     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if machine() != 'x86_64':
@@ -22,24 +23,18 @@ if machine() != 'x86_64':
 if not lgb.compat.DASK_INSTALLED:
     pytest.skip('Dask is not installed', allow_module_level=True)
 
-import cloudpickle
 import dask.array as da
 import dask.dataframe as dd
-import joblib
 import numpy as np
 import pandas as pd
 import sklearn.utils.estimator_checks as sklearn_checks
 from dask.array.utils import assert_eq
 from dask.distributed import Client, LocalCluster, default_client, wait
-from pkg_resources import parse_version
 from scipy.sparse import csc_matrix, csr_matrix
 from scipy.stats import spearmanr
-from sklearn import __version__ as sk_version
 from sklearn.datasets import make_blobs, make_regression
 
-from .utils import make_ranking
-
-sk_version = parse_version(sk_version)
+from .utils import make_ranking, pickle_obj, unpickle_obj
 
 tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ranking']
 distributed_training_algorithms = ['data', 'voting']
@@ -61,7 +56,8 @@ task_to_local_factory = {
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
-    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface')
+    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
+    pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Fails to run with CUDA Experimental interface')
 ]
 
 
@@ -236,32 +232,6 @@ def _constant_metric(y_true, y_pred):
     return metric_name, value, is_higher_better
 
 
-def _pickle(obj, filepath, serializer):
-    if serializer == 'pickle':
-        with open(filepath, 'wb') as f:
-            pickle.dump(obj, f)
-    elif serializer == 'joblib':
-        joblib.dump(obj, filepath)
-    elif serializer == 'cloudpickle':
-        with open(filepath, 'wb') as f:
-            cloudpickle.dump(obj, f)
-    else:
-        raise ValueError(f'Unrecognized serializer type: {serializer}')
-
-
-def _unpickle(filepath, serializer):
-    if serializer == 'pickle':
-        with open(filepath, 'rb') as f:
-            return pickle.load(f)
-    elif serializer == 'joblib':
-        return joblib.load(filepath)
-    elif serializer == 'cloudpickle':
-        with open(filepath, 'rb') as f:
-            return cloudpickle.load(f)
-    else:
-        raise ValueError(f'Unrecognized serializer type: {serializer}')
-
-
 def _objective_least_squares(y_true, y_pred):
     grad = y_pred - y_true
     hess = np.ones(len(y_true))
@@ -272,25 +242,6 @@ def _objective_logistic_regression(y_true, y_pred):
     y_pred = 1.0 / (1.0 + np.exp(-y_pred))
     grad = y_pred - y_true
     hess = y_pred * (1.0 - y_pred)
-    return grad, hess
-
-
-def _objective_logloss(y_true, y_pred):
-    num_rows = len(y_true)
-    num_class = len(np.unique(y_true))
-    # operate on preds as [num_data, num_classes] matrix
-    y_pred = y_pred.reshape(-1, num_class, order='F')
-    row_wise_max = np.max(y_pred, axis=1).reshape(num_rows, 1)
-    preds = y_pred - row_wise_max
-    prob = np.exp(preds) / np.sum(np.exp(preds), axis=1).reshape(num_rows, 1)
-    grad_update = np.zeros_like(preds)
-    grad_update[np.arange(num_rows), y_true.astype(np.int32)] = -1.0
-    grad = prob + grad_update
-    factor = num_class / (num_class - 1)
-    hess = factor * prob * (1 - prob)
-    # reshape back to 1-D array, grouped by class id and then row id
-    grad = grad.T.reshape(-1)
-    hess = hess.T.reshape(-1)
     return grad, hess
 
 
@@ -511,7 +462,7 @@ def test_classifier_custom_objective(output, task, cluster):
             })
         elif task == 'multiclass-classification':
             params.update({
-                'objective': _objective_logloss,
+                'objective': sklearn_multiclass_custom_objective,
                 'num_classes': 3
             })
 
@@ -1362,23 +1313,23 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
             assert getattr(local_model, "client", None) is None
 
             tmp_file = tmp_path / "model-1.pkl"
-            _pickle(
+            pickle_obj(
                 obj=dask_model,
                 filepath=tmp_file,
                 serializer=serializer
             )
-            model_from_disk = _unpickle(
+            model_from_disk = unpickle_obj(
                 filepath=tmp_file,
                 serializer=serializer
             )
 
             local_tmp_file = tmp_path / "local-model-1.pkl"
-            _pickle(
+            pickle_obj(
                 obj=local_model,
                 filepath=local_tmp_file,
                 serializer=serializer
             )
-            local_model_from_disk = _unpickle(
+            local_model_from_disk = unpickle_obj(
                 filepath=local_tmp_file,
                 serializer=serializer
             )
@@ -1418,23 +1369,23 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                 local_model.client_
 
             tmp_file2 = tmp_path / "model-2.pkl"
-            _pickle(
+            pickle_obj(
                 obj=dask_model,
                 filepath=tmp_file2,
                 serializer=serializer
             )
-            fitted_model_from_disk = _unpickle(
+            fitted_model_from_disk = unpickle_obj(
                 filepath=tmp_file2,
                 serializer=serializer
             )
 
             local_tmp_file2 = tmp_path / "local-model-2.pkl"
-            _pickle(
+            pickle_obj(
                 obj=local_model,
                 filepath=local_tmp_file2,
                 serializer=serializer
             )
-            local_fitted_model_from_disk = _unpickle(
+            local_fitted_model_from_disk = unpickle_obj(
                 filepath=local_tmp_file2,
                 serializer=serializer
             )
@@ -1854,10 +1805,7 @@ def test_sklearn_integration(estimator, check, cluster):
 @pytest.mark.parametrize("estimator", list(_tested_estimators()))
 def test_parameters_default_constructible(estimator):
     name = estimator.__class__.__name__
-    if sk_version >= parse_version("0.24"):
-        Estimator = estimator
-    else:
-        Estimator = estimator.__class__
+    Estimator = estimator
     sklearn_checks.check_parameters_default_constructible(name, Estimator)
 
 
