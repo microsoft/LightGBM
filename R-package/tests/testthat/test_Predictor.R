@@ -2,6 +2,8 @@ VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
+library(Matrix)
+
 test_that("Predictor$finalize() should not fail", {
     X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
     y <- iris[["Sepal.Length"]]
@@ -121,13 +123,107 @@ test_that("predictions keep row names from the data", {
         data = dtrain
         , obj = "regression"
         , nrounds = 5L
+        , verbose = -1L
     )
-    pred <- predict(bst, X, reshape = TRUE)
-    expect_true(is.vector(pred))
-    expect_false(is.null(names(pred)))
-    expect_equal(row.names(X), names(pred))
 
-    row.names(X) <- NULL
+    expect_has_row_names <- function(pred) {
+        if (is.vector(pred)) {
+            rnames <- names(pred)
+        } else {
+            rnames <- row.names(pred)
+        }
+        expect_false(is.null(rnames))
+        expect_true(is.vector(rnames))
+        expect_equal(row.names(X), rnames)
+    }
+
+    expect_doesnt_have_row_names <- function(pred) {
+        expect_null(row.names(pred))
+    }
+
     pred <- predict(bst, X, reshape = TRUE)
-    expect_null(names(pred))
+    expect_has_row_names(pred)
+    pred <- predict(bst, X, reshape = TRUE, rawscore = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, X, reshape = TRUE, predleaf = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, X, reshape = TRUE, predcontrib = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, X, reshape = FALSE)
+    expect_doesnt_have_row_names(pred)
+    Xcopy <- X
+    row.names(Xcopy) <- NULL
+    pred <- predict(bst, Xcopy, reshape = TRUE)
+    expect_doesnt_have_row_names(pred)
+
+    Xcsc <- as(X, "CsparseMatrix")
+    pred <- predict(bst, Xcsc, reshape = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, Xcsc, reshape = TRUE, rawscore = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, Xcsc, reshape = TRUE, predleaf = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, Xcsc, reshape = TRUE, predcontrib = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, Xcsc, reshape = FALSE)
+    expect_doesnt_have_row_names(pred)
+    Xcopy <- Xcsc
+    row.names(Xcopy) <- NULL
+    pred <- predict(bst, Xcopy, reshape = TRUE)
+    expect_doesnt_have_row_names(pred)
+
+    data(iris)
+    y <- as.numeric(iris$Species) - 1.0
+    X <- as.matrix(iris[, names(iris) != "Species"])
+    row.names(X) <- paste("rname", seq(1L, nrow(X)), sep = "")
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    bst <- lgb.train(
+        data = dtrain
+        , obj = "multiclass"
+        , params = list(num_class = 3L)
+        , nrounds = 5L
+        , verbose = -1L
+    )
+
+    pred <- predict(bst, X, reshape = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, X, reshape = TRUE, rawscore = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, X, reshape = TRUE, predleaf = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, X, reshape = TRUE, predcontrib = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, X, reshape = FALSE)
+    expect_doesnt_have_row_names(pred)
+    Xcopy <- X
+    row.names(Xcopy) <- NULL
+    pred <- predict(bst, Xcopy, reshape = TRUE)
+    expect_doesnt_have_row_names(pred)
+
+    data(agaricus.train, package = "lightgbm")
+    X <- agaricus.train$data
+    y <- agaricus.train$label
+    row.names(X) <- paste("rname", seq(1L, nrow(X)), sep = "")
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    bst <- lgb.train(
+        data = dtrain
+        , obj = "binary"
+        , nrounds = 5L
+        , verbose = -1L
+    )
+
+    pred <- predict(bst, X, reshape = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, X, reshape = TRUE, rawscore = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, X, reshape = TRUE, predleaf = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, X, reshape = TRUE, predcontrib = TRUE)
+    expect_has_row_names(pred)
+    pred <- predict(bst, X, reshape = FALSE)
+    expect_doesnt_have_row_names(pred)
+    Xcopy <- X
+    row.names(Xcopy) <- NULL
+    pred <- predict(bst, Xcopy, reshape = TRUE)
+    expect_doesnt_have_row_names(pred)
 })
