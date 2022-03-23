@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2020 IBM Corporation. All rights reserved.
+ * Copyright (c) 2020 IBM Corporation, Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 #ifndef LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
@@ -7,7 +7,7 @@
 
 #include <LightGBM/utils/common.h>
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_CUDA_EXP)
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif
@@ -42,8 +42,8 @@ struct CHAllocator {
   T* allocate(std::size_t n) {
     T* ptr;
     if (n == 0) return NULL;
-    n = (n + kAlignedSize - 1) & -kAlignedSize;
-    #ifdef USE_CUDA
+    n = SIZE_ALIGNED(n);
+    #if defined(USE_CUDA) || defined(USE_CUDA_EXP)
       if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaError_t ret = cudaHostAlloc(&ptr, n*sizeof(T), cudaHostAllocPortable);
         if (ret != cudaSuccess) {
@@ -62,7 +62,7 @@ struct CHAllocator {
   void deallocate(T* p, std::size_t n) {
     (void)n;  // UNUSED
     if (p == NULL) return;
-    #ifdef USE_CUDA
+    #if defined(USE_CUDA) || defined(USE_CUDA_EXP)
       if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaPointerAttributes attributes;
         cudaPointerGetAttributes(&attributes, p);
