@@ -1,13 +1,14 @@
 # coding: utf-8
 import itertools
 import math
+from os import getenv
 from pathlib import Path
 
 import joblib
 import numpy as np
 import pytest
 from sklearn.base import clone
-from sklearn.datasets import load_svmlight_file, make_multilabel_classification
+from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
 from sklearn.ensemble import StackingClassifier, StackingRegressor
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
@@ -18,7 +19,7 @@ from sklearn.utils.validation import check_is_fitted
 import lightgbm as lgb
 
 from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking,
-                    make_synthetic_regression)
+                    make_synthetic_regression, sklearn_multiclass_custom_objective, softmax)
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -99,6 +100,7 @@ def test_regression():
     assert gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
 def test_multiclass():
     X, y = load_digits(n_class=10, return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -111,6 +113,7 @@ def test_multiclass():
     assert gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
 def test_lambdarank():
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
     X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
@@ -1068,6 +1071,7 @@ def test_nan_handle():
     np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.nan)
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
 def test_first_metric_only():
 
     def fit_and_check(eval_set_names, metric_names, assumed_iteration, first_metric_only):
@@ -1280,3 +1284,20 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
     preds_1d = model_1d.predict(X)
     preds_2d = model_2d.predict(X)
     np.testing.assert_array_equal(preds_1d, preds_2d)
+
+
+def test_multiclass_custom_objective():
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    params = {'n_estimators': 10, 'num_leaves': 7}
+    builtin_obj_model = lgb.LGBMClassifier(**params)
+    builtin_obj_model.fit(X, y)
+    builtin_obj_preds = builtin_obj_model.predict_proba(X)
+
+    custom_obj_model = lgb.LGBMClassifier(objective=sklearn_multiclass_custom_objective, **params)
+    custom_obj_model.fit(X, y)
+    custom_obj_preds = softmax(custom_obj_model.predict(X, raw_score=True))
+
+    np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
+    assert not callable(builtin_obj_model.objective_)
+    assert callable(custom_obj_model.objective_)

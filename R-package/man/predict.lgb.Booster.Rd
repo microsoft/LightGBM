@@ -6,7 +6,7 @@
 \usage{
 \method{predict}{lgb.Booster}(
   object,
-  data,
+  newdata,
   start_iteration = NULL,
   num_iteration = NULL,
   rawscore = FALSE,
@@ -21,17 +21,17 @@
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
-\item{data}{a \code{matrix} object, a \code{dgCMatrix}, a \code{dgRMatrix} object, a \code{dsparseVector} object,
-            or a character representing a path to a text file (CSV, TSV, or LibSVM).
+\item{newdata}{a \code{matrix} object, a \code{dgCMatrix}, a \code{dgRMatrix} object, a \code{dsparseVector} object,
+               or a character representing a path to a text file (CSV, TSV, or LibSVM).
 
-            For sparse inputs, if predictions are only going to be made for a single row, it will be faster to
-            use CSR format, in which case the data may be passed as either a single-row CSR matrix (class
-            `dgRMatrix` from package `Matrix`) or as a sparse numeric vector (class `dsparseVector` from
-            package `Matrix`).
+               For sparse inputs, if predictions are only going to be made for a single row, it will be faster to
+               use CSR format, in which case the data may be passed as either a single-row CSR matrix (class
+               `dgRMatrix` from package `Matrix`) or as a sparse numeric vector (class `dsparseVector` from
+               package `Matrix`).
 
-            If single-row predictions are going to be performed frequently, it is recommended to
-            pre-configure the model object for fast single-row sparse predictions through function
-            \link{lgb.configure_fast_predict}.}
+               If single-row predictions are going to be performed frequently, it is recommended to
+               pre-configure the model object for fast single-row sparse predictions through function
+               \link{lgb.configure_fast_predict}.}
 
 \item{start_iteration}{int or None, optional (default=None)
 Start index of the iteration to predict.

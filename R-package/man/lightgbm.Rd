@@ -16,6 +16,8 @@ lightgbm(
   init_model = NULL,
   callbacks = list(),
   serializable = TRUE,
+  objective = "regression",
+  init_score = NULL,
   ...
 )
 }
@@ -49,6 +51,13 @@ set to the iteration number of the best iteration.}
 
 \item{serializable}{whether to make the resulting objects serializable through functions such as
 \code{save} or \code{saveRDS} (see section "Model serialization").}
+
+\item{objective}{Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
+For a list of accepted objectives, see
+\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
+the "objective" item of the "Parameters" section of the documentation}.}
+
+\item{init_score}{initial score is the base prediction lightgbm will boost from}
 
 \item{...}{Additional arguments passed to \code{\link{lgb.train}}. For example
 \itemize{

@@ -424,7 +424,7 @@ def _train(
     model_factory : lightgbm.LGBMClassifier, lightgbm.LGBMRegressor, or lightgbm.LGBMRanker class
         Class of the local underlying model.
     sample_weight : Dask Array or Dask Series of shape = [n_samples] or None, optional (default=None)
-        Weights of training data.
+        Weights of training data. Weights should be non-negative.
     init_score : Dask Array or Dask Series of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task), or Dask Array or Dask DataFrame of shape = [n_samples, n_classes] (for multi-class task), or None, optional (default=None)
         Init score of training data.
     group : Dask Array or Dask Series or None, optional (default=None)
@@ -441,7 +441,7 @@ def _train(
     eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
     eval_sample_weight : list of Dask Array or Dask Series, or None, optional (default=None)
-        Weights for each validation set in eval_set.
+        Weights for each validation set in eval_set. Weights should be non-negative.
     eval_class_weight : list of dict or str, or None, optional (default=None)
         Class weights, one dict or str for each validation set in eval_set.
     eval_init_score : list of Dask Array, Dask Series or Dask DataFrame (for multi-class task), or None, optional (default=None)

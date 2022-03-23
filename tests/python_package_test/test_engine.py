@@ -6,19 +6,21 @@ import math
 import pickle
 import platform
 import random
+from os import getenv
 from pathlib import Path
 
 import numpy as np
 import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
-from sklearn.datasets import load_svmlight_file, make_multilabel_classification
+from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
 import lightgbm as lgb
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression
+from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression,
+                    sklearn_multiclass_custom_objective, softmax)
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -569,6 +571,7 @@ def test_multi_class_error():
     assert results['training']['multi_error@2'][-1] == pytest.approx(0)
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
 def test_auc_mu():
     # should give same result as binary auc for 2 classes
     X, y = load_digits(n_class=10, return_X_y=True)
@@ -1024,24 +1027,30 @@ def test_cvbooster():
         'metric': 'binary_logloss',
         'verbose': -1,
     }
+    nfold = 3
     lgb_train = lgb.Dataset(X_train, y_train)
     # with early stopping
     cv_res = lgb.cv(params, lgb_train,
                     num_boost_round=25,
-                    nfold=3,
+                    nfold=nfold,
                     callbacks=[lgb.early_stopping(stopping_rounds=5)],
                     return_cvbooster=True)
     assert 'cvbooster' in cv_res
     cvb = cv_res['cvbooster']
     assert isinstance(cvb, lgb.CVBooster)
     assert isinstance(cvb.boosters, list)
-    assert len(cvb.boosters) == 3
+    assert len(cvb.boosters) == nfold
     assert all(isinstance(bst, lgb.Booster) for bst in cvb.boosters)
     assert cvb.best_iteration > 0
     # predict by each fold booster
-    preds = cvb.predict(X_test, num_iteration=cvb.best_iteration)
+    preds = cvb.predict(X_test)
     assert isinstance(preds, list)
-    assert len(preds) == 3
+    assert len(preds) == nfold
+    # check that each booster predicted using the best iteration
+    for fold_preds, bst in zip(preds, cvb.boosters):
+        assert bst.best_iteration == cvb.best_iteration
+        expected = bst.predict(X_test, num_iteration=cvb.best_iteration)
+        np.testing.assert_allclose(fold_preds, expected)
     # fold averaging
     avg_pred = np.mean(preds, axis=0)
     ret = log_loss(y_test, avg_pred)
@@ -1494,6 +1503,7 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     return trainset
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Monotone constraints are not yet supported by CUDA Experimental version')
 @pytest.mark.parametrize("test_with_categorical_variable", [True, False])
 def test_monotone_constraints(test_with_categorical_variable):
     def is_increasing(y):
@@ -1583,6 +1593,7 @@ def test_monotone_constraints(test_with_categorical_variable):
                 assert are_interactions_enforced(constrained_model, feature_sets)
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Monotone constraints are not yet supported by CUDA Experimental version')
 def test_monotone_penalty():
     def are_first_splits_non_monotone(tree, n, monotone_constraints):
         if n <= 0:
@@ -1622,6 +1633,7 @@ def test_monotone_penalty():
 
 
 # test if a penalty as high as the depth indeed prohibits all monotone splits
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Monotone constraints are not yet supported by CUDA Experimental version')
 def test_monotone_penalty_max():
     max_depth = 5
     monotone_constraints = [1, -1, 0]
@@ -2310,6 +2322,54 @@ def test_default_objective_and_metric():
     assert len(evals_result['valid_0']['l2']) == 5
 
 
+def test_multiclass_custom_objective():
+    def custom_obj(y_pred, ds):
+        y_true = ds.get_label()
+        return sklearn_multiclass_custom_objective(y_true, y_pred)
+
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    ds = lgb.Dataset(X, y)
+    params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
+    builtin_obj_bst = lgb.train(params, ds, num_boost_round=10)
+    builtin_obj_preds = builtin_obj_bst.predict(X)
+
+    custom_obj_bst = lgb.train(params, ds, num_boost_round=10, fobj=custom_obj)
+    custom_obj_preds = softmax(custom_obj_bst.predict(X))
+
+    np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
+
+
+def test_multiclass_custom_eval():
+    def custom_eval(y_pred, ds):
+        y_true = ds.get_label()
+        return 'custom_logloss', log_loss(y_true, y_pred), False
+
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
+    train_ds = lgb.Dataset(X_train, y_train)
+    valid_ds = lgb.Dataset(X_valid, y_valid, reference=train_ds)
+    params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
+    eval_result = {}
+    bst = lgb.train(
+        params,
+        train_ds,
+        num_boost_round=10,
+        valid_sets=[train_ds, valid_ds],
+        valid_names=['train', 'valid'],
+        feval=custom_eval,
+        callbacks=[lgb.record_evaluation(eval_result)],
+        keep_training_booster=True,
+    )
+
+    for key, ds in zip(['train', 'valid'], [train_ds, valid_ds]):
+        np.testing.assert_allclose(eval_result[key]['multi_logloss'], eval_result[key]['custom_logloss'])
+        _, metric, value, _ = bst.eval(ds, key, feval=custom_eval)[1]  # first element is multi_logloss
+        assert metric == 'custom_logloss'
+        np.testing.assert_allclose(value, eval_result[key][metric][-1])
+
+
 @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason='not enough RAM')
 def test_model_size():
     X, y = make_synthetic_regression()
@@ -2338,6 +2398,7 @@ def test_model_size():
         pytest.skipTest('not enough RAM')
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
 def test_get_split_value_histogram():
     X, y = load_boston(return_X_y=True)
     lgb_train = lgb.Dataset(X, y, categorical_feature=[2])
@@ -2417,6 +2478,7 @@ def test_get_split_value_histogram():
         gbm.get_split_value_histogram(2)
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
 def test_early_stopping_for_only_first_metric():
 
     def metrics_combination_train_regression(valid_sets, metric_list, assumed_iteration,
@@ -2823,6 +2885,7 @@ def test_trees_to_dataframe():
         assert tree_df.loc[0, col] is None
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Interaction constraints are not yet supported by CUDA Experimental version')
 def test_interaction_constraints():
     X, y = load_boston(return_X_y=True)
     num_features = X.shape[1]
@@ -3217,6 +3280,7 @@ def test_dump_model_hook():
     assert "LV" in dumped_model_str
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Forced splits are not yet supported by CUDA Experimental version')
 def test_force_split_with_feature_fraction(tmp_path):
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -3291,3 +3355,115 @@ def test_record_evaluation_with_cv(train_metric):
                 np.testing.assert_allclose(
                     cv_hist[key], eval_result[dataset][f'{metric}-{agg}']
                 )
+
+
+def test_pandas_with_numpy_regular_dtypes():
+    pd = pytest.importorskip('pandas')
+    uints = ['uint8', 'uint16', 'uint32', 'uint64']
+    ints = ['int8', 'int16', 'int32', 'int64']
+    bool_and_floats = ['bool', 'float16', 'float32', 'float64']
+    rng = np.random.RandomState(42)
+
+    n_samples = 100
+    # data as float64
+    df = pd.DataFrame({
+        'x1': rng.randint(0, 2, n_samples),
+        'x2': rng.randint(1, 3, n_samples),
+        'x3': 10 * rng.randint(1, 3, n_samples),
+        'x4': 100 * rng.randint(1, 3, n_samples),
+    })
+    df = df.astype(np.float64)
+    y = df['x1'] * (df['x2'] + df['x3'] + df['x4'])
+    ds = lgb.Dataset(df, y)
+    params = {'objective': 'l2', 'num_leaves': 31, 'min_child_samples': 1}
+    bst = lgb.train(params, ds, num_boost_round=5)
+    preds = bst.predict(df)
+
+    # test all features were used
+    assert bst.trees_to_dataframe()['split_feature'].nunique() == df.shape[1]
+    # test the score is better than predicting the mean
+    baseline = np.full_like(y, y.mean())
+    assert mean_squared_error(y, preds) < mean_squared_error(y, baseline)
+
+    # test all predictions are equal using different input dtypes
+    for target_dtypes in [uints, ints, bool_and_floats]:
+        df2 = df.astype({f'x{i}': dtype for i, dtype in enumerate(target_dtypes, start=1)})
+        assert df2.dtypes.tolist() == target_dtypes
+        ds2 = lgb.Dataset(df2, y)
+        bst2 = lgb.train(params, ds2, num_boost_round=5)
+        preds2 = bst2.predict(df2)
+        np.testing.assert_allclose(preds, preds2)
+
+
+def test_pandas_nullable_dtypes():
+    pd = pytest.importorskip('pandas')
+    rng = np.random.RandomState(0)
+    df = pd.DataFrame({
+        'x1': rng.randint(1, 3, size=100),
+        'x2': np.linspace(-1, 1, 100),
+        'x3': pd.arrays.SparseArray(rng.randint(0, 11, size=100)),
+        'x4': rng.rand(100) < 0.5,
+    })
+    # introduce some missing values
+    df.loc[1, 'x1'] = np.nan
+    df.loc[2, 'x2'] = np.nan
+    df.loc[3, 'x4'] = np.nan
+    # the previous line turns x3 into object dtype in recent versions of pandas
+    df['x4'] = df['x4'].astype(np.float64)
+    y = df['x1'] * df['x2'] + df['x3'] * (1 + df['x4'])
+    y = y.fillna(0)
+
+    # train with regular dtypes
+    params = {'objective': 'l2', 'num_leaves': 31, 'min_child_samples': 1}
+    ds = lgb.Dataset(df, y)
+    bst = lgb.train(params, ds, num_boost_round=5)
+    preds = bst.predict(df)
+
+    # convert to nullable dtypes
+    df2 = df.copy()
+    df2['x1'] = df2['x1'].astype('Int32')
+    df2['x2'] = df2['x2'].astype('Float64')
+    df2['x4'] = df2['x4'].astype('boolean')
+
+    # test training succeeds
+    ds_nullable_dtypes = lgb.Dataset(df2, y)
+    bst_nullable_dtypes = lgb.train(params, ds_nullable_dtypes, num_boost_round=5)
+    preds_nullable_dtypes = bst_nullable_dtypes.predict(df2)
+
+    trees_df = bst_nullable_dtypes.trees_to_dataframe()
+    # test all features were used
+    assert trees_df['split_feature'].nunique() == df.shape[1]
+    # test the score is better than predicting the mean
+    baseline = np.full_like(y, y.mean())
+    assert mean_squared_error(y, preds) < mean_squared_error(y, baseline)
+
+    # test equal predictions
+    np.testing.assert_allclose(preds, preds_nullable_dtypes)
+
+
+def test_boost_from_average_with_single_leaf_trees():
+    # test data are taken from bug report
+    # https://github.com/microsoft/LightGBM/issues/4708
+    X = np.array([
+        [1021.0589, 1018.9578],
+        [1023.85754, 1018.7854],
+        [1024.5468, 1018.88513],
+        [1019.02954, 1018.88513],
+        [1016.79926, 1018.88513],
+        [1007.6, 1018.88513]], dtype=np.float32)
+    y = np.array([1023.8, 1024.6, 1024.4, 1023.8, 1022.0, 1014.4], dtype=np.float32)
+    params = {
+        "extra_trees": True,
+        "min_data_in_bin": 1,
+        "extra_seed": 7,
+        "objective": "regression",
+        "verbose": -1,
+        "boost_from_average": True,
+        "min_data_in_leaf": 1,
+    }
+    train_set = lgb.Dataset(X, y)
+    model = lgb.train(params=params, train_set=train_set, num_boost_round=10)
+
+    preds = model.predict(X)
+    mean_preds = np.mean(preds)
+    assert y.min() <= mean_preds <= y.max()

@@ -81,9 +81,11 @@ struct Config {
   static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
+  #ifndef __NVCC__
   #pragma region Parameters
 
   #pragma region Core Parameters
+  #endif  // __NVCC__
 
   // [no-save]
   // [doc-only]
@@ -204,12 +206,14 @@ struct Config {
 
   // [doc-only]
   // type = enum
-  // options = cpu, gpu, cuda
+  // options = cpu, gpu, cuda, cuda_exp
   // alias = device
   // desc = device for the tree learning, you can use GPU to achieve the faster learning
   // desc = **Note**: it is recommended to use the smaller ``max_bin`` (e.g. 63) to get the better speed up
   // desc = **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training
   // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
+  // desc = **Note**: ``cuda_exp`` is an experimental CUDA version, the installation guide for ``cuda_exp`` is identical with ``cuda``
+  // desc = **Note**: ``cuda_exp`` is faster than ``cuda`` and will replace ``cuda`` in the future
   std::string device_type = "cpu";
 
   // [doc-only]
@@ -228,9 +232,11 @@ struct Config {
   // desc = **Note**: to avoid potential instability due to numerical issues, please set ``force_col_wise=true`` or ``force_row_wise=true`` when setting ``deterministic=true``
   bool deterministic = false;
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region Learning Control Parameters
+  #endif  // __NVCC__
 
   // desc = used only with ``cpu`` device type
   // desc = set this to ``true`` to force col-wise histogram building
@@ -568,11 +574,13 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   int snapshot_freq = -1;
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region IO Parameters
 
   #pragma region Dataset Parameters
+  #endif  // __NVCC__
 
   // alias = linear_trees
   // desc = fit piecewise linear gradient boosting tree
@@ -670,6 +678,7 @@ struct Config {
   // desc = add a prefix ``name:`` for column name, e.g. ``weight=name:weight``
   // desc = **Note**: works only in case of loading data directly from text file
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0, and weight is column\_1, the correct parameter is ``weight=0``
+  // desc = **Note**: weights should be non-negative
   std::string weight_column = "";
 
   // type = int or string
@@ -697,7 +706,7 @@ struct Config {
   // desc = used to specify categorical features
   // desc = use number for index, e.g. ``categorical_feature=0,1,2`` means column\_0, column\_1 and column\_2 are categorical features
   // desc = add a prefix ``name:`` for column name, e.g. ``categorical_feature=name:c1,c2,c3`` means c1, c2 and c3 are categorical features
-  // desc = **Note**: only supports categorical with ``int`` type (not applicable for data represented as pandas DataFrame in Python-package)
+  // desc = **Note**: all values will be cast to ``int32`` (integer codes will be extracted from pandas categoricals in the Python-package)
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
   // desc = **Note**: all values should be less than ``Int32.MaxValue`` (2147483647)
   // desc = **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers starting from zero
@@ -727,9 +736,11 @@ struct Config {
   // desc = **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/microsoft/lightgbm-transform/issues>`__
   std::string parser_config_file = "";
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region Predict Parameters
+  #endif  // __NVCC__
 
   // [no-save]
   // desc = used only in ``prediction`` task
@@ -799,9 +810,11 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string output_result = "LightGBM_predict_result.txt";
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region Convert Parameters
+  #endif  // __NVCC__
 
   // [no-save]
   // desc = used only in ``convert_model`` task
@@ -817,11 +830,13 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string convert_model = "gbdt_prediction.cpp";
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma endregion
 
   #pragma region Objective Parameters
+  #endif  // __NVCC__
 
   // desc = used only in ``rank_xendcg`` objective
   // desc = random seed for objectives, if random process is needed
@@ -901,9 +916,11 @@ struct Config {
   // desc = separate by ``,``
   std::vector<double> label_gain;
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region Metric Parameters
+  #endif  // __NVCC__
 
   // [doc-only]
   // alias = metrics, metric_types
@@ -975,9 +992,11 @@ struct Config {
   // desc = if not specified, will use equal weights for all classes
   std::vector<double> auc_mu_weights;
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region Network Parameters
+  #endif  // __NVCC__
 
   // check = >0
   // alias = num_machine
@@ -1006,9 +1025,11 @@ struct Config {
   // desc = list of machines in the following format: ``ip1:port1,ip2:port2``
   std::string machines = "";
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma region GPU Parameters
+  #endif  // __NVCC__
 
   // desc = OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
   // desc = ``-1`` means the system-wide default platform
@@ -1029,9 +1050,11 @@ struct Config {
   // desc = **Note**: can be used only in CUDA implementation
   int num_gpu = 1;
 
+  #ifndef __NVCC__
   #pragma endregion
 
   #pragma endregion
+  #endif  // __NVCC__
 
   size_t file_load_progress_interval_bytes = size_t(10) * 1024 * 1024 * 1024;
 
