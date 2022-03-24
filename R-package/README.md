@@ -16,6 +16,8 @@
     - [Installing from a Pre-compiled lib_lightgbm](#lib_lightgbm)
 * [Examples](#examples)
 * [Testing](#testing)
+    - [Running the Tests](#running-the-tests)
+    - [Code Coverage](#code-coverage)
 * [Preparing a CRAN Package](#preparing-a-cran-package)
 * [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
@@ -152,7 +154,8 @@ Rscript build_r.R
 
 The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script. That script supports the following command-line options:
 
-- `-j[jobs]`: number of threads to use when compiling LightGBM. E.g., `-j4` will try to compile 4 objects at a time.
+- `--no-build-vignettes`: Skip building vignettes.
+- `-j[jobs]`: Number of threads to use when compiling LightGBM. E.g., `-j4` will try to compile 4 objects at a time.
     - by default, this script uses single-thread compilation
     - for best results, set `-j` to the number of physical CPUs
 - `--skip-install`: Build the package tarball, but do not install it.
@@ -233,17 +236,42 @@ Testing
 
 The R package's unit tests are run automatically on every commit, via integrations like [GitHub Actions](https://github.com/microsoft/LightGBM/actions). Adding new tests in `R-package/tests/testthat` is a valuable way to improve the reliability of the R package.
 
+### Running the Tests
+
+While developing the R package, run the code below to run the unit tests.
+
+```shell
+sh build-cran-package.sh \
+    --no-build-vignettes
+
+R CMD INSTALL --with-keep.source lightgbm*.tar.gz
+cd R-package/tests
+Rscript testthat.R
+```
+
+To run the tests with more verbose logs, set environment variable `LIGHTGBM_TEST_VERBOSITY` to a valid value for parameter [`verbosity`](https://lightgbm.readthedocs.io/en/latest/Parameters.html#verbosity).
+
+```shell
+export LIGHTGBM_TEST_VERBOSITY=1
+cd R-package/tests
+Rscript testthat.R
+```
+
+### Code Coverage
+
 When adding tests, you may want to use test coverage to identify untested areas and to check if the tests you've added are covering all branches of the intended code.
 
 The example below shows how to generate code coverage for the R package on a macOS or Linux setup. To adjust for your environment, refer to [the customization step described above](#custom-installation-linux-mac).
 
 ```shell
 # Install
-sh build-cran-package.sh
+sh build-cran-package.sh \
+    --no-build-vignettes
 
 # Get coverage
 Rscript -e " \
-    coverage  <- covr::package_coverage('./lightgbm_r', type = 'tests', quiet = FALSE);
+    library(covr);
+    coverage <- covr::package_coverage('./lightgbm_r', type = 'tests', quiet = FALSE);
     print(coverage);
     covr::report(coverage, file = file.path(getwd(), 'coverage.html'), browse = TRUE);
     "
@@ -268,6 +296,11 @@ sh build-cran-package.sh
 ```
 
 This will create a file `lightgbm_${VERSION}.tar.gz`, where `VERSION` is the version of `LightGBM`.
+
+That script supports the following command-line options:
+
+- `--no-build-vignettes`: Skip building vignettes.
+- `--r-executable=[path-to-executable]`: Use an alternative build of R.
 
 Also, CRAN package is generated with every commit to any repo's branch and can be found in "Artifacts" section of the associated Azure Pipelines run.
 

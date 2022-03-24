@@ -52,6 +52,8 @@
 #' @param params a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 #'               the "Parameters" section of the documentation} for a list of parameters and valid values.
 #' @param verbose verbosity for output, if <= 0, also will disable the print of evaluation during training
+#' @param serializable whether to make the resulting objects serializable through functions such as
+#'                     \code{save} or \code{saveRDS} (see section "Model serialization").
 #' @section Early Stopping:
 #'
 #'          "early stopping" refers to stopping the training process if the model's performance on a given
@@ -66,6 +68,21 @@
 #'          in \code{params}, that metric will be considered the "first" one. If you omit \code{metric},
 #'          a default metric will be used based on your choice for the parameter \code{obj} (keyword argument)
 #'          or \code{objective} (passed into \code{params}).
+#' @section Model serialization:
+#'
+#'          LightGBM model objects can be serialized and de-serialized through functions such as \code{save}
+#'          or \code{saveRDS}, but similarly to libraries such as 'xgboost', serialization works a bit differently
+#'          from typical R objects. In order to make models serializable in R, a copy of the underlying C++ object
+#'          as serialized raw bytes is produced and stored in the R model object, and when this R object is
+#'          de-serialized, the underlying C++ model object gets reconstructed from these raw bytes, but will only
+#'          do so once some function that uses it is called, such as \code{predict}. In order to forcibly
+#'          reconstruct the C++ object after deserialization (e.g. after calling \code{readRDS} or similar), one
+#'          can use the function \link{lgb.restore_handle} (for example, if one makes predictions in parallel or in
+#'          forked processes, it will be faster to restore the handle beforehand).
+#'
+#'          Producing and keeping these raw bytes however uses extra memory, and if they are not required,
+#'          it is possible to avoid producing them by passing `serializable=FALSE`. In such cases, these raw
+#'          bytes can be added to the model on demand through function \link{lgb.make_serializable}.
 #' @keywords internal
 NULL
 
@@ -75,7 +92,11 @@ NULL
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weight vector of response values. If not NULL, will set to dataset
-#' @param save_name File name to use when writing the trained model to disk. Should end in ".model".
+#' @param objective Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
+#'                  For a list of accepted objectives, see
+#'                  \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
+#'                  the "objective" item of the "Parameters" section of the documentation}.
+#' @param init_score initial score is the base prediction lightgbm will boost from
 #' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
 #'     \itemize{
 #'        \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}
@@ -90,14 +111,6 @@ NULL
 #'                            say "the first and tenth columns").}
 #'        \item{\code{reset_data}: Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                          into a predictor model which frees up memory and the original datasets}
-#'         \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
-#'         \item{\code{num_leaves}: Maximum number of leaves in one tree.}
-#'         \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
-#'                          overfit when #data is small. Tree still grow by leaf-wise.}
-#'          \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-#'                             the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
-#'                             not the number of threads (most CPU using hyper-threading to generate 2 threads
-#'                             per CPU core).}
 #'     }
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained \code{lgb.Booster}
@@ -110,9 +123,11 @@ lightgbm <- function(data,
                      verbose = 1L,
                      eval_freq = 1L,
                      early_stopping_rounds = NULL,
-                     save_name = "lightgbm.model",
                      init_model = NULL,
                      callbacks = list(),
+                     serializable = TRUE,
+                     objective = "regression",
+                     init_score = NULL,
                      ...) {
 
   # validate inputs early to avoid unnecessary computation
@@ -125,18 +140,20 @@ lightgbm <- function(data,
 
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
   if (!lgb.is.Dataset(x = dtrain)) {
-    dtrain <- lgb.Dataset(data = data, label = label, weight = weight)
+    dtrain <- lgb.Dataset(data = data, label = label, weight = weight, init_score = init_score)
   }
 
   train_args <- list(
     "params" = params
     , "data" = dtrain
     , "nrounds" = nrounds
+    , "obj" = objective
     , "verbose" = verbose
     , "eval_freq" = eval_freq
     , "early_stopping_rounds" = early_stopping_rounds
     , "init_model" = init_model
     , "callbacks" = callbacks
+    , "serializable" = serializable
   )
   train_args <- append(train_args, list(...))
 
@@ -154,9 +171,6 @@ lightgbm <- function(data,
     what = lgb.train
     , args = train_args
   )
-
-  # Store model under a specific name
-  bst$save_model(filename = save_name)
 
   return(bst)
 }

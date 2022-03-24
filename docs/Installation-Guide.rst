@@ -581,7 +581,9 @@ Following procedure is for the **MSVC** (Microsoft Visual C++) build.
 
    Visual Studio 2017 -> ``msvc-14.1-64.exe``,
 
-   Visual Studio 2019 -> ``msvc-14.2-64.exe``.
+   Visual Studio 2019 -> ``msvc-14.2-64.exe``,
+
+   Visual Studio 2022 -> ``msvc-14.3-64.exe``.
 
 4. Run the following commands:
 
@@ -633,6 +635,8 @@ To build LightGBM CUDA version, run the following commands:
   cd build
   cmake -DUSE_CUDA=1 ..
   make -j4
+
+Recently, a new CUDA version with better efficiency is implemented as an experimental feature. To build the new CUDA version, replace ``-DUSE_CUDA`` with ``-DUSE_CUDA_EXP`` in the above commands. Please note that new version requires **CUDA** 10.0 or later libraries.
 
 **Note**: glibc >= 2.14 is required.
 

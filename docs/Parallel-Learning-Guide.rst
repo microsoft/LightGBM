@@ -230,6 +230,41 @@ You could edit your firewall rules to allow communication between any of the wor
   * the port ``local_listen_port`` is not open on any of the worker hosts
   * any machine has multiple Dask worker processes running on it
 
+Using Custom Objective Functions with Dask
+******************************************
+
+It is possible to customize the boosting process by providing a custom objective function written in Python.
+See the Dask API's documentation for details on how to implement such functions.
+
+.. warning::
+
+  Custom objective functions used with ``lightgbm.dask`` will be called by each worker process on only that worker's local data.
+
+Follow the example below to use a custom implementation of the ``regression_l2`` objective.
+
+.. code:: python
+
+  import dask.array as da
+  import lightgbm as lgb
+  import numpy as np
+  from distributed import Client, LocalCluster
+
+  cluster = LocalCluster(n_workers=2)
+  client = Client(cluster)
+
+  X = da.random.random((1000, 10), (500, 10))
+  y = da.random.random((1000,), (500,))
+
+  def custom_l2_obj(y_true, y_pred):
+      grad = y_pred - y_true
+      hess = np.ones(len(y_true))
+      return grad, hess
+
+  dask_model = lgb.DaskLGBMRegressor(
+      objective=custom_l2_obj
+  )
+  dask_model.fit(X, y)
+
 Prediction with Dask
 ''''''''''''''''''''
 

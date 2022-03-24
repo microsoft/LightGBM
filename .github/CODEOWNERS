@@ -10,27 +10,27 @@
 *    @guolinke @StrikerRUS @jameslamb @shiyu1994
 
 # other catch-alls that will get matched if specific rules below are not matched
-*.R    @Laurae2 @jameslamb
-*.py    @StrikerRUS @chivee @wxchan @henry0312 @shiyu1994 @hzy46 @tongwu-msft
-*.cpp    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
-*.h    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
+*.R    @Laurae2 @jameslamb @jmoralez
+*.py    @StrikerRUS @jmoralez @jameslamb @shiyu1994 @hzy46 @tongwu-msft
+*.cpp    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
+*.h    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
 
 # main C++ code
-include/    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
-src/    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
-CMakeLists.txt    @guolinke @chivee @Laurae2 @jameslamb @wxchan @henry0312 @StrikerRUS @huanzhang12 @btrotta @shiyu1994 @hzy46 @tongwu-msft
-tests/c_api_test/    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
-tests/cpp_tests/    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
-tests/data/    @guolinke @chivee @btrotta @shiyu1994 @hzy46 @tongwu-msft
-windows/    @guolinke @chivee @btrotta @StrikerRUS @shiyu1994 @hzy46 @tongwu-msft
+include/    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
+src/    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
+CMakeLists.txt    @guolinke @Laurae2 @jameslamb @StrikerRUS @huanzhang12 @btrotta @shiyu1994 @hzy46 @tongwu-msft
+tests/c_api_test/    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
+tests/cpp_tests/    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
+tests/data/    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
+windows/    @guolinke @btrotta @StrikerRUS @shiyu1994 @hzy46 @tongwu-msft
 
 # R code
-build_r.R    @jameslamb @StrikerRUS
-build-cran-package.sh    @jameslamb @StrikerRUS
-R-package/    @Laurae2 @jameslamb
+build_r.R    @jameslamb @StrikerRUS @jmoralez
+build-cran-package.sh    @jameslamb @StrikerRUS @jmoralez
+R-package/    @Laurae2 @jameslamb @jmoralez
 
 # Python code
-python-package/    @StrikerRUS @chivee @wxchan @henry0312 @shiyu1994 @jameslamb @hzy46 @tongwu-msft
+python-package/    @StrikerRUS @shiyu1994 @jameslamb @hzy46 @tongwu-msft @jmoralez
 
 # Dask integration
 python-package/lightgbm/dask.py    @jameslamb @jmoralez
@@ -42,21 +42,21 @@ helpers/    @StrikerRUS @guolinke
 # CI administrative stuff
 .ci/    @StrikerRUS @jameslamb
 docs/    @StrikerRUS @jameslamb
-examples/     @StrikerRUS @jameslamb @guolinke
+examples/     @StrikerRUS @jameslamb @guolinke @jmoralez
 *.yml    @StrikerRUS @jameslamb
 .vsts-ci.yml    @StrikerRUS @jameslamb
 
 # docker setup
 docker/    @StrikerRUS @jameslamb
-docker/dockerfile-cli    @guolinke @chivee @shiyu1994
-docker/gpu/    @huanzhang12
-docker/dockerfile-python    @StrikerRUS @chivee @wxchan @henry0312 @shiyu1994
-docker/dockerfile-r    @Laurae2 @jameslamb
+docker/dockerfile-cli    @guolinke @shiyu1994 @StrikerRUS @jameslamb
+docker/gpu/    @huanzhang12 @StrikerRUS @jameslamb
+docker/dockerfile-python    @StrikerRUS @shiyu1994 @jameslamb @jmoralez
+docker/dockerfile-r    @Laurae2 @jameslamb @jmoralez
 
 # GPU code
-docs/GPU-*.rst    @huanzhang12
-src/treelearner/gpu_tree_learner.cpp    @huanzhang12 @guolinke @chivee @shiyu1994
-src/treelearner/tree_learner.cpp    @huanzhang12 @guolinke @chivee @shiyu1994
+docs/GPU-*.rst    @huanzhang12 @shiyu1994 @guolinke
+src/treelearner/gpu_tree_learner.cpp    @huanzhang12 @guolinke @shiyu1994
+src/treelearner/tree_learner.cpp    @huanzhang12 @guolinke @shiyu1994
 
 # JAVA code
-swig/    @guolinke @chivee @shiyu1994
+swig/    @guolinke @shiyu1994

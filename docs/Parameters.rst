@@ -199,7 +199,7 @@ Core Parameters
 
    -  **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
 
--  ``device_type`` :raw-html:`<a id="device_type" title="Permalink to this parameter" href="#device_type">&#x1F517;&#xFE0E;</a>`, default = ``cpu``, type = enum, options: ``cpu``, ``gpu``, ``cuda``, aliases: ``device``
+-  ``device_type`` :raw-html:`<a id="device_type" title="Permalink to this parameter" href="#device_type">&#x1F517;&#xFE0E;</a>`, default = ``cpu``, type = enum, options: ``cpu``, ``gpu``, ``cuda``, ``cuda_exp``, aliases: ``device``
 
    -  device for the tree learning, you can use GPU to achieve the faster learning
 
@@ -208,6 +208,10 @@ Core Parameters
    -  **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training
 
    -  **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
+
+   -  **Note**: ``cuda_exp`` is an experimental CUDA version, the installation guide for ``cuda_exp`` is identical with ``cuda``
+
+   -  **Note**: ``cuda_exp`` is faster than ``cuda`` and will replace ``cuda`` in the future
 
 -  ``seed`` :raw-html:`<a id="seed" title="Permalink to this parameter" href="#seed">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = int, aliases: ``random_seed``, ``random_state``
 
@@ -780,6 +784,8 @@ Dataset Parameters
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0, and weight is column\_1, the correct parameter is ``weight=0``
 
+   -  **Note**: weights should be non-negative
+
 -  ``group_column`` :raw-html:`<a id="group_column" title="Permalink to this parameter" href="#group_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``group``, ``group_id``, ``query_column``, ``query``, ``query_id``
 
    -  used to specify the query/group id column
@@ -816,7 +822,7 @@ Dataset Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``categorical_feature=name:c1,c2,c3`` means c1, c2 and c3 are categorical features
 
-   -  **Note**: only supports categorical with ``int`` type (not applicable for data represented as pandas DataFrame in Python-package)
+   -  **Note**: all values will be cast to ``int32`` (integer codes will be extracted from pandas categoricals in the Python-package)
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
 
@@ -827,6 +833,8 @@ Dataset Parameters
    -  **Note**: all negative values will be treated as **missing values**
 
    -  **Note**: the output cannot be monotonically constrained with respect to a categorical feature
+
+   -  **Note**: floating point numbers in categorical features will be rounded towards 0
 
 -  ``forcedbins_filename`` :raw-html:`<a id="forcedbins_filename" title="Permalink to this parameter" href="#forcedbins_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
 
@@ -922,6 +930,8 @@ Predict Parameters
    -  used only in ``prediction`` task
 
    -  used only in ``classification`` and ``ranking`` applications
+
+   -  used only for predicting normal or raw scores
 
    -  if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
 
@@ -1273,7 +1283,8 @@ LightGBM supports weighted training. It uses an additional file to store weight 
     0.8
     ...
 
-It means the weight of the first data row is ``1.0``, second is ``0.5``, and so on.
+It means the weight of the first data row is ``1.0``, second is ``0.5``, and so on. Weights should be non-negative.
+
 The weight file corresponds with data file line by line, and has per weight per line.
 
 And if the name of data file is ``train.txt``, the weight file should be named as ``train.txt.weight`` and placed in the same folder as the data file.

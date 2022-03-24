@@ -6,7 +6,7 @@
 \usage{
 \method{predict}{lgb.Booster}(
   object,
-  data,
+  newdata,
   start_iteration = NULL,
   num_iteration = NULL,
   rawscore = FALSE,
@@ -21,7 +21,7 @@
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
-\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or
+\item{newdata}{a \code{matrix} object, a \code{dgCMatrix} object or
 a character representing a path to a text file (CSV, TSV, or LibSVM)}
 
 \item{start_iteration}{int or None, optional (default=None)
@@ -52,7 +52,7 @@ prediction outputs per case.}
 the "Predict Parameters" section of the documentation} for a list of parameters and
 valid values.}
 
-\item{...}{Additional prediction parameters. NOTE: deprecated as of v3.3.0. Use \code{params} instead.}
+\item{...}{ignored}
 }
 \value{
 For regression or binary classification, it returns a vector of length \code{nrows(data)}.

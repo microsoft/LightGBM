@@ -112,15 +112,15 @@ gbm = lgb.train(params,
 print('Finished 10 - 20 rounds with model file...')
 
 # decay learning rates
-# learning_rates accepts:
-# 1. list/tuple with length = num_boost_round
+# reset_parameter callback accepts:
+# 1. list with length = num_boost_round
 # 2. function(curr_iter)
 gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=10,
                 init_model=gbm,
-                learning_rates=lambda iter: 0.05 * (0.99 ** iter),
-                valid_sets=lgb_eval)
+                valid_sets=lgb_eval,
+                callbacks=[lgb.reset_parameter(learning_rate=lambda iter: 0.05 * (0.99 ** iter))])
 
 print('Finished 20 - 30 rounds with decay learning rates...')
 

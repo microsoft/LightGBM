@@ -25,7 +25,6 @@ from re import compile
 from shutil import copytree
 from subprocess import PIPE, Popen
 from typing import Any, List
-from unittest.mock import Mock
 
 import sphinx
 from docutils.nodes import reference
@@ -39,22 +38,6 @@ LIB_PATH = CURR_PATH.parent / 'python-package'
 sys.path.insert(0, str(LIB_PATH))
 
 INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#)")
-
-# -- mock out modules
-MOCK_MODULES = [
-    'dask',
-    'dask.distributed',
-    'datatable',
-    'graphviz',
-    'matplotlib',
-    'numpy',
-    'pandas',
-    'scipy',
-    'scipy.sparse',
-    'sklearn'
-]
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = Mock()
 
 
 class InternalRefTransform(Transform):
@@ -109,7 +92,22 @@ autodoc_default_options = {
     "inherited-members": True,
     "show-inheritance": True,
 }
-
+# mock out modules
+autodoc_mock_imports = [
+    'dask',
+    'dask.distributed',
+    'datatable',
+    'graphviz',
+    'matplotlib',
+    'numpy',
+    'pandas',
+    'scipy',
+    'scipy.sparse',
+]
+try:
+    import sklearn
+except ImportError:
+    autodoc_mock_imports.append('sklearn')
 # hide type hints in API docs
 autodoc_typehints = "none"
 
@@ -264,19 +262,6 @@ def generate_r_docs(app: Sphinx) -> None:
         The application object representing the Sphinx process.
     """
     commands = f"""
-    /home/docs/.conda/bin/conda create \
-        -q \
-        -y \
-        -c conda-forge \
-        --override-channels \
-        -n r_env \
-            r-base=4.1.0=hb67fd72_2 \
-            r-data.table=1.14.0=r41hcfec24a_0 \
-            r-jsonlite=1.7.2=r41hcfec24a_0 \
-            r-matrix=1.3_4=r41he454529_0 \
-            r-pkgdown=1.6.1=r41hc72bb7e_0 \
-            r-roxygen2=7.1.1=r41h03ef668_0
-    source /home/docs/.conda/bin/activate r_env
     export TAR=/bin/tar
     cd {CURR_PATH.parent}
     export R_LIBS="$CONDA_PREFIX/lib/R/library"
@@ -301,6 +286,7 @@ def generate_r_docs(app: Sphinx) -> None:
     cd {CURR_PATH.parent}
     """
     try:
+        print("Building R-package documentation")
         # Warning! The following code can cause buffer overflows on RTD.
         # Consider suppressing output completely if RTD project silently fails.
         # Refer to https://github.com/svenevs/exhale
@@ -314,6 +300,7 @@ def generate_r_docs(app: Sphinx) -> None:
             raise RuntimeError(output)
         else:
             print(output)
+            print("Done building R-package documentation")
     except BaseException as e:
         raise Exception(f"An error has occurred while generating documentation for R-package\n{e}")
 
