@@ -65,7 +65,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
-  if (config_->device_type == std::string("cuda")) {
+  if (config_->device_type == std::string("cuda") || config_->device_type == std::string("cuda_exp")) {
     LGBM_config_::current_learner = use_cuda_learner;
   }
 
@@ -391,7 +391,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto grad = gradients + offset;
       auto hess = hessians + offset;
       // need to copy gradients for bagging subset.
-      if (is_use_subset_ && bag_data_cnt_ < num_data_) {
+      if (is_use_subset_ && bag_data_cnt_ < num_data_ && config_->device_type != std::string("cuda_exp")) {
         for (int i = 0; i < bag_data_cnt_; ++i) {
           gradients_[offset + i] = grad[bag_data_indices_[i]];
           hessians_[offset + i] = hess[bag_data_indices_[i]];
@@ -805,15 +805,17 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     double average_bag_rate =
         (static_cast<double>(bag_data_cnt_) / num_data_) / config->bagging_freq;
     is_use_subset_ = false;
-    const int group_threshold_usesubset = 100;
-    if (average_bag_rate <= 0.5
-        && (train_data_->num_feature_groups() < group_threshold_usesubset)) {
-      if (tmp_subset_ == nullptr || is_change_dataset) {
-        tmp_subset_.reset(new Dataset(bag_data_cnt_));
-        tmp_subset_->CopyFeatureMapperFrom(train_data_);
+    if (config_->device_type != std::string("cuda_exp")) {
+      const int group_threshold_usesubset = 100;
+      if (average_bag_rate <= 0.5
+          && (train_data_->num_feature_groups() < group_threshold_usesubset)) {
+        if (tmp_subset_ == nullptr || is_change_dataset) {
+          tmp_subset_.reset(new Dataset(bag_data_cnt_));
+          tmp_subset_->CopyFeatureMapperFrom(train_data_);
+        }
+        is_use_subset_ = true;
+        Log::Debug("Use subset for bagging");
       }
-      is_use_subset_ = true;
-      Log::Debug("Use subset for bagging");
     }
 
     need_re_bagging_ = true;

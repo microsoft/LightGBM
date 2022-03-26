@@ -123,6 +123,8 @@ All requirements from `Build from Sources section <#build-from-sources>`__ apply
 
 **CUDA** library (version 9.0 or higher) is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version-experimental>`__.
 
+Recently, a new CUDA version with better efficiency is implemented as an experimental feature. To build the new CUDA version, replace ``--cuda`` with ``--cuda-exp`` in the above commands. Please note that new version requires **CUDA** 10.0 or later libraries.
+
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
 
@@ -197,6 +199,8 @@ Run ``python setup.py install --mingw``, if you want to use **MinGW-w64** on **W
 Run ``python setup.py install --gpu`` to enable GPU support. All requirements from `Build GPU Version section <#build-gpu-version>`__ apply for this installation option as well. To pass additional options to **CMake** use the following syntax: ``python setup.py install --gpu --opencl-include-dir=/usr/local/cuda/include/``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
 
 Run ``python setup.py install --cuda`` to enable CUDA support. All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
+
+Run ``python setup.py install --cuda-exp`` to enable the new experimental version of CUDA support. All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
 
 Run ``python setup.py install --hdfs`` to enable HDFS support. All requirements from `Build HDFS Version section <#build-hdfs-version>`__ apply for this installation option as well.
 
