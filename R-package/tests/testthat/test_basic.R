@@ -2927,3 +2927,29 @@ test_that("lightgbm() defaults to 'regression' objective if objective not otherw
   expect_true(any(model_txt_lines == "objective=regression"))
   expect_false(any(model_txt_lines == "objective=regression_l1"))
 })
+
+test_that("lightgbm() accepts 'weight' and 'weights'", {
+  data(mtcars)
+  X <- as.matrix(mtcars[, -1L])
+  y <- as.numeric(mtcars[, 1L])
+  w <- rep(1.0, nrow(X))
+  model <- lightgbm(
+    X
+    , y
+    , weights = w
+    , obj = "regression"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+
+  # Avoid a bad CRAN check due to partial argument matches
+  lgb_args <- list(
+    X
+    , y
+    , weight = w
+    , obj = "regression"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  model <- do.call(lightgbm, lgb_args)
+})
