@@ -28,7 +28,7 @@ may allow you to pass other types of data like \code{matrix} and then separately
 
 \item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}}
 
-\item{weights}{Sample / observation weights for rows in the input data. If `NULL`, will assume that all
+\item{weights}{Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
 observations / rows have the same importance / weight.}
 
 \item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
