@@ -1,7 +1,7 @@
 # coding: utf-8
+import copy
 import json
 import pickle
-import copy
 from pathlib import Path
 
 import numpy as np
@@ -159,6 +159,7 @@ def binary_error(preds, train_data):
     preds = 1. / (1. + np.exp(-preds))
     return 'error', np.mean(labels != (preds > 0.5)), False
 
+
 # Pass custom objective function through params
 params_custom_obj = copy.deepcopy(params)
 params_custom_obj['objective'] = loglikelihood
@@ -184,6 +185,7 @@ def accuracy(preds, train_data):
     labels = train_data.get_label()
     preds = 1. / (1. + np.exp(-preds))
     return 'accuracy', np.mean(labels == (preds > 0.5)), True
+
 
 # Pass custom objective function through params
 params_custom_obj = copy.deepcopy(params)
