@@ -147,6 +147,9 @@ class Metadata {
     queries_[idx] = static_cast<data_size_t>(value);
   }
 
+  /*! \brief Load initial scores from file */
+  void LoadInitialScore(const std::string& data_filename);
+
   /*!
   * \brief Get weights, if not exists, will return nullptr
   * \return Pointer of weights
@@ -223,8 +226,6 @@ class Metadata {
   #endif  // USE_CUDA_EXP
 
  private:
-  /*! \brief Load initial scores from file */
-  void LoadInitialScore();
   /*! \brief Load wights from file */
   void LoadWeights();
   /*! \brief Load query boundaries from file */
