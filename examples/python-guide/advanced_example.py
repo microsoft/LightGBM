@@ -1,6 +1,7 @@
 # coding: utf-8
 import json
 import pickle
+import copy
 from pathlib import Path
 
 import numpy as np
@@ -158,12 +159,14 @@ def binary_error(preds, train_data):
     preds = 1. / (1. + np.exp(-preds))
     return 'error', np.mean(labels != (preds > 0.5)), False
 
+# Pass custom objective function through params
+params_custom_obj = copy.deepcopy(params)
+params_custom_obj['objective'] = loglikelihood
 
-gbm = lgb.train(params,
+gbm = lgb.train(params_custom_obj,
                 lgb_train,
                 num_boost_round=10,
                 init_model=gbm,
-                fobj=loglikelihood,
                 feval=binary_error,
                 valid_sets=lgb_eval)
 
@@ -182,12 +185,14 @@ def accuracy(preds, train_data):
     preds = 1. / (1. + np.exp(-preds))
     return 'accuracy', np.mean(labels == (preds > 0.5)), True
 
+# Pass custom objective function through params
+params_custom_obj = copy.deepcopy(params)
+params_custom_obj['objective'] = loglikelihood
 
-gbm = lgb.train(params,
+gbm = lgb.train(params_custom_obj,
                 lgb_train,
                 num_boost_round=10,
                 init_model=gbm,
-                fobj=loglikelihood,
                 feval=[binary_error, accuracy],
                 valid_sets=lgb_eval)
 
