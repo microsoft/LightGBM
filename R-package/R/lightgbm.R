@@ -91,7 +91,7 @@ NULL
 #' @description Simple interface for training a LightGBM model.
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
-#' @param weights Sample / observation weights for rows in the input data. If `NULL`, will assume that all
+#' @param weights Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
 #'                observations / rows have the same importance / weight.
 #' @param objective Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
 #'                  For a list of accepted objectives, see
