@@ -597,7 +597,9 @@ class LGBMModel(_LGBMModelBase):
         if callable(self._objective):
             if stage == "fit":
                 self._fobj = _ObjectiveFunctionWrapper(self._objective)
-            params['objective'] = 'None'  # objective = nullptr for unknown objective
+                params['objective'] = self._fobj
+            elif stage == "predict":
+                params['objective'] = 'None'
         else:
             if stage == "fit":
                 self._fobj = None
@@ -756,7 +758,6 @@ class LGBMModel(_LGBMModelBase):
             num_boost_round=self.n_estimators,
             valid_sets=valid_sets,
             valid_names=eval_names,
-            fobj=self._fobj,
             feval=eval_metrics_callable,
             init_model=init_model,
             feature_name=feature_name,
