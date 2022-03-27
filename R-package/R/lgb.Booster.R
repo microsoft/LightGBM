@@ -817,14 +817,6 @@ predict.lgb.Booster <- function(object,
     , reshape = reshape
     , params = params
   )
-
-  if (reshape && NROW(row.names(newdata))) {
-    if (is.null(dim(pred))) {
-      names(pred) <- row.names(newdata)
-    } else {
-      row.names(pred) <- row.names(newdata)
-    }
-  }
   return(pred)
 }
 
