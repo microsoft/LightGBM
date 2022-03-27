@@ -598,7 +598,7 @@ class LGBMModel(_LGBMModelBase):
             if stage == "fit":
                 self._fobj = _ObjectiveFunctionWrapper(self._objective)
                 params['objective'] = self._fobj
-            elif stage == "predict":
+            else:
                 params['objective'] = 'None'
         else:
             if stage == "fit":

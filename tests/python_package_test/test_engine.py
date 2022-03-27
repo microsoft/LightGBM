@@ -2311,8 +2311,7 @@ def test_multiple_feval_train():
     assert 'decreasing_metric' in evals_result['valid_0']
 
 
-def test_objective_callable_train():
-    # Test classification
+def test_objective_callable_train_binary_classification():
     X, y = load_breast_cancer(return_X_y=True)
     params = {
         'verbose': -1,
@@ -2333,7 +2332,8 @@ def test_objective_callable_train():
     assert logloss_error == pytest.approx(0.25, 0.1)
     assert rocauc_error == pytest.approx(0.99, 0.5)
 
-    # Test regression
+
+def test_objective_callable_train_regression():
     X, y = make_synthetic_regression()
     params = {
         'verbose': -1,
@@ -2351,8 +2351,7 @@ def test_objective_callable_train():
     assert mse_error == pytest.approx(119, 1)
 
 
-def test_objective_callable_cv():
-    # Test classification
+def test_objective_callable_cv_binary_classification():
     X, y = load_breast_cancer(return_X_y=True)
     params = {
         'verbose': -1,
@@ -2377,7 +2376,8 @@ def test_objective_callable_cv():
     assert all(cv_objs)
     assert all(cv_logloss_errors)
 
-    # Test regression
+
+def test_objective_callable_cv_regression():
     X, y = make_synthetic_regression()
     lgb_train = lgb.Dataset(X, y)
     params_with_metric = {
