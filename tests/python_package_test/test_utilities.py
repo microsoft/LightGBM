@@ -105,39 +105,22 @@ def test_register_invalid_logger():
         def warning(self, msg: str) -> None:
             print(msg)
 
-        def error(self, msg: str) -> None:
-            print(msg)
-
     class LoggerWithoutWarningMethod:
         def info(self, msg: str) -> None:
-            print(msg)
-
-        def error(self, msg: str) -> None:
-            print(msg)
-
-    class LoggerWithoutErrorMethod:
-        def info(self, msg: str) -> None:
-            print(msg)
-
-        def warning(self, msg: str) -> None:
             print(msg)
 
     class LoggerWithAttributeNotCallable:
         def __init__(self):
             self.info = 1
             self.warning = 2
-            self.error = 3
 
-    expected_error_message = "Logger must provide 'info', 'warning' and 'error' method"
+    expected_error_message = "Logger must provide 'info' and 'warning' method"
 
     with pytest.raises(TypeError, match=expected_error_message):
         lgb.register_logger(LoggerWithoutInfoMethod())
 
     with pytest.raises(TypeError, match=expected_error_message):
         lgb.register_logger(LoggerWithoutWarningMethod())
-
-    with pytest.raises(TypeError, match=expected_error_message):
-        lgb.register_logger(LoggerWithoutErrorMethod())
 
     with pytest.raises(TypeError, match=expected_error_message):
         lgb.register_logger(LoggerWithAttributeNotCallable())
@@ -153,22 +136,17 @@ def test_register_custom_logger():
         def custom_warning(self, msg: str) -> None:
             logged_messages.append(msg)
 
-        def custom_error(self, msg: str) -> None:
-            logged_messages.append(msg)
-
     custom_logger = CustomLogger()
     lgb.register_logger(
         custom_logger,
         info_method_name="custom_info",
-        warning_method_name="custom_warning",
-        error_method_name="custom_error",
+        warning_method_name="custom_warning"
     )
 
     lgb.basic._log_info("info message")
     lgb.basic._log_warning("warning message")
-    lgb.basic._log_error("error message")
 
-    expected_log = ["info message", "warning message", "error message"]
+    expected_log = ["info message", "warning message"]
     assert logged_messages == expected_log
 
     logged_messages = []
