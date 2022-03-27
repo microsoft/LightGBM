@@ -732,8 +732,8 @@ Booster <- R6::R6Class(
 #' @param reshape whether to reshape the vector of predictions to a matrix form when there are several
 #'                prediction outputs per case.
 #'
-#'                If passing `reshape=TRUE` and `data` has row names, the output will also have those
-#'                row names.
+#'                If \code{newdata} has row names and the output has the same number of rows as \code{newdata}
+#'                (which can be achieved with \code{reshape=TRUE}), the output will also have those row names.
 #' @param params a list of additional named parameters. See
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 #'               the "Predict Parameters" section of the documentation} for a list of parameters and
