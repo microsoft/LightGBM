@@ -14,7 +14,7 @@ test_that("Feature penalties work properly", {
     lightgbm(
       data = train$data
       , label = train$label
-      , nthreads = 1L
+      , num_threads = 1L
       , params = list(
         num_leaves = 5L
         , learning_rate = 0.05
@@ -72,7 +72,7 @@ test_that("training should warn if you use 'dart' boosting, specified with 'boos
       result <- lightgbm(
         data = train$data
         , label = train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = params
         , nrounds = 5L
         , verbose = -1L

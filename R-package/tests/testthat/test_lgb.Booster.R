@@ -129,7 +129,7 @@ test_that("lgb.load() gives the expected error messages given different incorrec
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             objective = "binary"
             , num_leaves = 4L
@@ -176,7 +176,7 @@ test_that("Loading a Booster from a text file works", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
@@ -253,7 +253,7 @@ test_that("Loading a Booster from a string works", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
@@ -286,7 +286,7 @@ test_that("Saving a large model to string should work", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             num_leaves = 100L
             , learning_rate = 0.01
@@ -330,7 +330,7 @@ test_that("Saving a large model to JSON should work", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             num_leaves = 100L
             , learning_rate = 0.01
@@ -360,7 +360,7 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
@@ -416,7 +416,7 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
     bst <- lightgbm(
         data = as.matrix(agaricus.train$data)
         , label = agaricus.train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
@@ -510,7 +510,7 @@ test_that("Booster$rollback_one_iter() should work as expected", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
@@ -545,7 +545,7 @@ test_that("Booster$update() passing a train_set works as expected", {
     bst <- lightgbm(
         data = as.matrix(agaricus.train$data)
         , label = agaricus.train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
@@ -569,7 +569,7 @@ test_that("Booster$update() passing a train_set works as expected", {
     bst2 <- lightgbm(
         data = as.matrix(agaricus.train$data)
         , label = agaricus.train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
@@ -595,7 +595,7 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
     bst <- lightgbm(
         data = as.matrix(agaricus.train$data)
         , label = agaricus.train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
@@ -691,7 +691,7 @@ test_that("Saving a model with different feature importance types works", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
@@ -747,7 +747,7 @@ test_that("Saving a model with unknown importance type fails", {
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , nthreads = 1L
+        , num_threads = 1L
         , params = list(
             num_leaves = 4L
             , learning_rate = 1.0
@@ -1167,7 +1167,7 @@ test_that("Handle is automatically restored when calling predict", {
         agaricus.train$data
         , agaricus.train$label
         , nrounds = 5L
-        , nthreads = 1L
+        , num_threads = 1L
         , obj = "binary"
         , params = list(
             verbose = VERBOSITY
