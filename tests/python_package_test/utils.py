@@ -125,6 +125,10 @@ def softmax(x):
     return exp_x / np.sum(exp_x, axis=1).reshape(-1, 1)
 
 
+def logistic_sigmoid(x):
+    return 1.0 / (1.0 + np.exp(-x))
+
+
 def sklearn_multiclass_custom_objective(y_true, y_pred):
     num_rows, num_class = y_pred.shape
     prob = softmax(y_pred)

@@ -12,7 +12,6 @@ from pathlib import Path
 import numpy as np
 import psutil
 import pytest
-from scipy import special
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
 from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
@@ -20,8 +19,8 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 
 import lightgbm as lgb
 
-from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression,
-                    sklearn_multiclass_custom_objective, softmax)
+from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
+                    make_synthetic_regression, sklearn_multiclass_custom_objective, softmax)
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -38,24 +37,11 @@ def mse_obj(y_pred, dtrain):
 
 
 def logloss_obj(preds, train_data):
-    """Taken from https://maxhalford.github.io/blog/lightgbm-focal-loss/"""
-    y = train_data.get_label()
-    p = special.expit(preds)
-    grad = p - y
-    hess = p * (1 - p)
+    y_true = train_data.get_label()
+    y_pred = logistic_sigmoid(preds)
+    grad = y_pred - y_true
+    hess = y_pred * (1.0 - y_pred)
     return grad, hess
-
-
-def logloss_metric(preds, train_data):
-    """Taken from https://maxhalford.github.io/blog/lightgbm-focal-loss/"""
-    y = train_data.get_label()
-    p = special.expit(preds)
-    ll = np.empty_like(p)
-    pos = y == 1
-    ll[pos] = np.log(p[pos])
-    ll[~pos] = np.log(1 - p[~pos])
-    is_higher_better = False
-    return 'logloss', -ll.mean(), is_higher_better
 
 
 def multi_logloss(y_true, y_pred):
@@ -2322,10 +2308,9 @@ def test_objective_callable_train_binary_classification():
     booster = lgb.train(
         params=params,
         train_set=train_dataset,
-        num_boost_round=100,
-        feval=logloss_metric
+        num_boost_round=100
     )
-    y_pred = special.expit(booster.predict(X))
+    y_pred = logistic_sigmoid(booster.predict(X))
     logloss_error = log_loss(y, y_pred)
     rocauc_error = roc_auc_score(y, y_pred)
     assert booster.params['objective'] == 'none'
@@ -2368,7 +2353,7 @@ def test_objective_callable_cv_binary_classification():
     )
     cv_booster = cv_res['cvbooster'].boosters
     cv_logloss_errors = [
-        log_loss(y, special.expit(cb.predict(X))) < 0.29 for cb in cv_booster
+        log_loss(y, logistic_sigmoid(cb.predict(X))) < 0.29 for cb in cv_booster
     ]
     cv_objs = [
         cb.params['objective'] == 'none' for cb in cv_booster
