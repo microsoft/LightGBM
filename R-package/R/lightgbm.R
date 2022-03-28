@@ -91,7 +91,8 @@ NULL
 #' @description Simple interface for training a LightGBM model.
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
-#' @param weight vector of response values. If not NULL, will set to dataset
+#' @param weights Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
+#'                observations / rows have the same importance / weight.
 #' @param objective Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
 #'                  For a list of accepted objectives, see
 #'                  \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
@@ -132,7 +133,7 @@ NULL
 #' @export
 lightgbm <- function(data,
                      label = NULL,
-                     weight = NULL,
+                     weights = NULL,
                      params = list(),
                      nrounds = 100L,
                      verbose = 1L,
@@ -162,7 +163,7 @@ lightgbm <- function(data,
 
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
   if (!lgb.is.Dataset(x = dtrain)) {
-    dtrain <- lgb.Dataset(data = data, label = label, weight = weight, init_score = init_score)
+    dtrain <- lgb.Dataset(data = data, label = label, weight = weights, init_score = init_score)
   }
 
   train_args <- list(

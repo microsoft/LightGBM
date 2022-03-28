@@ -2978,3 +2978,29 @@ test_that("lightgbm() accepts 'num_threads' as either top-level argument or unde
   )
   expect_equal(bst$params$num_threads, 1L)
 })
+
+test_that("lightgbm() accepts 'weight' and 'weights'", {
+  data(mtcars)
+  X <- as.matrix(mtcars[, -1L])
+  y <- as.numeric(mtcars[, 1L])
+  w <- rep(1.0, nrow(X))
+  model <- lightgbm(
+    X
+    , y
+    , weights = w
+    , obj = "regression"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+
+  # Avoid a bad CRAN check due to partial argument matches
+  lgb_args <- list(
+    X
+    , y
+    , weight = w
+    , obj = "regression"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  model <- do.call(lightgbm, lgb_args)
+})
