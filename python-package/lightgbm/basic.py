@@ -55,9 +55,9 @@ def register_logger(
     ----------
     logger : Any
         Custom logger.
-    info_method_name: str, optional (default="info")
+    info_method_name : str, optional (default="info")
         Method used to log info messages.
-    warning_method_name: str, optional (default="warning")
+    warning_method_name : str, optional (default="warning")
         Method used to log warning messages.
     """
     def _has_method(logger: Any, method_name: str) -> bool:
