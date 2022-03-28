@@ -2948,3 +2948,33 @@ test_that("lightgbm() defaults to 'regression' objective if objective not otherw
   expect_true(any(model_txt_lines == "objective=regression"))
   expect_false(any(model_txt_lines == "objective=regression_l1"))
 })
+
+test_that("lightgbm() accepts 'num_threads' as either top-level argument or under params", {
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = -1L
+    , num_threads = 1L
+  )
+  expect_equal(bst$params$num_threads, 1L)
+
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = -1L
+    , parms = list(num_threads = 1L)
+  )
+  expect_equal(bst$params$num_threads, 1L)
+
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = -1L
+    , num_threads = 10L
+    , parms = list(num_threads = 1L)
+  )
+  expect_equal(bst$params$num_threads, 1L)
+})
