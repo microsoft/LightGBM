@@ -151,9 +151,11 @@ lightgbm <- function(data,
     stop("nrounds should be greater than zero")
   }
 
-  if (!length(intersect(names(params), .PARAMETER_ALIASES()$num_threads))) {
-    params$num_threads <- num_threads
-  }
+  params <- lgb.check.wrapper_param(
+    main_param_name = "num_threads"
+    , params = params
+    , alternative_kwarg_value = num_threads
+  )
 
   # Set data to a temporary variable
   dtrain <- data
