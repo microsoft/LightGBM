@@ -10,7 +10,6 @@ lightgbm(
   weight = NULL,
   params = list(),
   nrounds = 100L,
-  nthreads = parallel::detectCores(),
   verbose = 1L,
   eval_freq = 1L,
   early_stopping_rounds = NULL,
@@ -19,6 +18,7 @@ lightgbm(
   serializable = TRUE,
   objective = "regression",
   init_score = NULL,
+  num_threads = parallel::detectCores(logical = FALSE),
   ...
 )
 }
@@ -35,19 +35,6 @@ may allow you to pass other types of data like \code{matrix} and then separately
 the "Parameters" section of the documentation} for a list of parameters and valid values.}
 
 \item{nrounds}{number of training rounds}
-
-\item{nthreads}{Number of parallel threads to use. For best speed, this should be set to the number of
-                physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
-                number of maximum threads (e.g. `nthreads = max(parallel::detectCores() / 2L, 1L)` as
-                a shorthand for the optimal value).
-
-                Be aware that using too many threads can result in speed degradation in smaller datasets
-                (see the parameters documentation for more details).
-
-                If passing zero, will use the default number of threads configured for OpenMP
-                (typically controlled through an environment variable `OMP_NUM_THREADS`).
-
-                This parameter overrides `num_threads` in `params` if it exists there.}
 
 \item{verbose}{verbosity for output, if <= 0, also will disable the print of evaluation during training}
 
@@ -72,6 +59,21 @@ For a list of accepted objectives, see
 the "objective" item of the "Parameters" section of the documentation}.}
 
 \item{init_score}{initial score is the base prediction lightgbm will boost from}
+
+\item{num_threads}{Number of parallel threads to use. For best speed, this should be set to the number of
+                   physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
+                   number of maximum threads (note that, while the default value passed here tries to detect
+                   the number of physical cores in the system, when using this package on linux and other
+                   unix-type systems, the default value passed to this function might correspond to the number
+                   of logical cores instead, which might be sub-optimal).
+
+                   Be aware that using too many threads can result in speed degradation in smaller datasets
+                   (see the parameters documentation for more details).
+
+                   If passing zero, will use the default number of threads configured for OpenMP
+                   (typically controlled through an environment variable `OMP_NUM_THREADS`).
+
+                   This parameter gets overriden by `num_threads` and its aliases under `params` if passed there.}
 
 \item{...}{Additional arguments passed to \code{\link{lgb.train}}. For example
 \itemize{

@@ -92,23 +92,25 @@ NULL
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weight vector of response values. If not NULL, will set to dataset
-#' @param nthreads Number of parallel threads to use. For best speed, this should be set to the number of
-#'                 physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
-#'                 number of maximum threads (e.g. `nthreads = max(parallel::detectCores() / 2L, 1L)` as
-#'                 a shorthand for the optimal value).
-#'
-#'                 Be aware that using too many threads can result in speed degradation in smaller datasets
-#'                 (see the parameters documentation for more details).
-#'
-#'                 If passing zero, will use the default number of threads configured for OpenMP
-#'                 (typically controlled through an environment variable `OMP_NUM_THREADS`).
-#'
-#'                 This parameter overrides `num_threads` in `params` if it exists there.
 #' @param objective Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
 #'                  For a list of accepted objectives, see
 #'                  \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
 #'                  the "objective" item of the "Parameters" section of the documentation}.
 #' @param init_score initial score is the base prediction lightgbm will boost from
+#' @param num_threads Number of parallel threads to use. For best speed, this should be set to the number of
+#'                    physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
+#'                    number of maximum threads (note that, while the default value passed here tries to detect
+#'                    the number of physical cores in the system, when using this package on linux and other
+#'                    unix-type systems, the default value passed to this function might correspond to the number
+#'                    of logical cores instead, which might be sub-optimal).
+#'
+#'                    Be aware that using too many threads can result in speed degradation in smaller datasets
+#'                    (see the parameters documentation for more details).
+#'
+#'                    If passing zero, will use the default number of threads configured for OpenMP
+#'                    (typically controlled through an environment variable `OMP_NUM_THREADS`).
+#'
+#'                    This parameter gets overriden by `num_threads` and its aliases under `params` if passed there.
 #' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
 #'     \itemize{
 #'        \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}
@@ -133,7 +135,6 @@ lightgbm <- function(data,
                      weight = NULL,
                      params = list(),
                      nrounds = 100L,
-                     nthreads = parallel::detectCores(),
                      verbose = 1L,
                      eval_freq = 1L,
                      early_stopping_rounds = NULL,
@@ -142,6 +143,7 @@ lightgbm <- function(data,
                      serializable = TRUE,
                      objective = "regression",
                      init_score = NULL,
+                     num_threads = parallel::detectCores(logical = FALSE),
                      ...) {
 
   # validate inputs early to avoid unnecessary computation
@@ -149,7 +151,9 @@ lightgbm <- function(data,
     stop("nrounds should be greater than zero")
   }
 
-  params$num_threads <- nthreads
+  if (!length(intersect(names(params), .PARAMETER_ALIASES()$num_threads))) {
+    params$num_threads <- num_threads
+  }
 
   # Set data to a temporary variable
   dtrain <- data
