@@ -2954,7 +2954,7 @@ test_that("lightgbm() accepts 'num_threads' as either top-level argument or unde
     data = train$data
     , label = train$label
     , nrounds = 5L
-    , verbose = -1L
+    , verbose = VERBOSITY
     , num_threads = 1L
   )
   expect_equal(bst$params$num_threads, 1L)
@@ -2963,7 +2963,7 @@ test_that("lightgbm() accepts 'num_threads' as either top-level argument or unde
     data = train$data
     , label = train$label
     , nrounds = 5L
-    , verbose = -1L
+    , verbose = VERBOSITY
     , parms = list(num_threads = 1L)
   )
   expect_equal(bst$params$num_threads, 1L)
@@ -2972,7 +2972,7 @@ test_that("lightgbm() accepts 'num_threads' as either top-level argument or unde
     data = train$data
     , label = train$label
     , nrounds = 5L
-    , verbose = -1L
+    , verbose = VERBOSITY
     , num_threads = 10L
     , parms = list(num_threads = 1L)
   )
