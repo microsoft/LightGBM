@@ -41,21 +41,37 @@ class _DummyLogger:
         warnings.warn(msg, stacklevel=3)
 
 
-_LOGGER: Union[_DummyLogger, Logger] = _DummyLogger()
+_LOGGER: Any = _DummyLogger()
+_INFO_METHOD_NAME = "info"
+_WARNING_METHOD_NAME = "warning"
 
 
-def register_logger(logger: Logger) -> None:
+def register_logger(
+    logger: Any, info_method_name: str = "info", warning_method_name: str = "warning"
+) -> None:
     """Register custom logger.
 
     Parameters
     ----------
-    logger : logging.Logger
+    logger : Any
         Custom logger.
+    info_method_name : str, optional (default="info")
+        Method used to log info messages.
+    warning_method_name : str, optional (default="warning")
+        Method used to log warning messages.
     """
-    if not isinstance(logger, Logger):
-        raise TypeError("Logger should inherit logging.Logger class")
-    global _LOGGER
+    def _has_method(logger: Any, method_name: str) -> bool:
+        return callable(getattr(logger, method_name, None))
+
+    if not _has_method(logger, info_method_name) or not _has_method(logger, warning_method_name):
+        raise TypeError(
+            f"Logger must provide '{info_method_name}' and '{warning_method_name}' method"
+        )
+
+    global _LOGGER, _INFO_METHOD_NAME, _WARNING_METHOD_NAME
     _LOGGER = logger
+    _INFO_METHOD_NAME = info_method_name
+    _WARNING_METHOD_NAME = warning_method_name
 
 
 def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], None]:
@@ -76,16 +92,16 @@ def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], Non
 
 
 def _log_info(msg: str) -> None:
-    _LOGGER.info(msg)
+    getattr(_LOGGER, _INFO_METHOD_NAME)(msg)
 
 
 def _log_warning(msg: str) -> None:
-    _LOGGER.warning(msg)
+    getattr(_LOGGER, _WARNING_METHOD_NAME)(msg)
 
 
 @_normalize_native_string
 def _log_native(msg: str) -> None:
-    _LOGGER.info(msg)
+    getattr(_LOGGER, _INFO_METHOD_NAME)(msg)
 
 
 def _log_callback(msg: bytes) -> None:
