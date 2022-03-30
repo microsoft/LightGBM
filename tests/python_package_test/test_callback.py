@@ -22,6 +22,10 @@ def pickle_and_unpickle_object(obj, serializer):
     return obj_from_disk
 
 
+def reset_feature_fraction(boosting_round):
+    return 0.6 if boosting_round < 15 else 0.8
+
+
 @pytest.mark.parametrize('serializer', SERIALIZERS)
 def test_early_stopping_callback_is_picklable(serializer):
     rounds = 5
@@ -53,3 +57,17 @@ def test_record_evaluation_callback_is_picklable(serializer):
     assert callback_from_disk.before_iteration is False
     assert callback.eval_result == callback_from_disk.eval_result
     assert callback.eval_result is results
+
+
+@pytest.mark.parametrize('serializer', SERIALIZERS)
+def test_reset_parameter_callback_is_picklable(serializer):
+    params = {
+        'bagging_fraction': [0.7] * 5 + [0.6] * 5,
+        'feature_fraction': reset_feature_fraction
+    }
+    callback = lgb.reset_parameter(**params)
+    callback_from_disk = pickle_and_unpickle_object(obj=callback, serializer=serializer)
+    assert callback_from_disk.order == 10
+    assert callback_from_disk.before_iteration is True
+    assert callback.kwargs == callback_from_disk.kwargs
+    assert callback.kwargs == params
