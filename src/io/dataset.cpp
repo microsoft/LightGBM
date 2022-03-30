@@ -342,7 +342,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   auto is_sparse = io_config.is_enable_sparse;
   if (io_config.device_type == std::string("cuda") || io_config.device_type == std::string("cuda_exp")) {
       LGBM_config_::current_device = lgbm_device_cuda;
-      if (io_config.device_type == std::string("cuda") && is_sparse) {
+      if ((io_config.device_type == std::string("cuda") || io_config.device_type == std::string("cuda_exp")) && is_sparse) {
         Log::Warning("Using sparse features with CUDA is currently not supported.");
         is_sparse = false;
       }
