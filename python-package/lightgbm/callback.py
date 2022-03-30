@@ -96,6 +96,45 @@ def log_evaluation(period: int = 1, show_stdv: bool = True) -> _LogEvaluationCal
     return _LogEvaluationCallback(period=period, show_stdv=show_stdv)
 
 
+class _RecordEvaluationCallback:
+    """Internal record evaluation callable class."""
+
+    def __init__(self, eval_result: Dict[str, Dict[str, List[Any]]]) -> None:
+        self.order = 20
+        self.before_iteration = False
+
+        if not isinstance(eval_result, dict):
+            raise TypeError('eval_result should be a dictionary')
+        self.eval_result = eval_result
+
+    def _init(self, env: CallbackEnv) -> None:
+        self.eval_result.clear()
+        for item in env.evaluation_result_list:
+            if len(item) == 4:  # regular train
+                data_name, eval_name = item[:2]
+            else:  # cv
+                data_name, eval_name = item[1].split()
+            self.eval_result.setdefault(data_name, collections.OrderedDict())
+            if len(item) == 4:
+                self.eval_result[data_name].setdefault(eval_name, [])
+            else:
+                self.eval_result[data_name].setdefault(f'{eval_name}-mean', [])
+                self.eval_result[data_name].setdefault(f'{eval_name}-stdv', [])
+
+    def __call__(self, env: CallbackEnv) -> None:
+        if env.iteration == env.begin_iteration:
+            self._init(env)
+        for item in env.evaluation_result_list:
+            if len(item) == 4:
+                data_name, eval_name, result = item[:3]
+                self.eval_result[data_name][eval_name].append(result)
+            else:
+                data_name, eval_name = item[1].split()
+                res_mean, res_stdv = item[2], item[4]
+                self.eval_result[data_name][f'{eval_name}-mean'].append(res_mean)
+                self.eval_result[data_name][f'{eval_name}-stdv'].append(res_stdv)
+
+
 def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
     """Create a callback that records the evaluation history into ``eval_result``.
 
@@ -126,40 +165,10 @@ def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
 
     Returns
     -------
-    callback : callable
+    callback : _RecordEvaluationCallback
         The callback that records the evaluation history into the passed dictionary.
     """
-    if not isinstance(eval_result, dict):
-        raise TypeError('eval_result should be a dictionary')
-
-    def _init(env: CallbackEnv) -> None:
-        eval_result.clear()
-        for item in env.evaluation_result_list:
-            if len(item) == 4:  # regular train
-                data_name, eval_name = item[:2]
-            else:  # cv
-                data_name, eval_name = item[1].split()
-            eval_result.setdefault(data_name, collections.OrderedDict())
-            if len(item) == 4:
-                eval_result[data_name].setdefault(eval_name, [])
-            else:
-                eval_result[data_name].setdefault(f'{eval_name}-mean', [])
-                eval_result[data_name].setdefault(f'{eval_name}-stdv', [])
-
-    def _callback(env: CallbackEnv) -> None:
-        if env.iteration == env.begin_iteration:
-            _init(env)
-        for item in env.evaluation_result_list:
-            if len(item) == 4:
-                data_name, eval_name, result = item[:3]
-                eval_result[data_name][eval_name].append(result)
-            else:
-                data_name, eval_name = item[1].split()
-                res_mean, res_stdv = item[2], item[4]
-                eval_result[data_name][f'{eval_name}-mean'].append(res_mean)
-                eval_result[data_name][f'{eval_name}-stdv'].append(res_stdv)
-    _callback.order = 20  # type: ignore
-    return _callback
+    return _RecordEvaluationCallback(eval_result=eval_result)
 
 
 def reset_parameter(**kwargs: Union[list, Callable]) -> Callable:
