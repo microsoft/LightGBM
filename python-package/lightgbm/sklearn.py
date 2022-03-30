@@ -2,7 +2,6 @@
 """Scikit-learn wrapper interface for LightGBM."""
 import copy
 from inspect import signature
-from joblib import cpu_count
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -14,6 +13,17 @@ from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite
                      _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
                      pd_DataFrame)
 from .engine import train
+
+try:
+    from joblib import cpu_count
+    cpu_count_lib = "joblib"
+except ImportError:
+    try:
+        from psutil import cpu_count
+        cpu_count_lib = "psutil"
+    except ImportError:
+        from multiprocessing import cpu_count
+        cpu_count_lib = "multiprocessing"
 
 _EvalResultType = Tuple[str, float, bool]
 
@@ -363,7 +373,7 @@ class LGBMModel(_LGBMModelBase):
         reg_alpha: float = 0.,
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
-        n_jobs: int = 0,
+        n_jobs: Union[int, None] = None,
         importance_type: str = 'split',
         **kwargs
     ):
@@ -426,14 +436,18 @@ class LGBMModel(_LGBMModelBase):
             If int, this number is used to seed the C++ code.
             If RandomState object (numpy), a random integer is picked based on its state to seed the C++ code.
             If None, default seeds in C++ code are used.
-        n_jobs : int, optional (default=0)
-            Number of parallel threads to use for training (can be changed at prediction time).
-            Negative integers are interpreted as following joblib's formula, just like scikit-learn
-            (so e.g. -1 means using all threads). A value of zero corresponds the default number of
-            threads configured for OpenMP in the system.
+        n_jobs : int or None, optional (default=None)
+            Number of parallel threads to use for training (can be changed at prediction time by
+            passing it as an extra keyword argument).
 
             For better performance, it is recommended to set this to the number of physical cores
             in the CPU.
+
+            Negative integers are interpreted as following joblib's formula, just like scikit-learn
+            (so e.g. -1 means using all threads). A value of zero corresponds the default number of
+            threads configured for OpenMP in the system. A value of ``None`` (the default) corresponds
+            to using the number of physical cores in the system (its correct detection requires
+            either the ``joblib`` or the ``psutil`` util libraries to be installed).
         importance_type : str, optional (default='split')
             The type of feature importance to be filled into ``feature_importances_``.
             If 'split', result contains numbers of times the feature is used in a model.
@@ -643,9 +657,18 @@ class LGBMModel(_LGBMModelBase):
         params = _choose_param_value("metric", params, original_metric)
 
         # use joblib conventions for negative n_jobs, just like scikit-learn
-        num_threads_aliases = _ConfigAliases.get("num_threads")
-        if self.n_jobs < 0 and not any([k in num_threads_aliases for k in params.keys()]):
-            params["num_threads"] = max(cpu_count() + 1 + self.n_jobs, 1)
+        if self.n_jobs is None or self.n_jobs < 0:
+            num_threads_aliases = _ConfigAliases.get("num_threads")
+            if not any([k in num_threads_aliases for k in params.keys()]):
+                if self.n_jobs is None:
+                    if cpu_count_lib == "joblib":
+                        params["num_threads"] = cpu_count(only_physical_cores=True)
+                    elif cpu_count_lib == "psutil":
+                        params["num_threads"] = cpu_count(logical=False)
+                    else:
+                        params["num_threads"] = cpu_count()
+                elif self.n_jobs < 0:
+                    params["num_threads"] = max(cpu_count() + 1 + self.n_jobs, 1)
 
         return params
 

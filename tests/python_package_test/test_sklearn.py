@@ -1,6 +1,7 @@
 # coding: utf-8
 import itertools
 import math
+import re
 from os import getenv
 from pathlib import Path
 
@@ -1301,3 +1302,26 @@ def test_multiclass_custom_objective():
     np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
     assert not callable(builtin_obj_model.objective_)
     assert callable(custom_obj_model.objective_)
+
+
+def test_negative_n_jobs():
+    n_threads = joblib.cpu_count()
+    if n_threads <= 1:
+        return None
+    val_minus_two = n_threads - 1
+    X, y = load_breast_cancer(return_X_y=True)
+    gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=-2).fit(X, y)
+    gbm.booster_.save_model("model.txt")
+    with open("model.txt", "r") as f:
+        model_txt = f.read()
+    assert bool(re.search(r"\[num_threads: %d\]" % val_minus_two, model_txt))
+
+
+def test_default_n_jobs():
+    n_cores = joblib.cpu_count(only_physical_cores=True)
+    X, y = load_breast_cancer(return_X_y=True)
+    gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=None).fit(X, y)
+    gbm.booster_.save_model("model.txt")
+    with open("model.txt", "r") as f:
+        model_txt = f.read()
+    assert bool(re.search(r"\[num_threads: %d\]" % n_cores, model_txt))
