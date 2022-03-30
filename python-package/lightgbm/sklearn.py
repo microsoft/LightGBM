@@ -1,6 +1,7 @@
 # coding: utf-8
 """Scikit-learn wrapper interface for LightGBM."""
 import copy
+import multiprocessing
 from inspect import signature
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -362,7 +363,7 @@ class LGBMModel(_LGBMModelBase):
         reg_alpha: float = 0.,
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
-        n_jobs: int = -1,
+        n_jobs: int = 0,
         importance_type: str = 'split',
         **kwargs
     ):
@@ -425,8 +426,14 @@ class LGBMModel(_LGBMModelBase):
             If int, this number is used to seed the C++ code.
             If RandomState object (numpy), a random integer is picked based on its state to seed the C++ code.
             If None, default seeds in C++ code are used.
-        n_jobs : int, optional (default=-1)
+        n_jobs : int, optional (default=0)
             Number of parallel threads to use for training (can be changed at prediction time).
+            Negative integers are interpreted as following joblib's formula, just like scikit-learn
+            (so e.g. -1 means using all threads). A value of zero corresponds the default number of
+            threads configured for OpenMP in the system.
+
+            For better performance, it is recommended to set this to the number of physical cores
+            in the CPU.
         importance_type : str, optional (default='split')
             The type of feature importance to be filled into ``feature_importances_``.
             If 'split', result contains numbers of times the feature is used in a model.
@@ -634,6 +641,11 @@ class LGBMModel(_LGBMModelBase):
 
         # overwrite default metric by explicitly set metric
         params = _choose_param_value("metric", params, original_metric)
+
+        # use joblib conventions for negative n_jobs, just like scikit-learn
+        num_threads_aliases = _ConfigAliases.get("num_threads")
+        if self.n_jobs < 0 and not any([k in num_threads_aliases for k in params.keys()]):
+            params["num_threads"] = multiprocessing.cpu_count() + 1 - self.n_jobs
 
         return params
 
