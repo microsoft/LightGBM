@@ -295,7 +295,6 @@ Dataset <- R6::R6Class(
         init_score <- private$predictor$predict(
           data = private$raw_data
           , rawscore = TRUE
-          , reshape = TRUE
         )
 
         # Not needed to transpose, for is col_marjor
