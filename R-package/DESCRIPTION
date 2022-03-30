@@ -48,9 +48,9 @@ NeedsCompilation: yes
 Biarch: true
 VignetteBuilder: knitr
 Suggests:
-    RhpcBLASctl,
     knitr,
     processx,
+    RhpcBLASctl,
     rmarkdown,
     testthat
 Depends:
