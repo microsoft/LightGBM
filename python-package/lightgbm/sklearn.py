@@ -659,6 +659,7 @@ class LGBMModel(_LGBMModelBase):
         # use joblib conventions for negative n_jobs, just like scikit-learn
         if self.n_jobs is None or self.n_jobs < 0:
             num_threads_aliases = _ConfigAliases.get("num_threads")
+            num_threads_aliases = [alias for alias in num_threads_aliases if alias != "n_jobs"]
             if not any([k in num_threads_aliases for k in params.keys()]):
                 if self.n_jobs is None:
                     if cpu_count_lib == "joblib":
