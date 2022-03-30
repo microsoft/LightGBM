@@ -79,7 +79,6 @@ test_that("train and predict binary classification", {
         , objective = "binary"
         , metric = "binary_error"
     )
-    , num_threads = 1L
     , nrounds = nrounds
   )
   expect_false(is.null(bst$record_evals))
@@ -113,7 +112,6 @@ test_that("train and predict softmax", {
         , metric = "multi_error"
         , num_class = 3L
     )
-    , num_threads = 1L
     , nrounds = 20L
   )
 
@@ -137,7 +135,6 @@ test_that("use of multiple eval metrics works", {
         , objective = "binary"
         , metric = metrics
     )
-    , num_threads = 1L
     , nrounds = 10L
   )
   expect_false(is.null(bst$record_evals))
@@ -160,7 +157,6 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
         , objective = "binary"
         , metric = "binary_error"
     )
-    , num_threads = 1L
     , nrounds = nrounds
   )
   expect_true(abs(bst$lower_bound() - -1.590853) < TOLERANCE)
@@ -178,7 +174,6 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
         , objective = "regression"
         , metric = "l2"
     )
-    , num_threads = 1L
     , nrounds = nrounds
   )
   expect_true(abs(bst$lower_bound() - 0.1513859) < TOLERANCE)
@@ -194,7 +189,6 @@ test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
         data = dtrain
         , params = params
         , nrounds = nround_value
-        , num_threads = 1L
         , save_name = tempfile(fileext = ".model")
       )
     }, "nrounds should be greater than zero")
@@ -209,7 +203,6 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
     data = train$data
     , label = train$label
     , nrounds = nrounds
-    , num_threads = 1L
     , params = list(
       objective = "regression"
       , metric = "l2"
@@ -221,7 +214,6 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
   param_bst <- lightgbm(
     data = train$data
     , label = train$label
-    , num_threads = 1L
     , params = list(
       objective = "regression"
       , metric = "l2"
@@ -235,7 +227,6 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
     data = train$data
     , label = train$label
     , nrounds = 20L
-    , num_threads = 1L
     , params = list(
       objective = "regression"
       , metric = "l2"
@@ -277,7 +268,6 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
   bst <- lightgbm(
     data = train$data
     , label = train$label
-    , num_threads = 1L
     , params = list(
         num_leaves = 5L
         , objective = "binary"
@@ -1727,7 +1717,6 @@ test_that("lgb.train() works with integer, double, and numeric data", {
     bst <- lightgbm(
       data = X
       , label = y
-      , num_threads = 1L
       , params = list(
         objective = "regression"
         , min_data = 1L
@@ -2036,7 +2025,6 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
   bst <- lightgbm(
     data = dtrain
     , nrounds = nrounds
-    , num_threads = 1L
     , valids = list(
       "valid1" = dvalid1
       , "something-random-we-would-not-hardcode" = dtrain
@@ -2596,7 +2584,6 @@ test_that("lgb.train() throws an informative error if interaction_constraints is
       bst <- lightgbm(
         data = dtrain
         , params = params
-        , num_threads = 1L
         , nrounds = 2L
       )
     }, "interaction_constraints must be a list")
@@ -2610,7 +2597,6 @@ test_that(paste0("lgb.train() throws an informative error if the members of inte
       bst <- lightgbm(
         data = dtrain
         , params = params
-        , num_threads = 1L
         , nrounds = 2L
       )
     }, "every element in interaction_constraints must be a character vector or numeric vector")
@@ -2624,7 +2610,6 @@ test_that("lgb.train() throws an informative error if interaction_constraints co
       bst <- lightgbm(
         data = dtrain
         , params = params
-        , num_threads = 1L
         , nrounds = 2L
       )
     }, "supplied a too large value in interaction_constraints")
@@ -2639,7 +2624,6 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
   bst <- lightgbm(
     data = dtrain
     , params = params
-    , num_threads = 1L
     , nrounds = 2L
   )
   pred1 <- bst$predict(test$data)
@@ -2649,7 +2633,6 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
   bst <- lightgbm(
     data = dtrain
     , params = params
-    , num_threads = 1L
     , nrounds = 2L
   )
   pred2 <- bst$predict(test$data)
@@ -2658,7 +2641,6 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
   bst <- lightgbm(
     data = dtrain
     , params = params
-    , num_threads = 1L
     , nrounds = 2L
   )
   pred3 <- bst$predict(test$data)
@@ -2676,7 +2658,6 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   bst <- lightgbm(
     data = dtrain
     , params = params
-    , num_threads = 1L
     , nrounds = 2L
   )
   pred1 <- bst$predict(test$data)
@@ -2687,7 +2668,6 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   bst <- lightgbm(
     data = dtrain
     , params = params
-    , num_threads = 1L
     , nrounds = 2L
     , colnames = new_colnames
   )
