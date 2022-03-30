@@ -1,8 +1,8 @@
 # coding: utf-8
 """Scikit-learn wrapper interface for LightGBM."""
 import copy
-import multiprocessing
 from inspect import signature
+from joblib import cpu_count
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -645,7 +645,7 @@ class LGBMModel(_LGBMModelBase):
         # use joblib conventions for negative n_jobs, just like scikit-learn
         num_threads_aliases = _ConfigAliases.get("num_threads")
         if self.n_jobs < 0 and not any([k in num_threads_aliases for k in params.keys()]):
-            params["num_threads"] = max(multiprocessing.cpu_count() + 1 + self.n_jobs, 1)
+            params["num_threads"] = max(cpu_count() + 1 + self.n_jobs, 1)
 
         return params
 
