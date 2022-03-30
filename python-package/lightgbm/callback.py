@@ -54,7 +54,23 @@ def _format_eval_result(value: _EvalResultTuple, show_stdv: bool = True) -> str:
         raise ValueError("Wrong metric value")
 
 
-def log_evaluation(period: int = 1, show_stdv: bool = True) -> Callable:
+class _LogEvaluationCallback:
+    """Internal log evaluation callable class."""
+
+    def __init__(self, period: int = 1, show_stdv: bool = True) -> None:
+        self.order = 10
+        self.before_iteration = False
+
+        self.period = period
+        self.show_stdv = show_stdv
+
+    def __call__(self, env: CallbackEnv) -> None:
+        if self.period > 0 and env.evaluation_result_list and (env.iteration + 1) % self.period == 0:
+            result = '\t'.join([_format_eval_result(x, self.show_stdv) for x in env.evaluation_result_list])
+            _log_info(f'[{env.iteration + 1}]\t{result}')
+
+
+def log_evaluation(period: int = 1, show_stdv: bool = True) -> _LogEvaluationCallback:
     """Create a callback that logs the evaluation results.
 
     By default, standard output resource is used.
@@ -74,15 +90,10 @@ def log_evaluation(period: int = 1, show_stdv: bool = True) -> Callable:
 
     Returns
     -------
-    callback : callable
+    callback : _LogEvaluationCallback
         The callback that logs the evaluation results every ``period`` boosting iteration(s).
     """
-    def _callback(env: CallbackEnv) -> None:
-        if period > 0 and env.evaluation_result_list and (env.iteration + 1) % period == 0:
-            result = '\t'.join([_format_eval_result(x, show_stdv) for x in env.evaluation_result_list])
-            _log_info(f'[{env.iteration + 1}]\t{result}')
-    _callback.order = 10  # type: ignore
-    return _callback
+    return _LogEvaluationCallback(period=period, show_stdv=show_stdv)
 
 
 def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
