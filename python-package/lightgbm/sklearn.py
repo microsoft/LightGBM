@@ -645,7 +645,7 @@ class LGBMModel(_LGBMModelBase):
         # use joblib conventions for negative n_jobs, just like scikit-learn
         num_threads_aliases = _ConfigAliases.get("num_threads")
         if self.n_jobs < 0 and not any([k in num_threads_aliases for k in params.keys()]):
-            params["num_threads"] = multiprocessing.cpu_count() + 1 - self.n_jobs
+            params["num_threads"] = max(multiprocessing.cpu_count() + 1 + self.n_jobs, 1)
 
         return params
 
