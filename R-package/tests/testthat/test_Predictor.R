@@ -1,3 +1,5 @@
+library(Matrix)
+
 VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
@@ -110,4 +112,29 @@ test_that("start_iteration works correctly", {
     pred_leaf1 <- predict(bst, test$data, predleaf = TRUE)
     pred_leaf2 <- predict(bst, test$data, start_iteration = 0L, num_iteration = end_iter + 1L, predleaf = TRUE)
     expect_equal(pred_leaf1, pred_leaf2)
+})
+
+test_that("Feature contributions from sparse inputs produce sparse outputs", {
+    data(mtcars)
+    X <- as.matrix(mtcars[, -1L])
+    y <- as.numeric(mtcars[, 1L])
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    bst <- lgb.train(
+      data = dtrain
+      , obj = "regression"
+      , nrounds = 5L
+      , verbose = -1L
+    )
+
+    Xcsc <- as(X, "CsparseMatrix")
+    pred_csc <- predict(bst, Xcsc, predcontrib = TRUE)
+    expect_s4_class(pred_csc, "dgCMatrix")
+
+    Xcsr <- as(X, "RsparseMatrix")
+    pred_csr <- predict(bst, Xcsr, predcontrib = TRUE)
+    expect_s4_class(pred_csr, "dgRMatrix")
+
+    Xspv <- as(X[1L, , drop = FALSE], "sparseVector")
+    pred_spv <- predict(bst, Xspv, predcontrib = TRUE)
+    expect_s4_class(pred_spv, "dsparseVector")
 })
