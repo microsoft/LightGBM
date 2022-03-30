@@ -100,18 +100,20 @@ NULL
 #' @param init_score initial score is the base prediction lightgbm will boost from
 #' @param num_threads Number of parallel threads to use. For best speed, this should be set to the number of
 #'                    physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
-#'                    number of maximum threads (note that, while the default value passed here tries to detect
-#'                    the number of physical cores in the system, when using this package on linux and other
-#'                    unix-type systems, the default value passed to this function might correspond to the number
-#'                    of logical cores instead, which might be sub-optimal).
+#'                    number of maximum threads.
 #'
 #'                    Be aware that using too many threads can result in speed degradation in smaller datasets
 #'                    (see the parameters documentation for more details).
 #'
 #'                    If passing zero, will use the default number of threads configured for OpenMP
-#'                    (typically controlled through an environment variable `OMP_NUM_THREADS`).
+#'                    (typically controlled through an environment variable \code{OMP_NUM_THREADS}).
 #'
-#'                    This parameter gets overriden by `num_threads` and its aliases under `params` if passed there.
+#'                    If passing \code{NULL} (the default), will try to use the number of physical cores in the
+#'                    system, but be aware that getting the number of cores detected correctly requires package
+#'                    \code{RhpcBLASctl} to be installed.
+#'
+#'                    This parameter gets overriden by \code{num_threads} and its aliases under \code{params}
+#'                    if passed there.
 #' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
 #'     \itemize{
 #'        \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}
@@ -129,7 +131,6 @@ NULL
 #'     }
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained \code{lgb.Booster}
-#' @importFrom parallel detectCores
 #' @export
 lightgbm <- function(data,
                      label = NULL,
@@ -144,7 +145,7 @@ lightgbm <- function(data,
                      serializable = TRUE,
                      objective = "regression",
                      init_score = NULL,
-                     num_threads = parallel::detectCores(logical = FALSE),
+                     num_threads = NULL,
                      ...) {
 
   # validate inputs early to avoid unnecessary computation
@@ -152,6 +153,9 @@ lightgbm <- function(data,
     stop("nrounds should be greater than zero")
   }
 
+  if (is.null(num_threads)) {
+    num_threads <- lgb.get.default.num.threads()
+  }
   params <- lgb.check.wrapper_param(
     main_param_name = "num_threads"
     , params = params

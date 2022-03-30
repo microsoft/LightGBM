@@ -2958,6 +2958,11 @@ test_that("lightgbm() accepts 'num_threads' as either top-level argument or unde
     , num_threads = 1L
   )
   expect_equal(bst$params$num_threads, 1L)
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
 
   bst <- lightgbm(
     data = train$data
@@ -2967,6 +2972,11 @@ test_that("lightgbm() accepts 'num_threads' as either top-level argument or unde
     , params = list(num_threads = 1L)
   )
   expect_equal(bst$params$num_threads, 1L)
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
 
   bst <- lightgbm(
     data = train$data
@@ -2977,6 +2987,11 @@ test_that("lightgbm() accepts 'num_threads' as either top-level argument or unde
     , params = list(num_threads = 1L)
   )
   expect_equal(bst$params$num_threads, 1L)
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
 })
 
 test_that("lightgbm() accepts 'weight' and 'weights'", {

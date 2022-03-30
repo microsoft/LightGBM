@@ -48,6 +48,7 @@ NeedsCompilation: yes
 Biarch: true
 VignetteBuilder: knitr
 Suggests:
+    RhpcBLASctl,
     knitr,
     processx,
     rmarkdown,
@@ -61,7 +62,8 @@ Imports:
     jsonlite (>= 1.0),
     Matrix (>= 1.1-0),
     methods,
-    utils
+    utils,
+    parallel
 SystemRequirements:
     C++11
 RoxygenNote: 7.1.2
