@@ -2941,6 +2941,7 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
     , nrounds = 5L
     , verbose = -1L
   )
+  expect_equal(model$.__enclos_env__$private$train_set$get_field("weight"), w)
 
   # Avoid a bad CRAN check due to partial argument matches
   lgb_args <- list(
@@ -2952,4 +2953,5 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
     , verbose = -1L
   )
   model <- do.call(lightgbm, lgb_args)
+  expect_equal(model$.__enclos_env__$private$train_set$get_field("weight"), w)
 })
